@@ -1,65 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942Ab1AFS2e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 13:28:34 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34470 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751693Ab1AFS2c convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 13:28:32 -0500
+	id S1753004Ab1AFS3m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 13:29:42 -0500
+Received: from elasmtp-dupuy.atl.sa.earthlink.net ([209.86.89.62]:36450 "EHLO
+	elasmtp-dupuy.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752444Ab1AFS3j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 13:29:39 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=dk20050327; d=earthlink.net;
+  b=UTKp+PCPdKNk8lV/RQvEiUM4r/MI6MT4BpmragSk8ZJ6clNZ919ZIOOV2DN3sksB;
+  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
+Message-ID: <4D260A11.2040102@earthlink.net>
+Date: Thu, 06 Jan 2011 13:29:37 -0500
+From: Stephen Clark <sclark46@earthlink.net>
+Reply-To: sclark46@earthlink.net
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-In-Reply-To: <20110106092833.GA16125@elte.hu>
-References: <20110106092833.GA16125@elte.hu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 6 Jan 2011 10:28:11 -0800
-Message-ID: <AANLkTinotRxScOHEb0HgFgSpGPkq_6jKTv5CfvnQM=ee@mail.gmail.com>
-Subject: Re: [GIT PULL] scheduler changes for v2.6.38
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Robert Hancock <hancockrwd@gmail.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        ide <linux-ide@vger.kernel.org>
+Subject: Re: Kernel 2.6.37 erroneously limiting to UDMA/33
+References: <4D24B98D.6080307@earthlink.net> <4D2503B1.4080500@gmail.com>
+In-Reply-To: <4D2503B1.4080500@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec79db06d6c85c94da490e55818ed176abd2350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
+X-Originating-IP: 69.22.83.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo, can we please not do things like this:
-
-> diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
-> index 155a415..562c56e 100644
-> --- a/kernel/trace/trace_selftest.c
-> +++ b/kernel/trace/trace_selftest.c
-> @@ -558,7 +558,7 @@ trace_selftest_startup_nop(struct tracer *trace, struct trace_array *tr)
->  static int trace_wakeup_test_thread(void *data)
->  {
->        /* Make this a RT thread, doesn't need to be too high */
-> -       struct sched_param param = { .sched_priority = 5 };
-> +       static struct sched_param param = { .sched_priority = 5 };
->        struct completion *x = data;
+On 01/05/2011 06:50 PM, Robert Hancock wrote:
+> (CCing linux-ide)
 >
->        sched_setscheduler(current, SCHED_FIFO, &param);
-> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> index 5b08215..c812c49 100644
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -307,7 +307,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->  */
->  static int watchdog(void *unused)
->  {
-> -       struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
-> +       static struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
->        struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
+> On 01/05/2011 12:33 PM, Stephen Clark wrote:
+>> Hello,
+>>
+>> Why is the kernel limiting me to udma/33 when the device says it can do
+>> ata2.01: CFA: TRANSCEND, 20070831, max UDMA/66
+>>
+>> There is no cable the compact flash is a socket on the motherboard!
 >
->        sched_setscheduler(current, SCHED_FIFO, &param);
+> The kernel has no way to know that, and presumably the board isn't 
+> connecting the signal for IDE pin 34 to ground in order to properly 
+> signal that an 80-wire cable (or equivalent) is connected so that 
+> speeds over UDMA33 can be used.
+>
+> You should be able to use the libata.force=80c option on the kernel 
+> command line to override the cable detection.
+>
+>>
+>> Loading sd_mod.ko module
+>> Loading libata.ko module
+>> Loading ata_generic.ko module
+>> Loading pata_acpi.ko module
+>> pata_acpi 0000:00:0f.0: PCI INT B -> GSI 21 (level, low) -> IRQ 21
+>> pata_acpi 0000:00:0f.0: PCI INT B disabled
+>> Loading pata_via.ko module
+>> scsi0 : pata_via
+>> scsi1 : pata_via
+>> ata1: PATA max UDMA/133 cmd 0x1f0 ctl 0x3f6 bmdma 0xfa00 irq 14
+>> ata2: PATA max UDMA/133 cmd 0x170 ctl 0x376 bmdma 0xfa08 irq 15
+>> ata2.01: CFA: TRANSCEND, 20070831, max UDMA/66
+>> ata2.01: 7962192 sectors, multi 0: LBA
+>> ata2.01: limited to UDMA/33 due to 40-wire cable
+>> ata2.01: configured for UDMA/33
+>> scsi 1:0:1:0: Direct-Access ATA TRANSCEND 2007 PQ: 0 ANSI: 5
+>> sd 1:0:1:0: [sda] 7962192 512-byte logical blocks: (4.07 GB/3.79 GiB)
+>> sd 1:0:1:0: [sda] Write Protect is off
+>> sd 1:0:1:0: [sda] Write cache: disabled, read cache: enabled, doesn't
+>> support DA
+>> sda: sda1 sda2 sda3
+>> sd 1:0:1:0: [sda] Attached SCSI disk
+>> Loading ata_piix.ko module
+>>
+>> Thanks,
+>> Steve
+>>
+>
 
-It's just nasty and horrible.
+Hmm... libata.force=80c - didn't seem to work.
 
-Now, something like
+   Booting command-list
 
-    "static const struct sched_param param = .."
+root (hd0,0)
+  Filesystem type is ext2fs, partition type 0x83
+kernel /vmlinuz-2.6.37 ro root=LABEL=/ console=ttyS0,115200n8 
+libata.force=80c
+    [Linux-bzImage, setup=0x3c00, size=0x2ad060]
+initrd /initrd-2.6.37.img
+    [Linux-initrd @ 0x1fd59000, 0x286776 bytes]
+...
+Loading pata_via.ko module
+scsi0 : pata_via
+scsi1 : pata_via
+ata1: PATA max UDMA/133 cmd 0x1f0 ctl 0x3f6 bmdma 0xfa00 irq 14
+ata2: PATA max UDMA/133 cmd 0x170 ctl 0x376 bmdma 0xfa08 irq 15
+ata2.01: CFA: TRANSCEND, 20070831, max UDMA/66
+ata2.01: 7962192 sectors, multi 0: LBA
+ata2.01: limited to UDMA/33 due to 40-wire cable
+ata2.01: configured for UDMA/33
+scsi 1:0:1:0: Direct-Access     ATA      TRANSCEND        2007 PQ: 0 ANSI: 5
+sd 1:0:1:0: [sda] 7962192 512-byte logical blocks: (4.07 GB/3.79 GiB)
+sd 1:0:1:0: [sda] Write Protect is off
+sd 1:0:1:0: [sda] Write cache: disabled, read cache: enabled, doesn't 
+support DA
+  sda: sda1 sda2 sda3
+sd 1:0:1:0: [sda] Attached SCSI disk
 
-is fine, if it's really a const thing. But if it's non-const, don't
-make it be a static inside a function. Please.
+-- 
 
-                            Linus
+"They that give up essential liberty to obtain temporary safety,
+deserve neither liberty nor safety."  (Ben Franklin)
+
+"The course of history shows that as a government grows, liberty
+decreases."  (Thomas Jefferson)
+
+
+
