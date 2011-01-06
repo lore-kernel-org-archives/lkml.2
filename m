@@ -1,112 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008Ab1AFJTM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 04:19:12 -0500
-Received: from mail.pripojeni.net ([217.66.174.14]:46651 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751834Ab1AFJTL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 04:19:11 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com
-Subject: [PATCH 1/1] PM: fix oops in suspend/hibernate code
-Date: Thu,  6 Jan 2011 10:18:24 +0100
-Message-Id: <1294305504-5787-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <201101060028.43342.rjw@sisk.pl>
-References: <201101060028.43342.rjw@sisk.pl>
+	id S1752034Ab1AFJVb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 04:21:31 -0500
+Received: from mga01.intel.com ([192.55.52.88]:9203 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751319Ab1AFJV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 04:21:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,282,1291622400"; 
+   d="scan'208";a="644002171"
+From: Sheng Yang <sheng@linux.intel.com>
+Organization: Intel Opensource Technology Center
+To: Ian Campbell <ijc@hellion.org.uk>
+Subject: Re: [PATCH 2/2 v2] xen: HVM X2APIC support
+Date: Thu, 6 Jan 2011 17:23:29 +0800
+User-Agent: KMail/1.13.5 (Linux/2.6.35-23-generic; KDE/4.5.1; x86_64; ; )
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+References: <1292912329-12451-1-git-send-email-sheng@linux.intel.com> <201101060920.47797.sheng@linux.intel.com> <1294305030.3831.3590.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1294305030.3831.3590.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101061723.29523.sheng@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When ioremap fails (which might happen for some reason), we nicely
-oops in suspend_nvs_save due to NULL dereference by memcpy in there.
-Fail gracefully instead.
+On Thursday 06 January 2011 17:10:30 Ian Campbell wrote:
+> On Thu, 2011-01-06 at 09:20 +0800, Sheng Yang wrote:
+> > On Wednesday 05 January 2011 22:56:28 Ian Campbell wrote:
+> > > > > @@ -1384,6 +1365,17 @@ static bool __init xen_hvm_platform(void)
+> > > > > 
+> > > > >       return true;
+> > > > >  
+> > > > >  }
+> > > > > 
+> > > > > +bool xen_hvm_need_lapic(void)
+> > > > > +{
+> > > > > +     if (xen_pv_domain())
+> > > > > +             return false;
+> > > > > +     if (xen_hvm_domain() && xen_feature(XENFEAT_hvm_pirqs) &&
+> > > > > +                     xen_have_vector_callback)
+> > > > > +             return false;
+> > > > > +     return (xen_cpuid_base() != 0);
+> > > > > +}
+> > > > > +EXPORT_SYMBOL_GPL(xen_hvm_need_lapic);
+> > > > > +
+> > > 
+> > > Since xen_hvm_domain() is always true if xen_cpuid_base() != 0, isn't
+> > > 
+> > > this more obviously written as:
+> > > 	if (!xen_hvm_domain())
+> > > 	
+> > > 		return false;
+> > 
+> > XEN_HVM_DOMAIN works only when kernel built with CONFIG_XEN. This patch
+> > can also support kernel built without CONFIG_XEN but with
+> > CONFIG_X86_X2APIC.
+> 
+> This function is only compiled when CONFIG_XEN=y, you have a different
+> variant for the CONFIG_XEN=n case which just does the xen_cpuid_base()
+> check.
+> 
+> It's actually a bit confusing to have xen_x2apic_para_available() defer
+> to xen_hvm_need_lapic() when CONFIG_XEN is enabled but do the check
+> itself when it is not. Can we not simply have:
+> 
+> static inline bool xen_x2apic_para_available(void)
+> {
+> #ifdef CONFIG_XEN
+> 	if (!xen_hvm_domain())
+> 		return false;
+> 	if (xen_have_vector_callback)
+> 		return false;
+> 	return true;
+> #else
+> 	return xen_cpuid_base() != 0;
+> #endif
+> }
+> 
+> (either in include/asm/xen/hypervisor.h or out of line in
+> arch/x86/kernel/cpu/hypervisor.c if this leads to include dependency
+> hell)
+> 
+> Note that xen_have_vector_callback can be true only if
+> xen_feature(XENFEAT_hvm_callback_vector) so I think that bit of the
+> check was redundant.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
----
- drivers/acpi/sleep.c    |    5 ++---
- include/linux/suspend.h |    4 ++--
- kernel/power/nvs.c      |    8 +++++++-
- 3 files changed, 11 insertions(+), 6 deletions(-)
+I am not familiar with these dependence, and just followed Stefano's comments.
+> 
+> Maybe even better would be to separate the general Xen presence logic
+> from the decision to use x2apic, e.g.:
+> 
+> static inline bool xen_para_available(void)
+> {
+> #ifdef CONFIG_XEN
+> 	return xen_hvm_domain();
+> #else
+> 	return xen_cpuid_base() != 0;
+> #endif
+> }
+> 
+> static inline bool xen_x2apic_para_available(void)
+> {
+> 	if (!xen_para_available())
+> 		return false;
+> #ifdef CONFIG_XEN
+> 	if (xen_have_vector_callback)
+> 		return false;
+> #endif
+> 	return true;
+> }
+> 
+> This could be simplified further if xen_have_vector_callback was #define
+> to 0 when CONFIG_XEN=n.
 
-diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-index c423231..f94c9a9 100644
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -124,8 +124,7 @@ static int acpi_pm_freeze(void)
- static int acpi_pm_pre_suspend(void)
- {
- 	acpi_pm_freeze();
--	suspend_nvs_save();
--	return 0;
-+	return suspend_nvs_save();
- }
+Thanks for the comments, but seems it's a little late. The patches have been there 
+for more than a month since the first version, and now they are finally in the 
+tree... And since it's not a bug, could we leave it to the later clean up?
  
- /**
-@@ -151,7 +150,7 @@ static int acpi_pm_prepare(void)
- {
- 	int error = __acpi_pm_prepare();
- 	if (!error)
--		acpi_pm_pre_suspend();
-+		error = acpi_pm_pre_suspend();
- 
- 	return error;
- }
-diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-index c1f4998..3ac2551 100644
---- a/include/linux/suspend.h
-+++ b/include/linux/suspend.h
-@@ -262,7 +262,7 @@ static inline bool system_entering_hibernation(void) { return false; }
- extern int suspend_nvs_register(unsigned long start, unsigned long size);
- extern int suspend_nvs_alloc(void);
- extern void suspend_nvs_free(void);
--extern void suspend_nvs_save(void);
-+extern int suspend_nvs_save(void);
- extern void suspend_nvs_restore(void);
- #else /* CONFIG_SUSPEND_NVS */
- static inline int suspend_nvs_register(unsigned long a, unsigned long b)
-@@ -271,7 +271,7 @@ static inline int suspend_nvs_register(unsigned long a, unsigned long b)
- }
- static inline int suspend_nvs_alloc(void) { return 0; }
- static inline void suspend_nvs_free(void) {}
--static inline void suspend_nvs_save(void) {}
-+static inline int suspend_nvs_save(void) {}
- static inline void suspend_nvs_restore(void) {}
- #endif /* CONFIG_SUSPEND_NVS */
- 
-diff --git a/kernel/power/nvs.c b/kernel/power/nvs.c
-index 1836db6..57c6fab 100644
---- a/kernel/power/nvs.c
-+++ b/kernel/power/nvs.c
-@@ -105,7 +105,7 @@ int suspend_nvs_alloc(void)
- /**
-  *	suspend_nvs_save - save NVS memory regions
-  */
--void suspend_nvs_save(void)
-+int suspend_nvs_save(void)
- {
- 	struct nvs_page *entry;
- 
-@@ -114,8 +114,14 @@ void suspend_nvs_save(void)
- 	list_for_each_entry(entry, &nvs_list, node)
- 		if (entry->data) {
- 			entry->kaddr = ioremap(entry->phys_start, entry->size);
-+			if (!entry->kaddr) {
-+				suspend_nvs_free();
-+				return -ENOMEM;
-+			}
- 			memcpy(entry->data, entry->kaddr, entry->size);
- 		}
-+
-+	return 0;
- }
- 
- /**
--- 
-1.7.3.4
+> > > Also, checking for the XenVMMXenVMM signature alone seems like a very
+> > > broad test for checking the availability of a specific feature, is
+> > > there nothing more specific which we could/should be testing?
+> > 
+> > The CPU flag x2apic is checked when we want to enable x2apic, and only
+> > Xen which supported x2apic emulation would show this flag.
+> 
+> A comment to that effect, in the checkin commentary if not the code,
+> would be a useful reminder of this.
 
+The caller of the function indicate so, it's in the x2apic enabling code(which is 
+the same as KVM). So I think that maybe enough.
 
+--
+regards
+Yang, Sheng
+
+> 
+> Thanks,
+> Ian.
