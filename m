@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab1AFAwd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:52:33 -0500
-Received: from kroah.org ([198.145.64.141]:35693 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754201Ab1AFA3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754202Ab1AFA3s (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 5 Jan 2011 19:29:48 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:02 2011
-Message-Id: <20110106002301.959353029@clark.site>
+Received: from kroah.org ([198.145.64.141]:35679 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754181Ab1AFA3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:29:45 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:01 2011
+Message-Id: <20110106002301.781715875@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:22:35 -0800
+Date: Wed, 05 Jan 2011 16:22:33 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Nandita Dukkipati <nanditad@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [056/152] tcp: Bug fix in initialization of receive window.
+Subject: [054/152] tcp: Increase TCP_MAXSEG socket option minimum.
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,40 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Nandita Dukkipati <nanditad@google.com>
+From: David S. Miller <davem@davemloft.net>
 
-[ Upstream commit b1afde60f2b9ee8444fba4e012dc99a3b28d224d ]
+[ Upstream commit 7a1abd08d52fdeddb3e9a5a33f2f15cc6a5674d2 ]
 
-The bug has to do with boundary checks on the initial receive window.
-If the initial receive window falls between init_cwnd and the
-receive window specified by the user, the initial window is incorrectly
-brought down to init_cwnd. The correct behavior is to allow it to
-remain unchanged.
+As noted by Steve Chen, since commit
+f5fff5dc8a7a3f395b0525c02ba92c95d42b7390 ("tcp: advertise MSS
+requested by user") we can end up with a situation where
+tcp_select_initial_window() does a divide by a zero (or
+even negative) mss value.
 
-Signed-off-by: Nandita Dukkipati <nanditad@google.com>
+The problem is that sometimes we effectively subtract
+TCPOLEN_TSTAMP_ALIGNED and/or TCPOLEN_MD5SIG_ALIGNED from the mss.
+
+Fix this by increasing the minimum from 8 to 64.
+
+Reported-by: Steve Chen <schen@mvista.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv4/tcp_output.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ net/ipv4/tcp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -237,11 +237,10 @@ void tcp_select_initial_window(int __spa
- 		/* when initializing use the value from init_rcv_wnd
- 		 * rather than the default from above
- 		 */
--		if (init_rcv_wnd &&
--		    (*rcv_wnd > init_rcv_wnd * mss))
--			*rcv_wnd = init_rcv_wnd * mss;
--		else if (*rcv_wnd > init_cwnd * mss)
--			*rcv_wnd = init_cwnd * mss;
-+		if (init_rcv_wnd)
-+			*rcv_wnd = min(*rcv_wnd, init_rcv_wnd * mss);
-+		else
-+			*rcv_wnd = min(*rcv_wnd, init_cwnd * mss);
- 	}
- 
- 	/* Set the clamp no higher than max representable value */
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -2246,7 +2246,7 @@ static int do_tcp_setsockopt(struct sock
+ 		/* Values greater than interface MTU won't take effect. However
+ 		 * at the point when this call is done we typically don't yet
+ 		 * know which interface is going to be used */
+-		if (val < 8 || val > MAX_TCP_WINDOW) {
++		if (val < 64 || val > MAX_TCP_WINDOW) {
+ 			err = -EINVAL;
+ 			break;
+ 		}
 
 
