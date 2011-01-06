@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547Ab1AFAax (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:30:53 -0500
-Received: from kroah.org ([198.145.64.141]:35932 "EHLO coco.kroah.org"
+	id S1754576Ab1AFAbA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:31:00 -0500
+Received: from kroah.org ([198.145.64.141]:35949 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754462Ab1AFAaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:30:52 -0500
+	id S1754545Ab1AFAa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:30:58 -0500
 X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:06 2011
-Message-Id: <20110106002306.568071683@clark.site>
+Message-Id: <20110106002306.914677134@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:23:22 -0800
+Date: Wed, 05 Jan 2011 16:23:26 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yan Li <yan.i.li@intel.com>, Dmitry Torokhov <dtor@mail.ru>
-Subject: [103/152] Input: synaptics - fix handling of 2-button ClickPads
+        Vitaly Kuznetsov <vitty@altlinux.ru>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+Subject: [107/152] USB: usb-storage: unusual_devs entry for the Samsung YP-CP3
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yan Li <yan.i.li@intel.com>
+From: Vitaly Kuznetsov <vitty@altlinux.ru>
 
-commit 3bfa321e662edf90fb8123a02c987c2965fa50bb upstream.
+commit d73a9b3001f29271c2e9f2a806b05a431c5d9591 upstream.
 
-Lenovo S10-3t's ClickPad is a 2-button ClickPad that reports BTN_LEFT
-and BTN_RIGHT as normal touchpad, unlike the 1-button ClickPad used in
-HP mini 210 that reports solely BTN_MIDDLE.
+Add an unusual_devs entry for the Samsung YP-CP3 MP4 player.
 
-In 0xc0-cap response, the 1-button ClickPad has the 20-bit set while
-2-button ClickPad has the 8-bit set.
+User was getting the following errors in dmesg:
+ usb 2-6: reset high speed USB device using ehci_hcd and address 2
+ usb 2-6: reset high speed USB device using ehci_hcd and address 2
+ usb 2-6: reset high speed USB device using ehci_hcd and address 2
+ usb 2-6: USB disconnect, address 2
+ sd 3:0:0:0: [sdb] Assuming drive cache: write through
+ sdb:<2>ldm_validate_partition_table(): Disk read failed.
+ Dev sdb: unable to read RDB block 0
+  unable to read partition table
 
-This patch makes the kernel only handle 1-button ClickPad specially,
-and treat 2-button ClickPad in the same fashion as regular touchpads.
-
-This fixes kernel bug #18122 and MeeGo bug #4807.
-
-Signed-off-by: Yan Li <yan.i.li@intel.com>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Signed-off-by: Vitaly Kuznetsov <vitty@altlinux.ru>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/input/mouse/synaptics.h |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/storage/unusual_devs.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/input/mouse/synaptics.h
-+++ b/drivers/input/mouse/synaptics.h
-@@ -51,7 +51,8 @@
- #define SYN_EXT_CAP_REQUESTS(c)		(((c) & 0x700000) >> 20)
- #define SYN_CAP_MULTI_BUTTON_NO(ec)	(((ec) & 0x00f000) >> 12)
- #define SYN_CAP_PRODUCT_ID(ec)		(((ec) & 0xff0000) >> 16)
--#define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100100)
-+#define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100000) /* 1-button ClickPad */
-+#define SYN_CAP_CLICKPAD2BTN(ex0c)	((ex0c) & 0x000100) /* 2-button ClickPad */
- #define SYN_CAP_MAX_DIMENSIONS(ex0c)	((ex0c) & 0x020000)
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -481,6 +481,13 @@ UNUSUAL_DEV(  0x04e8, 0x507c, 0x0220, 0x
+ 		US_SC_DEVICE, US_PR_DEVICE, NULL,
+ 		US_FL_MAX_SECTORS_64),
  
- /* synaptics modes query bits */
++/* Reported by Vitaly Kuznetsov <vitty@altlinux.ru> */
++UNUSUAL_DEV(  0x04e8, 0x5122, 0x0000, 0x9999,
++		"Samsung",
++		"YP-CP3",
++		US_SC_DEVICE, US_PR_DEVICE, NULL,
++		US_FL_MAX_SECTORS_64 | US_FL_BULK_IGNORE_TAG),
++
+ /* Entry and supporting patch by Theodore Kilgore <kilgota@auburn.edu>.
+  * Device uses standards-violating 32-byte Bulk Command Block Wrappers and
+  * reports itself as "Proprietary SCSI Bulk." Cf. device entry 0x084d:0x0011.
 
 
