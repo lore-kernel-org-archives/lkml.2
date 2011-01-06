@@ -1,78 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab1AFXzd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 18:55:33 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60395 "EHLO mx2.mail.elte.hu"
+	id S1753426Ab1AFXuE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 18:50:04 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38035 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755280Ab1AFXz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 18:55:27 -0500
-Date: Fri, 7 Jan 2011 00:54:57 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] RCU changes for v2.6.38
-Message-ID: <20110106235457.GB15940@elte.hu>
-References: <20110106090808.GA15170@elte.hu>
- <AANLkTikocAcVEAHXi3g7z2s+4y3mh5m0bs17iJnUWPhz@mail.gmail.com>
+	id S1752060Ab1AFXuB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 18:50:01 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: netdev@vger.kernel.org
+Subject: [PATCH] forcedeth: Do not use legacy PCI power management
+Date: Fri, 7 Jan 2011 00:49:16 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37+; KDE/4.4.4; x86_64; ; )
+Cc: David Miller <davem@davemloft.net>, LKML <linux-kernel@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikocAcVEAHXi3g7z2s+4y3mh5m0bs17iJnUWPhz@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101070049.16833.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+The forcedeth driver uses the legacy PCI power management, so it has
+to do PCI-specific things in its ->suspend() and ->resume() callbacks
+and some of them are not done correctly.
 
-> On Thu, Jan 6, 2011 at 1:08 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > Please pull the latest core-rcu-for-linus git tree from:
-> 
-> So I pulled, but I'm not convinced about the crazy busy-looping
-> SRCU_SYNCHRONIZE_DELAY thing.
-> 
-> Why does it do a silly udelay(), instead of just looping over the
-> srcu_readers_active_idx() for a few times? You're wasting CPU time
-> anyway, why ask the user how many usecs to waste?
-> 
-> IOW, why isn't that "wait for no active readers" a nice helper
-> function, and why doesn't it do
-> 
->    for (i = 0; i < CONFIG_SRCU_SYNCHRONIZE_DELAY; i++) {
->       if (!srcu_readers_active_idx(sp, idx))
->          return;
->       udelay(1);
->    }
->    while (srcu_readers_active_idx(sp, idx))
->       schedule_timeout_interruptible(1);
-> 
-> instead? And is it really sane to ask the kernel configurator to come
-> up with a random value (ie that "CONFIG_SRCU_SYNCHRONIZE_DELAY" is
-> just stupid and wrong)?
-> 
-> Please fix this. And don't make people answer unanswerable questions.
-> If YOU and Paul don't know the answer, why the hell do you expect
-> somebody who does a "make config" to know the answer?
-> 
-> Either pick a number, or pick an algorithm that self-tunes.
-> 
-> Don't use the Kconfig system as a way to tell people that it's their
-> fault when you made a bad decision. Really.
+Convert forcedeth to the new PCI power management framework and make
+it let the PCI subsystem take care of all the PCI-specific aspects of
+device handling during system power transitions.
 
-Fully agreed - we'll fix this.
+Tested with nVidia Corporation MCP55 Ethernet (rev a2).
 
-Thanks,
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/net/forcedeth.c |   34 ++++++++++++----------------------
+ 1 file changed, 12 insertions(+), 22 deletions(-)
 
-	Ingo
+Index: linux-2.6/drivers/net/forcedeth.c
+===================================================================
+--- linux-2.6.orig/drivers/net/forcedeth.c
++++ linux-2.6/drivers/net/forcedeth.c
+@@ -4082,6 +4082,7 @@ static int nv_set_wol(struct net_device
+ 		writel(flags, base + NvRegWakeUpFlags);
+ 		spin_unlock_irq(&np->lock);
+ 	}
++	device_set_wakeup_enable(&np->pci_dev->dev, np->wolenabled);
+ 	return 0;
+ }
+ 
+@@ -5643,14 +5644,10 @@ static int __devinit nv_probe(struct pci
+ 	/* set mac address */
+ 	nv_copy_mac_to_hw(dev);
+ 
+-	/* Workaround current PCI init glitch:  wakeup bits aren't
+-	 * being set from PCI PM capability.
+-	 */
+-	device_init_wakeup(&pci_dev->dev, 1);
+-
+ 	/* disable WOL */
+ 	writel(0, base + NvRegWakeUpFlags);
+ 	np->wolenabled = 0;
++	device_set_wakeup_enable(&pci_dev->dev, false);
+ 
+ 	if (id->driver_data & DEV_HAS_POWER_CNTRL) {
+ 
+@@ -5923,8 +5920,9 @@ static void __devexit nv_remove(struct p
+ }
+ 
+ #ifdef CONFIG_PM
+-static int nv_suspend(struct pci_dev *pdev, pm_message_t state)
++static int nv_suspend(struct device *device)
+ {
++	struct pci_dev *pdev = to_pci_dev(device);
+ 	struct net_device *dev = pci_get_drvdata(pdev);
+ 	struct fe_priv *np = netdev_priv(dev);
+ 	u8 __iomem *base = get_hwbase(dev);
+@@ -5940,25 +5938,17 @@ static int nv_suspend(struct pci_dev *pd
+ 	for (i = 0;i <= np->register_size/sizeof(u32); i++)
+ 		np->saved_config_space[i] = readl(base + i*sizeof(u32));
+ 
+-	pci_save_state(pdev);
+-	pci_enable_wake(pdev, pci_choose_state(pdev, state), np->wolenabled);
+-	pci_disable_device(pdev);
+-	pci_set_power_state(pdev, pci_choose_state(pdev, state));
+ 	return 0;
+ }
+ 
+-static int nv_resume(struct pci_dev *pdev)
++static int nv_resume(struct device *device)
+ {
++	struct pci_dev *pdev = to_pci_dev(device);
+ 	struct net_device *dev = pci_get_drvdata(pdev);
+ 	struct fe_priv *np = netdev_priv(dev);
+ 	u8 __iomem *base = get_hwbase(dev);
+ 	int i, rc = 0;
+ 
+-	pci_set_power_state(pdev, PCI_D0);
+-	pci_restore_state(pdev);
+-	/* ack any pending wake events, disable PME */
+-	pci_enable_wake(pdev, PCI_D0, 0);
+-
+ 	/* restore non-pci configuration space */
+ 	for (i = 0;i <= np->register_size/sizeof(u32); i++)
+ 		writel(np->saved_config_space[i], base+i*sizeof(u32));
+@@ -5977,6 +5967,9 @@ static int nv_resume(struct pci_dev *pde
+ 	return rc;
+ }
+ 
++static SIMPLE_DEV_PM_OPS(nv_pm_ops, nv_suspend, nv_resume);
++#define NV_PM_OPS (&nv_pm_ops)
++
+ static void nv_shutdown(struct pci_dev *pdev)
+ {
+ 	struct net_device *dev = pci_get_drvdata(pdev);
+@@ -6000,14 +5993,12 @@ static void nv_shutdown(struct pci_dev *
+ 	 * only put the device into D3 if we really go for poweroff.
+ 	 */
+ 	if (system_state == SYSTEM_POWER_OFF) {
+-		if (pci_enable_wake(pdev, PCI_D3cold, np->wolenabled))
+-			pci_enable_wake(pdev, PCI_D3hot, np->wolenabled);
++		pci_wake_from_d3(pdev, np->wolenabled);
+ 		pci_set_power_state(pdev, PCI_D3hot);
+ 	}
+ }
+ #else
+-#define nv_suspend NULL
+-#define nv_shutdown NULL
++#define NV_PM_OPS NULL
+ #define nv_resume NULL
+ #endif /* CONFIG_PM */
+ 
+@@ -6180,9 +6171,8 @@ static struct pci_driver driver = {
+ 	.id_table	= pci_tbl,
+ 	.probe		= nv_probe,
+ 	.remove		= __devexit_p(nv_remove),
+-	.suspend	= nv_suspend,
+-	.resume		= nv_resume,
+ 	.shutdown	= nv_shutdown,
++	.driver.pm	= NV_PM_OPS,
+ };
+ 
+ static int __init init_nic(void)
