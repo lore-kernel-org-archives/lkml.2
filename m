@@ -1,373 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab1AFG3y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 01:29:54 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:35007 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752599Ab1AFG3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 01:29:52 -0500
-Date: Thu, 6 Jan 2011 17:29:41 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for January 6
-Message-Id: <20110106172941.388cfb2b.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1753916Ab1AFGjc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 01:39:32 -0500
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:35911 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753765Ab1AFGjb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 01:39:31 -0500
+Date: Thu, 6 Jan 2011 15:29:11 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: balbir@linux.vnet.ibm.com
+Cc: Minchan Kim <minchan.kim@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: [BUGFIX][PATCH v4] memcg: fix memory migration of shmem swapcache
+Message-Id: <20110106152911.db6c5b2c.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20110106054200.GG3722@balbir.in.ibm.com>
+References: <20110105130020.e2a854e4.nishimura@mxp.nes.nec.co.jp>
+	<20110105115840.GD4654@cmpxchg.org>
+	<20110106100923.24b1dd12.nishimura@mxp.nes.nec.co.jp>
+	<AANLkTi=rp=WZa7PP4V6anU0SQ3BM-RJQwiDu1fJuoDig@mail.gmail.com>
+	<20110106123415.895d6dfc.nishimura@mxp.nes.nec.co.jp>
+	<20110106054200.GG3722@balbir.in.ibm.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__6_Jan_2011_17_29_41_+1100_eG3bkdGvt4bpz9M+"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__6_Jan_2011_17_29_41_+1100_eG3bkdGvt4bpz9M+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Sorry for nit-picking but succeed is not as good as succeeded,
+> successful, successful_migration or migration_ok
+> 
+OK, I use "migration_ok".
 
-Hi all,
+===
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
-[The mirroring of this out to the kernel.org servers is being slow]
+In current implimentation, mem_cgroup_end_migration() decides whether the page
+migration has succeeded or not by checking "oldpage->mapping".
 
-Changes since 20110105:
+But if we are tring to migrate a shmem swapcache, the page->mapping of it is
+NULL from the begining, so the check would be invalid.
+As a result, mem_cgroup_end_migration() assumes the migration has succeeded
+even if it's not, so "newpage" would be freed while it's not uncharged.
 
-The nfsd tree gained a conflict against Linus' tree.
+This patch fixes it by passing mem_cgroup_end_migration() the result of the
+page migration.
 
-The vfs-scale lost a conflict but gained another against the xfs tree.
+Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+v3->v4
+  - s/succeed/migration_ok
+v2->v3
+  - s/success/succeed
+v1->v2
+  - pass mem_cgroup_end_migration() "bool" instead of "int".
 
-The bjdooks-i2c tree gained conflicts against the arm tree.
+ include/linux/memcontrol.h |    5 ++---
+ mm/memcontrol.c            |    5 ++---
+ mm/migrate.c               |    2 +-
+ 3 files changed, 5 insertions(+), 7 deletions(-)
 
-The wireless tree lost its build failure.
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 159a076..769c318 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -93,7 +93,7 @@ extern int
+ mem_cgroup_prepare_migration(struct page *page,
+ 	struct page *newpage, struct mem_cgroup **ptr);
+ extern void mem_cgroup_end_migration(struct mem_cgroup *mem,
+-	struct page *oldpage, struct page *newpage);
++	struct page *oldpage, struct page *newpage, bool migration_ok);
+ 
+ /*
+  * For memory reclaim.
+@@ -231,8 +231,7 @@ mem_cgroup_prepare_migration(struct page *page, struct page *newpage,
+ }
+ 
+ static inline void mem_cgroup_end_migration(struct mem_cgroup *mem,
+-					struct page *oldpage,
+-					struct page *newpage)
++		struct page *oldpage, struct page *newpage, bool migration_ok)
+ {
+ }
+ 
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 61678be..c35f817 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2856,7 +2856,7 @@ int mem_cgroup_prepare_migration(struct page *page,
+ 
+ /* remove redundant charge if migration failed*/
+ void mem_cgroup_end_migration(struct mem_cgroup *mem,
+-	struct page *oldpage, struct page *newpage)
++	struct page *oldpage, struct page *newpage, bool migration_ok)
+ {
+ 	struct page *used, *unused;
+ 	struct page_cgroup *pc;
+@@ -2865,8 +2865,7 @@ void mem_cgroup_end_migration(struct mem_cgroup *mem,
+ 		return;
+ 	/* blocks rmdir() */
+ 	cgroup_exclude_rmdir(&mem->css);
+-	/* at migration success, oldpage->mapping is NULL. */
+-	if (oldpage->mapping) {
++	if (!migration_ok) {
+ 		used = oldpage;
+ 		unused = newpage;
+ 	} else {
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 6ae8a66..be66b23 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -756,7 +756,7 @@ rcu_unlock:
+ 		rcu_read_unlock();
+ uncharge:
+ 	if (!charge)
+-		mem_cgroup_end_migration(mem, page, newpage);
++		mem_cgroup_end_migration(mem, page, newpage, rc == 0);
+ unlock:
+ 	unlock_page(page);
+ 
+-- 
+1.7.1
 
-The drm tree gained a build failure for which I applied a patch.
-
-The percpu tree still has its build failure so I reverted a commit.
-
-The tty tree still has its build failure for which I reverted a commit.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 184 trees (counting Linus' and 26 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/rc-fixes
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging gcl-current/merge
-Merging arm/devel
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging linux-spec/for-next
-Merging msm/for-next
-Merging omap/for-next
-CONFLICT (content): Merge conflict in arch/arm/plat-omap/Kconfig
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-CONFLICT (content): Merge conflict in arch/arm/mach-tegra/timer.c
-Merging ux500-core/ux500-core
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-Merging galak/next
-Merging s390/features
-Merging sh/sh-latest
-CONFLICT (content): Merge conflict in arch/sh/kernel/cpu/sh2a/clock-sh7201.c
-Merging rmobile/rmobile-latest
-CONFLICT (content): Merge conflict in arch/arm/mach-shmobile/Kconfig
-Applying: rmobile: merge fixup for clkdev changes
-Merging sparc/master
-Merging tile/master
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-CONFLICT (content): Merge conflict in Documentation/filesystems/Locking
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging vfs-scale/vfs-scale-working
-CONFLICT (content): Merge conflict in fs/9p/vfs_inode.c
-CONFLICT (content): Merge conflict in fs/cifs/dir.c
-CONFLICT (content): Merge conflict in fs/fuse/inode.c
-CONFLICT (content): Merge conflict in fs/hfsplus/hfsplus_fs.h
-CONFLICT (content): Merge conflict in fs/hfsplus/unicode.c
-CONFLICT (content): Merge conflict in fs/xfs/xfs_iget.c
-Applying: v9fs: merge fix for changes in the vfs-scale tree
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/pxa27x.c
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/pxa3xx.c
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/trizeps4.c
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-CONFLICT (content): Merge conflict in drivers/net/skge.c
-CONFLICT (content): Merge conflict in drivers/net/sky2.c
-CONFLICT (content): Merge conflict in net/9p/protocol.c
-Merging wireless/master
-CONFLICT (content): Merge conflict in net/bluetooth/Makefile
-Merging bluetooth/master
-Merging mtd/master
-Merging crypto/master
-Merging sound-asoc/for-next
-Merging sound/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-CONFLICT (content): Merge conflict in drivers/input/keyboard/Kconfig
-CONFLICT (content): Merge conflict in include/linux/input.h
-Merging input-mt/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-CONFLICT (content): Merge conflict in drivers/mfd/Makefile
-CONFLICT (content): Merge conflict in drivers/mfd/wm8994-core.c
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-CONFLICT (content): Merge conflict in drivers/video/sh_mobile_lcdcfb.c
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-Merging voltage/for-next
-CONFLICT (content): Merge conflict in drivers/regulator/core.c
-CONFLICT (content): Merge conflict in drivers/regulator/mc13783-regulator.c
-Merging security-testing/next
-Merging selinux/master
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-core=
-.c
-CONFLICT (content): Merge conflict in fs/ext4/ext4.h
-Merging audit/for-next
-Merging suspend/linux-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging catalin/for-next
-Merging alacrity/linux-next
-CONFLICT (content): Merge conflict in drivers/Makefile
-CONFLICT (content): Merge conflict in include/linux/Kbuild
-CONFLICT (content): Merge conflict in lib/Kconfig
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/next-devicetree
-CONFLICT (content): Merge conflict in arch/sparc/prom/tree_32.c
-CONFLICT (content): Merge conflict in drivers/mtd/Kconfig
-Merging spi/next-spi
-CONFLICT (rename/delete): Rename arch/arm/mach-pxa/include/mach/pxa2xx_spi.=
-h->include/linux/spi/pxa2xx_spi.h in HEAD and deleted in spi/next-spi
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/devices.c
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/poodle.c
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/z2.c
-Merging tip/auto-latest
-Merging rcu/rcu/next
-Merging oprofile/for-next
-Merging xen/upstream/xen
-Merging swiotlb-xen/master
-CONFLICT (content): Merge conflict in drivers/xen/Kconfig
-CONFLICT (content): Merge conflict in drivers/xen/Makefile
-Merging xen-pvhvm/linux-next
-Merging edac-amd/for-next
-Merging percpu/for-next
-CONFLICT (delete/modify): arch/x86/kernel/apic/nmi.c deleted in HEAD and mo=
-dified in percpu/for-next. Version percpu/for-next of arch/x86/kernel/apic/=
-nmi.c left in tree.
-CONFLICT (content): Merge conflict in arch/x86/kernel/apic/x2apic_uv_x.c
-CONFLICT (content): Merge conflict in arch/x86/kernel/process.c
-$ git rm -f arch/x86/kernel/apic/nmi.c
-[master eacfd5c] Revert "x86: use this_cpu_has for thermal_interrupt"
-Merging workqueues/for-next
-CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
-e.txt
-CONFLICT (content): Merge conflict in drivers/media/video/bt8xx/bttv-input.c
-CONFLICT (content): Merge conflict in drivers/rtc/rtc-dev.c
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-[master 180abf7] Revert "drivers: serial: apbuart: Handle OF failures grace=
-fully"
-Merging usb/usb-next
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/Kconfig
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/clock3xxx_data.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/clock44xx_data.c
-CONFLICT (content): Merge conflict in arch/sh/Kconfig
-CONFLICT (content): Merge conflict in drivers/usb/Kconfig
-CONFLICT (content): Merge conflict in drivers/usb/host/ehci-hcd.c
-Merging staging/staging-next
-Merging slabh/slabh
-Merging bkl-trivial/trivial
-Merging bkl-llseek/llseek
-Merging bkl-vfs/vfs
-Merging bkl-config/config
-CONFLICT (content): Merge conflict in arch/powerpc/kernel/setup_64.c
-CONFLICT (delete/modify): drivers/staging/stradis/Kconfig deleted in HEAD a=
-nd modified in bkl-config/config. Version bkl-config/config of drivers/stag=
-ing/stradis/Kconfig left in tree.
-CONFLICT (content): Merge conflict in fs/nfsd/nfs4state.c
-CONFLICT (content): Merge conflict in include/linux/hardirq.h
-CONFLICT (content): Merge conflict in include/linux/smp_lock.h
-$ git rm -f drivers/staging/stradis/Kconfig
-Merging irqflags/master
-Merging cleancache/linux-next
-CONFLICT (content): Merge conflict in fs/ocfs2/super.c
-CONFLICT (content): Merge conflict in fs/super.c
-CONFLICT (content): Merge conflict in include/linux/fs.h
-CONFLICT (content): Merge conflict in mm/Kconfig
-Merging scsi-post-merge/merge-base:master
-$ git checkout scsi-post-merge/master
-Applying: [SCSI] sd: implement sd_check_events()
-Applying: [SCSI] sd,sr: kill compat SDEV_MEDIA_CHANGE event
-Applying: [SCSI] target: Add LIO target core v4.0.0-rc6
-Applying: vga_switcheroo: fix prototype for non CONFIG_VGA_SWITCHEROO build
-
---Signature=_Thu__6_Jan_2011_17_29_41_+1100_eG3bkdGvt4bpz9M+
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNJWFVAAoJEDMEi1NhKgbskm4H/2HmAXqzFyIUYKB6N9pH8XZo
-07xnzDhqTYelZzaLGJdkHocuCgKIrz8W0CnxftnfnWAxRG2uZMQPA9nANP1U1OvW
-GDNdsiivjuHWNuGM+VJB8lGL9t/gNkjiQWGAWXyaObBwHsWutIG5a9zTUj8RjDX4
-knM4WPgge/pX1KboXnB0MOKtmxtFF/1KIcLlI+QuRDejgTijaQthnkgKPlZEPjzs
-d3hAKYWeqrW4L3vo+mxZTX8lsjFaMsvT2XBDE9YJpgeVqjx6e+TfMJXn/ltrIyHT
-s92tRo2Ji/3d3KAL249DTClaujYg3h0f8Jq1Wf75naSbBLMpFvMyOIsGjXpGjvg=
-=Y1i4
------END PGP SIGNATURE-----
-
---Signature=_Thu__6_Jan_2011_17_29_41_+1100_eG3bkdGvt4bpz9M+--
