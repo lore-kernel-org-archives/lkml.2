@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab1AFVPT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 16:15:19 -0500
-Received: from inx.pm.waw.pl ([195.116.170.130]:41614 "EHLO inx.pm.waw.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751404Ab1AFVPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 16:15:17 -0500
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] checkpatch: putting the && or || on the wrong line
-References: <20110104055900.GA5062@bicker>
-	<20110104163836.GA30317@fieldses.org>
-	<20110104164414.GX5875@const.bordeaux.inria.fr>
-	<1294160834.6617.51.camel@Joe-Laptop>
-	<m3fwt7i740.fsf@intrepid.localdomain>
-	<1294249529.6617.118.camel@Joe-Laptop>
-	<m339p6p5zo.fsf@intrepid.localdomain>
-	<1294336674.12561.81.camel@Joe-Laptop>
-	<m3r5cplr2m.fsf@intrepid.localdomain>
-	<1294347753.12561.106.camel@Joe-Laptop>
-Date: Thu, 06 Jan 2011 22:14:48 +0100
-In-Reply-To: <1294347753.12561.106.camel@Joe-Laptop> (Joe Perches's message of
-	"Thu, 06 Jan 2011 13:02:33 -0800")
-Message-ID: <m37hehloon.fsf@intrepid.localdomain>
+	id S1753940Ab1AFVQx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 16:16:53 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:43515 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753396Ab1AFVQw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 16:16:52 -0500
+Date: Fri, 7 Jan 2011 08:16:46 +1100
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: Crypto Update for 2.6.38
+Message-ID: <20110106211645.GA26184@gondor.apana.org.au>
+References: <20081225002020.GA2912@gondor.apana.org.au> <20090324044932.GA18245@gondor.apana.org.au> <20091204135530.GA29371@gondor.apana.org.au> <20100226004914.GA20812@gondor.apana.org.au> <20100519020603.GA19654@gondor.apana.org.au> <20100521104404.GA29530@gondor.apana.org.au> <20100804140448.GA4042@gondor.apana.org.au> <20101024061625.GA23715@gondor.apana.org.au> <20110106000157.GA16089@gondor.apana.org.au> <AANLkTikzg3Hndp8WRi59bvJdBLxi=p-1gt7aZDLYbSW8@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikzg3Hndp8WRi59bvJdBLxi=p-1gt7aZDLYbSW8@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches <joe@perches.com> writes:
+On Thu, Jan 06, 2011 at 10:05:46AM -0800, Linus Torvalds wrote:
+>
+> Is there really any point to this? And can we get more explanation of
+> what the interface is, and who would use it?
 
->> >> Sure, standardization is a good thing - to a certain point.
->> >> We've passed this point long ago.
+I think you've answered it yourself in the third paragraph :)
 
-> Right.  It's all exactly the same.
-> We agree.  Cites aren't necessary.
+> If you need crypto in user space, it's almost invariably better done
+> in user space. If the CPU can do crypto on its own, and doesn't expose
+> those instructions to user space, it's just a stupid CPU - and the
+> user/kernel transfer is likely going to make it slower than a pure
+> software approach for any but the biggest transfers.
 
-People complained on lkml and other lists that the CodingStyle /
-checkpatch went way too far many times. So the evidence is there, in the
-list archives, and I guess even now you're getting feedback on this.
+I agree completely.
 
-OTOH you failed to show evidence that super-strict standardization
-benefits anyone.
+> And if the crypto engine is off-chip, the sw version is going to be
+> faster anyway except for possible async versions that are hard to
+> interface to user space.
+> 
+> So I really need more convincing about the whole user-space interface.
+> Adding new interfaces willy-nilly isn't a good idea. They need damn
+> good reasons.
+
+Right.  This purpose of this interface is to access the async
+hardware crypto drivers that we have added over the past years.
+
+For a modern x86-64 CPU it isn't interesting at all.  It's mainly
+for other architectures where the CPU may not be able to keep up
+with say 10Gb/s IPsec traffic and the encryption and/or hashing
+must be offloaded.
+
+This is also why only hash and skcipher are supported as they
+are the main algorithm types supported by teh current async
+drivers in the kernel.
+
+Cheers,
 -- 
-Krzysztof Halasa
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
