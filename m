@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754124Ab1AFA3h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:29:37 -0500
-Received: from kroah.org ([198.145.64.141]:35622 "EHLO coco.kroah.org"
+	id S1754280Ab1AFA37 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:29:59 -0500
+Received: from kroah.org ([198.145.64.141]:35739 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753720Ab1AFA3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:29:33 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:00 2011
-Message-Id: <20110106002300.798350317@clark.site>
+	id S1754248Ab1AFA35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:29:57 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:02 2011
+Message-Id: <20110106002302.752605499@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:22:23 -0800
+Date: Wed, 05 Jan 2011 16:22:44 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Hillf Danton <dhillf@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [044/152] sparc64: Delete prom_puts() unused.
+Subject: [065/152] bonding: Fix slave selection bug.
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: David S. Miller <davem@davemloft.net>
+From: Hillf Danton <dhillf@gmail.com>
 
-[ Upstream commit ce05a94efaf71d562eeefd30d6bbc2ab42b06bac ]
+[ Upstream commit af3e5bd5f650163c2e12297f572910a1af1b8236 ]
 
+The returned slave is incorrect, if the net device under check is not
+charged yet by the master.
+
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/sparc/prom/console_64.c |   16 ----------------
- 1 file changed, 16 deletions(-)
+ drivers/net/bonding/bonding.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/sparc/prom/console_64.c
-+++ b/arch/sparc/prom/console_64.c
-@@ -81,19 +81,3 @@ prom_putchar(char c)
- {
- 	prom_nbputchar(c);
+--- a/drivers/net/bonding/bonding.h
++++ b/drivers/net/bonding/bonding.h
+@@ -240,11 +240,11 @@ static inline struct slave *bond_get_sla
+ 
+ 	bond_for_each_slave(bond, slave, i) {
+ 		if (slave->dev == slave_dev) {
+-			break;
++			return slave;
+ 		}
+ 	}
+ 
+-	return slave;
++	return 0;
  }
--
--void
--prom_puts(const char *s, int len)
--{
--	unsigned long args[7];
--
--	args[0] = (unsigned long) "write";
--	args[1] = 3;
--	args[2] = 1;
--	args[3] = (unsigned int) prom_stdout;
--	args[4] = (unsigned long) s;
--	args[5] = len;
--	args[6] = (unsigned long) -1;
--
--	p1275_cmd_direct(args);
--}
+ 
+ static inline struct bonding *bond_get_bond_by_slave(struct slave *slave)
 
 
