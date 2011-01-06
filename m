@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab1AFSwH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 13:52:07 -0500
-Received: from kroah.org ([198.145.64.141]:43346 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753420Ab1AFSvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 13:51:53 -0500
-Date: Thu, 6 Jan 2011 10:48:40 -0800
-From: Greg KH <greg@kroah.com>
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Pratyush Anand <pratyush.anand@st.com>
-Subject: Re: [PATCH V2] ST SPEAr: PCIE gadget suppport
-Message-ID: <20110106184840.GA21672@kroah.com>
-References: <137dfad4a093ea0ac80396f5eb7fbf0c382be698.1294314772.git.viresh.kumar@st.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <137dfad4a093ea0ac80396f5eb7fbf0c382be698.1294314772.git.viresh.kumar@st.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753443Ab1AFSzo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 13:55:44 -0500
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:40620 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753201Ab1AFSzm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 13:55:42 -0500
+Subject: Re: [PATCH] PM: fix suspend_set_ops() to take const pointer
+From: Kevin Hilman <khilman@ti.com>
+To: linux-pm@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1294273373-8967-1-git-send-email-khilman@ti.com>
+References: <1294273373-8967-1-git-send-email-khilman@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Texas Instruments, Inc.
+Date: Thu, 06 Jan 2011 10:55:37 -0800
+Message-ID: <1294340137.328.6.camel@vence>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 06, 2011 at 05:29:10PM +0530, Viresh Kumar wrote:
-> From: Pratyush Anand <pratyush.anand@st.com>
+On Wed, 2011-01-05 at 16:22 -0800, Kevin Hilman wrote:
+> checkpatch warns that pointers for certain structs should be const,
+> and platform_suspend_ops is one of those structs.  If you follow this
+> suggestion you trade a checkpatch warning for a compiler warning of
+> the form:
 > 
-> This is a configurable gadget. can be configured by sysfs interface. Any
-> IP available at PCIE bus can be programmed to be used by host
-> controller.It supoorts both INTX and MSI.
-> By default, gadget is configured for INTX and SYSRAM1 is mapped to BAR0
-> with size 0x1000
+>    warning: passing argument 1 of 'suspend_set_ops' discards qualifiers from pointer target type
 > 
-> Changes since V1:
-> - __iomem added for register addresses
-> - kerneldoc comment removed whereever not required.
-> - help node moved from sysfs to documentation/misc-devices
-> - strict_strtoul used instead of sscanf
+> Fix suspend_set_ops() to take a const pointer so everyone expects
+> const.
 > 
-> Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
-> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+> Signed-off-by: Kevin Hilman <khilman@ti.com>
 > ---
->  Documentation/misc-devices/spear-pcie-gadget.txt |  125 ++++
+> Applies to v2.6.37, but also applies cleanly to suspend-2.6/linux-next
 
-New sysfs entries require updates to the Documentation/ABI/ directory
-for them.
+Oops, plese disregard.  This is already fixed in linux-next.
 
-Please rework the patch to include these entries.
+Kevin
 
-> +read behaviour of nodes:
-> +------------------------------
-> +link 		:gives ltssm status.
-> +int_type 	:type of supported interrupt
-> +no_of_msi read	:zero if MSI is not enabled by host.A positive value is the
-> +		number of MSI vector granted.
-> +vendor_id	:returns programmed vendor id (hex)
-> +device_id	:returns programmed device id(hex)
-> +bar0_size:	:retruns size of bar0 in hex.
-> +bar0_address	:returns address of bar0 mapped area in hex.
-> +bar0_rw_offset	:returns offset of bar0 for which bar0_data will return value.
-> +bar0_data	:returns data at bar0_rw_offset.
-> +
-> +write behaviour of nodes:
-> +------------------------------
-> +link 		:write UP to enable ltsmm DOWN to disable
-> +int_type	:write interrupt type to be configured and (int_type could be
-> +		INTA, MSI or NO_INT).select MSI only when you have programmed
-> +		no_of_msi node.
-> +no_of_msi	:number of MSI vector needed.
-> +inta		:write 1 to assert INTA and 0 to de-assert.
-> +send_msi	:write MSI vector to be send.
-> +vendor_id	:write vendor id(hex) to be programmed.
-> +device_id	:write device id(hex) to be programmed.
-> +bar0_size	:write size of bar0 in hex. default bar0 size is 1000 (hex)
-> +		bytes.
-> +bar0_address	:write	address of bar0 mapped area in hex. (default mapping of
-> +		bar0 is SYSRAM1(E0800000).Aalways program bar size before bar
-> +		address. kernel might modify bar size and address to align. So
-> +		read back bar size and address after writing to cross check.
-> +bar0_rw_offset	:write offset of bar0 for which	bar0_data will write value.
-> +bar0_data	:write data to be written at bar0_rw_offset.
+>  include/linux/suspend.h |    4 ++--
+>  kernel/power/suspend.c  |    2 +-
+>  2 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/linux/suspend.h b/include/linux/suspend.h
+> index 2669751..bb98383 100644
+> --- a/include/linux/suspend.h
+> +++ b/include/linux/suspend.h
+> @@ -122,7 +122,7 @@ struct platform_suspend_ops {
+>   * suspend_set_ops - set platform dependent suspend operations
+>   * @ops: The new suspend operations to set.
+>   */
+> -extern void suspend_set_ops(struct platform_suspend_ops *ops);
+> +extern void suspend_set_ops(const struct platform_suspend_ops *ops);
+>  extern int suspend_valid_only_mem(suspend_state_t state);
+>  
+>  /**
+> @@ -147,7 +147,7 @@ extern int pm_suspend(suspend_state_t state);
+>  #else /* !CONFIG_SUSPEND */
+>  #define suspend_valid_only_mem	NULL
+>  
+> -static inline void suspend_set_ops(struct platform_suspend_ops *ops) {}
+> +static inline void suspend_set_ops(const struct platform_suspend_ops *ops) {}
+>  static inline int pm_suspend(suspend_state_t state) { return -ENOSYS; }
+>  #endif /* !CONFIG_SUSPEND */
+>  
+> diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+> index ecf7705..0c0af3d 100644
+> --- a/kernel/power/suspend.c
+> +++ b/kernel/power/suspend.c
+> @@ -36,7 +36,7 @@ static struct platform_suspend_ops *suspend_ops;
+>   *	suspend_set_ops - Set the global suspend method table.
+>   *	@ops:	Pointer to ops structure.
+>   */
+> -void suspend_set_ops(struct platform_suspend_ops *ops)
+> +void suspend_set_ops(const struct platform_suspend_ops *ops)
+>  {
+>  	mutex_lock(&pm_mutex);
+>  	suspend_ops = ops;
 
-Should you use configfs for this instead of sysfs?  It looks like that
-is what you are looking for here.
 
-thanks,
-
-greg k-h
