@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab1AFKai (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 05:30:38 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:55661 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427Ab1AFKah (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 05:30:37 -0500
-Date: Thu, 6 Jan 2011 11:30:35 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: Robert Hancock <hancockrwd@gmail.com>
-Cc: sclark46@earthlink.net, linux-kernel <linux-kernel@vger.kernel.org>,
-        ide <linux-ide@vger.kernel.org>
-Subject: Re: Kernel 2.6.37 erroneously limiting to UDMA/33
-Message-ID: <20110106103035.GA3484@rhlx01.hs-esslingen.de>
+	id S1752731Ab1AFKbi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 05:31:38 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:35118 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752427Ab1AFKbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 05:31:37 -0500
+Date: Thu, 6 Jan 2011 10:31:16 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 0/7] Change page reference handling semantic of page
+	cache
+Message-ID: <20110106103116.GD29257@csn.ul.ie>
+References: <cover.1293031046.git.minchan.kim@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <4D2503B1.4080500@gmail.com>
-X-Priority: none
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <cover.1293031046.git.minchan.kim@gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Robert Hancock wrote:
-> On 01/05/2011 12:33 PM, Stephen Clark wrote:
-> > Hello,
-> >
-> > Why is the kernel limiting me to udma/33 when the device says it can do
-> > ata2.01: CFA: TRANSCEND, 20070831, max UDMA/66
-> >
-> > There is no cable the compact flash is a socket on the motherboard!
+On Thu, Dec 23, 2010 at 12:32:42AM +0900, Minchan Kim wrote:
+> Now we increases page reference on add_to_page_cache but doesn't decrease it
+> in remove_from_page_cache. Such asymmetric makes confusing about
+> page reference so that caller should notice it and comment why they
+> release page reference. It's not good API.
 > 
-> The kernel has no way to know that, and presumably the board isn't 
-> connecting the signal for IDE pin 34 to ground in order to properly 
-> signal that an 80-wire cable (or equivalent) is connected so that speeds 
-> over UDMA33 can be used.
+> Long time ago, Hugh tried it[1] but gave up of reason which
+> reiser4's drop_page had to unlock the page between removing it from
+> page cache and doing the page_cache_release. But now the situation is
+> changed. I think at least things in current mainline doesn't have any
+> obstacles. The problem is fs or somethings out of mainline.
+> If it has done such thing like reiser4, this patch could be a problem but
+> they found it when compile time since we remove remove_from_page_cache.
 > 
-> You should be able to use the libata.force=80c option on the kernel 
-> command line to override the cable detection.
+> [1] http://lkml.org/lkml/2004/10/24/140
+> 
+> The series configuration is following as. 
+> 
+> [1/7] : This patch introduces new API delete_from_page_cache.
+> [2,3,4,5/7] : Change remove_from_page_cache with delete_from_page_cache.
+> Intentionally I divide patch per file since someone might have a concern 
+> about releasing page reference of delete_from_page_cache in 
+> somecase (ex, truncate.c)
+> [6/7] : Remove old API so out of fs can meet compile error when build time
+> and can notice it.
+> [7/7] : Change __remove_from_page_cache with __delete_from_page_cache, too.
+> In this time, I made all-in-one patch because it doesn't change old behavior
+> so it has no concern. Just clean up patch.
+> 
 
-Further comments for the OP:
+Other than hugetlbfs being called tlbfs in patch 3/7;
 
-If 80c happens to be correct for this machine (since it's soldered
-it's quite obvious) and the machine is quite wide-spread, perhaps one needs
-to add overrides within drivers/ata/pata_via.c/via_cable_detect() functionality,
-analogous to the ata_piix.c/ich_pata_cable_detect() case where it uses
-an entire ich_laptop device list to match against,
-to detect special 80c compatible cases.
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 
-But since pata_via.c has the insightful comment
-"Perform cable detection. Actually for the VIA case the BIOS
- already did this for us."
-it looks like your BIOS might be considered "broken"
-due to not indicating 80c for such a solder job
---> BIOS upgrade available?
-
-
-
-And perhaps better avoid mentioning a specific kernel in the subject
-line unless it's a regression (which likely isn't the case here),
-or write it like "..... (on 2.6.XXX)".
-
-Andreas Mohr
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
