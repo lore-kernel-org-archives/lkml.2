@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab1AFFZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 00:25:57 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:31189 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab1AFFZ4 (ORCPT
+	id S1753041Ab1AFF3z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 00:29:55 -0500
+Received: from exht1.emulex.com ([138.239.113.183]:34007 "EHLO
+	exht1.ad.emulex.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752467Ab1AFF3x convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 00:25:56 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6217"; a="69226787"
-Message-ID: <4D255263.7040106@codeaurora.org>
-Date: Wed, 05 Jan 2011 21:25:55 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Thu, 6 Jan 2011 00:29:53 -0500
+From: <Sathya.Perla@Emulex.Com>
+To: <gregkh@suse.de>, <linux-kernel@vger.kernel.org>, <stable@kernel.org>
+CC: <stable-review@kernel.org>, <torvalds@linux-foundation.org>,
+        <akpm@linux-foundation.org>, <alan@lxorguk.ukuu.org.uk>,
+        <subbu.seetharaman@Emulex.Com>, <Sarveshwar.Bandi@Emulex.Com>,
+        <Ajit.Khaparde@Emulex.Com>, <joe.jin@oracle.com>,
+        <davem@davemloft.net>
+Date: Wed, 5 Jan 2011 21:29:23 -0800
+Subject: RE: [064/152] driver/net/benet: fix be_cmd_multicast_set() memcpy
+ bug
+Thread-Topic: [064/152] driver/net/benet: fix be_cmd_multicast_set() memcpy
+ bug
+Thread-Index: AcutONlDS8s4JR7xQfOd5smV6tPwSAAKcMmw
+Message-ID: <85ed0759-b208-4ee0-98a4-cdae0da5b430@exht1.ad.emulex.com>
+References: <20110106002500.GA3172@kroah.com>
+ <20110106002302.664621558@clark.site>
+In-Reply-To: <20110106002302.664621558@clark.site>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: mm: Poison freed init memory
-References: <1294256845-29517-1-git-send-email-sboyd@codeaurora.org> <20110105202645.GL8638@n2100.arm.linux.org.uk>
-In-Reply-To: <20110105202645.GL8638@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2011 12:26 PM, Russell King - ARM Linux wrote:
-> On Wed, Jan 05, 2011 at 11:47:25AM -0800, Stephen Boyd wrote:
->> Poisoning __init marked memory can be useful when tracking down
->> obscure memory corruption bugs. When a pointer is 0xCCCCCCCC in an
->
-> That's a bad idea for a value.  With a 3GB page offset and 256MB or
-> more memory, accesses to such an address will always succeed.
->
-> There's two things to be considered when selecting a possible poison
-> value:
->
-> 1. what value is guaranteed to provoke an undefined instruction exception?
-> 2. what value when used as an address and dereferenced is mostly always
->    going to abort?
->
-> 1 for ARM mode implies an 0xe7fXXXfX value.  For Thumb mode 0xdeXX.  We
-> use this space for breakpoints.
->
-> 2 unfortunately depends on the platform. 
+The patch below is fine. Thanks.
 
-A coworker proposed we use a SWI instruction. We could do that if the
-poison is 0xEF and then do something in the SWI handler where that
-number causes us to blow up?
+-Sathya
 
-If I'm following correctly, point 1 is about __init functions and point
-2 is about __initdata. I'm more concerned about __initdata because
-__init functions called from non __init marked functions are usually
-caught with section mismatch checks. Also, if we're jumping to
-0xCCCCCCCC we're probably not in the text section of the kernel with a
-3GB offset anymore, right? __initdata is easier to reference from
-anywhere (ignoring function pointers) and it would definitely be nice to
-find those invalid accesses quicker. For point 2, perhaps an unaligned
-access would trigger sometimes?
+-----Original Message-----
+From: Greg KH [mailto:gregkh@suse.de] 
+Sent: Thursday, January 06, 2011 5:53 AM
+To: linux-kernel@vger.kernel.org; stable@kernel.org
+Cc: stable-review@kernel.org; torvalds@linux-foundation.org; akpm@linux-foundation.org; alan@lxorguk.ukuu.org.uk; Perla, Sathya; Seetharaman, Subramanian; Bandi, Sarveshwar; Khaparde, Ajit; Joe Jin; David S. Miller
+Subject: [064/152] driver/net/benet: fix be_cmd_multicast_set() memcpy bug
 
-Swapping the cheese for some cheese flavored poison is better than nothing.
+2.6.36-stable review patch.  If anyone has any objections, please let us know.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+------------------
+
+
+From: Joe Jin <joe.jin@oracle.com>
+
+[ Upstream commit 3fd40d0ceac9c234243730f4d7a6ffdb2fd3023a ]
+
+Regarding  benet be_cmd_multicast_set() function, now using
+netdev_for_each_mc_addr() helper for mac address copy, but
+when copying to req->mac[] did not increase of the index.
+
+Cc: Sathya Perla <sathyap@serverengines.com>
+Cc: Subbu Seetharaman <subbus@serverengines.com>
+Cc: Sarveshwar Bandi <sarveshwarb@serverengines.com>
+Cc: Ajit Khaparde <ajitk@serverengines.com>
+Signed-off-by: Joe Jin <joe.jin@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/net/benet/be_cmds.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/net/benet/be_cmds.c
++++ b/drivers/net/benet/be_cmds.c
+@@ -1179,7 +1179,7 @@ int be_cmd_multicast_set(struct be_adapt
+ 
+ 		i = 0;
+ 		netdev_for_each_mc_addr(ha, netdev)
+-			memcpy(req->mac[i].byte, ha->addr, ETH_ALEN);
++			memcpy(req->mac[i++].byte, ha->addr, ETH_ALEN);
+ 	} else {
+ 		req->promiscuous = 1;
+ 	}
+
 
