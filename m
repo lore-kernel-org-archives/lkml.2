@@ -1,69 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930Ab1AFRuO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 12:50:14 -0500
-Received: from mga01.intel.com ([192.55.52.88]:1193 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751389Ab1AFRuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 12:50:12 -0500
-Message-Id: <1bdc18$j6a1ns@fmsmga002.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,284,1291622400"; 
-   d="scan'208";a="644155132"
-Date: Thu, 06 Jan 2011 17:49:48 +0000
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>
-Subject: Re: Linux 2.6.37
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-In-Reply-To: <AANLkTi=aTKFVO8Lx=fDUGrxVaQL73XrsxoOP7-qYKksb@mail.gmail.com>
-References: <AANLkTikKA-nStyNjkdsVa8hd=PFQR3tYTJh3MnfpNkD8@mail.gmail.com> <20110106104816.GA4026@tiehlicka.suse.cz> <AANLkTi=aTKFVO8Lx=fDUGrxVaQL73XrsxoOP7-qYKksb@mail.gmail.com>
-From: Chris Wilson <chris@chris-wilson.co.uk>
+	id S1752880Ab1AFRvm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 12:51:42 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39297 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751087Ab1AFRvj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 12:51:39 -0500
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+In-Reply-To: <1294336054.2905.1.camel@heimdal.trondhjem.org>
+References: <1294254337.16957.13.camel@mulgrave.site>
+	 <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
+	 <1294256169.16957.18.camel@mulgrave.site>
+	 <20110105200008.GJ8638@n2100.arm.linux.org.uk>
+	 <1294259637.16957.25.camel@mulgrave.site>
+	 <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
+	 <20110105210448.GM8638@n2100.arm.linux.org.uk>
+	 <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>
+	 <1294262208.2952.4.camel@heimdal.trondhjem.org>
+	 <AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com>
+	 <1294268808.2952.18.camel@heimdal.trondhjem.org>
+	 <1294270104.16957.73.camel@mulgrave.site>
+	 <1294335614.22825.154.camel@mulgrave.site>
+	 <1294336054.2905.1.camel@heimdal.trondhjem.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 06 Jan 2011 11:51:35 -0600
+Message-ID: <1294336295.22825.168.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Jan 2011 08:29:22 -0800, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> On Thu, Jan 6, 2011 at 2:48 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> >
-> > It seems that there is still a regression for intel graphic cards
-> > backlight. One report is https://bugzilla.kernel.org/show_bug.cgi?id=22672.
-> > I can reproduce the problem easily by:
-> > xset dpms force standby; sleep 3s; xset dpms force on
-> >
-> > backlight doesn't get up (there is really dark picture though which
-> > doesn't get brighter by function keys which work normally) after dpms on
-> > until I close and open lid.
+On Thu, 2011-01-06 at 12:47 -0500, Trond Myklebust wrote:
+> On Thu, 2011-01-06 at 11:40 -0600, James Bottomley wrote: 
+> > On Wed, 2011-01-05 at 23:28 +0000, James Bottomley wrote:
+> > > Can you explain how the code works? it looks to me like you read the xdr
+> > > stuff through the vmap region then write it out directly to the pages? 
+> > 
+> > OK, I think I see how this is supposed to work:  It's a sequential loop
+> > of reading in via the pages (i.e. through the kernel mapping) and then
+> > updating those pages via the vmap.  In which case, I think this patch is
+> > what you need.
+> > 
+> > The theory of operation is that the readdir on pages actually uses the
+> > network DMA operations to perform, so when it's finished, the underlying
+> > page is up to date.  After this you invalidate the vmap range, so we
+> > have no cache lines above it (so it picks up the values from the
+> > uptodate page).  Finally, after the operation on the vmap region has
+> > finished, you flush it so that any updated contents go back to the pages
+> > themselves before the next iteration begins.
+> > 
+> > Does this look right to people?  I've verified it fixes the issues on
+> > parisc.
+> > 
+> > James
+> > 
+> > ---
+> > 
+> > diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+> > index 996dd89..bde1911 100644
+> > --- a/fs/nfs/dir.c
+> > +++ b/fs/nfs/dir.c
+> > @@ -587,12 +587,16 @@ int nfs_readdir_xdr_to_array(nfs_readdir_descriptor_t *desc, struct page *page,
+> >  		if (status < 0)
+> >  			break;
+> >  		pglen = status;
+> > +
+> > +		invalidate_kernel_vmap_range(pages_ptr, pglen);
+> > +
+> >  		status = nfs_readdir_page_filler(desc, &entry, pages_ptr, page, pglen);
+> >  		if (status < 0) {
+> >  			if (status == -ENOSPC)
+> >  				status = 0;
+> >  			break;
+> >  		}
+> > +		flush_kernel_vmap_range(pages_ptr, pglen);
 > 
-> Hmm. That commit no longer reverts cleanly, so it's not trivial to
-> test whether all those things are exactly the same issue. It's been
-> bisected in the bugzilla entry, but it would be good to verify that
-> yes, reverting it really does fix the issue, and your issue is the
-> exact same one.
+> Why is this line needed? We're not writing through the virtual mapping.
+
+If you're not altering it, it isn't ... the problem on parisc is that
+invalidate is a nop for us because flush does it all, but I can fix
+that.
+
+James
+
+> We checked using just the invalidate_kernel_vmap_range(), and that
+> appeared to suffice to fix the problem on ARM.
 > 
-> Chris, any ideas?
+> Cheers
+>   Trond
 
-My fear is that some machines have a dependency between the backlight
-and panel power status. The patch in question changed the timing between
-turning on the panel and adjusting the backlight which would be restore
-with:
 
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index aa23070..0b40b4f 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -106,6 +106,12 @@ static void intel_lvds_enable(struct intel_lvds *intel_lvds)
- 	I915_WRITE(ctl_reg, I915_READ(ctl_reg) | POWER_TARGET_ON);
- 	POSTING_READ(lvds_reg);
- 
-+	{
-+		u32 reg = HAS_PCH_SPLIT(dev) ? PCH_PP_STATUS : PPS_STATUS;
-+		if (wait_for(I915_READ(reg) & PP_ON, 1000))
-+			DRM_ERROR("timed out waiting for panel to power up\n");
-+	}
-+
- 	intel_panel_set_backlight(dev, dev_priv->backlight_level);
- }
-
--- 
-Chris Wilson, Intel Open Source Technology Centre
