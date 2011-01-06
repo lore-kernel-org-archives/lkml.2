@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784Ab1AFW1g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 17:27:36 -0500
-Received: from kroah.org ([198.145.64.141]:55680 "EHLO coco.kroah.org"
+	id S1754790Ab1AFW1y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 17:27:54 -0500
+Received: from kroah.org ([198.145.64.141]:55673 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754503Ab1AFWXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 17:23:52 -0500
+	id S1754555Ab1AFWXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 17:23:51 -0500
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Cosmin Cojocar <cosmin.cojocar@gmail.com>,
+Cc: Daniel Walker <dwalker@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
+        Mike Frysinger <vapier@gentoo.org>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 23/36] serial: omap-serial: Add support for kernel debugger
-Date: Thu,  6 Jan 2011 14:23:12 -0800
-Message-Id: <1294352605-31906-23-git-send-email-gregkh@suse.de>
+Subject: [PATCH 21/36] drivers: char: hvc: add arm JTAG DCC console support
+Date: Thu,  6 Jan 2011 14:23:10 -0800
+Message-Id: <1294352605-31906-21-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110106215404.GA30624@kroah.com>
 References: <20110106215404.GA30624@kroah.com>
@@ -20,102 +21,199 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cosmin Cojocar <cosmin.cojocar@gmail.com>
+From: Daniel Walker <dwalker@codeaurora.org>
 
-The kgdb invokes the poll_put_char and poll_get_char when communicating
-with the host. This patch also changes the initialization order because the
-kgdb will check at the very beginning, if there is a valid serial
-driver.
+This driver adds a basic console that uses the arm JTAG
+DCC to transfer data back and forth. It has support for
+ARMv6 and ARMv7.
 
-Signed-off-by: Cosmin Cojocar <cosmin.cojocar@gmail.com>
+This console is created under the HVC driver, and should be named
+/dev/hvcX (or /dev/hvc0 for example).
+
+Cc: Tony Lindgren <tony@atomide.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Mike Frysinger <vapier@gentoo.org>
+Signed-off-by: Daniel Walker <dwalker@codeaurora.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/serial/Makefile      |    2 +-
- drivers/serial/omap-serial.c |   38 ++++++++++++++++++++++++++++++++------
- 2 files changed, 33 insertions(+), 7 deletions(-)
+ drivers/char/Kconfig   |    9 +++
+ drivers/char/Makefile  |    1 +
+ drivers/char/hvc_dcc.c |  133 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 143 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/char/hvc_dcc.c
 
-diff --git a/drivers/serial/Makefile b/drivers/serial/Makefile
-index f9b26df..8ea92e9 100644
---- a/drivers/serial/Makefile
-+++ b/drivers/serial/Makefile
-@@ -80,6 +80,7 @@ obj-$(CONFIG_SERIAL_NETX) += netx-serial.o
- obj-$(CONFIG_SERIAL_OF_PLATFORM) += of_serial.o
- obj-$(CONFIG_SERIAL_OF_PLATFORM_NWPSERIAL) += nwpserial.o
- obj-$(CONFIG_SERIAL_KS8695) += serial_ks8695.o
-+obj-$(CONFIG_SERIAL_OMAP) += omap-serial.o
- obj-$(CONFIG_KGDB_SERIAL_CONSOLE) += kgdboc.o
- obj-$(CONFIG_SERIAL_QE) += ucc_uart.o
- obj-$(CONFIG_SERIAL_TIMBERDALE)	+= timbuart.o
-@@ -89,6 +90,5 @@ obj-$(CONFIG_SERIAL_ALTERA_UART) += altera_uart.o
- obj-$(CONFIG_SERIAL_VT8500) += vt8500_serial.o
- obj-$(CONFIG_SERIAL_MRST_MAX3110)	+= mrst_max3110.o
- obj-$(CONFIG_SERIAL_MFD_HSU)	+= mfd.o
--obj-$(CONFIG_SERIAL_OMAP) += omap-serial.o
- obj-$(CONFIG_SERIAL_IFX6X60)  	+= ifx6x60.o
- obj-$(CONFIG_SERIAL_PCH_UART)	+= pch_uart.o
-diff --git a/drivers/serial/omap-serial.c b/drivers/serial/omap-serial.c
-index 14365f7..54239f5 100644
---- a/drivers/serial/omap-serial.c
-+++ b/drivers/serial/omap-serial.c
-@@ -866,12 +866,6 @@ serial_omap_type(struct uart_port *port)
- 	return up->name;
- }
+diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+index 43d3395..d4a7776 100644
+--- a/drivers/char/Kconfig
++++ b/drivers/char/Kconfig
+@@ -682,6 +682,15 @@ config HVC_UDBG
+        select HVC_DRIVER
+        default n
  
--#ifdef CONFIG_SERIAL_OMAP_CONSOLE
--
--static struct uart_omap_port *serial_omap_console_ports[4];
--
--static struct uart_driver serial_omap_reg;
--
- #define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
- 
- static inline void wait_for_xmitr(struct uart_omap_port *up)
-@@ -905,6 +899,34 @@ static inline void wait_for_xmitr(struct uart_omap_port *up)
- 	}
- }
- 
-+#ifdef CONFIG_CONSOLE_POLL
++config HVC_DCC
++       bool "ARM JTAG DCC console"
++       depends on ARM
++       select HVC_DRIVER
++       help
++         This console uses the JTAG DCC on ARM to create a console under the HVC
++	 driver. This console is used through a JTAG only on ARM. If you don't have
++	 a JTAG then you probably don't want this option.
 +
-+static void serial_omap_poll_put_char(struct uart_port *port, unsigned char ch)
+ config VIRTIO_CONSOLE
+ 	tristate "Virtio console"
+ 	depends on VIRTIO
+diff --git a/drivers/char/Makefile b/drivers/char/Makefile
+index ba53ec9..fa0b824 100644
+--- a/drivers/char/Makefile
++++ b/drivers/char/Makefile
+@@ -34,6 +34,7 @@ obj-$(CONFIG_HVC_CONSOLE)	+= hvc_vio.o hvsi.o
+ obj-$(CONFIG_HVC_ISERIES)	+= hvc_iseries.o
+ obj-$(CONFIG_HVC_RTAS)		+= hvc_rtas.o
+ obj-$(CONFIG_HVC_TILE)		+= hvc_tile.o
++obj-$(CONFIG_HVC_DCC)		+= hvc_dcc.o
+ obj-$(CONFIG_HVC_BEAT)		+= hvc_beat.o
+ obj-$(CONFIG_HVC_DRIVER)	+= hvc_console.o
+ obj-$(CONFIG_HVC_IRQ)		+= hvc_irq.o
+diff --git a/drivers/char/hvc_dcc.c b/drivers/char/hvc_dcc.c
+new file mode 100644
+index 0000000..6470f63
+--- /dev/null
++++ b/drivers/char/hvc_dcc.c
+@@ -0,0 +1,133 @@
++/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#include <linux/console.h>
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/init.h>
++#include <linux/moduleparam.h>
++#include <linux/types.h>
++
++#include <asm/processor.h>
++
++#include "hvc_console.h"
++
++/* DCC Status Bits */
++#define DCC_STATUS_RX		(1 << 30)
++#define DCC_STATUS_TX		(1 << 29)
++
++static inline u32 __dcc_getstatus(void)
 +{
-+	struct uart_omap_port *up = (struct uart_omap_port *)port;
-+	wait_for_xmitr(up);
-+	serial_out(up, UART_TX, ch);
++	u32 __ret;
++
++	asm("mrc p14, 0, %0, c0, c1, 0	@ read comms ctrl reg"
++		: "=r" (__ret) : : "cc");
++
++	return __ret;
 +}
 +
-+static int serial_omap_poll_get_char(struct uart_port *port)
++
++#if defined(CONFIG_CPU_V7)
++static inline char __dcc_getchar(void)
 +{
-+	struct uart_omap_port *up = (struct uart_omap_port *)port;
-+	unsigned int status = serial_in(up, UART_LSR);
++	char __c;
 +
-+	if (!(status & UART_LSR_DR))
-+		return NO_POLL_CHAR;
++	asm("get_wait:	mrc p14, 0, pc, c0, c1, 0                          \n\
++			bne get_wait                                       \n\
++			mrc p14, 0, %0, c0, c5, 0	@ read comms data reg"
++		: "=r" (__c) : : "cc");
 +
-+	return serial_in(up, UART_RX);
++	return __c;
 +}
++#else
++static inline char __dcc_getchar(void)
++{
++	char __c;
 +
-+#endif /* CONFIG_CONSOLE_POLL */
++	asm("mrc p14, 0, %0, c0, c5, 0	@ read comms data reg"
++		: "=r" (__c));
 +
-+#ifdef CONFIG_SERIAL_OMAP_CONSOLE
-+
-+static struct uart_omap_port *serial_omap_console_ports[4];
-+
-+static struct uart_driver serial_omap_reg;
-+
- static void serial_omap_console_putchar(struct uart_port *port, int ch)
- {
- 	struct uart_omap_port *up = (struct uart_omap_port *)port;
-@@ -1022,6 +1044,10 @@ static struct uart_ops serial_omap_pops = {
- 	.request_port	= serial_omap_request_port,
- 	.config_port	= serial_omap_config_port,
- 	.verify_port	= serial_omap_verify_port,
-+#ifdef CONFIG_CONSOLE_POLL
-+	.poll_put_char  = serial_omap_poll_put_char,
-+	.poll_get_char  = serial_omap_poll_get_char,
++	return __c;
++}
 +#endif
- };
- 
- static struct uart_driver serial_omap_reg = {
++
++#if defined(CONFIG_CPU_V7)
++static inline void __dcc_putchar(char c)
++{
++	asm("put_wait:	mrc p14, 0, pc, c0, c1, 0                 \n\
++			bcs put_wait                              \n\
++			mcr p14, 0, %0, c0, c5, 0                   "
++	: : "r" (c) : "cc");
++}
++#else
++static inline void __dcc_putchar(char c)
++{
++	asm("mcr p14, 0, %0, c0, c5, 0	@ write a char"
++		: /* no output register */
++		: "r" (c));
++}
++#endif
++
++static int hvc_dcc_put_chars(uint32_t vt, const char *buf, int count)
++{
++	int i;
++
++	for (i = 0; i < count; i++) {
++		while (__dcc_getstatus() & DCC_STATUS_TX)
++			cpu_relax();
++
++		__dcc_putchar((char)(buf[i] & 0xFF));
++	}
++
++	return count;
++}
++
++static int hvc_dcc_get_chars(uint32_t vt, char *buf, int count)
++{
++	int i;
++
++	for (i = 0; i < count; ++i) {
++		int c = -1;
++
++		if (__dcc_getstatus() & DCC_STATUS_RX)
++			c = __dcc_getchar();
++		if (c < 0)
++			break;
++		buf[i] = c;
++	}
++
++	return i;
++}
++
++static const struct hv_ops hvc_dcc_get_put_ops = {
++	.get_chars = hvc_dcc_get_chars,
++	.put_chars = hvc_dcc_put_chars,
++};
++
++static int __init hvc_dcc_console_init(void)
++{
++	hvc_instantiate(0, 0, &hvc_dcc_get_put_ops);
++	return 0;
++}
++console_initcall(hvc_dcc_console_init);
++
++static int __init hvc_dcc_init(void)
++{
++	hvc_alloc(0, 0, &hvc_dcc_get_put_ops, 128);
++	return 0;
++}
++device_initcall(hvc_dcc_init);
 -- 
 1.7.3.2
 
