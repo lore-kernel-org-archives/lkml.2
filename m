@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab1AFV0i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 16:26:38 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:30542 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753599Ab1AFV0h (ORCPT
+	id S1753992Ab1AFV3N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 16:29:13 -0500
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:48355 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751160Ab1AFV3L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 16:26:37 -0500
-Message-ID: <4D263350.5070008@kernel.org>
-Date: Thu, 06 Jan 2011 13:25:36 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Thu, 6 Jan 2011 16:29:11 -0500
+From: Kevin Hilman <khilman@ti.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: Koen Kooi <koen@dominion.thruhere.net>, Brad Parker <brad@heeltoe.com>,
+        Anand Gadiyar <gadiyar@ti.com>, Ming Lei <tom.leiming@gmail.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Paul Walmsley <paul@pwsan.com>, Greg KH <greg@kroah.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
+        linux-omap@vger.kernel.org
+Subject: Re: linux-next: manual merge of the usb tree with the omap tree
+Organization: Texas Instruments, Inc.
+References: <20101223171859.f6842045.sfr@canb.auug.org.au>
+	<4D139517.3010608@ti.com>
+	<AANLkTi=pTNg2iWN+=uEv=CyZHHCoddF51pmmCMjPeMUF@mail.gmail.com>
+	<4ce0f816f951f24ca3de9c84d9f70842@mail.gmail.com>
+	<4D25E313.4060202@heeltoe.com>
+	<8B3471BB-CB3F-4CE6-B523-D9C5E87B9CEC@dominion.thruhere.net>
+	<87pqs9vqya.fsf@ti.com> <4D260812.3010605@ti.com>
+	<871v4pvpvg.fsf@ti.com> <4D2624F9.9090100@ti.com>
+Date: Thu, 06 Jan 2011 13:29:06 -0800
+In-Reply-To: <4D2624F9.9090100@ti.com> (Nishanth Menon's message of "Thu, 06
+	Jan 2011 14:24:25 -0600")
+Message-ID: <87lj2xu3fh.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [patch] x86, numa: Fix CONFIG_DEBUG_PER_CPU_MAPS without NUMA
- emulation
-References: <4D1BC856.4010202@kernel.org> <4D1BC94C.5040100@zytor.com> <AANLkTikknHfA4TQw+SMH-EyJBHoNHXk8Rheq4=K4jNWA@mail.gmail.com> <alpine.DEB.2.00.1012291637270.6040@chino.kir.corp.google.com> <4D1BD928.50701@zytor.com> <alpine.DEB.2.00.1012291702180.7374@chino.kir.corp.google.com> <4D1BE615.4000700@zytor.com> <20101230090648.GB7306@elte.hu> <20101230102815.GA29822@elte.hu> <20101230103002.GA30020@elte.hu> <20101230120153.GA16476@elte.hu> <alpine.DEB.2.00.1012301052050.12995@chino.kir.corp.google.com> <alpine.DEB.2.00.1012301053590.12995@chino.kir.corp.google.com> <alpine.DEB.2.00.1101061238460.30820@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1101061238460.30820@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2011 12:39 PM, David Rientjes wrote:
-> On Thu, 30 Dec 2010, David Rientjes wrote:
-> 
->> "x86, numa: Fake node-to-cpumask for NUMA emulation" broke the build when
->> CONFIG_DEBUG_PER_CPU_MAPS is set and CONFIG_NUMA_EMU is not.  This is
->> because it is possible to map a cpu to multiple nodes when NUMA emulation
->> is used; the patch required a physical node address table to find those
->> nodes that was only available when CONFIG_NUMA_EMU was enabled.
->>
->> This extracts the common debug functionality to its own function for
->> CONFIG_DEBUG_PER_CPU_MAPS and uses it regardless of whether
->> CONFIG_NUMA_EMU is set or not.
->>
->> NUMA emulation will now iterate over the set of possible nodes for each
->> cpu and call the new debug function whereas only the cpu's node will be
->> used without NUMA emulation enabled.
->>
->> Reported-by: Ingo Molnar <mingo@elte.hu>
->> Signed-off-by: David Rientjes <rientjes@google.com>
-> 
-> Ingo, do you know what the status of this fix is?  It's required for 
-> x86/numa to build and I'd hate to see all of this fixes miss .38 because 
-> of this failure.
+Nishanth Menon <nm@ti.com> writes:
 
-If x86/numa would not be pushed to Linus. x86/apic-cleanups should be pushed at first.
-or Thomas will take care of it?
+> Kevin Hilman had written, on 01/06/2011 12:38 PM, the following:
+> [..]
+>> Feel free to break it up if you prefer, but IMO it would be mergable as
+> just for the record, posted the same here:
+> http://marc.info/?l=linux-omap&m=129434370207879&w=2
 
-Thanks
+Thanks, and this is even more mergable. :)
 
-Yinghai
-
-
+Kevin
