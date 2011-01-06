@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521Ab1AFWXo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 17:23:44 -0500
-Received: from kroah.org ([198.145.64.141]:55641 "EHLO coco.kroah.org"
+	id S1754568Ab1AFWXw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 17:23:52 -0500
+Received: from kroah.org ([198.145.64.141]:55658 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754503Ab1AFWXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 17:23:41 -0500
+	id S1754503Ab1AFWXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 17:23:45 -0500
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Jiri Slaby <jslaby@suse.cz>, "Dr. Werner Fink" <werner@suse.de>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 11/36] console: add /proc/consoles
-Date: Thu,  6 Jan 2011 14:23:00 -0800
-Message-Id: <1294352605-31906-11-git-send-email-gregkh@suse.de>
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 16/36] Serial: ce4100: Add PCI UART support for the ce4100
+Date: Thu,  6 Jan 2011 14:23:05 -0800
+Message-Id: <1294352605-31906-16-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110106215404.GA30624@kroah.com>
 References: <20110106215404.GA30624@kroah.com>
@@ -20,194 +20,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-It allows users to see what consoles are currently known to the system
-and with what flags.
+This patch adds support for the PCI UART on the ce4100.
 
-It is based on Werner's patch, the part about traversing fds was
-removed, the code was moved to kernel/printk.c, where consoles are
-handled and it makes more sense to me.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz> [cleanups]
-Signed-off-by: "Dr. Werner Fink" <werner@suse.de>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- Documentation/filesystems/proc.txt |   24 ++++++++
- fs/proc/Makefile                   |    1 +
- fs/proc/proc_console.c             |  114 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 139 insertions(+), 0 deletions(-)
- create mode 100644 fs/proc/proc_console.c
+ drivers/serial/8250_pci.c |   36 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 36 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index e73df27..9471225 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -1181,6 +1181,30 @@ Table 1-12: Files in /proc/fs/ext4/<devname>
-  mb_groups       details of multiblock allocator buddy cache of free blocks
- ..............................................................................
+diff --git a/drivers/serial/8250_pci.c b/drivers/serial/8250_pci.c
+index 53be4d3..e30356d 100644
+--- a/drivers/serial/8250_pci.c
++++ b/drivers/serial/8250_pci.c
+@@ -957,6 +957,22 @@ pci_default_setup(struct serial_private *priv,
+ 	return setup_port(priv, port, bar, offset, board->reg_shift);
+ }
  
-+2.0 /proc/consoles
-+------------------
-+Shows registered system console lines.
++static int
++ce4100_serial_setup(struct serial_private *priv,
++		  const struct pciserial_board *board,
++		  struct uart_port *port, int idx)
++{
++	int ret;
 +
-+To see which character device lines are currently used for the system console
-+/dev/console, you may simply look into the file /proc/consoles:
++	ret = setup_port(priv, port, 0, 0, board->reg_shift);
++	port->iotype = UPIO_MEM32;
++	port->type = PORT_XSCALE;
++	port->flags = (port->flags | UPF_FIXED_PORT | UPF_FIXED_TYPE);
++	port->regshift = 2;
 +
-+  > cat /proc/consoles
-+  tty0                 -WU (ECp)       4:7
-+  ttyS0                -W- (Ep)        4:64
++	return ret;
++}
 +
-+The columns are:
-+
-+  device               name of the device
-+  operations           R = can do read operations
-+                       W = can do write operations
-+                       U = can do unblank
-+  flags                E = it is enabled
-+                       C = it is prefered console
-+                       B = it is primary boot console
-+                       p = it is used for printk buffer
-+                       b = it is not a TTY but a Braille device
-+                       a = it is safe to use when cpu is offline
-+  major:minor          major and minor number of the device separated by a colon
+ static int skip_tx_en_setup(struct serial_private *priv,
+ 			const struct pciserial_board *board,
+ 			struct uart_port *port, int idx)
+@@ -981,6 +997,7 @@ static int skip_tx_en_setup(struct serial_private *priv,
+ #define PCI_SUBDEVICE_ID_POCTAL232	0x0308
+ #define PCI_SUBDEVICE_ID_POCTAL422	0x0408
+ #define PCI_VENDOR_ID_ADVANTECH		0x13fe
++#define PCI_DEVICE_ID_INTEL_CE4100_UART 0x2e66
+ #define PCI_DEVICE_ID_ADVANTECH_PCI3620	0x3620
+ #define PCI_DEVICE_ID_TITAN_200I	0x8028
+ #define PCI_DEVICE_ID_TITAN_400I	0x8048
+@@ -1072,6 +1089,13 @@ static struct pci_serial_quirk pci_serial_quirks[] __refdata = {
+ 		.subdevice	= PCI_ANY_ID,
+ 		.setup		= skip_tx_en_setup,
+ 	},
++	{
++		.vendor		= PCI_VENDOR_ID_INTEL,
++		.device		= PCI_DEVICE_ID_INTEL_CE4100_UART,
++		.subvendor	= PCI_ANY_ID,
++		.subdevice	= PCI_ANY_ID,
++		.setup		= ce4100_serial_setup,
++	},
+ 	/*
+ 	 * ITE
+ 	 */
+@@ -1592,6 +1616,7 @@ enum pci_board_num_t {
+ 	pbn_ADDIDATA_PCIe_2_3906250,
+ 	pbn_ADDIDATA_PCIe_4_3906250,
+ 	pbn_ADDIDATA_PCIe_8_3906250,
++	pbn_ce4100_1_115200,
+ };
  
- ------------------------------------------------------------------------------
- Summary
-diff --git a/fs/proc/Makefile b/fs/proc/Makefile
-index 2758e2a..288a49e 100644
---- a/fs/proc/Makefile
-+++ b/fs/proc/Makefile
-@@ -15,6 +15,7 @@ proc-y	+= devices.o
- proc-y	+= interrupts.o
- proc-y	+= loadavg.o
- proc-y	+= meminfo.o
-+proc-y	+= proc_console.o
- proc-y	+= stat.o
- proc-y	+= uptime.o
- proc-y	+= version.o
-diff --git a/fs/proc/proc_console.c b/fs/proc/proc_console.c
-new file mode 100644
-index 0000000..8a70760
---- /dev/null
-+++ b/fs/proc/proc_console.c
-@@ -0,0 +1,114 @@
-+/*
-+ * Copyright (c) 2010 Werner Fink, Jiri Slaby
-+ *
-+ * Licensed under GPLv2
-+ */
+ /*
+@@ -2281,6 +2306,12 @@ static struct pciserial_board pci_boards[] __devinitdata = {
+ 		.uart_offset	= 0x200,
+ 		.first_offset	= 0x1000,
+ 	},
++	[pbn_ce4100_1_115200] = {
++		.flags		= FL_BASE0,
++		.num_ports	= 1,
++		.base_baud	= 921600,
++		.reg_shift      = 2,
++	},
+ };
+ 
+ static const struct pci_device_id softmodem_blacklist[] = {
+@@ -3760,6 +3791,11 @@ static struct pci_device_id serial_pci_tbl[] = {
+ 	{	PCI_VENDOR_ID_NETMOS, PCI_DEVICE_ID_NETMOS_9865,
+ 		0xA000, 0x3004,
+ 		0, 0, pbn_b0_bt_4_115200 },
++	/* Intel CE4100 */
++	{	PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CE4100_UART,
++		PCI_ANY_ID,  PCI_ANY_ID, 0, 0,
++		pbn_ce4100_1_115200 },
 +
-+#include <linux/console.h>
-+#include <linux/kernel.h>
-+#include <linux/proc_fs.h>
-+#include <linux/seq_file.h>
-+#include <linux/tty_driver.h>
-+
-+/*
-+ * This is handler for /proc/consoles
-+ */
-+static int show_console_dev(struct seq_file *m, void *v)
-+{
-+	static const struct {
-+		short flag;
-+		char name;
-+	} con_flags[] = {
-+		{ CON_ENABLED,		'E' },
-+		{ CON_CONSDEV,		'C' },
-+		{ CON_BOOT,		'B' },
-+		{ CON_PRINTBUFFER,	'p' },
-+		{ CON_BRL,		'b' },
-+		{ CON_ANYTIME,		'a' },
-+	};
-+	char flags[ARRAY_SIZE(con_flags) + 1];
-+	struct console *con = v;
-+	unsigned int a;
-+	int len;
-+	dev_t dev = 0;
-+
-+	if (con->device) {
-+		const struct tty_driver *driver;
-+		int index;
-+		driver = con->device(con, &index);
-+		if (driver) {
-+			dev = MKDEV(driver->major, driver->minor_start);
-+			dev += index;
-+		}
-+	}
-+
-+	for (a = 0; a < ARRAY_SIZE(con_flags); a++)
-+		flags[a] = (con->flags & con_flags[a].flag) ?
-+			con_flags[a].name : ' ';
-+	flags[a] = 0;
-+
-+	seq_printf(m, "%s%d%n", con->name, con->index, &len);
-+	len = 21 - len;
-+	if (len < 1)
-+		len = 1;
-+	seq_printf(m, "%*c%c%c%c (%s)", len, ' ', con->read ? 'R' : '-',
-+			con->write ? 'W' : '-', con->unblank ? 'U' : '-',
-+			flags);
-+	if (dev)
-+		seq_printf(m, " %4d:%d", MAJOR(dev), MINOR(dev));
-+
-+	seq_printf(m, "\n");
-+
-+	return 0;
-+}
-+
-+static void *c_start(struct seq_file *m, loff_t *pos)
-+{
-+	struct console *con;
-+	loff_t off = 0;
-+
-+	acquire_console_sem();
-+	for_each_console(con)
-+		if (off++ == *pos)
-+			break;
-+
-+	return con;
-+}
-+
-+static void *c_next(struct seq_file *m, void *v, loff_t *pos)
-+{
-+	struct console *con = v;
-+	++*pos;
-+	return con->next;
-+}
-+
-+static void c_stop(struct seq_file *m, void *v)
-+{
-+	release_console_sem();
-+}
-+
-+static const struct seq_operations consoles_op = {
-+	.start	= c_start,
-+	.next	= c_next,
-+	.stop	= c_stop,
-+	.show	= show_console_dev
-+};
-+
-+static int consoles_open(struct inode *inode, struct file *file)
-+{
-+	return seq_open(file, &consoles_op);
-+}
-+
-+static const struct file_operations proc_consoles_operations = {
-+	.open		= consoles_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= seq_release,
-+};
-+
-+static int register_proc_consoles(void)
-+{
-+	proc_create("consoles", 0, NULL, &proc_consoles_operations);
-+	return 0;
-+}
-+module_init(register_proc_consoles);
+ 
+ 	/*
+ 	 * These entries match devices with class COMMUNICATION_SERIAL,
 -- 
 1.7.3.2
 
