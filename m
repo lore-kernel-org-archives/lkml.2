@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514Ab1AFA2r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:28:47 -0500
-Received: from kroah.org ([198.145.64.141]:35360 "EHLO coco.kroah.org"
+	id S1753888Ab1AFA3C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:29:02 -0500
+Received: from kroah.org ([198.145.64.141]:35413 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751622Ab1AFA2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:28:45 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:22:57 2011
-Message-Id: <20110106002257.018027105@clark.site>
+	id S1753747Ab1AFA24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:28:56 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:22:58 2011
+Message-Id: <20110106002257.928654963@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:21:42 -0800
+Date: Wed, 05 Jan 2011 16:21:52 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Miklos Szeredi <mszeredi@suse.cz>, Tejun Heo <tj@kernel.org>
-Subject: [003/152] fuse: fix ioctl when server is 32bit
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [013/152] nohz: Fix printk_needs_cpu() return value on offline cpus
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,106 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit d9d318d39dd5cb686660504a3565aac453709ccc upstream.
+commit 61ab25447ad6334a74e32f60efb135a3467223f8 upstream.
 
-If a 32bit CUSE server is run on 64bit this results in EIO being
-returned to the caller.
+This patch fixes a hang observed with 2.6.32 kernels where timers got enqueued
+on offline cpus.
 
-The reason is that FUSE_IOCTL_RETRY reply was defined to use 'struct
-iovec', which is different on 32bit and 64bit archs.
+printk_needs_cpu() may return 1 if called on offline cpus. When a cpu gets
+offlined it schedules the idle process which, before killing its own cpu, will
+call tick_nohz_stop_sched_tick(). That function in turn will call
+printk_needs_cpu() in order to check if the local tick can be disabled. On
+offline cpus this function should naturally return 0 since regardless if the
+tick gets disabled or not the cpu will be dead short after. That is besides the
+fact that __cpu_disable() should already have made sure that no interrupts on
+the offlined cpu will be delivered anyway.
 
-Work around this by looking at the size of the reply to determine
-which struct was used.  This is only needed if CONFIG_COMPAT is
-defined.
+In this case it prevents tick_nohz_stop_sched_tick() to call
+select_nohz_load_balancer(). No idea if that really is a problem. However what
+made me debug this is that on 2.6.32 the function get_nohz_load_balancer() is
+used within __mod_timer() to select a cpu on which a timer gets enqueued. If
+printk_needs_cpu() returns 1 then the nohz_load_balancer cpu doesn't get
+updated when a cpu gets offlined. It may contain the cpu number of an offline
+cpu. In turn timers get enqueued on an offline cpu and not very surprisingly
+they never expire and cause system hangs.
 
-A more permanent fix for the interface will be to use the same struct
-on both 32bit and 64bit.
+This has been observed 2.6.32 kernels. On current kernels __mod_timer() uses
+get_nohz_timer_target() which doesn't have that problem. However there might be
+other problems because of the too early exit tick_nohz_stop_sched_tick() in
+case a cpu goes offline.
 
-Reported-by: "ccmail111" <ccmail111@yahoo.com>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-CC: Tejun Heo <tj@kernel.org>
+Easiest way to fix this is just to test if the current cpu is offline and call
+printk_tick() directly which clears the condition.
+
+Alternatively I tried a cpu hotplug notifier which would clear the condition,
+however between calling the notifier function and printk_needs_cpu() something
+could have called printk() again and the problem is back again. This seems to
+be the safest fix.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20101126120235.406766476@de.ibm.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/fuse/file.c |   50 ++++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 44 insertions(+), 6 deletions(-)
+ kernel/printk.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -13,6 +13,7 @@
- #include <linux/kernel.h>
- #include <linux/sched.h>
- #include <linux/module.h>
-+#include <linux/compat.h>
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1062,6 +1062,8 @@ void printk_tick(void)
  
- static const struct file_operations fuse_direct_io_file_operations;
- 
-@@ -1642,6 +1643,44 @@ static int fuse_verify_ioctl_iov(struct
+ int printk_needs_cpu(int cpu)
+ {
++	if (unlikely(cpu_is_offline(cpu)))
++		printk_tick();
+ 	return per_cpu(printk_pending, cpu);
  }
  
- /*
-+ * CUSE servers compiled on 32bit broke on 64bit kernels because the
-+ * ABI was defined to be 'struct iovec' which is different on 32bit
-+ * and 64bit.  Fortunately we can determine which structure the server
-+ * used from the size of the reply.
-+ */
-+static int fuse_copy_ioctl_iovec(struct iovec *dst, void *src,
-+				 size_t transferred, unsigned count,
-+				 bool is_compat)
-+{
-+#ifdef CONFIG_COMPAT
-+	if (count * sizeof(struct compat_iovec) == transferred) {
-+		struct compat_iovec *ciov = src;
-+		unsigned i;
-+
-+		/*
-+		 * With this interface a 32bit server cannot support
-+		 * non-compat (i.e. ones coming from 64bit apps) ioctl
-+		 * requests
-+		 */
-+		if (!is_compat)
-+			return -EINVAL;
-+
-+		for (i = 0; i < count; i++) {
-+			dst[i].iov_base = compat_ptr(ciov[i].iov_base);
-+			dst[i].iov_len = ciov[i].iov_len;
-+		}
-+		return 0;
-+	}
-+#endif
-+
-+	if (count * sizeof(struct iovec) != transferred)
-+		return -EIO;
-+
-+	memcpy(dst, src, transferred);
-+	return 0;
-+}
-+
-+/*
-  * For ioctls, there is no generic way to determine how much memory
-  * needs to be read and/or written.  Furthermore, ioctls are allowed
-  * to dereference the passed pointer, so the parameter requires deep
-@@ -1822,14 +1861,13 @@ long fuse_do_ioctl(struct file *file, un
- 		    in_iovs + out_iovs > FUSE_IOCTL_MAX_IOV)
- 			goto out;
- 
--		err = -EIO;
--		if ((in_iovs + out_iovs) * sizeof(struct iovec) != transferred)
--			goto out;
--
--		/* okay, copy in iovs and retry */
- 		vaddr = kmap_atomic(pages[0], KM_USER0);
--		memcpy(page_address(iov_page), vaddr, transferred);
-+		err = fuse_copy_ioctl_iovec(page_address(iov_page), vaddr,
-+					    transferred, in_iovs + out_iovs,
-+					    (flags & FUSE_IOCTL_COMPAT) != 0);
- 		kunmap_atomic(vaddr, KM_USER0);
-+		if (err)
-+			goto out;
- 
- 		in_iov = page_address(iov_page);
- 		out_iov = in_iov + in_iovs;
 
 
