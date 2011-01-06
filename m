@@ -1,50 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787Ab1AFQEy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 11:04:54 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:37406 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741Ab1AFQEw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 11:04:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=TPTNLu71jSy611p1x8lgzLxgdCvuCvy5eICBLvnhSyml0AarFsIlepBSz+gQb1MSbQ
-         4q2SoDgrwKZtP187yUEOe/nZ+IWgCIezMc0Y41ypSKm6HxT6iSZ9oat0uz0dbaKcbV2Y
-         uZdVYQv7PhDGWU0FBU2Lm5/3xAf8TAFuKxhRs=
-From: Vasily Khoruzhick <anarsoul@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] leds/h1940: Use gpiolib for latch access / fix build failure
-Date: Thu, 6 Jan 2011 18:03:25 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r3-anarsoul; KDE/4.5.4; i686; ; )
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ben Dooks <ben-linux@fluff.org>,
-        Vincent Sanders <support@simtec.co.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Richard Purdie <rpurdie@rpsys.net>
-References: <1291932292-16049-1-git-send-email-peterhuewe@gmx.de> <201012100016.58130.anarsoul@gmail.com> <20110104153725.2f3fede2.akpm@linux-foundation.org>
-In-Reply-To: <20110104153725.2f3fede2.akpm@linux-foundation.org>
+	id S1753740Ab1AFQGh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 11:06:37 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:47796 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752862Ab1AFQGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 11:06:36 -0500
+X-Authenticated: #911537
+X-Provags-ID: V01U2FsdGVkX1/4fKYrcen4lE9tkPPqQeoGFoOXlJK9pVBaiKDs7x
+	fCGSuX2/zDC6gf
+Date: Thu, 6 Jan 2011 17:06:29 +0100
+From: torbenh <torbenh@gmx.de>
+To: Dario Faggioli <raistlin@linux.it>
+Cc: Oleg Nesterov <oleg@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>, john.stultz@linaro.org,
+        roland@redhat.com, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH resend] Reading POSIX CPU timer from outside the
+ process.
+Message-ID: <20110106160629.GH32126@siel.b>
+Mail-Followup-To: Dario Faggioli <raistlin@linux.it>,
+	Oleg Nesterov <oleg@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	linux-kernel <linux-kernel@vger.kernel.org>, john.stultz@linaro.org,
+	roland@redhat.com, Ingo Molnar <mingo@elte.hu>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Stanislaw Gruszka <sgruszka@redhat.com>,
+	Dhaval Giani <dhaval.giani@gmail.com>,
+	Randy Dunlap <rdunlap@xenotime.net>
+References: <1293121303.3390.185.camel@Palantir>
+ <1293533742.2899.1028.camel@Palantir>
+ <20101228163829.GA26533@redhat.com>
+ <1293572304.2899.1214.camel@Palantir>
+ <20101229132130.GA16349@redhat.com>
+ <20101230174529.GE2086@siel.b>
+ <1294138885.6169.136.camel@Palantir>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101061803.26194.anarsoul@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294138885.6169.136.camel@Palantir>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 January 2011 01:37:25 Andrew Morton wrote:
-
-> So which patch to use?
+On Tue, Jan 04, 2011 at 12:01:25PM +0100, Dario Faggioli wrote:
+> On Thu, 2010-12-30 at 18:45 +0100, torbenh wrote: 
+> > > I think we should change glibc if clock_getcpuclockid() doesn't work,
+> > > please see below.
+> > 
+> > http://www.kernel.org/doc/man-pages/online/pages/man3/pthread_getcpuclockid.3.html
+> > 
+> > this one works.
+> > ok... it takes a pthread_t for identifying the thread.
+> > but it works.
+> > 
+> Well, I knew this, I knew it very well, as you can see from the code on
+> the git I pointed to (it's part of one of the examples!).
 > 
-> I queued Peter's patch because it's simpler.  I queued it for
-> 2.6.38-rc1, taged for backporting into 2.6.37.x, so we have a bit of
-> time to think about it.
+> the thing is that I believe there are situations where it could be
+> useful to sample CLOCK_THREAD_CPUTIME_ID from a _different_ process, and
+> in that case, you can't access that thread's pthread-id, can you? :-O
+> 
+> The jack2 code I saw could be one of these "potential user", and AFAICT
+> your jack1 might be another one, no?
+> Yeah, I know, whether you can/want use this or not also depends on other
+> issues, but you are in a _different_ process --and thus you can't use
+> pthread_* calls-- aren't you?
 
-Anyway, it's time to drop leds-h1940 driver, I'll submit patch to support 
-H1940 leds via generic leds-gpio driver tonight.
+i would need to tell the tid to jackd anyways.
+i could as well just communicate the clock_id. 
 
-Regards
-Vasily
+getting the clock_id into the other process is not a problem.
+the problem is that i am not allowed to read out the clock.
+
+
+> 
+> I'm now looking at Oleg's solution and into glibc as well... I'll come
+> out with something ASAP.
+> 
+> Regards,
+> Dario
+> 
+> -- 
+> <<This happens because I choose it to happen!>> (Raistlin Majere)
+> ----------------------------------------------------------------------
+> Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+> 
+> http://retis.sssup.it/people/faggioli -- dario.faggioli@jabber.org
+
+
+
+-- 
+torben Hohn
