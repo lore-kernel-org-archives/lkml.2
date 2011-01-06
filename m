@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385Ab1AFAaR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Jan 2011 19:30:17 -0500
-Received: from kroah.org ([198.145.64.141]:35812 "EHLO coco.kroah.org"
+	id S1754661Ab1AFAbU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Jan 2011 19:31:20 -0500
+Received: from kroah.org ([198.145.64.141]:36001 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754354Ab1AFAaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Jan 2011 19:30:12 -0500
-X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:04 2011
-Message-Id: <20110106002304.076081785@clark.site>
+	id S1754636Ab1AFAbQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Jan 2011 19:31:16 -0500
+X-Mailbox-Line: From gregkh@clark.site Wed Jan  5 16:23:07 2011
+Message-Id: <20110106002307.897088222@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 05 Jan 2011 16:22:57 -0800
+Date: Wed, 05 Jan 2011 16:23:37 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasiliy Kulikov <segooon@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [078/152] net: packet: fix information leak to userland
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Chris Ball <cjb@laptop.org>
+Subject: [118/152] mmc: atmel-mci: fix multiblock SDIO transfers
 In-Reply-To: <20110106002500.GA3172@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,44 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-From: Vasiliy Kulikov <segooon@gmail.com>
+commit 2f1d791882d21a4002a719fb016a1ac21c8bd6b7 upstream.
 
-[ Upstream commit 67286640f638f5ad41a946b9a3dc75327950248f ]
+Based on report made by Yauhen in:
+"MMC: Fix multiblock SDIO transfers in AT91 MCI" patch,
+I report those changes to the brother driver: atmel-mci.
 
-packet_getname_spkt() doesn't initialize all members of sa_data field of
-sockaddr struct if strlen(dev->name) < 13.  This structure is then copied
-to userland.  It leads to leaking of contents of kernel stack memory.
-We have to fully fill sa_data with strncpy() instead of strlcpy().
+So, this patch sets SDIO transfer types: SDIO block and SDIO byte
+transfers instead of using ordinary MMC block transfers.
+It is checking opcode for SDIO CMD53 and setting transfer
+type in MCI_CMDR register properly.
 
-The same with packet_getname(): it doesn't initialize sll_pkttype field of
-sockaddr_ll.  Set it to zero.
-
-Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/packet/af_packet.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -1721,7 +1721,7 @@ static int packet_getname_spkt(struct so
- 	rcu_read_lock();
- 	dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
- 	if (dev)
--		strlcpy(uaddr->sa_data, dev->name, 15);
-+		strncpy(uaddr->sa_data, dev->name, 14);
- 	else
- 		memset(uaddr->sa_data, 0, 14);
- 	rcu_read_unlock();
-@@ -1744,6 +1744,7 @@ static int packet_getname(struct socket
- 	sll->sll_family = AF_PACKET;
- 	sll->sll_ifindex = po->ifindex;
- 	sll->sll_protocol = po->num;
-+	sll->sll_pkttype = 0;
- 	rcu_read_lock();
- 	dev = dev_get_by_index_rcu(sock_net(sk), po->ifindex);
- 	if (dev) {
+---
+ drivers/mmc/host/atmel-mci.c |   18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
+
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -26,6 +26,7 @@
+ #include <linux/stat.h>
+ 
+ #include <linux/mmc/host.h>
++#include <linux/mmc/sdio.h>
+ 
+ #include <mach/atmel-mci.h>
+ #include <linux/atmel-mci.h>
+@@ -532,12 +533,17 @@ static u32 atmci_prepare_command(struct
+ 	data = cmd->data;
+ 	if (data) {
+ 		cmdr |= MCI_CMDR_START_XFER;
+-		if (data->flags & MMC_DATA_STREAM)
+-			cmdr |= MCI_CMDR_STREAM;
+-		else if (data->blocks > 1)
+-			cmdr |= MCI_CMDR_MULTI_BLOCK;
+-		else
+-			cmdr |= MCI_CMDR_BLOCK;
++
++		if (cmd->opcode == SD_IO_RW_EXTENDED) {
++			cmdr |= MCI_CMDR_SDIO_BLOCK;
++		} else {
++			if (data->flags & MMC_DATA_STREAM)
++				cmdr |= MCI_CMDR_STREAM;
++			else if (data->blocks > 1)
++				cmdr |= MCI_CMDR_MULTI_BLOCK;
++			else
++				cmdr |= MCI_CMDR_BLOCK;
++		}
+ 
+ 		if (data->flags & MMC_DATA_READ)
+ 			cmdr |= MCI_CMDR_TRDIR_READ;
 
 
