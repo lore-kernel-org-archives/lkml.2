@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163Ab1AFQVi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 11:21:38 -0500
-Received: from mail-bw0-f66.google.com ([209.85.214.66]:64110 "EHLO
-	mail-bw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751667Ab1AFQVh (ORCPT
+	id S1752494Ab1AFQWo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 11:22:44 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54761 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751761Ab1AFQWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 11:21:37 -0500
+	Thu, 6 Jan 2011 11:22:43 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=N3vvg8aHo7LQLSrp4UlV2JhVhDYexdPyvHjSBQ1Wvm0nX0g7JE2Y71p4H+G+2BaeNG
-         xy7a4XAOXxGFvynHrT6fM92yOn2PCQFhkisqY+T3QVcPcOUSkBF/Cp9sysOAz/tbyfmP
-         XR0/4lletbY01i7+2x8aYdhA+Ngs1IsFtRWPI=
-Message-ID: <4D25EC0C.9010409@gmail.com>
-Date: Thu, 06 Jan 2011 17:21:32 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=GdgHBVLNrmVxN5AJJSm+0HdWsjQEdNMtgNOoC+A7rnNX2Bu3QrdvHTmcpu2XrQYKnP
+         ueW9mOKkZ7eXeguC5R2E79AWLMREOdBzjp+F8iJxewFw4k9S/Yj9SzLUeemiC1z+bIlF
+         pXz9RaGOUwnCX5gwWQTVeAPUOgcjQ+JOw9n3w=
+Date: Thu, 6 Jan 2011 17:22:38 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: "H. Peter Anvin" <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Soeren Sandmann Pedersen <sandmann@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/2] x86: Fix rbp saving in pt_regs on irq entry
+Message-ID: <20110106162236.GB2308@nowhere>
+References: <1294325513-14276-1-git-send-email-fweisbec@gmail.com>
+ <1294325513-14276-2-git-send-email-fweisbec@gmail.com>
+ <4D25EB4B020000780002ABF7@vpn.id2.novell.com>
+ <20110106154536.GA2308@nowhere>
+ <4D25F79F020000780002AC20@vpn.id2.novell.com>
 MIME-Version: 1.0
-To: Len Brown <lenb@kernel.org>
-CC: Jiri Slaby <jslaby@suse.cz>, len.brown@intel.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] ia64: fix build of ioremap_cache
-References: <4D257CD9.8060909@gmail.com> <1294302687-8051-1-git-send-email-jslaby@suse.cz> <alpine.LFD.2.02.1101061103010.17728@x980>
-In-Reply-To: <alpine.LFD.2.02.1101061103010.17728@x980>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D25F79F020000780002AC20@vpn.id2.novell.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2011 05:03 PM, Len Brown wrote:
+On Thu, Jan 06, 2011 at 04:10:55PM +0000, Jan Beulich wrote:
+> >>> On 06.01.11 at 16:45, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > Before we had:
+> > 
+> > 
+> > 	leaveq
+> > 
+> > 	CFI_RESTORE             rbp
+> > 	CFI_DEF_CFA_REGISTER    rsp
+> > 	CFI_ADJUST_CFA_OFFSET   -8
+> > 
+> > So CFI_RESTORE means rbp has now the value of the base frame of
+> > the calling frame (the base frame pointer of the interrupted proc) ?
 > 
->> diff --git a/arch/ia64/include/asm/io.h b/arch/ia64/include/asm/io.h
->> index 009a7e0..e5a6c35 100644
->> --- a/arch/ia64/include/asm/io.h
->> +++ b/arch/ia64/include/asm/io.h
->> @@ -428,7 +428,7 @@ extern void __iomem * early_ioremap (unsigned long phys_addr, unsigned long size
->>  extern void early_iounmap (volatile void __iomem *addr, unsigned long size);
->>  static inline void __iomem * ioremap_cache (unsigned long phys_addr, unsigned long size)
->>  {
->> -	return ioremap(unsigned long phys_addr, unsigned long size);
->> +	return ioremap(phys_addr, size);
->>  }
+> No - all it means is that %rbp now has its original (caller or
+> interrupted procedure) value again (i.e. an unwinder should not
+> try to read it from the stack [or other previously recorded
+> location] anymore).
 > 
-> I pushed this fix 9 days ago, what tree are you running?
+> > And what follows means that rsp-8 points to the return address?
+> 
+> No - .cfi_def_cfa_register says which register serves as the frame
+> pointer, and .cfi_adjust_cfa_offset says to adjust the offset from
+> the frame pointer to the top [or bottom] of frame. At any time
+> 
+> 	CFA = cfa_register + cfa_offset
+> 
+> with CFA being what all locations on the stack are expressed
+> relative to.
 
-Aha, you melded the fix into the original patch. I only checked whether
-there was a change on the top of that commit. So ignore this patch and
-sorry for the noise.
+Ok.
 
-regards,
--- 
-js
+So here rsp points to pt_regs::r11
+
+I don't understand why locations relative to the stack must be
+expressed here by taking rsp - 8 as a base.
