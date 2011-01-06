@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab1AFWRR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 17:17:17 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45225 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754085Ab1AFWRP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 17:17:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:user-agent:date:subject:from:to:cc:message-id:thread-topic
-         :thread-index:in-reply-to:mime-version:content-type
-         :content-transfer-encoding;
-        b=QUPcZkXVIvYekx8FIJF80EE6lbzBEtxwu5E9cuqfZ58aYTt50gcA0FiOzsiSRiCfPR
-         Cn4cou4cz9F6ke9tJtAeMbVxxRe0p8K0Xu7t3g9xuT7l8vGAzU8k2ZKw83bfFrDNebq9
-         0RIz9WaBteUimf37tgo/cIGlFtm+5B5jTfbQs=
-User-Agent: Microsoft-Entourage/12.28.0.101117
-Date: Thu, 06 Jan 2011 22:17:06 +0000
-Subject: Re: [PATCH 6/8] xen/debug: WARN_ON when 1-1 but no _PAGE_IOMAP flag
- set.
-From: Keir Fraser <keir@xen.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        Jan Beulich <JBeulich@novell.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>
-Message-ID: <C94BEFE2.11452%keir@xen.org>
-Thread-Topic: [PATCH 6/8] xen/debug: WARN_ON when 1-1 but no _PAGE_IOMAP flag
- set.
-Thread-Index: Acut73OxLKwQLQHZRk6BbPSlgUOCiw==
-In-Reply-To: <20110106215952.GB18722@dumpdata.com>
-Mime-version: 1.0
-Content-type: text/plain;
-	charset="US-ASCII"
-Content-transfer-encoding: 7bit
+	id S1754222Ab1AFWTV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 17:19:21 -0500
+Received: from cantor.suse.de ([195.135.220.2]:55678 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751988Ab1AFWTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 17:19:20 -0500
+Date: Thu, 6 Jan 2011 13:57:05 -0800
+From: Greg KH <gregkh@suse.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [000/152] 2.6.36.3-stable review
+Message-ID: <20110106215705.GA30799@suse.de>
+References: <20110106002500.GA3172@kroah.com>
+ <20110106134254.68fa27ac@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110106134254.68fa27ac@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2011 21:59, "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com> wrote:
-
->> Always 0x55...55 (for m2p entries that exist), else page fault on access to
->> the non-existent m2p entry (m2p entries only guaranteed to exist for ram).
->> Perhaps the 0xff...ff values come from Linux's own fixup code handling a
->> faulting read access of the m2p array? If so you could return 0x55...55
->> instead and avoid checking for 0xff...ff. I really don't know how you could
->> get 0xff...ff for non-RAM pages from Xen itself.
+On Thu, Jan 06, 2011 at 01:42:54PM +0000, Alan Cox wrote:
+> On Wed, 5 Jan 2011 16:25:00 -0800
+> Greg KH <gregkh@suse.de> wrote:
 > 
-> The non-RAM pages are assinged to a DOMID_IO (arch_init_memory), for example:
+> > 
+> > This is the start of the stable review cycle for the 2.6.36.3 release.
+> > There are 152 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let us know.  If anyone is a maintainer of the proper subsystem, and
+> > wants to add a Signed-off-by: line to the patch, please respond with it.
 > 
->  298     /* First 1MB of RAM is historically marked as I/O. */
->  299     for ( i = 0; i < 0x100; i++ )
->  300         share_xen_page_with_guest(mfn_to_page(i), dom_io,
-> XENSHARE_writable);
+> Look sane on first glance but we don't seem to have a revert for the
+> serial mess up yet ?
 > 
-> and share_xen_page.. sets that page to INVALID_M2P_ENTRY.
+> > 7a56aa45982bb87bfca98a2832b5ae782c03364a is the first bad commit 
+> > commit 7a56aa45982bb87bfca98a2832b5ae782c03364a
+> > Author: Yegor Yefremov <yegor_sub1@visionsystems.de>
+> > Date:   Wed Jun 16 16:29:55 2010 +0200
+> > 
+> >     serial: add UART_CAP_EFR and UART_CAP_SLEEP flags to 16C950 UARTs 
+> > definition
+> >     
+> >     Adding UART_CAP_EFR and UART_CAP_SLEEP flags will enable sleep 
+> > mode
+> >     and automatic CTS flow control for 16C950 UARTs. It will also 
+> > avoid
+> >     capabilities detection warning like this:
+> >     
+> >     "ttyS0: detected caps 00000700 should be 00000100"
+> >     
+> >     Signed-off-by: Yegor Yefremov <yegorslists@googlemail.com>
+> >     Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 > 
-> But I could also be reading the code wrongly?
+> 
+> Has been bisected by several people to be causing failures and reported ?
 
-You're right, I missed that.
+Hm, I saw Pavel reported a problem, but I didn't get a definate "this
+must be reverted" resolution from that thread.  It looked like we should
+just drop one of these flags perhaps?
 
- -- Keir
+I can revert it if it really is an issue, but it needs to be reverted in
+Linus's tree first, before going to stable.
 
+thanks,
 
+greg k-h
