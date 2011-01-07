@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126Ab1AGUvK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 15:51:10 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:41668 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751858Ab1AGUvJ (ORCPT
+	id S1753069Ab1AGU62 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 15:58:28 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:55813 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752561Ab1AGU61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 15:51:09 -0500
+	Fri, 7 Jan 2011 15:58:27 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=C+4kQsMTGpVEkyAsSHzJHLmcOhGklq25sBouzOdOtlT+yOKJ6Z+PXw7czOyqIjapxv
-         ZOHAQiBsY/fylJMQJ4Gx7d4Iy9CHk2UyBjh8XIxPj3ljJVNW8/8iRSZALQIpMTxdRyXx
-         VUsooqir/rzfhHakQjLS3Yv0+cQpK8mDJwxHY=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=n++EBprIY/prqJU4R5eyUTo5+O8VufNyU8gAeHvsGvTrQRt5VXO8mRugMvYAkiHs3O
+         QvwuvOHZOyacGLki+xXUJsZIFV+GKXznKIrnRy1N5MmMW/9fCnzqjwil3bll890jQc13
+         3go6g0UjNeMDlZqIL6M9i2R4fWYrYp4tdWLi4=
+Date: Fri, 7 Jan 2011 15:58:23 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Stephen Clark <sclark46@earthlink.net>
+Cc: Robert Hancock <hancockrwd@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        ide <linux-ide@vger.kernel.org>
+Subject: Re: Kernel 2.6.37 erroneously limiting to UDMA/33
+Message-ID: <20110107205823.GF7355@mtj.dyndns.org>
+References: <4D24B98D.6080307@earthlink.net>
+ <4D2503B1.4080500@gmail.com>
+ <4D260A11.2040102@earthlink.net>
 MIME-Version: 1.0
-Date: Fri, 7 Jan 2011 14:51:08 -0600
-Message-ID: <AANLkTimJ+g=VuvW0HeGKX1my4JY+nWkBbRhP9nCFeawd@mail.gmail.com>
-Subject: Any hardware timers avialable to user-space?
-From: Paul Sheer <paulsheer@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D260A11.2040102@earthlink.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
+Hello,
 
-I'm looking for a way to return the value of any hardware clock to user-space:
+On Thu, Jan 06, 2011 at 01:29:37PM -0500, Stephen Clark wrote:
+> Hmm... libata.force=80c - didn't seem to work.
 
-Dan Bernstein's 'clockspeed' (http://cr.yp.to/clockspeed.html) package
-relies on the Pentium RDTSC instruction on Linux or gethrtime() on Solaris.
-On Solaris, gethrtime() is the same as clock_gettime(CLOCK_MONOTONIC,...)
+Is libata.ko a module which is loaded from initrd?  The initrd could
+be dumb and fail to pass the kernel param to the module when loading
+it.  In those cases, you'll need to modify initrd so that the
+parameter is specified.
 
-On Linux clock_gettime(CLOCK_MONOTONIC,...) incurs adjustments
-(so sayeth lkml archives) and doesn't seem suitable for implementing
-the kind of "ntp" client that is clockspeed's purpose.
+Thanks.
 
-Mentioned in Documentation/kvm/timekeeping.txt are a number of PC
-hardware clocks like the 82C54.
-
-Are any of these available to user space?
-
-Are there any plans to create a gethrtime() function like on Solaris?
-
-Has anyone suggested a new clock_gettime(CLOCK_HARDWARE,...) system call?
-
-Many thanks
-
--paul
+-- 
+tejun
