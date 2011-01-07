@@ -1,124 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101Ab1AGHp6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 02:45:58 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:40926 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389Ab1AGHp5 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:7:1>);
-	Fri, 7 Jan 2011 02:45:57 -0500
-Message-Id: <4D26D2C2020000780002AECB@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Fri, 07 Jan 2011 07:45:53 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Frederic Weisbecker" <fweisbec@gmail.com>
-Cc: "H. Peter Anvin" <a.p.zijlstra@chello.nl>, "Ingo Molnar" <mingo@elte.hu>,
-        "Stephane Eranian" <eranian@google.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Arnaldo Carvalho de Melo" <acme@redhat.com>,
-        "Soeren Sandmann Pedersen" <sandmann@redhat.com>,
-        "LKML" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/2] x86: Fix rbp saving in pt_regs on irq
-	 entry
-References: <1294325513-14276-1-git-send-email-fweisbec@gmail.com>
- <1294325513-14276-2-git-send-email-fweisbec@gmail.com>
- <4D25EB4B020000780002ABF7@vpn.id2.novell.com>
- <20110106154536.GA2308@nowhere>
- <4D25F79F020000780002AC20@vpn.id2.novell.com>
- <20110106162236.GB2308@nowhere>
- <4D25FE5B020000780002AC50@vpn.id2.novell.com>
- <20110106165452.GC2308@nowhere>
- <4D2602DE020000780002ACA3@vpn.id2.novell.com>
- <20110106171231.GD2308@nowhere>
-In-Reply-To: <20110106171231.GD2308@nowhere>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1752589Ab1AGHql (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 02:46:41 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:56996 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751834Ab1AGHqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 02:46:40 -0500
+Message-ID: <4D26C4D4.30303@cn.fujitsu.com>
+Date: Fri, 07 Jan 2011 15:46:28 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH v2 1/3] KVM: fix rcu usage warning in kvm_arch_vcpu_ioctl_set_sregs()
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-01-07 15:46:07,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-01-07 15:46:11,
+	Serialize complete at 2011-01-07 15:46:11
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 06.01.11 at 18:12, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Thu, Jan 06, 2011 at 04:58:54PM +0000, Jan Beulich wrote:
->> >>> On 06.01.11 at 17:54, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> > On Thu, Jan 06, 2011 at 04:39:39PM +0000, Jan Beulich wrote:
->> >> >>> On 06.01.11 at 17:22, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> >> > On Thu, Jan 06, 2011 at 04:10:55PM +0000, Jan Beulich wrote:
->> >> >> >>> On 06.01.11 at 16:45, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> >> >> > Before we had:
->> >> >> > 
->> >> >> > 
->> >> >> > 	leaveq
->> >> >> > 
->> >> >> > 	CFI_RESTORE             rbp
->> >> >> > 	CFI_DEF_CFA_REGISTER    rsp
->> >> >> > 	CFI_ADJUST_CFA_OFFSET   -8
->> >> >> > 
->> >> >> > So CFI_RESTORE means rbp has now the value of the base frame of
->> >> >> > the calling frame (the base frame pointer of the interrupted proc) ?
->> >> >> 
->> >> >> No - all it means is that %rbp now has its original (caller or
->> >> >> interrupted procedure) value again (i.e. an unwinder should not
->> >> >> try to read it from the stack [or other previously recorded
->> >> >> location] anymore).
->> >> >> 
->> >> >> > And what follows means that rsp-8 points to the return address?
->> >> >> 
->> >> >> No - .cfi_def_cfa_register says which register serves as the frame
->> >> >> pointer, and .cfi_adjust_cfa_offset says to adjust the offset from
->> >> >> the frame pointer to the top [or bottom] of frame. At any time
->> >> >> 
->> >> >> 	CFA = cfa_register + cfa_offset
->> >> >> 
->> >> >> with CFA being what all locations on the stack are expressed
->> >> >> relative to.
->> >> > 
->> >> > Ok.
->> >> > 
->> >> > So here rsp points to pt_regs::r11
->> >> > 
->> >> > I don't understand why locations relative to the stack must be
->> >> > expressed here by taking rsp - 8 as a base.
->> >> 
->> >> Nothing says rsp-8. The annotations merely say to set the base
->> >> register to rsp and to *adjust* the offset by -8 (after all, that's
->> >> what the leaveq instruction does).
->> > 
->> > Ah! So CFA acts like a virtual frame base pointer right?
->> 
->> Correct.
-> 
-> Ah great. I was starting to prepare for the case you come to stab me :)
-> 
-> So what do you think about that:
-> 
->         leaveq
-> 
->         CFI_RESTORE             rbp
->         CFI_DEF_CFA_REGISTER    rsp
->         CFI_ADJUST_CFA_OFFSET   -8
-> 
->        /* we did not save rbx, restore only from ARGOFFSET */
->        addq $8, %rsp
->        CFI_ADJUST_CFA_OFFSET   -16
-> 
-> 
-> Does that look correct to you? We increased rsp to start recovering
-> the regs from the right place, but the frame pointer of the current
-> proc must stay what it was.
+Fix:
 
-As you hinted in your subsequent reply - it's -8 here (that's
-why the directive is named *adjust*; there are other
-directives allowing to *set* an offset).
+[ 1001.499596] ===================================================
+[ 1001.499599] [ INFO: suspicious rcu_dereference_check() usage. ]
+[ 1001.499601] ---------------------------------------------------
+[ 1001.499604] include/linux/kvm_host.h:301 invoked rcu_dereference_check() without protection!
+	......
+[ 1001.499636] Pid: 6035, comm: qemu-system-x86 Not tainted 2.6.37-rc6+ #62
+[ 1001.499638] Call Trace:
+[ 1001.499644]  [<ffffffff81076cf6>] lockdep_rcu_dereference+0x9d/0xa5
+[ 1001.499653]  [<ffffffffa02567a6>] gfn_to_memslot+0x8d/0xc8 [kvm]
+[ 1001.499661]  [<ffffffffa0256824>] gfn_to_hva+0x16/0x3f [kvm]
+[ 1001.499669]  [<ffffffffa02568f5>] kvm_read_guest_page+0x1e/0x5e [kvm]
+[ 1001.499681]  [<ffffffffa026c24a>] kvm_read_guest_page_mmu+0x53/0x5e [kvm]
+[ 1001.499699]  [<ffffffffa026c294>] load_pdptrs+0x3f/0x9c [kvm]
+[ 1001.499705]  [<ffffffffa00d825e>] ? vmx_set_cr0+0x507/0x517 [kvm_intel]
+[ 1001.499717]  [<ffffffffa026ca56>] kvm_arch_vcpu_ioctl_set_sregs+0x1f3/0x3c0 [kvm]
+[ 1001.499727]  [<ffffffffa025a410>] kvm_vcpu_ioctl+0x6a5/0xbc5 [kvm]
 
-> Now I don't understand how this is all useful as this is not a normal
-> proc but an interruption. We can't get back the return address from
-> the CFA. Or am I missing something?
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/x86.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-Unwind annotations, when written correctly, allow unwinding
-through all kinds of execution flows, including interrupts or
-exceptions as well as including stack switches.
-
-Jan
-
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index fa708c9..0b77e9c 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5571,7 +5571,7 @@ int kvm_arch_vcpu_ioctl_set_sregs(struct kvm_vcpu *vcpu,
+ 				  struct kvm_sregs *sregs)
+ {
+ 	int mmu_reset_needed = 0;
+-	int pending_vec, max_bits;
++	int pending_vec, max_bits, idx;
+ 	struct desc_ptr dt;
+ 
+ 	dt.size = sregs->idt.limit;
+@@ -5600,10 +5600,13 @@ int kvm_arch_vcpu_ioctl_set_sregs(struct kvm_vcpu *vcpu,
+ 	kvm_x86_ops->set_cr4(vcpu, sregs->cr4);
+ 	if (sregs->cr4 & X86_CR4_OSXSAVE)
+ 		update_cpuid(vcpu);
++
++	idx = srcu_read_lock(&vcpu->kvm->srcu);
+ 	if (!is_long_mode(vcpu) && is_pae(vcpu)) {
+ 		load_pdptrs(vcpu, vcpu->arch.walk_mmu, kvm_read_cr3(vcpu));
+ 		mmu_reset_needed = 1;
+ 	}
++	srcu_read_unlock(&vcpu->kvm->srcu, idx);
+ 
+ 	if (mmu_reset_needed)
+ 		kvm_mmu_reset_context(vcpu);
+-- 
+1.7.3.4
