@@ -1,166 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851Ab1AGPPw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 10:15:52 -0500
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:49076 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753041Ab1AGPPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 10:15:51 -0500
-Message-ID: <4D272EBA.5000703@kernel.dk>
-Date: Fri, 07 Jan 2011 16:18:18 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	id S1753771Ab1AGPSA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 10:18:00 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60309 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751612Ab1AGPR7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 10:17:59 -0500
+Date: Fri, 7 Jan 2011 15:17:55 +0000
+From: Ben Hutchings <benh@debian.org>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: romieu@fr.zoreil.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/r8169: Update the function of parsing firmware
+Message-ID: <20110107151755.GN3702@decadent.org.uk>
+References: <1294393509-3492-1-git-send-email-hayeswang@realtek.com>
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Li Zefan <lizf@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] blktrace: add missing probe argument to block_bio_complete
-References: <20110107015453.GB5109@Krystal> <x498vyw7qe7.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x498vyw7qe7.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294393509-3492-1-git-send-email-hayeswang@realtek.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: benh@debian.org
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-01-07 15:13, Jeff Moyer wrote:
-> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> writes:
+On Fri, 2011-01-07 at 17:45 +0800, Hayes Wang wrote:
+> Update rtl_phy_write_fw function. The new function could
+> parse the complex firmware which is used by RTL8111E and later.
+> The new firmware may read data and do some operations, not just
+> do writing only.
 > 
->> blktrace.c block bio complete callback needs to gain a new argument to reflect
->> the newly added "error" tracepoint argument. This is needed to match the new
->> block_bio_complete TRACE_EVENT as of
->> commit de983a7bfcb7c020901ca6e2314cf55a4207ab5a.
->>
->> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
->> CC: Jeff Moyer <jmoyer@redhat.com>
->> CC: Steven Rostedt <rostedt@goodmis.org>
->> CC: Frederic Weisbecker <fweisbec@gmail.com>
->> CC: Ingo Molnar <mingo@elte.hu>
->> CC: Thomas Gleixner <tglx@linutronix.de>
->> CC: Jens Axboe <axboe@kernel.dk>
->> CC: Li Zefan <lizf@cn.fujitsu.com>
->> ---
->>  kernel/trace/blktrace.c |    3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> Index: linux-2.6-lttng/kernel/trace/blktrace.c
->> ===================================================================
->> --- linux-2.6-lttng.orig/kernel/trace/blktrace.c
->> +++ linux-2.6-lttng/kernel/trace/blktrace.c
->> @@ -785,7 +785,8 @@ static void blk_add_trace_bio_bounce(voi
->>  }
->>  
->>  static void blk_add_trace_bio_complete(void *ignore,
->> -				       struct request_queue *q, struct bio *bio)
->> +				       struct request_queue *q, struct bio *bio,
->> +				       int error)
->>  {
->>  	blk_add_trace_bio(q, bio, BLK_TA_COMPLETE);
->>  }
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+> ---
+>  drivers/net/r8169.c |  112 ++++++++++++++++++++++++++++++++++++++++++++-------
+>  1 files changed, 97 insertions(+), 15 deletions(-)
 > 
-> OK, I clearly didn't look closely enough last time.  There's no sense
-> passing this information down if it isn't used (as you said initially).
-> blk_add_trace_bio sets the error based on whether or not the
-> BIO_UPTODATE bit is set.  So, I think we should instead revert the patch
-> I sent you (Mathieu), and then completely get rid of the error field in
-> the TP macros.
-> 
-> Does that make sense to everyone else?
+> diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+> index 27a7c20..2115424 100644
+> --- a/drivers/net/r8169.c
+> +++ b/drivers/net/r8169.c
+[...] 
+> -	while (i-- != 0) {
+> -		u32 action = le32_to_cpu(*phytable);
+> -		u32 data = action & 0x0000ffff;
+> -		u32 reg = (action & 0x0fff0000) >> 16;
+> +	predata = 0;
+> +	count = 0;
+> +
+> +	for (index = 0; index < fw->size / sizeof(*phytable); ) {
+> +		u32 action = le32_to_cpu(phytable[index]);
+> +		u32 data = action & 0x0000FFFF;
+> +		u32 regno = (action & 0x0FFF0000) >> 16;
+> +
+> +		if (!action)
+> +			break;
+>  
+> -		switch(action & 0xf0000000) {
+> +		switch(action & 0xF0000000) {
+[...]
+> +		case PHY_BJMPN:
+> +			index -= regno;
+> +			break;
+[...]
 
-We usually use BIO_UPTODATE if we have no other information available.
-So if we have, then we should use it.
+I'm concerned that this is being extended from a firmware upload
+interface to a quite general interpreter for PHY initialisation.  I
+realise that this will make it easier to fix PHY firmware bugs in
+future but it also allows you to accidentally introduce infinite loops.
+The initialisation programs will obviously not be subject to the same
+sort of review on netdev that new C code is.
 
-diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-index fab31af..153562d 100644
---- a/kernel/trace/blktrace.c
-+++ b/kernel/trace/blktrace.c
-@@ -758,54 +758,58 @@ static void blk_add_trace_rq_complete(void *ignore,
-  * @q:		queue the io is for
-  * @bio:	the source bio
-  * @what:	the action
-+ * @error:	error, if any
-  *
-  * Description:
-  *     Records an action against a bio. Will log the bio offset + size.
-  *
-  **/
- static void blk_add_trace_bio(struct request_queue *q, struct bio *bio,
--				     u32 what)
-+			      u32 what, int error)
- {
- 	struct blk_trace *bt = q->blk_trace;
- 
- 	if (likely(!bt))
- 		return;
- 
-+	if (!error && !bio_flagged(bio, BIO_UPTODATE))
-+		error = EIO;
-+
- 	__blk_add_trace(bt, bio->bi_sector, bio->bi_size, bio->bi_rw, what,
--			!bio_flagged(bio, BIO_UPTODATE), 0, NULL);
-+			error, 0, NULL);
- }
- 
- static void blk_add_trace_bio_bounce(void *ignore,
- 				     struct request_queue *q, struct bio *bio)
- {
--	blk_add_trace_bio(q, bio, BLK_TA_BOUNCE);
-+	blk_add_trace_bio(q, bio, BLK_TA_BOUNCE, 0);
- }
- 
- static void blk_add_trace_bio_complete(void *ignore,
- 				       struct request_queue *q, struct bio *bio,
- 				       int error)
- {
--	blk_add_trace_bio(q, bio, BLK_TA_COMPLETE);
-+	blk_add_trace_bio(q, bio, BLK_TA_COMPLETE, error);
- }
- 
- static void blk_add_trace_bio_backmerge(void *ignore,
- 					struct request_queue *q,
- 					struct bio *bio)
- {
--	blk_add_trace_bio(q, bio, BLK_TA_BACKMERGE);
-+	blk_add_trace_bio(q, bio, BLK_TA_BACKMERGE, 0);
- }
- 
- static void blk_add_trace_bio_frontmerge(void *ignore,
- 					 struct request_queue *q,
- 					 struct bio *bio)
- {
--	blk_add_trace_bio(q, bio, BLK_TA_FRONTMERGE);
-+	blk_add_trace_bio(q, bio, BLK_TA_FRONTMERGE, 0);
- }
- 
- static void blk_add_trace_bio_queue(void *ignore,
- 				    struct request_queue *q, struct bio *bio)
- {
--	blk_add_trace_bio(q, bio, BLK_TA_QUEUE);
-+	blk_add_trace_bio(q, bio, BLK_TA_QUEUE, 0);
- }
- 
- static void blk_add_trace_getrq(void *ignore,
-@@ -813,7 +817,7 @@ static void blk_add_trace_getrq(void *ignore,
- 				struct bio *bio, int rw)
- {
- 	if (bio)
--		blk_add_trace_bio(q, bio, BLK_TA_GETRQ);
-+		blk_add_trace_bio(q, bio, BLK_TA_GETRQ, 0);
- 	else {
- 		struct blk_trace *bt = q->blk_trace;
- 
-@@ -828,7 +832,7 @@ static void blk_add_trace_sleeprq(void *ignore,
- 				  struct bio *bio, int rw)
- {
- 	if (bio)
--		blk_add_trace_bio(q, bio, BLK_TA_SLEEPRQ);
-+		blk_add_trace_bio(q, bio, BLK_TA_SLEEPRQ, 0);
- 	else {
- 		struct blk_trace *bt = q->blk_trace;
- 
+> +		case PHY_DELAY_MS:
+> +			mdelay(data);
+> +			index++;
+> +			break;
+
+Why mdelay() and not msleep()?  This is not an atomic context.
+
+> +		case PHY_READ_MAC_BYTE:
+> +		case PHY_WRITE_MAC_BYTE:
+> +		case PHY_WRITE_ERI_WORD:
+>  		default:
+>  			BUG();
+>  		}
+> +
+> +		if (index < 0)
+> +			BUG();
+[...]
+
+index is unsigned so it can't be < 0.  It looks like the loop condition
+should catch an out-of-range index, but really the range-checking should
+be done in the first loop.
+
+Ben.
 
 -- 
-Jens Axboe
-
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
