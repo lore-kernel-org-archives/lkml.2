@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104Ab1AGGG3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 01:06:29 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:63874 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753518Ab1AGGG1 (ORCPT
+	id S1754140Ab1AGGGq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 01:06:46 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:61287 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657Ab1AGGGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 01:06:27 -0500
+	Fri, 7 Jan 2011 01:06:45 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=dVkzL+J/NrNc+8eLB/X4aYxU1P5MSVt726A7HJqR9qm66aqtUp/P6l++eWvMHgkwiQ
-         CxBoTBLzaIwA+3H7DCMJBjnn8HkldhQOOdEmBIeGijBcwOG7kG49B9mmTNVVeXXvZAQN
-         V2yXtP/3jcnQJbkCS9lTBkFdkhH2nBS8PWlb0=
-Date: Thu, 6 Jan 2011 22:06:19 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Rakesh Iyer <riyer@nvidia.com>
-Cc: "'Randy Dunlap'" <rdunlap@xenotime.net>, Jesper Juhl <jj@chaosbits.net>,
-        "tsoni@codeaurora.org" <tsoni@codeaurora.org>,
-        "shubhrajyoti@ti.com" <shubhrajyoti@ti.com>,
-        "ccross@android.com" <ccross@android.com>,
-        "konkers@android.com" <konkers@android.com>,
-        "olof@lixom.net" <olof@lixom.net>, Andrew Chew <AChew@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: Re: [PATCH v2] input: tegra-kbc - Add tegra keyboard driver
-Message-ID: <20110107060618.GB29038@core.coreip.homeip.net>
-References: <1294351512-17035-1-git-send-email-riyer@nvidia.com>
- <alpine.LNX.2.00.1101062311340.13988@swampdragon.chaosbits.net>
- <20110106142714.f823dea8.rdunlap@xenotime.net>
- <1FC56210173BB445BD77F608D6FB8D03165A008053@HQMAIL03.nvidia.com>
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=Nur3IDTf5+Zv6CcRdQ4IccrcSInyIbvtreSItS/lbYGPcnxe9xFdZFxpWFXBXZpuOZ
+         UqbrWYRmZrt1YBL4FngjHCOZC8gpJ6hmp6NyjC9zSAKsgfRTp48rGx0RwBTc5jIyxjOe
+         +RlEApJngrKfrqlBpi2BmtFnFLN4tffszpTOU=
+Date: Fri, 7 Jan 2011 09:05:58 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Dave Airlie <airlied@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] vga_switcheroo: comparing too few characters in
+ strncmp()
+Message-ID: <20110107060558.GE1717@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Alexey Dobriyan <adobriyan@gmail.com>,
+	Dave Airlie <airlied@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+References: <20110107051227.GD1717@bicker>
+ <20110107053054.GA9057@p183.telecom.by>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1FC56210173BB445BD77F608D6FB8D03165A008053@HQMAIL03.nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110107053054.GA9057@p183.telecom.by>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 06, 2011 at 06:49:45PM -0800, Rakesh Iyer wrote:
+On Fri, Jan 07, 2011 at 07:30:54AM +0200, Alexey Dobriyan wrote:
+> On Fri, Jan 07, 2011 at 08:12:27AM +0300, Dan Carpenter wrote:
+> > -	if (strncmp(usercmd, "MDIS", 3) == 0) {
+> > +	if (strncmp(usercmd, "MDIS", 4) == 0) {
 > 
-> Is having this check really an issue?  Can't input_free_device change
-> in the future so that NULL as a parameter does cause undesirable
-> side-effects?
+> How about you NUL-terminate, and use strcmp().
 
-No, it won't because changing it to crash on NULL pointers would be
-really stupid.
+I assume there is a reason for this userspace API.  Dave?
 
-Thanks.
-
--- 
-Dmitry
+regards,
+dan carpenter
