@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177Ab1AGKwQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 05:52:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39430 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752053Ab1AGKwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 05:52:13 -0500
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: linux-perf-users@vger.kernel.org
-Subject: Re: [PATCH 8/9] perf timechart: Map power:cpu_idle events to the corresponding cpuidle state
-Date: Fri, 7 Jan 2011 11:52:11 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-18-desktop; KDE/4.5.3; x86_64; ; )
-Cc: mingo@elte.hu, arjan@linux.intel.com, lenb@kernel.org, j-pihet@ti.com,
-        linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>
-References: <1294396190-23031-1-git-send-email-trenn@suse.de> <1294396190-23031-9-git-send-email-trenn@suse.de>
-In-Reply-To: <1294396190-23031-9-git-send-email-trenn@suse.de>
+	id S1752115Ab1AGK5u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 05:57:50 -0500
+Received: from mail-fx0-f66.google.com ([209.85.161.66]:56424 "EHLO
+	mail-fx0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683Ab1AGK5s convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 05:57:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:cc:content-type:content-transfer-encoding;
+        b=st+hN1aJ9V/bc+vylu10B7jK8LYoev3TsJ9hfNFqwVbriZYeb0djnK1zdXefX5DX/7
+         NTTPhFA71JcylLC/cCBfdaC4XyM5sS3IviJQZyXfm9JPRCP9v+bwWYV4n4ZDPFwkgicF
+         3Zvgttp0FGQ6cb51Ae2MIHTWcnQq0UA6yfdfI=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-6"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101071152.11407.trenn@suse.de>
+Date: Fri, 7 Jan 2011 11:57:45 +0100
+X-Google-Sender-Auth: P4FdQrvC3vynFnO50VXXIANZWlM
+Message-ID: <AANLkTinhrj38rbEt7ds971D9g-UF+xS0jmzO7X15ZaLn@mail.gmail.com>
+Subject: [-next] ERROR: "strchr" [drivers/target/target_core_mod.ko] undefined!
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Nicholas Bellinger <nab@linux-iscsi.org>,
+        James Bottomley <James.Bottomley@suse.de>
+Cc: scsi <linux-scsi@vger.kernel.org>, Linux-Next <linux-next@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Argh, forgot guilt refresh on this one.
-The changelog could be a bit more detailed by adding:
+Since a few days, linux-next shows:
 
-On Friday 07 January 2011 11:29:49 Thomas Renninger wrote:
-> Before, power:cpu_idle events were very specific X86 Intel mwait events.
-> This got fixed with previous patches and cpu_idle events are now thrown by
-> all cpuidle drivers and can be mapped to the corresponding cpuidle state
-> in /sys.
-> 
-> This patch reads out the corresponding cpuidle name of a cpu_idle event
-> and uses it in the title line of the chart (c-states Cx in x86, omap2
-> - DDR self refresh states for various arm archs).
-> 
-> It also reads out the corresponding abbr(eviation) and uses the string
-> to draw the cpu idle occurences. This needs a short (3 letter) string
-> to keep the overview in the chart.
+| ERROR: "strchr" [drivers/target/target_core_mod.ko] undefined!
 
-All features/fixes this patch includes:
-  - Read up cpuidle events from sysfs if available
-    and thus make them architecture independent
-  - Use (free) green color to display idle events in the chart,
-    red is also used by "Blocked IO" event(s)
-  - Fix wrong class="rect.cX" to class="cX" idle box svg drawing
-    definitions. This fixes up black idle drawings for eog (eye of gnome)
-    and firefox (inkscape somehow could handle the broken case).
+in m68k allmodconfig builds
+(http://kisskb.ellerman.id.au/kisskb/buildresult/3754323/).
 
-    Thomas
+I guess this is caused by the following 3 calls to strstr():
+
+drivers/target/target_core_configfs.c:
++       ptr = strstr(page, "1");
+
++       str = strstr(buf, "_");
+
++       str2 = strstr(str+1, "_");
+
+Some versions of gcc replace calls to strstr() with single-character
+"needle" string parameters by calls to strchr() behind our back.
+This causes linking errors if strchr() is defined as an inline function
+in <asm/string.h> (e.g. on m68k).
+
+You can prevent this by explicitly calling strchr() instead.
+
+Cfr. commit 59d309f9c8ef0bd01bf93cc0e758f1d810417bdb
+("kgdb: Replace strstr() by strchr() for single-character needles).
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
