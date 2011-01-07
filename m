@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413Ab1AGClS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 21:41:18 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40929 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970Ab1AGClR (ORCPT
+	id S1755423Ab1AGCmd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 21:42:33 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59791
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751866Ab1AGCmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 21:41:17 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=LpF/iXDXj/E/FfT2632iVDzX+eANZHsLsuhdkKP7LRIwQFRp/xGIyjTSTVFStIoueS
-         NPNJyyRYClSTsXtfcjwvN513TYMW+2af1jLR10tb0Myf8znLZqRBt+DarILvn5scNOMU
-         a0WwdUJ05mzGe0t87WyYNqOPNJh/RhykPFHrI=
-Subject: Re: [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when vid not
- used
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Matt Carlson <mcarlson@broadcom.com>
-Cc: Jesse Gross <jesse@nicira.com>,
-        Michael Leun <lkml20101129@newton.leun.net>,
-        Michael Chan <mchan@broadcom.com>, David Miller <davem@davemloft.net>,
-        Ben Greear <greearb@candelatech.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-In-Reply-To: <20110107022912.GA17757@mcarlson.broadcom.com>
-References: <AANLkTinLMCzKz7n45HdeAwNxsWjCADAkgfK+MjXVcFqh@mail.gmail.com>
-	 <20101213224510.GB17400@mcarlson.broadcom.com>
-	 <AANLkTi=9BYt=vkNkAiTBxnfnCjCX7AqCG=ML6coc4vdZ@mail.gmail.com>
-	 <20101214191500.GD19951@mcarlson.broadcom.com>
-	 <1293901393.2535.49.camel@edumazet-laptop>
-	 <AANLkTinq9ABi0prxe0m1Ma6rno4UnAOzuW-b5L362ij9@mail.gmail.com>
-	 <1293984348.2535.101.camel@edumazet-laptop>
-	 <AANLkTincX-wPQE9gs16v53E4=Skivzc4ZSJS43oNBLD_@mail.gmail.com>
-	 <1294356887.2704.13.camel@edumazet-laptop>
-	 <1294363201.2704.19.camel@edumazet-laptop>
-	 <20110107022912.GA17757@mcarlson.broadcom.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 Jan 2011 03:41:11 +0100
-Message-ID: <1294368071.2704.49.camel@edumazet-laptop>
+	Thu, 6 Jan 2011 21:42:31 -0500
+Date: Thu, 06 Jan 2011 18:43:02 -0800 (PST)
+Message-Id: <20110106.184302.193709839.davem@davemloft.net>
+To: herbert@gondor.hengli.com.au
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org
+Subject: Re: Crypto Update for 2.6.38
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110107001459.GA32068@gondor.apana.org.au>
+References: <20110106225301.GA27358@gondor.apana.org.au>
+	<AANLkTi=E3fqTos7A2fJ2PRKT=o5=sgWh+CzMv4G7P4rZ@mail.gmail.com>
+	<20110107001459.GA32068@gondor.apana.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 06 janvier 2011 à 18:29 -0800, Matt Carlson a écrit :
+From: Herbert Xu <herbert@gondor.apana.org.au>
+Date: Fri, 7 Jan 2011 11:14:59 +1100
 
-> Hi Eric.  Sorry for the delay.  I was under the impression that your
-> problems were software related and that you just needed a revised
-> version of these VLAN patches I was sending to Michael.  Is this not
-> true?
+> Anyway, here is a test program that does a set number (1024 * 1024)
+> of 4096-byte (total 4GB) encryptions with libssl and kernel crypto.
+> The result on my Core 2 (in a KVM VM FWIW) is:
 > 
-> Having a hardware stat increment suggests this is a new problem.
-> Maybe I missed it, but I didn't see what hardware you are working
-> with and whether or not management firmware was enabled.  Could you tell
-> me that info?
+> lenny0:~# time ./test_crypto > /dev/null 
 > 
+> real    0m30.340s
+> user    0m0.172s
+> sys     0m30.166s
+> lenny0:~# time ./test_crypto software > /dev/null 
+> 
+> real    0m34.555s
+> user    0m34.550s
+> sys     0m0.004s
+> lenny0:~# 
+> 
+> I'm not claiming these numbers make any sense but this is just
+> a ballpark figure.
+> 
+> Dave, can you run this program on your N2 and see what it shows?
 
-Hi Matt
+Sure, here goes, BTW I had to change the buffer size to 8192 since
+vmsplice requires page aligned operation (I was getting -EINVAL
+otherwise):
 
-I started a bisection, because I couldnt sleep tonight anyway :(
+davem@maramba:~$ time ./crypto_user_test >/dev/null
 
-14:04.0 Ethernet controller: Broadcom Corporation NetXtreme BCM5715S
-Gigabit Ethernet (rev a3)
-	Subsystem: Hewlett-Packard Company NC326m PCIe Dual Port Adapter
-	Flags: bus master, 66MHz, medium devsel, latency 64, IRQ 43
-	Memory at fdff0000 (64-bit, non-prefetchable) [size=64K]
-	Memory at fdfe0000 (64-bit, non-prefetchable) [size=64K]
-	[virtual] Expansion ROM at fdbe0000 [disabled] [size=128K]
-	Capabilities: [40] PCI-X non-bridge device
-	Capabilities: [48] Power Management version 2
-	Capabilities: [50] Vital Product Data
-	Capabilities: [58] MSI: Enable+ Count=1/8 Maskable- 64bit+
-	Kernel driver in use: tg3
-	Kernel modules: tg3
+real		 0m46.586s
+user		 0m3.280s
+sys		 0m43.230s
+davem@maramba:~$ time ./crypto_user_test software >/dev/null
 
+real		 10m40.336s
+user		 10m40.540s
+sys		 0m0.000s
+davem@maramba:~$   
 
-
+What's that, something like a factor of 13 faster? :-)
