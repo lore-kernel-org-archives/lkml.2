@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872Ab1AGOKA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 09:10:00 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:61118 "EHLO
+	id S1753382Ab1AGOK0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 09:10:26 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:59488 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752542Ab1AGOJ6 (ORCPT
+	with ESMTP id S1752776Ab1AGOJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 09:09:58 -0500
+	Fri, 7 Jan 2011 09:09:59 -0500
 From: Arnd Bergmann <arnd@arndb.de>
-To: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
-Subject: Re: [PATCHv1 02/12] unicore32 core architecture: generic headers stuff
-Date: Fri, 7 Jan 2011 00:55:53 +0100
+To: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>,
+        Al Viro <viro@ftp.linux.org.uk>
+Subject: Re: [PATCHv1 11/12] unicore32 core architecture: signals
+Date: Fri, 7 Jan 2011 01:16:57 +0100
 User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
 Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <00c801cba463$b0f3db00$12db9100$@mprc.pku.edu.cn>
-In-Reply-To: <00c801cba463$b0f3db00$12db9100$@mprc.pku.edu.cn>
+References: <00da01cba465$6d6e52f0$484af8d0$@mprc.pku.edu.cn>
+In-Reply-To: <00da01cba465$6d6e52f0$484af8d0$@mprc.pku.edu.cn>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="gb2312"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101070055.53996.arnd@arndb.de>
-X-Provags-ID: V02:K0:nsXkHwet8Q+VH4ZapbXI8txw1fgee4XofYUaKgV7Mro
- K85O+SOLIF9vxouptsxGq4MKd+UYF4YbjR1kZZB8fWHM+x7IUS
- SUluB59XfPjl/O+oMpIXeWkTmOwL+/kvkoWjfGqzYMZYJy7mC/
- qzUfkdAeOxxDfWpjr7vxtUIhu1a0tiSWADXJiWZfTcGEO3Bimu
- NaTXmCfwGeIk5WXUhJZXA==
+Message-Id: <201101070116.57654.arnd@arndb.de>
+X-Provags-ID: V02:K0:DCngbGtF+VSfQepXhH22gwWJAYyqf5Yc/sH3UbmXqj6
+ V63V9SoCdOtaVd/1+XHLve2YHPmvXE4KFXwFvBoPdVIYmgfbpA
+ k/D1EiM7A3JiznnvrtT6yWtckVWe/pi3ExVsrqg/dr6zARbJhI
+ C00I7xM1PRzP/Rp1nwj8GcGEb93nJpMherOo5XHH//OTMjdbnP
+ bbi+cXJBxK3qGB/ppqaKQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Saturday 25 December 2010, Guan Xuetao wrote:
-> diff --git a/arch/unicore32/include/asm/sizes.h b/arch/unicore32/include/asm/sizes.h
-> new file mode 100644
-> index 0000000..3720307
-> --- /dev/null
-> +++ b/arch/unicore32/include/asm/sizes.h
-> @@ -0,0 +1,47 @@
-> +/*
-> + * linux/arch/unicore32/include/asm/sizes.h
-> + *
-> + * Code specific to PKUnity SoC and UniCore ISA
-> + *
-> + * Copyright (C) 2001-2010 GUAN Xue-tao
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +#ifndef __UNICORE_SIZES_H__
-> +#define __UNICORE_SIZES_H__
-> +
-> +/* handy sizes */
-> +#define SZ_16				0x00000010
-> +#define SZ_256				0x00000100
-> +#define SZ_512				0x00000200
-> ...
+> From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+> 
+> Patch 11 implements signals.
+> 
+> Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+> ---
+>  arch/unicore32/include/asm/sigcontext.h |   61 ++++
+>  arch/unicore32/kernel/signal.c          |  571 +++++++++++++++++++++++++++++++
+>  arch/unicore32/kernel/signal.h          |   16 +
+>  3 files changed, 648 insertions(+), 0 deletions(-)
 
-This would be nice to have in include/asm-generic. Please make a patch that
-adds the file there and use it with your scripts.
+Al Viro recently did a major cleanup of the signal handling code in a
+number of architectures. He can probably give much better feedback
+on this one than I can.
 
-> --- /dev/null
-> +++ b/arch/unicore32/include/asm/stat.h
-> @@ -0,0 +1,71 @@
-> +/*
-> + * linux/arch/unicore32/include/asm/stat.h
-
-I think we discussed this particular header before. There should be no reason
-to have your own version instead of using the generic file like you do for the
-rest of the API headers.
+The one thing that sticks out to me is that you implement both legacy
+and rt signals, where new architectures should generally only need the
+rt variant.
 
 	Arnd
-
