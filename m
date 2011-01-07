@@ -1,48 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752420Ab1AFM6O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 07:58:14 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56033 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257Ab1AFM6N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 07:58:13 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=uecwrYP7sm3ppl7UzXBIUFlG6Eq/znmtahYJ31GOb78IhG2Xmbu8Cd17P5dUbmJlFx
-         GQZjHT/Jlv5BouO1gA9gxTS5ppe93t16AGv2HMoIG01CMqdi0Rv/AEB28lKuOn9rEyHH
-         XJiPVG4xDsKZ7fBdmDqIBWvyO45gr/irNkLYY=
+	id S1752522Ab1AFM7Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 07:59:16 -0500
+Received: from mga01.intel.com ([192.55.52.88]:9275 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752488Ab1AFM7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 07:59:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,283,1291622400"; 
+   d="scan'208";a="875010431"
+Date: Thu, 6 Jan 2011 21:04:02 -0500
+From: Youquan Song <youquan.song@linux.intel.com>
+To: Yong Wang <yong.y.wang@linux.intel.com>
+Cc: Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
+        hpa@linux.intel.com, suresh.b.siddha@intel.com, arjan@linux.intel.com,
+        trenn@suse.de, kent.liu@intel.com, chaohong.guo@intel.com,
+        Youquan Song <youquan.song@linux.intel.com>
+Subject: Re: [PATCH 1/2] apic: Fix error interrupt report at all APs
+Message-ID: <20110107020402.GA14593@linux-youquan.bj.intel.com>
+References: <1294284532-24285-1-git-send-email-youquan.song@intel.com> <1294284532-24285-2-git-send-email-youquan.song@intel.com> <20110106092753.GA32343@ywang-moblin2.bj.intel.com>
 MIME-Version: 1.0
-Date: Thu, 6 Jan 2011 20:58:12 +0800
-Message-ID: <AANLkTinOPuYsVovrZpbuCCmG5deEyc8WgA_A1RJx_YK7@mail.gmail.com>
-Subject: [PATCH] sched: fix strncmp operation
-From: Hillf Danton <dhillf@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rik van Riel <riel@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110106092753.GA32343@ywang-moblin2.bj.intel.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One of the operands, buf, is incorrect, since it is stripped and the
-correct address for subsequent string comparing could change if
-leading white spaces, if any, are removed from buf.
+> If the thermal interrupt vector of all CPUs is 0 and you are seeing
+> LAPIC error interrupts, the correct way to fix it is to disable digital
+> thermal sensors from generating interrupts.
+Thanks for your feedback Yong!
 
-It is fixed by replacing buf with cmp.
+No. Write LVT with vector(0~15) will always generate error interrupt if error
+interrupt is set. it has nothing with digital thermal device.
+Since you find some platform will cause issue because BIOS possible take
+over the thermal interrupt.
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
+So my prefered patch is like following, move the APIC_LVTTHMR restore to
+vecotor check domain, which following your origin logic.
 
---- a/kernel/sched.c	2010-11-01 19:54:12.000000000 +0800
-+++ b/kernel/sched.c	2011-01-06 20:52:02.000000000 +0800
-@@ -751,7 +751,7 @@ sched_feat_write(struct file *filp, cons
- 	buf[cnt] = 0;
- 	cmp = strstrip(buf);
+Can I consider BIOS under control thermal interrupt will not be illegal vector?
 
--	if (strncmp(buf, "NO_", 3) == 0) {
-+	if (strncmp(cmp, "NO_", 3) == 0) {
- 		neg = 1;
- 		cmp += 3;
+
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index 4b68326..a2cb9bd 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -405,30 +405,28 @@ void intel_init_thermal(struct cpuinfo_x86 *c)
+ 	 */
+ 	rdmsr(MSR_IA32_MISC_ENABLE, l, h);
+ 
+-	/*
+-	 * The initial value of thermal LVT entries on all APs always reads
+-	 * 0x10000 because APs are woken up by BSP issuing INIT-SIPI-SIPI
+-	 * sequence to them and LVT registers are reset to 0s except for
+-	 * the mask bits which are set to 1s when APs receive INIT IPI.
+-	 * Always restore the value that BIOS has programmed on AP based on
+-	 * BSP's info we saved since BIOS is always setting the same value
+-	 * for all threads/cores
+-	 */
+-	apic_write(APIC_LVTTHMR, lvtthmr_init);
+-
+ 	h = lvtthmr_init;
+-
+-	if ((l & MSR_IA32_MISC_ENABLE_TM1) && (h & APIC_DM_SMI)) {
+-		printk(KERN_DEBUG
+-		       "CPU%d: Thermal monitoring handled by SMI\n", cpu);
+-		return;
+-	}
+-
+ 	/* Check whether a vector already exists */
+ 	if (h & APIC_VECTOR_MASK) {
+ 		printk(KERN_DEBUG
+ 		       "CPU%d: Thermal LVT vector (%#x) already installed\n",
+ 		       cpu, (h & APIC_VECTOR_MASK));
++		/*
++	 	 * The initial value of thermal LVT entries on all APs always reads
++	 	 * 0x10000 because APs are woken up by BSP issuing INIT-SIPI-SIPI
++	 	 * sequence to them and LVT registers are reset to 0s except for
++	 	 * the mask bits which are set to 1s when APs receive INIT IPI.
++	 	 * Always restore the value that BIOS has programmed on AP based on
++	 	 * BSP's info we saved since BIOS is always setting the same value
++	 	 * for all threads/cores
++	 	*/
++		apic_write(APIC_LVTTHMR, h);
++		return;
++	}
++
++	if ((l & MSR_IA32_MISC_ENABLE_TM1) && (h & APIC_DM_SMI)) {
++		printk(KERN_DEBUG
++		       "CPU%d: Thermal monitoring handled by SMI\n", cpu);
+ 		return;
  	}
+ 
+
