@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573Ab1AGJs2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 04:48:28 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:43936 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754450Ab1AGJsZ convert rfc822-to-8bit (ORCPT
+	id S1754576Ab1AGJxM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 04:53:12 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49735 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754456Ab1AGJxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 04:48:25 -0500
+	Fri, 7 Jan 2011 04:53:10 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=VBNoQvOGd8XYbXTxNojeqzZnJ73atr1C6UofoAj9zCNbqQTcpEpp+j31v5Eby6BqkC
-         A9zcOOh1rA+4bFPInTeG26S49UyuqKsOeOJRVhyVS+c+t14DbOm+cHo1mC/dgsIRztdF
-         d39Pu0PEYB1oer0MJZr/nvr2Xs6/Eh433OTnE=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=MjdZA7qiPDBIvWXBOa2fBr3F/POxCiOiS0tV3J8M5nCR5BzuFVDvnZ1Rzj69Jv3W1d
+         mmEXCQiDLqY0ckw2vGMN5QWBzvDfLUOnrrOeXHK+afkU6vgdnUR2wAN7bUG1JeARZjU9
+         nNMixZNTFoAgV90blSa+bJvI95KDAjWoPhK3k=
+Message-ID: <4D26E282.6040301@gmail.com>
+Date: Fri, 07 Jan 2011 12:53:06 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1101071040470.26685@pobox.suse.cz>
-References: <1294248468-19979-1-git-send-email-benjamin.tissoires@enac.fr>
-	<20110105174927.GB2146@polaris.bitmath.org>
-	<AANLkTikCqufvOgYqqBZLjfmtSdsgyQV4L2HyvEP07+vf@mail.gmail.com>
-	<alpine.LNX.2.00.1101061610270.26685@pobox.suse.cz>
-	<20110107011444.GA7262@core.coreip.homeip.net>
-	<alpine.LNX.2.00.1101071040470.26685@pobox.suse.cz>
-Date: Fri, 7 Jan 2011 10:48:24 +0100
-X-Google-Sender-Auth: lUm9wfSCIgb4YyqqSGpiSBaaFZc
-Message-ID: <AANLkTik7--frFi=9avRMeBHAdrOm+YvvGG-FURKy0JX4@mail.gmail.com>
-Subject: Re: [RFC v2 0/10] hid-multitouch: a first step towards multitouch unification
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Don Zickus <dzickus@redhat.com>
+CC: x86@kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6] x86, NMI: die_notifier and default_do_nmi cleanups
+References: <1294348732-15030-1-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1294348732-15030-1-git-send-email-dzickus@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 7, 2011 at 10:41 AM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Thu, 6 Jan 2011, Dmitry Torokhov wrote:
->
->> > In case the patchset doesn't impose danger of regressions for already
->> > existing devices, we could merge this new 'unified' driver only for newly
->> > supported devices, and finish the unification in 2.6.39.
->>
->> Yep, let's merge the dirver and all new devices in this round and then
->> get ready to convert already supported devices in next window.
->
-> Fully agreed, as I have written elsewhere already.
->
-> Benjamin, when do you expect to have the patches for .38 ready? The merge
-> window is already open, so that I could schedule the merges properly.
+On 01/07/2011 12:18 AM, Don Zickus wrote:
+> This is another version of the NMI rewrite patches I sent previously.  I
+> take it those patches were too thick to be reviewed easily, so I broke out
+> the patches differently to make it easier to review.  Hopefully it doesn't
+> look as scary.
+> 
+> The bulk of the patch adds priorities to the die_chain notifiers for NMI
+> events and removes the DIE_NMI_IPI event.  There are some other cleanups
+> too, which include removing the restriction of the BSP cpu to process 
+> external NMIs.
+> 
+> Cheers,
+> Don
+> 
+> Don Zickus (5):
+>   x86: Convert some devices to use DIE_NMIUNKNOWN
+>   x86, NMI: Add priorities to handlers
+>   x86, NMI: Remove DIE_NMI_IPI
+>   x86, NMI: Allow NMI reason io port (0x61) to be processed on any CPU
+>   x86, NMI: Clean-up default_do_nmi()
+> 
+> Huang Ying (1):
+>   x86, NMI: Add NMI symbol constants and rename memory parity to PCI
+>     SERR
+> 
 
-I'm doing my best to have the v3 today with only the 3 new devices.
-After, we may have to find a consensus for the not ideal
-implementation.
+FWIW, the series looks good to me. Thanks Don.
 
-Cheers,
-Benjamin
-
-
->
-> Thanks,
->
-> --
-> Jiri Kosina
-> SUSE Labs, Novell Inc.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+-- 
+    Cyrill
