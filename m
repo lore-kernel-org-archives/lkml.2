@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864Ab1AGH3r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 02:29:47 -0500
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:36483 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752380Ab1AGH3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 02:29:45 -0500
-Message-ID: <4D26C179.7030704@kernel.dk>
-Date: Fri, 07 Jan 2011 08:32:09 +0100
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the block tree
-References: <20110107110513.30776114.sfr@canb.auug.org.au>
-In-Reply-To: <20110107110513.30776114.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752380Ab1AGHkG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 02:40:06 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:34766 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328Ab1AGHkF convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:5:1>);
+	Fri, 7 Jan 2011 02:40:05 -0500
+Message-Id: <4D26D160020000780002AEBE@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Fri, 07 Jan 2011 07:40:00 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Robert Richter" <robert.richter@amd.com>
+Cc: "Andreas Herrmann3" <Andreas.Herrmann3@amd.com>,
+        "Joerg Roedel" <Joerg.Roedel@amd.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        "JeremyFitzhardinge" <jeremy@goop.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: [PATCH] x86: use PCI method for enabling AMD extended
+	 config  space before MSR method
+References: <4D26028F020000780002AC8A@vpn.id2.novell.com>
+ <20110106172004.GM4739@erda.amd.com>
+In-Reply-To: <20110106172004.GM4739@erda.amd.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-01-07 01:05, Stephen Rothwell wrote:
-> Hi Jens,
+>>> On 06.01.11 at 18:20, Robert Richter <robert.richter@amd.com> wrote:
+> On 06.01.11 11:57:35, Jan Beulich wrote:
+>> +#ifdef CONFIG_AMD_NB
+>> +	/* Try the PCI method first. */
+>> +	if (early_pci_allowed()) {
+>> +		unsigned int i, n;
+>> +
+>> +		for (n = i = 0; !n && amd_bus_dev_ranges[i].dev_limit; ++i) {
+>> +			u8 bus = amd_bus_dev_ranges[i].bus;
+>> +			u8 slot = amd_bus_dev_ranges[i].dev_base;
+>> +			u8 limit = amd_bus_dev_ranges[i].dev_limit;
+>> +
+>> +			for (; slot < limit; ++slot) {
+>> +				u32 val = read_pci_config(bus, slot, 3, 0);
+>> +
+>> +				if (!early_is_k8_nb(val))
+>> +					continue;
+>> +
+>> +				val = read_pci_config(bus, slot, 3, 0x8c);
+>> +				if (!(val & (ENABLE_CF8_EXT_CFG >> 32))) {
+>> +					val |= ENABLE_CF8_EXT_CFG >> 32;
+>> +					write_pci_config(bus, slot, 3, 0x8c,
+>> +							 val);
+>> +				}
+>> +				++n;
+>> +			}
+>> +		}
+>> +		pr_info("Extended Config Space enabled on %u nodes\n", n);
 > 
-> After merging the block tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> arch/powerpc/platforms/built-in.o: In function `.pmf_get_function':
-> (.text+0x723c): undefined reference to `.kref_get'
-> arch/powerpc/platforms/built-in.o: In function `.pmf_unregister_driver':
-> (.text+0x72c8): undefined reference to `.kref_get'
-> arch/powerpc/platforms/built-in.o: In function `.pmf_do_functions':
-> (.text+0x793c): undefined reference to `.kref_get'
-> arch/powerpc/platforms/built-in.o: In function `.__pmf_find_function':
-> (.text+0x7c80): undefined reference to `.kref_get'
-> arch/powerpc/platforms/built-in.o: In function `.pmf_register_driver':
-> (.text+0x8044): undefined reference to `.kref_get'
-> arch/powerpc/platforms/built-in.o:(.text+0x8310): more undefined references to `.kref_get' follow
-> lib/lib.a(kref.o):(__ksymtab+0x10): undefined reference to `kref_get'
-> drivers/built-in.o: In function `.get_current_tty':
-> (.text+0x60970): undefined reference to `.kref_get'
-> drivers/built-in.o: In function `.__proc_set_tty':
-> tty_io.c:(.text+0x61624): undefined reference to `.kref_get'
-> drivers/built-in.o: In function `.tty_init_dev':
-> (.text+0x64d2c): undefined reference to `.kref_get'
-> drivers/built-in.o: In function `.tty_open':
-> tty_io.c:(.text+0x64ee4): undefined reference to `.kref_get'
-> tty_io.c:(.text+0x64f20): undefined reference to `.kref_get'
-> drivers/built-in.o:tty_io.c:(.text+0x64f58): more undefined references to `.kref_get' follow
-> 
-> Caused by commit 15454034cb3021d8bb9d21b4f35072a809197fdd ("block: add
-> internal hd part table references") which removes kref_get() instead of
-> kref_test_and_get()!
-> 
-> This really wasn't tested, right?
+> Isn't i the number of nodes?
 
-Irk, it was tested and booted, but apparently I merged the first bad
-version of the patch.
+No, "i" is the number of PCI devices looked at (but only those that
+pass early_is_k8_nb() are of interest).
 
-> I have used the block tree from next-20110106 for today.
-
-Thanks, I'll get this fixed up now.
-
-
--- 
-Jens Axboe
+Jan
 
