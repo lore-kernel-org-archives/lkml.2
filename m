@@ -1,78 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865Ab1AGPH2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 10:07:28 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:36295 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751129Ab1AGPH1 (ORCPT
+	id S1752377Ab1AGPMR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 10:12:17 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58806 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751941Ab1AGPMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 10:07:27 -0500
-Date: Fri, 7 Jan 2011 16:07:24 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Greg KH <gregkh@suse.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [000/152] 2.6.36.3-stable review
-Message-ID: <20110107150724.GA29082@atrey.karlin.mff.cuni.cz>
-References: <20110106002500.GA3172@kroah.com> <20110106134254.68fa27ac@lxorguk.ukuu.org.uk> <20110106215705.GA30799@suse.de>
+	Fri, 7 Jan 2011 10:12:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ihbOjkhGsnO47nVvAoZ7mczy6VT3T7bXsJX3ueRwStzfkfa4xdfTe0PIvG5L1aqWZJ
+         mAY7gm+nbe6QnIdhOwXeyDTFvv5QJ7+Z8G4dxYTiufHzTPUgW241BLOFm7yqGvlULr7q
+         ACS8GWMrh0R1dv4mJSjqdHxtcPAAFxb3b0FNU=
+Date: Fri, 7 Jan 2011 16:12:10 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Subject: Re: [PATCH] tracing, perf : add cpu hotplug trace events
+Message-ID: <20110107151200.GB1736@nowhere>
+References: <AANLkTimsR3=BKSF8EyASu4_T_vTznw4yEqmxPS8gOQCy@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110106215705.GA30799@suse.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTimsR3=BKSF8EyASu4_T_vTznw4yEqmxPS8gOQCy@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Jan 06, 2011 at 01:42:54PM +0000, Alan Cox wrote:
-> > On Wed, 5 Jan 2011 16:25:00 -0800
-> > Greg KH <gregkh@suse.de> wrote:
-> > 
-> > > 
-> > > This is the start of the stable review cycle for the 2.6.36.3 release.
-> > > There are 152 patches in this series, all will be posted as a response
-> > > to this one.  If anyone has any issues with these being applied, please
-> > > let us know.  If anyone is a maintainer of the proper subsystem, and
-> > > wants to add a Signed-off-by: line to the patch, please respond with it.
-> > 
-> > Look sane on first glance but we don't seem to have a revert for the
-> > serial mess up yet ?
-> > 
-> > > 7a56aa45982bb87bfca98a2832b5ae782c03364a is the first bad commit 
-> > > commit 7a56aa45982bb87bfca98a2832b5ae782c03364a
-> > > Author: Yegor Yefremov <yegor_sub1@visionsystems.de>
-> > > Date:   Wed Jun 16 16:29:55 2010 +0200
-> > > 
-> > >     serial: add UART_CAP_EFR and UART_CAP_SLEEP flags to 16C950 UARTs 
-> > > definition
-> > >     
-> > >     Adding UART_CAP_EFR and UART_CAP_SLEEP flags will enable sleep 
-> > > mode
-> > >     and automatic CTS flow control for 16C950 UARTs. It will also 
-> > > avoid
-> > >     capabilities detection warning like this:
-> > >     
-> > >     "ttyS0: detected caps 00000700 should be 00000100"
-> > >     
-> > >     Signed-off-by: Yegor Yefremov <yegorslists@googlemail.com>
-> > >     Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> > 
-> > 
-> > Has been bisected by several people to be causing failures and reported ?
+On Tue, Jan 04, 2011 at 10:50:36AM +0100, Vincent Guittot wrote:
+> Please find below a proposal for adding new trace events for cpu
+> hotplug.The goal is to measure the latency of each part (kernel,
+> architecture and platform) and also to trace the cpu hotplug activity
+> with other power events. I have tested these traces events on an arm
+> platform
 > 
-> Hm, I saw Pavel reported a problem, but I didn't get a definate "this
-> must be reverted" resolution from that thread.  It looked like we should
-> just drop one of these flags perhaps?
+> Comments are welcome.
 > 
-> I can revert it if it really is an issue, but it needs to be reverted in
-> Linus's tree first, before going to stable.
+> Date: Wed, 15 Dec 2010 11:22:21 +0100
+> Subject: [PATCH] hotplug tracepoint
+> 
+> this patch adds new events for cpu hotplug tracing
+> * plug/unplug sequence
+> * architecture and machine latency measurements
+> 
+> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> ---
+> include/trace/events/hotplug.h |   71 ++++++++++++++++++++++++++++++++++++++++
+> 1 files changed, 71 insertions(+), 0 deletions(-)
+> create mode 100644 include/trace/events/hotplug.h
+> 
+> diff --git a/include/trace/events/hotplug.h b/include/trace/events/hotplug.h
+> new file mode 100644
+> index 0000000..51c86ab
+> --- /dev/null
+> +++ b/include/trace/events/hotplug.h
+> @@ -0,0 +1,71 @@
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM hotplug
+> +
+> +#if !defined(_TRACE_HOTPLUG_H) || defined(TRACE_HEADER_MULTI_READ)
+> +#define _TRACE_HOTPLUG_H
+> +
+> +#include <linux/ktime.h>
+> +#include <linux/tracepoint.h>
+> +
+> +#ifndef _TRACE_HOTPLUG_ENUM_
+> +#define _TRACE_HOTPLUG_ENUM_
+> +enum hotplug_type {
+> + HOTPLUG_UNPLUG = 0,
+> + HOTPLUG_PLUG = 1
+> +};
+> +
+> +enum hotplug_step {
+> + HOTPLUG_KERNEL = 0,
+> + HOTPLUG_ARCH = 1,
+> + HOTPLUG_MACH = 2
+> +};
+> +#endif
+> +
+> +TRACE_EVENT(hotplug_start,
 
-Flow control flag seems to be responsible.
+hotplug is way too generic.
 
-But... it hits me and then... me. So I'd like to see it resolved in
-devel tree, but it may not 100% vital for stable.
+cpu_hotplug may be?
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> +
+> + TP_PROTO(unsigned int type, unsigned int step, unsigned int cpuid),
+
+I feel a bit uncomfortable with these opaque type and step.
+
+What about splitting the events:
+
+	cpu_down_start
+	cpu_down_end
+
+	cpu_up_start
+	cpu_up_end
+
+This ways they are much more self-explanatory.
+
+I also feel uncomfortable about exposing arch step details in core
+tracepoints.
+
+But if we consider the following sequence:
+
+	cpu_down() {
+		__cpu_disable() {
+			platform_cpu_disable();
+		}
+	}
+
+Then exposing start/end of cpu_disable() makes sense, by way of:
+
+	cpu_arch_disable_start
+        cpu_arch_disable_end
+
+        cpu_arch_enable_start
+        cpu_arch_enable_end
+
+
+	cpu_arch_die_start
+        cpu_arch_die_end
+
+        cpu_arch_die_start
+        cpu_arch_die_end
+
+Because they are arch events that you can retrieve everywhere, the tracepoints
+are still called from the code code.
+
+Now for the machine part, it's very highly arch specific, most notably for arm
+so I wonder if it would make more sense to keep that seperate into arch
+tracepoints.
+
+How does that all look? I hope I'm not overengineering.
+
+Creating such series of similar tracepoints is quite easy and quick using
+DECLARE_EVENT_CLASS and DEFINE_EVENT.
+
+> +
+> + TP_ARGS(type, step, cpuid),
+> +
+> + TP_STRUCT__entry(
+> + __field(u32, type)
+> + __field(u32, step)
+> + __field(u32, cpuid)
+> + ),
+
+And please use a proper indentation for trace_events.
+You can have a look at the examples in include/trace/events/
