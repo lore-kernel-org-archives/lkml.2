@@ -1,138 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106Ab1AGDZM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 22:25:12 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:4607 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756088Ab1AGDZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 22:25:09 -0500
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-Date: Thu, 6 Jan 2011 19:24:59 -0800
-From: "Matt Carlson" <mcarlson@broadcom.com>
-To: "Jesse Gross" <jesse@nicira.com>
-cc: "Michael Leun" <lkml20101129@newton.leun.net>,
-        "Matthew Carlson" <mcarlson@broadcom.com>,
-        "Michael Chan" <mchan@broadcom.com>,
-        "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "David Miller" <davem@davemloft.net>,
-        "Ben Greear" <greearb@candelatech.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when vid
- not used
-Message-ID: <20110107032459.GA17959@mcarlson.broadcom.com>
-References: <AANLkTikKkAesHc4Fi4SwAkV0e65D0TQRztrRYoDNu3MP@mail.gmail.com>
- <20101206222703.32fbe852@xenia.leun.net>
- <AANLkTinLMCzKz7n45HdeAwNxsWjCADAkgfK+MjXVcFqh@mail.gmail.com>
- <20101213224510.GB17400@mcarlson.broadcom.com>
- <AANLkTi=9BYt=vkNkAiTBxnfnCjCX7AqCG=ML6coc4vdZ@mail.gmail.com>
- <20101214191500.GD19951@mcarlson.broadcom.com>
- <20101215012430.120fd47f@xenia.leun.net>
- <20101215013431.GA21173@mcarlson.broadcom.com>
- <20101215081606.18e12fc9@xenia.leun.net>
- <AANLkTi=hGRW+DwoKQzxPAZao6-y_tvn6nNXS-tj_-Y6T@mail.gmail.com>
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=hGRW+DwoKQzxPAZao6-y_tvn6nNXS-tj_-Y6T@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-WSS-ID: 613858583P052322942-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Disposition: inline
+	id S1752568Ab1AGDfi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 22:35:38 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:51539 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751545Ab1AGDfh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 22:35:37 -0500
+X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=4xg72MV0qvQA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=QyXUC8HyAAAA:8 a=z6gsHLkEAAAA:8 a=hkCx7ROzYOxGkqFXLYYA:9 a=oEWZ0mD9vkk1ub0oVoxup0W_angA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [[PATCH] trace-cmd: ] Use conditional assignment of CC and AR
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Darren Hart <darren@dvhart.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Darren Hart <dvhart@linux.intel.com>, Tim Bird <tim.bird@am.sony.com>
+In-Reply-To: <1294333733-7746-1-git-send-email-darren@dvhart.com>
+References: <1294333733-7746-1-git-send-email-darren@dvhart.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 06 Jan 2011 22:35:33 -0500
+Message-ID: <1294371333.26623.188.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 18, 2010 at 07:38:00PM -0800, Jesse Gross wrote:
-> On Tue, Dec 14, 2010 at 11:16 PM, Michael Leun
-> <lkml20101129@newton.leun.net> wrote:
-> > OK - all tests done on that DL320G5:
-> >
-> > For completeness, 2.6.37-rc5 unpatched:
-> >
-> > eth0, no vlan configured: totally broken - see double tagged vlans
-> > without tag, single or untagged packets missing at all
+On Thu, 2011-01-06 at 09:08 -0800, Darren Hart wrote:
+> From: Darren Hart <dvhart@linux.intel.com>
 > 
-> Random behavior?  This one is somewhat hard to explain - maybe there
-> are some other factors.  eth0 has ASF on, so it always strips tags.  I
-> would expect it to behave like the vlan configured case.
+> Allow the user to specify CC and AR via the environment by only
+> setting them in the Makefile if they don't already exist. This is
+> useful for external build systems for example.
 > 
-> >
-> > eth0, vlan configured: see packets without vlan tag (see double tagged
-> > packets with one vlan tag)
-> 
-> Both ASF and vlan group configured cause tag stripping to be enabled.
-> Missing tag.
-> 
-> >
-> > eth1 same as originally reported:
-> > without vlan configured see vlan tags (single and double tagged as
-> > expected)
-> 
-> No ASF and no vlan group means tag stripping is disabled.  Have tag.
-> 
-> > with vlan configured: see packets without vlan tag (see double tagged
-> > packets with one vlan tag)
-> 
-> Configuring vlan group causes stripping to be enabled.  Missing tag.
-> 
-> >
-> >
-> > 2.6.37-rc5, your tg3 use new vlan-code patch:
-> >
-> > eth0, no vlan configured: ?see packets without vlan tag (see double
-> > tagged packets with one vlan tag)
-> 
-> ASF enables tag stripping.  Missing tag.
-> 
-> > eth1, no vlan configured: see vlan tags (single and double tagged as
-> > expected)
-> 
-> No ASF, no vlan group means no stripping.  Have tag.
-> 
-> >
-> >
-> > eth0, vlan configured: as without vlan
-> 
-> ASF enables stripping.  Missing tag.
-> 
-> > eth1, vlan configured: as without vlan
-> 
-> With this patch vlan stripping is only enabled when ASF is on, so no
-> stripping.  Have tag.
-> 
-> >
-> > 2.6.37-rc5, your tg3 use new vlan-code patch with test patch ontop
-> >
-> > eth1 no vlan configured: see packets without vlan tag (see double tagged
-> > packets with one vlan tag)
-> 
-> With the second patch, vlan stripping is always enabled.  Missing tag.
-> 
-> > eth1 with vlan: the same
-> 
-> Stripping still always enabled.  Missing tag.
-> 
-> The bottom line is whenever vlan stripping is enabled we're missing
-> the outer tag.  It might be worth adding some debugging in the area
-> before napi_gro_receive/vlan_gro_receive (depending on version).  My
-> guess is that (desc->type_flags & RXD_FLAG_VLAN) is false even for
-> vlan packets on this NIC.
-> 
-> You said that everything works on the 5752?  Matt, is it possible that
-> the 5714 either has a problem with vlan stripping or a different way
-> of reporting it?
+> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+> CC: Tim Bird <tim.bird@am.sony.com>
 
-I don't think this is a 5714 specific issue.  I think the problem is
-rooted in the fact that the VLAN tag stripping is enabled.
+Applied,
 
-Your RXD_FLAG_VLAN idea sounds unlikely to me, but it's worth a check.
+Thanks Darren!
 
-The patch here is using __vlan_hwaccel_put_tag(), which informs the
-stack a VLAN tag is present.  If this is indeed a reporting problem, I'm
-not sure what else the driver should be doing.
+-- Steve
 
-> Also, why does ASF require vlan stripping?
-
-This is a firmware limitation.
 
