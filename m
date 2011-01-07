@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab1AGI3c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 03:29:32 -0500
-Received: from kramwerk.de ([62.75.162.77]:42170 "EHLO mail.kramwerk.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751760Ab1AGI3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 03:29:30 -0500
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-From: Florian Kriener <florian@kriener.org>
-To: Nick Piggin <npiggin@gmail.com>
-Subject: Re: BUG in fs/inode.c:429
-Date: Fri, 7 Jan 2011 09:29:28 +0100
-User-Agent: KMail
-References: <201101061735.40060.florian@kriener.org> <AANLkTi=QDTt=QYwf3+jr0jWd6D3HiBNaOh_sOG6hey=s@mail.gmail.com>
-In-Reply-To: <AANLkTi=QDTt=QYwf3+jr0jWd6D3HiBNaOh_sOG6hey=s@mail.gmail.com>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101070929.28672.florian@kriener.org>
+	id S1753749Ab1AGIac (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 03:30:32 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46720 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752022Ab1AGIab (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 03:30:31 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=P6PBhy1buvk/pP3uaQAPeMQVyVv7c/NeFQMOktbo+h9YEkRYCe1PYuDCFZDmydlwqZ
+         MDUKjxGhduF7V+p0RCT67syT7fjioX99WYwwMzvptYr0+0rxrxW9QnHArhCyrPfnthcj
+         mX1SP7inOEc1i+0lo5Ejxqxj0UF2tLhXJZ6MQ=
+Subject: Re: [058/152] tcp: protect sysctl_tcp_cookie_size reads
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: William Allen Simpson <william.allen.simpson@gmail.com>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>
+In-Reply-To: <4D2691D4.3060304@gmail.com>
+References: <20110106002302.141581701@clark.site>
+	 <4D2691D4.3060304@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 Jan 2011 09:30:25 +0100
+Message-ID: <1294389025.2704.95.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 January 2011 01:44:49 you wrote:
-> On Fri, Jan 7, 2011 at 3:35 AM, Florian Kriener <florian@kriener.org> 
-> > [ 4626.750273] ------------[ cut here ]------------
-> > [ 4626.750314] kernel BUG at
-> > /build/buildd-linux-2.6_2.6.37~rc7-1~experimental.1-amd64-
-> > Mw4Tor/linux-2.6-2.6.37~rc7/debian/build/source_amd64_none/fs/inod
-> > e.c:429!
+Le jeudi 06 janvier 2011 à 23:08 -0500, William Allen Simpson a écrit :
+> Thank you for bringing this to my attention.  There's been quite a few
+> changes in the 18 months since this function was originally written.
 > 
-> Is this an unpatched kernel? ie.
-> BUG_ON(!list_empty(&inode->i_data.private_list));
-
-I checked, and yes, that's the line.
- 
-> > I am using 2.6.37-rc7 from Debian experimental and all my
-> > filesystems are ext4 except for /boot, which is ext2 (and /tmp is
-> > tmpfs).
+> The overall purpose of the patch seems OK, although most of the patch
+> has nothing to do with the purported fix.
 > 
-> Definitely no other filesystems? Too bad frame pointers are turned
-> off, but it seems perhaps default evict_inode is being used, which
-> doesn't do invalidate_inode_buffers(). ext2/3/4/fat/udf all seem to
-> do the right thing here, though.
+> That is, somebody preferred to alter conditions and remove braces.  Seems
+> harder to read to me!  I'm surprised that this passed checkpatch.pl?
+> 
 
-% mount
-/dev/mapper/nanuk-root on / type ext4 (rw,noatime,errors=remount-ro,acl,commit=0)
-tmpfs on /lib/init/rw type tmpfs (rw,nosuid,mode=0755)
-proc on /proc type proc (rw,noexec,nosuid,nodev)
-sysfs on /sys type sysfs (rw,noexec,nosuid,nodev)
-udev on /dev type tmpfs (rw,mode=0755)
-tmpfs on /dev/shm type tmpfs (rw,nosuid,nodev)
-devpts on /dev/pts type devpts (rw,noexec,nosuid,gid=5,mode=620)
-/dev/sda1 on /boot type ext2 (rw,noatime)
-tempfs on /tmp type tmpfs (rw,noatime,mode=1777)
-/dev/mapper/nanuk-home on /home type ext4 (rw,noatime,acl,commit=0)
-binfmt_misc on /proc/sys/fs/binfmt_misc type binfmt_misc (rw,noexec,nosuid,nodev)
+Hi William, here is somebody talking to you.
 
-and that's all. I have an external hard drive, that is not shown above, but
-its ext4 there too.
- 
-> If it's happening semi frequently, could you compile a vanilla 2.6.37
-> with the same .config, just turn on frame pointers, and report if it
-> happens again?
+This part of the code was exactly what you wrote, with no change.
 
-I'll do that. But I don't know how to turn frame pointers on. Is that a config
-option? I only know of the -fomit-frame-pointers gcc option. If I understand
-correctly that would be a small to medium performance hit, am I right?
+http://patchwork.ozlabs.org/patch/40126/
 
-> Dumping the inode->i_ops symbol name before going BUG in fact
-> might be helpful too.
+Are you telling us somebody else added bug to your code ?
+This is not the case, obviously.
 
-Again, I'll do that if you tell me how to.
+After bug fix and cleanup code looks good, and even checkpatch.pl is
+fine with it. No need for useless brackets around "return XXX;"
+If I remember well, I did the cleanup so that my patch could not trigger
+checkpatch.pl errors/warnings. Not that I am a particular checkpatch
+fan, but I know some people are.
 
-Sorry for beeing such a noop.
+By the way, you were CCed when I sent one month ago the mail to
+David/netdev. And no reaction from you at that time.
 
-Thanks,
-Flo.
+
+
