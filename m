@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316Ab1AGN2U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 08:28:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14669 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752576Ab1AGN2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 08:28:19 -0500
-Date: Fri, 7 Jan 2011 09:55:27 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 2/3] KVM: send IPI to vcpu only when it's in guest mode
-Message-ID: <20110107115527.GA13196@amt.cnet>
-References: <4D26C4D4.30303@cn.fujitsu.com>
- <4D26C527.9090403@cn.fujitsu.com>
+	id S1753328Ab1AGNaF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 08:30:05 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:57338 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752576Ab1AGNaD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 08:30:03 -0500
+Date: Fri, 7 Jan 2011 08:30:02 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: torvalds@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] hfsplus updates
+Message-ID: <20110107133002.GA27044@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D26C527.9090403@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 07, 2011 at 03:47:51PM +0800, Xiao Guangrong wrote:
-> We can interrupt the vcpu only when it's running in guest mode
-> to reduce IPI
-> 
-> It looks like only ia64 and x86 need to send IPI to other vcpus, so
-> i only add the implementation of 'vcpu->guest_mode' in ia64, but i
-> don't know ia64 well, please point out the right way for me if the
-> implementation is incorrect
-> 
-> Also reorganize struct kvm_vcpu to make ->guest_mode and ->requests
-> in the same cache line explicitly.
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-> ---
->  arch/ia64/kvm/kvm-ia64.c |    2 ++
->  arch/x86/kvm/x86.c       |    6 +++++-
->  include/linux/kvm_host.h |    9 +++++----
->  virt/kvm/kvm_main.c      |    7 ++++++-
->  4 files changed, 18 insertions(+), 6 deletions(-)
-> 
+Hi Linus,
 
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index b1b6cbb..a475264 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -153,7 +153,12 @@ static bool make_all_cpus_request(struct kvm *kvm, unsigned int req)
->  		if (kvm_make_check_request(req, vcpu))
->  			continue;
->  		cpu = vcpu->cpu;
-> -		if (cpus != NULL && cpu != -1 && cpu != me)
-> +
-> +		/* Set ->requests bit before we read ->guest_mode */
-> +		smp_mb();
-> +
-> +		if (cpus != NULL && cpu != -1 && cpu != me &&
-> +		      atomic_read(&vcpu->guest_mode))
->  			cpumask_set_cpu(cpu, cpus);
+please pull the hfsplus updates for this merge window.  The most
+important bits is fixing up fsync and sync to actually work correctly.
+In addition to that hfsplus also stops using buffer heads for it's
+superblock (volume header) as it needs to be accesses at 512 byte
+granularity.  The rest is various small patches and a couple of cleanups
+contributed by Anton.
 
-Don't think this is safe, since guest_mode does not imply that a vcpu
-has received the IPI, only that IPI has been sent (see kvm_vcpu_kick).
 
-And make_all_cpus_request must guarantee all target vcpus are out of
-guest mode before it returns.
+The following changes since commit ff8b16d7e15a8ba2a6086645614a483e048e3fbf:
+
+  vmstat: fix offset calculation on void* (2010-11-03 14:39:58 -0400)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/hch/hfsplus.git for-next
+
+Anton Salikhmetov (5):
+      hfsplus: fix an artifact in ioctl flag checking
+      hfsplus: over 80 character lines clean-up
+      hfsplus: C99 comments clean-up
+      hfsplus: spaces/indentation clean-up
+      hfsplus: %L-to-%ll, macro correction, and remove unneeded braces
+
+Christoph Hellwig (12):
+      hfsplus: fix option parsing during remount
+      hfsplus: silence a few debug printks
+      hfsplus: always use hfsplus_sync_fs to write the volume header
+      hfsplus: use raw bio access for the volume headers
+      hfsplus: use raw bio access for partition tables
+      hfsplus: make sure sync writes out all metadata
+      hfsplus: avoid useless work in hfsplus_sync_fs
+      hfsplus: simplify fsync
+      hfsplus: write up fsync for directories
+      hfsplus: split up inode flags
+      hfsplus: optimize fsync
+      hfsplus: flush disk caches in sync and fsync
+
+ fs/hfsplus/bfind.c       |    6 +-
+ fs/hfsplus/bitmap.c      |    3 +-
+ fs/hfsplus/bnode.c       |   70 +++++++++++-------
+ fs/hfsplus/brec.c        |   28 +++++---
+ fs/hfsplus/btree.c       |   33 ++++++---
+ fs/hfsplus/catalog.c     |   85 ++++++++++++++--------
+ fs/hfsplus/dir.c         |   37 +++++++---
+ fs/hfsplus/extents.c     |   96 ++++++++++++++++---------
+ fs/hfsplus/hfsplus_fs.h  |  125 +++++++++++++++++++-------------
+ fs/hfsplus/hfsplus_raw.h |    3 +-
+ fs/hfsplus/inode.c       |   89 +++++++++++++++--------
+ fs/hfsplus/ioctl.c       |    6 +-
+ fs/hfsplus/options.c     |   44 +++++++++++-
+ fs/hfsplus/part_tbl.c    |  129 +++++++++++++++++++--------------
+ fs/hfsplus/super.c       |  130 ++++++++++++++++++++-------------
+ fs/hfsplus/unicode.c     |   41 +++++++----
+ fs/hfsplus/wrapper.c     |  178 +++++++++++++++++++++++++++++-----------------
+ 17 files changed, 703 insertions(+), 400 deletions(-)
 
