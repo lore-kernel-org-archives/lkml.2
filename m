@@ -1,152 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab1AGSmH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 13:42:07 -0500
-Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:54652 "EHLO
-	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755311Ab1AGSmC (ORCPT
+	id S1755408Ab1AGSmr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 13:42:47 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:46543 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755050Ab1AGSmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 13:42:02 -0500
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-To: Stephane Chatty <chatty@enac.fr>, Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Subject: [RFC v3 5/5] hid-mulitouch: added support for the 'Sensing Win7-TwoFinger'
-Date: Fri,  7 Jan 2011 19:42:42 +0100
-Message-Id: <1294425762-29730-6-git-send-email-benjamin.tissoires@enac.fr>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1294425762-29730-1-git-send-email-benjamin.tissoires@enac.fr>
-References: <1294425762-29730-1-git-send-email-benjamin.tissoires@enac.fr>
+	Fri, 7 Jan 2011 13:42:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=fdMN6p32nb9UG2Qw1Lxb3kte6tpZbiItrUY6blEFRvreEyRCEYqBfzygO2jTq1R7OL
+         g1xIicexO19O/mMKtJTlXg4kf8dnroCR+bbpY2rYP3E2IgwPeLFzOFDBmWRFjiBtkQ3N
+         4Ld4bEiPZdf5e15Qa7BHHfmdY27wF2w4Ghk14=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <4D25AF02.60208@gmail.com>
+References: <4D25AF02.60208@gmail.com>
+Date: Fri, 7 Jan 2011 10:42:44 -0800
+X-Google-Sender-Auth: Xs8YzW5U4lzO_lLSdusQ3dk8Hh4
+Message-ID: <AANLkTimGt5hi+TpFHWxktJEg3tcDQmmARdqFqzAt++OQ@mail.gmail.com>
+Subject: Re: [PATCH 01/17] pramfs: documentation
+From: Tony Luck <tony.luck@intel.com>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Tim Bird <tim.bird@am.sony.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added support for the 'Sensing Win7-TwoFinger' panel by GeneralTouch found on some tablets.
+On Thu, Jan 6, 2011 at 4:01 AM, Marco Stornelli
+<marco.stornelli@gmail.com> wrote:
+> +accessed data that must survive system reboots and power cycles. An
+> +example usage might be system logs under /var/log, or a user address
+> +book in a cell phone or PDA.
 
-Because of conflicting VID/PID, this conflicts with previous support for some single-touch panels by GeneralTouch
+Some usage model questions:
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Signed-off-by: Stéphane Chatty <chatty@enac.fr>
----
- drivers/hid/Kconfig          |    1 +
- drivers/hid/hid-core.c       |    2 +-
- drivers/hid/hid-ids.h        |    1 +
- drivers/hid/hid-multitouch.c |   18 +++++++++++++++++-
- 4 files changed, 20 insertions(+), 2 deletions(-)
+How do you handle errors?  I see that there are a few sanity checks in the
+"mount" path ... but there would seem to be several opportunities for the
+file system to get corrupted in other ways.  Since you don't have a block
+device, a standard "fsck" program looks challenging (though I guess you
+could mmap("/dev/mem") to peek & poke at the filesystem before trying
+to mount it).  Some sort of recovery path would seem useful for the "address
+book" use model ... or do you just expect users to back their address book
+up (to the cloud?) and have the phone just make a clean filesystem if any
+errors are found?
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index de31d75..9bd2148 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -294,6 +294,7 @@ config HID_MULTITOUCH
- 	  Say Y here if you have one of the following devices:
- 	  - PixCir touchscreen
- 	  - Cypress TrueTouch
-+	  - 'Sensing Win7-TwoFinger' panel by GeneralTouch
- 
- config HID_NTRIG
- 	tristate "N-Trig touch screen"
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index e6a86bf..a41290d 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1309,6 +1309,7 @@ static const struct hid_device_id hid_blacklist[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_EZKEY, USB_DEVICE_ID_BTC_8193) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GAMERON, USB_DEVICE_ID_GAMERON_DUAL_PSX_ADAPTOR) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GAMERON, USB_DEVICE_ID_GAMERON_DUAL_PCS_ADAPTOR) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH, USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GREENASIA, 0x0003) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GREENASIA, 0x0012) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE) },
-@@ -1612,7 +1613,6 @@ static const struct hid_device_id hid_ignore_list[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ESSENTIAL_REALITY, USB_DEVICE_ID_ESSENTIAL_REALITY_P5) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ETT, USB_DEVICE_ID_TC5UH) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ETT, USB_DEVICE_ID_TC4UM) },
--	{ HID_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH, 0x0001) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH, 0x0002) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH, 0x0003) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH, 0x0004) },
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index c258c42..a97983e 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -226,6 +226,7 @@
- #define USB_DEVICE_ID_GAMERON_DUAL_PCS_ADAPTOR	0x0002
- 
- #define USB_VENDOR_ID_GENERAL_TOUCH	0x0dfc
-+#define USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS 0x0001
- 
- #define USB_VENDOR_ID_GLAB		0x06c2
- #define USB_DEVICE_ID_4_PHIDGETSERVO_30	0x0038
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 7af9f71..3442ed5 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -33,6 +33,7 @@ MODULE_LICENSE("GPL");
- #define MT_QUIRK_NOT_SEEN_MEANS_UP	(1 << 0)
- #define MT_QUIRK_SLOT_IS_CONTACTID	(1 << 1)
- #define MT_QUIRK_CYPRESS	(1 << 2)
-+#define MT_QUIRK_SLOT_IS_CONTACTNUMBER	(1 << 3)
- 
- struct mt_slot {
- 	__s32 x, y, p, w, h;
-@@ -63,7 +64,8 @@ struct mt_class {
- /* classes of device behavior */
- #define MT_CLS_DEFAULT 0
- #define MT_CLS_DUAL1 1
--#define MT_CLS_CYPRESS 2
-+#define MT_CLS_DUAL2 2
-+#define MT_CLS_CYPRESS 3
- 
- /*
-  * these device-dependent functions determine what slot corresponds
-@@ -75,6 +77,11 @@ static int slot_is_contactid(struct mt_device *td)
- 	return td->curdata.contactid;
- }
- 
-+static int slot_is_contactnumber(struct mt_device *td)
-+{
-+	return td->num_received;
-+}
-+
- static int cypress_compute_slot(struct mt_device *td)
- {
- 	if (td->curdata.contactid != 0 || td->num_received == 0)
-@@ -105,6 +112,7 @@ static int find_slot_from_contactid(struct mt_device *td)
- struct mt_class mt_classes[] = {
- 	{ 0, 0, 0, 10 },                             /* MT_CLS_DEFAULT */
- 	{ MT_QUIRK_SLOT_IS_CONTACTID, 0, 0, 2 },     /* MT_CLS_DUAL1 */
-+	{ MT_QUIRK_SLOT_IS_CONTACTNUMBER, 0, 0, 10 },    /* MT_CLS_DUAL2 */
- 	{ MT_QUIRK_CYPRESS | MT_QUIRK_NOT_SEEN_MEANS_UP, 0, 0, 10 }, /* MT_CLS_CYPRESS */
- };
- 
-@@ -237,6 +245,9 @@ static int mt_compute_slot(struct mt_device *td)
- 	if (cls->quirks & MT_QUIRK_CYPRESS)
- 		return cypress_compute_slot(td);
- 
-+	if (cls->quirks & MT_QUIRK_SLOT_IS_CONTACTNUMBER)
-+		return slot_is_contactnumber(td);
-+
- 	return find_slot_from_contactid(td);
- }
- 
-@@ -441,6 +452,11 @@ static const struct hid_device_id mt_devices[] = {
- 		HID_USB_DEVICE(USB_VENDOR_ID_CYPRESS,
- 			USB_DEVICE_ID_CYPRESS_TRUETOUCH) },
- 
-+	/* GeneralTouch panel */
-+	{ .driver_data = MT_CLS_DUAL2,
-+		HID_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-+			USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS) },
-+
- 	/* PixCir-based panels */
- 	{ .driver_data = MT_CLS_DUAL1,
- 		HID_USB_DEVICE(USB_VENDOR_ID_HANVON,
--- 
-1.7.3.4
+What about quotas?  You have a fixed amount of persistent space, and
+presumably a number of apps that the user installs on their device that
+may like to use pramfs to store data.  Do you need some kernel enforcement
+to stop one rogue application from using up all the space? Or do you expect that
+this would be handled in some library level interface that applications will
+use to access pramfs?
 
+-Tony
