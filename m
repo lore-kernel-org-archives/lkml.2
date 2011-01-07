@@ -1,81 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab1AGX3J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 18:29:09 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52294 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab1AGX3F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 18:29:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=tTFK+DBWg8fmEaF21CwFEJ5wXVND03udVtQ5ZxKcwBEevnKhsTlx2wYmPPcZBxJqpN
-         Do3dJ5Di3X+eoUjLgM39hqAqhUuWrHGw6eP97hkDYAoCsFrIXIXddTb//75BYfs1lHxT
-         0Exe2e7DveHPZQLqDq+D00hKZGiy6izV4S5hI=
-Message-ID: <4D27A1BC.4080802@gmail.com>
-Date: Sat, 08 Jan 2011 00:29:00 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: Jiri Slaby <jslaby@suse.cz>, jbarnes@virtuousgeek.org,
-        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+	id S1752177Ab1AGX35 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 18:29:57 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:40678 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751823Ab1AGX3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 18:29:55 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] cpuidle: Make cpuidle_enable_device() call poll_idle_init()
+Date: Sat, 8 Jan 2011 00:29:20 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37+; KDE/4.4.4; x86_64; ; )
+Cc: Len Brown <lenb@kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH 1/1] PCI: tune up ICH4 quirk for broken BIOSes
-References: <1294327066-23518-1-git-send-email-jslaby@suse.cz> <201101061224.40596.bjorn.helgaas@hp.com> <4D277B33.1000508@gmail.com> <201101071603.29999.bjorn.helgaas@hp.com>
-In-Reply-To: <201101071603.29999.bjorn.helgaas@hp.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-15
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201101080029.20744.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2011 12:03 AM, Bjorn Helgaas wrote:
-> On Friday, January 07, 2011 01:44:35 pm Jiri Slaby wrote:
->> On 01/06/2011 08:24 PM, Bjorn Helgaas wrote:
->>> Theoretically, ACPI tells us about the GPIO/TCO/etc. regions in a
->>> generic way via namespace devices or something in the static tables.
->>> Is that generic information missing, or is it there and Linux is
->>> ignoring it?  If we're ignoring it, I'd rather fix that.
->>
->> It works for most boxes I would say. Try to google for "claimed by ICH4
->> ACPI/GPIO/TCO", it reports sane ranges like 0400-047f or 4000-407f.
-> 
-> My point is that BIOS should be telling the OS about GPIO/TCO/etc.
-> regions via an ACPI mechanism, and, ideally, we would use that rather
-> than reading the address out of chipset-dependent registers.
-> 
-> Even though PMBASE says the ACPI registers occupy 128 bytes from
-> 0x100-0x17f, it's likely there's no actual conflict between the
-> last 16 bytes and the IDE device.
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-I wouldn't say so. According to the datasheet 0x60-0x7f of the space
-(i.e. 0x160-0x17f here) is for TCO registers. There:
-0x10 -- Software IRQ Generation Register (i.e. 0x170)
-0x11-0x1f -- reserved (0x171-0x17f)
+The following scenario is possible with the current cpuidle code and
+the ACPI cpuidle driver:
+(1) acpi_processor_cst_has_changed() is called,
+(2) cpuidle_disable_device() is called,
+(3) cpuidle_remove_state_sysfs() is called to remove the (presumably
+    outdated) states info from sysfs,
+(3) acpi_processor_get_power_info() is called, the first entry in the
+    pr->power.states[] table is filled with zeros,
+(4) acpi_processor_setup_cpuidle() is called and it doesn't fill the
+    first entry in pr->power.states[],
+(5) cpuidle_enable_device() is called,
+(6) __cpuidle_register_device() is _not_ called, since the device has
+    already been registered,
+(7) Consequently, poll_idle_init() is _not_ called either,
+(8) cpuidle_add_state_sysfs() is called to create the sysfs attributes
+    for the new states and it uses the bogus first table entry from
+    acpi_processor_get_power_info() for creating state0.
 
-So at least 0x170 should be conflicting. Unless TCO is unused/disabled
-and not mapped there at all. May be that the case?
+This problem will be avoided if cpuidle_enable_device() calls
+poll_idle_init() for dev->registered different from zero.
 
-> ACPI probably reports this region via the FADT (the GPE PM register
-> blocks) and possibly a PNP0C02 device.  These will probably report
-> something that doesn't conflict with the legacy IDE ports, i.e., a
-> subset of the 0x100-0x17f range.
-> 
-> Ooooh, I notice in the bugzilla that something's wrong with SMBIOS
-> (comment 29) and ACPI is disabled because we couldn't find the
-> RSDP (dmesg in comment 27).  What sort of machine is this, anyway?
-> We didn't find PNPBIOS, either.
+Reported-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/cpuidle/cpuidle.c |   80 +++++++++++++++++++++++-----------------------
+ 1 file changed, 41 insertions(+), 39 deletions(-)
 
-Hmm, it looks like some old crap. What exact information you would like
-to know? I've just asked if ACPI is not disabled in BIOS. There should
-be no machine without ACPI running still in the 21st century, I think.
-
-thanks,
--- 
-js
+Index: linux-2.6/drivers/cpuidle/cpuidle.c
+===================================================================
+--- linux-2.6.orig/drivers/cpuidle/cpuidle.c
++++ linux-2.6/drivers/cpuidle/cpuidle.c
+@@ -154,6 +154,45 @@ void cpuidle_resume_and_unlock(void)
+ 
+ EXPORT_SYMBOL_GPL(cpuidle_resume_and_unlock);
+ 
++#ifdef CONFIG_ARCH_HAS_CPU_RELAX
++static int poll_idle(struct cpuidle_device *dev, struct cpuidle_state *st)
++{
++	ktime_t	t1, t2;
++	s64 diff;
++	int ret;
++
++	t1 = ktime_get();
++	local_irq_enable();
++	while (!need_resched())
++		cpu_relax();
++
++	t2 = ktime_get();
++	diff = ktime_to_us(ktime_sub(t2, t1));
++	if (diff > INT_MAX)
++		diff = INT_MAX;
++
++	ret = (int) diff;
++	return ret;
++}
++
++static void poll_idle_init(struct cpuidle_device *dev)
++{
++	struct cpuidle_state *state = &dev->states[0];
++
++	cpuidle_set_statedata(state, NULL);
++
++	snprintf(state->name, CPUIDLE_NAME_LEN, "C0");
++	snprintf(state->desc, CPUIDLE_DESC_LEN, "CPUIDLE CORE POLL IDLE");
++	state->exit_latency = 0;
++	state->target_residency = 0;
++	state->power_usage = -1;
++	state->flags = CPUIDLE_FLAG_POLL;
++	state->enter = poll_idle;
++}
++#else
++static void poll_idle_init(struct cpuidle_device *dev) {}
++#endif /* CONFIG_ARCH_HAS_CPU_RELAX */
++
+ /**
+  * cpuidle_enable_device - enables idle PM for a CPU
+  * @dev: the CPU
+@@ -176,6 +215,8 @@ int cpuidle_enable_device(struct cpuidle
+ 		ret = __cpuidle_register_device(dev);
+ 		if (ret)
+ 			return ret;
++	} else {
++		poll_idle_init(dev);
+ 	}
+ 
+ 	if ((ret = cpuidle_add_state_sysfs(dev)))
+@@ -232,45 +273,6 @@ void cpuidle_disable_device(struct cpuid
+ 
+ EXPORT_SYMBOL_GPL(cpuidle_disable_device);
+ 
+-#ifdef CONFIG_ARCH_HAS_CPU_RELAX
+-static int poll_idle(struct cpuidle_device *dev, struct cpuidle_state *st)
+-{
+-	ktime_t	t1, t2;
+-	s64 diff;
+-	int ret;
+-
+-	t1 = ktime_get();
+-	local_irq_enable();
+-	while (!need_resched())
+-		cpu_relax();
+-
+-	t2 = ktime_get();
+-	diff = ktime_to_us(ktime_sub(t2, t1));
+-	if (diff > INT_MAX)
+-		diff = INT_MAX;
+-
+-	ret = (int) diff;
+-	return ret;
+-}
+-
+-static void poll_idle_init(struct cpuidle_device *dev)
+-{
+-	struct cpuidle_state *state = &dev->states[0];
+-
+-	cpuidle_set_statedata(state, NULL);
+-
+-	snprintf(state->name, CPUIDLE_NAME_LEN, "C0");
+-	snprintf(state->desc, CPUIDLE_DESC_LEN, "CPUIDLE CORE POLL IDLE");
+-	state->exit_latency = 0;
+-	state->target_residency = 0;
+-	state->power_usage = -1;
+-	state->flags = CPUIDLE_FLAG_POLL;
+-	state->enter = poll_idle;
+-}
+-#else
+-static void poll_idle_init(struct cpuidle_device *dev) {}
+-#endif /* CONFIG_ARCH_HAS_CPU_RELAX */
+-
+ /**
+  * __cpuidle_register_device - internal register function called before register
+  * and enable routines
