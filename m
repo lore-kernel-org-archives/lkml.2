@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429Ab1AGUnh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 15:43:37 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:59621 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab1AGUng (ORCPT
+	id S1752556Ab1AGUoE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 15:44:04 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32413 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498Ab1AGUoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 15:43:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=x7OwgkUUwl6FvuVh3tzv4DudUkpGe+ntOskSxRtVfLQGz51piB3nvVbXjVmkWtEehk
-         +5JmFYfnb5GZiszOdREOcmd4zoI2ucUrXRLLnWC8gr2IkRpvmADwavIzvD32XsGW8ckp
-         t8mjn9nfCHrmvRUzkz4y9YPgXF+DDip+prPTc=
-Date: Fri, 7 Jan 2011 15:43:32 -0500
-From: Tejun Heo <tj@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
-        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: unify "numa=" command line option handling
-Message-ID: <20110107204332.GE7355@mtj.dyndns.org>
-References: <4D2603BF020000780002ACA7@vpn.id2.novell.com>
- <alpine.DEB.2.00.1101061235010.30820@chino.kir.corp.google.com>
- <20110107203304.GC7355@mtj.dyndns.org>
- <alpine.DEB.2.00.1101071234590.31653@chino.kir.corp.google.com>
+	Fri, 7 Jan 2011 15:44:03 -0500
+Message-ID: <4D277A8C.5010502@kernel.org>
+Date: Fri, 07 Jan 2011 12:41:48 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1101071234590.31653@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ingo Molnar <mingo@elte.hu>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] memblock: Don't adjust size in memblock_find_base()
+References: <AANLkTikknHfA4TQw+SMH-EyJBHoNHXk8Rheq4=K4jNWA@mail.gmail.com> <alpine.DEB.2.00.1012291637270.6040@chino.kir.corp.google.com> <4D1BD928.50701@zytor.com> <alpine.DEB.2.00.1012291702180.7374@chino.kir.corp.google.com> <4D1BE615.4000700@zytor.com> <20101230090648.GB7306@elte.hu> <20101230102815.GA29822@elte.hu> <20101230103002.GA30020@elte.hu> <AANLkTimeqrLzDuqBoSvmkSJWMc7u3PeRf37vjzBca2Lh@mail.gmail.com> <AANLkTimpyRXS9dNFATh4GqtA46uynutAvK7Qb5S7WPFO@mail.gmail.com> <20110105134434.GA22816@elte.hu>
+In-Reply-To: <20110105134434.GA22816@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 07, 2011 at 12:36:41PM -0800, David Rientjes wrote:
-> I don't think it applies cleanly anymore since d906f0eb was merged, but I 
-> agree with Jan that this new feature should probably be merged for .38.
 
-Okay, the series is already too late for this merge window at this
-point anyway.  I'm not too happy how the merge process is progressing
-but, well, it seems there needs to be another refresh.  Anyways,
-please let me know when the series needs to be refreshed.
+While applying patch to use memblock to find aperture for 64bit x86.
+Ingo found system with 1g + force_iommu
 
-Thanks.
+> No AGP bridge found
+> Node 0: aperture @ 38000000 size 32 MB
+> Aperture pointing to e820 RAM. Ignoring.
+> Your BIOS doesn't leave a aperture memory hole
+> Please enable the IOMMU option in the BIOS setup
+> This costs you 64 MB of RAM
+> Cannot allocate aperture memory hole (0,65536K)
 
--- 
-tejun
+the corresponding code:
+	addr = memblock_find_in_range(0, 1ULL<<32, aper_size, 512ULL<<20);
+	if (addr == MEMBLOCK_ERROR || addr + aper_size > 0xffffffff) {
+		printk(KERN_ERR
+			"Cannot allocate aperture memory hole (%lx,%uK)\n",
+				addr, aper_size>>10);
+		return 0;
+	}
+	memblock_x86_reserve_range(addr, addr + aper_size, "aperture64")
+
+it fails because memblock core code align the size with 512M. that could make
+size way too big.
+
+So don't align the size in that case.
+
+actually __memblock_alloc_base, the another caller already align that before calling that function.
+
+BTW. x86 does not use __memblock_alloc_base...
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ mm/memblock.c |    2 --
+ 1 file changed, 2 deletions(-)
+
+Index: linux-2.6/mm/memblock.c
+===================================================================
+--- linux-2.6.orig/mm/memblock.c
++++ linux-2.6/mm/memblock.c
+@@ -137,8 +137,6 @@ static phys_addr_t __init_memblock membl
+ 
+ 	BUG_ON(0 == size);
+ 
+-	size = memblock_align_up(size, align);
+-
+ 	/* Pump up max_addr */
+ 	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
+ 		end = memblock.current_limit;
