@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab1AGTMY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 14:12:24 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:52089 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755116Ab1AGTMW (ORCPT
+	id S1755420Ab1AGTOJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 14:14:09 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:45978 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755021Ab1AGTOF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 14:12:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=P4kt0d2PBW9yXPI3wqwwUC12qOXKGcZ59R9HK56W1uSwkVcG3mtkA0qM4tEiB1KUsK
-         /fTh5L/FXNtP93XTBrW4Dcd930XpZM/pohTJXKpOKFa0tGLB2LU6V4YoWPeZsShKUfgW
-         qJpbIyCfNG8LHqqUpmAC2JkJC/6FrKqM3H3Rw=
-MIME-Version: 1.0
-In-Reply-To: <1294425762-29730-1-git-send-email-benjamin.tissoires@enac.fr>
-References: <1294425762-29730-1-git-send-email-benjamin.tissoires@enac.fr>
-Date: Fri, 7 Jan 2011 20:12:21 +0100
-X-Google-Sender-Auth: _Q2uCirkDYzLEDHKbIbv5ooqpXU
-Message-ID: <AANLkTikxWv+zn1MdXAGFSZU=hNfF4OHnK7pCk6DgdKSg@mail.gmail.com>
-Subject: Re: [RFC v3 0/5] hid-multitouch: a first step towards multitouch unification
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-To: Stephane Chatty <chatty@enac.fr>, Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 7 Jan 2011 14:14:05 -0500
+X-IronPort-AV: E=Sophos;i="4.60,290,1291622400"; 
+   d="scan'208";a="502832510"
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+In-Reply-To: <20110107190229.GX31708@n2100.arm.linux.org.uk>
+References: <20110105210448.GM8638@n2100.arm.linux.org.uk>
+	 <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>
+	 <1294262208.2952.4.camel@heimdal.trondhjem.org>
+	 <AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com>
+	 <1294268808.2952.18.camel@heimdal.trondhjem.org>
+	 <1294270104.16957.73.camel@mulgrave.site>
+	 <1294335614.22825.154.camel@mulgrave.site>
+	 <1294336054.2905.1.camel@heimdal.trondhjem.org>
+	 <AANLkTimusF4KCJ4vHPn+T1dUiKxapXaT0QTtFvh8Ykdd@mail.gmail.com>
+	 <1294426405.2929.23.camel@heimdal.trondhjem.org>
+	 <20110107190229.GX31708@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Fri, 07 Jan 2011 14:13:48 -0500
+Message-ID: <1294427628.2929.30.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 07 Jan 2011 19:13:50.0101 (UTC) FILETIME=[040A5450:01CBAE9F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I forgot to mention that I keep the flag RFC as I'm waiting for more
-tests in the begining of the next week (only Cypress has been tested
-with the last release).
+On Fri, 2011-01-07 at 19:02 +0000, Russell King - ARM Linux wrote: 
+> On Fri, Jan 07, 2011 at 01:53:25PM -0500, Trond Myklebust wrote:
+> > I'd still like to keep the existing code for those architectures that
+> > don't have problems, since that allows us to send 32k READDIR requests
+> > instead of being limited to 4k. For large directories, that is a clear
+> > win.
+> > For the NOMMU case we will just go back to using a single page for
+> > storage (and 4k READDIR requests only). Should I just do the same for
+> > architectures like ARM and PARISC?
+> 
+> I think you said that readdir reads via the vmalloc mapping of the
+> group of pages, but XDR writes to the individual pages.
+> 
+> As I understand NFS, you receive a packet, you then have to use XDR
+> to unpack the data, which you presumably write into the set of
+> struct page *'s using kmap?
 
-Cheers,
-Benjamin
+No. The socket or RDMA layers place the data directly into the struct
+pages. We then unpack them in the XDR layer using the vmalloc mapping
+and place the resulting processed readdir data into the page cache.
 
-On Fri, Jan 7, 2011 at 7:42 PM, Benjamin Tissoires
-<benjamin.tissoires@enac.fr> wrote:
-> Hi,
->
-> here is the v3.
->
-> all changes are coming from the mails with Henrik:
->
-> - restricted to new drivers only
-> - delete mt_buffer struct
-> - replace/adapt prev_valid in favor of seen_in_this_frame
-> - integrated fuzz
-> - introduce MT_QUIRKS
-> - other small fixes
->
-> Cheers,
-> Benjamin
->
->
+> Isn't a solution to have XDR write directly into the vmalloc mapping
+> rather than using struct page * and kmap?
+
+Unfortunately that isn't possible. :-(
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
