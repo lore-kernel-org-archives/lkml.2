@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136Ab1AGVGg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 16:06:36 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:49297 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801Ab1AGVGf convert rfc822-to-8bit (ORCPT
+	id S1753284Ab1AGVKf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 16:10:35 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:49176 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752425Ab1AGVKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 16:06:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=umRva+n31hjdlto62o8CTfbdPUmR/xC6Uhf2fu/2hMpGDJ1jVDTqBHfIPgk0Z6A6rT
-         uCBS+fu5OSE2rAEVJ6liX+cf/X57KDb9Li9GIrpJwRpXYb789i2z5Z2X8oVLxLqDDwfG
-         SQ/dhI15sUjbIRNKfUGE2Kr7wsEtL+gt5D1PM=
-MIME-Version: 1.0
-In-Reply-To: <20110107200850.GE29913@polaris.bitmath.org>
-References: <1294425762-29730-1-git-send-email-benjamin.tissoires@enac.fr>
-	<20110107200850.GE29913@polaris.bitmath.org>
-Date: Fri, 7 Jan 2011 22:06:34 +0100
-X-Google-Sender-Auth: DaIlwXWHK8l2txFS6yRz4ThE0jM
-Message-ID: <AANLkTim1qw_=9Z23wtU5BxTUrzfGiEJRdR3naQUrTrpK@mail.gmail.com>
-Subject: Re: [RFC v3 0/5] hid-multitouch: a first step towards multitouch unification
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Stephane Chatty <chatty@enac.fr>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 7 Jan 2011 16:10:33 -0500
+Subject: Re: [-next] ERROR: "strchr" [drivers/target/target_core_mod.ko]
+	undefined!
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        scsi <linux-scsi@vger.kernel.org>,
+        Linux-Next <linux-next@vger.kernel.org>, linux-kernel@vger.kernel.org
+In-Reply-To: <1294415045.4895.16.camel@mulgrave.site>
+References: <AANLkTinhrj38rbEt7ds971D9g-UF+xS0jmzO7X15ZaLn@mail.gmail.com>
+	 <1294415045.4895.16.camel@mulgrave.site>
+Content-Type: text/plain
+Date: Fri, 07 Jan 2011 13:04:34 -0800
+Message-Id: <1294434274.2895.146.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 7, 2011 at 9:08 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> Hi Benjamin,
->
->> here is the v3.
->>
->> all changes are coming from the mails with Henrik:
->>
->> - restricted to new drivers only
->> - delete mt_buffer struct
->> - replace/adapt prev_valid in favor of seen_in_this_frame
->> - integrated fuzz
->> - introduce MT_QUIRKS
->> - other small fixes
->
-> A lot of progress in one day - thank you very much for making the
-> changes. I will be online for quite a bit longer in case there is more
-> coming this way. With some testing over the weekend (I will be
-> traveling, sorry), it doesn't look impossible to have this ready early
-> next week.
+On Fri, 2011-01-07 at 09:44 -0600, James Bottomley wrote:
+> On Fri, 2011-01-07 at 11:57 +0100, Geert Uytterhoeven wrote:
+> > Since a few days, linux-next shows:
+> > 
+> > | ERROR: "strchr" [drivers/target/target_core_mod.ko] undefined!
+> > 
+> > in m68k allmodconfig builds
+> > (http://kisskb.ellerman.id.au/kisskb/buildresult/3754323/).
+> > 
+> > I guess this is caused by the following 3 calls to strstr():
+> > 
+> > drivers/target/target_core_configfs.c:
+> > +       ptr = strstr(page, "1");
+> > 
+> > +       str = strstr(buf, "_");
+> > 
+> > +       str2 = strstr(str+1, "_");
+> > 
+> > Some versions of gcc replace calls to strstr() with single-character
+> > "needle" string parameters by calls to strchr() behind our back.
+> > This causes linking errors if strchr() is defined as an inline function
+> > in <asm/string.h> (e.g. on m68k).
+> > 
+> > You can prevent this by explicitly calling strchr() instead.
+> > 
+> > Cfr. commit 59d309f9c8ef0bd01bf93cc0e758f1d810417bdb
+> > ("kgdb: Replace strstr() by strchr() for single-character needles).
+> > 
+> > Gr{oetje,eeting}s,
+> 
+> Surely the fix for this is not to inline it in m68k? If gcc is growing
+> the capability to make these types of transformations, it's not going to
+> stop at single entry string strstr().
+> 
+> If you want to keep the fast inline, there is a way (which I forget) to
+> drop an external reference as well, just in case.
+> 
 
-For my part, I'm a bit tired, and I don't have any device at home to
-test. I wont publish anything for the evening as I will for sure
-introduce bugs.
+Hi guys,
 
-Good night,
-Benjamin
+So I really don't have a strong perference here, but would tend to agree
+with James that this should probably be fixed in m68k..  If this is too
+much of an pain for you Geert I am happy to make this change.
 
->
-> Cheers,
-> Henrik
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Thanks!
+
+--nab
+
