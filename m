@@ -1,67 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab1AGQpr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 11:45:47 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43066 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754589Ab1AGQpp (ORCPT
+	id S1754607Ab1AGQzn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 11:55:43 -0500
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:39827 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754470Ab1AGQzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 11:45:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=dIS8YhQLcFO53k+DqOTSy9j7pqVZe5xsJUTtqCxKxj9RzA1+6J7SBdt1glxYeUK32a
-         iYJG0UMYW75I8HCDXIAVELvlEaEOZK2b7dITrPkM+dDh52ovEzozGPoSgq2pz0u7psmk
-         1W1eM4VDrw5NSYMIhktkajPz134i/qqFI/yHU=
+	Fri, 7 Jan 2011 11:55:41 -0500
+Subject: [PATCH 0/3] hpsa: A few more miscellaneous patches for Jan. 2011
+To: james.bottomley@hansenpartnership.com
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: linux-scsi@vger.kernel.org, mike.miller@hp.com,
+        linux-kernel@vger.kernel.org, thenzl@redhat.com,
+        akpm@linux-foundation.org, smcameron@yahoo.com
+Date: Fri, 07 Jan 2011 10:55:37 -0600
+Message-ID: <20110107165247.14259.45944.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <4D27319A.3060806@kernel.dk>
-References: <AANLkTimHE35jUOY6Lhd7OnATSD6BeB4poUosaQ+bR61i@mail.gmail.com>
-	<4D26CCEE.4070508@kernel.dk>
-	<AANLkTingF8jK2Lppng+MCeszB=KFEsqs9uRqBn0Uhdh8@mail.gmail.com>
-	<4D2710DC.9050908@kernel.dk>
-	<AANLkTi=ZV4-vb7qEbGn=mm6Nz0Jg=XT5YogD=0HNTSdW@mail.gmail.com>
-	<4D27319A.3060806@kernel.dk>
-Date: Fri, 7 Jan 2011 11:45:43 -0500
-Message-ID: <AANLkTinmkAhCVOnF+x=Azfypg6Faadq=rn+Wuk+UdUJD@mail.gmail.com>
-Subject: Re: Who does determine the number of requests that can be serving
- simultaneously in a storage?
-From: Yuehai Xu <yuehaixu@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, cmm@us.ibm.com, rwheeler@redhat.com,
-        vgoyal@redhat.com, czoccolo@gmail.com, yhxu@wayne.edu
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> You don't need those values. btt can just look at dispatch and
-> completion events to get an exact queue depth number at any point in
-> time.
+The following series contains a few old fixes that I somehow failed
+to send along previously.
 
-Cool tool, I need to learn it further.
+---
 
-> I would double check that NCQ really is active, not just supported. For
-> instance, the controller needs to support it too. If you look at dmesg
-> from when it detects your drive, it should print the queue depth used.
-> Or you can check queue_depth in the sysfs scsi_device directory. It
-> should be 31 (32 in total, but one has to be reserved for error
-> handling) for NCQ enabled, or 1 if if isn't.
->
+Stephen M. Cameron (2):
+      hpsa: fix use of uninitialized variable in hpsa_add_msa2xxx_enclosure_device()
+      hpsa: Fix problem that CMD_UNABORTABLE command status was treated as unknown
 
-You are right, info from dmesg:
-[    1.476660] ata4.00: 156301488 sectors, multi 16: LBA48 NCQ (depth 0/32)
+Vasiliy Kulikov (1):
+      hpsa: avoid leaking stack contents to userland
 
-and queue_depth is 1.
 
-It proves that the NCQ of SSD is not actually activated. Error
-message(bash: /sys/block/sdb/device/queue_depth: Permission denied) is
-got when I "echo 31 > /sys/block/sdb/device/queue_depth" even though I
-am already with the privilege of root.
+ drivers/scsi/hpsa.c |   13 +++++++++++--
+ 1 files changed, 11 insertions(+), 2 deletions(-)
 
-Anyway, one thing is certain, it is because the NCQ of SSD is not
-activated, that the number of requests in flight is 1.
+-- 
+-- steve
 
-I really appreciate your help, thanks very much!
-
-Yuehai
