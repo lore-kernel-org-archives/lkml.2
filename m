@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579Ab1AGOWZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 09:22:25 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:36873 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753534Ab1AGOWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 09:22:23 -0500
-Date: Sat, 8 Jan 2011 01:22:11 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: sedat.dilek@gmail.com
-Cc: Sedat Dilek <sedat.dilek@googlemail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the block tree
-Message-Id: <20110108012211.1e19f0f7.sfr@canb.auug.org.au>
-In-Reply-To: <AANLkTimpVMLGBnP33Ro8MBtW3GJjskg0bBK717Xf-Mh_@mail.gmail.com>
-References: <20110107110513.30776114.sfr@canb.auug.org.au>
-	<4D26C179.7030704@kernel.dk>
-	<AANLkTinyaZfsYv43046LWgu8U3kg6_79y+PTFO1RxtnY@mail.gmail.com>
-	<20110107231748.76170ff3.sfr@canb.auug.org.au>
-	<AANLkTimpVMLGBnP33Ro8MBtW3GJjskg0bBK717Xf-Mh_@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sat__8_Jan_2011_01_22_11_+1100_91nnHwaZBJ5k_2pw"
+	id S1753558Ab1AGO0W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 09:26:22 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48754 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752303Ab1AGO0U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 09:26:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=RmYgbgLBhdG2Bw2nCxfsdTmAodISqxat2QfImn3LvgSWYPoLPvJANIShFE5Xzzw5Kv
+         k2wWixyzv2G6pm6Nfpkd5mr38p3tk/Q1OSY3+nxKzGqg1n054oCJc65vnxEP9vlIaa/E
+         8vrLjfsNNNRSF58T+dzf2WoQwwQsaZH/ZboW4=
+From: Richard Genoud <richard.genoud@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-kernel@vger.kernel.org,
+        Richard Genoud <richard.genoud@gmail.com>
+Subject: [PATCH] spi_imx.c: correct the test on platform_get_irq() return value
+Date: Fri,  7 Jan 2011 15:26:01 +0100
+Message-Id: <1294410361-9092-1-git-send-email-richard.genoud@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <AANLkTimpTUz_Fizef09urPBR8vP80KU-5yApjzGWFwc0@mail.gmail.com>
+References: <AANLkTimpTUz_Fizef09urPBR8vP80KU-5yApjzGWFwc0@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__8_Jan_2011_01_22_11_+1100_91nnHwaZBJ5k_2pw
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The test "if (spi_imx->irq <= 0)" is not testing the IRQ value, but the return value of platform_get_irq().
+As platform_get_irq() can return an error (-ENXIO) or the IRQ value it found, the test should be "if (spi_imx->irq < 0)"
 
-Hi,
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+---
+ drivers/spi/spi_imx.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-On Fri, 7 Jan 2011 14:19:33 +0100 Sedat Dilek <sedat.dilek@googlemail.com> =
-wrote:
->
-> Hmm, I have pulled-in freshly from linux-2.6-block#for-next after you
-> published latest linux-next (next-20110107).
-> So, I guessed the (reported) issue is fixed, now.
+diff --git a/drivers/spi/spi_imx.c b/drivers/spi/spi_imx.c
+index 55a38e2..793ae99 100644
+--- a/drivers/spi/spi_imx.c
++++ b/drivers/spi/spi_imx.c
+@@ -847,7 +847,7 @@ static int __devinit spi_imx_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	spi_imx->irq = platform_get_irq(pdev, 0);
+-	if (spi_imx->irq <= 0) {
++	if (spi_imx->irq < 0) {
+ 		ret = -EINVAL;
+ 		goto out_iounmap;
+ 	}
+-- 
+1.7.1
 
-No, the commit that caused the warnings was removed when I went back to
-using the block tree from next-20110106.  So it will come back unless
-fixed.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Sat__8_Jan_2011_01_22_11_+1100_91nnHwaZBJ5k_2pw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNJyGTAAoJEDMEi1NhKgbstd4H/2jQzCcWw6jm5va7h8bF3aGH
-ijv/UjpdVYC81UQoaXNGgDyRCrGa1ykFcWJenvKdOueJAeOK3QxvCR2T/Y4BPdgz
-DWDAvtKl4ttFD0phmzKP8FCP9Ak+qmRpcQHRAzJq9aJsW0r5gAmwSBCfQZRO4hYk
-fbZs1jPCtX2rHIxABznqMPWcikJYhNl4DxQnzk5d0GEeq66zYtzrtt5DJCaWhgqq
-sBNuHSEjRexHqAfBJQ5g6Ww/6yTbAAAn2J9aWVNnfo1ziHfLPvQcrq7kZXGzrWMx
-DwukcFeWvntKjTV5g5MBbsjH3HhEQcYg6T9v/qxvGcUk6oUYXIOxt21eKh+u8r4=
-=dnhQ
------END PGP SIGNATURE-----
-
---Signature=_Sat__8_Jan_2011_01_22_11_+1100_91nnHwaZBJ5k_2pw--
