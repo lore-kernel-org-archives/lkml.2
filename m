@@ -1,102 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab1AGSsA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 13:48:00 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59953 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751696Ab1AGSr6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 13:47:58 -0500
+	id S1754583Ab1AGSsi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 13:48:38 -0500
+Received: from kroah.org ([198.145.64.141]:51211 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752099Ab1AGSsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 13:48:36 -0500
+Date: Fri, 7 Jan 2011 10:32:28 -0800
+From: Greg KH <greg@kroah.com>
+To: pratyush <pratyush.anand@st.com>
+Cc: Viresh KUMAR <viresh.kumar@st.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH V2] ST SPEAr: PCIE gadget suppport
+Message-ID: <20110107183228.GB14638@kroah.com>
+References: <137dfad4a093ea0ac80396f5eb7fbf0c382be698.1294314772.git.viresh.kumar@st.com>
+ <20110106184840.GA21672@kroah.com>
+ <4D26D55D.4010600@st.com>
 MIME-Version: 1.0
-In-Reply-To: <20110106.122003.233698077.davem@davemloft.net>
-References: <20110106.122003.233698077.davem@davemloft.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 7 Jan 2011 10:46:48 -0800
-Message-ID: <AANLkTi=7=_FyVsjA3vKEpg8RwfC=m-8QGfqa6ctxQday@mail.gmail.com>
-Subject: Re: [GIT] Networking
-To: David Miller <davem@davemloft.net>, Hayes Wang <hayeswang@realtek.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        Ben Hutchings <benh@debian.org>, David Woodhouse <dwmw2@infradead.org>
-Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D26D55D.4010600@st.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 6, 2011 at 12:20 PM, David Miller <davem@davemloft.net> wrote:
->
-> Plus the usual spattering of wireless, bluetooth, and wired driver
-> updates.
+On Fri, Jan 07, 2011 at 02:27:01PM +0530, pratyush wrote:
+> On 1/7/2011 12:18 AM, Greg KH wrote:
+> > On Thu, Jan 06, 2011 at 05:29:10PM +0530, Viresh Kumar wrote:
+> >> From: Pratyush Anand <pratyush.anand@st.com>
+> >>
+> >> This is a configurable gadget. can be configured by sysfs interface. Any
+> >> IP available at PCIE bus can be programmed to be used by host
+> >> controller.It supoorts both INTX and MSI.
+> >> By default, gadget is configured for INTX and SYSRAM1 is mapped to BAR0
+> >> with size 0x1000
+> >>
+> >> Changes since V1:
+> >> - __iomem added for register addresses
+> >> - kerneldoc comment removed whereever not required.
+> >> - help node moved from sysfs to documentation/misc-devices
+> >> - strict_strtoul used instead of sscanf
+> >>
+> >> Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
+> >> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+> >> ---
+> >>  Documentation/misc-devices/spear-pcie-gadget.txt |  125 ++++
+> > 
+> > New sysfs entries require updates to the Documentation/ABI/ directory
+> > for them.
+> > 
+> > Please rework the patch to include these entries.
+> > 
+> 
+> Ok..will send [Patch V3] with these modifications.
+> But, are these rework needed if I move this interface to configfs
+> as you have suggested below.
+> Or is there some different directory where documentation for configfs
+> node can be mentioned?
 
-Grr.
+Nope, same directory, you are still creating a user/kernel ABI by using
+configfs right?  It needs to be documented just as well.
 
-This breaks booting for me.
+thanks,
 
-[torvalds@i5 linux]$ git bisect good
-bca03d5f32c8ee9b5cfa1d32640a63fded6cb3c0 is the first bad commit
-commit bca03d5f32c8ee9b5cfa1d32640a63fded6cb3c0
-Author: françois romieu <romieu@fr.zoreil.com>
-Date:   Mon Jan 3 15:07:31 2011 +0000
-
-    r8169: remove the firmware of RTL8111D.
-
-    The binary file of the firmware is moved to linux-firmware repository.
-    The firmwares are rtl_nic/rtl8168d-1.fw and rtl_nic/rtl8168d-2.fw.
-    The driver goes along if the firmware couldn't be found. However, it
-    is suggested to be done with the suitable firmware.
-
-    Some wrong PHY parameters are directly corrected in the driver.
-
-    Simple firmware checking added per Ben Hutchings suggestion.
-
-    Signed-off-by: Hayes Wang <hayeswang@realtek.com>
-    Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-    Cc: Ben Hutchings <benh@debian.org>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
-
-and the behavior is very broken: it just hangs at boot-time. No
-messages from the driver (certainly not any messages about missing
-firmware), no nothing. The thing is just hung.
-
-On a working setup, I have
-
-
-  [    1.595071] r8169 Gigabit Ethernet driver 2.3LK-NAPI loaded
-  [    1.595114] r8169 0000:01:00.0: PCI INT A -> GSI 19 (level, low) -> IRQ 19
-  [    1.595174] r8169 0000:01:00.0: setting latency timer to 64
-  [    1.595227] r8169 0000:01:00.0: irq 42 for MSI/MSI-X
-  [    1.595770] r8169 0000:01:00.0: eth0: RTL8168d/8111d at
-0xffffc90000068000, e0:cb:4e:95:1a:d7, XID 083000c0 IRQ 42
-  ...
-  [    7.985917] r8169 0000:01:00.0: eth0: link up
-  [    7.987525] r8169 0000:01:00.0: eth0: link up
-
-while on a non-working setup, I get that XID line, and after that a
-few other init routines continue to show up (probably just
-multi-threaded initcalls), but the box is dead.
-
-Quite frankly, that commit looks broken anyway. It doesn't just switch
-to the firmware loader, it also seems to change other things (ie
-removed some mdio writes, added others).
-
-What's going on? This is NOT how things are supposed to happen. Yes,
-the firmware file is in the external linux-firmware repo, but that
-doesn't help if the kernel build won't even notice and pick it up (or
-warn about it not being found). Also, the external linux-firmware repo
-isn't even support any sane installation scripts, nor does it work
-with the "build automatically into the kernel" mode.
-
-We also have those CONFIG_FIRMWARE_IN_KERNEL and CONFIG_STANDALONE
-flags, and the build apparently failed both of those.
-
-Not acceptable. I'm ok with an external firmware repository, but only
-if it _works_. Right now it doesn't. It just seems to cause silent
-failures: there were no warnings about missing firmware at ANY time.
-Not build-time, not run-time.
-
-I bet I can make it work by making it a module, and installing the
-firmware manually. But it's supposed to work even without that.
-
-                             Linus
+greg k-h
