@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440Ab1AGOV1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 09:21:27 -0500
-Received: from tac.ki.iif.hu ([193.6.222.43]:41789 "EHLO tac.ki.iif.hu"
+	id S1753465Ab1AGOWQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 09:22:16 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:37098 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752161Ab1AGOV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 09:21:26 -0500
-From: Ferenc Wagner <wferi@niif.hu>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Replace the dangerous to_root_device macro with an inline function
-References: <44482f820e5700f952825c9b5ec6a9f080975d79.1294326889.git.wferi@niif.hu>
-	<20110106162032.GA10189@suse.de> <87zkrd3gkz.fsf@tac.ki.iif.hu>
-	<20110106205259.GA28326@suse.de>
-Date: Fri, 07 Jan 2011 15:21:24 +0100
-In-Reply-To: <20110106205259.GA28326@suse.de> (Greg KH's message of "Thu, 6
-	Jan 2011 12:52:59 -0800")
-Message-ID: <87r5co23rv.fsf@tac.ki.iif.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1752161Ab1AGOWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 09:22:15 -0500
+Date: Fri, 7 Jan 2011 15:22:03 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86: unify "numa=" command line option handling
+Message-ID: <20110107142203.GA12773@elte.hu>
+References: <4D2603BF020000780002ACA7@vpn.id2.novell.com>
+ <alpine.DEB.2.00.1101061235010.30820@chino.kir.corp.google.com>
+ <4D26D3FD020000780002AED9@vpn.id2.novell.com>
+ <alpine.DEB.2.00.1101070156050.19087@chino.kir.corp.google.com>
+ <4D26F3AE020000780002AF5D@vpn.id2.novell.com>
+ <20110107125722.GA23185@elte.hu>
+ <4D272413020000780002B009@vpn.id2.novell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D272413020000780002B009@vpn.id2.novell.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <gregkh@suse.de> writes:
 
-> On Thu, Jan 06, 2011 at 09:47:08PM +0100, Ferenc Wagner wrote:
->
->> Greg KH <gregkh@suse.de> writes:
->> 
->>> On Thu, Jan 06, 2011 at 04:24:24PM +0100, Ferenc Wagner wrote:
->>>
->>>> The original macro worked only when applied to variables named 'dev'.
->>>> While this could have been fixed by simply renaming the macro argument,
->>>> a more type-safe replacement is preferred.
->>>
->>> Preferred for what?  This is a local macro, not exported to anything
->>> else, is it causing problems today within this single file?
->> 
->> No, it isn't a problem currently, because this macro is applied to
->> variables named 'dev' exclusively.  But the macro definition is wrong,
->> as it uses 'dev' (the macro argument) in two places, of which the second
->> probably isn't intentional, as the third argument of the container_of
->> macro is a structure member name, which should stay fixed to the literal
->> string 'dev' in this case, not replaced by the actual macro argument.
->
-> No, it was intentional :)
+* Jan Beulich <JBeulich@novell.com> wrote:
 
-Then we should fix it's misleading name. :)
+> >>> On 07.01.11 at 13:57, Ingo Molnar <mingo@elte.hu> wrote:
+> 
+> > * Jan Beulich <JBeulich@novell.com> wrote:
+> > 
+> >> >>> On 07.01.11 at 10:58, David Rientjes <rientjes@google.com> wrote:
+> >> > On Fri, 7 Jan 2011, Jan Beulich wrote:
+> >> > 
+> >> >> However, the problem my patch addresses has been long standing
+> >> >> (I noted it with our .32 based kernel, but according to my looking at
+> >> >> the code it would go back to at least .27), so I'd like to ask for it to
+> >> >> be merged independently (and I should probably have copied stable
+> >> >> too), unless (quite unlikely) Tejun's merge is intended to also be
+> >> >> applied to stable kernels.
+> >> >> 
+> >> > 
+> >> > I don't think this should be targeted to -stable since it's not a bugfix; 
+> >> > this is adding a feature that allows you to disable acpi parsing of the 
+> >> > SRAT on i386.
+> >> 
+> >> How is this not a bug fix if it allows a system to boot that previously
+> >> didn't?
+> > 
+> > btw., that's an absolutely key piece of information that REALLY should have 
+> > been 
+> > included in the changelog of the first patch. It is more important than all 
+> > of the 
+> > changelog.
+> 
+> Quoting that text: "In order to be able to suppress the use of SRAT
+> tables that 32-bit Linux can't deal with (possibly leading to a non-
+> bootable system, without disabling ACPI altogether), move the
+> "numa=" option handling to common code."
+> 
+> To me it says just that. And of course, not every system with a
+> not understood SRAT would be yielded non-bootable, hence the
+> wording "possibly leading to ...".
 
-> I'll take this as a general "clean up" patch
 
-Great, that's exactly what it is.
+Your -stable comment above made it appear to me as if you knew about a specific 
+system that crashed this way? As long as it's only theoretical i'm not sure it 
+warrants a -stable backport.
 
-> if you resend it with the 2/2 removed.
-
-On its way...
-
-> But note that it will not get added to my trees until after the
-> .38-rc1 merge happens.
-
-No problem, it's been sitting in my tree for almost a year now. :)
--- 
 Thanks,
-Feri.
+
+	Ingo
