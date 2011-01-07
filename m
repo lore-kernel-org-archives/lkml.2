@@ -1,80 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755151Ab1AGBmd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 20:42:33 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33101 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755060Ab1AGBmb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 20:42:31 -0500
+	id S1755333Ab1AGBsg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 20:48:36 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:33590 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755015Ab1AGBsf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 20:48:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=wduiYI3YO4kGc+tZflx/vSLkFOIHJgNoItJRL0UpXo6hScYq0oJ+0GGT/nY8n0Z8aL
+         jJ1cmMB4jzA/45IHZdS3R6TfTNEjxDl57SO9V37wcEfCfWWir/326+k0mk0uZr9xtL8R
+         gFooIiFt9KEtgQFoyelNTJrUY60zJp8H4Sxlc=
 MIME-Version: 1.0
-In-Reply-To: <20110107005954.GA18145@void.printf.net>
-References: <20110105102534.GA6679@amd> <loom.20110106T030535-794@post.gmane.org>
- <AANLkTikO68RQW0jzeLDOzRw7Hm15Ho0G9=Bp1KobKsrQ@mail.gmail.com> <20110107005954.GA18145@void.printf.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 6 Jan 2011 17:41:39 -0800
-Message-ID: <AANLkTimdV1WtdPXeZ8JO40gkC=2dt27bqKxGORuHVyrn@mail.gmail.com>
-Subject: Re: [announce] vfs-scale git tree update
-To: Chris Ball <cjb@laptop.org>
-Cc: Nick Piggin <npiggin@gmail.com>, Jongman Heo <jongman.heo@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20110106172154.edee5c66.randy.dunlap@oracle.com>
+References: <AANLkTik7tcZo8ka80y=FD-_UxwvB6-R8iRHRq+rkOSo+@mail.gmail.com>
+	<4d2654c410489a1b90@agluck-desktop.sc.intel.com>
+	<AANLkTi=0cf=JGGiJ6w3nanJTN1zyLvgVt8FUzwTWp2YG@mail.gmail.com>
+	<AANLkTimJMMC=LoD4igGCMdcFaBS9EpHVHh_x5=91_bbE@mail.gmail.com>
+	<20110106172154.edee5c66.randy.dunlap@oracle.com>
+Date: Thu, 6 Jan 2011 17:48:34 -0800
+X-Google-Sender-Auth: hkVaIrAjfvCiWVYXp-niLIF5X9Y
+Message-ID: <AANLkTi=fTkpH2i2qZEPXKJpiQRC=o15zbR7W5PRNku8G@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/apic changes for v2.6.38
+From: Yinghai Lu <yinghai@kernel.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Luck, Tony" <tony.luck@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 6, 2011 at 4:59 PM, Chris Ball <cjb@laptop.org> wrote:
+On Thu, Jan 6, 2011 at 5:21 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> On Thu, 6 Jan 2011 16:17:10 -0800 Yinghai Lu wrote:
 >
-> In my case, the hang happens when microcode.ko is modprobed and calls
-> out for device firmware via request_firmware(), and then udev also calls
-> microcode_ctl, which attempts to open(2) /dev/cpu/microcode to write
-> microcode into it.  (The request_firmware() interface is the preferred
-> one, and opening /dev/cpu/microcode is an older compatibility interface.)
-
-Hmm. That modprobe seems to be hung on 'sysdev_drivers_lock'.
-
-Which in turn seems to be _held_ by the first modprobe, which is
-waiting for a request_firmware:
-
-  [  256.980052] modprobe        D 00000000ffff4f88     0   372      1
-0x00000000
-  [  256.981227]  ffff88022206dc58 0000000000000086 0000000000000292
-00000000ffffffff
-  [  256.982415]  0000000000013840 0000000000013840 0000000000013840
-ffff88022620dc40
-  [  256.983692]  0000000000013840 ffff88022206dfd8 0000000000013840
-0000000000013840
-  [  256.984979] Call Trace:
-  [  256.986306]  [<ffffffff81463a41>] schedule_timeout+0x36/0xe3
-  [  256.987615]  [<ffffffff8110ad4c>] ? kfree+0xc9/0xd6
-  [  256.988893]  [<ffffffff8103d243>] ? need_resched+0x23/0x2d
-  [  256.990337]  [<ffffffff81463824>] wait_for_common+0xad/0x102
-  [  256.991637]  [<ffffffff8104757f>] ? default_wake_function+0x0/0x14
-  [  256.992954]  [<ffffffff81463931>] wait_for_completion+0x1d/0x1f
-  [  256.994360]  [<ffffffff812f42df>] _request_firmware+0x2df/0x39a
-  [  256.999744]  [<ffffffffa00f6358>] microcode_init_cpu+0xc4/0x115 [microcode]
-  [  257.001112]  [<ffffffffa00f6409>] mc_sysdev_add+0x60/0x76 [microcode]
-  [  257.002458]  [<ffffffff812e9772>] sysdev_driver_register+0xc0/0x11b
-
-and everybody else is in the open path for the microcode. And that
-request_firmware holds the lock, because it's done through the ->add()
-function of another sysdev_driver_register().
-
-I'm wondering if this is a previously existing race condition leading
-to a deadlock. One that previously would have been serialized enough
-by the dcache lock that you'd never have that happen.
-
-It might be interesting to re-run it with mutex debugging and lockdep
-enabled, to see if that reports anything. Although it probably won't,
-because it's not about a plain lock dependency, but ends up being
-deadlocked on the uevent being finished (but you have the modprobe and
-the request_firmware ones waiting on each other).
-
-I dunno. I haven't really though that fully through. But we've had
-cases roughly like that before, and yes, they can be exposed by some
-independent serialization going away - long-standing potential bugs,
-that simply never happened in practice before.
-
-                      Linus
+>> On Thu, Jan 6, 2011 at 3:53 PM, Linus Torvalds
+>> <torvalds@linux-foundation.org> wrote:
+>> > On Thu, Jan 6, 2011 at 3:48 PM, Luck, Tony <tony.luck@intel.com> wrote:
+>> >> Untested on X86.  Builds and boots on ia64 (both normally and with
+>> >> maxcpus=8 to limit the number of cpus).
+>> >>
+>> >> Signed-off-by: Tony Luck <tony.luck@intel.com>
+>> >
+>> > Looks much better to me, and gets rid of that silly #ifdef that I reacted to.
+>> >
+>> > But no hurry, this looks low-priority. So let's make this go through
+>> > the x86 tree and get merged later, after it has passed whatever normal
+>> > tests that the -tip tree goes through. Ok?
+>>
+>> yes. x86 is safe. We have apicid_to_node[] array, and already check
+>> apic id with MAX_LOCAL_APIC
+>> in x86 version acpi_numa_processor_affinity_init().
+>>
+>> looks ia64 is using struct array with cpu idx for mapping
+>>
+>>         node_cpuid[srat_num_cpus].phys_id =
+>>             (pa->apic_id << 8) | (pa->local_sapic_eid);
+>>         /* nid should be overridden as logical node id later */
+>>         node_cpuid[srat_num_cpus].nid = pxm;
+>>         cpu_set(srat_num_cpus, early_cpu_possible_map);
+>>         srat_num_cpus++;
+>>
+>> but it does not check the boundary of that array...
+>>
+>> struct node_cpuid_s node_cpuid[NR_CPUS]..
+>>
+>> so if some one try to boot kernel with small NR_CPUS on bigger IA64
+>> system, could get some variables node_cpuid[]...
+>>
+>> Assume Tony will have another patch for IA64 to check that before
+>> apply this patch.
+>>
+>> sth like
+>>
+>> Index: linux-2.6/arch/ia64/kernel/acpi.c
+>> ===================================================================
+>> --- linux-2.6.orig/arch/ia64/kernel/acpi.c
+>> +++ linux-2.6/arch/ia64/kernel/acpi.c
+>> @@ -477,6 +479,11 @@ acpi_numa_processor_affinity_init(struct
+>>       if (!(pa->flags & ACPI_SRAT_CPU_ENABLED))
+>>               return;
+>>
+>> +     if (srat_num_cpus >= NR_CPUS) {
+>> +             printk(KERN_WARNING "NR_CPUS (%d) is too small, not all cpus used.
+>> %d\n", NR_CPUS);
+>
+>                                                                        CPUs used.
+>
+> Don't need %d 2 times.
+>
+right.
