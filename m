@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab1AGKG1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 05:06:27 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:40821 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754470Ab1AGKG0 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:5:1>);
-	Fri, 7 Jan 2011 05:06:26 -0500
-Message-Id: <4D26F3AE020000780002AF5D@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Fri, 07 Jan 2011 10:06:22 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "David Rientjes" <rientjes@google.com>
-Cc: "Ingo Molnar" <mingo@elte.hu>, "Tejun Heo" <tj@kernel.org>,
-        <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86: unify "numa=" command line option handling
-References: <4D2603BF020000780002ACA7@vpn.id2.novell.com>
- <alpine.DEB.2.00.1101061235010.30820@chino.kir.corp.google.com>
- <4D26D3FD020000780002AED9@vpn.id2.novell.com>
- <alpine.DEB.2.00.1101070156050.19087@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1101070156050.19087@chino.kir.corp.google.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754649Ab1AGKGo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 05:06:44 -0500
+Received: from cantor.suse.de ([195.135.220.2]:42762 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754632Ab1AGKGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 05:06:43 -0500
+Date: Fri, 7 Jan 2011 11:06:41 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "James T. Dickson" <james.dickson@jtdata.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: introduce 'notimeout' blacklist for Dell Vostro
+ V13 (was Re: Synaptics touchpad on Dell Vostro V13)
+In-Reply-To: <8583070.26.1294325869588.JavaMail.root@butch.jtdata.net>
+Message-ID: <alpine.LNX.2.00.1101071105350.26685@pobox.suse.cz>
+References: <8583070.26.1294325869588.JavaMail.root@butch.jtdata.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 07.01.11 at 10:58, David Rientjes <rientjes@google.com> wrote:
-> On Fri, 7 Jan 2011, Jan Beulich wrote:
+On Thu, 6 Jan 2011, James T. Dickson wrote:
+
+> Correct .. Suspend worked fine when the touchpad was a generic mouse.
 > 
->> However, the problem my patch addresses has been long standing
->> (I noted it with our .32 based kernel, but according to my looking at
->> the code it would go back to at least .27), so I'd like to ask for it to
->> be merged independently (and I should probably have copied stable
->> too), unless (quite unlikely) Tejun's merge is intended to also be
->> applied to stable kernels.
->> 
+> However, this appears a symptom of the synaptics driver. I was able to 
+> overcome it with this script from 
+> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/59867 .
 > 
-> I don't think this should be targeted to -stable since it's not a bugfix; 
-> this is adding a feature that allows you to disable acpi parsing of the 
-> SRAT on i386.
+> Placing it in /etc/pm/sleeps.d/ .
+> 
+> #!/bin/sh
+> #
+> # Reload the AT keyboard interface.
+> 
+> case "$1" in
+>         hibernate|suspend)
+>                 rmmod psmouse
+>                 ;;
+>         thaw|resume)
+>                 modprobe psmouse
+>                 ;;
+>         *)
+>                 ;;
+> esac
 
-How is this not a bug fix if it allows a system to boot that previously
-didn't?
+I have already came across reports of this being needed for synaptics 
+touchpads on several different machines already, so this seems to be 
+rather unrelated problem to me.
 
-Jan
+Dmitry, what is your current plan with the notimeout thing for V13, 
+please? Still .38 material?
 
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
