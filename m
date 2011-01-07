@@ -1,103 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876Ab1AGTj7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 14:39:59 -0500
-Received: from mail.windriver.com ([147.11.1.11]:41880 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163Ab1AGTj6 (ORCPT
+	id S1755116Ab1AGTm4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 14:42:56 -0500
+Received: from 27.mail-out.ovh.net ([91.121.30.210]:34387 "HELO
+	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754471Ab1AGTmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 14:39:58 -0500
-Date: Fri, 7 Jan 2011 14:39:07 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-        Sathya Perla <sathyap@serverengines.com>,
-        Ajit Khaparde <ajitk@serverengines.com>,
-        "David S. Miller" <davem@davemloft.net>, Joe Jin <joe.jin@oracle.com>,
-        Subbu Seetharaman <subbus@serverengines.com>,
-        Sarveshwar Bandi <sarveshwarb@serverengines.com>,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [stable] [064/152] driver/net/benet: fix
- be_cmd_multicast_set() memcpy bug
-Message-ID: <20110107193907.GH32717@windriver.com>
-References: <20110106002500.GA3172@kroah.com>
- <20110106002302.664621558@clark.site>
+	Fri, 7 Jan 2011 14:42:54 -0500
+Message-ID: <4D276CAD.5090604@armadeus.com>
+Date: Fri, 07 Jan 2011 20:42:37 +0100
+From: Fabien Marteau <fabien.marteau@armadeus.com>
+Reply-To: fabien.marteau@armadeus.com
+Organization: ARMadeus Systems
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110106002302.664621558@clark.site>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 07 Jan 2011 19:39:08.0607 (UTC) FILETIME=[8D23F4F0:01CBAEA2]
+To: Trilok Soni <tsoni@codeaurora.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Scott Moreau <oreaus@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: joystick:   Adding Austria Microsystem AS5011
+ joystick driver (third version)
+References: <4D22ECB6.6090800@armadeus.com> <4D22FE0F.7010206@codeaurora.org>
+In-Reply-To: <4D22FE0F.7010206@codeaurora.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 7833448603739840841
+X-Ovh-Remote: 82.232.255.99 (arc68-6-82-232-255-99.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[[stable] [064/152] driver/net/benet: fix be_cmd_multicast_set() memcpy bug] On 05/01/2011 (Wed 16:22) Greg KH wrote:
-
-> 2.6.36-stable review patch.  If anyone has any objections, please let us know.
+On 04/01/2011 12:01, Trilok Soni wrote:
+> Hi Fabien,
 > 
-> ------------------
+> On 1/4/2011 3:17 PM, Fabien Marteau wrote:
+>>  Driver for EasyPoint AS5011 2 axis joystick chip. This chip is plugged
+>>  on an I2C bus. It has been tested on ARM processor (i.MX27).
+>>
+>> Third version, according to Dmitry Torokhov and Trilok Soni comments.
+>>
+>>
+>> Signed-off-by: Fabien Marteau <fabien.marteau@armadeus.com>
+>> ---
 > 
+> Looks good. Few comments.
 > 
-> From: Joe Jin <joe.jin@oracle.com>
+>>  drivers/input/joystick/Kconfig  |    9 +
+>>  drivers/input/joystick/Makefile |    1 +
+>>  drivers/input/joystick/as5011.c |  377 +++++++++++++++++++++++++++++++++++++++
+>>  include/linux/as5011.h          |   35 ++++
 > 
-> [ Upstream commit 3fd40d0ceac9c234243730f4d7a6ffdb2fd3023a ]
+> How about moving it to include/linux/input?
 
-This one should be 408cc293c29ada769ae772420a39961320da1854.
-
-Figured I'd run reviewbot on the others and check for valid IDs.
-There are a couple others that have the same issue:
-
-0066
-bridge-fix-IPv6-queries-for-bridge-multicast-snoopin.patch
-	should be 76d661586c8131453ba75a2e027c1f21511a893a
-
-0072
-l2tp-Fix-modalias-of-l2tp_ip.patch
-	should be e8d34a884e4ff118920bb57664def8a73b1b784f
-
-0073
-x25-decrement-netdev-reference-counts-on-unload.patch
-	should be 171995e5d82dcc92bea37a7d2a2ecc21068a0f19
-
-0076
-net-Fix-header-size-check-for-GSO-case-in-recvmsg-af.patch
-	should be 1f18b7176e2e41fada24584ce3c80e9abfaca52b
-
-Thanks,
-Paul.
+It's better yes.
 
 > 
-> Regarding  benet be_cmd_multicast_set() function, now using
-> netdev_for_each_mc_addr() helper for mac address copy, but
-> when copying to req->mac[] did not increase of the index.
+>> +
+>> +#include <linux/module.h>
+>> +#include <linux/init.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/i2c.h>
+>> +#include <linux/string.h>
+>> +#include <linux/list.h>
+>> +#include <linux/sysfs.h>
+>> +#include <linux/ctype.h>
+>> +#include <linux/hwmon-sysfs.h>
 > 
-> Cc: Sathya Perla <sathyap@serverengines.com>
-> Cc: Subbu Seetharaman <subbus@serverengines.com>
-> Cc: Sarveshwar Bandi <sarveshwarb@serverengines.com>
-> Cc: Ajit Khaparde <ajitk@serverengines.com>
-> Signed-off-by: Joe Jin <joe.jin@oracle.com>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> ---
->  drivers/net/benet/be_cmds.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Are you using anything from this file? Please audit this list and remove
+> the files which are not used. Thanks.
+
+Done
+
 > 
-> --- a/drivers/net/benet/be_cmds.c
-> +++ b/drivers/net/benet/be_cmds.c
-> @@ -1179,7 +1179,7 @@ int be_cmd_multicast_set(struct be_adapt
->  
->  		i = 0;
->  		netdev_for_each_mc_addr(ha, netdev)
-> -			memcpy(req->mac[i].byte, ha->addr, ETH_ALEN);
-> +			memcpy(req->mac[i++].byte, ha->addr, ETH_ALEN);
->  	} else {
->  		req->promiscuous = 1;
->  	}
+>> +
+>> +#define SIZE_NAME 30
+>> +#define SIZE_EVENT_PATH 40
+> 
+> I don't find anybody using these #defines. Please remove the defines which
+> are not used.
+
+Old useless macro, deleted.
+
+> 
+>> +#define AS5011_MAX_AXIS	80
+>> +#define AS5011_MIN_AXIS	(-80)
+>> +#define AS5011_FUZZ	8
+>> +#define AS5011_FLAT	40
+>> +
+>> +static int as5011_i2c_write(struct i2c_client *client,
+>> +			    uint8_t aregaddr,
+>> +			    uint8_t avalue)
+>> +{
+>> +	int ret;
+>> +	uint8_t data[2] = { aregaddr, avalue };
+>> +
+>> +	struct i2c_msg msg = {	client->addr,
+>> +				I2C_M_IGNORE_NAK,
+>> +				2,
+>> +				(uint8_t *)data };
+>> +
+>> +	ret = i2c_transfer(client->adapter, &msg, 1);
+>> +
+>> +	if (ret < 0)
+>> +		return ret;
+>> +	return 1;
+>> +}
+> 
+> We return '0' on success and negative error code for error.
+
+Ok.
+
+> 
+>> +
+>> +static irqreturn_t button_interrupt(int irq, void *dev_id)
+>> +{
+>> +	struct as5011_platform_data *plat_dat = dev_id;
+>> +	int ret;
+>> +
+>> +	ret = gpio_get_value(plat_dat->button_gpio);
+> 
+> I don't find gpio_request call for this gpio anywhere in this driver. I prefer
+> that we do that for each gpio we use in the driver itself. Only muxing stuff
+> can be left out in your init/exit hooks.
+
+Ok I added it and deleted init/exit hooks.
+
+> 
+>> +	if (ret)
+>> +		input_report_key(plat_dat->input_dev, BTN_JOYSTICK, 0);
+>> +	else
+>> +		input_report_key(plat_dat->input_dev, BTN_JOYSTICK, 1);
+>> +	input_sync(plat_dat->input_dev);
+>> +
+>> +	return IRQ_HANDLED;
+>> +}
+>> +
+>> +static void as5011_update_axes(struct as5011_platform_data *plat_dat)
+>> +{
+>> +	signed char x, y;
+>> +
+>> +	x = as5011_i2c_read(plat_dat->i2c_client, AS5011_X_RES_INT);
+>> +	y = as5011_i2c_read(plat_dat->i2c_client, AS5011_Y_RES_INT);
+> 
+> I prefer that i2c_read wrapper here would return the actual error code instead,
+> and have one function argument to return the "x, y" co-ordinates, that way
+> we don't loose the error codes, and return from here itself if i2c read fails.
+
+Ok
+
+> 
+>> +	input_report_abs(plat_dat->input_dev, ABS_X, x);
+>> +	input_report_abs(plat_dat->input_dev, ABS_Y, y);
+>> +	input_sync(plat_dat->input_dev);
+>> +}
+>> +
+>> +static irqreturn_t as5011_int_interrupt(int irq, void *dev_id)
+>> +{
+>> +	struct as5011_platform_data *plat_dat = dev_id;
+>> +
+>> +	mutex_lock(&plat_dat->update_lock);
+>> +	as5011_update_axes(plat_dat);
+>> +	mutex_unlock(&plat_dat->update_lock);
+> 
+> Please explain this lock. Sorry if I have missed out your explanation in the earlier threads.
+
+If a second interruption occurs the first update must be finished before update again.
+
+> 
+>> +
+>> +	return IRQ_HANDLED;
+>> +}
+>> +
+>> +static int __devinit as5011_probe(struct i2c_client *client,
+>> +			const struct i2c_device_id *id)
+>> +{
+>> +	struct as5011_platform_data *plat_dat = client->dev.platform_data;
+> 
+> const please. 
+
+ok
+
+>> +
+>> +	retval = request_threaded_irq(plat_dat->button_irq,
+>> +					NULL, button_interrupt,
+>> +					0, "as5011_button",
+>> +					plat_dat);
+>> +	if (retval < 0) {
+>> +		dev_err(&client->dev, "Can't allocate irq %d\n",
+>> +			plat_dat->button_irq);
+>> +		retval = -EBUSY;
+> 
+> Why don't we return same error code instead of overwriting it here?
+
+Copy/paste error.
+
+
+>> +
+>> +	/* to free irq gpio in chip*/
+>> +	as5011_i2c_read(plat_dat->i2c_client, AS5011_X_RES_INT);
+> 
+> Would you prefer to move some of the initialization of the chip except
+> reset of controller to open() call, so that if there is no user of this
+> device than we don't need to leave this device left configured?
+
+I it could be a good idea. I didn't know that I can catch the open() call under the driver.
+
+>> +struct as5011_platform_data {
+>> +	/* public */
+>> +	int button_gpio;
+>> +	int button_irq;
+>> +	int int_gpio;
+>> +	int int_irq;
+>> +	char xp, xn; /* threshold for x axis */
+>> +	char yp, yn; /* threshold for y axis */
+>> +
+>> +	int (*init_gpio)(void); /* init interrupts gpios */
+>> +	void (*exit_gpio)(void);/* exit gpios */
+>> +
+>> +	/* private */
+>> +	struct input_dev *input_dev;
+>> +	struct i2c_client *i2c_client;
+>> +	char name[AS5011_MAX_NAME_LENGTH];
+>> +	struct mutex update_lock;
+> 
+> These private stuff should not be part of your platform data structure. When we say
+> platform data meaning that it will be all public with "const". Please allocate
+> local data structure in the probe itself with these private members. You can refer
+> other drivers.
+
+Ok done.
+
 > 
 > 
-> _______________________________________________
-> stable mailing list
-> stable@linux.kernel.org
-> http://linux.kernel.org/mailman/listinfo/stable
+> ---Trilok Soni
+> 
+
+-- Fabien Marteau
+
