@@ -1,91 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156Ab1AGNRS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 08:17:18 -0500
-Received: from mail-fx0-f66.google.com ([209.85.161.66]:42730 "EHLO
-	mail-fx0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752096Ab1AGNRQ convert rfc822-to-8bit (ORCPT
+	id S1753218Ab1AGNTf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 08:19:35 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:64807 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752629Ab1AGNTe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 08:17:16 -0500
+	Fri, 7 Jan 2011 08:19:34 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=pwGtM51FL3AMWnFA3mxdCMo7QYKbNUsrVoH/gFi2jJygEMYv0a5pmkDt5H+Dnjtn1/
-         vyf/flbyFLa/gCz7Ngk3ojJz9v9SQ1UUXI+lFUYj8pRmOsN1B5E1n6V/XOMcjfu/0qks
-         t4YWcsqh+YGm+NQ/QGEdgP6BClFdWFCRAf3Xo=
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=VKYXolIA3TtfpR0p78fsZNVIcoc+4WtID92pNwgonF9OjU3hmJxCOUnzMWt5lMzDwf
+         5X63d9QiwVb88CUhGcjA97W0fm5VlcLbNtHlYlntZEKmlmgLNlpPdHIiYSqC+oVD39pU
+         1F8QvKR3bfOzvjwSLjPfuNdnStJK+jK9LbV+c=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=iddsbRr+N5iLuGBizbFFQ2JN9sgBFC_Q3uA2K@mail.gmail.com>
-References: <AANLkTi=9B-8KN0oiXoiU+KqPt6B8Vs=d7yu9cui-7e1r@mail.gmail.com>
-	<20101215101027.GA31097@ZenIV.linux.org.uk>
-	<4D0A12EA.6040605@snapgear.com>
-	<AANLkTi=iddsbRr+N5iLuGBizbFFQ2JN9sgBFC_Q3uA2K@mail.gmail.com>
-Date: Fri, 7 Jan 2011 14:17:13 +0100
-X-Google-Sender-Auth: fHvbNN7Fc2RBdm8J2Jb7EGgTepo
-Message-ID: <AANLkTik-9r_ZPkzVGowW2xT8h+QtVJ57q3mE6iKsuuVa@mail.gmail.com>
-Subject: Re: Signal patchset
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Ungerer <gerg@snapgear.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Andreas Schwab <schwab@linux-m68k.org>,
-        Thorsten Glaser <tg@mirbsd.de>, linux-kernel@vger.kernel.org,
-        linux-m68k@vger.kernel.org
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20110107231748.76170ff3.sfr@canb.auug.org.au>
+References: <20110107110513.30776114.sfr@canb.auug.org.au>
+	<4D26C179.7030704@kernel.dk>
+	<AANLkTinyaZfsYv43046LWgu8U3kg6_79y+PTFO1RxtnY@mail.gmail.com>
+	<20110107231748.76170ff3.sfr@canb.auug.org.au>
+Date: Fri, 7 Jan 2011 14:19:33 +0100
+Message-ID: <AANLkTimpVMLGBnP33Ro8MBtW3GJjskg0bBK717Xf-Mh_@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the block tree
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 6, 2011 at 21:42, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Thu, Dec 16, 2010 at 14:23, Greg Ungerer <gerg@snapgear.com> wrote:
->> On 15/12/10 20:10, Al Viro wrote:
->>> On Sun, Dec 05, 2010 at 12:15:10PM +0100, Geert Uytterhoeven wrote:
->>>
->>>> Unless someone objects, I'm inclined to apply Al's patchset, as it
->>>> improves the
->>>> situation anyway.
->>>>
->>>> OK?
->>>
->>> FWIW, there's an m68knommu counterpart (ACKed by gerg a while ago).  The
->>> entire bunch is on ftp.linux.org.uk/pub/people/viro/m68k-signals - both m68k
->>> and m68knommu sets.  I don't know how you guys would prefer it done, since
+On Fri, Jan 7, 2011 at 1:17 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi All,
 >
-> Thx, good the know the nommu part is there, as I don't seem to have it
-> in my mailbox.
->
->>> there's a trivial dependency between m68k and m68knommu parts of series -
->>> the former has
->>> +#ifndef __uClinux__
->>> +#define __ARCH_WANT_SYS_RT_SIGSUSPEND
->>> +#endif
->>> in unistd.h and the latter does
->>> -#ifndef __uClinux__
->>>  #define __ARCH_WANT_SYS_RT_SIGSUSPEND
->>> -#endif
->>> Both parts switch to generic sys_rt_sigsuspend(), for mmu and nommu resp.,
->>> so they need __ARCH_WANT_SYS_RT_SIGSUSPEND defined as soon as conversion
->>> is done.  Other than that they are independent.
+> On Fri, 7 Jan 2011 11:52:08 +0100 Sedat Dilek <sedat.dilek@googlemail.com> wrote:
 >>
->> I can make sure to send to Linus after Geert. Unless Geert you
->> want to take and send both the m68k and m68knommu changes?
+>> JFYI:
+>> I pulled in patches from linux-2.6-block#for-next (up to commit
+>> 6573422f81efa3bd71848dc584c35d4318d3de0b):
+>> "Merge branch 'for-2.6.38/core' into for-next"
+>> ...into linux-next (next-20110107) and now I get:
+>>
+>> $ grep block build_linux-next_next20110107.dileks.2.log
+>> 30886 blocks
+>>   CC      fs/block_dev.o
+>>   CC      mm/memblock.o
+>>   CC      kernel/power/block_io.o
+>> /home/sd/src/linux-2.6/linux-2.6.37/debian/build/source_i386_none/kernel/trace/blktrace.c:999:2:
+>> warning: passing argument 1 of ‘register_trace_block_bio_complete’
+>> from incompatible pointer type
+>> /home/sd/src/linux-2.6/linux-2.6.37/debian/build/source_i386_none/include/trace/events/block.h:240:1:
+>> note: expected ‘void (*)(void *, struct request_queue *, struct bio *,
+>> int)’ but argument is of type ‘void (*)(void *, struct request_queue
+>> *, struct bio *)’
+>> /home/sd/src/linux-2.6/linux-2.6.37/debian/build/source_i386_none/kernel/trace/blktrace.c:1038:2:
+>> warning: passing argument 1 of ‘unregister_trace_block_bio_complete’
+>> from incompatible pointer type
+>> /home/sd/src/linux-2.6/linux-2.6.37/debian/build/source_i386_none/include/trace/events/block.h:240:1:
+>> note: expected ‘void (*)(void *, struct request_queue *, struct bio *,
+>> int)’ but argument is of type ‘void (*)(void *, struct request_queue
+>> *, struct bio *)’
 >
-> I can take the m68knommu changes with your ack, too.
-> I'll try to take a look at it tomorrow...
+> I reported that separately today and Mathieu Desnoyers (cc'd) has said
+> that he will supply a patch.
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
+>
 
-I applied the m68k part to master and for-2.6.38/for-linus.
-In addition, I applied the m68knommu part with Greg's acks added to for-next.
+Hmm, I have pulled-in freshly from linux-2.6-block#for-next after you
+published latest linux-next (next-20110107).
+So, I guessed the (reported) issue is fixed, now.
 
-Greg, please let me know if this is OK, so I can send a pull request to Linus
-after it's been cooking one night in linux-next.
+- Sedat -
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+[1] http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=commit;h=b7908c1035af7652cd613991b54dbff9c8b6bd3a
