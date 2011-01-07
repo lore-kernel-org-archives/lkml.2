@@ -1,118 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab1AGEI6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 23:08:58 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:36361 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752957Ab1AGEI5 (ORCPT
+	id S1754814Ab1AGEPH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 23:15:07 -0500
+Received: from mga09.intel.com ([134.134.136.24]:38122 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754708Ab1AGEPF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 23:08:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=aUTDfsgQxqAP5omYjJp5VAc4T7or1STiDkXjK6Cp2DqS+3G86llD+Ui/OfB4CRBwf+
-         25P4d1EtieUtpftrsQYf386KkCJjZxLCsDfDd/0c44UuRXkOGCb4umixneqWtUIEbg3D
-         xb20lBy1fGwRleZC3MtDzRCtvMW8K0AA0qkMs=
-Message-ID: <4D2691D4.3060304@gmail.com>
-Date: Thu, 06 Jan 2011 23:08:52 -0500
-From: William Allen Simpson <william.allen.simpson@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Thu, 6 Jan 2011 23:15:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,286,1291622400"; 
+   d="scan'208";a="694454253"
+From: "Zhong, Xin" <xin.zhong@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "StMichalke@web.de" <StMichalke@web.de>
+CC: "bugzilla-daemon@bugzilla.kernel.org" 
+	<bugzilla-daemon@bugzilla.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+Date: Fri, 7 Jan 2011 12:14:39 +0800
+Subject: RE: [Bug 26242] New: BUG: unable to handle kernel NULL pointer
+ dereference at   (null)
+Thread-Topic: [Bug 26242] New: BUG: unable to handle kernel NULL pointer
+ dereference at   (null)
+Thread-Index: Acut5rx6OXKwGHsgQfm9mtT8Gy+diQAOKX0Q
+Message-ID: <1865303E0DED764181A9D882DEF65FB685AF8B6D57@shsmsx502.ccr.corp.intel.com>
+References: <bug-26242-27@https.bugzilla.kernel.org/>
+ <20110106131258.c4b262bf.akpm@linux-foundation.org>
+In-Reply-To: <20110106131258.c4b262bf.akpm@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [058/152] tcp: protect sysctl_tcp_cookie_size reads
-References: <20110106002302.141581701@clark.site>
-In-Reply-To: <20110106002302.141581701@clark.site>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you for bringing this to my attention.  There's been quite a few
-changes in the 18 months since this function was originally written.
+A similar bug has been reported by Kenneth Lakin [kennethlakin@gmail.com] last week. It's related to my check-in (git commit 914ee295af418e936ec20a08c1663eaabe4cd07a). I am looking into it now.
 
-The overall purpose of the patch seems OK, although most of the patch
-has nothing to do with the purported fix.
+I found one suspicious code in prepage_pages (fs/btrfs/file.c):
 
-That is, somebody preferred to alter conditions and remove braces.  Seems
-harder to read to me!  I'm surprised that this passed checkpatch.pl?
+        start_pos = pos & ~((u64)root->sectorsize - 1);
+        last_pos = ((u64)index + num_pages) << PAGE_CACHE_SHIFT;
+
+root->sectorsize is used at first, but PAGE_SIZE is used after it. Do we assume these two values are always the same?
+
+-----Original Message-----
+From: linux-btrfs-owner@vger.kernel.org [mailto:linux-btrfs-owner@vger.kernel.org] On Behalf Of Andrew Morton
+Sent: Friday, January 07, 2011 5:13 AM
+To: StMichalke@web.de
+Cc: bugzilla-daemon@bugzilla.kernel.org; Peter Zijlstra; linux-kernel@vger.kernel.org; linux-btrfs@vger.kernel.org
+Subject: Re: [Bug 26242] New: BUG: unable to handle kernel NULL pointer dereference at (null)
 
 
-On 1/5/11 7:22 PM, Greg KH wrote:
-> 2.6.36-stable review patch.  If anyone has any objections, please let us know.
->
-> ------------------
->
->
-> From: Eric Dumazet<eric.dumazet@gmail.com>
->
-> [ Upstream commit f19872575ff7819a3723154657a497d9bca66b33 ]
->
-> Make sure sysctl_tcp_cookie_size is read once in
-> tcp_cookie_size_check(), or we might return an illegal value to caller
-> if sysctl_tcp_cookie_size is changed by another cpu.
->
-> Signed-off-by: Eric Dumazet<eric.dumazet@gmail.com>
-> Cc: Ben Hutchings<bhutchings@solarflare.com>
-> Cc: William Allen Simpson<william.allen.simpson@gmail.com>
-> Signed-off-by: David S. Miller<davem@davemloft.net>
-> Signed-off-by: Greg Kroah-Hartman<gregkh@suse.de>
-> ---
->   net/ipv4/tcp_output.c |   27 +++++++++++++++------------
->   1 file changed, 15 insertions(+), 12 deletions(-)
->
-> --- a/net/ipv4/tcp_output.c
-> +++ b/net/ipv4/tcp_output.c
-> @@ -391,27 +391,30 @@ struct tcp_out_options {
->    */
->   static u8 tcp_cookie_size_check(u8 desired)
->   {
-> -	if (desired>  0) {
-> +	int cookie_size;
-> +
-> +	if (desired>  0)
->   		/* previously specified */
->   		return desired;
-> -	}
-> -	if (sysctl_tcp_cookie_size<= 0) {
-> +
-> +	cookie_size = ACCESS_ONCE(sysctl_tcp_cookie_size);
-> +	if (cookie_size<= 0)
->   		/* no default specified */
->   		return 0;
-> -	}
-> -	if (sysctl_tcp_cookie_size<= TCP_COOKIE_MIN) {
-> +
-> +	if (cookie_size<= TCP_COOKIE_MIN)
->   		/* value too small, specify minimum */
->   		return TCP_COOKIE_MIN;
-> -	}
-> -	if (sysctl_tcp_cookie_size>= TCP_COOKIE_MAX) {
-> +
-> +	if (cookie_size>= TCP_COOKIE_MAX)
->   		/* value too large, specify maximum */
->   		return TCP_COOKIE_MAX;
-> -	}
-> -	if (0x1&  sysctl_tcp_cookie_size) {
-> +
-> +	if (cookie_size&  1)
->   		/* 8-bit multiple, illegal, fix it */
-> -		return (u8)(sysctl_tcp_cookie_size + 0x1);
-> -	}
-> -	return (u8)sysctl_tcp_cookie_size;
-> +		cookie_size++;
-> +
-> +	return (u8)cookie_size;
->   }
->
->   /* Write previously computed TCP options to the packet.
->
->
->
+(switched to email.  Please respond via emailed reply-to-all, not via the
+bugzilla web interface).
 
+On Thu, 6 Jan 2011 20:59:08 GMT
+bugzilla-daemon@bugzilla.kernel.org wrote:
+
+> https://bugzilla.kernel.org/show_bug.cgi?id=26242
+> 
+>            Summary: BUG: unable to handle kernel NULL pointer dereference
+>                     at   (null)
+>            Product: Memory Management
+>            Version: 2.5
+>     Kernel Version: 2.6.37
+>           Platform: All
+>         OS/Version: Linux
+>               Tree: Mainline
+>             Status: NEW
+>           Severity: low
+>           Priority: P1
+>          Component: Other
+>         AssignedTo: akpm@linux-foundation.org
+>         ReportedBy: StMichalke@web.de
+>         Regression: No
+> 
+> 
+> My system crashed with the following output:
+> 
+> ___
+> Jan  6 20:06:22 eser kernel: [19365.562621] BUG: unable to handle kernel NULL
+> pointer dereference at   (null)
+> Jan  6 20:06:22 eser kernel: [19365.562675] IP: [<c022989b>]
+> kmap_atomic_prot+0x1b/0x100
+> Jan  6 20:06:22 eser kernel: [19365.562709] *pde = 00000000 
+> Jan  6 20:06:22 eser kernel: [19365.562726] Oops: 0000 [#1] PREEMPT SMP 
+> Jan  6 20:06:22 eser kernel: [19365.562752] last sysfs file:
+> /sys/devices/platform/coretemp.0/temp1_input
+> Jan  6 20:06:22 eser kernel: [19365.562777] Modules linked in: isofs usblp
+> usb_storage uas nls_utf8 udf crc_itu_t fuse ipt_MASQUERADE xt_pkttype xt_TCPMSS
+> xt_tcpudp ipt_LOG xt_limit iptable_nat nf_nat snd_pcm_oss snd_mixer_oss snd_seq
+> snd_seq_device xt_NOTRACK ipt_REJECT xt_state iptable_raw iptable_filter
+> nf_conntrack_netbios_ns nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 ip_tables
+> cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf
+> speedstep_lib ip6_tables x_tables loop arc4 ecb b43 snd_hda_codec_si3054
+> mac80211 snd_hda_codec_realtek snd_hda_intel r8169 snd_hda_codec cfg80211
+> sdhci_pci mii snd_hwdep acer_wmi sdhci snd_pcm rfkill iTCO_wdt yenta_socket ssb
+> tifm_7xx1 iTCO_vendor_support sg sr_mod mmc_core snd_timer pcmcia_core
+> tifm_core cdrom pcspkr wmi pcmcia_rsrc psmouse snd i2c_i801 shpchp evdev
+> soundcore battery rng_core ac snd_page_alloc pci_hotplug dm_crypt usbhid hid
+> nouveau ttm drm_kms_helper drm uhci_hcd rtc_cmos ata_piix i2c_algo_bit i2c_core
+> rtc_core cfbcopyarea ehci_hcd usb
+> Jan  6 20:06:22 eser kernel: core video cfbimgblt cfbfillrect rtc_lib output
+> button nls_base dm_snapshot sha512_generic sha256_generic xts cbc aes_i586
+> aes_generic cfq_iosched blk_cgroup btrfs zlib_deflate libcrc32c reiserfs ahci
+> libahci libata coretemp hwmon fan thermal processor unix [last unloaded:
+> pktcdvd]
+> Jan  6 20:06:22 eser kernel: [19365.563014] 
+> Jan  6 20:06:22 eser kernel: [19365.563014] Pid: 15675, comm: gimp-2.6 Not
+> tainted 2.6.37 #1 Myall2                         /Aspire 9410
+> Jan  6 20:06:22 eser kernel: [19365.563014] EIP: 0060:[<c022989b>] EFLAGS:
+> 00010202 CPU: 0
+> Jan  6 20:06:22 eser kernel: [19365.563014] EIP is at
+> kmap_atomic_prot+0x1b/0x100
+> Jan  6 20:06:22 eser kernel: [19365.563014] EAX: 00000000 EBX: 00000600 ECX:
+> f3a82000 EDX: 00000163
+> Jan  6 20:06:23 eser kernel: [19365.563014] ESI: f3a83eac EDI: 00000000 EBP:
+> f3a83db8 ESP: f3a83da8
+> Jan  6 20:06:23 eser kernel: [19365.563014]  DS: 007b ES: 007b FS: 00d8 GS:
+> 0033 SS: 0068
+> Jan  6 20:06:23 eser kernel: [19365.563014] Process gimp-2.6 (pid: 15675,
+> ti=f3a82000 task=eaf28000 task.ti=f3a82000)
+> Jan  6 20:06:23 eser kernel: [19365.563014] Stack:
+> Jan  6 20:06:23 eser kernel: [19365.563014]  f3a83dc0 00000600 f3a83eac
+> 00000000 f3a83dc0 c022998e f3a83dd8 c0299c0c
+> Jan  6 20:06:23 eser kernel: [19365.563014]  e0359240 00000600 00001000
+> 00001000 f3a83dfc f828d6da 00000600 00001008
+> Jan  6 20:06:23 eser kernel: [19365.563014]  00000002 00000000 00000002
+> 00002000 00001608 f3a83ed0 f828e1ff 00001608
+> Jan  6 20:06:23 eser kernel: [19365.563014] Call Trace:
+> Jan  6 20:06:23 eser kernel: [19365.563014]  [<c022998e>] ?
+> __kmap_atomic+0xe/0x10
+> Jan  6 20:06:23 eser kernel: [19365.563014]  [<c0299c0c>] ?
+> iov_iter_copy_from_user_atomic+0x3c/0x90
+> Jan  6 20:06:23 eser kernel: [19365.563014]  [<f828d6da>] ?
+> btrfs_copy_from_user+0x5a/0xb0 [btrfs]
+> Jan  6 20:06:23 eser kernel: [19365.563014]  [<f828e1ff>] ?
+> btrfs_file_aio_write+0x52f/0x9c0 [btrfs]
+> Jan  6 20:06:23 eser kernel: [19365.563014]  [<c02d0810>] ?
+> __mem_cgroup_commit_charge+0x70/0xe0
+> Jan  6 20:06:23 eser kernel: [19365.563014]  [<c02d672c>] ?
+> do_sync_write+0x9c/0xd0
+> Jan  6 20:06:23 eser kernel: [19365.563014]  [<c02d6b15>] ?
+> rw_verify_area+0x65/0x100
+> Jan  6 20:06:23 eser kernel: [19365.563014]  [<c02d6e7a>] ?
+> vfs_write+0x9a/0x160
+> Jan  6 20:06:23 eser kernel: [19365.563014]  [<c02d8211>] ?
+> fget_light+0x91/0xb0
+> Jan  6 20:06:23 eser kernel: [19365.563014]  [<c02d6690>] ?
+> do_sync_write+0x0/0xd0
+> Jan  6 20:06:23 eser kernel: [19365.563014]  [<c02d714d>] ? sys_write+0x3d/0x70
+> Jan  6 20:06:23 eser kernel: [19365.563014]  [<c0202e18>] ?
+> sysenter_do_call+0x12/0x28
+> Jan  6 20:06:23 eser kernel: [19365.563014]  [<c04e0000>] ?
+> quirk_amd_ide_mode+0x40/0x95
+> Jan  6 20:06:23 eser kernel: [19365.563014] Code: 8b 15 4c 6a 6b c0 55 89 e5 e8
+> e2 f8 ff ff 5d c3 55 89 e5 83 ec 10 89 e1 81 e1 00 e0 ff ff 89 5d f4 89 75 f8
+> 89 7d fc 83 41 14 01 <8b> 08 c1 e9 1e 69 d9 40 03 00 00 8d 8b c0 42 64 c0 2b 8b
+> cc 45 
+> Jan  6 20:06:23 eser kernel: [19365.563014] EIP: [<c022989b>]
+> kmap_atomic_prot+0x1b/0x100 SS:ESP 0068:f3a83da8
+> Jan  6 20:06:23 eser kernel: [19365.563014] CR2: 0000000000000000
+> Jan  6 20:06:23 eser kernel: [19365.568714] ---[ end trace afc2be06c7d06a71
+> ]---
+> Jan  6 20:06:23 eser kernel: [19365.568724] note: gimp-2.6[15675] exited with
+> preempt_count 2
+> ___
+> 
+> The kernel is an unpatched v2.6.37. I have not seen something like this before.
+
+Bugzilla's habit of wordwrapping oops traces is fantastically
+irritating.  Please use attachments to avoid this.
+
+Either Peter's new kmap_atomic() stuff blew up or BTRFS is playing
+around with a NULL page*.  I'd wager on the latter.
+
+Thanks, I'll ask Rafael and Maciej to track this as a 2.6.36->2.6.37
+regression.
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
