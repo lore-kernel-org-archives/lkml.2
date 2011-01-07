@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812Ab1AGTTm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 14:19:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57450 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751762Ab1AGTTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 14:19:41 -0500
-Date: Fri, 7 Jan 2011 11:19:30 -0800
-From: Greg KH <gregkh@suse.de>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-        Nelson Elhage <nelhage@ksplice.com>,
-        "David S. Miller" <davem@davemloft.net>, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, stable-review@kernel.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [stable] [069/152] econet: Do the correct cleanup after an
- unprivileged SIOCSIFADDR.
-Message-ID: <20110107191930.GB16084@suse.de>
-References: <20110106002500.GA3172@kroah.com>
- <20110106002303.148373791@clark.site>
- <20110107191036.GG32717@windriver.com>
+	id S1753420Ab1AGTYu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 14:24:50 -0500
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:57395 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753137Ab1AGTYs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 14:24:48 -0500
+Date: Fri, 7 Jan 2011 21:24:43 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: "Gadiyar, Anand" <gadiyar@ti.com>
+Cc: Ming Lei <tom.leiming@gmail.com>, Benoit Cousson <b-cousson@ti.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Paul Walmsley <paul@pwsan.com>, Greg KH <greg@kroah.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
+        linux-omap@vger.kernel.org
+Subject: Re: linux-next: manual merge of the usb tree with the omap tree
+Message-ID: <20110107192443.GE2272@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <4D139517.3010608@ti.com>
+ <AANLkTi=pTNg2iWN+=uEv=CyZHHCoddF51pmmCMjPeMUF@mail.gmail.com>
+ <4ce0f816f951f24ca3de9c84d9f70842@mail.gmail.com>
+ <AANLkTimA5UOVn6+xe0ofV1F3_XhAP0daBvOAX2k1u_dU@mail.gmail.com>
+ <AANLkTimzQ1PHN986fqPF0yjd1M+390nSUDYJ65pu0z_f@mail.gmail.com>
+ <4D271E0E.8050401@ti.com>
+ <AANLkTikLQRHyp-TS_idEp5Fr74qC3vDoMqqsAA2v_oV8@mail.gmail.com>
+ <c822ad4569a9dc865b5ccf39e12c828b@mail.gmail.com>
+ <f853a77e2aebea4130fc486bdbf4aa06@mail.gmail.com>
+ <AANLkTiku=1-NftQGkOiG0Sm5Fp1-Szqe+39kzWz+4dAC@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110107191036.GG32717@windriver.com>
+In-Reply-To: <AANLkTiku=1-NftQGkOiG0Sm5Fp1-Szqe+39kzWz+4dAC@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 07, 2011 at 02:10:36PM -0500, Paul Gortmaker wrote:
-> [[stable] [069/152] econet: Do the correct cleanup after an unprivileged SIOCSIFADDR.] On 05/01/2011 (Wed 16:22) Greg KH wrote:
+On Sat, Jan 08, 2011 at 12:24:24AM +0530, Gadiyar, Anand wrote:
+> On Fri, Jan 7, 2011 at 8:50 PM, Anand Gadiyar <gadiyar@ti.com> wrote:
+> > Update: I disabled CONFIG_OMAP_RESET_CLOCKS and the PHY and other
+> > connected devices enumerate just fine. Could you try this out on
+> > your board as well?
+> >
+> > I'll look deeper and see if there are some required clocks that are
+> > accidentally getting turned off.
+> >
 > 
-> > 2.6.36-stable review patch.  If anyone has any objections, please let us know.
-> > 
-> > ------------------
-> > 
-> > 
-> > From: Nelson Elhage <nelhage@ksplice.com>
-> > 
-> > [ Upstream commit f24b8bedf70c524775eabd51570c3fa7708a97b7 ]
+> A final update from today: It appears that disabling auxclk3_ck causes
+> EHCI to fail. I'm not sure what this clock feeds, and will need to look it
+> up. Keeping this clock alive is sufficient to get the hub to enumerate.
 > 
-> I think the upstream # got mangled somehow.  Looking at the tree, I
-> think the upstream is 0c62fc6dd02c8d793c75ae76a9b6881fc36388ad.
-> 
-> The ID listed currently gives me a "bad object". 
+> I would've looked it up, but got booted out by a fire alarm drill. I'll
+> take a look tomorrow and cook up a fix.
 
-Nice catch, I don't know what happened here, must be something in
-David's scripts, not mine :)
+Good finding :-) Thanks a lot :-)
 
-I'll go edit the changelog before I commit it later today, thanks.
-
-greg k-h
+-- 
+balbi
