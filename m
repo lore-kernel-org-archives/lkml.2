@@ -1,148 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998Ab1AGPcp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 10:32:45 -0500
-Received: from hera.kernel.org ([140.211.167.34]:40638 "EHLO hera.kernel.org"
+	id S1754005Ab1AGPdG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 10:33:06 -0500
+Received: from hera.kernel.org ([140.211.167.34]:40660 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752319Ab1AGPcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 10:32:43 -0500
-Date: Fri, 7 Jan 2011 15:32:16 GMT
-From: tip-bot for David Rientjes <rientjes@google.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, tglx@linutronix.de, rientjes@google.com,
+	id S1752392Ab1AGPdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 10:33:03 -0500
+Date: Fri, 7 Jan 2011 15:32:40 GMT
+From: tip-bot for Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
         mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, rientjes@google.com,
-        mingo@elte.hu
-In-Reply-To: <alpine.DEB.2.00.1012301053590.12995@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1012301053590.12995@chino.kir.corp.google.com>
+Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <4d22058b.cdace30a.4657.ffff95b1@mx.google.com>
+References: <4d22058b.cdace30a.4657.ffff95b1@mx.google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/numa] x86, numa: Fix CONFIG_DEBUG_PER_CPU_MAPS without NUMA emulation
-Message-ID: <tip-d906f0eb2f0e6d1a24c479f69a9c39e7e45c5ae8@git.kernel.org>
-Git-Commit-ID: d906f0eb2f0e6d1a24c479f69a9c39e7e45c5ae8
+Subject: [tip:perf/core] perf_events: Move code around to prepare for cgroup
+Message-ID: <tip-0b3fcf178deefd7b64154c2c0760a2c63df0b74f@git.kernel.org>
+Git-Commit-ID: 0b3fcf178deefd7b64154c2c0760a2c63df0b74f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 07 Jan 2011 15:32:17 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 07 Jan 2011 15:32:40 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d906f0eb2f0e6d1a24c479f69a9c39e7e45c5ae8
-Gitweb:     http://git.kernel.org/tip/d906f0eb2f0e6d1a24c479f69a9c39e7e45c5ae8
-Author:     David Rientjes <rientjes@google.com>
-AuthorDate: Thu, 30 Dec 2010 10:54:16 -0800
+Commit-ID:  0b3fcf178deefd7b64154c2c0760a2c63df0b74f
+Gitweb:     http://git.kernel.org/tip/0b3fcf178deefd7b64154c2c0760a2c63df0b74f
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Mon, 3 Jan 2011 18:20:01 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 7 Jan 2011 14:09:34 +0100
+CommitDate: Fri, 7 Jan 2011 15:08:50 +0100
 
-x86, numa: Fix CONFIG_DEBUG_PER_CPU_MAPS without NUMA emulation
+perf_events: Move code around to prepare for cgroup
 
-"x86, numa: Fake node-to-cpumask for NUMA emulation" broke the
-build when CONFIG_DEBUG_PER_CPU_MAPS is set and CONFIG_NUMA_EMU
-is not.  This is because it is possible to map a cpu to multiple
-nodes when NUMA emulation is used; the patch required a physical
-node address table to find those nodes that was only available
-when CONFIG_NUMA_EMU was enabled.
+In particular this patch move perf_event_exit_task() before
+cgroup_exit() to allow for cgroup support. The cgroup_exit()
+function detaches the cgroups attached to a task.
 
-This extracts the common debug functionality to its own function
-for CONFIG_DEBUG_PER_CPU_MAPS and uses it regardless of whether
-CONFIG_NUMA_EMU is set or not.
+Other movements include hoisting some definitions and inlines
+at the top of perf_event.c
 
-NUMA emulation will now iterate over the set of possible nodes
-for each cpu and call the new debug function whereas only the
-cpu's node will be used without NUMA emulation enabled.
-
-Reported-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: David Rientjes <rientjes@google.com>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-LKML-Reference: <alpine.DEB.2.00.1012301053590.12995@chino.kir.corp.google.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <4d22058b.cdace30a.4657.ffff95b1@mx.google.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/mm/numa_64.c |   48 +++++++++++++++++++++++++++++++++++++-----------
- 1 files changed, 37 insertions(+), 11 deletions(-)
+ kernel/exit.c       |   14 +++++++++-----
+ kernel/perf_event.c |   28 +++++++++++++++++-----------
+ 2 files changed, 26 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 3d73201..1e72102 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -833,15 +833,48 @@ void __cpuinit numa_remove_cpu(int cpu)
- #endif /* !CONFIG_NUMA_EMU */
- 
- #else /* CONFIG_DEBUG_PER_CPU_MAPS */
-+static struct cpumask __cpuinit *debug_cpumask_set_cpu(int cpu, int enable)
-+{
-+	int node = early_cpu_to_node(cpu);
-+	struct cpumask *mask;
-+	char buf[64];
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 676149a..8cb8904 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -994,6 +994,15 @@ NORET_TYPE void do_exit(long code)
+ 	exit_fs(tsk);
+ 	check_stack_usage();
+ 	exit_thread();
 +
-+	mask = node_to_cpumask_map[node];
-+	if (!mask) {
-+		pr_err("node_to_cpumask_map[%i] NULL\n", node);
-+		dump_stack();
-+		return NULL;
-+	}
++	/*
++	 * Flush inherited counters to the parent - before the parent
++	 * gets woken up by child-exit notifications.
++	 *
++	 * because of cgroup mode, must be called before cgroup_exit()
++	 */
++	perf_event_exit_task(tsk);
 +
-+	cpulist_scnprintf(buf, sizeof(buf), mask);
-+	printk(KERN_DEBUG "%s cpu %d node %d: mask now %s\n",
-+		enable ? "numa_add_cpu" : "numa_remove_cpu",
-+		cpu, node, buf);
-+	return mask;
-+}
+ 	cgroup_exit(tsk, 1);
  
- /*
-  * --------- debug versions of the numa functions ---------
-  */
-+#ifndef CONFIG_NUMA_EMU
-+static void __cpuinit numa_set_cpumask(int cpu, int enable)
-+{
-+	struct cpumask *mask;
+ 	if (group_dead)
+@@ -1007,11 +1016,6 @@ NORET_TYPE void do_exit(long code)
+ 	 * FIXME: do that only when needed, using sched_exit tracepoint
+ 	 */
+ 	flush_ptrace_hw_breakpoint(tsk);
+-	/*
+-	 * Flush inherited counters to the parent - before the parent
+-	 * gets woken up by child-exit notifications.
+-	 */
+-	perf_event_exit_task(tsk);
+ 
+ 	exit_notify(tsk, group_dead);
+ #ifdef CONFIG_NUMA
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 11847bf..2c14e3a 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -38,6 +38,12 @@
+ 
+ #include <asm/irq_regs.h>
+ 
++enum event_type_t {
++	EVENT_FLEXIBLE = 0x1,
++	EVENT_PINNED = 0x2,
++	EVENT_ALL = EVENT_FLEXIBLE | EVENT_PINNED,
++};
 +
-+	mask = debug_cpumask_set_cpu(cpu, enable);
-+	if (!mask)
-+		return;
+ atomic_t perf_task_events __read_mostly;
+ static atomic_t nr_mmap_events __read_mostly;
+ static atomic_t nr_comm_events __read_mostly;
+@@ -65,6 +71,12 @@ int sysctl_perf_event_sample_rate __read_mostly = 100000;
+ 
+ static atomic64_t perf_event_id;
+ 
++static void cpu_ctx_sched_out(struct perf_cpu_context *cpuctx,
++			      enum event_type_t event_type);
 +
-+	if (enable)
-+		cpumask_set_cpu(cpu, mask);
-+	else
-+		cpumask_clear_cpu(cpu, mask);
-+}
-+#else
- static void __cpuinit numa_set_cpumask(int cpu, int enable)
- {
- 	int node = early_cpu_to_node(cpu);
- 	struct cpumask *mask;
--	char buf[64];
- 	int i;
++static void cpu_ctx_sched_in(struct perf_cpu_context *cpuctx,
++			     enum event_type_t event_type);
++
+ void __weak perf_event_print_debug(void)	{ }
  
- 	for_each_online_node(i) {
-@@ -851,24 +884,17 @@ static void __cpuinit numa_set_cpumask(int cpu, int enable)
- 		if (addr < physnodes[node].start ||
- 					addr >= physnodes[node].end)
- 			continue;
--		mask = node_to_cpumask_map[node];
--		if (mask == NULL) {
--			pr_err("node_to_cpumask_map[%i] NULL\n", i);
--			dump_stack();
-+		mask = debug_cpumask_set_cpu(cpu, enable);
-+		if (!mask)
- 			return;
--		}
- 
- 		if (enable)
- 			cpumask_set_cpu(cpu, mask);
- 		else
- 			cpumask_clear_cpu(cpu, mask);
--
--		cpulist_scnprintf(buf, sizeof(buf), mask);
--		printk(KERN_DEBUG "%s cpu %d node %d: mask now %s\n",
--			enable ? "numa_add_cpu" : "numa_remove_cpu",
--			cpu, node, buf);
- 	}
+ extern __weak const char *perf_pmu_name(void)
+@@ -72,6 +84,11 @@ extern __weak const char *perf_pmu_name(void)
+ 	return "pmu";
  }
-+#endif /* CONFIG_NUMA_EMU */
  
- void __cpuinit numa_add_cpu(int cpu)
++static inline u64 perf_clock(void)
++{
++	return local_clock();
++}
++
+ void perf_pmu_disable(struct pmu *pmu)
  {
+ 	int *count = this_cpu_ptr(pmu->pmu_disable_count);
+@@ -240,11 +257,6 @@ static void perf_unpin_context(struct perf_event_context *ctx)
+ 	put_ctx(ctx);
+ }
+ 
+-static inline u64 perf_clock(void)
+-{
+-	return local_clock();
+-}
+-
+ /*
+  * Update the record of the current time in a context.
+  */
+@@ -1193,12 +1205,6 @@ static int perf_event_refresh(struct perf_event *event, int refresh)
+ 	return 0;
+ }
+ 
+-enum event_type_t {
+-	EVENT_FLEXIBLE = 0x1,
+-	EVENT_PINNED = 0x2,
+-	EVENT_ALL = EVENT_FLEXIBLE | EVENT_PINNED,
+-};
+-
+ static void ctx_sched_out(struct perf_event_context *ctx,
+ 			  struct perf_cpu_context *cpuctx,
+ 			  enum event_type_t event_type)
