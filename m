@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939Ab1AGPYf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 10:24:35 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51230 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752885Ab1AGPYe (ORCPT
+	id S1752885Ab1AGP0q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 10:26:46 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:32940 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751641Ab1AGP0p convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 10:24:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=fE8gt0EbW7JJ41tVjq2lZ7u69YN86Ym0QODwqoCpoCpePZc966vs/ZUdGkLWUIHwF5
-         iyBKkFBkoKVLhzoZCAtf7zx1pPe4KHMJ2+onWW6BYLfezLBrGf3RVxEDCjeoWHpyngP4
-         YltUE3QBK9vkAnEDuEDNAPA/AMY8TI2YgR590=
-Date: Fri, 7 Jan 2011 16:24:29 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Soeren Sandmann Pedersen <sandmann@redhat.com>
-Subject: Re: [RFC GIT PULL] perf updates
-Message-ID: <20110107152421.GA2631@nowhere>
-References: <1294325513-14276-1-git-send-email-fweisbec@gmail.com>
- <20110107122317.GA20761@elte.hu>
+	Fri, 7 Jan 2011 10:26:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110107122317.GA20761@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1294410361-9092-1-git-send-email-richard.genoud@gmail.com>
+References: <AANLkTimpTUz_Fizef09urPBR8vP80KU-5yApjzGWFwc0@mail.gmail.com> <1294410361-9092-1-git-send-email-richard.genoud@gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 7 Jan 2011 08:26:23 -0700
+X-Google-Sender-Auth: qIUDqVabCtOgWOfwQZS0dwZZo8U
+Message-ID: <AANLkTin0eXCpLD1B0+zABqYcWxzG8+kM1cpRyD+Af_2n@mail.gmail.com>
+Subject: Re: [PATCH] spi_imx.c: correct the test on platform_get_irq() return value
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: spi-devel-general@lists.sourceforge.net,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 07, 2011 at 01:23:17PM +0100, Ingo Molnar wrote:
-> 
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > Ingo,
-> > 
-> > Please pull the perf/core branch that can be found at:
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> > 	perf/core
-> > 	
-> > Soeren reported some time ago that callchains were broken on
-> > x86_64 with cpu-clock/task-clock events. After some time I
-> > finally found the problem was in the irq low level arg saving.
-> > It touches fragile code though, I hope some people can
-> > have a look over the fix.
-> > 
-> > Thanks,
-> > 	Frederic
-> > ---
-> > 
-> > Frederic Weisbecker (2):
-> >       x86: Fix rbp saving in pt_regs on irq entry
-> >       perf: Build tools with frame pointer
-> 
-> Is this variant fine with Jan too?
+On Fri, Jan 7, 2011 at 7:26 AM, Richard Genoud <richard.genoud@gmail.com> wrote:
+> The test "if (spi_imx->irq <= 0)" is not testing the IRQ value, but the return value of platform_get_irq().
+> As platform_get_irq() can return an error (-ENXIO) or the IRQ value it found, the test should be "if (spi_imx->irq < 0)"
+>
+> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
 
-So, Arnaldo has picked up the second patch.
+For the majority of architectures in Linux, 0 is not a valid IRQ for
+devices.  Unless there is an actual imx platform that currently
+assigns linux irq 0 to the spi controller then I'd rather not apply
+this change.
 
-For the first I need to resend with a fix on CFI annotations.
+g.
+
+> ---
+>  drivers/spi/spi_imx.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/spi/spi_imx.c b/drivers/spi/spi_imx.c
+> index 55a38e2..793ae99 100644
+> --- a/drivers/spi/spi_imx.c
+> +++ b/drivers/spi/spi_imx.c
+> @@ -847,7 +847,7 @@ static int __devinit spi_imx_probe(struct platform_device *pdev)
+>        }
+>
+>        spi_imx->irq = platform_get_irq(pdev, 0);
+> -       if (spi_imx->irq <= 0) {
+> +       if (spi_imx->irq < 0) {
+>                ret = -EINVAL;
+>                goto out_iounmap;
+>        }
+> --
+> 1.7.1
+>
+>
+
+
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
