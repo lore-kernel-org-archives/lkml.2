@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752087Ab1AGH3g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 02:29:36 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:36016 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389Ab1AGH3f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 02:29:35 -0500
-Date: Fri, 7 Jan 2011 02:29:34 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch 8/8] fs: add i_op->sync_inode
-Message-ID: <20110107072934.GA2849@infradead.org>
-References: <20101218015117.759480620@kernel.dk>
- <20101229151246.GA22033@infradead.org>
- <20110104062725.GD3402@amd>
- <20110104065736.GA8013@infradead.org>
- <20110104080323.GC4090@amd>
- <20110104092501.GB2760@infradead.org>
- <20110104094922.GA4812@amd>
- <20110106204510.GA2872@infradead.org>
- <20110107044734.GA4552@amd>
- <20110107072430.GA32308@infradead.org>
+	id S1752864Ab1AGH3r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 02:29:47 -0500
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:36483 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752380Ab1AGH3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 02:29:45 -0500
+Message-ID: <4D26C179.7030704@kernel.dk>
+Date: Fri, 07 Jan 2011 08:32:09 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110107072430.GA32308@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the block tree
+References: <20110107110513.30776114.sfr@canb.auug.org.au>
+In-Reply-To: <20110107110513.30776114.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 07, 2011 at 02:24:30AM -0500, Christoph Hellwig wrote:
-> On Fri, Jan 07, 2011 at 03:47:34PM +1100, Nick Piggin wrote:
-> > No, you misunderstand 1. I am saying they should be treated as
-> > WB_SYNC_NONE.
-> > 
-> > In fact 2 would cause much more IO, because dirty writeout would
-> > never clean them so it will just keep writing them out. I don't
-> > know how 2 could be feasible.
+On 2011-01-07 01:05, Stephen Rothwell wrote:
+> Hi Jens,
 > 
-> WB_SYNC_NONE means ->write_inode behaves non-blocking.  That is
-> we do not block on memory allocations, and we do not take locks
-> blocking.  Most journaling filesystems currently take the easy
-> way out an make it a no-op due to that, but take a look at XFS
-> how complicated it is to avoid the blocking if you want a non-noop
-> implementation.
+> After merging the block tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> arch/powerpc/platforms/built-in.o: In function `.pmf_get_function':
+> (.text+0x723c): undefined reference to `.kref_get'
+> arch/powerpc/platforms/built-in.o: In function `.pmf_unregister_driver':
+> (.text+0x72c8): undefined reference to `.kref_get'
+> arch/powerpc/platforms/built-in.o: In function `.pmf_do_functions':
+> (.text+0x793c): undefined reference to `.kref_get'
+> arch/powerpc/platforms/built-in.o: In function `.__pmf_find_function':
+> (.text+0x7c80): undefined reference to `.kref_get'
+> arch/powerpc/platforms/built-in.o: In function `.pmf_register_driver':
+> (.text+0x8044): undefined reference to `.kref_get'
+> arch/powerpc/platforms/built-in.o:(.text+0x8310): more undefined references to `.kref_get' follow
+> lib/lib.a(kref.o):(__ksymtab+0x10): undefined reference to `kref_get'
+> drivers/built-in.o: In function `.get_current_tty':
+> (.text+0x60970): undefined reference to `.kref_get'
+> drivers/built-in.o: In function `.__proc_set_tty':
+> tty_io.c:(.text+0x61624): undefined reference to `.kref_get'
+> drivers/built-in.o: In function `.tty_init_dev':
+> (.text+0x64d2c): undefined reference to `.kref_get'
+> drivers/built-in.o: In function `.tty_open':
+> tty_io.c:(.text+0x64ee4): undefined reference to `.kref_get'
+> tty_io.c:(.text+0x64f20): undefined reference to `.kref_get'
+> drivers/built-in.o:tty_io.c:(.text+0x64f58): more undefined references to `.kref_get' follow
+> 
+> Caused by commit 15454034cb3021d8bb9d21b4f35072a809197fdd ("block: add
+> internal hd part table references") which removes kref_get() instead of
+> kref_test_and_get()!
+> 
+> This really wasn't tested, right?
 
-Btw, there's an easy way how we could get this right, in fact
-the write_inode in XFS is already trying to do it, it's just the
-caller not copying with it:
+Irk, it was tested and booted, but apparently I merged the first bad
+version of the patch.
 
- - if we can't get locks for a non-blocking ->write_inode we return
-   EAGAIN, and the callers sets the dirty bits again.
+> I have used the block tree from next-20110106 for today.
+
+Thanks, I'll get this fixed up now.
+
+
+-- 
+Jens Axboe
+
