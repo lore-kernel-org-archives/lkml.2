@@ -1,129 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058Ab1AGKZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 05:25:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29067 "EHLO mx1.redhat.com"
+	id S1751926Ab1AGKaO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 05:30:14 -0500
+Received: from cantor.suse.de ([195.135.220.2]:43278 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751891Ab1AGKZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 05:25:54 -0500
-Date: Fri, 7 Jan 2011 12:24:32 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Milton Miller <miltonm@bga.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jamie Lokier <jamie@shareable.org>, Thomas Weber <swirl@gmx.li>,
-        Gleb Natapov <gleb@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio: remove virtio-pci root device
-Message-ID: <20110107102432.GC8089@redhat.com>
-References: <20110105191711.GA27489@redhat.com>
- <virtio-pci-whynotsimplify@mdm.bga.com>
- <virtio-pci-noroot@mdm.bga.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <virtio-pci-noroot@mdm.bga.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751383Ab1AGKaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 05:30:08 -0500
+From: Thomas Renninger <trenn@suse.de>
+Cc: linux-perf-users@vger.kernel.org, mingo@elte.hu, arjan@linux.intel.com,
+        lenb@kernel.org, j-pihet@ti.com, Thomas Renninger <trenn@suse.de>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/9] cpuidle: Rename X86 specific idle poll state[0] from C0 to POLL
+Date: Fri,  7 Jan 2011 11:29:43 +0100
+Message-Id: <1294396190-23031-3-git-send-email-trenn@suse.de>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1294396190-23031-1-git-send-email-trenn@suse.de>
+References: <1294396190-23031-1-git-send-email-trenn@suse.de>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 07, 2011 at 02:55:06AM -0600, Milton Miller wrote:
-> We sometimes need to map between the virtio device and
-> the given pci device. One such use is OS installer that
-> gets the boot pci device from BIOS and needs to
-> find the relevant block device. Since it can't,
-> installation fails.
-> 
-> Instead of creating a top-level devices/virtio-pci
-> directory, create each device under the corresponding
-> pci device node.  Symlinks to all virtio-pci
-> devices can be found under the pci driver link in
-> bus/pci/drivers/virtio-pci/devices, and all virtio
-> devices under drivers/bus/virtio/devices.
-> 
-> Signed-off-by: Milton Miller <miltonm@bga.com>
+C0 means and is well know as "not idle".
+All documentation out there uses this term as "running"/"not idle"
+state. Also Linux userspace tools (e.g. cpufreq-aperf and turbostat)
+show C0 residency which there is correct, but means something totally
+else than cpuidle "POLL" state.
 
-Thanks! I'll try this next week. 
-Some comments from looking at code:
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+CC: arjan@linux.intel.com
+CC: lenb@kernel.org
+CC: linux-acpi@vger.kernel.org
+CC: Ingo Molnar <mingo@elte.hu>
+CC: linux-kernel@vger.kernel.org
+---
+ drivers/cpuidle/cpuidle.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-- This will break apps that look for devices in the old virtio-pci directory.
-  There are not likely to be many of these,
-  but better be careful. Let's create a compatibility
-  option to put symlinks there?
-  Could be under a compile time option with a deprecation plan.
-  
-- This will create ./virtio0 under the pci device, right?
-  But if the device is then renamed, the installer
-  won't be able to find it, right?
-  And need to do pattern matching to find the name is a bit ugly.
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index 08d5f05..99cc8fc 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -260,7 +260,7 @@ static void poll_idle_init(struct cpuidle_device *dev)
+ 
+ 	cpuidle_set_statedata(state, NULL);
+ 
+-	snprintf(state->name, CPUIDLE_NAME_LEN, "C0");
++	snprintf(state->name, CPUIDLE_NAME_LEN, "POLL");
+ 	snprintf(state->desc, CPUIDLE_DESC_LEN, "CPUIDLE CORE POLL IDLE");
+ 	state->exit_latency = 0;
+ 	state->target_residency = 0;
+-- 
+1.7.3.1
 
-Could we create ./virtio/virtio0 under the pci device?
-Then one can open virtio directory and then the only file there.
-
-> ---
-> 
-> This is an alternative to the patch by Michael S. Tsirkin
-> titled "virtio-pci: add softlinks between virtio and pci"
-> https://patchwork.kernel.org/patch/454581/
-> 
-> It creates simpler code, uses less memory, and should
-> be even easier use by the installer as it won't have to
-> know a virtio symlink to follow (just follow none).
-> 
-> Compile tested only as I don't have kvm setup.
-> 
-> 
-> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-> index ef8d9d5..4fb5b2b 100644
-> --- a/drivers/virtio/virtio_pci.c
-> +++ b/drivers/virtio/virtio_pci.c
-> @@ -96,11 +96,6 @@ static struct pci_device_id virtio_pci_id_table[] = {
->  
->  MODULE_DEVICE_TABLE(pci, virtio_pci_id_table);
->  
-> -/* A PCI device has it's own struct device and so does a virtio device so
-> - * we create a place for the virtio devices to show up in sysfs.  I think it
-> - * would make more sense for virtio to not insist on having it's own device. */
-> -static struct device *virtio_pci_root;
-> -
->  /* Convert a generic virtio device to our structure */
->  static struct virtio_pci_device *to_vp_device(struct virtio_device *vdev)
->  {
-> @@ -629,7 +624,7 @@ static int __devinit virtio_pci_probe(struct pci_dev *pci_dev,
->  	if (vp_dev == NULL)
->  		return -ENOMEM;
->  
-> -	vp_dev->vdev.dev.parent = virtio_pci_root;
-> +	vp_dev->vdev.dev.parent = &pci_dev->dev;
->  	vp_dev->vdev.dev.release = virtio_pci_release_dev;
->  	vp_dev->vdev.config = &virtio_pci_config_ops;
->  	vp_dev->pci_dev = pci_dev;
-> @@ -717,17 +712,7 @@ static struct pci_driver virtio_pci_driver = {
->  
->  static int __init virtio_pci_init(void)
->  {
-> -	int err;
-> -
-> -	virtio_pci_root = root_device_register("virtio-pci");
-> -	if (IS_ERR(virtio_pci_root))
-> -		return PTR_ERR(virtio_pci_root);
-> -
-> -	err = pci_register_driver(&virtio_pci_driver);
-> -	if (err)
-> -		root_device_unregister(virtio_pci_root);
-> -
-> -	return err;
-> +	return pci_register_driver(&virtio_pci_driver);
->  }
->  
->  module_init(virtio_pci_init);
-> @@ -735,7 +720,6 @@ module_init(virtio_pci_init);
->  static void __exit virtio_pci_exit(void)
->  {
->  	pci_unregister_driver(&virtio_pci_driver);
-> -	root_device_unregister(virtio_pci_root);
->  }
->  
->  module_exit(virtio_pci_exit);
