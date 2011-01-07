@@ -1,243 +1,458 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab1AGG41 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 01:56:27 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40264 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218Ab1AGG4Z (ORCPT
+	id S1753971Ab1AGHPr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 02:15:47 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:42273 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752753Ab1AGHPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 01:56:25 -0500
+	Fri, 7 Jan 2011 02:15:46 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=Ey+4OLFGkc0/wqBTxgKOnV6ci5sVtpAwE/D9UiN2E750baK9XsPYuSBRtLXJFNnz4d
-         hV5Nts66ugWa1Y4QJusNC1wv91JbtShsF8vtyji7XymRcBXZfEUzY23HT7+ppMUxrcSB
-         5yGJ5TvGDHPF7YlUZQ/x6sT7BlCvX311x6lvY=
-Date: Thu, 6 Jan 2011 22:56:19 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [git pull] Input updates for 2.6.38-rc0
-Message-ID: <20110107065619.GD29038@core.coreip.homeip.net>
-References: <20110107065448.GC29038@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110107065448.GC29038@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
+         :mime-version:content-type:content-transfer-encoding;
+        b=qzOnfgspWvADIgL0yim086OwwZLqOWJ40AD+1gow7rjd8gs8J8UhEcIA/U4M5YBEiB
+         8CMfgnyft7YSKOleDprPYK6MXBARsSCNj4rGHUTzuxy7KxKXjBwzGFuDYaXCqDxDf8Di
+         WgRcXAQfqU94fqEz3PVCS5p6VvaTnOcqJsRN8=
+Date: Fri, 7 Jan 2011 08:15:39 +0100
+From: Urs Fleisch <urs.fleisch@gmail.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LM Sensors <lm-sensors@lm-sensors.org>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [PATCH V5] hwmon: driver for Sensirion SHT21 humidity and
+ temperature sensor
+Message-Id: <20110107081539.df496517.urs.fleisch@gmail.com>
+In-Reply-To: <20110106155641.GA9319@ericsson.com>
+References: <20101229134511.cc466ac0.urs.fleisch@gmail.com>
+	<4D1DF097.1080200@cam.ac.uk>
+	<20110103081448.f96c413e.urs.fleisch@gmail.com>
+	<4D21ADCB.4070206@cam.ac.uk>
+	<1294078159.9786.9.camel@groeck-laptop>
+	<4D230ED0.8060008@cam.ac.uk>
+	<20110104152837.GA32138@ericsson.com>
+	<20110104200001.3328dae3.urs.fleisch@gmail.com>
+	<1294170132.9786.52.camel@groeck-laptop>
+	<20110106084338.d31624e3.urs.fleisch@gmail.com>
+	<20110106155641.GA9319@ericsson.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Fixed subject, should read 2.6.38-rc0. I should stop reusing old
- messages for pull requests...]
+> Only thing missing is Documentation/hwmon/sht21.
+> 
+> Urs, can you add that ? 
+I have added a file Documentation/hwmon/sht21 to the patch.
 
-On Thu, Jan 06, 2011 at 10:54:48PM -0800, Dmitry Torokhov wrote:
-> Hi Linus,
-> 
-> Please pull from:
-> 
-> 	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-> or
-> 	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
-> 
-> to receive first round of updates for the input subsystem.
-> 
-> As an exception, a few HID drivers are coming through my tree instead of
-> Jiri's in this merge window, because they depend on MT protocol changes.
-> 
-> There will be a conflict in drivers/input/keyboard/Kconfig due to
-> tc3589x keypad driver coming from ux500 tree and clashing with SPEAR
-> keypad driver. If you could resolve by having SPEAR entry first and
-> tc3589x next to it that would be great, otherwise I can pull your tree
-> and resolve conflict myself.
-> 
-> Thanks!
-> 
-> Changelog:
-> ---------
-> 
-> Ajay Ramaswamy (1):
->       Input: wacom - add support for digitizer in Lenovo W700
-> 
-> Andres Salomon (2):
->       Input: psmouse - fix up Synaptics comment
->       Input: psmouse - disable the synaptics extension on OLPC machines
-> 
-> Andy Ross (1):
->       hid: egalax: Add support for Wetab (726b)
-> 
-> Axel Lin (7):
->       Input: xpad - return proper error in error path
->       Input: xpad - fix a memory leak
->       Input: xpad - fix resource reclaim in xpad_probe error path
->       Input: xpad - ensure xpad->bulk_out is initialized before submitting urb
->       Input: ps2mult - fix wrong kfree in ps2mult_connect error path
->       Input: ams_delta_serio - fix wrong kfree in ams_delta_serio_exit
->       Input: ct82c710 - remove a redundant serio_register_port()
-> 
-> Chris Leech (1):
->       Input: qt602240_ts - fix wrong sizeof in object table allocation
-> 
-> Daniel Drake (5):
->       Input: hgpk - support GlideSensor and PenTablet modes
->       Input: hgpk - rework spew detection
->       Input: hgpk - extend jumpiness detection
->       Input: hgpk - detect simple mode overflows
->       Input: hgpk - recalibration tweaks
-> 
-> David Sterba (1):
->       Input: bu21013_ts - fix misuse of logical operation in place of bitop
-> 
-> Dmitry Torokhov (10):
->       Input: xpad - remove useless check in xpad_remove
->       Input: pcf_keypad - convert to dev_op_ops
->       Input: mac mouse emulation - add locking
->       Input: qt602240_ts - convert to using dev_pm_ops
->       Input: serio - convert to common workqueue instead of a thread
->       Input: gameport - convert to use common workqueue instead of a thread
->       Input: clean up Makefile (use input-core-y)
->       Input: iforce - clean up Makefile
->       Input: cma3000_d0x_i2c - add MODULE_DEVICE_TABLE
->       Input: include MT library as source for kerneldoc
-> 
-> Hemanth V (1):
->       Input: add CMA3000 accelerometer driver
-> 
-> Henrik Rydberg (18):
->       input: mt: Break out slots handling
->       input: mt: Collect slots initialization code
->       input: mt: Move tracking and pointer emulation to input-mt
->       input: mt: Add hovering distance axis
->       hid: egalax: Setup input device manually
->       hid: egalax: Correct for device resolution report error
->       hid: egalax: Report zero as minimum pressure
->       hid: egalax: Add event filtering
->       hid: egalax: Convert to MT slots
->       hid: egalax: Add support for Wetab
->       hid: egalax: Document the new devices in Kconfig
->       MAINTAINERS: Update input-mt entry
->       Input: introduce device properties
->       Input: fix double equality sign in uevent
->       input: mt: Document interface updates
->       Input: synaptics - report clickpad property
->       Input: synaptics - add multi-finger and semi-mt support
->       Input: synaptics - ignore bogus mt packet
-> 
-> Jesper Juhl (1):
->       Input: serio HIL MLC - don't deref null, don't leak and return proper error
-> 
-> Joe Perches (2):
->       Input: i8042 - use pr_<level>, pr_fmt, fix dbg and __FILE__ use
->       Input: use pr_fmt and pr_<level>
-> 
-> Pali Rohár (1):
->       Input: i8042 - add Acer Aspire 5100 to the Dritek list
-> 
-> Paul Fox (1):
->       Input: hgpk - fix powersave mode
-> 
-> Ping Cheng (2):
->       Input: wacom_w8001 - use __set_bit to set keybits
->       Input: wacom_w8001 - support pen or touch only devices
-> 
-> Rajeev Kumar (1):
->       Input: add support for keyboards on ST SPEAr platform
-> 
-> Richard Nauber (1):
->       hid: egalax: Add support for Samsung NB30 netbook
-> 
-> Tony SIM (2):
->       Input: tca6416-keypad - add support for tca6408a
->       Input: add ST1232 touchscreen controller driver
-> 
-> 
-> Diffstat:
-> --------
-> 
->  Documentation/DocBook/device-drivers.tmpl    |    4 +
->  Documentation/input/cma3000_d0x.txt          |  115 +++++
->  Documentation/input/multi-touch-protocol.txt |   53 ++-
->  MAINTAINERS                                  |    2 +
->  arch/arm/plat-spear/include/plat/keyboard.h  |  141 ++++++
->  drivers/hid/Kconfig                          |    3 +-
->  drivers/hid/hid-3m-pct.c                     |   36 +--
->  drivers/hid/hid-core.c                       |    3 +
->  drivers/hid/hid-egalax.c                     |  131 +++---
->  drivers/hid/hid-ids.h                        |    3 +
->  drivers/input/Makefile                       |    2 +-
->  drivers/input/apm-power.c                    |   14 +-
->  drivers/input/evbug.c                        |   18 +-
->  drivers/input/evdev.c                        |   19 +-
->  drivers/input/ff-core.c                      |   11 +-
->  drivers/input/ff-memless.c                   |   31 +-
->  drivers/input/gameport/gameport.c            |  152 +++---
->  drivers/input/input-mt.c                     |  170 +++++++
->  drivers/input/input-polldev.c                |    5 +-
->  drivers/input/input.c                        |   91 ++---
->  drivers/input/joydev.c                       |    4 +-
->  drivers/input/joystick/iforce/Makefile       |   15 +-
->  drivers/input/joystick/xpad.c                |  123 +++--
->  drivers/input/keyboard/Kconfig               |   19 +-
->  drivers/input/keyboard/Makefile              |    1 +
->  drivers/input/keyboard/spear-keyboard.c      |  344 +++++++++++++
->  drivers/input/keyboard/tca6416-keypad.c      |   13 +-
->  drivers/input/misc/Kconfig                   |   24 +
->  drivers/input/misc/Makefile                  |    2 +
->  drivers/input/misc/cma3000_d0x.c             |  398 +++++++++++++++
->  drivers/input/misc/cma3000_d0x.h             |   42 ++
->  drivers/input/misc/cma3000_d0x_i2c.c         |  143 ++++++
->  drivers/input/misc/pcf8574_keypad.c          |   19 +-
->  drivers/input/misc/uinput.c                  |    8 +-
->  drivers/input/mouse/hgpk.c                   |  695 +++++++++++++++++++++++---
->  drivers/input/mouse/hgpk.h                   |   31 ++-
->  drivers/input/mouse/psmouse-base.c           |    1 +
->  drivers/input/mouse/synaptics.c              |  129 +++++-
->  drivers/input/mouse/synaptics.h              |    3 +
->  drivers/input/mousedev.c                     |   10 +-
->  drivers/input/serio/ams_delta_serio.c        |    1 -
->  drivers/input/serio/ct82c710.c               |    8 +-
->  drivers/input/serio/hil_mlc.c                |    5 +
->  drivers/input/serio/hp_sdc_mlc.c             |   18 +-
->  drivers/input/serio/i8042-x86ia64io.h        |   37 +-
->  drivers/input/serio/i8042.c                  |   92 ++--
->  drivers/input/serio/i8042.h                  |   14 +-
->  drivers/input/serio/ps2mult.c                |    2 +-
->  drivers/input/serio/serio.c                  |  155 +++----
->  drivers/input/tablet/wacom.h                 |    1 +
->  drivers/input/tablet/wacom_wac.c             |   33 +-
->  drivers/input/tablet/wacom_wac.h             |    4 -
->  drivers/input/touchscreen/Kconfig            |   22 +-
->  drivers/input/touchscreen/Makefile           |    1 +
->  drivers/input/touchscreen/bu21013_ts.c       |    2 +-
->  drivers/input/touchscreen/qt602240_ts.c      |   21 +-
->  drivers/input/touchscreen/st1232.c           |  274 ++++++++++
->  drivers/input/touchscreen/wacom_w8001.c      |   71 ++--
->  drivers/input/xen-kbdfront.c                 |   10 +-
->  drivers/macintosh/mac_hid.c                  |    8 +
->  include/linux/input.h                        |   38 +-
->  include/linux/input/cma3000.h                |   59 +++
->  include/linux/input/mt.h                     |   57 +++
->  include/linux/uinput.h                       |    1 +
->  64 files changed, 3209 insertions(+), 753 deletions(-)
->  create mode 100644 Documentation/input/cma3000_d0x.txt
->  create mode 100644 arch/arm/plat-spear/include/plat/keyboard.h
->  create mode 100644 drivers/input/input-mt.c
->  create mode 100644 drivers/input/keyboard/spear-keyboard.c
->  create mode 100644 drivers/input/misc/cma3000_d0x.c
->  create mode 100644 drivers/input/misc/cma3000_d0x.h
->  create mode 100644 drivers/input/misc/cma3000_d0x_i2c.c
->  create mode 100644 drivers/input/touchscreen/st1232.c
->  create mode 100644 include/linux/input/cma3000.h
->  create mode 100644 include/linux/input/mt.h
-> 
-> -- 
-> Dmitry
-> 
+> what tree is your patch based on ? I am having trouble applying it.
+I used the 2.6.32 kernel from the rowboat project
+(http://code.google.com/p/rowboat/) because my sensor is connected to an
+OMAP3EVM board. To make the patch applicable for the latest kernel, I added
+a line to the Makefile patch. I could apply the patch without problems to
+the linux-next kernel, although patch reported fuzz with Kconfig. The patch
+below is now based on linux-next, so there should be no longer problems.
 
--- 
-Dmitry
+Thanks,
+Urs
+
+Signed-off-by: Urs Fleisch <urs.fleisch@sensirion.com>
+---
+diff --git a/Documentation/hwmon/sht21 b/Documentation/hwmon/sht21
+new file mode 100644
+index 0000000..db17fda
+--- /dev/null
++++ b/Documentation/hwmon/sht21
+@@ -0,0 +1,49 @@
++Kernel driver sht21
++===================
++
++Supported chips:
++  * Sensirion SHT21
++    Prefix: 'sht21'
++    Addresses scanned: none
++    Datasheet: Publicly available at the Sensirion website
++    http://www.sensirion.com/en/pdf/product_information/Datasheet-humidity-sensor-SHT21.pdf
++
++  * Sensirion SHT25
++    Prefix: 'sht21'
++    Addresses scanned: none
++    Datasheet: Publicly available at the Sensirion website
++    http://www.sensirion.com/en/pdf/product_information/Datasheet-humidity-sensor-SHT25.pdf
++
++Author:
++  Urs Fleisch <urs.fleisch@sensirion.com>
++
++Description
++-----------
++
++The SHT21 and SHT25 are humidity and temperature sensors in a DFN package of
++only 3 x 3 mm footprint and 1.1 mm height. The difference between the two
++devices is the higher level of precision of the SHT25 (1.8% relative humidity,
++0.2 degree Celsius) compared with the SHT21 (2.0% relative humidity,
++0.3 degree Celsius).
++
++The devices communicate with the I2C protocol. All sensors are set to the same
++I2C address 0x40, so an entry with I2C_BOARD_INFO("sht21", 0x40) can be used
++in the board setup code.
++
++sysfs-Interface
++---------------
++
++temp1_input - temperature input
++humidity1_input - humidity input
++
++Notes
++-----
++
++The driver uses the default resolution settings of 12 bit for humidity and 14
++bit for temperature, which results in typical measurement times of 22 ms for
++humidity and 66 ms for temperature. To keep self heating below 0.1 degree
++Celsius, the device should not be active for more than 10% of the time,
++e.g. maximum two measurements per second at the given resolution.
++
++Different resolutions, the on-chip heater, using the CRC checksum and reading
++the serial number are not supported yet.
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 5fcdbb4..35f00da 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -744,6 +744,16 @@ config SENSORS_SHT15
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called sht15.
+ 
++config SENSORS_SHT21
++	tristate "Sensiron humidity and temperature sensors. SHT21 and compat."
++	depends on I2C
++	help
++	  If you say yes here you get support for the Sensiron SHT21, SHT25
++	  humidity and temperature sensors.
++
++	  This driver can also be built as a module.  If so, the module
++	  will be called sht21.
++
+ config SENSORS_S3C
+ 	tristate "Samsung built-in ADC"
+ 	depends on S3C_ADC
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index 42542d7..dde02d9 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -91,6 +91,7 @@ obj-$(CONFIG_SENSORS_PC87427)	+= pc87427.o
+ obj-$(CONFIG_SENSORS_PCF8591)	+= pcf8591.o
+ obj-$(CONFIG_SENSORS_S3C)	+= s3c-hwmon.o
+ obj-$(CONFIG_SENSORS_SHT15)	+= sht15.o
++obj-$(CONFIG_SENSORS_SHT21)	+= sht21.o
+ obj-$(CONFIG_SENSORS_SIS5595)	+= sis5595.o
+ obj-$(CONFIG_SENSORS_SMM665)	+= smm665.o
+ obj-$(CONFIG_SENSORS_SMSC47B397)+= smsc47b397.o
+diff --git a/drivers/hwmon/sht21.c b/drivers/hwmon/sht21.c
+new file mode 100644
+index 0000000..f14c262
+--- /dev/null
++++ b/drivers/hwmon/sht21.c
+@@ -0,0 +1,300 @@
++/* Sensirion SHT21 humidity and temperature sensor driver
++ *
++ * Copyright (C) 2010 Urs Fleisch <urs.fleisch@sensirion.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA
++ *
++ * Data sheet available (5/2010) at
++ * http://www.sensirion.com/en/pdf/product_information/Datasheet-humidity-sensor-SHT21.pdf
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/err.h>
++#include <linux/mutex.h>
++#include <linux/device.h>
++
++/* I2C command bytes */
++#define SHT21_TRIG_T_MEASUREMENT_HM  0xe3
++#define SHT21_TRIG_RH_MEASUREMENT_HM 0xe5
++
++/**
++ * struct sht21 - SHT21 device specific data
++ * @hwmon_dev: device registered with hwmon
++ * @lock: mutex to protect measurement values
++ * @valid: only 0 before first measurement is taken
++ * @last_update: time of last update (jiffies)
++ * @temperature: cached temperature measurement value
++ * @humidity: cached humidity measurement value
++ */
++struct sht21 {
++	struct device *hwmon_dev;
++	struct mutex lock;
++	char valid;
++	unsigned long last_update;
++	int temperature;
++	int humidity;
++};
++
++/**
++ * sht21_temp_ticks_to_millicelsius() - convert raw temperature ticks to
++ * milli celsius
++ * @ticks: temperature ticks value received from sensor
++ */
++static inline int sht21_temp_ticks_to_millicelsius(int ticks)
++{
++	ticks &= ~0x0003; /* clear status bits */
++	/* Formula T = -46.85 + 175.72 * ST / 2^16 from data sheet 6.2,
++	   optimized for integer fixed point (3 digits) arithmetic */
++	return ((21965 * ticks) >> 13) - 46850;
++}
++
++/**
++ * sht21_rh_ticks_to_per_cent_mille() - convert raw humidity ticks to
++ * one-thousandths of a percent relative humidity
++ * @ticks: humidity ticks value received from sensor
++ */
++static inline int sht21_rh_ticks_to_per_cent_mille(int ticks)
++{
++	ticks &= ~0x0003; /* clear status bits */
++	/* Formula RH = -6 + 125 * SRH / 2^16 from data sheet 6.1,
++	   optimized for integer fixed point (3 digits) arithmetic */
++	return ((15625 * ticks) >> 13) - 6000;
++}
++
++/**
++ * sht21_read_word_data() - read word from register
++ * @client: I2C client device
++ * @reg: I2C command byte
++ *
++ * Returns value, negative errno on error.
++ */
++static inline int sht21_read_word_data(struct i2c_client *client, u8 reg)
++{
++	int ret = i2c_smbus_read_word_data(client, reg);
++	if (ret < 0)
++		return ret;
++	/* SMBus specifies low byte first, but the SHT21 returns MSB
++	 * first, so we have to swab16 the values */
++	return swab16(ret);
++}
++
++/**
++ * sht21_update_measurements() - get updated measurements from device
++ * @client: I2C client device
++ *
++ * Returns 0 on success, else negative errno.
++ */
++static int sht21_update_measurements(struct i2c_client *client)
++{
++	int ret = 0;
++	struct sht21 *sht21 = i2c_get_clientdata(client);
++
++	mutex_lock(&sht21->lock);
++	/* Data sheet 2.4:
++	 * SHT2x should not be active for more than 10% of the time - e.g.
++	 * maximum two measurements per second at 12bit accuracy shall be made.
++	 */
++	if (time_after(jiffies, sht21->last_update + HZ / 2) || !sht21->valid) {
++		ret = sht21_read_word_data(client, SHT21_TRIG_T_MEASUREMENT_HM);
++		if (ret < 0)
++			goto out;
++		sht21->temperature = sht21_temp_ticks_to_millicelsius(ret);
++		ret = sht21_read_word_data(client,
++					SHT21_TRIG_RH_MEASUREMENT_HM);
++		if (ret < 0)
++			goto out;
++		sht21->humidity = sht21_rh_ticks_to_per_cent_mille(ret);
++		sht21->last_update = jiffies;
++		sht21->valid = 1;
++	}
++out:
++	mutex_unlock(&sht21->lock);
++
++	return ret >= 0 ? 0 : ret;
++}
++
++/**
++ * sht21_show_temperature() - show temperature measurement value in sysfs
++ * @dev: device
++ * @attr: device attribute
++ * @buf: sysfs buffer (PAGE_SIZE) where measurement values are written to
++ *
++ * Will be called on read access to temp1_input sysfs attribute.
++ * Returns number of bytes written into buffer, negative errno on error.
++ */
++static ssize_t sht21_show_temperature(struct device *dev,
++	struct device_attribute *attr,
++	char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct sht21 *sht21 = i2c_get_clientdata(client);
++	int ret = sht21_update_measurements(client);
++	if (ret < 0)
++		return ret;
++	return sprintf(buf, "%d\n", sht21->temperature);
++}
++
++/**
++ * sht21_show_humidity() - show humidity measurement value in sysfs
++ * @dev: device
++ * @attr: device attribute
++ * @buf: sysfs buffer (PAGE_SIZE) where measurement values are written to
++ *
++ * Will be called on read access to humidity1_input sysfs attribute.
++ * Returns number of bytes written into buffer, negative errno on error.
++ */
++static ssize_t sht21_show_humidity(struct device *dev,
++	struct device_attribute *attr,
++	char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct sht21 *sht21 = i2c_get_clientdata(client);
++	int ret = sht21_update_measurements(client);
++	if (ret < 0)
++		return ret;
++	return sprintf(buf, "%d\n", sht21->humidity);
++}
++
++/* sysfs attributes */
++static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, sht21_show_temperature,
++	NULL, 0);
++static SENSOR_DEVICE_ATTR(humidity1_input, S_IRUGO, sht21_show_humidity,
++	NULL, 0);
++
++static struct attribute *sht21_attributes[] = {
++	&sensor_dev_attr_temp1_input.dev_attr.attr,
++	&sensor_dev_attr_humidity1_input.dev_attr.attr,
++	NULL
++};
++
++static const struct attribute_group sht21_attr_group = {
++	.attrs = sht21_attributes,
++};
++
++/**
++ * sht21_probe() - probe device
++ * @client: I2C client device
++ * @id: device ID
++ *
++ * Called by the I2C core when an entry in the ID table matches a
++ * device's name.
++ * Returns 0 on success.
++ */
++static int __devinit sht21_probe(struct i2c_client *client,
++	const struct i2c_device_id *id)
++{
++	struct sht21 *sht21;
++	int err;
++
++	if (!i2c_check_functionality(client->adapter,
++				     I2C_FUNC_SMBUS_WORD_DATA)) {
++		dev_err(&client->dev,
++			"adapter does not support SMBus word transactions\n");
++		return -ENODEV;
++	}
++
++	sht21 = kzalloc(sizeof(*sht21), GFP_KERNEL);
++	if (!sht21) {
++		dev_dbg(&client->dev, "kzalloc failed\n");
++		return -ENOMEM;
++	}
++	i2c_set_clientdata(client, sht21);
++
++	mutex_init(&sht21->lock);
++
++	err = sysfs_create_group(&client->dev.kobj, &sht21_attr_group);
++	if (err) {
++		dev_dbg(&client->dev, "could not create sysfs files\n");
++		goto fail_free;
++	}
++	sht21->hwmon_dev = hwmon_device_register(&client->dev);
++	if (IS_ERR(sht21->hwmon_dev)) {
++		dev_dbg(&client->dev, "unable to register hwmon device\n");
++		err = PTR_ERR(sht21->hwmon_dev);
++		goto fail_remove_sysfs;
++	}
++
++	dev_info(&client->dev, "initialized\n");
++
++	return 0;
++
++fail_remove_sysfs:
++	sysfs_remove_group(&client->dev.kobj, &sht21_attr_group);
++fail_free:
++	kfree(sht21);
++
++	return err;
++}
++
++/**
++ * sht21_remove() - remove device
++ * @client: I2C client device
++ */
++static int __devexit sht21_remove(struct i2c_client *client)
++{
++	struct sht21 *sht21 = i2c_get_clientdata(client);
++
++	hwmon_device_unregister(sht21->hwmon_dev);
++	sysfs_remove_group(&client->dev.kobj, &sht21_attr_group);
++	kfree(sht21);
++
++	return 0;
++}
++
++/* Device ID table */
++static const struct i2c_device_id sht21_id[] = {
++	{ "sht21", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, sht21_id);
++
++static struct i2c_driver sht21_driver = {
++	.driver.name = "sht21",
++	.probe       = sht21_probe,
++	.remove      = __devexit_p(sht21_remove),
++	.id_table    = sht21_id,
++};
++
++/**
++ * sht21_init() - initialize driver
++ *
++ * Called when kernel is booted or module is inserted.
++ * Returns 0 on success.
++ */
++static int __init sht21_init(void)
++{
++	return i2c_add_driver(&sht21_driver);
++}
++module_init(sht21_init);
++
++/**
++ * sht21_init() - clean up driver
++ *
++ * Called when module is removed.
++ */
++static void __exit sht21_exit(void)
++{
++	i2c_del_driver(&sht21_driver);
++}
++module_exit(sht21_exit);
++
++MODULE_AUTHOR("Urs Fleisch <urs.fleisch@sensirion.com>");
++MODULE_DESCRIPTION("Sensirion SHT21 humidity and temperature sensor driver");
++MODULE_LICENSE("GPL");
