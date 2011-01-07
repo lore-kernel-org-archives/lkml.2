@@ -1,77 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab1AGVKf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 16:10:35 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:49176 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752425Ab1AGVKd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 16:10:33 -0500
-Subject: Re: [-next] ERROR: "strchr" [drivers/target/target_core_mod.ko]
-	undefined!
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        scsi <linux-scsi@vger.kernel.org>,
-        Linux-Next <linux-next@vger.kernel.org>, linux-kernel@vger.kernel.org
-In-Reply-To: <1294415045.4895.16.camel@mulgrave.site>
-References: <AANLkTinhrj38rbEt7ds971D9g-UF+xS0jmzO7X15ZaLn@mail.gmail.com>
-	 <1294415045.4895.16.camel@mulgrave.site>
-Content-Type: text/plain
-Date: Fri, 07 Jan 2011 13:04:34 -0800
-Message-Id: <1294434274.2895.146.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	id S1753388Ab1AGVMk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 16:12:40 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:40456 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751760Ab1AGVMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 16:12:38 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: netdev@vger.kernel.org
+Subject: Re: [PATCH] forcedeth: Do not use legacy PCI power management
+Date: Fri, 7 Jan 2011 22:12:05 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37+; KDE/4.4.4; x86_64; ; )
+Cc: David Miller <davem@davemloft.net>, LKML <linux-kernel@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+References: <201101070049.16833.rjw@sisk.pl>
+In-Reply-To: <201101070049.16833.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201101072212.05449.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-07 at 09:44 -0600, James Bottomley wrote:
-> On Fri, 2011-01-07 at 11:57 +0100, Geert Uytterhoeven wrote:
-> > Since a few days, linux-next shows:
-> > 
-> > | ERROR: "strchr" [drivers/target/target_core_mod.ko] undefined!
-> > 
-> > in m68k allmodconfig builds
-> > (http://kisskb.ellerman.id.au/kisskb/buildresult/3754323/).
-> > 
-> > I guess this is caused by the following 3 calls to strstr():
-> > 
-> > drivers/target/target_core_configfs.c:
-> > +       ptr = strstr(page, "1");
-> > 
-> > +       str = strstr(buf, "_");
-> > 
-> > +       str2 = strstr(str+1, "_");
-> > 
-> > Some versions of gcc replace calls to strstr() with single-character
-> > "needle" string parameters by calls to strchr() behind our back.
-> > This causes linking errors if strchr() is defined as an inline function
-> > in <asm/string.h> (e.g. on m68k).
-> > 
-> > You can prevent this by explicitly calling strchr() instead.
-> > 
-> > Cfr. commit 59d309f9c8ef0bd01bf93cc0e758f1d810417bdb
-> > ("kgdb: Replace strstr() by strchr() for single-character needles).
-> > 
-> > Gr{oetje,eeting}s,
+On Friday, January 07, 2011, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
 > 
-> Surely the fix for this is not to inline it in m68k? If gcc is growing
-> the capability to make these types of transformations, it's not going to
-> stop at single entry string strstr().
+> The forcedeth driver uses the legacy PCI power management, so it has
+> to do PCI-specific things in its ->suspend() and ->resume() callbacks
+> and some of them are not done correctly.
 > 
-> If you want to keep the fast inline, there is a way (which I forget) to
-> drop an external reference as well, just in case.
+> Convert forcedeth to the new PCI power management framework and make
+> it let the PCI subsystem take care of all the PCI-specific aspects of
+> device handling during system power transitions.
 > 
+> Tested with nVidia Corporation MCP55 Ethernet (rev a2).
 
-Hi guys,
+This version of the patch contains a mistake (nv_shutdown should be #defined
+as NULL if !CONFIG_PM, not nv_resume), please disregard it.
 
-So I really don't have a strong perference here, but would tend to agree
-with James that this should probably be fixed in m68k..  If this is too
-much of an pain for you Geert I am happy to make this change.
+Fixed patch is appended.
 
-Thanks!
+Thanks,
+Rafael
 
---nab
 
+---
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: forcedeth: Do not use legacy PCI power management (v2)
+
+The forcedeth driver uses the legacy PCI power management, so it has
+to do PCI-specific things in its ->suspend() and ->resume() callbacks
+and some of them are not done correctly.
+
+Convert forcedeth to the new PCI power management framework and make
+it let the PCI subsystem take care of all the PCI-specific aspects of
+device handling during system power transitions.
+
+Tested with nVidia Corporation MCP55 Ethernet (rev a2).
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/net/forcedeth.c |   34 ++++++++++++----------------------
+ 1 file changed, 12 insertions(+), 22 deletions(-)
+
+Index: linux-2.6/drivers/net/forcedeth.c
+===================================================================
+--- linux-2.6.orig/drivers/net/forcedeth.c
++++ linux-2.6/drivers/net/forcedeth.c
+@@ -4082,6 +4082,7 @@ static int nv_set_wol(struct net_device
+ 		writel(flags, base + NvRegWakeUpFlags);
+ 		spin_unlock_irq(&np->lock);
+ 	}
++	device_set_wakeup_enable(&np->pci_dev->dev, np->wolenabled);
+ 	return 0;
+ }
+ 
+@@ -5643,14 +5644,10 @@ static int __devinit nv_probe(struct pci
+ 	/* set mac address */
+ 	nv_copy_mac_to_hw(dev);
+ 
+-	/* Workaround current PCI init glitch:  wakeup bits aren't
+-	 * being set from PCI PM capability.
+-	 */
+-	device_init_wakeup(&pci_dev->dev, 1);
+-
+ 	/* disable WOL */
+ 	writel(0, base + NvRegWakeUpFlags);
+ 	np->wolenabled = 0;
++	device_set_wakeup_enable(&pci_dev->dev, false);
+ 
+ 	if (id->driver_data & DEV_HAS_POWER_CNTRL) {
+ 
+@@ -5923,8 +5920,9 @@ static void __devexit nv_remove(struct p
+ }
+ 
+ #ifdef CONFIG_PM
+-static int nv_suspend(struct pci_dev *pdev, pm_message_t state)
++static int nv_suspend(struct device *device)
+ {
++	struct pci_dev *pdev = to_pci_dev(device);
+ 	struct net_device *dev = pci_get_drvdata(pdev);
+ 	struct fe_priv *np = netdev_priv(dev);
+ 	u8 __iomem *base = get_hwbase(dev);
+@@ -5940,25 +5938,17 @@ static int nv_suspend(struct pci_dev *pd
+ 	for (i = 0;i <= np->register_size/sizeof(u32); i++)
+ 		np->saved_config_space[i] = readl(base + i*sizeof(u32));
+ 
+-	pci_save_state(pdev);
+-	pci_enable_wake(pdev, pci_choose_state(pdev, state), np->wolenabled);
+-	pci_disable_device(pdev);
+-	pci_set_power_state(pdev, pci_choose_state(pdev, state));
+ 	return 0;
+ }
+ 
+-static int nv_resume(struct pci_dev *pdev)
++static int nv_resume(struct device *device)
+ {
++	struct pci_dev *pdev = to_pci_dev(device);
+ 	struct net_device *dev = pci_get_drvdata(pdev);
+ 	struct fe_priv *np = netdev_priv(dev);
+ 	u8 __iomem *base = get_hwbase(dev);
+ 	int i, rc = 0;
+ 
+-	pci_set_power_state(pdev, PCI_D0);
+-	pci_restore_state(pdev);
+-	/* ack any pending wake events, disable PME */
+-	pci_enable_wake(pdev, PCI_D0, 0);
+-
+ 	/* restore non-pci configuration space */
+ 	for (i = 0;i <= np->register_size/sizeof(u32); i++)
+ 		writel(np->saved_config_space[i], base+i*sizeof(u32));
+@@ -5977,6 +5967,9 @@ static int nv_resume(struct pci_dev *pde
+ 	return rc;
+ }
+ 
++static SIMPLE_DEV_PM_OPS(nv_pm_ops, nv_suspend, nv_resume);
++#define NV_PM_OPS (&nv_pm_ops)
++
+ static void nv_shutdown(struct pci_dev *pdev)
+ {
+ 	struct net_device *dev = pci_get_drvdata(pdev);
+@@ -6000,15 +5993,13 @@ static void nv_shutdown(struct pci_dev *
+ 	 * only put the device into D3 if we really go for poweroff.
+ 	 */
+ 	if (system_state == SYSTEM_POWER_OFF) {
+-		if (pci_enable_wake(pdev, PCI_D3cold, np->wolenabled))
+-			pci_enable_wake(pdev, PCI_D3hot, np->wolenabled);
++		pci_wake_from_d3(pdev, np->wolenabled);
+ 		pci_set_power_state(pdev, PCI_D3hot);
+ 	}
+ }
+ #else
+-#define nv_suspend NULL
++#define NV_PM_OPS NULL
+ #define nv_shutdown NULL
+-#define nv_resume NULL
+ #endif /* CONFIG_PM */
+ 
+ static DEFINE_PCI_DEVICE_TABLE(pci_tbl) = {
+@@ -6180,9 +6171,8 @@ static struct pci_driver driver = {
+ 	.id_table	= pci_tbl,
+ 	.probe		= nv_probe,
+ 	.remove		= __devexit_p(nv_remove),
+-	.suspend	= nv_suspend,
+-	.resume		= nv_resume,
+ 	.shutdown	= nv_shutdown,
++	.driver.pm	= NV_PM_OPS,
+ };
+ 
+ static int __init init_nic(void)
