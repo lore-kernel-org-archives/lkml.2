@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab1AGV25 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 16:28:57 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47623 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753298Ab1AGV2z convert rfc822-to-8bit (ORCPT
+	id S1753747Ab1AGVdK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 16:33:10 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:54793 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751725Ab1AGVdG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 16:28:55 -0500
+	Fri, 7 Jan 2011 16:33:06 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
-         :mime-version:content-type:content-transfer-encoding;
-        b=kw7HTxYOTLfvQlvfdDwW86QbY50JVB4U51C/C/kgdvogaE7EIoXp+kEYDhS8QrwEB9
-         1FDIdhtR++rUAzRWir/n87cXgapYBXJaLw5kkAnQy2fwvI2aqtDqtlggOkVBCrnFjXfd
-         GLCwfZuQJ39kzzv/enRJx2Q2Jh0pe8W0ZoJYU=
-Date: Fri, 7 Jan 2011 22:28:45 +0100
-From: Alejandro Riveira =?UTF-8?B?RmVybsOhbmRleg==?= 
-	<ariveira@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-Message-ID: <20110107222845.1cd02e26@varda>
-In-Reply-To: <AANLkTikwrHoOY4wvUp1qn-OT=EjZesSNR29US1ERc0o2@mail.gmail.com>
-References: <20110106.122003.233698077.davem@davemloft.net>
-	<AANLkTi=7=_FyVsjA3vKEpg8RwfC=m-8QGfqa6ctxQday@mail.gmail.com>
-	<20110107190656.GQ3702@decadent.org.uk>
-	<AANLkTikwrHoOY4wvUp1qn-OT=EjZesSNR29US1ERc0o2@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=uGlAFlIw0hg/xP+5YZKlHRgJA4rOA454JbPPkQy9mG/N50dXmKphTYGmYFaAIAdl0X
+         PSAF5vndLeojgPVoz/M6KImHEp2d/pE7i1sroFI7ogIOpsVGeVse8HDE6fj8izaEjPOe
+         Pi5lbsK6/EPAWgKWgl10bXHgLqkK2BDhTw6zE=
+Date: Fri, 7 Jan 2011 16:33:02 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Jeff Garzik <jeff@garzik.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Nick Piggin <npiggin@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
+        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
+        linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        IDE/ATA development list <linux-ide@vger.kernel.org>
+Subject: Re: [RFC][PATCH] spinlock: Kill spin_unlock_wait()
+Message-ID: <20110107213302.GI7355@mtj.dyndns.org>
+References: <AANLkTikGBsh0-QTe9CA2gwDtwzpdMi+fbDsTEKiJAL0P@mail.gmail.com>
+ <1294054362.2016.74.camel@laptop>
+ <20110104064542.GF3402@amd>
+ <1294254867.2016.281.camel@laptop>
+ <AANLkTi=URmD1GYqp+PfVf6rc0tXvRnAQG808LMnBRgG1@mail.gmail.com>
+ <1294306353.2016.304.camel@laptop>
+ <20110106103841.GA3493@amd>
+ <1294338395.2016.381.camel@laptop>
+ <20110107210152.GG7355@mtj.dyndns.org>
+ <AANLkTimA9VKO2bW0PtAVKhYdJ_cRi7mpsAC_QDZwrvAM@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimA9VKO2bW0PtAVKhYdJ_cRi7mpsAC_QDZwrvAM@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-El Fri, 7 Jan 2011 11:49:37 -0800
-Linus Torvalds <torvalds@linux-foundation.org> escribiÃ³:
+Hello, Jeff.
 
-
+On Fri, Jan 07, 2011 at 04:13:53PM -0500, Jeff Garzik wrote:
+> > Hmm... I think the ->eng_timeout path is already dead.  We no longer
+> > have any in-kernel implementation, so killing spin_unlock_wait()
+> > should be fine.  I'll follow up with removal of the unused callback.
 > 
-> [ Apart from the annoyance of also having to manually copying the
-> firmware files: why the heck doesn't that firmware tree even have a
-> "make firmware-install" makefile or something? The kernel has a "make
-> firmware-install" thing, why doesn't the firmware tree itself have
-> that? Gaah, this is almost as idiotic as trying to install a
-> self-built kernel under Ubuntu ]
- 
- Maybe i am just making myself a fool but i'll bite:
- this has allways worked for me
-
- make && sudo make install && sudo make modules_install
- sudo mkintramfs -o /boot/initrd-$kernel_version  $kernel_version
- sudo update-grub
- [ reboot the machine ]
-
-
+> Unfortunately...  libsas continues to avoid the new EH :(
 > 
->                         Linus
+> It's a hairy mess to untangle, too.  libata does proper error handling
+> of ATA device errors, notably NCQ error handling, which libsas sorely
+> misses.  But libata new EH assumes a bit too much about "owning" the
+> entirety of the EH process.  These assumptions are proper for wholly
+> ATA drivers (drivers/ata/*) where new EH can drive the EH process, but
+> in the SAS situation, a phy in SATA mode is simply a subset of a
+> larger set of EH conditions that must be handled.
+> 
+> Thus libsas uses the ancient libata hook ->phy_reset and lacks ->error_handler.
+> 
+> I think libata's old-EH path is entirely SAS-specific at this point.
+
+Hmm... but they don't use ata_scsi_error() and ->eng_timeout() at all,
+no?  We can't remove phy_reset() and need to keep the silly "if
+(->error_handler)" tests around but should be able to remove those
+from ata_scsi_error() and other EH routines, at least.  Am I missing
+something?
+
+Thanks.
+
+-- 
+tejun
