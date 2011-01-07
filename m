@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab1AGTuc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 14:50:32 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43038 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755448Ab1AGTua convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 14:50:30 -0500
+	id S1755484Ab1AGTuj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 14:50:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44296 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755473Ab1AGTui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 14:50:38 -0500
 MIME-Version: 1.0
-In-Reply-To: <20110107190656.GQ3702@decadent.org.uk>
-References: <20110106.122003.233698077.davem@davemloft.net>
- <AANLkTi=7=_FyVsjA3vKEpg8RwfC=m-8QGfqa6ctxQday@mail.gmail.com> <20110107190656.GQ3702@decadent.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 7 Jan 2011 11:49:37 -0800
-Message-ID: <AANLkTikwrHoOY4wvUp1qn-OT=EjZesSNR29US1ERc0o2@mail.gmail.com>
-Subject: Re: [GIT] Networking
-To: Ben Hutchings <benh@debian.org>
-Cc: David Miller <davem@davemloft.net>, Hayes Wang <hayeswang@realtek.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        David Woodhouse <dwmw2@infradead.org>, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+X-Fcc: ~/Mail/linus
+Cc: Dario Faggioli <raistlin@linux.it>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>, torbenh <torbenh@gmx.de>,
+        john.stultz@linaro.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] Read THREAD_CPUTIME clock from other  processes.
+In-Reply-To: Oleg Nesterov's message of  Friday, 7 January 2011 20:35:47 +0100 <20110107193547.GA28634@redhat.com>
+References: <1293121303.3390.185.camel@Palantir>
+	<20110107192809.05CFF40467@magilla.sf.frob.com>
+	<20110107193547.GA28634@redhat.com>
+X-Antipastobozoticataclysm: Bariumenemanilow
+Message-Id: <20110107195016.2334940467@magilla.sf.frob.com>
+Date: Fri,  7 Jan 2011 11:50:16 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 7, 2011 at 11:06 AM, Ben Hutchings <benh@debian.org> wrote:
->
-> This is because the driver is requesting firmware during probe, before
-> there is a firmware agent available (maybe even before / is mounted?)
-> rather than when the interface is brought up, as many other network
-> drivers do.
+> Yes, I was worried about possible security issues too. But, it seems,
+> /proc/pid/task/tid/stat (do_task_stat) shows ->utime/stime anyway.
 
-Yeah, doing it at device up time would fix the problem.
+This is constrained by ptrace_may_access(task, PTRACE_MODE_READ).
 
-> At the very least, we ought to make firmware loading fail fast and
-> noisily if this happens.
+> And /proc/schedstat shows sum_exec_runtime.
 
-Absolutely.
->
+This probably should be constrained in exactly the same ways as .../stat is.
 
-> There were some tables of PHY registers to poke that were a mixture of
-> control register writes and transfer of firmware to the microcontroller.
-> Hayes and Francois have separated those out.
+I think the constraints on /proc/.../stat reflect the most considered
+judgement of the security folks.  I suspect that the lack of constraint on
+/proc/.../schedstat reflects the scheduler folks just having failed to
+consider the same issues.  IMHO all access to the equivalent kinds of
+information should have the same security constraints.
 
-Ok.
+> No, the suggested change doesn't go that far, afaics. It only modifies
+> check_clock: this affects clock_getres and clock_set (which does nothing),
+> and posix_cpu_clock_get: affects clock_gettime().
 
->> I bet I can make it work by making it a module, and installing the
->> firmware manually. But it's supposed to work even without that.
->
-> Right.  This is very vaguely based on a patch I applied in Debian
-> where we build r8169 as a module, and I don't think anyone reported
-> this behaviour.
+That's good, but it should be mentioned so that next year someone doesn't
+come back with a "there's no reason you shouldn't be able to" and go
+unchallenged.
 
-I just confirmed that building it as a module works
 
-[ Apart from the annoyance of also having to manually copying the
-firmware files: why the heck doesn't that firmware tree even have a
-"make firmware-install" makefile or something? The kernel has a "make
-firmware-install" thing, why doesn't the firmware tree itself have
-that? Gaah, this is almost as idiotic as trying to install a
-self-built kernel under Ubuntu ]
-
-                        Linus
+Thanks,
+Roland
