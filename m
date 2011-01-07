@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207Ab1AGVB6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 16:01:58 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:55302 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677Ab1AGVB4 (ORCPT
+	id S1753322Ab1AGVCi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 16:02:38 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:55771 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752210Ab1AGVCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 16:01:56 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=WvQJouAFxvuC4B6RQ0MFzGsr9BijP//mecAfaf/ceXUESr5E9q5+ciI5hf3dAHFDGB
-         ++x2skFGoBQYxrrUaITYNn+Dh3KzU7itlJ6UOnT58mI/aKeikG+hUCEIpg6SrIl384Ds
-         QYNYhGZExAu15Xpi56iBAr/Vj0JkFL3QktCF8=
-Date: Fri, 7 Jan 2011 16:01:52 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Nick Piggin <npiggin@kernel.dk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
-        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
-        linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>, Jeff Garzik <jeff@garzik.org>
-Subject: Re: [RFC][PATCH] spinlock: Kill spin_unlock_wait()
-Message-ID: <20110107210152.GG7355@mtj.dyndns.org>
-References: <20101224122338.172750730@chello.nl>
- <20101224123742.724459093@chello.nl>
- <AANLkTikGBsh0-QTe9CA2gwDtwzpdMi+fbDsTEKiJAL0P@mail.gmail.com>
- <1294054362.2016.74.camel@laptop>
- <20110104064542.GF3402@amd>
- <1294254867.2016.281.camel@laptop>
- <AANLkTi=URmD1GYqp+PfVf6rc0tXvRnAQG808LMnBRgG1@mail.gmail.com>
- <1294306353.2016.304.camel@laptop>
- <20110106103841.GA3493@amd>
- <1294338395.2016.381.camel@laptop>
+	Fri, 7 Jan 2011 16:02:36 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Eric Paris <eparis@redhat.com>
+Cc: Amerigo Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org
+References: <1294302325-22593-1-git-send-email-amwang@redhat.com>
+	<m1bp3uifln.fsf@fess.ebiederm.org>
+	<AANLkTinLhAuSny735kofonAkaqwJvjjDHMUed_r03rVc@mail.gmail.com>
+	<m1k4igjwzf.fsf@fess.ebiederm.org>
+	<1294432333.3237.107.camel@localhost.localdomain>
+Date: Fri, 07 Jan 2011 13:02:32 -0800
+In-Reply-To: <1294432333.3237.107.camel@localhost.localdomain> (Eric Paris's
+	message of "Fri, 07 Jan 2011 15:32:13 -0500")
+Message-ID: <m18vywh1g7.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294338395.2016.381.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18el2WT44xa4qHjfTvlqc55jX4eN+jI0Xo=
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Eric Paris <eparis@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [Patch] kexec_load: check CAP_SYS_MODULE
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Eric Paris <eparis@redhat.com> writes:
 
-On Thu, Jan 06, 2011 at 07:26:35PM +0100, Peter Zijlstra wrote:
-> Jeff, Tejun, could you look at the ata-eh thing, then I'll put sorting
-> through the futex thing on my todo list.
+>> If I was building a configuration where I didn't want anyone to be able
+>> to direct the kernel into a different state by locking down the
+>> bootloaders I expect I would compile out the syscall as well.
+>
+> As sad as it may sound the vast majority of people don't build their own
+> kernels.  And even those people who have the intelligence to do it are
+> often constrained by some non-technical policy to run 'approved'
+> kernels. 
 
-Hmm... I think the ->eng_timeout path is already dead.  We no longer
-have any in-kernel implementation, so killing spin_unlock_wait()
-should be fine.  I'll follow up with removal of the unused callback.
+Yes I am aware of the crazy game that is called approved kernels.  Where
+there are too many regressions for people to trust new kernel releases
+but people want to change the kernel and the setup from what was tested
+and still have the stamp of approval anyway.  Financially it seems to
+make people money, but as best I can tell that game is ultimately what
+killed unix.
 
-Thanks.
+In this instance you seem to be redefining CAP_SYS_MODULE and
+CAP_SYS_REBOOT so you can play that game. 
 
--- 
-tejun
+> Maybe I didn't make it clear how this is going to be used.  I plan to
+> drop CAP_SYS_MODULE to stop root from loading their own modules and
+> running their own code in the kernel.  I can control reboot() since I
+> control the platform and the bootloader.  I cannot control kexec().  I'm
+> also required to use a generic distro kernel (bet you can't guess which
+> one)
+
+If you are truly locked down I recommend dropping CAP_SYS_REBOOT and
+setting up a watchdog that keeps the system from rebooting (standard
+practice in embedded kinds of setups like you describe).  That should
+meet everyone requirements without needing to game the system.
+
+> The only solution I see to solve the problem is to gate kexec on
+> CAP_SYS_MODULE.  Which makes sense since kexec() is in many respects
+> close to module_init() than it is to reboot().
+
+kexec_load is nothing like module_init().  All it does it puts data in
+memory for use by a subsequent reboot.  /sbin/kexec is a bootloader that
+runs inside of linux.  All you are noticing is that if you don't control
+/sbin/kexec you aren't controlling the bootloader.
+
+Eric
