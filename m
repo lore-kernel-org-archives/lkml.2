@@ -1,110 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754534Ab1AGSxc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 13:53:32 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:54612 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752429Ab1AGSx3 convert rfc822-to-8bit (ORCPT
+	id S1754729Ab1AGSyr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 13:54:47 -0500
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:34240 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752151Ab1AGSyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 13:53:29 -0500
-X-IronPort-AV: E=Sophos;i="4.60,290,1291622400"; 
-   d="scan'208";a="502825449"
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
-In-Reply-To: <AANLkTimusF4KCJ4vHPn+T1dUiKxapXaT0QTtFvh8Ykdd@mail.gmail.com>
-References: <1294254337.16957.13.camel@mulgrave.site>
-	 <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
-	 <1294256169.16957.18.camel@mulgrave.site>
-	 <20110105200008.GJ8638@n2100.arm.linux.org.uk>
-	 <1294259637.16957.25.camel@mulgrave.site>
-	 <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
-	 <20110105210448.GM8638@n2100.arm.linux.org.uk>
-	 <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>
-	 <1294262208.2952.4.camel@heimdal.trondhjem.org>
-	 <AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com>
-	 <1294268808.2952.18.camel@heimdal.trondhjem.org>
-	 <1294270104.16957.73.camel@mulgrave.site>
-	 <1294335614.22825.154.camel@mulgrave.site>
-	 <1294336054.2905.1.camel@heimdal.trondhjem.org>
-	 <AANLkTimusF4KCJ4vHPn+T1dUiKxapXaT0QTtFvh8Ykdd@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Fri, 07 Jan 2011 13:53:25 -0500
-Message-ID: <1294426405.2929.23.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 07 Jan 2011 18:53:27.0266 (UTC) FILETIME=[2B2C8420:01CBAE9C]
+	Fri, 7 Jan 2011 13:54:45 -0500
+MIME-Version: 1.0
+In-Reply-To: <f853a77e2aebea4130fc486bdbf4aa06@mail.gmail.com>
+References: <20101223171859.f6842045.sfr@canb.auug.org.au> <4D139517.3010608@ti.com>
+ <AANLkTi=pTNg2iWN+=uEv=CyZHHCoddF51pmmCMjPeMUF@mail.gmail.com>
+ <4ce0f816f951f24ca3de9c84d9f70842@mail.gmail.com> <AANLkTimA5UOVn6+xe0ofV1F3_XhAP0daBvOAX2k1u_dU@mail.gmail.com>
+ <AANLkTimzQ1PHN986fqPF0yjd1M+390nSUDYJ65pu0z_f@mail.gmail.com>
+ <4D271E0E.8050401@ti.com> <AANLkTikLQRHyp-TS_idEp5Fr74qC3vDoMqqsAA2v_oV8@mail.gmail.com>
+ <c822ad4569a9dc865b5ccf39e12c828b@mail.gmail.com> <f853a77e2aebea4130fc486bdbf4aa06@mail.gmail.com>
+From: "Gadiyar, Anand" <gadiyar@ti.com>
+Date: Sat, 8 Jan 2011 00:24:24 +0530
+Message-ID: <AANLkTiku=1-NftQGkOiG0Sm5Fp1-Szqe+39kzWz+4dAC@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the usb tree with the omap tree
+To: Anand Gadiyar <gadiyar@ti.com>, Ming Lei <tom.leiming@gmail.com>
+Cc: Benoit Cousson <b-cousson@ti.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Paul Walmsley <paul@pwsan.com>, Greg KH <greg@kroah.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
+        linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-06 at 09:55 -0800, Linus Torvalds wrote: 
-> On Thu, Jan 6, 2011 at 9:47 AM, Trond Myklebust
-> <Trond.Myklebust@netapp.com> wrote:
-> >
-> > Why is this line needed? We're not writing through the virtual mapping.
-> 
-> I haven't looked at the sequence of accesses, but you need to be
-> _very_ aware that "write-through" is absolutely NOT sufficient for
-> cache coherency.
-> 
-> In cache coherency, you have three options:
-> 
->  - true coherency (eg physically indexed/tagged caches)
-> 
->  - exclusion (eg virtual caches, but with an exclusion guarantee that
-> guarantees that aliases cannot happen: either by using physical
-> tagging or by not allowing cases that could cause virtual aliases)
-> 
->  - write-through AND non-cached reads (ie "no caching at all").
-> 
-> You seem to be forgetting the "no cached reads" part. It's not
-> sufficient to flush after a write - you need to make sure that you
-> also don't have a cached copy of the alias for the read.
-> 
-> So "We're not writing through the virtual mapping" is NOT a sufficient
-> excuse. If you're reading through the virtual mapping, you need to
-> make sure that the virtual mapping is flushed _after_ any writes
-> through any other mapping and _before_ any reads through the virtual
-> one.
+On Fri, Jan 7, 2011 at 8:50 PM, Anand Gadiyar <gadiyar@ti.com> wrote:
+> Update: I disabled CONFIG_OMAP_RESET_CLOCKS and the PHY and other
+> connected devices enumerate just fine. Could you try this out on
+> your board as well?
+>
+> I'll look deeper and see if there are some required clocks that are
+> accidentally getting turned off.
+>
 
-I'm aware of that. That part should be taken care of by the call to
-invalidate_kernel_vmap_range() which was in both James and my patch.
+A final update from today: It appears that disabling auxclk3_ck causes
+EHCI to fail. I'm not sure what this clock feeds, and will need to look it
+up. Keeping this clock alive is sufficient to get the hub to enumerate.
 
-There is already code in the SUNRPC layer that calls flush_dcache_page()
-after writing (although as Russell pointed out earlier, that is
-apparently a no-op for non-page cache pages such as these).
+I would've looked it up, but got booted out by a fire alarm drill. I'll
+take a look tomorrow and cook up a fix.
 
-> This is why you really really really generally don't want to have
-> aliasing. Purely virtual caches are pure crap. Really.
-
-Well, it looks as if NOMMU is giving us problems due to the lack of a
-vm_map_ram() (see https://bugzilla.kernel.org/show_bug.cgi?id=26262).
-
-I'd still like to keep the existing code for those architectures that
-don't have problems, since that allows us to send 32k READDIR requests
-instead of being limited to 4k. For large directories, that is a clear
-win.
-For the NOMMU case we will just go back to using a single page for
-storage (and 4k READDIR requests only). Should I just do the same for
-architectures like ARM and PARISC?
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+- Anand
