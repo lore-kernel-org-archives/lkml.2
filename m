@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044Ab1AGDEZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 22:04:25 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:52398 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755746Ab1AGDEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 22:04:23 -0500
-Date: Fri, 7 Jan 2011 14:04:14 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lukas Czerner <lczerner@redhat.com>
-Subject: linux-next: build warnings after merge of the final tree (ext3 tree
- related)
-Message-Id: <20110107140414.43d5b980.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__7_Jan_2011_14_04_14_+1100_.EPpf+g2_I7yzAJl"
+	id S1756055Ab1AGDEq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 22:04:46 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:59598 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755746Ab1AGDEo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 22:04:44 -0500
+Date: Fri, 7 Jan 2011 14:04:39 +1100
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: David Miller <davem@davemloft.net>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org
+Subject: Re: Crypto Update for 2.6.38
+Message-ID: <20110107030439.GA884@gondor.apana.org.au>
+References: <20110106225301.GA27358@gondor.apana.org.au> <AANLkTi=E3fqTos7A2fJ2PRKT=o5=sgWh+CzMv4G7P4rZ@mail.gmail.com> <20110107001459.GA32068@gondor.apana.org.au> <20110106.184302.193709839.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110106.184302.193709839.davem@davemloft.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__7_Jan_2011_14_04_14_+1100_.EPpf+g2_I7yzAJl
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jan 06, 2011 at 06:43:02PM -0800, David Miller wrote:
+>
+> davem@maramba:~$ time ./crypto_user_test >/dev/null
+> 
+> real		 0m46.586s
+> user		 0m3.280s
+> sys		 0m43.230s
+> davem@maramba:~$ time ./crypto_user_test software >/dev/null
+> 
+> real		 10m40.336s
+> user		 10m40.540s
+> sys		 0m0.000s
+> davem@maramba:~$   
+> 
+> What's that, something like a factor of 13 faster? :-)
 
-Hi Jan,
+Heh, I missed the leading 1 in your second result and was about
+to spill my drink :)
 
-After merging the final tree, today's linux-next build (powerpc
-ppc44x_defconfig) produced these warnings:
-
-fs/ext3/balloc.c: In function 'ext3_get_group_no_and_offset':
-fs/ext3/balloc.c:53: warning: comparison of distinct pointer types lacks a =
-cast
-fs/ext3/balloc.c:53: warning: right shift count >=3D width of type
-fs/ext3/balloc.c:53: warning: passing argument 1 of '__div64_32' from incom=
-patible pointer type
-include/asm-generic/div64.h:35: note: expected 'uint64_t *' but argument is=
- of type 'ext3_fsblk_t *'
-
-Caused by commit 3e5eb5c509e311fdea2468be913ec264edd4f617 ("ext3: Add
-batched discard support for ext3").
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__7_Jan_2011_14_04_14_+1100_.EPpf+g2_I7yzAJl
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNJoKuAAoJEDMEi1NhKgbsdCAIAIDuEGuN/p52szV6V2REkk8B
-H1wusQ8JlUxUw6uuLSdU61vTuHVVjvtOZXWINzsd0hjJsIRypYDWm+WNIOrA6of3
-IEKP6d6KLWb9qNUKsFag/LWfTpiE5Ifd7nee6uPCbqhPDrWvlbqwGuGn+ATAV2dd
-htj10uLFOfIFv1Laq8SI3l20w6fvkaIhZSWVJE4bIjrD3AWxyrkrnBsOkeX50xq9
-Rox4iOQPlh3O8JdYNgYx6JYLKTVQh3h0hisNl++j9gw9+5JMlHFwBr/25gRhnoGN
-fYUNEvXpFvci0CW2lqvTwJuGxgnx2/QAqR9gX/JmRfkBkhDSamUt2yZqTtdVhKI=
-=X3kk
------END PGP SIGNATURE-----
-
---Signature=_Fri__7_Jan_2011_14_04_14_+1100_.EPpf+g2_I7yzAJl--
+Thanks!
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
