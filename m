@@ -1,458 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971Ab1AGHPr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 02:15:47 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42273 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752753Ab1AGHPq (ORCPT
+	id S1754123Ab1AGHR6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 02:17:58 -0500
+Received: from mail.windriver.com ([147.11.1.11]:63851 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753681Ab1AGHR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 02:15:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
-         :mime-version:content-type:content-transfer-encoding;
-        b=qzOnfgspWvADIgL0yim086OwwZLqOWJ40AD+1gow7rjd8gs8J8UhEcIA/U4M5YBEiB
-         8CMfgnyft7YSKOleDprPYK6MXBARsSCNj4rGHUTzuxy7KxKXjBwzGFuDYaXCqDxDf8Di
-         WgRcXAQfqU94fqEz3PVCS5p6VvaTnOcqJsRN8=
-Date: Fri, 7 Jan 2011 08:15:39 +0100
-From: Urs Fleisch <urs.fleisch@gmail.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LM Sensors <lm-sensors@lm-sensors.org>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [PATCH V5] hwmon: driver for Sensirion SHT21 humidity and
- temperature sensor
-Message-Id: <20110107081539.df496517.urs.fleisch@gmail.com>
-In-Reply-To: <20110106155641.GA9319@ericsson.com>
-References: <20101229134511.cc466ac0.urs.fleisch@gmail.com>
-	<4D1DF097.1080200@cam.ac.uk>
-	<20110103081448.f96c413e.urs.fleisch@gmail.com>
-	<4D21ADCB.4070206@cam.ac.uk>
-	<1294078159.9786.9.camel@groeck-laptop>
-	<4D230ED0.8060008@cam.ac.uk>
-	<20110104152837.GA32138@ericsson.com>
-	<20110104200001.3328dae3.urs.fleisch@gmail.com>
-	<1294170132.9786.52.camel@groeck-laptop>
-	<20110106084338.d31624e3.urs.fleisch@gmail.com>
-	<20110106155641.GA9319@ericsson.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Jan 2011 02:17:58 -0500
+Date: Fri, 7 Jan 2011 15:17:36 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH] sched: consolidate the name of root_task_group and
+ init_task_group
+Message-ID: <20110107071736.GA32635@windriver.com>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1294375414-31028-1-git-send-email-yong.zhang0@gmail.com>
+ <1294378950.8823.36.camel@marge.simson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1294378950.8823.36.camel@marge.simson.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 07 Jan 2011 07:17:39.0480 (UTC) FILETIME=[F78DE980:01CBAE3A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Only thing missing is Documentation/hwmon/sht21.
+On Fri, Jan 07, 2011 at 06:42:30AM +0100, Mike Galbraith wrote:
+> On Fri, 2011-01-07 at 12:43 +0800, Yong Zhang wrote:
+> > root_task_group is the leftover of USER_SCHED, now it's always
+> > same to init_task_group.
 > 
-> Urs, can you add that ? 
-I have added a file Documentation/hwmon/sht21 to the patch.
+> Wouldn't the reverse be better?  It's root as in tree.
 
-> what tree is your patch based on ? I am having trouble applying it.
-I used the 2.6.32 kernel from the rowboat project
-(http://code.google.com/p/rowboat/) because my sensor is connected to an
-OMAP3EVM board. To make the patch applicable for the latest kernel, I added
-a line to the Makefile patch. I could apply the patch without problems to
-the linux-next kernel, although patch reported fuzz with Kconfig. The patch
-below is now based on linux-next, so there should be no longer problems.
+Well, I have no bias to either of them. Keeping init_task_group is
+just that we can touch less lines. :)
 
-Thanks,
-Urs
-
-Signed-off-by: Urs Fleisch <urs.fleisch@sensirion.com>
+If you want root_task_group, here it is:
 ---
-diff --git a/Documentation/hwmon/sht21 b/Documentation/hwmon/sht21
-new file mode 100644
-index 0000000..db17fda
---- /dev/null
-+++ b/Documentation/hwmon/sht21
-@@ -0,0 +1,49 @@
-+Kernel driver sht21
-+===================
-+
-+Supported chips:
-+  * Sensirion SHT21
-+    Prefix: 'sht21'
-+    Addresses scanned: none
-+    Datasheet: Publicly available at the Sensirion website
-+    http://www.sensirion.com/en/pdf/product_information/Datasheet-humidity-sensor-SHT21.pdf
-+
-+  * Sensirion SHT25
-+    Prefix: 'sht21'
-+    Addresses scanned: none
-+    Datasheet: Publicly available at the Sensirion website
-+    http://www.sensirion.com/en/pdf/product_information/Datasheet-humidity-sensor-SHT25.pdf
-+
-+Author:
-+  Urs Fleisch <urs.fleisch@sensirion.com>
-+
-+Description
-+-----------
-+
-+The SHT21 and SHT25 are humidity and temperature sensors in a DFN package of
-+only 3 x 3 mm footprint and 1.1 mm height. The difference between the two
-+devices is the higher level of precision of the SHT25 (1.8% relative humidity,
-+0.2 degree Celsius) compared with the SHT21 (2.0% relative humidity,
-+0.3 degree Celsius).
-+
-+The devices communicate with the I2C protocol. All sensors are set to the same
-+I2C address 0x40, so an entry with I2C_BOARD_INFO("sht21", 0x40) can be used
-+in the board setup code.
-+
-+sysfs-Interface
-+---------------
-+
-+temp1_input - temperature input
-+humidity1_input - humidity input
-+
-+Notes
-+-----
-+
-+The driver uses the default resolution settings of 12 bit for humidity and 14
-+bit for temperature, which results in typical measurement times of 22 ms for
-+humidity and 66 ms for temperature. To keep self heating below 0.1 degree
-+Celsius, the device should not be active for more than 10% of the time,
-+e.g. maximum two measurements per second at the given resolution.
-+
-+Different resolutions, the on-chip heater, using the CRC checksum and reading
-+the serial number are not supported yet.
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 5fcdbb4..35f00da 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -744,6 +744,16 @@ config SENSORS_SHT15
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called sht15.
+From: Yong Zhang <yong.zhang0@gmail.com>
+Subject: [PATCH] sched: consolidate the name of root_task_group and init_task_group
+
+root_task_group is the leftover of USER_SCHED, now it's always
+same to init_task_group.
+But as Mike suggested, root_task_group is maybe the suitable name
+to keep for a tree.
+So in this patch:
+  init_task_group      --> root_task_group
+  init_task_group_load --> root_task_group_load
+  INIT_TASK_GROUP_LOAD --> ROOT_TASK_GROUP_LOAD
+
+Suggested-by: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+---
+ include/linux/sched.h    |    2 +-
+ kernel/sched.c           |   42 ++++++++++++++++++++----------------------
+ kernel/sched_autogroup.c |    6 +++---
+ 3 files changed, 24 insertions(+), 26 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 883ad10..a6b04a0 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2500,7 +2500,7 @@ extern void normalize_rt_tasks(void);
  
-+config SENSORS_SHT21
-+	tristate "Sensiron humidity and temperature sensors. SHT21 and compat."
-+	depends on I2C
-+	help
-+	  If you say yes here you get support for the Sensiron SHT21, SHT25
-+	  humidity and temperature sensors.
-+
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called sht21.
-+
- config SENSORS_S3C
- 	tristate "Samsung built-in ADC"
- 	depends on S3C_ADC
-diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 42542d7..dde02d9 100644
---- a/drivers/hwmon/Makefile
-+++ b/drivers/hwmon/Makefile
-@@ -91,6 +91,7 @@ obj-$(CONFIG_SENSORS_PC87427)	+= pc87427.o
- obj-$(CONFIG_SENSORS_PCF8591)	+= pcf8591.o
- obj-$(CONFIG_SENSORS_S3C)	+= s3c-hwmon.o
- obj-$(CONFIG_SENSORS_SHT15)	+= sht15.o
-+obj-$(CONFIG_SENSORS_SHT21)	+= sht21.o
- obj-$(CONFIG_SENSORS_SIS5595)	+= sis5595.o
- obj-$(CONFIG_SENSORS_SMM665)	+= smm665.o
- obj-$(CONFIG_SENSORS_SMSC47B397)+= smsc47b397.o
-diff --git a/drivers/hwmon/sht21.c b/drivers/hwmon/sht21.c
-new file mode 100644
-index 0000000..f14c262
---- /dev/null
-+++ b/drivers/hwmon/sht21.c
-@@ -0,0 +1,300 @@
-+/* Sensirion SHT21 humidity and temperature sensor driver
-+ *
-+ * Copyright (C) 2010 Urs Fleisch <urs.fleisch@sensirion.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA
-+ *
-+ * Data sheet available (5/2010) at
-+ * http://www.sensirion.com/en/pdf/product_information/Datasheet-humidity-sensor-SHT21.pdf
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/i2c.h>
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
-+#include <linux/err.h>
-+#include <linux/mutex.h>
-+#include <linux/device.h>
-+
-+/* I2C command bytes */
-+#define SHT21_TRIG_T_MEASUREMENT_HM  0xe3
-+#define SHT21_TRIG_RH_MEASUREMENT_HM 0xe5
-+
-+/**
-+ * struct sht21 - SHT21 device specific data
-+ * @hwmon_dev: device registered with hwmon
-+ * @lock: mutex to protect measurement values
-+ * @valid: only 0 before first measurement is taken
-+ * @last_update: time of last update (jiffies)
-+ * @temperature: cached temperature measurement value
-+ * @humidity: cached humidity measurement value
-+ */
-+struct sht21 {
-+	struct device *hwmon_dev;
-+	struct mutex lock;
-+	char valid;
-+	unsigned long last_update;
-+	int temperature;
-+	int humidity;
-+};
-+
-+/**
-+ * sht21_temp_ticks_to_millicelsius() - convert raw temperature ticks to
-+ * milli celsius
-+ * @ticks: temperature ticks value received from sensor
-+ */
-+static inline int sht21_temp_ticks_to_millicelsius(int ticks)
-+{
-+	ticks &= ~0x0003; /* clear status bits */
-+	/* Formula T = -46.85 + 175.72 * ST / 2^16 from data sheet 6.2,
-+	   optimized for integer fixed point (3 digits) arithmetic */
-+	return ((21965 * ticks) >> 13) - 46850;
-+}
-+
-+/**
-+ * sht21_rh_ticks_to_per_cent_mille() - convert raw humidity ticks to
-+ * one-thousandths of a percent relative humidity
-+ * @ticks: humidity ticks value received from sensor
-+ */
-+static inline int sht21_rh_ticks_to_per_cent_mille(int ticks)
-+{
-+	ticks &= ~0x0003; /* clear status bits */
-+	/* Formula RH = -6 + 125 * SRH / 2^16 from data sheet 6.1,
-+	   optimized for integer fixed point (3 digits) arithmetic */
-+	return ((15625 * ticks) >> 13) - 6000;
-+}
-+
-+/**
-+ * sht21_read_word_data() - read word from register
-+ * @client: I2C client device
-+ * @reg: I2C command byte
-+ *
-+ * Returns value, negative errno on error.
-+ */
-+static inline int sht21_read_word_data(struct i2c_client *client, u8 reg)
-+{
-+	int ret = i2c_smbus_read_word_data(client, reg);
-+	if (ret < 0)
-+		return ret;
-+	/* SMBus specifies low byte first, but the SHT21 returns MSB
-+	 * first, so we have to swab16 the values */
-+	return swab16(ret);
-+}
-+
-+/**
-+ * sht21_update_measurements() - get updated measurements from device
-+ * @client: I2C client device
-+ *
-+ * Returns 0 on success, else negative errno.
-+ */
-+static int sht21_update_measurements(struct i2c_client *client)
-+{
-+	int ret = 0;
-+	struct sht21 *sht21 = i2c_get_clientdata(client);
-+
-+	mutex_lock(&sht21->lock);
-+	/* Data sheet 2.4:
-+	 * SHT2x should not be active for more than 10% of the time - e.g.
-+	 * maximum two measurements per second at 12bit accuracy shall be made.
-+	 */
-+	if (time_after(jiffies, sht21->last_update + HZ / 2) || !sht21->valid) {
-+		ret = sht21_read_word_data(client, SHT21_TRIG_T_MEASUREMENT_HM);
-+		if (ret < 0)
-+			goto out;
-+		sht21->temperature = sht21_temp_ticks_to_millicelsius(ret);
-+		ret = sht21_read_word_data(client,
-+					SHT21_TRIG_RH_MEASUREMENT_HM);
-+		if (ret < 0)
-+			goto out;
-+		sht21->humidity = sht21_rh_ticks_to_per_cent_mille(ret);
-+		sht21->last_update = jiffies;
-+		sht21->valid = 1;
-+	}
-+out:
-+	mutex_unlock(&sht21->lock);
-+
-+	return ret >= 0 ? 0 : ret;
-+}
-+
-+/**
-+ * sht21_show_temperature() - show temperature measurement value in sysfs
-+ * @dev: device
-+ * @attr: device attribute
-+ * @buf: sysfs buffer (PAGE_SIZE) where measurement values are written to
-+ *
-+ * Will be called on read access to temp1_input sysfs attribute.
-+ * Returns number of bytes written into buffer, negative errno on error.
-+ */
-+static ssize_t sht21_show_temperature(struct device *dev,
-+	struct device_attribute *attr,
-+	char *buf)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct sht21 *sht21 = i2c_get_clientdata(client);
-+	int ret = sht21_update_measurements(client);
-+	if (ret < 0)
-+		return ret;
-+	return sprintf(buf, "%d\n", sht21->temperature);
-+}
-+
-+/**
-+ * sht21_show_humidity() - show humidity measurement value in sysfs
-+ * @dev: device
-+ * @attr: device attribute
-+ * @buf: sysfs buffer (PAGE_SIZE) where measurement values are written to
-+ *
-+ * Will be called on read access to humidity1_input sysfs attribute.
-+ * Returns number of bytes written into buffer, negative errno on error.
-+ */
-+static ssize_t sht21_show_humidity(struct device *dev,
-+	struct device_attribute *attr,
-+	char *buf)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct sht21 *sht21 = i2c_get_clientdata(client);
-+	int ret = sht21_update_measurements(client);
-+	if (ret < 0)
-+		return ret;
-+	return sprintf(buf, "%d\n", sht21->humidity);
-+}
-+
-+/* sysfs attributes */
-+static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, sht21_show_temperature,
-+	NULL, 0);
-+static SENSOR_DEVICE_ATTR(humidity1_input, S_IRUGO, sht21_show_humidity,
-+	NULL, 0);
-+
-+static struct attribute *sht21_attributes[] = {
-+	&sensor_dev_attr_temp1_input.dev_attr.attr,
-+	&sensor_dev_attr_humidity1_input.dev_attr.attr,
-+	NULL
-+};
-+
-+static const struct attribute_group sht21_attr_group = {
-+	.attrs = sht21_attributes,
-+};
-+
-+/**
-+ * sht21_probe() - probe device
-+ * @client: I2C client device
-+ * @id: device ID
-+ *
-+ * Called by the I2C core when an entry in the ID table matches a
-+ * device's name.
-+ * Returns 0 on success.
-+ */
-+static int __devinit sht21_probe(struct i2c_client *client,
-+	const struct i2c_device_id *id)
-+{
-+	struct sht21 *sht21;
-+	int err;
-+
-+	if (!i2c_check_functionality(client->adapter,
-+				     I2C_FUNC_SMBUS_WORD_DATA)) {
-+		dev_err(&client->dev,
-+			"adapter does not support SMBus word transactions\n");
-+		return -ENODEV;
-+	}
-+
-+	sht21 = kzalloc(sizeof(*sht21), GFP_KERNEL);
-+	if (!sht21) {
-+		dev_dbg(&client->dev, "kzalloc failed\n");
-+		return -ENOMEM;
-+	}
-+	i2c_set_clientdata(client, sht21);
-+
-+	mutex_init(&sht21->lock);
-+
-+	err = sysfs_create_group(&client->dev.kobj, &sht21_attr_group);
-+	if (err) {
-+		dev_dbg(&client->dev, "could not create sysfs files\n");
-+		goto fail_free;
-+	}
-+	sht21->hwmon_dev = hwmon_device_register(&client->dev);
-+	if (IS_ERR(sht21->hwmon_dev)) {
-+		dev_dbg(&client->dev, "unable to register hwmon device\n");
-+		err = PTR_ERR(sht21->hwmon_dev);
-+		goto fail_remove_sysfs;
-+	}
-+
-+	dev_info(&client->dev, "initialized\n");
-+
-+	return 0;
-+
-+fail_remove_sysfs:
-+	sysfs_remove_group(&client->dev.kobj, &sht21_attr_group);
-+fail_free:
-+	kfree(sht21);
-+
-+	return err;
-+}
-+
-+/**
-+ * sht21_remove() - remove device
-+ * @client: I2C client device
-+ */
-+static int __devexit sht21_remove(struct i2c_client *client)
-+{
-+	struct sht21 *sht21 = i2c_get_clientdata(client);
-+
-+	hwmon_device_unregister(sht21->hwmon_dev);
-+	sysfs_remove_group(&client->dev.kobj, &sht21_attr_group);
-+	kfree(sht21);
-+
-+	return 0;
-+}
-+
-+/* Device ID table */
-+static const struct i2c_device_id sht21_id[] = {
-+	{ "sht21", 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, sht21_id);
-+
-+static struct i2c_driver sht21_driver = {
-+	.driver.name = "sht21",
-+	.probe       = sht21_probe,
-+	.remove      = __devexit_p(sht21_remove),
-+	.id_table    = sht21_id,
-+};
-+
-+/**
-+ * sht21_init() - initialize driver
-+ *
-+ * Called when kernel is booted or module is inserted.
-+ * Returns 0 on success.
-+ */
-+static int __init sht21_init(void)
-+{
-+	return i2c_add_driver(&sht21_driver);
-+}
-+module_init(sht21_init);
-+
-+/**
-+ * sht21_init() - clean up driver
-+ *
-+ * Called when module is removed.
-+ */
-+static void __exit sht21_exit(void)
-+{
-+	i2c_del_driver(&sht21_driver);
-+}
-+module_exit(sht21_exit);
-+
-+MODULE_AUTHOR("Urs Fleisch <urs.fleisch@sensirion.com>");
-+MODULE_DESCRIPTION("Sensirion SHT21 humidity and temperature sensor driver");
-+MODULE_LICENSE("GPL");
+ #ifdef CONFIG_CGROUP_SCHED
+ 
+-extern struct task_group init_task_group;
++extern struct task_group root_task_group;
+ 
+ extern struct task_group *sched_create_group(struct task_group *parent);
+ extern void sched_destroy_group(struct task_group *tg);
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 114a0de..35a8046 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -278,14 +278,12 @@ struct task_group {
+ #endif
+ };
+ 
+-#define root_task_group init_task_group
+-
+ /* task_group_lock serializes the addition/removal of task groups */
+ static DEFINE_SPINLOCK(task_group_lock);
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 
+-# define INIT_TASK_GROUP_LOAD	NICE_0_LOAD
++# define ROOT_TASK_GROUP_LOAD	NICE_0_LOAD
+ 
+ /*
+  * A weight of 0 or 1 can cause arithmetics problems.
+@@ -298,13 +296,13 @@ static DEFINE_SPINLOCK(task_group_lock);
+ #define MIN_SHARES	2
+ #define MAX_SHARES	(1UL << 18)
+ 
+-static int init_task_group_load = INIT_TASK_GROUP_LOAD;
++static int root_task_group_load = ROOT_TASK_GROUP_LOAD;
+ #endif
+ 
+ /* Default task group.
+  *	Every task in system belong to this group at bootup.
+  */
+-struct task_group init_task_group;
++struct task_group root_task_group;
+ 
+ #endif	/* CONFIG_CGROUP_SCHED */
+ 
+@@ -7848,7 +7846,7 @@ static void init_tg_cfs_entry(struct task_group *tg, struct cfs_rq *cfs_rq,
+ 	cfs_rq->tg = tg;
+ 
+ 	tg->se[cpu] = se;
+-	/* se could be NULL for init_task_group */
++	/* se could be NULL for root_task_group */
+ 	if (!se)
+ 		return;
+ 
+@@ -7908,18 +7906,18 @@ void __init sched_init(void)
+ 		ptr = (unsigned long)kzalloc(alloc_size, GFP_NOWAIT);
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+-		init_task_group.se = (struct sched_entity **)ptr;
++		root_task_group.se = (struct sched_entity **)ptr;
+ 		ptr += nr_cpu_ids * sizeof(void **);
+ 
+-		init_task_group.cfs_rq = (struct cfs_rq **)ptr;
++		root_task_group.cfs_rq = (struct cfs_rq **)ptr;
+ 		ptr += nr_cpu_ids * sizeof(void **);
+ 
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ #ifdef CONFIG_RT_GROUP_SCHED
+-		init_task_group.rt_se = (struct sched_rt_entity **)ptr;
++		root_task_group.rt_se = (struct sched_rt_entity **)ptr;
+ 		ptr += nr_cpu_ids * sizeof(void **);
+ 
+-		init_task_group.rt_rq = (struct rt_rq **)ptr;
++		root_task_group.rt_rq = (struct rt_rq **)ptr;
+ 		ptr += nr_cpu_ids * sizeof(void **);
+ 
+ #endif /* CONFIG_RT_GROUP_SCHED */
+@@ -7939,13 +7937,13 @@ void __init sched_init(void)
+ 			global_rt_period(), global_rt_runtime());
+ 
+ #ifdef CONFIG_RT_GROUP_SCHED
+-	init_rt_bandwidth(&init_task_group.rt_bandwidth,
++	init_rt_bandwidth(&root_task_group.rt_bandwidth,
+ 			global_rt_period(), global_rt_runtime());
+ #endif /* CONFIG_RT_GROUP_SCHED */
+ 
+ #ifdef CONFIG_CGROUP_SCHED
+-	list_add(&init_task_group.list, &task_groups);
+-	INIT_LIST_HEAD(&init_task_group.children);
++	list_add(&root_task_group.list, &task_groups);
++	INIT_LIST_HEAD(&root_task_group.children);
+ 	autogroup_init(&init_task);
+ #endif /* CONFIG_CGROUP_SCHED */
+ 
+@@ -7960,34 +7958,34 @@ void __init sched_init(void)
+ 		init_cfs_rq(&rq->cfs, rq);
+ 		init_rt_rq(&rq->rt, rq);
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+-		init_task_group.shares = init_task_group_load;
++		root_task_group.shares = root_task_group_load;
+ 		INIT_LIST_HEAD(&rq->leaf_cfs_rq_list);
+ 		/*
+-		 * How much cpu bandwidth does init_task_group get?
++		 * How much cpu bandwidth does root_task_group get?
+ 		 *
+ 		 * In case of task-groups formed thr' the cgroup filesystem, it
+ 		 * gets 100% of the cpu resources in the system. This overall
+ 		 * system cpu resource is divided among the tasks of
+-		 * init_task_group and its child task-groups in a fair manner,
++		 * root_task_group and its child task-groups in a fair manner,
+ 		 * based on each entity's (task or task-group's) weight
+ 		 * (se->load.weight).
+ 		 *
+-		 * In other words, if init_task_group has 10 tasks of weight
++		 * In other words, if root_task_group has 10 tasks of weight
+ 		 * 1024) and two child groups A0 and A1 (of weight 1024 each),
+ 		 * then A0's share of the cpu resource is:
+ 		 *
+ 		 *	A0's bandwidth = 1024 / (10*1024 + 1024 + 1024) = 8.33%
+ 		 *
+-		 * We achieve this by letting init_task_group's tasks sit
+-		 * directly in rq->cfs (i.e init_task_group->se[] = NULL).
++		 * We achieve this by letting root_task_group's tasks sit
++		 * directly in rq->cfs (i.e root_task_group->se[] = NULL).
+ 		 */
+-		init_tg_cfs_entry(&init_task_group, &rq->cfs, NULL, i, NULL);
++		init_tg_cfs_entry(&root_task_group, &rq->cfs, NULL, i, NULL);
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+ 		rq->rt.rt_runtime = def_rt_bandwidth.rt_runtime;
+ #ifdef CONFIG_RT_GROUP_SCHED
+ 		INIT_LIST_HEAD(&rq->leaf_rt_rq_list);
+-		init_tg_rt_entry(&init_task_group, &rq->rt, NULL, i, NULL);
++		init_tg_rt_entry(&root_task_group, &rq->rt, NULL, i, NULL);
+ #endif
+ 
+ 		for (j = 0; j < CPU_LOAD_IDX_MAX; j++)
+@@ -8814,7 +8812,7 @@ cpu_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cgrp)
+ 
+ 	if (!cgrp->parent) {
+ 		/* This is early initialization for the top cgroup */
+-		return &init_task_group.css;
++		return &root_task_group.css;
+ 	}
+ 
+ 	parent = cgroup_tg(cgrp->parent);
+diff --git a/kernel/sched_autogroup.c b/kernel/sched_autogroup.c
+index c80fedc..e011e53 100644
+--- a/kernel/sched_autogroup.c
++++ b/kernel/sched_autogroup.c
+@@ -11,8 +11,8 @@ static atomic_t autogroup_seq_nr;
+ 
+ static void autogroup_init(struct task_struct *init_task)
+ {
+-	autogroup_default.tg = &init_task_group;
+-	init_task_group.autogroup = &autogroup_default;
++	autogroup_default.tg = &root_task_group;
++	root_task_group.autogroup = &autogroup_default;
+ 	kref_init(&autogroup_default.kref);
+ 	init_rwsem(&autogroup_default.lock);
+ 	init_task->signal->autogroup = &autogroup_default;
+@@ -63,7 +63,7 @@ static inline struct autogroup *autogroup_create(void)
+ 	if (!ag)
+ 		goto out_fail;
+ 
+-	tg = sched_create_group(&init_task_group);
++	tg = sched_create_group(&root_task_group);
+ 
+ 	if (IS_ERR(tg))
+ 		goto out_free;
+-- 
+1.7.0.4
