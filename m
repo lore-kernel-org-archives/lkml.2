@@ -1,102 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309Ab1AGUnJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 15:43:09 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:38107 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760Ab1AGUnG (ORCPT
+	id S1752429Ab1AGUnh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 15:43:37 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:59621 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557Ab1AGUng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 15:43:06 -0500
-Message-ID: <4D277AD5.2090409@canonical.com>
-Date: Fri, 07 Jan 2011 15:43:01 -0500
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Chris Bagwell <chris@cnpbagwell.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+	Fri, 7 Jan 2011 15:43:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=x7OwgkUUwl6FvuVh3tzv4DudUkpGe+ntOskSxRtVfLQGz51piB3nvVbXjVmkWtEehk
+         +5JmFYfnb5GZiszOdREOcmd4zoI2ucUrXRLLnWC8gr2IkRpvmADwavIzvD32XsGW8ckp
+         t8mjn9nfCHrmvRUzkz4y9YPgXF+DDip+prPTc=
+Date: Fri, 7 Jan 2011 15:43:32 -0500
+From: Tejun Heo <tj@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
+        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] Documentation: Add evdev type and code definitions
-References: <1292361672-2581-1-git-send-email-chase.douglas@canonical.com> <1292361672-2581-3-git-send-email-chase.douglas@canonical.com> <4D0A1E49.2070604@euromail.se>
-In-Reply-To: <4D0A1E49.2070604@euromail.se>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] x86: unify "numa=" command line option handling
+Message-ID: <20110107204332.GE7355@mtj.dyndns.org>
+References: <4D2603BF020000780002ACA7@vpn.id2.novell.com>
+ <alpine.DEB.2.00.1101061235010.30820@chino.kir.corp.google.com>
+ <20110107203304.GC7355@mtj.dyndns.org>
+ <alpine.DEB.2.00.1101071234590.31653@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1101071234590.31653@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2010 09:12 AM, Henrik Rydberg wrote:
-> On 12/14/2010 10:21 PM, Chase Douglas wrote:
->> +The evdev protocol uses a map of types and codes to express input device values
->> +to userspace. This document describes the types and codes and how and when they
->> +may be used.
-> 
-> 
-> On a general note, the transfer is stateful. It is assumed that the receiver
-> knows that prior state of an axes when the new value comes in. Only changed
-> values are emitted.
-> 
-> Most of the input state can be retrieved via ioctl/sysfs calls.
+On Fri, Jan 07, 2011 at 12:36:41PM -0800, David Rientjes wrote:
+> I don't think it applies cleanly anymore since d906f0eb was merged, but I 
+> agree with Jan that this new feature should probably be merged for .38.
 
-I've noted both of these for the next revision.
+Okay, the series is already too late for this merge window at this
+point anyway.  I'm not too happy how the merge process is progressing
+but, well, it seems there needs to be another refresh.  Anyways,
+please let me know when the series needs to be refreshed.
 
->> +* SYN_REPORT:
->> +  - Used to synchronize and separate events in time. For example, motion of a
->> +    mouse may set the REL_X and REL_Y values for one motion, then emit a
->> +    SYN_REPORT. The next motion will emit more REL_X and REL_Y values and send
->> +    another SYN_REPORT.
-> 
-> 
-> We have not using the name @frame@ much so far, but i think it is a good name
-> for it.
+Thanks.
 
-Good idea. I began using 'frame' name for the next revision.
-
->> +* BTN_TOOL_<name>, BTN_TOUCH:
->> +  - These codes are used in conjunction with input trackpads, tablets, and
->> +    touchscreens. These devices may be used with fingers, pens, or other tools.
->> +    When an event occurs and a tool is used, the corresponding BTN_TOOL_<name>
->> +    code should be set to a value of 1. When the tool is no longer interacting
->> +    with the input device, the BTN_TOOL_<name> code should be reset to 0. All
->> +    trackpads, tablets, and touchscreens should use at least one BTN_TOOL_<name>
->> +    code when events are generated. For non-tablet devices, the tool is usually
->> +    BTN_TOUCH.
-> 
-> 
-> BTN_TOUCH is always required, and on top of that, one or several other BTN_TOOL
-> can be used. There is also a quirk in that BTN_TOUCH should come first in the
-> event stream, for the benefit of the mousedev emulation driver.
-
-I've tried to address both issues in the next revision.
-
->> +* BTN_TOOL_FINGER, BTN_TOOL_DOUBLETAP, BTN_TOOL_TRIPLETAP, BTN_TOOL_QUADTAP:
->> +  - These codes denote one, two, three, and four finger interaction on a
->> +    trackpad or touchscreen. For example, if the user uses two fingers and moves
->> +    them on the touchpad in an effort to scroll content on screen,
->> +    BTN_TOOL_DOUBLETAP should be set to value 1 for the duration of the motion.
->> +    Note that these codes and the BTN_TOOL_<name> and BTN_TOUCH codes are
->> +    orthogonal in purpose. A trackpad event generated by finger touches should
->> +    generate events for one code from each group.
-> 
-> 
-> In the input-mt interface, there is a function to report these,
-> input_mt_report_finger_count().
-
-I've added a note about this.
-
->> +* ABS_DISTANCE:
->> +  - Used to describe the distance of a tool from an interaction surface. This
->> +    should only be used while the tool is in close proximity of the device. If
->> +    the input device may be used freely in three dimensions, consider ABS_Z
->> +    instead.
-> 
-> 
-> The word "hovering" is commonly used to describe this usage. Many pen tablets
-> use it, and touch versions are emerging.
-
-I added use of the word 'hovering' to be clear.
-
-Thanks!
-
--- Chase
+-- 
+tejun
