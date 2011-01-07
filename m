@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242Ab1AGAoI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 19:44:08 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:49831 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751523Ab1AGAoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754030Ab1AGAoG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 19:44:06 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:11675 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751725Ab1AGAoE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Jan 2011 19:44:04 -0500
-Date: Fri, 7 Jan 2011 11:44:00 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Morris <jmorris@namei.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: linux-next: manual merge of the security-testing tree with the net
- tree
-Message-Id: <20110107114400.e4d1d33b.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+From: Simon Glass <sjg@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Simon Glass <sjg@chromium.org>
+Subject: [PATCH] Initialize sysctl to 1 to fix /proc/sys/kernel/sysrq value
+Date: Thu,  6 Jan 2011 16:43:55 -0800
+Message-Id: <1294361035-22843-1-git-send-email-sjg@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+sysreq has previously (before commit 97f5f0cd) been initialized to 1,
+thus enabling it on startup and making this value visible to user
+space via /proc/sys/kernel/sysrq.
 
-Today's linux-next merge of the security-testing tree got a conflict in
-security/smack/smack_lsm.c between commit
-3610cda53f247e176bcbb7a7cca64bc53b12acdb ("af_unix: Avoid socket->sk NULL
-OOPS in stream connect security hooks") from the net tree and commit
-b4e0d5f0791bd6dd12a1c1edea0340969c7c1f90 ("Smack: UDS revision") from the
-security-testing tree.
+Commit 97f5f0cd split the __sysrq_enabled into two variables, one in
+kernel/sysctl.c and the other in drivers/char/sysrq.c. The second is
+initialised to 1 but the first is not, and I can find no mechanism in
+the code to do so.
 
-I fixed it up (I think - see below) and can carry the fix as necessary.
+The upshot of this problem is that sysrq will read as 0 and appear to
+be disabled as far as user space thinks, even though in fact it will
+be enabled on boot. This problem goes away as soon as anyone writes
+the sysrq file, and in particular when sysctl.conf contains the sysrq
+line, so it may not be obvious.
+
+This simple fix just initialises the variable on the sysctl.c side.
+
+Change-Id: Iaeda23abf236e7791d71a384dc453b6a0138eaf5
+
+Signed-off-by: Simon Glass <sjg@chromium.org>
+---
+ kernel/sysctl.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 3a45c22..4b2f758 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -171,7 +171,8 @@ static int proc_taint(struct ctl_table *table, int write,
+ #endif
+ 
+ #ifdef CONFIG_MAGIC_SYSRQ
+-static int __sysrq_enabled; /* Note: sysrq code ises it's own private copy */
++/* Note: sysrq code in drivers/char/sysrq.c uses its own private copy */
++static int __sysrq_enabled = 1;
+ 
+ static int sysrq_sysctl_handler(ctl_table *table, int write,
+ 				void __user *buffer, size_t *lenp,
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+1.7.3.1
 
-diff --cc security/smack/smack_lsm.c
-index ccb71a0,05dc4da..0000000
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@@ -2415,17 -2534,21 +2534,21 @@@ static int smack_setprocattr(struct tas
-   * Return 0 if a subject with the smack of sock could access
-   * an object with the smack of other, otherwise an error code
-   */
- -static int smack_unix_stream_connect(struct socket *sock,
- -				     struct socket *other, struct sock *newsk)
- +static int smack_unix_stream_connect(struct sock *sock,
- +				     struct sock *other, struct sock *newsk)
-  {
-- 	struct inode *sp = SOCK_INODE(sock->sk_socket);
-- 	struct inode *op = SOCK_INODE(other->sk_socket);
- -	struct socket_smack *ssp = sock->sk->sk_security;
- -	struct socket_smack *osp = other->sk->sk_security;
-++	struct socket_smack *ssp = sock->sk_security;
-++	struct socket_smack *osp = other->sk_security;
-  	struct smk_audit_info ad;
-+ 	int rc = 0;
-  
-  	smk_ad_init(&ad, __func__, LSM_AUDIT_DATA_NET);
- -	smk_ad_setfield_u_net_sk(&ad, other->sk);
- +	smk_ad_setfield_u_net_sk(&ad, other);
-- 	return smk_access(smk_of_inode(sp), smk_of_inode(op),
-- 				 MAY_READWRITE, &ad);
-+ 
-+ 	if (!capable(CAP_MAC_OVERRIDE))
-+ 		rc = smk_access(ssp->smk_out, osp->smk_in, MAY_WRITE, &ad);
-+ 
-+ 	return rc;
-  }
-  
-  /**
