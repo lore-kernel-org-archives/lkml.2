@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab1AGWF4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 17:05:56 -0500
-Received: from cantor.suse.de ([195.135.220.2]:38193 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751790Ab1AGWFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 17:05:55 -0500
-Date: Fri, 7 Jan 2011 14:00:12 -0800
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
-        Anand Gadiyar <gadiyar@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [GIT PATCH] USB merge for .38
-Message-ID: <20110107220012.GA26091@suse.de>
-References: <20110106235016.GA2212@kroah.com>
- <AANLkTi=rwv2CW-x_p9SrKghcPKD4TeOAP=2mtp8EcS34@mail.gmail.com>
+	id S1754350Ab1AGWGm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 17:06:42 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:33418 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753636Ab1AGWGk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 17:06:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=AtFdiUSwvTVTOT53sMweRNSZobIMGKWdYCrQis/68Gy7B2UYfFm+4YpVCrTQHGn81x
+         tlJ0fBcFlq76s6JhFRfsAaOPj5HEX+f+mD0yhSBe4kx3bkeBNQtlQWJ5HhPLayL5vmH5
+         aSBkZV7TWlwz2ZvzWZYxYt06GAS99os2nuGgs=
+Message-ID: <4D278E6B.7020002@gmail.com>
+Date: Sat, 08 Jan 2011 01:06:35 +0300
+From: Nikolai Kondrashov <spbnick@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101227 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=rwv2CW-x_p9SrKghcPKD4TeOAP=2mtp8EcS34@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Chase Douglas <chase.douglas@canonical.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Chris Bagwell <chris@cnpbagwell.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Documentation: Add evdev type and code definitions
+References: <1294435695-16750-1-git-send-email-chase.douglas@canonical.com>
+In-Reply-To: <1294435695-16750-1-git-send-email-chase.douglas@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 07, 2011 at 01:22:40PM -0800, Linus Torvalds wrote:
-> On Thu, Jan 6, 2011 at 3:50 PM, Greg KH <gregkh@suse.de> wrote:
-> >
-> > Nothing radical here at all, lots of musb changes, which touched a bunch
-> > of arch-specific code, and some new drivers, mostly gadget ones.
-> 
-> There were also a number of conflicts with the ARM updates (omap clock
-> data in particular - added aliases, changed names, you name it).
-> 
-> I spent some time trying to fix it up properly, and maybe I even
-> succeeded, but you guys should really look the result over.
+On 01/08/2011 12:28 AM, Chase Douglas wrote:
+> +* BTN_TOOL_<name>:
+> +  - These codes are used in conjunction with input trackpads, tablets, and
+> +    touchscreens. These devices may be used with fingers, pens, or other tools.
+> +    When an event occurs and a tool is used, the corresponding BTN_TOOL_<name>
+> +    code should be set to a value of 1. When the tool is no longer interacting
+> +    with the input device, the BTN_TOOL_<name>  code should be reset to 0. All
+> +    trackpads, tablets, and touchscreens should use at least one BTN_TOOL_<name>
+> +    code when events are generated.
 
-The drivers/usb/* changes look good to me.  I know Tony was looking at
-the omap merge issues, and if there was one, I think he had the needed
-fixup.
+There are some tablets (namely UC-Logic ones), which do not indicate tool
+proximity. Yet they may have both a pen and a mouse. They just send reports
+with separate report IDs. Currently it is solved by using
+HID_QUIRK_MULTI_INPUT and not sending any BTN_TOOL_* events.
 
-thanks for doing the merge.
+Should the documentation reflect the fact that some tablets do not send any
+BTN_TOOL_* events, or should the drivers be updated to synthesise them?
 
-greg k-h
+Note that in the latter case there will never be a BTN_TOOL_* with
+zero value when the tool leaves the digitizing area, but only when the tools
+are switched (if ever).
+
+Sincerely,
+Nick
