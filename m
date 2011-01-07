@@ -1,113 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754271Ab1AGUe5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 15:34:57 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:43200 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753993Ab1AGUey (ORCPT
+	id S1755212Ab1AGUfR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 15:35:17 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:56862 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754033Ab1AGUez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 15:34:54 -0500
-Message-ID: <4D2778E7.4000201@canonical.com>
-Date: Fri, 07 Jan 2011 15:34:47 -0500
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Fri, 7 Jan 2011 15:34:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=irct5oG6OKlUCWAub/BD9Se8Y3L+0segWhQghUEQGGveaJRoccJWgKUoWY4+FVFbka
+         MKb5UIuU5gJWDerb9vMp2TL7tItJm6Q7QqoduArpBOsRrZtCDazeQozOYzA6ADPUjt/V
+         hEfP6pzIK/wcSsoFYmp0RdbNjyKEHj/vATHWY=
+Message-ID: <4D2777FC.6040509@gmail.com>
+Date: Fri, 07 Jan 2011 21:30:52 +0100
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-To: Peter Hutterer <peter.hutterer@who-t.net>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Chris Bagwell <chris@cnpbagwell.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] Documentation: Add evdev type and code definitions
-References: <1292361672-2581-1-git-send-email-chase.douglas@canonical.com> <1292361672-2581-3-git-send-email-chase.douglas@canonical.com> <20101215235900.GA4952@salty.local>
-In-Reply-To: <20101215235900.GA4952@salty.local>
+To: Tony Luck <tony.luck@intel.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Tim Bird <tim.bird@am.sony.com>
+Subject: Re: [PATCH 01/17] pramfs: documentation
+References: <4D25AF02.60208@gmail.com> <AANLkTimGt5hi+TpFHWxktJEg3tcDQmmARdqFqzAt++OQ@mail.gmail.com>
+In-Reply-To: <AANLkTimGt5hi+TpFHWxktJEg3tcDQmmARdqFqzAt++OQ@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2010 06:59 PM, Peter Hutterer wrote:
-> On Tue, Dec 14, 2010 at 01:21:10PM -0800, Chase Douglas wrote:
->> +EV_KEY events take the form KEY_<name> or BTN_<name>. For example, KEY_A is used
->> +to represent the 'A' key on a keyboard. When a key is depressed, an event with
->> +the key's code is emitted with value 1. When the key is depressed, an event is
->> +emitted with value 0. In general, KEY_<name> is used for keyboard keys, and
->> +BTN_<name> is used for other types of momentary switch events.
+Il 07/01/2011 19:42, Tony Luck ha scritto:
+> On Thu, Jan 6, 2011 at 4:01 AM, Marco Stornelli
+> <marco.stornelli@gmail.com> wrote:
+>> +accessed data that must survive system reboots and power cycles. An
+>> +example usage might be system logs under /var/log, or a user address
+>> +book in a cell phone or PDA.
 > 
-> repeat keys have value 2, might want to add this here.
-
-Done.
-
->> +* BTN_TOOL_<name>, BTN_TOUCH:
->> +  - These codes are used in conjunction with input trackpads, tablets, and
->> +    touchscreens. These devices may be used with fingers, pens, or other tools.
->> +    When an event occurs and a tool is used, the corresponding BTN_TOOL_<name>
->> +    code should be set to a value of 1. When the tool is no longer interacting
->> +    with the input device, the BTN_TOOL_<name> code should be reset to 0. All
->> +    trackpads, tablets, and touchscreens should use at least one BTN_TOOL_<name>
->> +    code when events are generated. For non-tablet devices, the tool is usually
->> +    BTN_TOUCH.
+> Some usage model questions:
 > 
-> BTN_TOUCH is used as proximity delimiter. e.g. wacom sends BTN_TOOL_PEN when
-> the pen comes into proximity and (in addition) BTN_TOUCH when the pen
-> actually touches the tablet. synaptics does the same IIRC except that it
-> doesn't support hovering, so BTN_TOOL_FINGER and BTN_TOUCH are always
-> set/unset in the same EV_SYN frame.
+> How do you handle errors?  I see that there are a few sanity checks in the
+> "mount" path ... but there would seem to be several opportunities for the
+> file system to get corrupted in other ways.  Since you don't have a block
+> device, a standard "fsck" program looks challenging (though I guess you
+> could mmap("/dev/mem") to peek & poke at the filesystem before trying
+> to mount it).
 
-I've added wording for this.
+Actually not (at least when strict devmem options is turned on) because
+the memory region is marked exclusive at the moment (only a design
+constraint). About the errors: pramfs does not maintain file data in the
+page caches for normal file I/O, so no writeback, the read/write
+operation are done with direct io and they are always sync. The data are
+write protected in hw when the arch provide this facility (x86 does).
+Inode contains a checksum and when there are problems they are marked as
+bad. Superblock contains checksum and there is a redundant superblock.
 
->> +* REL_WHEEL, REL_HWHEEL:
->> +  - These codes are used for vertical and horizontal scroll wheels,
->> +    respectively.
-> 
-> I'm not sure they're special, other than in X where we still treat them as
-> buttons by convention. It's good to describe them here, just in case, but I
-> wouldn't call that a "special meaning".
+> Some sort of recovery path would seem useful for the "address
+> book" use model ... or do you just expect users to back their address book
+> up (to the cloud?) and have the phone just make a clean filesystem if any
+> errors are found?
 
-In my mind I thought people may confuse this with a generic knob input
-device. I've seen these in the local Apple store, and I believe they are
-used primarily for professional a/v editing to go forward and backward
-in time. I don't believe such devices should be using either of these
-codes, so I defined the codes to be for scroll wheels.
+Yeah maybe the address book can be a case not perfectly suitable, but it
+was only an example. I thought about the fs as a "cache" in this use
+case. However the designer can use this area whatever he wants,
+recently I saw in a project this fs used as a system cache for decrypted
+files where the files were stored in flash encrypted, so I think it's
+flexible.
 
-Any objections?
+> What about quotas?  You have a fixed amount of persistent space, and
+> presumably a number of apps that the user installs on their device that
+> may like to use pramfs to store data.  Do you need some kernel enforcement
+> to stop one rogue application from using up all the space? Or do you expect that
+> this would be handled in some library level interface that applications will
+> use to access pramfs?
 
->> +* ABS_PRESSURE:
->> +  - Used to describe the pressure of a touch interaction on an input device.
-> 
-> again, that's not really special IMO. it pretty much does what it says on
-> the box :)
+Sincerely in my embedded systems I've never used quotas even to save
+footprint (for the kernel support I mean). I don't think it's an hot
+feature in this case and other fs for embedded use as ubifs, jffs2 etc.
+don't support it.
 
-I think I had something in mind for this like the above REL_WHEEL, but I
-can't think of it now. After re-reading this description, I don't think
-it yields any new information that can't be gleaned from the code name
-itself, so I've yanked it from the document.
-
-> fwiw, I know that even though the documentation should be enough as-is,
-> having a few simple examples are always really useful to form the picture in
-> one's head. especially for newcomers who don't understand the basic concepts
-> yet.
-> 
-> just something like:
-> "for example, an absolute device moving to a new position and pressing and
-> releasing a button may send events like this:
-> code            value
-> -----------------------
-> ABS_X           10
-> ABS_Y           100
-> BTN_LEFT        1
-> EV_SYN          SYN_REPORT
-> BTN_LEFT        0
-> EV_SYN          SYN_REPORT
-> 
-> This immediately makes it obvious that buttons and axes can be mixed in the
-> same frame. you may want to also point to a few tools that show the event
-> stream (evtest comes to mind as the most widely distributed).
-
-I would like to see this as well, but I think I'll leave the initial
-commit to just the protocol documentation. We should add these in a
-subsequent commit (and I'm running out of time at the moment :).
-
-Thanks!
-
--- Chase
+Marco
