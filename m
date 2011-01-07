@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab1AGROY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 12:14:24 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:26553 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754707Ab1AGROX (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Fri, 7 Jan 2011 12:14:23 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: dri-devel@lists.freedesktop.org, thomas@shipmail.org, airlied@linux.ie,
-        linux-kernel@vger.kernel.org
-Cc: konrad@darnok.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/5] tm: Utilize the dma_addr_t array for pages that are to in DMA32 pool.
-Date: Fri,  7 Jan 2011 12:11:41 -0500
-Message-Id: <1294420304-24811-3-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com>
-References: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com>
+	id S1754948Ab1AGRQB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 12:16:01 -0500
+Received: from nm19-vm0.bullet.mail.ac4.yahoo.com ([98.139.53.212]:24948 "HELO
+	nm19-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754843Ab1AGRQA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 12:16:00 -0500
+X-Yahoo-Newman-Id: 242497.73198.bm@omp1014.mail.ac4.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.ca;
+  h=DKIM-Signature:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:Subject:From:To:Cc:In-Reply-To:References:Content-Type:Date:Message-ID:Mime-Version:X-Mailer:Content-Transfer-Encoding;
+  b=R8Q47Jq1bv617p1uo2tb9vO0KH0dIvMDe8bS/GNvSEUqK4dzyIYoocA7zGlLWyllOCpWGGWpTXrpJtjYeq8juqVV6Kg5ASMK8bPLmf+T3nMMkY2ippPtDoKSmTBH2AluppyjvXkY8jnbiNPn2QFJd0hVqionACSehcbjc4WSxmU=  ;
+X-Yahoo-SMTP: izt95ZKswBDBT1bN16dPvD5jLHMKn5IFkJA-
+X-YMail-OSG: 2FaEHl0VM1kywztn7Pgp2lW5TkGBivicJo5243B6dUHwYuF
+ mT0h40fUy5B7fTufdrB6GW9xOy9b.ASRc7sWuJ7_icVzSWWNNckUHRBuqC6d
+ dIAv2BDDfkn5Q2gO1jJN5FOMAzOWKrDTuE_m6MO111BhCj8AcS0HmmyUul9T
+ EB.dr8lOGqPceSUWkrirFYQEp2jcGGUWVeoowagO9j1XSL7hYOUwAACW3LYx
+ SJBbGmSbkXcR7EQCYnoh_zxwCRIjVpiseBZlTqT0Bu3QIWhDnzsW4GG8Gg4x
+ OgvrO0hALt.zuXF6bnQE6HKl6oUcWHqB_qkGzPMPsGexH
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: can't resume from ACPI S3 with TICK_ONESHOT
+From: "James C. Georgas" <james.georgas@yahoo.ca>
+To: Borislav Petkov <bp@amd64.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
+In-Reply-To: <20110107111658.GE16507@aftab>
+References: <1294191939.3889.49.camel@Tachyon>
+	 <20110105120959.GB4927@kryptos.osrc.amd.com>
+	 <1294242385.3650.38.camel@Tachyon>  <20110107111658.GE16507@aftab>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 Jan 2011 10:15:50 -0700
+Message-ID: <1294420550.17472.1.camel@Tachyon>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We only use the "if (pool == NULL)" path for right now.
+On Fri, 2011-01-07 at 12:16 +0100, Borislav Petkov wrote:
+> On Wed, Jan 05, 2011 at 10:46:25AM -0500, James C. Georgas wrote:
+> > Let me know if you need more.
+> 
+> Yeah, what does
+> 
+> xxd /sys/firmware/acpi/tables/HPET
+> 
+> say?
+> 
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/gpu/drm/ttm/ttm_page_alloc.c |   26 +++++++++++++++++++++++---
- 1 files changed, 23 insertions(+), 3 deletions(-)
+Tachyon james # xxd /sys/firmware/acpi/tables/HPET
+0000000: 4850 4554 3800 0000 012a 5054 4c54 4420  HPET8....*PTLTD 
+0000010: 4850 4554 5442 4c20 0000 0406 204c 5450  HPETTBL .... LTP
+0000020: 0100 0000 1082 5343 0000 0000 0000 d0fe  ......SC........
+0000030: 0000 0000 0080 0000                      ........
+Tachyon james # 
 
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-index 6859288..5d09677 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-@@ -683,14 +683,22 @@ int ttm_get_pages(struct list_head *pages, int flags,
- 			gfp_flags |= GFP_HIGHUSER;
- 
- 		for (r = 0; r < count; ++r) {
--			p = alloc_page(gfp_flags);
-+			if ((flags & TTM_PAGE_FLAG_DMA32) && dma_address) {
-+				void *addr;
-+				addr = dma_alloc_coherent(NULL, PAGE_SIZE,
-+							&dma_address[r],
-+							gfp_flags);
-+				if (addr == NULL)
-+					return -ENOMEM;
-+				p = virt_to_page(addr);
-+			} else
-+				p = alloc_page(gfp_flags);
- 			if (!p) {
- 
- 				printk(KERN_ERR TTM_PFX
- 				       "Unable to allocate page.");
- 				return -ENOMEM;
- 			}
--
- 			list_add(&p->lru, pages);
- 		}
- 		return 0;
-@@ -739,12 +747,24 @@ void ttm_put_pages(struct list_head *pages, unsigned page_count, int flags,
- 	unsigned long irq_flags;
- 	struct ttm_page_pool *pool = ttm_get_pool(flags, cstate);
- 	struct page *p, *tmp;
-+	unsigned r;
- 
- 	if (pool == NULL) {
- 		/* No pool for this memory type so free the pages */
- 
-+		r = page_count-1;
- 		list_for_each_entry_safe(p, tmp, pages, lru) {
--			__free_page(p);
-+			if ((flags & TTM_PAGE_FLAG_DMA32) && dma_address) {
-+				void *addr = page_address(p);
-+				WARN_ON(!addr || !dma_address[r]);
-+				if (addr)
-+					dma_free_coherent(NULL, PAGE_SIZE,
-+							addr,
-+							dma_address[r]);
-+				dma_address[r] = 0;
-+			} else
-+				__free_page(p);
-+			r--;
- 		}
- 		/* Make the pages list empty */
- 		INIT_LIST_HEAD(pages);
--- 
-1.7.1
 
