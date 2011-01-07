@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754963Ab1AGRUJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 12:20:09 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:52647
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754826Ab1AGRUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 12:20:07 -0500
-From: Hank Janssen <hjanssen@microsoft.com>
-To: hjanssen@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org
-Cc: Abhishek Kane <v-abkane@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 1/1] staging: hv: Removed unneeded call to netif_stop_queue() in hv_netvsc
-Date: Fri,  7 Jan 2011 09:25:39 -0800
-Message-Id: <1294421139-18657-1-git-send-email-hjanssen@microsoft.com>
-X-Mailer: git-send-email 1.5.5.6
+	id S1754900Ab1AGRXJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 12:23:09 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57756 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754532Ab1AGRXH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 12:23:07 -0500
+Date: Fri, 7 Jan 2011 10:23:04 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: David Gibson <david@gibson.dropbear.id.au>,
+        "Blanchard, Hollis" <Hollis_Blanchard@mentor.com>,
+        devicetree-discuss@lists.ozlabs.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Scott Wood <scottwood@freescale.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Saxena, Deepak" <deepak_saxena@mentor.com>
+Subject: Re: [PATCH] of/device: Don't register disabled devices
+Message-ID: <20110107172304.GC25446@angua.secretlab.ca>
+References: <20110103230122.25772.72990.stgit@localhost6.localdomain6>
+ <DD7A9A95166BF4418C4C1EB2033B6EE2038FA8E5@na3-mail.mgc.mentorg.com>
+ <20110105233535.GB8846@yookeroo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110105233535.GB8846@yookeroo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hank Janssen <hjanssen@microsoft.com>
+On Thu, Jan 06, 2011 at 10:35:35AM +1100, David Gibson wrote:
+> On Wed, Jan 05, 2011 at 02:53:27PM -0800, Blanchard, Hollis wrote:
+> > On 01/03/2011 03:01 PM, Grant Likely wrote:
+> > > Device nodes with the property status="disabled" are not usable and so
+> > > don't register them when parsing the device tree for devices.
+> > >
+> > This is great and all, but a fair amount of driver code explicitly 
+> > searches the tree, rather than registering a probe function. That's why 
+> > our earlier patches in this area were more comprehensive.
 
-Removed the call to netif_stop_queue() in netvsc_probe() as
-the queue is not initialized at that point and further call
-to it after queue initialization is really not necessary.
+As your patch set shows, the total set isn't unmanageable, and the
+preference for new code is to use the device model infrastructure if
+at all possible.
 
-This change was prompted after an upstream change went into 
-2.6.37 (netif_tx_stop_queue) that now checks if netif_stop_queue
-is called before register with netdev is done.
+> > 
+> > What are your thoughts on handling those cases?
+> 
+> One by one.  Trying to handle the explicit searches automagically is
+> just asking for trouble.
 
-This will eliminate the warning message to the log when hv_netvsc
-driver starts up.
+Just as David says, the special cases are... well... special.
+Anything making decisions about registering devices needs to follow
+the status!="okay" rules.
 
-Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-
-
----
- drivers/staging/hv/netvsc_drv.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
-index 0147b40..54706a1 100644
---- a/drivers/staging/hv/netvsc_drv.c
-+++ b/drivers/staging/hv/netvsc_drv.c
-@@ -358,7 +358,6 @@ static int netvsc_probe(struct device *device)
- 
- 	/* Set initial state */
- 	netif_carrier_off(net);
--	netif_stop_queue(net);
- 
- 	net_device_ctx = netdev_priv(net);
- 	net_device_ctx->device_ctx = device_ctx;
--- 
-1.6.0.2
+g.
 
