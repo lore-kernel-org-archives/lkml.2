@@ -1,99 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525Ab1AGWPL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 17:15:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33427 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754122Ab1AGWPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 17:15:08 -0500
-Date: Fri, 7 Jan 2011 23:15:03 +0100
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: akpm@linux-foundation.org, bengardiner@nanometrics.ca,
-        bgamari.foss@gmail.com, eric.dumazet@gmail.com, geert@linux-m68k.org,
-        hjl.tools@gmail.com, jj@chaosbits.net, kirill@shutemov.name,
-        lacombar@gmail.com, mmarek@suse.cz, olof@lixom.net, stigge@antcom.de,
-        thomas@wytron.com.tw, vapier@gentoo.org, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] kbuild core updates for 2.6.38-rc1
-Message-ID: <20110107221503.GA13373@sepie.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754445Ab1AGWVP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 17:21:15 -0500
+Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:40532 "EHLO
+	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753862Ab1AGWVO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 17:21:14 -0500
+From: Ian Campbell <ijc@hellion.org.uk>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: dri-devel@lists.freedesktop.org, thomas@shipmail.org, airlied@linux.ie,
+        linux-kernel@vger.kernel.org, konrad@darnok.org
+In-Reply-To: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com>
+References: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Fri, 07 Jan 2011 22:21:00 +0000
+Message-ID: <1294438860.12280.52.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.1.7
+X-SA-Exim-Mail-From: ijc@hellion.org.uk
+Subject: Re: [RFC PATCH v2] Utilize the PCI API in the TTM framework.
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
+X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=4eYIZ_Hv1GIA:10 a=8nJEP1OIZ-IA:10 a=D19gQVrFAAAA:8 a=tHz9FfFoAAAA:8 a=xNf9USuDAAAA:8 a=F6UfI3xHLa2ZW7SZ3QUA:9 a=QeVSQVoKOEKCEWt0X9jeRYcJoF4A:4 a=wPNLvfGTeEIA:10 a=6O0IECtVFhoA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, 2011-01-07 at 12:11 -0500, Konrad Rzeszutek Wilk wrote: 
+> Attached is a set of patches that make it possible for drivers using TTM API
+> (nouveau and radeon graphic drivers) to work under Xen. The explanation
+> is a bit complex and I am not sure if I am explaining it that well..so if
+> something is unclear please do ping me.
+> 
+> Changes since v1: [https://lkml.org/lkml/2010/12/6/516]
+>  - Cleaned up commit message (forgot to add my SoB).
 
-plese pull following kbuild updates for 2.6.38-rc1. It's quite boring
-this time: two modpost fixes, a fixdep optimization that makes
-allmodconfig build 2% faster and a couple of small but welcome fixes.
+v1 was:
+Tested-by: Ian Campbell <ian.campbell@citrix.com>
+(actually I tested a backport to the 2.6.32.x Debian Squeeze kernel
+which uses 2.6.33.x era DRM code, others have also reported success with
+this backport in http://bugs.debian.org/602418)
 
-Michal
+Ian.
 
-The following changes since commit c8ddb2713c624f432fa5fe3c7ecffcdda46ea0d4:
+-- 
+Ian Campbell
 
-  Linux 2.6.37-rc1 (2010-11-01 07:54:12 -0400)
+Did you know that for the price of a 280-Z you can buy two Z-80's?
+		-- P. J. Plauger
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git kbuild
-
-Andrew Morton (1):
-      gen_init_cpio: checkpatch fixes
-
-Arnaud Lacombe (1):
-      scripts/genksyms: fix header usage
-
-Ben Gamari (1):
-      Make fixdep error handling more explicit
-
-Ben Gardiner (1):
-      kbuild: fix interaction of CONFIG_IKCONFIG and KCONFIG_CONFIG
-
-Eric Dumazet (1):
-      fixdep: use hash table instead of a single array
-
-Geert Uytterhoeven (1):
-      checksyscalls: Fix stand-alone usage
-
-H.J. Lu (1):
-      modpost: Put .zdebug* section on white list
-
-Jesper Juhl (1):
-      gen_init_cpio: Avoid race between call to stat() and call to open()
-
-Kirill A. Shutemov (2):
-      kbuild: introduce HDR_ARCH_LIST for headers_install_all
-      kbuild: export linux/{a.out,kvm,kvm_para}.h on headers_install_all
-
-Michal Marek (1):
-      Merge commit 'v2.6.37-rc1' into kbuild/kbuild
-
-Mike Frysinger (1):
-      headers_install: check exit status of unifdef
-
-Olof Johansson (1):
-      modpost: Fix address calculation in reloc_location()
-
-Roland Stigge (1):
-      mkuboot.sh: Fail if mkimage is missing
-
-Thomas Chou (1):
-      gen_init_cpio: remove leading `/' from file names
-
- Documentation/make/headers_install.txt |    5 +-
- Makefile                               |    1 +
- include/linux/Kbuild                   |    9 ++-
- kernel/Makefile                        |    2 +-
- scripts/basic/fixdep.c                 |  119 ++++++++++++++++++--------------
- scripts/checksyscalls.sh               |    4 +-
- scripts/genksyms/parse.c_shipped       |    2 +-
- scripts/genksyms/parse.y               |    2 +-
- scripts/headers.sh                     |    2 +-
- scripts/headers_install.pl             |    7 ++
- scripts/mkuboot.sh                     |    2 +-
- scripts/mod/modpost.c                  |    3 +-
- usr/gen_init_cpio.c                    |   20 ++++--
- 13 files changed, 108 insertions(+), 70 deletions(-)
