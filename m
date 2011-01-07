@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519Ab1AGUbV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 15:31:21 -0500
-Received: from pfepa.post.tele.dk ([195.41.46.235]:58691 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754116Ab1AGUbU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 15:31:20 -0500
-Date: Fri, 7 Jan 2011 21:31:19 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: David Miller <davem@davemloft.net>, lkml <linux-kernel@vger.kernel.org>,
-        sparclinux <sparclinux@vger.kernel.org>
-Subject: Re: sparc boot failure due to perf init
-Message-ID: <20110107203119.GA30408@merkur.ravnborg.org>
-References: <20110107201805.GA28104@merkur.ravnborg.org> <1294431832.2016.457.camel@laptop> <1294432055.2016.458.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294432055.2016.458.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755529Ab1AGUcU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 15:32:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29628 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752484Ab1AGUcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 15:32:19 -0500
+Subject: Re: [Patch] kexec_load: check CAP_SYS_MODULE
+From: Eric Paris <eparis@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Amerigo Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org
+In-Reply-To: <m1k4igjwzf.fsf@fess.ebiederm.org>
+References: <1294302325-22593-1-git-send-email-amwang@redhat.com>
+	 <m1bp3uifln.fsf@fess.ebiederm.org>
+	 <AANLkTinLhAuSny735kofonAkaqwJvjjDHMUed_r03rVc@mail.gmail.com>
+	 <m1k4igjwzf.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 Jan 2011 15:32:13 -0500
+Message-ID: <1294432333.3237.107.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 07, 2011 at 09:27:35PM +0100, Peter Zijlstra wrote:
-> On Fri, 2011-01-07 at 21:23 +0100, Peter Zijlstra wrote:
-> > On Fri, 2011-01-07 at 21:18 +0100, Sam Ravnborg wrote:
-> > > This was introduced by: 
-> > > "perf, arch: Cleanup perf-pmu init vs lockup-detector" - 004417a6d468e24399e383645c068b498eed84ad
-> > > 
-> > > I did not see any obvious fix.
-> > > (To avoid it is simple - I can disable it in my config).
-> > 
-> > Or you can switch back to arch_initcall() for now, it'll cause the
-> > generic watchdog stuff not to work, but that's a lot less important.
-> > 
-> > I'll have a chat with Dave on how to best sort all this.
+On Fri, 2011-01-07 at 12:10 -0800, Eric W. Biederman wrote:
+> Eric Paris <eparis@parisplace.org> writes:
+
+> >> CAP_SYS_BOOT is the correct capability.  Sure you can run any
+> >> code but only after rebooting.  I don't see how this differs
+> >> from any other reboot scenario.
+> >
+> > The difference is that after a reboot the bootloader and the system
+> > control what code is run.  kexec_load() immediately runs the new
+> > kernel which is not controlled by the bootloader or by the system.
+> > Imagine a situation where the bootloader and the /boot directory are
+> > RO (enforced by hardware).   kexec_load() would let you run any kernel
+> > code you want on the box whereas reboot would not.
 > 
-> That is, simply revert the sparc bit for now.
+> The scenario is imaginable (not common but imaginable) but I don't see
+> how requiring CAP_SYS_MODULE makes anything better.
+> 
+> If I was building a configuration where I didn't want anyone to be able
+> to direct the kernel into a different state by locking down the
+> bootloaders I expect I would compile out the syscall as well.
 
-For now I just disabled the option as I am trying to
-debug a console related problem and do not need the
-perf_event support (or at least I do not know I need it :-) ).
+As sad as it may sound the vast majority of people don't build their own
+kernels.  And even those people who have the intelligence to do it are
+often constrained by some non-technical policy to run 'approved'
+kernels. 
 
-Then you guys can sort it out and I can test any patches
-you come up with.
+> Most bootloaders have the option of booting something else the mechanism
+> is just different. I really don't see what the addition of
+> CAP_SYS_MODULE gains you.
+> 
+> Right now CAP_SYS_BOOT still makes sense to me and CAP_SYS_MODULE stills
+> seems like nonsense in this context.
 
-	Sam
+There is no question in my mind that CAP_SYS_BOOT makes sense.  We are
+violently agreed on that point.  The problem is reboot() != kexec_load()
+kexec_load() is as close to init_module() as it is to reboot().
+
+Maybe I didn't make it clear how this is going to be used.  I plan to
+drop CAP_SYS_MODULE to stop root from loading their own modules and
+running their own code in the kernel.  I can control reboot() since I
+control the platform and the bootloader.  I cannot control kexec().  I'm
+also required to use a generic distro kernel (bet you can't guess which
+one)
+
+The only solution I see to solve the problem is to gate kexec on
+CAP_SYS_MODULE.  Which makes sense since kexec() is in many respects
+close to module_init() than it is to reboot().
+
+-Eric
 
