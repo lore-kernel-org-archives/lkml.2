@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab1AGPhp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 10:37:45 -0500
-Received: from hera.kernel.org ([140.211.167.34]:36930 "EHLO hera.kernel.org"
+	id S1754217Ab1AGPhw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 10:37:52 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:55089 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751986Ab1AGPhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 10:37:43 -0500
-Date: Fri, 7 Jan 2011 15:37:19 GMT
-From: tip-bot for Hillf Danton <dhillf@gmail.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        dhillf@gmail.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dhillf@gmail.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <AANLkTinOPuYsVovrZpbuCCmG5deEyc8WgA_A1RJx_YK7@mail.gmail.com>
-References: <AANLkTinOPuYsVovrZpbuCCmG5deEyc8WgA_A1RJx_YK7@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Fix strncmp operation
-Message-ID: <tip-524429c31b486c05449666b94613f59f729c0a84@git.kernel.org>
-Git-Commit-ID: 524429c31b486c05449666b94613f59f729c0a84
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753127Ab1AGPhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 10:37:51 -0500
+Date: Fri, 7 Jan 2011 16:37:45 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Soeren Sandmann Pedersen <sandmann@redhat.com>
+Subject: Re: [RFC GIT PULL] perf updates
+Message-ID: <20110107153745.GA2516@elte.hu>
+References: <1294325513-14276-1-git-send-email-fweisbec@gmail.com>
+ <20110107122317.GA20761@elte.hu>
+ <20110107152421.GA2631@nowhere>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 07 Jan 2011 15:37:19 +0000 (UTC)
+In-Reply-To: <20110107152421.GA2631@nowhere>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  524429c31b486c05449666b94613f59f729c0a84
-Gitweb:     http://git.kernel.org/tip/524429c31b486c05449666b94613f59f729c0a84
-Author:     Hillf Danton <dhillf@gmail.com>
-AuthorDate: Thu, 6 Jan 2011 20:58:12 +0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 7 Jan 2011 15:55:10 +0100
 
-sched: Fix strncmp operation
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-One of the operands, buf, is incorrect, since it is stripped and the
-correct address for subsequent string comparing could change if
-leading white spaces, if any, are removed from buf.
+> On Fri, Jan 07, 2011 at 01:23:17PM +0100, Ingo Molnar wrote:
+> > 
+> > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > 
+> > > Ingo,
+> > > 
+> > > Please pull the perf/core branch that can be found at:
+> > > 
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> > > 	perf/core
+> > > 	
+> > > Soeren reported some time ago that callchains were broken on
+> > > x86_64 with cpu-clock/task-clock events. After some time I
+> > > finally found the problem was in the irq low level arg saving.
+> > > It touches fragile code though, I hope some people can
+> > > have a look over the fix.
+> > > 
+> > > Thanks,
+> > > 	Frederic
+> > > ---
+> > > 
+> > > Frederic Weisbecker (2):
+> > >       x86: Fix rbp saving in pt_regs on irq entry
+> > >       perf: Build tools with frame pointer
+> > 
+> > Is this variant fine with Jan too?
+> 
+> So, Arnaldo has picked up the second patch.
+> 
+> For the first I need to resend with a fix on CFI annotations.
 
-It is fixed by replacing buf with cmp.
+ok, i'll wait with pulling then.
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <AANLkTinOPuYsVovrZpbuCCmG5deEyc8WgA_A1RJx_YK7@mail.gmail.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/sched.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Thanks,
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index a8478a2..a0eb094 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -741,7 +741,7 @@ sched_feat_write(struct file *filp, const char __user *ubuf,
- 	buf[cnt] = 0;
- 	cmp = strstrip(buf);
- 
--	if (strncmp(buf, "NO_", 3) == 0) {
-+	if (strncmp(cmp, "NO_", 3) == 0) {
- 		neg = 1;
- 		cmp += 3;
- 	}
+	Ingo
