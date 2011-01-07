@@ -1,51 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab1AGOuT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 09:50:19 -0500
-Received: from casper.infradead.org ([85.118.1.10]:58385 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753612Ab1AGOuR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 09:50:17 -0500
-Subject: Re: [PATCH 3/6] x86, NMI: Add priorities to handlers
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: x86@kernel.org, Robert Richter <robert.richter@amd.com>,
-        ying.huang@intel.com, gorcunov@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110107144318.GU2317@redhat.com>
-References: <1294348732-15030-1-git-send-email-dzickus@redhat.com>
-	 <1294348732-15030-4-git-send-email-dzickus@redhat.com>
-	 <1294405791.2016.450.camel@laptop>  <20110107144318.GU2317@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 07 Jan 2011 15:50:17 +0100
-Message-ID: <1294411817.2016.454.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752888Ab1AGPFh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 10:05:37 -0500
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:42937 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752008Ab1AGPFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 10:05:36 -0500
+Message-ID: <4D272C54.5010406@kernel.dk>
+Date: Fri, 07 Jan 2011 16:08:04 +0100
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: sedat.dilek@gmail.com, Sedat Dilek <sedat.dilek@googlemail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the block tree
+References: <20110107110513.30776114.sfr@canb.auug.org.au>	<4D26C179.7030704@kernel.dk>	<AANLkTinyaZfsYv43046LWgu8U3kg6_79y+PTFO1RxtnY@mail.gmail.com>	<20110107231748.76170ff3.sfr@canb.auug.org.au>	<AANLkTimpVMLGBnP33Ro8MBtW3GJjskg0bBK717Xf-Mh_@mail.gmail.com> <20110108012211.1e19f0f7.sfr@canb.auug.org.au>
+In-Reply-To: <20110108012211.1e19f0f7.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-07 at 09:43 -0500, Don Zickus wrote:
-
-> > I had to add the below to make things build here.
-> > 
-> > ---
-> > Index: linux-2.6/arch/x86/kernel/kgdb.c
-> > ===================================================================
-> > --- linux-2.6.orig/arch/x86/kernel/kgdb.c
-> > +++ linux-2.6/arch/x86/kernel/kgdb.c
-> > @@ -48,6 +48,7 @@
-> >  #include <asm/apicdef.h>
-> >  #include <asm/system.h>
-> >  #include <asm/apic.h>
-> > +#include <asm/nmi.h>
-> >  
-> >  struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] =
-> >  {
-> > 
+On 2011-01-07 15:22, Stephen Rothwell wrote:
+> Hi,
 > 
-> Doh.  I missed a spot.  Thanks for the catch.  I'll add that and repost.
+> On Fri, 7 Jan 2011 14:19:33 +0100 Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+>>
+>> Hmm, I have pulled-in freshly from linux-2.6-block#for-next after you
+>> published latest linux-next (next-20110107).
+>> So, I guessed the (reported) issue is fixed, now.
+> 
+> No, the commit that caused the warnings was removed when I went back to
+> using the block tree from next-20110106.  So it will come back unless
+> fixed.
 
-I already fixed it up and send it Ingo-wards.
+It is fixed in linux-2.6-block#for-next as-of earlier today, so if Sedat
+pulled from there it should be gone.
+
+-- 
+Jens Axboe
+
