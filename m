@@ -1,114 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab1AGSl5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 13:41:57 -0500
-Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:54629 "EHLO
-	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755021Ab1AGSlz (ORCPT
+	id S1755327Ab1AGSmF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 13:42:05 -0500
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:32315 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755279Ab1AGSmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 13:41:55 -0500
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-To: Stephane Chatty <chatty@enac.fr>, Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Subject: [RFC v3 1/5] hid: add feature_mapping callback
-Date: Fri,  7 Jan 2011 19:42:38 +0100
-Message-Id: <1294425762-29730-2-git-send-email-benjamin.tissoires@enac.fr>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1294425762-29730-1-git-send-email-benjamin.tissoires@enac.fr>
-References: <1294425762-29730-1-git-send-email-benjamin.tissoires@enac.fr>
+	Fri, 7 Jan 2011 13:42:01 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: V6ZkNrIVM1kiq66coEA_DA2tDASe6dUSPyx8KdhF02.0geO
+ Ky4cJfKKayC02S8irXcOiRVO.40pbvxuTDpRqHxyfsd77p1ZyWQwOyGev0AV
+ _Xdlx4bI.EZBVUgUYu6ezsqpOyymorCnNUWk5xmFEhIj1edBPPtKNfkPOCkZ
+ bMJpO3JwuUJwqtQpc8ryONpslvnrPWC.mos87nOecFpjEGu0sqa_2bEHFF.R
+ RRcCXhCHWhnLT5LS7a.c604mKNQ44z7hhnmsgxzNOQd7.tslFGm1X6uEzquO
+ 5Ro9KjYA0W6XfJpq1qGRgDmqn.d.X0KhTbek0SyA8_Ch4GgE-
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 7 Jan 2011 12:41:58 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+cc: "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for
+ this_cpu_cmpxchg_double
+In-Reply-To: <20110107180419.GB23082@Krystal>
+Message-ID: <alpine.DEB.2.00.1101071227450.3014@router.home>
+References: <20110106204513.669098445@linux.com> <20110106204525.222395863@linux.com> <4D263C91.30709@zytor.com> <alpine.DEB.2.00.1101070907060.3014@router.home> <20110107180419.GB23082@Krystal>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently hid doesn't export the features it knows to the specific modules.
-Some information can be really important in such features: MosArt and
-Cypress devices are by default not in a multitouch mode.
-We have to send the value 2 on the right feature.
+On Fri, 7 Jan 2011, Mathieu Desnoyers wrote:
 
-This patch exports to the module the features report so they can find the
-right feature to set up the correct mode.
+> I have to admit that I also hate the current interface for two reasons:
+>
+> a) the way it splits the target address in two.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
----
- drivers/hid/hid-input.c |   17 +++++++++++++----
- include/linux/hid.h     |    4 ++++
- 2 files changed, 17 insertions(+), 4 deletions(-)
+We are handling two different entities that are placed next to each other.
 
-diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index bb0b365..e1b48e4 100644
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -287,6 +287,14 @@ static void hidinput_configure_usage(struct hid_input *hidinput, struct hid_fiel
- 		goto ignore;
- 	}
- 
-+	if (field->report_type == HID_FEATURE_REPORT) {
-+		if (device->driver->feature_mapping) {
-+			device->driver->feature_mapping(device, hidinput, field,
-+                                usage);
-+		}
-+		goto ignore;
-+	}
-+
- 	if (device->driver->input_mapping) {
- 		int ret = device->driver->input_mapping(device, hidinput, field,
- 				usage, &bit, &max);
-@@ -836,7 +844,6 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
- 	struct hid_input *hidinput = NULL;
- 	struct input_dev *input_dev;
- 	int i, j, k;
--	int max_report_type = HID_OUTPUT_REPORT;
- 
- 	INIT_LIST_HEAD(&hid->inputs);
- 
-@@ -853,10 +860,11 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
- 			return -1;
- 	}
- 
--	if (hid->quirks & HID_QUIRK_SKIP_OUTPUT_REPORTS)
--		max_report_type = HID_INPUT_REPORT;
-+	for (k = HID_INPUT_REPORT; k <= HID_FEATURE_REPORT; k++) {
-+		if (k == HID_OUTPUT_REPORT &&
-+			hid->quirks & HID_QUIRK_SKIP_OUTPUT_REPORTS)
-+			continue;
- 
--	for (k = HID_INPUT_REPORT; k <= max_report_type; k++)
- 		list_for_each_entry(report, &hid->report_enum[k].report_list, list) {
- 
- 			if (!report->maxfield)
-@@ -909,6 +917,7 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
- 				hidinput = NULL;
- 			}
- 		}
-+	}
- 
- 	if (hidinput && input_register_device(hidinput->input))
- 		goto out_cleanup;
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index bb0f56f..75303b0 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -593,6 +593,7 @@ struct hid_usage_id {
-  * @report_fixup: called before report descriptor parsing (NULL means nop)
-  * @input_mapping: invoked on input registering before mapping an usage
-  * @input_mapped: invoked on input registering after mapping an usage
-+ * @feature_mapping: invoked on feature registering
-  * @suspend: invoked on suspend (NULL means nop)
-  * @resume: invoked on resume if device was not reset (NULL means nop)
-  * @reset_resume: invoked on resume if device was reset (NULL means nop)
-@@ -636,6 +637,9 @@ struct hid_driver {
- 	int (*input_mapped)(struct hid_device *hdev,
- 			struct hid_input *hidinput, struct hid_field *field,
- 			struct hid_usage *usage, unsigned long **bit, int *max);
-+	void (*feature_mapping)(struct hid_device *hdev,
-+ 			struct hid_input *hidinput, struct hid_field *field,
-+ 			struct hid_usage *usage);
- #ifdef CONFIG_PM
- 	int (*suspend)(struct hid_device *hdev, pm_message_t message);
- 	int (*resume)(struct hid_device *hdev);
--- 
-1.7.3.4
+> b) the loss of the value read (the fact that the only current user of this API
+>    does not need the value returned seems like a very weak argument to define an
+>    API).
 
+The other user of cmpxchg_double that I have in my tree also does not have
+the need. Repeatability is not as simple to implement as with a single
+word cmpxchg.
+
+> I'm probably missing important compiler trickiness here, but why are we not
+> rather relying on forced compiler alignment to declare the target address type ?
+> e.g.:
+>
+> typedef struct {
+>         unsigned long v[2];
+> } __attribute__((aligned(2 * sizeof(long)))) cmpxchg_double_t;
+>
+> For the usage you are doing within the allocator code, you can use an union (the
+> bitfield sizes are completely arbitrary).
+>
+> union alloc_cd {
+>         cmpxchg_double_t cd;
+>         struct {
+>                 void *ptr;
+>                 unsigned long seq:48;
+>                 unsigned long cpu:16;
+>         } v;
+> };
+>
+> So this_cpu_cmpxchg_double would expect the type "cmpxchg_double_t *" as its
+> first argument.
+
+That requires conversions back and forth between words and this
+type. We only need the bonding between the two per cpu variables for the
+single cmpxchg_double operation. There is no need to do this for the two
+old values or the two new values.
+
+> One way to manage to return the value read would be to pass a pointer to
+> "old_word1-2" as argument rather than the value itself, and return the value
+> read in these locations. Anyway, we won't need the old words for comparison with
+> the return value, because the returned "bool" takes care of telling us if they
+> differ.
+
+That would require allocating storage for the two word variable required,
+passing an address etc. All not necessary right now. Would increase the
+latency of the inner loop. Saving the returned values also would increase
+the code uselessly.
+
+> Adding the types just for clarity sake (should be handled differently in your
+> macro scheme of course), this_cpu_cmpxchg_double would look like:
+>
+> typedef struct {
+>         unsigned long v[2];
+> } __attribute__((aligned(2 * sizeof(long)))) cmpxchg_double_t;
+>
+> bool this_cpu_cmpxchg_double(cmpxchg_double_t *pcp,
+>                              unsigned long *old_ret_word1,
+>                              unsigned long *old_ret_word2,
+>                              unsigned long new_word1,
+>                              unsigned long new_word2)
+>
+> Thoughts ?
+
+Looks not symmetric. The proposed approach in the patch has a clear
+association of the first and second percpu variable with the first and
+second old and new values.
+
+Also cmpxchg_double may be used with different types and different object
+sizes. Are we going to define cmpxchg_double_t for all types supported
+and maybe created by the user? this_cpu_cmpxchg_double also supports two 4
+byte fields.
+
+Plus you can have mixed types. In the current use case you have one
+integer and one pointer. So the cmpxchg_double_t would not fit in cleanly.
+We would have to define custom types. And with that we will then have
+difficulties codeing methods to check the compatibility of types.
+
+I tried something like this before I came up with the current
+solution. It was significantly more code and the code was difficult
+to understand. Never was as clean and this one.
