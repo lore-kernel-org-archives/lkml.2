@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab1AGUel (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 15:34:41 -0500
-Received: from casper.infradead.org ([85.118.1.10]:56192 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760Ab1AGUej (ORCPT
+	id S1753903Ab1AGUet (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 15:34:49 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:59323 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753565Ab1AGUer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 15:34:39 -0500
-Subject: Re: [GIT] Networking
-From: David Woodhouse <dwmw2@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ben Hutchings <benh@debian.org>, David Miller <davem@davemloft.net>,
-        Hayes Wang <hayeswang@realtek.com>,
-        Francois Romieu <romieu@fr.zoreil.com>, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTikwrHoOY4wvUp1qn-OT=EjZesSNR29US1ERc0o2@mail.gmail.com>
-References: <20110106.122003.233698077.davem@davemloft.net>
-	 <AANLkTi=7=_FyVsjA3vKEpg8RwfC=m-8QGfqa6ctxQday@mail.gmail.com>
-	 <20110107190656.GQ3702@decadent.org.uk>
-	 <AANLkTikwrHoOY4wvUp1qn-OT=EjZesSNR29US1ERc0o2@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 Jan 2011 20:34:28 +0000
-Message-ID: <1294432468.2520.24.camel@macbook.infradead.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 7 Jan 2011 15:34:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=k1dfaagL1RxLvVBwhe5+3YR+6Xab1KEtqvhI9qTnfvlNV8gar3GcE/UyrziQNHXsHl
+         KI6AH6WBwSsjR600p8sg==
+Date: Fri, 7 Jan 2011 12:34:40 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Christoph Lameter <cl@linux.com>
+cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Bart Van Assche <bvanassche@acm.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] slub: Fix sysfs circular locking dependency
+In-Reply-To: <alpine.DEB.2.00.1101070922100.3014@router.home>
+Message-ID: <alpine.DEB.2.00.1101071227160.31653@chino.kir.corp.google.com>
+References: <1294172717-6044-1-git-send-email-penberg@kernel.org> <alpine.DEB.2.00.1101041939030.27551@chino.kir.corp.google.com> <alpine.DEB.2.00.1101050943120.13032@router.home> <alpine.DEB.2.00.1101051108520.14761@router.home>
+ <AANLkTinft80dXqE-U=YDB23d9=BgXLCxJzgiA_gF4cVL@mail.gmail.com> <AANLkTinCZzJWYGnxXq_Nwv7QSkEV4Tg-te-1y0PCeRRY@mail.gmail.com> <AANLkTinQMahgVrWLxR0J6Zbh-_SPjxVJ-wuZt8B5TNjc@mail.gmail.com> <alpine.DEB.2.00.1101060019140.25879@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1101061107500.8655@router.home> <20110107091106.aaa07abe.kamezawa.hiroyu@jp.fujitsu.com> <alpine.DEB.2.00.1101070922100.3014@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-07 at 11:49 -0800, Linus Torvalds wrote:
-> [ Apart from the annoyance of also having to manually copying the
-> firmware files: why the heck doesn't that firmware tree even have a
-> "make firmware-install" makefile or something? The kernel has a "make
-> firmware-install" thing, why doesn't the firmware tree itself have
-> that?
+On Fri, 7 Jan 2011, Christoph Lameter wrote:
 
-Yeah, the main reason I haven't yet submitted a patch to remove the
-legacy firmware/ directory from the kernel source, as discussed at the
-Kernel Summit, is because I need to implement some makefiles for the
-firmware tree first.
+> Subject: slub: Avoid use of slub_lock in show_slab_objects()
+> 
+> The purpose of the locking is to prevent removal and additions
+> of nodes when statistics are gathered for a slab cache. So we
+> need to avoid racing with memory hotplug functionality.
+> 
+> It is enough to take the memory hotplug locks there instead
+> of the slub_lock.
+> 
 
-I'll do a 'make install' for the firmware tree which installs it all,
-and lets you specify min/max kernel versions so you can omit stuff that
-*really* isn't relevant.
+Because memory hotplug is the only time s->node[] is modified after the 
+sysfs files are created, which is the only time show_slab_objects() is 
+called.
 
-I also want to preserve the CONFIG_FIRMWARE_IN_KERNEL option, but that
-can't easily be based on the hardcoded knowledge of the config options;
-it wants to be based on the MODULE_FIRMWARE tags of the built-in
-drivers. And once we're enumerating those, it should be relatively
-simple to warn about missing firmwares in the non-FIRMWARE_IN_KERNEL
-case too.
+> online_pages() does not acquire the memory_hotplug lock. So
+> add the missing locking there.
+> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-I didn't find the time to do that for the 2.6.38 merge window, but I
-should get it done for 2.6.39.
+Acked-by: David Rientjes <rientjes@google.com>
 
--- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
-
+ [ Should probably be seperated out into two patches, one for the
+   memory hotplug locking addition and one for the slub fix, both
+   should be pushed during this merge window.  If so, a comment
+   describing the new semantics of lock_memory_hotplug() to protect 
+   data structures that may be modified in hotplug notifier 
+   callbacks would be appreciated. ]
