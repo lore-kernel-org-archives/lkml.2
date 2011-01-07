@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524Ab1AGQjT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 11:39:19 -0500
+	id S1754435Ab1AGQjS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 11:39:18 -0500
 Received: from mga11.intel.com ([192.55.52.93]:40007 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753821Ab1AGQjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752659Ab1AGQjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Jan 2011 11:39:17 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,289,1291622400"; 
-   d="scan'208";a="644537603"
+   d="scan'208";a="644537596"
 From: Youquan Song <youquan.song@intel.com>
 To: linux-kernel@vger.kernel.org, hpa@linux.intel.com,
         suresh.b.siddha@intel.com
@@ -16,12 +16,10 @@ Cc: yong.y.wang@linux.intel.com, joe@perches.com, jbaron@redhat.com,
         arjan@linux.intel.com, trenn@suse.de, kent.liu@intel.com,
         chaohong.guo@intel.com, Youquan Song <youquan.song@linux.intel.com>,
         Youquan Song <youquan.song@intel.com>
-Subject: [PATCH v2 1/2] apic: Fix error interrupt report at all APs
-Date: Sat,  8 Jan 2011 00:36:43 +0800
-Message-Id: <1294418204-15587-2-git-send-email-youquan.song@intel.com>
+Subject: [PATCH v2 0/2] apic: Fix error interrupt report at all APs when boot 
+Date: Sat,  8 Jan 2011 00:36:42 +0800
+Message-Id: <1294418204-15587-1-git-send-email-youquan.song@intel.com>
 X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1294418204-15587-1-git-send-email-youquan.song@intel.com>
-References: <1294418204-15587-1-git-send-email-youquan.song@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -46,55 +44,5 @@ at interrupt delivery mode not fixed mode(BIOS handle will be SMI mode) before
 restore AP's thermal LVT. So the agony noise of error interrupt will dismiss
 when boot on machine that BIOS does not handle thermal interrupt..  
 
-
-Signed-off-by: Youquan Song <youquan.song@intel.com>
----
- arch/x86/include/asm/apicdef.h           |    1 +
- arch/x86/kernel/cpu/mcheck/therm_throt.c |   12 +++++++-----
- 2 files changed, 8 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/include/asm/apicdef.h b/arch/x86/include/asm/apicdef.h
-index a859ca4..f587be0 100644
---- a/arch/x86/include/asm/apicdef.h
-+++ b/arch/x86/include/asm/apicdef.h
-@@ -78,6 +78,7 @@
- #define		APIC_DEST_LOGICAL	0x00800
- #define		APIC_DEST_PHYSICAL	0x00000
- #define		APIC_DM_FIXED		0x00000
-+#define		APIC_DM_FIXED_MASK	0x00700
- #define		APIC_DM_LOWEST		0x00100
- #define		APIC_DM_SMI		0x00200
- #define		APIC_DM_REMRD		0x00300
-diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-index 4b68326..ecd6992 100644
---- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-+++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-@@ -405,18 +405,20 @@ void intel_init_thermal(struct cpuinfo_x86 *c)
- 	 */
- 	rdmsr(MSR_IA32_MISC_ENABLE, l, h);
- 
-+	h = lvtthmr_init;
- 	/*
- 	 * The initial value of thermal LVT entries on all APs always reads
- 	 * 0x10000 because APs are woken up by BSP issuing INIT-SIPI-SIPI
- 	 * sequence to them and LVT registers are reset to 0s except for
- 	 * the mask bits which are set to 1s when APs receive INIT IPI.
--	 * Always restore the value that BIOS has programmed on AP based on
--	 * BSP's info we saved since BIOS is always setting the same value
--	 * for all threads/cores
-+	 * If BIOS take over the thermal interrupt and set its interrupt
-+	 * delivery mode to SMI not fixed, it restore the value that BIOS has
-+	 * programmed on AP based on BSP's info we saved since BIOS is always
-+	 * setting the same value for all threads/cores.
- 	 */
--	apic_write(APIC_LVTTHMR, lvtthmr_init);
-+	if (h & APIC_DM_FIXED_MASK)
-+		apic_write(APIC_LVTTHMR, lvtthmr_init);
- 
--	h = lvtthmr_init;
- 
- 	if ((l & MSR_IA32_MISC_ENABLE_TM1) && (h & APIC_DM_SMI)) {
- 		printk(KERN_DEBUG
--- 
-1.6.4.2
+Also add print out error interrupt reason debug information.
 
