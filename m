@@ -1,348 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab1AGMXy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 07:23:54 -0500
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:60118 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752412Ab1AGMXw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 07:23:52 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 7 Jan 2011 13:23:38 +0100
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Stephane Chatty <chatty@enac.fr>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC v2 03/10] hid-multitouch: support for PixCir-based panels
-Message-ID: <20110107122338.GB2312@polaris.bitmath.org>
-References: <1294248468-19979-1-git-send-email-benjamin.tissoires@enac.fr>
- <1294248468-19979-4-git-send-email-benjamin.tissoires@enac.fr>
- <20110106172528.GD1790@polaris.bitmath.org>
- <AANLkTimhk80b+jkqsNrxmFzSgmHX=_wdzbwE09NoFgV1@mail.gmail.com>
+	id S1752715Ab1AGMbn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 07:31:43 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:44828 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752541Ab1AGMbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 07:31:41 -0500
+Date: Fri, 7 Jan 2011 13:31:30 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Soeren Sandmann Pedersen <sandmann@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/2] x86: Fix rbp saving in pt_regs on irq entry
+Message-ID: <20110107123130.GB20761@elte.hu>
+References: <1294325513-14276-2-git-send-email-fweisbec@gmail.com>
+ <4D25EB4B020000780002ABF7@vpn.id2.novell.com>
+ <20110106154536.GA2308@nowhere>
+ <4D25F79F020000780002AC20@vpn.id2.novell.com>
+ <20110106162236.GB2308@nowhere>
+ <4D25FE5B020000780002AC50@vpn.id2.novell.com>
+ <20110106165452.GC2308@nowhere>
+ <4D2602DE020000780002ACA3@vpn.id2.novell.com>
+ <20110106171231.GD2308@nowhere>
+ <4D26D2C2020000780002AECB@vpn.id2.novell.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimhk80b+jkqsNrxmFzSgmHX=_wdzbwE09NoFgV1@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.248.200.95
-X-Scan-Result: No virus found in message 1PbBM5-000777-3I.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PbBM5-000777-3I d9d20ac21e9e1a6906cc22d0358e1a67
+In-Reply-To: <4D26D2C2020000780002AECB@vpn.id2.novell.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Please provide a bit more information under this config option. The
-> > usual "what should I do", and roughly what devices are supported.
+
+* Jan Beulich <JBeulich@novell.com> wrote:
+
+> > Now I don't understand how this is all useful as this is not a normal proc but 
+> > an interruption. We can't get back the return address from the CFA. Or am I 
+> > missing something?
 > 
-> Will try, but don't hesitate to send one if you feel in a good mood for writing.
-> 
-> I can propose:
-> 
-> +        ---help---
-> +          Generic support for HID multitouch panels.
-> +          Currently supported panels are:
-> +          - PixCir touchscreen
-> +          - Cypress TrueTouch
-> +          - 'Sensing Win7-TwoFinger' panel by GeneralTouch
+> Unwind annotations, when written correctly, allow unwinding through all kinds of 
+> execution flows, including interrupts or exceptions as well as including stack 
+> switches.
 
-This is fine, but needs the "to compile as a module" etc, examples are
-all around the Kconfig file.
+Yeah and that's rather useful, as exception contexts can nest in very weird ways, 
+especially with NMIs involved. For example a 7-context combination is possible:
 
-> >> +struct mt_slot {
-> >> +     __s32 x, y, p;
-> >> +     __s32 contactid;        /* the device ContactID assigned to this slot */
-> >> +     __u16 trkid;    /* the tracking ID that was assigned to this slot */
-> >> +     bool valid;     /* did we just get valid contact data for this slot? */
-> >> +     bool prev_valid;/* was this slot previously valid/active? */
-> >> +};
-> >
-> > The trkid and prev_valid are no longer needed. The touch state seems to be missing.
-> 
-> Concerning the trkid, agree.
-> I can assure you that prev_valid is needed by at least the Cypress
-> device. In a sense, it has the same problem than mt protocol A: it
-> does not send the release information except when the last finger has
-> been released. This gymnastic is thus required.
+  user-space -> syscall -> pagefault -> softirq -> hardirq -> debug trap -> NMI
 
-Perhaps I did not explain properly. What is needed is a way to clear
-the touch state of the active slots not yet seen in a touch
-frame. Because of the mixup of semantics around "valid" and "touch",
-it looks more complicated than it really is. My point is that the
-previous frame has nothing to do with it.
+And the call frame walking logic needs to be able to get all the way back to 
+user-space ...
 
-> 
-> I think that the misunderstanding comes from the name. We have this 2
-> flags (valid and prev_valid) to tell whether the device sent data
-> during this report or the previous one. It's not the same meaning that
-> the touch you're talking about. For Cypress device, those 2 flags are
-> mandatory.
+For that every transition needs to work flawlessly, for debugging (and CFI based 
+profiling) to work fine.
 
-The names are indeed confusing. A valid packet means the incoming
-packet contains information about a slot, and brings updates to the
-touch state and the touch properties. The touch state just needs to be
-set, it is the same logic everytime.
+Most of those transitions can happen at any instruction boundary that a given 
+context executes, so the total number of possible combinations is virtually endless.
 
-> 
-> Maybe introducing data + prev_data + touch (3 flags instead of 2->
-> touch can go into mt_buffer, and data and prev_data only in mt_slot as
-> they are not given by the device) is clearer.
-
-This would be unnecessarily complicated. Either (touch_state,
-seen_in_this_frame), or (touch_state,
-last_frame_revision_of_this_slot) would be enough.
-
-> 
-> >
-> >> +
-> >> +struct mt_buffer {
-> >> +     __s32 x, y, p;
-> >> +     __s32 contactid;        /* the device ContactID assigned to this slot */
-> >> +};
-> >
-> > The only different to mt_slot are the valid and touch field, which is
-> > also needed for incoming data. I'd say those should be merged.
-> >
-> 
-> Well, the point is that the buffer and the slot have 2 different meanings:
-> one is the incoming data, the other is the processed data. It strikes
-> us to have only one struct as the slot contains extra information for
-> it to be processed.
-
-This is not true. The data that comes via a valid packet is the touch
-state and the property updates, the rest is about handling the
-validity. But let's say you use (touch, revision, props), for
-instance.  The incoming valid packet would update curdata.touch and
-curdata.props. When the slot is finished, curdata is copied to the
-right place. At the end of the frame, a device with the
-slots-not-send-in-this-frame-are-considered-unused quirk would reset
-the touch of the slots with slot[i].revision !=
-curdata.revision. Finally, curdata.revision would be incremented.
-
-> >
-> >> +     __s8 inputmode;         /* InputMode HID feature, -1 if non-existent */
-> >> +     __u8 num_received;      /* how many contacts we received */
-> >> +     __u8 maxcontact;        /* expected last contact index */
-> >> +     bool curvalid;          /* is the current contact valid? */
-> >
-> > This value should probably be a mt_slot struct as well.
-> 
-> I was bothering too. Renaming the field (see above) may solve the
-> problem: we have curvalid (or curdata with the name I propose) which
-> is only needed for algorithm reasons, and touch that goes into
-> mt_buffer as it comes from the device.
-
-Looking again, it seems to me that curvalid should really be where it
-is now.
-
-> >
-> >> +     struct mt_slot slots[0];        /* first slot */
-> >> +};
-> >> +
-> >> +struct mt_class {
-> >> +     int (*compute_slot)(struct mt_device *);
-> >> +     __u8 maxcontacts;
-> >> +};
-> >
-> > I imagine maxcontacts could be variable for devices within the same
-> > class. Perhaps it should be a member of the device instead? The
-> > resolution and fuzz could be added here as well.
-> 
-> resolution and fuzz: I let you implement it (when adding egalax or
-> 3m). But isn't it something we can't get from the report descriptors?
-
-Resolution, yes, but defaults might still be needed. And maybe
-compute_slot should be a bitmask of quirks instead. So far we would
-have MT_QUIRK_SLOT_IS_CONTACTID and MT_QUIRK_NOT_SEEN_MEANS_UP.
-
-> concerning the device vs. class, currently, we have only seen classes
-> (one or more device sharing the same behavior), but we didn't bother
-> about resolution and fuzz.
-> It would be a shame to have to duplicate the mt_class (or mt_device),
-> one by vendorID/deviceID, as many devices may share the same
-> properties (at least those that have been manufactured by the same
-> company and that behave the same way: cando, stantum, etc...).
-> I also like the concept of default class as it will help people easily
-> adding devices.
-
-The statement comes from observing what seems to happen over time with
-device lists, but sure, it won't really hurt to have the classes.
-
-> >
-> >> +
-> >> +/* classes of device behavior */
-> >> +#define MT_CLS_DEFAULT 0
-> >> +#define MT_CLS_DUAL1 1
-> >> +
-> >> +/*
-> >> + * these device-dependent functions determine what slot corresponds
-> >> + * to a valid contact that was just read.
-> >> + */
-> >> +
-> >> +static int slot_is_contactid(struct mt_device *td)
-> >> +{
-> >> +     return td->curdata.contactid;
-> >> +}
-> >> +
-> >> +static int find_slot_from_contactid(struct mt_device *td)
-> >> +{
-> >> +     int i;
-> >> +     for (i = 0; i < td->mtclass->maxcontacts; ++i) {
-> >> +             if (td->slots[i].prev_valid &&
-> >
-> > Why prev_valid? Ought to be valid, right?
-> 
-> Because the code resets valid after each sending -> implementation dependent.
-
-The prev_valid and valid are only different because prev_valid is used
-with touch semantics, whereas valid is not and is reset at each frame
-emission. Once we stop mixing fruits, it will all become clear and
-simple.
-
-> > Nice solution to the end-of-data issue. It would be good if the input
-> > setup was abstracted into a function like in hid-egalax, to simplify
-> > further additions.
-> 
-> thanks.
-> I was not very happy in making this abstraction for just one line of
-> code. I thought you could do it when adding the additions.
-
-Or you could do it right away - it will simplify the existing
-patch, and make subsequent patches simpler as well.
-
-> >
-> >> +                             input_mt_init_slots(hi->input,
-> >> +                                             td->mtclass->maxcontacts);
-> >
-> > Maxcontacts should probably take the hid description into account as well.
-> 
-> I don't understand your point here
-
-Take 3M as an example. The controller supports up to 60 contacts, but
-different devices may not be needing that many. Having a way to trim
-the number of allocated slots to just the right size for the current
-devices seems like a good idea.
-
-> >
-> > And ABS_PRESSURE.
-> 
-> I thought that the mouse emulation was restricted to X and Y.
-
-Look at the psmouse, wacom and generic MT emulation code for counter examples.
-
-> > There are some hid drivers that need to setup fuzz in order to work
-> > properly. We should either add it to hid core or use the same bypass as
-> > in hid-egalax and hid-3m-pct.
-> 
-> Can I let you do this in further updates? (for the new devices and
-> those I sent, this works out of the box)
-
-Why not do it right away? It is quite simple, and mostly copy and
-paste from those drivers.
-
-> >> +/*
-> >> + * this function is called when a whole packet has been received and processed,
-> >> + * so that it can decide what to send to the input layer.
-> >> + */
-> >> +static void mt_emit_event(struct mt_device *td, struct input_dev *input)
-> >> +{
-> >> +     int i;
-> >> +
-> >> +     for (i = 0; i < td->mtclass->maxcontacts; ++i) {
-> >> +             struct mt_slot *s = &(td->slots[i]);
-> >> +             if (!s->valid) {
-> >> +                     /*
-> >> +                      * this slot does not contain useful data,
-> >> +                      * notify its closure if necessary
-> >> +                      */
-> >> +                     if (s->prev_valid) {
-> >> +                             input_mt_slot(input, i);
-> >> +                             input_mt_report_slot_state(input,
-> >> +                                     MT_TOOL_FINGER, false);
-> >> +                             s->prev_valid = false;
-> >> +                     }
-
-This code will have exactly the same result without the "if
-(s->prev_valid)", since prev_valid is a copy of the last touch
-state. The input core will filter away any duplicate calls. Thus, it
-can all be replaced by
-
-input_mt_slot(input, i);
-input_mt_report_slot_state(input, MT_TOOL_FINGER, s->valid);
-
-Further assuming that valid will change to touch, it is all starting
-to look conceptually correct. We could then prepend this line
-
-if ((device_quirks & MT_QUIRK_NOT_SEEN_MEANS_UP) && s->revision != curdata.revision)
-    s->state = false;
-
-and we would have support for the devices you mention.
-
-> >> +                     continue;
-> >> +             }
-> >> +             if (!s->prev_valid)
-> >> +                     s->trkid = td->lasttrkid++;
-> >
-> > Most of the above can be removed.
-> 
-> Cypress device does not sends touch information when a touch is
-> released. This piece of code is required for devices that behave the
-> same way.
-
-See the above example.
-
-> >
-> >> +
-> >> +             input_mt_slot(input, i);
-> >> +             input_mt_report_slot_state(input, MT_TOOL_FINGER, true);
-> >
-> > "true" here should simply be slot->touch state.
-> >
-> >> +             input_event(input, EV_ABS, ABS_MT_POSITION_X, s->x);
-> >> +             input_event(input, EV_ABS, ABS_MT_POSITION_Y, s->y);
-> >> +             input_event(input, EV_ABS, ABS_MT_PRESSURE, s->p);
-> >> +             s->prev_valid = true;
-> >> +             s->valid = false;
-> >
-> > Invalidating the data of a tracked slots seems wrong. If the device
-> > sends tracked data properly, no special consideration is needed - it
-> > will get cleared when appropriate. Other cases could be dealt with
-> > separately.
-> 
-> already discussed (pb in naming the fields I think)
-
-The egalax driver has a different behavior, for instance.
-
-> >> +             case HID_DG_TIPSWITCH:
-> >> +                     td->curvalid = value;
-> >
-> > Most drivers seem to use this as touch state.
-> 
-> agree and that is how it is used in the current implementation. We
-> really should change the name.
-
-I believe the curvalid is fine, but it should be updated differently.
-The INRANGE and CONFIDENCE fields seem to do that for some devices,
-yet others rely on the contactcount. The TIPSWITCH field should rather
-update curdata.touch.
-
-> >> +             case HID_DG_CONTACTCOUNT:
-> >> +                     /*
-> >> +                      * We must not overwrite the previous value (some
-> >> +                      * devices send one sequence splitted over several
-> >> +                      * messages)
-> >> +                      */
-> >> +                     if (value)
-> >> +                             td->maxcontact = value - 1;
-> >
-> > Is td->maxcontact ever reset? And why not num_expected or something
-> > instead of maxcontact - odd semantics.
-> 
-> maxcontact is not reset (not needed as it is sent in each report).
-> Concerning the name, agree.
-
-You are right, this will work, too.
+Unfortunately we dont seem to have a good way to test any of this automatically. 
+Putting a perf probe on every assembly instruction perhaps, and checking whether the 
+frame manages to go back all the way to user-space?
 
 Thanks,
-Henrik
+
+	Ingo
