@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287Ab1AGNZu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 08:25:50 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:44466 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728Ab1AGNZt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 08:25:49 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=H3uvZHeIQosylCNhhCiJaeOI7OkG1LjRELjJaqRyteqeOFEAlMQdyqynNeVHLPb5gf
-         J7idIdSuadlBDK65w1J4rgu93zj9IXxJu5rL0glXS7D8MdGz0kGOpgnYDSAKwoyIXMkx
-         LTk/wqmalV/mRk1/6/onuoZDA/noAdWr+lm74=
-Subject: Re: [058/152] tcp: protect sysctl_tcp_cookie_size reads
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: William Allen Simpson <william.allen.simpson@gmail.com>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
-        stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        "David S. Miller" <davem@davemloft.net>
-In-Reply-To: <4D270F85.9070705@gmail.com>
-References: <20110106002302.141581701@clark.site>
-	 <4D2691D4.3060304@gmail.com> <1294389025.2704.95.camel@edumazet-laptop>
-	 <4D270F85.9070705@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 Jan 2011 14:25:43 +0100
-Message-ID: <1294406743.3306.29.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1753316Ab1AGN2U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 08:28:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14669 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752576Ab1AGN2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 08:28:19 -0500
+Date: Fri, 7 Jan 2011 09:55:27 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 2/3] KVM: send IPI to vcpu only when it's in guest mode
+Message-ID: <20110107115527.GA13196@amt.cnet>
+References: <4D26C4D4.30303@cn.fujitsu.com>
+ <4D26C527.9090403@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D26C527.9090403@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 07 janvier 2011 à 08:05 -0500, William Allen Simpson a
-écrit :
+On Fri, Jan 07, 2011 at 03:47:51PM +0800, Xiao Guangrong wrote:
+> We can interrupt the vcpu only when it's running in guest mode
+> to reduce IPI
+> 
+> It looks like only ia64 and x86 need to send IPI to other vcpus, so
+> i only add the implementation of 'vcpu->guest_mode' in ia64, but i
+> don't know ia64 well, please point out the right way for me if the
+> implementation is incorrect
+> 
+> Also reorganize struct kvm_vcpu to make ->guest_mode and ->requests
+> in the same cache line explicitly.
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+> ---
+>  arch/ia64/kvm/kvm-ia64.c |    2 ++
+>  arch/x86/kvm/x86.c       |    6 +++++-
+>  include/linux/kvm_host.h |    9 +++++----
+>  virt/kvm/kvm_main.c      |    7 ++++++-
+>  4 files changed, 18 insertions(+), 6 deletions(-)
+> 
 
-> Your helpful comments are/were appreciated.
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index b1b6cbb..a475264 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -153,7 +153,12 @@ static bool make_all_cpus_request(struct kvm *kvm, unsigned int req)
+>  		if (kvm_make_check_request(req, vcpu))
+>  			continue;
+>  		cpu = vcpu->cpu;
+> -		if (cpus != NULL && cpu != -1 && cpu != me)
+> +
+> +		/* Set ->requests bit before we read ->guest_mode */
+> +		smp_mb();
+> +
+> +		if (cpus != NULL && cpu != -1 && cpu != me &&
+> +		      atomic_read(&vcpu->guest_mode))
+>  			cpumask_set_cpu(cpu, cpus);
 
-You are very welcome.
+Don't think this is safe, since guest_mode does not imply that a vcpu
+has received the IPI, only that IPI has been sent (see kvm_vcpu_kick).
 
+And make_all_cpus_request must guarantee all target vcpus are out of
+guest mode before it returns.
 
