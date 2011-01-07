@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab1AGWoE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 17:44:04 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33670 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147Ab1AGWoD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 17:44:03 -0500
-Date: Fri, 7 Jan 2011 22:43:48 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: vexpress: register platform PATA device.
-Message-ID: <20110107224348.GZ31708@n2100.arm.linux.org.uk>
-References: <1294435445-2020-1-git-send-email-nbowler@elliptictech.com>
+	id S1754745Ab1AGWpY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 17:45:24 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56005 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752147Ab1AGWpX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 17:45:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294435445-2020-1-git-send-email-nbowler@elliptictech.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20110106215404.GA30624@kroah.com>
+References: <20110106215404.GA30624@kroah.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 7 Jan 2011 14:44:14 -0800
+Message-ID: <AANLkTi=mCKWKTcP7JVdwVkk4OVEGDNHYgb5-W+1NJmtQ@mail.gmail.com>
+Subject: Re: [GIT PATCH] TTY/serial merge for .38
+To: Greg KH <gregkh@suse.de>, Daniel Hellstrom <daniel@gaisler.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 07, 2011 at 04:24:05PM -0500, Nick Bowler wrote:
-> The compactflash device on this platform is not usable simply because it
-> is never registered with the kernel.  Fix that up.
-> 
-> Signed-off-by: Nick Bowler <nbowler@elliptictech.com>
-> ---
->  arch/arm/Kconfig             |    1 +
->  arch/arm/mach-vexpress/v2m.c |   25 +++++++++++++++++++++++++
->  2 files changed, 26 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index d56d21c..ee61039 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -264,6 +264,7 @@ config ARCH_VEXPRESS
->  	select HAVE_CLK
->  	select ICST
->  	select PLAT_VERSATILE
-> +	select HAVE_PATA_PLATFORM
+On Thu, Jan 6, 2011 at 1:54 PM, Greg KH <gregkh@suse.de> wrote:
+> Here is the big tty and serial merge for .38.  I'll be sending another
+> smaller one that just moves drivers around after .38-rc1 is out, as is
+> the norm for file moves to handle issues with other trees syncing up
+> properly.
 
-To avoid the Kconfig warning, this should be:
+Merged. However, the drivers/serial/apbuart.c file conflicted, and
+both sides of the merge had some insanity in them.
 
-	select HAVE_PATA_PLATFORM if ATA
+So I did an "evil merge" - a merge that actually changed the code to
+match neither side - and it looks better to me. But maybe that's just
+the drugs I'm taking talking.
 
-or it needs to be moved outside of the if ATA ... endif block in
-drivers/ata/Kconfig.
+So people should check it out. In particular, look at the interaction
+of "drivers: serial: apbuart: Handle OF failures gracefully" and the
+"Added support for ampopts in APBUART driver. Used in AMP systems"
+commit.
 
-Apart from that, I see nothing wrong.
+                    Linus
