@@ -1,368 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177Ab1AGSE7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 13:04:59 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:37439 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755163Ab1AGSE5 (ORCPT
+	id S1755185Ab1AGSFl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 13:05:41 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:59754 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755098Ab1AGSFk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 13:04:57 -0500
+	Fri, 7 Jan 2011 13:05:40 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type;
-        b=O+RbQ9cJeq40eDjsjD3FnmmQ80fLWCwstOonXOAcnGHZqWeWogx4UbVK6pqzkrB0UN
-         QUM2V4mX6dt79qt5zBMFxO8XxDYEX+Rz9tEC4FgXxWAj8pKybZY81NpXxOQYjJpF9yOR
-         oc2vcCufDeKstU9rTpr7nQI07bPvXB/Rq1SXQ=
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ixQhAv3BNEfvOaXRu2ki0hf0ylIUvnzbA3YbnJ6dCwsJW1sTeEGHNhg1l1NvOYRIiB
+         1QOjlDbhWSYIymt5URI3AleRE++eFRXJTZMPynGd8obLgk+wDg8lAR03zmQINfoahKP+
+         NR3YqZnvpWn+aZ5YnBkhI6PcC6jSLZfKt0HuA=
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <4D272C54.5010406@kernel.dk>
-References: <20110107110513.30776114.sfr@canb.auug.org.au>
-	<4D26C179.7030704@kernel.dk>
-	<AANLkTinyaZfsYv43046LWgu8U3kg6_79y+PTFO1RxtnY@mail.gmail.com>
-	<20110107231748.76170ff3.sfr@canb.auug.org.au>
-	<AANLkTimpVMLGBnP33Ro8MBtW3GJjskg0bBK717Xf-Mh_@mail.gmail.com>
-	<20110108012211.1e19f0f7.sfr@canb.auug.org.au>
-	<4D272C54.5010406@kernel.dk>
-Date: Fri, 7 Jan 2011 19:04:56 +0100
-Message-ID: <AANLkTim_Su1XTvvpFvPqv1xpkkUA3PEVDEVpXaODjYpt@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the block tree
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=0016367f9678b5b5660499457452
+In-Reply-To: <AANLkTim6HoN5+m180-Du+oda+6N49qSaGga6ktMPV4U4@mail.gmail.com>
+References: <20101208212505.GA18192@hostway.ca>
+	<20101218010801.GE28367@hostway.ca>
+	<20101229220313.GA13688@hostway.ca>
+	<AANLkTinq074Q-B=5B4_aXuBm-3ELwGknsJv+OvS1z1OX@mail.gmail.com>
+	<20110104214008.GH27727@hostway.ca>
+	<AANLkTim6HoN5+m180-Du+oda+6N49qSaGga6ktMPV4U4@mail.gmail.com>
+Date: Fri, 7 Jan 2011 10:05:39 -0800
+Message-ID: <AANLkTinLsREtOqNGW2j5m0UYros1AgTu953JHjjJZ-F+@mail.gmail.com>
+Subject: Re: System CPU increasing on idle 2.6.36
+From: Mark Moseley <moseleymark@gmail.com>
+To: Simon Kirby <sim@hostway.ca>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016367f9678b5b5660499457452
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-On Fri, Jan 7, 2011 at 4:08 PM, Jens Axboe <axboe@kernel.dk> wrote:
-> On 2011-01-07 15:22, Stephen Rothwell wrote:
->> Hi,
+On Wed, Jan 5, 2011 at 11:43 AM, Mark Moseley <moseleymark@gmail.com> wrote:
+> On Tue, Jan 4, 2011 at 1:40 PM, Simon Kirby <sim@hostway.ca> wrote:
+>> On Tue, Jan 04, 2011 at 09:42:14AM -0800, Mark Moseley wrote:
 >>
->> On Fri, 7 Jan 2011 14:19:33 +0100 Sedat Dilek <sedat.dilek@googlemail.co=
-m> wrote:
+>>> On Wed, Dec 29, 2010 at 2:03 PM, Simon Kirby <sim@hostway.ca> wrote:
 >>>
->>> Hmm, I have pulled-in freshly from linux-2.6-block#for-next after you
->>> published latest linux-next (next-20110107).
->>> So, I guessed the (reported) issue is fixed, now.
+>>> > I've noticed nfs_inode_cache is ever-increasing as well with 2.6.37:
+>>> >
+>>> > ?OBJS ACTIVE ?USE OBJ SIZE ?SLABS OBJ/SLAB CACHE SIZE NAME
+>>> > 2562514 2541520 ?99% ? ?0.95K ?78739 ? ? ? 33 ? 2519648K nfs_inode_cache
+>>> > 467200 285110 ?61% ? ?0.02K ? 1825 ? ? ?256 ? ? ?7300K kmalloc-16
+>>> > 299397 242350 ?80% ? ?0.19K ?14257 ? ? ? 21 ? ? 57028K dentry
+>>> > 217434 131978 ?60% ? ?0.55K ? 7767 ? ? ? 28 ? ?124272K radix_tree_node
+>>> > 215232 ?81522 ?37% ? ?0.06K ? 3363 ? ? ? 64 ? ? 13452K kmalloc-64
+>>> > 183027 136802 ?74% ? ?0.10K ? 4693 ? ? ? 39 ? ? 18772K buffer_head
+>>> > 101120 ?71184 ?70% ? ?0.03K ? ?790 ? ? ?128 ? ? ?3160K kmalloc-32
+>>> > ?79616 ?59713 ?75% ? ?0.12K ? 2488 ? ? ? 32 ? ? ?9952K kmalloc-128
+>>> > ?66560 ?41257 ?61% ? ?0.01K ? ?130 ? ? ?512 ? ? ? 520K kmalloc-8
+>>> > ?42126 ?26650 ?63% ? ?0.75K ? 2006 ? ? ? 21 ? ? 32096K ext3_inode_cache
+>>> >
+>>> > http://0x.ca/sim/ref/2.6.37/inodes_nfs.png
+>>> > http://0x.ca/sim/ref/2.6.37/cpu2_nfs.png
+>>> >
+>>> > Perhaps I could bisect just fs/nfs changes between 2.6.35 and 2.6.36 to
+>>> > try to track this down without having to wait too long, unless somebody
+>>> > can see what is happening here.
+>>>
+>>> I'll get started bisecting too, since this is something of a
+>>> show-stopper. Boxes that pre-2.6.36 would stay up for months at a time
+>>> now have to be powercycled every couple of days (which is about how
+>>> long it takes for this behavior to show up). This is across-the-board
+>>> for about 50 boxes, ranging from 2.6.36 to 2.6.36.2.
+>>>
+>>> Simon: It's probably irrelevant since these are kernel threads, but
+>>> I'm curious what distro your boxes are running. Ours are Debian Lenny,
+>>> i386, Dell Poweredge 850s. Just trying to figure out any
+>>> commonalities. I'll get my boxes back on 2.6.36.2 and start watching
+>>> nfs_inode_cache as well.
 >>
->> No, the commit that caused the warnings was removed when I went back to
->> using the block tree from next-20110106. =C2=A0So it will come back unle=
-ss
->> fixed.
+>> Same distro, x86_64, similar servers.
+>>
+>> I'm not sure if the two cases I am seeing are exactly the same problem,
+>> but on the log crunching boxes, system time seems proportional to
+>> nfs_inode_cache and nfs_inode_cache just keeps growing forever; however,
+>> if I stop the load and unmount the NFS mount points, all of the
+>> nfs_inode_cache objects do actually go away (after umount finishes).
+>>
+>> It seems the shrinker callback might not be working as intended here.
+>>
+>> On the shared server case, the crazy spinlock contention from all of the
+>> flusher processes happens suddenly and overloads the boxes for 10-15
+>> minutes, and then everything recovers.  Over 21 of these boxes, they
+>> each have about 500k-700k nfs_inode_cache objects.  The log cruncher hit
+>> 3.3 million nfs_inode_cache objects before I unmounted.
+>>
+>> Are your boxes repeating this behaviour at any predictable interval?
 >
-> It is fixed in linux-2.6-block#for-next as-of earlier today, so if Sedat
-> pulled from there it should be gone.
+> Simon:
+> My boxes definitely fall into the latter category, with spinlock
+> regularly sitting at 60-80% CPU (according to 'perf top'). As far as
+> predictability, not strictly, but it's typically after an uptime of
+> 2-3 days. They take so long to get into this state that I've never
+> seen the actual transition in person, just the after-effects of
+> flush-0:xx gone crazy. These boxes have a number of other NFS mounts,
+> but it's on the flush-0:xx's for the heavily written-to NFS mounts
+> that are spinning wildly, which you'd expect to be the case. The
+> infrequently written-to NFS servers' flush-0:xx isn't to be found in
+> 'top' output.
 >
-> --
-> Jens Axboe
+> I'd booted into older kernels after my initial reply, so I'm 14 hrs
+> into booting a box back into 2.6.36.2 and another box into a
+> double-bisected 2.6.35-2.6.36 kernel (my first bisect hit compile
+> errors). Both are running normally but that fits with the pattern so
+> far.
 >
+> NFS Guys:
+> Anything else we can be digging up to help debug this? This is a
+> pretty ugly issue.
 >
 
-I guess 0002 should fix it, its not the case (patch + "big diff" attached).
+NOTE: NFS/Kernel guys: I've left the 2.6.36.2 box still thrashing
+about in case there's something you'd like me to look at.
 
-- Sedat -
+Ok, both my 2.6.36.2 kernel box and my 2.6.35->2.6.36 bisect box (was
+bisected to ce7db282a3830f57f5b05ec48288c23a5c4d66d5 -- this is my
+first time doing bisect, so I'll preemptively apologize for doing
+anything silly) both went berserk within 15 mins of each other, after
+an uptime of around 63 hours for 2.6.36.2 and 65 hours for the
+bisected box. The 2.6.36.2 one is still running with all the various
+flush-0:xx threads spinning wildly. The bisected box just keeled over
+and died, but is back up now. The only kernel messages logged are just
+of the "task kworker/4:1:359 blocked for more than 120 seconds"
+variety, all with _raw_spin_lock_irq at the top of the stack trace.
 
-sd@tbox:~/src/linux-2.6/linux-2.6.37/debian/patches$ LC_ALL=3DC ls -l
-linux-2.6-block-for-next/
-total 44
--rw-r--r-- 1 sd sd  5903 Jan  7 10:33
-0001-block-add-internal-hd-part-table-references.patch
--rw-r--r-- 1 sd sd  2382 Jan  7 10:33
-0002-block-trace-event-block-fix-unassigned-field.patch
--rw-r--r-- 1 sd sd  3400 Jan  7 10:33
-0003-block-cfq-don-t-use-atomic_t-for-cfq_queue.patch
--rw-r--r-- 1 sd sd  3387 Jan  7 10:33
-0004-block-cfq-don-t-use-atomic_t-for-cfq_group.patch
--rw-r--r-- 1 sd sd   403 Jan  7 10:33 Shortlog
--rw-r--r-- 1 sd sd   527 Jan  7 10:33 diffstat
--rw-r--r-- 1 sd sd 12797 Jan  7 10:33 linux-2.6-block-for-next.patch
+Looking at slabinfo, specifically, this: stats=$(grep nfs_inode_cache
+/proc/slabinfo | awk '{ print $2, $3 }')
+the active_objs and num_objs both increase to over a million (these
+boxes are delivering mail to NFS-mounted mailboxes, so that's
+perfectly reasonable). On both boxes, looking at sar, things start to
+go awry around 10am today EST. At that time on the 2.6.36.2 box, the
+NFS numbers look like this:
 
---0016367f9678b5b5660499457452
-Content-Type: plain/text; 
-	name="0002-block-trace-event-block-fix-unassigned-field.patch"
-Content-Disposition: attachment; 
-	filename="0002-block-trace-event-block-fix-unassigned-field.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gine8qlz0
+Fri Jan  7 09:58:00 2011: 1079433 1079650
+Fri Jan  7 09:59:00 2011: 1079632 1080300
+Fri Jan  7 10:00:00 2011: 1080196 1080300
+Fri Jan  7 10:01:01 2011: 1080599 1080716
+Fri Jan  7 10:02:01 2011: 1081074 1081288
 
-RnJvbSBiNzkwOGMxMDM1YWY3NjUyY2Q2MTM5OTFiNTRkYmZmOWM4YjZiZDNhIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBKZWZmIE1veWVyIDxqbW95ZXJAcmVkaGF0LmNvbT4KRGF0ZTog
-VGh1LCA2IEphbiAyMDExIDIwOjQxOjQyICswMTAwClN1YmplY3Q6IFtQQVRDSCAyLzRdIGJsb2Nr
-OiB0cmFjZSBldmVudCBibG9jayBmaXggdW5hc3NpZ25lZCBmaWVsZAoKVGhlICJlcnJvciIgZmll
-bGQgaW4gYmxvY2tfYmlvX2NvbXBsZXRlIGlzIG5vdCBhc3NpZ25lZCwgbGVhdmluZyB0aGUgbWVt
-b3J5IGFyZWEKdW5pbml0aWFsaXplZCAoa2VlcGluZyBnYXJiYWdlIGRhdGEpLiBQYXNzIGFuIGFk
-ZGl0aW9uYWwgdHJhY2Vwb2ludCBhcmd1bWVudCB0bwp0aGlzIGV2ZW50IHRvIGluaXRpYWxpemUg
-dGhpcyBmaWVsZC4KClNpZ25lZC1vZmYtYnk6IEplZmYgTW95ZXIgPGptb3llckByZWRoYXQuY29t
-PgpTaWduZWQtb2ZmLWJ5OiBNYXRoaWV1IERlc25veWVycyA8bWF0aGlldS5kZXNub3llcnNAZWZm
-aWNpb3MuY29tPgpDQzogU3RldmVuIFJvc3RlZHQgPHJvc3RlZHRAZ29vZG1pcy5vcmc+CkNDOiBG
-cmVkZXJpYyBXZWlzYmVja2VyIDxmd2Vpc2JlY0BnbWFpbC5jb20+CkNDOiBJbmdvIE1vbG5hciA8
-bWluZ29AZWx0ZS5odT4KQ0M6IFRob21hcyBHbGVpeG5lciA8dGdseEBsaW51dHJvbml4LmRlPgpD
-QzogTGkgWmVmYW4gPGxpemZAY24uZnVqaXRzdS5jb20+CkNDOiBBbGFuLkJydW5lbGxlQGhwLmNv
-bQpTaWduZWQtb2ZmLWJ5OiBKZW5zIEF4Ym9lIDxqYXhib2VAZnVzaW9uaW8uY29tPgotLS0KIGRy
-aXZlcnMvbWQvZG0uYyAgICAgICAgICAgICAgfCAgICAyICstCiBpbmNsdWRlL3RyYWNlL2V2ZW50
-cy9ibG9jay5oIHwgICAgNiArKysrLS0KIDIgZmlsZXMgY2hhbmdlZCwgNSBpbnNlcnRpb25zKCsp
-LCAzIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvbWQvZG0uYyBiL2RyaXZlcnMv
-bWQvZG0uYwppbmRleCAwYTJiNTUxLi5mNDhhMmYzIDEwMDY0NAotLS0gYS9kcml2ZXJzL21kL2Rt
-LmMKKysrIGIvZHJpdmVycy9tZC9kbS5jCkBAIC02MzAsNyArNjMwLDcgQEAgc3RhdGljIHZvaWQg
-ZGVjX3BlbmRpbmcoc3RydWN0IGRtX2lvICppbywgaW50IGVycm9yKQogCQkJcXVldWVfaW8obWQs
-IGJpbyk7CiAJCX0gZWxzZSB7CiAJCQkvKiBkb25lIHdpdGggbm9ybWFsIElPIG9yIGVtcHR5IGZs
-dXNoICovCi0JCQl0cmFjZV9ibG9ja19iaW9fY29tcGxldGUobWQtPnF1ZXVlLCBiaW8pOworCQkJ
-dHJhY2VfYmxvY2tfYmlvX2NvbXBsZXRlKG1kLT5xdWV1ZSwgYmlvLCBpb19lcnJvcik7CiAJCQli
-aW9fZW5kaW8oYmlvLCBpb19lcnJvcik7CiAJCX0KIAl9CmRpZmYgLS1naXQgYS9pbmNsdWRlL3Ry
-YWNlL2V2ZW50cy9ibG9jay5oIGIvaW5jbHVkZS90cmFjZS9ldmVudHMvYmxvY2suaAppbmRleCBi
-NTZjNjVkLi5hYmE0MjFkIDEwMDY0NAotLS0gYS9pbmNsdWRlL3RyYWNlL2V2ZW50cy9ibG9jay5o
-CisrKyBiL2luY2x1ZGUvdHJhY2UvZXZlbnRzL2Jsb2NrLmgKQEAgLTIwNiwxNSArMjA2LDE2IEBA
-IFRSQUNFX0VWRU5UKGJsb2NrX2Jpb19ib3VuY2UsCiAgKiBibG9ja19iaW9fY29tcGxldGUgLSBj
-b21wbGV0ZWQgYWxsIHdvcmsgb24gdGhlIGJsb2NrIG9wZXJhdGlvbgogICogQHE6IHF1ZXVlIGhv
-bGRpbmcgdGhlIGJsb2NrIG9wZXJhdGlvbgogICogQGJpbzogYmxvY2sgb3BlcmF0aW9uIGNvbXBs
-ZXRlZAorICogQGVycm9yOiBpbyBlcnJvciB2YWx1ZQogICoKICAqIFRoaXMgdHJhY2Vwb2ludCBp
-bmRpY2F0ZXMgdGhlcmUgaXMgbm8gZnVydGhlciB3b3JrIHRvIGRvIG9uIHRoaXMKICAqIGJsb2Nr
-IElPIG9wZXJhdGlvbiBAYmlvLgogICovCiBUUkFDRV9FVkVOVChibG9ja19iaW9fY29tcGxldGUs
-CiAKLQlUUF9QUk9UTyhzdHJ1Y3QgcmVxdWVzdF9xdWV1ZSAqcSwgc3RydWN0IGJpbyAqYmlvKSwK
-KwlUUF9QUk9UTyhzdHJ1Y3QgcmVxdWVzdF9xdWV1ZSAqcSwgc3RydWN0IGJpbyAqYmlvLCBpbnQg
-ZXJyb3IpLAogCi0JVFBfQVJHUyhxLCBiaW8pLAorCVRQX0FSR1MocSwgYmlvLCBlcnJvciksCiAK
-IAlUUF9TVFJVQ1RfX2VudHJ5KAogCQlfX2ZpZWxkKCBkZXZfdCwJCWRldgkJKQpAQCAtMjI4LDYg
-KzIyOSw3IEBAIFRSQUNFX0VWRU5UKGJsb2NrX2Jpb19jb21wbGV0ZSwKIAkJX19lbnRyeS0+ZGV2
-CQk9IGJpby0+YmlfYmRldi0+YmRfZGV2OwogCQlfX2VudHJ5LT5zZWN0b3IJCT0gYmlvLT5iaV9z
-ZWN0b3I7CiAJCV9fZW50cnktPm5yX3NlY3Rvcgk9IGJpby0+Ymlfc2l6ZSA+PiA5OworCQlfX2Vu
-dHJ5LT5lcnJvcgkJPSBlcnJvcjsKIAkJYmxrX2ZpbGxfcndicyhfX2VudHJ5LT5yd2JzLCBiaW8t
-PmJpX3J3LCBiaW8tPmJpX3NpemUpOwogCSksCiAKLS0gCjEuNy40LnJjMAoK
---0016367f9678b5b5660499457452
-Content-Type: plain/text; name="linux-2.6-block-for-next.patch"
-Content-Disposition: attachment; filename="linux-2.6-block-for-next.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gineazl41
+on the bisected, like this:
 
-SmVmZiBNb3llciAoMSk6CiAgICAgIGJsb2NrOiB0cmFjZSBldmVudCBibG9jayBmaXggdW5hc3Np
-Z25lZCBmaWVsZAoKSmVucyBBeGJvZSAoMik6CiAgICAgIGJsb2NrOiBhZGQgaW50ZXJuYWwgaGQg
-cGFydCB0YWJsZSByZWZlcmVuY2VzCiAgICAgIE1lcmdlIGJyYW5jaCAnZm9yLTIuNi4zOC9jb3Jl
-JyBpbnRvIGZvci1uZXh0CgpTZWRhdCBEaWxlayAoMSk6CiAgICAgIE1lcmdlIGJyYW5jaCAnZm9y
-LW5leHQnIG9mIGdpdDovL2dpdC5rZXJuZWwub3JnLy4uLi9heGJvZS9saW51eC0yLjYtYmxvY2sK
-ClNoYW9odWEgTGkgKDIpOgogICAgICBibG9jayBjZnE6IGRvbid0IHVzZSBhdG9taWNfdCBmb3Ig
-Y2ZxX3F1ZXVlCiAgICAgIGJsb2NrIGNmcTogZG9uJ3QgdXNlIGF0b21pY190IGZvciBjZnFfZ3Jv
-dXAKCiBibG9jay9ibGstY29yZS5jICAgICAgICAgICAgIHwgICAgNiArKy0tCiBibG9jay9ibGst
-bWVyZ2UuYyAgICAgICAgICAgIHwgICAgMiArLQogYmxvY2svY2ZxLWlvc2NoZWQuYyAgICAgICAg
-ICB8ICAgNTAgKysrKysrKysrKysrKysrKysrKysrKystLS0tLS0tLS0tLS0tLS0tLS0KIGJsb2Nr
-L2dlbmhkLmMgICAgICAgICAgICAgICAgfCAgICAzICstCiBkcml2ZXJzL21kL2RtLmMgICAgICAg
-ICAgICAgIHwgICAgMiArLQogZnMvcGFydGl0aW9ucy9jaGVjay5jICAgICAgICB8ICAgIDggKyst
-LS0tCiBpbmNsdWRlL2xpbnV4L2dlbmhkLmggICAgICAgIHwgICAyNyArKysrKysrKysrKysrKysr
-KysrKystCiBpbmNsdWRlL2xpbnV4L2tyZWYuaCAgICAgICAgIHwgICAgMSAtCiBpbmNsdWRlL3Ry
-YWNlL2V2ZW50cy9ibG9jay5oIHwgICAgNiArKystCiBsaWIva3JlZi5jICAgICAgICAgICAgICAg
-ICAgIHwgICAxMiAtLS0tLS0tLS0tCiAxMCBmaWxlcyBjaGFuZ2VkLCA2NyBpbnNlcnRpb25zKCsp
-LCA1MCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9ibG9jay9ibGstY29yZS5jIGIvYmxvY2sv
-YmxrLWNvcmUuYwppbmRleCA1MDBjMDgwLi4yZjQwMDJmIDEwMDY0NAotLS0gYS9ibG9jay9ibGst
-Y29yZS5jCisrKyBiL2Jsb2NrL2Jsay1jb3JlLmMKQEAgLTcwLDcgKzcwLDcgQEAgc3RhdGljIHZv
-aWQgZHJpdmVfc3RhdF9hY2N0KHN0cnVjdCByZXF1ZXN0ICpycSwgaW50IG5ld19pbykKIAkJcGFy
-dF9zdGF0X2luYyhjcHUsIHBhcnQsIG1lcmdlc1tyd10pOwogCX0gZWxzZSB7CiAJCXBhcnQgPSBk
-aXNrX21hcF9zZWN0b3JfcmN1KHJxLT5ycV9kaXNrLCBibGtfcnFfcG9zKHJxKSk7Ci0JCWlmICgh
-a3JlZl90ZXN0X2FuZF9nZXQoJnBhcnQtPnJlZikpIHsKKwkJaWYgKCFoZF9zdHJ1Y3RfdHJ5X2dl
-dChwYXJ0KSkgewogCQkJLyoKIAkJCSAqIFRoZSBwYXJ0aXRpb24gaXMgYWxyZWFkeSBiZWluZyBy
-ZW1vdmVkLAogCQkJICogdGhlIHJlcXVlc3Qgd2lsbCBiZSBhY2NvdW50ZWQgb24gdGhlIGRpc2sg
-b25seQpAQCAtODAsNyArODAsNyBAQCBzdGF0aWMgdm9pZCBkcml2ZV9zdGF0X2FjY3Qoc3RydWN0
-IHJlcXVlc3QgKnJxLCBpbnQgbmV3X2lvKQogCQkJICogaXQgYXMgYW55IG90aGVyIHBhcnRpdGlv
-bi4KIAkJCSAqLwogCQkJcGFydCA9ICZycS0+cnFfZGlzay0+cGFydDA7Ci0JCQlrcmVmX2dldCgm
-cGFydC0+cmVmKTsKKwkJCWhkX3N0cnVjdF9nZXQocGFydCk7CiAJCX0KIAkJcGFydF9yb3VuZF9z
-dGF0cyhjcHUsIHBhcnQpOwogCQlwYXJ0X2luY19pbl9mbGlnaHQocGFydCwgcncpOwpAQCAtMTgx
-OCw3ICsxODE4LDcgQEAgc3RhdGljIHZvaWQgYmxrX2FjY291bnRfaW9fZG9uZShzdHJ1Y3QgcmVx
-dWVzdCAqcmVxKQogCQlwYXJ0X3JvdW5kX3N0YXRzKGNwdSwgcGFydCk7CiAJCXBhcnRfZGVjX2lu
-X2ZsaWdodChwYXJ0LCBydyk7CiAKLQkJa3JlZl9wdXQoJnBhcnQtPnJlZiwgX19kZWxldGVfcGFy
-dGl0aW9uKTsKKwkJaGRfc3RydWN0X3B1dChwYXJ0KTsKIAkJcGFydF9zdGF0X3VubG9jaygpOwog
-CX0KIH0KZGlmZiAtLWdpdCBhL2Jsb2NrL2Jsay1tZXJnZS5jIGIvYmxvY2svYmxrLW1lcmdlLmMK
-aW5kZXggMjNlYTc0Yi4uZWE4NWUyMCAxMDA2NDQKLS0tIGEvYmxvY2svYmxrLW1lcmdlLmMKKysr
-IGIvYmxvY2svYmxrLW1lcmdlLmMKQEAgLTM1Niw3ICszNTYsNyBAQCBzdGF0aWMgdm9pZCBibGtf
-YWNjb3VudF9pb19tZXJnZShzdHJ1Y3QgcmVxdWVzdCAqcmVxKQogCQlwYXJ0X3JvdW5kX3N0YXRz
-KGNwdSwgcGFydCk7CiAJCXBhcnRfZGVjX2luX2ZsaWdodChwYXJ0LCBycV9kYXRhX2RpcihyZXEp
-KTsKIAotCQlrcmVmX3B1dCgmcGFydC0+cmVmLCBfX2RlbGV0ZV9wYXJ0aXRpb24pOworCQloZF9z
-dHJ1Y3RfcHV0KHBhcnQpOwogCQlwYXJ0X3N0YXRfdW5sb2NrKCk7CiAJfQogfQpkaWZmIC0tZ2l0
-IGEvYmxvY2svY2ZxLWlvc2NoZWQuYyBiL2Jsb2NrL2NmcS1pb3NjaGVkLmMKaW5kZXggMWFjMjBm
-NS4uODQyNzY5NyAxMDA2NDQKLS0tIGEvYmxvY2svY2ZxLWlvc2NoZWQuYworKysgYi9ibG9jay9j
-ZnEtaW9zY2hlZC5jCkBAIC05Niw3ICs5Niw3IEBAIHN0cnVjdCBjZnFfcmJfcm9vdCB7CiAgKi8K
-IHN0cnVjdCBjZnFfcXVldWUgewogCS8qIHJlZmVyZW5jZSBjb3VudCAqLwotCWF0b21pY190IHJl
-ZjsKKwlpbnQgcmVmOwogCS8qIHZhcmlvdXMgc3RhdGUgZmxhZ3MsIHNlZSBiZWxvdyAqLwogCXVu
-c2lnbmVkIGludCBmbGFnczsKIAkvKiBwYXJlbnQgY2ZxX2RhdGEgKi8KQEAgLTIwNyw3ICsyMDcs
-NyBAQCBzdHJ1Y3QgY2ZxX2dyb3VwIHsKIAlzdHJ1Y3QgYmxraW9fZ3JvdXAgYmxrZzsKICNpZmRl
-ZiBDT05GSUdfQ0ZRX0dST1VQX0lPU0NIRUQKIAlzdHJ1Y3QgaGxpc3Rfbm9kZSBjZnFkX25vZGU7
-Ci0JYXRvbWljX3QgcmVmOworCWludCByZWY7CiAjZW5kaWYKIAkvKiBudW1iZXIgb2YgcmVxdWVz
-dHMgdGhhdCBhcmUgb24gdGhlIGRpc3BhdGNoIGxpc3Qgb3IgaW5zaWRlIGRyaXZlciAqLwogCWlu
-dCBkaXNwYXRjaGVkOwpAQCAtMTAxNCw3ICsxMDE0LDcgQEAgY2ZxX2ZpbmRfYWxsb2NfY2ZxZyhz
-dHJ1Y3QgY2ZxX2RhdGEgKmNmcWQsIHN0cnVjdCBjZ3JvdXAgKmNncm91cCwgaW50IGNyZWF0ZSkK
-IAkgKiBlbGV2YXRvciB3aGljaCB3aWxsIGJlIGRyb3BwZWQgYnkgZWl0aGVyIGVsZXZhdG9yIGV4
-aXQKIAkgKiBvciBjZ3JvdXAgZGVsZXRpb24gcGF0aCBkZXBlbmRpbmcgb24gd2hvIGlzIGV4aXRp
-bmcgZmlyc3QuCiAJICovCi0JYXRvbWljX3NldCgmY2ZxZy0+cmVmLCAxKTsKKwljZnFnLT5yZWYg
-PSAxOwogCiAJLyoKIAkgKiBBZGQgZ3JvdXAgb250byBjZ3JvdXAgbGlzdC4gSXQgbWlnaHQgaGFw
-cGVuIHRoYXQgYmRpLT5kZXYgaXMKQEAgLTEwNTksNyArMTA1OSw3IEBAIHN0YXRpYyBzdHJ1Y3Qg
-Y2ZxX2dyb3VwICpjZnFfZ2V0X2NmcWcoc3RydWN0IGNmcV9kYXRhICpjZnFkLCBpbnQgY3JlYXRl
-KQogCiBzdGF0aWMgaW5saW5lIHN0cnVjdCBjZnFfZ3JvdXAgKmNmcV9yZWZfZ2V0X2NmcWcoc3Ry
-dWN0IGNmcV9ncm91cCAqY2ZxZykKIHsKLQlhdG9taWNfaW5jKCZjZnFnLT5yZWYpOworCWNmcWct
-PnJlZisrOwogCXJldHVybiBjZnFnOwogfQogCkBAIC0xMDcxLDcgKzEwNzEsNyBAQCBzdGF0aWMg
-dm9pZCBjZnFfbGlua19jZnFxX2NmcWcoc3RydWN0IGNmcV9xdWV1ZSAqY2ZxcSwgc3RydWN0IGNm
-cV9ncm91cCAqY2ZxZykKIAogCWNmcXEtPmNmcWcgPSBjZnFnOwogCS8qIGNmcXEgcmVmZXJlbmNl
-IG9uIGNmcWcgKi8KLQlhdG9taWNfaW5jKCZjZnFxLT5jZnFnLT5yZWYpOworCWNmcXEtPmNmcWct
-PnJlZisrOwogfQogCiBzdGF0aWMgdm9pZCBjZnFfcHV0X2NmcWcoc3RydWN0IGNmcV9ncm91cCAq
-Y2ZxZykKQEAgLTEwNzksOCArMTA3OSw5IEBAIHN0YXRpYyB2b2lkIGNmcV9wdXRfY2ZxZyhzdHJ1
-Y3QgY2ZxX2dyb3VwICpjZnFnKQogCXN0cnVjdCBjZnFfcmJfcm9vdCAqc3Q7CiAJaW50IGksIGo7
-CiAKLQlCVUdfT04oYXRvbWljX3JlYWQoJmNmcWctPnJlZikgPD0gMCk7Ci0JaWYgKCFhdG9taWNf
-ZGVjX2FuZF90ZXN0KCZjZnFnLT5yZWYpKQorCUJVR19PTihjZnFnLT5yZWYgPD0gMCk7CisJY2Zx
-Zy0+cmVmLS07CisJaWYgKGNmcWctPnJlZikKIAkJcmV0dXJuOwogCWZvcl9lYWNoX2NmcWdfc3Qo
-Y2ZxZywgaSwgaiwgc3QpCiAJCUJVR19PTighUkJfRU1QVFlfUk9PVCgmc3QtPnJiKSk7CkBAIC0x
-MTg4LDcgKzExODksNyBAQCBzdGF0aWMgdm9pZCBjZnFfc2VydmljZV90cmVlX2FkZChzdHJ1Y3Qg
-Y2ZxX2RhdGEgKmNmcWQsIHN0cnVjdCBjZnFfcXVldWUgKmNmcXEsCiAJCQljZnFfZ3JvdXBfc2Vy
-dmljZV90cmVlX2RlbChjZnFkLCBjZnFxLT5jZnFnKTsKIAkJY2ZxcS0+b3JpZ19jZnFnID0gY2Zx
-cS0+Y2ZxZzsKIAkJY2ZxcS0+Y2ZxZyA9ICZjZnFkLT5yb290X2dyb3VwOwotCQlhdG9taWNfaW5j
-KCZjZnFkLT5yb290X2dyb3VwLnJlZik7CisJCWNmcWQtPnJvb3RfZ3JvdXAucmVmKys7CiAJCWdy
-b3VwX2NoYW5nZWQgPSAxOwogCX0gZWxzZSBpZiAoIWNmcWQtPmNmcV9ncm91cF9pc29sYXRpb24K
-IAkJICAgJiYgY2ZxcV90eXBlKGNmcXEpID09IFNZTkNfV09SS0xPQUQgJiYgY2ZxcS0+b3JpZ19j
-ZnFnKSB7CkBAIC0yMDI1LDcgKzIwMjYsNyBAQCBzdGF0aWMgaW50IGNmcXFfcHJvY2Vzc19yZWZz
-KHN0cnVjdCBjZnFfcXVldWUgKmNmcXEpCiAJaW50IHByb2Nlc3NfcmVmcywgaW9fcmVmczsKIAog
-CWlvX3JlZnMgPSBjZnFxLT5hbGxvY2F0ZWRbUkVBRF0gKyBjZnFxLT5hbGxvY2F0ZWRbV1JJVEVd
-OwotCXByb2Nlc3NfcmVmcyA9IGF0b21pY19yZWFkKCZjZnFxLT5yZWYpIC0gaW9fcmVmczsKKwlw
-cm9jZXNzX3JlZnMgPSBjZnFxLT5yZWYgLSBpb19yZWZzOwogCUJVR19PTihwcm9jZXNzX3JlZnMg
-PCAwKTsKIAlyZXR1cm4gcHJvY2Vzc19yZWZzOwogfQpAQCAtMjA2NSwxMCArMjA2NiwxMCBAQCBz
-dGF0aWMgdm9pZCBjZnFfc2V0dXBfbWVyZ2Uoc3RydWN0IGNmcV9xdWV1ZSAqY2ZxcSwgc3RydWN0
-IGNmcV9xdWV1ZSAqbmV3X2NmcXEpCiAJICovCiAJaWYgKG5ld19wcm9jZXNzX3JlZnMgPj0gcHJv
-Y2Vzc19yZWZzKSB7CiAJCWNmcXEtPm5ld19jZnFxID0gbmV3X2NmcXE7Ci0JCWF0b21pY19hZGQo
-cHJvY2Vzc19yZWZzLCAmbmV3X2NmcXEtPnJlZik7CisJCW5ld19jZnFxLT5yZWYgKz0gcHJvY2Vz
-c19yZWZzOwogCX0gZWxzZSB7CiAJCW5ld19jZnFxLT5uZXdfY2ZxcSA9IGNmcXE7Ci0JCWF0b21p
-Y19hZGQobmV3X3Byb2Nlc3NfcmVmcywgJmNmcXEtPnJlZik7CisJCWNmcXEtPnJlZiArPSBuZXdf
-cHJvY2Vzc19yZWZzOwogCX0KIH0KIApAQCAtMjUzMiw5ICsyNTMzLDEwIEBAIHN0YXRpYyB2b2lk
-IGNmcV9wdXRfcXVldWUoc3RydWN0IGNmcV9xdWV1ZSAqY2ZxcSkKIAlzdHJ1Y3QgY2ZxX2RhdGEg
-KmNmcWQgPSBjZnFxLT5jZnFkOwogCXN0cnVjdCBjZnFfZ3JvdXAgKmNmcWcsICpvcmlnX2NmcWc7
-CiAKLQlCVUdfT04oYXRvbWljX3JlYWQoJmNmcXEtPnJlZikgPD0gMCk7CisJQlVHX09OKGNmcXEt
-PnJlZiA8PSAwKTsKIAotCWlmICghYXRvbWljX2RlY19hbmRfdGVzdCgmY2ZxcS0+cmVmKSkKKwlj
-ZnFxLT5yZWYtLTsKKwlpZiAoY2ZxcS0+cmVmKQogCQlyZXR1cm47CiAKIAljZnFfbG9nX2NmcXEo
-Y2ZxZCwgY2ZxcSwgInB1dF9xdWV1ZSIpOwpAQCAtMjgzNyw3ICsyODM5LDcgQEAgc3RhdGljIHZv
-aWQgY2ZxX2luaXRfY2ZxcShzdHJ1Y3QgY2ZxX2RhdGEgKmNmcWQsIHN0cnVjdCBjZnFfcXVldWUg
-KmNmcXEsCiAJUkJfQ0xFQVJfTk9ERSgmY2ZxcS0+cF9ub2RlKTsKIAlJTklUX0xJU1RfSEVBRCgm
-Y2ZxcS0+Zmlmbyk7CiAKLQlhdG9taWNfc2V0KCZjZnFxLT5yZWYsIDApOworCWNmcXEtPnJlZiA9
-IDA7CiAJY2ZxcS0+Y2ZxZCA9IGNmcWQ7CiAKIAljZnFfbWFya19jZnFxX3ByaW9fY2hhbmdlZChj
-ZnFxKTsKQEAgLTI5NzMsMTEgKzI5NzUsMTEgQEAgY2ZxX2dldF9xdWV1ZShzdHJ1Y3QgY2ZxX2Rh
-dGEgKmNmcWQsIGJvb2wgaXNfc3luYywgc3RydWN0IGlvX2NvbnRleHQgKmlvYywKIAkgKiBwaW4g
-dGhlIHF1ZXVlIG5vdyB0aGF0IGl0J3MgYWxsb2NhdGVkLCBzY2hlZHVsZXIgZXhpdCB3aWxsIHBy
-dW5lIGl0CiAJICovCiAJaWYgKCFpc19zeW5jICYmICEoKmFzeW5jX2NmcXEpKSB7Ci0JCWF0b21p
-Y19pbmMoJmNmcXEtPnJlZik7CisJCWNmcXEtPnJlZisrOwogCQkqYXN5bmNfY2ZxcSA9IGNmcXE7
-CiAJfQogCi0JYXRvbWljX2luYygmY2ZxcS0+cmVmKTsKKwljZnFxLT5yZWYrKzsKIAlyZXR1cm4g
-Y2ZxcTsKIH0KIApAQCAtMzY3OSwxMyArMzY4MSwxMyBAQCBuZXdfcXVldWU6CiAJfQogCiAJY2Zx
-cS0+YWxsb2NhdGVkW3J3XSsrOwotCWF0b21pY19pbmMoJmNmcXEtPnJlZik7Ci0KLQlzcGluX3Vu
-bG9ja19pcnFyZXN0b3JlKHEtPnF1ZXVlX2xvY2ssIGZsYWdzKTsKLQorCWNmcXEtPnJlZisrOwog
-CXJxLT5lbGV2YXRvcl9wcml2YXRlID0gY2ljOwogCXJxLT5lbGV2YXRvcl9wcml2YXRlMiA9IGNm
-cXE7CiAJcnEtPmVsZXZhdG9yX3ByaXZhdGUzID0gY2ZxX3JlZl9nZXRfY2ZxZyhjZnFxLT5jZnFn
-KTsKKworCXNwaW5fdW5sb2NrX2lycXJlc3RvcmUocS0+cXVldWVfbG9jaywgZmxhZ3MpOworCiAJ
-cmV0dXJuIDA7CiAKIHF1ZXVlX2ZhaWw6CkBAIC0zODYwLDYgKzM4NjIsMTAgQEAgc3RhdGljIHZv
-aWQgKmNmcV9pbml0X3F1ZXVlKHN0cnVjdCByZXF1ZXN0X3F1ZXVlICpxKQogCWlmICghY2ZxZCkK
-IAkJcmV0dXJuIE5VTEw7CiAKKwkvKgorCSAqIERvbid0IG5lZWQgdGFrZSBxdWV1ZV9sb2NrIGlu
-IHRoZSByb3V0aW5lLCBzaW5jZSB3ZSBhcmUKKwkgKiBpbml0aWFsaXppbmcgdGhlIGlvc2NoZWR1
-bGVyLCBhbmQgbm9ib2R5IGlzIHVzaW5nIGNmcWQKKwkgKi8KIAljZnFkLT5jaWNfaW5kZXggPSBp
-OwogCiAJLyogSW5pdCByb290IHNlcnZpY2UgdHJlZSAqLwpAQCAtMzg3OSw3ICszODg1LDcgQEAg
-c3RhdGljIHZvaWQgKmNmcV9pbml0X3F1ZXVlKHN0cnVjdCByZXF1ZXN0X3F1ZXVlICpxKQogCSAq
-IFRha2UgYSByZWZlcmVuY2UgdG8gcm9vdCBncm91cCB3aGljaCB3ZSBuZXZlciBkcm9wLiBUaGlz
-IGlzIGp1c3QKIAkgKiB0byBtYWtlIHN1cmUgdGhhdCBjZnFfcHV0X2NmcWcoKSBkb2VzIG5vdCB0
-cnkgdG8ga2ZyZWUgcm9vdCBncm91cAogCSAqLwotCWF0b21pY19zZXQoJmNmcWctPnJlZiwgMSk7
-CisJY2ZxZy0+cmVmID0gMTsKIAlyY3VfcmVhZF9sb2NrKCk7CiAJY2ZxX2Jsa2lvY2dfYWRkX2Js
-a2lvX2dyb3VwKCZibGtpb19yb290X2Nncm91cCwgJmNmcWctPmJsa2csCiAJCQkJCSh2b2lkICop
-Y2ZxZCwgMCk7CkBAIC0zODk5LDcgKzM5MDUsNyBAQCBzdGF0aWMgdm9pZCAqY2ZxX2luaXRfcXVl
-dWUoc3RydWN0IHJlcXVlc3RfcXVldWUgKnEpCiAJICogd2lsbCBub3QgYXR0ZW1wdCB0byBmcmVl
-IGl0LgogCSAqLwogCWNmcV9pbml0X2NmcXEoY2ZxZCwgJmNmcWQtPm9vbV9jZnFxLCAxLCAwKTsK
-LQlhdG9taWNfaW5jKCZjZnFkLT5vb21fY2ZxcS5yZWYpOworCWNmcWQtPm9vbV9jZnFxLnJlZisr
-OwogCWNmcV9saW5rX2NmcXFfY2ZxZygmY2ZxZC0+b29tX2NmcXEsICZjZnFkLT5yb290X2dyb3Vw
-KTsKIAogCUlOSVRfTElTVF9IRUFEKCZjZnFkLT5jaWNfbGlzdCk7CmRpZmYgLS1naXQgYS9ibG9j
-ay9nZW5oZC5jIGIvYmxvY2svZ2VuaGQuYwppbmRleCAwMDkzZGRmYS4uNmE1Yjc3MiAxMDA2NDQK
-LS0tIGEvYmxvY2svZ2VuaGQuYworKysgYi9ibG9jay9nZW5oZC5jCkBAIC0xMjYzLDcgKzEyNjMs
-OCBAQCBzdHJ1Y3QgZ2VuZGlzayAqYWxsb2NfZGlza19ub2RlKGludCBtaW5vcnMsIGludCBub2Rl
-X2lkKQogCQkJcmV0dXJuIE5VTEw7CiAJCX0KIAkJZGlzay0+cGFydF90YmwtPnBhcnRbMF0gPSAm
-ZGlzay0+cGFydDA7Ci0JCWtyZWZfaW5pdCgmZGlzay0+cGFydDAucmVmKTsKKworCQloZF9yZWZf
-aW5pdCgmZGlzay0+cGFydDApOwogCiAJCWRpc2stPm1pbm9ycyA9IG1pbm9yczsKIAkJcmFuZF9p
-bml0aWFsaXplX2Rpc2soZGlzayk7CmRpZmYgLS1naXQgYS9kcml2ZXJzL21kL2RtLmMgYi9kcml2
-ZXJzL21kL2RtLmMKaW5kZXggMGEzZWUwOC4uMGRlNjkyMSAxMDA2NDQKLS0tIGEvZHJpdmVycy9t
-ZC9kbS5jCisrKyBiL2RyaXZlcnMvbWQvZG0uYwpAQCAtNjI5LDcgKzYyOSw3IEBAIHN0YXRpYyB2
-b2lkIGRlY19wZW5kaW5nKHN0cnVjdCBkbV9pbyAqaW8sIGludCBlcnJvcikKIAkJCXF1ZXVlX2lv
-KG1kLCBiaW8pOwogCQl9IGVsc2UgewogCQkJLyogZG9uZSB3aXRoIG5vcm1hbCBJTyBvciBlbXB0
-eSBmbHVzaCAqLwotCQkJdHJhY2VfYmxvY2tfYmlvX2NvbXBsZXRlKG1kLT5xdWV1ZSwgYmlvKTsK
-KwkJCXRyYWNlX2Jsb2NrX2Jpb19jb21wbGV0ZShtZC0+cXVldWUsIGJpbywgaW9fZXJyb3IpOwog
-CQkJYmlvX2VuZGlvKGJpbywgaW9fZXJyb3IpOwogCQl9CiAJfQpkaWZmIC0tZ2l0IGEvZnMvcGFy
-dGl0aW9ucy9jaGVjay5jIGIvZnMvcGFydGl0aW9ucy9jaGVjay5jCmluZGV4IGMwMGIxMmQuLjlj
-MjExMTkgMTAwNjQ0Ci0tLSBhL2ZzL3BhcnRpdGlvbnMvY2hlY2suYworKysgYi9mcy9wYXJ0aXRp
-b25zL2NoZWNrLmMKQEAgLTM4MSwxMCArMzgxLDggQEAgc3RhdGljIHZvaWQgZGVsZXRlX3BhcnRp
-dGlvbl9yY3VfY2Ioc3RydWN0IHJjdV9oZWFkICpoZWFkKQogCXB1dF9kZXZpY2UocGFydF90b19k
-ZXYocGFydCkpOwogfQogCi12b2lkIF9fZGVsZXRlX3BhcnRpdGlvbihzdHJ1Y3Qga3JlZiAqcmVm
-KQordm9pZCBfX2RlbGV0ZV9wYXJ0aXRpb24oc3RydWN0IGhkX3N0cnVjdCAqcGFydCkKIHsKLQlz
-dHJ1Y3QgaGRfc3RydWN0ICpwYXJ0ID0gY29udGFpbmVyX29mKHJlZiwgc3RydWN0IGhkX3N0cnVj
-dCwgcmVmKTsKLQogCWNhbGxfcmN1KCZwYXJ0LT5yY3VfaGVhZCwgZGVsZXRlX3BhcnRpdGlvbl9y
-Y3VfY2IpOwogfQogCkBAIC00MDYsNyArNDA0LDcgQEAgdm9pZCBkZWxldGVfcGFydGl0aW9uKHN0
-cnVjdCBnZW5kaXNrICpkaXNrLCBpbnQgcGFydG5vKQogCWtvYmplY3RfcHV0KHBhcnQtPmhvbGRl
-cl9kaXIpOwogCWRldmljZV9kZWwocGFydF90b19kZXYocGFydCkpOwogCi0Ja3JlZl9wdXQoJnBh
-cnQtPnJlZiwgX19kZWxldGVfcGFydGl0aW9uKTsKKwloZF9zdHJ1Y3RfcHV0KHBhcnQpOwogfQog
-CiBzdGF0aWMgc3NpemVfdCB3aG9sZV9kaXNrX3Nob3coc3RydWN0IGRldmljZSAqZGV2LApAQCAt
-NTA1LDcgKzUwMyw3IEBAIHN0cnVjdCBoZF9zdHJ1Y3QgKmFkZF9wYXJ0aXRpb24oc3RydWN0IGdl
-bmRpc2sgKmRpc2ssIGludCBwYXJ0bm8sCiAJaWYgKCFkZXZfZ2V0X3VldmVudF9zdXBwcmVzcyhk
-ZGV2KSkKIAkJa29iamVjdF91ZXZlbnQoJnBkZXYtPmtvYmosIEtPQkpfQUREKTsKIAotCWtyZWZf
-aW5pdCgmcC0+cmVmKTsKKwloZF9yZWZfaW5pdChwKTsKIAlyZXR1cm4gcDsKIAogb3V0X2ZyZWVf
-aW5mbzoKZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgvZ2VuaGQuaCBiL2luY2x1ZGUvbGludXgv
-Z2VuaGQuaAppbmRleCA4NGI0OWEyLi5jMGQ1ZjY5IDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4
-L2dlbmhkLmgKKysrIGIvaW5jbHVkZS9saW51eC9nZW5oZC5oCkBAIC0xMTUsOCArMTE1LDggQEAg
-c3RydWN0IGhkX3N0cnVjdCB7CiAjZWxzZQogCXN0cnVjdCBkaXNrX3N0YXRzIGRrc3RhdHM7CiAj
-ZW5kaWYKKwlhdG9taWNfdCByZWY7CiAJc3RydWN0IHJjdV9oZWFkIHJjdV9oZWFkOwotCXN0cnVj
-dCBrcmVmIHJlZjsKIH07CiAKICNkZWZpbmUgR0VOSERfRkxfUkVNT1ZBQkxFCQkJMQpAQCAtNTk4
-LDcgKzU5OCw3IEBAIGV4dGVybiBzdHJ1Y3QgaGRfc3RydWN0ICogX19tdXN0X2NoZWNrIGFkZF9w
-YXJ0aXRpb24oc3RydWN0IGdlbmRpc2sgKmRpc2ssCiAJCQkJCQkgICAgIHNlY3Rvcl90IGxlbiwg
-aW50IGZsYWdzLAogCQkJCQkJICAgICBzdHJ1Y3QgcGFydGl0aW9uX21ldGFfaW5mbwogCQkJCQkJ
-ICAgICAgICppbmZvKTsKLWV4dGVybiB2b2lkIF9fZGVsZXRlX3BhcnRpdGlvbihzdHJ1Y3Qga3Jl
-ZiAqcmVmKTsKK2V4dGVybiB2b2lkIF9fZGVsZXRlX3BhcnRpdGlvbihzdHJ1Y3QgaGRfc3RydWN0
-ICopOwogZXh0ZXJuIHZvaWQgZGVsZXRlX3BhcnRpdGlvbihzdHJ1Y3QgZ2VuZGlzayAqLCBpbnQp
-OwogZXh0ZXJuIHZvaWQgcHJpbnRrX2FsbF9wYXJ0aXRpb25zKHZvaWQpOwogCkBAIC02MjcsNiAr
-NjI3LDI5IEBAIGV4dGVybiBzc2l6ZV90IHBhcnRfZmFpbF9zdG9yZShzdHJ1Y3QgZGV2aWNlICpk
-ZXYsCiAJCQkgICAgICAgY29uc3QgY2hhciAqYnVmLCBzaXplX3QgY291bnQpOwogI2VuZGlmIC8q
-IENPTkZJR19GQUlMX01BS0VfUkVRVUVTVCAqLwogCitzdGF0aWMgaW5saW5lIHZvaWQgaGRfcmVm
-X2luaXQoc3RydWN0IGhkX3N0cnVjdCAqcGFydCkKK3sKKwlhdG9taWNfc2V0KCZwYXJ0LT5yZWYs
-IDEpOworCXNtcF9tYigpOworfQorCitzdGF0aWMgaW5saW5lIHZvaWQgaGRfc3RydWN0X2dldChz
-dHJ1Y3QgaGRfc3RydWN0ICpwYXJ0KQoreworCWF0b21pY19pbmMoJnBhcnQtPnJlZik7CisJc21w
-X21iX19hZnRlcl9hdG9taWNfaW5jKCk7Cit9CisKK3N0YXRpYyBpbmxpbmUgaW50IGhkX3N0cnVj
-dF90cnlfZ2V0KHN0cnVjdCBoZF9zdHJ1Y3QgKnBhcnQpCit7CisJcmV0dXJuIGF0b21pY19pbmNf
-bm90X3plcm8oJnBhcnQtPnJlZik7Cit9CisKK3N0YXRpYyBpbmxpbmUgdm9pZCBoZF9zdHJ1Y3Rf
-cHV0KHN0cnVjdCBoZF9zdHJ1Y3QgKnBhcnQpCit7CisJaWYgKGF0b21pY19kZWNfYW5kX3Rlc3Qo
-JnBhcnQtPnJlZikpCisJCV9fZGVsZXRlX3BhcnRpdGlvbihwYXJ0KTsKK30KKwogI2Vsc2UgLyog
-Q09ORklHX0JMT0NLICovCiAKIHN0YXRpYyBpbmxpbmUgdm9pZCBwcmludGtfYWxsX3BhcnRpdGlv
-bnModm9pZCkgeyB9CmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L2tyZWYuaCBiL2luY2x1ZGUv
-bGludXgva3JlZi5oCmluZGV4IDA0ZjE5NGEuLmQ0YTYyYWIgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUv
-bGludXgva3JlZi5oCisrKyBiL2luY2x1ZGUvbGludXgva3JlZi5oCkBAIC0yMyw3ICsyMyw2IEBA
-IHN0cnVjdCBrcmVmIHsKIAogdm9pZCBrcmVmX2luaXQoc3RydWN0IGtyZWYgKmtyZWYpOwogdm9p
-ZCBrcmVmX2dldChzdHJ1Y3Qga3JlZiAqa3JlZik7Ci1pbnQga3JlZl90ZXN0X2FuZF9nZXQoc3Ry
-dWN0IGtyZWYgKmtyZWYpOwogaW50IGtyZWZfcHV0KHN0cnVjdCBrcmVmICprcmVmLCB2b2lkICgq
-cmVsZWFzZSkgKHN0cnVjdCBrcmVmICprcmVmKSk7CiBpbnQga3JlZl9zdWIoc3RydWN0IGtyZWYg
-KmtyZWYsIHVuc2lnbmVkIGludCBjb3VudCwKIAkgICAgIHZvaWQgKCpyZWxlYXNlKSAoc3RydWN0
-IGtyZWYgKmtyZWYpKTsKZGlmZiAtLWdpdCBhL2luY2x1ZGUvdHJhY2UvZXZlbnRzL2Jsb2NrLmgg
-Yi9pbmNsdWRlL3RyYWNlL2V2ZW50cy9ibG9jay5oCmluZGV4IGI1NmM2NWQuLmFiYTQyMWQgMTAw
-NjQ0Ci0tLSBhL2luY2x1ZGUvdHJhY2UvZXZlbnRzL2Jsb2NrLmgKKysrIGIvaW5jbHVkZS90cmFj
-ZS9ldmVudHMvYmxvY2suaApAQCAtMjA2LDE1ICsyMDYsMTYgQEAgVFJBQ0VfRVZFTlQoYmxvY2tf
-YmlvX2JvdW5jZSwKICAqIGJsb2NrX2Jpb19jb21wbGV0ZSAtIGNvbXBsZXRlZCBhbGwgd29yayBv
-biB0aGUgYmxvY2sgb3BlcmF0aW9uCiAgKiBAcTogcXVldWUgaG9sZGluZyB0aGUgYmxvY2sgb3Bl
-cmF0aW9uCiAgKiBAYmlvOiBibG9jayBvcGVyYXRpb24gY29tcGxldGVkCisgKiBAZXJyb3I6IGlv
-IGVycm9yIHZhbHVlCiAgKgogICogVGhpcyB0cmFjZXBvaW50IGluZGljYXRlcyB0aGVyZSBpcyBu
-byBmdXJ0aGVyIHdvcmsgdG8gZG8gb24gdGhpcwogICogYmxvY2sgSU8gb3BlcmF0aW9uIEBiaW8u
-CiAgKi8KIFRSQUNFX0VWRU5UKGJsb2NrX2Jpb19jb21wbGV0ZSwKIAotCVRQX1BST1RPKHN0cnVj
-dCByZXF1ZXN0X3F1ZXVlICpxLCBzdHJ1Y3QgYmlvICpiaW8pLAorCVRQX1BST1RPKHN0cnVjdCBy
-ZXF1ZXN0X3F1ZXVlICpxLCBzdHJ1Y3QgYmlvICpiaW8sIGludCBlcnJvciksCiAKLQlUUF9BUkdT
-KHEsIGJpbyksCisJVFBfQVJHUyhxLCBiaW8sIGVycm9yKSwKIAogCVRQX1NUUlVDVF9fZW50cnko
-CiAJCV9fZmllbGQoIGRldl90LAkJZGV2CQkpCkBAIC0yMjgsNiArMjI5LDcgQEAgVFJBQ0VfRVZF
-TlQoYmxvY2tfYmlvX2NvbXBsZXRlLAogCQlfX2VudHJ5LT5kZXYJCT0gYmlvLT5iaV9iZGV2LT5i
-ZF9kZXY7CiAJCV9fZW50cnktPnNlY3RvcgkJPSBiaW8tPmJpX3NlY3RvcjsKIAkJX19lbnRyeS0+
-bnJfc2VjdG9yCT0gYmlvLT5iaV9zaXplID4+IDk7CisJCV9fZW50cnktPmVycm9yCQk9IGVycm9y
-OwogCQlibGtfZmlsbF9yd2JzKF9fZW50cnktPnJ3YnMsIGJpby0+YmlfcncsIGJpby0+Ymlfc2l6
-ZSk7CiAJKSwKIApkaWZmIC0tZ2l0IGEvbGliL2tyZWYuYyBiL2xpYi9rcmVmLmMKaW5kZXggNTJk
-MDgzMS4uM2VmYjg4MiAxMDA2NDQKLS0tIGEvbGliL2tyZWYuYworKysgYi9saWIva3JlZi5jCkBA
-IC0zNywxOCArMzcsNiBAQCB2b2lkIGtyZWZfZ2V0KHN0cnVjdCBrcmVmICprcmVmKQogfQogCiAv
-KioKLSAqIGtyZWZfdGVzdF9hbmRfZ2V0IC0gaW5jcmVtZW50IHJlZmNvdW50IGZvciBvYmplY3Qg
-b25seSBpZiByZWZjb3VudCBpcyBub3QKLSAqIHplcm8uCi0gKiBAa3JlZjogb2JqZWN0LgotICoK
-LSAqIFJldHVybiBub24temVybyBpZiB0aGUgcmVmY291bnQgd2FzIGluY3JlbWVudGVkLCAwIG90
-aGVyd2lzZQotICovCi1pbnQga3JlZl90ZXN0X2FuZF9nZXQoc3RydWN0IGtyZWYgKmtyZWYpCi17
-Ci0JcmV0dXJuIGF0b21pY19pbmNfbm90X3plcm8oJmtyZWYtPnJlZmNvdW50KTsKLX0KLQotLyoq
-CiAgKiBrcmVmX3B1dCAtIGRlY3JlbWVudCByZWZjb3VudCBmb3Igb2JqZWN0LgogICogQGtyZWY6
-IG9iamVjdC4KICAqIEByZWxlYXNlOiBwb2ludGVyIHRvIHRoZSBmdW5jdGlvbiB0aGF0IHdpbGwg
-Y2xlYW4gdXAgdGhlIG9iamVjdCB3aGVuIHRoZQo=
---0016367f9678b5b5660499457452--
+Fri Jan  7 09:59:34 2011: 1162786 1165320
+Fri Jan  7 10:00:34 2011: 1163301 1165320
+Fri Jan  7 10:01:34 2011: 1164369 1165450
+Fri Jan  7 10:02:35 2011: 1164179 1165450
+Fri Jan  7 10:03:35 2011: 1165795 1166958
+
+When the bisected box finally died, the last numbers were:
+
+Fri Jan  7 10:40:33 2011: 1177156 1177202
+Fri Jan  7 10:42:21 2011: 1177157 1177306
+Fri Jan  7 10:44:55 2011: 1177201 1177324
+Fri Jan  7 10:45:55 2011: 1177746 1177826
+
+On the still-thrashing 2.6.36.2 box, the highwater mark is:
+
+Fri Jan  7 10:23:30 2011: 1084020 1084070
+
+and once things went awry, the active_objs started falling away and
+the number_objs has stayed at 1084070. Last numbers were:
+
+Fri Jan  7 12:19:34 2011: 826623 1084070
+
+The bisected box had reached 1mil entries (or more significantly
+1048576 entries) by y'day evening. The 2.6.36.2 box hit that by 7am
+EST today. So in neither case was there a big spike in entries.
+
+These boxes have identical workloads. They're not accessible from the
+net, so there's no chance of a DDoS or something. The significance of
+10am EST could be either uptime-related (all these have gone down
+after 2-3 days) or just due to the to-be-expected early morning spike
+in mail flow.
