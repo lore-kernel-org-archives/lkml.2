@@ -1,90 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144Ab1AGNFT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 08:05:19 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:46155 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753057Ab1AGNFO (ORCPT
+	id S1753193Ab1AGNF7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 08:05:59 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62190 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752648Ab1AGNF6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 08:05:14 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=EZfK9fu6rT71YQWjK2odcVLEHzWLnFhl67hADLq8DCuIbrI5yt0t1rzblCZJZ/rt0D
-         MG/qXFIPE514YzxG+ujskQDvb9Uxf2DSdTizzvq2aKCS4qUA5hbAeOr56sL5RVi/OOeS
-         flQj7/IEA80bD4UIe2Pz/gQM3xe3mE+2qqv9Q=
-Message-ID: <4D270F85.9070705@gmail.com>
-Date: Fri, 07 Jan 2011 08:05:09 -0500
-From: William Allen Simpson <william.allen.simpson@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Fri, 7 Jan 2011 08:05:58 -0500
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
-        stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [058/152] tcp: protect sysctl_tcp_cookie_size reads
-References: <20110106002302.141581701@clark.site>	 <4D2691D4.3060304@gmail.com> <1294389025.2704.95.camel@edumazet-laptop>
-In-Reply-To: <1294389025.2704.95.camel@edumazet-laptop>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTi=S3TLY92RE3VZdzZ3MpzyWEOtxMaUPtm7miCA9@mail.gmail.com>
+References: <AANLkTinbqG7sXxf82wc516snLoae1DtCWjo+VtsPx2P3@mail.gmail.com>
+	<20101122154754.e022d935.akpm@linux-foundation.org>
+	<AANLkTi=AiJ1MekBXZbVj3f2pBtFe52BtCxtbRq=u-YOR@mail.gmail.com>
+	<20101129152500.000c380b.akpm@linux-foundation.org>
+	<alpine.LSU.2.00.1011300939520.6633@tigran.mtv.corp.google.com>
+	<alpine.LSU.2.00.1012291231540.22566@sister.anvils>
+	<AANLkTi=ZuOJ07yN-nqso_pX_NS90eKrPD=vG9-_a59vG@mail.gmail.com>
+	<AANLkTi=S3TLY92RE3VZdzZ3MpzyWEOtxMaUPtm7miCA9@mail.gmail.com>
+Date: Fri, 7 Jan 2011 14:05:57 +0100
+Message-ID: <AANLkTin75LdO653Q1eX4Ws1X-s2Dae+aRyGhx_a7yh9n@mail.gmail.com>
+Subject: Re: kernel BUG at /build/buildd/linux-2.6.35/mm/filemap.c:128!
+From: =?UTF-8?B?Um9iZXJ0IMWad2nEmWNraQ==?= <robert@swiecki.net>
+To: Hugh Dickins <hughd@google.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/7/11 3:30 AM, Eric Dumazet wrote:
-> Are you telling us somebody else added bug to your code ?
-> This is not the case, obviously.
+On Fri, Jan 7, 2011 at 2:02 PM, Robert Święcki <robert@swiecki.net> wrote:
+>  but will be happy if someone else beats me to it.
+>>>
+>>> I have since found an omission in the restart_addr logic: looking back
+>>> at the October 2004 history of vm_truncate_count, I see that originally
+>>> I designed it to work one way, but hurriedly added a 7/6 redesign when
+>>> vma splitting turned out to leave an ambiguity.  I should have updated
+>>> the protection in mremap move at that time, but missed it.
+>>>
+>>> Robert, please try out the patch below (should apply fine to 2.6.35):
+>>
+>> In the beginning  of Jan (3-4) at earliest I'm afraid, i.e. when I
+>> manage to get to my console-over-rs232 setup.
 >
-As I noted, "There's been quite a few changes" -- one of which was a major
-change to sysctls.  As one of the reviewers of this code, you didn't mention
-this ACCESS_ONCE() function, so I'm assuming it didn't exist at that time.
-
-
-> After bug fix and cleanup code
-
-As I noted, "most of the patch has nothing to do with the purported fix."
-That makes the patch hard to read and evaluate.
-
-Moreover, I remember being castigated (by you and others) for combining bug
-fixes with cleanup code.  And I'm not sure this counts as "cleanup" code.
-
-> looks good,
-
-As the saying goes, beauty is in the eye of the beholder.  Trading a blank
-line for a trailing brace is neither here nor there.  Screen space used
-remains the same.
-
-> and even checkpatch.pl is
-> fine with it. No need for useless brackets around "return XXX;"
-
-My instructors would have flunked me for not including braces around
-multi-line sequences; it was one of the great no-no's of the '70s.  Perhaps
-that's not the case anymore with modern colorful visual syntax checkers?
-
-
-> If I remember well, I did the cleanup so that my patch could not trigger
-> checkpatch.pl errors/warnings. Not that I am a particular checkpatch
-> fan, but I know some people are.
+> I cannot reproduce it even with the unpatched kernel, cause I get the
+> following oops (3 times out of 3 tries) relatively quickly. Still
+> trying.
 >
-As a relative Linux kernel newbie, I scrupulously followed patch
-instructions.  Those instructions mandated running checkpatch.
+> Entering kdb (current=0xffff88006b525ac0, pid 12468) on processor 1 Oops: (null)
+> due to oops @ 0xffffffff810c2a1b
+> CPU 1 <c>
+> <d>Pid: 12468, comm: iknowthis Not tainted 2.6.37-rc2 #1
 
-If there are now "checkpatch.pl errors/warnings" on that code, checkpatch
-must have changed.  At the time, all multi-line sequences were required to
-be enclosed in braces.
+Hm.. wrong kernel, trying now with 2.6.35 - anyway this proc readdir
+oops appears also on 2.6.35
 
-I still think that's a better idea, looks better, and makes maintenance
-easier in the long term.  YMMV.
-
-
-> By the way, you were CCed when I sent one month ago the mail to
-> David/netdev. And no reaction from you at that time.
+> 0GH911/Precision WorkStation 390
+> <d>RIP: 0010:[<ffffffff810c2a1b>]  [<ffffffff810c2a1b>] next_pidmap+0x4b/0xa0
+> <d>RSP: 0000:ffff88006bc6fd78  EFLAGS: 00010206
+> <d>RAX: 001ffffffffd2010 RBX: 001fffff829eee38 RCX: 0000000000000034
+> <d>RDX: 0000000000001bd7 RSI: 00000000e9009bd6 RDI: ffffffff82a1ce20
+> <d>RBP: ffff88006bc6fd98 R08: c000000000000000 R09: 4fb0000000000000
+> <d>R10: 7d80000000000000 R11: 0000000000000000 R12: ffffffff82a1d628
+> <d>R13: ffffffff82a1ce20 R14: ffff880123768000 R15: ffffffff811d98e0
+> <d>FS:  0000000000000000(0000) GS:ffff8800cfc40000(0063) knlGS:00000000f74aa6c0
+> <d>CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
+> <d>CR2: 000000000808865c CR3: 000000011b1a4000 CR4: 00000000000006e0
+> <d>DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> <d>DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process iknowthis (pid: 12468, threadinfo ffff88006bc6e000, task
+> ffff88006b525ac0)
+> <0>Stack:
+> <c> ffff88006bc6fe78<c> 00000000e9009bd6<c> 0000000000000000<c>
+> ffffffff82a1ce20<c>
+> <c> ffff88006bc6fdc8<c> ffffffff810c2aac<c> ffff880018cfc410<c>
+> ffffffff82a1ce20<c>
+> <c> 00000000e9009bd6<c> ffffffff811d98e0<c> ffff88006bc6fe28<c>
+> ffffffff811f3dab<c>
+> <0>Call Trace:
+> [1]more>
+> Only 'q' or 'Q' are processed at more prompt, input ignored
+> <0> [<ffffffff810c2aac>] find_ge_pid+0x3c/0x50
+> <0> [<ffffffff811d98e0>] ? compat_fillonedir+0x0/0xe0
+> <0> [<ffffffff811f3dab>] next_tgid+0x3b/0xc0
+> <0> [<ffffffff811d98e0>] ? compat_fillonedir+0x0/0xe0
+> <0> [<ffffffff811f42ec>] proc_pid_readdir+0x13c/0x1d0
+> <0> [<ffffffff811d98e0>] ? compat_fillonedir+0x0/0xe0
+> <0> [<ffffffff811f03fa>] proc_root_readdir+0x4a/0x60
+> <0> [<ffffffff811d98e0>] ? compat_fillonedir+0x0/0xe0
+> <0> [<ffffffff811a58d0>] vfs_readdir+0xc0/0xe0
+> <0> [<ffffffff811d8435>] compat_sys_old_readdir+0x45/0x70
+> <0> [<ffffffff8108b023>] ia32_sysret+0x0/0x5
+> <0>Code: 89 fd 48 c1 e8 0f 48 c1 e0 04 48 8d 5c 07 08 4c 39 e3 73 54
+> 81 e2 ff 7f 00 00 eb 0f eb 02 90 90 48 83 c3 10 31 d2 49 39 dc 76 3d
+> <48> 8b 7b 08 48 85 ff 74 ec 48 63 d2 be 00 80 00 00 e8 6f a4 41
+> Call Trace:
+>  [<ffffffff810c2aac>] find_ge_pid+0x3c/0x50
+>  [<ffffffff811d98e0>] ? compat_fillonedir+0x0/0xe0
+>  [<ffffffff811f3dab>] next_tgid+0x3b/0xc0
+>  [<ffffffff811d98e0>] ? compat_fillonedir+0x0/0xe0
+>  [<ffffffff811f42ec>] proc_pid_readdir+0x13c/0x1d0
+>  [<ffffffff811d98e0>] ? compat_fillonedir+0x0/0xe0
+>  [<ffffffff811f03fa>] proc_root_readdir+0x4a/0x60
+>  [<ffffffff811d98e0>] ? compat_fillonedir+0x0/0xe0
+>  [<ffffffff811a58d0>] vfs_readdir+0xc0/0xe0
+> [1]more>
+> Only 'q' or 'Q' are processed at more prompt, input ignored
+>  [<ffffffff811d8435>] compat_sys_old_readdir+0x45/0x70
+>  [<ffffffff8108b023>] ia32_sysret+0x0/0x5
 >
-Amazingly enough, my life is not centered around Linux on a day-to-day
-basis.  Young folks like you are trying to make a name for yourselves in
-the Linux world -- apparently, by being exceptionally abrasive.
+>
+>
+> --
+> Robert Święcki
+>
 
-Your helpful comments are/were appreciated.
+
+
+-- 
+Robert Święcki
