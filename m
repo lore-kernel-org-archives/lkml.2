@@ -1,182 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584Ab1AGDyz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 22:54:55 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57323 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685Ab1AGDyx (ORCPT
+	id S1753733Ab1AGDzM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 22:55:12 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:60100 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753622Ab1AGDzB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 22:54:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Vxw2wBcUL03koLe44OElDJMHiSTNzAYu+2cqNckRbolTeDUromgNrTv7Gw09VlTID5
-         BcLwx2fG6Yg+ltq6CCm0EJViRLIBYpuvRVgqq9ODlcAy4jY35KfIcdVEgFJxDSDE/74l
-         qkf7bT4gdixg8nvUrFHyA/r2aHdgGUTjeMyQM=
-Subject: Re: [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when vid not
- used
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Matt Carlson <mcarlson@broadcom.com>
-Cc: Jesse Gross <jesse@nicira.com>,
-        Michael Leun <lkml20101129@newton.leun.net>,
-        Michael Chan <mchan@broadcom.com>, David Miller <davem@davemloft.net>,
-        Ben Greear <greearb@candelatech.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-In-Reply-To: <20110107034130.GA18028@mcarlson.broadcom.com>
-References: <AANLkTinq9ABi0prxe0m1Ma6rno4UnAOzuW-b5L362ij9@mail.gmail.com>
-	 <1293984348.2535.101.camel@edumazet-laptop>
-	 <AANLkTincX-wPQE9gs16v53E4=Skivzc4ZSJS43oNBLD_@mail.gmail.com>
-	 <1294356887.2704.13.camel@edumazet-laptop>
-	 <1294363201.2704.19.camel@edumazet-laptop>
-	 <20110107022912.GA17757@mcarlson.broadcom.com>
-	 <1294368071.2704.49.camel@edumazet-laptop>
-	 <1294368202.2704.50.camel@edumazet-laptop>
-	 <20110107025930.GA17808@mcarlson.broadcom.com>
-	 <1294369486.2704.53.camel@edumazet-laptop>
-	 <20110107034130.GA18028@mcarlson.broadcom.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 Jan 2011 04:54:48 +0100
-Message-ID: <1294372488.2704.61.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 6 Jan 2011 22:55:01 -0500
+Date: Fri, 7 Jan 2011 14:54:56 +1100
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Matt Mackall <mpm@selenic.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+        Harald Welte <HaraldWelte@viatech.com>,
+        Michal Ludvig <michal@logix.cz>
+Subject: crypto: padlock - Move padlock.h into include/crypto
+Message-ID: <20110107035456.GA1341@gondor.apana.org.au>
+References: <20110104230644.GJ27114@darkside.kls.lan> <20110105003020.GA5751@gondor.apana.org.au> <20110105035222.GA8762@darkside.kls.lan> <20110105054735.GA7773@gondor.apana.org.au> <20110105131621.GA24769@darkside.kls.lan> <20110106061241.GA18939@gondor.apana.org.au> <20110106131516.GB8803@darkside.kls.lan> <20110106133541.GA22030@gondor.apana.org.au> <20110106144254.GC8803@darkside.kls.lan> <20110107034948.GA1177@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110107034948.GA1177@gondor.apana.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 06 janvier 2011 à 19:41 -0800, Matt Carlson a écrit :
-> On Thu, Jan 06, 2011 at 07:04:46PM -0800, Eric Dumazet wrote:
-> > Le jeudi 06 janvier 2011 ?? 18:59 -0800, Matt Carlson a ??crit :
-> > > On Thu, Jan 06, 2011 at 06:43:22PM -0800, Eric Dumazet wrote:
-> > > > Le vendredi 07 janvier 2011 ?? 03:41 +0100, Eric Dumazet a ??crit :
-> > > > > Le jeudi 06 janvier 2011 ?? 18:29 -0800, Matt Carlson a ??crit :
-> > > > > 
-> > > > > > Hi Eric.  Sorry for the delay.  I was under the impression that your
-> > > > > > problems were software related and that you just needed a revised
-> > > > > > version of these VLAN patches I was sending to Michael.  Is this not
-> > > > > > true?
-> > > > > > 
-> > > > > > Having a hardware stat increment suggests this is a new problem.
-> > > > > > Maybe I missed it, but I didn't see what hardware you are working
-> > > > > > with and whether or not management firmware was enabled.  Could you tell
-> > > > > > me that info?
-> > > > > > 
-> > > > > 
-> > > > > Hi Matt
-> > > > > 
-> > > > > I started a bisection, because I couldnt sleep tonight anyway :(
-> > > > > 
-> > > > > 14:04.0 Ethernet controller: Broadcom Corporation NetXtreme BCM5715S
-> > > > > Gigabit Ethernet (rev a3)
-> > > > > 	Subsystem: Hewlett-Packard Company NC326m PCIe Dual Port Adapter
-> > > > > 	Flags: bus master, 66MHz, medium devsel, latency 64, IRQ 43
-> > > > > 	Memory at fdff0000 (64-bit, non-prefetchable) [size=64K]
-> > > > > 	Memory at fdfe0000 (64-bit, non-prefetchable) [size=64K]
-> > > > > 	[virtual] Expansion ROM at fdbe0000 [disabled] [size=128K]
-> > > > > 	Capabilities: [40] PCI-X non-bridge device
-> > > > > 	Capabilities: [48] Power Management version 2
-> > > > > 	Capabilities: [50] Vital Product Data
-> > > > > 	Capabilities: [58] MSI: Enable+ Count=1/8 Maskable- 64bit+
-> > > > > 	Kernel driver in use: tg3
-> > > > > 	Kernel modules: tg3
-> > > > > 
-> > > > > 
-> > > > 
-> > > > $ ethtool -i eth2
-> > > > driver: tg3
-> > > > version: 3.115
-> > > > firmware-version: 5715s-v3.28
-> > > > bus-info: 0000:14:04.0
-> > > > $ dmesg | grep ASF
-> > > > [    6.220577] tg3 0000:14:04.0: eth2: RXcsums[1] LinkChgREG[0] MIirq[0]
-> > > > ASF[0] TSOcap[1]
-> > > > [    6.228586] tg3 0000:14:04.1: eth3: RXcsums[1] LinkChgREG[0] MIirq[0]
-> > > > ASF[0] TSOcap[1]
-> > > 
-> > > Thanks.  So management firmware is disabled.  This should be
-> > > straightforward case.
-> > > 
-> > > I'm wondering if I'm misunderstanding something though.  You said earlier
-> > > that VLAN tagging doesn't work unless you applied my patch.  Is this no
-> > > longer true?
-> > > 
-> > 
-> > I dont apply your patch because Jesse said it was not a good patch ;)
-> 
-> Oh.
-> 
-> > Maybe I missed something and it must be applied ? Problem is : current
-> > Linus tree now includes net-next-2.6 and vlan doesnt work. You should
-> > resubmit it perhaps ?
-> 
-> Yes, something needs to be submitted.  I want to make sure we aren't
-> chasing the same problem though.  If the patch(es) fix your problem,
-> then I can concentrate on finalizing the patch.
-> 
+On Fri, Jan 07, 2011 at 02:49:48PM +1100, Herbert Xu wrote:
+>
+> commit 0735ac1f2551d9f9d356126aaf3b1110150918e6
+> Author: Herbert Xu <herbert@gondor.apana.org.au>
+> Date:   Fri Jan 7 14:48:57 2011 +1100
 
-I believe it did, I can test your next patch ;)
+Here are the other patches to fix this problem:
 
-> I can combine my last patch (the one that always enabled VLAN tag
-> stripping) and the previous patch (that implements all your comments so
-> far) into one patch, but that still leaves the behavior Michael noted
-> unaddressed.
-> 
-> Michael, did you ever find out whether or not RXD_FLAG_VLAN was being
-> set?
-> 
+commit 21493088733e6e09dac6f54595a1b6b8ab1e68fd
+Author: Herbert Xu <herbert@gondor.apana.org.au>
+Date:   Fri Jan 7 14:52:00 2011 +1100
 
-Here is the bisect log , just in case :
-
-d2394e6bb1aa636f3bd142cb6f7845a4332514b5 is first bad commit
-commit d2394e6bb1aa636f3bd142cb6f7845a4332514b5
-Author: Matt Carlson <mcarlson@broadcom.com>
-Date:   Wed Nov 24 08:31:47 2010 +0000
-
-    tg3: Always turn on APE features in mac_mode reg
+    crypto: padlock - Move padlock.h into include/crypto
     
-    The APE needs certain bits in the mac_mode register to be enabled for
-    traffic to flow correctly.  This patch changes the code to always enable
-    these bits in the presence of the APE.
+    This patch moves padlock.h from drivers/crypto into include/crypto
+    so that it may be used by the via-rng driver.
     
-    Signed-off-by: Matt Carlson <mcarlson@broadcom.com>
-    Reviewed-by: Michael Chan <mchan@broadcom.com>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
+    Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 
-:040000 040000 086382ce3ecd909222faf53ca23c48d1200dd60c 0a325ac6e7aa87a6737610292ab3025156a4ed80 M	drivers
+diff --git a/drivers/crypto/padlock-aes.c b/drivers/crypto/padlock-aes.c
+index 2e992bc..2e56508 100644
+--- a/drivers/crypto/padlock-aes.c
++++ b/drivers/crypto/padlock-aes.c
+@@ -9,6 +9,7 @@
+ 
+ #include <crypto/algapi.h>
+ #include <crypto/aes.h>
++#include <crypto/padlock.h>
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/types.h>
+@@ -21,7 +22,6 @@
+ #include <asm/byteorder.h>
+ #include <asm/processor.h>
+ #include <asm/i387.h>
+-#include "padlock.h"
+ 
+ /*
+  * Number of data blocks actually fetched for each xcrypt insn.
+diff --git a/drivers/crypto/padlock-sha.c b/drivers/crypto/padlock-sha.c
+index d3a27e0..adf075b 100644
+--- a/drivers/crypto/padlock-sha.c
++++ b/drivers/crypto/padlock-sha.c
+@@ -13,6 +13,7 @@
+  */
+ 
+ #include <crypto/internal/hash.h>
++#include <crypto/padlock.h>
+ #include <crypto/sha.h>
+ #include <linux/err.h>
+ #include <linux/module.h>
+@@ -22,13 +23,6 @@
+ #include <linux/kernel.h>
+ #include <linux/scatterlist.h>
+ #include <asm/i387.h>
+-#include "padlock.h"
+-
+-#ifdef CONFIG_64BIT
+-#define STACK_ALIGN 16
+-#else
+-#define STACK_ALIGN 4
+-#endif
+ 
+ struct padlock_sha_desc {
+ 	struct shash_desc fallback;
+diff --git a/drivers/crypto/padlock.h b/drivers/crypto/padlock.h
+deleted file mode 100644
+index b728e45..0000000
+--- a/drivers/crypto/padlock.h
++++ /dev/null
+@@ -1,23 +0,0 @@
+-/*
+- * Driver for VIA PadLock
+- *
+- * Copyright (c) 2004 Michal Ludvig <michal@logix.cz>
+- *
+- * This program is free software; you can redistribute it and/or modify it
+- * under the terms of the GNU General Public License as published by the Free
+- * Software Foundation; either version 2 of the License, or (at your option) 
+- * any later version.
+- *
+- */
+-
+-#ifndef _CRYPTO_PADLOCK_H
+-#define _CRYPTO_PADLOCK_H
+-
+-#define PADLOCK_ALIGNMENT 16
+-
+-#define PFX	"padlock: "
+-
+-#define PADLOCK_CRA_PRIORITY	300
+-#define PADLOCK_COMPOSITE_PRIORITY 400
+-
+-#endif	/* _CRYPTO_PADLOCK_H */
+diff --git a/include/crypto/padlock.h b/include/crypto/padlock.h
+new file mode 100644
+index 0000000..d2cfa2e
+--- /dev/null
++++ b/include/crypto/padlock.h
+@@ -0,0 +1,29 @@
++/*
++ * Driver for VIA PadLock
++ *
++ * Copyright (c) 2004 Michal Ludvig <michal@logix.cz>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option) 
++ * any later version.
++ *
++ */
++
++#ifndef _CRYPTO_PADLOCK_H
++#define _CRYPTO_PADLOCK_H
++
++#define PADLOCK_ALIGNMENT 16
++
++#define PFX	KBUILD_MODNAME ": "
++
++#define PADLOCK_CRA_PRIORITY	300
++#define PADLOCK_COMPOSITE_PRIORITY 400
++
++#ifdef CONFIG_64BIT
++#define STACK_ALIGN 16
++#else
++#define STACK_ALIGN 4
++#endif
++
++#endif	/* _CRYPTO_PADLOCK_H */
 
-
-
-$ git bisect log
-git bisect start
-# bad: [3c0cb7c31c206aaedb967e44b98442bbeb17a6c4] Merge branch 'devel' of master.kernel.org:/home/rmk/linux-2.6-arm
-git bisect bad 3c0cb7c31c206aaedb967e44b98442bbeb17a6c4
-# good: [3c0eee3fe6a3a1c745379547c7e7c904aa64f6d5] Linux 2.6.37
-git bisect good 3c0eee3fe6a3a1c745379547c7e7c904aa64f6d5
-# bad: [63e35cd9bd4c8ae085c8b9a70554595b529c4100] Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next-2.6 into for-davem
-git bisect bad 63e35cd9bd4c8ae085c8b9a70554595b529c4100
-# bad: [67d5288049f46f816181f63eaa8f1371877ad8ea] vxge: update driver version
-git bisect bad 67d5288049f46f816181f63eaa8f1371877ad8ea
-# good: [b382b191ea9e9ccefc437433d23befe91f4a8925] ipv6: AF_INET6 link address family
-git bisect good b382b191ea9e9ccefc437433d23befe91f4a8925
-# good: [bedbbb959d2c1d1dbb4c2215f5b7074b1da3030a] ath: Add a driver_info bitmask field
-git bisect good bedbbb959d2c1d1dbb4c2215f5b7074b1da3030a
-# bad: [cf7afbfeb8ceb0187348d0a1a0db61305e25f05f] rtnl: make link af-specific updates atomic
-git bisect bad cf7afbfeb8ceb0187348d0a1a0db61305e25f05f
-# good: [22674a24b44ac53f244ef6edadd02021a270df5a] Net: dns_resolver: Makefile: Remove deprecated kbuild goal definitions
-git bisect good 22674a24b44ac53f244ef6edadd02021a270df5a
-# bad: [cf79003d598b1f82a4caa0564107283b4f560e14] tg3: Fix 5719 internal FIFO overflow problem
-git bisect bad cf79003d598b1f82a4caa0564107283b4f560e14
-# good: [094f2faaa2c4973e50979158f655a1d31a97ba98] Net: rds: Makefile: Remove deprecated items
-git bisect good 094f2faaa2c4973e50979158f655a1d31a97ba98
-# good: [04f6d70f6e64900a5d70a5fc199dd9d5fa787738] SELinux: Only return netlink error when we know the return is fatal
-git bisect good 04f6d70f6e64900a5d70a5fc199dd9d5fa787738
-# good: [5093eedc8bdfd7d906836a44a248f66a99e27d22] tg3: Apply 10Mbps fix to all 57765 revisions
-git bisect good 5093eedc8bdfd7d906836a44a248f66a99e27d22
-# bad: [d2394e6bb1aa636f3bd142cb6f7845a4332514b5] tg3: Always turn on APE features in mac_mode reg
-git bisect bad d2394e6bb1aa636f3bd142cb6f7845a4332514b5
-# good: [b75cc0e4c1caac63941d96a73b2214e8007b934b] tg3: Assign correct tx margin for 5719
-git bisect good b75cc0e4c1caac63941d96a73b2214e8007b934b
-
-
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
