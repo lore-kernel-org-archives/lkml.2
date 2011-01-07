@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865Ab1AGRO0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 12:14:26 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:26552 "EHLO
+	id S1754849Ab1AGROZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 12:14:25 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26554 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754781Ab1AGROX (ORCPT
+	with ESMTP id S1754717Ab1AGROX (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
 	Fri, 7 Jan 2011 12:14:23 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: dri-devel@lists.freedesktop.org, thomas@shipmail.org, airlied@linux.ie,
         linux-kernel@vger.kernel.org
 Cc: konrad@darnok.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 4/5] radeon/ttm/PCIe: Use dma_addr if TTM has set it.
-Date: Fri,  7 Jan 2011 12:11:43 -0500
-Message-Id: <1294420304-24811-5-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 1/5] ttm: Introduce a placeholder for DMA (bus) addresses.
+Date: Fri,  7 Jan 2011 12:11:40 -0500
+Message-Id: <1294420304-24811-2-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com>
 References: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com>
@@ -21,159 +21,152 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the TTM layer has used the DMA API to setup pages that are
-TTM_PAGE_FLAG_DMA32 (look at patch titled: "ttm: Utilize the dma_addr_t
-array for pages that are to in DMA32 pool."), lets use it
-when programming the GART in the PCIe type cards.
-
-This patch skips doing the pci_map_page (and pci_unmap_page) if
-there is a DMA addresses passed in for that page. If the dma_address
-is zero (or DMA_ERROR_CODE), then we continue on with our old
-behaviour.
+This is right now limited to only non-pool constructs.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/gpu/drm/radeon/radeon.h      |    4 ++-
- drivers/gpu/drm/radeon/radeon_gart.c |   36 ++++++++++++++++++++++++---------
- drivers/gpu/drm/radeon/radeon_ttm.c  |    5 +++-
- 3 files changed, 33 insertions(+), 12 deletions(-)
+ drivers/gpu/drm/ttm/ttm_page_alloc.c |    9 ++++++---
+ drivers/gpu/drm/ttm/ttm_tt.c         |   10 ++++++++--
+ include/drm/ttm/ttm_bo_driver.h      |    2 ++
+ include/drm/ttm/ttm_page_alloc.h     |    8 ++++++--
+ 4 files changed, 22 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
-index 73f600d..c9bbab9 100644
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -317,6 +317,7 @@ struct radeon_gart {
- 	union radeon_gart_table		table;
- 	struct page			**pages;
- 	dma_addr_t			*pages_addr;
-+	bool				*ttm_alloced;
- 	bool				ready;
+diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+index b1e02ff..6859288 100644
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+@@ -38,6 +38,7 @@
+ #include <linux/mm.h>
+ #include <linux/seq_file.h> /* for seq_printf */
+ #include <linux/slab.h>
++#include <linux/dma-mapping.h>
+ 
+ #include <asm/atomic.h>
+ 
+@@ -662,7 +663,8 @@ out:
+  * cached pages.
+  */
+ int ttm_get_pages(struct list_head *pages, int flags,
+-		enum ttm_caching_state cstate, unsigned count)
++		enum ttm_caching_state cstate, unsigned count,
++		dma_addr_t *dma_address)
+ {
+ 	struct ttm_page_pool *pool = ttm_get_pool(flags, cstate);
+ 	struct page *p = NULL;
+@@ -720,7 +722,7 @@ int ttm_get_pages(struct list_head *pages, int flags,
+ 			printk(KERN_ERR TTM_PFX
+ 			       "Failed to allocate extra pages "
+ 			       "for large request.");
+-			ttm_put_pages(pages, 0, flags, cstate);
++			ttm_put_pages(pages, 0, flags, cstate, NULL);
+ 			return r;
+ 		}
+ 	}
+@@ -731,7 +733,8 @@ int ttm_get_pages(struct list_head *pages, int flags,
+ 
+ /* Put all pages in pages list to correct pool to wait for reuse */
+ void ttm_put_pages(struct list_head *pages, unsigned page_count, int flags,
+-		enum ttm_caching_state cstate)
++		enum ttm_caching_state cstate,
++		dma_addr_t *dma_address)
+ {
+ 	unsigned long irq_flags;
+ 	struct ttm_page_pool *pool = ttm_get_pool(flags, cstate);
+diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
+index af789dc..0d39001 100644
+--- a/drivers/gpu/drm/ttm/ttm_tt.c
++++ b/drivers/gpu/drm/ttm/ttm_tt.c
+@@ -49,12 +49,16 @@ static int ttm_tt_swapin(struct ttm_tt *ttm);
+ static void ttm_tt_alloc_page_directory(struct ttm_tt *ttm)
+ {
+ 	ttm->pages = drm_calloc_large(ttm->num_pages, sizeof(*ttm->pages));
++	ttm->dma_address = drm_calloc_large(ttm->num_pages,
++					    sizeof(*ttm->dma_address));
+ }
+ 
+ static void ttm_tt_free_page_directory(struct ttm_tt *ttm)
+ {
+ 	drm_free_large(ttm->pages);
+ 	ttm->pages = NULL;
++	drm_free_large(ttm->dma_address);
++	ttm->dma_address = NULL;
+ }
+ 
+ static void ttm_tt_free_user_pages(struct ttm_tt *ttm)
+@@ -105,7 +109,8 @@ static struct page *__ttm_tt_get_page(struct ttm_tt *ttm, int index)
+ 
+ 		INIT_LIST_HEAD(&h);
+ 
+-		ret = ttm_get_pages(&h, ttm->page_flags, ttm->caching_state, 1);
++		ret = ttm_get_pages(&h, ttm->page_flags, ttm->caching_state, 1,
++				    &ttm->dma_address[index]);
+ 
+ 		if (ret != 0)
+ 			return NULL;
+@@ -298,7 +303,8 @@ static void ttm_tt_free_alloced_pages(struct ttm_tt *ttm)
+ 			count++;
+ 		}
+ 	}
+-	ttm_put_pages(&h, count, ttm->page_flags, ttm->caching_state);
++	ttm_put_pages(&h, count, ttm->page_flags, ttm->caching_state,
++		      ttm->dma_address);
+ 	ttm->state = tt_unpopulated;
+ 	ttm->first_himem_page = ttm->num_pages;
+ 	ttm->last_lomem_page = -1;
+diff --git a/include/drm/ttm/ttm_bo_driver.h b/include/drm/ttm/ttm_bo_driver.h
+index 8e0c848..6dc4fcc 100644
+--- a/include/drm/ttm/ttm_bo_driver.h
++++ b/include/drm/ttm/ttm_bo_driver.h
+@@ -149,6 +149,7 @@ enum ttm_caching_state {
+  * @swap_storage: Pointer to shmem struct file for swap storage.
+  * @caching_state: The current caching state of the pages.
+  * @state: The current binding state of the pages.
++ * @dma_address: The DMA (bus) addresses of the pages (if TTM_PAGE_FLAG_DMA32)
+  *
+  * This is a structure holding the pages, caching- and aperture binding
+  * status for a buffer object that isn't backed by fixed (VRAM / AGP)
+@@ -173,6 +174,7 @@ struct ttm_tt {
+ 		tt_unbound,
+ 		tt_unpopulated,
+ 	} state;
++	dma_addr_t *dma_address;
  };
  
-@@ -329,7 +330,8 @@ void radeon_gart_fini(struct radeon_device *rdev);
- void radeon_gart_unbind(struct radeon_device *rdev, unsigned offset,
- 			int pages);
- int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
--		     int pages, struct page **pagelist);
-+		     int pages, struct page **pagelist,
-+		     dma_addr_t *dma_addr);
- 
- 
- /*
-diff --git a/drivers/gpu/drm/radeon/radeon_gart.c b/drivers/gpu/drm/radeon/radeon_gart.c
-index e65b903..4a5ac4b 100644
---- a/drivers/gpu/drm/radeon/radeon_gart.c
-+++ b/drivers/gpu/drm/radeon/radeon_gart.c
-@@ -149,8 +149,9 @@ void radeon_gart_unbind(struct radeon_device *rdev, unsigned offset,
- 	p = t / (PAGE_SIZE / RADEON_GPU_PAGE_SIZE);
- 	for (i = 0; i < pages; i++, p++) {
- 		if (rdev->gart.pages[p]) {
--			pci_unmap_page(rdev->pdev, rdev->gart.pages_addr[p],
--				       PAGE_SIZE, PCI_DMA_BIDIRECTIONAL);
-+			if (!rdev->gart.ttm_alloced[p])
-+				pci_unmap_page(rdev->pdev, rdev->gart.pages_addr[p],
-+				       		PAGE_SIZE, PCI_DMA_BIDIRECTIONAL);
- 			rdev->gart.pages[p] = NULL;
- 			rdev->gart.pages_addr[p] = rdev->dummy_page.addr;
- 			page_base = rdev->gart.pages_addr[p];
-@@ -165,7 +166,7 @@ void radeon_gart_unbind(struct radeon_device *rdev, unsigned offset,
- }
- 
- int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
--		     int pages, struct page **pagelist)
-+		     int pages, struct page **pagelist, dma_addr_t *dma_addr)
- {
- 	unsigned t;
- 	unsigned p;
-@@ -180,15 +181,22 @@ int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
- 	p = t / (PAGE_SIZE / RADEON_GPU_PAGE_SIZE);
- 
- 	for (i = 0; i < pages; i++, p++) {
--		/* we need to support large memory configurations */
--		/* assume that unbind have already been call on the range */
--		rdev->gart.pages_addr[p] = pci_map_page(rdev->pdev, pagelist[i],
-+		/* On TTM path, we only use the DMA API if TTM_PAGE_FLAG_DMA32
-+		 * is requested. */
-+		if (dma_addr[i] != DMA_ERROR_CODE) {
-+			rdev->gart.ttm_alloced[p] = true;
-+			rdev->gart.pages_addr[p] = dma_addr[i];
-+		} else {
-+			/* we need to support large memory configurations */
-+			/* assume that unbind have already been call on the range */
-+			rdev->gart.pages_addr[p] = pci_map_page(rdev->pdev, pagelist[i],
- 							0, PAGE_SIZE,
- 							PCI_DMA_BIDIRECTIONAL);
--		if (pci_dma_mapping_error(rdev->pdev, rdev->gart.pages_addr[p])) {
--			/* FIXME: failed to map page (return -ENOMEM?) */
--			radeon_gart_unbind(rdev, offset, pages);
--			return -ENOMEM;
-+			if (pci_dma_mapping_error(rdev->pdev, rdev->gart.pages_addr[p])) {
-+				/* FIXME: failed to map page (return -ENOMEM?) */
-+				radeon_gart_unbind(rdev, offset, pages);
-+				return -ENOMEM;
-+			}
- 		}
- 		rdev->gart.pages[p] = pagelist[i];
- 		page_base = rdev->gart.pages_addr[p];
-@@ -251,6 +259,12 @@ int radeon_gart_init(struct radeon_device *rdev)
- 		radeon_gart_fini(rdev);
- 		return -ENOMEM;
- 	}
-+	rdev->gart.ttm_alloced = kzalloc(sizeof(bool) *
-+					rdev->gart.num_cpu_pages, GFP_KERNEL);
-+	if (rdev->gart.ttm_alloced == NULL) {
-+		radeon_gart_fini(rdev);
-+		return -ENOMEM;
-+	}
- 	/* set GART entry to point to the dummy page by default */
- 	for (i = 0; i < rdev->gart.num_cpu_pages; i++) {
- 		rdev->gart.pages_addr[i] = rdev->dummy_page.addr;
-@@ -267,6 +281,8 @@ void radeon_gart_fini(struct radeon_device *rdev)
- 	rdev->gart.ready = false;
- 	kfree(rdev->gart.pages);
- 	kfree(rdev->gart.pages_addr);
-+	kfree(rdev->gart.ttm_alloced);
- 	rdev->gart.pages = NULL;
- 	rdev->gart.pages_addr = NULL;
-+	rdev->gart.ttm_alloced = NULL;
- }
-diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
-index 6f156e9..ca04505 100644
---- a/drivers/gpu/drm/radeon/radeon_ttm.c
-+++ b/drivers/gpu/drm/radeon/radeon_ttm.c
-@@ -647,6 +647,7 @@ struct radeon_ttm_backend {
- 	unsigned long			num_pages;
- 	struct page			**pages;
- 	struct page			*dummy_read_page;
-+	dma_addr_t			*dma_addrs;
- 	bool				populated;
- 	bool				bound;
- 	unsigned			offset;
-@@ -662,6 +663,7 @@ static int radeon_ttm_backend_populate(struct ttm_backend *backend,
- 
- 	gtt = container_of(backend, struct radeon_ttm_backend, backend);
- 	gtt->pages = pages;
-+	gtt->dma_addrs = dma_addrs;
- 	gtt->num_pages = num_pages;
- 	gtt->dummy_read_page = dummy_read_page;
- 	gtt->populated = true;
-@@ -674,6 +676,7 @@ static void radeon_ttm_backend_clear(struct ttm_backend *backend)
- 
- 	gtt = container_of(backend, struct radeon_ttm_backend, backend);
- 	gtt->pages = NULL;
-+	gtt->dma_addrs = NULL;
- 	gtt->num_pages = 0;
- 	gtt->dummy_read_page = NULL;
- 	gtt->populated = false;
-@@ -694,7 +697,7 @@ static int radeon_ttm_backend_bind(struct ttm_backend *backend,
- 		     gtt->num_pages, bo_mem, backend);
- 	}
- 	r = radeon_gart_bind(gtt->rdev, gtt->offset,
--			     gtt->num_pages, gtt->pages);
-+			     gtt->num_pages, gtt->pages, gtt->dma_addrs);
- 	if (r) {
- 		DRM_ERROR("failed to bind %lu pages at 0x%08X\n",
- 			  gtt->num_pages, gtt->offset);
+ #define TTM_MEMTYPE_FLAG_FIXED         (1 << 0)	/* Fixed (on-card) PCI memory */
+diff --git a/include/drm/ttm/ttm_page_alloc.h b/include/drm/ttm/ttm_page_alloc.h
+index 1168214..8062890 100644
+--- a/include/drm/ttm/ttm_page_alloc.h
++++ b/include/drm/ttm/ttm_page_alloc.h
+@@ -36,11 +36,13 @@
+  * @flags: ttm flags for page allocation.
+  * @cstate: ttm caching state for the page.
+  * @count: number of pages to allocate.
++ * @dma_address: The DMA (bus) address of pages (if TTM_PAGE_FLAG_DMA32 set).
+  */
+ int ttm_get_pages(struct list_head *pages,
+ 		  int flags,
+ 		  enum ttm_caching_state cstate,
+-		  unsigned count);
++		  unsigned count,
++		  dma_addr_t *dma_address);
+ /**
+  * Put linked list of pages to pool.
+  *
+@@ -49,11 +51,13 @@ int ttm_get_pages(struct list_head *pages,
+  * count.
+  * @flags: ttm flags for page allocation.
+  * @cstate: ttm caching state.
++ * @dma_address: The DMA (bus) address of pages (if TTM_PAGE_FLAG_DMA32 set).
+  */
+ void ttm_put_pages(struct list_head *pages,
+ 		   unsigned page_count,
+ 		   int flags,
+-		   enum ttm_caching_state cstate);
++		   enum ttm_caching_state cstate,
++		   dma_addr_t *dma_address);
+ /**
+  * Initialize pool allocator.
+  */
 -- 
 1.7.1
 
