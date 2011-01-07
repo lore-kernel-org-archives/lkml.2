@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754925Ab1AGAup (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 19:50:45 -0500
-Received: from kroah.org ([198.145.64.141]:47142 "EHLO coco.kroah.org"
+	id S1755132Ab1AGAu7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 19:50:59 -0500
+Received: from mms1.broadcom.com ([216.31.210.17]:4292 "EHLO mms1.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752137Ab1AGAuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 19:50:44 -0500
-Date: Thu, 6 Jan 2011 16:50:29 -0800
-From: Greg KH <greg@kroah.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <greg@suse.de>
-Subject: Re: [PATCH 2/3] vt: fix issue when fbcon wants to takeover a
- second time.
-Message-ID: <20110107005029.GA4257@kroah.com>
-References: <1292895677-4242-1-git-send-email-airlied@gmail.com>
- <1292895677-4242-3-git-send-email-airlied@gmail.com>
- <AANLkTinsVH2pyPfEjEfm9JD=D8P12Q0Y56y+ZJbpYc06@mail.gmail.com>
+	id S1754887Ab1AGAu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 19:50:58 -0500
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+Subject: Re: 2.6.37 vlans on bnx2 not functional, panic with tcpdump
+From: "Michael Chan" <mchan@broadcom.com>
+To: "Iain Paton" <selsinork@gmail.com>
+cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1294357941.21580.2.camel@HP1>
+References: <4D2634DE.2060907@gmail.com> <1294357941.21580.2.camel@HP1>
+Date: Thu, 6 Jan 2011 16:46:46 -0800
+Message-ID: <1294361206.21580.7.camel@HP1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinsVH2pyPfEjEfm9JD=D8P12Q0Y56y+ZJbpYc06@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mailer: Evolution 2.12.3 (2.12.3-8.el5)
+X-WSS-ID: 6138BC2D3P052285453-01-01
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 07, 2011 at 09:57:41AM +1000, Dave Airlie wrote:
-> Hi Greg,
+
+On Thu, 2011-01-06 at 15:52 -0800, Michael Chan wrote:
+> On Thu, 2011-01-06 at 13:32 -0800, Iain Paton wrote:
+> > Hi,
+> > 
+> > vlans don't appear to be functional on my HP DL380G6 with onboard bnx2
+> > adapter using vanilla 2.6.37 kernel. No tagged vlan traffic 
+> > is arriving at the vlan interface.
 > 
-> here is the patch I think you missed.
+> VLANs on net-next-2.6 kernel works for me on bnx2 devices.  I'll try
+> 2.6.37 next.
 
-Ah, thanks, I did.  I'll queue this up for after .38-rc1 is out as it's
-a bug fix.  It should go to -stable as well for .37 right?
+May be you have management firmware running on your devices that can
+change the behavior.  Can you provide ethtool -i eth0 on both bnx2
+devices on your system?
 
-thanks,
 
-greg k-h
