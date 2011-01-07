@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754350Ab1AGWGm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 17:06:42 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33418 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753636Ab1AGWGk (ORCPT
+	id S1754382Ab1AGWJv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 17:09:51 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:50221 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753695Ab1AGWJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 17:06:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=AtFdiUSwvTVTOT53sMweRNSZobIMGKWdYCrQis/68Gy7B2UYfFm+4YpVCrTQHGn81x
-         tlJ0fBcFlq76s6JhFRfsAaOPj5HEX+f+mD0yhSBe4kx3bkeBNQtlQWJ5HhPLayL5vmH5
-         aSBkZV7TWlwz2ZvzWZYxYt06GAS99os2nuGgs=
-Message-ID: <4D278E6B.7020002@gmail.com>
-Date: Sat, 08 Jan 2011 01:06:35 +0300
-From: Nikolai Kondrashov <spbnick@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101227 Icedove/3.0.11
+	Fri, 7 Jan 2011 17:09:48 -0500
+Date: Fri, 7 Jan 2011 22:09:40 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Yin Kangkai <kangkai.yin@linux.intel.com>
+Cc: platform-driver-x86 <platform-driver-x86@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        "Liu, Bing Wei" <bing.wei.liu@intel.com>,
+        Corentin Chary <corentin.chary@gmail.com>
+Subject: Re: [PATCH V2] platform-driver-x86: ACPI EC Extra driver for
+	Oaktrail
+Message-ID: <20110107220940.GA32575@srcf.ucam.org>
+References: <20110106025949.GJ9496@kai-debian> <20110107074115.GH30215@kai-debian>
 MIME-Version: 1.0
-To: Chase Douglas <chase.douglas@canonical.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Chris Bagwell <chris@cnpbagwell.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Documentation: Add evdev type and code definitions
-References: <1294435695-16750-1-git-send-email-chase.douglas@canonical.com>
-In-Reply-To: <1294435695-16750-1-git-send-email-chase.douglas@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110107074115.GH30215@kai-debian>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2011 12:28 AM, Chase Douglas wrote:
-> +* BTN_TOOL_<name>:
-> +  - These codes are used in conjunction with input trackpads, tablets, and
-> +    touchscreens. These devices may be used with fingers, pens, or other tools.
-> +    When an event occurs and a tool is used, the corresponding BTN_TOOL_<name>
-> +    code should be set to a value of 1. When the tool is no longer interacting
-> +    with the input device, the BTN_TOOL_<name>  code should be reset to 0. All
-> +    trackpads, tablets, and touchscreens should use at least one BTN_TOOL_<name>
-> +    code when events are generated.
+On Fri, Jan 07, 2011 at 03:41:15PM +0800, Yin Kangkai wrote:
 
-There are some tablets (namely UC-Logic ones), which do not indicate tool
-proximity. Yet they may have both a pen and a mouse. They just send reports
-with separate report IDs. Currently it is solved by using
-HID_QUIRK_MULTI_INPUT and not sending any BTN_TOOL_* events.
+> This driver implements an Extra ACPI EC driver for products based on Intel
+> Oaktrail platform.  It is programming the EC space, through existing ACPI EC
+> driver, to provide user space layer the sysfs and rfkill interfaces to
+> enable/disable the Camera, Bluetooth, GPS, WiFi, 3G, and to show the status of
+> Touchscreen.
 
-Should the documentation reflect the fact that some tablets do not send any
-BTN_TOOL_* events, or should the drivers be updated to synthesise them?
+As far as I can tell, the only ACPI aspect of this driver is that it 
+makes use of the ACPI EC driver? In that case I think the name's 
+misleading.
 
-Note that in the latter case there will never be a BTN_TOOL_* with
-zero value when the tool leaves the digitizing area, but only when the tools
-are switched (if ever).
+> @@ -0,0 +1,13 @@
+> +What:		/sys/devices/platform/intel_oaktrail/camera
+> +Date:		Jan 2011
+> +KernelVersion:	2.6.37
+> +Contact:	"Yin Kangkai" <kangkai.yin@intel.com>
+> +Description:
+> +		Control the camera. 1 means on, 0 means off.
 
-Sincerely,
-Nick
+We really need a better approach for this kind of thing...
+
+> +What:		/sys/devices/platform/intel_oaktrail/touchscreen
+> +Date:		Jan 2011
+> +KernelVersion:	2.6.37
+> +Contact:	"Yin Kangkai" <kangkai.yin@intel.com>
+> +Description:
+> +		Show the status of the touch screen. 1 means on, 0 means off.
+
+And this one, but we don't have one yet so I think this is ok.
+
+> +	wwan_rfkill = oaktrail_rfkill_new("oaktrail-wwan",
+> +					  RFKILL_TYPE_WWAN,
+> +					  OT_EC_WWAN_MASK);
+
+Do you have any way to identify whether the hardware has all these 
+features before registering?
+
+> +static struct dmi_system_id __initdata oaktrail_dmi_table[] = {
+> +	{
+> +		.ident = "OakTrail platform",
+> +		.matches = {
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "OakTrail platform"),
+> +		},
+> +		.callback = dmi_check_cb
+> +	},
+> +	{ }
+> +};
+
+Is any hardware actually going to ship with this identifier, or will 
+vendors change the string?
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
