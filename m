@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab1AGPNL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 10:13:11 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:42082 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753757Ab1AGPNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 10:13:08 -0500
-Date: Fri, 7 Jan 2011 16:12:54 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86: unify "numa=" command line option handling
-Message-ID: <20110107151254.GA418@elte.hu>
-References: <4D2603BF020000780002ACA7@vpn.id2.novell.com>
- <alpine.DEB.2.00.1101061235010.30820@chino.kir.corp.google.com>
- <4D26D3FD020000780002AED9@vpn.id2.novell.com>
- <alpine.DEB.2.00.1101070156050.19087@chino.kir.corp.google.com>
- <4D26F3AE020000780002AF5D@vpn.id2.novell.com>
- <20110107125722.GA23185@elte.hu>
- <4D272413020000780002B009@vpn.id2.novell.com>
- <20110107142203.GA12773@elte.hu>
- <4D2730BE020000780002B040@vpn.id2.novell.com>
+	id S1753855Ab1AGPNp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 10:13:45 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62633 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752243Ab1AGPNo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 10:13:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D2730BE020000780002B040@vpn.id2.novell.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <89f79879497f66250cde9abdab3cc1da846fd790.1294400351.git.kirr@landau.phys.spbu.ru>
+References: <89f79879497f66250cde9abdab3cc1da846fd790.1294400351.git.kirr@landau.phys.spbu.ru>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Fri, 7 Jan 2011 16:13:27 +0100
+Message-ID: <AANLkTindW3TnuP8VA0co-bLT7r2M-jrxTR_sYYQj1rE9@mail.gmail.com>
+Subject: Re: [RESEND PATCH 1/2] init: Add support for root devices to be
+ specified by partition name
+To: Kirill Smelkov <kirr@landau.phys.spbu.ru>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Will Drewry <wad@chromium.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 7, 2011 at 12:42, Kirill Smelkov <kirr@landau.phys.spbu.ru> wrote:
+>  [ In follow-up to b5af921e ]
+>
+> Besides GUIDs, there are also partition names stored in an EFI GPT
+> partition table. So let's add support for root to be located not only by
+> GUID, but also by partition names, like this:
+>
+>    root=PARTNAME=<partition-name>
 
-* Jan Beulich <JBeulich@novell.com> wrote:
+Are you sure about this? What's your use case?
 
-> >>> On 07.01.11 at 15:22, Ingo Molnar <mingo@elte.hu> wrote:
-> > Your -stable comment above made it appear to me as if you knew about a 
-> > specific 
-> > system that crashed this way? As long as it's only theoretical i'm not sure 
-> > it 
-> > warrants a -stable backport.
-> 
-> Yes, I do have a system affected (which made me craft the patch
-> in the first place).
+Generally, we really don't recommend ever to use any simple labels for
+critical stuff -- not from filesystems, not from partitions.
 
-In that case it's very useful to start the commit with:
+I know that some distros did that, but this is pretty misguided, and I
+think, should not be extended to any new facility, unless there is a
+good use case for that.
 
-  System XYZ crashes during bootup due to a bug in numa= command line option 
-  handling.
+Labels are not unique and in the general case absolutely not useful to
+uniquely identify data on a disk. They only make sense for humans, or
+interfaces that visualize things -- they should usually not be used in
+any environment that reliably needs to identify a certain partition.
+We have the uuids  for a reason.
 
-That will also cause me to add an immediate -stable backport tag from me, even if 
-you dont add it. Keeping it all optional and theoretical with 'it may crash' wording 
-just hides the essential piece of information that there's a real system affected by 
-the bug.
-
-Thanks,
-
-	Ingo
+Kay
