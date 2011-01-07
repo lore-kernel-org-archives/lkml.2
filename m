@@ -1,100 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518Ab1AGKWK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 05:22:10 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59228 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754254Ab1AGKWI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 05:22:08 -0500
-Message-ID: <4D26E906.3080608@oracle.com>
-Date: Fri, 07 Jan 2011 18:20:54 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre OracleBeehiveExtension/1.0.0.2-OracleInternal ObetStats/CATLAF_1292475699435-498544290 Thunderbird/3.1.7
+	id S1753058Ab1AGKZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 05:25:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29067 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751891Ab1AGKZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 05:25:54 -0500
+Date: Fri, 7 Jan 2011 12:24:32 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Milton Miller <miltonm@bga.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jamie Lokier <jamie@shareable.org>, Thomas Weber <swirl@gmx.li>,
+        Gleb Natapov <gleb@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] virtio: remove virtio-pci root device
+Message-ID: <20110107102432.GC8089@redhat.com>
+References: <20110105191711.GA27489@redhat.com>
+ <virtio-pci-whynotsimplify@mdm.bga.com>
+ <virtio-pci-noroot@mdm.bga.com>
 MIME-Version: 1.0
-To: jeremy@goop.org, ian.campbell@citrix.com,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: linux-fbdev@vger.kernel.org, xen-devel@lists.xensource.com,
-        gurudas.pai@oracle.com, guru.anbalagane@oracle.com,
-        greg.marsden@oracle.com, joe.jin@oracle.com,
-        linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [patch] xenfb: fix potential memory leak
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <virtio-pci-noroot@mdm.bga.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Jan 07, 2011 at 02:55:06AM -0600, Milton Miller wrote:
+> We sometimes need to map between the virtio device and
+> the given pci device. One such use is OS installer that
+> gets the boot pci device from BIOS and needs to
+> find the relevant block device. Since it can't,
+> installation fails.
+> 
+> Instead of creating a top-level devices/virtio-pci
+> directory, create each device under the corresponding
+> pci device node.  Symlinks to all virtio-pci
+> devices can be found under the pci driver link in
+> bus/pci/drivers/virtio-pci/devices, and all virtio
+> devices under drivers/bus/virtio/devices.
+> 
+> Signed-off-by: Milton Miller <miltonm@bga.com>
 
-This patch fix potential memory leak when xenfb connect backend failed.
-Thanks for Ian's review and comments.
+Thanks! I'll try this next week. 
+Some comments from looking at code:
 
-Signed-off-by: Joe Jin <joe.jin@oracle.com>
-Tested-by: Gurudas Pai <gurudas.pai@oracle.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+- This will break apps that look for devices in the old virtio-pci directory.
+  There are not likely to be many of these,
+  but better be careful. Let's create a compatibility
+  option to put symlinks there?
+  Could be under a compile time option with a deprecation plan.
+  
+- This will create ./virtio0 under the pci device, right?
+  But if the device is then renamed, the installer
+  won't be able to find it, right?
+  And need to do pattern matching to find the name is a bit ugly.
 
----
-  xen-fbfront.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+Could we create ./virtio/virtio0 under the pci device?
+Then one can open virtio directory and then the only file there.
 
-diff --git a/drivers/video/xen-fbfront.c b/drivers/video/xen-fbfront.c
-index dc72563..953334a 100644
---- a/drivers/video/xen-fbfront.c
-+++ b/drivers/video/xen-fbfront.c
-@@ -561,26 +561,24 @@ static void xenfb_init_shared_page(struct xenfb_info *info,
- static int xenfb_connect_backend(struct xenbus_device *dev,
- 				 struct xenfb_info *info)
- {
--	int ret, evtchn;
-+	int ret, evtchn, irq;
- 	struct xenbus_transaction xbt;
- 
- 	ret = xenbus_alloc_evtchn(dev, &evtchn);
- 	if (ret)
- 		return ret;
--	ret = bind_evtchn_to_irqhandler(evtchn, xenfb_event_handler,
-+	irq = bind_evtchn_to_irqhandler(evtchn, xenfb_event_handler,
- 					0, dev->devicetype, info);
--	if (ret < 0) {
-+	if (irq < 0) {
- 		xenbus_free_evtchn(dev, evtchn);
- 		xenbus_dev_fatal(dev, ret, "bind_evtchn_to_irqhandler");
--		return ret;
-+		return irq;
- 	}
--	info->irq = ret;
--
-  again:
- 	ret = xenbus_transaction_start(&xbt);
- 	if (ret) {
- 		xenbus_dev_fatal(dev, ret, "starting transaction");
--		return ret;
-+		goto unbind_irq;
- 	}
- 	ret = xenbus_printf(xbt, dev->nodename, "page-ref", "%lu",
- 			    virt_to_mfn(info->page));
-@@ -602,15 +600,18 @@ static int xenfb_connect_backend(struct xenbus_device *dev,
- 		if (ret == -EAGAIN)
- 			goto again;
- 		xenbus_dev_fatal(dev, ret, "completing transaction");
--		return ret;
-+		goto unbind_irq;
- 	}
- 
- 	xenbus_switch_state(dev, XenbusStateInitialised);
-+	info->irq = irq;
- 	return 0;
- 
-  error_xenbus:
- 	xenbus_transaction_end(xbt, 1);
- 	xenbus_dev_fatal(dev, ret, "writing xenstore");
-+ unbind_irq:
-+	unbind_from_irqhandler(irq, info);
- 	return ret;
- }
- 
+> ---
+> 
+> This is an alternative to the patch by Michael S. Tsirkin
+> titled "virtio-pci: add softlinks between virtio and pci"
+> https://patchwork.kernel.org/patch/454581/
+> 
+> It creates simpler code, uses less memory, and should
+> be even easier use by the installer as it won't have to
+> know a virtio symlink to follow (just follow none).
+> 
+> Compile tested only as I don't have kvm setup.
+> 
+> 
+> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+> index ef8d9d5..4fb5b2b 100644
+> --- a/drivers/virtio/virtio_pci.c
+> +++ b/drivers/virtio/virtio_pci.c
+> @@ -96,11 +96,6 @@ static struct pci_device_id virtio_pci_id_table[] = {
+>  
+>  MODULE_DEVICE_TABLE(pci, virtio_pci_id_table);
+>  
+> -/* A PCI device has it's own struct device and so does a virtio device so
+> - * we create a place for the virtio devices to show up in sysfs.  I think it
+> - * would make more sense for virtio to not insist on having it's own device. */
+> -static struct device *virtio_pci_root;
+> -
+>  /* Convert a generic virtio device to our structure */
+>  static struct virtio_pci_device *to_vp_device(struct virtio_device *vdev)
+>  {
+> @@ -629,7 +624,7 @@ static int __devinit virtio_pci_probe(struct pci_dev *pci_dev,
+>  	if (vp_dev == NULL)
+>  		return -ENOMEM;
+>  
+> -	vp_dev->vdev.dev.parent = virtio_pci_root;
+> +	vp_dev->vdev.dev.parent = &pci_dev->dev;
+>  	vp_dev->vdev.dev.release = virtio_pci_release_dev;
+>  	vp_dev->vdev.config = &virtio_pci_config_ops;
+>  	vp_dev->pci_dev = pci_dev;
+> @@ -717,17 +712,7 @@ static struct pci_driver virtio_pci_driver = {
+>  
+>  static int __init virtio_pci_init(void)
+>  {
+> -	int err;
+> -
+> -	virtio_pci_root = root_device_register("virtio-pci");
+> -	if (IS_ERR(virtio_pci_root))
+> -		return PTR_ERR(virtio_pci_root);
+> -
+> -	err = pci_register_driver(&virtio_pci_driver);
+> -	if (err)
+> -		root_device_unregister(virtio_pci_root);
+> -
+> -	return err;
+> +	return pci_register_driver(&virtio_pci_driver);
+>  }
+>  
+>  module_init(virtio_pci_init);
+> @@ -735,7 +720,6 @@ module_init(virtio_pci_init);
+>  static void __exit virtio_pci_exit(void)
+>  {
+>  	pci_unregister_driver(&virtio_pci_driver);
+> -	root_device_unregister(virtio_pci_root);
+>  }
+>  
+>  module_exit(virtio_pci_exit);
