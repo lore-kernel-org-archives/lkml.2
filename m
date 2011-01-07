@@ -1,55 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663Ab1AGUhz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 15:37:55 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:63156 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338Ab1AGUhy (ORCPT
+	id S1752137Ab1AGUjo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 15:39:44 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:36496 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579Ab1AGUjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 15:37:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=bIjyrCR3EFnrDS49FiIlcYh6cMnqyuVqI9Hnm9jwd1RkZ1FA8I1Y0oE+fRO7GbMISv
-         S1/0l0+YHoTDLuI14Kpl/fqkroGnXmaOxWFbvyWrKT4Fc/5apSY5CJ0KcMzoHaqGhydO
-         dOTSlhv0APGbZk+B3uyyjNNO8Sw2iVS1XWIw8=
-Date: Fri, 7 Jan 2011 15:37:50 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86: unify "numa=" command line option handling
-Message-ID: <20110107203750.GD7355@mtj.dyndns.org>
-References: <4D2603BF020000780002ACA7@vpn.id2.novell.com>
- <alpine.DEB.2.00.1101061235010.30820@chino.kir.corp.google.com>
- <4D26D3FD020000780002AED9@vpn.id2.novell.com>
+	Fri, 7 Jan 2011 15:39:43 -0500
+Message-ID: <4D277A0B.4020300@canonical.com>
+Date: Fri, 07 Jan 2011 15:39:39 -0500
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D26D3FD020000780002AED9@vpn.id2.novell.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Chris Bagwell <chris@cnpbagwell.com>
+CC: Peter Hutterer <peter.hutterer@who-t.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] Documentation: Add evdev type and code definitions
+References: <1292361672-2581-1-git-send-email-chase.douglas@canonical.com>	<1292361672-2581-3-git-send-email-chase.douglas@canonical.com>	<20101215235900.GA4952@salty.local> <AANLkTinjHuOv=sd_C-e1OLXuH_AS0YU_Hfj77zien27F@mail.gmail.com>
+In-Reply-To: <AANLkTinjHuOv=sd_C-e1OLXuH_AS0YU_Hfj77zien27F@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Jan.
-
-On Fri, Jan 07, 2011 at 07:51:09AM +0000, Jan Beulich wrote:
-> > I like the idea in general, but I think it may collide with Tejun's NUMA 
-> > unification patchset for x86, which I assume will another revision once 
-> > the merge window for .38 closes?  Or maybe he'd like to merge your patch 
-> > with his series and push it as one?
+On 12/16/2010 09:56 AM, Chris Bagwell wrote:
+> On Wed, Dec 15, 2010 at 5:59 PM, Peter Hutterer
+> <peter.hutterer@who-t.net> wrote:
+>> On Tue, Dec 14, 2010 at 01:21:10PM -0800, Chase Douglas wrote:
+>>> +* BTN_TOOL_<name>, BTN_TOUCH:
+>>> +  - These codes are used in conjunction with input trackpads, tablets, and
+>>> +    touchscreens. These devices may be used with fingers, pens, or other tools.
+>>> +    When an event occurs and a tool is used, the corresponding BTN_TOOL_<name>
+>>> +    code should be set to a value of 1. When the tool is no longer interacting
+>>> +    with the input device, the BTN_TOOL_<name> code should be reset to 0. All
+>>> +    trackpads, tablets, and touchscreens should use at least one BTN_TOOL_<name>
+>>> +    code when events are generated. For non-tablet devices, the tool is usually
+>>> +    BTN_TOUCH.
+>>
+>> BTN_TOUCH is used as proximity delimiter. e.g. wacom sends BTN_TOOL_PEN when
+>> the pen comes into proximity and (in addition) BTN_TOUCH when the pen
+>> actually touches the tablet. synaptics does the same IIRC except that it
+>> doesn't support hovering, so BTN_TOOL_FINGER and BTN_TOUCH are always
+>> set/unset in the same EV_SYN frame.
 > 
-> I would assume that if unification is done, then the command line
-> option would become common too. Tejun?
+> This area is where most special cases are so somehow I think it
+> deserves extra attention.  Either in paragraphs or in sample events.
+> 
+> There is the special historical case of touchscreen were
+> BTN_TOOL_FINGER is not sent; which mostly works because most
+> touchscreens do not support proximity/hover concepts.  It can
+> recommend not to use this approach and to use new ioctl() to convey
+> touchscreen vs. touchpad information.
+> 
+> Just an FYI: Synaptics is only sending BTN_TOUCH when pressure is >30
+> for what ever historical reason (and duplicating logic in
+> xf86-input-synaptics) so it usually won't be in same sync window as
+> BTN_TOOL_FINGER.  I think its only touchpad left doing this so I think
+> we may want to recommend best practice is to have BTN_TOOL_FINGER/*TAP
+> and BTN_TOUCH track each other when hover is not supported.
 
-The unification isn't full and the parameter handling hasn't been
-moved yet, so yeah, either your patch can go in first and I can
-refresh my series on top of it or vice-versa.
+I have attempted to capture this in the document.
 
-Thanks.
+>>> +* BTN_TOOL_FINGER, BTN_TOOL_DOUBLETAP, BTN_TOOL_TRIPLETAP, BTN_TOOL_QUADTAP:
+>>> +  - These codes denote one, two, three, and four finger interaction on a
+>>> +    trackpad or touchscreen. For example, if the user uses two fingers and moves
+>>> +    them on the touchpad in an effort to scroll content on screen,
+>>> +    BTN_TOOL_DOUBLETAP should be set to value 1 for the duration of the motion.
+>>> +    Note that these codes and the BTN_TOOL_<name> and BTN_TOUCH codes are
+>>> +    orthogonal in purpose. A trackpad event generated by finger touches should
+>>> +    generate events for one code from each group.
+> 
+> We should probably recommend a best practice here.  Almost all drivers
+> today send only 1 of BTN_TOOL_FINGER/*TAP today.  For example, if 1
+> touch then BTN_TOOL_FINGER=1 and BTN_TOOL_DOUBLETAP=0 and during 2
+> touch then BTN_TOOL_FINGER=0 and BTN_TOOL_DOUBLETAP=1.
+> 
+> I think at least 1 driver sends them concurrently today and you must
+> look for highest finger count tool.  I'm pretty sure historically a
+> lot of the drivers sent them concurrently as well.
 
--- 
-tejun
+I tried to convey both points in the documentation for these codes, and
+hopefully examples added to the document will help as well.
+
+>>> +
+>>> +EV_ABS:
+>>> +----------
+>>> +EV_ABS events describe absolute changes in a property. For example, a touchpad
+>>> +may emit coordinates for a touch location.
+>>> +
+>>> +A few EV_ABS codes have special meanings:
+>>> +
+>>> +* ABS_PRESSURE:
+>>> +  - Used to describe the pressure of a touch interaction on an input device.
+>>
+>> again, that's not really special IMO. it pretty much does what it says on
+>> the box :)
+> 
+> :-)
+> 
+> It may be worth noting though that this is optional event.  When it
+> doesn't exist then BTN_TOUCH indicates touch.  When it does exist then
+> this is preferred indication of touch and should be used to debounced
+> touches because of fact that majority of touchpad/touchscreen will
+> start detecting contact while hovering.  But then that leads to
+> optional ABS_DISTANCE...
+
+All of the evdev codes are optional, unless stated somewhere in here
+otherwise like BTN_TOUCH (in my next revision). I feel this falls into
+how userspace should use the codes, not the definition of the codes.
+
+Thanks!
+
+-- Chase
