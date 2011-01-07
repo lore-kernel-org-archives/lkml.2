@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab1AGCfT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 21:35:19 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:59255 "EHLO smtps.tip.net.au"
+	id S1755386Ab1AGCjb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 21:39:31 -0500
+Received: from c60.cesmail.net ([216.154.195.49]:54071 "EHLO c60.cesmail.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753209Ab1AGCfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 21:35:17 -0500
-Date: Fri, 7 Jan 2011 13:35:11 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>, Joe Perches <joe@perches.com>
-Subject: linux-next: manual merge of the staging tree with the fbdev tree
-Message-Id: <20110107133511.bcfc1e85.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751694Ab1AGCja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 21:39:30 -0500
+Message-ID: <20110106213928.jd36vdlpcgsgcwss-cebfxv@webmail.spamcop.net>
+Date: Thu, 06 Jan 2011 21:39:28 -0500
+From: Pavel Roskin <proski@gnu.org>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: Crypto Update for 2.6.38
+References: <20100804140448.GA4042@gondor.apana.org.au>
+	<20101024061625.GA23715@gondor.apana.org.au>
+	<20110106000157.GA16089@gondor.apana.org.au>
+	<AANLkTikzg3Hndp8WRi59bvJdBLxi=p-1gt7aZDLYbSW8@mail.gmail.com>
+	<20110106211645.GA26184@gondor.apana.org.au>
+	<AANLkTimwaJCUxvMLoeS5Cpmu7FX3y=coeSdkPrrL4zcr@mail.gmail.com>
+	<20110106213932.GA26538@gondor.apana.org.au>
+	<AANLkTi=fggNhMm1LpOzzZ0_ofaU6w=ahX8SMGgFkHCui@mail.gmail.com>
+	<20110106223042.GA27080@gondor.apana.org.au>
+	<AANLkTinbH8i8rjUxACV5PkdLuVc9YccT+E5x=ZBWunyU@mail.gmail.com>
+	<20110106225301.GA27358@gondor.apana.org.au>
+In-Reply-To: <20110106225301.GA27358@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset=UTF-8;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Quoting Herbert Xu <herbert@gondor.apana.org.au>:
 
-Today's linux-next merge of the staging tree got a conflict in
-drivers/video/udlfb.c between commit realloc_framebuffer ("video: udlfb:
-Kill off special printk wrappers, use pr_fmt()") from the fbdev tree and
-commit 5b84cc781058bb452f869d84bb24442ec51948c4 ("staging: Use vzalloc")
-from the staging tree.
+> 	setsockopt(tfmfd, SOL_ALG, ALG_SET_KEY,
+> 		   "\x06\xa9\x21\x40\x36\xb8\xa1\x5b"
+> 		   "\x51\x2e\x03\xd5\x34\x12\x00\x06", 16);
 
-Another commit in the fbdev tree moves this file out of staging (from
-drivers/staging/udlfb/udlfb.c).
+By the way, is it a good idea to use setsockopt() this way?  Some keys  
+may be large.  And if AEAD is supported, will it use setsockopt() for  
+the unencrypted authenticated data?
 
-I fixed it up (see below) and can carry the fix as necessary.
+Maybe some variation of write() or sendto() would be more appropriate?
+
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/video/udlfb.c
-index 020589a,8dd21e0..0000000
---- a/drivers/video/udlfb.c
-+++ b/drivers/video/udlfb.c
-@@@ -1128,9 -1163,9 +1128,9 @@@ static int dlfb_realloc_framebuffer(str
-  		 * But with imperfect damage info we may send pixels over USB
-  		 * that were, in fact, unchanged - wasting limited USB bandwidth
-  		 */
-- 		new_back = vmalloc(new_len);
-+ 		new_back = vzalloc(new_len);
-  		if (!new_back)
-- 			pr_info("No shadow/backing buffer allcoated\n");
- -			dl_info("No shadow/backing buffer allocated\n");
-++			pr_info("No shadow/backing buffer allocated\n");
-  		else {
-  			if (dev->backing_buffer)
-  				vfree(dev->backing_buffer);
+Regards,
+Pavel Roskin
