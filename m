@@ -1,213 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754113Ab1AGPfE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 10:35:04 -0500
-Received: from hera.kernel.org ([140.211.167.34]:40755 "EHLO hera.kernel.org"
+	id S1753926Ab1AGPgK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 10:36:10 -0500
+Received: from hera.kernel.org ([140.211.167.34]:40796 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752092Ab1AGPfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 10:35:01 -0500
-Date: Fri, 7 Jan 2011 15:34:40 GMT
-From: tip-bot for Don Zickus <dzickus@redhat.com>
+	id S1751633Ab1AGPgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 10:36:07 -0500
+Date: Fri, 7 Jan 2011 15:35:39 GMT
+From: tip-bot for Yong Zhang <yong.zhang0@gmail.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, ying.huang@intel.com, tglx@linutronix.de,
-        dzickus@redhat.com, mingo@elte.hu
+        a.p.zijlstra@chello.nl, efault@gmx.de, yong.zhang0@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, ying.huang@intel.com, tglx@linutronix.de,
-        dzickus@redhat.com, mingo@elte.hu
-In-Reply-To: <1294348732-15030-5-git-send-email-dzickus@redhat.com>
-References: <1294348732-15030-5-git-send-email-dzickus@redhat.com>
+        a.p.zijlstra@chello.nl, efault@gmx.de, tglx@linutronix.de,
+        yong.zhang0@gmail.com, mingo@elte.hu
+In-Reply-To: <20110107071736.GA32635@windriver.com>
+References: <20110107071736.GA32635@windriver.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] x86, NMI: Remove DIE_NMI_IPI
-Message-ID: <tip-c410b8307702c1e1f35be3fd868ad18e4ba0410f@git.kernel.org>
-Git-Commit-ID: c410b8307702c1e1f35be3fd868ad18e4ba0410f
+Subject: [tip:sched/urgent] sched: Consolidate the name of root_task_group and init_task_group
+Message-ID: <tip-07e06b011db2b3300f6c975ebf293fc4c8c59942@git.kernel.org>
+Git-Commit-ID: 07e06b011db2b3300f6c975ebf293fc4c8c59942
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 07 Jan 2011 15:34:41 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 07 Jan 2011 15:35:40 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c410b8307702c1e1f35be3fd868ad18e4ba0410f
-Gitweb:     http://git.kernel.org/tip/c410b8307702c1e1f35be3fd868ad18e4ba0410f
-Author:     Don Zickus <dzickus@redhat.com>
-AuthorDate: Thu, 6 Jan 2011 16:18:50 -0500
+Commit-ID:  07e06b011db2b3300f6c975ebf293fc4c8c59942
+Gitweb:     http://git.kernel.org/tip/07e06b011db2b3300f6c975ebf293fc4c8c59942
+Author:     Yong Zhang <yong.zhang0@gmail.com>
+AuthorDate: Fri, 7 Jan 2011 15:17:36 +0800
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 7 Jan 2011 15:08:53 +0100
+CommitDate: Fri, 7 Jan 2011 15:54:34 +0100
 
-x86, NMI: Remove DIE_NMI_IPI
+sched: Consolidate the name of root_task_group and init_task_group
 
-With priorities in place and no one really understanding the difference between
-DIE_NMI and DIE_NMI_IPI, just remove DIE_NMI_IPI and convert everyone to DIE_NMI.
+root_task_group is the leftover of USER_SCHED, now it's always
+same to init_task_group.
+But as Mike suggested, root_task_group is maybe the suitable name
+to keep for a tree.
+So in this patch:
+  init_task_group      --> root_task_group
+  init_task_group_load --> root_task_group_load
+  INIT_TASK_GROUP_LOAD --> ROOT_TASK_GROUP_LOAD
 
-This also simplifies default_do_nmi() a little bit.  Instead of calling the
-die_notifier in both the if and else part, just pull it out and call it before
-the if-statement.  This has the side benefit of avoiding a call to the ioport
-to see if there is an external NMI sitting around until after the (more frequent)
-internal NMIs are dealt with.
-
-Patch-Inspired-by: Huang Ying <ying.huang@intel.com>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
+Suggested-by: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1294348732-15030-5-git-send-email-dzickus@redhat.com>
+LKML-Reference: <20110107071736.GA32635@windriver.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/include/asm/kdebug.h           |    1 -
- arch/x86/kernel/apic/hw_nmi.c           |    1 -
- arch/x86/kernel/cpu/mcheck/mce-inject.c |    3 ++-
- arch/x86/kernel/cpu/perf_event.c        |    1 -
- arch/x86/kernel/kgdb.c                  |    4 ----
- arch/x86/kernel/reboot.c                |    3 ++-
- arch/x86/kernel/traps.c                 |   19 ++++++++-----------
- arch/x86/oprofile/nmi_int.c             |    1 -
- 8 files changed, 12 insertions(+), 21 deletions(-)
+ include/linux/sched.h    |    2 +-
+ kernel/sched.c           |   42 ++++++++++++++++++++----------------------
+ kernel/sched_autogroup.c |    6 +++---
+ 3 files changed, 24 insertions(+), 26 deletions(-)
 
-diff --git a/arch/x86/include/asm/kdebug.h b/arch/x86/include/asm/kdebug.h
-index f23eb25..ca242d3 100644
---- a/arch/x86/include/asm/kdebug.h
-+++ b/arch/x86/include/asm/kdebug.h
-@@ -18,7 +18,6 @@ enum die_val {
- 	DIE_TRAP,
- 	DIE_GPF,
- 	DIE_CALL,
--	DIE_NMI_IPI,
- 	DIE_PAGE_FAULT,
- 	DIE_NMIUNKNOWN,
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 777cd01..341acbb 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2511,7 +2511,7 @@ extern void normalize_rt_tasks(void);
+ 
+ #ifdef CONFIG_CGROUP_SCHED
+ 
+-extern struct task_group init_task_group;
++extern struct task_group root_task_group;
+ 
+ extern struct task_group *sched_create_group(struct task_group *parent);
+ extern void sched_destroy_group(struct task_group *tg);
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 0494908..54b58ec 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -278,14 +278,12 @@ struct task_group {
+ #endif
  };
-diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-index 8bc49f1..79fd43c 100644
---- a/arch/x86/kernel/apic/hw_nmi.c
-+++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -68,7 +68,6 @@ arch_trigger_all_cpu_backtrace_handler(struct notifier_block *self,
  
- 	switch (cmd) {
- 	case DIE_NMI:
--	case DIE_NMI_IPI:
- 		break;
- 
- 	default:
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-inject.c b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-index 59546c1..a779719 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-inject.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-@@ -25,6 +25,7 @@
- #include <linux/gfp.h>
- #include <asm/mce.h>
- #include <asm/apic.h>
-+#include <asm/nmi.h>
- 
- /* Update fake mce registers on current CPU. */
- static void inject_mce(struct mce *m)
-@@ -83,7 +84,7 @@ static int mce_raise_notify(struct notifier_block *self,
- 	struct die_args *args = (struct die_args *)data;
- 	int cpu = smp_processor_id();
- 	struct mce *m = &__get_cpu_var(injectm);
--	if (val != DIE_NMI_IPI || !cpumask_test_cpu(cpu, mce_inject_cpumask))
-+	if (val != DIE_NMI || !cpumask_test_cpu(cpu, mce_inject_cpumask))
- 		return NOTIFY_DONE;
- 	cpumask_clear_cpu(cpu, mce_inject_cpumask);
- 	if (m->inject_flags & MCJ_EXCEPTION)
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 5e14b5e..c71bae4 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1268,7 +1268,6 @@ perf_event_nmi_handler(struct notifier_block *self,
- 
- 	switch (cmd) {
- 	case DIE_NMI:
--	case DIE_NMI_IPI:
- 		break;
- 	case DIE_NMIUNKNOWN:
- 		this_nmi = percpu_read(irq_stat.__nmi_count);
-diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
-index d43c841..a413000 100644
---- a/arch/x86/kernel/kgdb.c
-+++ b/arch/x86/kernel/kgdb.c
-@@ -526,10 +526,6 @@ static int __kgdb_notify(struct die_args *args, unsigned long cmd)
- 		}
- 		return NOTIFY_DONE;
- 
--	case DIE_NMI_IPI:
--		/* Just ignore, we will handle the roundup on DIE_NMI. */
--		return NOTIFY_DONE;
+-#define root_task_group init_task_group
 -
- 	case DIE_NMIUNKNOWN:
- 		if (was_in_debug_nmi[raw_smp_processor_id()]) {
- 			was_in_debug_nmi[raw_smp_processor_id()] = 0;
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 9c1c83e..fc7aae1 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -18,6 +18,7 @@
- #include <asm/pci_x86.h>
- #include <asm/virtext.h>
- #include <asm/cpu.h>
-+#include <asm/nmi.h>
+ /* task_group_lock serializes the addition/removal of task groups */
+ static DEFINE_SPINLOCK(task_group_lock);
  
- #ifdef CONFIG_X86_32
- # include <linux/ctype.h>
-@@ -747,7 +748,7 @@ static int crash_nmi_callback(struct notifier_block *self,
- {
- 	int cpu;
+ #ifdef CONFIG_FAIR_GROUP_SCHED
  
--	if (val != DIE_NMI_IPI)
-+	if (val != DIE_NMI)
- 		return NOTIFY_OK;
+-# define INIT_TASK_GROUP_LOAD	NICE_0_LOAD
++# define ROOT_TASK_GROUP_LOAD	NICE_0_LOAD
  
- 	cpu = raw_smp_processor_id();
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index c7fd1ce..23f6ac0 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -394,6 +394,14 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
- 	unsigned char reason = 0;
- 	int cpu;
+ /*
+  * A weight of 0 or 1 can cause arithmetics problems.
+@@ -298,13 +296,13 @@ static DEFINE_SPINLOCK(task_group_lock);
+ #define MIN_SHARES	2
+ #define MAX_SHARES	(1UL << 18)
  
-+	/*
-+	 * CPU-specific NMI must be processed before non-CPU-specific
-+	 * NMI, otherwise we may lose it, because the CPU-specific
-+	 * NMI can not be detected/processed on other CPUs.
-+	 */
-+	if (notify_die(DIE_NMI, "nmi", regs, 0, 2, SIGINT) == NOTIFY_STOP)
-+		return;
-+
- 	cpu = smp_processor_id();
+-static int init_task_group_load = INIT_TASK_GROUP_LOAD;
++static int root_task_group_load = ROOT_TASK_GROUP_LOAD;
+ #endif
  
- 	/* Only the BSP gets external NMIs from the system. */
-@@ -401,21 +409,10 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
- 		reason = get_nmi_reason();
+ /* Default task group.
+  *	Every task in system belong to this group at bootup.
+  */
+-struct task_group init_task_group;
++struct task_group root_task_group;
  
- 	if (!(reason & NMI_REASON_MASK)) {
--		if (notify_die(DIE_NMI_IPI, "nmi_ipi", regs, reason, 2, SIGINT)
--								== NOTIFY_STOP)
--			return;
--
--#ifdef CONFIG_X86_LOCAL_APIC
--		if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT)
--							== NOTIFY_STOP)
--			return;
--#endif
- 		unknown_nmi_error(reason, regs);
+ #endif	/* CONFIG_CGROUP_SCHED */
  
+@@ -7848,7 +7846,7 @@ static void init_tg_cfs_entry(struct task_group *tg, struct cfs_rq *cfs_rq,
+ 	cfs_rq->tg = tg;
+ 
+ 	tg->se[cpu] = se;
+-	/* se could be NULL for init_task_group */
++	/* se could be NULL for root_task_group */
+ 	if (!se)
  		return;
+ 
+@@ -7908,18 +7906,18 @@ void __init sched_init(void)
+ 		ptr = (unsigned long)kzalloc(alloc_size, GFP_NOWAIT);
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+-		init_task_group.se = (struct sched_entity **)ptr;
++		root_task_group.se = (struct sched_entity **)ptr;
+ 		ptr += nr_cpu_ids * sizeof(void **);
+ 
+-		init_task_group.cfs_rq = (struct cfs_rq **)ptr;
++		root_task_group.cfs_rq = (struct cfs_rq **)ptr;
+ 		ptr += nr_cpu_ids * sizeof(void **);
+ 
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ #ifdef CONFIG_RT_GROUP_SCHED
+-		init_task_group.rt_se = (struct sched_rt_entity **)ptr;
++		root_task_group.rt_se = (struct sched_rt_entity **)ptr;
+ 		ptr += nr_cpu_ids * sizeof(void **);
+ 
+-		init_task_group.rt_rq = (struct rt_rq **)ptr;
++		root_task_group.rt_rq = (struct rt_rq **)ptr;
+ 		ptr += nr_cpu_ids * sizeof(void **);
+ 
+ #endif /* CONFIG_RT_GROUP_SCHED */
+@@ -7939,13 +7937,13 @@ void __init sched_init(void)
+ 			global_rt_period(), global_rt_runtime());
+ 
+ #ifdef CONFIG_RT_GROUP_SCHED
+-	init_rt_bandwidth(&init_task_group.rt_bandwidth,
++	init_rt_bandwidth(&root_task_group.rt_bandwidth,
+ 			global_rt_period(), global_rt_runtime());
+ #endif /* CONFIG_RT_GROUP_SCHED */
+ 
+ #ifdef CONFIG_CGROUP_SCHED
+-	list_add(&init_task_group.list, &task_groups);
+-	INIT_LIST_HEAD(&init_task_group.children);
++	list_add(&root_task_group.list, &task_groups);
++	INIT_LIST_HEAD(&root_task_group.children);
+ 	autogroup_init(&init_task);
+ #endif /* CONFIG_CGROUP_SCHED */
+ 
+@@ -7960,34 +7958,34 @@ void __init sched_init(void)
+ 		init_cfs_rq(&rq->cfs, rq);
+ 		init_rt_rq(&rq->rt, rq);
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+-		init_task_group.shares = init_task_group_load;
++		root_task_group.shares = root_task_group_load;
+ 		INIT_LIST_HEAD(&rq->leaf_cfs_rq_list);
+ 		/*
+-		 * How much cpu bandwidth does init_task_group get?
++		 * How much cpu bandwidth does root_task_group get?
+ 		 *
+ 		 * In case of task-groups formed thr' the cgroup filesystem, it
+ 		 * gets 100% of the cpu resources in the system. This overall
+ 		 * system cpu resource is divided among the tasks of
+-		 * init_task_group and its child task-groups in a fair manner,
++		 * root_task_group and its child task-groups in a fair manner,
+ 		 * based on each entity's (task or task-group's) weight
+ 		 * (se->load.weight).
+ 		 *
+-		 * In other words, if init_task_group has 10 tasks of weight
++		 * In other words, if root_task_group has 10 tasks of weight
+ 		 * 1024) and two child groups A0 and A1 (of weight 1024 each),
+ 		 * then A0's share of the cpu resource is:
+ 		 *
+ 		 *	A0's bandwidth = 1024 / (10*1024 + 1024 + 1024) = 8.33%
+ 		 *
+-		 * We achieve this by letting init_task_group's tasks sit
+-		 * directly in rq->cfs (i.e init_task_group->se[] = NULL).
++		 * We achieve this by letting root_task_group's tasks sit
++		 * directly in rq->cfs (i.e root_task_group->se[] = NULL).
+ 		 */
+-		init_tg_cfs_entry(&init_task_group, &rq->cfs, NULL, i, NULL);
++		init_tg_cfs_entry(&root_task_group, &rq->cfs, NULL, i, NULL);
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+ 		rq->rt.rt_runtime = def_rt_bandwidth.rt_runtime;
+ #ifdef CONFIG_RT_GROUP_SCHED
+ 		INIT_LIST_HEAD(&rq->leaf_rt_rq_list);
+-		init_tg_rt_entry(&init_task_group, &rq->rt, NULL, i, NULL);
++		init_tg_rt_entry(&root_task_group, &rq->rt, NULL, i, NULL);
+ #endif
+ 
+ 		for (j = 0; j < CPU_LOAD_IDX_MAX; j++)
+@@ -8812,7 +8810,7 @@ cpu_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cgrp)
+ 
+ 	if (!cgrp->parent) {
+ 		/* This is early initialization for the top cgroup */
+-		return &init_task_group.css;
++		return &root_task_group.css;
  	}
--	if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT) == NOTIFY_STOP)
--		return;
  
- 	/* AK: following checks seem to be broken on modern chipsets. FIXME */
- 	if (reason & NMI_REASON_SERR)
-diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-index 6e84ea4..e77ea0b 100644
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -65,7 +65,6 @@ static int profile_exceptions_notify(struct notifier_block *self,
+ 	parent = cgroup_tg(cgrp->parent);
+diff --git a/kernel/sched_autogroup.c b/kernel/sched_autogroup.c
+index c80fedc..e011e53 100644
+--- a/kernel/sched_autogroup.c
++++ b/kernel/sched_autogroup.c
+@@ -11,8 +11,8 @@ static atomic_t autogroup_seq_nr;
  
- 	switch (val) {
- 	case DIE_NMI:
--	case DIE_NMI_IPI:
- 		if (ctr_running)
- 			model->check_ctrs(args->regs, &__get_cpu_var(cpu_msrs));
- 		else if (!nmi_enabled)
+ static void autogroup_init(struct task_struct *init_task)
+ {
+-	autogroup_default.tg = &init_task_group;
+-	init_task_group.autogroup = &autogroup_default;
++	autogroup_default.tg = &root_task_group;
++	root_task_group.autogroup = &autogroup_default;
+ 	kref_init(&autogroup_default.kref);
+ 	init_rwsem(&autogroup_default.lock);
+ 	init_task->signal->autogroup = &autogroup_default;
+@@ -63,7 +63,7 @@ static inline struct autogroup *autogroup_create(void)
+ 	if (!ag)
+ 		goto out_fail;
+ 
+-	tg = sched_create_group(&init_task_group);
++	tg = sched_create_group(&root_task_group);
+ 
+ 	if (IS_ERR(tg))
+ 		goto out_free;
