@@ -1,41 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146Ab1AGAwk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 19:52:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59948 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753716Ab1AGAwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 19:52:39 -0500
-Subject: Re: [PATCH 2/3] vt: fix issue when fbcon wants to takeover a
- second time.
-From: Dave Airlie <airlied@redhat.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Greg KH <greg@suse.de>
-In-Reply-To: <20110107005029.GA4257@kroah.com>
-References: <1292895677-4242-1-git-send-email-airlied@gmail.com>
-	 <1292895677-4242-3-git-send-email-airlied@gmail.com>
-	 <AANLkTinsVH2pyPfEjEfm9JD=D8P12Q0Y56y+ZJbpYc06@mail.gmail.com>
-	 <20110107005029.GA4257@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 Jan 2011 10:52:25 +1000
-Message-ID: <1294361545.8921.3.camel@clockmaker-el6>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754991Ab1AGA6r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 19:58:47 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:32882 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752753Ab1AGA6q convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 19:58:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <1294337041.4518.87.camel@work-vm>
+References: <1294280159-2513-1-git-send-email-john.stultz@linaro.org>
+	<1294280159-2513-13-git-send-email-john.stultz@linaro.org>
+	<AANLkTi=i9bnAz9FoB_Q1u4pTOwpBCTHK4S21iukZWBpF@mail.gmail.com>
+	<1294337041.4518.87.camel@work-vm>
+Date: Thu, 6 Jan 2011 16:58:45 -0800
+Message-ID: <AANLkTin8cntsFpaikpfzPbWL1YFb702rPync240X4axW@mail.gmail.com>
+Subject: Re: [PATCH 12/12] [RFC] Introduce Alarm (hybrid) timers
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Brian Swetland <swetland@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-06 at 16:50 -0800, Greg KH wrote:
-> On Fri, Jan 07, 2011 at 09:57:41AM +1000, Dave Airlie wrote:
-> > Hi Greg,
-> > 
-> > here is the patch I think you missed.
-> 
-> Ah, thanks, I did.  I'll queue this up for after .38-rc1 is out as it's
-> a bug fix.  It should go to -stable as well for .37 right?
+2011/1/6 John Stultz <john.stultz@linaro.org>:
+> On Wed, 2011-01-05 at 20:07 -0800, Arve Hjønnevåg wrote:
+>> On Wed, Jan 5, 2011 at 6:15 PM, John Stultz <john.stultz@linaro.org> wrote:
+>> > Its possible that I've missed some subtleties of the Android
+>> > alarm driver interface, and that some of the interface decisions
+>> > I've made may not allow Android to use this interface directly,
+>> > I'd be very interested if those details could be pointed out,
+>> > and hopefully we can find a good solution to get this useful
+>> > functionality upstream.
+>> >
+>>
+>> I don't know how suited the posix interface is for this, but I think
+>> it is critical to prevent suspend while an alarm is pending. If an
+>> alarm is important enough to wake the system up from suspend, it is
+>> probably not safe to suspend right after it triggered. The android
+>> alarm driver holds a wakelock until user-space calls back in to wait
+>> for the next alarm, while in-kernel alarms are called from interrupt
+>
+> Hrm. I was hoping to avoid wakelock discussions for now. What happens if
+> an app sets a single alarm and then never calls back in? I assume
+> closing the device drops the wakelock?
+>
 
-Yup, sounds like it should.
+Yes, but the current driver only supports a single client, so this
+only happens when the system_server crashes, not when apps exits.
 
-Dave.
+>> context. The apis provided in include/linux/pm_wakeup.h should provide
+>> the functionality you need to prevent suspend until the alarms have
+>> been fully processed, but I have not tried this api yet.
+>
+> Ok. I'll have to check out the pm_wakeup.h api and see if it can be
+> used.
+>
+>> It would also be useful to still allow in-kernel alarms to be
+>> activated from atomic context (we currently do this in a couple of
+>> drivers to avoid using a second wakelock).
+>
+> This is useful. I think I was being overly cautious using a mutex
+> instead of a spinlock for the base lock since I was worried about
+> calling into the RTC code which require mutexes, but we only do that at
+> suspend, so it should be ok to use a spinlock there. I'll revise and add
+> that in.
+>
+> So otherwise, do you see any reason why android might not be able to
+> adapt this code to replace the android alarm timers?
+>
 
+The user-space interface does not look appealing, but I don't see any
+reason why the in-kernel interface(s) cannot be shared. Our user-space
+code has a single thread that waits for alarms to trigger, while the
+alarms can be modified from any thread. As far as I can tell, using
+the posix interface would either require a thread per alarm (up to 5)
+or using signals. Both make the user-space code more complicated, and
+it is not clear if either of them provide a clear hand-off between
+where the kernel needs to block suspend because the alarm has not been
+delivered to user-space and where user-space needs to block suspend
+because it is handling the alarm.
+
+-- 
+Arve Hjønnevåg
