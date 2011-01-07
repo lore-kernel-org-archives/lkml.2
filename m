@@ -1,205 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934Ab1AGWpk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 17:45:40 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:59342 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754812Ab1AGWpi (ORCPT
+	id S1755014Ab1AGWqb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 17:46:31 -0500
+Received: from usindmx01.hds.com ([207.126.252.12]:54288 "EHLO
+	usindmx01.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754916Ab1AGWq3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 17:45:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type:content-id;
-        b=gILF1BQBf7qxMSRn3oWCeS4jJ6i27FjOqTIClXhZUMls9Z2JDS09YB/gk51flm6MW1
-         O56HJ2aLGRaUcH6So3XQ==
-Date: Fri, 7 Jan 2011 14:45:30 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        Catalin Marinas <catalin.marinas@arm.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: mke2fs: page allocation failure w/ kernel 2.6.37
-In-Reply-To: <201101052237.36735.toralf.foerster@gmx.de>
-Message-ID: <alpine.DEB.2.00.1101071443280.23858@chino.kir.corp.google.com>
-References: <201101052237.36735.toralf.foerster@gmx.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 7 Jan 2011 17:46:29 -0500
+X-Greylist: delayed 2302 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Jan 2011 17:45:40 EST
+From: Satoru Moriya <satoru.moriya@hds.com>
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mel@csn.ul.ie" <mel@csn.ul.ie>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Seiji Aguchi <seiji.aguchi@hds.com>
+Date: Fri, 7 Jan 2011 17:03:47 -0500
+Subject: [RFC][PATCH 0/2] Tunable watermark
+Thread-Topic: [RFC][PATCH 0/2] Tunable watermark
+Thread-Index: AcuutsHgFEJGwsPbT6epur3gKhhD/g==
+Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9C3A30A295@USINDEVS02.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="531368966-599384781-1294440292=:23858"
-Content-ID: <alpine.DEB.2.00.1101071445120.24369@chino.kir.corp.google.com>
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+This patchset introduces a new knob to control each watermark
+separately.
 
---531368966-599384781-1294440292=:23858
-Content-Type: TEXT/PLAIN; CHARSET=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-ID: <alpine.DEB.2.00.1101071445121.24369@chino.kir.corp.google.com>
+[Purpose]
+To control the timing at which kswapd/direct reclaim starts(ends)
+based on memory pressure and/or application characteristics
+because direct reclaim makes a memory alloc/access latency worse.
+(We'd like to avoid direct reclaim to keep latency low even if
+ under the high memory pressure.)
 
-On Wed, 5 Jan 2011, Toralf Förster wrote:
+[Problem]
+The thresholds kswapd/direct reclaim starts(ends) depend on
+watermark[min,low,high] and currently all watermarks are set
+based on min_free_kbytes. min_free_kbytes is the amount of
+free memory that Linux VM should keep at least.
 
-> Hello,
-> 
-> I got this in /var/log/messages today (created a ext2 partition at an external USB drive, worked fine) :
-> 
+This means the difference between thresholds at which kswapd
+starts and direct reclaim starts depends on the amount of free
+memory.
 
-Yeah, this failure is from the kmemleak stack which simply means that 
-debugging tool will be disabled rather than any disruption to the 
-workflow.
+On the other hand, the amount of required memory depends on
+applications. Therefore when it allocates/access memory more
+than the difference between watemark[low] and watermark[min],
+kernel sometimes runs direct reclaim before allocation and
+it makes application latency bigger.
 
-I'm curious why kmemleak is masking with GFP_KERNEL and GFP_ATOMIC and not 
-allowing users to pass __GFP_NOWARN to suppress this type of failure, 
-especially since the stack trace is already emitted by kmemleak when it is 
-stopped.  Catalin?
+[Solution]
+To avoid the situation above, this patch set introduces new
+tunables /proc/sys/vm/wmark_min_kbytes, wmark_low_kbytes and
+wmark_high_kbytes. Each entry controls watermark[min],
+watermark[low] and watermark[high] separately.
+By using these parameters one can make the difference between
+min and low bigger than the amount of memory which applications
+require.
 
-> ...
-> 2011-01-05T19:43:19.464+01:00 n22 kernel: mke2fs: page allocation failure. order:0, mode:0x0
-> 2011-01-05T19:43:19.464+01:00 n22 kernel: Pid: 26241, comm: mke2fs Not tainted 2.6.37 #1
-> 2011-01-05T19:43:19.464+01:00 n22 kernel: Call Trace:
-> 2011-01-05T19:43:19.464+01:00 n22 kernel: [<c1260b2b>] ? printk+0x18/0x1d
-> 2011-01-05T19:43:19.464+01:00 n22 kernel: [<c108b3e4>] __alloc_pages_nodemask+0x514/0x570
-> 2011-01-05T19:43:19.464+01:00 n22 kernel: [<c106099b>] ? __module_text_address+0xb/0x50
-> 2011-01-05T19:43:19.464+01:00 n22 kernel: [<c10adf10>] cache_alloc_refill+0x2c0/0x4f0
-> 2011-01-05T19:43:19.464+01:00 n22 kernel: [<c100676e>] ? print_context_stack+0x4e/0xb0
-> 2011-01-05T19:43:19.464+01:00 n22 kernel: [<c10adc3c>] kmem_cache_alloc+0xbc/0xd0
-> 2011-01-05T19:43:19.464+01:00 n22 kernel: [<c10b0083>] create_object+0x23/0x240
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10b01dd>] ? create_object+0x17d/0x240
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c102ff7f>] ? wake_up_process+0xf/0x20
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c1254307>] kmemleak_alloc+0x27/0x50
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10adc07>] kmem_cache_alloc+0x87/0xd0
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c108732e>] mempool_alloc_slab+0xe/0x10
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c1087471>] mempool_alloc+0x41/0xf0
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c1087471>] ? mempool_alloc+0x41/0xf0
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<f90ab023>] alloc_tio+0x23/0x50 [dm_mod]
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<f90ac7b4>] __split_and_process_bio+0x244/0x6f0 [dm_mod]
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c106099b>] ? __module_text_address+0xb/0x50
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10609e8>] ? is_module_text_address+0x8/0x10
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c1049e67>] ? __kernel_text_address+0x47/0x70
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c100676e>] ? print_context_stack+0x4e/0xb0
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10054f7>] ? dump_trace+0x87/0xe0
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<f90acd16>] dm_request+0xb6/0x150 [dm_mod]
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c112cd0f>] generic_make_request+0x28f/0x380
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10adc07>] ? kmem_cache_alloc+0x87/0xd0
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c112ce6a>] submit_bio+0x6a/0x100
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10d8b5c>] ? bio_alloc_bioset+0x3c/0xb0
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10d3c33>] submit_bh+0xe3/0x120
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10d67b9>] __block_write_full_page+0x229/0x3a0
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10d91e0>] ? blkdev_get_block+0x0/0xd0
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10d5fa0>] ? end_buffer_async_write+0x0/0x140
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10d6a1a>] block_write_full_page_endio+0xea/0x100
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10d5fa0>] ? end_buffer_async_write+0x0/0x140
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10d91e0>] ? blkdev_get_block+0x0/0xd0
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10d6a42>] block_write_full_page+0x12/0x20
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10d5fa0>] ? end_buffer_async_write+0x0/0x140
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10da0af>] blkdev_writepage+0xf/0x20
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c108b70b>] __writepage+0xb/0x30
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c108be58>] write_cache_pages+0x158/0x330
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c108b700>] ? __writepage+0x0/0x30
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10da0a0>] ? blkdev_writepage+0x0/0x20
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c108c04f>] generic_writepages+0x1f/0x30
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c108c077>] do_writepages+0x17/0x30
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c1085909>] __filemap_fdatawrite_range+0x59/0x70
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c108596f>] filemap_write_and_wait_range+0x4f/0x90
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10d23cc>] vfs_fsync_range+0x4c/0x90
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10d24c2>] vfs_fsync+0x22/0x30
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10d24fa>] do_fsync+0x2a/0x50
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c10d254d>] sys_fsync+0xd/0x10
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: [<c1002e93>] sysenter_do_call+0x12/0x22
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: Mem-Info:
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: DMA per-cpu:
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: CPU    0: hi:    0, btch:   1 usd:   0
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: CPU    1: hi:    0, btch:   1 usd:   0
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: Normal per-cpu:
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: CPU    0: hi:  186, btch:  31 usd: 115
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: CPU    1: hi:  186, btch:  31 usd:  30
-> 2011-01-05T19:43:19.466+01:00 n22 kernel: HighMem per-cpu:
-> 2011-01-05T19:43:19.467+01:00 n22 kernel: CPU    0: hi:  186, btch:  31 usd: 178
-> 2011-01-05T19:43:19.467+01:00 n22 kernel: CPU    1: hi:  186, btch:  31 usd: 115
-> 2011-01-05T19:43:19.467+01:00 n22 kernel: active_anon:144831 inactive_anon:60757 isolated_anon:0
-> 2011-01-05T19:43:19.467+01:00 n22 kernel: active_file:57044 inactive_file:117883 isolated_file:0
-> 2011-01-05T19:43:19.467+01:00 n22 kernel: unevictable:0 dirty:68283 writeback:14601 unstable:0
-> 2011-01-05T19:43:19.467+01:00 n22 kernel: free:45254 slab_reclaimable:10486 slab_unreclaimable:49038
-> 2011-01-05T19:43:19.467+01:00 n22 kernel: mapped:30904 shmem:29488 pagetables:1340 bounce:0
-> 2011-01-05T19:43:19.467+01:00 n22 kernel: DMA free:3500kB min:64kB low:80kB high:96kB active_anon:596kB inactive_anon:768kB active_file:132kB 
-> inactive_file:8024kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15800kB mlocked:0kB dirty:0kB writeback:0kB mapped:4kB shmem:0kB 
-> slab_reclaimable:604kB slab_unreclaimable:2284kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 
-> all_unreclaimable? no
-> 2011-01-05T19:43:19.467+01:00 n22 kernel: lowmem_reserve[]: 0 865 1911 1911
-> 2011-01-05T19:43:19.467+01:00 n22 kernel: Normal free:2756kB min:3728kB low:4660kB high:5592kB active_anon:73792kB inactive_anon:73856kB 
-> active_file:131732kB inactive_file:339856kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:885944kB mlocked:0kB dirty:273092kB 
-> writeback:58404kB mapped:12580kB shmem:43028kB slab_reclaimable:41340kB slab_unreclaimable:193868kB kernel_stack:2504kB pagetables:5360kB 
-> unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:1296 all_unreclaimable? no
-> 2011-01-05T19:43:19.467+01:00 n22 kernel: lowmem_reserve[]: 0 0 8369 8369
-> 2011-01-05T19:43:19.467+01:00 n22 kernel: HighMem free:174760kB min:512kB low:1636kB high:2764kB active_anon:504936kB inactive_anon:168404kB 
-> active_file:96312kB inactive_file:123652kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:1071256kB mlocked:0kB dirty:40kB writeback:0kB 
-> mapped:111032kB shmem:74924kB slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB 
-> pages_scanned:0 all_unreclaimable? no
-> 2011-01-05T19:43:19.467+01:00 n22 kernel: lowmem_reserve[]: 0 0 0 0
-> 2011-01-05T19:43:19.467+01:00 n22 kernel: DMA: 1*4kB 1*8kB 0*16kB 1*32kB 0*64kB 1*128kB 1*256kB 0*512kB 1*1024kB 1*2048kB 0*4096kB = 3500kB
-> 2011-01-05T19:43:19.467+01:00 n22 kernel: Normal: 1*4kB 0*8kB 0*16kB 0*32kB 1*64kB 1*128kB 0*256kB 1*512kB 0*1024kB 1*2048kB 0*4096kB = 2756kB
-> 2011-01-05T19:43:19.467+01:00 n22 kernel: HighMem: 16840*4kB 9685*8kB 1730*16kB 64*32kB 1*64kB 1*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 
-> 0*4096kB = 174760kB
-> 2011-01-05T19:43:19.467+01:00 n22 kernel: 204435 total pagecache pages
-> 2011-01-05T19:43:19.467+01:00 n22 kernel: 0 pages in swap cache
-> 2011-01-05T19:43:19.467+01:00 n22 kernel: Swap cache stats: add 0, delete 0, find 0/0
-> 2011-01-05T19:43:19.467+01:00 n22 kernel: Free swap  = 2003364kB
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: Total swap = 2003364kB
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: 498160 pages RAM
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: 270850 pages HighMem
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: 6064 pages reserved
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: 296131 pages shared
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: 275823 pages non-shared
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: kmemleak: Cannot allocate a kmemleak_object structure
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: Pid: 26241, comm: mke2fs Not tainted 2.6.37 #1
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: Call Trace:
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c1260b2b>] ? printk+0x18/0x1d
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c10b0288>] create_object+0x228/0x240
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c10b01dd>] ? create_object+0x17d/0x240
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c102ff7f>] ? wake_up_process+0xf/0x20
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c1254307>] kmemleak_alloc+0x27/0x50
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c10adc07>] kmem_cache_alloc+0x87/0xd0
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c108732e>] mempool_alloc_slab+0xe/0x10
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c1087471>] mempool_alloc+0x41/0xf0
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c1087471>] ? mempool_alloc+0x41/0xf0
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<f90ab023>] alloc_tio+0x23/0x50 [dm_mod]
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<f90ac7b4>] __split_and_process_bio+0x244/0x6f0 [dm_mod]
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c106099b>] ? __module_text_address+0xb/0x50
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c10609e8>] ? is_module_text_address+0x8/0x10
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c1049e67>] ? __kernel_text_address+0x47/0x70
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c100676e>] ? print_context_stack+0x4e/0xb0
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c10054f7>] ? dump_trace+0x87/0xe0
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<f90acd16>] dm_request+0xb6/0x150 [dm_mod]
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c112cd0f>] generic_make_request+0x28f/0x380
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c10adc07>] ? kmem_cache_alloc+0x87/0xd0
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c112ce6a>] submit_bio+0x6a/0x100
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c10d8b5c>] ? bio_alloc_bioset+0x3c/0xb0
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c10d3c33>] submit_bh+0xe3/0x120
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c10d67b9>] __block_write_full_page+0x229/0x3a0
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c10d91e0>] ? blkdev_get_block+0x0/0xd0
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c10d5fa0>] ? end_buffer_async_write+0x0/0x140
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c10d6a1a>] block_write_full_page_endio+0xea/0x100
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c10d5fa0>] ? end_buffer_async_write+0x0/0x140
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c10d91e0>] ? blkdev_get_block+0x0/0xd0
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c10d6a42>] block_write_full_page+0x12/0x20
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c10d5fa0>] ? end_buffer_async_write+0x0/0x140
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c10da0af>] blkdev_writepage+0xf/0x20
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c108b70b>] __writepage+0xb/0x30
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c108be58>] write_cache_pages+0x158/0x330
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c108b700>] ? __writepage+0x0/0x30
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c10da0a0>] ? blkdev_writepage+0x0/0x20
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c108c04f>] generic_writepages+0x1f/0x30
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c108c077>] do_writepages+0x17/0x30
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c1085909>] __filemap_fdatawrite_range+0x59/0x70
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c108596f>] filemap_write_and_wait_range+0x4f/0x90
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c10d23cc>] vfs_fsync_range+0x4c/0x90
-> 2011-01-05T19:43:19.468+01:00 n22 kernel: [<c10d24c2>] vfs_fsync+0x22/0x30
-> 2011-01-05T19:43:19.469+01:00 n22 kernel: [<c10d24fa>] do_fsync+0x2a/0x50
-> 2011-01-05T19:43:19.469+01:00 n22 kernel: [<c10d254d>] sys_fsync+0xd/0x10
-> 2011-01-05T19:43:19.469+01:00 n22 kernel: [<c1002e93>] sysenter_do_call+0x12/0x22
-> 2011-01-05T19:43:19.469+01:00 n22 kernel: kmemleak: Kernel memory leak detector disabled
-> 2011-01-05T19:43:19.469+01:00 n22 kernel: kmemleak: Automatic memory scanning thread ended
---531368966-599384781-1294440292=:23858--
+[Example]
+This is an example of the problem and solution above.
+
+- System Memory: 2GB
+- High memory pressure
+
+In this case, min_free_kbytes and watermarks are automatically
+set as follows.
+(Here, watermark shows sum of the each zone's watermark.)
+
+min_free_kbytes: 5752
+watermark[min] : 5752
+watermark[low] : 7190
+watermark[high]: 8628
+
+If application allocates/accesses 2000 kbytes memory (bigger
+than 1438(= 7190 - 5752)), direct reclaim may occur.
+
+By introducing this patch, one can set watermark[low] to bigger
+than 7752 which makes the difference between min and low bigger
+than 2000. This results in avoidance of direct reclaim without
+changing watermark[min].
+
+[Test]
+I ran a simple test like below:
+
+System memory: 2GB
+
+$ dd if=/dev/zero of=/tmp/tmp_file &
+$ time mapped-file-stream 1 $((1024 * 1024 * 64))
+
+The result is following.
+
+                  | default |  case 1   |  case 2 |
+----------------------------------------------------------
+wmark_min_kbytes  |  5752   |    5752   |   5752  |
+wmark_low_kbytes  |  7190   |   16384   |  32768  | (KB)
+wmark_high_kbytes |  8628   |   20480   |  40960  |
+----------------------------------------------------------
+real              |   503   |    364    |    337  |
+user              |     3   |      5    |      4  | (msec)
+sys               |   153   |    149    |    146  |
+----------------------------------------------------------
+page fault        |  32768  |  32768    |  32768  |
+kswapd_wakeup     |   1809  |    335    |    228  | (times)
+direct reclaim    |      5  |      0    |      0  |
+
+As you can see, direct reclaim was performed 5 times and
+its exec time was 503 msec in the default case. On the other
+hand, in case 1 (large delta case ) no direct reclaim was
+performed and its exec time was 364 msec.
+
+(*) mapped-file-stream
+     This is a micro benchmark from Johannes Weiner that accesses a
+     large sparse-file through mmap().
+     http://lkml.org/lkml/2010/8/30/226
+
+Any comments or suggestions are welcome	.
+
+
+Satoru Moriya (2):
+  Add explanation about min_free_kbytes to clarify its effect
+  Make watermarks tunable separately
+
+ Documentation/sysctl/vm.txt |   40 +++++++++++++++-
+ include/linux/mmzone.h      |    6 ++
+ kernel/sysctl.c             |   28 +++++++++++-
+ mm/page_alloc.c             |  109 +++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 181 insertions(+), 2 deletions(-)
+
