@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247Ab1AGS1z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 13:27:55 -0500
-Received: from landau.phys.spbu.ru ([195.19.235.38]:3787 "EHLO
-	landau.phys.spbu.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754990Ab1AGS1y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 13:27:54 -0500
-Date: Fri, 7 Jan 2011 21:27:53 +0300
-From: Kirill Smelkov <kirr@landau.phys.spbu.ru>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        Will Drewry <wad@chromium.org>
-Subject: Re: [RESEND PATCH 1/2] init: Add support for root devices to be
- specified by partition name
-Message-ID: <20110107182753.GA12012@landau.phys.spbu.ru>
-References: <89f79879497f66250cde9abdab3cc1da846fd790.1294400351.git.kirr@landau.phys.spbu.ru>
- <AANLkTindW3TnuP8VA0co-bLT7r2M-jrxTR_sYYQj1rE9@mail.gmail.com>
+	id S1755231Ab1AGSa5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 13:30:57 -0500
+Received: from THUNK.ORG ([69.25.196.29]:45348 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752470Ab1AGSaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 13:30:55 -0500
+Date: Fri, 7 Jan 2011 13:30:47 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch 8/8] fs: add i_op->sync_inode
+Message-ID: <20110107183047.GB21922@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Christoph Hellwig <hch@infradead.org>,
+	Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Andrew Morton <akpm@linux-foundation.org>
+References: <20101229151246.GA22033@infradead.org>
+ <20110104062725.GD3402@amd>
+ <20110104065736.GA8013@infradead.org>
+ <20110104080323.GC4090@amd>
+ <20110104092501.GB2760@infradead.org>
+ <20110104094922.GA4812@amd>
+ <20110106204510.GA2872@infradead.org>
+ <20110107044734.GA4552@amd>
+ <20110107072430.GA32308@infradead.org>
+ <20110107072934.GA2849@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTindW3TnuP8VA0co-bLT7r2M-jrxTR_sYYQj1rE9@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110107072934.GA2849@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 07, 2011 at 04:13:27PM +0100, Kay Sievers wrote:
-> On Fri, Jan 7, 2011 at 12:42, Kirill Smelkov <kirr@landau.phys.spbu.ru> wrote:
-> >  [ In follow-up to b5af921e ]
-> >
-> > Besides GUIDs, there are also partition names stored in an EFI GPT
-> > partition table. So let's add support for root to be located not only by
-> > GUID, but also by partition names, like this:
-> >
-> >    root=PARTNAME=<partition-name>
+On Fri, Jan 07, 2011 at 02:29:34AM -0500, Christoph Hellwig wrote:
+> Btw, there's an easy way how we could get this right, in fact
+> the write_inode in XFS is already trying to do it, it's just the
+> caller not copying with it:
 > 
-> Are you sure about this? What's your use case?
->
-> Generally, we really don't recommend ever to use any simple labels for
-> critical stuff -- not from filesystems, not from partitions.
-> 
-> I know that some distros did that, but this is pretty misguided, and I
-> think, should not be extended to any new facility, unless there is a
-> good use case for that.
-> 
-> Labels are not unique and in the general case absolutely not useful to
-> uniquely identify data on a disk. They only make sense for humans, or
-> interfaces that visualize things -- they should usually not be used in
-> any environment that reliably needs to identify a certain partition.
-> We have the uuids  for a reason.
+>  - if we can't get locks for a non-blocking ->write_inode we return
+>    EAGAIN, and the callers sets the dirty bits again.
 
-I'm regularly rebuilding flash image for one product and at present in
-bootloader we have 
+I like that solution; it might be one of the easier ways to maintain
+backwards compatibility.  Especially since (correct me if I am wrong)
+the simpler file systems which always write out the inode in the case
+of a non-blocking write_inode, say, like say the fat file system, are
+immune from this specific problem, right?
 
-    kernel      /boot/vmlinuz root=LABEL=NAVY-root ...
-
-
-which requires loading initrd which I've tried to avoid with
-root=PARTNAME=... We needed this stuff in the first place so that
-device could be booted over compact-flash or usb or whatever.
-
-Yes, this could be changed to using root filesystem uuid (although
-labels as you say are easier for humans to understand), and I see your
-point about reliability. So sorry for the noise coming from "misguided"
-heritage.
-
-Thanks,
-Kirill
-
+						- Ted
