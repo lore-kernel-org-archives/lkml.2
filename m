@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab1AGUoE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 15:44:04 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:32413 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab1AGUoD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 15:44:03 -0500
-Message-ID: <4D277A8C.5010502@kernel.org>
-Date: Fri, 07 Jan 2011 12:41:48 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1752615Ab1AGUoY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 15:44:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2275 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751760Ab1AGUoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 15:44:23 -0500
+Message-ID: <4D277B24.5000409@redhat.com>
+Date: Fri, 07 Jan 2011 10:44:20 -1000
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] memblock: Don't adjust size in memblock_find_base()
-References: <AANLkTikknHfA4TQw+SMH-EyJBHoNHXk8Rheq4=K4jNWA@mail.gmail.com> <alpine.DEB.2.00.1012291637270.6040@chino.kir.corp.google.com> <4D1BD928.50701@zytor.com> <alpine.DEB.2.00.1012291702180.7374@chino.kir.corp.google.com> <4D1BE615.4000700@zytor.com> <20101230090648.GB7306@elte.hu> <20101230102815.GA29822@elte.hu> <20101230103002.GA30020@elte.hu> <AANLkTimeqrLzDuqBoSvmkSJWMc7u3PeRf37vjzBca2Lh@mail.gmail.com> <AANLkTimpyRXS9dNFATh4GqtA46uynutAvK7Qb5S7WPFO@mail.gmail.com> <20110105134434.GA22816@elte.hu>
-In-Reply-To: <20110105134434.GA22816@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Glauber Costa <glommer@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [KVM TSC trapping / migration 2/2] Add TSC KHZ MSR
+References: <1294308645-31113-1-git-send-email-zamsden@redhat.com> <1294308645-31113-3-git-send-email-zamsden@redhat.com> <20110107104859.GA12056@amt.cnet>
+In-Reply-To: <20110107104859.GA12056@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/07/2011 12:48 AM, Marcelo Tosatti wrote:
+> On Thu, Jan 06, 2011 at 12:10:45AM -1000, Zachary Amsden wrote:
+>    
+>> Use an MSR to allow "soft" migration to hosts which do not support
+>> TSC trapping.  Rather than make this a required element of any
+>> migration protocol, we allow the TSC rate to be exported as a data
+>> field (useful in its own right), but we also allow a one time write
+>> of the MSR during VM creation.  The result is that for the common
+>> use case, no protocol change is required to communicate TSC rate
+>> to the receiving host.
+>>      
+> Migration to hosts which do not support the feature can be achieved by
+> saving/restoring the TSC rate + flags in a subsection. A subsection
+> seems more appropriate than an MSR for this.
+>    
 
-While applying patch to use memblock to find aperture for 64bit x86.
-Ingo found system with 1g + force_iommu
+Yes, I looked at that, but it looked to me like a subsection was 
+intended for an optional feature which MUST be present on the 
+destination if the source is using the feature.  This way, newer hosts 
+without the feature enabled can migrate to older hosts which do not 
+support the feature.
 
-> No AGP bridge found
-> Node 0: aperture @ 38000000 size 32 MB
-> Aperture pointing to e820 RAM. Ignoring.
-> Your BIOS doesn't leave a aperture memory hole
-> Please enable the IOMMU option in the BIOS setup
-> This costs you 64 MB of RAM
-> Cannot allocate aperture memory hole (0,65536K)
+The TSC rate migration is slightly different; we may wish to migrate 
+from a host with the TSC rate feature enabled to a host which does not 
+support the TSC rate feature.  This is exactly the current behavior, the 
+TSC rate will change on that migration, and I wanted to preserve that 
+behavior.  I don't advise that mode of usage, but there may be use cases 
+for it and it should be decided by policy, not dictated by our feature set.
 
-the corresponding code:
-	addr = memblock_find_in_range(0, 1ULL<<32, aper_size, 512ULL<<20);
-	if (addr == MEMBLOCK_ERROR || addr + aper_size > 0xffffffff) {
-		printk(KERN_ERR
-			"Cannot allocate aperture memory hole (%lx,%uK)\n",
-				addr, aper_size>>10);
-		return 0;
-	}
-	memblock_x86_reserve_range(addr, addr + aper_size, "aperture64")
+That said, I'm happy to remove the MSR if we truly don't want to support 
+that mode of usage.
 
-it fails because memblock core code align the size with 512M. that could make
-size way too big.
-
-So don't align the size in that case.
-
-actually __memblock_alloc_base, the another caller already align that before calling that function.
-
-BTW. x86 does not use __memblock_alloc_base...
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- mm/memblock.c |    2 --
- 1 file changed, 2 deletions(-)
-
-Index: linux-2.6/mm/memblock.c
-===================================================================
---- linux-2.6.orig/mm/memblock.c
-+++ linux-2.6/mm/memblock.c
-@@ -137,8 +137,6 @@ static phys_addr_t __init_memblock membl
- 
- 	BUG_ON(0 == size);
- 
--	size = memblock_align_up(size, align);
--
- 	/* Pump up max_addr */
- 	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
- 		end = memblock.current_limit;
+Zach
