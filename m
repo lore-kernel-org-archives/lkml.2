@@ -1,104 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741Ab1AGUom (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 15:44:42 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49093 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935Ab1AGUok (ORCPT
+	id S1752692Ab1AGUpi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 15:45:38 -0500
+Received: from vms173017pub.verizon.net ([206.46.173.17]:33141 "EHLO
+	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab1AGUpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 15:44:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=P+1cOwUNoImzpLzLNV+jSDx5U8f0TdPf1LXOj6cLE+dC38as/uKncEzLAiYWqHCzty
-         LfBYyoJAhxPSoU3S1hoEb9NURm0eqMf6Q1IyqA+b7mDelZAYEQnCkHLdqET4LaQkM6sF
-         NlqcgNT0Xn57eIEPo79Yv64dv0OxB0wC4qdxE=
-Message-ID: <4D277B33.1000508@gmail.com>
-Date: Fri, 07 Jan 2011 21:44:35 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: Jiri Slaby <jslaby@suse.cz>, jbarnes@virtuousgeek.org,
-        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH 1/1] PCI: tune up ICH4 quirk for broken BIOSes
-References: <1294327066-23518-1-git-send-email-jslaby@suse.cz> <201101061224.40596.bjorn.helgaas@hp.com>
-In-Reply-To: <201101061224.40596.bjorn.helgaas@hp.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Jan 2011 15:45:36 -0500
+Date: Fri, 07 Jan 2011 15:45:18 -0500 (EST)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Thomas Renninger <trenn@suse.de>
+Cc: linux-perf-users@vger.kernel.org, mingo@elte.hu, arjan@linux.intel.com,
+        j-pihet@ti.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/9] acpi: Use ACPI C-state type instead of enumeration
+ value to export cpuidle state name
+In-reply-to: <1294396190-23031-2-git-send-email-trenn@suse.de>
+Message-id: <alpine.LFD.2.02.1101071529100.20609@x980>
+References: <1294396190-23031-1-git-send-email-trenn@suse.de>
+ <1294396190-23031-2-git-send-email-trenn@suse.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2011 08:24 PM, Bjorn Helgaas wrote:
-> On Thursday, January 06, 2011 08:17:46 am Jiri Slaby wrote:
->> There are BIOSes out there where they provide ACPI mapping that
->> conflicts with fixed one. Then e.g. an IDE controller doesn't work due
->> to I/O space conflict:
->> pci 0000:00:1f.1: address space collision: [io  0x0170-0x0177] conflicts with 0000:00:1f.0 [io  0x0100-0x017f]
->>
->> 0x0170-0x0177 for IDE controllers is created in pci_setup_device.
->> 0x0100-0x017f for the ICH4 ISA bridge is created in quirk_ich4_lpc_acpi
+On Fri, 7 Jan 2011, Thomas Renninger wrote:
+
+> In the former /proc/acpi/processor/power/* there were Cx showing the
+> enumerated number/amount of C-states and type[Cy] which is
+> what should get shown as the cpuidle state name.
 > 
-> This might be the right thing to do, but it feels hacky to add more
-> magic numbers (">= 0x180"), so I'd like to understand it better.
+> Typically on latest Nehalem and later CPUs, BIOS vendors miss
+> out C2 and C3 wrongly shows up as C2.
 
-Yes, definitely, it's a hack, but I haven't found anything better. So I
-dropped the patch in for discussion.
+I think this patch will cause more confusion than it will fix.
 
-> (Is there a bugzilla for this? 
+It assumes that all states of type C2 should have the name "C2"
+and all the states of type "C3" should have the name "C3".
+But some systems may have more than one state of each type...
 
-Only a novell (opensuse) bugzilla:
-https://bugzilla.novell.com/show_bug.cgi?id=558740
+also, the state->name is somewhat arbitrary.
 
-> Is it a regression?  Sounds like an
-> old machine where we should have seen this before.)
+You'll notice that intel_idle uses the hardware C-state names
+such as NHM-C1, NHM-C3, NHM-C6 - to match the (arbitrary)
+names in the hardware documentation.  We could call those
+states Moe/Larry/Curley just as well.
 
-Yes, a regression. 2.6.31 and newer doesn't work. 2.6.27 did. I don't
-know what kernel exactly in between is first defunct.
+If somebody wants to know what the state _is_,
+then the state->desc field shows them in un-ambiguous
+terms, "MWAIT 0x10" etc.
 
-> My guess is that we found this "conflict" and tried to move the
-> controller, but it's hardwired to stay at 0x170 when in compatibility
-> mode.  So the hardware is really still at 0x170, but Linux thinks it
-> moved it elsewhere, so it doesn't work.
-
-Sorry I didn't get this paragraph.
-
-> The fixed IDE resources in pci_setup_device() make sense to me; I
-> think section 2.1 of the PCI IDE spec justifies specific OS knowledge
-> of the compatibility mode regions.
-> 
-> But I don't know the quirk_ich4_lpc_acpi() history, and this quirk
-> is the sort of information the OS should not have to know about.
-
-It's from ICH4 specs. For ICH4, the addresses of where to look for ACPI
-and GPIO are specified in the PCI BUS conf space.
-
-So we look at 0x40 in that space and find 0x101, so we reserve
-0x100-0x17f which conflicts with legacy IDE which is 0x170-0x17f.
-
-> Theoretically, ACPI tells us about the GPIO/TCO/etc. regions in a
-> generic way via namespace devices or something in the static tables.
-> Is that generic information missing, or is it there and Linux is
-> ignoring it?  If we're ignoring it, I'd rather fix that.
-
-It works for most boxes I would say. Try to google for "claimed by ICH4
-ACPI/GPIO/TCO", it reports sane ranges like 0400-047f or 4000-407f.
-
-> The main reason for claiming I/O regions is to keep us from placing
-> another device on top of them.  But we've had PCIBIOS_MIN_IO = 0x1000
-> forever, which should keep us from putting anything below that anyway
-> (at least for PCI devices).  So there must be some other reason for
-> claiming space in this quirk.
-
-Anyway, this ACPI space may be below 0x1000 as can be seen above. From
-the ICH standard, it can be anywhere...
+if somebody wants to simply enumerate the states,
+so they can use acpi.max_cstate=N, for example, then
+cpuidle already enumerates them in 
+/sys/devices/system/cpu/cpu0/cpuidle/state%d
 
 thanks,
--- 
-js
+Len Brown, Intel Open Source Technology Center
+
+ps. the thing about "mising C2".  That isn't a bug.
+That is actually BIOS writer's attempt to not break
+the installed base of Linux.  NHM doesn't actually
+have any ACPI C3-type states, just C2-type states.
+But in NHM, the LAPIC timer stops in C2-type states,
+so the BIOS advertises them as C2-type to make sure
+that an old version of Linux doesn't attempt to
+use the LAPIC timer in those states.
+(we switched to not trusting the LAPIC timer even
+in C2-type states a while back, but the installed
+base never gets updated)
+
+pps. I do think we need to be able to dump
+the _CST, as we lost the ACPI type info that
+was in /proc/acpi/processor/*/power and we
+may need it to debug some systems.
+
+> Signed-off-by: Thomas Renninger <trenn@suse.de>
+> CC: arjan@linux.intel.com
+> CC: lenb@kernel.org
+> CC: linux-acpi@vger.kernel.org
+> CC: linux-kernel@vger.kernel.org
+> ---
+>  drivers/acpi/processor_idle.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+> index dcb38f8..104ae77 100644
+> --- a/drivers/acpi/processor_idle.c
+> +++ b/drivers/acpi/processor_idle.c
+> @@ -1008,7 +1008,6 @@ static int acpi_processor_setup_cpuidle(struct acpi_processor *pr)
+>  #endif
+>  		cpuidle_set_statedata(state, cx);
+>  
+> -		snprintf(state->name, CPUIDLE_NAME_LEN, "C%d", i);
+>  		strncpy(state->desc, cx->desc, CPUIDLE_DESC_LEN);
+>  		state->exit_latency = cx->latency;
+>  		state->target_residency = cx->latency * latency_factor;
+> @@ -1016,6 +1015,7 @@ static int acpi_processor_setup_cpuidle(struct acpi_processor *pr)
+>  		state->flags = 0;
+>  		switch (cx->type) {
+>  			case ACPI_STATE_C1:
+> +			snprintf(state->name, CPUIDLE_NAME_LEN, "C1");
+>  			state->flags |= CPUIDLE_FLAG_SHALLOW;
+>  			if (cx->entry_method == ACPI_CSTATE_FFH)
+>  				state->flags |= CPUIDLE_FLAG_TIME_VALID;
+> @@ -1025,6 +1025,7 @@ static int acpi_processor_setup_cpuidle(struct acpi_processor *pr)
+>  			break;
+>  
+>  			case ACPI_STATE_C2:
+> +			snprintf(state->name, CPUIDLE_NAME_LEN, "C2");
+>  			state->flags |= CPUIDLE_FLAG_BALANCED;
+>  			state->flags |= CPUIDLE_FLAG_TIME_VALID;
+>  			state->enter = acpi_idle_enter_simple;
+> @@ -1032,6 +1033,7 @@ static int acpi_processor_setup_cpuidle(struct acpi_processor *pr)
+>  			break;
+>  
+>  			case ACPI_STATE_C3:
+> +			snprintf(state->name, CPUIDLE_NAME_LEN, "C3");
+>  			state->flags |= CPUIDLE_FLAG_DEEP;
+>  			state->flags |= CPUIDLE_FLAG_TIME_VALID;
+>  			state->flags |= CPUIDLE_FLAG_CHECK_BM;
+> -- 
+> 1.7.3.1
+> 
