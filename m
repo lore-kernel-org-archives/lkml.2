@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466Ab1AGOOY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 09:14:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54281 "EHLO mx1.redhat.com"
+	id S1753335Ab1AGOO5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 09:14:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46227 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751662Ab1AGOOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 09:14:23 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Li Zefan <lizf@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] blktrace: add missing probe argument to block_bio_complete
-References: <20110107015453.GB5109@Krystal>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 07 Jan 2011 09:13:52 -0500
-In-Reply-To: <20110107015453.GB5109@Krystal> (Mathieu Desnoyers's message of
-	"Thu, 6 Jan 2011 20:54:53 -0500")
-Message-ID: <x498vyw7qe7.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1751474Ab1AGOOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 09:14:55 -0500
+Date: Fri, 7 Jan 2011 15:14:54 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: John Johansen <john.johansen@canonical.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] apparmor: cleanup generated files correctly
+Message-ID: <20110107141453.GD1891@tiehlicka.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mathieu Desnoyers <mathieu.desnoyers@efficios.com> writes:
+Hi John,
+could you consider the patch bellow. The issue is minor but I guess it
+is worth having fixed.
+---
+>From a6b164aeff1234708595d06dd6f9abeb59564da6 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Fri, 7 Jan 2011 15:03:02 +0100
+Subject: [PATCH] apparmor: cleanup generated files correctly
 
-> blktrace.c block bio complete callback needs to gain a new argument to reflect
-> the newly added "error" tracepoint argument. This is needed to match the new
-> block_bio_complete TRACE_EVENT as of
-> commit de983a7bfcb7c020901ca6e2314cf55a4207ab5a.
->
-> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> CC: Jeff Moyer <jmoyer@redhat.com>
-> CC: Steven Rostedt <rostedt@goodmis.org>
-> CC: Frederic Weisbecker <fweisbec@gmail.com>
-> CC: Ingo Molnar <mingo@elte.hu>
-> CC: Thomas Gleixner <tglx@linutronix.de>
-> CC: Jens Axboe <axboe@kernel.dk>
-> CC: Li Zefan <lizf@cn.fujitsu.com>
-> ---
->  kernel/trace/blktrace.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->
-> Index: linux-2.6-lttng/kernel/trace/blktrace.c
-> ===================================================================
-> --- linux-2.6-lttng.orig/kernel/trace/blktrace.c
-> +++ linux-2.6-lttng/kernel/trace/blktrace.c
-> @@ -785,7 +785,8 @@ static void blk_add_trace_bio_bounce(voi
->  }
->  
->  static void blk_add_trace_bio_complete(void *ignore,
-> -				       struct request_queue *q, struct bio *bio)
-> +				       struct request_queue *q, struct bio *bio,
-> +				       int error)
->  {
->  	blk_add_trace_bio(q, bio, BLK_TA_COMPLETE);
->  }
+clean-files should be defined as a variable not a target.
 
-OK, I clearly didn't look closely enough last time.  There's no sense
-passing this information down if it isn't used (as you said initially).
-blk_add_trace_bio sets the error based on whether or not the
-BIO_UPTODATE bit is set.  So, I think we should instead revert the patch
-I sent you (Mathieu), and then completely get rid of the error field in
-the TP macros.
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ security/apparmor/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Does that make sense to everyone else?
+diff --git a/security/apparmor/Makefile b/security/apparmor/Makefile
+index f204869..bbb942a 100644
+--- a/security/apparmor/Makefile
++++ b/security/apparmor/Makefile
+@@ -6,7 +6,7 @@ apparmor-y := apparmorfs.o audit.o capability.o context.o ipc.o lib.o match.o \
+               path.o domain.o policy.o policy_unpack.o procattr.o lsm.o \
+               resource.o sid.o file.o
+ 
+-clean-files: capability_names.h af_names.h
++clean-files := capability_names.h af_names.h
+ 
+ quiet_cmd_make-caps = GEN     $@
+ cmd_make-caps = echo "static const char *capability_names[] = {" > $@ ; sed -n -e "/CAP_FS_MASK/d" -e "s/^\#define[ \\t]\\+CAP_\\([A-Z0-9_]\\+\\)[ \\t]\\+\\([0-9]\\+\\)\$$/[\\2]  = \"\\1\",/p" $< | tr A-Z a-z >> $@ ; echo "};" >> $@
+-- 
+1.7.2.3
 
-Cheers,
-Jeff
+-- 
+Michal Hocko
+L3 team 
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
