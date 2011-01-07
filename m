@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886Ab1AGRRQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 12:17:16 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51921 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754765Ab1AGRRP (ORCPT
+	id S1754858Ab1AGRS4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 12:18:56 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:36154 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754556Ab1AGRSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 12:17:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=CeDVgAnQSNBRffbKX+71K8yT/rK/0GYUC8aA+8tGzWzIM+Sp7dLiEVUZhANfOoPbKo
-         vsMQmykDc67RnRu9tzeOclkWOUqV6sPKdUTAC1gkQskTwGJecjg7q2qSqSChxX426wzy
-         F1DnSqCaQGUR/jWQn/WBmt+i5uoeprWnAjx4o=
-Date: Fri, 7 Jan 2011 18:17:09 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Jan Beulich <JBeulich@novell.com>,
-        "H. Peter Anvin" <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Soeren Sandmann Pedersen <sandmann@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC PATCH 1/2] x86: Fix rbp saving in pt_regs on irq entry
-Message-ID: <20110107171707.GC3066@nowhere>
-References: <4D25FE5B020000780002AC50@vpn.id2.novell.com>
- <20110106165452.GC2308@nowhere>
- <4D2602DE020000780002ACA3@vpn.id2.novell.com>
- <20110106171231.GD2308@nowhere>
- <4D26D2C2020000780002AECB@vpn.id2.novell.com>
- <20110107123130.GB20761@elte.hu>
- <20110107160459.GA2751@nowhere>
- <4D2749D6020000780002B0BC@vpn.id2.novell.com>
- <20110107162722.GA3066@nowhere>
- <20110107165843.GA7376@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110107165843.GA7376@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 7 Jan 2011 12:18:55 -0500
+Date: Fri, 7 Jan 2011 09:18:34 -0800
+From: Randy Dunlap <randy.dunlap@Oracle.com>
+To: akpm@linux-foundation.org, mjg@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: mmotm 2011-01-06-15-41 uploaded (apple_bl)
+Message-Id: <20110107091834.47786e35.randy.dunlap@oracle.com>
+In-Reply-To: <201101070014.p070Egpo023959@imap1.linux-foundation.org>
+References: <201101070014.p070Egpo023959@imap1.linux-foundation.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 07, 2011 at 05:58:43PM +0100, Ingo Molnar wrote:
-> 
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > On Fri, Jan 07, 2011 at 04:13:58PM +0000, Jan Beulich wrote:
-> > > >>> On 07.01.11 at 17:05, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > > > Once I'll have perf callchain based on CFI ready, we'll perhaps find some 
-> > > > issues
-> > > > there. Although I guess there are already tools that can make use of that.
-> > > 
-> > > Is this to read that you're planning to do a re-spin of the CFI
-> > > unwinding code (which I'm not allowed to submit another time,
-> > > but which we've been using for years in SuSE distros) then?
-> > 
-> > An in-kernel CFI unwinder?
-> > 
-> > No the intended CFI unwinding that I'm working on for perf is made
-> > on post-processing, on top of partial stack and regs snapshots.
-> > 
-> > The true unwinding is computed in userspace.
-> 
-> I think that design will be fundamentally more robust and more flexible than an 
-> in-kernel unwinder.
+On Thu, 06 Jan 2011 15:41:14 -0800 akpm@linux-foundation.org wrote:
 
-But in fact for the kernel unwinding it still uses frame pointers which is certainly
-the fastest and lightest way to unwind a stack. Very nice for our profiling.
+> The mm-of-the-moment snapshot 2011-01-06-15-41 has been uploaded to
+> 
+>    http://userweb.kernel.org/~akpm/mmotm/
+> 
+> and will soon be available at
+> 
+>    git://zen-kernel.org/kernel/mmotm.git
+> 
+> It contains the following patches against 2.6.37:
 
-Now one may argue about the loss of a register and its associated overhead, not
-sure it's always noticeable though...
+
+When ACPI is not enabled:
+
+drivers/video/backlight/apple_bl.c:142: warning: 'struct acpi_device' declared inside parameter list
+drivers/video/backlight/apple_bl.c:142: warning: its scope is only this definition or declaration, which is probably not what you want
+drivers/video/backlight/apple_bl.c:200: warning: 'struct acpi_device' declared inside parameter list
+drivers/video/backlight/apple_bl.c:214: error: variable 'apple_bl_driver' has initializer but incomplete type
+drivers/video/backlight/apple_bl.c:215: error: unknown field 'name' specified in initializer
+drivers/video/backlight/apple_bl.c:215: warning: excess elements in struct initializer
+drivers/video/backlight/apple_bl.c:215: warning: (near initialization for 'apple_bl_driver')
+drivers/video/backlight/apple_bl.c:216: error: unknown field 'ids' specified in initializer
+drivers/video/backlight/apple_bl.c:216: warning: excess elements in struct initializer
+drivers/video/backlight/apple_bl.c:216: warning: (near initialization for 'apple_bl_driver')
+drivers/video/backlight/apple_bl.c:217: error: unknown field 'ops' specified in initializer
+drivers/video/backlight/apple_bl.c:217: error: extra brace group at end of initializer
+drivers/video/backlight/apple_bl.c:217: error: (near initialization for 'apple_bl_driver')
+drivers/video/backlight/apple_bl.c:220: warning: excess elements in struct initializer
+drivers/video/backlight/apple_bl.c:220: warning: (near initialization for 'apple_bl_driver')
+drivers/video/backlight/apple_bl.c: In function 'apple_bl_init':
+drivers/video/backlight/apple_bl.c:225: error: implicit declaration of function 'acpi_bus_register_driver'
+drivers/video/backlight/apple_bl.c: In function 'apple_bl_exit':
+drivers/video/backlight/apple_bl.c:230: error: implicit declaration of function 'acpi_bus_unregister_driver'
+
+
+Should BACKLIGHT_APPLE also depend on ACPI?
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
