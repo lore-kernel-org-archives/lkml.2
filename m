@@ -1,123 +1,594 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327Ab1AGSmF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 13:42:05 -0500
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:32315 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755279Ab1AGSmB (ORCPT
+	id S1755381Ab1AGSmK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 13:42:10 -0500
+Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:54643 "EHLO
+	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755021Ab1AGSl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 13:42:01 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: V6ZkNrIVM1kiq66coEA_DA2tDASe6dUSPyx8KdhF02.0geO
- Ky4cJfKKayC02S8irXcOiRVO.40pbvxuTDpRqHxyfsd77p1ZyWQwOyGev0AV
- _Xdlx4bI.EZBVUgUYu6ezsqpOyymorCnNUWk5xmFEhIj1edBPPtKNfkPOCkZ
- bMJpO3JwuUJwqtQpc8ryONpslvnrPWC.mos87nOecFpjEGu0sqa_2bEHFF.R
- RRcCXhCHWhnLT5LS7a.c604mKNQ44z7hhnmsgxzNOQd7.tslFGm1X6uEzquO
- 5Ro9KjYA0W6XfJpq1qGRgDmqn.d.X0KhTbek0SyA8_Ch4GgE-
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 7 Jan 2011 12:41:58 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-cc: "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        akpm@linux-foundation.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for
- this_cpu_cmpxchg_double
-In-Reply-To: <20110107180419.GB23082@Krystal>
-Message-ID: <alpine.DEB.2.00.1101071227450.3014@router.home>
-References: <20110106204513.669098445@linux.com> <20110106204525.222395863@linux.com> <4D263C91.30709@zytor.com> <alpine.DEB.2.00.1101070907060.3014@router.home> <20110107180419.GB23082@Krystal>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 7 Jan 2011 13:41:59 -0500
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+To: Stephane Chatty <chatty@enac.fr>, Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Subject: [RFC v3 3/5] hid-multitouch: support for PixCir-based panels
+Date: Fri,  7 Jan 2011 19:42:40 +0100
+Message-Id: <1294425762-29730-4-git-send-email-benjamin.tissoires@enac.fr>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1294425762-29730-1-git-send-email-benjamin.tissoires@enac.fr>
+References: <1294425762-29730-1-git-send-email-benjamin.tissoires@enac.fr>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Jan 2011, Mathieu Desnoyers wrote:
+Created a driver for PixCir based dual-touch panels, including the one
+in the Hanvon tablet.  This is done in a code structure aimed at unifying
+support for several existing HID multitouch panels.
 
-> I have to admit that I also hate the current interface for two reasons:
->
-> a) the way it splits the target address in two.
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Signed-off-by: Stéphane Chatty <chatty@enac.fr>
+---
+ drivers/hid/Kconfig          |    9 +
+ drivers/hid/Makefile         |    1 +
+ drivers/hid/hid-core.c       |    2 +
+ drivers/hid/hid-ids.h        |    4 +
+ drivers/hid/hid-multitouch.c |  468 ++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 484 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/hid/hid-multitouch.c
 
-We are handling two different entities that are placed next to each other.
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index 401acec..511554d 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -285,6 +285,15 @@ config HID_MONTEREY
+ 	---help---
+ 	Support for Monterey Genius KB29E.
+ 
++config HID_MULTITOUCH
++	tristate "HID Multitouch panels"
++	depends on USB_HID
++	---help---
++	  Generic support for HID multitouch panels.
++
++	  Say Y here if you have one of the following devices:
++	  - PixCir touchscreen
++
+ config HID_NTRIG
+ 	tristate "N-Trig touch screen"
+ 	depends on USB_HID
+diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
+index c335605..ec991d4 100644
+--- a/drivers/hid/Makefile
++++ b/drivers/hid/Makefile
+@@ -46,6 +46,7 @@ obj-$(CONFIG_HID_MAGICMOUSE)    += hid-magicmouse.o
+ obj-$(CONFIG_HID_MICROSOFT)	+= hid-microsoft.o
+ obj-$(CONFIG_HID_MONTEREY)	+= hid-monterey.o
+ obj-$(CONFIG_HID_MOSART)	+= hid-mosart.o
++obj-$(CONFIG_HID_MULTITOUCH)	+= hid-multitouch.o
+ obj-$(CONFIG_HID_NTRIG)		+= hid-ntrig.o
+ obj-$(CONFIG_HID_ORTEK)		+= hid-ortek.o
+ obj-$(CONFIG_HID_PRODIKEYS)	+= hid-prodikeys.o
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 88668ae..2b4d9b9 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1286,6 +1286,7 @@ static const struct hid_device_id hid_blacklist[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_BELKIN, USB_DEVICE_ID_FLIP_KVM) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_BTC, USB_DEVICE_ID_BTC_EMPREX_REMOTE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_BTC, USB_DEVICE_ID_BTC_EMPREX_REMOTE_2) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_CANDO, USB_DEVICE_ID_CANDO_PIXCIR_MULTI_TOUCH) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CANDO, USB_DEVICE_ID_CANDO_MULTI_TOUCH) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CANDO, USB_DEVICE_ID_CANDO_MULTI_TOUCH_11_6) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_CANDO, USB_DEVICE_ID_CANDO_MULTI_TOUCH_15_6) },
+@@ -1312,6 +1313,7 @@ static const struct hid_device_id hid_blacklist[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_2) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_3) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_HANVON, USB_DEVICE_ID_HANVON_MULTITOUCH) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LABTEC, USB_DEVICE_ID_LABTEC_WIRELESS_KEYBOARD) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 0f150c7..17b444b 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -134,6 +134,7 @@
+ #define USB_DEVICE_ID_BTC_EMPREX_REMOTE_2	0x5577
+ 
+ #define USB_VENDOR_ID_CANDO		0x2087
++#define USB_DEVICE_ID_CANDO_PIXCIR_MULTI_TOUCH 0x0703
+ #define USB_DEVICE_ID_CANDO_MULTI_TOUCH	0x0a01
+ #define USB_DEVICE_ID_CANDO_MULTI_TOUCH_11_6 0x0b03
+ #define USB_DEVICE_ID_CANDO_MULTI_TOUCH_15_6 0x0f01
+@@ -306,6 +307,9 @@
+ #define USB_DEVICE_ID_HANWANG_TABLET_FIRST	0x5000
+ #define USB_DEVICE_ID_HANWANG_TABLET_LAST	0x8fff
+ 
++#define USB_VENDOR_ID_HANVON		0x20b3
++#define USB_DEVICE_ID_HANVON_MULTITOUCH	0x0a18
++
+ #define USB_VENDOR_ID_HAPP		0x078b
+ #define USB_DEVICE_ID_UGCI_DRIVING	0x0010
+ #define USB_DEVICE_ID_UGCI_FLYING	0x0020
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+new file mode 100644
+index 0000000..3b05dfe
+--- /dev/null
++++ b/drivers/hid/hid-multitouch.c
+@@ -0,0 +1,468 @@
++/*
++ *  HID driver for multitouch panels
++ *
++ *  Copyright (c) 2010-2011 Stephane Chatty <chatty@enac.fr>
++ *  Copyright (c) 2010-2011 Benjamin Tissoires <benjamin.tissoires@gmail.com>
++ *  Copyright (c) 2010-2011 Ecole Nationale de l'Aviation Civile, France
++ *
++ */
++
++/*
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ */
++
++#include <linux/device.h>
++#include <linux/hid.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/usb.h>
++#include <linux/input/mt.h>
++#include "usbhid/usbhid.h"
++
++
++MODULE_AUTHOR("Stephane Chatty <chatty@enac.fr>");
++MODULE_DESCRIPTION("HID multitouch panels");
++MODULE_LICENSE("GPL");
++
++#include "hid-ids.h"
++
++/* quirks to control the device */
++#define MT_QUIRK_NOT_SEEN_MEANS_UP	(1 << 0)
++#define MT_QUIRK_SLOT_IS_CONTACTID	(1 << 1)
++
++struct mt_slot {
++	__s32 x, y, p, w, h;
++	__s32 contactid;	/* the device ContactID assigned to this slot */
++	bool touch_state;	/* is the touch valid? */
++	bool seen_in_this_frame;/* has this slot been updated */
++};
++
++struct mt_device {
++	struct mt_slot curdata;	/* placeholder of incoming data */
++	struct mt_class *mtclass;	/* our mt device class */
++	unsigned last_field_index;	/* last field index of the report */
++	unsigned last_slot_field;	/* the last field of a slot */
++	__s8 inputmode;		/* InputMode HID feature, -1 if non-existent */
++	__u8 num_received;	/* how many contacts we received */
++	__u8 num_expected;	/* expected last contact index */
++	bool curvalid;		/* is the current contact valid? */
++	struct mt_slot slots[0];	/* first slot */
++};
++
++struct mt_class {
++	__s32 quirks;
++	__s32 sn_move;	/* Signal/noise ratio for move events */
++	__s32 sn_pressure;	/* Signal/noise ratio for pressure events */
++	__u8 maxcontacts;
++};
++
++/* classes of device behavior */
++#define MT_CLS_DEFAULT 0
++#define MT_CLS_DUAL1 1
++
++/*
++ * these device-dependent functions determine what slot corresponds
++ * to a valid contact that was just read.
++ */
++
++static int slot_is_contactid(struct mt_device *td)
++{
++	return td->curdata.contactid;
++}
++
++static int find_slot_from_contactid(struct mt_device *td)
++{
++	int i;
++	for (i = 0; i < td->mtclass->maxcontacts; ++i) {
++		if (td->slots[i].contactid == td->curdata.contactid &&
++			td->slots[i].touch_state)
++			return i;
++	}
++	for (i = 0; i < td->mtclass->maxcontacts; ++i) {
++		if (!td->slots[i].seen_in_this_frame &&
++			!td->slots[i].touch_state)
++			return i;
++	}
++	return -1;
++	/* should not occurs. If this happens that means
++	 * that the device sent more touches that it says
++	 * in the report descriptor. It is ignored then. */
++}
++
++struct mt_class mt_classes[] = {
++	{ 0, 0, 0, 10 },                             /* MT_CLS_DEFAULT */
++	{ MT_QUIRK_SLOT_IS_CONTACTID, 0, 0, 2 },     /* MT_CLS_DUAL1 */
++};
++
++static void mt_feature_mapping(struct hid_device *hdev, struct hid_input *hi,
++		struct hid_field *field, struct hid_usage *usage)
++{
++	if (usage->hid == HID_DG_INPUTMODE) {
++		struct mt_device *td = hid_get_drvdata(hdev);
++		td->inputmode = field->report->id;
++	}
++}
++
++static void set_abs(struct input_dev *input, unsigned int code,
++		struct hid_field *field, int snratio)
++{
++	int fmin = field->logical_minimum;
++	int fmax = field->logical_maximum;
++	int fuzz = snratio ? (fmax - fmin) / snratio : 0;
++	input_set_abs_params(input, code, fmin, fmax, fuzz, 0);
++}
++
++static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
++		struct hid_field *field, struct hid_usage *usage,
++		unsigned long **bit, int *max)
++{
++	struct mt_device *td = hid_get_drvdata(hdev);
++	struct mt_class *cls = td->mtclass;
++	switch (usage->hid & HID_USAGE_PAGE) {
++
++	case HID_UP_GENDESK:
++		switch (usage->hid) {
++		case HID_GD_X:
++			hid_map_usage(hi, usage, bit, max,
++					EV_ABS, ABS_MT_POSITION_X);
++			set_abs(hi->input, ABS_MT_POSITION_X, field,
++				cls->sn_move);
++			/* touchscreen emulation */
++			set_abs(hi->input, ABS_X, field, cls->sn_move);
++			td->last_slot_field = usage->hid;
++			return 1;
++		case HID_GD_Y:
++			hid_map_usage(hi, usage, bit, max,
++					EV_ABS, ABS_MT_POSITION_Y);
++			set_abs(hi->input, ABS_MT_POSITION_Y, field,
++				cls->sn_move);
++			/* touchscreen emulation */
++			set_abs(hi->input, ABS_Y, field, cls->sn_move);
++			td->last_slot_field = usage->hid;
++			return 1;
++		}
++		return 0;
++
++	case HID_UP_DIGITIZER:
++		switch (usage->hid) {
++		case HID_DG_INRANGE:
++			td->last_slot_field = usage->hid;
++			return 1;
++		case HID_DG_CONFIDENCE:
++			td->last_slot_field = usage->hid;
++			return 1;
++		case HID_DG_TIPSWITCH:
++			hid_map_usage(hi, usage, bit, max, EV_KEY, BTN_TOUCH);
++			input_set_capability(hi->input, EV_KEY, BTN_TOUCH);
++			td->last_slot_field = usage->hid;
++			return 1;
++		case HID_DG_CONTACTID:
++			input_mt_init_slots(hi->input,
++					td->mtclass->maxcontacts);
++			td->last_slot_field = usage->hid;
++			return 1;
++		case HID_DG_WIDTH:
++			hid_map_usage(hi, usage, bit, max,
++					EV_ABS, ABS_MT_TOUCH_MAJOR);
++			td->last_slot_field = usage->hid;
++			return 1;
++		case HID_DG_HEIGHT:
++			hid_map_usage(hi, usage, bit, max,
++					EV_ABS, ABS_MT_TOUCH_MINOR);
++			field->logical_maximum = 1;
++			field->logical_minimum = 1;
++			set_abs(hi->input, ABS_MT_ORIENTATION, field, 0);
++			td->last_slot_field = usage->hid;
++			return 1;
++		case HID_DG_TIPPRESSURE:
++			hid_map_usage(hi, usage, bit, max,
++					EV_ABS, ABS_MT_PRESSURE);
++			set_abs(hi->input, ABS_MT_PRESSURE, field,
++				cls->sn_pressure);
++			/* touchscreen emulation */
++			set_abs(hi->input, ABS_PRESSURE, field,
++				cls->sn_pressure);
++			td->last_slot_field = usage->hid;
++			return 1;
++		case HID_DG_CONTACTCOUNT:
++			td->last_field_index = field->report->maxfield - 1;
++			return 1;
++		case HID_DG_CONTACTMAX:
++			/* we don't set td->last_slot_field as contactcount and
++			 * contact max are global to the report */
++			return -1;
++		}
++		/* let hid-input decide for the others */
++		return 0;
++
++	case 0xff000000:
++		/* we do not want to map these: no input-oriented meaning */
++		return -1;
++	}
++
++	return 0;
++}
++
++static int mt_input_mapped(struct hid_device *hdev, struct hid_input *hi,
++		struct hid_field *field, struct hid_usage *usage,
++		unsigned long **bit, int *max)
++{
++	if (usage->type == EV_KEY || usage->type == EV_ABS)
++		set_bit(usage->type, hi->input->evbit);
++
++	return -1;
++}
++
++static int mt_compute_slot(struct mt_device *td)
++{
++	struct mt_class *cls = td->mtclass;
++
++	if (cls->quirks & MT_QUIRK_SLOT_IS_CONTACTID)
++		return slot_is_contactid(td);
++
++	return find_slot_from_contactid(td);
++}
++
++/*
++ * this function is called when a whole contact has been processed,
++ * so that it can assign it to a slot and store the data there
++ */
++static void mt_complete_slot(struct mt_device *td)
++{
++	if (td->curvalid) {
++		struct mt_slot *slot;
++		int slotnum = mt_compute_slot(td);
++
++		if (slotnum >= 0 && slotnum < td->mtclass->maxcontacts) {
++			slot = td->slots + slotnum;
++
++			memcpy(slot, &(td->curdata), sizeof(struct mt_slot));
++			slot->seen_in_this_frame = true;
++		}
++	}
++	td->num_received++;
++}
++
++
++/*
++ * this function is called when a whole packet has been received and processed,
++ * so that it can decide what to send to the input layer.
++ */
++static void mt_emit_event(struct mt_device *td, struct input_dev *input)
++{
++	int i;
++
++	for (i = 0; i < td->mtclass->maxcontacts; ++i) {
++		struct mt_slot *s = &(td->slots[i]);
++		if ((td->mtclass->quirks & MT_QUIRK_NOT_SEEN_MEANS_UP) &&
++			!s->seen_in_this_frame) {
++			/*
++			 * this slot does not contain useful data,
++			 * notify its closure
++			 */
++			s->touch_state = false;
++		}
++
++		input_mt_slot(input, i);
++		input_mt_report_slot_state(input, MT_TOOL_FINGER,
++			s->touch_state);
++		input_event(input, EV_ABS, ABS_MT_POSITION_X, s->x);
++		input_event(input, EV_ABS, ABS_MT_POSITION_Y, s->y);
++		input_event(input, EV_ABS, ABS_MT_PRESSURE, s->p);
++		input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR, s->w);
++		input_event(input, EV_ABS, ABS_MT_TOUCH_MINOR, s->h);
++		s->seen_in_this_frame = false;
++
++	}
++
++	input_mt_report_pointer_emulation(input, true);
++	input_sync(input);
++	td->num_received = 0;
++}
++
++
++
++static int mt_event(struct hid_device *hid, struct hid_field *field,
++				struct hid_usage *usage, __s32 value)
++{
++	struct mt_device *td = hid_get_drvdata(hid);
++
++	if (hid->claimed & HID_CLAIMED_INPUT) {
++		switch (usage->hid) {
++		case HID_DG_INRANGE:
++			break;
++		case HID_DG_TIPSWITCH:
++			td->curvalid = value;
++			td->curdata.touch_state = value;
++			break;
++		case HID_DG_CONFIDENCE:
++			break;
++		case HID_DG_CONTACTID:
++			td->curdata.contactid = value;
++			break;
++		case HID_DG_TIPPRESSURE:
++			td->curdata.p = value;
++			break;
++		case HID_GD_X:
++			td->curdata.x = value;
++			break;
++		case HID_GD_Y:
++			td->curdata.y = value;
++			break;
++		case HID_DG_WIDTH:
++			td->curdata.w = value;
++			break;
++		case HID_DG_HEIGHT:
++			td->curdata.h = value;
++			break;
++		case HID_DG_CONTACTCOUNT:
++			/*
++			 * We must not overwrite the previous value (some
++			 * devices send one sequence splitted over several
++			 * messages)
++			 */
++			if (value)
++				td->num_expected = value - 1;
++			break;
++
++		default:
++			/* fallback to the generic hidinput handling */
++			return 0;
++		}
++	}
++
++	if (usage->hid == td->last_slot_field)
++		mt_complete_slot(td);
++
++	if (field->index == td->last_field_index
++		&& td->num_received > td->num_expected)
++		mt_emit_event(td, field->hidinput->input);
++
++	/* we have handled the hidinput part, now remains hiddev */
++	if (hid->claimed & HID_CLAIMED_HIDDEV && hid->hiddev_hid_event)
++		hid->hiddev_hid_event(hid, field, usage, value);
++
++	return 1;
++}
++
++static void mt_set_input_mode(struct hid_device *hdev)
++{
++	struct mt_device *td = hid_get_drvdata(hdev);
++	struct hid_report *r;
++	struct hid_report_enum *re;
++
++	if (td->inputmode < 0)
++		return;
++
++	re = &(hdev->report_enum[HID_FEATURE_REPORT]);
++	r = re->report_id_hash[td->inputmode];
++	if (r) {
++		r->field[0]->value[0] = 0x02;
++		usbhid_submit_report(hdev, r, USB_DIR_OUT);
++	}
++}
++
++static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
++{
++	int ret;
++	struct mt_device *td;
++	struct mt_class *mtclass = mt_classes + id->driver_data;
++
++	/* This allows the driver to correctly support devices
++	 * that emit events over several HID messages.
++	 */
++	hdev->quirks |= HID_QUIRK_NO_INPUT_SYNC;
++
++	td = kzalloc(sizeof(struct mt_device) +
++				mtclass->maxcontacts * sizeof(struct mt_slot),
++				GFP_KERNEL);
++	if (!td) {
++		dev_err(&hdev->dev, "cannot allocate multitouch data\n");
++		return -ENOMEM;
++	}
++	td->mtclass = mtclass;
++	td->inputmode = -1;
++	hid_set_drvdata(hdev, td);
++
++	ret = hid_parse(hdev);
++	if (ret != 0)
++		goto fail;
++
++	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
++	if (ret != 0)
++		goto fail;
++
++	mt_set_input_mode(hdev);
++
++	return 0;
++
++fail:
++	kfree(td);
++	return ret;
++}
++
++#ifdef CONFIG_PM
++static int mt_reset_resume(struct hid_device *hdev)
++{
++	mt_set_input_mode(hdev);
++	return 0;
++}
++#endif
++
++static void mt_remove(struct hid_device *hdev)
++{
++	struct mt_device *td = hid_get_drvdata(hdev);
++	hid_hw_stop(hdev);
++	kfree(td);
++	hid_set_drvdata(hdev, NULL);
++}
++
++static const struct hid_device_id mt_devices[] = {
++
++	/* PixCir-based panels */
++	{ .driver_data = MT_CLS_DUAL1,
++		HID_USB_DEVICE(USB_VENDOR_ID_HANVON,
++			USB_DEVICE_ID_HANVON_MULTITOUCH) },
++	{ .driver_data = MT_CLS_DUAL1,
++		HID_USB_DEVICE(USB_VENDOR_ID_CANDO,
++			USB_DEVICE_ID_CANDO_PIXCIR_MULTI_TOUCH) },
++
++	{ }
++};
++MODULE_DEVICE_TABLE(hid, mt_devices);
++
++static const struct hid_usage_id mt_grabbed_usages[] = {
++	{ HID_ANY_ID, HID_ANY_ID, HID_ANY_ID },
++	{ HID_ANY_ID - 1, HID_ANY_ID - 1, HID_ANY_ID - 1}
++};
++
++static struct hid_driver mt_driver = {
++	.name = "hid-multitouch",
++	.id_table = mt_devices,
++	.probe = mt_probe,
++	.remove = mt_remove,
++	.input_mapping = mt_input_mapping,
++	.input_mapped = mt_input_mapped,
++	.feature_mapping = mt_feature_mapping,
++	.usage_table = mt_grabbed_usages,
++	.event = mt_event,
++#ifdef CONFIG_PM
++	.reset_resume = mt_reset_resume,
++#endif
++};
++
++static int __init mt_init(void)
++{
++	return hid_register_driver(&mt_driver);
++}
++
++static void __exit mt_exit(void)
++{
++	hid_unregister_driver(&mt_driver);
++}
++
++module_init(mt_init);
++module_exit(mt_exit);
+-- 
+1.7.3.4
 
-> b) the loss of the value read (the fact that the only current user of this API
->    does not need the value returned seems like a very weak argument to define an
->    API).
-
-The other user of cmpxchg_double that I have in my tree also does not have
-the need. Repeatability is not as simple to implement as with a single
-word cmpxchg.
-
-> I'm probably missing important compiler trickiness here, but why are we not
-> rather relying on forced compiler alignment to declare the target address type ?
-> e.g.:
->
-> typedef struct {
->         unsigned long v[2];
-> } __attribute__((aligned(2 * sizeof(long)))) cmpxchg_double_t;
->
-> For the usage you are doing within the allocator code, you can use an union (the
-> bitfield sizes are completely arbitrary).
->
-> union alloc_cd {
->         cmpxchg_double_t cd;
->         struct {
->                 void *ptr;
->                 unsigned long seq:48;
->                 unsigned long cpu:16;
->         } v;
-> };
->
-> So this_cpu_cmpxchg_double would expect the type "cmpxchg_double_t *" as its
-> first argument.
-
-That requires conversions back and forth between words and this
-type. We only need the bonding between the two per cpu variables for the
-single cmpxchg_double operation. There is no need to do this for the two
-old values or the two new values.
-
-> One way to manage to return the value read would be to pass a pointer to
-> "old_word1-2" as argument rather than the value itself, and return the value
-> read in these locations. Anyway, we won't need the old words for comparison with
-> the return value, because the returned "bool" takes care of telling us if they
-> differ.
-
-That would require allocating storage for the two word variable required,
-passing an address etc. All not necessary right now. Would increase the
-latency of the inner loop. Saving the returned values also would increase
-the code uselessly.
-
-> Adding the types just for clarity sake (should be handled differently in your
-> macro scheme of course), this_cpu_cmpxchg_double would look like:
->
-> typedef struct {
->         unsigned long v[2];
-> } __attribute__((aligned(2 * sizeof(long)))) cmpxchg_double_t;
->
-> bool this_cpu_cmpxchg_double(cmpxchg_double_t *pcp,
->                              unsigned long *old_ret_word1,
->                              unsigned long *old_ret_word2,
->                              unsigned long new_word1,
->                              unsigned long new_word2)
->
-> Thoughts ?
-
-Looks not symmetric. The proposed approach in the patch has a clear
-association of the first and second percpu variable with the first and
-second old and new values.
-
-Also cmpxchg_double may be used with different types and different object
-sizes. Are we going to define cmpxchg_double_t for all types supported
-and maybe created by the user? this_cpu_cmpxchg_double also supports two 4
-byte fields.
-
-Plus you can have mixed types. In the current use case you have one
-integer and one pointer. So the cmpxchg_double_t would not fit in cleanly.
-We would have to define custom types. And with that we will then have
-difficulties codeing methods to check the compatibility of types.
-
-I tried something like this before I came up with the current
-solution. It was significantly more code and the code was difficult
-to understand. Never was as clean and this one.
