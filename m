@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab1AGK5u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 05:57:50 -0500
-Received: from mail-fx0-f66.google.com ([209.85.161.66]:56424 "EHLO
-	mail-fx0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683Ab1AGK5s convert rfc822-to-8bit (ORCPT
+	id S1752184Ab1AGLAV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 06:00:21 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:41318 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852Ab1AGLAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 05:57:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:cc:content-type:content-transfer-encoding;
-        b=st+hN1aJ9V/bc+vylu10B7jK8LYoev3TsJ9hfNFqwVbriZYeb0djnK1zdXefX5DX/7
-         NTTPhFA71JcylLC/cCBfdaC4XyM5sS3IviJQZyXfm9JPRCP9v+bwWYV4n4ZDPFwkgicF
-         3Zvgttp0FGQ6cb51Ae2MIHTWcnQq0UA6yfdfI=
+	Fri, 7 Jan 2011 06:00:19 -0500
+Date: Fri, 7 Jan 2011 12:00:28 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        edac-devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] MCE EDAC changes for .38
+Message-ID: <20110107110028.GD16507@aftab>
 MIME-Version: 1.0
-Date: Fri, 7 Jan 2011 11:57:45 +0100
-X-Google-Sender-Auth: P4FdQrvC3vynFnO50VXXIANZWlM
-Message-ID: <AANLkTinhrj38rbEt7ds971D9g-UF+xS0jmzO7X15ZaLn@mail.gmail.com>
-Subject: [-next] ERROR: "strchr" [drivers/target/target_core_mod.ko] undefined!
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Nicholas Bellinger <nab@linux-iscsi.org>,
-        James Bottomley <James.Bottomley@suse.de>
-Cc: scsi <linux-scsi@vger.kernel.org>, Linux-Next <linux-next@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since a few days, linux-next shows:
+Hi Linus,
 
-| ERROR: "strchr" [drivers/target/target_core_mod.ko] undefined!
+this is the second patchset I have for .38 and it adds MCE decoding
+support for F15h CPUs. Again, long cooking time in linux-next with no
+issues.
 
-in m68k allmodconfig builds
-(http://kisskb.ellerman.id.au/kisskb/buildresult/3754323/).
+Thanks.
 
-I guess this is caused by the following 3 calls to strstr():
+The following changes since commit 3c0eee3fe6a3a1c745379547c7e7c904aa64f6d5:
 
-drivers/target/target_core_configfs.c:
-+       ptr = strstr(page, "1");
+  Linux 2.6.37 (2011-01-04 16:50:19 -0800)
 
-+       str = strstr(buf, "_");
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git mce-for-linus
 
-+       str2 = strstr(str+1, "_");
+Borislav Petkov (13):
+      EDAC, MCE: Select extended error code mask
+      EDAC, MCE: Add F15h DC MCE decoder
+      EDAC, MCE: Add F15h IC MCE decoder
+      EDAC, MCE: Add F15h CU MCE decoder
+      EDAC, MCE: No F15h LS MCE decoder
+      EDAC, MCE: Add an F15h NB MCE decoder
+      EDAC, MCE: Add F15 EX MCE decoder
+      EDAC, MCE: Add F15h FP MCE decoder
+      EDAC, MCE: Overhaul error fields extraction macros
+      EDAC, MCE: Shorten error report formatting
+      EDAC, MCE: Allow F15h bank 6 MCE injection
+      EDAC, MCE: Enable MCE decoding on F15h
+      EDAC, MCE: Fix NB error formatting
 
-Some versions of gcc replace calls to strstr() with single-character
-"needle" string parameters by calls to strchr() behind our back.
-This causes linking errors if strchr() is defined as an inline function
-in <asm/string.h> (e.g. on m68k).
+Randy Dunlap (1):
+      EDAC, MCE: Use BIT_64() to eliminate warnings on 32-bit
 
-You can prevent this by explicitly calling strchr() instead.
+ drivers/edac/amd64_edac.c  |    4 +-
+ drivers/edac/mce_amd.c     |  450 +++++++++++++++++++++++++++++++++----------
+ drivers/edac/mce_amd.h     |   14 +-
+ drivers/edac/mce_amd_inj.c |    9 +-
+ 4 files changed, 359 insertions(+), 118 deletions(-)
 
-Cfr. commit 59d309f9c8ef0bd01bf93cc0e758f1d810417bdb
-("kgdb: Replace strstr() by strchr() for single-character needles).
+-- 
+Regards/Gruss,
+Boris.
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
