@@ -1,75 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab1AGRMu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 12:12:50 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:38941 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754707Ab1AGRMs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 12:12:48 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Joe Perches <joe@perches.com>
-Cc: Krzysztof Halasa <khc@pm.waw.pl>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [patch] checkpatch: putting the && or || on the wrong line
-In-Reply-To: Your message of "Thu, 06 Jan 2011 13:38:38 PST."
-             <1294349918.12561.142.camel@Joe-Laptop>
-From: Valdis.Kletnieks@vt.edu
-References: <20110104055900.GA5062@bicker> <20110104163836.GA30317@fieldses.org> <20110104164414.GX5875@const.bordeaux.inria.fr> <1294160834.6617.51.camel@Joe-Laptop> <m3fwt7i740.fsf@intrepid.localdomain> <1294249529.6617.118.camel@Joe-Laptop> <m339p6p5zo.fsf@intrepid.localdomain> <1294336674.12561.81.camel@Joe-Laptop> <m3r5cplr2m.fsf@intrepid.localdomain> <1294347753.12561.106.camel@Joe-Laptop> <m37hehloon.fsf@intrepid.localdomain>
-            <1294349918.12561.142.camel@Joe-Laptop>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1294420352_4860P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 07 Jan 2011 12:12:32 -0500
-Message-ID: <26590.1294420352@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020201.4D274982.003C,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	id S1754865Ab1AGRO0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 12:14:26 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26552 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754781Ab1AGROX (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Fri, 7 Jan 2011 12:14:23 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: dri-devel@lists.freedesktop.org, thomas@shipmail.org, airlied@linux.ie,
+        linux-kernel@vger.kernel.org
+Cc: konrad@darnok.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 4/5] radeon/ttm/PCIe: Use dma_addr if TTM has set it.
+Date: Fri,  7 Jan 2011 12:11:43 -0500
+Message-Id: <1294420304-24811-5-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com>
+References: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1294420352_4860P
-Content-Type: text/plain; charset=us-ascii
+If the TTM layer has used the DMA API to setup pages that are
+TTM_PAGE_FLAG_DMA32 (look at patch titled: "ttm: Utilize the dma_addr_t
+array for pages that are to in DMA32 pool."), lets use it
+when programming the GART in the PCIe type cards.
 
-On Thu, 06 Jan 2011 13:38:38 PST, Joe Perches said:
+This patch skips doing the pci_map_page (and pci_unmap_page) if
+there is a DMA addresses passed in for that page. If the dma_address
+is zero (or DMA_ERROR_CODE), then we continue on with our old
+behaviour.
 
-> http://swerl.tudelft.nl/twiki/pub/Main/TechnicalReports/TUD-SERG-2009-008.pdf
-> 
-> RQ2 Are files or modules with a higher violation
-> density more fault-prone?
-> 
-> This holds for 10 rules in the standard, with some reserva-
-> tions. There is no reliable prediction for files without ac-
-> tive development (no changes) nor for files without viola-
-> tions. Also, the observed relation becomes less pronounced
-> in time, as the number of registered open faults decreases.
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/gpu/drm/radeon/radeon.h      |    4 ++-
+ drivers/gpu/drm/radeon/radeon_gart.c |   36 ++++++++++++++++++++++++---------
+ drivers/gpu/drm/radeon/radeon_ttm.c  |    5 +++-
+ 3 files changed, 33 insertions(+), 12 deletions(-)
 
-In other words, code not written to style is like finding a brown M&M
-at a Van Halen concert...
-
---==_Exmh_1294420352_4860P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNJ0mAcC3lWbTT17ARAnojAJ0USWFnk/6547OkW2hR9BPzhuyGTQCdHVTW
-jl2gs/LWC3gRjWgoZbkFafc=
-=Za/k
------END PGP SIGNATURE-----
-
---==_Exmh_1294420352_4860P--
+diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
+index 73f600d..c9bbab9 100644
+--- a/drivers/gpu/drm/radeon/radeon.h
++++ b/drivers/gpu/drm/radeon/radeon.h
+@@ -317,6 +317,7 @@ struct radeon_gart {
+ 	union radeon_gart_table		table;
+ 	struct page			**pages;
+ 	dma_addr_t			*pages_addr;
++	bool				*ttm_alloced;
+ 	bool				ready;
+ };
+ 
+@@ -329,7 +330,8 @@ void radeon_gart_fini(struct radeon_device *rdev);
+ void radeon_gart_unbind(struct radeon_device *rdev, unsigned offset,
+ 			int pages);
+ int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
+-		     int pages, struct page **pagelist);
++		     int pages, struct page **pagelist,
++		     dma_addr_t *dma_addr);
+ 
+ 
+ /*
+diff --git a/drivers/gpu/drm/radeon/radeon_gart.c b/drivers/gpu/drm/radeon/radeon_gart.c
+index e65b903..4a5ac4b 100644
+--- a/drivers/gpu/drm/radeon/radeon_gart.c
++++ b/drivers/gpu/drm/radeon/radeon_gart.c
+@@ -149,8 +149,9 @@ void radeon_gart_unbind(struct radeon_device *rdev, unsigned offset,
+ 	p = t / (PAGE_SIZE / RADEON_GPU_PAGE_SIZE);
+ 	for (i = 0; i < pages; i++, p++) {
+ 		if (rdev->gart.pages[p]) {
+-			pci_unmap_page(rdev->pdev, rdev->gart.pages_addr[p],
+-				       PAGE_SIZE, PCI_DMA_BIDIRECTIONAL);
++			if (!rdev->gart.ttm_alloced[p])
++				pci_unmap_page(rdev->pdev, rdev->gart.pages_addr[p],
++				       		PAGE_SIZE, PCI_DMA_BIDIRECTIONAL);
+ 			rdev->gart.pages[p] = NULL;
+ 			rdev->gart.pages_addr[p] = rdev->dummy_page.addr;
+ 			page_base = rdev->gart.pages_addr[p];
+@@ -165,7 +166,7 @@ void radeon_gart_unbind(struct radeon_device *rdev, unsigned offset,
+ }
+ 
+ int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
+-		     int pages, struct page **pagelist)
++		     int pages, struct page **pagelist, dma_addr_t *dma_addr)
+ {
+ 	unsigned t;
+ 	unsigned p;
+@@ -180,15 +181,22 @@ int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
+ 	p = t / (PAGE_SIZE / RADEON_GPU_PAGE_SIZE);
+ 
+ 	for (i = 0; i < pages; i++, p++) {
+-		/* we need to support large memory configurations */
+-		/* assume that unbind have already been call on the range */
+-		rdev->gart.pages_addr[p] = pci_map_page(rdev->pdev, pagelist[i],
++		/* On TTM path, we only use the DMA API if TTM_PAGE_FLAG_DMA32
++		 * is requested. */
++		if (dma_addr[i] != DMA_ERROR_CODE) {
++			rdev->gart.ttm_alloced[p] = true;
++			rdev->gart.pages_addr[p] = dma_addr[i];
++		} else {
++			/* we need to support large memory configurations */
++			/* assume that unbind have already been call on the range */
++			rdev->gart.pages_addr[p] = pci_map_page(rdev->pdev, pagelist[i],
+ 							0, PAGE_SIZE,
+ 							PCI_DMA_BIDIRECTIONAL);
+-		if (pci_dma_mapping_error(rdev->pdev, rdev->gart.pages_addr[p])) {
+-			/* FIXME: failed to map page (return -ENOMEM?) */
+-			radeon_gart_unbind(rdev, offset, pages);
+-			return -ENOMEM;
++			if (pci_dma_mapping_error(rdev->pdev, rdev->gart.pages_addr[p])) {
++				/* FIXME: failed to map page (return -ENOMEM?) */
++				radeon_gart_unbind(rdev, offset, pages);
++				return -ENOMEM;
++			}
+ 		}
+ 		rdev->gart.pages[p] = pagelist[i];
+ 		page_base = rdev->gart.pages_addr[p];
+@@ -251,6 +259,12 @@ int radeon_gart_init(struct radeon_device *rdev)
+ 		radeon_gart_fini(rdev);
+ 		return -ENOMEM;
+ 	}
++	rdev->gart.ttm_alloced = kzalloc(sizeof(bool) *
++					rdev->gart.num_cpu_pages, GFP_KERNEL);
++	if (rdev->gart.ttm_alloced == NULL) {
++		radeon_gart_fini(rdev);
++		return -ENOMEM;
++	}
+ 	/* set GART entry to point to the dummy page by default */
+ 	for (i = 0; i < rdev->gart.num_cpu_pages; i++) {
+ 		rdev->gart.pages_addr[i] = rdev->dummy_page.addr;
+@@ -267,6 +281,8 @@ void radeon_gart_fini(struct radeon_device *rdev)
+ 	rdev->gart.ready = false;
+ 	kfree(rdev->gart.pages);
+ 	kfree(rdev->gart.pages_addr);
++	kfree(rdev->gart.ttm_alloced);
+ 	rdev->gart.pages = NULL;
+ 	rdev->gart.pages_addr = NULL;
++	rdev->gart.ttm_alloced = NULL;
+ }
+diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
+index 6f156e9..ca04505 100644
+--- a/drivers/gpu/drm/radeon/radeon_ttm.c
++++ b/drivers/gpu/drm/radeon/radeon_ttm.c
+@@ -647,6 +647,7 @@ struct radeon_ttm_backend {
+ 	unsigned long			num_pages;
+ 	struct page			**pages;
+ 	struct page			*dummy_read_page;
++	dma_addr_t			*dma_addrs;
+ 	bool				populated;
+ 	bool				bound;
+ 	unsigned			offset;
+@@ -662,6 +663,7 @@ static int radeon_ttm_backend_populate(struct ttm_backend *backend,
+ 
+ 	gtt = container_of(backend, struct radeon_ttm_backend, backend);
+ 	gtt->pages = pages;
++	gtt->dma_addrs = dma_addrs;
+ 	gtt->num_pages = num_pages;
+ 	gtt->dummy_read_page = dummy_read_page;
+ 	gtt->populated = true;
+@@ -674,6 +676,7 @@ static void radeon_ttm_backend_clear(struct ttm_backend *backend)
+ 
+ 	gtt = container_of(backend, struct radeon_ttm_backend, backend);
+ 	gtt->pages = NULL;
++	gtt->dma_addrs = NULL;
+ 	gtt->num_pages = 0;
+ 	gtt->dummy_read_page = NULL;
+ 	gtt->populated = false;
+@@ -694,7 +697,7 @@ static int radeon_ttm_backend_bind(struct ttm_backend *backend,
+ 		     gtt->num_pages, bo_mem, backend);
+ 	}
+ 	r = radeon_gart_bind(gtt->rdev, gtt->offset,
+-			     gtt->num_pages, gtt->pages);
++			     gtt->num_pages, gtt->pages, gtt->dma_addrs);
+ 	if (r) {
+ 		DRM_ERROR("failed to bind %lu pages at 0x%08X\n",
+ 			  gtt->num_pages, gtt->offset);
+-- 
+1.7.1
 
