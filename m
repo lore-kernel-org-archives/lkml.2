@@ -1,125 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab1AGNFK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 08:05:10 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:58276 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752561Ab1AGNFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 08:05:07 -0500
-Date: Fri, 7 Jan 2011 14:04:26 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Xiaotian Feng <xtfeng@gmail.com>
-Cc: Valdis.Kletnieks@vt.edu, mat <castet.matthieu@free.fr>,
-        Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
-        Arjan van de Ven <arjan@infradead.org>,
-        James Morris <jmorris@namei.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 3/3 V13] RO/NX protection for loadable kernel
-Message-ID: <20110107130426.GA24259@elte.hu>
-References: <4CE2F914.9070106@free.fr>
- <24422.1290656467@localhost>
- <20101126182355.62615dff@mat-laptop>
- <20101208221951.GO5750@outflux.net>
- <20101211001857.4c5e0794@mat-laptop>
- <20101222124019.GG10809@elte.hu>
- <34428.1293053719@localhost>
- <AANLkTin55DXcQnK3NY7y-v8TXj5w-XT2rTJo9p90tj4g@mail.gmail.com>
+	id S1753144Ab1AGNFT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 08:05:19 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:46155 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753057Ab1AGNFO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 08:05:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=EZfK9fu6rT71YQWjK2odcVLEHzWLnFhl67hADLq8DCuIbrI5yt0t1rzblCZJZ/rt0D
+         MG/qXFIPE514YzxG+ujskQDvb9Uxf2DSdTizzvq2aKCS4qUA5hbAeOr56sL5RVi/OOeS
+         flQj7/IEA80bD4UIe2Pz/gQM3xe3mE+2qqv9Q=
+Message-ID: <4D270F85.9070705@gmail.com>
+Date: Fri, 07 Jan 2011 08:05:09 -0500
+From: William Allen Simpson <william.allen.simpson@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTin55DXcQnK3NY7y-v8TXj5w-XT2rTJo9p90tj4g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [058/152] tcp: protect sysctl_tcp_cookie_size reads
+References: <20110106002302.141581701@clark.site>	 <4D2691D4.3060304@gmail.com> <1294389025.2704.95.camel@edumazet-laptop>
+In-Reply-To: <1294389025.2704.95.camel@edumazet-laptop>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 1/7/11 3:30 AM, Eric Dumazet wrote:
+> Are you telling us somebody else added bug to your code ?
+> This is not the case, obviously.
+>
+As I noted, "There's been quite a few changes" -- one of which was a major
+change to sysctls.  As one of the reviewers of this code, you didn't mention
+this ACCESS_ONCE() function, so I'm assuming it didn't exist at that time.
 
-* Xiaotian Feng <xtfeng@gmail.com> wrote:
 
-> On Thu, Dec 23, 2010 at 5:35 AM,  <Valdis.Kletnieks@vt.edu> wrote:
-> > On Wed, 22 Dec 2010 13:40:19 +0100, Ingo Molnar said:
-> >>
-> >> * mat <castet.matthieu@free.fr> wrote:
-> >>
-> >> > Le Wed, 8 Dec 2010 14:19:51 -0800,
-> >> > Kees Cook <kees.cook@canonical.com> a écrit :
-> >> >
-> >> > > On Fri, Nov 26, 2010 at 06:23:55PM +0100, mat wrote:
-> >> > > > could you try the attached patch ?
-> >> > > >
-> >> > > > on module load, we sort the __jump_table section. So we should make
-> >> > > > it writable.
-> >> > > >
-> >> > > >
-> >> > > > Matthieu
-> >> > >
-> >> > > > diff --git a/arch/x86/include/asm/jump_label.h
-> >> > > > b/arch/x86/include/asm/jump_label.h index f52d42e..574dbc2 100644
-> >> > > > --- a/arch/x86/include/asm/jump_label.h
-> >> > > > +++ b/arch/x86/include/asm/jump_label.h
-> >> > > > @@ -14,7 +14,7 @@
-> >> > > >         do
-> >> > > > {                                                       \ asm
-> >> > > > goto("1:"                                       \
-> >> > > > JUMP_LABEL_INITIAL_NOP                  \
-> >> > > > -                       ".pushsection __jump_table,  \"a\" \n\t"\
-> >> > > > +                       ".pushsection __jump_table,  \"aw\" \n\t"\
-> >> > > >                         _ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
-> >> > > >                         ".popsection \n\t"                      \
-> >> > > >                         : :  "i" (key) :  : label);
-> >> > > > \
-> >> > >
-> >> > > Acked-by: Kees Cook <kees.cook@canonical.com>
-> >> > >
-> >> > > Can this please get committed to tip?
-> >> > I think it is not need anymore with  Steven Rostedt patch [1]
-> >> >
-> >> > Matthieu
-> >> >
-> >> > [1]
-> >> > > > Here we set the text read only before we call the notifiers. The
-> >> > > > function tracer changes the calls to mcount into nops via a notifier
-> >> > > > call so this must be done after the module notifiers.
-> >>
-> >> What's the status of this bug?
-> >>
-> >> If we still need the patch then please submit it standalone with a proper subject
-> >> line, with acks/signoffs added, etc.
-> >
-> > Steve Rostedt's patch that moves the setting of the page permissions seems to
-> > make this patch no longer necessary.  I tripped over this same issue, but the
-> > version in the latest -mmotm does not need it, as it includes Steve's fix.
-> >
-> 
-> I'm facing a boot failure (panic'ed on remove_jump_label_module_init)
-> on 2.6.37 (latest commit 3c0cb7c), which is 100% reproducible.
-> With this patch applied, I can boot my machine successfully, so I do
-> think this patch is needed.
+> After bug fix and cleanup code
 
-That would be commit:
+As I noted, "most of the patch has nothing to do with the purported fix."
+That makes the patch hard to read and evaluate.
 
- 94462ad3b147: module: Move RO/NX module protection to after ftrace module update
+Moreover, I remember being castigated (by you and others) for combining bug
+fixes with cleanup code.  And I'm not sure this counts as "cleanup" code.
 
-So if commit 3c0cb7c is still broken, it has 94462ad3b147 included already, and 
-there's some other bug. Kees, Steve, any ideas?
+> looks good,
 
-Xiaotian, please post as much about the crash as you can - a log/picture of the boot 
-crash that occurs would be good.
+As the saying goes, beauty is in the eye of the beholder.  Trading a blank
+line for a trailing brace is neither here nor there.  Screen space used
+remains the same.
 
-Thanks,
+> and even checkpatch.pl is
+> fine with it. No need for useless brackets around "return XXX;"
 
-	Ingo
+My instructors would have flunked me for not including braces around
+multi-line sequences; it was one of the great no-no's of the '70s.  Perhaps
+that's not the case anymore with modern colorful visual syntax checkers?
+
+
+> If I remember well, I did the cleanup so that my patch could not trigger
+> checkpatch.pl errors/warnings. Not that I am a particular checkpatch
+> fan, but I know some people are.
+>
+As a relative Linux kernel newbie, I scrupulously followed patch
+instructions.  Those instructions mandated running checkpatch.
+
+If there are now "checkpatch.pl errors/warnings" on that code, checkpatch
+must have changed.  At the time, all multi-line sequences were required to
+be enclosed in braces.
+
+I still think that's a better idea, looks better, and makes maintenance
+easier in the long term.  YMMV.
+
+
+> By the way, you were CCed when I sent one month ago the mail to
+> David/netdev. And no reaction from you at that time.
+>
+Amazingly enough, my life is not centered around Linux on a day-to-day
+basis.  Young folks like you are trying to make a name for yourselves in
+the Linux world -- apparently, by being exceptionally abrasive.
+
+Your helpful comments are/were appreciated.
