@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900Ab1AGRXJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 12:23:09 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:57756 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754532Ab1AGRXH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 12:23:07 -0500
-Date: Fri, 7 Jan 2011 10:23:04 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: David Gibson <david@gibson.dropbear.id.au>,
-        "Blanchard, Hollis" <Hollis_Blanchard@mentor.com>,
-        devicetree-discuss@lists.ozlabs.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Scott Wood <scottwood@freescale.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Saxena, Deepak" <deepak_saxena@mentor.com>
-Subject: Re: [PATCH] of/device: Don't register disabled devices
-Message-ID: <20110107172304.GC25446@angua.secretlab.ca>
-References: <20110103230122.25772.72990.stgit@localhost6.localdomain6>
- <DD7A9A95166BF4418C4C1EB2033B6EE2038FA8E5@na3-mail.mgc.mentorg.com>
- <20110105233535.GB8846@yookeroo>
+	id S1754972Ab1AGRY2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 12:24:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61432 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754637Ab1AGRY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 12:24:27 -0500
+Date: Fri, 7 Jan 2011 12:24:23 -0500
+From: David Teigland <teigland@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] dlm updates for 2.6.38
+Message-ID: <20110107172423.GB32391@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110105233535.GB8846@yookeroo>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 06, 2011 at 10:35:35AM +1100, David Gibson wrote:
-> On Wed, Jan 05, 2011 at 02:53:27PM -0800, Blanchard, Hollis wrote:
-> > On 01/03/2011 03:01 PM, Grant Likely wrote:
-> > > Device nodes with the property status="disabled" are not usable and so
-> > > don't register them when parsing the device tree for devices.
-> > >
-> > This is great and all, but a fair amount of driver code explicitly 
-> > searches the tree, rather than registering a probe function. That's why 
-> > our earlier patches in this area were more comprehensive.
+Linus,
 
-As your patch set shows, the total set isn't unmanageable, and the
-preference for new code is to use the device model infrastructure if
-at all possible.
+Please pull dlm updates for 2.6.38 from:
 
-> > 
-> > What are your thoughts on handling those cases?
-> 
-> One by one.  Trying to handle the explicit searches automagically is
-> just asking for trouble.
+git://git.kernel.org/pub/scm/linux/kernel/git/teigland/dlm.git for-linus
 
-Just as David says, the special cases are... well... special.
-Anything making decisions about registering devices needs to follow
-the status!="okay" rules.
+There are a few small improvements in the tcp comms layer.
 
-g.
+Thanks,
+Dave
 
+
+Bob Peterson (1):
+      dlm: reduce cond_resched during send
+
+David Miller (1):
+      dlm: Handle application limited situations properly.
+
+David Teigland (1):
+      dlm: use TCP_NODELAY
+
+Namhyung Kim (1):
+      dlm: sanitize work_start() in lowcomms.c
+
+Steven Whitehouse (1):
+      dlm: Use cmwq for send and receive workqueues
+
+
+ fs/dlm/lowcomms.c |   63 ++++++++++++++++++++++++++++++++++++++++++-----------
+ 1 files changed, 50 insertions(+), 13 deletions(-)
