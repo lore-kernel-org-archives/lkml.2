@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab1AGUcU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 15:32:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29628 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752484Ab1AGUcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 15:32:19 -0500
-Subject: Re: [Patch] kexec_load: check CAP_SYS_MODULE
-From: Eric Paris <eparis@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Amerigo Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
-        kexec@lists.infradead.org
-In-Reply-To: <m1k4igjwzf.fsf@fess.ebiederm.org>
-References: <1294302325-22593-1-git-send-email-amwang@redhat.com>
-	 <m1bp3uifln.fsf@fess.ebiederm.org>
-	 <AANLkTinLhAuSny735kofonAkaqwJvjjDHMUed_r03rVc@mail.gmail.com>
-	 <m1k4igjwzf.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 Jan 2011 15:32:13 -0500
-Message-ID: <1294432333.3237.107.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755540Ab1AGUdK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 15:33:10 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:49074 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755453Ab1AGUdI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 15:33:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=fVkfM0X+sWiTii/N5T6q5+Nj2Qa5uj4YncQ19L2VcMF9JeD/p0//spQm3cM06BzAjb
+         ms143THJfkyakWboeQf8m5KRnD1AEpZ44P504BNFSdT95P3EidJ208w7uX/4tU7gIzI5
+         X0ijFTE+umDwwZ/uM9qwTX1LgsLs++izPFV/E=
+Date: Fri, 7 Jan 2011 15:33:04 -0500
+From: Tejun Heo <tj@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
+        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: unify "numa=" command line option handling
+Message-ID: <20110107203304.GC7355@mtj.dyndns.org>
+References: <4D2603BF020000780002ACA7@vpn.id2.novell.com>
+ <alpine.DEB.2.00.1101061235010.30820@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1101061235010.30820@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-07 at 12:10 -0800, Eric W. Biederman wrote:
-> Eric Paris <eparis@parisplace.org> writes:
+Hello,
 
-> >> CAP_SYS_BOOT is the correct capability.  Sure you can run any
-> >> code but only after rebooting.  I don't see how this differs
-> >> from any other reboot scenario.
-> >
-> > The difference is that after a reboot the bootloader and the system
-> > control what code is run.  kexec_load() immediately runs the new
-> > kernel which is not controlled by the bootloader or by the system.
-> > Imagine a situation where the bootloader and the /boot directory are
-> > RO (enforced by hardware).   kexec_load() would let you run any kernel
-> > code you want on the box whereas reboot would not.
-> 
-> The scenario is imaginable (not common but imaginable) but I don't see
-> how requiring CAP_SYS_MODULE makes anything better.
-> 
-> If I was building a configuration where I didn't want anyone to be able
-> to direct the kernel into a different state by locking down the
-> bootloaders I expect I would compile out the syscall as well.
+On Thu, Jan 06, 2011 at 12:36:41PM -0800, David Rientjes wrote:
+> I like the idea in general, but I think it may collide with Tejun's NUMA 
+> unification patchset for x86, which I assume will another revision once 
+> the merge window for .38 closes?  Or maybe he'd like to merge your patch 
+> with his series and push it as one?
 
-As sad as it may sound the vast majority of people don't build their own
-kernels.  And even those people who have the intelligence to do it are
-often constrained by some non-technical policy to run 'approved'
-kernels. 
+Peter, what's the status of the patchset?  Is there something which is
+holding it from being merged into x86/numa?  Are you simply waiting
+for the rc1 window to close?
 
-> Most bootloaders have the option of booting something else the mechanism
-> is just different. I really don't see what the addition of
-> CAP_SYS_MODULE gains you.
-> 
-> Right now CAP_SYS_BOOT still makes sense to me and CAP_SYS_MODULE stills
-> seems like nonsense in this context.
+Thanks.
 
-There is no question in my mind that CAP_SYS_BOOT makes sense.  We are
-violently agreed on that point.  The problem is reboot() != kexec_load()
-kexec_load() is as close to init_module() as it is to reboot().
-
-Maybe I didn't make it clear how this is going to be used.  I plan to
-drop CAP_SYS_MODULE to stop root from loading their own modules and
-running their own code in the kernel.  I can control reboot() since I
-control the platform and the bootloader.  I cannot control kexec().  I'm
-also required to use a generic distro kernel (bet you can't guess which
-one)
-
-The only solution I see to solve the problem is to gate kexec on
-CAP_SYS_MODULE.  Which makes sense since kexec() is in many respects
-close to module_init() than it is to reboot().
-
--Eric
-
+-- 
+tejun
