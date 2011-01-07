@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675Ab1AGQzv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 11:55:51 -0500
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:39855 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754655Ab1AGQzt (ORCPT
+	id S1754705Ab1AGQ40 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 11:56:26 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:40947 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754316Ab1AGQ4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 11:55:49 -0500
-Subject: [PATCH 2/3] hpsa: Fix problem that CMD_UNABORTABLE command status was
-	treated as unknown
-To: james.bottomley@hansenpartnership.com
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: linux-scsi@vger.kernel.org, mike.miller@hp.com,
-        linux-kernel@vger.kernel.org, thenzl@redhat.com,
-        akpm@linux-foundation.org, smcameron@yahoo.com
-Date: Fri, 07 Jan 2011 10:55:48 -0600
-Message-ID: <20110107165548.14259.50339.stgit@beardog.cce.hp.com>
-In-Reply-To: <20110107165247.14259.45944.stgit@beardog.cce.hp.com>
-References: <20110107165247.14259.45944.stgit@beardog.cce.hp.com>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Fri, 7 Jan 2011 11:56:24 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Fri, 7 Jan 2011 17:55:39 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
+Subject: [git pull] FireWire updates post 2.6.37
+Message-ID: <20110107175539.2b882d3d@stein>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen M. Cameron <StephenM.Cameron>
+Linus, please pull from the for-linus branch at
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
----
- drivers/scsi/hpsa.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git for-linus
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index c6c13b0..5828bcb 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -1152,6 +1152,10 @@ static void complete_scsi_command(struct CommandList *cp,
- 		cmd->result = DID_TIME_OUT << 16;
- 		dev_warn(&h->pdev->dev, "cp %p timedout\n", cp);
- 		break;
-+	case CMD_UNABORTABLE:
-+		cmd->result = DID_ERROR << 16;
-+		dev_warn(&h->pdev->dev, "Command unabortable\n");
-+		break;
- 	default:
- 		cmd->result = DID_ERROR << 16;
- 		dev_warn(&h->pdev->dev, "cp %p returned unknown status %x\n",
-@@ -1317,6 +1321,9 @@ static void hpsa_scsi_interpret_error(struct CommandList *cp)
- 	case CMD_TIMEOUT:
- 		dev_warn(d, "cp %p timed out\n", cp);
- 		break;
-+	case CMD_UNABORTABLE:
-+		dev_warn(d, "Command unabortable\n");
-+		break;
- 	default:
- 		dev_warn(d, "cp %p returned unknown status %x\n", cp,
- 				ei->CommandStatus);
+to receive the following updates for the IEEE 1394 (FireWire) subsystem.
+Most importantly this improves reception of asynchronous block packets
+with larger payload (outside physical DMA), as used by IP over 1394 or
+for example forensics applications.
 
+As not all patches had been crossposted to lkml yet, I will send the
+full log and diff as reply to this mail.
+
+Clemens Ladisch (10):
+      firewire: ohci: Asynchronous Reception rewrite
+      firewire: ohci: fix AT context initialization error handling
+      firewire: ohci: flush MMIO writes in the interrupt handler
+      firewire: ohci: properly clear posted write errors
+      firewire: make PHY packet header format consistent
+      firewire: ohci: optimize iso context checks in the interrupt handler
+      firewire: ohci: use common buffer for self IDs and AR descriptors
+      firewire: ohci: flush AT contexts after bus reset for OHCI 1.2
+      firewire: ohci: cache the context run bit
+      firewire: use split transaction timeout only for split transactions
+
+Joe Perches (1):
+      firewire: core: Update WARN uses
+
+Maxim Levitsky (4):
+      firewire: ohci: restore GUID on resume.
+      firewire: ohci: restart iso DMA contexts on resume from low power mode
+      firewire: net: ratelimit error messages
+      firewire: net: add carrier detection
+
+Stefan Richter (4):
+      firewire: nosy: char device is not seekable
+      firewire: net: set carrier state at ifup
+      firewire: ohci: flush AT contexts after bus reset - addendum
+      firewire: ohci: consolidate context status flags
+
+ drivers/firewire/Kconfig            |    2 +-
+ drivers/firewire/core-cdev.c        |    7 +-
+ drivers/firewire/core-transaction.c |   58 ++-
+ drivers/firewire/core.h             |    4 +-
+ drivers/firewire/net.c              |   47 ++-
+ drivers/firewire/nosy.c             |    3 +-
+ drivers/firewire/ohci.c             |  672 ++++++++++++++++++++++++-----------
+ include/linux/firewire.h            |    2 +-
+ 8 files changed, 548 insertions(+), 247 deletions(-)
+
+Thanks,
+-- 
+Stefan Richter
+-=====-==-== ---= --===
+http://arcgraph.de/sr/
