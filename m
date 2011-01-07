@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583Ab1AGSsi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 13:48:38 -0500
-Received: from kroah.org ([198.145.64.141]:51211 "EHLO coco.kroah.org"
+	id S1754478Ab1AGSsq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 13:48:46 -0500
+Received: from cantor.suse.de ([195.135.220.2]:32992 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752099Ab1AGSsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 13:48:36 -0500
-Date: Fri, 7 Jan 2011 10:32:28 -0800
-From: Greg KH <greg@kroah.com>
-To: pratyush <pratyush.anand@st.com>
-Cc: Viresh KUMAR <viresh.kumar@st.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH V2] ST SPEAr: PCIE gadget suppport
-Message-ID: <20110107183228.GB14638@kroah.com>
-References: <137dfad4a093ea0ac80396f5eb7fbf0c382be698.1294314772.git.viresh.kumar@st.com>
- <20110106184840.GA21672@kroah.com>
- <4D26D55D.4010600@st.com>
+	id S1752642Ab1AGSso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 13:48:44 -0500
+Date: Fri, 7 Jan 2011 10:37:16 -0800
+From: Greg KH <gregkh@suse.de>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [000/152] 2.6.36.3-stable review
+Message-ID: <20110107183716.GA14895@suse.de>
+References: <20110106002500.GA3172@kroah.com>
+ <20110106134254.68fa27ac@lxorguk.ukuu.org.uk>
+ <20110106215705.GA30799@suse.de>
+ <20110107150724.GA29082@atrey.karlin.mff.cuni.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D26D55D.4010600@st.com>
+In-Reply-To: <20110107150724.GA29082@atrey.karlin.mff.cuni.cz>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 07, 2011 at 02:27:01PM +0530, pratyush wrote:
-> On 1/7/2011 12:18 AM, Greg KH wrote:
-> > On Thu, Jan 06, 2011 at 05:29:10PM +0530, Viresh Kumar wrote:
-> >> From: Pratyush Anand <pratyush.anand@st.com>
-> >>
-> >> This is a configurable gadget. can be configured by sysfs interface. Any
-> >> IP available at PCIE bus can be programmed to be used by host
-> >> controller.It supoorts both INTX and MSI.
-> >> By default, gadget is configured for INTX and SYSRAM1 is mapped to BAR0
-> >> with size 0x1000
-> >>
-> >> Changes since V1:
-> >> - __iomem added for register addresses
-> >> - kerneldoc comment removed whereever not required.
-> >> - help node moved from sysfs to documentation/misc-devices
-> >> - strict_strtoul used instead of sscanf
-> >>
-> >> Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
-> >> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-> >> ---
-> >>  Documentation/misc-devices/spear-pcie-gadget.txt |  125 ++++
+On Fri, Jan 07, 2011 at 04:07:24PM +0100, Pavel Machek wrote:
+> > On Thu, Jan 06, 2011 at 01:42:54PM +0000, Alan Cox wrote:
+> > > On Wed, 5 Jan 2011 16:25:00 -0800
+> > > Greg KH <gregkh@suse.de> wrote:
+> > > 
+> > > > 
+> > > > This is the start of the stable review cycle for the 2.6.36.3 release.
+> > > > There are 152 patches in this series, all will be posted as a response
+> > > > to this one.  If anyone has any issues with these being applied, please
+> > > > let us know.  If anyone is a maintainer of the proper subsystem, and
+> > > > wants to add a Signed-off-by: line to the patch, please respond with it.
+> > > 
+> > > Look sane on first glance but we don't seem to have a revert for the
+> > > serial mess up yet ?
+> > > 
+> > > > 7a56aa45982bb87bfca98a2832b5ae782c03364a is the first bad commit 
+> > > > commit 7a56aa45982bb87bfca98a2832b5ae782c03364a
+> > > > Author: Yegor Yefremov <yegor_sub1@visionsystems.de>
+> > > > Date:   Wed Jun 16 16:29:55 2010 +0200
+> > > > 
+> > > >     serial: add UART_CAP_EFR and UART_CAP_SLEEP flags to 16C950 UARTs 
+> > > > definition
+> > > >     
+> > > >     Adding UART_CAP_EFR and UART_CAP_SLEEP flags will enable sleep 
+> > > > mode
+> > > >     and automatic CTS flow control for 16C950 UARTs. It will also 
+> > > > avoid
+> > > >     capabilities detection warning like this:
+> > > >     
+> > > >     "ttyS0: detected caps 00000700 should be 00000100"
+> > > >     
+> > > >     Signed-off-by: Yegor Yefremov <yegorslists@googlemail.com>
+> > > >     Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> > > 
+> > > 
+> > > Has been bisected by several people to be causing failures and reported ?
 > > 
-> > New sysfs entries require updates to the Documentation/ABI/ directory
-> > for them.
+> > Hm, I saw Pavel reported a problem, but I didn't get a definate "this
+> > must be reverted" resolution from that thread.  It looked like we should
+> > just drop one of these flags perhaps?
 > > 
-> > Please rework the patch to include these entries.
-> > 
+> > I can revert it if it really is an issue, but it needs to be reverted in
+> > Linus's tree first, before going to stable.
 > 
-> Ok..will send [Patch V3] with these modifications.
-> But, are these rework needed if I move this interface to configfs
-> as you have suggested below.
-> Or is there some different directory where documentation for configfs
-> node can be mentioned?
+> Flow control flag seems to be responsible.
+> 
+> But... it hits me and then... me. So I'd like to see it resolved in
+> devel tree, but it may not 100% vital for stable.
 
-Nope, same directory, you are still creating a user/kernel ABI by using
-configfs right?  It needs to be documented just as well.
+Ok, care to make up a patch I can apply for Linus's tree first that
+works for you?
 
 thanks,
 
