@@ -1,173 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab1AGVMk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 16:12:40 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:40456 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751760Ab1AGVMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 16:12:38 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: netdev@vger.kernel.org
-Subject: Re: [PATCH] forcedeth: Do not use legacy PCI power management
-Date: Fri, 7 Jan 2011 22:12:05 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37+; KDE/4.4.4; x86_64; ; )
-Cc: David Miller <davem@davemloft.net>, LKML <linux-kernel@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-References: <201101070049.16833.rjw@sisk.pl>
-In-Reply-To: <201101070049.16833.rjw@sisk.pl>
+	id S1753519Ab1AGVN7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 16:13:59 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:34854 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753298Ab1AGVNz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 16:13:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=NJNJE7vqiEySbe2yAa0E91eUz2rTDzBVLJy/XV6FoqAoMWUuR3yszzkDHMDxgGqvNS
+         6FlwczDSjnQ2D4GgVz17666sO+UtFh0cEADOe4J5hqTW/WjtaqfFMcGUdTAfar4GaodL
+         2k3SC/P9l9mw8k9So4AgIQG1BmxL5euybzNFg=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101072212.05449.rjw@sisk.pl>
+In-Reply-To: <20110107210152.GG7355@mtj.dyndns.org>
+References: <20101224122338.172750730@chello.nl>
+	<20101224123742.724459093@chello.nl>
+	<AANLkTikGBsh0-QTe9CA2gwDtwzpdMi+fbDsTEKiJAL0P@mail.gmail.com>
+	<1294054362.2016.74.camel@laptop>
+	<20110104064542.GF3402@amd>
+	<1294254867.2016.281.camel@laptop>
+	<AANLkTi=URmD1GYqp+PfVf6rc0tXvRnAQG808LMnBRgG1@mail.gmail.com>
+	<1294306353.2016.304.camel@laptop>
+	<20110106103841.GA3493@amd>
+	<1294338395.2016.381.camel@laptop>
+	<20110107210152.GG7355@mtj.dyndns.org>
+Date: Fri, 7 Jan 2011 16:13:53 -0500
+X-Google-Sender-Auth: kurgJYtfMQubri8KFq_EHrTkWMk
+Message-ID: <AANLkTimA9VKO2bW0PtAVKhYdJ_cRi7mpsAC_QDZwrvAM@mail.gmail.com>
+Subject: Re: [RFC][PATCH] spinlock: Kill spin_unlock_wait()
+From: Jeff Garzik <jeff@garzik.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Nick Piggin <npiggin@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
+        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
+        linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        "IDE/ATA development list" <linux-ide@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 07, 2011, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> The forcedeth driver uses the legacy PCI power management, so it has
-> to do PCI-specific things in its ->suspend() and ->resume() callbacks
-> and some of them are not done correctly.
-> 
-> Convert forcedeth to the new PCI power management framework and make
-> it let the PCI subsystem take care of all the PCI-specific aspects of
-> device handling during system power transitions.
-> 
-> Tested with nVidia Corporation MCP55 Ethernet (rev a2).
+On Fri, Jan 7, 2011 at 4:01 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Thu, Jan 06, 2011 at 07:26:35PM +0100, Peter Zijlstra wrote:
+>> Jeff, Tejun, could you look at the ata-eh thing, then I'll put sorting
+>> through the futex thing on my todo list.
+>
+> Hmm... I think the ->eng_timeout path is already dead.  We no longer
+> have any in-kernel implementation, so killing spin_unlock_wait()
+> should be fine.  I'll follow up with removal of the unused callback.
 
-This version of the patch contains a mistake (nv_shutdown should be #defined
-as NULL if !CONFIG_PM, not nv_resume), please disregard it.
+Unfortunately...  libsas continues to avoid the new EH :(
 
-Fixed patch is appended.
+It's a hairy mess to untangle, too.  libata does proper error handling
+of ATA device errors, notably NCQ error handling, which libsas sorely
+misses.  But libata new EH assumes a bit too much about "owning" the
+entirety of the EH process.  These assumptions are proper for wholly
+ATA drivers (drivers/ata/*) where new EH can drive the EH process, but
+in the SAS situation, a phy in SATA mode is simply a subset of a
+larger set of EH conditions that must be handled.
 
-Thanks,
-Rafael
+Thus libsas uses the ancient libata hook ->phy_reset and lacks ->error_handler.
+
+I think libata's old-EH path is entirely SAS-specific at this point.
+
+     Jeff
 
 
----
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: forcedeth: Do not use legacy PCI power management (v2)
-
-The forcedeth driver uses the legacy PCI power management, so it has
-to do PCI-specific things in its ->suspend() and ->resume() callbacks
-and some of them are not done correctly.
-
-Convert forcedeth to the new PCI power management framework and make
-it let the PCI subsystem take care of all the PCI-specific aspects of
-device handling during system power transitions.
-
-Tested with nVidia Corporation MCP55 Ethernet (rev a2).
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/net/forcedeth.c |   34 ++++++++++++----------------------
- 1 file changed, 12 insertions(+), 22 deletions(-)
-
-Index: linux-2.6/drivers/net/forcedeth.c
-===================================================================
---- linux-2.6.orig/drivers/net/forcedeth.c
-+++ linux-2.6/drivers/net/forcedeth.c
-@@ -4082,6 +4082,7 @@ static int nv_set_wol(struct net_device
- 		writel(flags, base + NvRegWakeUpFlags);
- 		spin_unlock_irq(&np->lock);
- 	}
-+	device_set_wakeup_enable(&np->pci_dev->dev, np->wolenabled);
- 	return 0;
- }
- 
-@@ -5643,14 +5644,10 @@ static int __devinit nv_probe(struct pci
- 	/* set mac address */
- 	nv_copy_mac_to_hw(dev);
- 
--	/* Workaround current PCI init glitch:  wakeup bits aren't
--	 * being set from PCI PM capability.
--	 */
--	device_init_wakeup(&pci_dev->dev, 1);
--
- 	/* disable WOL */
- 	writel(0, base + NvRegWakeUpFlags);
- 	np->wolenabled = 0;
-+	device_set_wakeup_enable(&pci_dev->dev, false);
- 
- 	if (id->driver_data & DEV_HAS_POWER_CNTRL) {
- 
-@@ -5923,8 +5920,9 @@ static void __devexit nv_remove(struct p
- }
- 
- #ifdef CONFIG_PM
--static int nv_suspend(struct pci_dev *pdev, pm_message_t state)
-+static int nv_suspend(struct device *device)
- {
-+	struct pci_dev *pdev = to_pci_dev(device);
- 	struct net_device *dev = pci_get_drvdata(pdev);
- 	struct fe_priv *np = netdev_priv(dev);
- 	u8 __iomem *base = get_hwbase(dev);
-@@ -5940,25 +5938,17 @@ static int nv_suspend(struct pci_dev *pd
- 	for (i = 0;i <= np->register_size/sizeof(u32); i++)
- 		np->saved_config_space[i] = readl(base + i*sizeof(u32));
- 
--	pci_save_state(pdev);
--	pci_enable_wake(pdev, pci_choose_state(pdev, state), np->wolenabled);
--	pci_disable_device(pdev);
--	pci_set_power_state(pdev, pci_choose_state(pdev, state));
- 	return 0;
- }
- 
--static int nv_resume(struct pci_dev *pdev)
-+static int nv_resume(struct device *device)
- {
-+	struct pci_dev *pdev = to_pci_dev(device);
- 	struct net_device *dev = pci_get_drvdata(pdev);
- 	struct fe_priv *np = netdev_priv(dev);
- 	u8 __iomem *base = get_hwbase(dev);
- 	int i, rc = 0;
- 
--	pci_set_power_state(pdev, PCI_D0);
--	pci_restore_state(pdev);
--	/* ack any pending wake events, disable PME */
--	pci_enable_wake(pdev, PCI_D0, 0);
--
- 	/* restore non-pci configuration space */
- 	for (i = 0;i <= np->register_size/sizeof(u32); i++)
- 		writel(np->saved_config_space[i], base+i*sizeof(u32));
-@@ -5977,6 +5967,9 @@ static int nv_resume(struct pci_dev *pde
- 	return rc;
- }
- 
-+static SIMPLE_DEV_PM_OPS(nv_pm_ops, nv_suspend, nv_resume);
-+#define NV_PM_OPS (&nv_pm_ops)
-+
- static void nv_shutdown(struct pci_dev *pdev)
- {
- 	struct net_device *dev = pci_get_drvdata(pdev);
-@@ -6000,15 +5993,13 @@ static void nv_shutdown(struct pci_dev *
- 	 * only put the device into D3 if we really go for poweroff.
- 	 */
- 	if (system_state == SYSTEM_POWER_OFF) {
--		if (pci_enable_wake(pdev, PCI_D3cold, np->wolenabled))
--			pci_enable_wake(pdev, PCI_D3hot, np->wolenabled);
-+		pci_wake_from_d3(pdev, np->wolenabled);
- 		pci_set_power_state(pdev, PCI_D3hot);
- 	}
- }
- #else
--#define nv_suspend NULL
-+#define NV_PM_OPS NULL
- #define nv_shutdown NULL
--#define nv_resume NULL
- #endif /* CONFIG_PM */
- 
- static DEFINE_PCI_DEVICE_TABLE(pci_tbl) = {
-@@ -6180,9 +6171,8 @@ static struct pci_driver driver = {
- 	.id_table	= pci_tbl,
- 	.probe		= nv_probe,
- 	.remove		= __devexit_p(nv_remove),
--	.suspend	= nv_suspend,
--	.resume		= nv_resume,
- 	.shutdown	= nv_shutdown,
-+	.driver.pm	= NV_PM_OPS,
- };
- 
- static int __init init_nic(void)
+P.S.  Note that libsas and ipr are peers; thus ipr driver also uses old EH.
