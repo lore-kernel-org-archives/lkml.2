@@ -1,101 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589Ab1AGARP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 19:17:15 -0500
-Received: from mail-qw0-f66.google.com ([209.85.216.66]:40548 "EHLO
-	mail-qw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753467Ab1AGARL convert rfc822-to-8bit (ORCPT
+	id S1754901Ab1AGAcX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 19:32:23 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45909 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753369Ab1AGAcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 19:17:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=sQlGzIY4am1UdUgee+GUG/lW5eDlRm8l2YzHeckQ05rV3UC1v2mD5I6vhqWuMiD53n
-         2mSBltbCed3k69MPPCJDj5abcQMXrq1ixTyz5WPmGoyZLNNIBJv4FsqsxNjXs+WSbbDE
-         cJkGYGgmtPwOBZDF4CtAWLIZ3G5ykDr21Q9LU=
+	Thu, 6 Jan 2011 19:32:22 -0500
+Date: Fri, 7 Jan 2011 00:32:05 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Ben Herrenchmidt <benh@kernel.crashing.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] Add a common struct clk
+Message-ID: <20110107003205.GL31708@n2100.arm.linux.org.uk>
+References: <1294199462.347935.472473715866.0.gpush@pororo> <20110106160752.GA2775@riccoc20.at.omicron.at> <20110106201137.GY25121@pengutronix.de> <201101070810.21398.jeremy.kerr@canonical.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=0cf=JGGiJ6w3nanJTN1zyLvgVt8FUzwTWp2YG@mail.gmail.com>
-References: <AANLkTik7tcZo8ka80y=FD-_UxwvB6-R8iRHRq+rkOSo+@mail.gmail.com>
-	<4d2654c410489a1b90@agluck-desktop.sc.intel.com>
-	<AANLkTi=0cf=JGGiJ6w3nanJTN1zyLvgVt8FUzwTWp2YG@mail.gmail.com>
-Date: Thu, 6 Jan 2011 16:17:10 -0800
-X-Google-Sender-Auth: BRECB1qJiJmUfo5Rnmuqk0gFTXM
-Message-ID: <AANLkTimJMMC=LoD4igGCMdcFaBS9EpHVHh_x5=91_bbE@mail.gmail.com>
-Subject: Re: [GIT PULL] x86/apic changes for v2.6.38
-From: Yinghai Lu <yinghai@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Luck, Tony" <tony.luck@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201101070810.21398.jeremy.kerr@canonical.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 6, 2011 at 3:53 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, Jan 6, 2011 at 3:48 PM, Luck, Tony <tony.luck@intel.com> wrote:
->> Untested on X86.  Builds and boots on ia64 (both normally and with
->> maxcpus=8 to limit the number of cpus).
->>
->> Signed-off-by: Tony Luck <tony.luck@intel.com>
->
-> Looks much better to me, and gets rid of that silly #ifdef that I reacted to.
->
-> But no hurry, this looks low-priority. So let's make this go through
-> the x86 tree and get merged later, after it has passed whatever normal
-> tests that the -tip tree goes through. Ok?
+On Fri, Jan 07, 2011 at 08:10:20AM +0800, Jeremy Kerr wrote:
+> Hi Richard,
+> 
+> > > > +struct clk {
+> > > > +	const struct clk_ops	*ops;
+> > > > +	unsigned int		enable_count;
+> > > > +	int			flags;
+> > > > +	union {
+> > > > +		struct mutex	mutex;
+> > > > +		spinlock_t	spinlock;
+> > > > +	} lock;
+> > > > +};
+> > > 
+> > > Here you have a "polymorphic" lock, where the clock instance knows
+> > > which type it is supposed to be.  I got flak from David Miller and
+> > > 
+> > > others trying to do the same thing with the mdio_bus:
+> > >    http://kerneltrap.org/mailarchive/linux-netdev/2010/7/6/6280618
+> > > 
+> > > The criticism, applied to your case, is that the clk_enable() caller
+> > > cannot know whether it is safe to make the call or not. I was told,
+> > > "there has got to be a better way."
+> > 
+> > Note that this is not "new".  Currently there is no convention available
+> > if clk_enable sleeps or not.  See e.g.
+> > http://thread.gmane.org/gmane.linux.ports.arm.kernel/100744
+> 
+> As Uwe says, the common clock does not change these semantics; I would prefer 
+> to keep the driver API changes at a minimum with these patches.
+> 
+> But yes, it would be a good idea to:
+> 
+>  * introduce clk_enable_atomic, which requires clk->flags & CLK_ATOMIC
+> 
+>  * add might_sleep to clk_enable(), encouraging clk uses in atomic contexts
+>    to switch to clk_enable_atomic.
+> 
+> We'd still be able to handle CLK_ATOMIC clocks in clk_enable(), so the 
+> enforcement only needs to be one-way.
 
-yes. x86 is safe. We have apicid_to_node[] array, and already check
-apic id with MAX_LOCAL_APIC
-in x86 version acpi_numa_processor_affinity_init().
+I think the atomic stuff should be the norm through and through - otherwise
+we're going to end up with problems in drivers where they use the _atomic()
+stuff, but the clocks behind are coded to sleep.
 
-looks ia64 is using struct array with cpu idx for mapping
+I hate the GPIO APIs for doing this _cansleep crap as the decision of
+whether to use the _cansleep or normal APIs normally can't be made at
+the time when the API is used, but sometime later.  Many people just use
+the non-_cansleep versions irrespective of the context they're in -
+which is unnecessarily restrictive - consider what happens if you then
+have that driver use a GPIO on an I2C peripheral...
 
-        node_cpuid[srat_num_cpus].phys_id =
-            (pa->apic_id << 8) | (pa->local_sapic_eid);
-        /* nid should be overridden as logical node id later */
-        node_cpuid[srat_num_cpus].nid = pxm;
-        cpu_set(srat_num_cpus, early_cpu_possible_map);
-        srat_num_cpus++;
-
-but it does not check the boundary of that array...
-
-struct node_cpuid_s node_cpuid[NR_CPUS]..
-
-so if some one try to boot kernel with small NR_CPUS on bigger IA64
-system, could get some variables node_cpuid[]...
-
-Assume Tony will have another patch for IA64 to check that before
-apply this patch.
-
-sth like
-
-Index: linux-2.6/arch/ia64/kernel/acpi.c
-===================================================================
---- linux-2.6.orig/arch/ia64/kernel/acpi.c
-+++ linux-2.6/arch/ia64/kernel/acpi.c
-@@ -477,6 +479,11 @@ acpi_numa_processor_affinity_init(struct
- 	if (!(pa->flags & ACPI_SRAT_CPU_ENABLED))
- 		return;
-
-+	if (srat_num_cpus >= NR_CPUS) {
-+		printk(KERN_WARNING "NR_CPUS (%d) is too small, not all cpus used.
-%d\n", NR_CPUS);
-+		return;
-+	}
-+
- 	pxm = get_processor_proximity_domain(pa);
-
- 	/* record this node in proximity bitmap */
-
-
-Thanks
-
-Yinghai
+By inventing two interfaces, you're asking for the same thing to happen
+with clocks.
