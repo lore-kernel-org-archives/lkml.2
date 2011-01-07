@@ -1,120 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618Ab1AGWeE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 17:34:04 -0500
-Received: from violet.fr.zoreil.com ([92.243.8.30]:57240 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753232Ab1AGWeD (ORCPT
+	id S1754750Ab1AGWfe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 17:35:34 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:54174 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753264Ab1AGWfd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 17:34:03 -0500
-Date: Fri, 7 Jan 2011 22:13:54 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>, Hayes Wang <hayeswang@realtek.com>,
-        Ben Hutchings <benh@debian.org>, David Woodhouse <dwmw2@infradead.org>,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-Message-ID: <20110107211354.GA1862@electric-eye.fr.zoreil.com>
-References: <20110106.122003.233698077.davem@davemloft.net> <AANLkTi=7=_FyVsjA3vKEpg8RwfC=m-8QGfqa6ctxQday@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=7=_FyVsjA3vKEpg8RwfC=m-8QGfqa6ctxQday@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	Fri, 7 Jan 2011 17:35:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=kai/OQU+78Tfonw7l1lHz/R5YyuoQ/SXFLzYpvgCeTneC5FDLpUtZ/BYNSVpjbw6qA
+         KSERr0nBnKTkdRUKFshA==
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1101071416450.23577@chino.kir.corp.google.com>
+References: <65795E11DBF1E645A09CEC7EAEE94B9C3A30A295@USINDEVS02.corp.hds.com>
+	<alpine.DEB.2.00.1101071416450.23577@chino.kir.corp.google.com>
+Date: Fri, 7 Jan 2011 14:35:29 -0800
+Message-ID: <AANLkTikQPXWkEJwN5fV2vnUS37Fs+GNzFXuFkKXcnzmu@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/2] Tunable watermark
+From: Ying Han <yinghan@google.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Satoru Moriya <satoru.moriya@hds.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, dle-develop@lists.sourceforge.net,
+        Seiji Aguchi <seiji.aguchi@hds.com>, Ying Han <yinghan@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> :
-> On Thu, Jan 6, 2011 at 12:20 PM, David Miller <davem@davemloft.net> wrote:
-> >
-> > Plus the usual spattering of wireless, bluetooth, and wired driver
-> > updates.
-> 
-> Grr.
-
-Oops.
-
-[...]
-> [torvalds@i5 linux]$ git bisect good
-> bca03d5f32c8ee9b5cfa1d32640a63fded6cb3c0 is the first bad commit
-> commit bca03d5f32c8ee9b5cfa1d32640a63fded6cb3c0
-> Author: fran?ois romieu <romieu@fr.zoreil.com>
-> Date:   Mon Jan 3 15:07:31 2011 +0000
-> 
->     r8169: remove the firmware of RTL8111D.
-> 
->     The binary file of the firmware is moved to linux-firmware repository.
->     The firmwares are rtl_nic/rtl8168d-1.fw and rtl_nic/rtl8168d-2.fw.
->     The driver goes along if the firmware couldn't be found. However, it
->     is suggested to be done with the suitable firmware.
-> 
->     Some wrong PHY parameters are directly corrected in the driver.
-> 
->     Simple firmware checking added per Ben Hutchings suggestion.
-> 
->     Signed-off-by: Hayes Wang <hayeswang@realtek.com>
->     Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
->     Cc: Ben Hutchings <benh@debian.org>
->     Signed-off-by: David S. Miller <davem@davemloft.net>
-> 
-> and the behavior is very broken: it just hangs at boot-time. No
-> messages from the driver (certainly not any messages about missing
-> firmware), no nothing. The thing is just hung.
+On Fri, Jan 7, 2011 at 2:23 PM, David Rientjes <rientjes@google.com> wrote:
+> On Fri, 7 Jan 2011, Satoru Moriya wrote:
 >
-> On a working setup, I have
-> 
-> 
->   [    1.595071] r8169 Gigabit Ethernet driver 2.3LK-NAPI loaded
->   [    1.595114] r8169 0000:01:00.0: PCI INT A -> GSI 19 (level, low) -> IRQ 19
->   [    1.595174] r8169 0000:01:00.0: setting latency timer to 64
->   [    1.595227] r8169 0000:01:00.0: irq 42 for MSI/MSI-X
->   [    1.595770] r8169 0000:01:00.0: eth0: RTL8168d/8111d at
-> 0xffffc90000068000, e0:cb:4e:95:1a:d7, XID 083000c0 IRQ 42
+>> This patchset introduces a new knob to control each watermark
+>> separately.
+>>
+>> [Purpose]
+>> To control the timing at which kswapd/direct reclaim starts(ends)
+>> based on memory pressure and/or application characteristics
+>> because direct reclaim makes a memory alloc/access latency worse.
+>> (We'd like to avoid direct reclaim to keep latency low even if
+>>  under the high memory pressure.)
+>>
+>> [Problem]
+>> The thresholds kswapd/direct reclaim starts(ends) depend on
+>> watermark[min,low,high] and currently all watermarks are set
+>> based on min_free_kbytes. min_free_kbytes is the amount of
+>> free memory that Linux VM should keep at least.
+>>
+>
+> Not completely, it also depends on the amount of lowmem (because of the
+> reserve setup next) and the amount of memory in each zone.
+>
+>> This means the difference between thresholds at which kswapd
+>> starts and direct reclaim starts depends on the amount of free
+>> memory.
+>>
+>> On the other hand, the amount of required memory depends on
+>> applications. Therefore when it allocates/access memory more
+>> than the difference between watemark[low] and watermark[min],
+>> kernel sometimes runs direct reclaim before allocation and
+>> it makes application latency bigger.
+>>
+>> [Solution]
+>> To avoid the situation above, this patch set introduces new
+>> tunables /proc/sys/vm/wmark_min_kbytes, wmark_low_kbytes and
+>> wmark_high_kbytes. Each entry controls watermark[min],
+>> watermark[low] and watermark[high] separately.
+>> By using these parameters one can make the difference between
+>> min and low bigger than the amount of memory which applications
+>> require.
+>>
+>
+> I really dislike this because it adds additional tunables that should
+> already be handled correctly by the VM and it's very difficult for users
+> to know what to tune these values to; these watermarks (with the exception
+> of min) are supposed to be internal to the VM implementation.
+>
+> You didn't mention why it wouldn't be possible to modify
+> setup_per_zone_wmarks() in some way for your configuration so this happens
+> automatically.  If you can find a deterministic way to set these
+> watermarks from userspace, you should be able to do it in the kernel as
+> well based on the configuration.
+>
+> I think we should invest time in making sure the VM works for any type of
+> workload thrown at it instead of relying on userspace making lots of
+> adjustments.
 
->   ...
->   [    7.985917] r8169 0000:01:00.0: eth0: link up
->   [    7.987525] r8169 0000:01:00.0: eth0: link up
-> 
-> while on a non-working setup, I get that XID line, and after that a
-> few other init routines continue to show up (probably just
-> multi-threaded initcalls), but the box is dead.
-> 
-> Quite frankly, that commit looks broken anyway. It doesn't just switch
-> to the firmware loader, it also seems to change other things (ie
-> removed some mdio writes, added others).
+I agree in general that adding the APIs to each wmarks sounds like a
+over-kill, and
+hard for user to configure most of the time.
 
-It was described in the commit message as
-[...]
-    Some wrong PHY parameters are directly corrected in the driver.
+On the other hand, having the low/high wmark consider more characters
+other than the
+size of the zone sounds useful. But I am not sure how to approach that
+entirely in the
+kernel if we like the reclaim behavior to be reflected from the
+different workload.
 
-> What's going on?
+--Ying
 
-The firmware is supposed to be optional. The (relevant) 8168 have
-been reported to work without it. I have tested it with my hardware
-(RTL_GIGA_MAC_VER_26 (== your), RTL_GIGA_MAC_VER_25 + some others),
-seen the "r8169 0000:02:00.0: eth0: unable to apply firmware patch"
-message and noticed that the card was actually working. Though I did
-not try a non-modular build, this was not exactly a five minutes
-test.
-
-I had no technical reason [*] to turn the firmware mandatory and screw
-distro-maintainers who have decided that the firmware is not free enough.
-
-[*] The small "I will regret it" voices in my head do not count as
-    technical reasons.
-
-[...]
-> Not acceptable. I'm ok with an external firmware repository, but only
-> if it _works_. Right now it doesn't. It just seems to cause silent
-> failures: there were no warnings about missing firmware at ANY time.
-> Not build-time, not run-time.
-
-?
-
-The driver is supposed to display a message at KERN_WARNING.
-
--- 
-Ueimor
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom policy in Canada: sign http://dissolvethecrtc.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
