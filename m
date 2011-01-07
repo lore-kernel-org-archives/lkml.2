@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab1AGRTq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 12:19:46 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34389 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754556Ab1AGRTo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 12:19:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=kyHHO3XlaPXN9fVehf8tIqmDvDRFn3KCsq20EWI/uLE2Ztxl2g0yESzb21sGhFEJ/R
-         Q1xScuzFiq8ifEhiOeaQLSCBNF8IYPQhg8ktdEI/6QWI4ZyEAS3CIVhiKwivUrZKKL/T
-         NpKami8VlGPmaijfv7dav4GPTEG4wwH/28DYg=
-Date: Sat, 8 Jan 2011 04:19:37 +1100
-From: "Trent W. Buck" <trentbuck@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: Re: BUG: blank screen i915 (N10) LVDS in 2.6.37
-Message-ID: <20110107171934.GA1299@dali>
-References: <20110107085931.GA1400@dali>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110107085931.GA1400@dali>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754963Ab1AGRUJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 12:20:09 -0500
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:52647
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754826Ab1AGRUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 12:20:07 -0500
+From: Hank Janssen <hjanssen@microsoft.com>
+To: hjanssen@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org
+Cc: Abhishek Kane <v-abkane@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: [PATCH 1/1] staging: hv: Removed unneeded call to netif_stop_queue() in hv_netvsc
+Date: Fri,  7 Jan 2011 09:25:39 -0800
+Message-Id: <1294421139-18657-1-git-send-email-hjanssen@microsoft.com>
+X-Mailer: git-send-email 1.5.5.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I wrote:
-> When I boot 2.6.37, the onboard head remains blank.
-> It works in 2.6.36.  In both cases, the VGA head works fine.
-> [...]
-> IIRC I also changed from eeepc_laptop on .36 to eeepc_wmi .37 (with
-> the associated change to the boot parameter in .config); dunno if
-> that matters.
+From: Hank Janssen <hjanssen@microsoft.com>
 
-Apparently it does: going back to eeepc_laptop fixes the issue.
+Removed the call to netif_stop_queue() in netvsc_probe() as
+the queue is not initialized at that point and further call
+to it after queue initialization is really not necessary.
 
-    --- .config.old	2011-01-08 04:16:20.752701984 +1100
-    +++ .config	2011-01-08 03:51:03.000000000 +1100
-    @@ -4 +4 @@
-    -# Wed Jan  5 22:13:38 2011
-    +# Sat Jan  8 03:47:32 2011
-    @@ -353 +353 @@
-    -CONFIG_CMDLINE="root=/dev/sda2 ro quiet"
-    +CONFIG_CMDLINE="root=/dev/sda2 acpi_osi=Linux ro quiet"
-    @@ -1775 +1774,0 @@
-    -# CONFIG_LEDS_DELL_NETBOOKS is not set
-    @@ -1936 +1934,0 @@
-    -# CONFIG_DELL_WMI is not set
-    @@ -1938 +1935,0 @@
-    -# CONFIG_HP_WMI is not set
-    @@ -1947,4 +1944,2 @@
-    -# CONFIG_EEEPC_LAPTOP is not set
-    -CONFIG_EEEPC_WMI=y
-    -CONFIG_ACPI_WMI=y
-    -# CONFIG_MSI_WMI is not set
-    +CONFIG_EEEPC_LAPTOP=m
-    +# CONFIG_ACPI_WMI is not set
+This change was prompted after an upstream change went into 
+2.6.37 (netif_tx_stop_queue) that now checks if netif_stop_queue
+is called before register with netdev is done.
+
+This will eliminate the warning message to the log when hv_netvsc
+driver starts up.
+
+Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+
+
+---
+ drivers/staging/hv/netvsc_drv.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
+index 0147b40..54706a1 100644
+--- a/drivers/staging/hv/netvsc_drv.c
++++ b/drivers/staging/hv/netvsc_drv.c
+@@ -358,7 +358,6 @@ static int netvsc_probe(struct device *device)
+ 
+ 	/* Set initial state */
+ 	netif_carrier_off(net);
+-	netif_stop_queue(net);
+ 
+ 	net_device_ctx = netdev_priv(net);
+ 	net_device_ctx->device_ctx = device_ctx;
+-- 
+1.6.0.2
+
