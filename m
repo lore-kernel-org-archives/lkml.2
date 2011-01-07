@@ -1,156 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377Ab1AGPMR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 10:12:17 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58806 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941Ab1AGPMP (ORCPT
+	id S1753190Ab1AGPM2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 10:12:28 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64719 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752819Ab1AGPM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 10:12:15 -0500
+	Fri, 7 Jan 2011 10:12:26 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ihbOjkhGsnO47nVvAoZ7mczy6VT3T7bXsJX3ueRwStzfkfa4xdfTe0PIvG5L1aqWZJ
-         mAY7gm+nbe6QnIdhOwXeyDTFvv5QJ7+Z8G4dxYTiufHzTPUgW241BLOFm7yqGvlULr7q
-         ACS8GWMrh0R1dv4mJSjqdHxtcPAAFxb3b0FNU=
-Date: Fri, 7 Jan 2011 16:12:10 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Amit Kucheria <amit.kucheria@linaro.org>
-Subject: Re: [PATCH] tracing, perf : add cpu hotplug trace events
-Message-ID: <20110107151200.GB1736@nowhere>
-References: <AANLkTimsR3=BKSF8EyASu4_T_vTznw4yEqmxPS8gOQCy@mail.gmail.com>
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=WM73TNg+7+UZaclxgRBUnsQ94Mvzrc9hqKPViHjhLV4U1wHoJP9GreRfzTUeyvCxQH
+         ZQ28IEHhX2iEXoidBmozYMbl1uJnqu+TUknV9y2lAD2zNfQu8pREx8ZcN/dZ0SLNc6ax
+         /orEG8UwkHrznzaI3qrtsGPvy1w4dCEkhzcOE=
+Message-ID: <4D272D55.3040807@suse.cz>
+Date: Fri, 07 Jan 2011 16:12:21 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimsR3=BKSF8EyASu4_T_vTznw4yEqmxPS8gOQCy@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Kay Sievers <kay.sievers@vrfy.org>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 34/36] tty: add 'active' sysfs attribute to tty0 and console
+ device
+References: <20110106215404.GA30624@kroah.com> <1294352605-31906-34-git-send-email-gregkh@suse.de> <4D26D866.40906@suse.cz> <AANLkTimmtkOhEtRmzFxFS8Z_36Dcys+higaiVJXEr-=7@mail.gmail.com>
+In-Reply-To: <AANLkTimmtkOhEtRmzFxFS8Z_36Dcys+higaiVJXEr-=7@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 04, 2011 at 10:50:36AM +0100, Vincent Guittot wrote:
-> Please find below a proposal for adding new trace events for cpu
-> hotplug.The goal is to measure the latency of each part (kernel,
-> architecture and platform) and also to trace the cpu hotplug activity
-> with other power events. I have tested these traces events on an arm
-> platform
+On 01/07/2011 02:20 PM, Kay Sievers wrote:
+> On Fri, Jan 7, 2011 at 10:09, Jiri Slaby <jslaby@suse.cz> wrote:
+>> On 01/06/2011 11:23 PM, Greg Kroah-Hartman wrote:
+>>> --- a/drivers/tty/tty_io.c
+>>> +++ b/drivers/tty/tty_io.c
+>>> @@ -3232,9 +3232,45 @@ static int __init tty_class_init(void)
+>>>  postcore_initcall(tty_class_init);
+>>>
+>>>  /* 3/2004 jmc: why do these devices exist? */
+>>> -
+>>>  static struct cdev tty_cdev, console_cdev;
+>>>
+>>> +static ssize_t show_cons_active(struct device *dev,
+>>> +                             struct device_attribute *attr, char *buf)
+>>> +{
+>>> +     struct console *cs[16];
+>>> +     int i = 0;
+>>> +     struct console *c;
+>>> +     ssize_t count = 0;
+>>> +
+>>> +     acquire_console_sem();
+>>> +     for (c = console_drivers; c; c = c->next) {
+>>
+>> This should be:
+>> for_each_console(c)
+>> like somebody already suggested.
 > 
-> Comments are welcome.
+> That's exported now? It was local to printk.c at least that time.
 > 
-> Date: Wed, 15 Dec 2010 11:22:21 +0100
-> Subject: [PATCH] hotplug tracepoint
+> Anyway, the only sensible change here is to convert that home-grown
+> ->next thing to a proper kernel linked list, and use the common
+> iterators instead of doing it on our own, or export new custom ones.
+
+Perhaps -- I didn't look into the code if there is something which
+blocked this to be done years ago. I doubt there is...
+
+>>> +             if (!c->device)
+>>> +                     continue;
+>>
+>> Why are consoles without devices ignored here?
 > 
-> this patch adds new events for cpu hotplug tracing
-> * plug/unplug sequence
-> * architecture and machine latency measurements
+> It's a common pattern all over the place. What is a "console without a
+> device" that would be interesting here?
+
+For example parport console. The question is whether you are interested
+in consoles without ttys in systemd and other potential users.
+
+>> Other than that there are 2 build warnings, see below.
+>>
+>>> -     device_create(tty_class, NULL, MKDEV(TTY_MAJOR, 0), NULL, "tty0");
+>>> +     tty0dev = device_create(tty_class, NULL, MKDEV(TTY_MAJOR, 0), NULL, "tty0");
+>>> +     if (IS_ERR(tty0dev))
+>>> +             tty0dev = NULL;
+>>> +     else
+>>> +             device_create_file(tty0dev, &dev_attr_active);
+>>
+>> drivers/tty/vt/vt.c: In function ‘vty_init’:
+>> drivers/tty/vt/vt.c:2997:21: warning: ignoring return value of
+>> ‘device_create_file’, declared with attribute warn_unused_result
 > 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> ---
-> include/trace/events/hotplug.h |   71 ++++++++++++++++++++++++++++++++++++++++
-> 1 files changed, 71 insertions(+), 0 deletions(-)
-> create mode 100644 include/trace/events/hotplug.h
+> The code doesn't even check device_create(). :)
 > 
-> diff --git a/include/trace/events/hotplug.h b/include/trace/events/hotplug.h
-> new file mode 100644
-> index 0000000..51c86ab
-> --- /dev/null
-> +++ b/include/trace/events/hotplug.h
-> @@ -0,0 +1,71 @@
-> +#undef TRACE_SYSTEM
-> +#define TRACE_SYSTEM hotplug
-> +
-> +#if !defined(_TRACE_HOTPLUG_H) || defined(TRACE_HEADER_MULTI_READ)
-> +#define _TRACE_HOTPLUG_H
-> +
-> +#include <linux/ktime.h>
-> +#include <linux/tracepoint.h>
-> +
-> +#ifndef _TRACE_HOTPLUG_ENUM_
-> +#define _TRACE_HOTPLUG_ENUM_
-> +enum hotplug_type {
-> + HOTPLUG_UNPLUG = 0,
-> + HOTPLUG_PLUG = 1
-> +};
-> +
-> +enum hotplug_step {
-> + HOTPLUG_KERNEL = 0,
-> + HOTPLUG_ARCH = 1,
-> + HOTPLUG_MACH = 2
-> +};
-> +#endif
-> +
-> +TRACE_EVENT(hotplug_start,
+> Anyway we actually don't want to check the return value of
+> file_create(), it's a non-fatal error, if it ever happens.
 
-hotplug is way too generic.
+Ok, but we don't want to introduce new warnings.
 
-cpu_hotplug may be?
+> What's the preferred way to do that:
+>   int ignore = device_create_file()
 
-> +
-> + TP_PROTO(unsigned int type, unsigned int step, unsigned int cpuid),
+I think the usual workaround in C is casting to void.
 
-I feel a bit uncomfortable with these opaque type and step.
-
-What about splitting the events:
-
-	cpu_down_start
-	cpu_down_end
-
-	cpu_up_start
-	cpu_up_end
-
-This ways they are much more self-explanatory.
-
-I also feel uncomfortable about exposing arch step details in core
-tracepoints.
-
-But if we consider the following sequence:
-
-	cpu_down() {
-		__cpu_disable() {
-			platform_cpu_disable();
-		}
-	}
-
-Then exposing start/end of cpu_disable() makes sense, by way of:
-
-	cpu_arch_disable_start
-        cpu_arch_disable_end
-
-        cpu_arch_enable_start
-        cpu_arch_enable_end
-
-
-	cpu_arch_die_start
-        cpu_arch_die_end
-
-        cpu_arch_die_start
-        cpu_arch_die_end
-
-Because they are arch events that you can retrieve everywhere, the tracepoints
-are still called from the code code.
-
-Now for the machine part, it's very highly arch specific, most notably for arm
-so I wonder if it would make more sense to keep that seperate into arch
-tracepoints.
-
-How does that all look? I hope I'm not overengineering.
-
-Creating such series of similar tracepoints is quite easy and quick using
-DECLARE_EVENT_CLASS and DEFINE_EVENT.
-
-> +
-> + TP_ARGS(type, step, cpuid),
-> +
-> + TP_STRUCT__entry(
-> + __field(u32, type)
-> + __field(u32, step)
-> + __field(u32, cpuid)
-> + ),
-
-And please use a proper indentation for trace_events.
-You can have a look at the examples in include/trace/events/
+regards,
+-- 
+js
+suse labs
