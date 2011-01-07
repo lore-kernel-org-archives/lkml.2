@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab1AGBy4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 20:54:56 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:51300 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755112Ab1AGByz (ORCPT
+	id S1755689Ab1AGCBU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 21:01:20 -0500
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:53410 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754968Ab1AGCBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 20:54:55 -0500
-Date: Thu, 6 Jan 2011 20:54:53 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Jeff Moyer <jmoyer@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Li Zefan <lizf@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] blktrace: add missing probe argument to block_bio_complete
-Message-ID: <20110107015453.GB5109@Krystal>
+	Thu, 6 Jan 2011 21:01:17 -0500
+Date: Fri, 7 Jan 2011 10:59:18 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-sh@vger.kernel.org, Magnus Damm <damm@opensource.se>,
+        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dma: shdma: don't register the global die notifier multiple times
+Message-ID: <20110107015918.GI22477@linux-sh.org>
+References: <Pine.LNX.4.64.1101061759460.1248@axis700.grange>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 20:52:39 up 44 days,  6:55,  6 users,  load average: 0.01, 0.02,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <Pine.LNX.4.64.1101061759460.1248@axis700.grange>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blktrace.c block bio complete callback needs to gain a new argument to reflect
-the newly added "error" tracepoint argument. This is needed to match the new
-block_bio_complete TRACE_EVENT as of
-commit de983a7bfcb7c020901ca6e2314cf55a4207ab5a.
+On Thu, Jan 06, 2011 at 06:04:50PM +0100, Guennadi Liakhovetski wrote:
+> A recent patch has added a die notifier to the shdma driver, however, 
+> it registers a static die-notifier object in the probe routine, i.e., 
+> for each device instance. This is wrong and leads to a system lockup. 
+> This patch moves the die notifier registration to module init and 
+> exit routines respectively.
+> 
+> Reported-by: Magnus Damm <damm@opensource.se>
+> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> ---
+> 
+> This fixes the lock up on sh7372. Patch against current sh-2.6/master.
+> 
+Whoops, I suppose I should have tested on a platform with more than one
+DMAC :-)
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Jeff Moyer <jmoyer@redhat.com>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Jens Axboe <axboe@kernel.dk>
-CC: Li Zefan <lizf@cn.fujitsu.com>
----
- kernel/trace/blktrace.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-Index: linux-2.6-lttng/kernel/trace/blktrace.c
-===================================================================
---- linux-2.6-lttng.orig/kernel/trace/blktrace.c
-+++ linux-2.6-lttng/kernel/trace/blktrace.c
-@@ -785,7 +785,8 @@ static void blk_add_trace_bio_bounce(voi
- }
- 
- static void blk_add_trace_bio_complete(void *ignore,
--				       struct request_queue *q, struct bio *bio)
-+				       struct request_queue *q, struct bio *bio,
-+				       int error)
- {
- 	blk_add_trace_bio(q, bio, BLK_TA_COMPLETE);
- }
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+I'll piggyback this on top of the rmobile-latest branch, thanks.
