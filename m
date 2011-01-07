@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907Ab1AGM6h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 07:58:37 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:42434 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752266Ab1AGM6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 07:58:35 -0500
-Date: Fri, 7 Jan 2011 13:58:18 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Jan Beulich <JBeulich@novell.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "Roedel, Joerg" <Joerg.Roedel@amd.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: use PCI method for enabling AMD extended config
- space before MSR method
-Message-ID: <20110107125818.GB23185@elte.hu>
-References: <4D26028F020000780002AC8A@vpn.id2.novell.com>
- <20110106172004.GM4739@erda.amd.com>
- <20110106172834.GN4739@erda.amd.com>
+	id S1752880Ab1AGNAr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 08:00:47 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52612 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752641Ab1AGNAq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 08:00:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=V3XD/SLi8Hj15THPAkM67aIJi/762m3EDqmR1x5ykEimvyCmGscbsfJgg1Kzkfk2v/
+         NSwUbXEjgeLK6VObYQWHfWz05PiKjgvl0oNVs7ufBfKnU2vkO0thSVqFlqRQmO2KHdLn
+         4XQ1hWlHlMjpVpRXydonPG48ghWSA5wmT7AJQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110106172834.GN4739@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4D26CCEE.4070508@kernel.dk>
+References: <AANLkTimHE35jUOY6Lhd7OnATSD6BeB4poUosaQ+bR61i@mail.gmail.com>
+	<4D26CCEE.4070508@kernel.dk>
+Date: Fri, 7 Jan 2011 08:00:45 -0500
+Message-ID: <AANLkTingF8jK2Lppng+MCeszB=KFEsqs9uRqBn0Uhdh8@mail.gmail.com>
+Subject: Re: Who does determine the number of requests that can be serving
+ simultaneously in a storage?
+From: Yuehai Xu <yuehaixu@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, cmm@us.ibm.com, rwheeler@redhat.com,
+        vgoyal@redhat.com, czoccolo@gmail.com, yhxu@wayne.edu
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I add a tracepoint so that I can get nr_sorted and in_flight[0/1] of
+request_queue when request is completed, I consider nr_sorted as the
+number of pending requests and in_flight[0/1] represent the number
+serving in the storage. Does these two parameters stand for what I
+mean?
 
-* Robert Richter <robert.richter@amd.com> wrote:
+The test benchmark I use is postmark which simulates the email server
+system, over 90% requests are small random write. The storage is Intel
+M SSD. Generally, I think the number of in_flight[0/1] should be much
+greater than 1, but the result shows that this value is almost 1 no
+matter what I/O scheduler(CFQ/DEADLINE/NOOP) or
+filesystem(EXT4/EXT3/BTRFS) it is. Is it normal?
 
-> On 06.01.11 18:20:04, Robert Richter wrote:
-> > On 06.01.11 11:57:35, Jan Beulich wrote:
-> > > While both methods should work equivalently well for the native case,
-> > > the Xen Dom0 case can't reliably work with the MSR one, since there's
-> > > no guarantee that the virtual CPUs it has available fully cover all
-> > > necessary physical ones.
-> > > 
-> > > As per the suggestion of Robert Richter the patch only adds the PCI
-> > > method, but leaves the MSR one as a fallback to cover new systems the
-> > > PCI IDs of which may not have got added to the code base yet.
-> > > 
-> > > Signed-off-by: Jan Beulich <jbeulich@novell.com>
-> > > Cc: Robert Richter <robert.richter@amd.com>
-> > > Cc: Joerg Roedel <Joerg.Roedel@amd.com>
-> > > Cc: Andreas Herrmann <Andreas.Herrmann3@amd.com>
-> > > Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-> > > 
-> > > ---
-> > >  arch/x86/include/asm/amd_nb.h |    7 ++++++
-> > >  arch/x86/kernel/amd_nb.c      |    7 ++++++
-> > >  arch/x86/kernel/aperture_64.c |   44 +++++++++++++++---------------------------
-> > >  arch/x86/pci/amd_bus.c        |   30 ++++++++++++++++++++++++++++
-> > >  4 files changed, 60 insertions(+), 28 deletions(-)
-> 
-> Btw, the patch should be relative to tip/x86/amd-nb as there would be
-> conflicts otherwise due to other changes.
+B.T.W, I only run a process for postmark.
 
-that's upstream meanwhile, so a patch against -git or -tip would suffice.
+> The driver has to take care of this. Since requests are pulled by the
+> driver, it knows when to stop asking for more work.
+>
+> BTW, your depth of 4 for the HDD seems a bit odd. Typically all SATA
+> drives share the same queue depth, limited by what NCQ provides (32).
+>
+
+This number is given arbitrary, just for example.
 
 Thanks,
-
-	Ingo
+Yuehai
