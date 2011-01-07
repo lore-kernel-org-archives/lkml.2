@@ -1,39 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378Ab1AGJc0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 04:32:26 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51175 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754007Ab1AGJcY (ORCPT
+	id S1754334Ab1AGJeH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 04:34:07 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:51678 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808Ab1AGJeC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 04:32:24 -0500
-Date: Fri, 7 Jan 2011 09:31:55 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Hans Ulli Kroll <ulli.kroll@googlemail.com>
-Cc: rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/2] ARM: Gemini: add RTC support for Gemini SoC
-Message-ID: <20110107093155.GN31708@n2100.arm.linux.org.uk>
-References: <1292339307-14336-1-git-send-email-ulli.kroll@googlemail.com>
+	Fri, 7 Jan 2011 04:34:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=JC1TeSQGrZEw2sQdI34uYKfu3luEA5cFyc8Dx3gMkgZaiGh0HBwm3db4O8i4/KF0Os
+         WEp8CtMDkB4r1GA4ZuS05PI425xnUSjyVFwMTY7yubjA7wNgq1DPjB1gQzbphQGita+X
+         eE6Aa6LC8gmqaLDKH/mPcKREMehdTmCR1kS9o=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292339307-14336-1-git-send-email-ulli.kroll@googlemail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <34428.1293053719@localhost>
+References: <4CE2F914.9070106@free.fr>
+	<24422.1290656467@localhost>
+	<20101126182355.62615dff@mat-laptop>
+	<20101208221951.GO5750@outflux.net>
+	<20101211001857.4c5e0794@mat-laptop>
+	<20101222124019.GG10809@elte.hu>
+	<34428.1293053719@localhost>
+Date: Fri, 7 Jan 2011 17:34:01 +0800
+Message-ID: <AANLkTin55DXcQnK3NY7y-v8TXj5w-XT2rTJo9p90tj4g@mail.gmail.com>
+Subject: Re: [PATCH 3/3 V13] RO/NX protection for loadable kernel
+From: Xiaotian Feng <xtfeng@gmail.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Ingo Molnar <mingo@elte.hu>, mat <castet.matthieu@free.fr>,
+        Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
+        Arjan van de Ven <arjan@infradead.org>,
+        James Morris <jmorris@namei.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
+        Siarhei Liakh <sliakh.lkml@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 14, 2010 at 04:08:25PM +0100, Hans Ulli Kroll wrote:
-> This patch adds the driver for the rtc chip on the Gemini SoC
+On Thu, Dec 23, 2010 at 5:35 AM,  <Valdis.Kletnieks@vt.edu> wrote:
+> On Wed, 22 Dec 2010 13:40:19 +0100, Ingo Molnar said:
+>>
+>> * mat <castet.matthieu@free.fr> wrote:
+>>
+>> > Le Wed, 8 Dec 2010 14:19:51 -0800,
+>> > Kees Cook <kees.cook@canonical.com> a écrit :
+>> >
+>> > > On Fri, Nov 26, 2010 at 06:23:55PM +0100, mat wrote:
+>> > > > could you try the attached patch ?
+>> > > >
+>> > > > on module load, we sort the __jump_table section. So we should make
+>> > > > it writable.
+>> > > >
+>> > > >
+>> > > > Matthieu
+>> > >
+>> > > > diff --git a/arch/x86/include/asm/jump_label.h
+>> > > > b/arch/x86/include/asm/jump_label.h index f52d42e..574dbc2 100644
+>> > > > --- a/arch/x86/include/asm/jump_label.h
+>> > > > +++ b/arch/x86/include/asm/jump_label.h
+>> > > > @@ -14,7 +14,7 @@
+>> > > >         do
+>> > > > {                                                       \ asm
+>> > > > goto("1:"                                       \
+>> > > > JUMP_LABEL_INITIAL_NOP                  \
+>> > > > -                       ".pushsection __jump_table,  \"a\" \n\t"\
+>> > > > +                       ".pushsection __jump_table,  \"aw\" \n\t"\
+>> > > >                         _ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
+>> > > >                         ".popsection \n\t"                      \
+>> > > >                         : :  "i" (key) :  : label);
+>> > > > \
+>> > >
+>> > > Acked-by: Kees Cook <kees.cook@canonical.com>
+>> > >
+>> > > Can this please get committed to tip?
+>> > I think it is not need anymore with  Steven Rostedt patch [1]
+>> >
+>> > Matthieu
+>> >
+>> > [1]
+>> > > > Here we set the text read only before we call the notifiers. The
+>> > > > function tracer changes the calls to mcount into nops via a notifier
+>> > > > call so this must be done after the module notifiers.
+>>
+>> What's the status of this bug?
+>>
+>> If we still need the patch then please submit it standalone with a proper subject
+>> line, with acks/signoffs added, etc.
+>
+> Steve Rostedt's patch that moves the setting of the page permissions seems to
+> make this patch no longer necessary.  I tripped over this same issue, but the
+> version in the latest -mmotm does not need it, as it includes Steve's fix.
+>
 
-I'll take patch 2, but not patch 1.  There is no requirement for patch 1
-to come via my tree - it can be handled by the RTC people.
+I'm facing a boot failure (panic'ed on remove_jump_label_module_init)
+on 2.6.37 (latest commit 3c0cb7c), which is 100% reproducible.
+With this patch applied, I can boot my machine successfully, so I do
+think this patch is needed.
 
-My tree is not for random driver code being merged into mainline just
-because it's used on some ARM platform somewhere.
-
-(I'm making this request as a result of feedback from Linus on last nights
-merge of the ARM tree.)
-
-Thanks.
+Thanks
+Xiaotian
