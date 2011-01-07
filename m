@@ -1,112 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab1AGTbq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 14:31:46 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:42625 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753876Ab1AGTbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 14:31:44 -0500
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-To: Stephane Chatty <chatty@enac.fr>, Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Subject: [PATCH v3 resend] hid: add feature_mapping callback
-Date: Fri,  7 Jan 2011 20:32:21 +0100
-Message-Id: <1294428741-2521-1-git-send-email-benjamin.tissoires@enac.fr>
-X-Mailer: git-send-email 1.7.3.4
+	id S1754286Ab1AGTbz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 14:31:55 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:51198 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754090Ab1AGTbw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 14:31:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:in-reply-to:references:user-agent:date
+         :message-id:mime-version:content-type;
+        b=rq6WYm9L7q038pCL3zq6lFbMpbH9cpsuw5omatnnITxcS5TIJObUPrC/BclPxlFcKy
+         VLc69GTXkriFN1K1CMHWUycyvfDTfeDyhwDSiOgkZrxCPe1xth6W5XfM3cL+ZK6iNoQC
+         0OfcHl+0Shy9+YK5+jYwR9ho/pCWU3InsHxCk=
+From: Ben Gamari <bgamari.foss@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: "Igor M. Liplianin" <liplianin@me.by>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, aospan@netup.ru
+Subject: Re: [PATCH 01/18] Altera FPGA firmware download module.
+In-Reply-To: <4D1DC2DD.6050400@infradead.org>
+References: <201012310726.31851.liplianin@netup.ru> <201012311212.19715.laurent.pinchart@ideasonboard.com> <4D1DBE2A.5080003@infradead.org> <201012311230.51903.laurent.pinchart@ideasonboard.com> <4D1DC2DD.6050400@infradead.org>
+User-Agent: Notmuch/0.5-17-g2d1420b (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
+Date: Fri, 07 Jan 2011 14:31:48 -0500
+Message-ID: <8739p45x3v.fsf@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently hid doesn't export the features it knows to the specific modules.
-Some information can be really important in such features: MosArt and
-Cypress devices are by default not in a multitouch mode.
-We have to send the value 2 on the right feature.
+Hi Mauro,
 
-This patch exports to the module the features report so they can find the
-right feature to set up the correct mode.
+On Fri, 31 Dec 2010 09:47:41 -0200, Mauro Carvalho Chehab <mchehab@infradead.org> wrote:
+> Em 31-12-2010 09:30, Laurent Pinchart escreveu:
+> > Hi Mauro,
+> > 
+> > [snip]
+> > 
+> > I understand this. However, a complete JTAG state machine in the kernel, plus 
+> > an Altera firmware parser, seems to be a lot of code that could live in 
+> > userspace.
+> 
+> Moving it to userspace would mean a kernel driver that would depend on an
+> userspace daemon^Wfirmware loader to work. I would NAK such designs.
+> 
+> The way it is is fine from my POV.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Acked-by: Henrik Rydberg <rydberg@euromail.se>
----
- drivers/hid/hid-input.c |   17 +++++++++++++----
- include/linux/hid.h     |    4 ++++
- 2 files changed, 17 insertions(+), 4 deletions(-)
+Any furthur comment on this? As I noted, I strongly disagree and would
+point out that there is no shortage of precedent for the use of
+userspace callbacks for loading of firmware, especially when the process
+is as tricky as this.
 
-diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index bb0b365..daced07 100644
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -287,6 +287,14 @@ static void hidinput_configure_usage(struct hid_input *hidinput, struct hid_fiel
- 		goto ignore;
- 	}
- 
-+	if (field->report_type == HID_FEATURE_REPORT) {
-+		if (device->driver->feature_mapping) {
-+			device->driver->feature_mapping(device, hidinput, field,
-+				usage);
-+		}
-+		goto ignore;
-+	}
-+
- 	if (device->driver->input_mapping) {
- 		int ret = device->driver->input_mapping(device, hidinput, field,
- 				usage, &bit, &max);
-@@ -836,7 +844,6 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
- 	struct hid_input *hidinput = NULL;
- 	struct input_dev *input_dev;
- 	int i, j, k;
--	int max_report_type = HID_OUTPUT_REPORT;
- 
- 	INIT_LIST_HEAD(&hid->inputs);
- 
-@@ -853,10 +860,11 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
- 			return -1;
- 	}
- 
--	if (hid->quirks & HID_QUIRK_SKIP_OUTPUT_REPORTS)
--		max_report_type = HID_INPUT_REPORT;
-+	for (k = HID_INPUT_REPORT; k <= HID_FEATURE_REPORT; k++) {
-+		if (k == HID_OUTPUT_REPORT &&
-+			hid->quirks & HID_QUIRK_SKIP_OUTPUT_REPORTS)
-+			continue;
- 
--	for (k = HID_INPUT_REPORT; k <= max_report_type; k++)
- 		list_for_each_entry(report, &hid->report_enum[k].report_list, list) {
- 
- 			if (!report->maxfield)
-@@ -909,6 +917,7 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
- 				hidinput = NULL;
- 			}
- 		}
-+	}
- 
- 	if (hidinput && input_register_device(hidinput->input))
- 		goto out_cleanup;
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index bb0f56f..96bd792 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -593,6 +593,7 @@ struct hid_usage_id {
-  * @report_fixup: called before report descriptor parsing (NULL means nop)
-  * @input_mapping: invoked on input registering before mapping an usage
-  * @input_mapped: invoked on input registering after mapping an usage
-+ * @feature_mapping: invoked on feature registering
-  * @suspend: invoked on suspend (NULL means nop)
-  * @resume: invoked on resume if device was not reset (NULL means nop)
-  * @reset_resume: invoked on resume if device was reset (NULL means nop)
-@@ -636,6 +637,9 @@ struct hid_driver {
- 	int (*input_mapped)(struct hid_device *hdev,
- 			struct hid_input *hidinput, struct hid_field *field,
- 			struct hid_usage *usage, unsigned long **bit, int *max);
-+	void (*feature_mapping)(struct hid_device *hdev,
-+			struct hid_input *hidinput, struct hid_field *field,
-+			struct hid_usage *usage);
- #ifdef CONFIG_PM
- 	int (*suspend)(struct hid_device *hdev, pm_message_t message);
- 	int (*resume)(struct hid_device *hdev);
--- 
-1.7.3.4
+I also work with Altera FPGAs and have a strong interest in making this
+work yet from my perspective it seems pretty clear that the best way
+forward both for both maintainability and useability is to keep
+this code in user-space. There is absolutely no reason why this code
+_must_ be in the kernel and punting it out to userspace only requires
+a udev rule.
 
+Placing this functionality in userspace results in a massive duplication
+of code, as there are already a number of functional user-space JTAG
+implementations.
+
+> > If I understand it correctly the driver assumes the firmware is in an Altera 
+> > proprietary format. If we really want JTAG code in the kernel we should at 
+> > least split the file parser and the TAP access code.
+> > 
+> 
+> Agreed, but I don't think this would be a good reason to block the code merge
+> for .38.
+> 
+Sure, but there should be agreement that a kernel-mode JTAG state
+machine really is the best way forward (i.e. necessary for effective
+firmware upload) before we commit to carry this code around forever.
+
+- Ben
