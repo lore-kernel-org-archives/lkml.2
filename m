@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398Ab1AGNdh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 08:33:37 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:47335 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753348Ab1AGNdg convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:5:1>);
-	Fri, 7 Jan 2011 08:33:36 -0500
-Message-Id: <4D27243D020000780002B00C@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Fri, 07 Jan 2011 13:33:33 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Robert Richter" <robert.richter@amd.com>, "Ingo Molnar" <mingo@elte.hu>
-Cc: "Andreas Herrmann3" <Andreas.Herrmann3@amd.com>,
-        "Joerg Roedel" <Joerg.Roedel@amd.com>,
-        "Jeremy Fitzhardinge" <jeremy@goop.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: [PATCH] x86: use PCI method for enabling AMD extended
-	 config space before MSR method
-References: <4D26028F020000780002AC8A@vpn.id2.novell.com>
- <20110106172004.GM4739@erda.amd.com> <20110106172834.GN4739@erda.amd.com>
- <20110107125818.GB23185@elte.hu>
-In-Reply-To: <20110107125818.GB23185@elte.hu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753389Ab1AGNgh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 08:36:37 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:45429 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753227Ab1AGNgg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 08:36:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=rA0sfclgto9NagA9FQWMQgr7StjbxBmfv12pOCgq5sbI5FTQKM+LdvaMU7kibqU8y/
+         +COwPqUoxME+eaK9Yhm9+RgK+HKzK5mzOncPRl/KdIslBooGtWapNkhewZ5KMQIW2NYq
+         jAcXUm6cw4ZtD3eiKPUo4GunJ2NsGyo+/+6yA=
+MIME-Version: 1.0
+In-Reply-To: <4D270F85.9070705@gmail.com>
+References: <20110106002302.141581701@clark.site>
+	<4D2691D4.3060304@gmail.com>
+	<1294389025.2704.95.camel@edumazet-laptop>
+	<4D270F85.9070705@gmail.com>
+Date: Fri, 7 Jan 2011 15:36:35 +0200
+X-Google-Sender-Auth: kjFVQcxeyjJ8VN9NulGwn71MaJQ
+Message-ID: <AANLkTinkmnVLi7NrKsK50MBsycyYhyvEdtm01NA9ubOX@mail.gmail.com>
+Subject: Re: [058/152] tcp: protect sysctl_tcp_cookie_size reads
+From: Pekka Enberg <penberg@kernel.org>
+To: William Allen Simpson <william.allen.simpson@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 07.01.11 at 13:58, Ingo Molnar <mingo@elte.hu> wrote:
+Hi William,
 
-> * Robert Richter <robert.richter@amd.com> wrote:
-> 
->> On 06.01.11 18:20:04, Robert Richter wrote:
->> > On 06.01.11 11:57:35, Jan Beulich wrote:
->> > > While both methods should work equivalently well for the native case,
->> > > the Xen Dom0 case can't reliably work with the MSR one, since there's
->> > > no guarantee that the virtual CPUs it has available fully cover all
->> > > necessary physical ones.
->> > > 
->> > > As per the suggestion of Robert Richter the patch only adds the PCI
->> > > method, but leaves the MSR one as a fallback to cover new systems the
->> > > PCI IDs of which may not have got added to the code base yet.
->> > > 
->> > > Signed-off-by: Jan Beulich <jbeulich@novell.com>
->> > > Cc: Robert Richter <robert.richter@amd.com>
->> > > Cc: Joerg Roedel <Joerg.Roedel@amd.com>
->> > > Cc: Andreas Herrmann <Andreas.Herrmann3@amd.com>
->> > > Cc: Jeremy Fitzhardinge <jeremy@goop.org>
->> > > 
->> > > ---
->> > >  arch/x86/include/asm/amd_nb.h |    7 ++++++
->> > >  arch/x86/kernel/amd_nb.c      |    7 ++++++
->> > >  arch/x86/kernel/aperture_64.c |   44 +++++++++++++++---------------------------
->> > >  arch/x86/pci/amd_bus.c        |   30 ++++++++++++++++++++++++++++
->> > >  4 files changed, 60 insertions(+), 28 deletions(-)
->> 
->> Btw, the patch should be relative to tip/x86/amd-nb as there would be
->> conflicts otherwise due to other changes.
-> 
-> that's upstream meanwhile, so a patch against -git or -tip would suffice.
+On Fri, Jan 7, 2011 at 3:05 PM, William Allen Simpson
+<william.allen.simpson@gmail.com> wrote:
+> My instructors would have flunked me for not including braces around
+> multi-line sequences; it was one of the great no-no's of the '70s.  Perhaps
+> that's not the case anymore with modern colorful visual syntax checkers?
 
-Yes, will do as soon as I can get to it.
+That's because your instructors hadn't read Documentation/CodingStyle
+which didn't appear until the '90s.
 
-Jan
-
+                        Pekka
