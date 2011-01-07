@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab1AGROZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 12:14:25 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:26554 "EHLO
+	id S1754893Ab1AGROl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 12:14:41 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26856 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754717Ab1AGROX (ORCPT
+	with ESMTP id S1754869Ab1AGROk (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Fri, 7 Jan 2011 12:14:23 -0500
+	Fri, 7 Jan 2011 12:14:40 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: dri-devel@lists.freedesktop.org, thomas@shipmail.org, airlied@linux.ie,
         linux-kernel@vger.kernel.org
 Cc: konrad@darnok.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 1/5] ttm: Introduce a placeholder for DMA (bus) addresses.
-Date: Fri,  7 Jan 2011 12:11:40 -0500
-Message-Id: <1294420304-24811-2-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 3/5] ttm: Expand (*populate) to support an array of DMA addresses.
+Date: Fri,  7 Jan 2011 12:11:42 -0500
+Message-Id: <1294420304-24811-4-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com>
 References: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com>
@@ -21,152 +21,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is right now limited to only non-pool constructs.
+We pass in the array of ttm pages to be populated in the GART/MM
+of the card (or AGP). Patch titled: "ttm: Utilize the dma_addr_t array
+for pages that are to in DMA32 pool." uses the DMA API to make those
+pages have a proper DMA addresses (in the situation where
+page_to_phys or virt_to_phys do not give use the DMA (bus) address).
+
+Since we are using the DMA API on those pages, we should pass in the
+DMA address to this function so it can save it in its proper fields
+(later patches use it).
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/gpu/drm/ttm/ttm_page_alloc.c |    9 ++++++---
- drivers/gpu/drm/ttm/ttm_tt.c         |   10 ++++++++--
- include/drm/ttm/ttm_bo_driver.h      |    2 ++
- include/drm/ttm/ttm_page_alloc.h     |    8 ++++++--
- 4 files changed, 22 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_sgdma.c |    3 ++-
+ drivers/gpu/drm/radeon/radeon_ttm.c     |    3 ++-
+ drivers/gpu/drm/ttm/ttm_agp_backend.c   |    3 ++-
+ drivers/gpu/drm/ttm/ttm_tt.c            |    2 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c  |    3 ++-
+ include/drm/ttm/ttm_bo_driver.h         |    4 +++-
+ 6 files changed, 12 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-index b1e02ff..6859288 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-@@ -38,6 +38,7 @@
- #include <linux/mm.h>
- #include <linux/seq_file.h> /* for seq_printf */
- #include <linux/slab.h>
-+#include <linux/dma-mapping.h>
+diff --git a/drivers/gpu/drm/nouveau/nouveau_sgdma.c b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
+index 288baca..edc140a 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_sgdma.c
++++ b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
+@@ -20,7 +20,8 @@ struct nouveau_sgdma_be {
  
- #include <asm/atomic.h>
- 
-@@ -662,7 +663,8 @@ out:
-  * cached pages.
-  */
- int ttm_get_pages(struct list_head *pages, int flags,
--		enum ttm_caching_state cstate, unsigned count)
-+		enum ttm_caching_state cstate, unsigned count,
-+		dma_addr_t *dma_address)
+ static int
+ nouveau_sgdma_populate(struct ttm_backend *be, unsigned long num_pages,
+-		       struct page **pages, struct page *dummy_read_page)
++		       struct page **pages, struct page *dummy_read_page,
++		       dma_addr_t *dma_addrs)
  {
- 	struct ttm_page_pool *pool = ttm_get_pool(flags, cstate);
- 	struct page *p = NULL;
-@@ -720,7 +722,7 @@ int ttm_get_pages(struct list_head *pages, int flags,
- 			printk(KERN_ERR TTM_PFX
- 			       "Failed to allocate extra pages "
- 			       "for large request.");
--			ttm_put_pages(pages, 0, flags, cstate);
-+			ttm_put_pages(pages, 0, flags, cstate, NULL);
- 			return r;
- 		}
- 	}
-@@ -731,7 +733,8 @@ int ttm_get_pages(struct list_head *pages, int flags,
- 
- /* Put all pages in pages list to correct pool to wait for reuse */
- void ttm_put_pages(struct list_head *pages, unsigned page_count, int flags,
--		enum ttm_caching_state cstate)
-+		enum ttm_caching_state cstate,
-+		dma_addr_t *dma_address)
+ 	struct nouveau_sgdma_be *nvbe = (struct nouveau_sgdma_be *)be;
+ 	struct drm_device *dev = nvbe->dev;
+diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
+index 01c2c73..6f156e9 100644
+--- a/drivers/gpu/drm/radeon/radeon_ttm.c
++++ b/drivers/gpu/drm/radeon/radeon_ttm.c
+@@ -655,7 +655,8 @@ struct radeon_ttm_backend {
+ static int radeon_ttm_backend_populate(struct ttm_backend *backend,
+ 				       unsigned long num_pages,
+ 				       struct page **pages,
+-				       struct page *dummy_read_page)
++				       struct page *dummy_read_page,
++				       dma_addr_t *dma_addrs)
  {
- 	unsigned long irq_flags;
- 	struct ttm_page_pool *pool = ttm_get_pool(flags, cstate);
+ 	struct radeon_ttm_backend *gtt;
+ 
+diff --git a/drivers/gpu/drm/ttm/ttm_agp_backend.c b/drivers/gpu/drm/ttm/ttm_agp_backend.c
+index f999e36..1c4a72f 100644
+--- a/drivers/gpu/drm/ttm/ttm_agp_backend.c
++++ b/drivers/gpu/drm/ttm/ttm_agp_backend.c
+@@ -47,7 +47,8 @@ struct ttm_agp_backend {
+ 
+ static int ttm_agp_populate(struct ttm_backend *backend,
+ 			    unsigned long num_pages, struct page **pages,
+-			    struct page *dummy_read_page)
++			    struct page *dummy_read_page,
++			    dma_addr_t *dma_addrs)
+ {
+ 	struct ttm_agp_backend *agp_be =
+ 	    container_of(backend, struct ttm_agp_backend, backend);
 diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
-index af789dc..0d39001 100644
+index 0d39001..86d5b17 100644
 --- a/drivers/gpu/drm/ttm/ttm_tt.c
 +++ b/drivers/gpu/drm/ttm/ttm_tt.c
-@@ -49,12 +49,16 @@ static int ttm_tt_swapin(struct ttm_tt *ttm);
- static void ttm_tt_alloc_page_directory(struct ttm_tt *ttm)
- {
- 	ttm->pages = drm_calloc_large(ttm->num_pages, sizeof(*ttm->pages));
-+	ttm->dma_address = drm_calloc_large(ttm->num_pages,
-+					    sizeof(*ttm->dma_address));
- }
- 
- static void ttm_tt_free_page_directory(struct ttm_tt *ttm)
- {
- 	drm_free_large(ttm->pages);
- 	ttm->pages = NULL;
-+	drm_free_large(ttm->dma_address);
-+	ttm->dma_address = NULL;
- }
- 
- static void ttm_tt_free_user_pages(struct ttm_tt *ttm)
-@@ -105,7 +109,8 @@ static struct page *__ttm_tt_get_page(struct ttm_tt *ttm, int index)
- 
- 		INIT_LIST_HEAD(&h);
- 
--		ret = ttm_get_pages(&h, ttm->page_flags, ttm->caching_state, 1);
-+		ret = ttm_get_pages(&h, ttm->page_flags, ttm->caching_state, 1,
-+				    &ttm->dma_address[index]);
- 
- 		if (ret != 0)
- 			return NULL;
-@@ -298,7 +303,8 @@ static void ttm_tt_free_alloced_pages(struct ttm_tt *ttm)
- 			count++;
- 		}
+@@ -169,7 +169,7 @@ int ttm_tt_populate(struct ttm_tt *ttm)
  	}
--	ttm_put_pages(&h, count, ttm->page_flags, ttm->caching_state);
-+	ttm_put_pages(&h, count, ttm->page_flags, ttm->caching_state,
-+		      ttm->dma_address);
- 	ttm->state = tt_unpopulated;
- 	ttm->first_himem_page = ttm->num_pages;
- 	ttm->last_lomem_page = -1;
+ 
+ 	be->func->populate(be, ttm->num_pages, ttm->pages,
+-			   ttm->dummy_read_page);
++			   ttm->dummy_read_page, ttm->dma_address);
+ 	ttm->state = tt_unbound;
+ 	return 0;
+ }
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c b/drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c
+index 80bc37b..87e43e0 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c
+@@ -102,7 +102,8 @@ struct vmw_ttm_backend {
+ 
+ static int vmw_ttm_populate(struct ttm_backend *backend,
+ 			    unsigned long num_pages, struct page **pages,
+-			    struct page *dummy_read_page)
++			    struct page *dummy_read_page,
++			    dma_addr_t *dma_addrs)
+ {
+ 	struct vmw_ttm_backend *vmw_be =
+ 	    container_of(backend, struct vmw_ttm_backend, backend);
 diff --git a/include/drm/ttm/ttm_bo_driver.h b/include/drm/ttm/ttm_bo_driver.h
-index 8e0c848..6dc4fcc 100644
+index 6dc4fcc..ebcd3dd 100644
 --- a/include/drm/ttm/ttm_bo_driver.h
 +++ b/include/drm/ttm/ttm_bo_driver.h
-@@ -149,6 +149,7 @@ enum ttm_caching_state {
-  * @swap_storage: Pointer to shmem struct file for swap storage.
-  * @caching_state: The current caching state of the pages.
-  * @state: The current binding state of the pages.
-+ * @dma_address: The DMA (bus) addresses of the pages (if TTM_PAGE_FLAG_DMA32)
-  *
-  * This is a structure holding the pages, caching- and aperture binding
-  * status for a buffer object that isn't backed by fixed (VRAM / AGP)
-@@ -173,6 +174,7 @@ struct ttm_tt {
- 		tt_unbound,
- 		tt_unpopulated,
- 	} state;
-+	dma_addr_t *dma_address;
- };
- 
- #define TTM_MEMTYPE_FLAG_FIXED         (1 << 0)	/* Fixed (on-card) PCI memory */
-diff --git a/include/drm/ttm/ttm_page_alloc.h b/include/drm/ttm/ttm_page_alloc.h
-index 1168214..8062890 100644
---- a/include/drm/ttm/ttm_page_alloc.h
-+++ b/include/drm/ttm/ttm_page_alloc.h
-@@ -36,11 +36,13 @@
-  * @flags: ttm flags for page allocation.
-  * @cstate: ttm caching state for the page.
-  * @count: number of pages to allocate.
-+ * @dma_address: The DMA (bus) address of pages (if TTM_PAGE_FLAG_DMA32 set).
-  */
- int ttm_get_pages(struct list_head *pages,
- 		  int flags,
- 		  enum ttm_caching_state cstate,
--		  unsigned count);
-+		  unsigned count,
-+		  dma_addr_t *dma_address);
- /**
-  * Put linked list of pages to pool.
-  *
-@@ -49,11 +51,13 @@ int ttm_get_pages(struct list_head *pages,
-  * count.
-  * @flags: ttm flags for page allocation.
-  * @cstate: ttm caching state.
-+ * @dma_address: The DMA (bus) address of pages (if TTM_PAGE_FLAG_DMA32 set).
-  */
- void ttm_put_pages(struct list_head *pages,
- 		   unsigned page_count,
- 		   int flags,
--		   enum ttm_caching_state cstate);
-+		   enum ttm_caching_state cstate,
-+		   dma_addr_t *dma_address);
- /**
-  * Initialize pool allocator.
-  */
+@@ -50,13 +50,15 @@ struct ttm_backend_func {
+ 	 * @pages: Array of pointers to ttm pages.
+ 	 * @dummy_read_page: Page to be used instead of NULL pages in the
+ 	 * array @pages.
++	 * @dma_addrs: Array of DMA (bus) address of the ttm pages.
+ 	 *
+ 	 * Populate the backend with ttm pages. Depending on the backend,
+ 	 * it may or may not copy the @pages array.
+ 	 */
+ 	int (*populate) (struct ttm_backend *backend,
+ 			 unsigned long num_pages, struct page **pages,
+-			 struct page *dummy_read_page);
++			 struct page *dummy_read_page,
++			 dma_addr_t *dma_addrs);
+ 	/**
+ 	 * struct ttm_backend_func member clear
+ 	 *
 -- 
 1.7.1
 
