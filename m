@@ -1,73 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184Ab1AGLAV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 06:00:21 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:41318 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852Ab1AGLAT (ORCPT
+	id S1752198Ab1AGLMX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 06:12:23 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:40253 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456Ab1AGLMV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 06:00:19 -0500
-Date: Fri, 7 Jan 2011 12:00:28 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        edac-devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] MCE EDAC changes for .38
-Message-ID: <20110107110028.GD16507@aftab>
+	Fri, 7 Jan 2011 06:12:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=O79IvjmToKYv3pJEGf080Bpb6BT5ogp6h0eXzzONmZFoZLA7pnhCRCfp3EodvnTizm
+         oqEgCr8cmZMH4f3B/lsCv12sspNvNikQ/enJgk84h9nhpd4TpmOO8O1ykGDZUp7SfTDf
+         j4Amot1PInYsNKwqGpy/fmn+ZBmtGf6usHvDo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110107101839.GA2312@polaris.bitmath.org>
+References: <1294248468-19979-1-git-send-email-benjamin.tissoires@enac.fr>
+	<1294248468-19979-2-git-send-email-benjamin.tissoires@enac.fr>
+	<20110106162223.GB1790@polaris.bitmath.org>
+	<AANLkTi=xdPJP9okhRL8q-0vL5cVPKniAjve6BQHmB=+p@mail.gmail.com>
+	<20110107101839.GA2312@polaris.bitmath.org>
+Date: Fri, 7 Jan 2011 12:12:19 +0100
+X-Google-Sender-Auth: YTfDJ-d4X4P75FPfJ_7_r-kwdR0
+Message-ID: <AANLkTim3WY4yUWMQUBMV0q--w2U6LeVb_CYVgkUL_5tT@mail.gmail.com>
+Subject: Re: [RFC v2 01/10] hid: add feature_mapping callback
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Stephane Chatty <chatty@enac.fr>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Jan 7, 2011 at 11:18 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>> >>       struct input_dev *input_dev;
+>> >>       int i, j, k;
+>> >> -     int max_report_type = HID_OUTPUT_REPORT;
+>> >> +     int max_report_type = HID_FEATURE_REPORT;
+>> >
+>> > Doing it this way conflicts with the HID_QUIRK_SKIP_OUTPUT_REPORTS quirk.
+>>
+>>
+>> Do you agree on this way? (will send the patch in the next version)
+>>
+>> @@ -834,11 +842,10 @@ int hidinput_connect(struct hid_device *hid,
+>> unsigned int force)
+>>  {
+>>       struct hid_report *report;
+>>       struct hid_input *hidinput = NULL;
+>>       struct input_dev *input_dev;
+>>       int i, j, k;
+>> -     int max_report_type = HID_OUTPUT_REPORT;
+>>
+>>       INIT_LIST_HEAD(&hid->inputs);
+>>
+>>       if (!force) {
+>>               for (i = 0; i < hid->maxcollection; i++) {
+>> @@ -851,14 +858,14 @@ int hidinput_connect(struct hid_device *hid,
+>> unsigned int force)
+>>
+>>               if (i == hid->maxcollection)
+>>                       return -1;
+>>       }
+>>
+>> -     if (hid->quirks & HID_QUIRK_SKIP_OUTPUT_REPORTS)
+>> -             max_report_type = HID_INPUT_REPORT;
+>> +     for (k = HID_INPUT_REPORT; k <= HID_FEATURE_REPORT; k++)
+>> +             if (hid->quirks & HID_QUIRK_SKIP_OUTPUT_REPORTS)
+>> +                     continue;
+>>
+>> -     for (k = HID_INPUT_REPORT; k <= max_report_type; k++)
+>>               list_for_each_entry(report, &hid->report_enum[k].report_list, list) {
+>>
+>>                       if (!report->maxfield)
+>>                               continue;
+>
+> Perfect.
 
-this is the second patchset I have for .38 and it adds MCE decoding
-support for F15h CPUs. Again, long cooking time in linux-next with no
-issues.
+Well, in fact, I made 2 big mistakes (forgot the brackets after
+for(;;), and test if k==HID_OUTPUT_REPORT...), but the idea is still
+the same.
 
-Thanks.
-
-The following changes since commit 3c0eee3fe6a3a1c745379547c7e7c904aa64f6d5:
-
-  Linux 2.6.37 (2011-01-04 16:50:19 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git mce-for-linus
-
-Borislav Petkov (13):
-      EDAC, MCE: Select extended error code mask
-      EDAC, MCE: Add F15h DC MCE decoder
-      EDAC, MCE: Add F15h IC MCE decoder
-      EDAC, MCE: Add F15h CU MCE decoder
-      EDAC, MCE: No F15h LS MCE decoder
-      EDAC, MCE: Add an F15h NB MCE decoder
-      EDAC, MCE: Add F15 EX MCE decoder
-      EDAC, MCE: Add F15h FP MCE decoder
-      EDAC, MCE: Overhaul error fields extraction macros
-      EDAC, MCE: Shorten error report formatting
-      EDAC, MCE: Allow F15h bank 6 MCE injection
-      EDAC, MCE: Enable MCE decoding on F15h
-      EDAC, MCE: Fix NB error formatting
-
-Randy Dunlap (1):
-      EDAC, MCE: Use BIT_64() to eliminate warnings on 32-bit
-
- drivers/edac/amd64_edac.c  |    4 +-
- drivers/edac/mce_amd.c     |  450 +++++++++++++++++++++++++++++++++----------
- drivers/edac/mce_amd.h     |   14 +-
- drivers/edac/mce_amd_inj.c |    9 +-
- 4 files changed, 359 insertions(+), 118 deletions(-)
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Sorry,
+Benjamin
