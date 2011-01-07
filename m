@@ -1,144 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755135Ab1AGRzF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 12:55:05 -0500
-Received: from mms3.broadcom.com ([216.31.210.19]:3815 "EHLO MMS3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755004Ab1AGRzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 12:55:04 -0500
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-Subject: Re: 2.6.37 vlans on bnx2 not functional, panic with tcpdump
-From: "Michael Chan" <mchan@broadcom.com>
-To: selsinork <selsinork@gmail.com>
-cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTi=PGPVRbS3XViskpZ0GSS8ouBcgVZYYG9EoM-Nz@mail.gmail.com>
-References: <4D2634DE.2060907@gmail.com> <1294357941.21580.2.camel@HP1>
- <1294361206.21580.7.camel@HP1>
- <AANLkTi=PGPVRbS3XViskpZ0GSS8ouBcgVZYYG9EoM-Nz@mail.gmail.com>
-Date: Fri, 7 Jan 2011 09:50:53 -0800
-Message-ID: <1294422653.14051.11.camel@HP1>
+	id S1755150Ab1AGSCV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 13:02:21 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53563 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755111Ab1AGSCT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 13:02:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=wIO16ftXREjfIk2/bGtogvW9d4x0tWrIJ4/KbIPONQCPlK8DssjaGuRe8jHyxCQKIx
+         kLrea3N+tbkJCXGPTyzVT2dW3fo5KhOhWOMGkJK0o6+aGcYlpLbvnxfuX+PF1o77m+fG
+         jGK4PMa6kbaW8ls1PB/tU4hoCiktUMmYGV/Ps=
+Message-ID: <4D2754F9.8050707@gmail.com>
+Date: Fri, 07 Jan 2011 18:01:29 +0000
+From: Iain Paton <selsinork@gmail.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090302)
 MIME-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-8.el5)
-X-WSS-ID: 61398C241VG1679257-01-01
-Content-Type: text/plain
+To: Michael Chan <mchan@broadcom.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.37 vlans on bnx2 not functional, panic with tcpdump
+References: <4D2634DE.2060907@gmail.com> <1294357941.21580.2.camel@HP1> <1294361206.21580.7.camel@HP1> <AANLkTi=PGPVRbS3XViskpZ0GSS8ouBcgVZYYG9EoM-Nz@mail.gmail.com> <1294422653.14051.11.camel@HP1>
+In-Reply-To: <1294422653.14051.11.camel@HP1>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Michael Chan wrote:
 
-On Fri, 2011-01-07 at 00:57 -0800, selsinork wrote:
-> On Fri, Jan 7, 2011 at 12:46 AM, Michael Chan <mchan@broadcom.com>
-> wrote:
->         
->         
->         May be you have management firmware running on your devices
->         that can
->         change the behavior.  Can you provide ethtool -i eth0 on both
->         bnx2
->         devices on your system?
-> 
-> This particular system has four onboard ports, a two port add-in card
-> and a single port fiber card all using bnx2, so I have some options to
-> try different devices if there's something different about them.
-> Details of all of them below.
-> 
-> Booting the same system back to 2.6.36 with the patch I mentioned
-> previously leaves me with a functioning network, so given it could be
-> management firmware related, why does it work on .36 but not .37 ?  
+> The kernel has undergone major VLAN changes at this time, so there may
+> be a problem depending on what stripping mode we're in.  The tg3 driver
+> is having some similar problems that haven't been completely resolved
+> yet.
 
-Management firmware affects the stripping/unstripping of VLAN tags.  If
-management firmware is enabled, we need to configure the chip to always
-strip the VLAN tag, otherwise management firmware will not receive the
-packets properly.
+It seems to be related to generic vlan changes, I've duplicated it on an Intel 82547L nic in a completely different system connected 
+to a different switch.
 
-The kernel has undergone major VLAN changes at this time, so there may
-be a problem depending on what stripping mode we're in.  The tg3 driver
-is having some similar problems that haven't been completely resolved
-yet.
+So you can consider any bnx2 cause for this closed. I'll get back to the list if I can come up with any more useful info.
 
-Anyway, I'll wait for you to narrow this down further.  I'll also try to
-do some additional testing myself.
-
-You have management firmware (NCSI) enabled on eth0 and eth1, but not
-the other devices (the firmware shown is NVRAM firmware).  If it's still
-a problem, please see if there's a difference in behavior between the
-devices with NCSI enabled and disabled.
-
-Thanks.
-
->  The install is very stripped down, there's no udev or /sbin/hotplug
-> loading firmware behind my back as neither are installed. So firmware
-> is whatever comes with the kernel. Just having had a look, I see the
-> firmware provided with the kernel has changed in .37, but the output
-> of ethtool -i shows the same firmware being used with .36 and .37
-> 
-> Iain
-> 
-> 02:00.0 Ethernet controller: Broadcom Corporation NetXtreme II BCM5709
-> Gigabit Ethernet (rev 20)
-> 02:00.1 Ethernet controller: Broadcom Corporation NetXtreme II BCM5709
-> Gigabit Ethernet (rev 20)
-> 03:00.0 Ethernet controller: Broadcom Corporation NetXtreme II BCM5709
-> Gigabit Ethernet (rev 20)
-> 03:00.1 Ethernet controller: Broadcom Corporation NetXtreme II BCM5709
-> Gigabit Ethernet (rev 20)
-> 04:00.0 RAID bus controller: Hewlett-Packard Company Smart Array G6
-> controllers (rev 01)
-> 07:00.0 Ethernet controller: Broadcom Corporation NetXtreme II BCM5709
-> Gigabit Ethernet (rev 20)
-> 07:00.1 Ethernet controller: Broadcom Corporation NetXtreme II BCM5709
-> Gigabit Ethernet (rev 20)
-> 0a:00.0 PCI bridge: Broadcom EPB PCI-Express to PCI-X Bridge (rev c3)
-> 0b:00.0 Ethernet controller: Broadcom Corporation NetXtreme II
-> BCM5708S Gigabit Ethernet (rev 12)
-> 
-> from 2.6.37:
-> 
-> root@64bit:~# ethtool -i eth0
-> driver: bnx2
-> version: 2.0.17
-> firmware-version: bc 5.2.2 NCSI 2.0.6
-> bus-info: 0000:02:00.0
-> root@64bit:~# ethtool -i eth1
-> driver: bnx2
-> version: 2.0.17
-> firmware-version: bc 5.2.2 NCSI 2.0.6
-> bus-info: 0000:02:00.1
-> root@64bit:~# ethtool -i eth2
-> driver: bnx2
-> version: 2.0.17
-> firmware-version: bc 5.2.2
-> bus-info: 0000:03:00.0
-> root@64bit:~# ethtool -i eth3
-> driver: bnx2
-> version: 2.0.17
-> firmware-version: bc 5.2.2
-> bus-info: 0000:03:00.1
-> root@64bit:~# ethtool -i eth4
-> driver: bnx2
-> version: 2.0.17
-> firmware-version: bc 5.2.2
-> bus-info: 0000:07:00.0
-> root@64bit:~# ethtool -i eth5
-> driver: bnx2
-> version: 2.0.17
-> firmware-version: bc 5.2.2
-> bus-info: 0000:07:00.1
-> root@64bit:~# ethtool -i eth6
-> driver: bnx2
-> version: 2.0.17
-> firmware-version: bc 1.9.6
-> bus-info: 0000:0b:00.0
->  
-> from 2.6.36:
-> 
->  ethtool -i eth1
-> driver: bnx2
-> version: 2.0.17
-> firmware-version: bc 5.2.2 NCSI 2.0.6
-> bus-info: 0000:02:00.1
-> 
-
-
+Thanks for your help,
+Iain
