@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755386Ab1AGCjb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 21:39:31 -0500
-Received: from c60.cesmail.net ([216.154.195.49]:54071 "EHLO c60.cesmail.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751694Ab1AGCja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 21:39:30 -0500
-Message-ID: <20110106213928.jd36vdlpcgsgcwss-cebfxv@webmail.spamcop.net>
-Date: Thu, 06 Jan 2011 21:39:28 -0500
-From: Pavel Roskin <proski@gnu.org>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: Crypto Update for 2.6.38
-References: <20100804140448.GA4042@gondor.apana.org.au>
-	<20101024061625.GA23715@gondor.apana.org.au>
-	<20110106000157.GA16089@gondor.apana.org.au>
-	<AANLkTikzg3Hndp8WRi59bvJdBLxi=p-1gt7aZDLYbSW8@mail.gmail.com>
-	<20110106211645.GA26184@gondor.apana.org.au>
-	<AANLkTimwaJCUxvMLoeS5Cpmu7FX3y=coeSdkPrrL4zcr@mail.gmail.com>
-	<20110106213932.GA26538@gondor.apana.org.au>
-	<AANLkTi=fggNhMm1LpOzzZ0_ofaU6w=ahX8SMGgFkHCui@mail.gmail.com>
-	<20110106223042.GA27080@gondor.apana.org.au>
-	<AANLkTinbH8i8rjUxACV5PkdLuVc9YccT+E5x=ZBWunyU@mail.gmail.com>
-	<20110106225301.GA27358@gondor.apana.org.au>
-In-Reply-To: <20110106225301.GA27358@gondor.apana.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=UTF-8;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
+	id S1755413Ab1AGClS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 21:41:18 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40929 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753970Ab1AGClR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Jan 2011 21:41:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=LpF/iXDXj/E/FfT2632iVDzX+eANZHsLsuhdkKP7LRIwQFRp/xGIyjTSTVFStIoueS
+         NPNJyyRYClSTsXtfcjwvN513TYMW+2af1jLR10tb0Myf8znLZqRBt+DarILvn5scNOMU
+         a0WwdUJ05mzGe0t87WyYNqOPNJh/RhykPFHrI=
+Subject: Re: [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when vid not
+ used
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Matt Carlson <mcarlson@broadcom.com>
+Cc: Jesse Gross <jesse@nicira.com>,
+        Michael Leun <lkml20101129@newton.leun.net>,
+        Michael Chan <mchan@broadcom.com>, David Miller <davem@davemloft.net>,
+        Ben Greear <greearb@candelatech.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+In-Reply-To: <20110107022912.GA17757@mcarlson.broadcom.com>
+References: <AANLkTinLMCzKz7n45HdeAwNxsWjCADAkgfK+MjXVcFqh@mail.gmail.com>
+	 <20101213224510.GB17400@mcarlson.broadcom.com>
+	 <AANLkTi=9BYt=vkNkAiTBxnfnCjCX7AqCG=ML6coc4vdZ@mail.gmail.com>
+	 <20101214191500.GD19951@mcarlson.broadcom.com>
+	 <1293901393.2535.49.camel@edumazet-laptop>
+	 <AANLkTinq9ABi0prxe0m1Ma6rno4UnAOzuW-b5L362ij9@mail.gmail.com>
+	 <1293984348.2535.101.camel@edumazet-laptop>
+	 <AANLkTincX-wPQE9gs16v53E4=Skivzc4ZSJS43oNBLD_@mail.gmail.com>
+	 <1294356887.2704.13.camel@edumazet-laptop>
+	 <1294363201.2704.19.camel@edumazet-laptop>
+	 <20110107022912.GA17757@mcarlson.broadcom.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 Jan 2011 03:41:11 +0100
+Message-ID: <1294368071.2704.49.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Herbert Xu <herbert@gondor.apana.org.au>:
+Le jeudi 06 janvier 2011 à 18:29 -0800, Matt Carlson a écrit :
 
-> 	setsockopt(tfmfd, SOL_ALG, ALG_SET_KEY,
-> 		   "\x06\xa9\x21\x40\x36\xb8\xa1\x5b"
-> 		   "\x51\x2e\x03\xd5\x34\x12\x00\x06", 16);
+> Hi Eric.  Sorry for the delay.  I was under the impression that your
+> problems were software related and that you just needed a revised
+> version of these VLAN patches I was sending to Michael.  Is this not
+> true?
+> 
+> Having a hardware stat increment suggests this is a new problem.
+> Maybe I missed it, but I didn't see what hardware you are working
+> with and whether or not management firmware was enabled.  Could you tell
+> me that info?
+> 
 
-By the way, is it a good idea to use setsockopt() this way?  Some keys  
-may be large.  And if AEAD is supported, will it use setsockopt() for  
-the unencrypted authenticated data?
+Hi Matt
 
-Maybe some variation of write() or sendto() would be more appropriate?
+I started a bisection, because I couldnt sleep tonight anyway :(
 
--- 
-Regards,
-Pavel Roskin
+14:04.0 Ethernet controller: Broadcom Corporation NetXtreme BCM5715S
+Gigabit Ethernet (rev a3)
+	Subsystem: Hewlett-Packard Company NC326m PCIe Dual Port Adapter
+	Flags: bus master, 66MHz, medium devsel, latency 64, IRQ 43
+	Memory at fdff0000 (64-bit, non-prefetchable) [size=64K]
+	Memory at fdfe0000 (64-bit, non-prefetchable) [size=64K]
+	[virtual] Expansion ROM at fdbe0000 [disabled] [size=128K]
+	Capabilities: [40] PCI-X non-bridge device
+	Capabilities: [48] Power Management version 2
+	Capabilities: [50] Vital Product Data
+	Capabilities: [58] MSI: Enable+ Count=1/8 Maskable- 64bit+
+	Kernel driver in use: tg3
+	Kernel modules: tg3
+
+
+
