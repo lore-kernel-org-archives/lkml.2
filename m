@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005Ab1AGPdG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 10:33:06 -0500
-Received: from hera.kernel.org ([140.211.167.34]:40660 "EHLO hera.kernel.org"
+	id S1754020Ab1AGPda (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 10:33:30 -0500
+Received: from hera.kernel.org ([140.211.167.34]:40674 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752392Ab1AGPdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 10:33:03 -0500
-Date: Fri, 7 Jan 2011 15:32:40 GMT
+	id S1752590Ab1AGPd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 10:33:28 -0500
+Date: Fri, 7 Jan 2011 15:32:58 GMT
 From: tip-bot for Stephane Eranian <eranian@google.com>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
         mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
@@ -14,144 +14,121 @@ Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
 Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
         linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <4d22058b.cdace30a.4657.ffff95b1@mx.google.com>
-References: <4d22058b.cdace30a.4657.ffff95b1@mx.google.com>
+In-Reply-To: <4d220593.2308e30a.48c5.ffff8ae9@mx.google.com>
+References: <4d220593.2308e30a.48c5.ffff8ae9@mx.google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf_events: Move code around to prepare for cgroup
-Message-ID: <tip-0b3fcf178deefd7b64154c2c0760a2c63df0b74f@git.kernel.org>
-Git-Commit-ID: 0b3fcf178deefd7b64154c2c0760a2c63df0b74f
+Subject: [tip:perf/core] perf_events: Generalize use of event_filter_match()
+Message-ID: <tip-5632ab12e9e1fcd7e94058567e181d8f35e83798@git.kernel.org>
+Git-Commit-ID: 5632ab12e9e1fcd7e94058567e181d8f35e83798
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 07 Jan 2011 15:32:40 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 07 Jan 2011 15:32:59 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0b3fcf178deefd7b64154c2c0760a2c63df0b74f
-Gitweb:     http://git.kernel.org/tip/0b3fcf178deefd7b64154c2c0760a2c63df0b74f
+Commit-ID:  5632ab12e9e1fcd7e94058567e181d8f35e83798
+Gitweb:     http://git.kernel.org/tip/5632ab12e9e1fcd7e94058567e181d8f35e83798
 Author:     Stephane Eranian <eranian@google.com>
 AuthorDate: Mon, 3 Jan 2011 18:20:01 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 7 Jan 2011 15:08:50 +0100
+CommitDate: Fri, 7 Jan 2011 15:08:51 +0100
 
-perf_events: Move code around to prepare for cgroup
+perf_events: Generalize use of event_filter_match()
 
-In particular this patch move perf_event_exit_task() before
-cgroup_exit() to allow for cgroup support. The cgroup_exit()
-function detaches the cgroups attached to a task.
+Replace all occurrences of:
+	event->cpu != -1 && event->cpu == smp_processor_id()
+by a call to:
+	event_filter_match(event)
 
-Other movements include hoisting some definitions and inlines
-at the top of perf_event.c
+This makes the code more consistent and will make the cgroup
+patch smaller.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <4d22058b.cdace30a.4657.ffff95b1@mx.google.com>
+LKML-Reference: <4d220593.2308e30a.48c5.ffff8ae9@mx.google.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/exit.c       |   14 +++++++++-----
- kernel/perf_event.c |   28 +++++++++++++++++-----------
- 2 files changed, 26 insertions(+), 16 deletions(-)
+ kernel/perf_event.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 676149a..8cb8904 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -994,6 +994,15 @@ NORET_TYPE void do_exit(long code)
- 	exit_fs(tsk);
- 	check_stack_usage();
- 	exit_thread();
-+
-+	/*
-+	 * Flush inherited counters to the parent - before the parent
-+	 * gets woken up by child-exit notifications.
-+	 *
-+	 * because of cgroup mode, must be called before cgroup_exit()
-+	 */
-+	perf_event_exit_task(tsk);
-+
- 	cgroup_exit(tsk, 1);
- 
- 	if (group_dead)
-@@ -1007,11 +1016,6 @@ NORET_TYPE void do_exit(long code)
- 	 * FIXME: do that only when needed, using sched_exit tracepoint
- 	 */
- 	flush_ptrace_hw_breakpoint(tsk);
--	/*
--	 * Flush inherited counters to the parent - before the parent
--	 * gets woken up by child-exit notifications.
--	 */
--	perf_event_exit_task(tsk);
- 
- 	exit_notify(tsk, group_dead);
- #ifdef CONFIG_NUMA
 diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 11847bf..2c14e3a 100644
+index 2c14e3a..dcdb19e 100644
 --- a/kernel/perf_event.c
 +++ b/kernel/perf_event.c
-@@ -38,6 +38,12 @@
+@@ -949,7 +949,7 @@ static void __perf_install_in_context(void *info)
  
- #include <asm/irq_regs.h>
+ 	add_event_to_ctx(event, ctx);
  
-+enum event_type_t {
-+	EVENT_FLEXIBLE = 0x1,
-+	EVENT_PINNED = 0x2,
-+	EVENT_ALL = EVENT_FLEXIBLE | EVENT_PINNED,
-+};
-+
- atomic_t perf_task_events __read_mostly;
- static atomic_t nr_mmap_events __read_mostly;
- static atomic_t nr_comm_events __read_mostly;
-@@ -65,6 +71,12 @@ int sysctl_perf_event_sample_rate __read_mostly = 100000;
+-	if (event->cpu != -1 && event->cpu != smp_processor_id())
++	if (!event_filter_match(event))
+ 		goto unlock;
  
- static atomic64_t perf_event_id;
+ 	/*
+@@ -1094,7 +1094,7 @@ static void __perf_event_enable(void *info)
+ 		goto unlock;
+ 	__perf_event_mark_enabled(event, ctx);
  
-+static void cpu_ctx_sched_out(struct perf_cpu_context *cpuctx,
-+			      enum event_type_t event_type);
-+
-+static void cpu_ctx_sched_in(struct perf_cpu_context *cpuctx,
-+			     enum event_type_t event_type);
-+
- void __weak perf_event_print_debug(void)	{ }
+-	if (event->cpu != -1 && event->cpu != smp_processor_id())
++	if (!event_filter_match(event))
+ 		goto unlock;
  
- extern __weak const char *perf_pmu_name(void)
-@@ -72,6 +84,11 @@ extern __weak const char *perf_pmu_name(void)
- 	return "pmu";
- }
+ 	/*
+@@ -1441,7 +1441,7 @@ ctx_pinned_sched_in(struct perf_event_context *ctx,
+ 	list_for_each_entry(event, &ctx->pinned_groups, group_entry) {
+ 		if (event->state <= PERF_EVENT_STATE_OFF)
+ 			continue;
+-		if (event->cpu != -1 && event->cpu != smp_processor_id())
++		if (!event_filter_match(event))
+ 			continue;
  
-+static inline u64 perf_clock(void)
-+{
-+	return local_clock();
-+}
-+
- void perf_pmu_disable(struct pmu *pmu)
- {
- 	int *count = this_cpu_ptr(pmu->pmu_disable_count);
-@@ -240,11 +257,6 @@ static void perf_unpin_context(struct perf_event_context *ctx)
- 	put_ctx(ctx);
- }
+ 		if (group_can_go_on(event, cpuctx, 1))
+@@ -1473,7 +1473,7 @@ ctx_flexible_sched_in(struct perf_event_context *ctx,
+ 		 * Listen to the 'cpu' scheduling filter constraint
+ 		 * of events:
+ 		 */
+-		if (event->cpu != -1 && event->cpu != smp_processor_id())
++		if (!event_filter_match(event))
+ 			continue;
  
--static inline u64 perf_clock(void)
--{
--	return local_clock();
--}
--
- /*
-  * Update the record of the current time in a context.
-  */
-@@ -1193,12 +1205,6 @@ static int perf_event_refresh(struct perf_event *event, int refresh)
- 	return 0;
- }
+ 		if (group_can_go_on(event, cpuctx, can_add_hw)) {
+@@ -1700,7 +1700,7 @@ static void perf_ctx_adjust_freq(struct perf_event_context *ctx, u64 period)
+ 		if (event->state != PERF_EVENT_STATE_ACTIVE)
+ 			continue;
  
--enum event_type_t {
--	EVENT_FLEXIBLE = 0x1,
--	EVENT_PINNED = 0x2,
--	EVENT_ALL = EVENT_FLEXIBLE | EVENT_PINNED,
--};
--
- static void ctx_sched_out(struct perf_event_context *ctx,
- 			  struct perf_cpu_context *cpuctx,
- 			  enum event_type_t event_type)
+-		if (event->cpu != -1 && event->cpu != smp_processor_id())
++		if (!event_filter_match(event))
+ 			continue;
+ 
+ 		hwc = &event->hw;
+@@ -3899,7 +3899,7 @@ static int perf_event_task_match(struct perf_event *event)
+ 	if (event->state < PERF_EVENT_STATE_INACTIVE)
+ 		return 0;
+ 
+-	if (event->cpu != -1 && event->cpu != smp_processor_id())
++	if (!event_filter_match(event))
+ 		return 0;
+ 
+ 	if (event->attr.comm || event->attr.mmap ||
+@@ -4036,7 +4036,7 @@ static int perf_event_comm_match(struct perf_event *event)
+ 	if (event->state < PERF_EVENT_STATE_INACTIVE)
+ 		return 0;
+ 
+-	if (event->cpu != -1 && event->cpu != smp_processor_id())
++	if (!event_filter_match(event))
+ 		return 0;
+ 
+ 	if (event->attr.comm)
+@@ -4184,7 +4184,7 @@ static int perf_event_mmap_match(struct perf_event *event,
+ 	if (event->state < PERF_EVENT_STATE_INACTIVE)
+ 		return 0;
+ 
+-	if (event->cpu != -1 && event->cpu != smp_processor_id())
++	if (!event_filter_match(event))
+ 		return 0;
+ 
+ 	if ((!executable && event->attr.mmap_data) ||
