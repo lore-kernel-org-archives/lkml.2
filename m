@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737Ab1AGPNH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 10:13:07 -0500
-Received: from 29.mail-out.ovh.net ([87.98.216.213]:33538 "HELO
-	29.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752548Ab1AGPNF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 10:13:05 -0500
-Message-ID: <4D272D7C.4070900@example.com>
-Date: Fri, 07 Jan 2011 16:13:00 +0100
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	id S1753812Ab1AGPNL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 10:13:11 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:42082 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753757Ab1AGPNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 10:13:08 -0500
+Date: Fri, 7 Jan 2011 16:12:54 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86: unify "numa=" command line option handling
+Message-ID: <20110107151254.GA418@elte.hu>
+References: <4D2603BF020000780002ACA7@vpn.id2.novell.com>
+ <alpine.DEB.2.00.1101061235010.30820@chino.kir.corp.google.com>
+ <4D26D3FD020000780002AED9@vpn.id2.novell.com>
+ <alpine.DEB.2.00.1101070156050.19087@chino.kir.corp.google.com>
+ <4D26F3AE020000780002AF5D@vpn.id2.novell.com>
+ <20110107125722.GA23185@elte.hu>
+ <4D272413020000780002B009@vpn.id2.novell.com>
+ <20110107142203.GA12773@elte.hu>
+ <4D2730BE020000780002B040@vpn.id2.novell.com>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: GIT again
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 3277776105568694552
-X-Ovh-Remote: 83.24.110.28 (doc28.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.500004/N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D2730BE020000780002B040@vpn.id2.novell.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-Sorry for bothering again. I think I fimanaged to build the kernel as I 
-wanted to. Lets simplify the problem. There is Linus tree and a separate 
-tree, which was announed here as:
+* Jan Beulich <JBeulich@novell.com> wrote:
 
-git://git.kernel.org/some.git for-linus
+> >>> On 07.01.11 at 15:22, Ingo Molnar <mingo@elte.hu> wrote:
+> > Your -stable comment above made it appear to me as if you knew about a 
+> > specific 
+> > system that crashed this way? As long as it's only theoretical i'm not sure 
+> > it 
+> > warrants a -stable backport.
+> 
+> Yes, I do have a system affected (which made me craft the patch
+> in the first place).
 
-The objective is to build the kernel with Linus sources with some.git 
-changes incorporatwed in it. I think I managed to achieve the objective 
-doing:
+In that case it's very useful to start the commit with:
 
-# let me remind myself ;-)
-git clone <Linus URL here>
-git remote add some git://git.kernel.org/some.git
-git pull some for-linus
+  System XYZ crashes during bootup due to a bug in numa= command line option 
+  handling.
 
-I've done it this way and I am convinced I've achieved the objective. 
-But not sure. For sure the last command modified the source, what is 
-what I wanted, I had to finally correct ot by hand and do git commit -a.
+That will also cause me to add an immediate -stable backport tag from me, even if 
+you dont add it. Keeping it all optional and theoretical with 'it may crash' wording 
+just hides the essential piece of information that there's a real system affected by 
+the bug.
 
-Am I right?
+Thanks,
 
-Regards,
-
-Piotr Hosowicz
-
--- 
-- Poszed³em wczoraj z ¿on± do ZOO
-- I jak?
-- Nie wziêli...
-NP: Peter Green Splinter Group - Turn Your Love Away
-NB: 2.6.37-20110107-1437-pztidm+
+	Ingo
