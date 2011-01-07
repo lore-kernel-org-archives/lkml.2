@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab1AGQ6T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 11:58:19 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58544 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754555Ab1AGQ6S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 11:58:18 -0500
-Date: Fri, 7 Jan 2011 09:58:15 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Richard Genoud <richard.genoud@gmail.com>
-Cc: spi-devel-general@lists.sourceforge.net,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] spi_imx.c: correct the test on platform_get_irq()
- return value
-Message-ID: <20110107165815.GA25446@angua.secretlab.ca>
-References: <AANLkTimpTUz_Fizef09urPBR8vP80KU-5yApjzGWFwc0@mail.gmail.com>
- <1294410361-9092-1-git-send-email-richard.genoud@gmail.com>
+	id S1754697Ab1AGQ7E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 11:59:04 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:48135 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754555Ab1AGQ7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 11:59:03 -0500
+Date: Fri, 7 Jan 2011 17:58:43 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jan Beulich <JBeulich@novell.com>,
+        "H. Peter Anvin" <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Soeren Sandmann Pedersen <sandmann@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC PATCH 1/2] x86: Fix rbp saving in pt_regs on irq entry
+Message-ID: <20110107165843.GA7376@elte.hu>
+References: <20110106162236.GB2308@nowhere>
+ <4D25FE5B020000780002AC50@vpn.id2.novell.com>
+ <20110106165452.GC2308@nowhere>
+ <4D2602DE020000780002ACA3@vpn.id2.novell.com>
+ <20110106171231.GD2308@nowhere>
+ <4D26D2C2020000780002AECB@vpn.id2.novell.com>
+ <20110107123130.GB20761@elte.hu>
+ <20110107160459.GA2751@nowhere>
+ <4D2749D6020000780002B0BC@vpn.id2.novell.com>
+ <20110107162722.GA3066@nowhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1294410361-9092-1-git-send-email-richard.genoud@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110107162722.GA3066@nowhere>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 07, 2011 at 03:26:01PM +0100, Richard Genoud wrote:
-> The test "if (spi_imx->irq <= 0)" is not testing the IRQ value, but the return value of platform_get_irq().
-> As platform_get_irq() can return an error (-ENXIO) or the IRQ value it found, the test should be "if (spi_imx->irq < 0)"
-> 
-> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
 
-Alright.  Applied.
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-g.
+> On Fri, Jan 07, 2011 at 04:13:58PM +0000, Jan Beulich wrote:
+> > >>> On 07.01.11 at 17:05, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > > Once I'll have perf callchain based on CFI ready, we'll perhaps find some 
+> > > issues
+> > > there. Although I guess there are already tools that can make use of that.
+> > 
+> > Is this to read that you're planning to do a re-spin of the CFI
+> > unwinding code (which I'm not allowed to submit another time,
+> > but which we've been using for years in SuSE distros) then?
+> 
+> An in-kernel CFI unwinder?
+> 
+> No the intended CFI unwinding that I'm working on for perf is made
+> on post-processing, on top of partial stack and regs snapshots.
+> 
+> The true unwinding is computed in userspace.
 
-> ---
->  drivers/spi/spi_imx.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/spi/spi_imx.c b/drivers/spi/spi_imx.c
-> index 55a38e2..793ae99 100644
-> --- a/drivers/spi/spi_imx.c
-> +++ b/drivers/spi/spi_imx.c
-> @@ -847,7 +847,7 @@ static int __devinit spi_imx_probe(struct platform_device *pdev)
->  	}
->  
->  	spi_imx->irq = platform_get_irq(pdev, 0);
-> -	if (spi_imx->irq <= 0) {
-> +	if (spi_imx->irq < 0) {
->  		ret = -EINVAL;
->  		goto out_iounmap;
->  	}
-> -- 
-> 1.7.1
-> 
+I think that design will be fundamentally more robust and more flexible than an 
+in-kernel unwinder.
+
+Thanks,
+
+	Ingo
