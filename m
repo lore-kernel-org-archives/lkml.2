@@ -1,117 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683Ab1AGFQe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 00:16:34 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44797 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377Ab1AGFQc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 00:16:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=FFDtRSP8y7D+ljCwSfBWxhhCEoJgSI/JIzMv5qOFxMEvW+j5V/6JJq3+QfmmK2pp1M
-         HLi6FT2eSmelzgzVqu6BLn1DU4lCPjSNgvdctGEN7tEwTMx+dDfHJegVuPawOvIb0g5g
-         TffOwWz5E+Xw/foHAIq0IDUi7ODPQa/jHDM9Y=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimHE35jUOY6Lhd7OnATSD6BeB4poUosaQ+bR61i@mail.gmail.com>
-References: <AANLkTimHE35jUOY6Lhd7OnATSD6BeB4poUosaQ+bR61i@mail.gmail.com>
-Date: Fri, 7 Jan 2011 00:16:31 -0500
-Message-ID: <AANLkTikt2D2ijwZxSst0R5=nLzMwxHh8sbYd=h_bFk6v@mail.gmail.com>
-Subject: Re: Who does determine the number of requests that can be serving
- simultaneously in a storage?
-From: Yuehai Xu <yuehaixu@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: axboe@kernel.dk, cmm@us.ibm.com, rwheeler@redhat.com, vgoyal@redhat.com,
-        czoccolo@gmail.com, yhxu@wayne.edu
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753556Ab1AGF3V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 00:29:21 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:55495 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751512Ab1AGF3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 00:29:19 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19AdIIKe+VA/KLbU8o5tfHmWq6hW8meoPJewLMW4/
+	agpHUYACPkCNbb
+Subject: Re: [RFC -v3 PATCH 2/3] sched: add yield_to function
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Chris Wright <chrisw@sous-sol.org>
+In-Reply-To: <1294247065.2016.267.camel@laptop>
+References: <20110103162637.29f23c40@annuminas.surriel.com>
+	 <20110103162918.577a9620@annuminas.surriel.com>
+	 <1294164289.2016.186.camel@laptop>
+	 <1294246647.8369.52.camel@marge.simson.net>
+	 <1294247065.2016.267.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 Jan 2011 06:29:06 +0100
+Message-ID: <1294378146.8823.27.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Wed, 2011-01-05 at 18:04 +0100, Peter Zijlstra wrote:
+> On Wed, 2011-01-05 at 17:57 +0100, Mike Galbraith wrote:
+> > +               p_cfs_rq = cfs_rq_of(pse);
+> > +               local = 1;
+> > +       }
+> > +#endif
+> > +
+> > +       /* Tell the scheduler that we'd really like pse to run next. */
+> > +       p_cfs_rq->next = pse;
+> > +
+> > +       /* We know whether we want to preempt or not, but are we allowed? */
+> > +       preempt &= same_thread_group(p, task_of(p_cfs_rq->curr));
+> > +
+> > +       if (local)
+> > +               clear_buddies(cfs_rq, se); 
+> 
+> You might want to clear before setting next :-)
 
-I add a patch to kernel 2.6.35.7, in order to find out the number of
-pending/serving requests regards to SSD, Intel_M. The benchmark I use
-is postmark, access pattern is random small write. Below is the patch:
+Or better, just remove dept. of redundancy dept. cruft.  We clear
+buddies upon selection.  It's also pointless worrying whether to set
+TIF_RESCHED or not, no cycle savings to be had there methinks.
 
-diff -Nur orig/block/blk-core.c new/block/blk-core.c
---- orig/block/blk-core.c       2011-01-06 23:57:39.000000000 -0500
-+++ new/block/blk-core.c        2011-01-06 23:57:46.000000000 -0500
-@@ -37,6 +37,10 @@
- EXPORT_TRACEPOINT_SYMBOL_GPL(block_rq_remap);
- EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_complete);
+While performing cruftectomy, also did cosmetic int ==> bool.
 
-+#define complete_log(queue, fmt, args...)     \
-+        blk_add_trace_msg(queue, "yh " fmt, ##args)
+
+
+sched: Add yield_to(task, preempt) functionality.
+
+Currently only implemented for fair class tasks.
+
+Add a yield_to_task method() to the fair scheduling class. allowing the
+caller of yield_to() to accelerate another thread in it's thread group,
+task group, and sched class toward either it's cpu, or potentially the
+caller's own cpu if the 'preempt' argument is also passed.
+
+Implemented via a scheduler hint, using cfs_rq->next to encourage the
+target being selected.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+
+---
+ include/linux/sched.h |    1 
+ kernel/sched.c        |   56 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched_fair.c   |   44 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 101 insertions(+)
+
+Index: linux-2.6/include/linux/sched.h
+===================================================================
+--- linux-2.6.orig/include/linux/sched.h
++++ linux-2.6/include/linux/sched.h
+@@ -1056,6 +1056,7 @@ struct sched_class {
+ 	void (*enqueue_task) (struct rq *rq, struct task_struct *p, int flags);
+ 	void (*dequeue_task) (struct rq *rq, struct task_struct *p, int flags);
+ 	void (*yield_task) (struct rq *rq);
++	bool (*yield_to_task) (struct task_struct *p, bool preempt);
+ 
+ 	void (*check_preempt_curr) (struct rq *rq, struct task_struct *p, int flags);
+ 
+Index: linux-2.6/kernel/sched.c
+===================================================================
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -5327,6 +5327,62 @@ void __sched yield(void)
+ }
+ EXPORT_SYMBOL(yield);
+ 
++/**
++ * yield_to - yield the current processor to another thread in
++ * your thread group, or accelerate that thread toward the
++ * processor it's on.
++ *
++ * It's the caller's job to ensure that the target task struct
++ * can't go away on us before we can do any checks.
++ */
++void __sched yield_to(struct task_struct *p, bool preempt)
++{
++	struct task_struct *curr = current;
++	struct rq *rq, *p_rq;
++	unsigned long flags;
++	bool yield = 0;
 +
- static int __make_request(struct request_queue *q, struct bio *bio);
-
++	local_irq_save(flags);
++	rq = this_rq();
++
++again:
++	p_rq = task_rq(p);
++	double_rq_lock(rq, p_rq);
++	while (task_rq(p) != p_rq) {
++		double_rq_unlock(rq, p_rq);
++		goto again;
++	}
++
++	if (!curr->sched_class->yield_to_task)
++		goto out;
++
++	if (curr->sched_class != p->sched_class)
++		goto out;
++
++	if (task_running(p_rq, p) || p->state)
++		goto out;
++
++	if (!same_thread_group(p, curr))
++		goto out;
++
++#ifdef CONFIG_FAIR_GROUP_SCHED
++	if (task_group(p) != task_group(curr))
++		goto out;
++#endif
++
++	yield = curr->sched_class->yield_to_task(p, preempt);
++
++out:
++	double_rq_unlock(rq, p_rq);
++	local_irq_restore(flags);
++
++	if (yield) {
++		set_current_state(TASK_RUNNING);
++		schedule();
++	}
++}
++EXPORT_SYMBOL_GPL(yield_to);
++
  /*
-@@ -1974,6 +1978,10 @@
-        if (!req->bio)
-                return false;
-
-+       complete_log(req->q, "nr_sorted: %u, in_flight[0]: %u,
-in_flight[1]: %u",
-+               req->q->nr_sorted, req->q->in_flight[0], req->q->in_flight[1]);
+  * This task is about to go to sleep on IO. Increment rq->nr_iowait so
+  * that process accounting knows that this is a task in IO wait state.
+Index: linux-2.6/kernel/sched_fair.c
+===================================================================
+--- linux-2.6.orig/kernel/sched_fair.c
++++ linux-2.6/kernel/sched_fair.c
+@@ -1337,6 +1337,49 @@ static void yield_task_fair(struct rq *r
+ }
+ 
+ #ifdef CONFIG_SMP
++static void pull_task(struct rq *src_rq, struct task_struct *p,
++		      struct rq *this_rq, int this_cpu);
++#endif
 +
-        trace_block_rq_complete(req->q, req);
++static bool yield_to_task_fair(struct task_struct *p, bool preempt)
++{
++	struct sched_entity *se = &current->se;
++	struct sched_entity *pse = &p->se;
++	struct cfs_rq *cfs_rq = cfs_rq_of(se);
++	struct cfs_rq *p_cfs_rq = cfs_rq_of(pse);
++	int this_cpu = smp_processor_id();
++
++	if (!pse->on_rq)
++		return false;
++
++#ifdef CONFIG_SMP
++	/*
++	 * If this yield is important enough to want to preempt instead
++	 * of only dropping a ->next hint, we're alone, and the target
++	 * is not alone, pull the target to this cpu.
++	 *
++	 * NOTE: the target may be alone in it's cfs_rq if another class
++	 * task or another task group is currently executing on it's cpu.
++	 * In this case, we still pull, to accelerate it toward the cpu.
++	 */
++	if (cfs_rq != p_cfs_rq && preempt && cfs_rq->nr_running == 1 &&
++			cpumask_test_cpu(this_cpu, &p->cpus_allowed)) {
++		pull_task(task_rq(p), p, this_rq(), this_cpu);
++		p_cfs_rq = cfs_rq_of(pse);
++	}
++#endif
++
++	/* Tell the scheduler that we'd really like pse to run next. */
++	p_cfs_rq->next = pse;
++
++	/* We know whether we want to preempt or not, but are we allowed? */
++	if (preempt && same_thread_group(p, task_of(p_cfs_rq->curr)))
++		resched_task(task_of(p_cfs_rq->curr));
++
++	return cfs_rq == p_cfs_rq;
++}
++
++#ifdef CONFIG_SMP
+ 
+ static void task_waking_fair(struct rq *rq, struct task_struct *p)
+ {
+@@ -4143,6 +4186,7 @@ static const struct sched_class fair_sch
+ 	.enqueue_task		= enqueue_task_fair,
+ 	.dequeue_task		= dequeue_task_fair,
+ 	.yield_task		= yield_task_fair,
++	.yield_to_task		= yield_to_task_fair,
+ 
+ 	.check_preempt_curr	= check_preempt_wakeup,
+ 
 
-        /*
 
-Here, I consider nr_sorted in "struct request_queue" as the number of
-pending requests, while in_flight[0/1] represent for the number of
-async/sync requests serving simultaneously in SSD. I think this little
-patch should exactly show the pending/serving number of requests.
-
-The result from blkparse shows that the number of serving requests in
-SSD is almost 1, while the pending number varies from tens to a
-hundred. Since I only run a single process for postmark, does that
-mean the number of requests in flight is always 1 even the storage is
-SSD?
-
-I have tested ext3/ext4/btrfs on cfq/deadline/noop, the numbers for
-requests in flight are the same, almost no more than 1.
-
-Thanks,
-Yuehai
-
-On Thu, Jan 6, 2011 at 10:21 PM, Yuehai Xu <yuehaixu@gmail.com> wrote:
-> Hi all,
->
-> We know that couples of requests can be serving simultaneously in a
-> storage because of NCQ. My question is that who does determine the
-> exact number of the servicing requests in HDD or SSD? Since the
-> capability for different storages(hdd/ssd) to server multiple requests
-> is different, how the OS know the exact number of requests that can be
-> served simultaneously?
->
-> I fail to figure out the answer. I know the dispatch routine in I/O
-> schedulers is elevator_dispatch_fn, which are invoked at two places.
-> One is in __elv_next_request(), the other is elv_drain_elevator(). I
-> fail to figure out the exact condition to trigger the routine of
-> elv_drain_elevator(), from the source code, I know that it should
-> dispatch all the requests in pending queue to "request_queue", from
-> which the request is selected to dispatch into device driver.
->
-> For __elv_next_request(), it is actually invoked by
-> blk_peek_reqeust(), which is invoked by blk_fetch_request(). From
-> their comments, I know that only a request should be fetched from
-> "request_queue" and this request should be dispatched into
-> corresponding device driver. However, I notice that blk_fetch_request
-> is invoked at a number of places, it fetches the requests endlessly
-> with different stop condition. Which condition is the exact one that
-> control the number of requests which can be served at the same time?
-> The OS would of course not dispatch requests more than that the
-> storage can serve, for example, for SSD, the number of multi requests
-> serving simultaneously might be 32, while for HDD, the number is 4.
-> But how the OS handle this?
->
-> Does different file system handle this differently?
->
-> I appreciate any help. Thanks very much!
->
-> Yuehai
->
