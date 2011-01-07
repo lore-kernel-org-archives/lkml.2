@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab1AGUdK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 15:33:10 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:49074 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755453Ab1AGUdI (ORCPT
+	id S1753367Ab1AGUel (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 15:34:41 -0500
+Received: from casper.infradead.org ([85.118.1.10]:56192 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760Ab1AGUej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 15:33:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=fVkfM0X+sWiTii/N5T6q5+Nj2Qa5uj4YncQ19L2VcMF9JeD/p0//spQm3cM06BzAjb
-         ms143THJfkyakWboeQf8m5KRnD1AEpZ44P504BNFSdT95P3EidJ208w7uX/4tU7gIzI5
-         X0ijFTE+umDwwZ/uM9qwTX1LgsLs++izPFV/E=
-Date: Fri, 7 Jan 2011 15:33:04 -0500
-From: Tejun Heo <tj@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
-        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: unify "numa=" command line option handling
-Message-ID: <20110107203304.GC7355@mtj.dyndns.org>
-References: <4D2603BF020000780002ACA7@vpn.id2.novell.com>
- <alpine.DEB.2.00.1101061235010.30820@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1101061235010.30820@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 7 Jan 2011 15:34:39 -0500
+Subject: Re: [GIT] Networking
+From: David Woodhouse <dwmw2@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Hutchings <benh@debian.org>, David Miller <davem@davemloft.net>,
+        Hayes Wang <hayeswang@realtek.com>,
+        Francois Romieu <romieu@fr.zoreil.com>, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTikwrHoOY4wvUp1qn-OT=EjZesSNR29US1ERc0o2@mail.gmail.com>
+References: <20110106.122003.233698077.davem@davemloft.net>
+	 <AANLkTi=7=_FyVsjA3vKEpg8RwfC=m-8QGfqa6ctxQday@mail.gmail.com>
+	 <20110107190656.GQ3702@decadent.org.uk>
+	 <AANLkTikwrHoOY4wvUp1qn-OT=EjZesSNR29US1ERc0o2@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 Jan 2011 20:34:28 +0000
+Message-ID: <1294432468.2520.24.camel@macbook.infradead.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, 2011-01-07 at 11:49 -0800, Linus Torvalds wrote:
+> [ Apart from the annoyance of also having to manually copying the
+> firmware files: why the heck doesn't that firmware tree even have a
+> "make firmware-install" makefile or something? The kernel has a "make
+> firmware-install" thing, why doesn't the firmware tree itself have
+> that?
 
-On Thu, Jan 06, 2011 at 12:36:41PM -0800, David Rientjes wrote:
-> I like the idea in general, but I think it may collide with Tejun's NUMA 
-> unification patchset for x86, which I assume will another revision once 
-> the merge window for .38 closes?  Or maybe he'd like to merge your patch 
-> with his series and push it as one?
+Yeah, the main reason I haven't yet submitted a patch to remove the
+legacy firmware/ directory from the kernel source, as discussed at the
+Kernel Summit, is because I need to implement some makefiles for the
+firmware tree first.
 
-Peter, what's the status of the patchset?  Is there something which is
-holding it from being merged into x86/numa?  Are you simply waiting
-for the rc1 window to close?
+I'll do a 'make install' for the firmware tree which installs it all,
+and lets you specify min/max kernel versions so you can omit stuff that
+*really* isn't relevant.
 
-Thanks.
+I also want to preserve the CONFIG_FIRMWARE_IN_KERNEL option, but that
+can't easily be based on the hardcoded knowledge of the config options;
+it wants to be based on the MODULE_FIRMWARE tags of the built-in
+drivers. And once we're enumerating those, it should be relatively
+simple to warn about missing firmwares in the non-FIRMWARE_IN_KERNEL
+case too.
+
+I didn't find the time to do that for the 2.6.38 merge window, but I
+should get it done for 2.6.39.
 
 -- 
-tejun
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
+
