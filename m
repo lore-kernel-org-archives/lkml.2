@@ -1,84 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478Ab1AGSsq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 13:48:46 -0500
-Received: from cantor.suse.de ([195.135.220.2]:32992 "EHLO mx1.suse.de"
+	id S1754534Ab1AGSxc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 13:53:32 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:54612 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752642Ab1AGSso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 13:48:44 -0500
-Date: Fri, 7 Jan 2011 10:37:16 -0800
-From: Greg KH <gregkh@suse.de>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [000/152] 2.6.36.3-stable review
-Message-ID: <20110107183716.GA14895@suse.de>
-References: <20110106002500.GA3172@kroah.com>
- <20110106134254.68fa27ac@lxorguk.ukuu.org.uk>
- <20110106215705.GA30799@suse.de>
- <20110107150724.GA29082@atrey.karlin.mff.cuni.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110107150724.GA29082@atrey.karlin.mff.cuni.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752429Ab1AGSx3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 13:53:29 -0500
+X-IronPort-AV: E=Sophos;i="4.60,290,1291622400"; 
+   d="scan'208";a="502825449"
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+In-Reply-To: <AANLkTimusF4KCJ4vHPn+T1dUiKxapXaT0QTtFvh8Ykdd@mail.gmail.com>
+References: <1294254337.16957.13.camel@mulgrave.site>
+	 <AANLkTi=VZUxNFd7n-qwf5aiOeK5rkk8qBmo+kOpgg7up@mail.gmail.com>
+	 <1294256169.16957.18.camel@mulgrave.site>
+	 <20110105200008.GJ8638@n2100.arm.linux.org.uk>
+	 <1294259637.16957.25.camel@mulgrave.site>
+	 <AANLkTimzzBsdtWcZtP5E_CH1hUZugGMoaHOiMdQJf764@mail.gmail.com>
+	 <20110105210448.GM8638@n2100.arm.linux.org.uk>
+	 <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>
+	 <1294262208.2952.4.camel@heimdal.trondhjem.org>
+	 <AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com>
+	 <1294268808.2952.18.camel@heimdal.trondhjem.org>
+	 <1294270104.16957.73.camel@mulgrave.site>
+	 <1294335614.22825.154.camel@mulgrave.site>
+	 <1294336054.2905.1.camel@heimdal.trondhjem.org>
+	 <AANLkTimusF4KCJ4vHPn+T1dUiKxapXaT0QTtFvh8Ykdd@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Fri, 07 Jan 2011 13:53:25 -0500
+Message-ID: <1294426405.2929.23.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 07 Jan 2011 18:53:27.0266 (UTC) FILETIME=[2B2C8420:01CBAE9C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 07, 2011 at 04:07:24PM +0100, Pavel Machek wrote:
-> > On Thu, Jan 06, 2011 at 01:42:54PM +0000, Alan Cox wrote:
-> > > On Wed, 5 Jan 2011 16:25:00 -0800
-> > > Greg KH <gregkh@suse.de> wrote:
-> > > 
-> > > > 
-> > > > This is the start of the stable review cycle for the 2.6.36.3 release.
-> > > > There are 152 patches in this series, all will be posted as a response
-> > > > to this one.  If anyone has any issues with these being applied, please
-> > > > let us know.  If anyone is a maintainer of the proper subsystem, and
-> > > > wants to add a Signed-off-by: line to the patch, please respond with it.
-> > > 
-> > > Look sane on first glance but we don't seem to have a revert for the
-> > > serial mess up yet ?
-> > > 
-> > > > 7a56aa45982bb87bfca98a2832b5ae782c03364a is the first bad commit 
-> > > > commit 7a56aa45982bb87bfca98a2832b5ae782c03364a
-> > > > Author: Yegor Yefremov <yegor_sub1@visionsystems.de>
-> > > > Date:   Wed Jun 16 16:29:55 2010 +0200
-> > > > 
-> > > >     serial: add UART_CAP_EFR and UART_CAP_SLEEP flags to 16C950 UARTs 
-> > > > definition
-> > > >     
-> > > >     Adding UART_CAP_EFR and UART_CAP_SLEEP flags will enable sleep 
-> > > > mode
-> > > >     and automatic CTS flow control for 16C950 UARTs. It will also 
-> > > > avoid
-> > > >     capabilities detection warning like this:
-> > > >     
-> > > >     "ttyS0: detected caps 00000700 should be 00000100"
-> > > >     
-> > > >     Signed-off-by: Yegor Yefremov <yegorslists@googlemail.com>
-> > > >     Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> > > 
-> > > 
-> > > Has been bisected by several people to be causing failures and reported ?
-> > 
-> > Hm, I saw Pavel reported a problem, but I didn't get a definate "this
-> > must be reverted" resolution from that thread.  It looked like we should
-> > just drop one of these flags perhaps?
-> > 
-> > I can revert it if it really is an issue, but it needs to be reverted in
-> > Linus's tree first, before going to stable.
+On Thu, 2011-01-06 at 09:55 -0800, Linus Torvalds wrote: 
+> On Thu, Jan 6, 2011 at 9:47 AM, Trond Myklebust
+> <Trond.Myklebust@netapp.com> wrote:
+> >
+> > Why is this line needed? We're not writing through the virtual mapping.
 > 
-> Flow control flag seems to be responsible.
+> I haven't looked at the sequence of accesses, but you need to be
+> _very_ aware that "write-through" is absolutely NOT sufficient for
+> cache coherency.
 > 
-> But... it hits me and then... me. So I'd like to see it resolved in
-> devel tree, but it may not 100% vital for stable.
+> In cache coherency, you have three options:
+> 
+>  - true coherency (eg physically indexed/tagged caches)
+> 
+>  - exclusion (eg virtual caches, but with an exclusion guarantee that
+> guarantees that aliases cannot happen: either by using physical
+> tagging or by not allowing cases that could cause virtual aliases)
+> 
+>  - write-through AND non-cached reads (ie "no caching at all").
+> 
+> You seem to be forgetting the "no cached reads" part. It's not
+> sufficient to flush after a write - you need to make sure that you
+> also don't have a cached copy of the alias for the read.
+> 
+> So "We're not writing through the virtual mapping" is NOT a sufficient
+> excuse. If you're reading through the virtual mapping, you need to
+> make sure that the virtual mapping is flushed _after_ any writes
+> through any other mapping and _before_ any reads through the virtual
+> one.
 
-Ok, care to make up a patch I can apply for Linus's tree first that
-works for you?
+I'm aware of that. That part should be taken care of by the call to
+invalidate_kernel_vmap_range() which was in both James and my patch.
 
-thanks,
+There is already code in the SUNRPC layer that calls flush_dcache_page()
+after writing (although as Russell pointed out earlier, that is
+apparently a no-op for non-page cache pages such as these).
 
-greg k-h
+> This is why you really really really generally don't want to have
+> aliasing. Purely virtual caches are pure crap. Really.
+
+Well, it looks as if NOMMU is giving us problems due to the lack of a
+vm_map_ram() (see https://bugzilla.kernel.org/show_bug.cgi?id=26262).
+
+I'd still like to keep the existing code for those architectures that
+don't have problems, since that allows us to send 32k READDIR requests
+instead of being limited to 4k. For large directories, that is a clear
+win.
+For the NOMMU case we will just go back to using a single page for
+storage (and 4k READDIR requests only). Should I just do the same for
+architectures like ARM and PARISC?
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
