@@ -1,594 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755381Ab1AGSmK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 13:42:10 -0500
-Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:54643 "EHLO
-	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755021Ab1AGSl7 (ORCPT
+	id S1755396Ab1AGSmP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 13:42:15 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36260 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752870Ab1AGSmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 13:41:59 -0500
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-To: Stephane Chatty <chatty@enac.fr>, Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Subject: [RFC v3 3/5] hid-multitouch: support for PixCir-based panels
-Date: Fri,  7 Jan 2011 19:42:40 +0100
-Message-Id: <1294425762-29730-4-git-send-email-benjamin.tissoires@enac.fr>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1294425762-29730-1-git-send-email-benjamin.tissoires@enac.fr>
-References: <1294425762-29730-1-git-send-email-benjamin.tissoires@enac.fr>
+	Fri, 7 Jan 2011 13:42:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=RDx+dqZ9wJxkFWmE/uhe4wQ/RvVTRr/scX6XUytQRyroZ6bZuiWpGe2BkADCaPzYEF
+         XpzKELfXc2NBoTmnRNJV1pMDcn2QlcxltbOvfxtoPtovJVVqBNi3hJjCUXNyId+YJNxN
+         Fjtakz9O4jmZmaVgjOrttT1PPLlgDK5IuuU1Y=
+Message-ID: <4D275E7E.3040903@gmail.com>
+Date: Fri, 07 Jan 2011 21:42:06 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Jason Wessel <jason.wessel@windriver.com>, Don Zickus <dzickus@redhat.com>,
+        Lin Ming <ming.m.lin@intel.com>, Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [PATCH -tip/master] perf, x86: P4 PMU - Fix unflagged overflows handling
+ v4
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Created a driver for PixCir based dual-touch panels, including the one
-in the Hanvon tablet.  This is done in a code structure aimed at unifying
-support for several existing HID multitouch panels.
+Don found that P4 PMU reads CCCR register instead of counter
+itself (in attempt to catch unflagged event) this makes P4
+NMI handler to consume all NMIs it observes. So the other
+NMI users such as kgdb simply have no chance to get NMI
+on their hands.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Signed-off-by: Stéphane Chatty <chatty@enac.fr>
+Side note: at moment there is no way to run nmi-watchdog
+together with perf tool. This is because both 'perf top' and
+nmi-watchdog use same event. So while nmi-watchdog reserves
+one event/counter for own needs there is no room for perf tool
+left (there is a way to disable nmi-watchdog on boot of course).
+
+Ming has tested this patch with the following results
+
+ | 1. watchdog disabled
+ |
+ | kgdb tests on boot OK
+ | perf works OK
+ |
+ | 2. watchdog enabled, without patch perf-x86-p4-nmi-4
+ |
+ | kgdb tests on boot hang
+ |
+ | 3. watchdog enabled, without patch perf-x86-p4-nmi-4 and do not run kgdb
+ | tests on boot
+ |
+ | "perf top" partialy works
+ |   cpu-cycles            no
+ |   instructions          yes
+ |   cache-references      no
+ |   cache-misses          no
+ |   branch-instructions   no
+ |   branch-misses         yes
+ |   bus-cycles            no
+ |
+ | 4. watchdog enabled, with patch perf-x86-p4-nmi-4 applied
+ |
+ | kgdb tests on boot OK
+ | perf does not work, NMI "Dazed and confused" messages show up
+ |
+
+Which means we still have problems with p4 box due to 'unknown'
+nmi happens but at least it should fix kgdb test cases.
+
+Reported-by: Jason Wessel <jason.wessel@windriver.com>
+Reported-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Lin Ming <ming.m.lin@intel.com>
+CC: Stephane Eranian <eranian@google.com>
+CC: Peter Zijlstra <peterz@infradead.org>
 ---
- drivers/hid/Kconfig          |    9 +
- drivers/hid/Makefile         |    1 +
- drivers/hid/hid-core.c       |    2 +
- drivers/hid/hid-ids.h        |    4 +
- drivers/hid/hid-multitouch.c |  468 ++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 484 insertions(+), 0 deletions(-)
- create mode 100644 drivers/hid/hid-multitouch.c
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 401acec..511554d 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -285,6 +285,15 @@ config HID_MONTEREY
- 	---help---
- 	Support for Monterey Genius KB29E.
- 
-+config HID_MULTITOUCH
-+	tristate "HID Multitouch panels"
-+	depends on USB_HID
-+	---help---
-+	  Generic support for HID multitouch panels.
-+
-+	  Say Y here if you have one of the following devices:
-+	  - PixCir touchscreen
-+
- config HID_NTRIG
- 	tristate "N-Trig touch screen"
- 	depends on USB_HID
-diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-index c335605..ec991d4 100644
---- a/drivers/hid/Makefile
-+++ b/drivers/hid/Makefile
-@@ -46,6 +46,7 @@ obj-$(CONFIG_HID_MAGICMOUSE)    += hid-magicmouse.o
- obj-$(CONFIG_HID_MICROSOFT)	+= hid-microsoft.o
- obj-$(CONFIG_HID_MONTEREY)	+= hid-monterey.o
- obj-$(CONFIG_HID_MOSART)	+= hid-mosart.o
-+obj-$(CONFIG_HID_MULTITOUCH)	+= hid-multitouch.o
- obj-$(CONFIG_HID_NTRIG)		+= hid-ntrig.o
- obj-$(CONFIG_HID_ORTEK)		+= hid-ortek.o
- obj-$(CONFIG_HID_PRODIKEYS)	+= hid-prodikeys.o
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 88668ae..2b4d9b9 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1286,6 +1286,7 @@ static const struct hid_device_id hid_blacklist[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_BELKIN, USB_DEVICE_ID_FLIP_KVM) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_BTC, USB_DEVICE_ID_BTC_EMPREX_REMOTE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_BTC, USB_DEVICE_ID_BTC_EMPREX_REMOTE_2) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_CANDO, USB_DEVICE_ID_CANDO_PIXCIR_MULTI_TOUCH) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_CANDO, USB_DEVICE_ID_CANDO_MULTI_TOUCH) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_CANDO, USB_DEVICE_ID_CANDO_MULTI_TOUCH_11_6) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_CANDO, USB_DEVICE_ID_CANDO_MULTI_TOUCH_15_6) },
-@@ -1312,6 +1313,7 @@ static const struct hid_device_id hid_blacklist[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_2) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_3) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_HANVON, USB_DEVICE_ID_HANVON_MULTITOUCH) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LABTEC, USB_DEVICE_ID_LABTEC_WIRELESS_KEYBOARD) },
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 0f150c7..17b444b 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -134,6 +134,7 @@
- #define USB_DEVICE_ID_BTC_EMPREX_REMOTE_2	0x5577
- 
- #define USB_VENDOR_ID_CANDO		0x2087
-+#define USB_DEVICE_ID_CANDO_PIXCIR_MULTI_TOUCH 0x0703
- #define USB_DEVICE_ID_CANDO_MULTI_TOUCH	0x0a01
- #define USB_DEVICE_ID_CANDO_MULTI_TOUCH_11_6 0x0b03
- #define USB_DEVICE_ID_CANDO_MULTI_TOUCH_15_6 0x0f01
-@@ -306,6 +307,9 @@
- #define USB_DEVICE_ID_HANWANG_TABLET_FIRST	0x5000
- #define USB_DEVICE_ID_HANWANG_TABLET_LAST	0x8fff
- 
-+#define USB_VENDOR_ID_HANVON		0x20b3
-+#define USB_DEVICE_ID_HANVON_MULTITOUCH	0x0a18
-+
- #define USB_VENDOR_ID_HAPP		0x078b
- #define USB_DEVICE_ID_UGCI_DRIVING	0x0010
- #define USB_DEVICE_ID_UGCI_FLYING	0x0020
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-new file mode 100644
-index 0000000..3b05dfe
---- /dev/null
-+++ b/drivers/hid/hid-multitouch.c
-@@ -0,0 +1,468 @@
-+/*
-+ *  HID driver for multitouch panels
-+ *
-+ *  Copyright (c) 2010-2011 Stephane Chatty <chatty@enac.fr>
-+ *  Copyright (c) 2010-2011 Benjamin Tissoires <benjamin.tissoires@gmail.com>
-+ *  Copyright (c) 2010-2011 Ecole Nationale de l'Aviation Civile, France
-+ *
-+ */
-+
-+/*
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/hid.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/usb.h>
-+#include <linux/input/mt.h>
-+#include "usbhid/usbhid.h"
-+
-+
-+MODULE_AUTHOR("Stephane Chatty <chatty@enac.fr>");
-+MODULE_DESCRIPTION("HID multitouch panels");
-+MODULE_LICENSE("GPL");
-+
-+#include "hid-ids.h"
-+
-+/* quirks to control the device */
-+#define MT_QUIRK_NOT_SEEN_MEANS_UP	(1 << 0)
-+#define MT_QUIRK_SLOT_IS_CONTACTID	(1 << 1)
-+
-+struct mt_slot {
-+	__s32 x, y, p, w, h;
-+	__s32 contactid;	/* the device ContactID assigned to this slot */
-+	bool touch_state;	/* is the touch valid? */
-+	bool seen_in_this_frame;/* has this slot been updated */
-+};
-+
-+struct mt_device {
-+	struct mt_slot curdata;	/* placeholder of incoming data */
-+	struct mt_class *mtclass;	/* our mt device class */
-+	unsigned last_field_index;	/* last field index of the report */
-+	unsigned last_slot_field;	/* the last field of a slot */
-+	__s8 inputmode;		/* InputMode HID feature, -1 if non-existent */
-+	__u8 num_received;	/* how many contacts we received */
-+	__u8 num_expected;	/* expected last contact index */
-+	bool curvalid;		/* is the current contact valid? */
-+	struct mt_slot slots[0];	/* first slot */
-+};
-+
-+struct mt_class {
-+	__s32 quirks;
-+	__s32 sn_move;	/* Signal/noise ratio for move events */
-+	__s32 sn_pressure;	/* Signal/noise ratio for pressure events */
-+	__u8 maxcontacts;
-+};
-+
-+/* classes of device behavior */
-+#define MT_CLS_DEFAULT 0
-+#define MT_CLS_DUAL1 1
-+
-+/*
-+ * these device-dependent functions determine what slot corresponds
-+ * to a valid contact that was just read.
-+ */
-+
-+static int slot_is_contactid(struct mt_device *td)
-+{
-+	return td->curdata.contactid;
-+}
-+
-+static int find_slot_from_contactid(struct mt_device *td)
-+{
-+	int i;
-+	for (i = 0; i < td->mtclass->maxcontacts; ++i) {
-+		if (td->slots[i].contactid == td->curdata.contactid &&
-+			td->slots[i].touch_state)
-+			return i;
-+	}
-+	for (i = 0; i < td->mtclass->maxcontacts; ++i) {
-+		if (!td->slots[i].seen_in_this_frame &&
-+			!td->slots[i].touch_state)
-+			return i;
-+	}
-+	return -1;
-+	/* should not occurs. If this happens that means
-+	 * that the device sent more touches that it says
-+	 * in the report descriptor. It is ignored then. */
-+}
-+
-+struct mt_class mt_classes[] = {
-+	{ 0, 0, 0, 10 },                             /* MT_CLS_DEFAULT */
-+	{ MT_QUIRK_SLOT_IS_CONTACTID, 0, 0, 2 },     /* MT_CLS_DUAL1 */
-+};
-+
-+static void mt_feature_mapping(struct hid_device *hdev, struct hid_input *hi,
-+		struct hid_field *field, struct hid_usage *usage)
-+{
-+	if (usage->hid == HID_DG_INPUTMODE) {
-+		struct mt_device *td = hid_get_drvdata(hdev);
-+		td->inputmode = field->report->id;
-+	}
-+}
-+
-+static void set_abs(struct input_dev *input, unsigned int code,
-+		struct hid_field *field, int snratio)
-+{
-+	int fmin = field->logical_minimum;
-+	int fmax = field->logical_maximum;
-+	int fuzz = snratio ? (fmax - fmin) / snratio : 0;
-+	input_set_abs_params(input, code, fmin, fmax, fuzz, 0);
-+}
-+
-+static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
-+		struct hid_field *field, struct hid_usage *usage,
-+		unsigned long **bit, int *max)
-+{
-+	struct mt_device *td = hid_get_drvdata(hdev);
-+	struct mt_class *cls = td->mtclass;
-+	switch (usage->hid & HID_USAGE_PAGE) {
-+
-+	case HID_UP_GENDESK:
-+		switch (usage->hid) {
-+		case HID_GD_X:
-+			hid_map_usage(hi, usage, bit, max,
-+					EV_ABS, ABS_MT_POSITION_X);
-+			set_abs(hi->input, ABS_MT_POSITION_X, field,
-+				cls->sn_move);
-+			/* touchscreen emulation */
-+			set_abs(hi->input, ABS_X, field, cls->sn_move);
-+			td->last_slot_field = usage->hid;
-+			return 1;
-+		case HID_GD_Y:
-+			hid_map_usage(hi, usage, bit, max,
-+					EV_ABS, ABS_MT_POSITION_Y);
-+			set_abs(hi->input, ABS_MT_POSITION_Y, field,
-+				cls->sn_move);
-+			/* touchscreen emulation */
-+			set_abs(hi->input, ABS_Y, field, cls->sn_move);
-+			td->last_slot_field = usage->hid;
-+			return 1;
-+		}
-+		return 0;
-+
-+	case HID_UP_DIGITIZER:
-+		switch (usage->hid) {
-+		case HID_DG_INRANGE:
-+			td->last_slot_field = usage->hid;
-+			return 1;
-+		case HID_DG_CONFIDENCE:
-+			td->last_slot_field = usage->hid;
-+			return 1;
-+		case HID_DG_TIPSWITCH:
-+			hid_map_usage(hi, usage, bit, max, EV_KEY, BTN_TOUCH);
-+			input_set_capability(hi->input, EV_KEY, BTN_TOUCH);
-+			td->last_slot_field = usage->hid;
-+			return 1;
-+		case HID_DG_CONTACTID:
-+			input_mt_init_slots(hi->input,
-+					td->mtclass->maxcontacts);
-+			td->last_slot_field = usage->hid;
-+			return 1;
-+		case HID_DG_WIDTH:
-+			hid_map_usage(hi, usage, bit, max,
-+					EV_ABS, ABS_MT_TOUCH_MAJOR);
-+			td->last_slot_field = usage->hid;
-+			return 1;
-+		case HID_DG_HEIGHT:
-+			hid_map_usage(hi, usage, bit, max,
-+					EV_ABS, ABS_MT_TOUCH_MINOR);
-+			field->logical_maximum = 1;
-+			field->logical_minimum = 1;
-+			set_abs(hi->input, ABS_MT_ORIENTATION, field, 0);
-+			td->last_slot_field = usage->hid;
-+			return 1;
-+		case HID_DG_TIPPRESSURE:
-+			hid_map_usage(hi, usage, bit, max,
-+					EV_ABS, ABS_MT_PRESSURE);
-+			set_abs(hi->input, ABS_MT_PRESSURE, field,
-+				cls->sn_pressure);
-+			/* touchscreen emulation */
-+			set_abs(hi->input, ABS_PRESSURE, field,
-+				cls->sn_pressure);
-+			td->last_slot_field = usage->hid;
-+			return 1;
-+		case HID_DG_CONTACTCOUNT:
-+			td->last_field_index = field->report->maxfield - 1;
-+			return 1;
-+		case HID_DG_CONTACTMAX:
-+			/* we don't set td->last_slot_field as contactcount and
-+			 * contact max are global to the report */
-+			return -1;
-+		}
-+		/* let hid-input decide for the others */
-+		return 0;
-+
-+	case 0xff000000:
-+		/* we do not want to map these: no input-oriented meaning */
-+		return -1;
-+	}
-+
-+	return 0;
-+}
-+
-+static int mt_input_mapped(struct hid_device *hdev, struct hid_input *hi,
-+		struct hid_field *field, struct hid_usage *usage,
-+		unsigned long **bit, int *max)
-+{
-+	if (usage->type == EV_KEY || usage->type == EV_ABS)
-+		set_bit(usage->type, hi->input->evbit);
-+
-+	return -1;
-+}
-+
-+static int mt_compute_slot(struct mt_device *td)
-+{
-+	struct mt_class *cls = td->mtclass;
-+
-+	if (cls->quirks & MT_QUIRK_SLOT_IS_CONTACTID)
-+		return slot_is_contactid(td);
-+
-+	return find_slot_from_contactid(td);
-+}
-+
-+/*
-+ * this function is called when a whole contact has been processed,
-+ * so that it can assign it to a slot and store the data there
-+ */
-+static void mt_complete_slot(struct mt_device *td)
-+{
-+	if (td->curvalid) {
-+		struct mt_slot *slot;
-+		int slotnum = mt_compute_slot(td);
-+
-+		if (slotnum >= 0 && slotnum < td->mtclass->maxcontacts) {
-+			slot = td->slots + slotnum;
-+
-+			memcpy(slot, &(td->curdata), sizeof(struct mt_slot));
-+			slot->seen_in_this_frame = true;
-+		}
-+	}
-+	td->num_received++;
-+}
-+
-+
-+/*
-+ * this function is called when a whole packet has been received and processed,
-+ * so that it can decide what to send to the input layer.
-+ */
-+static void mt_emit_event(struct mt_device *td, struct input_dev *input)
-+{
-+	int i;
-+
-+	for (i = 0; i < td->mtclass->maxcontacts; ++i) {
-+		struct mt_slot *s = &(td->slots[i]);
-+		if ((td->mtclass->quirks & MT_QUIRK_NOT_SEEN_MEANS_UP) &&
-+			!s->seen_in_this_frame) {
-+			/*
-+			 * this slot does not contain useful data,
-+			 * notify its closure
-+			 */
-+			s->touch_state = false;
-+		}
-+
-+		input_mt_slot(input, i);
-+		input_mt_report_slot_state(input, MT_TOOL_FINGER,
-+			s->touch_state);
-+		input_event(input, EV_ABS, ABS_MT_POSITION_X, s->x);
-+		input_event(input, EV_ABS, ABS_MT_POSITION_Y, s->y);
-+		input_event(input, EV_ABS, ABS_MT_PRESSURE, s->p);
-+		input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR, s->w);
-+		input_event(input, EV_ABS, ABS_MT_TOUCH_MINOR, s->h);
-+		s->seen_in_this_frame = false;
-+
-+	}
-+
-+	input_mt_report_pointer_emulation(input, true);
-+	input_sync(input);
-+	td->num_received = 0;
-+}
-+
-+
-+
-+static int mt_event(struct hid_device *hid, struct hid_field *field,
-+				struct hid_usage *usage, __s32 value)
-+{
-+	struct mt_device *td = hid_get_drvdata(hid);
-+
-+	if (hid->claimed & HID_CLAIMED_INPUT) {
-+		switch (usage->hid) {
-+		case HID_DG_INRANGE:
-+			break;
-+		case HID_DG_TIPSWITCH:
-+			td->curvalid = value;
-+			td->curdata.touch_state = value;
-+			break;
-+		case HID_DG_CONFIDENCE:
-+			break;
-+		case HID_DG_CONTACTID:
-+			td->curdata.contactid = value;
-+			break;
-+		case HID_DG_TIPPRESSURE:
-+			td->curdata.p = value;
-+			break;
-+		case HID_GD_X:
-+			td->curdata.x = value;
-+			break;
-+		case HID_GD_Y:
-+			td->curdata.y = value;
-+			break;
-+		case HID_DG_WIDTH:
-+			td->curdata.w = value;
-+			break;
-+		case HID_DG_HEIGHT:
-+			td->curdata.h = value;
-+			break;
-+		case HID_DG_CONTACTCOUNT:
-+			/*
-+			 * We must not overwrite the previous value (some
-+			 * devices send one sequence splitted over several
-+			 * messages)
-+			 */
-+			if (value)
-+				td->num_expected = value - 1;
-+			break;
-+
-+		default:
-+			/* fallback to the generic hidinput handling */
-+			return 0;
-+		}
-+	}
-+
-+	if (usage->hid == td->last_slot_field)
-+		mt_complete_slot(td);
-+
-+	if (field->index == td->last_field_index
-+		&& td->num_received > td->num_expected)
-+		mt_emit_event(td, field->hidinput->input);
-+
-+	/* we have handled the hidinput part, now remains hiddev */
-+	if (hid->claimed & HID_CLAIMED_HIDDEV && hid->hiddev_hid_event)
-+		hid->hiddev_hid_event(hid, field, usage, value);
-+
-+	return 1;
-+}
-+
-+static void mt_set_input_mode(struct hid_device *hdev)
-+{
-+	struct mt_device *td = hid_get_drvdata(hdev);
-+	struct hid_report *r;
-+	struct hid_report_enum *re;
-+
-+	if (td->inputmode < 0)
-+		return;
-+
-+	re = &(hdev->report_enum[HID_FEATURE_REPORT]);
-+	r = re->report_id_hash[td->inputmode];
-+	if (r) {
-+		r->field[0]->value[0] = 0x02;
-+		usbhid_submit_report(hdev, r, USB_DIR_OUT);
-+	}
-+}
-+
-+static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
-+{
-+	int ret;
-+	struct mt_device *td;
-+	struct mt_class *mtclass = mt_classes + id->driver_data;
-+
-+	/* This allows the driver to correctly support devices
-+	 * that emit events over several HID messages.
-+	 */
-+	hdev->quirks |= HID_QUIRK_NO_INPUT_SYNC;
-+
-+	td = kzalloc(sizeof(struct mt_device) +
-+				mtclass->maxcontacts * sizeof(struct mt_slot),
-+				GFP_KERNEL);
-+	if (!td) {
-+		dev_err(&hdev->dev, "cannot allocate multitouch data\n");
-+		return -ENOMEM;
-+	}
-+	td->mtclass = mtclass;
-+	td->inputmode = -1;
-+	hid_set_drvdata(hdev, td);
-+
-+	ret = hid_parse(hdev);
-+	if (ret != 0)
-+		goto fail;
-+
-+	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
-+	if (ret != 0)
-+		goto fail;
-+
-+	mt_set_input_mode(hdev);
-+
-+	return 0;
-+
-+fail:
-+	kfree(td);
-+	return ret;
-+}
-+
-+#ifdef CONFIG_PM
-+static int mt_reset_resume(struct hid_device *hdev)
-+{
-+	mt_set_input_mode(hdev);
-+	return 0;
-+}
-+#endif
-+
-+static void mt_remove(struct hid_device *hdev)
-+{
-+	struct mt_device *td = hid_get_drvdata(hdev);
-+	hid_hw_stop(hdev);
-+	kfree(td);
-+	hid_set_drvdata(hdev, NULL);
-+}
-+
-+static const struct hid_device_id mt_devices[] = {
-+
-+	/* PixCir-based panels */
-+	{ .driver_data = MT_CLS_DUAL1,
-+		HID_USB_DEVICE(USB_VENDOR_ID_HANVON,
-+			USB_DEVICE_ID_HANVON_MULTITOUCH) },
-+	{ .driver_data = MT_CLS_DUAL1,
-+		HID_USB_DEVICE(USB_VENDOR_ID_CANDO,
-+			USB_DEVICE_ID_CANDO_PIXCIR_MULTI_TOUCH) },
-+
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(hid, mt_devices);
-+
-+static const struct hid_usage_id mt_grabbed_usages[] = {
-+	{ HID_ANY_ID, HID_ANY_ID, HID_ANY_ID },
-+	{ HID_ANY_ID - 1, HID_ANY_ID - 1, HID_ANY_ID - 1}
-+};
-+
-+static struct hid_driver mt_driver = {
-+	.name = "hid-multitouch",
-+	.id_table = mt_devices,
-+	.probe = mt_probe,
-+	.remove = mt_remove,
-+	.input_mapping = mt_input_mapping,
-+	.input_mapped = mt_input_mapped,
-+	.feature_mapping = mt_feature_mapping,
-+	.usage_table = mt_grabbed_usages,
-+	.event = mt_event,
-+#ifdef CONFIG_PM
-+	.reset_resume = mt_reset_resume,
-+#endif
-+};
-+
-+static int __init mt_init(void)
-+{
-+	return hid_register_driver(&mt_driver);
-+}
-+
-+static void __exit mt_exit(void)
-+{
-+	hid_unregister_driver(&mt_driver);
-+}
-+
-+module_init(mt_init);
-+module_exit(mt_exit);
--- 
-1.7.3.4
+Don, your opinion?
 
+ arch/x86/include/asm/perf_event_p4.h |    3 +++
+ arch/x86/kernel/cpu/perf_event_p4.c  |   28 +++++++++++++++-------------
+ 2 files changed, 18 insertions(+), 13 deletions(-)
+
+Index: linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/include/asm/perf_event_p4.h
++++ linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
+@@ -20,6 +20,9 @@
+ #define ARCH_P4_MAX_ESCR	(ARCH_P4_TOTAL_ESCR - ARCH_P4_RESERVED_ESCR)
+ #define ARCH_P4_MAX_CCCR	(18)
+
++#define ARCH_P4_CNTRVAL_BITS	(40)
++#define ARCH_P4_CNTRVAL_MASK	((1ULL << ARCH_P4_CNTRVAL_BITS) - 1)
++
+ #define P4_ESCR_EVENT_MASK	0x7e000000U
+ #define P4_ESCR_EVENT_SHIFT	25
+ #define P4_ESCR_EVENTMASK_MASK	0x01fffe00U
+Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
++++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -753,19 +753,21 @@ out:
+
+ static inline int p4_pmu_clear_cccr_ovf(struct hw_perf_event *hwc)
+ {
+-	int overflow = 0;
+-	u32 low, high;
++	u64 v;
+
+-	rdmsr(hwc->config_base + hwc->idx, low, high);
+-
+-	/* we need to check high bit for unflagged overflows */
+-	if ((low & P4_CCCR_OVF) || !(high & (1 << 31))) {
+-		overflow = 1;
+-		(void)checking_wrmsrl(hwc->config_base + hwc->idx,
+-			((u64)low) & ~P4_CCCR_OVF);
++	/* an official way for overflow indication */
++	rdmsrl(hwc->config_base + hwc->idx, v);
++	if (v & P4_CCCR_OVF) {
++		wrmsrl(hwc->config_base + hwc->idx, v & ~P4_CCCR_OVF);
++		return 1;
+ 	}
+
+-	return overflow;
++	/* it might be unflagged overflow */
++	rdmsrl(hwc->event_base + hwc->idx, v);
++	if (!(v & ARCH_P4_CNTRVAL_MASK))
++		return 1;
++
++	return 0;
+ }
+
+ static void p4_pmu_disable_pebs(void)
+@@ -1152,9 +1154,9 @@ static __initconst const struct x86_pmu
+ 	 */
+ 	.num_counters		= ARCH_P4_MAX_CCCR,
+ 	.apic			= 1,
+-	.cntval_bits		= 40,
+-	.cntval_mask		= (1ULL << 40) - 1,
+-	.max_period		= (1ULL << 39) - 1,
++	.cntval_bits		= ARCH_P4_CNTRVAL_BITS,
++	.cntval_mask		= ARCH_P4_CNTRVAL_MASK,
++	.max_period		= (1ULL << (ARCH_P4_CNTRVAL_BITS - 1)) - 1,
+ 	.hw_config		= p4_hw_config,
+ 	.schedule_events	= p4_pmu_schedule_events,
+ 	/*
