@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab1AGEsk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 23:48:40 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:48067 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752957Ab1AGEsj (ORCPT
+	id S1753217Ab1AGFMo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 00:12:44 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48757 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751748Ab1AGFMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 23:48:39 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAN8oJk15LcNW/2dsb2JhbACkHnS9CoVMBJAw
-Date: Fri, 7 Jan 2011 15:48:36 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch 8/8] fs: add i_op->sync_inode
-Message-ID: <20110107044836.GB4552@amd>
-References: <20101218014634.943276411@kernel.dk>
- <20101218015117.759480620@kernel.dk>
- <20101229151246.GA22033@infradead.org>
- <20110104062725.GD3402@amd>
- <20110104065736.GA8013@infradead.org>
- <20110104080323.GC4090@amd>
- <20110104083132.GA4485@amd>
- <20110104092541.GC2760@infradead.org>
- <20110104095231.GB4812@amd>
- <20110106204911.GB2872@infradead.org>
+	Fri, 7 Jan 2011 00:12:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=ACK//IRTJhwNqtiKQ2zJFW285ocUXS/Q2WLlINB+jEC6ek1Dv3yMGmSHNspMNJbR5U
+         SCSXUPuZWwojyX382pT7Kw8VOJOUcXJw6TqbkaA0aGwMG4YYqQyH6w/7r/1a+A52XE9g
+         ath+tylEAx4ERmJgYih8jWS+6p+sJ7qITjZjA=
+Date: Fri, 7 Jan 2011 08:12:27 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Dave Airlie <airlied@redhat.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] vga_switcheroo: comparing too few characters in strncmp()
+Message-ID: <20110107051227.GD1717@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Dave Airlie <airlied@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110106204911.GB2872@infradead.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 06, 2011 at 03:49:11PM -0500, Christoph Hellwig wrote:
-> On Tue, Jan 04, 2011 at 08:52:31PM +1100, Nick Piggin wrote:
-> > OK I missed that part about not requiring dirty metadata to be written,
-> > just currently ongoing async operations. But then I don't understand how
-> > it would be used by nfsd, how does nfsd start some async operation on
-> > the inode metadata such that ->commit_metadata would do anything useful
-> > for it?
-> 
-> NFSD calls various inode operations (create/mkdir/mknod/link/symlink/
-> rename/unlink/rmdir/setattr) and then requires those operations to be
-> on disk before completing the request to the client, but it does not
-> require other dirty state to be written (data, unlogged size
-> or timestamp updates).  Take a look at the XFS implementation: it just
-> checks if the inode is still pinned (that is in the in-memory log, but
-> not commited to disk) and if so forces the log up to the log buffer
-> that contains the last changes to the inode.
+This is a copy-and-paste bug.  We should be comparing 4 characters here
+instead of 3.
 
-OK, I don't exactly see why a sync_inode with appropriate flag could
-not solve that problem. I'll take a bit more look through nfs and
-xfs. Thanks...
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
+diff --git a/drivers/gpu/vga/vga_switcheroo.c b/drivers/gpu/vga/vga_switcheroo.c
+index d2d8543..e01cacb 100644
+--- a/drivers/gpu/vga/vga_switcheroo.c
++++ b/drivers/gpu/vga/vga_switcheroo.c
+@@ -346,11 +346,11 @@ vga_switcheroo_debugfs_write(struct file *filp, const char __user *ubuf,
+ 	if (strncmp(usercmd, "DIS", 3) == 0)
+ 		client_id = VGA_SWITCHEROO_DIS;
+ 
+-	if (strncmp(usercmd, "MIGD", 3) == 0) {
++	if (strncmp(usercmd, "MIGD", 4) == 0) {
+ 		just_mux = true;
+ 		client_id = VGA_SWITCHEROO_IGD;
+ 	}
+-	if (strncmp(usercmd, "MDIS", 3) == 0) {
++	if (strncmp(usercmd, "MDIS", 4) == 0) {
+ 		just_mux = true;
+ 		client_id = VGA_SWITCHEROO_DIS;
+ 	}
