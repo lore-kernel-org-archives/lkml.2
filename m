@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab1AGTYu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 14:24:50 -0500
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:57395 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753137Ab1AGTYs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 14:24:48 -0500
-Date: Fri, 7 Jan 2011 21:24:43 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: "Gadiyar, Anand" <gadiyar@ti.com>
-Cc: Ming Lei <tom.leiming@gmail.com>, Benoit Cousson <b-cousson@ti.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Paul Walmsley <paul@pwsan.com>, Greg KH <greg@kroah.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        linux-omap@vger.kernel.org
-Subject: Re: linux-next: manual merge of the usb tree with the omap tree
-Message-ID: <20110107192443.GE2272@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <4D139517.3010608@ti.com>
- <AANLkTi=pTNg2iWN+=uEv=CyZHHCoddF51pmmCMjPeMUF@mail.gmail.com>
- <4ce0f816f951f24ca3de9c84d9f70842@mail.gmail.com>
- <AANLkTimA5UOVn6+xe0ofV1F3_XhAP0daBvOAX2k1u_dU@mail.gmail.com>
- <AANLkTimzQ1PHN986fqPF0yjd1M+390nSUDYJ65pu0z_f@mail.gmail.com>
- <4D271E0E.8050401@ti.com>
- <AANLkTikLQRHyp-TS_idEp5Fr74qC3vDoMqqsAA2v_oV8@mail.gmail.com>
- <c822ad4569a9dc865b5ccf39e12c828b@mail.gmail.com>
- <f853a77e2aebea4130fc486bdbf4aa06@mail.gmail.com>
- <AANLkTiku=1-NftQGkOiG0Sm5Fp1-Szqe+39kzWz+4dAC@mail.gmail.com>
+	id S1753658Ab1AGT2c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 14:28:32 -0500
+Received: from dhael.aehallh.com ([199.73.30.2]:43363 "EHLO dhael.aehallh.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753305Ab1AGT2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 14:28:31 -0500
+X-Greylist: delayed 471 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Jan 2011 14:28:31 EST
+Date: Fri, 7 Jan 2011 14:20:39 -0500
+From: "Zephaniah E. Loss-Cutler-Hull" <warp@aehallh.com>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: Linux 2.6.37
+Message-ID: <20110107192039.GO6307@aehallh.com>
+Mail-Followup-To: linux-kernel@vger.kernel.org,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Chris Wilson <chris@chris-wilson.co.uk>,
+	dri-devel@lists.freedesktop.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTiku=1-NftQGkOiG0Sm5Fp1-Szqe+39kzWz+4dAC@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 08, 2011 at 12:24:24AM +0530, Gadiyar, Anand wrote:
-> On Fri, Jan 7, 2011 at 8:50 PM, Anand Gadiyar <gadiyar@ti.com> wrote:
-> > Update: I disabled CONFIG_OMAP_RESET_CLOCKS and the PHY and other
-> > connected devices enumerate just fine. Could you try this out on
-> > your board as well?
-> >
-> > I'll look deeper and see if there are some required clocks that are
-> > accidentally getting turned off.
-> >
+On Thu, 06 Jan 2011 11:50:02 +0100, Michal Hocko wrote:
+> Hi,
 > 
-> A final update from today: It appears that disabling auxclk3_ck causes
-> EHCI to fail. I'm not sure what this clock feeds, and will need to look it
-> up. Keeping this clock alive is sufficient to get the hub to enumerate.
+> On Tue 04-01-11 17:15:45, Linus Torvalds wrote:
+> [...]
+> > We did have another revert to fix hopefullythe last "blank screen"
+> > regression on intel graphics.
 > 
-> I would've looked it up, but got booted out by a fire alarm drill. I'll
-> take a look tomorrow and cook up a fix.
+> It seems that there is still a regression for intel graphic cards
+> backlight. One report is
+> https://bugzilla.kernel.org/show_bug.cgi?id=22672.
+> I can reproduce the problem easily by:
+> xset dpms force standby; sleep 3s; xset dpms force on
+> 
+> backlight doesn't get up (there is really dark picture though which
+> doesn't get brighter by function keys which work normally) after dpms on
+> until I close and open lid.
+> 
+> The problem wasn't present in 2.6.36
 
-Good finding :-) Thanks a lot :-)
+And I have a different regression.
 
--- 
-balbi
+On 2.6.36.2 everything is fine, on 2.6.37 my laptop's display is more or
+less blank, backlight on, with a white pattern slowly moving across the
+screen like it was a (bad) moving spot light effect.
+
+dmesg output and .configs at
+https://bugs.freedesktop.org/show_bug.cgi?id=32903
+
+Zephaniah E. Loss-Cutler-Hull.
