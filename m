@@ -1,211 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab1AGJSp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 04:18:45 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:62007 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753668Ab1AGJSm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 04:18:42 -0500
-X-IronPort-AV: E=Sophos;i="4.60,288,1291611600"; 
-   d="scan'208";a="129974810"
-Subject: Re: [patch] xenfb: fix xenfb suspend/resume race.
-From: Ian Campbell <Ian.Campbell@eu.citrix.com>
-To: Joe Jin <joe.jin@oracle.com>
-CC: "jeremy@goop.org" <jeremy@goop.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "gurudas.pai@oracle.com" <gurudas.pai@oracle.com>,
-        "guru.anbalagane@oracle.com" <guru.anbalagane@oracle.com>,
-        "greg.marsden@oracle.com" <greg.marsden@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-In-Reply-To: <4D26B577.5060105@oracle.com>
-References: <4D26B577.5060105@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Fri, 7 Jan 2011 09:17:42 +0000
-Message-ID: <1294391862.3831.3913.camel@zakaz.uk.xensource.com>
+	id S1754267Ab1AGJTS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 04:19:18 -0500
+Received: from cantor.suse.de ([195.135.220.2]:41374 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754137Ab1AGJTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 04:19:14 -0500
+Date: Fri, 7 Jan 2011 10:19:12 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Piotr Hosowicz <piotr@hosowicz.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: GIT question - am I doing it correctly?
+Message-ID: <20110107091911.GB1891@tiehlicka.suse.cz>
+References: <4D1B6066.9000701@example.com>
+ <20110103134807.GA3911@tiehlicka.suse.cz>
+ <4D25F611.9040802@example.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D25F611.9040802@example.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-07 at 06:40 +0000, Joe Jin wrote:
-> Hi,
+On Thu 06-01-11 18:04:17, Piotr Hosowicz wrote:
+> On 03.01.2011 14:48, Michal Hocko wrote:
+> >On Wed 29-12-10 17:23:02, Piotr Hosowicz wrote:
+> >>Hello,
+> >
+> >Hi,
+> >
+> >>
+> >>Everytime I git pull tyhe Linus' sources but before I build I apply
+> >>Peter Zijlstra's fixes, Takashi Iwai's sources and Dave Miller's
+> >>sources. The sequence is:
+> >>
+> >># the Linus' sources
+> >>git pull
+> >>
+> >># external sources
+> >>git remote add some_name git://some_URL.git
+> >>
+> >># update
+> >>git remote update
+> >>
+> >>Then configure and I build. I noticed that especially Peter's
+> >>git-update very quickly, not as long as they did before.
+> >>
+> >>Is my procedure correct? I am new to GIT.
+> >
+> >What do you want to achieve?
 > 
-> when do migration test, we hit the panic as below:
-> <1>BUG: unable to handle kernel paging request at 0000000b819fdb98
-> <1>IP: [<ffffffff812a588f>] notify_remote_via_irq+0x13/0x34
-> <4>PGD 94b10067 PUD 0
-> <0>Oops: 0000 [#1] SMP
-> <0>last sysfs file: /sys/class/misc/autofs/dev
-> <4>CPU 3
-> <4>Modules linked in: autofs4(U) hidp(U) nfs(U) fscache(U) nfs_acl(U)
-> auth_rpcgss(U) rfcomm(U) l2cap(U) bluetooth(U) rfkill(U) lockd(U) sunrpc(U)
-> nf_conntrack_netbios_ns(U) ipt_REJECT(U) nf_conntrack_ipv4(U)
-> nf_defrag_ipv4(U) xt_state(U) nf_conntrack(U) iptable_filter(U) ip_tables(U)
-> ip6t_REJECT(U) xt_tcpudp(U) ip6table_filter(U) ip6_tables(U) x_tables(U)
-> ipv6(U) parport_pc(U) lp(U) parport(U) snd_seq_dummy(U) snd_seq_oss(U)
-> snd_seq_midi_event(U) snd_seq(U) snd_seq_device(U) snd_pcm_oss(U)
-> snd_mixer_oss(U) snd_pcm(U) snd_timer(U) snd(U) soundcore(U)
-> snd_page_alloc(U) joydev(U) xen_netfront(U) pcspkr(U) xen_blkfront(U)
-> uhci_hcd(U) ohci_hcd(U) ehci_hcd(U)
-> Pid: 18, comm: events/3 Not tainted 2.6.32
-> RIP: e030:[<ffffffff812a588f>]  [<ffffffff812a588f>]
-> ify_remote_via_irq+0x13/0x34
-> RSP: e02b:ffff8800e7bf7bd0  EFLAGS: 00010202
-> RAX: ffff8800e61c8000 RBX: ffff8800e62f82c0 RCX: 0000000000000000
-> RDX: 00000000000001e3 RSI: ffff8800e7bf7c68 RDI: 0000000bfffffff4
-> RBP: ffff8800e7bf7be0 R08: 00000000000001e2 R09: ffff8800e62f82c0
-> R10: 0000000000000001 R11: ffff8800e6386110 R12: 0000000000000000
-> R13: 0000000000000007 R14: ffff8800e62f82e0 R15: 0000000000000240
-> FS:  00007f409d3906e0(0000) GS:ffff8800028b8000(0000)
-> GS:0000000000000000
-> CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 0000000b819fdb98 CR3: 000000003ee3b000 CR4: 0000000000002660
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process events/3 (pid: 18, threadinfo ffff8800e7bf6000, task
-> f8800e7bf4540)
-> Stack:
->  0000000000000200 ffff8800e61c8000 ffff8800e7bf7c00 ffffffff812712c9
-> <0> ffffffff8100ea5f ffffffff81438d80 ffff8800e7bf7cd0 ffffffff812714ee
-> <0> 0000000000000000 ffffffff81270568 000000000000e030 0000000000010202
-> Call Trace:
->  [<ffffffff812712c9>] xenfb_send_event+0x5c/0x5e
->  [<ffffffff8100ea5f>] ? xen_restore_fl_direct_end+0x0/0x1
->  [<ffffffff81438d80>] ? _spin_unlock_irqrestore+0x16/0x18
->  [<ffffffff812714ee>] xenfb_refresh+0x1b1/0x1d7
->  [<ffffffff81270568>] ? sys_imageblit+0x1ac/0x458
->  [<ffffffff81271786>] xenfb_imageblit+0x2f/0x34
->  [<ffffffff8126a3e5>] soft_cursor+0x1b5/0x1c8
->  [<ffffffff8126a137>] bit_cursor+0x4b6/0x4d7
->  [<ffffffff8100ea5f>] ? xen_restore_fl_direct_end+0x0/0x1
->  [<ffffffff81438d80>] ? _spin_unlock_irqrestore+0x16/0x18
->  [<ffffffff81269c81>] ? bit_cursor+0x0/0x4d7
->  [<ffffffff812656b7>] fb_flashcursor+0xff/0x111
->  [<ffffffff812655b8>] ? fb_flashcursor+0x0/0x111
->  [<ffffffff81071812>] worker_thread+0x14d/0x1ed
->  [<ffffffff81075a8c>] ? autoremove_wake_function+0x0/0x3d
->  [<ffffffff81438d80>] ? _spin_unlock_irqrestore+0x16/0x18
->  [<ffffffff810716c5>] ? worker_thread+0x0/0x1ed
->  [<ffffffff810756e3>] kthread+0x6e/0x76
->  [<ffffffff81012dea>] child_rip+0xa/0x20
->  [<ffffffff81011fd1>] ? int_ret_from_sys_call+0x7/0x1b
->  [<ffffffff8101275d>] ? retint_restore_args+0x5/0x6
->  [<ffffffff81012de0>] ? child_rip+0x0/0x20
-> Code: 6b ff 0c 8b 87 a4 db 9f 81 66 85 c0 74 08 0f b7 f8 e8 3b ff ff ff c9
-> c3 55 48 89 e5 48 83 ec 10 0f 1f 44 00 00 89 ff 48 6b ff 0c <8b> 87 a4 db 9f
-> 81 66 85 c0 74 14 48 8d 75 f0 0f b7 c0 bf 04 00
-> RIP  [<ffffffff812a588f>] notify_remote_via_irq+0x13/0x34
->  RSP <ffff8800e7bf7bd0>
-> CR2: 0000000b819fdb98
-> ---[ end trace 098b4b74827595d0 ]---
+> I would like to have everything from Linus tree + additions from
+> mmotm for example.
+
+Andrew maintains mmotm as a quilt tree AFAIK, though there is some
+initiative to have also a git tree which mirrors it
+(http://lwn.net/Articles/311677/).  Btw. mmotm contains Linus tree (from
+certain point of time).
+
+Anyway, you can add what-ever git tree as a new remote. This basically
+means that you can fetch commits from that tree into your local git
+"database" and checkout out any of them as a branch (please note that if
+the remote shares commits with your trees then you commit just the
+additional ones). 
+
+If you add a remote it doesn't mean that you stack that tree on top of
+the original one. It is all just about commits which have their parents
+so they form a history (very roughtly). You will find more about remotes
+here: http://progit.org/book/ch2-5.html.
+
+> Regards,
 > 
-> The root cause of the panic is try to refresh xenfb when suspend/resume.
-
-perhaps work "... between the resume and reconnecting to the backend."
-into that sentence somewhere.
-
-> Clear refresh flag of xenfb before disconnect backend would fix this issue.
-
-s/refresh/update_wanted/
-
-> Also below patch will fixed mem leak when connect to xenfb backend failed.
+> Piotr Hosowicz
 > 
-> Please review and comment.
-> 
-> Signed-off-by: Joe Jin <joe.jin@oracle.com>
-> Tested-by: Gurudas Pai <gurudas.pai@oracle.com>
+> -- 
+> Z cyklu "Uroki demokracji", czyli pytania i odpowiedzi w teledurniejach:
+> - Jak d?ugo trwa?a wojna sze?ciodniowa mi?dzy Izraelem a Egiptem?
+> - (po d?u?szym namy?le): Czterna?cie dni.
+> NP: Peter Green Splinter Group - Big Change Is Gonna Come
+> NB: 2.6.37
 
-Looks good. But please separate the mem leak fix into its own patch, it
-has nothing to do with this crash (hiding a 1 line fix for a crash in
-amongst 30 lines of something else does nobody any favours, as the
-length of this thread testifies).
-
-You can add
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-to the xenfb_disconnect_backend change once you've split it out.
-
-I have some further comments on the xenfb_connect_backend change below.
-
-> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> 
-> ---
->  xen-fbfront.c |   21 +++++++++++++--------
->  1 file changed, 13 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/video/xen-fbfront.c b/drivers/video/xen-fbfront.c
-> index dc72563..6f23797 100644
-> --- a/drivers/video/xen-fbfront.c
-> +++ b/drivers/video/xen-fbfront.c
-> @@ -561,26 +561,24 @@ static void xenfb_init_shared_page(struct xenfb_info *info,
->  static int xenfb_connect_backend(struct xenbus_device *dev,
->  				 struct xenfb_info *info)
->  {
-> -	int ret, evtchn;
-> +	int ret, evtchn, irq;
->  	struct xenbus_transaction xbt;
->  
->  	ret = xenbus_alloc_evtchn(dev, &evtchn);
->  	if (ret)
->  		return ret;
-> -	ret = bind_evtchn_to_irqhandler(evtchn, xenfb_event_handler,
-> +	irq = bind_evtchn_to_irqhandler(evtchn, xenfb_event_handler,
->  					0, dev->devicetype, info);
-> -	if (ret < 0) {
-> +	if (irq < 0) {
->  		xenbus_free_evtchn(dev, evtchn);
->  		xenbus_dev_fatal(dev, ret, "bind_evtchn_to_irqhandler");
-> -		return ret;
-> +		return irq;
->  	}
-> -	info->irq = ret;
-> -
->   again:
->  	ret = xenbus_transaction_start(&xbt);
->  	if (ret) {
->  		xenbus_dev_fatal(dev, ret, "starting transaction");
-> -		return ret;
-> +		goto unbind_irq;
->  	}
->  	ret = xenbus_printf(xbt, dev->nodename, "page-ref", "%lu",
->  			    virt_to_mfn(info->page));
-> @@ -602,20 +600,27 @@ static int xenfb_connect_backend(struct xenbus_device *dev,
->  		if (ret == -EAGAIN)
->  			goto again;
->  		xenbus_dev_fatal(dev, ret, "completing transaction");
-> -		return ret;
-> +		goto unbind_irq;
->  	}
->  
->  	xenbus_switch_state(dev, XenbusStateInitialised);
-> +	info->irq = irq;
->  	return 0;
->  
->   error_xenbus:
->  	xenbus_transaction_end(xbt, 1);
->  	xenbus_dev_fatal(dev, ret, "writing xenstore");
-> + unbind_irq:
-> +	printk(KERN_ERR "xenfb_connect_backend failed!\n");
-
-If anything this should be xenbus_dev_BLAH(). However all the places
-which "goto unbind_irq" already include a xenbus_dev_fatal with more
-specific context information and so does the case which falls through
-from error_xenbus so I think this new message is redundant.
-
-> +	unbind_from_irqhandler(irq, info);
-> +	xenbus_free_evtchn(dev, evtchn);
-
-unbind_from_irqhandler will also close the event channel for you so the
-call to xenbus_free_evtchn is not necessary here.
-
-Thanks,
-Ian.
-
+-- 
+Michal Hocko
+L3 team 
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
