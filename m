@@ -1,177 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543Ab1AGJra (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 04:47:30 -0500
-Received: from rtitmf2.realtek.com ([60.250.210.236]:2976 "EHLO
-	mf2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754417Ab1AGJr1 (ORCPT
+	id S1754573Ab1AGJs2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 04:48:28 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:43936 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754450Ab1AGJsZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 04:47:27 -0500
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH] net/r8169: Update the function of parsing firmware
-Date: Fri, 7 Jan 2011 17:45:09 +0800
-Message-ID: <1294393509-3492-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.7.3.2
+	Fri, 7 Jan 2011 04:48:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=VBNoQvOGd8XYbXTxNojeqzZnJ73atr1C6UofoAj9zCNbqQTcpEpp+j31v5Eby6BqkC
+         A9zcOOh1rA+4bFPInTeG26S49UyuqKsOeOJRVhyVS+c+t14DbOm+cHo1mC/dgsIRztdF
+         d39Pu0PEYB1oer0MJZr/nvr2Xs6/Eh433OTnE=
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <alpine.LNX.2.00.1101071040470.26685@pobox.suse.cz>
+References: <1294248468-19979-1-git-send-email-benjamin.tissoires@enac.fr>
+	<20110105174927.GB2146@polaris.bitmath.org>
+	<AANLkTikCqufvOgYqqBZLjfmtSdsgyQV4L2HyvEP07+vf@mail.gmail.com>
+	<alpine.LNX.2.00.1101061610270.26685@pobox.suse.cz>
+	<20110107011444.GA7262@core.coreip.homeip.net>
+	<alpine.LNX.2.00.1101071040470.26685@pobox.suse.cz>
+Date: Fri, 7 Jan 2011 10:48:24 +0100
+X-Google-Sender-Auth: lUm9wfSCIgb4YyqqSGpiSBaaFZc
+Message-ID: <AANLkTik7--frFi=9avRMeBHAdrOm+YvvGG-FURKy0JX4@mail.gmail.com>
+Subject: Re: [RFC v2 0/10] hid-multitouch: a first step towards multitouch unification
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update rtl_phy_write_fw function. The new function could
-parse the complex firmware which is used by RTL8111E and later.
-The new firmware may read data and do some operations, not just
-do writing only.
+On Fri, Jan 7, 2011 at 10:41 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Thu, 6 Jan 2011, Dmitry Torokhov wrote:
+>
+>> > In case the patchset doesn't impose danger of regressions for already
+>> > existing devices, we could merge this new 'unified' driver only for newly
+>> > supported devices, and finish the unification in 2.6.39.
+>>
+>> Yep, let's merge the dirver and all new devices in this round and then
+>> get ready to convert already supported devices in next window.
+>
+> Fully agreed, as I have written elsewhere already.
+>
+> Benjamin, when do you expect to have the patches for .38 ready? The merge
+> window is already open, so that I could schedule the merges properly.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/r8169.c |  112 ++++++++++++++++++++++++++++++++++++++++++++-------
- 1 files changed, 97 insertions(+), 15 deletions(-)
+I'm doing my best to have the v3 today with only the 3 new devices.
+After, we may have to find a consensus for the not ideal
+implementation.
 
-diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
-index 27a7c20..2115424 100644
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -1632,39 +1632,121 @@ rtl_phy_write_fw(struct rtl8169_private *tp, const struct firmware *fw)
- {
- 	__le32 *phytable = (__le32 *)fw->data;
- 	struct net_device *dev = tp->dev;
--	size_t i;
-+	size_t index;
-+	u32 predata, count;
- 
- 	if (fw->size % sizeof(*phytable)) {
--		netif_err(tp, probe, dev, "odd sized firmware %zd\n", fw->size);
-+		netif_err(tp, probe, dev, "odd sized firmware %zd\n",
-+			  fw->size);
- 		return;
- 	}
- 
--	for (i = 0; i < fw->size / sizeof(*phytable); i++) {
--		u32 action = le32_to_cpu(phytable[i]);
-+	for (index = 0; index < fw->size / sizeof(*phytable); index++) {
-+		u32 action = le32_to_cpu(phytable[index]);
- 
--		if (!action)
-+		switch(action & 0xF0000000) {
-+		case PHY_READ:
-+		case PHY_DATA_OR:
-+		case PHY_DATA_AND:
-+		case PHY_BJMPN:
-+		case PHY_READ_EFUSE:
-+		case PHY_CLEAR_READCOUNT:
-+		case PHY_WRITE:
-+		case PHY_READCOUNT_EQ_SKIP:
-+		case PHY_COMP_EQ_SKIPN:
-+		case PHY_COMP_NEQ_SKIPN:
-+		case PHY_WRITE_PREVIOUS:
-+		case PHY_SKIPN:
-+		case PHY_DELAY_MS:
- 			break;
- 
--		if ((action & 0xf0000000) != PHY_WRITE) {
--			netif_err(tp, probe, dev,
--				  "unknown action 0x%08x\n", action);
-+		case PHY_READ_MAC_BYTE:
-+		case PHY_WRITE_MAC_BYTE:
-+		case PHY_WRITE_ERI_WORD:
-+		default:
-+			netif_err(tp, probe, tp->dev,
-+				  "Invalid action 0x%08x\n", action);
- 			return;
- 		}
- 	}
- 
--	while (i-- != 0) {
--		u32 action = le32_to_cpu(*phytable);
--		u32 data = action & 0x0000ffff;
--		u32 reg = (action & 0x0fff0000) >> 16;
-+	predata = 0;
-+	count = 0;
-+
-+	for (index = 0; index < fw->size / sizeof(*phytable); ) {
-+		u32 action = le32_to_cpu(phytable[index]);
-+		u32 data = action & 0x0000FFFF;
-+		u32 regno = (action & 0x0FFF0000) >> 16;
-+
-+		if (!action)
-+			break;
- 
--		switch(action & 0xf0000000) {
-+		switch(action & 0xF0000000) {
-+		case PHY_READ:
-+			predata = rtl_readphy(tp, regno);
-+			count++;
-+			index++;
-+			break;
-+		case PHY_DATA_OR:
-+			predata |= data;
-+			index++;
-+			break;
-+		case PHY_DATA_AND:
-+			predata &= data;
-+			index++;
-+			break;
-+		case PHY_BJMPN:
-+			index -= regno;
-+			break;
-+		case PHY_READ_EFUSE:
-+			predata = rtl8168d_efuse_read(tp->mmio_addr, regno);
-+			index++;
-+			break;
-+		case PHY_CLEAR_READCOUNT:
-+			count = 0;
-+			index++;
-+			break;
- 		case PHY_WRITE:
--			rtl_writephy(tp, reg, data);
--			phytable++;
-+			rtl_writephy(tp, regno, data);
-+			index++;
-+			break;
-+		case PHY_READCOUNT_EQ_SKIP:
-+			if (count == data)
-+				index += 2;
-+			else
-+				index += 1;
-+			break;
-+		case PHY_COMP_EQ_SKIPN:
-+			if (predata == data)
-+				index += regno;
-+			index++;
-+			break;
-+		case PHY_COMP_NEQ_SKIPN:
-+			if (predata != data)
-+				index += regno;
-+			index++;
-+			break;
-+		case PHY_WRITE_PREVIOUS:
-+			rtl_writephy(tp, regno, predata);
-+			index++;
- 			break;
-+		case PHY_SKIPN:
-+			index += regno + 1;
-+			break;
-+		case PHY_DELAY_MS:
-+			mdelay(data);
-+			index++;
-+			break;
-+
-+		case PHY_READ_MAC_BYTE:
-+		case PHY_WRITE_MAC_BYTE:
-+		case PHY_WRITE_ERI_WORD:
- 		default:
- 			BUG();
- 		}
-+
-+		if (index < 0)
-+			BUG();
- 	}
- }
- 
--- 
-1.7.3.2
+Cheers,
+Benjamin
 
+
+>
+> Thanks,
+>
+> --
+> Jiri Kosina
+> SUSE Labs, Novell Inc.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
