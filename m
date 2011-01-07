@@ -1,53 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519Ab1AGUJr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 15:09:47 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:44477 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752552Ab1AGUJq (ORCPT
+	id S1755458Ab1AGUKx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 15:10:53 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:39266 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552Ab1AGUKw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 15:09:46 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 7 Jan 2011 21:08:50 +0100
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Stephane Chatty <chatty@enac.fr>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC v3 0/5] hid-multitouch: a first step towards multitouch
- unification
-Message-ID: <20110107200850.GE29913@polaris.bitmath.org>
-References: <1294425762-29730-1-git-send-email-benjamin.tissoires@enac.fr>
+	Fri, 7 Jan 2011 15:10:52 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Eric Paris <eparis@parisplace.org>
+Cc: Amerigo Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org, eparis@redhat.com
+References: <1294302325-22593-1-git-send-email-amwang@redhat.com>
+	<m1bp3uifln.fsf@fess.ebiederm.org>
+	<AANLkTinLhAuSny735kofonAkaqwJvjjDHMUed_r03rVc@mail.gmail.com>
+Date: Fri, 07 Jan 2011 12:10:44 -0800
+In-Reply-To: <AANLkTinLhAuSny735kofonAkaqwJvjjDHMUed_r03rVc@mail.gmail.com>
+	(Eric Paris's message of "Thu, 6 Jan 2011 14:02:47 -0500")
+Message-ID: <m1k4igjwzf.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294425762-29730-1-git-send-email-benjamin.tissoires@enac.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.248.200.95
-X-Scan-Result: No virus found in message 1PbIcE-0003ni-Cc.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PbIcE-0003ni-Cc 18b3ec2d0fd8c029e5036521b9276baf
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19H4/ZA2IExXPvxXw7t4DuwoZOzDDSRhMo=
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Eric Paris <eparis@parisplace.org>
+X-Spam-Relay-Country: 
+Subject: Re: [Patch] kexec_load: check CAP_SYS_MODULE
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+Eric Paris <eparis@parisplace.org> writes:
 
-> here is the v3.
-> 
-> all changes are coming from the mails with Henrik:
-> 
-> - restricted to new drivers only
-> - delete mt_buffer struct
-> - replace/adapt prev_valid in favor of seen_in_this_frame
-> - integrated fuzz
-> - introduce MT_QUIRKS
-> - other small fixes
+> On Thu, Jan 6, 2011 at 3:47 AM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>> Amerigo Wang <amwang@redhat.com> writes:
+>>
+>>> Eric pointed out that kexec_load() actually allows you to
+>>> run any code you want in ring0, this is more like CAP_SYS_MODULE.
+>>
+>> Let me get this straight you want to make the permission checks
+>> less stringent by allowing either CAP_SYS_MODULE or CAP_SYS_BOOT?
+>
+> Nope, read my patch again.  It actually requires BOTH of them.
 
-A lot of progress in one day - thank you very much for making the
-changes. I will be online for quite a bit longer in case there is more
-coming this way. With some testing over the weekend (I will be
-traveling, sorry), it doesn't look impossible to have this ready early
-next week.
+Ah right.  Testing the negative and going to -EPERM.
 
-Cheers,
-Henrik
+>> CAP_SYS_BOOT is the correct capability.  Sure you can run any
+>> code but only after rebooting.  I don't see how this differs
+>> from any other reboot scenario.
+>
+> The difference is that after a reboot the bootloader and the system
+> control what code is run.  kexec_load() immediately runs the new
+> kernel which is not controlled by the bootloader or by the system.
+> Imagine a situation where the bootloader and the /boot directory are
+> RO (enforced by hardware).   kexec_load() would let you run any kernel
+> code you want on the box whereas reboot would not.
+
+The scenario is imaginable (not common but imaginable) but I don't see
+how requiring CAP_SYS_MODULE makes anything better.
+
+If I was building a configuration where I didn't want anyone to be able
+to direct the kernel into a different state by locking down the
+bootloaders I expect I would compile out the syscall as well.
+
+Most bootloaders have the option of booting something else the mechanism
+is just different. I really don't see what the addition of
+CAP_SYS_MODULE gains you.
+
+Right now CAP_SYS_BOOT still makes sense to me and CAP_SYS_MODULE stills
+seems like nonsense in this context.
+
+Eric
