@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883Ab1AGCad (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Jan 2011 21:30:33 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:47270 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752386Ab1AGCab (ORCPT
+	id S1755395Ab1AGCfW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Jan 2011 21:35:22 -0500
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:13352 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753209Ab1AGCfT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Jan 2011 21:30:31 -0500
-Subject: Re: [PATCH 12/12] [RFC] Introduce Alarm (hybrid) timers
-From: John Stultz <john.stultz@linaro.org>
-To: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-Cc: linux-kernel@vger.kernel.org, Brian Swetland <swetland@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>, rjw@sisk.pl
-In-Reply-To: <AANLkTin8cntsFpaikpfzPbWL1YFb702rPync240X4axW@mail.gmail.com>
-References: <1294280159-2513-1-git-send-email-john.stultz@linaro.org>
-	 <1294280159-2513-13-git-send-email-john.stultz@linaro.org>
-	 <AANLkTi=i9bnAz9FoB_Q1u4pTOwpBCTHK4S21iukZWBpF@mail.gmail.com>
-	 <1294337041.4518.87.camel@work-vm>
-	 <AANLkTin8cntsFpaikpfzPbWL1YFb702rPync240X4axW@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 06 Jan 2011 18:30:20 -0800
-Message-ID: <1294367420.4518.171.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 6 Jan 2011 21:35:19 -0500
+From: David Daney <ddaney@caviumnetworks.com>
+To: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Cc: David Daney <ddaney@caviumnetworks.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+Subject: [PATCH 0/6] MIPS: perf: Make perf work for 64-bit/Octeon counters.
+Date: Thu,  6 Jan 2011 18:35:01 -0800
+Message-Id: <1294367707-2593-1-git-send-email-ddaney@caviumnetworks.com>
+X-Mailer: git-send-email 1.7.2.3
+X-OriginalArrivalTime: 07 Jan 2011 02:35:19.0469 (UTC) FILETIME=[86855DD0:01CBAE13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-06 at 16:58 -0800, Arve Hjønnevåg wrote:
-> 2011/1/6 John Stultz <john.stultz@linaro.org>:
-> > So otherwise, do you see any reason why android might not be able to
-> > adapt this code to replace the android alarm timers?
-> >
-> 
-> The user-space interface does not look appealing, but I don't see any
-> reason why the in-kernel interface(s) cannot be shared. Our user-space
-> code has a single thread that waits for alarms to trigger, while the
-> alarms can be modified from any thread.
+The existing MIPS perf hardware counter support only handles 32-bit
+wide counters.  Some CPUs (like Octeon) have the 64-bit wide variety.
+This patch set allows perf to work on Octeon, and I hope not break
+existing systems.  I have not tested it on non-Octeon systems, so it
+would be good if someone could test that.
 
-So its something like nanosleep(), only other threads can extend or
-shorten the sleep time?
+Summary of the patches:
 
-Could you explain some of the rational for such an interface, so I can
-better understand the need?
+1) Fix faulty Octeon interrupt controller code.
 
->  As far as I can tell, using
-> the posix interface would either require a thread per alarm (up to 5)
-> or using signals. Both make the user-space code more complicated, and
+2) Add some register definitions.
 
-Yea, it probably would need signals, but I'd have to grok the use case a
-little better. And its possible it would complicate the user-space code
-some, but on the other hand, it would be using a more standard kernel
-interface. The other option is extending the posix interface to try to
-better match the need.
+3,4) Clean up existing code.
 
-> it is not clear if either of them provide a clear hand-off between
-> where the kernel needs to block suspend because the alarm has not been
-> delivered to user-space and where user-space needs to block suspend
-> because it is handling the alarm.
+5) 64-bit perf counter support.
 
-Indeed. I'm still looking into the pm_wake details to see the
-limitations there. Some method of inheriting a stay_awake seems to be
-needed, but sounds pretty ugly. Alternatively we may need some method or
-callback to the kernel to detect that a signal has been handled by
-userland (allowing the pm_relax to occur).
+6) Octeon perf event bindings.
 
-Rafael: Any thoughts here?
+Patch 4/6 is the biggest and has the highest chance of having broken
+something.
 
-thanks
--john
+This patch set depends on a couple of others that have previously been
+sent to Ralf:
 
+http://patchwork.linux-mips.org/patch/1927/
+http://patchwork.linux-mips.org/patch/1850/
+http://patchwork.linux-mips.org/patch/1851/
+http://patchwork.linux-mips.org/patch/1852/
+http://patchwork.linux-mips.org/patch/1853/
+http://patchwork.linux-mips.org/patch/1854/
+
+David Daney (6):
+  MIPS: Octeon: Enable per-CPU IRQs on all CPUs.
+  MIPS: Add accessor macros for 64-bit performance counter registers.
+  MIPS: perf: Cleanup formatting in arch/mips/kernel/perf_event.c
+  MIPS: perf: Reorganize contents of perf support files.
+  MIPS: perf: Add support for 64-bit perf counters.
+  MIPS: perf: Add Octeon support for hardware perf.
+
+ arch/mips/Kconfig                    |    2 +-
+ arch/mips/cavium-octeon/octeon-irq.c |   30 +-
+ arch/mips/cavium-octeon/smp.c        |   10 +
+ arch/mips/include/asm/mipsregs.h     |    8 +
+ arch/mips/kernel/Makefile            |    5 +-
+ arch/mips/kernel/perf_event.c        |  521 +--------------
+ arch/mips/kernel/perf_event_mipsxx.c | 1265 +++++++++++++++++++++++++---------
+ 7 files changed, 977 insertions(+), 864 deletions(-)
+
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+-- 
+1.7.2.3
 
