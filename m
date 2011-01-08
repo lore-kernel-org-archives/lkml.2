@@ -1,139 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460Ab1AHL6W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 06:58:22 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50347 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752284Ab1AHL6U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 06:58:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type;
-        b=BoUeJ390Yu9YLOEpkgjgMjklH5A48K5bLriH+xuUYU6onEW9olmBoL+GINmQtrQXPo
-         jTTU9PGEc/XKlcHDG3qY8MSAXSjYDGYYVGVGmv4/kk18ujsEK9ENqnBYnWmjCYCwYhY/
-         l/3zkK/f8rID38WLYUIZhraYHfmZH9zaNiyoM=
-Message-ID: <4D285158.1080804@gmail.com>
-Date: Sat, 08 Jan 2011 06:58:16 -0500
-From: William Allen Simpson <william.allen.simpson@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S1751640Ab1AHMFm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 07:05:42 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:41743 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750934Ab1AHMFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jan 2011 07:05:39 -0500
+From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
+To: "Arnd Bergmann" <arnd@arndb.de>, <linux-arch@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] asm-generic headers: add sizes.h
+Date: Sat, 8 Jan 2011 20:05:34 +0800
+Message-ID: <023e01cbaf2c$5b8fbe80$12af3b80$@mprc.pku.edu.cn>
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Eric Dumazet <eric.dumazet@gmail.com>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [058/152] tcp: protect sysctl_tcp_cookie_size reads
-References: <20110106002302.141581701@clark.site>	<4D2691D4.3060304@gmail.com>	<1294389025.2704.95.camel@edumazet-laptop>	<4D270F85.9070705@gmail.com> <AANLkTinkmnVLi7NrKsK50MBsycyYhyvEdtm01NA9ubOX@mail.gmail.com>
-In-Reply-To: <AANLkTinkmnVLi7NrKsK50MBsycyYhyvEdtm01NA9ubOX@mail.gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------080802060801050500010402"
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AcuvK35HsoGITnJNQzK9CY+jEFYQOA==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080802060801050500010402
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 
-On 1/7/11 8:36 AM, Pekka Enberg wrote:
-> On Fri, Jan 7, 2011 at 3:05 PM, William Allen Simpson
-> <william.allen.simpson@gmail.com>  wrote:
->> My instructors would have flunked me for not including braces around
->> multi-line sequences; it was one of the great no-no's of the '70s.  Perhaps
->> that's not the case anymore with modern colorful visual syntax checkers?
->
-> That's because your instructors hadn't read Documentation/CodingStyle
-> which didn't appear until the '90s.
->
-Hi, Pekka.
+ This patch adds sizes.h into asm-generic headers.
+ Only 32-bit version supported.
 
-OTOH, I *have* read Documentation/CodingStyle a cople year back, and then
-re-checked it again today....  Out of curiosity, as I haven't done a Linux
-patch in many months, I cloned linux-2.6 and checked out v2.6.36-rc8 (I don't
-know where 2.6.36-stable is kept).
+Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+--- 
+ include/asm-generic/sizes.h |   47 +++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 47 insertions(+), 0 deletions(-)
 
-Note this patch is cleaner and more readable; lines that are changed have
-one-to-one correspondence.
-
-Eric was *not* *truthful* saying there were "checkpatch.pl errors/warnings" in
-my code.
-
-===
-
-scripts/checkpatch.pl ~/sysctl_tcp_cookie_size-read-once.patch
-total: 0 errors, 0 warnings, 36 lines checked
-
-/home/test/sysctl_tcp_cookie_size-read-once.patch has no obvious style
-problems and is ready for submission.
-
---------------080802060801050500010402
-Content-Type: text/plain; x-mac-type="54455854"; x-mac-creator="0";
- name="sysctl_tcp_cookie_size-read-once.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="sysctl_tcp_cookie_size-read-once.patch"
-
->From bd6f04cbee4c924e07cf3a1819a24acc3cc2490b Mon Sep 17 00:00:00 2001
-From: William Allen Simpson <william.allen.simpson@gmail.com>
-Date: Sat, 8 Jan 2011 05:58:21 -0500
-Subject: [PATCH] sysctl_tcp_cookie_size read once
-
-Read sysctl_tcp_cookie_size only once in tcp_cookie_size_check(),
-as it might be concurrently changed by another cpu.
-
-Signed-off-by: William.Allen.Simpson@gmail.com
----
- net/ipv4/tcp_output.c |   15 +++++++++------
- 1 files changed, 9 insertions(+), 6 deletions(-)
-
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index de3bd84..49be4e3 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -392,27 +392,30 @@ struct tcp_out_options {
-  */
- static u8 tcp_cookie_size_check(u8 desired)
- {
-+	int cookie_size;
+diff --git a/include/asm-generic/sizes.h b/include/asm-generic/sizes.h
+new file mode 100644
+index 0000000..ea5d4ef
+--- /dev/null
++++ b/include/asm-generic/sizes.h
+@@ -0,0 +1,47 @@
++/*
++ * linux/include/asm-generic/sizes.h
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#ifndef __ASM_GENERIC_SIZES_H__
++#define __ASM_GENERIC_SIZES_H__
 +
- 	if (desired > 0) {
- 		/* previously specified */
- 		return desired;
- 	}
--	if (sysctl_tcp_cookie_size <= 0) {
-+	cookie_size = ACCESS_ONCE(sysctl_tcp_cookie_size);
-+	if (cookie_size <= 0) {
- 		/* no default specified */
- 		return 0;
- 	}
--	if (sysctl_tcp_cookie_size <= TCP_COOKIE_MIN) {
-+	if (cookie_size <= TCP_COOKIE_MIN) {
- 		/* value too small, specify minimum */
- 		return TCP_COOKIE_MIN;
- 	}
--	if (sysctl_tcp_cookie_size >= TCP_COOKIE_MAX) {
-+	if (cookie_size >= TCP_COOKIE_MAX) {
- 		/* value too large, specify maximum */
- 		return TCP_COOKIE_MAX;
- 	}
--	if (0x1 & sysctl_tcp_cookie_size) {
-+	if (cookie_size & 0x1) {
- 		/* 8-bit multiple, illegal, fix it */
--		return (u8)(sysctl_tcp_cookie_size + 0x1);
-+		cookie_size += 0x1;
- 	}
--	return (u8)sysctl_tcp_cookie_size;
-+	return (u8)cookie_size;
- }
- 
- /* Write previously computed TCP options to the packet.
--- 
-1.7.1
++#define SZ_1				0x00000001
++#define SZ_2				0x00000002
++#define SZ_4				0x00000004
++#define SZ_8				0x00000008
++#define SZ_16				0x00000010
++#define SZ_32				0x00000020
++#define SZ_64				0x00000040
++#define SZ_128				0x00000080
++#define SZ_256				0x00000100
++#define SZ_512				0x00000200
++
++#define SZ_1K				0x00000400
++#define SZ_2K				0x00000800
++#define SZ_4K				0x00001000
++#define SZ_8K				0x00002000
++#define SZ_16K				0x00004000
++#define SZ_32K				0x00008000
++#define SZ_64K				0x00010000
++#define SZ_128K				0x00020000
++#define SZ_256K				0x00040000
++#define SZ_512K				0x00080000
++
++#define SZ_1M				0x00100000
++#define SZ_2M				0x00200000
++#define SZ_4M				0x00400000
++#define SZ_8M				0x00800000
++#define SZ_16M				0x01000000
++#define SZ_32M				0x02000000
++#define SZ_64M				0x04000000
++#define SZ_128M				0x08000000
++#define SZ_256M				0x10000000
++#define SZ_512M				0x20000000
++
++#define SZ_1G				0x40000000
++#define SZ_2G				0x80000000
++
++#endif /* __ASM_GENERIC_SIZES_H__ */
 
-
---------------080802060801050500010402--
