@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751640Ab1AHMFm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 07:05:42 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:41743 "EHLO mprc.pku.edu.cn"
+	id S1751737Ab1AHMHX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 07:07:23 -0500
+Received: from hera.kernel.org ([140.211.167.34]:58332 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750934Ab1AHMFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 07:05:39 -0500
-From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
-To: "Arnd Bergmann" <arnd@arndb.de>, <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] asm-generic headers: add sizes.h
-Date: Sat, 8 Jan 2011 20:05:34 +0800
-Message-ID: <023e01cbaf2c$5b8fbe80$12af3b80$@mprc.pku.edu.cn>
+	id S1750934Ab1AHMHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jan 2011 07:07:21 -0500
+Date: Sat, 8 Jan 2011 12:06:49 GMT
+From: tip-bot for Rakib Mullick <rakib.mullick@gmail.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        rakib.mullick@gmail.com, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
+        sandmann@redhat.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, rakib.mullick@gmail.com, a.p.zijlstra@chello.nl,
+        sandmann@redhat.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <AANLkTik9U_Z0WSZ7YjrykER_pBUfPDdgUUmtYx=R74nL@mail.gmail.com>
+References: <AANLkTik9U_Z0WSZ7YjrykER_pBUfPDdgUUmtYx=R74nL@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] x86, dumpstack: Fix unused variable warning
+Message-ID: <tip-39a6eebda253aa34d659ca9436e3c32ef60473f1@git.kernel.org>
+Git-Commit-ID: 39a6eebda253aa34d659ca9436e3c32ef60473f1
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AcuvK35HsoGITnJNQzK9CY+jEFYQOA==
-Content-Language: zh-cn
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 08 Jan 2011 12:06:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+Commit-ID:  39a6eebda253aa34d659ca9436e3c32ef60473f1
+Gitweb:     http://git.kernel.org/tip/39a6eebda253aa34d659ca9436e3c32ef60473f1
+Author:     Rakib Mullick <rakib.mullick@gmail.com>
+AuthorDate: Fri, 7 Jan 2011 16:59:49 +0100
+Committer:  Frederic Weisbecker <fweisbec@gmail.com>
+CommitDate: Fri, 7 Jan 2011 16:59:49 +0100
 
- This patch adds sizes.h into asm-generic headers.
- Only 32-bit version supported.
+x86, dumpstack: Fix unused variable warning
 
-Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
---- 
- include/asm-generic/sizes.h |   47 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 47 insertions(+), 0 deletions(-)
+In dump_stack function, bp isn't used anymore, which is introduced by
+commit 9c0729dc8062bed96189bd14ac6d4920f3958743. This patch removes bp
+completely.
 
-diff --git a/include/asm-generic/sizes.h b/include/asm-generic/sizes.h
-new file mode 100644
-index 0000000..ea5d4ef
---- /dev/null
-+++ b/include/asm-generic/sizes.h
-@@ -0,0 +1,47 @@
-+/*
-+ * linux/include/asm-generic/sizes.h
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __ASM_GENERIC_SIZES_H__
-+#define __ASM_GENERIC_SIZES_H__
-+
-+#define SZ_1				0x00000001
-+#define SZ_2				0x00000002
-+#define SZ_4				0x00000004
-+#define SZ_8				0x00000008
-+#define SZ_16				0x00000010
-+#define SZ_32				0x00000020
-+#define SZ_64				0x00000040
-+#define SZ_128				0x00000080
-+#define SZ_256				0x00000100
-+#define SZ_512				0x00000200
-+
-+#define SZ_1K				0x00000400
-+#define SZ_2K				0x00000800
-+#define SZ_4K				0x00001000
-+#define SZ_8K				0x00002000
-+#define SZ_16K				0x00004000
-+#define SZ_32K				0x00008000
-+#define SZ_64K				0x00010000
-+#define SZ_128K				0x00020000
-+#define SZ_256K				0x00040000
-+#define SZ_512K				0x00080000
-+
-+#define SZ_1M				0x00100000
-+#define SZ_2M				0x00200000
-+#define SZ_4M				0x00400000
-+#define SZ_8M				0x00800000
-+#define SZ_16M				0x01000000
-+#define SZ_32M				0x02000000
-+#define SZ_64M				0x04000000
-+#define SZ_128M				0x08000000
-+#define SZ_256M				0x10000000
-+#define SZ_512M				0x20000000
-+
-+#define SZ_1G				0x40000000
-+#define SZ_2G				0x80000000
-+
-+#endif /* __ASM_GENERIC_SIZES_H__ */
+Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: Soeren Sandmann <sandmann@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: H. Peter Anvin <hpa@zytor.com>
+LKML-Reference: <AANLkTik9U_Z0WSZ7YjrykER_pBUfPDdgUUmtYx=R74nL@mail.gmail.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ arch/x86/kernel/dumpstack.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index 8474c99..d6fb146 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -197,14 +197,8 @@ void show_stack(struct task_struct *task, unsigned long *sp)
+  */
+ void dump_stack(void)
+ {
+-	unsigned long bp = 0;
+ 	unsigned long stack;
+ 
+-#ifdef CONFIG_FRAME_POINTER
+-	if (!bp)
+-		get_bp(bp);
+-#endif
+-
+ 	printk("Pid: %d, comm: %.20s %s %s %.*s\n",
+ 		current->pid, current->comm, print_tainted(),
+ 		init_utsname()->release,
