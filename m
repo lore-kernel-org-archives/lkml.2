@@ -1,93 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab1AHAj5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 19:39:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6265 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752202Ab1AHAj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 19:39:56 -0500
-Subject: Re: [Patch] kexec_load: check CAP_SYS_MODULE
-From: Eric Paris <eparis@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Amerigo Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
-        kexec@lists.infradead.org
-In-Reply-To: <m18vywh1g7.fsf@fess.ebiederm.org>
-References: <1294302325-22593-1-git-send-email-amwang@redhat.com>
-	 <m1bp3uifln.fsf@fess.ebiederm.org>
-	 <AANLkTinLhAuSny735kofonAkaqwJvjjDHMUed_r03rVc@mail.gmail.com>
-	 <m1k4igjwzf.fsf@fess.ebiederm.org>
-	 <1294432333.3237.107.camel@localhost.localdomain>
-	 <m18vywh1g7.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 Jan 2011 19:39:49 -0500
-Message-ID: <1294447189.3237.132.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752744Ab1AHAwH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 19:52:07 -0500
+Received: from netnation.com ([204.174.223.2]:51806 "EHLO peace.netnation.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751649Ab1AHAwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 19:52:04 -0500
+Date: Fri, 7 Jan 2011 16:52:03 -0800
+From: Simon Kirby <sim@hostway.ca>
+To: Mark Moseley <moseleymark@gmail.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: System CPU increasing on idle 2.6.36
+Message-ID: <20110108005203.GD24433@hostway.ca>
+References: <20101208212505.GA18192@hostway.ca> <20101218010801.GE28367@hostway.ca> <20101229220313.GA13688@hostway.ca> <AANLkTinq074Q-B=5B4_aXuBm-3ELwGknsJv+OvS1z1OX@mail.gmail.com> <20110104214008.GH27727@hostway.ca> <AANLkTim6HoN5+m180-Du+oda+6N49qSaGga6ktMPV4U4@mail.gmail.com> <AANLkTinLsREtOqNGW2j5m0UYros1AgTu953JHjjJZ-F+@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinLsREtOqNGW2j5m0UYros1AgTu953JHjjJZ-F+@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-07 at 13:02 -0800, Eric W. Biederman wrote:
-> Eric Paris <eparis@redhat.com> writes:
+On Fri, Jan 07, 2011 at 10:05:39AM -0800, Mark Moseley wrote:
 
-> Yes I am aware of the crazy game that is called approved kernels.  Where
-> there are too many regressions for people to trust new kernel releases
-> but people want to change the kernel and the setup from what was tested
-> and still have the stamp of approval anyway.  Financially it seems to
-> make people money, but as best I can tell that game is ultimately what
-> killed unix.
-
-I don't believe this is a particularly relevant line of conversion and
-should probably drop it, but I can't completely leave it alone.  We
-obviously have a very different understanding of what concerning the
-unix wars brought about its death.  I'd think it obvious that the very
-fact that this conversation is taking place shows that the exact
-opposite of the unix wars problems are being seen here.  You clearly
-have personal opinions about the benefits of custom built kernels, but
-they are not the opinions of the vast majority of linux users.  I rarely
-run disto kernels and I'm sure few on lkml do, but it doesn't change the
-fact that most users, especially large IT environments, require system
-standardization.  I hope to address the needs of this portion of the
-linux community even if you might wish they functioned differently.
-
-> In this instance you seem to be redefining CAP_SYS_MODULE and
-> CAP_SYS_REBOOT so you can play that game.
-
-Clearly I am refining the meaning of both in some way.  Personally I
-think the current differentiation is wrong.
-
-> > Maybe I didn't make it clear how this is going to be used.  I plan to
-> > drop CAP_SYS_MODULE to stop root from loading their own modules and
-> > running their own code in the kernel.  I can control reboot() since I
-> > control the platform and the bootloader.  I cannot control kexec().  I'm
-> > also required to use a generic distro kernel (bet you can't guess which
-> > one)
+> NOTE: NFS/Kernel guys: I've left the 2.6.36.2 box still thrashing
+> about in case there's something you'd like me to look at.
 > 
-> If you are truly locked down I recommend dropping CAP_SYS_REBOOT and
-> setting up a watchdog that keeps the system from rebooting (standard
-> practice in embedded kinds of setups like you describe).  That should
-> meet everyone requirements without needing to game the system.
+> Ok, both my 2.6.36.2 kernel box and my 2.6.35->2.6.36 bisect box (was
+> bisected to ce7db282a3830f57f5b05ec48288c23a5c4d66d5 -- this is my
+> first time doing bisect, so I'll preemptively apologize for doing
 
-This does not meet the set of requirements.  I recognize that you don't
-have the full architecture in mind (and apologize that I can't describe
-it much better than I am already), but root should still be allowed to
-reboot the machine.  This is not an embedded platform.  Nor one in which
-a watchdog task makes any sense at all.
+That's a merge commit, so that doesn't sound right (it doesn't contain
+changes by itself).  How were you running the bisect?  Were you
+definitely seeing a good case since v2.6.35?  Could you post your
+"git bisect log" so I can see if I can follow it?
 
-> > The only solution I see to solve the problem is to gate kexec on
-> > CAP_SYS_MODULE.  Which makes sense since kexec() is in many respects
-> > close to module_init() than it is to reboot().
+> anything silly) both went berserk within 15 mins of each other, after
+> an uptime of around 63 hours for 2.6.36.2 and 65 hours for the
+> bisected box. The 2.6.36.2 one is still running with all the various
+> flush-0:xx threads spinning wildly. The bisected box just keeled over
+> and died, but is back up now. The only kernel messages logged are just
+> of the "task kworker/4:1:359 blocked for more than 120 seconds"
+> variety, all with _raw_spin_lock_irq at the top of the stack trace.
 > 
-> kexec_load is nothing like module_init().  All it does it puts data in
-> memory for use by a subsequent reboot.  /sbin/kexec is a bootloader that
-> runs inside of linux.  All you are noticing is that if you don't control
-> /sbin/kexec you aren't controlling the bootloader.
+> Looking at slabinfo, specifically, this: stats=$(grep nfs_inode_cache
+> /proc/slabinfo | awk '{ print $2, $3 }')
+> the active_objs and num_objs both increase to over a million (these
+> boxes are delivering mail to NFS-mounted mailboxes, so that's
+> perfectly reasonable). On both boxes, looking at sar, things start to
+> go awry around 10am today EST. At that time on the 2.6.36.2 box, the
+> NFS numbers look like this:
+> 
+> Fri Jan  7 09:58:00 2011: 1079433 1079650
+> Fri Jan  7 09:59:00 2011: 1079632 1080300
+> Fri Jan  7 10:00:00 2011: 1080196 1080300
+> Fri Jan  7 10:01:01 2011: 1080599 1080716
+> Fri Jan  7 10:02:01 2011: 1081074 1081288
+> 
+> on the bisected, like this:
+> 
+> Fri Jan  7 09:59:34 2011: 1162786 1165320
+> Fri Jan  7 10:00:34 2011: 1163301 1165320
+> Fri Jan  7 10:01:34 2011: 1164369 1165450
+> Fri Jan  7 10:02:35 2011: 1164179 1165450
+> Fri Jan  7 10:03:35 2011: 1165795 1166958
+> 
+> When the bisected box finally died, the last numbers were:
+> 
+> Fri Jan  7 10:40:33 2011: 1177156 1177202
+> Fri Jan  7 10:42:21 2011: 1177157 1177306
+> Fri Jan  7 10:44:55 2011: 1177201 1177324
+> Fri Jan  7 10:45:55 2011: 1177746 1177826
 
-Does that mean you would instead prefer that we check CAP_SYS_MODULE in
-sys_reboot() when LINUX_REBOOT_CMD_KEXEC is set (or really
-kernel_kexec())?  It seems to me you indicate that is the more analogous
-location since it is the actual place where we load new kernel code on
-the running system (aka what sys_module was intended to protect)?
+Yeah, I was seeing load proportional to these, but I don't think their
+growth is anything wrong.  It just seems to be something that is taking
+up CPU from flush proceses as they grow, and something which is causing a
+thundering herd of reclaim with lots of spinlock contention.
 
--Eric
+Hmmm.. I tried to see if drop_caches would clear nfs_inode_cache and thus
+the CPU usage.  The top of slabtop before doing anything:
 
+  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
+1256343 1221799  97%    0.95K  38071       33   1218272K nfs_inode_cache
+
+# echo 2 > /proc/sys/vm/drop_caches
+
+this took about 40 seconds to execute, and perf top showed this for
+pretty much the whole time:
+
+             samples  pcnt function                 DSO
+             _______ _____ ________________________ ___________
+
+             1188.00 45.1% _raw_spin_lock           [kernel]
+              797.00 30.2% rpcauth_cache_shrinker   [kernel]
+              132.00  5.0% shrink_slab              [kernel]
+               60.00  2.3% queue_io                 [kernel]
+               59.00  2.2% _cond_resched            [kernel]
+               44.00  1.7% nfs_writepages           [kernel]
+               35.00  1.3% writeback_single_inode   [kernel]
+               34.00  1.3% writeback_sb_inodes      [kernel]
+               23.00  0.9% do_writepages            [kernel]
+               20.00  0.8% bit_waitqueue            [kernel]
+               15.00  0.6% redirty_tail             [kernel]
+               11.00  0.4% __iget                   [kernel]
+               11.00  0.4% __GI_strstr              libc-2.7.so
+
+slabtop then showed:
+
+  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
+1256211 531720  42%    0.95K  38067       33   1218144K nfs_inode_cache
+
+and this doesn't change further with drop_caches=3 or 1.  It's strange
+that most of them were freed, but not all...  We do actually have
+RPC_CREDCACHE_DEFAULT_HASHBITS set to 10 at build time, which might
+explain a bigger credcache and time to free that.  Did you change your
+auth_hashtable_size at all?  Anyway, even with all of that, system CPU
+doesn't change.
+
+Ok, weird, Running "sync" actually caused "vmstat 1" to go from 25% CPU
+spikes every 5 seconds with nfs_writepages in the "perf top" every 5
+seconds to being idle!  /proc/vmstat showed only nr_dirty 8 and
+nr_writeback 0 before I ran "sync".  Either that, or it was just good
+timing.
+
+procs -----------memory---------- ---swap-- -----io---- -system-- ----cpu----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa
+ 0  0      0 6767892   9696  41088    0    0     5   180   15   70 62  7 29  1
+ 0  0      0 6767892   9696  41088    0    0     0     0 1124 1978  0  0 100  0
+ 0  0      0 6767892   9696  41088    0    0     0     0 1105 1967  0  0 100  0
+ 0  0      0 6767892   9696  41088    0    0     0     0 1180 1984  0  2 98  0
+ 2  0      0 6767892   9696  41088    0    0     0     0 2102 1968  0 22 78  0
+ 0  0      0 6767768   9704  41084    0    0     0    52 1504 2022  0  8 91  1
+ 0  0      0 6767768   9704  41084    0    0     0     0 1059 1965  0  0 100  0
+ 0  0      0 6767768   9704  41088    0    0     0     0 1077 1982  0  0 100  0
+ 0  0      0 6767768   9704  41088    0    0     0     0 1166 1972  1  2 97  0
+ 0  0      0 6767768   9704  41088    0    0     0     0 1353 1990  0  6 94  0
+ 0  0      0 6767644   9704  41100    0    0     0     0 2531 2050  0 27 72  0
+ 0  0      0 6767644   9704  41100    0    0     0     0 1065 1974  0  0 100  0
+ 1  0      0 6767644   9704  41100    0    0     0     0 1090 1967  0  0 100  0
+ 0  0      0 6767644   9704  41100    0    0     0     0 1175 1971  0  2 98  0
+ 0  0      0 6767644   9704  41100    0    0     0     0 1321 1967  0  6 94  0
+ 1  0      0 6767644   9712  41100    0    0     0    52 1995 1995  0 18 81  1
+ 0  0      0 6767644   9712  41100    0    0     0     0 1342 1964  0  6 94  0
+ 0  0      0 6767644   9712  41100    0    0     0     0 1064 1974  0  0 100  0
+ 0  0      0 6767644   9712  41100    0    0     0     0 1163 1968  0  2 98  0
+ 0  0      0 6767644   9712  41100    0    0     0     0 1390 1976  1  6 94  0
+ 0  0      0 6767768   9712  41112    0    0     0     0 1282 2018  0  1 99  0
+ 0  0      0 6767768   9712  41112    0    0     0     0 2166 1972  0 24 76  0
+ 0  0      0 6786260   9712  41112    0    0     0     0 1092 1989  0  0 100  0
+ 0  0      0 6786260   9712  41112    0    0     0     0 1039 2003  0  2 98  0
+ 0  0      0 6774588   9712  41112    0    0     0     0 1524 2015  3  9 89  0
+ 0  1      0 6770124   9716  41112    0    0     0    48 1315 1990  3  0 87 11
+ 1  0      0 6769628   9720  41112    0    0     0     4 2196 1966  0 20 79  0
+ 0  0      0 6768364   9724  41108    0    0    36     0 1403 2031  1  5 94  1
+ 0  0      0 6768388   9724  41144    0    0     0     0 1185 1969  0  2 98  0
+ 0  0      0 6768388   9724  41144    0    0     0     0 1351 1975  0  6 94  0
+ 0  0      0 6768140   9724  41156    0    0     0     0 1261 2020  0  1 99  0
+ 0  0      0 6768140   9724  41156    0    0     0     0 1053 1973  0  0 100  0
+ 1  0      0 6768140   9724  41156    0    0     0     0 2194 1971  1 26 73  0
+ 0  0      0 6768140   9732  41148    0    0     0    52 1283 2088  0  4 96  0
+ 2  0      0 6768140   9732  41156    0    0     0     0 1184 1965  0  2 98  0
+ 0  0      0 6786368   9732  41156    0    0     0     0 1297 2000  0  4 97  0
+ 0  0      0 6786384   9732  41156    0    0     0     0  998 1949  0  0 100  0
+(stop vmstat 1, run sync, restart vmstat 1)
+ 1  0      0 6765304   9868  41736    0    0     0     0 1239 1967  0  0 100  0
+ 0  0      0 6765304   9868  41736    0    0     0     0 1174 2035  0  0 100  0
+ 0  0      0 6765304   9868  41736    0    0     0     0 1084 1976  0  0 100  0
+ 1  0      0 6765172   9868  41736    0    0     0     0 1100 1975  0  0 100  0
+ 0  0      0 6765304   9868  41760    0    0     0     0 1501 1997  1  1 98  0
+ 0  0      0 6765304   9868  41760    0    0     0     0 1092 1964  0  0 100  0
+ 1  0      0 6765304   9868  41760    0    0     0     0 1096 1963  0  0 100  0
+ 0  0      0 6765304   9868  41760    0    0     0     0 1083 1967  0  0 100  0
+ 0  0      0 6765304   9876  41752    0    0     0    76 1101 1980  0  0 99  1
+ 0  0      0 6765304   9876  41760    0    0     0     4 1199 2097  0  2 98  0
+ 0  0      0 6765304   9876  41760    0    0     0     0 1055 1964  0  0 100  0
+ 0  0      0 6765304   9876  41760    0    0     0     0 1064 1977  0  0 100  0
+ 0  0      0 6765304   9876  41760    0    0     0     0 1073 1968  0  0 100  0
+ 0  0      0 6765304   9876  41760    0    0     0     0 1080 1976  0  0 100  0
+ 0  0      0 6765156   9884  41772    0    0     0    20 1329 2034  1  1 98  1
+ 0  0      0 6765180   9884  41780    0    0     0     0 1097 1971  0  1 99  0
+ 0  0      0 6765180   9884  41780    0    0     0     0 1073 1960  0  0 100  0
+ 0  0      0 6765180   9884  41780    0    0     0     0 1079 1976  0  0 100  0
+ 0  0      0 6765172   9884  41780    0    0     0     0 1120 1980  0  0 100  0
+ 0  0      0 6765180   9892  41772    0    0     0    60 1097 1982  0  0 100  0
+ 0  0      0 6765180   9892  41780    0    0     0     0 1067 1969  0  0 100  0
+ 0  0      0 6765180   9892  41780    0    0     0     0 1063 1973  0  0 100  0
+ 0  0      0 6765180   9892  41780    0    0     0     0 1064 1969  0  1 100  0
+
+Hmmm.  I'll watch it and see if it climbs back up again.  That would mean
+that for now, echo 2 > /proc/sys/vm/drop_caches ; sync is a workaround
+for the problem we're seeing with system CPU slowly creeping up since
+2.6.36.  I have no idea if this affects the sudden flush process spinlock
+contention and attempted writeback without much progress during normal
+load, but it certainly changes things here.
+
+http://0x.ca/sim/ref/2.6.37/cpu_after_drop_caches_2_and_sync.png
+
+Simon-
