@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752067Ab1AHUyt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 15:54:49 -0500
-Received: from relay.uni-heidelberg.de ([129.206.100.212]:46106 "EHLO
-	relay.uni-heidelberg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685Ab1AHUys (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 15:54:48 -0500
-Message-ID: <20110108190301.f10ziqsmck0g8ok4@wwwmail.urz.uni-heidelberg.de>
-Date: Sat, 08 Jan 2011 19:03:01 +0100
-From: WEBMAIL TEAM <upgrad@web.com>
-Reply-to: upgrad@info.al
-To: undisclosed-recipients:;
-Subject: Account Verification
+	id S1752087Ab1AHVZV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 16:25:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58520 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751641Ab1AHVZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jan 2011 16:25:19 -0500
+Date: Sat, 8 Jan 2011 22:25:17 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Cc: Stephane Chatty <chatty@enac.fr>, Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC v3 0/5] hid-multitouch: a first step towards multitouch
+ unification 
+In-Reply-To: <alpine.LNX.2.00.1101072359450.26685@pobox.suse.cz>
+Message-ID: <alpine.LNX.2.00.1101082224130.26685@pobox.suse.cz>
+References: <1294425762-29730-1-git-send-email-benjamin.tissoires@enac.fr> <alpine.LNX.2.00.1101072355200.26685@pobox.suse.cz> <alpine.LNX.2.00.1101072359450.26685@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.5)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 8 Jan 2011, Jiri Kosina wrote:
 
+> > > all changes are coming from the mails with Henrik:
+> > > 
+> > > - restricted to new drivers only
+> > > - delete mt_buffer struct
+> > > - replace/adapt prev_valid in favor of seen_in_this_frame
+> > > - integrated fuzz
+> > > - introduce MT_QUIRKS
+> > > - other small fixes
+> > 
+> > Hi Bejnamin,
+> > 
+> > thanks a lot for spinning this up so nicely and quickly.
+> > 
+> > I have now applied the patchset as-is to the 'multitouch' branch in my 
+> > tree.
+> 
+> Which means -- could you please send any followup patches on top of that 
+> branch (i.e. on top of the v3 patchset)? It would help my workflow and 
+> make the merging process smoother.
 
-Dear webmail User,
+'multitouch' brach now builds, as Linus has taken Dmitry's pull request 
+and I have merged from Linus.
 
-To complete your Account Verification process, you are to reply this  
-message and
-enter your ID and PASSWORD in the space provided (********), you are  
-required to
-do this on receipt of this e-mail to prevent your Webmail Account from been
-de-activated and erased from our database.
+So once you have fixed for the minor issues raised by Henrik and once you 
+have finished your testing, please send the additional fixes to me and I 
+will be merging the branch upstream.
 
-Full Name:
-Webmail User ID:
-webmail Password:
+Thanks,
 
-Thank you for using our webmail service.
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
