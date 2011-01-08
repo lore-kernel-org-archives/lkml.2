@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752353Ab1AHW5q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 17:57:46 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45485 "EHLO
+	id S1752437Ab1AHXG4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 18:06:56 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57034 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751195Ab1AHW5p (ORCPT
+	by vger.kernel.org with ESMTP id S1752249Ab1AHXGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 17:57:45 -0500
+	Sat, 8 Jan 2011 18:06:54 -0500
 From: Ben Hutchings <ben@decadent.org.uk>
 To: David Woodhouse <dwmw2@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Henry Ptasinski <henryp@broadcom.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Ken Kawasaki <ken_kawasaki@spring.nifty.jp>,
+        David Hinds <dahinds@users.sourceforge.net>
 In-Reply-To: <1294527372.3283.43.camel@localhost>
 References: <1294527372.3283.43.camel@localhost>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-GEuQL16H+TEiRGld5nl5"
-Date: Sat, 08 Jan 2011 22:57:41 +0000
-Message-ID: <1294527461.3283.45.camel@localhost>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-ON70uw7b20368HyhCeQA"
+Date: Sat, 08 Jan 2011 23:06:46 +0000
+Message-ID: <1294528006.3283.54.camel@localhost>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: [PATCH 1/2] brcm80211: Remove version number from filenames,
- matching the driver
+Subject: [PATCH 2/2] Add source and copyright notice for CIS files from
+ pcmcia-cs
 X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
 X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,75 +30,482 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-GEuQL16H+TEiRGld5nl5
+--=-ON70uw7b20368HyhCeQA
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-The driver generates filenames like this:
-
-                sprintf(fw_name, "%s-%d.fw", wl_firmwares[i],
-                        UCODE_LOADER_API_VER);
-                ...
-                sprintf(fw_name, "%s_hdr-%d.fw", wl_firmwares[i],
-                        UCODE_LOADER_API_VER);
-
-which implies the filenames should be:
-
-    brcm/bcm43xx-0.fw
-    brcm/bcm43xx_hdr-0.fw
+The CIS files mostly come from pcmcia-cs releases, in which the source
+files were named etc/cis/*.cis and the binaries were named
+etc/cis/*.dat.  However, the current drivers request the *binaries* as
+cis/*.cis.  It's too late to fix that, so put the sources in a
+subdirectory here.
 
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- WHENCE                          |    5 +++--
- brcm/bcm43xx-0-610-809-0.fw     |  Bin 97376 -> 0 bytes
- brcm/bcm43xx-0.fw               |  Bin 0 -> 97376 bytes
- brcm/bcm43xx_hdr-0-610-809-0.fw |  Bin 180 -> 0 bytes
- brcm/bcm43xx_hdr-0.fw           |  Bin 0 -> 180 bytes
- 5 files changed, 3 insertions(+), 2 deletions(-)
- delete mode 100644 brcm/bcm43xx-0-610-809-0.fw
- create mode 100644 brcm/bcm43xx-0.fw
- delete mode 100644 brcm/bcm43xx_hdr-0-610-809-0.fw
- create mode 100644 brcm/bcm43xx_hdr-0.fw
+ WHENCE                |   25 +++++++++++++++++++++----
+ cis/src/3CCFEM556.cis |   22 ++++++++++++++++++++++
+ cis/src/3CXEM556.cis  |   22 ++++++++++++++++++++++
+ cis/src/COMpad2.cis   |   20 ++++++++++++++++++++
+ cis/src/COMpad4.cis   |   14 ++++++++++++++
+ cis/src/DP83903.cis   |   24 ++++++++++++++++++++++++
+ cis/src/LA-PCM.cis    |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ cis/src/MT5634ZLX.cis |   18 ++++++++++++++++++
+ cis/src/NE2K.cis      |   10 ++++++++++
+ cis/src/PCMLM28.cis   |   37 +++++++++++++++++++++++++++++++++++++
+ cis/src/PE-200.cis    |   11 +++++++++++
+ cis/src/PE520.cis     |   11 +++++++++++
+ cis/src/RS-COM-2P.cis |   14 ++++++++++++++
+ cis/src/tamarack.cis  |   17 +++++++++++++++++
+ 14 files changed, 285 insertions(+), 4 deletions(-)
+ create mode 100644 cis/src/3CCFEM556.cis
+ create mode 100644 cis/src/3CXEM556.cis
+ create mode 100644 cis/src/COMpad2.cis
+ create mode 100644 cis/src/COMpad4.cis
+ create mode 100644 cis/src/DP83903.cis
+ create mode 100644 cis/src/LA-PCM.cis
+ create mode 100644 cis/src/MT5634ZLX.cis
+ create mode 100644 cis/src/NE2K.cis
+ create mode 100644 cis/src/PCMLM28.cis
+ create mode 100644 cis/src/PE-200.cis
+ create mode 100644 cis/src/PE520.cis
+ create mode 100644 cis/src/RS-COM-2P.cis
+ create mode 100644 cis/src/tamarack.cis
 
 diff --git a/WHENCE b/WHENCE
-index 0bc162c..cec7478 100644
+index cec7478..b948b3d 100644
 --- a/WHENCE
 +++ b/WHENCE
-@@ -1403,8 +1403,9 @@ Licence:
+@@ -806,30 +806,42 @@ File: cis/NE2K.cis
+ File: cis/tamarack.cis
+ File: cis/PE-200.cis
+ File: cis/PE520.cis
++Source: cis/src/LA-PCM.cis
++Source: cis/src/PCMLM28.cis
++Source: cis/src/DP83903.cis
++Source: cis/src/NE2K.cis
++Source: cis/src/tamarack.cis
++Source: cis/src/PE-200.cis
++Source: cis/src/PE520.cis
 =20
- Driver: brcm80211 - Broadcom 802.11n wireless LAN driver.
+-Licence: GPL
++Licence: Dual GPLv2/MPL
 =20
--File: brcm/bcm43xx-0-610-809-0.fw
--File: brcm/bcm43xx_hdr-0-610-809-0.fw
-+File: brcm/bcm43xx-0.fw
-+File: brcm/bcm43xx_hdr-0.fw
-+Version: 610.809.0
+ Originally developed by the pcmcia-cs project
++Copyright (C) 1998, 1999, 2000 David A. Hinds
 =20
- Licence: Redistributable. See LICENCE.broadcom_bcm43xx for details.
+ --------------------------------------------------------------------------
 =20
-[binary changes omitted]
+ Driver: 3c589_cs - 3Com PCMCIA adapter
+=20
+ File: cis/3CXEM556.cis
++Source: cis/src/3CXEM556.cis
+=20
+-Licence: GPL
++Licence: Dual GPLv2/MPL
+=20
+ Originally developed by the pcmcia-cs project
++Copyright (C) 1998, 1999, 2000 David A. Hinds
+=20
+ --------------------------------------------------------------------------
+=20
+ Driver: 3c574_cs - 3Com PCMCIA adapter
+=20
+ File: cis/3CCFEM556.cis
++Source: cis/src/3CCFEM556.cis
+=20
+-Licence: GPL
++Licence: Dual GPLv2/MPL
+=20
+ Originally developed by the pcmcia-cs project
++Copyright (C) 1998, 1999, 2000 David A. Hinds
+=20
+ --------------------------------------------------------------------------
+=20
+@@ -839,10 +851,15 @@ File: cis/MT5634ZLX.cis
+ File: cis/RS-COM-2P.cis
+ File: cis/COMpad2.cis
+ File: cis/COMpad4.cis
++Source: cis/src/MT5634ZLX.cis
++Source: cis/src/RS-COM-2P.cis
++Source: cis/src/COMpad2.cis
++Source: cis/src/COMpad4.cis
+=20
+-Licence: GPL
++Licence: Dual GPLv2/MPL
+=20
+ Originally developed by the pcmcia-cs project
++Copyright (C) 1998, 1999, 2000 David A. Hinds
+=20
+ --------------------------------------------------------------------------
+=20
+diff --git a/cis/src/3CCFEM556.cis b/cis/src/3CCFEM556.cis
+new file mode 100644
+index 0000000..be627d0
+--- /dev/null
++++ b/cis/src/3CCFEM556.cis
+@@ -0,0 +1,22 @@
++#
++# This card is MFC-compliant, but identifies itself as single function
++#
++vers_1 5.0, "3Com", "Megahertz 3CCFEM556", "LAN + 56k Modem"
++manfid 0x0101, 0x0556
++funcid 0
++
++mfc {
++  funcid network_adapter
++  config base 0x1000 mask 0x267 last_index 0x07
++  cftable_entry 0x07
++    Vcc Vnom 5V
++    irq mask 0xffff [level]
++    io  0x0000-0x000f [8bit] [16bit]
++}, {
++  funcid serial_port
++  config base 0x1100 mask 0x277 last_index 0x27
++  cftable_entry 0x27
++    Vcc Vnom 5V
++    irq mask 0xffff [level]
++    io  0x0000-0x0007 [8bit]
++}
+diff --git a/cis/src/3CXEM556.cis b/cis/src/3CXEM556.cis
+new file mode 100644
+index 0000000..819f08f
+--- /dev/null
++++ b/cis/src/3CXEM556.cis
+@@ -0,0 +1,22 @@
++#
++# This card is MFC-compliant, but identifies itself as single function
++#
++vers_1 5.0, "3Com", "Megahertz 3CXEM556", "LAN + 56k Modem"
++manfid 0x0101, 0x0035
++funcid 0
++
++mfc {
++  funcid network_adapter
++  config base 0x0800 mask 0x63 last_index 0x07
++  cftable_entry 0x07
++    Vcc Vnom 5V
++    irq mask 0xffff [level]
++    io  0x0000-0x000f [8bit] [16bit]
++}, {
++  funcid serial_port
++  config base 0x900 mask 0x63 last_index 0x27
++  cftable_entry 0x27
++    Vcc Vnom 5V
++    irq mask 0xffff [level]
++    io  0x0000-0x0007 [8bit]
++}
+diff --git a/cis/src/COMpad2.cis b/cis/src/COMpad2.cis
+new file mode 100644
+index 0000000..bfc2374
+--- /dev/null
++++ b/cis/src/COMpad2.cis
+@@ -0,0 +1,20 @@
++#
++# Replacement CIS for Advantech COMpad-32/85
++#
++dev_info
++  NULL 0ns, 512b
++vers_1 4.1, "ADVANTECH", "COMpad-32/85", "1.0"
++funcid serial_port [post]
++config base 0x0100 mask 0x0003 last_index 0x05
++cftable_entry 0x01 [default]
++  [mwait]
++  io 0x02e8-0x02ef, 0x03e8-0x03ef [lines=3D10] [8bit] [range]
++  irq mask 0x9eb8 [level]
++cftable_entry 0x02
++  io 0x0330-0x033f [lines=3D10] [8bit] [range]
++cftable_entry 0x03
++  io 0x0340-0x034f [lines=3D10] [8bit] [range]
++cftable_entry 0x04
++  io 0x0350-0x035f [lines=3D10] [8bit] [range]
++cftable_entry 0x05
++  io 0x0360-0x036f [lines=3D10] [8bit] [range]
+diff --git a/cis/src/COMpad4.cis b/cis/src/COMpad4.cis
+new file mode 100644
+index 0000000..325991c
+--- /dev/null
++++ b/cis/src/COMpad4.cis
+@@ -0,0 +1,14 @@
++#
++# Replacement CIS for Advantech COMpad-32/85B-4
++#
++dev_info
++  NULL 0ns, 512b
++vers_1 4.1, "ADVANTECH", "COMpad-32/85B-4"
++funcid serial_port [post]
++config base 0x0100 mask 0x0001 last_index 0x02
++cftable_entry 0x01 [default]
++  [mwait]
++  io 0x0240-0x025f [lines=3D10] [8bit] [range]
++  irq mask 0x9eb8 [level]
++cftable_entry 0x02
++  io 0x0340-0x035f [lines=3D10] [8bit] [range]
+diff --git a/cis/src/DP83903.cis b/cis/src/DP83903.cis
+new file mode 100644
+index 0000000..ce86f45
+--- /dev/null
++++ b/cis/src/DP83903.cis
+@@ -0,0 +1,24 @@
++#
++# This CIS is for cards based on the National Semiconductor
++# DP83903 Multiple Function Interface Chip
++#
++vers_1 4.1, "Multifunction Card", "", "", "NSC MF LAN/Modem"
++manfid 0x0175, 0x0000
++funcid 0
++
++mfc {
++  funcid network_adapter
++  config base 0x1020 mask 0x277 last_index 0x17
++  cftable_entry 0x17
++    Vcc Vnom 5V
++    irq mask 0xffff [level]
++    io  0x0000-0x001f [8bit] [16bit]
++    memory 0x0000-0x3fff @ 0x0000
++}, {
++  funcid serial_port
++  config base 0x1040 mask 0x0277 last_index 0x07
++  cftable_entry 0x07
++    Vcc Vnom 5V
++    irq mask 0xffff [level]
++    io  0x0000-0x0007 [8bit]
++}
+diff --git a/cis/src/LA-PCM.cis b/cis/src/LA-PCM.cis
+new file mode 100644
+index 0000000..5c427bd
+--- /dev/null
++++ b/cis/src/LA-PCM.cis
+@@ -0,0 +1,44 @@
++#
++# Replacement CIS for Allied Telesis LA-PCM
++#
++dev_info
++  fn_specific 100ns, 64kb
++  FLASH 150ns, 60kb
++attr_dev_info
++  FLASH 150ns, 4kb
++manfid 0xc00f, 0x0002
++funcid network_adapter [post] [rom]
++vers_1 4.1, "Allied Telesis,K.K", "Ethernet LAN Card", "CentreCOM", "LA-PC=
+M"
++config base 0x20000 mask 0x000b last_index 0x10
++cftable_entry 0x01
++  io 0x0200-0x021f [8bit] [16bit]
++cftable_entry 0x02
++  io 0x0220-0x023f [8bit] [16bit]
++cftable_entry 0x03
++  io 0x0240-0x025f [8bit] [16bit]
++cftable_entry 0x04
++  io 0x0260-0x027f [8bit] [16bit]
++cftable_entry 0x05
++  io 0x0280-0x029f [8bit] [16bit]
++cftable_entry 0x06
++  io 0x02a0-0x02bf [8bit] [16bit]
++cftable_entry 0x07
++  io 0x02c0-0x02df [8bit] [16bit]
++cftable_entry 0x08
++  io 0x02e0-0x02ff [8bit] [16bit]
++cftable_entry 0x09
++  io 0x0300-0x031f [8bit] [16bit]
++cftable_entry 0x0a
++  io 0x0320-0x033f [8bit] [16bit]
++cftable_entry 0x0b
++  io 0x0340-0x035f [8bit] [16bit]
++cftable_entry 0x0c
++  io 0x0360-0x037f [8bit] [16bit]
++cftable_entry 0x0d
++  io 0x0380-0x039f [8bit] [16bit]
++cftable_entry 0x0e
++  io 0x03a0-0x03bf [8bit] [16bit]
++cftable_entry 0x0f
++  io 0x03c0-0x03df [8bit] [16bit]
++cftable_entry 0x10
++  io 0x03e0-0x03ff [8bit] [16bit]
+diff --git a/cis/src/MT5634ZLX.cis b/cis/src/MT5634ZLX.cis
+new file mode 100644
+index 0000000..52249b3
+--- /dev/null
++++ b/cis/src/MT5634ZLX.cis
+@@ -0,0 +1,18 @@
++#
++# Replacement CIS for Multitech MT5634ZLX modems
++#
++dev_info no_info
++vers_1 4.1, "MultiTech", "PCMCIA 56K DataFax"
++manfid 0x0200, 0x0001
++funcid serial_port
++config base 0xff80 mask 0x0067 last_index 0x27
++cftable_entry 0x0f [default]
++  [rdybsy] [audio] [pwrdown]
++  Vcc Vnom 5V Vpp1 Vnom 5V Vpp2 Vnom 5V
++  io 0x03f8-0x03ff [lines=3D10] [8bit]
++cftable_entry 0x17
++  io 0x02f8-0x02ff [lines=3D10] [8bit]
++cftable_entry 0x1f
++  io 0x03e8-0x03ef [lines=3D10] [8bit]
++cftable_entry 0x27
++  io 0x02e8-0x02ef [lines=3D10] [8bit]
+diff --git a/cis/src/NE2K.cis b/cis/src/NE2K.cis
+new file mode 100644
+index 0000000..d1d47f3
+--- /dev/null
++++ b/cis/src/NE2K.cis
+@@ -0,0 +1,10 @@
++#
++# Replacement CIS for various busted NE2000-compatible cards
++#
++vers_1 4.1, "PCMCIA", "Ethernet"
++funcid network_adapter
++config base 0x03f8 mask 0x03 last_index 0x20
++cftable_entry 0x20 [default]
++  Vcc Vnom 5V
++  irq mask 0xffff [level]
++  io 0x0000-0x001f [8bit] [16bit]
+diff --git a/cis/src/PCMLM28.cis b/cis/src/PCMLM28.cis
+new file mode 100644
+index 0000000..39c6d16
+--- /dev/null
++++ b/cis/src/PCMLM28.cis
+@@ -0,0 +1,37 @@
++#
++# The on-card CIS says it is MFC-compliant, but it is not
++#
++vers_1 4.1, "LINKSYS", "PCMLM28"
++manfid 0x0143, 0xc0ab
++funcid 0
++config base 0x03f8 mask 0x03 last_index 0x2f
++
++cftable_entry 0x24 [default]
++  Vcc Vnom 5V
++  irq mask 0xffff [level]
++  io 0x0300-0x031f, 0x02f8-0x02ff [8bit] [16bit]
++
++cftable_entry 0x25
++  io 0x0320-0x033f, 0x02f8-0x02ff [8bit] [16bit]
++cftable_entry 0x26
++  io 0x0340-0x035f, 0x02f8-0x02ff [8bit] [16bit]
++cftable_entry 0x27
++  io 0x0360-0x037f, 0x02f8-0x02ff [8bit] [16bit]
++
++cftable_entry 0x28
++  io 0x0300-0x031f, 0x03e8-0x03ef [8bit] [16bit]
++cftable_entry 0x29
++  io 0x0320-0x033f, 0x03e8-0x03ef [8bit] [16bit]
++cftable_entry 0x2a
++  io 0x0340-0x035f, 0x03e8-0x03ef [8bit] [16bit]
++cftable_entry 0x2b
++  io 0x0360-0x037f, 0x03e8-0x03ef [8bit] [16bit]
++
++cftable_entry 0x2c
++  io 0x0300-0x031f, 0x02e8-0x02ef [8bit] [16bit]
++cftable_entry 0x2d
++  io 0x0320-0x033f, 0x02e8-0x02ef [8bit] [16bit]
++cftable_entry 0x2e
++  io 0x0340-0x035f, 0x02e8-0x02ef [8bit] [16bit]
++cftable_entry 0x2f
++  io 0x0360-0x037f, 0x02e8-0x02ef [8bit] [16bit]
+diff --git a/cis/src/PE-200.cis b/cis/src/PE-200.cis
+new file mode 100644
+index 0000000..7db7494
+--- /dev/null
++++ b/cis/src/PE-200.cis
+@@ -0,0 +1,11 @@
++#
++# Replacement CIS for PE-200 ethernet card
++#
++vers_1 4.1, "PMX   ", "PE-200", "ETHERNET", "R01"
++funcid network_adapter [post] [rom]
++config base 0x0100 mask 0x0001 last_index 0x01
++cftable_entry 0x1 [default]
++  [mwait]
++  Vcc Vnom 5V
++  irq mask 0xffff [level]
++  io 0x0000-0x000f, 0x0010-0x001f [8bit] [16bit]
+diff --git a/cis/src/PE520.cis b/cis/src/PE520.cis
+new file mode 100644
+index 0000000..fb411ab
+--- /dev/null
++++ b/cis/src/PE520.cis
+@@ -0,0 +1,11 @@
++#
++# Replacement CIS for LanPro EP-4000A ethernet card
++#
++vers_1 4.1, "KTI", "PE520 PLUS", "PCMCIA Ethernet"
++manfid 0x0161, 0x0010
++funcid network_adapter
++config base 0x0fd0 mask 0x0b last_index 0x01
++cftable_entry 0x01 [default]
++  Vcc Vnom 5V
++  irq mask 0xffff [level]
++  io 0x0000-0x001f [8bit] [16bit]
+diff --git a/cis/src/RS-COM-2P.cis b/cis/src/RS-COM-2P.cis
+new file mode 100644
+index 0000000..2e385cb
+--- /dev/null
++++ b/cis/src/RS-COM-2P.cis
+@@ -0,0 +1,14 @@
++#
++# Replacement CIS for dual-serial-port IO card
++#
++vers_1 4.1, "PCMCIA", "RS-COM 2P"
++funcid serial_port [post]
++config base 0x0100 mask 0x0001 last_index 0x03
++cftable_entry 0x01 [default]
++  [mwait]
++  io 0x03e8-0x03ef, 0x02e8-0x02ef [lines=3D10] [8bit] [range]
++  irq mask 0x9eb8 [level]
++cftable_entry 0x02
++  io 0x0250-0x0257, 0x0258-0x025f [lines=3D10] [8bit] [range]
++cftable_entry 0x03
++  io 0x0260-0x0267, 0x0268-0x026f [lines=3D10] [8bit] [range]
+diff --git a/cis/src/tamarack.cis b/cis/src/tamarack.cis
+new file mode 100644
+index 0000000..8802694
+--- /dev/null
++++ b/cis/src/tamarack.cis
+@@ -0,0 +1,17 @@
++#
++# Replacement CIS for Surecom, Tamarack NE2000 cards
++#
++dev_info
++  fn_specific 100ns, 512b
++attr_dev_info
++  EEPROM 250ns, 512b
++vers_1 4.1, "TAMARACK", "Ethernet", "A", "004743118001"
++funcid network_adapter
++config base 0x03f8 mask 0x0003 last_index 0x20
++cftable_entry 0x20 [default]
++  [mwait]
++  Vcc Vnom 5V Vmin 4500mV Vmax 5500mV Istatic 100mA
++    Iavg 170mA Ipeak 200mA
++  timing wait 15us
++  io 0x0000-0x000f, 0x0010-0x001f [lines=3D5] [8bit] [16bit]
++  irq mask 0xffff [level]
+--=20
+1.7.2.3
 
 
---=-GEuQL16H+TEiRGld5nl5
+
+--=-ON70uw7b20368HyhCeQA
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQIVAwUATSjr4ue/yOyVhhEJAQIxBRAAuzSkeqc+QV4ixwlmx5njvyN/vdSLz97Q
-UyVtEf6SrrHry8U4lOBA1sg0NQiQ47nVEMdbtomUp772NmD0GzIkmCSadjR7F9uh
-CX1auXz+mtIPxMW7HaFDL7ylapPBGmT5xwhXymIHwp8blisvqNGO3D+ZuYv2hLLE
-Q9EQtOri+R0plWJNxJK2sSeds+jotl4KBymPiZ65Q0sOnc7ZHy2MLyue6PjyQO+y
-XMqeYZzPamC347tADCkpwCrS+Ss/iw/k2uyCJM1e6chxGyPzCy4TgCLtPq87RdgV
-onlzYzTGWQpR9RONhed0xP1VuYoJ9xFBwrDqV4K/EYGCJJen0ZHNToF9HirHfJ/2
-BD0tWcXo7emAIfQyowJYQuPyZb/FusN9CsWa1rILkfHCE+i3SGfNqrnSyTFSEbpA
-LZKaOMEgths3UWjLs0S8zLX+164sw9Olfoi4QBPRuYVUAlRZLKMU5WWA83+wCLdO
-EICQO308m/j3W42h+MXax1VYQ8VSehopMuU6SKFs1Cm6MioNHofds0JkliKeGSoJ
-0YguIRcZOdT1AnfL3druLO/v3DcHSk+yFsIW0g9Wb70vy78a78fC8yn1SKIGCoTX
-aSL0FPPQp0Ihna7n0fQL92v0pnRomVHmpSh4jGntT858u+Hta40C1R0soV8VmdxN
-GCPStEHn6ws=
-=kFHE
+iQIVAwUATSjuAee/yOyVhhEJAQJQzRAAsksTpAZnxY6Fvcg8WvnBZ5VCD5RikaQ4
+l1GB8/D/E3j1oE5Jwl9DTmMI7eu6ApyNo1XZErtqQvPhEcpLv8Q+n2Br1kpSAIM/
+OZTuldpjGyngA9gdqrSBGaIakG/2XdQ/zaATQat1Q9Yrj2TKbRzyN6tJpOGkSj3S
+xwClJl3ptKnZFUQoN+ZO/NSynrsusgdtv5KRo/Hou0+rTf7P60eKLY9goIJwrnAk
+SeiaPySVOC9mdy3hEPup1tdkmzzGBZR6/3C2PGNGzabCrDkz9OHLQ8nJ0TeiUAiG
+eZFOmsQHpr98LbNx45KV5/FKcK23o9Q8QTDcc9qQ+8k+HdmG4Syia9Ow0U7t8m02
+9IaLQ8spdVTf1OFtOS53SqkGfeyYFxzXFOP69KPA2nzBCEyeP/61KXepiWMEv5oD
+pis1lAcTua3AJa9p5+A2My3jyUby8Y+VPfd79E0IefpbnxE241OQo68IdSzb/Z3X
++QMt/WzDpzE2yMSCy7ZleQSROQiWNdtFIa2tq3pDo7mvz6nCRM+U/TZtbdG2Uef4
+syk4RJ2y7l2UvWZQ+OBffhN4wwkrlIjlGM/voIWPRUjZhAlF/mv2knQjRxsjgkoT
+PSRAy8d5sUdrZUiR1yU/2lC78u1diknDEN+/etWk2dVIl3IPkL1Qqm0kZ0i/DbHO
+SahLpWnK5YI=
+=hmJF
 -----END PGP SIGNATURE-----
 
---=-GEuQL16H+TEiRGld5nl5--
+--=-ON70uw7b20368HyhCeQA--
