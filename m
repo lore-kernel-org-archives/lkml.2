@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753053Ab1AHBco (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 20:32:44 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:41834
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752831Ab1AHBcn (ORCPT
+	id S1753024Ab1AHBdi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 20:33:38 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55115 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752185Ab1AHBdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 20:32:43 -0500
-Date: Fri, 07 Jan 2011 17:33:15 -0800 (PST)
-Message-Id: <20110107.173315.71121000.davem@davemloft.net>
-To: gregkh@suse.de
-Cc: paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org, nelhage@ksplice.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, stable-review@kernel.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [stable] [069/152] econet: Do the correct cleanup after an
- unprivileged SIOCSIFADDR.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110107191930.GB16084@suse.de>
-References: <20110106002303.148373791@clark.site>
-	<20110107191036.GG32717@windriver.com>
-	<20110107191930.GB16084@suse.de>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Jan 2011 20:33:37 -0500
+MIME-Version: 1.0
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 7 Jan 2011 17:32:46 -0800
+Message-ID: <AANLkTi=eNucM5d=+zq5euz3dZirJEhPaH9f9ZXuHymEM@mail.gmail.com>
+Subject: Quick merge window note..
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <gregkh@suse.de>,
+        David Miller <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@suse.de>
-Date: Fri, 7 Jan 2011 11:19:30 -0800
+So I've obviously been merging eagerly the last couple of days, but
+I'm taking most of the weekend off, and I thought I'd just point
+people at the fact that I merged the somewhat scary (but very
+impressive) lockless name lookup tree from Nick today.
 
-> On Fri, Jan 07, 2011 at 02:10:36PM -0500, Paul Gortmaker wrote:
->> [[stable] [069/152] econet: Do the correct cleanup after an unprivileged SIOCSIFADDR.] On 05/01/2011 (Wed 16:22) Greg KH wrote:
->> 
->> > 2.6.36-stable review patch.  If anyone has any objections, please let us know.
->> > 
->> > ------------------
->> > 
->> > 
->> > From: Nelson Elhage <nelhage@ksplice.com>
->> > 
->> > [ Upstream commit f24b8bedf70c524775eabd51570c3fa7708a97b7 ]
->> 
->> I think the upstream # got mangled somehow.  Looking at the tree, I
->> think the upstream is 0c62fc6dd02c8d793c75ae76a9b6881fc36388ad.
->> 
->> The ID listed currently gives me a "bad object". 
-> 
-> Nice catch, I don't know what happened here, must be something in
-> David's scripts, not mine :)
-> 
-> I'll go edit the changelog before I commit it later today, thanks.
+It's scary because this is some very core code, and the new RCU lookup
+model is way more clever and subtle than the old dentry_lock spinlock.
 
-That script is called my brain as I generate these by hand. :-)
+But it's rather impressive and I really wanted to merge it, because
+some of the performance numbers are pretty stunning. For example, a
+hot-cache "find . -size" on my home directory (which basically just
+does name lookups to get the stat information for every file
+recursively) became 35% faster. And that's the _unthreaded_ case. Not
+some odd high-end scalability thing, and not some recompiled binary
+taking advantage of new facilities. Pathname lookup is just simply
+faster.
 
-Thanks for catching this and fixing it.
+On the scary side, it's worth noticing that if you see any problems,
+and you think it might be due to the new rcu lookup, rather than
+bisect _everything_ (the merge window has already brought in 3700+
+commits), it may be worth just checking the VFS scale tip itself.
+That's fairly easy, because it's based on plain 2.6.37 (which if it
+isn't stable for you, we have bigger problems than the RCU lookup),
+and is just 57 commits up until commit b3e19d924b6e ("fs: scale
+mntget/mntput").
+
+So rather than bisect the 3700+ commits, start out by trying that one
+commit first.
+
+Of course, I've already bisected one problem (firmware loading
+"feature"), and that wasn't in the RCU pathname lookup, so maybe I'm
+pointing out the new name lookup for no good reason. Traditionally, I
+think most of our regressions by far tend to be in drivers etc rather
+than core code and me being worried about the core may be silly.
+
+(And btw, I do have more pull requests pending, and no, I didn't miss
+them just because I haven't pulled yours yet. But I'm going to give it
+a short rest, and continue pulling on Sunday)
+
+                                 Linus
