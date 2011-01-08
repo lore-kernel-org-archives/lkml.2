@@ -1,96 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161Ab1AHWJj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 17:09:39 -0500
-Received: from quamquam.org ([88.198.196.3]:48378 "EHLO quamquam.org"
+	id S1752168Ab1AHWQr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 17:16:47 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:55066 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752067Ab1AHWJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 17:09:38 -0500
-X-Greylist: delayed 1169 seconds by postgrey-1.27 at vger.kernel.org; Sat, 08 Jan 2011 17:09:37 EST
-Message-ID: <4D28DC01.2010901@poelzi.org>
-Date: Sat, 08 Jan 2011 22:49:53 +0100
-From: Daniel Poelzleithner <poelzi@poelzi.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1751872Ab1AHWQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jan 2011 17:16:47 -0500
+Date: Sat, 8 Jan 2011 23:16:35 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH v2 1/7] Introduce delete_from_page_cache
+Message-ID: <20110108221635.GB23189@cmpxchg.org>
+References: <cover.1293982522.git.minchan.kim@gmail.com>
+ <39f5e90f69d523d7f69f8ba283e318def6538307.1293982522.git.minchan.kim@gmail.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-X-Enigmail-Version: 1.1.2
-OpenPGP: id=0A7B003D;
-	url=http://files.poelzi.org/poelzi.asc
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigE8BF02DA8AE796A56C3A94C8"
-X-SA-Exim-Connect-IP: 91.64.130.10
-X-SA-Exim-Rcpt-To: linux-kernel@vger.kernel.org
-X-SA-Exim-Mail-From: poelzi@poelzi.org
-Subject: ANN: ulatencyd
-X-SA-Exim-Version: 4.2.1 (built Sat, 07 Nov 2009 20:03:47 +0000)
-X-SA-Exim-Scanned: Yes (on quamquam.org)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <39f5e90f69d523d7f69f8ba283e318def6538307.1293982522.git.minchan.kim@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigE8BF02DA8AE796A56C3A94C8
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jan 03, 2011 at 12:44:30AM +0900, Minchan Kim wrote:
+> This function works as just wrapper remove_from_page_cache.
+> The difference is that it decreases page references in itself.
+> So caller have to make sure it has a page reference before calling.
+> 
+> This patch is ready for removing remove_from_page_cache.
+> 
+> Cc: Christoph Hellwig <hch@infradead.org>
+> Acked-by: Hugh Dickins <hughd@google.com>
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> ---
+>  include/linux/pagemap.h |    1 +
+>  mm/filemap.c            |   17 +++++++++++++++++
+>  2 files changed, 18 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+> index 9c66e99..7a1cb49 100644
+> --- a/include/linux/pagemap.h
+> +++ b/include/linux/pagemap.h
+> @@ -457,6 +457,7 @@ int add_to_page_cache_lru(struct page *page, struct address_space *mapping,
+>  				pgoff_t index, gfp_t gfp_mask);
+>  extern void remove_from_page_cache(struct page *page);
+>  extern void __remove_from_page_cache(struct page *page);
+> +extern void delete_from_page_cache(struct page *page);
+>  
+>  /*
+>   * Like add_to_page_cache_locked, but used to add newly allocated pages:
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index 095c393..1ca7475 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -166,6 +166,23 @@ void remove_from_page_cache(struct page *page)
+>  }
+>  EXPORT_SYMBOL(remove_from_page_cache);
+>  
+> +/**
+> + * delete_from_page_cache - delete page from page cache
+> + *
 
-Hi,
+This empty line is invalid kerneldoc, the argument descriptions must
+follow the short function description line immediately.
 
-I'm proud to announce ulatencyd [1]. A scriptable daemon to dynamically
-adjust Linux scheduling parameters and other things.
+Otherwise,
+Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
 
-It is not ready for a release yet, but it works to a point I started to
-get satisfied. I'm able to run a make -j 40 on my dual core machine
-while looking a full hd movie without problems and the ui from kde still
-feels good :-)
-
-The architecture looks like this:
-
-https://github.com/poelzi/ulatencyd/raw/master/docs/architecture.png
-
-The rules usually only mark processes with flags that the scheduler uses
-for his decision how to set the parameters of the process.
-In special cases, the rule can enforce itself to schedule the process
-itself, which is useful for reacting to attacks, for example.
-
-There is still a lot of work to do. The scheduler itself was a quick
-hack that needs a lot of work. There are currently no rules for swap of
-death, fork-bombs, amok running processes,... and the scheduler has to
-handle them of course.
-There are already lots of optimization that minimize the amount of lua
-code running, but the load on ulatencyd is high when a lot of processes
-are spawned. This will be optimized soon.
-
-[1] https://github.com/poelzi/ulatencyd/
-
-PS: please CC if possible :-)
-
-kind regards
- Daniel Poelzleithner
-
-
---------------enigE8BF02DA8AE796A56C3A94C8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQIcBAEBAgAGBQJNKNwHAAoJEFYpgV2RoepcJxMQAK9tJ614dZRZO69/O3bBy1Ps
-CVIdOx0GRgSAyJFwhgjgJDWfIXfOxLs7gfX3K6jDc5esrksLbNxN6TnmP1iIrhOl
-8Kjh+xKt9+Vz6STrePL8wG+UfZDrmUABIONUYiC/MB+dxdRrRUjNvSmhR/QlfZhX
-Pad2/8IHbRPj7sV/AKVpmdOfDVj7eM7ogAaLT9XIpA/Li7TanIbGoKEgaYCwMbJD
-j5okslWVGwK4QTcDg9wcr3PwSvZoeoHxCAZEUdShqjdGEUZsrm9/p9h5m7H2QyG4
-A8SqltgbgFv5sAez68Dgf96kwlpAUWicDxs0+XYGKYwIOB557uKlyjS5YowhpoXl
-ZuHMzajphDlStNG+gUdoLqlK1ykp5pzt0mbF1vFW+UzXsbswtNndKQVPFv0xp5ct
-SJv4tmI7b0nIXKkpiTUwMah+ShnCLK+aG/MSydj9Ea8f91CXusBnxZSAg9iMU5BS
-XP3g8J6k6oN5YDLcIbnOl3+yo2u3z01n9xgM04Zv6xqllKeqcwiqMHGwC/iBKVSh
-2VCGVM2OUdsqQd2pAkFCfN+EQvvIa10tFYrv4sHY+nLOAeQRUZnBC/UmxidcR8PZ
-WSVxJHWrjnBusKIQ+wMYZaE9kjK8GGAZSu9d11jA30231I3fJRvSl2sP15FZSRBs
-7oYG0UMbfM1+XptzDO3M
-=qdGD
------END PGP SIGNATURE-----
-
---------------enigE8BF02DA8AE796A56C3A94C8--
+> + * @page: the page which the kernel is trying to remove from page cache
+> + *
+> + * This must be called only on pages that have
+> + * been verified to be in the page cache and locked.
+> + * It will never put the page into the free list,
+> + * the caller has a reference on the page.
+> + */
+> +void delete_from_page_cache(struct page *page)
+> +{
+> +	remove_from_page_cache(page);
+> +	page_cache_release(page);
+> +}
+> +EXPORT_SYMBOL(delete_from_page_cache);
+> +
+>  static int sync_page(void *word)
+>  {
+>  	struct address_space *mapping;
