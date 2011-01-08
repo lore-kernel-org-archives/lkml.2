@@ -1,103 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317Ab1AHWqm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 17:46:42 -0500
-Received: from cantor.suse.de ([195.135.220.2]:36832 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752181Ab1AHWql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 17:46:41 -0500
-Message-ID: <4D28E945.3060504@suse.com>
-Date: Sat, 08 Jan 2011 17:46:29 -0500
-From: Jeff Mahoney <jeffm@suse.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Florian Mickler <florian@mickler.org>
-Cc: Dan Carpenter <error27@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, balbir@linux.vnet.ibm.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] taskstats: Use better ifdef for alignment
-References: <4D1BCE58.4000902@suse.com>	<20101229161418.d34bf0d4.akpm@linux-foundation.org>	<4D1C180A.20000@suse.com>	<20101229213243.891b0db5.akpm@linux-foundation.org>	<4D1CAAA1.8030106@suse.com>	<20110101171946.6179c3b6@schatten.dmk.lab>	<20110101165135.GJ1886@bicker> <20110102131747.3e79107a@schatten.dmk.lab>
-In-Reply-To: <20110102131747.3e79107a@schatten.dmk.lab>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752349Ab1AHW4S (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 17:56:18 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45479 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752209Ab1AHW4R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jan 2011 17:56:17 -0500
+From: Ben Hutchings <ben@decadent.org.uk>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-eYQ6ZeixDcSrHTE7jLcl"
+Date: Sat, 08 Jan 2011 22:56:12 +0000
+Message-ID: <1294527372.3283.43.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: [PATCH 0/2] firmware: Administrative fixes
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
 
-On 01/02/2011 07:17 AM, Florian Mickler wrote:
-> On Sat, 1 Jan 2011 19:51:35 +0300
-> Dan Carpenter <error27@gmail.com> wrote:
-> 
->> On Sat, Jan 01, 2011 at 05:19:46PM +0100, Florian Mickler wrote:
->>> Is there already a patch available or integrated into iotop which
->>> fixes this? I'd think that if the kernel could wait on fixed iotop's to
->>> be distributed it would be easier to sell the breakage on bugzilla &
->>> co...
->>>
->>
->> The story is that 4be2c95d1f "taskstats: pad taskstats netlink response
->> for aligment issues on ia64" broke iotop on 64 bit processors (32 bit
->> was unaffected).  This patch fixes it for x86-64 and powerpc-64.
->>
->> On the other 64 bit processors iotop works but instead you get a message
->> in dmesg:
->> kernel unaligned access to 0xe000023879dca9bc, ip=0xa000000100133d10
->>
->> So on those arches you were already getting posts to bugzilla etc.  Now
->> those people can upgrade the kernel and download iotop version 0.4.2 or
->> higher.
->>
->> regards,
->> dan carpenter
->>
-> 
-> Ah ok. And probably bug #24272 is related to this. If I
-> understood it correctly 85893120 fixed some runtime warnings (or more
-> exactly the misaligning) and broke iotop in the process (on all of 64
-> bit). 
-> 
-> 4be2c95d1f undid that and enhanced the netlink messages on  IA64
-> archs with a new type to fix the alignment and now it's changed to
-> align well on all archs that need alignment, leaving archs unbroken that
-> have efficient unaligned access (x86-64 and powerpc-64). Nice. 
-> 
-> And to answer my original question, i just checked out (some?/the?)
-> iotop sources from git://repo.or.cz/iotop.git and found a fix[1] for the
-> issue with 85893120. 
-> 
-> Is iotop parsing fixed to ignore the null-field in the meantime?
+--=-eYQ6ZeixDcSrHTE7jLcl
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-It isn't yet, but I sent Guillaume a patch to iotop when I sent in the
-null-field patch that actually parses the packet instead of doing
-field-offset tricks.
+I'll send a pull-request shortly if no-one objects to the changes.
 
-- -Jeff
+Ben.
 
-> Thx,
-> Flo
-> 
-> [1]git://repo.or.cz/iotop.git:commit 08211d209ae8fc7e67ea3bebb09979ff61c70f97
-> Author: Guillaume Chazarain <guichaz@gmail.com>
-> Date:   Sat Sep 4 13:57:43 2010 +0200
-> 
->     Instead of assuming the pid field is 4 bytes long, take its length from the header.
->     This is needed for http://lkml.org/lkml/2010/2/12/167
->     [PATCH] delayacct: align to 8 byte boundary on 64-bit systems
+Ben Hutchings (2):
+  brcm80211: Remove version number from filenames, matching the driver
+  Add source and copyright notice for CIS files from pcmcia-cs
+
+ WHENCE                          |   30 +++++++++++++++++++++-----
+ brcm/bcm43xx-0-610-809-0.fw     |  Bin 97376 -> 0 bytes
+ brcm/bcm43xx-0.fw               |  Bin 0 -> 97376 bytes
+ brcm/bcm43xx_hdr-0-610-809-0.fw |  Bin 180 -> 0 bytes
+ brcm/bcm43xx_hdr-0.fw           |  Bin 0 -> 180 bytes
+ cis/src/3CCFEM556.cis           |   22 +++++++++++++++++++
+ cis/src/3CXEM556.cis            |   22 +++++++++++++++++++
+ cis/src/COMpad2.cis             |   20 +++++++++++++++++
+ cis/src/COMpad4.cis             |   14 ++++++++++++
+ cis/src/DP83903.cis             |   24 +++++++++++++++++++++
+ cis/src/LA-PCM.cis              |   44 +++++++++++++++++++++++++++++++++++=
+++++
+ cis/src/MT5634ZLX.cis           |   18 ++++++++++++++++
+ cis/src/NE2K.cis                |   10 ++++++++
+ cis/src/PCMLM28.cis             |   37 ++++++++++++++++++++++++++++++++
+ cis/src/PE-200.cis              |   11 +++++++++
+ cis/src/PE520.cis               |   11 +++++++++
+ cis/src/RS-COM-2P.cis           |   14 ++++++++++++
+ cis/src/tamarack.cis            |   17 +++++++++++++++
+ 18 files changed, 288 insertions(+), 6 deletions(-)
+ delete mode 100644 brcm/bcm43xx-0-610-809-0.fw
+ create mode 100644 brcm/bcm43xx-0.fw
+ delete mode 100644 brcm/bcm43xx_hdr-0-610-809-0.fw
+ create mode 100644 brcm/bcm43xx_hdr-0.fw
+ create mode 100644 cis/src/3CCFEM556.cis
+ create mode 100644 cis/src/3CXEM556.cis
+ create mode 100644 cis/src/COMpad2.cis
+ create mode 100644 cis/src/COMpad4.cis
+ create mode 100644 cis/src/DP83903.cis
+ create mode 100644 cis/src/LA-PCM.cis
+ create mode 100644 cis/src/MT5634ZLX.cis
+ create mode 100644 cis/src/NE2K.cis
+ create mode 100644 cis/src/PCMLM28.cis
+ create mode 100644 cis/src/PE-200.cis
+ create mode 100644 cis/src/PE520.cis
+ create mode 100644 cis/src/RS-COM-2P.cis
+ create mode 100644 cis/src/tamarack.cis
+
+--=20
+1.7.2.3
 
 
-- -- 
-Jeff Mahoney
-SUSE Labs
+
+--=-eYQ6ZeixDcSrHTE7jLcl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEARECAAYFAk0o6UUACgkQLPWxlyuTD7Is/wCfTUBE/2hg19vfGO2Wzk3Zkguo
-mW8AnAv6ey78E7dJsvkKLy/YS6vW10cE
-=fUIp
+iQIVAwUATSjrfee/yOyVhhEJAQKaYg//cvNMy8sy7K3LUIJowwWUjlVsi17g5Ge9
+Wvh65JeJF2SSQAsW1g7pBl5Up2L7kfacNO+vlE1IL1nuZIkIQdokzEO2Us/t9qHo
+s7ToGNtlyixTuFkNfWV/hhhOOjSXWb7jFxY6gsrDNhv+wcg1uDDaX9ARnW8XiDBj
+/GdyJAfQEVKrbQaasQiSS5y7uvr2cTtsvSLOhBbjx4nC5Tx3TN42du2qbPVZJ8hQ
+SchCpKWPUab1ACCPOI44yagZN3JMw5Mu9Agdrm1HDpCLFpbjb6TLA9obKiI7KojE
+ZLS0SolHlXtBuuJN2fIlayH76mjIdv7ZYz/Bm+eJirIddNMMjWx+sfZBZgoKyYYc
+ITsNMRfxgByiU11e4sJmBruMgLjRn+OcZkmn1KktQZZsapC1jdRFpzjrjdur/evb
+pUfeULJeHWJlhp84Y0UjnZRo8ZUmI4tKOY64pTwfEJd4tvD0KVdtpruRRscX3d0q
+jFEEYN1cHSfYAvO+r6LWgze0ujQyBbCFESp+8DUGV7pfyDWJwHJjJTlcLTERBVeU
+RRl4jUTCRuWYanb7EEhrKFbzQ3FyPAIF4zJSfsc2Xdc+eQ64KX3XyGo89qH2sqeh
+JwE1M/DLsPQ/7K0/+9aXfktz8MzhnIAdpYum03o1LvkfHnRQmc1892eLd/8pEido
+EXxETNOwgqY=
+=nkXm
 -----END PGP SIGNATURE-----
+
+--=-eYQ6ZeixDcSrHTE7jLcl--
