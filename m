@@ -1,90 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990Ab1AHXyZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 18:54:25 -0500
-Received: from cantor.suse.de ([195.135.220.2]:37786 "EHLO mx1.suse.de"
+	id S1752161Ab1AIABQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 19:01:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60916 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751434Ab1AHXyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 18:54:24 -0500
-Date: Sat, 8 Jan 2011 15:49:49 -0800
+	id S1751737Ab1AIABP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jan 2011 19:01:15 -0500
+Date: Sat, 8 Jan 2011 15:56:08 -0800
 From: Greg KH <gregkh@suse.de>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com
-Subject: Re: kobject_put vs module unload
-Message-ID: <20110108234949.GA4262@suse.de>
-References: <Pine.LNX.4.64.1101072234040.382@hs20-bc2-1.build.redhat.com>
- <20110108055621.GB10391@suse.de>
- <Pine.LNX.4.64.1101080811400.29089@hs20-bc2-1.build.redhat.com>
- <AANLkTikg7vAG4-E=BD_sC=63R8fDCfEi_wiqnxDnUnK=@mail.gmail.com>
- <Pine.LNX.4.64.1101081258560.24933@hs20-bc2-1.build.redhat.com>
- <AANLkTi=hZ_W877QOwNK3=1-2S03VsKOXF_cVno_ReyrY@mail.gmail.com>
- <Pine.LNX.4.64.1101081340250.1879@hs20-bc2-1.build.redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>
+Subject: Re: Quick merge window note..
+Message-ID: <20110108235608.GA4470@suse.de>
+References: <AANLkTi=eNucM5d=+zq5euz3dZirJEhPaH9f9ZXuHymEM@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <Pine.LNX.4.64.1101081340250.1879@hs20-bc2-1.build.redhat.com>
+In-Reply-To: <AANLkTi=eNucM5d=+zq5euz3dZirJEhPaH9f9ZXuHymEM@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 08, 2011 at 01:50:50PM -0500, Mikulas Patocka wrote:
+On Fri, Jan 07, 2011 at 05:32:46PM -0800, Linus Torvalds wrote:
+> But it's rather impressive and I really wanted to merge it, because
+> some of the performance numbers are pretty stunning. For example, a
+> hot-cache "find . -size" on my home directory (which basically just
+> does name lookups to get the stat information for every file
+> recursively) became 35% faster. And that's the _unthreaded_ case. Not
+> some odd high-end scalability thing, and not some recompiled binary
+> taking advantage of new facilities. Pathname lookup is just simply
+> faster.
 > 
-> 
-> On Sat, 8 Jan 2011, Kay Sievers wrote:
-> 
-> > On Sat, Jan 8, 2011 at 19:01, Mikulas Patocka <mpatocka@redhat.com> wrote:
-> > > On Sat, 8 Jan 2011, Kay Sievers wrote:
-> > >> On Sat, Jan 8, 2011 at 14:19, Mikulas Patocka <mpatocka@redhat.com> wrote:
-> > >> > On Fri, 7 Jan 2011, Greg KH wrote:
-> > >>
-> > >> >> > 4) the reference obtained at point 1) is dropped, kobject reference count
-> > >> >> > reaches zero and the release callback is called. But that callback points
-> > >> >> > to an unloaded module and causes a crash.
-> > >> >> >
-> > >> >> > How is it solved? Am I missing something?
-> > >> >>
-> > >> >> You have the code that creates and frees the object, to not be in the
-> > >> >> module that could have been unloaded.  It's really just that simple.
-> > >> >
-> > >> > If the whole device mapper subsystem can be a module, where can I put the
-> > >> > code?
-> > >> >
-> > >> > I think a similar bug exists in md, it can also be unloaded as a module
-> > >> > and it has "release" method in its module code.
-> > >>
-> > >> If you still have data structures hanging around, these structures are
-> > >> supposed to take a reference on the module -- and you can not unload
-> > >> the module as long as this is the case.
-> > >>
-> > >> Kay
-> > >
-> > > kobject references don't increase module reference count. If kobject held
-> > > module references, it would be a fix for this bug, but could cause other
-> > > bugs (some modules could be unloadable due to self-references to its own
-> > > kobjects).
-> > 
-> > Sure, they don't automatically take references. It's the job of the
-> > driver/module, to make sure to pin the module for any data of it,
-> > which might be still in use.
-> > 
-> > Kay
-> 
-> A module can't unpin itself. If it does, the module can be unloaded 
-> immediatelly after module_put(THIS_MODULE) call and the function that 
-> called module_put crashes.
-> 
-> A module must be unpinned by someone else. The question is: who unpins the 
-> module when kobject references are gone?
+> On the scary side, it's worth noticing that if you see any problems,
+> and you think it might be due to the new rcu lookup, rather than
+> bisect _everything_ (the merge window has already brought in 3700+
+> commits), it may be worth just checking the VFS scale tip itself.
+> That's fairly easy, because it's based on plain 2.6.37 (which if it
+> isn't stable for you, we have bigger problems than the RCU lookup),
+> and is just 57 commits up until commit b3e19d924b6e ("fs: scale
+> mntget/mntput").
 
-Who ever you decide to have unpin it.
-
-Seriously, it's up to you to handle this properly, it's not something
-built into the kobject/driver model at all due to it being something
-that can be done in a number of different ways.
-
-thanks,
+Thanks for the heads up.  In some initial testing here, it all looks
+good to me.
 
 greg k-h
