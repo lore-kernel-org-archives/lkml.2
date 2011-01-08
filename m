@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751371Ab1AHRMN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 12:12:13 -0500
-Received: from mail.perches.com ([173.55.12.10]:3042 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750908Ab1AHRML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 12:12:11 -0500
-Subject: Re: [patch] checkpatch: putting the && or || on the wrong line
-From: Joe Perches <joe@perches.com>
-To: Krzysztof Halasa <khc@pm.waw.pl>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-In-Reply-To: <m3zkrbv7e5.fsf@intrepid.localdomain>
-References: <20110104055900.GA5062@bicker>
-	 <20110104163836.GA30317@fieldses.org>
-	 <20110104164414.GX5875@const.bordeaux.inria.fr>
-	 <1294160834.6617.51.camel@Joe-Laptop> <m3fwt7i740.fsf@intrepid.localdomain>
-	 <1294249529.6617.118.camel@Joe-Laptop>
-	 <m339p6p5zo.fsf@intrepid.localdomain>
-	 <1294336674.12561.81.camel@Joe-Laptop>
-	 <m3r5cplr2m.fsf@intrepid.localdomain>
-	 <1294347753.12561.106.camel@Joe-Laptop>
-	 <m37hehloon.fsf@intrepid.localdomain>
-	 <1294349918.12561.142.camel@Joe-Laptop>
-	 <m3zkrbv7e5.fsf@intrepid.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 08 Jan 2011 09:12:09 -0800
-Message-ID: <1294506729.10091.13.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751559Ab1AHRPB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 12:15:01 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44864 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab1AHRO7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jan 2011 12:14:59 -0500
+Date: Sat, 8 Jan 2011 17:13:32 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+Cc: tglx@linutronix.de, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: interrupt latency while resuming.
+Message-ID: <20110108171332.GB31708@n2100.arm.linux.org.uk>
+References: <4D2897D1.3040609@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D2897D1.3040609@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-01-08 at 14:42 +0100, Krzysztof Halasa wrote:
-> Joe Perches <joe@perches.com> writes:
-> >> OTOH you failed to show evidence that super-strict standardization
-> >> benefits anyone.
-> > I don't need to.
-> > If you don't agree with the assertion,
-> > facts likely won't change your mind.
-> > You'll more likely dispute the facts.
-> Sounds like you have the hard facts. Why not let us know anyway?
-> > Look up this paper if you care to though:
-> > Evaluating the Relation Between Coding
-> > Standard Violations and Faults Within and
-> > Across Software Versions
-> This is apples vs oranges, nobody disputes a need for sensible rules.
+On Sat, Jan 08, 2011 at 08:58:57AM -0800, Abhijeet Dharmapurikar wrote:
+>
+> I am trying to address an issue of not handling a wakeup interrupt quick  
+> enough while resuming. It is an edge triggered interrupt with the  
+> IRQ_WAKEUP flag set. The interrupt controller implements lazy disabling  
+> of interrupts, IOW does not have a disable callback in the irq_chip.
+>
+> So while going in to supend that interrupt is marked  IRQ_DISABLED in  
+> dpm_suspend_noirq().
+>
+> On resume handle_edge_trigger is run right after  
+> arch_suspend_enable_irqs(). It finds the interrupt marked  IRQ_DISABLED  
+> and it sets the IRQ_PENDING flag and does not call the handler.
+>
+> As the resume path unrolls, non boot cpus  are enabled,  
+> dpm_resume_noirq() is run. At that time it finds the IRQ_PENDING flag is  
+> set on this interrupt and the interrupt handler is run.
 
-Classic example of the disutility of fact based argumentation.
+The reason it's after non-boot CPUs are enabled is that the affinity
+settings may require it to be run on one of these CPUs, so we need to
+ensure that those CPUs are up.
 
-Krzyzstof, let's chat about something like the weather next time.
+We know it takes something like 200ms to run the lpg calibration, and
+this is responsible for the majority of the time when bringing a CPU
+online.
 
-cheers, Joe
+One solution is to sort out whether we need to re-run the lpj calibration
+each time we resume a CPU.  At the moment, we're just using the boot CPU
+loops_per_jiffy for every udelay(), assuming that all CPUs are running
+at the same clock rate - so we _could_ skip the calibration as its
+never used.
 
+Or we could fix things so that it is used (which also sorts udelay for
+asymetrically clocked secondary CPUs) but then we always have to re-run
+the calibration, or we have to stipulate that secondary CPUs come up at
+the same clock rate as they went down.  I suspect there's systems out
+there where the latter is not true at present, so it's not something we
+can impose - which means we're stuck having to do 200ms of recalibration
+per CPU.
+
+Another solution is to check whether we can run the handler before other
+CPUs are online - it may mean we're breaking IRQ affinity, but any
+non-boot affinity has already been broken by taking the other CPUs
+offline.
