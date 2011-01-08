@@ -1,86 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672Ab1AHKCt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 05:02:49 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:33584 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751112Ab1AHKCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 05:02:46 -0500
-From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
-To: "'Arnd Bergmann'" <arnd@arndb.de>
-Cc: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <00c801cba463$b0f3db00$12db9100$@mprc.pku.edu.cn> <201101070055.53996.arnd@arndb.de>
-In-Reply-To: <201101070055.53996.arnd@arndb.de>
-Subject: RE: [PATCHv1 02/12] unicore32 core architecture: generic headers stuff
-Date: Sat, 8 Jan 2011 18:02:41 +0800
-Message-ID: <023a01cbaf1b$3022b5b0$90682110$@mprc.pku.edu.cn>
+	id S1751748Ab1AHKJF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 05:09:05 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51428 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751399Ab1AHKJD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jan 2011 05:09:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=pMVnpJ4oUUBlAEXgU2OesYhDr2fRLGIQnYmqpjhliyYMqAfA3/yy0s6s8+m1P33Mqe
+         1whSRplQw2EWa656q5SaOqZJN/dF54UtOT+LyyP+/XOQnQM2+3ujmJa1KsRCYXMdj3Ct
+         HQPXCzaNIuvMW0IPP6rh5B6b/s6d8kwJS1JvU=
+Date: Sat, 8 Jan 2011 18:09:13 +0800
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH retry] btrfs: mount failure return value fix
+Message-ID: <20110108100913.GA2659@darkstar>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQIYK12dfRgBJd2P21ZajbE/j/EKgAEdxNtBkyTs8vA=
-Content-Language: zh-cn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I happened to pass swap partition as root partition in cmdline,
+then kernel panic and tell me about "Cannot open root device".
+It is not correct, in fact it is a fs type mismatch instead of 'no device'.
 
+Eventually I found btrfs mounting failed with -EIO, it should be -EINVAL.
+The logic in init/do_mounts.c:
+        for (p = fs_names; *p; p += strlen(p)+1) {
+                int err = do_mount_root(name, p, flags, root_mount_data);
+                switch (err) {
+                        case 0:
+                                goto out;
+                        case -EACCES:
+                                flags |= MS_RDONLY;
+                                goto retry;
+                        case -EINVAL:
+                                continue;
+                }
+		print "Cannot open root device"
+		panic
+	}
+SO fs type after btrfs will have no chance to mount
 
-> -----Original Message-----
-> From: Arnd Bergmann [mailto:arnd@arndb.de]
-> Sent: Friday, January 07, 2011 7:56 AM
-> To: Guan Xuetao
-> Cc: linux-arch@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCHv1 02/12] unicore32 core architecture: generic headers stuff
-> 
-> On Saturday 25 December 2010, Guan Xuetao wrote:
-> > diff --git a/arch/unicore32/include/asm/sizes.h b/arch/unicore32/include/asm/sizes.h
-> > new file mode 100644
-> > index 0000000..3720307
-> > --- /dev/null
-> > +++ b/arch/unicore32/include/asm/sizes.h
-> > @@ -0,0 +1,47 @@
-> > +/*
-> > + * linux/arch/unicore32/include/asm/sizes.h
-> > + *
-> > + * Code specific to PKUnity SoC and UniCore ISA
-> > + *
-> > + * Copyright (C) 2001-2010 GUAN Xue-tao
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License version 2 as
-> > + * published by the Free Software Foundation.
-> > + */
-> > +#ifndef __UNICORE_SIZES_H__
-> > +#define __UNICORE_SIZES_H__
-> > +
-> > +/* handy sizes */
-> > +#define SZ_16				0x00000010
-> > +#define SZ_256				0x00000100
-> > +#define SZ_512				0x00000200
-> > ...
-> 
-> This would be nice to have in include/asm-generic. Please make a patch that
-> adds the file there and use it with your scripts.
-Ok, my pleasure.
+Here fix the return value as -EINVAL
 
-> 
-> > --- /dev/null
-> > +++ b/arch/unicore32/include/asm/stat.h
-> > @@ -0,0 +1,71 @@
-> > +/*
-> > + * linux/arch/unicore32/include/asm/stat.h
-> 
-> I think we discussed this particular header before. There should be no reason
-> to have your own version instead of using the generic file like you do for the
-> rest of the API headers.
-The generic-version stat.h can't work for existing binary file systems in unicore32.
-I will submit a patch for generic-version stat.h for discussion.
+Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
+---
+ fs/btrfs/disk-io.c |    4 +++-
+ fs/btrfs/volumes.c |    8 +++++---
+ 2 files changed, 8 insertions(+), 4 deletions(-)
 
-> 
-> 	Arnd
-Thanks arnd.
-
-Guan Xuetao
-
+--- linux-2.6.orig/fs/btrfs/disk-io.c	2010-12-29 21:53:17.473333338 +0800
++++ linux-2.6/fs/btrfs/disk-io.c	2010-12-29 21:57:37.916666672 +0800
+@@ -1713,8 +1713,10 @@ struct btrfs_root *open_ctree(struct sup
+ 		     fs_info, BTRFS_ROOT_TREE_OBJECTID);
+ 
+ 	bh = btrfs_read_dev_super(fs_devices->latest_bdev);
+-	if (!bh)
++	if (!bh) {
++		err = -EINVAL;
+ 		goto fail_iput;
++	}
+ 
+ 	memcpy(&fs_info->super_copy, bh->b_data, sizeof(fs_info->super_copy));
+ 	memcpy(&fs_info->super_for_commit, &fs_info->super_copy,
+--- linux-2.6.orig/fs/btrfs/volumes.c	2010-12-29 21:53:17.503333338 +0800
++++ linux-2.6/fs/btrfs/volumes.c	2010-12-29 21:57:37.920000005 +0800
+@@ -598,8 +598,10 @@ static int __btrfs_open_devices(struct b
+ 		set_blocksize(bdev, 4096);
+ 
+ 		bh = btrfs_read_dev_super(bdev);
+-		if (!bh)
++		if (!bh) {
++			ret = -EINVAL;
+ 			goto error_close;
++		}
+ 
+ 		disk_super = (struct btrfs_super_block *)bh->b_data;
+ 		devid = btrfs_stack_device_id(&disk_super->dev_item);
+@@ -700,7 +702,7 @@ int btrfs_scan_one_device(const char *pa
+ 		goto error_close;
+ 	bh = btrfs_read_dev_super(bdev);
+ 	if (!bh) {
+-		ret = -EIO;
++		ret = -EINVAL;
+ 		goto error_close;
+ 	}
+ 	disk_super = (struct btrfs_super_block *)bh->b_data;
+@@ -1193,7 +1195,7 @@ int btrfs_rm_device(struct btrfs_root *r
+ 		set_blocksize(bdev, 4096);
+ 		bh = btrfs_read_dev_super(bdev);
+ 		if (!bh) {
+-			ret = -EIO;
++			ret = -EINVAL;
+ 			goto error_close;
+ 		}
+ 		disk_super = (struct btrfs_super_block *)bh->b_data;
