@@ -1,138 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751814Ab1AHKl4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 05:41:56 -0500
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:53453 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750936Ab1AHKly (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 05:41:54 -0500
-Message-ID: <4D283F6E.2070301@shipmail.org>
-Date: Sat, 08 Jan 2011 11:41:50 +0100
-From: Thomas Hellstrom <thomas@shipmail.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100624 Mandriva/3.0.5-0.1mdv2009.1 (2009.1) Thunderbird/3.0.5
+	id S1752018Ab1AHLJh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 06:09:37 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:53596 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751548Ab1AHLJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jan 2011 06:09:35 -0500
+From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
+To: "'Sam Ravnborg'" <sam@ravnborg.org>
+Cc: "'Paul Mundt'" <lethal@linux-sh.org>, <linux-arch@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+References: <00c601cba463$69533750$3bf9a5f0$@mprc.pku.edu.cn> <20110106075553.GC15914@linux-sh.org> <023601cbaef7$850f2af0$8f2d80d0$@mprc.pku.edu.cn> <20110108072053.GA10552@merkur.ravnborg.org>
+In-Reply-To: <20110108072053.GA10552@merkur.ravnborg.org>
+Subject: RE: [PATCHv1 01/12] unicore32 core architecture: build	infrastructure
+Date: Sat, 8 Jan 2011 19:09:29 +0800
+Message-ID: <023c01cbaf24$85a99cc0$90fcd640$@mprc.pku.edu.cn>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: dri-devel@lists.freedesktop.org, airlied@linux.ie,
-        linux-kernel@vger.kernel.org, konrad@darnok.org
-Subject: Re: [RFC PATCH v2] Utilize the PCI API in the TTM framework.
-References: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQEfSwmwFZxtPXz+EiWqnhCTy4B4ZAEbQqKvAoaCX2cCTHiU4ZTwL72Q
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Konrad!
-
-Just back from vacation. I'll try to review this patch set in the 
-upcoming week!
-
-Thanks,
-Thomas
 
 
-On 01/07/2011 06:11 PM, Konrad Rzeszutek Wilk wrote:
-> Attached is a set of patches that make it possible for drivers using TTM API
-> (nouveau and radeon graphic drivers) to work under Xen. The explanation
-> is a bit complex and I am not sure if I am explaining it that well..so if
-> something is unclear please do ping me.
->
-> Changes since v1: [https://lkml.org/lkml/2010/12/6/516]
->   - Cleaned up commit message (forgot to add my SoB).
->
-> Short explanation of problem: What we are hitting under Xen is that instead
-> of programming the GART with the physical DMA address of the TTM page, we
-> end up programming the bounce buffer DMA (bus) address!
->
-> Long explanation:
-> The reason we end up doing this is that:
->
->   1). alloc_page with GFP_DMA32 does not allocate "real" (Machine Frame Numbers
->       - MFN) under the 4GB in Xen. That is b/c if actually made the pages underneath
->       4GB available to the the Linux page allocator we would not be able to
->       give those to other guest devices. This would mean if we tried to pass
->       in a USB device to one guest and in another were running the Xorg server
->       we wouldn't be able to do so as we would run out of pages under 4GB. So
->       pages that we get from alloc_page have a PFN that is under 4GB but in
->       reality the real physical address (MFN) is above 4GB. Ugh..
->
->   2). The backends for "struct ttm_backend_func" utilize the PCI API. When
->       they get a page allocated via alloc_page, the use 'pci_map_page' and
->       program the DMA (bus) address in the GART - which is correct. But then
->       the calls that kick off the graphic driver to process the pages do not
->       use the pci_page_sync_* calls. If the physical address of the page
->       is the same as the DMA bus address returned from pci_map_page then there
->       are no trouble. But if they are different:
-> 	virt_to_phys(page_address(p)) != pci_map_page(p,..)
->       then the graphic card fetches data from the DMA (bus) address (so the
->       value returned from pci_map_page). The data however that the user wrote
->       to (the page p) ends up being untouched. You are probably saying:
->       "What? Nonsense, we stitch the page in ttm_bo_vm_fault using the PFN
->       and .. and even if the virt_to_phys(page_address(p)) != pci_map_page(p)
->       the GART ends up with the bus (DMA) address of the PFN!" That is true.
->       But if you combine this with 1) where you end up with page that is
->       above the dma_mask (even if you called it with GFP_DMA32) and then
->       make a call on pci_map_page you would end up with a bounce buffer!
->
->
-> The problem above can be easily reproduced on bare-metal if you pass in
-> "swiotlb=force iommu=soft".
->
->
-> There are two ways of fixing this:
->
->   1). Use the 'dma_alloc_coherent' (or pci_alloc_consistent if there is
->       struct pcidev present), instead of alloc_page for GFP_DMA32. The
->       'dma_alloc_coherent' guarantees that the allocated page fits
->       within the device dma_mask (or uses the default DMA32 if no device
->       is passed in). This also guarantees that any subsequent call
->       to the PCI API for this page will return the same DMA (bus) address
->       as the first call (so pci_alloc_consistent, and then pci_map_page
->       will give the same DMA bus address).
->
->   2). Use the pci_sync_range_* after sending a page to the graphics
->       engine. If the bounce buffer is used then we end up copying the
->       pages.
->
->   3). This one I really don't want to think about, but I should mention
->       it. Alter the alloc_page and its backend to know about Xen.
->       The pushback from the MM guys will be probably: "why not use the PCI API.."
->
->
-> So attached is a draft set of patches that use solution #1. I've tested
-> this on baremetal (and Xen) on PCIe Radeon and nouveau cards with success.
->
-> 1) The 'NULL' when doing dma_alloc_coherent is unsightly. I was toying
-> with modifying the TTM API to pass in 'struct device' or 'struct pci_device'
-> but figured it would make first sense to get your guys input before heading that route.
->
-> This patch-set is also available at:
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git devel/ttm.pci-api.v3
->
-> Konrad Rzeszutek Wilk (5):
->        ttm: Introduce a placeholder for DMA (bus) addresses.
->        tm: Utilize the dma_addr_t array for pages that are to in DMA32 pool.
->        ttm: Expand (*populate) to support an array of DMA addresses.
->        radeon/ttm/PCIe: Use dma_addr if TTM has set it.
->        nouveau/ttm/PCIe: Use dma_addr if TTM has set it.
->
-> And diffstat:
->
->   drivers/gpu/drm/nouveau/nouveau_sgdma.c |   31 +++++++++++++++++++-------
->   drivers/gpu/drm/radeon/radeon.h         |    4 ++-
->   drivers/gpu/drm/radeon/radeon_gart.c    |   36 ++++++++++++++++++++++--------
->   drivers/gpu/drm/radeon/radeon_ttm.c     |    8 +++++-
->   drivers/gpu/drm/ttm/ttm_agp_backend.c   |    3 +-
->   drivers/gpu/drm/ttm/ttm_page_alloc.c    |   35 +++++++++++++++++++++++++-----
->   drivers/gpu/drm/ttm/ttm_tt.c            |   12 +++++++--
->   drivers/gpu/drm/vmwgfx/vmwgfx_buffer.c  |    3 +-
->   include/drm/ttm/ttm_bo_driver.h         |    6 ++++-
->   include/drm/ttm/ttm_page_alloc.h        |    8 +++++-
->   10 files changed, 111 insertions(+), 35 deletions(-)
->
->
->    
+> -----Original Message-----
+> From: Sam Ravnborg [mailto:sam@ravnborg.org]
+> Sent: Saturday, January 08, 2011 3:21 PM
+> To: Guan Xuetao
+> Cc: 'Paul Mundt'; linux-arch@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCHv1 01/12] unicore32 core architecture: build infrastructure
+> 
+> Hi Guan.
+> 
+> A few nits.
+> 
+> > +# Explicitly specifiy 32-bit UniCore ISA:
+> > +KBUILD_CFLAGS	+=$(call cc-option,-municore32)
+> 
+> If gcc does not support -municore32 then I assume it
+> is a wrong gcc version used.
+> So just add it unconditionally.
+> 
+> The cc-option macro is used to add options to gcc iff gcc
+> supports this option. So each time you use cc-option we
+> actually run gcc to determine if the opton is supported.
+Corrected.
+
+> 
+> Also as a general rule add a space after the equal sign:
+> > +KBUILD_CFLAGS	+= -municore32
+>                           ^
+Ok.
+
+> > +
+> > +#Default value
+> > +head-y		:= arch/unicore32/kernel/head.o arch/unicore32/kernel/init_task.o
+> Break longer lines in two like this:
+> > +head-y		:= arch/unicore32/kernel/head.o
+> > +head-y		+= arch/unicore32/kernel/init_task.o
+> 
+> Note: I see lots of Makefile where longer lines are continued on
+> the next line using a '\'. But like in regular C code to use an incremental
+> assignment looks just better / is more clear.
+> 
+Ok.
+> > +textofs-y	:= 0x00408000
+> > +
+> > +# The byte offset of the kernel image in RAM from the start of RAM.
+> > +TEXT_OFFSET := $(textofs-y)
+> 
+> If you are going to have different TEXT_OFFSET's then I suggest to move
+> this to KConfig as an "hex "Text offset" config option.
+> You can set default values dependign on BSP etc.
+There is no different TEXT_OFFSET.
+
+> 
+> Also defiing stuff here just to export it for use in boot/
+> has always looked like a strange concept - but many archs do so today.
+> You do not export TEXT_OFFSET but I guess this is a bug?
+I need TEXT_OFFSET for kernel/ and boot/, so export it.
+What's the better method?
+> 
+> > +
+> > +export	TEXT_OFFSET GZFLAGS
+> This variable is never used.
+GZFLAGS is removed.
+> 
+> 
+> > +
+> > +core-y				+= arch/unicore32/kernel/ arch/unicore32/mm/
+> > +core-$(CONFIG_UNICORE_FPU_F64)	+= arch/unicore32/uc-f64/
+> > +
+> > +drivers-$(CONFIG_ARCH_PUV3)	+= drivers/staging/puv3/
+> > +
+> > +libs-y				+= arch/unicore32/lib/
+> > +# include libc.a in libs-y for string functions, like memcpy and so on.
+> > +libs-y				+= $(shell $(CC) $(KBUILD_CFLAGS) -print-file-name=libc.a)
+> > +libs-y				+= $(shell $(CC) $(KBUILD_CFLAGS) -print-file-name=libgcc.a)
+> > +
+> 
+> The other three archs that uses libgcc use:
+> 
+>     $(shell $(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
+> 
+> So when I read the above I am confused why it looks different than the others.
+> For libc I guess you do nto have that option and what you do is fine there.
+It's the same with -print-libgcc-file-name and -print-file-name=libgcc.a.
+And we need libc.a for string like functions.
+> 
+> > +
+> > +CLEAN_FILES += $(ASM_GENERIC_HEADERS)
+> > +
+> > +# We use MRPROPER_FILES and CLEAN_FILES now
+> 
+> Stale comment
+Removed.
+> 
+> 
+> > +  echo  '                  Install using (your) ~/bin/$(INSTALLKERNEL) or'
+> > +  echo  '                  (distribution) /sbin/$(INSTALLKERNEL) or'
+> > +  echo  '                  install to $$(INSTALL_PATH) and run lilo'
+> 
+> I do not think the three lines above is correct for unicore32.
+> Looks like they are left from a copy from x86.
+Removed.
+> 
+> 	Sam
+Thanks Sam.
+
+Guan Xuetao
 
