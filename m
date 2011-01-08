@@ -1,93 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab1AHCVU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 21:21:20 -0500
-Received: from mga02.intel.com ([134.134.136.20]:21553 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752614Ab1AHCVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 21:21:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,292,1291622400"; 
-   d="scan'208";a="694751178"
-From: Youquan Song <youquan.song@intel.com>
-To: linux-kernel@vger.kernel.org, hpa@linux.intel.com,
-        suresh.b.siddha@intel.com
-Cc: yong.y.wang@linux.intel.com, joe@perches.com, jbaron@redhat.com,
-        arjan@linux.intel.com, trenn@suse.de, kent.liu@intel.com,
-        chaohong.guo@intel.com, Youquan Song <youquan.song@linux.intel.com>,
-        Youquan Song <youquan.song@intel.com>
-Subject: [PATCH v3 2/2] apic: Add print error interrupt reason
-Date: Sat,  8 Jan 2011 10:20:11 +0800
-Message-Id: <1294453211-26439-3-git-send-email-youquan.song@intel.com>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1294453211-26439-2-git-send-email-youquan.song@intel.com>
-References: <1294453211-26439-1-git-send-email-youquan.song@intel.com>
- <1294453211-26439-2-git-send-email-youquan.song@intel.com>
+	id S1752542Ab1AHCXU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 21:23:20 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44808
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751801Ab1AHCXT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 21:23:19 -0500
+Date: Fri, 07 Jan 2011 18:23:50 -0800 (PST)
+Message-Id: <20110107.182350.193715518.davem@davemloft.net>
+To: a.p.zijlstra@chello.nl
+Cc: sam@ravnborg.org, linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: sparc boot failure due to perf init
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1294431832.2016.457.camel@laptop>
+References: <20110107201805.GA28104@merkur.ravnborg.org>
+	<1294431832.2016.457.camel@laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-End user worry about the error interrupt information and intend to know what
-kind of error interrupts are generated, so this patch add printing out the
-detail debug information of error interrupt. 
-dynamic debug is not initiated when LAPIC initiation, so the pr_debug will not
-output the error interrupt debug information when boot.
-In this patch, we use apic_printk(APIC_DEBUG,), so if add kernel option
-apic=debug will output the error interrupt during boot.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Fri, 07 Jan 2011 21:23:52 +0100
 
-Signed-off-by: Youquan Song <youquan.song@intel.com>
----
- arch/x86/kernel/apic/apic.c |   29 ++++++++++++++++++++++++++++-
- 1 files changed, 28 insertions(+), 1 deletions(-)
+> On Fri, 2011-01-07 at 21:18 +0100, Sam Ravnborg wrote:
+>> This was introduced by: 
+>> "perf, arch: Cleanup perf-pmu init vs lockup-detector" - 004417a6d468e24399e383645c068b498eed84ad
+>> 
+>> I did not see any obvious fix.
+>> (To avoid it is simple - I can disable it in my config).
+> 
+> Or you can switch back to arch_initcall() for now, it'll cause the
+> generic watchdog stuff not to work, but that's a lot less important.
+> 
+> I'll have a chat with Dave on how to best sort all this.
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 3f838d5..f0f2809 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1794,6 +1794,32 @@ void smp_spurious_interrupt(struct pt_regs *regs)
- 	irq_exit();
- }
- 
-+static const char * const error_interrupt_reason[] = {
-+	"Send CS error",
-+	"Receive CS error",
-+	"Send accept error",
-+	"Receive accept error",
-+	"Redirectable IPI",
-+	"Send illegal vector",
-+	"Received illegal vector",
-+	"Illegal register address",
-+};
-+
-+static void print_error_interrupt_reason(u32 reason)
-+{
-+	u32 i = 0;
-+	reason = reason & 0xff;
-+	do {
-+		if (reason & 0x1)
-+			apic_printk(APIC_DEBUG, " : %s",
-+					error_interrupt_reason[i]);
-+		i++;
-+		reason >>= 1;
-+	} while (reason > 0);
-+
-+	apic_printk(APIC_DEBUG, "\n");
-+}
-+
- /*
-  * This interrupt should never happen with our APIC/SMP architecture
-  */
-@@ -1821,8 +1847,9 @@ void smp_error_interrupt(struct pt_regs *regs)
- 	 * 6: Received illegal vector
- 	 * 7: Illegal register address
- 	 */
--	pr_debug("APIC error on CPU%d: %02x(%02x)\n",
-+	apic_printk(APIC_DEBUG, "APIC error on CPU%d: %02x(%02x)",
- 		smp_processor_id(), v , v1);
-+	print_error_interrupt_reason(v1);
- 	irq_exit();
- }
- 
--- 
-1.6.4.2
+I'll take a look at this.
 
+Thanks for bisecting this down Sam, I was seeing the same problem
+on my machines and was about to debug it myself.
