@@ -1,89 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071Ab1AHMSI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 07:18:08 -0500
-Received: from violet.fr.zoreil.com ([92.243.8.30]:49643 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751012Ab1AHMSH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 07:18:07 -0500
-Date: Sat, 8 Jan 2011 13:17:26 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ben Hutchings <benh@debian.org>, David Miller <davem@davemloft.net>,
-        Hayes Wang <hayeswang@realtek.com>,
-        David Woodhouse <dwmw2@infradead.org>, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-Message-ID: <20110108121726.GA2216@electric-eye.fr.zoreil.com>
-References: <20110106.122003.233698077.davem@davemloft.net> <AANLkTi=7=_FyVsjA3vKEpg8RwfC=m-8QGfqa6ctxQday@mail.gmail.com> <20110107190656.GQ3702@decadent.org.uk> <AANLkTikwrHoOY4wvUp1qn-OT=EjZesSNR29US1ERc0o2@mail.gmail.com> <20110107215505.GA1892@electric-eye.fr.zoreil.com> <AANLkTinANp+Jp8TPKzii6iZLUFpMyrXhmxYr42nZrXQU@mail.gmail.com> <20110108000901.GA2133@electric-eye.fr.zoreil.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110108000901.GA2133@electric-eye.fr.zoreil.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	id S1752306Ab1AHMqx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 07:46:53 -0500
+Received: from mga09.intel.com ([134.134.136.24]:50628 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752118Ab1AHMqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jan 2011 07:46:52 -0500
+Message-Id: <b9dded$hjmdu0@orsmga002.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,293,1291622400"; 
+   d="scan'208";a="591083456"
+Date: Sat, 08 Jan 2011 12:46:48 +0000
+To: Pavel Machek <pavel@ucw.cz>, Dave Airlie <airlied@gmail.com>
+Subject: Re: Linux 2.6.37-rc8
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <20000101001300.GA1627@ucw.cz>
+References: <AANLkTi=-dNeeDjcSoznKtwcaNyw1mMXSqepFY89R2i+2@mail.gmail.com> <20110104142604.GA6591@ucw.cz> <849307$b0n4jp@azsmga001.ch.intel.com> <20110104210408.GA2008@elf.ucw.cz> <AANLkTim2PC5tgLfuz4+jO4L_xSX9bPuLhy+gtE2mgcJH@mail.gmail.com> <20110105220533.GA2700@elf.ucw.cz> <AANLkTikq9QHDk2zN+b8LFjrfqmHgtHWS8nT42hfiSwrz@mail.gmail.com> <20110106202712.GA1967@elf.ucw.cz> <20000101001300.GA1627@ucw.cz>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-r8169: delay phy init until device opens.
+On Sat, 1 Jan 2000 01:13:01 +0100, Pavel Machek <pavel@ucw.cz> wrote:
+> One more question: what kind of 3D performance should I expect?
+> glxgears get < 100 fps in 1024x768 mode, and flightgear is unusable.
 
-It workarounds the 60s firmware load failure timeout for the
-non-modular case.
+glxgears should be vsync'ed, and flightgear would be expecting a little
+too much from the 945. World of Padman is about the limit of the
+complexity that 945 can handle and remain playable. On the other hand, it
+is a very able performer for "2D" compositing.
+-Chris
 
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-
-diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
-index 27a7c20..dd758cd 100644
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -3069,15 +3069,6 @@ rtl8169_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 		rtl8168_driver_start(tp);
- 	}
- 
--	rtl8169_init_phy(dev, tp);
--
--	/*
--	 * Pretend we are using VLANs; This bypasses a nasty bug where
--	 * Interrupts stop flowing on high load on 8110SCd controllers.
--	 */
--	if (tp->mac_version == RTL_GIGA_MAC_VER_05)
--		RTL_W16(CPlusCmd, RTL_R16(CPlusCmd) | RxVlan);
--
- 	device_set_wakeup_enable(&pdev->dev, tp->features & RTL_FEATURE_WOL);
- 
- 	if (pci_dev_run_wake(pdev))
-@@ -3127,6 +3118,7 @@ static void __devexit rtl8169_remove_one(struct pci_dev *pdev)
- static int rtl8169_open(struct net_device *dev)
- {
- 	struct rtl8169_private *tp = netdev_priv(dev);
-+	void __iomem *ioaddr = tp->mmio_addr;
- 	struct pci_dev *pdev = tp->pci_dev;
- 	int retval = -ENOMEM;
- 
-@@ -3162,6 +3154,15 @@ static int rtl8169_open(struct net_device *dev)
- 
- 	napi_enable(&tp->napi);
- 
-+	rtl8169_init_phy(dev, tp);
-+
-+	/*
-+	 * Pretend we are using VLANs; This bypasses a nasty bug where
-+	 * Interrupts stop flowing on high load on 8110SCd controllers.
-+	 */
-+	if (tp->mac_version == RTL_GIGA_MAC_VER_05)
-+		RTL_W16(CPlusCmd, RTL_R16(CPlusCmd) | RxVlan);
-+
- 	rtl_pll_power_up(tp);
- 
- 	rtl_hw_start(dev);
-@@ -3171,7 +3172,7 @@ static int rtl8169_open(struct net_device *dev)
- 	tp->saved_wolopts = 0;
- 	pm_runtime_put_noidle(&pdev->dev);
- 
--	rtl8169_check_link_status(dev, tp, tp->mmio_addr);
-+	rtl8169_check_link_status(dev, tp, ioaddr);
- out:
- 	return retval;
- 
+-- 
+Chris Wilson, Intel Open Source Technology Centre
