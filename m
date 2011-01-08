@@ -1,74 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381Ab1AHMre (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 07:47:34 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36204 "EHLO
+	id S1752115Ab1AHM5V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 07:57:21 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60297 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752217Ab1AHMrd convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751663Ab1AHM5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 07:47:33 -0500
+	Sat, 8 Jan 2011 07:57:20 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=lcEm7M8cPMgLRczStJs3yLgN1yV+i/2Hu0nBhCqcIerICoVbbz8UtlEGwWrr5oSLh+
-         niOA6eaaJ1LmNLYQnbsXwQIYa2ot9n8O/jD43R3ShgbvgpT3d/rUDdEvTd21jED/9j5t
-         1MsbhUTeBBRaFi/Py0Es6bjPgk1BDE6gWrl/I=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type;
+        b=dh/yJYUnncMdWTaIDC1ysqt5WwVyFvUdCGfyU1GYeBuua+pEpNp5r6DZgEYgav1c79
+         hTyVeywz3unDs3PwfYkDXfaRz8GRwgzm4KX7EQblcJ+rHmYGSaxlpmW35410ptKZiEYq
+         LaUQ9GUWUk+IkJ99Jf6W/kuvmfJ41LDK+f5+4=
+Message-ID: <4D285F2B.9070407@gmail.com>
+Date: Sat, 08 Jan 2011 07:57:15 -0500
+From: William Allen Simpson <william.allen.simpson@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110107232339.GS21922@thunk.org>
-References: <201101052237.36735.toralf.foerster@gmx.de>
-	<alpine.DEB.2.00.1101071443280.23858@chino.kir.corp.google.com>
-	<20110107232339.GS21922@thunk.org>
-Date: Sat, 8 Jan 2011 12:47:32 +0000
-X-Google-Sender-Auth: DNTYlurDAF6CY1bUhx_unVH1mNo
-Message-ID: <AANLkTi=JNOF43ue6CjODXhLTMxmrRTx-7JPdYGvn60mk@mail.gmail.com>
-Subject: Re: mke2fs: page allocation failure w/ kernel 2.6.37
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: "Ted Ts'o" <tytso@mit.edu>, David Rientjes <rientjes@google.com>,
-        =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Pekka Enberg <penberg@kernel.org>
+CC: Eric Dumazet <eric.dumazet@gmail.com>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [058/152] tcp: protect sysctl_tcp_cookie_size reads
+References: <20110106002302.141581701@clark.site>	<4D2691D4.3060304@gmail.com>	<1294389025.2704.95.camel@edumazet-laptop>	<4D270F85.9070705@gmail.com> <AANLkTinkmnVLi7NrKsK50MBsycyYhyvEdtm01NA9ubOX@mail.gmail.com> <4D285158.1080804@gmail.com>
+In-Reply-To: <4D285158.1080804@gmail.com>
+Content-Type: multipart/mixed;
+ boundary="------------030001010709060203040401"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, 7 January 2011, Ted Ts'o <tytso@mit.edu> wrote:
-> On Fri, Jan 07, 2011 at 02:45:30PM -0800, David Rientjes wrote:
->> On Wed, 5 Jan 2011, Toralf Förster wrote:
->>
->> > Hello,
->> >
->> > I got this in /var/log/messages today (created a ext2 partition at an external USB drive, worked fine) :
->> >
->>
->> Yeah, this failure is from the kmemleak stack which simply means that
->> debugging tool will be disabled rather than any disruption to the
->> workflow.
->>
->> I'm curious why kmemleak is masking with GFP_KERNEL and GFP_ATOMIC and not
->> allowing users to pass __GFP_NOWARN to suppress this type of failure,
->> especially since the stack trace is already emitted by kmemleak when it is
->> stopped.  Catalin?
+This is a multi-part message in MIME format.
+--------------030001010709060203040401
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+
+On 1/8/11 6:58 AM, William Allen Simpson wrote:
+> Eric was *not* *truthful* saying there were "checkpatch.pl errors/warnings" in
+> my code.
 >
-> Indeed, is there a reason why the kmemleak code is so noisy?  And can
-> it display a more obvious message about what is going on?  It took me
-> a while to figure out why it was unhappy, and whether there it was a
-> fault of the code it was testing, or just that it could get the memory
-> it needed....
+I've received a private email complaining that I've not properly attributed
+the origin of the patch.  Given a person has already lied to me about this,
+I'm not sure.  When it comes to personal integrity, it's "one strike and
+you're out"!
 
-Good point, I think kmemleak can always pass __GFP_NOWARN for its own
-allocations. Note that these allocations are only for the kmemleak
-metadata, the other users just allocate memory with the flags they
-requested. When failing, it could also avoid printing call traces
-(maybe keep a debug macro in case one wants to track this).
+Since Eric had previously reviewed the original code, surely any such error
+would have been found by him at that time.  Perhaps he made a mistake?
 
-I'll post a patch on Monday.
+However, I'm happy to add a Reported-by line.  If this is an error, hopefully
+somebody will correct it.
 
-Thanks.
+--------------030001010709060203040401
+Content-Type: text/plain; x-mac-type="54455854"; x-mac-creator="0";
+ name="sysctl_tcp_cookie_size-read-once.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="sysctl_tcp_cookie_size-read-once.patch"
 
+>From bd6f04cbee4c924e07cf3a1819a24acc3cc2490b Mon Sep 17 00:00:00 2001
+From: William Allen Simpson <william.allen.simpson@gmail.com>
+Date: Sat, 8 Jan 2011 05:58:21 -0500
+Subject: [PATCH] sysctl_tcp_cookie_size read once
 
+Read sysctl_tcp_cookie_size only once in tcp_cookie_size_check(),
+as it might be concurrently changed by another cpu.
+
+Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: William.Allen.Simpson@gmail.com
+---
+ net/ipv4/tcp_output.c |   15 +++++++++------
+ 1 files changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index de3bd84..49be4e3 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -392,27 +392,30 @@ struct tcp_out_options {
+  */
+ static u8 tcp_cookie_size_check(u8 desired)
+ {
++	int cookie_size;
++
+ 	if (desired > 0) {
+ 		/* previously specified */
+ 		return desired;
+ 	}
+-	if (sysctl_tcp_cookie_size <= 0) {
++	cookie_size = ACCESS_ONCE(sysctl_tcp_cookie_size);
++	if (cookie_size <= 0) {
+ 		/* no default specified */
+ 		return 0;
+ 	}
+-	if (sysctl_tcp_cookie_size <= TCP_COOKIE_MIN) {
++	if (cookie_size <= TCP_COOKIE_MIN) {
+ 		/* value too small, specify minimum */
+ 		return TCP_COOKIE_MIN;
+ 	}
+-	if (sysctl_tcp_cookie_size >= TCP_COOKIE_MAX) {
++	if (cookie_size >= TCP_COOKIE_MAX) {
+ 		/* value too large, specify maximum */
+ 		return TCP_COOKIE_MAX;
+ 	}
+-	if (0x1 & sysctl_tcp_cookie_size) {
++	if (cookie_size & 0x1) {
+ 		/* 8-bit multiple, illegal, fix it */
+-		return (u8)(sysctl_tcp_cookie_size + 0x1);
++		cookie_size += 0x1;
+ 	}
+-	return (u8)sysctl_tcp_cookie_size;
++	return (u8)cookie_size;
+ }
+ 
+ /* Write previously computed TCP options to the packet.
 -- 
-Catalin
+1.7.1
+
+
+--------------030001010709060203040401--
