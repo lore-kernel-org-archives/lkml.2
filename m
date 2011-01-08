@@ -1,83 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869Ab1AHSl3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 13:41:29 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63408 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab1AHSl1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 13:41:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type;
-        b=VDbvr1Fx68ftTAyqMhSE/mpUU6JXwuK4BfdHhJoXYTdJV8C0q90QwyV6Qp6kBolRJb
-         C+2HQq0x2RR4fInq8Rp7otnx+4AH5vx6p3EJnlHN7HE9F6sqtH8kAsZhLmpG86gQiegA
-         8T/nosxNCAJ48CN+BGukldCG4KSTPDHzRPpu8=
-Message-ID: <4D28AFD1.3020808@gmail.com>
-Date: Sat, 08 Jan 2011 19:41:21 +0100
-From: Jarek Poplawski <jarkao2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.13) Gecko/20100916 SeaMonkey/2.0.8
+	id S1751383Ab1AHSvB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 13:51:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63388 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750925Ab1AHSvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jan 2011 13:51:00 -0500
+Date: Sat, 8 Jan 2011 13:50:50 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
+To: Kay Sievers <kay.sievers@vrfy.org>
+cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com
+Subject: Re: kobject_put vs module unload
+In-Reply-To: <AANLkTi=hZ_W877QOwNK3=1-2S03VsKOXF_cVno_ReyrY@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1101081340250.1879@hs20-bc2-1.build.redhat.com>
+References: <Pine.LNX.4.64.1101072234040.382@hs20-bc2-1.build.redhat.com>
+ <20110108055621.GB10391@suse.de> <Pine.LNX.4.64.1101080811400.29089@hs20-bc2-1.build.redhat.com>
+ <AANLkTikg7vAG4-E=BD_sC=63R8fDCfEi_wiqnxDnUnK=@mail.gmail.com>
+ <Pine.LNX.4.64.1101081258560.24933@hs20-bc2-1.build.redhat.com>
+ <AANLkTi=hZ_W877QOwNK3=1-2S03VsKOXF_cVno_ReyrY@mail.gmail.com>
 MIME-Version: 1.0
-To: Iain Paton <selsinork@gmail.com>
-CC: Michael Chan <mchan@broadcom.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.37 vlans on bnx2 not functional, panic with tcpdump
-References: <4D2634DE.2060907@gmail.com> <1294357941.21580.2.camel@HP1> <1294361206.21580.7.camel@HP1> <AANLkTi=PGPVRbS3XViskpZ0GSS8ouBcgVZYYG9EoM-Nz@mail.gmail.com> <1294422653.14051.11.camel@HP1> <4D2754F9.8050707@gmail.com>
-In-Reply-To: <4D2754F9.8050707@gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------090806050204080902040303"
+Content-Type: MULTIPART/MIXED; BOUNDARY="168436252-769775331-1294512650=:1879"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090806050204080902040303
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Iain Paton wrote:
-...
-> So you can consider any bnx2 cause for this closed. I'll get back to the
-> list if I can come up with any more useful info.
+--168436252-769775331-1294512650=:1879
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-Hi Iain,
-If it's not a problem, please try if the attached debugging patch
-(not tested) can change anything.
 
-Thanks,
-Jarek P.
 
---------------090806050204080902040303
-Content-Type: text/plain;
- name="dev.c.deliver_skb.1.diff"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="dev.c.deliver_skb.1.diff"
+On Sat, 8 Jan 2011, Kay Sievers wrote:
 
-ZGlmZiAtLWdpdCBhL25ldC9jb3JlL2Rldi5jIGIvbmV0L2NvcmUvZGV2LmMKaW5kZXggMGRk
-NTRhNi4uOTI0NDM3MyAxMDA2NDQKLS0tIGEvbmV0L2NvcmUvZGV2LmMKKysrIGIvbmV0L2Nv
-cmUvZGV2LmMKQEAgLTI3MjAsNiArMjcyMCwxNyBAQCBzdGF0aWMgaW5saW5lIGludCBkZWxp
-dmVyX3NrYihzdHJ1Y3Qgc2tfYnVmZiAqc2tiLAogCXJldHVybiBwdF9wcmV2LT5mdW5jKHNr
-Yiwgc2tiLT5kZXYsIHB0X3ByZXYsIG9yaWdfZGV2KTsKIH0KIAorc3RhdGljIGlubGluZSBp
-bnQgZGVsaXZlcl9za2JfY2xvbmUoc3RydWN0IHNrX2J1ZmYgKnNrYiwKKwkJCSAgICAgIHN0
-cnVjdCBwYWNrZXRfdHlwZSAqcHRfcHJldiwKKwkJCSAgICAgIHN0cnVjdCBuZXRfZGV2aWNl
-ICpvcmlnX2RldikKK3sKKwlzdHJ1Y3Qgc2tfYnVmZiAqbnNrYiA9IHNrYl9jbG9uZShza2Is
-IEdGUF9BVE9NSUMpOworCisJaWYgKCFuc2tiKQorCQlyZXR1cm4gMDsKKwlyZXR1cm4gcHRf
-cHJldi0+ZnVuYyhuc2tiLCBuc2tiLT5kZXYsIHB0X3ByZXYsIG9yaWdfZGV2KTsKK30KKwog
-I2lmIChkZWZpbmVkKENPTkZJR19CUklER0UpIHx8IGRlZmluZWQoQ09ORklHX0JSSURHRV9N
-T0RVTEUpKSAmJiBcCiAgICAgKGRlZmluZWQoQ09ORklHX0FUTV9MQU5FKSB8fCBkZWZpbmVk
-KENPTkZJR19BVE1fTEFORV9NT0RVTEUpKQogLyogVGhpcyBob29rIGlzIGRlZmluZWQgaGVy
-ZSBmb3IgQVRNIExBTkUgKi8KQEAgLTI5NTAsNyArMjk2MSw3IEBAIHN0YXRpYyBpbnQgX19u
-ZXRpZl9yZWNlaXZlX3NrYihzdHJ1Y3Qgc2tfYnVmZiAqc2tiKQogCQlpZiAocHR5cGUtPmRl
-diA9PSBudWxsX29yX29yaWcgfHwgcHR5cGUtPmRldiA9PSBza2ItPmRldiB8fAogCQkgICAg
-cHR5cGUtPmRldiA9PSBvcmlnX2RldikgewogCQkJaWYgKHB0X3ByZXYpCi0JCQkJcmV0ID0g
-ZGVsaXZlcl9za2Ioc2tiLCBwdF9wcmV2LCBvcmlnX2Rldik7CisJCQkJcmV0ID0gZGVsaXZl
-cl9za2JfY2xvbmUoc2tiLCBwdF9wcmV2LCBvcmlnX2Rldik7CiAJCQlwdF9wcmV2ID0gcHR5
-cGU7CiAJCX0KIAl9CkBAIC0yOTc2LDcgKzI5ODcsNyBAQCBuY2xzOgogCiAJaWYgKHZsYW5f
-dHhfdGFnX3ByZXNlbnQoc2tiKSkgewogCQlpZiAocHRfcHJldikgewotCQkJcmV0ID0gZGVs
-aXZlcl9za2Ioc2tiLCBwdF9wcmV2LCBvcmlnX2Rldik7CisJCQlyZXQgPSBkZWxpdmVyX3Nr
-Yl9jbG9uZShza2IsIHB0X3ByZXYsIG9yaWdfZGV2KTsKIAkJCXB0X3ByZXYgPSBOVUxMOwog
-CQl9CiAJCWlmICh2bGFuX2h3YWNjZWxfZG9fcmVjZWl2ZSgmc2tiKSkgewo=
---------------090806050204080902040303--
+> On Sat, Jan 8, 2011 at 19:01, Mikulas Patocka <mpatocka@redhat.com> wrote=
+:
+> > On Sat, 8 Jan 2011, Kay Sievers wrote:
+> >> On Sat, Jan 8, 2011 at 14:19, Mikulas Patocka <mpatocka@redhat.com> wr=
+ote:
+> >> > On Fri, 7 Jan 2011, Greg KH wrote:
+> >>
+> >> >> > 4) the reference obtained at point 1) is dropped, kobject referen=
+ce count
+> >> >> > reaches zero and the release callback is called. But that callbac=
+k points
+> >> >> > to an unloaded module and causes a crash.
+> >> >> >
+> >> >> > How is it solved? Am I missing something?
+> >> >>
+> >> >> You have the code that creates and frees the object, to not be in t=
+he
+> >> >> module that could have been unloaded. =C2=A0It's really just that s=
+imple.
+> >> >
+> >> > If the whole device mapper subsystem can be a module, where can I pu=
+t the
+> >> > code?
+> >> >
+> >> > I think a similar bug exists in md, it can also be unloaded as a mod=
+ule
+> >> > and it has "release" method in its module code.
+> >>
+> >> If you still have data structures hanging around, these structures are
+> >> supposed to take a reference on the module -- and you can not unload
+> >> the module as long as this is the case.
+> >>
+> >> Kay
+> >
+> > kobject references don't increase module reference count. If kobject he=
+ld
+> > module references, it would be a fix for this bug, but could cause othe=
+r
+> > bugs (some modules could be unloadable due to self-references to its ow=
+n
+> > kobjects).
+>=20
+> Sure, they don't automatically take references. It's the job of the
+> driver/module, to make sure to pin the module for any data of it,
+> which might be still in use.
+>=20
+> Kay
+
+A module can't unpin itself. If it does, the module can be unloaded=20
+immediatelly after module_put(THIS_MODULE) call and the function that=20
+called module_put crashes.
+
+A module must be unpinned by someone else. The question is: who unpins the=
+=20
+module when kobject references are gone?
+
+Mikulas
+--168436252-769775331-1294512650=:1879--
