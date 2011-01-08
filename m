@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab1AHODw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 09:03:52 -0500
-Received: from pfepa.post.tele.dk ([195.41.46.235]:59212 "EHLO
+	id S1752727Ab1AHOHn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 09:07:43 -0500
+Received: from pfepa.post.tele.dk ([195.41.46.235]:59509 "EHLO
 	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752351Ab1AHODu (ORCPT
+	with ESMTP id S1752380Ab1AHOHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 09:03:50 -0500
-Date: Sat, 8 Jan 2011 15:03:47 +0100
+	Sat, 8 Jan 2011 09:07:41 -0500
+Date: Sat, 8 Jan 2011 15:07:40 +0100
 From: Sam Ravnborg <sam@ravnborg.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        linux arch <linux-arch@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Guan Xuetao <guanxuetao@mprc.pku.edu.cn>,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH 1/2] kbuild: asm-generic support
-Message-ID: <20110108140347.GA3928@merkur.ravnborg.org>
-References: <20110108130302.GA21698@merkur.ravnborg.org> <20110108130427.GA25461@merkur.ravnborg.org> <20110109004539.5bf33510.sfr@canb.auug.org.au>
+To: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+Cc: "'Arnd Bergmann'" <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv1 01/12] unicore32 core architecture: build
+	infrastructure
+Message-ID: <20110108140740.GB3928@merkur.ravnborg.org>
+References: <00c601cba463$69533750$3bf9a5f0$@mprc.pku.edu.cn> <201101070118.41900.arnd@arndb.de> <023801cbaf15$8c569690$a503c3b0$@mprc.pku.edu.cn>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110109004539.5bf33510.sfr@canb.auug.org.au>
+In-Reply-To: <023801cbaf15$8c569690$a503c3b0$@mprc.pku.edu.cn>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 09, 2011 at 12:45:39AM +1100, Stephen Rothwell wrote:
-> Hi Sam,
+> > 
+> > Overall, I can see that there has been a lot of good progress in the code since
+> > the original versions that I looked at, very nice!
+> > 
+> > > diff --git a/arch/unicore32/.gitignore b/arch/unicore32/.gitignore
+> > > new file mode 100644
+> > > index 0000000..f0fc866
+> > > --- /dev/null
+> > > +++ b/arch/unicore32/.gitignore
+> > > @@ -0,0 +1,70 @@
+> > > +#
+> > > +# Generated include files
+> > > +#
+> > > +include/asm/atomic.h
+> > > +include/asm/auxvec.h
+> > > +include/asm/bitsperlong.h
+> > > +include/asm/bug.h
+> > > +include/asm/bugs.h
+> > > +include/asm/cputime.h
+> > > +include/asm/current.h
+> > > +include/asm/device.h
+> > > +include/asm/emergency-restart.h
+> > > +include/asm/errno.h
+> > > +include/asm/fb.h
+> > > +include/asm/fcntl.h
+> > > +include/asm/hardirq.h
+> > > ...
+> > 
+> > Maybe it would be better to put these files into a separate directory, like
+> > arch/unicore32/include/generated/asm, to make it easier to separate them
+> > from the other files and avoid listing them all in .gitignore besides the
+> > other places.
 > 
-> On Sat, 8 Jan 2011 14:04:27 +0100 Sam Ravnborg <sam@ravnborg.org> wrote:
-> >
-> > -LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include -Iinclude \
-> > +LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
-> > +                   -Iarch/$(hrd-arch)/include/generated -Iinclude \
->                                ^^^
-> hdr-arch?
-Good spotted.
+> That's great, and I make the following changes:
+...
 
-I wonder how this slipped in?!?
+I have made a second attempt to provice generic support
+for asm-generic headers as you likely have seen.
 
-If anyone try this - then please fix the misspelling.
-I will repost patch later.
+IMO you shall keep your own solution until we get
+generic support.
+In other words - you shall avoid being dependent on this.
 
 	Sam
