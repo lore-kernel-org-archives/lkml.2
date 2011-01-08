@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024Ab1AHBdi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 20:33:38 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55115 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752185Ab1AHBdh (ORCPT
+	id S1753068Ab1AHBeZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 20:34:25 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:61049 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752837Ab1AHBeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 20:33:37 -0500
+	Fri, 7 Jan 2011 20:34:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=G5PKxvD//Whi/fLBd8RsFxEkjtrZcag9PE2mjMy6AmRzAncHMbaSfOtlWXNbmPzzUX
+         H0AGvLOAC6mwLzGInxBw==
 MIME-Version: 1.0
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 7 Jan 2011 17:32:46 -0800
-Message-ID: <AANLkTi=eNucM5d=+zq5euz3dZirJEhPaH9f9ZXuHymEM@mail.gmail.com>
-Subject: Quick merge window note..
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <gregkh@suse.de>,
-        David Miller <davem@davemloft.net>
+From: Mike Waychison <mikew@google.com>
+Date: Fri, 7 Jan 2011 17:34:00 -0800
+Message-ID: <AANLkTin215LOZDs_BL6r9Aa_fX60iwyEZQ-FzbcEhXCQ@mail.gmail.com>
+Subject: Google firmware drivers in staging?
+To: Greg KH <greg@kroah.com>, torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So I've obviously been merging eagerly the last couple of days, but
-I'm taking most of the weekend off, and I thought I'd just point
-people at the fact that I merged the somewhat scary (but very
-impressive) lockless name lookup tree from Nick today.
+Hi Greg, Linus,
 
-It's scary because this is some very core code, and the new RCU lookup
-model is way more clever and subtle than the old dentry_lock spinlock.
+I'm going through our core dependencies for changes to the kernel that
+we use in house.  FWIW, these "core" dependencies are essentially
+required for our userland stack to function properly in our cluster
+environment.  My goal is to make it seamless for other Google
+engineers to use otherwise mainline kernels on our machines, enabling
+them to develop more of their code against mainline.
 
-But it's rather impressive and I really wanted to merge it, because
-some of the performance numbers are pretty stunning. For example, a
-hot-cache "find . -size" on my home directory (which basically just
-does name lookups to get the stat information for every file
-recursively) became 35% faster. And that's the _unthreaded_ case. Not
-some odd high-end scalability thing, and not some recompiled binary
-taking advantage of new facilities. Pathname lookup is just simply
-faster.
+Anyhow, rummaging down the list of stuff that we consider "core", I've
+come across a couple firmware specific drivers.  These drivers are
+specific to our machines, and would likely never apply to anyone
+else's hardware.  That said, they aren't very complicated (they are
+mostly isolated) and generally just help us plumb information between
+userland and the firmware itself (like system event log data).
 
-On the scary side, it's worth noticing that if you see any problems,
-and you think it might be due to the new rcu lookup, rather than
-bisect _everything_ (the merge window has already brought in 3700+
-commits), it may be worth just checking the VFS scale tip itself.
-That's fairly easy, because it's based on plain 2.6.37 (which if it
-isn't stable for you, we have bigger problems than the RCU lookup),
-and is just 57 commits up until commit b3e19d924b6e ("fs: scale
-mntget/mntput").
+I'd like to get rid of these drivers as a delta between mainline and
+our in-house trees.  Note that I can't really change anything on the
+firmware side as those ABIs are sorta written in stone for all intents
+and purposes, but I'd be happy to adapt the userland-exposed sides of
+the drivers if needed.
 
-So rather than bisect the 3700+ commits, start out by trying that one
-commit first.
+I'd like to release these guys publicly if there is any hope that they
+can wind up in the official tree.   What are your thoughts on putting
+them through the staging tree?
 
-Of course, I've already bisected one problem (firmware loading
-"feature"), and that wasn't in the RCU pathname lookup, so maybe I'm
-pointing out the new name lookup for no good reason. Traditionally, I
-think most of our regressions by far tend to be in drivers etc rather
-than core code and me being worried about the core may be silly.
-
-(And btw, I do have more pull requests pending, and no, I didn't miss
-them just because I haven't pulled yours yet. But I'm going to give it
-a short rest, and continue pulling on Sunday)
-
-                                 Linus
+Mike Waychison
