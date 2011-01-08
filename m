@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab1AHCRc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 21:17:32 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59165 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480Ab1AHCRb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 21:17:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=w6rel9K33tafRmkhht9rg8GLOrPFnaDHdY/CyXlam8a6e1hfgAL69MQQKr4zYv/vn6
-         +TyAATYi1IeYP2GZr5jL/2pwb7KXDERjrOh4tlh6u8r6fkQIw5V8tj65qVlUGxzkBhJb
-         OdqzJdA7YT63kk5NJyfktrhHXh7ygNNEfH+Dk=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTim75ihzBKXx1e9NbPnECMrKUidOLWjVuBWHwiEP@mail.gmail.com>
-References: <AANLkTim75ihzBKXx1e9NbPnECMrKUidOLWjVuBWHwiEP@mail.gmail.com>
-Date: Sat, 8 Jan 2011 10:17:29 +0800
-Message-ID: <AANLkTinkxPSeWz1jev69quw+Nv+3JG0U6t2WE4cDkuxV@mail.gmail.com>
-Subject: Re: [PATCH] replace ida in workqueue with page-sized buffer
-From: Hillf Danton <dhillf@gmail.com>
-To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
+	id S1752474Ab1AHCVI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 21:21:08 -0500
+Received: from mga02.intel.com ([134.134.136.20]:21553 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751662Ab1AHCVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 21:21:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,292,1291622400"; 
+   d="scan'208";a="694751156"
+From: Youquan Song <youquan.song@intel.com>
+To: linux-kernel@vger.kernel.org, hpa@linux.intel.com,
+        suresh.b.siddha@intel.com
+Cc: yong.y.wang@linux.intel.com, joe@perches.com, jbaron@redhat.com,
+        arjan@linux.intel.com, trenn@suse.de, kent.liu@intel.com,
+        chaohong.guo@intel.com, Youquan Song <youquan.song@linux.intel.com>,
+        Youquan Song <youquan.song@intel.com>
+Subject: [PATCH v3 0/2] apic: Fix error interrupt report at all APs when boot 
+Date: Sat,  8 Jan 2011 10:20:09 +0800
+Message-Id: <1294453211-26439-1-git-send-email-youquan.song@intel.com>
+X-Mailer: git-send-email 1.6.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 18, 2010 at 9:10 PM, Hillf Danton <dhillf@gmail.com> wrote:
-> The id of worker of global work queue is monitored with kernel library, ida.
->
-> The ida in global work queue is redefined to be page-sized buffer,
-> which is allocated when initializing workqueue.
->
-> The new id allocator could monitor ids in the rage from 0 to INT_MAX.
-> The buffer is used to store freed ids, and if the peak number of ids,
-> in workqueue as whole, is not out of the capacity of the allocated
-> buffer, there is no more allocation of buffer after initializing.
->
-> The advantage looks that the new allocator runs faster.
->
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+Recently, customer report that once machine boot, there are many error interrupt
+reported with exact number of all APs. 
 
-Hey Ingo
+The root cause is Local APIC will generate error interrupt when it detect
+the illegal vector (one in 0 ~ 15) in an interrupt message received or
+interrupt generate from local vector table or self IPI. SDM3A.chapter 10.
 
-Please take a glance at the patch for replacing ida in workqueue at
+AP LAPIC thermal sensor register will be reset to 0x10000, if thermal throttling
+interrupt take over by BIOS, it need restore AP with the thermal sensor register
+value of geting from BSP, otherwise cause system issue. If BIOS does not take
+over the thermal interrupt, The restore value will be CPU rest value of 0x10000,
+which means the interrupt vector is zero. After writing 0x10000 to thermal
+sensor LVT, the processor will recieve the error interrupt report if the APIC
+error interrupt is also set.
 
-       https://lkml.org/lkml/2010/12/18/35
+This patch add check the BIOS whether take over the thermal interrupt by look
+at interrupt delivery mode not fixed mode(BIOS handle will be SMI mode) before
+restore AP's thermal LVT. So the agony noise of error interrupt will dismiss
+when boot on machine that BIOS does not handle thermal interrupt..  
 
-thanks
-Hillf
+Also add print out error interrupt reason debug information.
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
+
+
