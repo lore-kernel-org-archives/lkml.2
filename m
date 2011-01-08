@@ -1,129 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267Ab1AHLbD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 06:31:03 -0500
-Received: from hydra.rus.uni-stuttgart.de ([129.69.1.55]:34570 "EHLO
-	hydra.rus.uni-stuttgart.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751838Ab1AHLbA (ORCPT
+	id S1752306Ab1AHLs3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 06:48:29 -0500
+Received: from pfepb.post.tele.dk ([195.41.46.236]:45358 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752032Ab1AHLs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 06:31:00 -0500
-X-Greylist: delayed 512 seconds by postgrey-1.27 at vger.kernel.org; Sat, 08 Jan 2011 06:31:00 EST
-Message-ID: <4D2848F0.8070906@rus.uni-stuttgart.de>
-Date: Sat, 08 Jan 2011 12:22:24 +0100
-From: Thomas Richter <richter@rus.uni-stuttgart.de>
-Reply-To: richter@rus.uni-stuttgart.de
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	Sat, 8 Jan 2011 06:48:28 -0500
+X-Greylist: delayed 55565 seconds by postgrey-1.27 at vger.kernel.org; Sat, 08 Jan 2011 06:48:28 EST
+Date: Sat, 8 Jan 2011 12:48:26 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+Cc: "'Paul Mundt'" <lethal@linux-sh.org>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv1 01/12] unicore32 core architecture: build
+	infrastructure
+Message-ID: <20110108114826.GA7915@merkur.ravnborg.org>
+References: <00c601cba463$69533750$3bf9a5f0$@mprc.pku.edu.cn> <20110106075553.GC15914@linux-sh.org> <023601cbaef7$850f2af0$8f2d80d0$@mprc.pku.edu.cn> <20110108072053.GA10552@merkur.ravnborg.org> <023c01cbaf24$85a99cc0$90fcd640$@mprc.pku.edu.cn>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: nvidia pata driver hangs on fsync
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <023c01cbaf24$85a99cc0$90fcd640$@mprc.pku.edu.cn>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks,
+> > > +textofs-y	:= 0x00408000
+> > > +
+> > > +# The byte offset of the kernel image in RAM from the start of RAM.
+> > > +TEXT_OFFSET := $(textofs-y)
+> > 
+> > If you are going to have different TEXT_OFFSET's then I suggest to move
+> > this to KConfig as an "hex "Text offset" config option.
+> > You can set default values dependign on BSP etc.
+> There is no different TEXT_OFFSET.
+> 
+> > 
+> > Also defiing stuff here just to export it for use in boot/
+> > has always looked like a strange concept - but many archs do so today.
+> > You do not export TEXT_OFFSET but I guess this is a bug?
+> I need TEXT_OFFSET for kernel/ and boot/, so export it.
 
-this is a bug report on drivers/ata/pata_amd.c for at least the kernel 
-versions 2.6.32.27 and 2.6.35.10. It might affect other kernels.
+I would suggest to move this to you Kconfig file.
+something like this:
 
-Configuration is as follows:
+# The byte offset of the kernel image in RAM from the start of RAM
+config UNICORE32_TEXT_OFFSET
+	hex
+	default 0x00408000
 
-Asus M2N-SLI board with Nforce4 chipset. lspci reports the following:
+Then you have the symbol available as CONFIG_UNICORE32_TEXT_OFFSET
+both in your Makefiles and in your source files.
+> > 
+> > > +
+> > > +core-y				+= arch/unicore32/kernel/ arch/unicore32/mm/
+> > > +core-$(CONFIG_UNICORE_FPU_F64)	+= arch/unicore32/uc-f64/
+> > > +
+> > > +drivers-$(CONFIG_ARCH_PUV3)	+= drivers/staging/puv3/
+> > > +
+> > > +libs-y				+= arch/unicore32/lib/
+> > > +# include libc.a in libs-y for string functions, like memcpy and so on.
+> > > +libs-y				+= $(shell $(CC) $(KBUILD_CFLAGS) -print-file-name=libc.a)
+> > > +libs-y				+= $(shell $(CC) $(KBUILD_CFLAGS) -print-file-name=libgcc.a)
+> > > +
+> > 
+> > The other three archs that uses libgcc use:
+> > 
+> >     $(shell $(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
+> > 
+> > So when I read the above I am confused why it looks different than the others.
+> > For libc I guess you do nto have that option and what you do is fine there.
+> It's the same with -print-libgcc-file-name and -print-file-name=libgcc.a.
+> And we need libc.a for string like functions.
 
-00:00.0 RAM memory: nVidia Corporation MCP55 Memory Controller (rev a1)
-00:01.0 ISA bridge: nVidia Corporation MCP55 LPC Bridge (rev a2)
-00:01.1 SMBus: nVidia Corporation MCP55 SMBus (rev a2)
-00:02.0 USB Controller: nVidia Corporation MCP55 USB Controller (rev a1)
-00:02.1 USB Controller: nVidia Corporation MCP55 USB Controller (rev a2)
-00:04.0 IDE interface: nVidia Corporation MCP55 IDE (rev a1)
-00:05.0 IDE interface: nVidia Corporation MCP55 SATA Controller (rev a2)
-00:05.1 IDE interface: nVidia Corporation MCP55 SATA Controller (rev a2)
-00:05.2 IDE interface: nVidia Corporation MCP55 SATA Controller (rev a2)
-00:06.0 PCI bridge: nVidia Corporation MCP55 PCI bridge (rev a2)
-00:06.1 Audio device: nVidia Corporation MCP55 High Definition Audio 
-(rev a2)
-00:08.0 Bridge: nVidia Corporation MCP55 Ethernet (rev a2)
-00:09.0 Bridge: nVidia Corporation MCP55 Ethernet (rev a2)
-00:0e.0 PCI bridge: nVidia Corporation MCP55 PCI Express bridge (rev a2)
-00:0f.0 PCI bridge: nVidia Corporation MCP55 PCI Express bridge (rev a2)
-00:18.0 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] 
-HyperTransport Technology Configuration
-00:18.1 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] 
-Address Map
-00:18.2 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] 
-DRAM Controller
-00:18.3 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] 
-Miscellaneous Control
-01:06.0 Multimedia audio controller: Creative Labs SB Live! EMU10k1 (rev 07)
-01:06.1 Input device controller: Creative Labs SB Live! Game Port (rev 07)
-01:07.0 Parallel controller: Timedia Technology Co Ltd Device 7268 (rev 01)
-01:08.0 SCSI storage controller: Tekram Technology Co.,Ltd. TRM-S1040 
-(rev 01)
-01:0b.0 FireWire (IEEE 1394): Texas Instruments TSB43AB22/A 
-IEEE-1394a-2000 Controller (PHY/Link)
-03:00.0 VGA compatible controller: nVidia Corporation NV43 [GeForce 6600 
-GT] (rev a2)
+And then they use equal methods - OK.
 
-
-Two CD/DVD/DVD-RAM drivers (master/slave) are connected to the PATA 
-interface of the chipset and accessed via udma2 according to hdparm.
-The PATA interface is accessed through drivers/ata/pata_amd.c.
-
-Problem:
-
-mke2fs hangs reliably on formatting a filing system on DVD-RAM(!), for 
-either drive. Specifically, running mke2fs through strace shows that the 
-writes and seeks go to the drive fine, but after writing inode 
-information, mke2fs issues an fsync, and in that fsync the driver just 
-hangs. The drives show no further activity, and the system must be 
-rebooted to regain access. The issued command is:
-
-mke2fs -t ext2 -b 2048 /dev/srX with X = 0 or 1 (hangs for master or 
-slave, always reproducible)
-
-The problem does not appear with the legacy IDE driver, i.e. through 
-drivers/ide/amd74xx.c on which the cdroms work correctly and mke2fs 
-works fine. Drives are here also configured for udma2:
-/dev/hda:
-
-ATAPI CD-ROM, with removable media
-         Model Number:       _NEC DVD_RW ND-4571A
-         Serial Number:
-         Firmware Revision:  1-01
-Standards:
-         Likely used CD-ROM ATAPI-1
-Configuration:
-         DRQ response: 3ms.
-         Packet size: 12 bytes
-Capabilities:
-         LBA, IORDY(cannot be disabled)
-         DMA: mdma0 mdma1 mdma2 udma0 udma1 *udma2
-              Cycle time: min=120ns recommended=120ns
-         PIO: pio0 pio1 pio2 pio3 pio4
-              Cycle time: no flow control=120ns  IORDY flow control=120ns
-
-ATAPI CD-ROM, with removable media
-         Model Number:       HL-DT-ST DVDRAM GSA-4040B
-         Serial Number:      K2938AC0452
-         Firmware Revision:  A304
-Standards:
-         Likely used CD-ROM ATAPI-1
-Configuration:
-         DRQ response: 50us.
-         Packet size: 12 bytes
-Capabilities:
-         LBA, IORDY(can be disabled)
-         DMA: mdma0 mdma1 mdma2 udma0 udma1 *udma2
-              Cycle time: min=120ns recommended=120ns
-         PIO: pio0 pio1 pio2 pio3 pio4
-              Cycle time: no flow control=120ns  IORDY flow control=120ns
-HW reset results:
-         CBLID- above Vih
-         Device num = 1
-
-Greetings,
-
-Thomas Richter
-
+	Sam
