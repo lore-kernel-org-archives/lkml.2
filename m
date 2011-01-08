@@ -1,84 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217Ab1AHLZP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 06:25:15 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:50368 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751613Ab1AHLZN convert rfc822-to-8bit (ORCPT
+	id S1752267Ab1AHLbD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 06:31:03 -0500
+Received: from hydra.rus.uni-stuttgart.de ([129.69.1.55]:34570 "EHLO
+	hydra.rus.uni-stuttgart.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751838Ab1AHLbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 06:25:13 -0500
-Date: Sat, 8 Jan 2011 12:24:55 +0100
-From: matthieu castet <castet.matthieu@free.fr>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Xiaotian Feng <xtfeng@gmail.com>, Valdis.Kletnieks@vt.edu,
-        Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
-        Arjan van de Ven <arjan@infradead.org>,
-        James Morris <jmorris@namei.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 3/3 V13] RO/NX protection for loadable kernel
-Message-ID: <20110108122455.38d31524@mat-laptop>
-In-Reply-To: <20110107130426.GA24259@elte.hu>
-References: <4CE2F914.9070106@free.fr>
-	<24422.1290656467@localhost>
-	<20101126182355.62615dff@mat-laptop>
-	<20101208221951.GO5750@outflux.net>
-	<20101211001857.4c5e0794@mat-laptop>
-	<20101222124019.GG10809@elte.hu>
-	<34428.1293053719@localhost>
-	<AANLkTin55DXcQnK3NY7y-v8TXj5w-XT2rTJo9p90tj4g@mail.gmail.com>
-	<20110107130426.GA24259@elte.hu>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sat, 8 Jan 2011 06:31:00 -0500
+X-Greylist: delayed 512 seconds by postgrey-1.27 at vger.kernel.org; Sat, 08 Jan 2011 06:31:00 EST
+Message-ID: <4D2848F0.8070906@rus.uni-stuttgart.de>
+Date: Sat, 08 Jan 2011 12:22:24 +0100
+From: Thomas Richter <richter@rus.uni-stuttgart.de>
+Reply-To: richter@rus.uni-stuttgart.de
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: nvidia pata driver hangs on fsync
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Fri, 7 Jan 2011 14:04:26 +0100,
-Ingo Molnar <mingo@elte.hu> a écrit :
+Hi folks,
 
-> 
-> * Xiaotian Feng <xtfeng@gmail.com> wrote:
-> 
-> > 
-> > I'm facing a boot failure (panic'ed on
-> > remove_jump_label_module_init) on 2.6.37 (latest commit 3c0cb7c),
-> > which is 100% reproducible. With this patch applied, I can boot my
-> > machine successfully, so I do think this patch is needed.
-> 
-> That would be commit:
-> 
->  94462ad3b147: module: Move RO/NX module protection to after ftrace
-> module update
-> 
-> So if commit 3c0cb7c is still broken, it has 94462ad3b147 included
-> already, and there's some other bug. Kees, Steve, any ideas?
-> 
-The problem comes from remove_jump_label_module_init that does :
-if (within_module_init(iter->code, mod))
-                        iter->key = 0;
+this is a bug report on drivers/ata/pata_amd.c for at least the kernel 
+versions 2.6.32.27 and 2.6.35.10. It might affect other kernels.
 
-This mean if there are jump label in the module init, we will
-invalidate them by writing the the jump label section.
+Configuration is as follows:
 
-But this section is read only.
+Asus M2N-SLI board with Nforce4 chipset. lspci reports the following:
 
-The solution is either to make the section read write, either we avoid
-this write.
+00:00.0 RAM memory: nVidia Corporation MCP55 Memory Controller (rev a1)
+00:01.0 ISA bridge: nVidia Corporation MCP55 LPC Bridge (rev a2)
+00:01.1 SMBus: nVidia Corporation MCP55 SMBus (rev a2)
+00:02.0 USB Controller: nVidia Corporation MCP55 USB Controller (rev a1)
+00:02.1 USB Controller: nVidia Corporation MCP55 USB Controller (rev a2)
+00:04.0 IDE interface: nVidia Corporation MCP55 IDE (rev a1)
+00:05.0 IDE interface: nVidia Corporation MCP55 SATA Controller (rev a2)
+00:05.1 IDE interface: nVidia Corporation MCP55 SATA Controller (rev a2)
+00:05.2 IDE interface: nVidia Corporation MCP55 SATA Controller (rev a2)
+00:06.0 PCI bridge: nVidia Corporation MCP55 PCI bridge (rev a2)
+00:06.1 Audio device: nVidia Corporation MCP55 High Definition Audio 
+(rev a2)
+00:08.0 Bridge: nVidia Corporation MCP55 Ethernet (rev a2)
+00:09.0 Bridge: nVidia Corporation MCP55 Ethernet (rev a2)
+00:0e.0 PCI bridge: nVidia Corporation MCP55 PCI Express bridge (rev a2)
+00:0f.0 PCI bridge: nVidia Corporation MCP55 PCI Express bridge (rev a2)
+00:18.0 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] 
+HyperTransport Technology Configuration
+00:18.1 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] 
+Address Map
+00:18.2 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] 
+DRAM Controller
+00:18.3 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] 
+Miscellaneous Control
+01:06.0 Multimedia audio controller: Creative Labs SB Live! EMU10k1 (rev 07)
+01:06.1 Input device controller: Creative Labs SB Live! Game Port (rev 07)
+01:07.0 Parallel controller: Timedia Technology Co Ltd Device 7268 (rev 01)
+01:08.0 SCSI storage controller: Tekram Technology Co.,Ltd. TRM-S1040 
+(rev 01)
+01:0b.0 FireWire (IEEE 1394): Texas Instruments TSB43AB22/A 
+IEEE-1394a-2000 Controller (PHY/Link)
+03:00.0 VGA compatible controller: nVidia Corporation NV43 [GeForce 6600 
+GT] (rev a2)
 
-For avoid the write a solution could be to do something like
-trim_init_extable :
-/*
- * If the exception table is sorted, any referring to the module init
- * will be at the beginning or the end.
- */
 
+Two CD/DVD/DVD-RAM drivers (master/slave) are connected to the PATA 
+interface of the chipset and accessed via udma2 according to hdparm.
+The PATA interface is accessed through drivers/ata/pata_amd.c.
 
-Matthieu
+Problem:
+
+mke2fs hangs reliably on formatting a filing system on DVD-RAM(!), for 
+either drive. Specifically, running mke2fs through strace shows that the 
+writes and seeks go to the drive fine, but after writing inode 
+information, mke2fs issues an fsync, and in that fsync the driver just 
+hangs. The drives show no further activity, and the system must be 
+rebooted to regain access. The issued command is:
+
+mke2fs -t ext2 -b 2048 /dev/srX with X = 0 or 1 (hangs for master or 
+slave, always reproducible)
+
+The problem does not appear with the legacy IDE driver, i.e. through 
+drivers/ide/amd74xx.c on which the cdroms work correctly and mke2fs 
+works fine. Drives are here also configured for udma2:
+/dev/hda:
+
+ATAPI CD-ROM, with removable media
+         Model Number:       _NEC DVD_RW ND-4571A
+         Serial Number:
+         Firmware Revision:  1-01
+Standards:
+         Likely used CD-ROM ATAPI-1
+Configuration:
+         DRQ response: 3ms.
+         Packet size: 12 bytes
+Capabilities:
+         LBA, IORDY(cannot be disabled)
+         DMA: mdma0 mdma1 mdma2 udma0 udma1 *udma2
+              Cycle time: min=120ns recommended=120ns
+         PIO: pio0 pio1 pio2 pio3 pio4
+              Cycle time: no flow control=120ns  IORDY flow control=120ns
+
+ATAPI CD-ROM, with removable media
+         Model Number:       HL-DT-ST DVDRAM GSA-4040B
+         Serial Number:      K2938AC0452
+         Firmware Revision:  A304
+Standards:
+         Likely used CD-ROM ATAPI-1
+Configuration:
+         DRQ response: 50us.
+         Packet size: 12 bytes
+Capabilities:
+         LBA, IORDY(can be disabled)
+         DMA: mdma0 mdma1 mdma2 udma0 udma1 *udma2
+              Cycle time: min=120ns recommended=120ns
+         PIO: pio0 pio1 pio2 pio3 pio4
+              Cycle time: no flow control=120ns  IORDY flow control=120ns
+HW reset results:
+         CBLID- above Vih
+         Device num = 1
+
+Greetings,
+
+Thomas Richter
+
