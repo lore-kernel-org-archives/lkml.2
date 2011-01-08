@@ -1,50 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779Ab1AHMQt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 07:16:49 -0500
-Received: from smtp103.sbc.mail.mud.yahoo.com ([68.142.198.202]:33948 "HELO
-	smtp103.sbc.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751012Ab1AHMQr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 07:16:47 -0500
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Sat, 08 Jan 2011 07:16:47 EST
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=sbcglobal.net;
-  h=DKIM-Signature:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:To:Reply-To:Date:Subject:MIME-Version:Content-Type:Content-Transfer-Encoding:Message-ID;
-  b=mGmHhUrit/CtM8R484ea70c7MBaP5Q8GlOE0CEOB4J2qoXPIu5aO9VIuw8jsXmXTRvHtROmHoisZaUenCuuJdq97RuU911YJfaavi/kn8lC6Br2Y2G2i0GybsE/17b22IvuNg6UaVbU+XqFqH/KUXcn6/obiUD3XzWsULE1qHkQ=  ;
-X-Yahoo-SMTP: mhdkQ62swBAd5KpFT4HTinrobP.50qeXi70DRih7DsFUsVyM
-X-YMail-OSG: Ce0iLTgVM1k1MK7hLPTvC8LyTAAeet5I.7uKAkedegPhxEx
- xRKEO4fAyy2evAmDOqHfidW6EeAQ3x1hn1c_3UrSxA_8BbpU_QQ.iZRM0a8u
- c.7hXt2hB7zDyT5cT5gtHyiB7MX8CvR2ZXqQXA_nd7TeHBibD7ce9tJ0hWBl
- 7dz7O7yADmei4JhwPAKJAAUzxbCYnWhY.mCfSbu7GuqxFQSE4Sk_g1WX8Wq.
- W1zyPTH9Cg7rIxNQWlH8nhMvbrk2KrN.dRXIrjStIiplcgzLzhGw_pz05QB7
- GlpsBJ_BilJ_CaUtGXx2bNEZNR7fc0Fst3A2h__XV.Dlq0alk5AqK3hHHIaV
- zz8_RFRwO21jttUF1HUWkZqq3BqLOBgtFA9zYwss-
-X-Yahoo-Newman-Property: ymail-3
-From: "Hello James" <monique97@sbcglobal.net>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-To: globalfab@representative.com
-Date: Fri, 07 Jan 2011 01:35:30 +0000
-Subject: Re: JB Truck LLC
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-ID: <WINDOWS7PC98a72366a01f4d68a360c13faa93a617@WINDOWS7PC>
+	id S1752071Ab1AHMSI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 07:18:08 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:49643 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751012Ab1AHMSH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jan 2011 07:18:07 -0500
+Date: Sat, 8 Jan 2011 13:17:26 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Hutchings <benh@debian.org>, David Miller <davem@davemloft.net>,
+        Hayes Wang <hayeswang@realtek.com>,
+        David Woodhouse <dwmw2@infradead.org>, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Networking
+Message-ID: <20110108121726.GA2216@electric-eye.fr.zoreil.com>
+References: <20110106.122003.233698077.davem@davemloft.net> <AANLkTi=7=_FyVsjA3vKEpg8RwfC=m-8QGfqa6ctxQday@mail.gmail.com> <20110107190656.GQ3702@decadent.org.uk> <AANLkTikwrHoOY4wvUp1qn-OT=EjZesSNR29US1ERc0o2@mail.gmail.com> <20110107215505.GA1892@electric-eye.fr.zoreil.com> <AANLkTinANp+Jp8TPKzii6iZLUFpMyrXhmxYr42nZrXQU@mail.gmail.com> <20110108000901.GA2133@electric-eye.fr.zoreil.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110108000901.GA2133@electric-eye.fr.zoreil.com>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+r8169: delay phy init until device opens.
 
-Dear Sir/Madam,
- 
-I am James Newell  From MD United State, Finance  Director of J B Trucks Company , My company had business with Bp in 2009  where i made $4.8usd out of my company knowlage which i legally place this fund in Escrow Account in Asia,  because US financail  position and security  i cant direct  this fund to  US rather i want you to assist me to receive this fund commission will be discuss in your next mail. Please if you interested include your direct phone and name in your reply.
- 
-Regards
-James Newell
-J B Trucks LLC
-41010 LITTLE ROAD,
-WHITEFORD, MD 21160
-TEL: +1888-522-4448
-FAX: +1888-769-5640
-Email: jbtrucks@engineer.com
+It workarounds the 60s firmware load failure timeout for the
+non-modular case.
 
+Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
+
+diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+index 27a7c20..dd758cd 100644
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -3069,15 +3069,6 @@ rtl8169_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 		rtl8168_driver_start(tp);
+ 	}
+ 
+-	rtl8169_init_phy(dev, tp);
+-
+-	/*
+-	 * Pretend we are using VLANs; This bypasses a nasty bug where
+-	 * Interrupts stop flowing on high load on 8110SCd controllers.
+-	 */
+-	if (tp->mac_version == RTL_GIGA_MAC_VER_05)
+-		RTL_W16(CPlusCmd, RTL_R16(CPlusCmd) | RxVlan);
+-
+ 	device_set_wakeup_enable(&pdev->dev, tp->features & RTL_FEATURE_WOL);
+ 
+ 	if (pci_dev_run_wake(pdev))
+@@ -3127,6 +3118,7 @@ static void __devexit rtl8169_remove_one(struct pci_dev *pdev)
+ static int rtl8169_open(struct net_device *dev)
+ {
+ 	struct rtl8169_private *tp = netdev_priv(dev);
++	void __iomem *ioaddr = tp->mmio_addr;
+ 	struct pci_dev *pdev = tp->pci_dev;
+ 	int retval = -ENOMEM;
+ 
+@@ -3162,6 +3154,15 @@ static int rtl8169_open(struct net_device *dev)
+ 
+ 	napi_enable(&tp->napi);
+ 
++	rtl8169_init_phy(dev, tp);
++
++	/*
++	 * Pretend we are using VLANs; This bypasses a nasty bug where
++	 * Interrupts stop flowing on high load on 8110SCd controllers.
++	 */
++	if (tp->mac_version == RTL_GIGA_MAC_VER_05)
++		RTL_W16(CPlusCmd, RTL_R16(CPlusCmd) | RxVlan);
++
+ 	rtl_pll_power_up(tp);
+ 
+ 	rtl_hw_start(dev);
+@@ -3171,7 +3172,7 @@ static int rtl8169_open(struct net_device *dev)
+ 	tp->saved_wolopts = 0;
+ 	pm_runtime_put_noidle(&pdev->dev);
+ 
+-	rtl8169_check_link_status(dev, tp, tp->mmio_addr);
++	rtl8169_check_link_status(dev, tp, ioaddr);
+ out:
+ 	return retval;
+ 
