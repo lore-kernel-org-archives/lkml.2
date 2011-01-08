@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751737Ab1AHMHX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 07:07:23 -0500
-Received: from hera.kernel.org ([140.211.167.34]:58332 "EHLO hera.kernel.org"
+	id S1751802Ab1AHMIr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 07:08:47 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:41749 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750934Ab1AHMHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 07:07:21 -0500
-Date: Sat, 8 Jan 2011 12:06:49 GMT
-From: tip-bot for Rakib Mullick <rakib.mullick@gmail.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        rakib.mullick@gmail.com, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
-        sandmann@redhat.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, rakib.mullick@gmail.com, a.p.zijlstra@chello.nl,
-        sandmann@redhat.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <AANLkTik9U_Z0WSZ7YjrykER_pBUfPDdgUUmtYx=R74nL@mail.gmail.com>
-References: <AANLkTik9U_Z0WSZ7YjrykER_pBUfPDdgUUmtYx=R74nL@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] x86, dumpstack: Fix unused variable warning
-Message-ID: <tip-39a6eebda253aa34d659ca9436e3c32ef60473f1@git.kernel.org>
-Git-Commit-ID: 39a6eebda253aa34d659ca9436e3c32ef60473f1
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1750934Ab1AHMIp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jan 2011 07:08:45 -0500
+From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
+To: "Arnd Bergmann" <arnd@arndb.de>, <linux-arch@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] asm-generic headers: add ftrace.h
+Date: Sat, 8 Jan 2011 20:08:44 +0800
+Message-ID: <024001cbaf2c$cbe9cc70$63bd6550$@mprc.pku.edu.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 08 Jan 2011 12:06:50 +0000 (UTC)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AcuvLMsOuZW1Uey2Rx+kwOdI/Wh5WQ==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  39a6eebda253aa34d659ca9436e3c32ef60473f1
-Gitweb:     http://git.kernel.org/tip/39a6eebda253aa34d659ca9436e3c32ef60473f1
-Author:     Rakib Mullick <rakib.mullick@gmail.com>
-AuthorDate: Fri, 7 Jan 2011 16:59:49 +0100
-Committer:  Frederic Weisbecker <fweisbec@gmail.com>
-CommitDate: Fri, 7 Jan 2011 16:59:49 +0100
+From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 
-x86, dumpstack: Fix unused variable warning
+ This patch adds ftrace.h into asm-generic headers.
+ The file content could be empty in most architectures.
 
-In dump_stack function, bp isn't used anymore, which is introduced by
-commit 9c0729dc8062bed96189bd14ac6d4920f3958743. This patch removes bp
-completely.
-
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: Soeren Sandmann <sandmann@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: H. Peter Anvin <hpa@zytor.com>
-LKML-Reference: <AANLkTik9U_Z0WSZ7YjrykER_pBUfPDdgUUmtYx=R74nL@mail.gmail.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 ---
- arch/x86/kernel/dumpstack.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+ include/asm-generic/ftrace.h |   16 ++++++++++++++++
+ 1 files changed, 16 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index 8474c99..d6fb146 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -197,14 +197,8 @@ void show_stack(struct task_struct *task, unsigned long *sp)
-  */
- void dump_stack(void)
- {
--	unsigned long bp = 0;
- 	unsigned long stack;
- 
--#ifdef CONFIG_FRAME_POINTER
--	if (!bp)
--		get_bp(bp);
--#endif
--
- 	printk("Pid: %d, comm: %.20s %s %s %.*s\n",
- 		current->pid, current->comm, print_tainted(),
- 		init_utsname()->release,
+diff --git a/include/asm-generic/ftrace.h b/include/asm-generic/ftrace.h
+new file mode 100644
+index 0000000..51abba9
+--- /dev/null
++++ b/include/asm-generic/ftrace.h
+@@ -0,0 +1,16 @@
++/*
++ * linux/include/asm-generic/ftrace.h
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#ifndef __ASM_GENERIC_FTRACE_H__
++#define __ASM_GENERIC_FTRACE_H__
++
++/*
++ * Not all architectures need their own ftrace.h, the most
++ * common definitions are already in linux/ftrace.h.
++ */
++
++#endif /* __ASM_GENERIC_FTRACE_H__ */
+
