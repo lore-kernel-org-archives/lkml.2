@@ -1,101 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751696Ab1AHRur (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 12:50:47 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61717 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046Ab1AHRuq (ORCPT
+	id S1751798Ab1AHSBF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 13:01:05 -0500
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:31120 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751045Ab1AHSBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 12:50:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=C91/w64iafOIJOvfxbMjCd7huWOZ34c7RN8Bp5s7bxGcoSjsip/Rj8FAR0Cn/K55NA
-         +zBahaRW40ye+tOJNAUO1g4U/rUW17sUQJ2RoikyF5TZx1/s2DH37AtrHgNUPolicRTp
-         SP6qEJOpADq0rr4RNHvmcWfAZt+uG1LBkTEuc=
-Date: Sat, 8 Jan 2011 18:50:28 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
-        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
-        Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH V8 02/13] ntp: add ADJ_SETOFFSET mode bit
-Message-ID: <20110108175028.GA22308@riccoc20.at.omicron.at>
-References: <cover.1293820862.git.richard.cochran@omicron.at>
- <fe2bec763bec155381d62721aa9da84aeca2785c.1293820862.git.richard.cochran@omicron.at>
- <AANLkTini2WdT-1v4k9V3JOZYDkA59P+SyscTe8-fK2Wk@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTini2WdT-1v4k9V3JOZYDkA59P+SyscTe8-fK2Wk@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 8 Jan 2011 13:01:04 -0500
+Subject: Re: [PATCH 11/32] v4l/cx18: update workqueue usage
+From: Andy Walls <awalls@md.metrocast.net>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+In-Reply-To: <1294062595-30097-12-git-send-email-tj@kernel.org>
+References: <1294062595-30097-1-git-send-email-tj@kernel.org>
+	 <1294062595-30097-12-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 08 Jan 2011 12:03:32 -0500
+Message-ID: <1294506212.2443.110.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2011-01-07_07:2011-01-07,2011-01-07,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=2
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=5.0.0-1012030000 definitions=main-1101070029
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 02, 2011 at 05:38:19AM +0900, Kuwahara,T. wrote:
-> As you know, it conflicts with MOD_PPSMAX.  And also, it is logically
-> the same as ADJ_OFFSET, unless the kernel PLL is enabled explicitly.
-
-I choose another bit, for the next version of the patch series.
-
+On Mon, 2011-01-03 at 14:49 +0100, Tejun Heo wrote:
+> With cmwq, there's no reason to use separate out_work_queue.  Drop it
+> and use system_wq instead.  The in_work_queue needs to be ordered so
+> can't use one of the system wqs; however, as it isn't used to reclaim
+> memory, allocate the workqueue with alloc_ordered_workqueue() without
+> WQ_MEM_RECLAIM.
 > 
-> So here's my simple solution:
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Andy Walls <awalls@md.metrocast.net>
+> Cc: linux-media@vger.kernel.org
+> ---
+> Only compile tested.  Please feel free to take it into the subsystem
+> tree or simply ack - I'll route it through the wq tree.
+
+Reviewed-by: Andy Walls <awalls@md.metrocast.net>
+Acked-by: Andy Walls <awalls@md.metrocast.net>
+
+Sorry it took so long for me to review.
+Please route via your wq tree for the cx18 driver.
+
+Thanks,
+Andy
+
+> Thanks.
 > 
+>  drivers/media/video/cx18/cx18-driver.c  |   24 ++----------------------
+>  drivers/media/video/cx18/cx18-driver.h  |    3 ---
+>  drivers/media/video/cx18/cx18-streams.h |    3 +--
+>  3 files changed, 3 insertions(+), 27 deletions(-)
+> 
+> diff --git a/drivers/media/video/cx18/cx18-driver.c b/drivers/media/video/cx18/cx18-driver.c
+> index df60f27..41c0822 100644
+> --- a/drivers/media/video/cx18/cx18-driver.c
+> +++ b/drivers/media/video/cx18/cx18-driver.c
+> @@ -656,7 +656,7 @@ static int __devinit cx18_create_in_workq(struct cx18 *cx)
+>  {
+>  	snprintf(cx->in_workq_name, sizeof(cx->in_workq_name), "%s-in",
+>  		 cx->v4l2_dev.name);
+> -	cx->in_work_queue = create_singlethread_workqueue(cx->in_workq_name);
+> +	cx->in_work_queue = alloc_ordered_workqueue(cx->in_workq_name, 0);
+>  	if (cx->in_work_queue == NULL) {
+>  		CX18_ERR("Unable to create incoming mailbox handler thread\n");
+>  		return -ENOMEM;
+> @@ -664,18 +664,6 @@ static int __devinit cx18_create_in_workq(struct cx18 *cx)
+>  	return 0;
+>  }
+>  
+> -static int __devinit cx18_create_out_workq(struct cx18 *cx)
+> -{
+> -	snprintf(cx->out_workq_name, sizeof(cx->out_workq_name), "%s-out",
+> -		 cx->v4l2_dev.name);
+> -	cx->out_work_queue = create_workqueue(cx->out_workq_name);
+> -	if (cx->out_work_queue == NULL) {
+> -		CX18_ERR("Unable to create outgoing mailbox handler threads\n");
+> -		return -ENOMEM;
+> -	}
+> -	return 0;
+> -}
+> -
+>  static void __devinit cx18_init_in_work_orders(struct cx18 *cx)
+>  {
+>  	int i;
+> @@ -702,15 +690,9 @@ static int __devinit cx18_init_struct1(struct cx18 *cx)
+>  	mutex_init(&cx->epu2apu_mb_lock);
+>  	mutex_init(&cx->epu2cpu_mb_lock);
+>  
+> -	ret = cx18_create_out_workq(cx);
+> -	if (ret)
+> -		return ret;
+> -
+>  	ret = cx18_create_in_workq(cx);
+> -	if (ret) {
+> -		destroy_workqueue(cx->out_work_queue);
+> +	if (ret)
+>  		return ret;
+> -	}
+>  
+>  	cx18_init_in_work_orders(cx);
+>  
+> @@ -1094,7 +1076,6 @@ free_mem:
+>  	release_mem_region(cx->base_addr, CX18_MEM_SIZE);
+>  free_workqueues:
+>  	destroy_workqueue(cx->in_work_queue);
+> -	destroy_workqueue(cx->out_work_queue);
+>  err:
+>  	if (retval == 0)
+>  		retval = -ENODEV;
+> @@ -1244,7 +1225,6 @@ static void cx18_remove(struct pci_dev *pci_dev)
+>  	cx18_halt_firmware(cx);
+>  
+>  	destroy_workqueue(cx->in_work_queue);
+> -	destroy_workqueue(cx->out_work_queue);
+>  
+>  	cx18_streams_cleanup(cx, 1);
+>  
+> diff --git a/drivers/media/video/cx18/cx18-driver.h b/drivers/media/video/cx18/cx18-driver.h
+> index 77be58c..f7f71d1 100644
+> --- a/drivers/media/video/cx18/cx18-driver.h
+> +++ b/drivers/media/video/cx18/cx18-driver.h
+> @@ -614,9 +614,6 @@ struct cx18 {
+>  	struct cx18_in_work_order in_work_order[CX18_MAX_IN_WORK_ORDERS];
+>  	char epu_debug_str[256]; /* CX18_EPU_DEBUG is rare: use shared space */
+>  
+> -	struct workqueue_struct *out_work_queue;
+> -	char out_workq_name[12]; /* "cx18-NN-out" */
+> -
+>  	/* i2c */
+>  	struct i2c_adapter i2c_adap[2];
+>  	struct i2c_algo_bit_data i2c_algo[2];
+> diff --git a/drivers/media/video/cx18/cx18-streams.h b/drivers/media/video/cx18/cx18-streams.h
+> index 77412be..5837ffb 100644
+> --- a/drivers/media/video/cx18/cx18-streams.h
+> +++ b/drivers/media/video/cx18/cx18-streams.h
+> @@ -41,8 +41,7 @@ static inline bool cx18_stream_enabled(struct cx18_stream *s)
+>  /* Related to submission of mdls to firmware */
+>  static inline void cx18_stream_load_fw_queue(struct cx18_stream *s)
+>  {
+> -	struct cx18 *cx = s->cx;
+> -	queue_work(cx->out_work_queue, &s->out_work_order);
+> +	schedule_work(&s->out_work_order);
+>  }
+>  
+>  static inline void cx18_stream_put_mdl_fw(struct cx18_stream *s,
 
-I have read the API documentation in the nanokernel source archive. It
-explains the (very complex looking) timex structure quite clearly and
-nicely. Now I am more convinced than ever that adding a new mode bit
-is the best way to go, as opposed to ADJ_OFFSET/!STA_PLL, because:
 
-1. The mode bits update kernel variables. That is what we want.
-2. Clearing STA_PLL means disable adjustments.
-3. The range of the timex.offset is way too small.
-
-I expand on each point, below. BTW, the API document is also available
-for online reading here:
-
-   http://www.slac.stanford.edu/comp/unix/package/rtems/src/ssrlApps/ntpNanoclock/api.htm
-
-1. Looking at the API, the documentation for the bits of the 'modes'
-   field states:
-
-        These bits control which field of the timex structure are used
-        to update the corresponding kernel variable. The bits may be
-        set in any combination. See the description below for which
-        bits control which variable.
-
-   With the ADJ_SETOFFSET mode, we are telling the kernel to update
-   the instantaneous value of the 'current time' variable. That usage
-   agrees with the sematics of the other mode bits.
-
-2. The documentation for STA_PLL states:
-
-        Master enable switch for the PLL/FLL loop. The algorithm is
-        responsive to time and/or frequency updates if set; otherwise,
-        no change in the current time or frequency will be made other
-        than to complete a pending phase adjustment. This bit does not
-        affect the PPS loop.
-
-   So when we clear this bit, the kernel promises that it will make
-   "no change in the current time." The proposed ADJ_OFFSET/!STA_PLL
-   solution would break this pattern.
-
-3. The timex.offset field is of type "long" and represents either
-   nanoseconds or microseconds. On 32 bit architectures, the maximum
-   possible adjustment would be
-
-   2^31 * 10^-6 = 2147.5 seconds
-
-   which is less than one hour. For the first adjustment of a clock,
-   we want to be able to jump the clock arbitrarily. Not every
-   computer has an RTC, and so some boot up believing that it is still
-   the year 1970.
-
-Richard
