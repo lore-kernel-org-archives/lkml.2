@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab1AHNqA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 08:46:00 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:59222 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752351Ab1AHNp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 08:45:58 -0500
-Date: Sun, 9 Jan 2011 00:45:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        linux arch <linux-arch@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Guan Xuetao <guanxuetao@mprc.pku.edu.cn>,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH 1/2] kbuild: asm-generic support
-Message-Id: <20110109004539.5bf33510.sfr@canb.auug.org.au>
-In-Reply-To: <20110108130427.GA25461@merkur.ravnborg.org>
-References: <20110108130302.GA21698@merkur.ravnborg.org>
-	<20110108130427.GA25461@merkur.ravnborg.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sun__9_Jan_2011_00_45_39_+1100_pqCfy2+KC9Q3YZl0"
+	id S1752611Ab1AHNtm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 08:49:42 -0500
+Received: from mail.izmir.gov.tr ([212.174.232.126]:22336 "EHLO
+	mail.izmir.gov.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab1AHNtl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jan 2011 08:49:41 -0500
+Message-ID: <32127.173.193.221.27.1294470167.squirrel@mail.izmir.gov.tr>
+Date: Sat, 8 Jan 2011 09:02:47 +0200 (EET)
+Subject: Re: Regards
+From: "Mr Katsuya Nakai" <mrkatsuya_nakai@yahoo.co.jp>
+Reply-To: katsuya_nakai55@terra.com
+User-Agent: SquirrelMail/1.4.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+X-izmir.gov.tr-MailScanner: Found to be clean
+X-izmir.gov.tr-MailScanner-SpamScore: sss
+X-izmir.gov.tr-MailScanner-From: mrkatsuya_nakai@yahoo.co.jp
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__9_Jan_2011_00_45_39_+1100_pqCfy2+KC9Q3YZl0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Sam,
 
-On Sat, 8 Jan 2011 14:04:27 +0100 Sam Ravnborg <sam@ravnborg.org> wrote:
->
-> -LINUXINCLUDE    :=3D -I$(srctree)/arch/$(hdr-arch)/include -Iinclude \
-> +LINUXINCLUDE    :=3D -I$(srctree)/arch/$(hdr-arch)/include \
-> +                   -Iarch/$(hrd-arch)/include/generated -Iinclude \
-                               ^^^
-hdr-arch?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+HSBC BANK
+kashi Hongoku-cho
+Chuo-ku, Tokyo 103-8660
+Japan
 
---Signature=_Sun__9_Jan_2011_00_45_39_+1100_pqCfy2+KC9Q3YZl0
-Content-Type: application/pgp-signature
+Name: Mr Katsuya Nakai
+Email: katsuya_nakai55@terra.com
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+I am Mr.Katsuya Nakai from HSBC Bank in Japan and have a sensitive and
+confidential brief from Japan.I am asking for your partnership in
+re-profiling funds ($12.200.000). I am contacting you because you live
+outside Japan. Finally, note that this must be concluded within two weeks.
+Kindly write back and i look forward to hear from you so i can give you
+more information about myself and the nature of the funds.
 
-iQEcBAEBAgAGBQJNKGqDAAoJEDMEi1NhKgbsK7cIAIpyFKyokfnp2U89n3rW4/Aa
-u7V4p3ZMLn62soxpGh1rGXcxotRkqDZrqYlCbPjX0Gu2zXX02sCLl8EXqV6nZbpS
-ArFbEatYNward2tNfGbC+5oDFk+cjuRytHXc/JfqpejZwDhCwe/OeP9ZQl/P+jB1
-2JQDA/a1gVB8ilzLvyBoJClRcd9X0R6qArn+JjiZetJNEPt0FhtZ0s384FTLs387
-63v0WKpn+QS7AphuppuFjVqMxTitXQoofYpiaBYgE1J5NViYbErLUgkkoIOGmYkl
-E63rwMJ0fkdFIQYHJppNMz/FXEsZmXBRy9xaizNMckWl7EDU7qGzK4IKU218H+U=
-=5zls
------END PGP SIGNATURE-----
+Regards,
+Mr. Katsuya Nakai.
 
---Signature=_Sun__9_Jan_2011_00_45_39_+1100_pqCfy2+KC9Q3YZl0--
+
+-- 
+This message has been scanned for viruses and
+dangerous content by MailScanner, and is
+believed to be clean.
+
