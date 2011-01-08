@@ -1,91 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753053Ab1AHQSo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 11:18:44 -0500
-Received: from mail-vw0-f66.google.com ([209.85.212.66]:50286 "EHLO
-	mail-vw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752925Ab1AHQSn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 11:18:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=sqw8PGz1F6XWmxLqde8q67B8E3PJWUxf97bND5zneDqfG2V7hWfEWpEeScd4EkIRsh
-         BaKsTNZDin/mO3DzziUSSbZcLWzxN/bPUbtJ3VVWhu56+DGp+hSjbesgOLxohDu2l+zd
-         OS98X/zqqD7UWpjI9OkbXih86g8BtRg46Msn0=
-Date: Sat, 8 Jan 2011 11:18:40 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Screwing with the concurrency limit
-Message-ID: <20110108161840.GC13269@mtj.dyndns.org>
-References: <4D287AED.9090304@gmail.com>
+	id S1753111Ab1AHQTY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 11:19:24 -0500
+Received: from cantor.suse.de ([195.135.220.2]:57359 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752886Ab1AHQTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jan 2011 11:19:23 -0500
+Date: Sat, 8 Jan 2011 08:11:56 -0800
+From: Greg KH <gregkh@suse.de>
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
+        Claudio Scordino <claudio@evidence.eu.com>
+Subject: Re: On Linux numbering scheme
+Message-ID: <20110108161156.GB16090@suse.de>
+References: <AANLkTik_pa7ac4iQAyU7JeUej7qfkAvYQTru7n0-mZAt@mail.gmail.com>
+ <32869803.14581294498166043.JavaMail.root@mail-zbox20.bo3.lycos.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4D287AED.9090304@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <32869803.14581294498166043.JavaMail.root@mail-zbox20.bo3.lycos.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Sat, Jan 08, 2011 at 06:55:41AM -0800, Kent Overstreet wrote:
-> First off, wild applause for cmwq. The limitations of the old
-> workqueues were a major irritation, I think your new implementation
-> is fabulous.
-
-Heh, that's flattering.  Thanks.
-
-> However, when merging bcache with mainline, I ran into a bit of a
-> thorny issue. Bcache relies heavily on workqueues, updates to the
-> cache's btree have to be done after every relevant IO completes.
-> Additionally, btree insertions can involve sleeping on IO while the
-> root of the tree isn't write locked - so we'd like to not block
-> other work items from completing if we don't have to.
+On Sat, Jan 08, 2011 at 09:49:26AM -0500, Artem S. Tashkinov wrote:
+> ----- "Geert Uytterhoeven" <geert@linux-m68k.org> wrote:
 > 
-> So, one might expect the way to get the best performance would be
->   alloc_workqueue("bcache", WQ_HIGHPRI|WQ_MEM_RECLAIM, 0)
-
-A bit tangential but is WQ_HIGHPRI really necessary?  Is the use case
-very latency sensitive?
-
-> Trouble is, sometimes we do write lock the root of the btree,
-> blocking everything else from getting anything done - the end result
-> is
->   root@moria:~# ps ax|grep kworker|wc -l
->   1550
-
-Yeah, that will happen.
-
-> (running dbench in a VM with disks in tmpfs). Performance is fine (I
-> think, haven't been trying to rigorously benchmark) but that's
-> annoying.
+> > On Thu, Jan 6, 2011 at 09:31, Claudio Scordino
+> > <claudio@evidence.eu.com> wrote:
+> > >>   As time passes by, the Linux numbering scheme makes even less
+> > sense.
+> > >>   Some time ago there was a discussion on LKML about a new
+> > numbering
+> > >>   scheme but it didn't come to any positive conclusion and then
+> > the
+> > >>   subject was forgotten entirely. Not meaning to raise a clamour
+> > here
+> > >>   (and I suppose I represent a large group of Linux users here).
+> > I'm
+> > >>   willing to suggest a numbering scheme which I hope will answer
+> > all
+> > >>   known complaints and criticism.
+> > >
+> > > This seems to be a periodically recurrent topic on the list.
+> > >
+> > > If I've correctly understood all points of view, there are currently
+> > two
+> > > groups of developers:
+> > >
+> > > 1. Those who want to maintain the current numbering scheme, because
+> > they
+> > > feel comfortable with it, and because they can easily understand
+> > the
+> > > number of releases between one release and another.
+> > >
+> > > 2. Those who prefer having a scheme somehow related to the date, so
+> > they
+> > > can easily understand when a certain kernel has been released (i.e.
+> > how
+> > > "old" it is).
+> > >
+> > > Does really exist a numbering scheme that can satisfy both groups
+> > of
+> > > people ? Probably not.
+> > >
+> > > My only idea would be to maintain the usual numbering scheme, and
+> > just
+> > > replace the second number (6) with the year of release.
+> > >
+> > > For example:
+> > >
+> > >        2.6.36 would be 2.10.36
+> > >
+> > >        2.6.37 would be 2.11.37
+> > >
+> > >        2.6.38 would be 2.11.38
+> > >
+> > >        and so on...
+> > >
+> > > This way, you put some information about the year of release
+> > without
+> > > loosing all the benefits of the current scheme.
+> > >
+> > > But this means having two independent incremental numbers, which
+> > maybe
+> > > is a too insane scheme.
+> > 
+> > Then why not drop the leading "2." completely?
+> > 
 > 
-> I think the best way I can express it is that bcache normally wants
-> a concurrency limit of 1, except when we're blocking and we aren't
-> write locking the root of the btree.
-> 
-> So, do you think there might be some sane way of doing this with
-> cmwq? Some way to say "Don't count this work item I'm in right now
-> count against the workqueue's concurrency limit anymore". If such a
-> thing could be done, I think it'd be the perfect solution (and I'll
-> owe you a case of your choice of beer :)
+> This will break too many user space scripts/applications which expect
+> 2.x.x.x numbers.
 
-Hmmm... workqueue allows adjusting @max_active on the fly with
-workqueue_set_max_active().  I think what you can do is to wrap write
-locks with max_active cramping.  ie. set_max_active(1); write_lock();
-do the stuff; write_unlock(); set_max_active(orig_max_active);
+What userspace scripts/applications expect numbers like that?  How do
+they handle releases like what Linus just did (2.6.37)?
 
-workqueue_set_max_active() would need a bit update to make it behave
-under such dynamic usage (so that it returns the original max_active
-after applying the new one and kicks the delayed work items when
-max_active gets increased) but if that sounds like a plan which could
-work, I'll be happy to update it.
+thanks,
 
-Good luck.
-
--- 
-tejun
+greg k-h
