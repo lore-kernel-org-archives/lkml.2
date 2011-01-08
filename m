@@ -1,294 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751671Ab1AHRfe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 12:35:34 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:59726 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936Ab1AHRfd (ORCPT
+	id S1751696Ab1AHRur (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 12:50:47 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61717 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751046Ab1AHRuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 12:35:33 -0500
+	Sat, 8 Jan 2011 12:50:46 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=A8xEJNi+DintlPnvRRhwkOuUA7Mp9Y6m/OaWcrkL1VZo/8gQt9KVyYUGwy+s8MNWM8
-         KqFxpRfTEBuGvPgMu5DHi/mNCnEw986GWdcKK0AVCjK+to+9HgKKzGlBh1PXG4dQJ/Mr
-         otowUr64s5iNIbYYIDwYwZXAjNxvkSrrDNc+o=
-Date: Sat, 8 Jan 2011 19:35:26 +0200
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: akpm@linux-foundation.org
-Cc: jslaby@suse.cz, werner@suse.de, linux-kernel@vger.kernel.org
-Subject: [PATCH] proc: move proc_console.c to fs/proc/consoles.c
-Message-ID: <20110108173526.GA21042@p183.telecom.by>
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=C91/w64iafOIJOvfxbMjCd7huWOZ34c7RN8Bp5s7bxGcoSjsip/Rj8FAR0Cn/K55NA
+         +zBahaRW40ye+tOJNAUO1g4U/rUW17sUQJ2RoikyF5TZx1/s2DH37AtrHgNUPolicRTp
+         SP6qEJOpADq0rr4RNHvmcWfAZt+uG1LBkTEuc=
+Date: Sat, 8 Jan 2011 18:50:28 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
+        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH V8 02/13] ntp: add ADJ_SETOFFSET mode bit
+Message-ID: <20110108175028.GA22308@riccoc20.at.omicron.at>
+References: <cover.1293820862.git.richard.cochran@omicron.at>
+ <fe2bec763bec155381d62721aa9da84aeca2785c.1293820862.git.richard.cochran@omicron.at>
+ <AANLkTini2WdT-1v4k9V3JOZYDkA59P+SyscTe8-fK2Wk@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <AANLkTini2WdT-1v4k9V3JOZYDkA59P+SyscTe8-fK2Wk@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Filename is supposed to match procfile name for random junk.
+On Sun, Jan 02, 2011 at 05:38:19AM +0900, Kuwahara,T. wrote:
+> As you know, it conflicts with MOD_PPSMAX.  And also, it is logically
+> the same as ADJ_OFFSET, unless the kernel PLL is enabled explicitly.
 
-Add __init while I'm at it.
+I choose another bit, for the next version of the patch series.
 
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
----
+> 
+> So here's my simple solution:
+> 
 
- fs/proc/Makefile       |    2 
- fs/proc/consoles.c     |  114 +++++++++++++++++++++++++++++++++++++++++++++++++
- fs/proc/proc_console.c |  114 -------------------------------------------------
- 3 files changed, 115 insertions(+), 115 deletions(-)
+I have read the API documentation in the nanokernel source archive. It
+explains the (very complex looking) timex structure quite clearly and
+nicely. Now I am more convinced than ever that adding a new mode bit
+is the best way to go, as opposed to ADJ_OFFSET/!STA_PLL, because:
 
---- a/fs/proc/Makefile
-+++ b/fs/proc/Makefile
-@@ -10,12 +10,12 @@ proc-$(CONFIG_MMU)	:= mmu.o task_mmu.o
- proc-y       += inode.o root.o base.o generic.o array.o \
- 		proc_tty.o
- proc-y	+= cmdline.o
-+proc-y	+= consoles.o
- proc-y	+= cpuinfo.o
- proc-y	+= devices.o
- proc-y	+= interrupts.o
- proc-y	+= loadavg.o
- proc-y	+= meminfo.o
--proc-y	+= proc_console.o
- proc-y	+= stat.o
- proc-y	+= uptime.o
- proc-y	+= version.o
-new file mode 100644
---- /dev/null
-+++ b/fs/proc/consoles.c
-@@ -0,0 +1,114 @@
-+/*
-+ * Copyright (c) 2010 Werner Fink, Jiri Slaby
-+ *
-+ * Licensed under GPLv2
-+ */
-+
-+#include <linux/console.h>
-+#include <linux/kernel.h>
-+#include <linux/proc_fs.h>
-+#include <linux/seq_file.h>
-+#include <linux/tty_driver.h>
-+
-+/*
-+ * This is handler for /proc/consoles
-+ */
-+static int show_console_dev(struct seq_file *m, void *v)
-+{
-+	static const struct {
-+		short flag;
-+		char name;
-+	} con_flags[] = {
-+		{ CON_ENABLED,		'E' },
-+		{ CON_CONSDEV,		'C' },
-+		{ CON_BOOT,		'B' },
-+		{ CON_PRINTBUFFER,	'p' },
-+		{ CON_BRL,		'b' },
-+		{ CON_ANYTIME,		'a' },
-+	};
-+	char flags[ARRAY_SIZE(con_flags) + 1];
-+	struct console *con = v;
-+	unsigned int a;
-+	int len;
-+	dev_t dev = 0;
-+
-+	if (con->device) {
-+		const struct tty_driver *driver;
-+		int index;
-+		driver = con->device(con, &index);
-+		if (driver) {
-+			dev = MKDEV(driver->major, driver->minor_start);
-+			dev += index;
-+		}
-+	}
-+
-+	for (a = 0; a < ARRAY_SIZE(con_flags); a++)
-+		flags[a] = (con->flags & con_flags[a].flag) ?
-+			con_flags[a].name : ' ';
-+	flags[a] = 0;
-+
-+	seq_printf(m, "%s%d%n", con->name, con->index, &len);
-+	len = 21 - len;
-+	if (len < 1)
-+		len = 1;
-+	seq_printf(m, "%*c%c%c%c (%s)", len, ' ', con->read ? 'R' : '-',
-+			con->write ? 'W' : '-', con->unblank ? 'U' : '-',
-+			flags);
-+	if (dev)
-+		seq_printf(m, " %4d:%d", MAJOR(dev), MINOR(dev));
-+
-+	seq_printf(m, "\n");
-+
-+	return 0;
-+}
-+
-+static void *c_start(struct seq_file *m, loff_t *pos)
-+{
-+	struct console *con;
-+	loff_t off = 0;
-+
-+	acquire_console_sem();
-+	for_each_console(con)
-+		if (off++ == *pos)
-+			break;
-+
-+	return con;
-+}
-+
-+static void *c_next(struct seq_file *m, void *v, loff_t *pos)
-+{
-+	struct console *con = v;
-+	++*pos;
-+	return con->next;
-+}
-+
-+static void c_stop(struct seq_file *m, void *v)
-+{
-+	release_console_sem();
-+}
-+
-+static const struct seq_operations consoles_op = {
-+	.start	= c_start,
-+	.next	= c_next,
-+	.stop	= c_stop,
-+	.show	= show_console_dev
-+};
-+
-+static int consoles_open(struct inode *inode, struct file *file)
-+{
-+	return seq_open(file, &consoles_op);
-+}
-+
-+static const struct file_operations proc_consoles_operations = {
-+	.open		= consoles_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= seq_release,
-+};
-+
-+static int __init proc_consoles_init(void)
-+{
-+	proc_create("consoles", 0, NULL, &proc_consoles_operations);
-+	return 0;
-+}
-+module_init(proc_consoles_init);
-deleted file mode 100644
---- a/fs/proc/proc_console.c
-+++ /dev/null
-@@ -1,114 +0,0 @@
--/*
-- * Copyright (c) 2010 Werner Fink, Jiri Slaby
-- *
-- * Licensed under GPLv2
-- */
--
--#include <linux/console.h>
--#include <linux/kernel.h>
--#include <linux/proc_fs.h>
--#include <linux/seq_file.h>
--#include <linux/tty_driver.h>
--
--/*
-- * This is handler for /proc/consoles
-- */
--static int show_console_dev(struct seq_file *m, void *v)
--{
--	static const struct {
--		short flag;
--		char name;
--	} con_flags[] = {
--		{ CON_ENABLED,		'E' },
--		{ CON_CONSDEV,		'C' },
--		{ CON_BOOT,		'B' },
--		{ CON_PRINTBUFFER,	'p' },
--		{ CON_BRL,		'b' },
--		{ CON_ANYTIME,		'a' },
--	};
--	char flags[ARRAY_SIZE(con_flags) + 1];
--	struct console *con = v;
--	unsigned int a;
--	int len;
--	dev_t dev = 0;
--
--	if (con->device) {
--		const struct tty_driver *driver;
--		int index;
--		driver = con->device(con, &index);
--		if (driver) {
--			dev = MKDEV(driver->major, driver->minor_start);
--			dev += index;
--		}
--	}
--
--	for (a = 0; a < ARRAY_SIZE(con_flags); a++)
--		flags[a] = (con->flags & con_flags[a].flag) ?
--			con_flags[a].name : ' ';
--	flags[a] = 0;
--
--	seq_printf(m, "%s%d%n", con->name, con->index, &len);
--	len = 21 - len;
--	if (len < 1)
--		len = 1;
--	seq_printf(m, "%*c%c%c%c (%s)", len, ' ', con->read ? 'R' : '-',
--			con->write ? 'W' : '-', con->unblank ? 'U' : '-',
--			flags);
--	if (dev)
--		seq_printf(m, " %4d:%d", MAJOR(dev), MINOR(dev));
--
--	seq_printf(m, "\n");
--
--	return 0;
--}
--
--static void *c_start(struct seq_file *m, loff_t *pos)
--{
--	struct console *con;
--	loff_t off = 0;
--
--	acquire_console_sem();
--	for_each_console(con)
--		if (off++ == *pos)
--			break;
--
--	return con;
--}
--
--static void *c_next(struct seq_file *m, void *v, loff_t *pos)
--{
--	struct console *con = v;
--	++*pos;
--	return con->next;
--}
--
--static void c_stop(struct seq_file *m, void *v)
--{
--	release_console_sem();
--}
--
--static const struct seq_operations consoles_op = {
--	.start	= c_start,
--	.next	= c_next,
--	.stop	= c_stop,
--	.show	= show_console_dev
--};
--
--static int consoles_open(struct inode *inode, struct file *file)
--{
--	return seq_open(file, &consoles_op);
--}
--
--static const struct file_operations proc_consoles_operations = {
--	.open		= consoles_open,
--	.read		= seq_read,
--	.llseek		= seq_lseek,
--	.release	= seq_release,
--};
--
--static int register_proc_consoles(void)
--{
--	proc_create("consoles", 0, NULL, &proc_consoles_operations);
--	return 0;
--}
--module_init(register_proc_consoles);
+1. The mode bits update kernel variables. That is what we want.
+2. Clearing STA_PLL means disable adjustments.
+3. The range of the timex.offset is way too small.
+
+I expand on each point, below. BTW, the API document is also available
+for online reading here:
+
+   http://www.slac.stanford.edu/comp/unix/package/rtems/src/ssrlApps/ntpNanoclock/api.htm
+
+1. Looking at the API, the documentation for the bits of the 'modes'
+   field states:
+
+        These bits control which field of the timex structure are used
+        to update the corresponding kernel variable. The bits may be
+        set in any combination. See the description below for which
+        bits control which variable.
+
+   With the ADJ_SETOFFSET mode, we are telling the kernel to update
+   the instantaneous value of the 'current time' variable. That usage
+   agrees with the sematics of the other mode bits.
+
+2. The documentation for STA_PLL states:
+
+        Master enable switch for the PLL/FLL loop. The algorithm is
+        responsive to time and/or frequency updates if set; otherwise,
+        no change in the current time or frequency will be made other
+        than to complete a pending phase adjustment. This bit does not
+        affect the PPS loop.
+
+   So when we clear this bit, the kernel promises that it will make
+   "no change in the current time." The proposed ADJ_OFFSET/!STA_PLL
+   solution would break this pattern.
+
+3. The timex.offset field is of type "long" and represents either
+   nanoseconds or microseconds. On 32 bit architectures, the maximum
+   possible adjustment would be
+
+   2^31 * 10^-6 = 2147.5 seconds
+
+   which is less than one hour. For the first adjustment of a clock,
+   we want to be able to jump the clock arbitrarily. Not every
+   computer has an RTC, and so some boot up believing that it is still
+   the year 1970.
+
+Richard
