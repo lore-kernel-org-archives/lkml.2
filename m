@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037Ab1AHUlv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 15:41:51 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51590 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751288Ab1AHUlu (ORCPT
+	id S1752019Ab1AHUxs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 15:53:48 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:49152 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685Ab1AHUxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 15:41:50 -0500
-From: Ben Hutchings <ben@decadent.org.uk>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Harald Welte <HaraldWelte@viatech.com>, Greg KH <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1290522331.6770.1479.camel@localhost>
-References: <1286844138.2955.320.camel@localhost>
-	 <1290522331.6770.1479.camel@localhost>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-znxMKS2Q8dPs+n6kVBn7"
-Date: Sat, 08 Jan 2011 20:41:35 +0000
-Message-ID: <1294519295.3283.34.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [GIT PULL linux-firmware.git] VT6656 firmware
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	Sat, 8 Jan 2011 15:53:46 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [RFC] kbuild: generic support for asm-generic
+Date: Sat, 8 Jan 2011 21:53:31 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "linux-kbuild" <linux-kbuild@vger.kernel.org>,
+        linux arch <linux-arch@vger.kernel.org>,
+        Guan Xuetao <guanxuetao@mprc.pku.edu.cn>,
+        Michal Marek <mmarek@suse.cz>
+References: <20110108130302.GA21698@merkur.ravnborg.org>
+In-Reply-To: <20110108130302.GA21698@merkur.ravnborg.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101082153.31837.arnd@arndb.de>
+X-Provags-ID: V02:K0:juGB2/kunBphPblnkvovphpADhYkirbab9/AiFvlWZ8
+ d499zZmmeo09u7A+8Nsomn/ILQOXCDtgMBjz9KeN6QpL3OBR0i
+ RbhAAy/1qb0ESf0dPd9YPfuO30icQD7emkoRjYYNEPqWR9XTNF
+ wT+SEKYDm+fFE6afj1agitaJeElGIrUoaqXDLLQZ+tEGIG9I7W
+ RHqBx2QjBC7fB3AKhkk1Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Saturday 08 January 2011, Sam Ravnborg wrote:
+> Hi Arnd et all.
+> 
+> This is my second attempt to provide generic support for
+> architectures that use existing headers from asm-generic.
+> 
+> With this kbuild will read the file: arch/$ARCH/include/asm-generic
+> 
+> For each file listed in this file a wrapper is generated in
+> arch/$ARCH/inclue/generated/asm/
+> 
+> The patch include support so headers_install works.
+> 
+> The inspiration came from the unicore32 patchset,
+> but I redid this to make it more general.
+> 
+> I will follow-up with two patches.
+> One that implment the functionality.
+> A second that convert two headers in x86 to use the
+> new asm-generic stuff (only as an example).
 
---=-znxMKS2Q8dPs+n6kVBn7
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Very nice patch!
 
-On Tue, 2010-11-23 at 14:25 +0000, Ben Hutchings wrote:
-> On Tue, 2010-10-12 at 01:42 +0100, Ben Hutchings wrote:
-> > The following changes since commit e9f9e3a9b7d780e93ae869c1b8502c843bfd=
-93a4:
-> >=20
-> >   wimax: update WiMAX firmwares for 2.6.35 (2010-09-29 12:02:34 +0900)
-> >=20
-> > are available in the git repository at:
-> >   http://git.decadent.org.uk/git/linux-firmware.git master
-> >=20
-> > Ben Hutchings (1):
-> >       Add firmware for VIA VT6656
-> >=20
-> >  LICENCE.via_vt6656 |   25 +++++++++++++++++++++++++
-> >  WHENCE             |    8 ++++++++
-> >  vntwusb.fw         |  Bin 0 -> 11341 bytes
-> >  3 files changed, 33 insertions(+), 0 deletions(-)
-> >  create mode 100644 LICENCE.via_vt6656
-> >  create mode 100644 vntwusb.fw
->=20
-> ping!
+This is something I'd certainly like to see upstream, and you made
+a good point about keeping it seperate from the unicore32 submission.
 
-PING!
+One detail I don't like too much is that you now have two different
+formats for specifying lists of headers to do something with.
 
-Ben.
+Instead of the new arch/*/include/asm-generic file, how about listing
+all files that are actually provided by the architecture as "header-y"
+in arch/*/include/asm/Kbuild, and listing all files as something
+else in include/asm-generic/Kbuild and include/asm-generic/Kbuild.asm?
 
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
-
---=-znxMKS2Q8dPs+n6kVBn7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIVAwUATSjL/Oe/yOyVhhEJAQK1+BAAiDjj3AOa1WlDD2itg6GC/VzWYH0yHPz+
-HUDSjuNqtoQ5+FFwX4JKNHZm+guwLktcCp+sUdkO9Q3j6rN/VoEmhqhhS1iDimiv
-SqC7q7ogyWATZ7LwGVX21YeN3y1LDJhIh7nlZl239b44V+wyOdJJh02i88qymubg
-pTduRjD+5xeC/Okkdnf7AlV6WYajn/3GMR1dSo5J0ReSssRXVbut+dKbHFs2unqW
-KZ9/kyKp97Cshq9FLat94W6wfMuHTBuoJfqzwo2QLbkOcjFCWpHPum1+FMbFMgzY
-t9aY6Bpqat6OLjAXCk5JLPbHBiJO9SaB2OUku4R6nXhlVK7Dtphy+X9dmhKfy8ea
-d3tsybVht2uQBedYdQ1Qt5+P/owzzbYetuX4nd39U018bulUQ+Ovn3ibfJDSRW+0
-acs4SmZVczdfsXeJKSuqR6klUulqWLhUUvQE9nmaRaUfYhEL9dJwli89DIvA0v3L
-WTtpkdSrG9IvpUAeVT/hezvVV/HLL4/eKxy/tDD21mI70XLcLBG5xCxcf2ZzDDJt
-OFxpSVi9L13gc79Gu5c8Z3GB8AmsDqHxZUvIsPhry2oUMoqaTyISTg+IaQjV6sTQ
-nC+uKhC+R9smGkmNnYUIRIUNpDb0AqBbjU7HX74f/oPnbIW2/GURe9nQqH7DSEKf
-lBufwGrp3xA=
-=5cNb
------END PGP SIGNATURE-----
-
---=-znxMKS2Q8dPs+n6kVBn7--
+	Arnd
