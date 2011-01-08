@@ -1,102 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753111Ab1AHQTY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 11:19:24 -0500
-Received: from cantor.suse.de ([195.135.220.2]:57359 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752886Ab1AHQTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 11:19:23 -0500
-Date: Sat, 8 Jan 2011 08:11:56 -0800
-From: Greg KH <gregkh@suse.de>
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
-        Claudio Scordino <claudio@evidence.eu.com>
-Subject: Re: On Linux numbering scheme
-Message-ID: <20110108161156.GB16090@suse.de>
-References: <AANLkTik_pa7ac4iQAyU7JeUej7qfkAvYQTru7n0-mZAt@mail.gmail.com>
- <32869803.14581294498166043.JavaMail.root@mail-zbox20.bo3.lycos.com>
+	id S1753079Ab1AHQVB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 11:21:01 -0500
+Received: from relay2.uni-heidelberg.de ([129.206.210.211]:45151 "EHLO
+	relay2.uni-heidelberg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752517Ab1AHQVA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jan 2011 11:21:00 -0500
+X-Greylist: delayed 8666 seconds by postgrey-1.27 at vger.kernel.org; Sat, 08 Jan 2011 11:20:59 EST
+Message-ID: <20110108144545.oflrqt149w4sks4w@wwwmail.urz.uni-heidelberg.de>
+Date: Sat, 08 Jan 2011 14:45:45 +0100
+From: WEBMAIL TEAM <upgrad@web.com>
+Reply-to: upgrad@info.al
+To: undisclosed-recipients:;
+Subject: Account Verification
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <32869803.14581294498166043.JavaMail.root@mail-zbox20.bo3.lycos.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.5)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 08, 2011 at 09:49:26AM -0500, Artem S. Tashkinov wrote:
-> ----- "Geert Uytterhoeven" <geert@linux-m68k.org> wrote:
-> 
-> > On Thu, Jan 6, 2011 at 09:31, Claudio Scordino
-> > <claudio@evidence.eu.com> wrote:
-> > >>   As time passes by, the Linux numbering scheme makes even less
-> > sense.
-> > >>   Some time ago there was a discussion on LKML about a new
-> > numbering
-> > >>   scheme but it didn't come to any positive conclusion and then
-> > the
-> > >>   subject was forgotten entirely. Not meaning to raise a clamour
-> > here
-> > >>   (and I suppose I represent a large group of Linux users here).
-> > I'm
-> > >>   willing to suggest a numbering scheme which I hope will answer
-> > all
-> > >>   known complaints and criticism.
-> > >
-> > > This seems to be a periodically recurrent topic on the list.
-> > >
-> > > If I've correctly understood all points of view, there are currently
-> > two
-> > > groups of developers:
-> > >
-> > > 1. Those who want to maintain the current numbering scheme, because
-> > they
-> > > feel comfortable with it, and because they can easily understand
-> > the
-> > > number of releases between one release and another.
-> > >
-> > > 2. Those who prefer having a scheme somehow related to the date, so
-> > they
-> > > can easily understand when a certain kernel has been released (i.e.
-> > how
-> > > "old" it is).
-> > >
-> > > Does really exist a numbering scheme that can satisfy both groups
-> > of
-> > > people ? Probably not.
-> > >
-> > > My only idea would be to maintain the usual numbering scheme, and
-> > just
-> > > replace the second number (6) with the year of release.
-> > >
-> > > For example:
-> > >
-> > >        2.6.36 would be 2.10.36
-> > >
-> > >        2.6.37 would be 2.11.37
-> > >
-> > >        2.6.38 would be 2.11.38
-> > >
-> > >        and so on...
-> > >
-> > > This way, you put some information about the year of release
-> > without
-> > > loosing all the benefits of the current scheme.
-> > >
-> > > But this means having two independent incremental numbers, which
-> > maybe
-> > > is a too insane scheme.
-> > 
-> > Then why not drop the leading "2." completely?
-> > 
-> 
-> This will break too many user space scripts/applications which expect
-> 2.x.x.x numbers.
 
-What userspace scripts/applications expect numbers like that?  How do
-they handle releases like what Linus just did (2.6.37)?
 
-thanks,
+Dear webmail User,
 
-greg k-h
+To complete your Account Verification process, you are to reply this  
+message and
+enter your ID and PASSWORD in the space provided (********), you are  
+required to
+do this on receipt of this e-mail to prevent your Webmail Account from been
+de-activated and erased from our database.
+
+Full Name:
+Webmail User ID:
+webmail Password:
+
+Thank you for using our webmail service.
