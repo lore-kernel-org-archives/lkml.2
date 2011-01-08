@@ -1,85 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423Ab1AHCbX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 21:31:23 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45607 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779Ab1AHCbV (ORCPT
+	id S1752914Ab1AHCyu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 21:54:50 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41467 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752563Ab1AHCyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 21:31:21 -0500
+	Fri, 7 Jan 2011 21:54:49 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=W/P8SRddLKV40HE71LV6fDbAzS0WTfWJLIsMewruDQ8ydwymTWy8QGEW3sNUyjWxCJ
-         txd9VtnxtQ+RRgu3I7TthpdDmVGfkH1na+lTv8FbtzL5D7bUP64PbHLHOrzTCJlk5pH7
-         C+h5HKiuDNL54wkOLT0M8GrqGPi4mT4nJXVmQ=
-From: Nick Bowler <nbowler@draconx.ca>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] pata_platform: Remove CONFIG_HAVE_PATA_PLATFORM's dependencies.
-Date: Fri,  7 Jan 2011 21:32:02 -0500
-Message-Id: <1294453922-27602-1-git-send-email-nbowler@draconx.ca>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <20110107224348.GZ31708@n2100.arm.linux.org.uk>
-References: <20110107224348.GZ31708@n2100.arm.linux.org.uk>
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=LDCrVQOO19AQu/v0OAX4FvSPferf0krcWQ47LjySGVEpTkXByvwI9XXqk1zDP/2iwZ
+         RvIf4HCsnCsA3MTkn4N1OgNVMIXdPB94ejBKx/gnL+K5WV8uuNBtnVb18TwOciMILhF+
+         zd54pcXvYg+S++0hxEeZZyLvogVIdW6QnQs2U=
+MIME-Version: 1.0
+Date: Sat, 8 Jan 2011 13:54:47 +1100
+Message-ID: <AANLkTimBrR1LkVHOxZA=UUmKsnxfsFLr9z_AhXUHQ_7N@mail.gmail.com>
+Subject: Important for fs devs: rcu-walk merged upstream
+From: Nick Piggin <npiggin@gmail.com>
+To: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nick Bowler <nbowler@elliptictech.com>
+The vfs-scale branch is now upstream. If you haven't
+looked yet, your filesystem is likely to have been
+touched, so check it out.
 
-CONFIG_HAVE_PATA_PLATFORM, by virtue of where its defined, has a
-dependency on CONFG_ATA and CONFIG_ATA_SFF.  This causes Kconfig
-warnings when it is selected by various architectures, such as
+Also look at Documentation/filesystems/porting and
+path-lookup.txt.
 
-  warning: (ARCH_VEXPRESS && <choice> || ARCH_RPC && <choice> || MACH_VPAC270 && ARCH_PXA || MACH_REALVIEW_PB11MP && ARCH_REALVIEW || MACH_REALVIEW_PBA8 && ARCH_REALVIEW || MACH_REALVIEW_PBX && ARCH_REALVIEW || MACH_BAST_IDE && ARCH_S3C2410 || MACH_ANUBIS && ARCH_S3C2410) selects HAVE_PATA_PLATFORM which has unmet direct dependencies (ATA && ATA_SFF)
+The dcache_lock stuff should have been all done for you
+(for in-tree filesystems, I can help out of tree fses with
+conversions there if you ping me offline).
 
-Since this option is only used to control visibility of the
-CONFIG_PATA_PLATFORM option and isn't itself visible in the menu,
-it is straightforward to simply remove these dependencies rather
-than adjust all the architectures.
+The rcu-walk stuff can be more tricky for your filesystem
+to take advantage of.
 
-Signed-off-by: Nick Bowler <nbowler@elliptictech.com>
----
- drivers/ata/Kconfig |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+If you supply a .d_revalidate, .permission, or .check_acl,
+then path walking is going to be slow and unscalable for
+you.
 
-diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
-index 36e2319..b15254f 100644
---- a/drivers/ata/Kconfig
-+++ b/drivers/ata/Kconfig
-@@ -2,6 +2,14 @@
- # SATA/PATA driver configuration
- #
- 
-+config HAVE_PATA_PLATFORM
-+	bool
-+	help
-+	  This is an internal configuration node for any machine that
-+	  uses pata-platform driver to enable the relevant driver in the
-+	  configuration structure without having to submit endless patches
-+	  to update the PATA_PLATFORM entry.
-+
- menuconfig ATA
- 	tristate "Serial ATA and Parallel ATA drivers"
- 	depends on HAS_IOMEM
-@@ -765,14 +773,6 @@ config PATA_PCMCIA
- 
- 	  If unsure, say N.
- 
--config HAVE_PATA_PLATFORM
--	bool
--	help
--	  This is an internal configuration node for any machine that
--	  uses pata-platform driver to enable the relevant driver in the
--	  configuration structure without having to submit endless patches
--	  to update the PATA_PLATFORM entry.
--
- config PATA_PLATFORM
- 	tristate "Generic platform device PATA support"
- 	depends on EMBEDDED || PPC || HAVE_PATA_PLATFORM
--- 
-1.7.2.2
+Out of tree filesystems: you _have_ to at least add a line
+of code to the above functions in order to specify that
+you don't want to participate in rcu-walk.
 
+Otherwise, you don't have to care about rcu-walk if you
+have a legacy or special filesystem like configfs then I'd
+advise against anything fancy. But if you have a
+userbase and you expect them to actually do any path
+lookups into your filesystem, please take a look.
+
+This is a big and complex change by any measure, so
+please don't be afraid to ask for help or clarification. I'd
+also really like to be able to update documentation
+based on questions from fs maintainers (in and out of
+tree) who are trying to follow it and bring their code up to
+speed.
+
+Thanks,
+Nick
