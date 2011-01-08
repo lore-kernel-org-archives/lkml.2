@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513Ab1AGXzS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Jan 2011 18:55:18 -0500
-Received: from thunk.org ([69.25.196.29]:57852 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751779Ab1AGXzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Jan 2011 18:55:16 -0500
-Date: Fri, 7 Jan 2011 18:54:49 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Christoph Hellwig <hch@lst.de>
-Cc: "Darrick J. Wong" <djwong@us.ibm.com>, Jens Axboe <axboe@kernel.dk>,
-        Neil Brown <neilb@suse.de>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        Alasdair G Kergon <agk@redhat.com>, Jan Kara <jack@suse.cz>,
-        Mike Snitzer <snitzer@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-raid@vger.kernel.org, Keith Mannthey <kmannth@us.ibm.com>,
-        dm-devel@redhat.com, Mingming Cao <cmm@us.ibm.com>,
-        Tejun Heo <tj@kernel.org>, linux-ext4@vger.kernel.org,
-        Ric Wheeler <rwheeler@redhat.com>, Josef Bacik <josef@redhat.com>
-Subject: Patch to issue pure flushes directly (Was: Re: [PATCH v6 0/4]
- ext4: Coordinate data-only flush requests sent) by fsync
-Message-ID: <20110107235449.GT21922@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Christoph Hellwig <hch@lst.de>,
-	"Darrick J. Wong" <djwong@us.ibm.com>, Jens Axboe <axboe@kernel.dk>,
-	Neil Brown <neilb@suse.de>,
-	Andreas Dilger <adilger.kernel@dilger.ca>,
-	Alasdair G Kergon <agk@redhat.com>, Jan Kara <jack@suse.cz>,
-	Mike Snitzer <snitzer@redhat.com>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	linux-raid@vger.kernel.org, Keith Mannthey <kmannth@us.ibm.com>,
-	dm-devel@redhat.com, Mingming Cao <cmm@us.ibm.com>,
-	Tejun Heo <tj@kernel.org>, linux-ext4@vger.kernel.org,
-	Ric Wheeler <rwheeler@redhat.com>, Josef Bacik <josef@redhat.com>
-References: <20101129220536.12401.16581.stgit@elm3b57.beaverton.ibm.com>
- <20101130164124.GA30858@lst.de>
+	id S1752209Ab1AHAEr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Jan 2011 19:04:47 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:12330 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752187Ab1AHAEq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Jan 2011 19:04:46 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6219"; a="69481306"
+From: David Brown <davidb@codeaurora.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] MSM smp support
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+Date: Fri, 07 Jan 2011 16:04:46 -0800
+Message-ID: <8yavd20tg4h.fsf@huya.qualcomm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101130164124.GA30858@lst.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch seemed like a good idea to me; I just checked linux-next,
-and looks like nothing like this is planned to be merged.  Just
-thought I would send a prod-o-gram to see what the current thinking
-was around adding something like this.
+Linus,
+
+These are some additional MSM changes to add SMP support to MSM.
+These depended upon some changes in Russell King's devel tree that got
+rebased right before the push.  I've rebased these onto your current
+tip, and retested.
 
 Thanks,
+David
 
-						- Ted
+The following changes since commit e744070fd4ff9d3114277e52d77afa21579adce2:
 
+  Merge branch 'sched-fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2011-01-07 14:55:48 -0800)
 
-On Tue, Nov 30, 2010 at 05:41:24PM +0100, Christoph Hellwig wrote:
-> FYI, here's an updated version of my patch to not run pure flushes
-> that also works on SCSI/ATA and not just virtio.  I suspect the patch
-> alone might not be enough, but together with a variant of Neil's
-> suggestion might do the trick, with my patch taking care of the
-> highend-devices and Neil's scheme of taking care of stupid SATA disks.
-> 
-> 
-> Index: linux-2.6/block/blk-flush.c
-> ===================================================================
-> --- linux-2.6.orig/block/blk-flush.c	2010-11-30 17:27:33.108254088 +0100
-> +++ linux-2.6/block/blk-flush.c	2010-11-30 17:27:38.790004333 +0100
-> @@ -143,6 +143,17 @@ struct request *blk_do_flush(struct requ
->  	unsigned skip = 0;
->  
->  	/*
-> +	 * Just issue pure flushes directly.
-> +	 */
-> +	if (!blk_rq_sectors(rq)) {
-> +		if (!do_preflush) {
-> +			__blk_end_request_all(rq, 0);
-> +			return NULL;
-> +		}
-> +		return rq;
-> +	}
-> +
-> +	/*
->  	 * Special case.  If there's data but flush is not necessary,
->  	 * the request can be issued directly.
->  	 *
-> Index: linux-2.6/drivers/scsi/scsi_lib.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/scsi/scsi_lib.c	2010-11-30 17:27:33.120254298 +0100
-> +++ linux-2.6/drivers/scsi/scsi_lib.c	2010-11-30 17:27:38.791003634 +0100
-> @@ -1060,7 +1060,7 @@ int scsi_setup_blk_pc_cmnd(struct scsi_d
->  	 * that does not transfer data, in which case they may optionally
->  	 * submit a request without an attached bio.
->  	 */
-> -	if (req->bio) {
-> +	if (req->bio && !(req->cmd_flags & REQ_FLUSH)) {
->  		int ret;
->  
->  		BUG_ON(!req->nr_phys_segments);
+are available in the git repository at:
+
+  git://codeaurora.org/quic/kernel/davidb/linux-msm.git msm-smp
+
+Jeff Ohlstein (3):
+      msm: timer: SMP timer support for msm
+      msm: hotplug: support cpu hotplug on msm
+      msm: add SMP support for msm
+
+Stepan Moskovchenko (1):
+      msm: scm-boot: Support for setting cold/warm boot addresses
+
+Stephen Boyd (1):
+      msm: Secure Channel Manager (SCM) support
+
+ arch/arm/mach-msm/Kconfig                       |    5 +
+ arch/arm/mach-msm/Makefile                      |    4 +
+ arch/arm/mach-msm/headsmp.S                     |   40 ++++
+ arch/arm/mach-msm/hotplug.c                     |   91 +++++++
+ arch/arm/mach-msm/include/mach/msm_iomap-8x60.h |    6 +-
+ arch/arm/mach-msm/io.c                          |    1 +
+ arch/arm/mach-msm/platsmp.c                     |  166 +++++++++++++
+ arch/arm/mach-msm/scm-boot.c                    |   39 +++
+ arch/arm/mach-msm/scm-boot.h                    |   38 +++
+ arch/arm/mach-msm/scm.c                         |  287 +++++++++++++++++++++++
+ arch/arm/mach-msm/scm.h                         |   41 ++++
+ arch/arm/mach-msm/timer.c                       |  125 ++++++++--
+ 12 files changed, 819 insertions(+), 24 deletions(-)
+ create mode 100644 arch/arm/mach-msm/headsmp.S
+ create mode 100644 arch/arm/mach-msm/hotplug.c
+ create mode 100644 arch/arm/mach-msm/platsmp.c
+ create mode 100644 arch/arm/mach-msm/scm-boot.c
+ create mode 100644 arch/arm/mach-msm/scm-boot.h
+ create mode 100644 arch/arm/mach-msm/scm.c
+ create mode 100644 arch/arm/mach-msm/scm.h
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
