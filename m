@@ -1,511 +1,508 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437Ab1AHXG4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 18:06:56 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57034 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752249Ab1AHXGy (ORCPT
+	id S1752483Ab1AHXRI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 18:17:08 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:59126 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752267Ab1AHXRG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 18:06:54 -0500
-From: Ben Hutchings <ben@decadent.org.uk>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Ken Kawasaki <ken_kawasaki@spring.nifty.jp>,
-        David Hinds <dahinds@users.sourceforge.net>
-In-Reply-To: <1294527372.3283.43.camel@localhost>
-References: <1294527372.3283.43.camel@localhost>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-ON70uw7b20368HyhCeQA"
-Date: Sat, 08 Jan 2011 23:06:46 +0000
-Message-ID: <1294528006.3283.54.camel@localhost>
+	Sat, 8 Jan 2011 18:17:06 -0500
+X-IronPort-AV: E=Sophos;i="4.60,295,1291622400"; 
+   d="scan'208";a="503133927"
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+In-Reply-To: <1294505384.4181.14.camel@heimdal.trondhjem.org>
+References: <20110105210448.GM8638@n2100.arm.linux.org.uk>
+	 <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>
+	 <1294262208.2952.4.camel@heimdal.trondhjem.org>
+	 <AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com>
+	 <1294268808.2952.18.camel@heimdal.trondhjem.org>
+	 <1294270104.16957.73.camel@mulgrave.site>
+	 <1294335614.22825.154.camel@mulgrave.site>
+	 <1294336054.2905.1.camel@heimdal.trondhjem.org>
+	 <AANLkTimusF4KCJ4vHPn+T1dUiKxapXaT0QTtFvh8Ykdd@mail.gmail.com>
+	 <1294426405.2929.23.camel@heimdal.trondhjem.org>
+	 <20110107190229.GX31708@n2100.arm.linux.org.uk>
+	 <1294427467.4895.66.camel@mulgrave.site>
+	 <1294505384.4181.14.camel@heimdal.trondhjem.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Sat, 08 Jan 2011 18:15:51 -0500
+Message-ID: <1294528551.4181.19.camel@heimdal.trondhjem.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: [PATCH 2/2] Add source and copyright notice for CIS files from
- pcmcia-cs
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 08 Jan 2011 23:15:54.0439 (UTC) FILETIME=[FFA22D70:01CBAF89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2011-01-08 at 11:49 -0500, Trond Myklebust wrote: 
+> On Fri, 2011-01-07 at 13:11 -0600, James Bottomley wrote: 
+> > On the other hand, the xdr routines, since they take the pages anyway,
+> > could use a scatterlist approach to writing through the kernel mapping
+> > instead of using vmap ... we have all the machinery for this in
+> > lib/scatterlist.c ... it's not designed for this case, since it's
+> > designed to allow arbitrary linear reads and writes on a block
+> > scatterlist, but the principle is the same ... it looks like it would be
+> > rather a big patch, though ... 
+> 
+> The following alternative seems to work for me, but has only been
+> lightly tested so far. It's a bit large for a stable patch, but not too
+> ungainly.
+> 
+> It modifies xdr_stream, adding the ability to iterate through page data.
+> To avoid kmap()/kunmap(), it does require that pages be allocated in
+> lowmem, but since the only use case here is when using page arrays as
+> temporary buffers, that seems like an acceptable compromise.
 
---=-ON70uw7b20368HyhCeQA
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+...and here is an update which makes the whole process transparent to
+the decoder. It basically teaches xdr_inline_decode() how to switch
+buffers when it hits the end of the current iovec and/or page.
 
-The CIS files mostly come from pcmcia-cs releases, in which the source
-files were named etc/cis/*.cis and the binaries were named
-etc/cis/*.dat.  However, the current drivers request the *binaries* as
-cis/*.cis.  It's too late to fix that, so put the sources in a
-subdirectory here.
+Cheers
+  Trond
+----------------------------------------------------------------------------------- 
+>From 8b2e60cef5c65eef41ab61286f62dec6bfb1ac27 Mon Sep 17 00:00:00 2001
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date: Sat, 8 Jan 2011 17:45:38 -0500
+Subject: [PATCH] NFS: Don't use vm_map_ram() in readdir
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+vm_map_ram() is not available on NOMMU platforms, and causes trouble
+on incoherrent architectures such as ARM when we access the page data
+through both the direct and the virtual mapping.
+
+The alternative is to use the direct mapping to access page data
+for the case when we are not crossing a page boundary, but to copy
+the data into a linear scratch buffer when we are accessing data
+that spans page boundaries.
+
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 ---
- WHENCE                |   25 +++++++++++++++++++++----
- cis/src/3CCFEM556.cis |   22 ++++++++++++++++++++++
- cis/src/3CXEM556.cis  |   22 ++++++++++++++++++++++
- cis/src/COMpad2.cis   |   20 ++++++++++++++++++++
- cis/src/COMpad4.cis   |   14 ++++++++++++++
- cis/src/DP83903.cis   |   24 ++++++++++++++++++++++++
- cis/src/LA-PCM.cis    |   44 ++++++++++++++++++++++++++++++++++++++++++++
- cis/src/MT5634ZLX.cis |   18 ++++++++++++++++++
- cis/src/NE2K.cis      |   10 ++++++++++
- cis/src/PCMLM28.cis   |   37 +++++++++++++++++++++++++++++++++++++
- cis/src/PE-200.cis    |   11 +++++++++++
- cis/src/PE520.cis     |   11 +++++++++++
- cis/src/RS-COM-2P.cis |   14 ++++++++++++++
- cis/src/tamarack.cis  |   17 +++++++++++++++++
- 14 files changed, 285 insertions(+), 4 deletions(-)
- create mode 100644 cis/src/3CCFEM556.cis
- create mode 100644 cis/src/3CXEM556.cis
- create mode 100644 cis/src/COMpad2.cis
- create mode 100644 cis/src/COMpad4.cis
- create mode 100644 cis/src/DP83903.cis
- create mode 100644 cis/src/LA-PCM.cis
- create mode 100644 cis/src/MT5634ZLX.cis
- create mode 100644 cis/src/NE2K.cis
- create mode 100644 cis/src/PCMLM28.cis
- create mode 100644 cis/src/PE-200.cis
- create mode 100644 cis/src/PE520.cis
- create mode 100644 cis/src/RS-COM-2P.cis
- create mode 100644 cis/src/tamarack.cis
+ fs/nfs/dir.c               |   44 ++++++-------
+ fs/nfs/nfs2xdr.c           |    6 --
+ fs/nfs/nfs3xdr.c           |    6 --
+ fs/nfs/nfs4xdr.c           |    6 --
+ include/linux/sunrpc/xdr.h |    4 +-
+ net/sunrpc/xdr.c           |  155 +++++++++++++++++++++++++++++++++++---------
+ 6 files changed, 148 insertions(+), 73 deletions(-)
 
-diff --git a/WHENCE b/WHENCE
-index cec7478..b948b3d 100644
---- a/WHENCE
-+++ b/WHENCE
-@@ -806,30 +806,42 @@ File: cis/NE2K.cis
- File: cis/tamarack.cis
- File: cis/PE-200.cis
- File: cis/PE520.cis
-+Source: cis/src/LA-PCM.cis
-+Source: cis/src/PCMLM28.cis
-+Source: cis/src/DP83903.cis
-+Source: cis/src/NE2K.cis
-+Source: cis/src/tamarack.cis
-+Source: cis/src/PE-200.cis
-+Source: cis/src/PE520.cis
-=20
--Licence: GPL
-+Licence: Dual GPLv2/MPL
-=20
- Originally developed by the pcmcia-cs project
-+Copyright (C) 1998, 1999, 2000 David A. Hinds
-=20
- --------------------------------------------------------------------------
-=20
- Driver: 3c589_cs - 3Com PCMCIA adapter
-=20
- File: cis/3CXEM556.cis
-+Source: cis/src/3CXEM556.cis
-=20
--Licence: GPL
-+Licence: Dual GPLv2/MPL
-=20
- Originally developed by the pcmcia-cs project
-+Copyright (C) 1998, 1999, 2000 David A. Hinds
-=20
- --------------------------------------------------------------------------
-=20
- Driver: 3c574_cs - 3Com PCMCIA adapter
-=20
- File: cis/3CCFEM556.cis
-+Source: cis/src/3CCFEM556.cis
-=20
--Licence: GPL
-+Licence: Dual GPLv2/MPL
-=20
- Originally developed by the pcmcia-cs project
-+Copyright (C) 1998, 1999, 2000 David A. Hinds
-=20
- --------------------------------------------------------------------------
-=20
-@@ -839,10 +851,15 @@ File: cis/MT5634ZLX.cis
- File: cis/RS-COM-2P.cis
- File: cis/COMpad2.cis
- File: cis/COMpad4.cis
-+Source: cis/src/MT5634ZLX.cis
-+Source: cis/src/RS-COM-2P.cis
-+Source: cis/src/COMpad2.cis
-+Source: cis/src/COMpad4.cis
-=20
--Licence: GPL
-+Licence: Dual GPLv2/MPL
-=20
- Originally developed by the pcmcia-cs project
-+Copyright (C) 1998, 1999, 2000 David A. Hinds
-=20
- --------------------------------------------------------------------------
-=20
-diff --git a/cis/src/3CCFEM556.cis b/cis/src/3CCFEM556.cis
-new file mode 100644
-index 0000000..be627d0
---- /dev/null
-+++ b/cis/src/3CCFEM556.cis
-@@ -0,0 +1,22 @@
-+#
-+# This card is MFC-compliant, but identifies itself as single function
-+#
-+vers_1 5.0, "3Com", "Megahertz 3CCFEM556", "LAN + 56k Modem"
-+manfid 0x0101, 0x0556
-+funcid 0
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index 996dd89..0108cf4 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -33,7 +33,6 @@
+ #include <linux/namei.h>
+ #include <linux/mount.h>
+ #include <linux/sched.h>
+-#include <linux/vmalloc.h>
+ #include <linux/kmemleak.h>
+ 
+ #include "delegation.h"
+@@ -459,25 +458,26 @@ out:
+ /* Perform conversion from xdr to cache array */
+ static
+ int nfs_readdir_page_filler(nfs_readdir_descriptor_t *desc, struct nfs_entry *entry,
+-				void *xdr_page, struct page *page, unsigned int buflen)
++				struct page **xdr_pages, struct page *page, unsigned int buflen)
+ {
+ 	struct xdr_stream stream;
+-	struct xdr_buf buf;
+-	__be32 *ptr = xdr_page;
++	struct xdr_buf buf = {
++		.pages = xdr_pages,
++		.page_len = buflen,
++		.buflen = buflen,
++		.len = buflen,
++	};
++	struct page *scratch;
+ 	struct nfs_cache_array *array;
+ 	unsigned int count = 0;
+ 	int status;
+ 
+-	buf.head->iov_base = xdr_page;
+-	buf.head->iov_len = buflen;
+-	buf.tail->iov_len = 0;
+-	buf.page_base = 0;
+-	buf.page_len = 0;
+-	buf.buflen = buf.head->iov_len;
+-	buf.len = buf.head->iov_len;
+-
+-	xdr_init_decode(&stream, &buf, ptr);
++	scratch = alloc_page(GFP_KERNEL);
++	if (scratch == NULL)
++		return -ENOMEM;
+ 
++	xdr_init_decode(&stream, &buf, NULL);
++	xdr_set_scratch_buffer(&stream, page_address(scratch), PAGE_SIZE);
+ 
+ 	do {
+ 		status = xdr_decode(desc, entry, &stream);
+@@ -506,6 +506,8 @@ int nfs_readdir_page_filler(nfs_readdir_descriptor_t *desc, struct nfs_entry *en
+ 		} else
+ 			status = PTR_ERR(array);
+ 	}
 +
-+mfc {
-+  funcid network_adapter
-+  config base 0x1000 mask 0x267 last_index 0x07
-+  cftable_entry 0x07
-+    Vcc Vnom 5V
-+    irq mask 0xffff [level]
-+    io  0x0000-0x000f [8bit] [16bit]
-+}, {
-+  funcid serial_port
-+  config base 0x1100 mask 0x277 last_index 0x27
-+  cftable_entry 0x27
-+    Vcc Vnom 5V
-+    irq mask 0xffff [level]
-+    io  0x0000-0x0007 [8bit]
++	put_page(scratch);
+ 	return status;
+ }
+ 
+@@ -521,7 +523,6 @@ static
+ void nfs_readdir_free_large_page(void *ptr, struct page **pages,
+ 		unsigned int npages)
+ {
+-	vm_unmap_ram(ptr, npages);
+ 	nfs_readdir_free_pagearray(pages, npages);
+ }
+ 
+@@ -530,9 +531,8 @@ void nfs_readdir_free_large_page(void *ptr, struct page **pages,
+  * to nfs_readdir_free_large_page
+  */
+ static
+-void *nfs_readdir_large_page(struct page **pages, unsigned int npages)
++int nfs_readdir_large_page(struct page **pages, unsigned int npages)
+ {
+-	void *ptr;
+ 	unsigned int i;
+ 
+ 	for (i = 0; i < npages; i++) {
+@@ -541,13 +541,11 @@ void *nfs_readdir_large_page(struct page **pages, unsigned int npages)
+ 			goto out_freepages;
+ 		pages[i] = page;
+ 	}
++	return 0;
+ 
+-	ptr = vm_map_ram(pages, npages, 0, PAGE_KERNEL);
+-	if (!IS_ERR_OR_NULL(ptr))
+-		return ptr;
+ out_freepages:
+ 	nfs_readdir_free_pagearray(pages, i);
+-	return NULL;
++	return -ENOMEM;
+ }
+ 
+ static
+@@ -577,8 +575,8 @@ int nfs_readdir_xdr_to_array(nfs_readdir_descriptor_t *desc, struct page *page,
+ 	memset(array, 0, sizeof(struct nfs_cache_array));
+ 	array->eof_index = -1;
+ 
+-	pages_ptr = nfs_readdir_large_page(pages, array_size);
+-	if (!pages_ptr)
++	status = nfs_readdir_large_page(pages, array_size);
++	if (status < 0)
+ 		goto out_release_array;
+ 	do {
+ 		unsigned int pglen;
+@@ -587,7 +585,7 @@ int nfs_readdir_xdr_to_array(nfs_readdir_descriptor_t *desc, struct page *page,
+ 		if (status < 0)
+ 			break;
+ 		pglen = status;
+-		status = nfs_readdir_page_filler(desc, &entry, pages_ptr, page, pglen);
++		status = nfs_readdir_page_filler(desc, &entry, pages, page, pglen);
+ 		if (status < 0) {
+ 			if (status == -ENOSPC)
+ 				status = 0;
+diff --git a/fs/nfs/nfs2xdr.c b/fs/nfs/nfs2xdr.c
+index 5914a19..b382a1b 100644
+--- a/fs/nfs/nfs2xdr.c
++++ b/fs/nfs/nfs2xdr.c
+@@ -487,12 +487,6 @@ nfs_decode_dirent(struct xdr_stream *xdr, struct nfs_entry *entry, struct nfs_se
+ 
+ 	entry->d_type = DT_UNKNOWN;
+ 
+-	p = xdr_inline_peek(xdr, 8);
+-	if (p != NULL)
+-		entry->eof = !p[0] && p[1];
+-	else
+-		entry->eof = 0;
+-
+ 	return p;
+ 
+ out_overflow:
+diff --git a/fs/nfs/nfs3xdr.c b/fs/nfs/nfs3xdr.c
+index f6cc60f..ba91236 100644
+--- a/fs/nfs/nfs3xdr.c
++++ b/fs/nfs/nfs3xdr.c
+@@ -647,12 +647,6 @@ nfs3_decode_dirent(struct xdr_stream *xdr, struct nfs_entry *entry, struct nfs_s
+ 			memset((u8*)(entry->fh), 0, sizeof(*entry->fh));
+ 	}
+ 
+-	p = xdr_inline_peek(xdr, 8);
+-	if (p != NULL)
+-		entry->eof = !p[0] && p[1];
+-	else
+-		entry->eof = 0;
+-
+ 	return p;
+ 
+ out_overflow:
+diff --git a/fs/nfs/nfs4xdr.c b/fs/nfs/nfs4xdr.c
+index 9f1826b..0662a98 100644
+--- a/fs/nfs/nfs4xdr.c
++++ b/fs/nfs/nfs4xdr.c
+@@ -6215,12 +6215,6 @@ __be32 *nfs4_decode_dirent(struct xdr_stream *xdr, struct nfs_entry *entry,
+ 	if (verify_attr_len(xdr, p, len) < 0)
+ 		goto out_overflow;
+ 
+-	p = xdr_inline_peek(xdr, 8);
+-	if (p != NULL)
+-		entry->eof = !p[0] && p[1];
+-	else
+-		entry->eof = 0;
+-
+ 	return p;
+ 
+ out_overflow:
+diff --git a/include/linux/sunrpc/xdr.h b/include/linux/sunrpc/xdr.h
+index 498ab93..7783c68 100644
+--- a/include/linux/sunrpc/xdr.h
++++ b/include/linux/sunrpc/xdr.h
+@@ -201,6 +201,8 @@ struct xdr_stream {
+ 
+ 	__be32 *end;		/* end of available buffer space */
+ 	struct kvec *iov;	/* pointer to the current kvec */
++	struct kvec scratch;	/* Scratch buffer */
++	struct page **page_ptr;	/* pointer to the current page */
+ };
+ 
+ extern void xdr_init_encode(struct xdr_stream *xdr, struct xdr_buf *buf, __be32 *p);
+@@ -208,7 +210,7 @@ extern __be32 *xdr_reserve_space(struct xdr_stream *xdr, size_t nbytes);
+ extern void xdr_write_pages(struct xdr_stream *xdr, struct page **pages,
+ 		unsigned int base, unsigned int len);
+ extern void xdr_init_decode(struct xdr_stream *xdr, struct xdr_buf *buf, __be32 *p);
+-extern __be32 *xdr_inline_peek(struct xdr_stream *xdr, size_t nbytes);
++extern void xdr_set_scratch_buffer(struct xdr_stream *xdr, void *buf, size_t buflen);
+ extern __be32 *xdr_inline_decode(struct xdr_stream *xdr, size_t nbytes);
+ extern void xdr_read_pages(struct xdr_stream *xdr, unsigned int len);
+ extern void xdr_enter_page(struct xdr_stream *xdr, unsigned int len);
+diff --git a/net/sunrpc/xdr.c b/net/sunrpc/xdr.c
+index cd9e841..679cd67 100644
+--- a/net/sunrpc/xdr.c
++++ b/net/sunrpc/xdr.c
+@@ -552,6 +552,74 @@ void xdr_write_pages(struct xdr_stream *xdr, struct page **pages, unsigned int b
+ }
+ EXPORT_SYMBOL_GPL(xdr_write_pages);
+ 
++static void xdr_set_iov(struct xdr_stream *xdr, struct kvec *iov,
++		__be32 *p, unsigned int len)
++{
++	if (len > iov->iov_len)
++		len = iov->iov_len;
++	if (p == NULL)
++		p = (__be32*)iov->iov_base;
++	xdr->p = p;
++	xdr->end = (__be32*)(iov->iov_base + len);
++	xdr->iov = iov;
++	xdr->page_ptr = NULL;
 +}
-diff --git a/cis/src/3CXEM556.cis b/cis/src/3CXEM556.cis
-new file mode 100644
-index 0000000..819f08f
---- /dev/null
-+++ b/cis/src/3CXEM556.cis
-@@ -0,0 +1,22 @@
-+#
-+# This card is MFC-compliant, but identifies itself as single function
-+#
-+vers_1 5.0, "3Com", "Megahertz 3CXEM556", "LAN + 56k Modem"
-+manfid 0x0101, 0x0035
-+funcid 0
 +
-+mfc {
-+  funcid network_adapter
-+  config base 0x0800 mask 0x63 last_index 0x07
-+  cftable_entry 0x07
-+    Vcc Vnom 5V
-+    irq mask 0xffff [level]
-+    io  0x0000-0x000f [8bit] [16bit]
-+}, {
-+  funcid serial_port
-+  config base 0x900 mask 0x63 last_index 0x27
-+  cftable_entry 0x27
-+    Vcc Vnom 5V
-+    irq mask 0xffff [level]
-+    io  0x0000-0x0007 [8bit]
++static int xdr_set_page_base(struct xdr_stream *xdr,
++		unsigned int base, unsigned int len)
++{
++	unsigned int pgnr;
++	unsigned int maxlen;
++	unsigned int pgoff;
++	unsigned int pgend;
++	void *kaddr;
++
++	maxlen = xdr->buf->page_len;
++	if (base >= maxlen)
++		return -EINVAL;
++	maxlen -= base;
++	if (len > maxlen)
++		len = maxlen;
++
++	base += xdr->buf->page_base;
++
++	pgnr = base >> PAGE_SHIFT;
++	xdr->page_ptr = &xdr->buf->pages[pgnr];
++	kaddr = page_address(*xdr->page_ptr);
++
++	pgoff = base & ~PAGE_MASK;
++	xdr->p = (__be32*)(kaddr + pgoff);
++
++	pgend = pgoff + len;
++	if (pgend > PAGE_SIZE)
++		pgend = PAGE_SIZE;
++	xdr->end = (__be32*)(kaddr + pgend);
++	xdr->iov = NULL;
++	return 0;
 +}
-diff --git a/cis/src/COMpad2.cis b/cis/src/COMpad2.cis
-new file mode 100644
-index 0000000..bfc2374
---- /dev/null
-+++ b/cis/src/COMpad2.cis
-@@ -0,0 +1,20 @@
-+#
-+# Replacement CIS for Advantech COMpad-32/85
-+#
-+dev_info
-+  NULL 0ns, 512b
-+vers_1 4.1, "ADVANTECH", "COMpad-32/85", "1.0"
-+funcid serial_port [post]
-+config base 0x0100 mask 0x0003 last_index 0x05
-+cftable_entry 0x01 [default]
-+  [mwait]
-+  io 0x02e8-0x02ef, 0x03e8-0x03ef [lines=3D10] [8bit] [range]
-+  irq mask 0x9eb8 [level]
-+cftable_entry 0x02
-+  io 0x0330-0x033f [lines=3D10] [8bit] [range]
-+cftable_entry 0x03
-+  io 0x0340-0x034f [lines=3D10] [8bit] [range]
-+cftable_entry 0x04
-+  io 0x0350-0x035f [lines=3D10] [8bit] [range]
-+cftable_entry 0x05
-+  io 0x0360-0x036f [lines=3D10] [8bit] [range]
-diff --git a/cis/src/COMpad4.cis b/cis/src/COMpad4.cis
-new file mode 100644
-index 0000000..325991c
---- /dev/null
-+++ b/cis/src/COMpad4.cis
-@@ -0,0 +1,14 @@
-+#
-+# Replacement CIS for Advantech COMpad-32/85B-4
-+#
-+dev_info
-+  NULL 0ns, 512b
-+vers_1 4.1, "ADVANTECH", "COMpad-32/85B-4"
-+funcid serial_port [post]
-+config base 0x0100 mask 0x0001 last_index 0x02
-+cftable_entry 0x01 [default]
-+  [mwait]
-+  io 0x0240-0x025f [lines=3D10] [8bit] [range]
-+  irq mask 0x9eb8 [level]
-+cftable_entry 0x02
-+  io 0x0340-0x035f [lines=3D10] [8bit] [range]
-diff --git a/cis/src/DP83903.cis b/cis/src/DP83903.cis
-new file mode 100644
-index 0000000..ce86f45
---- /dev/null
-+++ b/cis/src/DP83903.cis
-@@ -0,0 +1,24 @@
-+#
-+# This CIS is for cards based on the National Semiconductor
-+# DP83903 Multiple Function Interface Chip
-+#
-+vers_1 4.1, "Multifunction Card", "", "", "NSC MF LAN/Modem"
-+manfid 0x0175, 0x0000
-+funcid 0
 +
-+mfc {
-+  funcid network_adapter
-+  config base 0x1020 mask 0x277 last_index 0x17
-+  cftable_entry 0x17
-+    Vcc Vnom 5V
-+    irq mask 0xffff [level]
-+    io  0x0000-0x001f [8bit] [16bit]
-+    memory 0x0000-0x3fff @ 0x0000
-+}, {
-+  funcid serial_port
-+  config base 0x1040 mask 0x0277 last_index 0x07
-+  cftable_entry 0x07
-+    Vcc Vnom 5V
-+    irq mask 0xffff [level]
-+    io  0x0000-0x0007 [8bit]
++static void xdr_set_next_page(struct xdr_stream *xdr)
++{
++	unsigned int newbase;
++
++	newbase = (1 + xdr->page_ptr - xdr->buf->pages) << PAGE_SHIFT;
++	newbase -= xdr->buf->page_base;
++
++	if (xdr_set_page_base(xdr, newbase, PAGE_SIZE) < 0)
++		xdr_set_iov(xdr, xdr->buf->tail, NULL, xdr->buf->len);
 +}
-diff --git a/cis/src/LA-PCM.cis b/cis/src/LA-PCM.cis
-new file mode 100644
-index 0000000..5c427bd
---- /dev/null
-+++ b/cis/src/LA-PCM.cis
-@@ -0,0 +1,44 @@
-+#
-+# Replacement CIS for Allied Telesis LA-PCM
-+#
-+dev_info
-+  fn_specific 100ns, 64kb
-+  FLASH 150ns, 60kb
-+attr_dev_info
-+  FLASH 150ns, 4kb
-+manfid 0xc00f, 0x0002
-+funcid network_adapter [post] [rom]
-+vers_1 4.1, "Allied Telesis,K.K", "Ethernet LAN Card", "CentreCOM", "LA-PC=
-M"
-+config base 0x20000 mask 0x000b last_index 0x10
-+cftable_entry 0x01
-+  io 0x0200-0x021f [8bit] [16bit]
-+cftable_entry 0x02
-+  io 0x0220-0x023f [8bit] [16bit]
-+cftable_entry 0x03
-+  io 0x0240-0x025f [8bit] [16bit]
-+cftable_entry 0x04
-+  io 0x0260-0x027f [8bit] [16bit]
-+cftable_entry 0x05
-+  io 0x0280-0x029f [8bit] [16bit]
-+cftable_entry 0x06
-+  io 0x02a0-0x02bf [8bit] [16bit]
-+cftable_entry 0x07
-+  io 0x02c0-0x02df [8bit] [16bit]
-+cftable_entry 0x08
-+  io 0x02e0-0x02ff [8bit] [16bit]
-+cftable_entry 0x09
-+  io 0x0300-0x031f [8bit] [16bit]
-+cftable_entry 0x0a
-+  io 0x0320-0x033f [8bit] [16bit]
-+cftable_entry 0x0b
-+  io 0x0340-0x035f [8bit] [16bit]
-+cftable_entry 0x0c
-+  io 0x0360-0x037f [8bit] [16bit]
-+cftable_entry 0x0d
-+  io 0x0380-0x039f [8bit] [16bit]
-+cftable_entry 0x0e
-+  io 0x03a0-0x03bf [8bit] [16bit]
-+cftable_entry 0x0f
-+  io 0x03c0-0x03df [8bit] [16bit]
-+cftable_entry 0x10
-+  io 0x03e0-0x03ff [8bit] [16bit]
-diff --git a/cis/src/MT5634ZLX.cis b/cis/src/MT5634ZLX.cis
-new file mode 100644
-index 0000000..52249b3
---- /dev/null
-+++ b/cis/src/MT5634ZLX.cis
-@@ -0,0 +1,18 @@
-+#
-+# Replacement CIS for Multitech MT5634ZLX modems
-+#
-+dev_info no_info
-+vers_1 4.1, "MultiTech", "PCMCIA 56K DataFax"
-+manfid 0x0200, 0x0001
-+funcid serial_port
-+config base 0xff80 mask 0x0067 last_index 0x27
-+cftable_entry 0x0f [default]
-+  [rdybsy] [audio] [pwrdown]
-+  Vcc Vnom 5V Vpp1 Vnom 5V Vpp2 Vnom 5V
-+  io 0x03f8-0x03ff [lines=3D10] [8bit]
-+cftable_entry 0x17
-+  io 0x02f8-0x02ff [lines=3D10] [8bit]
-+cftable_entry 0x1f
-+  io 0x03e8-0x03ef [lines=3D10] [8bit]
-+cftable_entry 0x27
-+  io 0x02e8-0x02ef [lines=3D10] [8bit]
-diff --git a/cis/src/NE2K.cis b/cis/src/NE2K.cis
-new file mode 100644
-index 0000000..d1d47f3
---- /dev/null
-+++ b/cis/src/NE2K.cis
-@@ -0,0 +1,10 @@
-+#
-+# Replacement CIS for various busted NE2000-compatible cards
-+#
-+vers_1 4.1, "PCMCIA", "Ethernet"
-+funcid network_adapter
-+config base 0x03f8 mask 0x03 last_index 0x20
-+cftable_entry 0x20 [default]
-+  Vcc Vnom 5V
-+  irq mask 0xffff [level]
-+  io 0x0000-0x001f [8bit] [16bit]
-diff --git a/cis/src/PCMLM28.cis b/cis/src/PCMLM28.cis
-new file mode 100644
-index 0000000..39c6d16
---- /dev/null
-+++ b/cis/src/PCMLM28.cis
-@@ -0,0 +1,37 @@
-+#
-+# The on-card CIS says it is MFC-compliant, but it is not
-+#
-+vers_1 4.1, "LINKSYS", "PCMLM28"
-+manfid 0x0143, 0xc0ab
-+funcid 0
-+config base 0x03f8 mask 0x03 last_index 0x2f
 +
-+cftable_entry 0x24 [default]
-+  Vcc Vnom 5V
-+  irq mask 0xffff [level]
-+  io 0x0300-0x031f, 0x02f8-0x02ff [8bit] [16bit]
++static bool xdr_set_next_buffer(struct xdr_stream *xdr)
++{
++	if (xdr->page_ptr != NULL)
++		xdr_set_next_page(xdr);
++	else if (xdr->iov == xdr->buf->head) {
++		if (xdr_set_page_base(xdr, 0, PAGE_SIZE) < 0)
++			xdr_set_iov(xdr, xdr->buf->tail, NULL, xdr->buf->len);
++	}
++	return xdr->p != xdr->end;
++}
 +
-+cftable_entry 0x25
-+  io 0x0320-0x033f, 0x02f8-0x02ff [8bit] [16bit]
-+cftable_entry 0x26
-+  io 0x0340-0x035f, 0x02f8-0x02ff [8bit] [16bit]
-+cftable_entry 0x27
-+  io 0x0360-0x037f, 0x02f8-0x02ff [8bit] [16bit]
+ /**
+  * xdr_init_decode - Initialize an xdr_stream for decoding data.
+  * @xdr: pointer to xdr_stream struct
+@@ -560,41 +628,67 @@ EXPORT_SYMBOL_GPL(xdr_write_pages);
+  */
+ void xdr_init_decode(struct xdr_stream *xdr, struct xdr_buf *buf, __be32 *p)
+ {
+-	struct kvec *iov = buf->head;
+-	unsigned int len = iov->iov_len;
+-
+-	if (len > buf->len)
+-		len = buf->len;
+ 	xdr->buf = buf;
+-	xdr->iov = iov;
+-	xdr->p = p;
+-	xdr->end = (__be32 *)((char *)iov->iov_base + len);
++	xdr->scratch.iov_base = NULL;
++	xdr->scratch.iov_len = 0;
++	if (buf->head[0].iov_len != 0)
++		xdr_set_iov(xdr, buf->head, p, buf->len);
++	else if (buf->page_len != 0)
++		xdr_set_page_base(xdr, 0, buf->len);
+ }
+ EXPORT_SYMBOL_GPL(xdr_init_decode);
+ 
+-/**
+- * xdr_inline_peek - Allow read-ahead in the XDR data stream
+- * @xdr: pointer to xdr_stream struct
+- * @nbytes: number of bytes of data to decode
+- *
+- * Check if the input buffer is long enough to enable us to decode
+- * 'nbytes' more bytes of data starting at the current position.
+- * If so return the current pointer without updating the current
+- * pointer position.
+- */
+-__be32 * xdr_inline_peek(struct xdr_stream *xdr, size_t nbytes)
++static __be32 * __xdr_inline_decode(struct xdr_stream *xdr, size_t nbytes)
+ {
+ 	__be32 *p = xdr->p;
+ 	__be32 *q = p + XDR_QUADLEN(nbytes);
+ 
+ 	if (unlikely(q > xdr->end || q < p))
+ 		return NULL;
++	xdr->p = q;
+ 	return p;
+ }
+-EXPORT_SYMBOL_GPL(xdr_inline_peek);
+ 
+ /**
+- * xdr_inline_decode - Retrieve non-page XDR data to decode
++ * xdr_set_scratch_buffer - Attach a scratch buffer for decoding data.
++ * @xdr: pointer to xdr_stream struct
++ * @buf: pointer to an empty buffer
++ * @buflen: size of 'buf'
++ *
++ * The scratch buffer is used when decoding from an array of pages.
++ * If an xdr_inline_decode() call spans across page boundaries, then
++ * we copy the data into the scratch buffer in order to allow linear
++ * access.
++ */
++void xdr_set_scratch_buffer(struct xdr_stream *xdr, void *buf, size_t buflen)
++{
++	xdr->scratch.iov_base = buf;
++	xdr->scratch.iov_len = buflen;
++}
++EXPORT_SYMBOL_GPL(xdr_set_scratch_buffer);
 +
-+cftable_entry 0x28
-+  io 0x0300-0x031f, 0x03e8-0x03ef [8bit] [16bit]
-+cftable_entry 0x29
-+  io 0x0320-0x033f, 0x03e8-0x03ef [8bit] [16bit]
-+cftable_entry 0x2a
-+  io 0x0340-0x035f, 0x03e8-0x03ef [8bit] [16bit]
-+cftable_entry 0x2b
-+  io 0x0360-0x037f, 0x03e8-0x03ef [8bit] [16bit]
++static __be32 *xdr_copy_to_scratch(struct xdr_stream *xdr, size_t nbytes)
++{
++	__be32 *p;
++	void *cpdest = xdr->scratch.iov_base;
++	size_t cplen = (char *)xdr->end - (char *)xdr->p;
 +
-+cftable_entry 0x2c
-+  io 0x0300-0x031f, 0x02e8-0x02ef [8bit] [16bit]
-+cftable_entry 0x2d
-+  io 0x0320-0x033f, 0x02e8-0x02ef [8bit] [16bit]
-+cftable_entry 0x2e
-+  io 0x0340-0x035f, 0x02e8-0x02ef [8bit] [16bit]
-+cftable_entry 0x2f
-+  io 0x0360-0x037f, 0x02e8-0x02ef [8bit] [16bit]
-diff --git a/cis/src/PE-200.cis b/cis/src/PE-200.cis
-new file mode 100644
-index 0000000..7db7494
---- /dev/null
-+++ b/cis/src/PE-200.cis
-@@ -0,0 +1,11 @@
-+#
-+# Replacement CIS for PE-200 ethernet card
-+#
-+vers_1 4.1, "PMX   ", "PE-200", "ETHERNET", "R01"
-+funcid network_adapter [post] [rom]
-+config base 0x0100 mask 0x0001 last_index 0x01
-+cftable_entry 0x1 [default]
-+  [mwait]
-+  Vcc Vnom 5V
-+  irq mask 0xffff [level]
-+  io 0x0000-0x000f, 0x0010-0x001f [8bit] [16bit]
-diff --git a/cis/src/PE520.cis b/cis/src/PE520.cis
-new file mode 100644
-index 0000000..fb411ab
---- /dev/null
-+++ b/cis/src/PE520.cis
-@@ -0,0 +1,11 @@
-+#
-+# Replacement CIS for LanPro EP-4000A ethernet card
-+#
-+vers_1 4.1, "KTI", "PE520 PLUS", "PCMCIA Ethernet"
-+manfid 0x0161, 0x0010
-+funcid network_adapter
-+config base 0x0fd0 mask 0x0b last_index 0x01
-+cftable_entry 0x01 [default]
-+  Vcc Vnom 5V
-+  irq mask 0xffff [level]
-+  io 0x0000-0x001f [8bit] [16bit]
-diff --git a/cis/src/RS-COM-2P.cis b/cis/src/RS-COM-2P.cis
-new file mode 100644
-index 0000000..2e385cb
---- /dev/null
-+++ b/cis/src/RS-COM-2P.cis
-@@ -0,0 +1,14 @@
-+#
-+# Replacement CIS for dual-serial-port IO card
-+#
-+vers_1 4.1, "PCMCIA", "RS-COM 2P"
-+funcid serial_port [post]
-+config base 0x0100 mask 0x0001 last_index 0x03
-+cftable_entry 0x01 [default]
-+  [mwait]
-+  io 0x03e8-0x03ef, 0x02e8-0x02ef [lines=3D10] [8bit] [range]
-+  irq mask 0x9eb8 [level]
-+cftable_entry 0x02
-+  io 0x0250-0x0257, 0x0258-0x025f [lines=3D10] [8bit] [range]
-+cftable_entry 0x03
-+  io 0x0260-0x0267, 0x0268-0x026f [lines=3D10] [8bit] [range]
-diff --git a/cis/src/tamarack.cis b/cis/src/tamarack.cis
-new file mode 100644
-index 0000000..8802694
---- /dev/null
-+++ b/cis/src/tamarack.cis
-@@ -0,0 +1,17 @@
-+#
-+# Replacement CIS for Surecom, Tamarack NE2000 cards
-+#
-+dev_info
-+  fn_specific 100ns, 512b
-+attr_dev_info
-+  EEPROM 250ns, 512b
-+vers_1 4.1, "TAMARACK", "Ethernet", "A", "004743118001"
-+funcid network_adapter
-+config base 0x03f8 mask 0x0003 last_index 0x20
-+cftable_entry 0x20 [default]
-+  [mwait]
-+  Vcc Vnom 5V Vmin 4500mV Vmax 5500mV Istatic 100mA
-+    Iavg 170mA Ipeak 200mA
-+  timing wait 15us
-+  io 0x0000-0x000f, 0x0010-0x001f [lines=3D5] [8bit] [16bit]
-+  irq mask 0xffff [level]
---=20
-1.7.2.3
++	if (nbytes > xdr->scratch.iov_len)
++		return NULL;
++	memcpy(cpdest, xdr->p, cplen);
++	cpdest += cplen;
++	nbytes -= cplen;
++	if (!xdr_set_next_buffer(xdr))
++		return NULL;
++	p = __xdr_inline_decode(xdr, nbytes);
++	if (p == NULL)
++		return NULL;
++	memcpy(cpdest, p, nbytes);
++	return xdr->scratch.iov_base;
++}
++
++/**
++ * xdr_inline_decode - Retrieve XDR data to decode
+  * @xdr: pointer to xdr_stream struct
+  * @nbytes: number of bytes of data to decode
+  *
+@@ -605,13 +699,16 @@ EXPORT_SYMBOL_GPL(xdr_inline_peek);
+  */
+ __be32 * xdr_inline_decode(struct xdr_stream *xdr, size_t nbytes)
+ {
+-	__be32 *p = xdr->p;
+-	__be32 *q = p + XDR_QUADLEN(nbytes);
++	__be32 *p;
+ 
+-	if (unlikely(q > xdr->end || q < p))
++	if (nbytes == 0)
++		return xdr->p;
++	if (xdr->p == xdr->end && !xdr_set_next_buffer(xdr))
+ 		return NULL;
+-	xdr->p = q;
+-	return p;
++	p = __xdr_inline_decode(xdr, nbytes);
++	if (p != NULL)
++		return p;
++	return xdr_copy_to_scratch(xdr, nbytes);
+ }
+ EXPORT_SYMBOL_GPL(xdr_inline_decode);
+ 
+@@ -671,16 +768,12 @@ EXPORT_SYMBOL_GPL(xdr_read_pages);
+  */
+ void xdr_enter_page(struct xdr_stream *xdr, unsigned int len)
+ {
+-	char * kaddr = page_address(xdr->buf->pages[0]);
+ 	xdr_read_pages(xdr, len);
+ 	/*
+ 	 * Position current pointer at beginning of tail, and
+ 	 * set remaining message length.
+ 	 */
+-	if (len > PAGE_CACHE_SIZE - xdr->buf->page_base)
+-		len = PAGE_CACHE_SIZE - xdr->buf->page_base;
+-	xdr->p = (__be32 *)(kaddr + xdr->buf->page_base);
+-	xdr->end = (__be32 *)((char *)xdr->p + len);
++	xdr_set_page_base(xdr, 0, len);
+ }
+ EXPORT_SYMBOL_GPL(xdr_enter_page);
+ 
+-- 
+1.7.3.4
 
 
 
---=-ON70uw7b20368HyhCeQA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-iQIVAwUATSjuAee/yOyVhhEJAQJQzRAAsksTpAZnxY6Fvcg8WvnBZ5VCD5RikaQ4
-l1GB8/D/E3j1oE5Jwl9DTmMI7eu6ApyNo1XZErtqQvPhEcpLv8Q+n2Br1kpSAIM/
-OZTuldpjGyngA9gdqrSBGaIakG/2XdQ/zaATQat1Q9Yrj2TKbRzyN6tJpOGkSj3S
-xwClJl3ptKnZFUQoN+ZO/NSynrsusgdtv5KRo/Hou0+rTf7P60eKLY9goIJwrnAk
-SeiaPySVOC9mdy3hEPup1tdkmzzGBZR6/3C2PGNGzabCrDkz9OHLQ8nJ0TeiUAiG
-eZFOmsQHpr98LbNx45KV5/FKcK23o9Q8QTDcc9qQ+8k+HdmG4Syia9Ow0U7t8m02
-9IaLQ8spdVTf1OFtOS53SqkGfeyYFxzXFOP69KPA2nzBCEyeP/61KXepiWMEv5oD
-pis1lAcTua3AJa9p5+A2My3jyUby8Y+VPfd79E0IefpbnxE241OQo68IdSzb/Z3X
-+QMt/WzDpzE2yMSCy7ZleQSROQiWNdtFIa2tq3pDo7mvz6nCRM+U/TZtbdG2Uef4
-syk4RJ2y7l2UvWZQ+OBffhN4wwkrlIjlGM/voIWPRUjZhAlF/mv2knQjRxsjgkoT
-PSRAy8d5sUdrZUiR1yU/2lC78u1diknDEN+/etWk2dVIl3IPkL1Qqm0kZ0i/DbHO
-SahLpWnK5YI=
-=hmJF
------END PGP SIGNATURE-----
-
---=-ON70uw7b20368HyhCeQA--
