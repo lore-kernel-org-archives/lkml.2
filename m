@@ -1,156 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751798Ab1AHSBF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 13:01:05 -0500
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:31120 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751045Ab1AHSBE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 13:01:04 -0500
-Subject: Re: [PATCH 11/32] v4l/cx18: update workqueue usage
-From: Andy Walls <awalls@md.metrocast.net>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-In-Reply-To: <1294062595-30097-12-git-send-email-tj@kernel.org>
-References: <1294062595-30097-1-git-send-email-tj@kernel.org>
-	 <1294062595-30097-12-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 08 Jan 2011 12:03:32 -0500
-Message-ID: <1294506212.2443.110.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
- definitions=2011-01-07_07:2011-01-07,2011-01-07,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=2
- phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=5.0.0-1012030000 definitions=main-1101070029
+	id S1751901Ab1AHSBd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 13:01:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20356 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751315Ab1AHSBc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Jan 2011 13:01:32 -0500
+Date: Sat, 8 Jan 2011 13:01:21 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
+To: Kay Sievers <kay.sievers@vrfy.org>
+cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com
+Subject: Re: kobject_put vs module unload
+In-Reply-To: <AANLkTikg7vAG4-E=BD_sC=63R8fDCfEi_wiqnxDnUnK=@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1101081258560.24933@hs20-bc2-1.build.redhat.com>
+References: <Pine.LNX.4.64.1101072234040.382@hs20-bc2-1.build.redhat.com>
+ <20110108055621.GB10391@suse.de> <Pine.LNX.4.64.1101080811400.29089@hs20-bc2-1.build.redhat.com>
+ <AANLkTikg7vAG4-E=BD_sC=63R8fDCfEi_wiqnxDnUnK=@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="168436252-1971607652-1294509681=:24933"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-03 at 14:49 +0100, Tejun Heo wrote:
-> With cmwq, there's no reason to use separate out_work_queue.  Drop it
-> and use system_wq instead.  The in_work_queue needs to be ordered so
-> can't use one of the system wqs; however, as it isn't used to reclaim
-> memory, allocate the workqueue with alloc_ordered_workqueue() without
-> WQ_MEM_RECLAIM.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Andy Walls <awalls@md.metrocast.net>
-> Cc: linux-media@vger.kernel.org
-> ---
-> Only compile tested.  Please feel free to take it into the subsystem
-> tree or simply ack - I'll route it through the wq tree.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Reviewed-by: Andy Walls <awalls@md.metrocast.net>
-Acked-by: Andy Walls <awalls@md.metrocast.net>
-
-Sorry it took so long for me to review.
-Please route via your wq tree for the cx18 driver.
-
-Thanks,
-Andy
-
-> Thanks.
-> 
->  drivers/media/video/cx18/cx18-driver.c  |   24 ++----------------------
->  drivers/media/video/cx18/cx18-driver.h  |    3 ---
->  drivers/media/video/cx18/cx18-streams.h |    3 +--
->  3 files changed, 3 insertions(+), 27 deletions(-)
-> 
-> diff --git a/drivers/media/video/cx18/cx18-driver.c b/drivers/media/video/cx18/cx18-driver.c
-> index df60f27..41c0822 100644
-> --- a/drivers/media/video/cx18/cx18-driver.c
-> +++ b/drivers/media/video/cx18/cx18-driver.c
-> @@ -656,7 +656,7 @@ static int __devinit cx18_create_in_workq(struct cx18 *cx)
->  {
->  	snprintf(cx->in_workq_name, sizeof(cx->in_workq_name), "%s-in",
->  		 cx->v4l2_dev.name);
-> -	cx->in_work_queue = create_singlethread_workqueue(cx->in_workq_name);
-> +	cx->in_work_queue = alloc_ordered_workqueue(cx->in_workq_name, 0);
->  	if (cx->in_work_queue == NULL) {
->  		CX18_ERR("Unable to create incoming mailbox handler thread\n");
->  		return -ENOMEM;
-> @@ -664,18 +664,6 @@ static int __devinit cx18_create_in_workq(struct cx18 *cx)
->  	return 0;
->  }
->  
-> -static int __devinit cx18_create_out_workq(struct cx18 *cx)
-> -{
-> -	snprintf(cx->out_workq_name, sizeof(cx->out_workq_name), "%s-out",
-> -		 cx->v4l2_dev.name);
-> -	cx->out_work_queue = create_workqueue(cx->out_workq_name);
-> -	if (cx->out_work_queue == NULL) {
-> -		CX18_ERR("Unable to create outgoing mailbox handler threads\n");
-> -		return -ENOMEM;
-> -	}
-> -	return 0;
-> -}
-> -
->  static void __devinit cx18_init_in_work_orders(struct cx18 *cx)
->  {
->  	int i;
-> @@ -702,15 +690,9 @@ static int __devinit cx18_init_struct1(struct cx18 *cx)
->  	mutex_init(&cx->epu2apu_mb_lock);
->  	mutex_init(&cx->epu2cpu_mb_lock);
->  
-> -	ret = cx18_create_out_workq(cx);
-> -	if (ret)
-> -		return ret;
-> -
->  	ret = cx18_create_in_workq(cx);
-> -	if (ret) {
-> -		destroy_workqueue(cx->out_work_queue);
-> +	if (ret)
->  		return ret;
-> -	}
->  
->  	cx18_init_in_work_orders(cx);
->  
-> @@ -1094,7 +1076,6 @@ free_mem:
->  	release_mem_region(cx->base_addr, CX18_MEM_SIZE);
->  free_workqueues:
->  	destroy_workqueue(cx->in_work_queue);
-> -	destroy_workqueue(cx->out_work_queue);
->  err:
->  	if (retval == 0)
->  		retval = -ENODEV;
-> @@ -1244,7 +1225,6 @@ static void cx18_remove(struct pci_dev *pci_dev)
->  	cx18_halt_firmware(cx);
->  
->  	destroy_workqueue(cx->in_work_queue);
-> -	destroy_workqueue(cx->out_work_queue);
->  
->  	cx18_streams_cleanup(cx, 1);
->  
-> diff --git a/drivers/media/video/cx18/cx18-driver.h b/drivers/media/video/cx18/cx18-driver.h
-> index 77be58c..f7f71d1 100644
-> --- a/drivers/media/video/cx18/cx18-driver.h
-> +++ b/drivers/media/video/cx18/cx18-driver.h
-> @@ -614,9 +614,6 @@ struct cx18 {
->  	struct cx18_in_work_order in_work_order[CX18_MAX_IN_WORK_ORDERS];
->  	char epu_debug_str[256]; /* CX18_EPU_DEBUG is rare: use shared space */
->  
-> -	struct workqueue_struct *out_work_queue;
-> -	char out_workq_name[12]; /* "cx18-NN-out" */
-> -
->  	/* i2c */
->  	struct i2c_adapter i2c_adap[2];
->  	struct i2c_algo_bit_data i2c_algo[2];
-> diff --git a/drivers/media/video/cx18/cx18-streams.h b/drivers/media/video/cx18/cx18-streams.h
-> index 77412be..5837ffb 100644
-> --- a/drivers/media/video/cx18/cx18-streams.h
-> +++ b/drivers/media/video/cx18/cx18-streams.h
-> @@ -41,8 +41,7 @@ static inline bool cx18_stream_enabled(struct cx18_stream *s)
->  /* Related to submission of mdls to firmware */
->  static inline void cx18_stream_load_fw_queue(struct cx18_stream *s)
->  {
-> -	struct cx18 *cx = s->cx;
-> -	queue_work(cx->out_work_queue, &s->out_work_order);
-> +	schedule_work(&s->out_work_order);
->  }
->  
->  static inline void cx18_stream_put_mdl_fw(struct cx18_stream *s,
+--168436252-1971607652-1294509681=:24933
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
 
+
+On Sat, 8 Jan 2011, Kay Sievers wrote:
+
+> On Sat, Jan 8, 2011 at 14:19, Mikulas Patocka <mpatocka@redhat.com> wrote=
+:
+> > On Fri, 7 Jan 2011, Greg KH wrote:
+>=20
+> >> > 4) the reference obtained at point 1) is dropped, kobject reference =
+count
+> >> > reaches zero and the release callback is called. But that callback p=
+oints
+> >> > to an unloaded module and causes a crash.
+> >> >
+> >> > How is it solved? Am I missing something?
+> >>
+> >> You have the code that creates and frees the object, to not be in the
+> >> module that could have been unloaded. =C2=A0It's really just that simp=
+le.
+> >
+> > If the whole device mapper subsystem can be a module, where can I put t=
+he
+> > code?
+> >
+> > I think a similar bug exists in md, it can also be unloaded as a module
+> > and it has "release" method in its module code.
+>=20
+> If you still have data structures hanging around, these structures are
+> supposed to take a reference on the module -- and you can not unload
+> the module as long as this is the case.
+>=20
+> Kay
+
+kobject references don't increase module reference count. If kobject held=
+=20
+module references, it would be a fix for this bug, but could cause other=20
+bugs (some modules could be unloadable due to self-references to its own=20
+kobjects).
+
+Mikulas
+--168436252-1971607652-1294509681=:24933--
