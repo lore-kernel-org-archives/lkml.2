@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab1AIWFx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jan 2011 17:05:53 -0500
-Received: from smtp.polymtl.ca ([132.207.4.11]:56521 "EHLO smtp.polymtl.ca"
+	id S1753250Ab1AIWGA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jan 2011 17:06:00 -0500
+Received: from smtp.polymtl.ca ([132.207.4.11]:49399 "EHLO smtp.polymtl.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753144Ab1AIWFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jan 2011 17:05:45 -0500
-Message-Id: <20110109220508.754470770@efficios.com>
+	id S1753144Ab1AIWFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jan 2011 17:05:55 -0500
+Message-Id: <20110109220512.026911363@efficios.com>
 User-Agent: quilt/0.48-1
-Date: Sun, 09 Jan 2011 16:59:31 -0500
+Date: Sun, 09 Jan 2011 16:59:51 -0500
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
         Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Li Zefan <lizf@cn.fujitsu.com>
-Subject: [RFC patch 04/28] trace event block remove semicolumns
+        Mel Gorman <mel@csn.ul.ie>, Dave Chinner <dchinner@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>
+Subject: [RFC patch 24/28] trace event writeback remove semicolons
 References: <20110109215927.633266833@efficios.com>
-Content-Disposition: inline; filename=trace-event-block-remove-semicolons.patch
-X-Poly-FromMTA: (test.dorsal.polymtl.ca [132.207.72.60]) at Sun,  9 Jan 2011 22:05:09 +0000
+Content-Disposition: inline; filename=trace-event-writeback-remove-semicolons.patch
+X-Poly-FromMTA: (test.dorsal.polymtl.ca [132.207.72.60]) at Sun,  9 Jan 2011 22:05:12 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,226 +29,136 @@ Part of the gradual TRACE_EVENT() semicolon removal. Enables creation of array
 of events, thus saving space for trace event probes.
 
 Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Jeff Moyer <jmoyer@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>
 CC: Steven Rostedt <rostedt@goodmis.org>
 CC: Frederic Weisbecker <fweisbec@gmail.com>
 CC: Ingo Molnar <mingo@elte.hu>
 CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Li Zefan <lizf@cn.fujitsu.com>
+CC: Mel Gorman <mel@csn.ul.ie>
+CC: Dave Chinner <dchinner@redhat.com>
+CC: Jens Axboe <axboe@kernel.dk>
+CC: Jeff Moyer <jmoyer@redhat.com>
 ---
- include/trace/events/block.h |   46 +++++++++++++++++++++----------------------
- 1 file changed, 23 insertions(+), 23 deletions(-)
+ include/trace/events/writeback.h |   51 +++++++++++++++++++++------------------
+ 1 file changed, 28 insertions(+), 23 deletions(-)
 
-Index: linux-2.6-lttng/include/trace/events/block.h
+Index: linux-2.6-lttng/include/trace/events/writeback.h
 ===================================================================
---- linux-2.6-lttng.orig/include/trace/events/block.h
-+++ linux-2.6-lttng/include/trace/events/block.h
-@@ -40,7 +40,7 @@ DECLARE_EVENT_CLASS(block_rq_with_error,
- 		  __entry->rwbs, __get_str(cmd),
- 		  (unsigned long long)__entry->sector,
- 		  __entry->nr_sector, __entry->errors)
+--- linux-2.6-lttng.orig/include/trace/events/writeback.h
++++ linux-2.6-lttng/include/trace/events/writeback.h
+@@ -8,8 +8,13 @@
+ #include <linux/device.h>
+ #include <linux/writeback.h>
+ 
++#ifndef _TRACE_WRITEBACK_DEF_
++#define _TRACE_WRITEBACK_DEF_
++
+ struct wb_writeback_work;
+ 
++#endif /* _TRACE_WRITEBACK_DEF_ */
++
+ DECLARE_EVENT_CLASS(writeback_work_class,
+ 	TP_PROTO(struct backing_dev_info *bdi, struct wb_writeback_work *work),
+ 	TP_ARGS(bdi, work),
+@@ -41,14 +46,14 @@ DECLARE_EVENT_CLASS(writeback_work_class
+ 		  __entry->range_cyclic,
+ 		  __entry->for_background
+ 	)
 -);
 +)
+ #define DEFINE_WRITEBACK_WORK_EVENT(name) \
+ DEFINE_EVENT(writeback_work_class, name, \
+ 	TP_PROTO(struct backing_dev_info *bdi, struct wb_writeback_work *work), \
+ 	TP_ARGS(bdi, work))
+-DEFINE_WRITEBACK_WORK_EVENT(writeback_nothread);
+-DEFINE_WRITEBACK_WORK_EVENT(writeback_queue);
+-DEFINE_WRITEBACK_WORK_EVENT(writeback_exec);
++DEFINE_WRITEBACK_WORK_EVENT(writeback_nothread)
++DEFINE_WRITEBACK_WORK_EVENT(writeback_queue)
++DEFINE_WRITEBACK_WORK_EVENT(writeback_exec)
  
- /**
-  * block_rq_abort - abort block operation request
-@@ -57,7 +57,7 @@ DEFINE_EVENT(block_rq_with_error, block_
- 	TP_PROTO(struct request_queue *q, struct request *rq),
- 
- 	TP_ARGS(q, rq)
--);
-+)
- 
- /**
-  * block_rq_requeue - place block IO request back on a queue
-@@ -73,7 +73,7 @@ DEFINE_EVENT(block_rq_with_error, block_
- 	TP_PROTO(struct request_queue *q, struct request *rq),
- 
- 	TP_ARGS(q, rq)
--);
-+)
- 
- /**
-  * block_rq_complete - block IO operation completed by device driver
-@@ -91,7 +91,7 @@ DEFINE_EVENT(block_rq_with_error, block_
- 	TP_PROTO(struct request_queue *q, struct request *rq),
- 
- 	TP_ARGS(q, rq)
--);
-+)
- 
- DECLARE_EVENT_CLASS(block_rq,
- 
-@@ -128,7 +128,7 @@ DECLARE_EVENT_CLASS(block_rq,
- 		  __entry->rwbs, __entry->bytes, __get_str(cmd),
- 		  (unsigned long long)__entry->sector,
- 		  __entry->nr_sector, __entry->comm)
--);
-+)
- 
- /**
-  * block_rq_insert - insert block operation request into queue
-@@ -145,7 +145,7 @@ DEFINE_EVENT(block_rq, block_rq_insert,
- 	TP_PROTO(struct request_queue *q, struct request *rq),
- 
- 	TP_ARGS(q, rq)
--);
-+)
- 
- /**
-  * block_rq_issue - issue pending block IO request operation to device driver
-@@ -160,7 +160,7 @@ DEFINE_EVENT(block_rq, block_rq_issue,
- 	TP_PROTO(struct request_queue *q, struct request *rq),
- 
- 	TP_ARGS(q, rq)
--);
-+)
- 
- /**
-  * block_bio_bounce - used bounce buffer when processing block operation
-@@ -200,7 +200,7 @@ TRACE_EVENT(block_bio_bounce,
- 		  MAJOR(__entry->dev), MINOR(__entry->dev), __entry->rwbs,
- 		  (unsigned long long)__entry->sector,
- 		  __entry->nr_sector, __entry->comm)
--);
-+)
- 
- /**
-  * block_bio_complete - completed all work on the block operation
-@@ -237,7 +237,7 @@ TRACE_EVENT(block_bio_complete,
- 		  MAJOR(__entry->dev), MINOR(__entry->dev), __entry->rwbs,
- 		  (unsigned long long)__entry->sector,
- 		  __entry->nr_sector, __entry->error)
--);
-+)
- 
- DECLARE_EVENT_CLASS(block_bio,
- 
-@@ -265,7 +265,7 @@ DECLARE_EVENT_CLASS(block_bio,
- 		  MAJOR(__entry->dev), MINOR(__entry->dev), __entry->rwbs,
- 		  (unsigned long long)__entry->sector,
- 		  __entry->nr_sector, __entry->comm)
--);
-+)
- 
- /**
-  * block_bio_backmerge - merging block operation to the end of an existing operation
-@@ -280,7 +280,7 @@ DEFINE_EVENT(block_bio, block_bio_backme
- 	TP_PROTO(struct request_queue *q, struct bio *bio),
- 
- 	TP_ARGS(q, bio)
--);
-+)
- 
- /**
-  * block_bio_frontmerge - merging block operation to the beginning of an existing operation
-@@ -295,7 +295,7 @@ DEFINE_EVENT(block_bio, block_bio_frontm
- 	TP_PROTO(struct request_queue *q, struct bio *bio),
- 
- 	TP_ARGS(q, bio)
--);
-+)
- 
- /**
-  * block_bio_queue - putting new block IO operation in queue
-@@ -309,7 +309,7 @@ DEFINE_EVENT(block_bio, block_bio_queue,
- 	TP_PROTO(struct request_queue *q, struct bio *bio),
- 
- 	TP_ARGS(q, bio)
--);
-+)
- 
- DECLARE_EVENT_CLASS(block_get_rq,
- 
-@@ -338,7 +338,7 @@ DECLARE_EVENT_CLASS(block_get_rq,
- 		  MAJOR(__entry->dev), MINOR(__entry->dev), __entry->rwbs,
- 		  (unsigned long long)__entry->sector,
- 		  __entry->nr_sector, __entry->comm)
--);
-+)
- 
- /**
-  * block_getrq - get a free request entry in queue for block IO operations
-@@ -354,7 +354,7 @@ DEFINE_EVENT(block_get_rq, block_getrq,
- 	TP_PROTO(struct request_queue *q, struct bio *bio, int rw),
- 
- 	TP_ARGS(q, bio, rw)
--);
-+)
- 
- /**
-  * block_sleeprq - waiting to get a free request entry in queue for block IO operation
-@@ -372,7 +372,7 @@ DEFINE_EVENT(block_get_rq, block_sleeprq
- 	TP_PROTO(struct request_queue *q, struct bio *bio, int rw),
- 
- 	TP_ARGS(q, bio, rw)
--);
-+)
- 
- /**
-  * block_plug - keep operations requests in request queue
-@@ -397,7 +397,7 @@ TRACE_EVENT(block_plug,
+ TRACE_EVENT(writeback_pages_written,
+ 	TP_PROTO(long pages_written),
+@@ -60,7 +65,7 @@ TRACE_EVENT(writeback_pages_written,
+ 		__entry->pages		= pages_written;
  	),
- 
- 	TP_printk("[%s]", __entry->comm)
+ 	TP_printk("%ld", __entry->pages)
 -);
 +)
  
- DECLARE_EVENT_CLASS(block_unplug,
+ DECLARE_EVENT_CLASS(writeback_class,
+ 	TP_PROTO(struct backing_dev_info *bdi),
+@@ -74,19 +79,19 @@ DECLARE_EVENT_CLASS(writeback_class,
+ 	TP_printk("bdi %s",
+ 		  __entry->name
+ 	)
+-);
++)
+ #define DEFINE_WRITEBACK_EVENT(name) \
+ DEFINE_EVENT(writeback_class, name, \
+ 	TP_PROTO(struct backing_dev_info *bdi), \
+ 	TP_ARGS(bdi))
  
-@@ -416,7 +416,7 @@ DECLARE_EVENT_CLASS(block_unplug,
- 	),
+-DEFINE_WRITEBACK_EVENT(writeback_nowork);
+-DEFINE_WRITEBACK_EVENT(writeback_wake_thread);
+-DEFINE_WRITEBACK_EVENT(writeback_wake_forker_thread);
+-DEFINE_WRITEBACK_EVENT(writeback_bdi_register);
+-DEFINE_WRITEBACK_EVENT(writeback_bdi_unregister);
+-DEFINE_WRITEBACK_EVENT(writeback_thread_start);
+-DEFINE_WRITEBACK_EVENT(writeback_thread_stop);
++DEFINE_WRITEBACK_EVENT(writeback_nowork)
++DEFINE_WRITEBACK_EVENT(writeback_wake_thread)
++DEFINE_WRITEBACK_EVENT(writeback_wake_forker_thread)
++DEFINE_WRITEBACK_EVENT(writeback_bdi_register)
++DEFINE_WRITEBACK_EVENT(writeback_bdi_unregister)
++DEFINE_WRITEBACK_EVENT(writeback_thread_start)
++DEFINE_WRITEBACK_EVENT(writeback_thread_stop)
  
- 	TP_printk("[%s] %d", __entry->comm, __entry->nr_rq)
+ DECLARE_EVENT_CLASS(wbc_class,
+ 	TP_PROTO(struct writeback_control *wbc, struct backing_dev_info *bdi),
+@@ -143,13 +148,13 @@ DECLARE_EVENT_CLASS(wbc_class,
+ DEFINE_EVENT(wbc_class, name, \
+ 	TP_PROTO(struct writeback_control *wbc, struct backing_dev_info *bdi), \
+ 	TP_ARGS(wbc, bdi))
+-DEFINE_WBC_EVENT(wbc_writeback_start);
+-DEFINE_WBC_EVENT(wbc_writeback_written);
+-DEFINE_WBC_EVENT(wbc_writeback_wait);
+-DEFINE_WBC_EVENT(wbc_balance_dirty_start);
+-DEFINE_WBC_EVENT(wbc_balance_dirty_written);
+-DEFINE_WBC_EVENT(wbc_balance_dirty_wait);
+-DEFINE_WBC_EVENT(wbc_writepage);
++DEFINE_WBC_EVENT(wbc_writeback_start)
++DEFINE_WBC_EVENT(wbc_writeback_written)
++DEFINE_WBC_EVENT(wbc_writeback_wait)
++DEFINE_WBC_EVENT(wbc_balance_dirty_start)
++DEFINE_WBC_EVENT(wbc_balance_dirty_written)
++DEFINE_WBC_EVENT(wbc_balance_dirty_wait)
++DEFINE_WBC_EVENT(wbc_writepage)
+ 
+ DECLARE_EVENT_CLASS(writeback_congest_waited_template,
+ 
+@@ -170,21 +175,21 @@ DECLARE_EVENT_CLASS(writeback_congest_wa
+ 	TP_printk("usec_timeout=%u usec_delayed=%u",
+ 			__entry->usec_timeout,
+ 			__entry->usec_delayed)
 -);
 +)
  
- /**
-  * block_unplug_timer - timed release of operations requests in queue to device driver
-@@ -430,7 +430,7 @@ DEFINE_EVENT(block_unplug, block_unplug_
- 	TP_PROTO(struct request_queue *q),
+ DEFINE_EVENT(writeback_congest_waited_template, writeback_congestion_wait,
  
- 	TP_ARGS(q)
+ 	TP_PROTO(unsigned int usec_timeout, unsigned int usec_delayed),
+ 
+ 	TP_ARGS(usec_timeout, usec_delayed)
 -);
 +)
  
- /**
-  * block_unplug_io - release of operations requests in request queue
-@@ -444,7 +444,7 @@ DEFINE_EVENT(block_unplug, block_unplug_
- 	TP_PROTO(struct request_queue *q),
+ DEFINE_EVENT(writeback_congest_waited_template, writeback_wait_iff_congested,
  
- 	TP_ARGS(q)
+ 	TP_PROTO(unsigned int usec_timeout, unsigned int usec_delayed),
+ 
+ 	TP_ARGS(usec_timeout, usec_delayed)
 -);
 +)
  
- /**
-  * block_split - split a single bio struct into two bio structs
-@@ -485,7 +485,7 @@ TRACE_EVENT(block_split,
- 		  (unsigned long long)__entry->sector,
- 		  (unsigned long long)__entry->new_sector,
- 		  __entry->comm)
--);
-+)
- 
- /**
-  * block_remap - map request for a partition to the raw device
-@@ -528,7 +528,7 @@ TRACE_EVENT(block_remap,
- 		  __entry->nr_sector,
- 		  MAJOR(__entry->old_dev), MINOR(__entry->old_dev),
- 		  (unsigned long long)__entry->old_sector)
--);
-+)
- 
- /**
-  * block_rq_remap - map request for a block operation request
-@@ -572,7 +572,7 @@ TRACE_EVENT(block_rq_remap,
- 		  __entry->nr_sector,
- 		  MAJOR(__entry->old_dev), MINOR(__entry->old_dev),
- 		  (unsigned long long)__entry->old_sector)
--);
-+)
- 
- #endif /* _TRACE_BLOCK_H */
+ #endif /* _TRACE_WRITEBACK_H */
  
 
