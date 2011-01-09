@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab1AIWjm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jan 2011 17:39:42 -0500
-Received: from smtp.sgsi.ucl.ac.be ([130.104.5.67]:50086 "EHLO
-	smtp4.sgsi.ucl.ac.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293Ab1AIWjk convert rfc822-to-8bit (ORCPT
+	id S1752887Ab1AIWmf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jan 2011 17:42:35 -0500
+Received: from vs244178.vserver.de ([62.75.244.178]:56194 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab1AIWme convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jan 2011 17:39:40 -0500
-X-DKIM: Sendmail DKIM Filter v2.8.2 smtp4.sgsi.ucl.ac.be D5797F2896
-From: Christoph Paasch <christoph.paasch@uclouvain.be>
-Reply-To: christoph.paasch@uclouvain.be
-Organization: =?iso-8859-1?q?Universit=E9_Catholique_de?= Louvain
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: [PATCH] Cleanup include/net/tcp.h include-files and coding-style
-Date: Sun, 9 Jan 2011 23:39:32 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.35-24-generic; KDE/4.5.5; x86_64; ; )
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1294606534-28522-1-git-send-email-christoph.paasch@uclouvain.be> <20110109223033.GA9485@p183.telecom.by>
-In-Reply-To: <20110109223033.GA9485@p183.telecom.by>
+	Sun, 9 Jan 2011 17:42:34 -0500
+X-Greylist: delayed 2121 seconds by postgrey-1.27 at vger.kernel.org; Sun, 09 Jan 2011 17:42:33 EST
+Date: Sun, 9 Jan 2011 23:07:07 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <1927484457.20110109230707@eikelenboom.it>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 3/3] x86: usb handoff in early_quirk
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201101092339.32378.christoph.paasch@uclouvain.be>
-X-Sgsi-Spamcheck: SASL authenticated, 
-X-SGSI-MailScanner-ID: D5797F2896.00000
-X-SGSI-MailScanner: Found to be clean
-X-SGSI-From: christoph.paasch@uclouvain.be
-X-SGSI-Spam-Status: No
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+some systems keep getting
+APIC calibration not consistent with PM-Timer: 139ms instead of 100ms
+APIC delta adjusted to PM-Timer: 831249 (1163736)
 
-On Sunday, January 09, 2011 wrote Alexey Dobriyan:
-> DMA stuff "dereferenced" in tcp_prequeue_init().
-Well, as far as I can see, tcp_prequeue_init only accesses the ucopy-fields of 
-tcp_sock, which are defined in linux/tcp.h.
+USB legacy SMI handler is not disabled at that time.
 
-BTW: shouldn't linux/tcp.h include linux/dmaengine.h ? It has a reference to 
-"struct dma_pinned_list"
+Try to disable USB legacy support early with this patch.
+So later APIC Timer calibration don't get messed up by USB legacy support SMI handler.
+After this patch, that warning never show up for 100 reboot tests.
 
-Christoph
+reuse code from drivers/usb/host/pci-quirks.c
+with changes
+1. delay and sleep ===> io_delay
+2. dev_warn etc to pr_warn(num, slot, func...)
+
+Signed-off-by: Yinghai Lu <yinghai@xxxxxxxxxx>
+
+---
+arch/x86/kernel/early-quirks.c | 170 +++++++++++++++++++++++++++++++++++++++++
+1 file changed, 170 insertions(+)
+
+Index: linux-2.6/arch/x86/kernel/early-quirks.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/early-quirks.c
++++ linux-2.6/arch/x86/kernel/early-quirks.c
+@@ -19,6 +19,174 @@
+#include <asm/iommu.h>
+#include <asm/gart.h>
+
++static inline void early_udelay2(void)
++{
++#ifndef CONFIG_PARVIRT
++ native_io_delay();
++#else
++ pv_cpu_ops.io_delay();
++#endif
++}
++
+
+
+Shouldn't that be CONFIG_PARAVIRT ?
+
 --
-Christoph Paasch
-PhD Student
 
-IP Networking Lab --- http://inl.info.ucl.ac.be
-MultiPath TCP in the Linux Kernel --- http://inl.info.ucl.ac.be/mptcp
-Université Catholique de Louvain
+Sander
 
-www.rollerbulls.be
---
