@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab1AIWIg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jan 2011 17:08:36 -0500
-Received: from smtp.polymtl.ca ([132.207.4.11]:58554 "EHLO smtp.polymtl.ca"
+	id S1753127Ab1AIWIt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jan 2011 17:08:49 -0500
+Received: from smtp.polymtl.ca ([132.207.4.11]:56318 "EHLO smtp.polymtl.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752147Ab1AIWIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jan 2011 17:08:35 -0500
-Message-Id: <20110109220511.867823199@efficios.com>
+	id S1753009Ab1AIWFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jan 2011 17:05:36 -0500
+Message-Id: <20110109220510.076060539@efficios.com>
 User-Agent: quilt/0.48-1
-Date: Sun, 09 Jan 2011 16:59:50 -0500
+Date: Sun, 09 Jan 2011 16:59:39 -0500
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
         Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, Tejun Heo <tj@kernel.org>
-Subject: [RFC patch 23/28] trace event workqueue remove semicolons
+        Li Zefan <lizf@cn.fujitsu.com>, Rusty Russell <rusty@rustcorp.com.au>
+Subject: [RFC patch 12/28] trace event module remove semicolons
 References: <20110109215927.633266833@efficios.com>
-Content-Disposition: inline; filename=trace-event-workqueue-remove-semicolons.patch
-X-Poly-FromMTA: (test.dorsal.polymtl.ca [132.207.72.60]) at Sun,  9 Jan 2011 22:05:12 +0000
+Content-Disposition: inline; filename=trace-event-module-remove-semicolons.patch
+X-Poly-FromMTA: (test.dorsal.polymtl.ca [132.207.72.60]) at Sun,  9 Jan 2011 22:05:10 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,59 +32,85 @@ CC: Steven Rostedt <rostedt@goodmis.org>
 CC: Frederic Weisbecker <fweisbec@gmail.com>
 CC: Ingo Molnar <mingo@elte.hu>
 CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Arjan van de Ven <arjan@linux.intel.com>
-CC: Tejun Heo <tj@kernel.org>
+CC: Li Zefan <lizf@cn.fujitsu.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>
 ---
- include/trace/events/workqueue.h |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ include/trace/events/module.h |   17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
-Index: linux-2.6-lttng/include/trace/events/workqueue.h
+Index: linux-2.6-lttng/include/trace/events/module.h
 ===================================================================
---- linux-2.6-lttng.orig/include/trace/events/workqueue.h
-+++ linux-2.6-lttng/include/trace/events/workqueue.h
-@@ -22,7 +22,7 @@ DECLARE_EVENT_CLASS(workqueue_work,
+--- linux-2.6-lttng.orig/include/trace/events/module.h
++++ linux-2.6-lttng/include/trace/events/module.h
+@@ -8,6 +8,9 @@
+ 
+ #ifdef CONFIG_MODULES
+ 
++#ifndef _TRACE_MODULE_DEF_
++#define _TRACE_MODULE_DEF_
++
+ struct module;
+ 
+ #define show_module_flags(flags) __print_flags(flags, "",	\
+@@ -15,6 +18,8 @@ struct module;
+ 	{ (1UL << TAINT_FORCED_MODULE),		"F" },		\
+ 	{ (1UL << TAINT_CRAP),			"C" })
+ 
++#endif /* _TRACE_MODULE_DEF_ */
++
+ TRACE_EVENT(module_load,
+ 
+ 	TP_PROTO(struct module *mod),
+@@ -32,7 +37,7 @@ TRACE_EVENT(module_load,
  	),
  
- 	TP_printk("work struct %p", __entry->work)
+ 	TP_printk("%s %s", __get_str(name), show_module_flags(__entry->taints))
 -);
 +)
  
- /**
-  * workqueue_queue_work - called when a work gets queued
-@@ -60,7 +60,7 @@ TRACE_EVENT(workqueue_queue_work,
- 	TP_printk("work struct=%p function=%pf workqueue=%p req_cpu=%u cpu=%u",
- 		  __entry->work, __entry->function, __entry->workqueue,
- 		  __entry->req_cpu, __entry->cpu)
--);
-+)
+ TRACE_EVENT(module_free,
  
- /**
-  * workqueue_activate_work - called when a work gets activated
-@@ -75,7 +75,7 @@ DEFINE_EVENT(workqueue_work, workqueue_a
- 	TP_PROTO(struct work_struct *work),
- 
- 	TP_ARGS(work)
--);
-+)
- 
- /**
-  * workqueue_execute_start - called immediately before the workqueue callback
-@@ -100,7 +100,7 @@ TRACE_EVENT(workqueue_execute_start,
+@@ -49,7 +54,7 @@ TRACE_EVENT(module_free,
  	),
  
- 	TP_printk("work struct %p: function %pf", __entry->work, __entry->function)
+ 	TP_printk("%s", __get_str(name))
 -);
 +)
  
- /**
-  * workqueue_execute_end - called immediately before the workqueue callback
-@@ -113,7 +113,7 @@ DEFINE_EVENT(workqueue_work, workqueue_e
- 	TP_PROTO(struct work_struct *work),
+ #ifdef CONFIG_MODULE_UNLOAD
+ /* trace_module_get/put are only used if CONFIG_MODULE_UNLOAD is defined */
+@@ -74,21 +79,21 @@ DECLARE_EVENT_CLASS(module_refcnt,
  
- 	TP_ARGS(work)
+ 	TP_printk("%s call_site=%pf refcnt=%d",
+ 		  __get_str(name), (void *)__entry->ip, __entry->refcnt)
 -);
 +)
  
- #endif /*  _TRACE_WORKQUEUE_H */
+ DEFINE_EVENT(module_refcnt, module_get,
+ 
+ 	TP_PROTO(struct module *mod, unsigned long ip),
+ 
+ 	TP_ARGS(mod, ip)
+-);
++)
+ 
+ DEFINE_EVENT(module_refcnt, module_put,
+ 
+ 	TP_PROTO(struct module *mod, unsigned long ip),
+ 
+ 	TP_ARGS(mod, ip)
+-);
++)
+ #endif /* CONFIG_MODULE_UNLOAD */
+ 
+ TRACE_EVENT(module_request,
+@@ -111,7 +116,7 @@ TRACE_EVENT(module_request,
+ 
+ 	TP_printk("%s wait=%d call_site=%pf",
+ 		  __get_str(name), (int)__entry->wait, (void *)__entry->ip)
+-);
++)
+ 
+ #endif /* CONFIG_MODULES */
  
 
