@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873Ab1AIDnD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 22:43:03 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:27643 "EHLO
+	id S1751964Ab1AIDpd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 22:45:33 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:57806 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114Ab1AIDnB (ORCPT
+	with ESMTP id S1750941Ab1AIDpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 22:43:01 -0500
-Date: Sat, 8 Jan 2011 19:39:21 -0800
+	Sat, 8 Jan 2011 22:45:33 -0500
+Date: Sat, 8 Jan 2011 19:38:02 -0800
 From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>, Linus <torvalds@linux-foundation.org>
-Cc: netdev@vger.kernel.org, davem@davemloft.net
-Subject: [PATCH 4/6] net/sock.h: make some fields private to fix kernel-doc
- warning(s)
-Message-Id: <20110108193921.e03ca09e.randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Linus <torvalds@linux-foundation.org>
+Subject: [PATCH 3/6] hrtimer.h: fix kernel-doc warning
+Message-Id: <20110108193802.36387a8c.randy.dunlap@oracle.com>
 Organization: Oracle Linux Eng.
 X-Mailer: Sylpheed 2.6.0 (GTK+ 2.14.4; i686-pc-linux-gnu)
 Mime-Version: 1.0
@@ -25,34 +24,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Fix new kernel-doc notation warning in sock.h by annotating skc_dontcopy_*
-as private fields.
+Fix new kernel-doc notation warning in hrtimer.h:
 
-Warning(include/net/sock.h:163): No description found for parameter 'skc_dontcopy_end[0]'
+Warning(include/linux/hrtimer.h:150): Excess struct/union/enum/typedef member 'first' description in 'hrtimer_clock_base'
 
 Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 ---
- include/net/sock.h |    4 ++++
- 1 file changed, 4 insertions(+)
+ include/linux/hrtimer.h |    1 -
+ 1 file changed, 1 deletion(-)
 
---- lnx0107.orig/include/net/sock.h
-+++ lnx0107/include/net/sock.h
-@@ -152,14 +152,18 @@ struct sock_common {
- 	 * fields between dontcopy_begin/dontcopy_end
- 	 * are not copied in sock_copy()
- 	 */
-+	/* private: */
- 	int			skc_dontcopy_begin[0];
-+	/* public: */
- 	union {
- 		struct hlist_node	skc_node;
- 		struct hlist_nulls_node skc_nulls_node;
- 	};
- 	int			skc_tx_queue_mapping;
- 	atomic_t		skc_refcnt;
-+	/* private: */
- 	int                     skc_dontcopy_end[0];
-+	/* public: */
- };
- 
- /**
+--- lnx0107.orig/include/linux/hrtimer.h
++++ lnx0107/include/linux/hrtimer.h
+@@ -131,7 +131,6 @@ struct hrtimer_sleeper {
+  * @index:		clock type index for per_cpu support when moving a
+  *			timer to a base on another cpu.
+  * @active:		red black tree root node for the active timers
+- * @first:		pointer to the timer node which expires first
+  * @resolution:		the resolution of the clock, in nanoseconds
+  * @get_time:		function to retrieve the current time of the clock
+  * @softirq_time:	the time when running the hrtimer queue in the softirq
