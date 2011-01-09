@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab1AIWGA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jan 2011 17:06:00 -0500
-Received: from smtp.polymtl.ca ([132.207.4.11]:49399 "EHLO smtp.polymtl.ca"
+	id S1753235Ab1AIWGs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jan 2011 17:06:48 -0500
+Received: from smtp.polymtl.ca ([132.207.4.11]:33945 "EHLO smtp.polymtl.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753144Ab1AIWFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jan 2011 17:05:55 -0500
-Message-Id: <20110109220512.026911363@efficios.com>
+	id S1753082Ab1AIWGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jan 2011 17:06:46 -0500
+Message-Id: <20110109220511.548391005@efficios.com>
 User-Agent: quilt/0.48-1
-Date: Sun, 09 Jan 2011 16:59:51 -0500
+Date: Sun, 09 Jan 2011 16:59:48 -0500
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
         Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Mel Gorman <mel@csn.ul.ie>, Dave Chinner <dchinner@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>
-Subject: [RFC patch 24/28] trace event writeback remove semicolons
+        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        Li Zefan <lizf@cn.fujitsu.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: [RFC patch 21/28] trace event timer remove semicolons
 References: <20110109215927.633266833@efficios.com>
-Content-Disposition: inline; filename=trace-event-writeback-remove-semicolons.patch
-X-Poly-FromMTA: (test.dorsal.polymtl.ca [132.207.72.60]) at Sun,  9 Jan 2011 22:05:12 +0000
+Content-Disposition: inline; filename=trace-event-timer-remove-semicolons.patch
+X-Poly-FromMTA: (test.dorsal.polymtl.ca [132.207.72.60]) at Sun,  9 Jan 2011 22:05:11 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,132 +34,141 @@ CC: Steven Rostedt <rostedt@goodmis.org>
 CC: Frederic Weisbecker <fweisbec@gmail.com>
 CC: Ingo Molnar <mingo@elte.hu>
 CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Mel Gorman <mel@csn.ul.ie>
-CC: Dave Chinner <dchinner@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>
-CC: Jeff Moyer <jmoyer@redhat.com>
+CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Li Zefan <lizf@cn.fujitsu.com>
+CC: Arjan van de Ven <arjan@linux.intel.com>
 ---
- include/trace/events/writeback.h |   51 +++++++++++++++++++++------------------
- 1 file changed, 28 insertions(+), 23 deletions(-)
+ include/trace/events/timer.h |   28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
-Index: linux-2.6-lttng/include/trace/events/writeback.h
+Index: linux-2.6-lttng/include/trace/events/timer.h
 ===================================================================
---- linux-2.6-lttng.orig/include/trace/events/writeback.h
-+++ linux-2.6-lttng/include/trace/events/writeback.h
-@@ -8,8 +8,13 @@
- #include <linux/device.h>
- #include <linux/writeback.h>
- 
-+#ifndef _TRACE_WRITEBACK_DEF_
-+#define _TRACE_WRITEBACK_DEF_
-+
- struct wb_writeback_work;
- 
-+#endif /* _TRACE_WRITEBACK_DEF_ */
-+
- DECLARE_EVENT_CLASS(writeback_work_class,
- 	TP_PROTO(struct backing_dev_info *bdi, struct wb_writeback_work *work),
- 	TP_ARGS(bdi, work),
-@@ -41,14 +46,14 @@ DECLARE_EVENT_CLASS(writeback_work_class
- 		  __entry->range_cyclic,
- 		  __entry->for_background
- 	)
--);
-+)
- #define DEFINE_WRITEBACK_WORK_EVENT(name) \
- DEFINE_EVENT(writeback_work_class, name, \
- 	TP_PROTO(struct backing_dev_info *bdi, struct wb_writeback_work *work), \
- 	TP_ARGS(bdi, work))
--DEFINE_WRITEBACK_WORK_EVENT(writeback_nothread);
--DEFINE_WRITEBACK_WORK_EVENT(writeback_queue);
--DEFINE_WRITEBACK_WORK_EVENT(writeback_exec);
-+DEFINE_WRITEBACK_WORK_EVENT(writeback_nothread)
-+DEFINE_WRITEBACK_WORK_EVENT(writeback_queue)
-+DEFINE_WRITEBACK_WORK_EVENT(writeback_exec)
- 
- TRACE_EVENT(writeback_pages_written,
- 	TP_PROTO(long pages_written),
-@@ -60,7 +65,7 @@ TRACE_EVENT(writeback_pages_written,
- 		__entry->pages		= pages_written;
+--- linux-2.6-lttng.orig/include/trace/events/timer.h
++++ linux-2.6-lttng/include/trace/events/timer.h
+@@ -23,7 +23,7 @@ DECLARE_EVENT_CLASS(timer_class,
  	),
- 	TP_printk("%ld", __entry->pages)
+ 
+ 	TP_printk("timer=%p", __entry->timer)
 -);
 +)
  
- DECLARE_EVENT_CLASS(writeback_class,
- 	TP_PROTO(struct backing_dev_info *bdi),
-@@ -74,19 +79,19 @@ DECLARE_EVENT_CLASS(writeback_class,
- 	TP_printk("bdi %s",
- 		  __entry->name
- 	)
--);
-+)
- #define DEFINE_WRITEBACK_EVENT(name) \
- DEFINE_EVENT(writeback_class, name, \
- 	TP_PROTO(struct backing_dev_info *bdi), \
- 	TP_ARGS(bdi))
+ /**
+  * timer_init - called when the timer is initialized
+@@ -34,7 +34,7 @@ DEFINE_EVENT(timer_class, timer_init,
+ 	TP_PROTO(struct timer_list *timer),
  
--DEFINE_WRITEBACK_EVENT(writeback_nowork);
--DEFINE_WRITEBACK_EVENT(writeback_wake_thread);
--DEFINE_WRITEBACK_EVENT(writeback_wake_forker_thread);
--DEFINE_WRITEBACK_EVENT(writeback_bdi_register);
--DEFINE_WRITEBACK_EVENT(writeback_bdi_unregister);
--DEFINE_WRITEBACK_EVENT(writeback_thread_start);
--DEFINE_WRITEBACK_EVENT(writeback_thread_stop);
-+DEFINE_WRITEBACK_EVENT(writeback_nowork)
-+DEFINE_WRITEBACK_EVENT(writeback_wake_thread)
-+DEFINE_WRITEBACK_EVENT(writeback_wake_forker_thread)
-+DEFINE_WRITEBACK_EVENT(writeback_bdi_register)
-+DEFINE_WRITEBACK_EVENT(writeback_bdi_unregister)
-+DEFINE_WRITEBACK_EVENT(writeback_thread_start)
-+DEFINE_WRITEBACK_EVENT(writeback_thread_stop)
- 
- DECLARE_EVENT_CLASS(wbc_class,
- 	TP_PROTO(struct writeback_control *wbc, struct backing_dev_info *bdi),
-@@ -143,13 +148,13 @@ DECLARE_EVENT_CLASS(wbc_class,
- DEFINE_EVENT(wbc_class, name, \
- 	TP_PROTO(struct writeback_control *wbc, struct backing_dev_info *bdi), \
- 	TP_ARGS(wbc, bdi))
--DEFINE_WBC_EVENT(wbc_writeback_start);
--DEFINE_WBC_EVENT(wbc_writeback_written);
--DEFINE_WBC_EVENT(wbc_writeback_wait);
--DEFINE_WBC_EVENT(wbc_balance_dirty_start);
--DEFINE_WBC_EVENT(wbc_balance_dirty_written);
--DEFINE_WBC_EVENT(wbc_balance_dirty_wait);
--DEFINE_WBC_EVENT(wbc_writepage);
-+DEFINE_WBC_EVENT(wbc_writeback_start)
-+DEFINE_WBC_EVENT(wbc_writeback_written)
-+DEFINE_WBC_EVENT(wbc_writeback_wait)
-+DEFINE_WBC_EVENT(wbc_balance_dirty_start)
-+DEFINE_WBC_EVENT(wbc_balance_dirty_written)
-+DEFINE_WBC_EVENT(wbc_balance_dirty_wait)
-+DEFINE_WBC_EVENT(wbc_writepage)
- 
- DECLARE_EVENT_CLASS(writeback_congest_waited_template,
- 
-@@ -170,21 +175,21 @@ DECLARE_EVENT_CLASS(writeback_congest_wa
- 	TP_printk("usec_timeout=%u usec_delayed=%u",
- 			__entry->usec_timeout,
- 			__entry->usec_delayed)
+ 	TP_ARGS(timer)
 -);
 +)
  
- DEFINE_EVENT(writeback_congest_waited_template, writeback_congestion_wait,
- 
- 	TP_PROTO(unsigned int usec_timeout, unsigned int usec_delayed),
- 
- 	TP_ARGS(usec_timeout, usec_delayed)
+ /**
+  * timer_start - called when the timer is started
+@@ -64,7 +64,7 @@ TRACE_EVENT(timer_start,
+ 	TP_printk("timer=%p function=%pf expires=%lu [timeout=%ld]",
+ 		  __entry->timer, __entry->function, __entry->expires,
+ 		  (long)__entry->expires - __entry->now)
 -);
 +)
  
- DEFINE_EVENT(writeback_congest_waited_template, writeback_wait_iff_congested,
+ /**
+  * timer_expire_entry - called immediately before the timer callback
+@@ -91,7 +91,7 @@ TRACE_EVENT(timer_expire_entry,
+ 	),
  
- 	TP_PROTO(unsigned int usec_timeout, unsigned int usec_delayed),
- 
- 	TP_ARGS(usec_timeout, usec_delayed)
+ 	TP_printk("timer=%p function=%pf now=%lu", __entry->timer, __entry->function,__entry->now)
 -);
 +)
  
- #endif /* _TRACE_WRITEBACK_H */
+ /**
+  * timer_expire_exit - called immediately after the timer callback returns
+@@ -108,7 +108,7 @@ DEFINE_EVENT(timer_class, timer_expire_e
+ 	TP_PROTO(struct timer_list *timer),
+ 
+ 	TP_ARGS(timer)
+-);
++)
+ 
+ /**
+  * timer_cancel - called when the timer is canceled
+@@ -119,7 +119,7 @@ DEFINE_EVENT(timer_class, timer_cancel,
+ 	TP_PROTO(struct timer_list *timer),
+ 
+ 	TP_ARGS(timer)
+-);
++)
+ 
+ /**
+  * hrtimer_init - called when the hrtimer is initialized
+@@ -151,7 +151,7 @@ TRACE_EVENT(hrtimer_init,
+ 			"CLOCK_REALTIME" : "CLOCK_MONOTONIC",
+ 		  __entry->mode == HRTIMER_MODE_ABS ?
+ 			"HRTIMER_MODE_ABS" : "HRTIMER_MODE_REL")
+-);
++)
+ 
+ /**
+  * hrtimer_start - called when the hrtimer is started
+@@ -183,7 +183,7 @@ TRACE_EVENT(hrtimer_start,
+ 				  .tv64 = __entry->expires }),
+ 		  (unsigned long long)ktime_to_ns((ktime_t) {
+ 				  .tv64 = __entry->softexpires }))
+-);
++)
+ 
+ /**
+  * htimmer_expire_entry - called immediately before the hrtimer callback
+@@ -213,7 +213,7 @@ TRACE_EVENT(hrtimer_expire_entry,
+ 
+ 	TP_printk("hrtimer=%p function=%pf now=%llu", __entry->hrtimer, __entry->function,
+ 		  (unsigned long long)ktime_to_ns((ktime_t) { .tv64 = __entry->now }))
+- );
++)
+ 
+ DECLARE_EVENT_CLASS(hrtimer_class,
+ 
+@@ -230,7 +230,7 @@ DECLARE_EVENT_CLASS(hrtimer_class,
+ 	),
+ 
+ 	TP_printk("hrtimer=%p", __entry->hrtimer)
+-);
++)
+ 
+ /**
+  * hrtimer_expire_exit - called immediately after the hrtimer callback returns
+@@ -244,7 +244,7 @@ DEFINE_EVENT(hrtimer_class, hrtimer_expi
+ 	TP_PROTO(struct hrtimer *hrtimer),
+ 
+ 	TP_ARGS(hrtimer)
+-);
++)
+ 
+ /**
+  * hrtimer_cancel - called when the hrtimer is canceled
+@@ -255,7 +255,7 @@ DEFINE_EVENT(hrtimer_class, hrtimer_canc
+ 	TP_PROTO(struct hrtimer *hrtimer),
+ 
+ 	TP_ARGS(hrtimer)
+-);
++)
+ 
+ /**
+  * itimer_state - called when itimer is started or canceled
+@@ -293,7 +293,7 @@ TRACE_EVENT(itimer_state,
+ 		  __entry->which, (unsigned long long)__entry->expires,
+ 		  __entry->value_sec, __entry->value_usec,
+ 		  __entry->interval_sec, __entry->interval_usec)
+-);
++)
+ 
+ /**
+  * itimer_expire - called when itimer expires
+@@ -321,7 +321,7 @@ TRACE_EVENT(itimer_expire,
+ 
+ 	TP_printk("which=%d pid=%d now=%llu", __entry->which,
+ 		  (int) __entry->pid, (unsigned long long)__entry->now)
+-);
++)
+ 
+ #endif /*  _TRACE_TIMER_H */
  
 
