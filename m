@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633Ab1AIVGM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jan 2011 16:06:12 -0500
-Received: from xenotime.net ([72.52.115.56]:53091 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751684Ab1AIVGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jan 2011 16:06:10 -0500
-Date: Sun, 9 Jan 2011 13:06:08 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Christoph Paasch <christoph.paasch@uclouvain.be>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Cleanup include/net/tcp.h include-files and
- coding-style
-Message-Id: <20110109130608.5c7bb4b0.rdunlap@xenotime.net>
-In-Reply-To: <1294606534-28522-1-git-send-email-christoph.paasch@uclouvain.be>
-References: <1294606534-28522-1-git-send-email-christoph.paasch@uclouvain.be>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752646Ab1AIVIJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jan 2011 16:08:09 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33206 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab1AIVIH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jan 2011 16:08:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=V8VdUg5gnn03UAQyTN8laGGX7kFOZorT3m3W0hPWcEYZHh0ZPk0Yp6hkkgN249V83V
+         TcMZtcJBJL+H6pUE058BcS6GvoNULJOVboQkzdqVx4zcyE6VCKgoGOqoTYOOpEDUzGhp
+         rv74FCZuR2y/PMSSuB8e80gUjiiRJQUTmms2Y=
+MIME-Version: 1.0
+In-Reply-To: <20110108175028.GA22308@riccoc20.at.omicron.at>
+References: <cover.1293820862.git.richard.cochran@omicron.at>
+ <fe2bec763bec155381d62721aa9da84aeca2785c.1293820862.git.richard.cochran@omicron.at>
+ <AANLkTini2WdT-1v4k9V3JOZYDkA59P+SyscTe8-fK2Wk@mail.gmail.com> <20110108175028.GA22308@riccoc20.at.omicron.at>
+From: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
+Date: Mon, 10 Jan 2011 06:07:26 +0900
+Message-ID: <AANLkTikigXGSACF6R6kfNHyKZ7GFWrUrCMxygvL3fUC6@mail.gmail.com>
+Subject: Re: [PATCH V8 02/13] ntp: add ADJ_SETOFFSET mode bit
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
+        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  9 Jan 2011 21:55:34 +0100 Christoph Paasch wrote:
+On Sun, Jan 9, 2011 at 2:50 AM, Richard Cochran
+<richardcochran@gmail.com> wrote:
+> we want to be able to jump the clock arbitrarily.
 
-> This patch reviews the include-files of net/tcp.h
-> Several #include where redundant. Some where not directly needed by
-> net/tcp.h
-> 
-> Files, including net/tcp.h where also including some the *.h-files that
-> net/tcp.h is already including. Thus, in these files the inclusion of
-> the *.h file is unnecessary.
-> 
-> Redundant includes in net/tcp.h:
-> 
-> linux/list.h --- included by linux/textsearch.h which is included by
->                  linux/skbuff.h
-
-If there is something in net/tcp.h that uses data or functions from <linux/list.h>,
-then <linux/list.h> should be #included in net/tcp.h, whether some other file
-pulls it in indirectly or not.
-
-etc. etc. etc.
-
-> linux/slab.h --- included by linux/crypto.h
-> linux/cache.h --- included by linux/skbuff.h
-> linux/skbuff.h --- included by net/sock.h
-> linux/kref.h --- included by linux/kobject.h, which is  included by
->                  linux/device.h, which is included by
->                  linux/dmaengine.h, which is included by
->                  linux/skbuff.h
-> net/inet_connection_sock.h --- included by net/inet_hashtables.h
-> net/checksum.h --- included by net/sock.h
-> net/request_sock.h --- included by net/inet_connection_sock.h
-> net/sock.h --- included by net/request_sock.h
-> net/snmp.h --- included by net/ip.h
-> net/dst.h --- included by net/sock.h
-> linux/seq_file.h --- included by net/neighbour.h, which is included by
->                      net/dst.h
-> 
-> Include-files not directly needed by net/tcp.h:
-> 
-> linux/percpu.h
-> linux/dmaengine.h
-> net/tcp_states.h
-> net/inet_ecn.h
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Another problem remains:  How do you deal with leap seconds?  I mean,
+given that 1 minute is not always 60 seconds, then what time was it
+XXXXX seconds ago?   Maybe some kind of lookup table is necessary, but
+in such case, isn't it a better choice just to use the
+clock_settime/settimeofday syscall?
