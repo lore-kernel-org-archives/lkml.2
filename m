@@ -1,86 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202Ab1AIRio (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jan 2011 12:38:44 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:57945 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab1AIRin (ORCPT
+	id S1752322Ab1AIRni (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jan 2011 12:43:38 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41570 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921Ab1AIRnh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jan 2011 12:38:43 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Artem S. Tashkinov" <t.artem@lycos.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: On Linux numbering scheme
-Date: Sun, 9 Jan 2011 18:38:22 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Claudio Scordino <claudio@evidence.eu.com>,
-        Greg KH <gregkh@suse.de>
-References: <27552986.2181294505105130.JavaMail.root@mail-zbox20.bo3.lycos.com>
-In-Reply-To: <27552986.2181294505105130.JavaMail.root@mail-zbox20.bo3.lycos.com>
+	Sun, 9 Jan 2011 12:43:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=L3fLx2jPWePWtOevN7nN6aDT7G1Z5DXBhHPg1jIcAn62R8ZxcL847vSYW6XJWFXgsV
+         3TppXe1KNotdmA38w6Mf0BieQTNZGVAPXGlErzZut0dmqTtBbLl247DzAl8ilpH6NWf8
+         1ZlhD3OZSGiVFff+uYFcMIn7MrGMYqseSEcKI=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101091838.22639.arnd@arndb.de>
-X-Provags-ID: V02:K0:r52wG0IlzlysRMUVvw5khb+t1m5pLJMDxNHlElOCmHi
- vteV5eojtjTMtlVTEZvh9aOa72I7EEE8axi16sZlmk+wC/i70y
- yILGWwjCV3BzLuFNBU1T0vG1myZhUqcAmBFhKbaT6br3EFe82v
- /K8MFSy17tgj7OKCMqp8qPbf9vKHy+v/ox5Y2ZtKy+K8Sryic8
- CJXPBGcB8gYGpahsQ8Rgw==
+In-Reply-To: <4D299F8C.9070700@gmail.com>
+References: <AANLkTimb7wj0oP_ctr7Ergf4VmVFTMHU3QCCaLcPE5Q9@mail.gmail.com>
+	<20110109093926.GB542@elte.hu>
+	<4D299F8C.9070700@gmail.com>
+Date: Sun, 9 Jan 2011 23:09:01 +0600
+Message-ID: <AANLkTikNGVbYK-VMiLu2xFzzO6ti5kXXB+p-MzcUYx63@mail.gmail.com>
+Subject: Re: [PATCH] x86, apic: Do not increment disabled_cpus from generic_processor_info.
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        x86@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 08 January 2011, Artem S. Tashkinov wrote:
-> However sources of VMWare/NVIDIA/VBox/etc. kernel modules have multiples
-> instances of:
-> 
-> #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 7)
-> #  error This driver does not support 2.4 kernels older than 2.4.7!
-> #elif LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
-> #  define KERNEL_2_4
-> #elif LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
-> #  error This driver does not support 2.5 kernels!
-> #elif LINUX_VERSION_CODE < KERNEL_VERSION(2, 7, 0)
-> #  define KERNEL_2_6
-> #else
-> #  error This driver does not support development kernels!
-> #endif
-> 
-> So, it seems like the only obstacle that stops us from starting a completely
-> new numbering scheme is proprietary or corporations driven/developed software.
+On Sun, Jan 9, 2011 at 5:44 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> On 01/09/2011 12:39 PM, Ingo Molnar wrote:
+>>
+>> * Rakib Mullick <rakib.mullick@gmail.com> wrote:
+>>
+>>>  disabled_cpus has been incremented from the call path of
+>>> generic_processor_info (i.e from  acpi_register_lapic and
+>>> MP_processor_info) when a perticular cpu is not enabled. So, we can
+>>> remove the redundant increment of disabled_cpus from
+>>> generic_processor_info.
+>>>
+>>>
+>>> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+> ...
+>> Hm, what effects does this have in practice? smpboot.c uses disabled_cpus as a value
+>> to calculate limits - why has this bug not caused some misbehavior somewhere? (or if
+>> it has caused misbehavior, what is that?)
+>>
+>> Thanks,
+>>
+>>       Ingo
+>
+> This disabled cpu may happen if nr_cpus early param specified and it's less than
+> nr_cpu_ids, but cpu might still be enabled in mp/acpi so we have to disable it.
+> And if we will not increment disabled_cpus this will lead the further report
+> about disabled cpu would refer to wrong cpu number. So I don't see why we
+> need to remove this disabled_cpus increment here.
+>
+> Rakib is there something I miss?
+>
+Lets see what Ingo says. :)
 
-If that was the only obstacle, I'd advocate for using whatever scheme
-breaks that code the most ;-)
-
-Seriously, the entire problem is just in perception. The main thing
-that's really wrong with the current scheme is that people tend to
-see the difference between e.g. 2.6.27 and 2.6.37 as much smaller than
-between 2.4.0 and 2.6.0, so there is less incentive to update to the
-latest release, while in fact there were three years between the
-releases in both cases and we are now a lot more active that we
-used to be.
-
-These days, the longterm releases really have the role of the old
-even-numbered releases, in the way that distros rely on them for
-stability, while the regular releases are used by a relatively small
-group of people that are interested in using or developing new
-features, like the old odd-numbered development releases.
-This analogy ends when you look at the kinds of quality control
-we apply to patches going into the longterm or the regular releases, 
-compared to old even/odd cycles, but I think it's still useful
-to consider it from this viewpoint.
-
-I think it would be good to start the next longterm series with a
-new number, since that would send an important message to the
-end-users and give us better hopes of having a common longterm
-tree for all enterprise and embedded people. It is however still
-a lot of time until we need to replace 2.6.32/34/35-longterm, and the
-incentive to change a name without any other consequences before
-then is pretty low IMHO.
-
-Most importantly, at the 2010 kernel summit it was decided to leave
-the numbering alone for now. There certainly wasn't a lack of
-ideas for how it should be named (2011/2.7/2.8/3.0/6.37/3.7/...).
-
-	Arnd
+> --
+>    Cyrill
+>
