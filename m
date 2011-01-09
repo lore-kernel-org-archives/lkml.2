@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751816Ab1AIDNr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Jan 2011 22:13:47 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40697 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039Ab1AIDNq convert rfc822-to-8bit (ORCPT
+	id S1752018Ab1AIDnM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Jan 2011 22:43:12 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27669 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114Ab1AIDnF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Jan 2011 22:13:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wmW0SBUWlFzfPdBRDEYmj9IFFkBFx16eJZkFfAFuydTy7HdYxdCDkonKvqN+LwZxri
-         PvXFlq87+ecx3RjIXovlJQgPugC5HRZOM9QJ3LrySorIJ0ARMtSNnNI4S4PxxZmPbcMn
-         1CPXTYTwcvlwq+BBUgf1t8kAJo8narqmhBWIc=
-MIME-Version: 1.0
-In-Reply-To: <20110108140136.GA13269@mtj.dyndns.org>
-References: <AANLkTim75ihzBKXx1e9NbPnECMrKUidOLWjVuBWHwiEP@mail.gmail.com>
-	<20110108140136.GA13269@mtj.dyndns.org>
-Date: Sun, 9 Jan 2011 11:13:44 +0800
-Message-ID: <AANLkTikhN3aEm_c-8LshqkyysKEoEHY60sy2+u++-1zw@mail.gmail.com>
-Subject: Re: [PATCH] replace ida in workqueue with page-sized buffer
-From: Hillf Danton <dhillf@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 8 Jan 2011 22:43:05 -0500
+Date: Sat, 8 Jan 2011 19:40:33 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Linus <torvalds@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH 5/6] pipe_fs_i.h: fix kernel-doc warning
+Message-Id: <20110108194033.7c76d766.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.6.0 (GTK+ 2.14.4; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 8, 2011 at 10:01 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hello,
->
-> On Sat, Dec 18, 2010 at 09:10:18PM +0800, Hillf Danton wrote:
->> The id of worker of global work queue is monitored with kernel library, ida.
->>
->> The ida in global work queue is redefined to be page-sized buffer,
->> which is allocated when initializing workqueue.
->>
->> The new id allocator could monitor ids in the rage from 0 to INT_MAX.
->> The buffer is used to store freed ids, and if the peak number of ids,
->> in workqueue as whole, is not out of the capacity of the allocated
->> buffer, there is no more allocation of buffer after initializing.
->>
->> The advantage looks that the new allocator runs faster.
->
-> I'm confused about why this is necessary.  It's not like workqueue ID
-> alloc/dealloc is hot path to begin with (they're quite lazy) and
-> during worker creation / destruction ida is a quite insignificant
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Great point. Since quite lazy, the patch is quite inapplicable.
+Fix kernel-doc notation warnings in pipe_fs_i.h:
 
-> part, so what is it trying to optimize?  It's not like ida allocator
-> is slow to begin with.
->
-> Also, the allocator looks quite dubious.
->
-> * What happens if more entries than what can fit in a page are freed?
->  It'll just lose track of it.
->
+Warning(include/linux/pipe_fs_i.h:58): No description found for parameter 'buffers'
 
-Losing track of allocated ids could happen only if allocation is not
-quite lazy, and it could be fixed by extending the page buffer, though
-not included in the delivered patch.
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ include/linux/pipe_fs_i.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-> * ida guarantees that always the lowest available slot is allocated.
->  The new allocator doesn't.
->
-
-Since the allocated ids are then hashed, the lowest available looks
-unnecessary in workqueue, which simplifies allocation.
-
-Thanks a lot for reviewing the patch.
-Hillf
+--- lnx0107.orig/include/linux/pipe_fs_i.h
++++ lnx0107/include/linux/pipe_fs_i.h
+@@ -30,6 +30,7 @@ struct pipe_buffer {
+  *	struct pipe_inode_info - a linux kernel pipe
+  *	@wait: reader/writer wait point in case of empty/full pipe
+  *	@nrbufs: the number of non-empty pipe buffers in this pipe
++ *	@buffers: total number of buffers (should be a power of 2)
+  *	@curbuf: the current pipe buffer entry
+  *	@tmp_page: cached released page
+  *	@readers: number of current readers of this pipe
