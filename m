@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751336Ab1AIJNd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jan 2011 04:13:33 -0500
-Received: from freeflow.nu ([178.79.134.28]:52549 "EHLO freeflow.nu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751020Ab1AIJNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jan 2011 04:13:31 -0500
-Date: Sun, 9 Jan 2011 11:13:29 +0200 (EET)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tiger
-To: torvalds@linux-foundation.org
-cc: cl@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [GIT PULL] SLAB changes for v2.6.38
-Message-ID: <alpine.DEB.2.00.1101091110520.5270@tiger>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1751488Ab1AIJdX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jan 2011 04:33:23 -0500
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:32946 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751000Ab1AIJdV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jan 2011 04:33:21 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEALgOKU1R8j+m/2dsb2JhbACkRXS6bg2FPwQ
+Date: Sun, 9 Jan 2011 10:33:19 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Mike Waychison <mikew@google.com>
+Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Priyanka Gupta <priyankag@google.com>
+Subject: Re: [PATCH 1/2] watchdog: Add support for sp5100 chipset TCO
+Message-ID: <20110109093319.GI3801@infomag.iguana.be>
+References: <1288054685-29107-1-git-send-email-mikew@google.com> <AANLkTik=eNbQoGaDLS_-8kZLFojK9P1Ge0QAEFc_cPtG@mail.gmail.com> <20110107082355.GD3801@infomag.iguana.be> <AANLkTin_xvms=Md_F0Uj0X=Exj61-bPALwABGFMX27bu@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTin_xvms=Md_F0Uj0X=Exj61-bPALwABGFMX27bu@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Mike,
 
-It's been rather quiet for slab allocators this merge cycle. There's only 
-few cleanups here. The bug fixes were merged in v2.6.37 already. As they 
-were cherry-picked from this branch, they show up in the pull request 
-(what's up with that btw).
+> The cleanups above seem fine to me.  What did you mean by "Change
+> reboot_notifier by a platform shutdown" though?  I see that you
+> removed the reboot_notifier, which is fine for our purposes.  Was this
+> a suggestion to have this stuff get called from platform code if
+> needed?  Am I missing something?
 
-                         Pekka
+The platform_driver struct has a shutdown operation which does the same
+as the reboot_notifier. Since the code is smaller and since the binary is
+smaller we prefer to use the shutdown operation. So I removed the
+reboot_notifier and added the shutdown operation.
 
-The following changes since commit 0c21e3aaf6ae85bee804a325aa29c325209180fd:
-   Linus Torvalds (1):
-         Merge branch 'for-next' of git://git.kernel.org/.../hch/hfsplus
+Kind regards,
+Wim.
 
-are available in the git repository at:
-
-   ssh://master.kernel.org/pub/scm/linux/kernel/git/penberg/slab-2.6.git for-linus
-
-Christoph Lameter (1):
-       slub: move slabinfo.c to tools/slub/slabinfo.c
-
-Pavel Emelyanov (1):
-       slub: Fix slub_lock down/up imbalance
-
-Pekka Enberg (2):
-       slub: Fix build breakage in Documentation/vm
-       Merge branch 'slab/next' into for-linus
-
-Richard Kennedy (1):
-       slub tracing: move trace calls out of always inlined functions to reduce kernel code size
-
-Steven Rostedt (1):
-       tracing/slab: Move kmalloc tracepoint out of inline code
-
-Tero Roponen (1):
-       slub: Fix a crash during slabinfo -v
-
-  Documentation/vm/Makefile                   |    2 +-
-  include/linux/slab_def.h                    |   33 ++++++----------
-  include/linux/slub_def.h                    |   55 +++++++++++++--------------
-  mm/slab.c                                   |   38 +++++++++++-------
-  mm/slub.c                                   |   30 +++++++++++---
-  {Documentation/vm => tools/slub}/slabinfo.c |    6 +-
-  6 files changed, 89 insertions(+), 75 deletions(-)
-  rename {Documentation/vm => tools/slub}/slabinfo.c (99%)
