@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306Ab1AIWLA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jan 2011 17:11:00 -0500
-Received: from smtp.polymtl.ca ([132.207.4.11]:54486 "EHLO smtp.polymtl.ca"
+	id S1752850Ab1AIWFW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jan 2011 17:05:22 -0500
+Received: from smtp.polymtl.ca ([132.207.4.11]:47438 "EHLO smtp.polymtl.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752853Ab1AIWFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jan 2011 17:05:23 -0500
-Message-Id: <20110109220509.915924257@efficios.com>
+	id S1752811Ab1AIWFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jan 2011 17:05:20 -0500
+Message-Id: <20110109215927.633266833@efficios.com>
 User-Agent: quilt/0.48-1
-Date: Sun, 09 Jan 2011 16:59:38 -0500
+Date: Sun, 09 Jan 2011 16:59:27 -0500
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: [RFC patch 11/28] trace event mce remove semicolons
-References: <20110109215927.633266833@efficios.com>
-Content-Disposition: inline; filename=trace-event-mce-remove-semicolons.patch
-X-Poly-FromMTA: (test.dorsal.polymtl.ca [132.207.72.60]) at Sun,  9 Jan 2011 22:05:10 +0000
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [RFC patch 00/28] Removal of trace event semicolons
+X-Poly-FromMTA: (test.dorsal.polymtl.ca [132.207.72.60]) at Sun,  9 Jan 2011 22:05:08 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Part of the gradual TRACE_EVENT() semicolon removal. Enables creation of array
-of events, thus saving space for trace event probes.
+Hi,
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
----
- include/trace/events/mce.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I am hereby proposing the removal of trailing semicolons within the trace event
+headers.
 
-Index: linux-2.6-lttng/include/trace/events/mce.h
-===================================================================
---- linux-2.6-lttng.orig/include/trace/events/mce.h
-+++ linux-2.6-lttng/include/trace/events/mce.h
-@@ -61,7 +61,7 @@ TRACE_EVENT(mce_record,
- 		__entry->walltime,
- 		__entry->socketid,
- 		__entry->apicid)
--);
-+)
- 
- #endif /* _TRACE_MCE_H */
- 
+Please refer to "patch 01: TRACE_EVENT: gradual semicolon removal" for
+explanation of this change. This patchset is based on the 2.6.37 kernel.
 
+Feedback is welcome,
+
+Thanks,
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
