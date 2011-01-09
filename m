@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab1AIWdb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jan 2011 17:33:31 -0500
-Received: from smtp.sgsi.ucl.ac.be ([130.104.5.67]:33009 "EHLO
-	smtp1.sgsi.ucl.ac.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab1AIWda convert rfc822-to-8bit (ORCPT
+	id S1752847Ab1AIWe3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jan 2011 17:34:29 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:52029 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548Ab1AIWe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jan 2011 17:33:30 -0500
-X-DKIM: Sendmail DKIM Filter v2.8.2 smtp1.sgsi.ucl.ac.be 78235E97E2
-From: Christoph Paasch <christoph.paasch@uclouvain.be>
-Reply-To: christoph.paasch@uclouvain.be
-Organization: =?iso-8859-1?q?Universit=E9_Catholique_de?= Louvain
-To: Ben Hutchings <bhutchings@solarflare.com>
-Subject: Re: [PATCH] Cleanup include/net/tcp.h include-files and coding-style
-Date: Sun, 9 Jan 2011 23:33:19 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.35-24-generic; KDE/4.5.5; x86_64; ; )
-Cc: Randy Dunlap <rdunlap@xenotime.net>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1294606534-28522-1-git-send-email-christoph.paasch@uclouvain.be> <201101092232.19171.christoph.paasch@uclouvain.be> <1294610141.2823.31.camel@localhost>
-In-Reply-To: <1294610141.2823.31.camel@localhost>
+	Sun, 9 Jan 2011 17:34:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=qiXS0RX8rM7OpN+szBzP3XfJToOLnnhbwiBhiNkeGGfKii3ytWuB7Js5JPicl/8OPF
+         92A7lSyhAtCLBrJjUnu8oAOOmhd163o4772TQi1FgCyg56GLsvn2dsGGnd4I09rQtPdA
+         tN5oUP3EcG5CM1/VlZ+iQzuA67fRb3MoBcm7A=
+Date: Sun, 9 Jan 2011 17:34:23 -0500
+From: Tejun Heo <tj@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH UPDATED] workqueue: relax lockdep annotation on
+ flush_work()
+Message-ID: <20110109223423.GA26607@mtj.dyndns.org>
+References: <20101229125711.GL488@htj.dyndns.org>
+ <1294067685.2016.83.camel@laptop>
+ <20110103152017.GV18831@htj.dyndns.org>
+ <201101032225.46714.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201101092333.19406.christoph.paasch@uclouvain.be>
-X-Sgsi-Spamcheck: SASL authenticated, 
-X-SGSI-MailScanner-ID: 78235E97E2.00000
-X-SGSI-MailScanner: Found to be clean
-X-SGSI-From: christoph.paasch@uclouvain.be
-X-SGSI-Spam-Status: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201101032225.46714.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 03, 2011 at 10:25:46PM +0100, Rafael J. Wysocki wrote:
+> On Monday, January 03, 2011, Tejun Heo wrote:
+> > On Mon, Jan 03, 2011 at 04:14:45PM +0100, Peter Zijlstra wrote:
+> > > > Hmmm?  The code applies the most strict contraints.  If the workqueue
+> > > > has a rescuer, flushing another work from the workqueue will always
+> > > > trigger lockdep warning.  The rule is relaxed only for workqueues
+> > > > which aren't used for memory reclaiming && support parallel execution.
+> > > 
+> > > Ah, ok. I read it like: if the current thread is a rescue thread.
+> > 
+> > Ah, I see.  Rafael, can you please verify the updated version is okay
+> > too (it should be but just in case)?
+> 
+> It still appears to be fine.
 
-On Sunday, January 09, 2011 wrote Ben Hutchings:
-> The cost of repeated inclusion is minimal.  GCC's preprocessor
-> recognises when the entire content of a file is conditional on #ifndef
-> FOO and will not even open it again if FOO is defined.
-Thanks, I did not knew about that.
+Applied to wq#fixes-2.6.38 with Tested-by and stable cc added.
 
-> If a file directly references definitions that are supposed to be
-> provided by a certain header, changing it to rely on indirect inclusion
-> of that header generally does *not* aid maintenance.
-But then, to be coherent, we would need to add the following includes (and I'm 
-even not 100% sure if it's all we need):
+Thank you.
 
-linux/percpu_counter.h (needed for percpu_counter_sum_positive)
-linux/mm_types.h (needed for struct page)
-linux/aio.h (needed for struct kiocb)
-net/inet_sock.h (needed for struct ip_options)
-linux/pipe_fs_i.h (needed for struct pipe_inode_info)
-linux/poll.h (needed for struct poll_table_struct)
-linux/compiler.h (needed for __percpu)
-
-IMO there should be a clear rule for the inclusion of files.
-
-Personally I think it's best to include as few files as possible. Because I 
-think, that this reduces the risk of including a file, whose structs/functions 
-aren't even referenced (it's easier to manually check if one include out of 10 
-is useless, than checking it for 50).
-
-But ok, there may be other stronger reasons for the opposite.
-What are the reasons for including these files?
-
-Regards,
-Christoph
-
---
-Christoph Paasch
-PhD Student
-
-IP Networking Lab --- http://inl.info.ucl.ac.be
-MultiPath TCP in the Linux Kernel --- http://inl.info.ucl.ac.be/mptcp
-Université Catholique de Louvain
-
-www.rollerbulls.be
---
+-- 
+tejun
