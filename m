@@ -1,272 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab1AIOwJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jan 2011 09:52:09 -0500
-Received: from csmtp3.one.com ([91.198.169.23]:43704 "EHLO csmtp3.one.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751793Ab1AIOwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jan 2011 09:52:07 -0500
-From: "Henrik Rydberg" <rydberg@bitmath.org>
-Date: Sun, 9 Jan 2011 15:51:42 +0100
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Chris Bagwell <chris@cnpbagwell.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        Nikolai Kondrashov <spbnick@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Documentation: Add evdev type and code definitions
-Message-ID: <20110109145142.GA1508@polaris.bitmath.org>
-References: <1294435695-16750-1-git-send-email-chase.douglas@canonical.com>
+	id S1752106Ab1AIPKq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jan 2011 10:10:46 -0500
+Received: from pfepb.post.tele.dk ([195.41.46.236]:55738 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949Ab1AIPKo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jan 2011 10:10:44 -0500
+Date: Sun, 9 Jan 2011 16:10:41 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        linux arch <linux-arch@vger.kernel.org>,
+        Guan Xuetao <guanxuetao@mprc.pku.edu.cn>,
+        Michal Marek <mmarek@suse.cz>, Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH 1/2] kbuild: asm-generic support
+Message-ID: <20110109151041.GA17237@merkur.ravnborg.org>
+References: <20110108130302.GA21698@merkur.ravnborg.org> <20110109082851.GA10463@merkur.ravnborg.org> <20110109083125.GA17045@merkur.ravnborg.org> <201101091503.34783.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1294435695-16750-1-git-send-email-chase.douglas@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201101091503.34783.arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 07, 2011 at 04:28:15PM -0500, Chase Douglas wrote:
-> This commit adds the file Documentation/input/evdev-codes.txt.
+On Sun, Jan 09, 2011 at 03:03:33PM +0100, Arnd Bergmann wrote:
+> Hi Sam,
 > 
-> Cc: Henrik Rydberg <rydberg@euromail.se>
-> Cc: Chris Bagwell <chris@cnpbagwell.com>
-> Cc: Peter Hutterer <peter.hutterer@who-t.net>
-> Cc: Nikolai Kondrashov <spbnick@gmail.com>
-> Cc: linux-input@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+> Looks much cleaner to me now, but I still don't see why we even need
+> the new generic-export-y variable in addition to export-y. Can't we
+> just simply install all $(filter-out, $(generated-y), $(header-y))
+> from arch/$(SRCARCH)/include/asm and all $(filter, $(generated-y),
+> $(header-y)) from rch/$(SRCARCH)/include/generated/asm?
 
-Hi Chase, thanks for the update! Minor comment below, otherwise
+Like this:
 
-Acked-by: Henrik Rydberg <rydberg@euromail.se>
+diff --git a/scripts/Makefile.headersinst b/scripts/Makefile.headersinst
+index 3a630c2..7c06dcf 100644
+--- a/scripts/Makefile.headersinst
++++ b/scripts/Makefile.headersinst
+@@ -31,10 +31,10 @@ check-file    := $(install)/.check
+ # generic-export-y list all generic headers to be exported
+ # generic-y list all files an architecture uses from asm-generic
+ # Use this to build a list of headers which require a wrapper
+-wrapper-files := $(filter $(generic-export-y), $(generic-y))
++wrapper-files := $(filter $(header-y), $(generic-y))
+ 
+ # all headers files for this dir
+-header-y      := $(filter-out $(wrapper-files), $(header-y))
++header-y      := $(filter-out $(generic-y), $(header-y))
+ all-files     := $(header-y) $(objhdr-y) $(generic-y)
+ input-files   := $(addprefix $(_src)/,$(header-y)) \
+                  $(addprefix $(objtree)/$(obj)/,$(objhdr-y))
 
-> ---
->  Documentation/input/evdev-codes.txt |  206 +++++++++++++++++++++++++++++++++++
->  1 files changed, 206 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/input/evdev-codes.txt
-> 
-> diff --git a/Documentation/input/evdev-codes.txt b/Documentation/input/evdev-codes.txt
-> new file mode 100644
-> index 0000000..8d7262c
-> --- /dev/null
-> +++ b/Documentation/input/evdev-codes.txt
-> @@ -0,0 +1,206 @@
-> +The evdev protocol uses a map of types and codes to express input device values
-> +to userspace. This document describes the types and codes and how and when they
-> +may be used.
-> +
-> +The evdev protocol is a stateful protocol. Events are emitted only when values
-> +of evdev codes have changed. However, the state is maintained within the Linux
-> +input subsystem; drivers do not need to maintain the state and may attempt to
-> +emit unchanged values without harm. Userspace may obtain the current state of
-> +evdev code values using the EVIOCGABS ioctl defined in linux/input.h.
 
-GABS is only to retrieve EV_ABS type events, there is also GKEY, GLED,
-GSND, GSW, GBIT and GPROP. Perhaps simply changing "EVIOCGABS" to
-"EVIOCG*" would suffice. The same information is also available under
-/sys/class/input/eventX/device/, as files in the capabilities/ and
-properties/ directories.
+And then reverting the changes to Kbuild.asm.
+Yes this works - and is much simpler. Good!
 
-> +
-> +Types:
-> +==========
-> +Types are groupings of codes under a logical input construct. Each type has a
-> +set of applicable codes to be used in generating events. See the Codes section
-> +for details on valid codes for each type.
-> +
-> +* EV_SYN:
-> +  - Used as markers to separate events. Events may be separated in time or in
-> +    space, such as with the multitouch protocol.
-> +
-> +* EV_KEY:
-> +  - Used to describe keyboard and other key-like input events.
-> +
-> +* EV_REL:
-> +  - Used to describe relative input events, e.g. moving the mouse 5 units to the
-> +    left.
-> +
-> +* EV_ABS:
-> +  - Used to describe absolute input events, e.g. describing the coordinates of a
-> +    touch on a touchscreen.
-> +
-> +* EV_MSC:
-> +  - Used to describe miscellaneous input events that do not fit into other
-> +    types.
-> +
-> +* EV_SW:
-> +  - Used to describe binary state input switches.
-> +
-> +* EV_LED:
-> +  - Used to turn LEDs on devices on and off.
-> +
-> +* EV_SND:
-> +  - Used to output sound to devices.
-> +
-> +* EV_REP:
-> +  - Used for autorepeating devices.
-> +
-> +* EV_FF:
-> +  - Used to send force feedback commands to an input device.
-> +
-> +* EV_PWR:
-> +  - A special type for power button and switch input.
-> +
-> +* EV_FF_STATUS:
-> +  - Used to receive force feedback device status.
-> +
-> +Codes:
-> +==========
-> +Codes define the precise type of event.
-> +
-> +EV_SYN:
-> +----------
-> +EV_SYN event values are undefined. Their usage is
-> +defined only by when they are sent in the evdev event stream.
-> +
-> +* SYN_REPORT:
-> +  - Used to synchronize and separate events into frames of time. For example,
-> +    motion of a mouse may set the REL_X and REL_Y values for one motion, then
-> +    emit a SYN_REPORT. The next motion will emit more REL_X and REL_Y values and
-> +    send another SYN_REPORT.
-> +
-> +* SYN_CONFIG:
-> +  - TBD
-> +
-> +* SYN_MT_REPORT:
-> +  - Used to synchronize and separate touch events. See the
-> +    multi-touch-protocol.txt document for more information.
-> +
-> +EV_KEY:
-> +----------
-> +EV_KEY events take the form KEY_<name> or BTN_<name>. For example, KEY_A is used
-> +to represent the 'A' key on a keyboard. When a key is depressed, an event with
-> +the key's code is emitted with value 1. When the key is released, an event is
-> +emitted with value 0. Some hardware send events when a key is repeated. These
-> +events have a value of 2. In general, KEY_<name> is used for keyboard keys, and
-> +BTN_<name> is used for other types of momentary switch events.
-> +
-> +A few EV_KEY codes have special meanings:
-> +
-> +* BTN_TOOL_<name>:
-> +  - These codes are used in conjunction with input trackpads, tablets, and
-> +    touchscreens. These devices may be used with fingers, pens, or other tools.
-> +    When an event occurs and a tool is used, the corresponding BTN_TOOL_<name>
-> +    code should be set to a value of 1. When the tool is no longer interacting
-> +    with the input device, the BTN_TOOL_<name> code should be reset to 0. All
-> +    trackpads, tablets, and touchscreens should use at least one BTN_TOOL_<name>
-> +    code when events are generated.
-> +
-> +* BTN_TOUCH:
-> +    BTN_TOUCH is used for touch contact. While an input tool is determined to be
-> +    within meaningful physical contact, the value of this property must be set
-> +    to 1. Meaningful physical contact may mean any contact, or it may mean
-> +    contact conditioned by an implementation defined property. For example, a
-> +    touchpad may set the value to 1 only when the touch pressure rises above a
-> +    certain value. BTN_TOUCH may be combined with BTN_TOOL_<name> codes. For
-> +    example, a pen tablet may set BTN_TOOL_PEN to 1 and BTN_TOUCH to 0 while the
-> +    pen is hovering over but not touching the tablet surface.
-> +
-> +Note: For appropriate function of the legacy mousedev emulation driver,
-> +BTN_TOUCH must be the first evdev code emitted in a synchronization frame.
-> +
-> +Note: Historically a touch device with BTN_TOOL_FINGER and BTN_TOUCH was
-> +interpreted as a touchpad by userspace, while a similar device without
-> +BTN_TOOL_FINGER was interpreted as a touchscreen. For backwards compatibility
-> +with current userspace it is recommended to follow this distinction. In the
-> +future, this distinction will be deprecated and the device properties ioctl
-> +EVIOCGPROP, defined in linux/input.h, will be used to convey the device type.
-> +
-> +* BTN_TOOL_FINGER, BTN_TOOL_DOUBLETAP, BTN_TOOL_TRIPLETAP, BTN_TOOL_QUADTAP:
-> +  - These codes denote one, two, three, and four finger interaction on a
-> +    trackpad or touchscreen. For example, if the user uses two fingers and moves
-> +    them on the touchpad in an effort to scroll content on screen,
-> +    BTN_TOOL_DOUBLETAP should be set to value 1 for the duration of the motion.
-> +    Note that these codes and the BTN_TOOL_<name> and BTN_TOUCH codes are
-> +    orthogonal in purpose. A trackpad event generated by finger touches should
-> +    generate events for one code from each group. At most only one of these
-> +    codes should have a value of 1 during any synchronization frame.
-> +
-> +Note: Historically some drivers emitted multiple of the finger count codes with
-> +a value of 1 in the same synchronization frame. This usage is deprecated.
-> +
-> +Note: In multitouch drivers, the input_mt_report_finger_count() function should
-> +be used to emit these codes. Please see multi-touch-protocol.txt for details.
-> +
-> +* KEY_SUSPEND, KEY_POWER:
-> +  - These codes are reserved for the EV_PWR type.
-> +
-> +EV_REL:
-> +----------
-> +EV_REL events describe relative changes in a property. For example, a mouse may
-> +move to the left by a certain number of units, but its absolute position in
-> +space is unknown. If the absolute position is known, EV_ABS codes should be used
-> +instead of EV_REL codes.
-> +
-> +A few EV_REL codes have special meanings:
-> +
-> +* REL_WHEEL, REL_HWHEEL:
-> +  - These codes are used for vertical and horizontal scroll wheels,
-> +    respectively.
-> +
-> +EV_ABS:
-> +----------
-> +EV_ABS events describe absolute changes in a property. For example, a touchpad
-> +may emit coordinates for a touch location.
-> +
-> +A few EV_ABS codes have special meanings:
-> +
-> +* ABS_DISTANCE:
-> +  - Used to describe the distance of a tool from an interaction surface. This
-> +    should only be used while the tool is hovering, meaning in close proximity
-> +    of the device. If the input device may be used freely in three dimensions,
-> +    consider ABS_Z instead.
-> +
-> +* ABS_MT_<name>:
-> +  - Used to describe multitouch input events. Please see
-> +    multi-touch-protocol.txt for details.
-> +
-> +EV_SW:
-> +----------
-> +EV_SW events describe stateful binary switches. For example, the SW_LID code is
-> +used to denote when a laptop lid is closed.
-> +
-> +EV_MSC:
-> +----------
-> +EV_MSC events are used for input and output events that do not fall under other
-> +categories.
-> +
-> +EV_LED:
-> +----------
-> +EV_LED events are used for input and output to set and query the state of
-> +various LEDs on devices.
-> +
-> +EV_REP:
-> +----------
-> +EV_REP events are used for specifying autorepeating events.
-> +
-> +EV_SND:
-> +----------
-> +EV_SND events are used for sending sound commands to simple sound output
-> +devices.
-> +
-> +EV_FF:
-> +----------
-> +EV_FF events are used to initialize a force feedback capable device and to cause
-> +such device to feedback.
-> +
-> +EV_PWR:
-> +----------
-> +EV_PWR events are a special type of key event used specifically for monitoring
-> +power buttons and switches. The two codes in use are:
-> +
-> +* KEY_POWER:
-> +  - Used to denote a power button event.
-> +
-> +* KEY_SUSPEND:
-> +  - Used to denote a suspend button event.
+I originally wanted to know wat set of files I worked
+with but this is not needed.
 
-Great document.
+I will test it a bit more tonight and post a v3 of the patchset.
 
-Thanks,
-Henrik
+Thanks for the review!
+
+	Sam
