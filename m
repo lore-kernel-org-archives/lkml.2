@@ -1,79 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752342Ab1AIQ4s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jan 2011 11:56:48 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56522 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751564Ab1AIQ4r (ORCPT
+	id S1752396Ab1AIRHv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jan 2011 12:07:51 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49952 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752265Ab1AIRHt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jan 2011 11:56:47 -0500
+	Sun, 9 Jan 2011 12:07:49 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=r0qqA0sdGtIWtSVccYfzdYTTeYIOvz35keICsSndoKwZDvqWzsRsEgflSItqQSSViB
-         v4J+F5SDldFDaUtUHlLRcsK8e4ED3MrlCvFteKY9iY0aPnvtilbIM3490POaXsK9iUrz
-         L1gbJmmw6WU+HxRNVs51T1rPhmy9zAE23ED2I=
-From: Pierre Tardy <tardyp@gmail.com>
-To: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Pierre Tardy <pierre.tardy@intel.com>
-Subject: [PATCH 3/3] mmc: remove anti clock gating quirk for wl1271
-Date: Sun,  9 Jan 2011 17:26:20 +0100
-Message-Id: <cb471b35d320b96a9d143103fd9e9b76f8998470.1294588491.git.tardyp@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <cover.1294588491.git.tardyp@gmail.com>
-References: <cover.1294588491.git.tardyp@gmail.com>
-In-Reply-To: <cover.1294588491.git.tardyp@gmail.com>
-References: <cover.1294588491.git.tardyp@gmail.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=GHIskh9T/wXSCpKOaIMFY6EFKAUwTjsQ1TBoFdDQZOo3phwFE7JpPoVLjO4uOO5ZHh
+         l9ZTupE3+VKSzK9MgGnVvX8yxTk7VbD4WlCdUTNm1jrOpcsK1cEdE/z1Y0U47nQmVIum
+         YeD0R04NDuNeg8y0aNCjmlfgkTaf5R3hup7KU=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinCSu68cC_jzO8MZs4Q=u+EABiZxkRv3gbyfqMk@mail.gmail.com>
+References: <AANLkTinCSu68cC_jzO8MZs4Q=u+EABiZxkRv3gbyfqMk@mail.gmail.com>
+Date: Sun, 9 Jan 2011 22:37:48 +0530
+Message-ID: <AANLkTin4yh3mQ7pbGPvYFNgNnRDVrmJUD4yUJT1tusC7@mail.gmail.com>
+Subject: Re: Bug in linux-2.6.37-rc8+: Weird X display upon hibernating
+From: Siddu <siddu.sjce@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pierre Tardy <pierre.tardy@intel.com>
+seems like its not getting much attention here .... atleast can anyone
+tell me which is the right place to be brought into notice ?
 
-Signed-off-by: Pierre Tardy <pierre.tardy@intel.com>
----
- drivers/mmc/core/quirks.c |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
+On Sun, Jan 9, 2011 at 4:22 PM, Siddu <siddu.sjce@gmail.com> wrote:
+> Hi all,
+> Recently i have gotten around with the habit of testing release
+> candidate builds out of the linus's tree .
+> Here is something strange which seems to happening with 2.6.37-rc8+
+> also i am not sure if this existed earlier .
+> Upon hibernating and booting back , X display becomes weird and
+> unusable , but on normal shutdown/reboot things seem to be fine.
+> Here with attaching logs of Xorg.0.log and kern.log
+>
+> a snippet of kern.log as follows
+> Jan  9 11:04:58 x-moto kernel: [ 4554.844761] done.
+> Jan  9 11:04:58 x-moto kernel: [ 4554.844780] PM: Basic memory bitmaps freed
+> Jan  9 11:04:58 x-moto kernel: [ 4554.844785] video LNXVIDEO:00:
+> Restoring backlight state
+> Jan  9 11:04:58 x-moto kernel: [ 4554.850370] [drm:drm_mode_getfb]
+> *ERROR* invalid framebuffer id
+> Jan  9 11:04:58 x-moto kernel: [ 4554.909592] [drm:radeon_ib_schedule]
+> *ERROR* radeon: couldn't schedule IB(12).
+> Jan  9 11:04:58 x-moto kernel: [ 4554.909596] [drm:radeon_cs_ioctl]
+> *ERROR* Failed to schedule IB !
+> Jan  9 11:04:58 x-moto kernel: [ 4554.909870] [drm:radeon_ib_schedule]
+> *ERROR* radeon: couldn't schedule IB(13).
+> Jan  9 11:04:58 x-moto kernel: [ 4554.909873] [drm:radeon_cs_ioctl]
+> *ERROR* Failed to schedule IB !
+> Jan  9 11:04:58 x-moto kernel: [ 4555.005941] [drm:radeon_ib_schedule]
+> *ERROR* radeon: couldn't schedule IB(14).
+> Jan  9 11:04:58 x-moto kernel: [ 4555.005945] [drm:radeon_cs_ioctl]
+> *ERROR* Failed to schedule IB !
+> Jan  9 11:04:58 x-moto kernel: [ 4555.007755] [drm:radeon_ib_schedule]
+> *ERROR* radeon: couldn't schedule IB(15).
+> Jan  9 11:04:58 x-moto kernel: [ 4555.007758] [drm:radeon_cs_ioctl]
+> *ERROR* Failed to schedule IB !
+> Jan  9 11:04:58 x-moto kernel: [ 4555.010712] [drm:radeon_ib_schedule]
+> *ERROR* radeon: couldn't schedule IB(0).
+> Jan  9 11:04:58 x-moto kernel: [ 4555.010716] [drm:radeon_cs_ioctl]
+> *ERROR* Failed to schedule IB !
+>
+> --
+> Regards,
+> ~Sid~
+> - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> - - - - - -
+> Gazing through the window at the world outside,
+> Wondering will mother earth survive ?
+> Hoping that the mankind will stop abusing her
+> Sometime !
+> - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+> - - - - - -
+>
 
-diff --git a/drivers/mmc/core/quirks.c b/drivers/mmc/core/quirks.c
-index fe467c8..506e4fc 100644
---- a/drivers/mmc/core/quirks.c
-+++ b/drivers/mmc/core/quirks.c
-@@ -33,6 +33,14 @@ static void add_quirk(struct mmc_card *card, int data)
- }
- 
- /*
-+ * This hook just removes a quirk unconditionnally
-+ */
-+static void remove_quirk_hook(struct mmc_card *card, int data)
-+{
-+	card->quirks &= ~data;
-+}
-+
-+/*
-  * This hook just adds a quirk for all sdio devices
-  */
- static void add_quirk_for_sdio_devices(struct mmc_card *card, int data)
-@@ -41,9 +49,19 @@ static void add_quirk_for_sdio_devices(struct mmc_card *card, int data)
- 		card->quirks |= data;
- }
- 
-+#ifndef SDIO_VENDOR_ID_TI
-+#define SDIO_VENDOR_ID_TI		0x0097
-+#endif
-+
-+#ifndef SDIO_DEVICE_ID_TI_WL1271
-+#define SDIO_DEVICE_ID_TI_WL1271	0x4076
-+#endif
-+
- static const struct mmc_fixup mmc_fixup_methods[] = {
- 	{ SDIO_ANY_ID, SDIO_ANY_ID,
- 		add_quirk_for_sdio_devices, MMC_QUIRK_BROKEN_CLK_GATING }
-+	{ SDIO_VENDOR_ID_TI, SDIO_DEVICE_ID_TI_WL1271,
-+		remove_quirk_hook, MMC_QUIRK_BROKEN_CLK_GATING },
- 	{ 0 }
- };
- 
+
+
 -- 
-1.7.1
-
+Regards,
+~Sid~
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+- - - - - -
+Gazing through the window at the world outside,
+Wondering will mother earth survive ?
+Hoping that the mankind will stop abusing her
+Sometime !
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+- - - - - -
