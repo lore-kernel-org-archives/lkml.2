@@ -1,83 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751488Ab1AIKPa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jan 2011 05:15:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64678 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750869Ab1AIKP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jan 2011 05:15:29 -0500
-Message-ID: <4D29872A.608@redhat.com>
-Date: Sun, 09 Jan 2011 12:00:10 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1751553Ab1AIK1H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jan 2011 05:27:07 -0500
+Received: from juliette.telenet-ops.be ([195.130.137.74]:58245 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751045Ab1AIK1F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jan 2011 05:27:05 -0500
+Date: Sun, 9 Jan 2011 11:27:02 +0100 (CET)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linux/m68k <linux-m68k@vger.kernel.org>
+cc: Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [PATCH] m68k/amiga: Fix "debug=mem"
+Message-ID: <alpine.DEB.2.00.1101091124290.473@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 2/3] KVM: send IPI to vcpu only when it's in guest
- mode
-References: <4D26C4D4.30303@cn.fujitsu.com> <4D26C527.9090403@cn.fujitsu.com> <20110107115527.GA13196@amt.cnet>
-In-Reply-To: <20110107115527.GA13196@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2011 01:55 PM, Marcelo Tosatti wrote:
-> On Fri, Jan 07, 2011 at 03:47:51PM +0800, Xiao Guangrong wrote:
-> >  We can interrupt the vcpu only when it's running in guest mode
-> >  to reduce IPI
-> >
-> >  It looks like only ia64 and x86 need to send IPI to other vcpus, so
-> >  i only add the implementation of 'vcpu->guest_mode' in ia64, but i
-> >  don't know ia64 well, please point out the right way for me if the
-> >  implementation is incorrect
-> >
-> >  Also reorganize struct kvm_vcpu to make ->guest_mode and ->requests
-> >  in the same cache line explicitly.
-> >
-> >  Signed-off-by: Xiao Guangrong<xiaoguangrong@cn.fujitsu.com>
-> >  ---
-> >   arch/ia64/kvm/kvm-ia64.c |    2 ++
-> >   arch/x86/kvm/x86.c       |    6 +++++-
-> >   include/linux/kvm_host.h |    9 +++++----
-> >   virt/kvm/kvm_main.c      |    7 ++++++-
-> >   4 files changed, 18 insertions(+), 6 deletions(-)
-> >
->
-> >  diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> >  index b1b6cbb..a475264 100644
-> >  --- a/virt/kvm/kvm_main.c
-> >  +++ b/virt/kvm/kvm_main.c
-> >  @@ -153,7 +153,12 @@ static bool make_all_cpus_request(struct kvm *kvm, unsigned int req)
-> >   		if (kvm_make_check_request(req, vcpu))
-> >   			continue;
-> >   		cpu = vcpu->cpu;
-> >  -		if (cpus != NULL&&  cpu != -1&&  cpu != me)
-> >  +
-> >  +		/* Set ->requests bit before we read ->guest_mode */
-> >  +		smp_mb();
-> >  +
-> >  +		if (cpus != NULL&&  cpu != -1&&  cpu != me&&
-> >  +		      atomic_read(&vcpu->guest_mode))
-> >   			cpumask_set_cpu(cpu, cpus);
->
-> Don't think this is safe, since guest_mode does not imply that a vcpu
-> has received the IPI, only that IPI has been sent (see kvm_vcpu_kick).
->
-> And make_all_cpus_request must guarantee all target vcpus are out of
-> guest mode before it returns.
->
+`debug=mem' on Amiga has been broken for a while.
+early_param() processing is done very/too early, i.e. before
+amiga_identify() / amiga_chip_init(), causing amiga_savekmsg_setup() not
+to find any Chip RAM.
 
-Good catch.  We could remove the atomic_xchg() in kvm_vcpu_kick(), but 
-need to think of any drawbacks to that.
+As we don't plan to free this memory anyway, just steal it from the initial
+Chip RAM memory block instead.
 
-Maybe we could replace guest_mode with a three value variable: in guest, 
-outside guest, and transitioning out of guest.    So kvm_vcpu_kick() 
-avoids the IPI on the last two, while make_all_cpus_request() only 
-avoids an IPI if outside guest mode.
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+This is patch is meant to replace commit
+f58c0050517b02b8143f13a98730ba4a14f4e1c5 ("m68k: Fix debug=mem on Amiga") in
+linux-m68k.git.
 
+ arch/m68k/amiga/config.c |   16 +++++++---------
+ 1 files changed, 7 insertions(+), 9 deletions(-)
+
+diff --git a/arch/m68k/amiga/config.c b/arch/m68k/amiga/config.c
+index b1577f7..82a4bb5 100644
+--- a/arch/m68k/amiga/config.c
++++ b/arch/m68k/amiga/config.c
+@@ -610,17 +610,17 @@ static void amiga_mem_console_write(struct console *co, const char *s,
+ 
+ static int __init amiga_savekmsg_setup(char *arg)
+ {
+-	static struct resource debug_res = { .name = "Debug" };
+-
+ 	if (!MACH_IS_AMIGA || strcmp(arg, "mem"))
+-		goto done;
++		return 0;
+ 
+-	if (!AMIGAHW_PRESENT(CHIP_RAM)) {
+-		printk("Warning: no chipram present for debugging\n");
+-		goto done;
++	if (amiga_chip_size < SAVEKMSG_MAXMEM) {
++		pr_err("Not enough chipram for debugging\n");
++		return -ENOMEM;
+ 	}
+ 
+-	savekmsg = amiga_chip_alloc_res(SAVEKMSG_MAXMEM, &debug_res);
++	/* Just steal the block, the chipram allocator isn't functional yet */
++	amiga_chip_size -= SAVEKMSG_MAXMEM;
++	savekmsg = (void *)ZTWO_VADDR(CHIP_PHYSADDR + amiga_chip_size);
+ 	savekmsg->magic1 = SAVEKMSG_MAGIC1;
+ 	savekmsg->magic2 = SAVEKMSG_MAGIC2;
+ 	savekmsg->magicptr = ZTWO_PADDR(savekmsg);
+@@ -628,8 +628,6 @@ static int __init amiga_savekmsg_setup(char *arg)
+ 
+ 	amiga_console_driver.write = amiga_mem_console_write;
+ 	register_console(&amiga_console_driver);
+-
+-done:
+ 	return 0;
+ }
+ 
 -- 
-error compiling committee.c: too many arguments to function
+1.7.0.4
 
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
