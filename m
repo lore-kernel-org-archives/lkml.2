@@ -1,80 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab1AIWzA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jan 2011 17:55:00 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:39983 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934Ab1AIWy7 (ORCPT
+	id S1752859Ab1AIXDf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jan 2011 18:03:35 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:35077 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751754Ab1AIXDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jan 2011 17:54:59 -0500
+	Sun, 9 Jan 2011 18:03:33 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=lQkjq41CkwOqpkwrhmEtoMqhNb5aPPfloC+5yigTi/2//UpYLsBUNeKgq60tkpjIfv
-         HGRb1AZDFauCfOB20wSbO1cyKSoK0aG6tA+ujwhb/c6O8JZ7aIIq0UTXEB1Sjw7KMEzz
-         Fkq1zuzuQ9ZRRgKaOgMsGn6HMo6NDQy3dazeA=
-MIME-Version: 1.0
-Date: Mon, 10 Jan 2011 09:54:57 +1100
-Message-ID: <AANLkTikBu6vggpTUQy_MeTG_PJ9WWoHVyDL0OLPa6v=_@mail.gmail.com>
-Subject: TSC as clocksource
-From: Rob <roblinux@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=20cf30433eec950b29049971bd7b
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=troWFePgo7ysIMqWnS1qo8GkWIdjJGHyYPAwUzpm0J5LReUpFmnHmG3GboXa8AFO59
+         ZxIpeM8wtKuPkglqFkJBX+dsm7G4zkt4IBhkakBfJCHwysCcEVw0w02TtO1WBdKKS0vl
+         s+Unlq/uML3VEyrrWfb0ArRX2HF4kpvnzglo8=
+From: ahern.michael.t@gmail.com
+To: gregkh@suse.de, u.kleine-koenig@pengutronix.de, julia@diku.dk,
+        nikai@nikai.net, morgan.gatti@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        mah <ahern.michael.t@gmail.com>
+Subject: [PATCH 1/5] Staging: comedi: fix line-length coding style issue in usbduxfast.c
+Date: Mon, 10 Jan 2011 10:03:12 +1100
+Message-Id: <1294614196-6665-1-git-send-email-ahern.michael.t@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf30433eec950b29049971bd7b
-Content-Type: text/plain; charset=ISO-8859-1
+From: mah <ahern.michael.t@gmail.com>
 
-Want to use TSC as clocksource
-have a Intel Core2 Duo with constant_tsc flag
-TSC should be stable at C1 + C2, it is debatable whether C3 is stable
+This patch to usbduxfast.c file that fixes warnings found by checkpatch.pl tool
 
-Using processor.max_cstate=2 to use only C1 + C2 changes nothing, still get
-Monitor-Mwait will be used to enter C-3 state
-there should be checks before this is forced
+Signed-off-by: Michael Ahern <ahern.michael.t@gmail.com>
+---
+ drivers/staging/comedi/drivers/usbduxfast.c |   54 +++++++++++++++-----------
+ 1 files changed, 31 insertions(+), 23 deletions(-)
 
-Please CC answers, comments to my email.
+diff --git a/drivers/staging/comedi/drivers/usbduxfast.c b/drivers/staging/comedi/drivers/usbduxfast.c
+index 5b15e6d..be4f5ec 100644
+--- a/drivers/staging/comedi/drivers/usbduxfast.c
++++ b/drivers/staging/comedi/drivers/usbduxfast.c
+@@ -453,14 +453,16 @@ static int usbduxfastsub_start(struct usbduxfastsub_s *udfs)
+ 	/* 7f92 to zero */
+ 	local_transfer_buffer[0] = 0;
+ 	/* bRequest, "Firmware" */
+-	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0), USBDUXFASTSUB_FIRMWARE,
+-				VENDOR_DIR_OUT,	/* bmRequestType */
+-				USBDUXFASTSUB_CPUCS,	/* Value */
+-				0x0000,	/* Index */
+-				/* address of the transfer buffer */
+-				local_transfer_buffer,
+-				1,	/* Length */
+-				EZTIMEOUT);	/* Timeout */
++	ret = usb_control_msg(udfs->usbdev,
++			      usb_sndctrlpipe(udfs->usbdev, 0),
++			      USBDUXFASTSUB_FIRMWARE,
++			      VENDOR_DIR_OUT,		/* bmRequestType */
++			      USBDUXFASTSUB_CPUCS,	/* Value */
++			      0x0000,			/* Index */
++					/* address of the transfer buffer */
++			      local_transfer_buffer,
++			      1,			/* Length */
++			      EZTIMEOUT);		/* Timeout */
+ 	if (ret < 0) {
+ 		printk("comedi_: usbduxfast_: control msg failed (start)\n");
+ 		return ret;
+@@ -477,12 +479,16 @@ static int usbduxfastsub_stop(struct usbduxfastsub_s *udfs)
+ 	/* 7f92 to one */
+ 	local_transfer_buffer[0] = 1;
+ 	/* bRequest, "Firmware" */
+-	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0), USBDUXFASTSUB_FIRMWARE,
+-			      VENDOR_DIR_OUT,	/* bmRequestType */
++	ret = usb_control_msg(udfs->usbdev,
++			      usb_sndctrlpipe(udfs->usbdev, 0),
++			      USBDUXFASTSUB_FIRMWARE,
++			      VENDOR_DIR_OUT,		/* bmRequestType */
+ 			      USBDUXFASTSUB_CPUCS,	/* Value */
+-			      0x0000,	/* Index */
+-			      local_transfer_buffer, 1,	/* Length */
+-			      EZTIMEOUT);	/* Timeout */
++			      0x0000,			/* Index */
++			      local_transfer_buffer,
++			      1,			/* Length */
++			      EZTIMEOUT);		/* Timeout */
++
+ 	if (ret < 0) {
+ 		printk(KERN_ERR "comedi_: usbduxfast: control msg failed "
+ 		       "(stop)\n");
+@@ -504,14 +510,16 @@ static int usbduxfastsub_upload(struct usbduxfastsub_s *udfs,
+ 	       startAddr, local_transfer_buffer[0]);
+ #endif
+ 	/* brequest, firmware */
+-	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0), USBDUXFASTSUB_FIRMWARE,
+-				VENDOR_DIR_OUT,	/* bmRequestType */
+-				startAddr,	/* value */
+-				0x0000,	/* index */
+-				/* our local safe buffer */
+-				local_transfer_buffer,
+-				len,	/* length */
+-				EZTIMEOUT);	/* timeout */
++	ret = usb_control_msg(udfs->usbdev,
++			      usb_sndctrlpipe(udfs->usbdev, 0),
++			      USBDUXFASTSUB_FIRMWARE,
++			      VENDOR_DIR_OUT,	/* bmRequestType */
++			      startAddr,	/* value */
++			      0x0000,		/* index */
++			      /* our local safe buffer */
++			      local_transfer_buffer,
++			      len,		/* length */
++			      EZTIMEOUT);	/* timeout */
+ 
+ #ifdef CONFIG_COMEDI_DEBUG
+ 	printk(KERN_DEBUG "comedi_: usbduxfast: result=%d\n", ret);
+@@ -1436,7 +1444,7 @@ static void tidy_up(struct usbduxfastsub_s *udfs)
+ 	udfs->ai_cmd_running = 0;
+ }
+ 
+-static void usbduxfast_firmware_request_complete_handler(const struct firmware
++static void usbduxfast_firmware_req_complete_handler(const struct firmware
+ 							 *fw, void *context)
+ {
+ 	struct usbduxfastsub_s *usbduxfastsub_tmp = context;
+@@ -1577,7 +1585,7 @@ static int usbduxfastsub_probe(struct usb_interface *uinterf,
+ 				      &udev->dev,
+ 				      GFP_KERNEL,
+ 				      usbduxfastsub + index,
+-				      usbduxfast_firmware_request_complete_handler);
++				      usbduxfast_firmware_req_complete_handler);
+ 
+ 	if (ret) {
+ 		dev_err(&udev->dev, "could not load firmware (err=%d)\n", ret);
+-- 
+1.7.0.4
 
---20cf30433eec950b29049971bd7b
-Content-Type: application/octet-stream; name=tsc
-Content-Disposition: attachment; filename=tsc
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_giqjjlil0
-
-V2FudCB0byB1c2UgVFNDIGFzIGNsb2Nrc291cmNlCmhhdmUgYSBJbnRlbCBDb3JlMiBEdW8gd2l0
-aCBjb25zdGFudF90c2MgZmxhZwpUU0Mgc2hvdWxkIGJlIHN0YWJsZSBhdCBDMSArIEMyLCBpdCBp
-cyBkZWJhdGFibGUgd2hldGhlciBDMyBpcyBzdGFibGUKClVzaW5nIHByb2Nlc3Nvci5tYXhfY3N0
-YXRlPTIgdG8gdXNlIG9ubHkgQzEgKyBDMiBjaGFuZ2VzIG5vdGhpbmcsIHN0aWxsIGdldApNb25p
-dG9yLU13YWl0IHdpbGwgYmUgdXNlZCB0byBlbnRlciBDLTMgc3RhdGUKdGhlcmUgc2hvdWxkIGJl
-IGNoZWNrcyBiZWZvcmUgdGhpcyBpcyBmb3JjZWQKClBsZWFzZSBDQyBhbnN3ZXJzLCBjb21tZW50
-cyB0byBteSBlbWFpbC4KCgpbICAgIDAuMDAwMDAwXSBocGV0IGNsb2NrZXZlbnQgcmVnaXN0ZXJl
-ZApbICAgIDAuMDAwMDAwXSBGYXN0IFRTQyBjYWxpYnJhdGlvbiB1c2luZyBQSVQKLi4uCi4uLgpb
-ICAgIDAuMDEyOTMxXSBDUFUwOiBUaGVybWFsIG1vbml0b3JpbmcgZW5hYmxlZCAoVE0yKQpbICAg
-IDAuMDEyOTgwXSB1c2luZyBtd2FpdCBpbiBpZGxlIHRocmVhZHMuCi4uLgouLi4KWyAgICAwLjQ2
-MTczMV0gSFBFVDogNCB0aW1lcnMgaW4gdG90YWwsIDAgdGltZXJzIHdpbGwgYmUgdXNlZCBmb3Ig
-cGVyLWNwdSB0aW1lcgpbICAgIDAuNDYxNzg2XSBocGV0MDogYXQgTU1JTyAweGZlZDAwMDAwLCBJ
-UlFzIDIsIDgsIDAsIDAKWyAgICAwLjQ2MTk5MF0gaHBldDA6IDQgY29tcGFyYXRvcnMsIDY0LWJp
-dCAxNC4zMTgxODAgTUh6IGNvdW50ZXIKWyAgICAwLjQ3MDAzNF0gU3dpdGNoaW5nIHRvIGNsb2Nr
-c291cmNlIHRzYwouLi4KLi4uClsgICAgMC41NzUxNjNdIEFDUEk6IGFjcGlfaWRsZSByZWdpc3Rl
-cmVkIHdpdGggY3B1aWRsZQpbICAgIDAuNTc3NzcyXSBNb25pdG9yLU13YWl0IHdpbGwgYmUgdXNl
-ZCB0byBlbnRlciBDLTEgc3RhdGUKWyAgICAwLjU4OTgwMF0gTW9uaXRvci1Nd2FpdCB3aWxsIGJl
-IHVzZWQgdG8gZW50ZXIgQy0yIHN0YXRlClsgICAgMC41ODk4NDNdIE1vbml0b3ItTXdhaXQgd2ls
-bCBiZSB1c2VkIHRvIGVudGVyIEMtMyBzdGF0ZQpbICAgIDAuNTg5ODc2XSBNYXJraW5nIFRTQyB1
-bnN0YWJsZSBkdWUgdG8gVFNDIGhhbHRzIGluIGlkbGUKWyAgICAwLjU5MTEyMF0gU3dpdGNoaW5n
-IHRvIGNsb2Nrc291cmNlIGhwZXQKCgpwcm9jZXNzb3IJOiAwCnZlbmRvcl9pZAk6IEdlbnVpbmVJ
-bnRlbApjcHUgZmFtaWx5CTogNgptb2RlbAkJOiAyMwptb2RlbCBuYW1lCTogSW50ZWwoUikgQ29y
-ZShUTSkyIER1byBDUFUgICAgIFA4NjAwICBAIDIuNDBHSHoKc3RlcHBpbmcJOiA2CmNwdSBNSHoJ
-CTogODAwLjAwMApjYWNoZSBzaXplCTogMzA3MiBLQgpwaHlzaWNhbCBpZAk6IDAKc2libGluZ3MJ
-OiAyCmNvcmUgaWQJCTogMApjcHUgY29yZXMJOiAyCmFwaWNpZAkJOiAwCmluaXRpYWwgYXBpY2lk
-CTogMApmcHUJCTogeWVzCmZwdV9leGNlcHRpb24JOiB5ZXMKY3B1aWQgbGV2ZWwJOiAxMAp3cAkJ
-OiB5ZXMKZmxhZ3MJCTogZnB1IHZtZSBkZSBwc2UgdHNjIG1zciBwYWUgbWNlIGN4OCBhcGljIHNl
-cCBtdHJyIHBnZSBtY2EgY21vdiBwYXQgcHNlMzYgY2xmbHVzaCBkdHMgYWNwaSBtbXggZnhzcgog
-ICBzc2Ugc3NlMiBzcyBodCB0bSBwYmUgc3lzY2FsbCBueCBsbSBjb25zdGFudF90c2MgYXJjaF9w
-ZXJmbW9uIHBlYnMgYnRzIHJlcF9nb29kIGFwZXJmbXBlcmYgcG5pIGR0ZXM2NCBtb25pdG9yCiAg
-IGRzX2NwbCB2bXggc214IGVzdCB0bTIgc3NzZTMgY3gxNiB4dHByIHBkY20gc3NlNF8xIGxhaGZf
-bG0gZHRzIHRwcl9zaGFkb3cgdm5taSBmbGV4cHJpb3JpdHkKYm9nb21pcHMJOiA0Nzg3Ljg2CmNs
-Zmx1c2ggc2l6ZQk6IDY0CmNhY2hlX2FsaWdubWVudAk6IDY0CmFkZHJlc3Mgc2l6ZXMJOiAzNiBi
-aXRzIHBoeXNpY2FsLCA0OCBiaXRzIHZpcnR1YWwKcG93ZXIgbWFuYWdlbWVudDoKCg==
---20cf30433eec950b29049971bd7b--
