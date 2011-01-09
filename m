@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab1AIVLX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jan 2011 16:11:23 -0500
-Received: from hera.kernel.org ([140.211.167.34]:38254 "EHLO hera.kernel.org"
+	id S1752730Ab1AIVLb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jan 2011 16:11:31 -0500
+Received: from hera.kernel.org ([140.211.167.34]:38258 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751501Ab1AIVLW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jan 2011 16:11:22 -0500
-Date: Sun, 9 Jan 2011 21:10:49 GMT
-From: tip-bot for Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+	id S1752111Ab1AIVL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jan 2011 16:11:29 -0500
+Date: Sun, 9 Jan 2011 21:11:11 GMT
+From: tip-bot for Lai Jiangshan <laijs@cn.fujitsu.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        mathieu.desnoyers@efficios.com, zhaolei@cn.fujitsu.com,
-        davem@davemloft.net, fweisbec@gmail.com, nhorman@tuxdriver.com,
-        rostedt@goodmis.org, tglx@linutronix.de, mingo@elte.hu
+        mathieu.desnoyers@efficios.com, rostedt@goodmis.org,
+        tglx@linutronix.de, laijs@cn.fujitsu.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        mathieu.desnoyers@efficios.com, zhaolei@cn.fujitsu.com,
-        davem@davemloft.net, fweisbec@gmail.com, nhorman@tuxdriver.com,
-        rostedt@goodmis.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110106175319.GA30610@Krystal>
-References: <20110106175319.GA30610@Krystal>
+        mathieu.desnoyers@efficios.com, rostedt@goodmis.org,
+        tglx@linutronix.de, laijs@cn.fujitsu.com
+In-Reply-To: <4D22D4F1.50505@cn.fujitsu.com>
+References: <4D22D4F1.50505@cn.fujitsu.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] tracing: remove duplicate null-pointer check in skb tracepoint
-Message-ID: <tip-881fe4bdcdc899674524e30a76c76d298b447008@git.kernel.org>
-Git-Commit-ID: 881fe4bdcdc899674524e30a76c76d298b447008
+Subject: [tip:perf/urgent] tracepoint: Add __rcu annotation
+Message-ID: <tip-bd1c8b22b7b81c6f6c4f5c19cb2387da3d02fb0f@git.kernel.org>
+Git-Commit-ID: bd1c8b22b7b81c6f6c4f5c19cb2387da3d02fb0f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 09 Jan 2011 21:10:50 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 09 Jan 2011 21:11:12 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  881fe4bdcdc899674524e30a76c76d298b447008
-Gitweb:     http://git.kernel.org/tip/881fe4bdcdc899674524e30a76c76d298b447008
-Author:     Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-AuthorDate: Thu, 6 Jan 2011 12:53:19 -0500
+Commit-ID:  bd1c8b22b7b81c6f6c4f5c19cb2387da3d02fb0f
+Gitweb:     http://git.kernel.org/tip/bd1c8b22b7b81c6f6c4f5c19cb2387da3d02fb0f
+Author:     Lai Jiangshan <laijs@cn.fujitsu.com>
+AuthorDate: Tue, 4 Jan 2011 16:06:09 +0800
 Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Fri, 7 Jan 2011 20:55:42 -0500
+CommitDate: Fri, 7 Jan 2011 20:57:22 -0500
 
-tracing: remove duplicate null-pointer check in skb tracepoint
+tracepoint: Add __rcu annotation
 
-The check for NULL skb in the kfree_skb trace event is a duplicate from the
-check already done in its only caller, kfree_skb(). Remove this duplicate check.
+Add __rcu annotation to :
+	(struct tracepoint)->funcs
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-LKML-Reference: <20110106175319.GA30610@Krystal>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: David S. Miller <davem@davemloft.net>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Zhaolei <zhaolei@cn.fujitsu.com>
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+LKML-Reference: <4D22D4F1.50505@cn.fujitsu.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/trace/events/skb.h |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ include/linux/tracepoint.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/trace/events/skb.h b/include/trace/events/skb.h
-index 75ce9d5..f10293c 100644
---- a/include/trace/events/skb.h
-+++ b/include/trace/events/skb.h
-@@ -25,9 +25,7 @@ TRACE_EVENT(kfree_skb,
- 
- 	TP_fast_assign(
- 		__entry->skbaddr = skb;
--		if (skb) {
--			__entry->protocol = ntohs(skb->protocol);
--		}
-+		__entry->protocol = ntohs(skb->protocol);
- 		__entry->location = location;
- 	),
- 
+diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+index 899103c..c681461 100644
+--- a/include/linux/tracepoint.h
++++ b/include/linux/tracepoint.h
+@@ -32,7 +32,7 @@ struct tracepoint {
+ 	int state;			/* State. */
+ 	void (*regfunc)(void);
+ 	void (*unregfunc)(void);
+-	struct tracepoint_func *funcs;
++	struct tracepoint_func __rcu *funcs;
+ } __attribute__((aligned(32)));		/*
+ 					 * Aligned on 32 bytes because it is
+ 					 * globally visible and gcc happily
