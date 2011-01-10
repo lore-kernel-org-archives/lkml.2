@@ -1,50 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751840Ab1AJGP5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 01:15:57 -0500
-Received: from in.cluded.net ([195.159.98.120]:38914 "EHLO in.cluded.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751619Ab1AJGP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 01:15:56 -0500
-Message-ID: <4D2AA2E9.9030209@uw.no>
-Date: Mon, 10 Jan 2011 06:10:49 +0000
-From: "Daniel K." <dk@uw.no>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9a1) Gecko/20060307 SeaMonkey/1.5a
+	id S1751882Ab1AJGRR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 01:17:17 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:61204 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab1AJGRP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 01:17:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=vpkwRRyqkRuaW31NIEQ6TheVsz1ylYwIsG6Ixj+Otu87HOFxPqtLX9q3NS++ydZe73
+         /B9vJ+Uu/yDT4VANInqhaq5x0RMle5L08gKdtsj9ykS+Y4VgRY3XQd2cWOCZqUz8TtPb
+         6sc1G4sodumlhZ0H3A0qRNACxa6qwYCfjuc9A=
+Date: Mon, 10 Jan 2011 08:17:10 +0200
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] headers: path.h redux
+Message-ID: <20110110061710.GA19138@p183.telecom.by>
 MIME-Version: 1.0
-To: Dan Carpenter <error27@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
-Subject: Re: ext3: deleting files doesn't free up space
-References: <AANLkTimwDpUz9GUmx3UutYir0UuoTSAXNzphWeEX9sKh@mail.gmail.com>
-In-Reply-To: <AANLkTimwDpUz9GUmx3UutYir0UuoTSAXNzphWeEX9sKh@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan Carpenter wrote:
-> I filled up my partition last night.
-> I deleted 5 gigs of movies.
-> The "Used" number went down to 125G.
-> The "Free" number stayed at 0.
-> I rebooted the system but it's still the same.
-> 
-> $ echo foo > foo
-> bash: echo: write error: No space left on device
-> 
-> $ df .
-> Filesystem           1K-blocks      Used Available Use% Mounted on
-> /dev/sda1            136236548 130363620         0 100% /media/old_sys
+Remove path.h from sched.h and other files.
 
-Check out the -m option to tune2fs, which sets the reserved-blocks-percentage for the FS - the percentage of blocks reserved to the super user, which is 5% by default.
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+---
 
-Presumably, root has filled the partition completely, and 5G worth of deleted user data is not enough to get under the 5% limit to allow for new data to be written by users.
+ include/linux/audit.h            |    1 +
+ include/linux/dcookies.h         |    2 +-
+ include/linux/sched.h            |    1 -
+ security/apparmor/include/file.h |    3 +--
+ security/selinux/include/avc.h   |    1 -
+ 5 files changed, 3 insertions(+), 5 deletions(-)
 
-As this partition is used for /home you might as well turn the feature off, as root should not need to have space reserved in that area of the filesystem.
-
-	tune2fs -m 0 /dev/sda1
-
-should give regular users access to the reserved blocks.
-
-
-Daniel K.
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -372,6 +372,7 @@ struct audit_buffer;
+ struct audit_context;
+ struct inode;
+ struct netlink_skb_parms;
++struct path;
+ struct linux_binprm;
+ struct mq_attr;
+ struct mqstat;
+--- a/include/linux/dcookies.h
++++ b/include/linux/dcookies.h
+@@ -13,10 +13,10 @@
+ #ifdef CONFIG_PROFILING
+  
+ #include <linux/dcache.h>
+-#include <linux/path.h>
+ #include <linux/types.h>
+  
+ struct dcookie_user;
++struct path;
+  
+ /**
+  * dcookie_register - register a user of dcookies
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -70,7 +70,6 @@ struct sched_param {
+ #include <linux/smp.h>
+ #include <linux/sem.h>
+ #include <linux/signal.h>
+-#include <linux/path.h>
+ #include <linux/compiler.h>
+ #include <linux/completion.h>
+ #include <linux/pid.h>
+--- a/security/apparmor/include/file.h
++++ b/security/apparmor/include/file.h
+@@ -15,12 +15,11 @@
+ #ifndef __AA_FILE_H
+ #define __AA_FILE_H
+ 
+-#include <linux/path.h>
+-
+ #include "domain.h"
+ #include "match.h"
+ 
+ struct aa_profile;
++struct path;
+ 
+ /*
+  * We use MAY_EXEC, MAY_WRITE, MAY_READ, MAY_APPEND and the following flags
+--- a/security/selinux/include/avc.h
++++ b/security/selinux/include/avc.h
+@@ -15,7 +15,6 @@
+ #include <linux/audit.h>
+ #include <linux/lsm_audit.h>
+ #include <linux/in6.h>
+-#include <linux/path.h>
+ #include <asm/system.h>
+ #include "flask.h"
+ #include "av_permissions.h"
