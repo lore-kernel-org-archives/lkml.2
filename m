@@ -1,51 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab1AJNnY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 08:43:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50608 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753715Ab1AJNnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 08:43:22 -0500
-Date: Mon, 10 Jan 2011 14:35:45 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [BUG stable, 2.6.32.27] sched: delayed cleanup of user_struct
-Message-ID: <20110110133545.GA30163@redhat.com>
-References: <4D2AB8F7.7030506@profihost.ag> <20110110114913.GA22298@redhat.com> <20110110123630.GA27057@redhat.com> <4D2AFFB5.5000807@profihost.ag>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D2AFFB5.5000807@profihost.ag>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754066Ab1AJNoW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 08:44:22 -0500
+Received: from casper.infradead.org ([85.118.1.10]:43677 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753922Ab1AJNoW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 08:44:22 -0500
+Subject: Re: TSC as clocksource
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rob <roblinux@gmail.com>
+Cc: linux-kernel@vger.kernel.org, "Brown, Len" <lenb@kernel.org>,
+        tglx <tglx@linutronix.de>
+In-Reply-To: <AANLkTikBu6vggpTUQy_MeTG_PJ9WWoHVyDL0OLPa6v=_@mail.gmail.com>
+References: <AANLkTikBu6vggpTUQy_MeTG_PJ9WWoHVyDL0OLPa6v=_@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 10 Jan 2011 14:44:52 +0100
+Message-ID: <1294667092.11896.0.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10, Stefan Priebe - Profihost AG wrote:
->
-> Hi,
->
-> is it a workaround to disable CONFIG_GROUP_SCHED?
-                                ^^^^^^^^^^^^^^^^^^
-CONFIG_USER_SCHED, not CONFIG_GROUP_SCHED.
+On Mon, 2011-01-10 at 09:54 +1100, Rob wrote:
+> Want to use TSC as clocksource
+> have a Intel Core2 Duo with constant_tsc flag
+> TSC should be stable at C1 + C2, it is debatable whether C3 is stable
+> 
+> Using processor.max_cstate=2 to use only C1 + C2 changes nothing, still get
+> Monitor-Mwait will be used to enter C-3 state
+> there should be checks before this is forced
+> 
+> Please CC answers, comments to my email.
 
-I think that disabling it should obviously help. But it is
-possible that there is something else. Given that you can
-reproduce the crash, it would be nice if you can test this
-and report ;)
-
-Or. You can revert
-
-	b00bc0b237055b4c45816325ee14f0bd83e6f590
-	uids: Prevent tear down race
-
-	3959214f971417f4162926ac52ad4cd042958caa
-	sched: delayed cleanup of user_struct
-
-patches for testing.
-
-Oleg.
-
+Len, Thomas?
