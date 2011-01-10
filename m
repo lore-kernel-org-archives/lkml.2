@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab1AJTML (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 14:12:11 -0500
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:39534 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab1AJTMJ (ORCPT
+	id S1753629Ab1AJTMT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 14:12:19 -0500
+Received: from mail.hosted.servetheworld.net ([83.143.81.74]:49261 "EHLO
+	mail.hosted.servetheworld.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753465Ab1AJTMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 14:12:09 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 24.130.172.179
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18l4SG4rQvkNePR9GGI/eqn
-Date: Mon, 10 Jan 2011 11:12:01 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: Anand Gadiyar <gadiyar@ti.com>, linux-omap@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg KH <gregkh@suse.de>, Felipe Balbi <balbi@ti.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Benoit Cousson <b-cousson@ti.com>
-Subject: Re: [PATCH] arm: omap4: pandaboard: turn on PHY reference clock at
- init
-Message-ID: <20110110191201.GG4957@atomide.com>
-References: <1294670535-9059-1-git-send-email-gadiyar@ti.com>
- <alpine.DEB.2.00.1101101152040.5731@utopia.booyaka.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1101101152040.5731@utopia.booyaka.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 10 Jan 2011 14:12:16 -0500
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Jan 2011 14:12:15 EST
+X-Originating-IP: 89.226.207.247
+From: Dag Arne Osvik <da@osvik.no>
+Reply-To: Dag Arne Osvik <da@osvik.no>
+To: Neil Horman <nhorman@tuxdriver.com>,
+        Nikos Mavrogiannopoulos <nmav@gnutls.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: Crypto Update for 2.6.38
+X-Mailer: Modest 3.2
+References: <20100804140448.GA4042@gondor.apana.org.au>
+	 <20101024061625.GA23715@gondor.apana.org.au>
+	 <20110106000157.GA16089@gondor.apana.org.au>
+	 <AANLkTikzg3Hndp8WRi59bvJdBLxi=p-1gt7aZDLYbSW8@mail.gmail.com>
+	 <20110106211645.GA26184@gondor.apana.org.au>
+	 <AANLkTimwaJCUxvMLoeS5Cpmu7FX3y=coeSdkPrrL4zcr@mail.gmail.com>
+	 <20110106213932.GA26538@gondor.apana.org.au>
+	 <AANLkTi=fggNhMm1LpOzzZ0_ofaU6w=ahX8SMGgFkHCui@mail.gmail.com>
+	 <20110107120451.GA22347@hmsreliant.think-freely.org>
+	 <AANLkTi=wLQNF2p3v_-2F9hLobVVqQTOQB8F76a=fSoLW@mail.gmail.com>
+	  <20110110120302.GA5869@hmsreliant.think-freely.org>
+In-Reply-To: <20110110120302.GA5869@hmsreliant.think-freely.org>
+Content-Type: text/plain; charset=utf-8
+Content-ID: <1294686329.16075.1.camel@Nokia-N900-51-1>
+Date: Mon, 10 Jan 2011 20:05:30 +0100
+Message-Id: <1294686330.16075.2.camel@Nokia-N900-51-1>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul Walmsley <paul@pwsan.com> [110110 10:51]:
-> On Mon, 10 Jan 2011, Anand Gadiyar wrote:
-> 
-> > The SMSC 3320 USB PHY on the OMAP4 Pandaboard needs a 19.2 MHz
-> > reference clock. This clock is provided from the OMAP4's fref_clk3
-> > pad.
+> On Sat, Jan 08, 2011 at 03:23:04PM +0200, Nikos Mavrogiannopoulos wrote:
+> > On Fri, Jan 7, 2011 at 2:04 PM, Neil Horman <nhorman@tuxdriver.com>
+> > wrote:
 > > 
-> > Recent changes to clock44xx_data.c made the clock framework aware
-> > of the existence of these fref_clk[i] lines. If the option
-> > CONFIG_OMAP_RESET_CLOCKS is enabled in the kernel, then the
-> > clock framework will turn these clocks off during bootup.
+> > > > Btw, it doesn't have to be about performance per se. Does this
+> > > > allow people to use keys without actually _seeing_ those keys?
+> > > > Your example implies that that is not the case, but that's
+> > > > actually one of the few reasons to actually support a kernel
+> > > > crypto interface - the ability to have private personal keys
+> > > > around, but not having to actually let possibly untrusted programs
+> > > > see them.
+> > > This actually is an indirect feature of this interface.  Using it,
+> > > you can open a algorithm socket, select a specific alg, assign a
+> > > key, and then pass that socket descriptor over a unix socket to an
+> > > another process using an SCM_RIGHTS ancilliary message.  The
+> > > receiving process can then use children acceppted from that passed
+> > > socket to preform the configured crypto operation without any
+> > > knoweldge of the keys used in it.  I can write a demo app if you
+> > > like.
 > > 
-> > Explicitly request and keep this clock enabled at init for the
-> > Pandaboard, so that the PHY receives this clock at all times.
-> > 
-> > Reported-by: Ming Lei <tom.leiming@gmail.com>
-> > Signed-off-by: Anand Gadiyar <gadiyar@ti.com>
-> > Cc: Benoit Cousson <b-cousson@ti.com>
-> > Cc: Paul Walmsley <paul@pwsan.com>
-> > Cc: Tony Lindgren <tony@atomide.com>
-> 
-> Reviewed-by: Paul Walmsley <paul@pwsan.com>
+> > Several things have to be considered when extending an interface like
+> > that. For example, do the algorithm implementations protect against
+> > timing attacks, or keys can be recovered, using them? What is the
+> No, the kernel does not implement any protection against timing attacks
+> in the algorithms per-se, but preforming a timing attack against a
+> kernel crypto operation is going to be near impossible anyway, as
+> precise timing measurements are going to get obscured by interupts,
+> scheduling jitter, lock contention, and various other factors that will
+> make measuring syscall time fairly useless.
 
-Will queue as a fix.
+Let me just point out that this is not near impossible at all; instead it has already been done more than 6 years ago. And it's not only syscall time that leaks information. One practical example is recovery of a full AES key in a couple of seconds, using cache attacks against an encrypted file system. AES-NI is immune to this kind of attack, but other algorithms typically implemented using lookup tables are at risk.
 
-Tony
+Dag Arne
+
