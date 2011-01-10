@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab1AJQZD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 11:25:03 -0500
-Received: from smtp.sgsi.ucl.ac.be ([130.104.5.67]:37192 "EHLO
-	smtp2.sgsi.ucl.ac.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753153Ab1AJQY7 convert rfc822-to-8bit (ORCPT
+	id S1753528Ab1AJQZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 11:25:59 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:35306 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753153Ab1AJQZ4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 11:24:59 -0500
-X-DKIM: Sendmail DKIM Filter v2.8.2 smtp2.sgsi.ucl.ac.be B26FDEDF96
-From: Christoph Paasch <christoph.paasch@uclouvain.be>
-Reply-To: christoph.paasch@uclouvain.be
-Organization: =?iso-8859-1?q?Universit=E9_Catholique_de?= Louvain
-To: Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH] Cleanup include/net/tcp.h include-files and coding-style
-Date: Mon, 10 Jan 2011 17:24:45 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.35-24-generic; KDE/4.5.5; x86_64; ; )
-Cc: Alexey Dobriyan <adobriyan@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1294606534-28522-1-git-send-email-christoph.paasch@uclouvain.be> <201101101244.24932.christoph.paasch@uclouvain.be> <20110110075032.e38955ef.rdunlap@xenotime.net>
-In-Reply-To: <20110110075032.e38955ef.rdunlap@xenotime.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Mon, 10 Jan 2011 11:25:56 -0500
+X-IronPort-AV: E=Sophos;i="4.60,301,1291622400"; 
+   d="scan'208";a="503598106"
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+In-Reply-To: <20110110105019.GC24920@pengutronix.de>
+References: <1294268808.2952.18.camel@heimdal.trondhjem.org>
+	 <1294270104.16957.73.camel@mulgrave.site>
+	 <1294335614.22825.154.camel@mulgrave.site>
+	 <1294336054.2905.1.camel@heimdal.trondhjem.org>
+	 <AANLkTimusF4KCJ4vHPn+T1dUiKxapXaT0QTtFvh8Ykdd@mail.gmail.com>
+	 <1294426405.2929.23.camel@heimdal.trondhjem.org>
+	 <20110107190229.GX31708@n2100.arm.linux.org.uk>
+	 <1294427467.4895.66.camel@mulgrave.site>
+	 <1294505384.4181.14.camel@heimdal.trondhjem.org>
+	 <1294528551.4181.19.camel@heimdal.trondhjem.org>
+	 <20110110105019.GC24920@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201101101724.46023.christoph.paasch@uclouvain.be>
-X-Sgsi-Spamcheck: SASL authenticated, 
-X-SGSI-MailScanner-ID: B26FDEDF96.00000
-X-SGSI-MailScanner: Found to be clean
-X-SGSI-From: christoph.paasch@uclouvain.be
-X-SGSI-Spam-Status: No
+Organization: NetApp Inc
+Date: Mon, 10 Jan 2011 11:25:34 -0500
+Message-ID: <1294676734.3349.10.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 10 Jan 2011 16:25:35.0571 (UTC) FILETIME=[02788A30:01CBB0E3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Monday, January 10, 2011 wrote Randy Dunlap:
-> Documentation/SubmitChecklist, #1:
+On Mon, 2011-01-10 at 11:50 +0100, Uwe Kleine-KÃ¶nig wrote: 
+> Hi Trond,
 > 
-> 1: If you use a facility then #include the file that defines/declares
->    that facility.  Don't depend on other header files pulling in ones
->    that you use.
-Ok, great. That was the answer I was looking for.
+> On Sat, Jan 08, 2011 at 06:15:51PM -0500, Trond Myklebust wrote:
+> > ----------------------------------------------------------------------------------- 
+> It would be great if you could add a "8<" in the line above next time.
+> Then git-am -c does the right thing (at least I think so).
 
-So, there is a clear rule that defines the #include-policy.
+Sorry. I wasn't aware of that particular idiom. So something like
 
-Now, should the missing #include's be added, or not?
+8<------------------------------------------------------------
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: .....
 
-Alexey Dobriyan is against it, as he says in one of his previous mails.
-And, I'm nearly sure that the rule is not respected in plenty of other files 
-of the Linux Kernel.
 
-Cheers,
-Christoph
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
---
-Christoph Paasch
-PhD Student
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-IP Networking Lab --- http://inl.info.ucl.ac.be
-MultiPath TCP in the Linux Kernel --- http://inl.info.ucl.ac.be/mptcp
-Université Catholique de Louvain
-
-www.rollerbulls.be
---
