@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab1AJXU1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 18:20:27 -0500
-Received: from void.printf.net ([89.145.121.20]:57864 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751628Ab1AJXUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 18:20:25 -0500
-Date: Mon, 10 Jan 2011 23:20:20 +0000
-From: Chris Ball <cjb@laptop.org>
-To: Chuanxiao Dong <chuanxiao.dong@intel.com>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH v6 0/3]mmc: implement eMMC4.4 standard HW reset feature
-Message-ID: <20110110232020.GA7920@void.printf.net>
-References: <20101227101305.GA20143@intel.com>
+	id S1754202Ab1AJXXl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 18:23:41 -0500
+Received: from wavehammer.waldi.eu.org ([82.139.201.20]:51307 "EHLO
+	wavehammer.waldi.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab1AJXXj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 18:23:39 -0500
+Date: Tue, 11 Jan 2011 00:23:35 +0100
+From: Bastian Blank <bastian@waldi.eu.org>
+To: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <kees.cook@canonical.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH 4/7] allow killing tasks in your own or child userns
+Message-ID: <20110110232335.GA27029@wavehammer.waldi.eu.org>
+Mail-Followup-To: Bastian Blank <bastian@waldi.eu.org>,
+	Serge Hallyn <serge.hallyn@canonical.com>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	containers@lists.linux-foundation.org,
+	kernel list <linux-kernel@vger.kernel.org>,
+	LSM <linux-security-module@vger.kernel.org>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Kees Cook <kees.cook@canonical.com>,
+	Alexey Dobriyan <adobriyan@gmail.com>,
+	Michael Kerrisk <mtk.manpages@gmail.com>
+References: <20110110211135.GA22446@mail.hallyn.com>
+ <20110110211334.GD22564@mail.hallyn.com>
+ <20110110215240.GA21351@wavehammer.waldi.eu.org>
+ <20110110225151.GA18944@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20101227101305.GA20143@intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110110225151.GA18944@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chuanxiao,
-
-On Mon, Dec 27, 2010 at 06:13:05PM +0800, Chuanxiao Dong wrote:
-> Hi all,
->    This is the version 6 of hardware reset feature implementation. When eMMC
->    card cannot response any command, signal RST_n can help to reset eMMC
->    card.
+On Mon, Jan 10, 2011 at 04:51:51PM -0600, Serge Hallyn wrote:
+> Quoting Bastian Blank (bastian@waldi.eu.org):
+> > Isn't that equal to this?
+> > 
+> > 	if (ns_capable(tcred->user->user_ns, CAP_KILL))
+> > 		return 1;
+> > 
+> > 	if (cred->user->user_ns == tcred->user->user_ns &&
+> > 	    (cred->euid == tcred->suid ||
+> > 	     cred->euid == tcred->uid ||
+> > 	     cred->uid == tcred->suid ||
+> > 	     cred->uid == tcred->uid))
+> > 		return 1;
+> > 
+> > 	return 0;
+> > 
+> > I would consider this much easier to read.
 > 
->    patch1: enable HW reset capability if card supports.
->    patch2: do hardware reset if card occurs read/write/erase timeout
->    patch3: implement hwreset_emmc and reinit_emmc callbacks. In this patch,
->    hwreset_emmc callback will pull up/down the corresponded GPIO line number
->    to trigger RST_n signal.
+> Unfortunately, it's actually not equivalent.  when capable()
+> returns success, then it sets the current->flags |= PF_SUPERPRIV.
+> If permission is granted based on userids and the capability
+> isn't needed, then we don't want to needlessly set PF_SUPERPRIV.
 
-Sorry for the very late reply.  I'm simply not sure what to do about
-this patchset -- I'm extremely reluctant to touch the once-only
-programmable bits on the eMMC, and especially to do so silently by
-default.
+Well, then switch the two if-clauses.
 
-Also, where exactly do you assign host->rst_gpio?  It isn't assigned
-to in this patch, so where will it be set?  It looks like you could
-end up strobing GPIO0 if a gpio isn't passed in at all.
+What is this flag used for anyway? I only see it used in the accounting
+stuff, and if every user can get it, it is not longer useful.
 
-I haven't seen any other reports of -ETIMEDOUT from eMMC controllers
-not responding to CMD0; I wonder if only your controller has this
-problem, and if that should change how we handle it.
-
-Does anyone else on the list have feedback on how best to proceed?
-
-Thanks,
+Bastian
 
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Bones: "The man's DEAD, Jim!"
