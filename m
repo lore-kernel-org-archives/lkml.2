@@ -1,68 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092Ab1AJKJX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 05:09:23 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:44691 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712Ab1AJKJV (ORCPT
+	id S1753384Ab1AJKKr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 05:10:47 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:37586 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752853Ab1AJKKo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 05:09:21 -0500
-Date: Mon, 10 Jan 2011 15:39:17 +0530
-From: Bharata B Rao <bharata@linux.vnet.ibm.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH -tip 2/2] sched: Display autogroup names in
- /proc/sched_debug.
-Message-ID: <20110110100917.GH2772@in.ibm.com>
-Reply-To: bharata@linux.vnet.ibm.com
-References: <20110110051445.GB2772@in.ibm.com>
- <20110110051643.GD2772@in.ibm.com>
- <1294652287.17357.14.camel@marge.simson.net>
+	Mon, 10 Jan 2011 05:10:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294652287.17357.14.camel@marge.simson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [81.245.167.220]
+In-Reply-To: <20110107055042.GA6137@besouro.research.nokia.com>
+References: <1294253342-29056-1-git-send-email-j-pihet@ti.com>
+	<1294253342-29056-3-git-send-email-j-pihet@ti.com>
+	<20110107055042.GA6137@besouro.research.nokia.com>
+Date: Mon, 10 Jan 2011 11:10:43 +0100
+Message-ID: <AANLkTikC2SbRxJ-uMu6PYO9iXNyvDivZAt8jZwc-7YOT@mail.gmail.com>
+Subject: Re: [PATCH 2/2] tools, perf: Documentation for the power events API
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: eduardo.valentin@nokia.com
+Cc: mingo@elte.hu, trenn@suse.de, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
+        linux-perf-users@vger.kernel.org, Jean Pihet <j-pihet@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 10:38:07AM +0100, Mike Galbraith wrote:
-> On Mon, 2011-01-10 at 10:46 +0530, Bharata B Rao wrote:
-> > sched: Display autogroup names in /proc/sched_debug.
-> > 
-> > Add autogroup name to cfs_rq and tasks information in /proc/sched_debug.
-> > 
-> > Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
-> > ---
-> >  kernel/sched_debug.c |    8 ++++++++
-> >  1 file changed, 8 insertions(+)
-> > 
-> > --- a/kernel/sched_debug.c
-> > +++ b/kernel/sched_debug.c
-> > @@ -92,6 +92,14 @@ static void print_cfs_group_stats(struct
-> >  #ifdef CONFIG_CGROUP_SCHED
-> >  static char * task_group_path(struct task_group *tg)
-> >  {
-> > +#ifdef CONFIG_SCHED_AUTOGROUP
-> > +	int enabled = ACCESS_ONCE(sysctl_sched_autogroup_enabled);
-> > +
-> > +	if (enabled && tg->autogroup) {
-> > +		autogroup_path(tg, group_path, PATH_MAX);
-> > +		return group_path;
-> > +	}
-> > +#endif
-> >  	/*
-> >  	 * May be NULL if the underlying cgroup isn't fully-created yet
-> >  	 */
-> 
-> What prevents the task being moved, and the task group being freed under
-> you?  Looks to me like task_group_path() needs rcu_read_lock().  It is
-> locked in the other two instances.  How about the below?
+Hello Eduardo,
 
-You are right, we need rcu_read_lock() there. Let me spin out an other
-version with the changes.
+On Fri, Jan 7, 2011 at 6:50 AM, Eduardo Valentin
+<eduardo.valentin@nokia.com> wrote:
+> Hello Jean,
+>
+> On Wed, Jan 05, 2011 at 07:49:02PM +0100, ext jean.pihet@newoldbits.com wrote:
+>> From: Jean Pihet <j-pihet@ti.com>
+>>
+>> Provides documentation for the following:
+>> - the new power trace API,
+>> - the old (legacy) power trace API,
+>> - the DEPRECATED Kconfig option usage.
+>>
+>> Signed-off-by: Jean Pihet <j-pihet@ti.com>
+>> ---
+>>  Documentation/trace/events-power.txt |   90 ++++++++++++++++++++++++++++++++++
+>>  1 files changed, 90 insertions(+), 0 deletions(-)
+>>  create mode 100644 Documentation/trace/events-power.txt
+>>
+>> diff --git a/Documentation/trace/events-power.txt b/Documentation/trace/events-power.txt
+>> new file mode 100644
+>> index 0000000..96d87b6
+>> --- /dev/null
+>> +++ b/Documentation/trace/events-power.txt
+>> @@ -0,0 +1,90 @@
+>> +
+>> +                     Subsystem Trace Points: power
+>> +
+>> +The power tracing system captures events related to power transitions
+>> +within the kernel. Broadly speaking there are three major subheadings:
+>> +
+>> +  o Power state switch which reports events related to suspend (S-states),
+>> +     cpuidle (C-states) and cpufreq (P-states)
+>> +  o System clock related changes
+>
+> What do you mean by system clock here? I see that you are covering cpu rate
+> changes and system clock (?) here. How about memory clock changes?
+> Would it make sense to have a major subheading for it? Maybe you are
+> targeting it be traced by means of clocks event (item 2. bellow)..
+The meaning is to trace the system clocks changes, i.e. clocks that
+the CPUs can control. Maybe 'SoC clocks' is a better name for it.
+Indeed 'System clock related changes' is for '2. Clocks events'
 
-Thanks,
-Bharata.
+Thanks for the review!
+
+Regards,
+Jean
+
+>
+>> +  o Power domains related changes and transitions
+>> +
+>> +This document describes what each of the tracepoints is and why they
+>> +might be useful.
+>> +
+>> +Cf. include/trace/events/power.h for the events definitions.
+>> +
+>> +1. Power state switch events
+>> +============================
+>> +
+>> +1.1 New trace API
+>> +-----------------
+>> +
+>> +A 'cpu' event class gathers the CPU-related events: cpuidle and
+>> +cpufreq.
+>> +
+>> +cpu_idle             "state=%lu cpu_id=%lu"
+>> +cpu_frequency                "state=%lu cpu_id=%lu"
+>> +
+>> +A suspend event is used to indicate the system going in and out of the
+>> +suspend mode:
+>> +
+>> +machine_suspend              "state=%lu"
+>> +
+>> +
+>> +Note: the value of '-1' or '4294967295' for state means an exit from the current state,
+>> +i.e. trace_cpu_idle(4, smp_processor_id()) means that the system
+>> +enters the idle state 4, while trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id())
+>> +means that the system exits the previous idle state.
+>> +
+>> +The event which has 'state=4294967295' in the trace is very important to the user
+>> +space tools which are using it to detect the end of the current state, and so to
+>> +correctly draw the states diagrams and to calculate accurate statistics etc.
+>> +
+>> +1.2 DEPRECATED trace API
+>> +------------------------
+>> +
+>> +A new Kconfig option CONFIG_EVENT_POWER_TRACING_DEPRECATED with the default value of
+>> +'y' has been created. This allows the legacy trace power API to be used conjointly
+>> +with the new trace API.
+>> +The Kconfig option, the old trace API (in include/trace/events/power.h) and the
+>> +old trace points will disappear in a future release (namely 2.6.41).
+>> +
+>> +power_start          "type=%lu state=%lu cpu_id=%lu"
+>> +power_frequency              "type=%lu state=%lu cpu_id=%lu"
+>> +power_end            "cpu_id=%lu"
+>> +
+>> +The 'type' parameter takes one of those macros:
+>> + . POWER_NONE        = 0,
+>> + . POWER_CSTATE      = 1,    /* C-State */
+>> + . POWER_PSTATE      = 2,    /* Fequency change or DVFS */
+>> +
+>> +The 'state' parameter is set depending on the type:
+>> + . Target C-state for type=POWER_CSTATE,
+>> + . Target frequency for type=POWER_PSTATE,
+>> +
+>> +power_end is used to indicate the exit of a state, corresponding to the latest
+>> +power_start event.
+>> +
+>> +2. Clocks events
+>> +================
+>> +The clock events are used for clock enable/disable and for
+>> +clock rate change.
+>> +
+>> +clock_enable         "%s state=%lu cpu_id=%lu"
+>> +clock_disable                "%s state=%lu cpu_id=%lu"
+>> +clock_set_rate               "%s state=%lu cpu_id=%lu"
+>> +
+>> +The first parameter gives the clock name (e.g. "gpio1_iclk").
+>> +The second parameter is '1' for enable, '0' for disable, the target
+>> +clock rate for set_rate.
+>> +
+>> +3. Power domains events
+>> +=======================
+>> +The power domain events are used for power domains transitions
+>> +
+>> +power_domain_target  "%s state=%lu cpu_id=%lu"
+>> +
+>> +The first parameter gives the power domain name (e.g. "mpu_pwrdm").
+>> +The second parameter is the power domain target state.
+>> +
+>> --
+>> 1.7.2.3
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+> --
+> Eduardo Valentin
+>
