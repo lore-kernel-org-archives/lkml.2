@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab1AJIfj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 03:35:39 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:42498 "EHLO mx2.parallels.com"
+	id S1752727Ab1AJIkO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 03:40:14 -0500
+Received: from www.tglx.de ([62.245.132.106]:46359 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751651Ab1AJIfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 03:35:37 -0500
-Message-ID: <4D2AC4D5.5070503@parallels.com>
-Date: Mon, 10 Jan 2011 02:35:33 -0600
-From: Rob Landley <rlandley@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1751700Ab1AJIkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 03:40:11 -0500
+Date: Mon, 10 Jan 2011 09:36:31 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Pierre Tardy <pierre.tardy@intel.com>
+cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Arjan van de Ven <arjan@infradead.org>, Adrian Bunk <bunk@stusta.de>,
+        Andrew Morton <akpm@osdl.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>, john stultz <johnstul@us.ibm.com>,
+        Roman Zippel <zippel@linux-m68k.org>, Andi Kleen <ak@suse.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: [PATCH] lapic-timer: increase the max_delta to 31 bits
+In-Reply-To: <1294327409-19426-1-git-send-email-pierre.tardy@intel.com>
+Message-ID: <alpine.LFD.2.00.1101100932400.12146@localhost6.localdomain6>
+References: <1294327409-19426-1-git-send-email-pierre.tardy@intel.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <trivial@kernel.org>, <linux-net@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-embedded@vger.kernel.org>
-Subject: [PATCH] Move an assert under DEBUG_KERNEL. (attempt 2)
-References: <4D2579B2.7060704@parallels.com> <20110106154120.b69118c9.akpm@linux-foundation.org>
-In-Reply-To: <20110106154120.b69118c9.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2011 05:41 PM, Andrew Morton wrote:
-> Probably a worthwhile thing to do, IMO.  If there's some net-specific
-> CONFIG_DEBUG_ setting then that wold be a better thing to use.
+On Thu, 6 Jan 2011, Pierre Tardy wrote:
+
+> Latest atom socs(penwell) does not have hpet timer.
 > 
-> However the patch was a) wordwrapped, b) space-stuffed and c) not cc'ed
-> to the networking list.  So its prospects are dim.
+> As their local APIC timer is clocked at 400KHZ, and the current code
+> limit their Initial Counter register to 23 bits, they cannot sleep
+> more than 1.34 seconds which leads to ~2 spurious wakeup per second (1 per thread)
+> 
+> These SOCs support 32bit timer so we change the max_delta to at least 31bits.
+> So we can at least sleep for 300 seconds.
+> 
+> We could not find any previous chip errata where lapic would only have 23 bit precision
+> As powertop is suggesting to activate HPET to "sleep longer", this could mean this problem is
+> already known.
 
-Ok, either I've beaten thunderbird into submission, or I'll be submitting a patch to Documentation/email-clients.txt.  (Whether or not I need to find a different smtp server to send this through remains an open question.)
+I have no idea why I put this limit there back then. If there is no
+erratum then there is no reason to keep it.
 
-(Confirming: I looked for a more specific DEBUG symbol, but couldn't find one.  I can add one, but this seems a bit small to have its own symbol, and DEBUG_KERNEL is already used in a few *.c files.)
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
 
-From: Rob Landley <rlandley@parallels.com>
-
-Move an assert under DEBUG_KERNEL.  (Minor cleanup to save a few bytes.)
-
-Signed-off-by: Rob Landley <rlandley@parallels.com>
----
-
- include/linux/rtnetlink.h |    4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/include/linux/rtnetlink.h b/include/linux/rtnetlink.h
-index bbad657..28c4025 100644
---- a/include/linux/rtnetlink.h
-+++ b/include/linux/rtnetlink.h
-@@ -782,6 +782,7 @@ extern struct netdev_queue *dev_ingress_queue_create(struct net_device *dev);
- extern void rtnetlink_init(void);
- extern void __rtnl_unlock(void);
  
-+#ifdef CONFIG_DEBUG_KERNEL
- #define ASSERT_RTNL() do { \
- 	if (unlikely(!rtnl_is_locked())) { \
- 		printk(KERN_ERR "RTNL: assertion failed at %s (%d)\n", \
-@@ -789,6 +790,9 @@ extern void __rtnl_unlock(void);
- 		dump_stack(); \
- 	} \
- } while(0)
-+#else
-+#define ASSERT_RTNL()
-+#endif
- 
- static inline u32 rtm_get_table(struct rtattr **rta, u8 table)
- {
+> Problem is here since very first implementation of lapic timer as a clock event
+> e9e2cdb [PATCH] clockevents: i386 drivers
+> cc contributors of the first patch and x86 maintainers
+> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> index 7821813..c031f1d 100644
+> --- a/arch/x86/kernel/apic/apic.c
+> +++ b/arch/x86/kernel/apic/apic.c
+> @@ -684,7 +684,7 @@ static int __init calibrate_APIC_clock(void)
+>  	lapic_clockevent.mult = div_sc(delta, TICK_NSEC * LAPIC_CAL_LOOPS,
+>  				       lapic_clockevent.shift);
+>  	lapic_clockevent.max_delta_ns =
+> -		clockevent_delta2ns(0x7FFFFF, &lapic_clockevent);
+> +		clockevent_delta2ns(0x7FFFFFFF, &lapic_clockevent);
+>  	lapic_clockevent.min_delta_ns =
+>  		clockevent_delta2ns(0xF, &lapic_clockevent);
+>  
+> -- 
+> 1.7.0.4
+> 
+> ---------------------------------------------------------------------
+> Intel Corporation SAS (French simplified joint stock company)
+> Registered headquarters: "Les Montalets"- 2, rue de Paris, 
+> 92196 Meudon Cedex, France
+> Registration Number:  302 456 199 R.C.S. NANTERRE
+> Capital: 4,572,000 Euros
+> 
+> This e-mail and any attachments may contain confidential material for
+> the sole use of the intended recipient(s). Any review or distribution
+> by others is strictly prohibited. If you are not the intended
+> recipient, please contact the sender and delete all copies.
+> 
