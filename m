@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888Ab1AJMMd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 07:12:33 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:43858 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752361Ab1AJMMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 07:12:31 -0500
-From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
-To: "'Sam Ravnborg'" <sam@ravnborg.org>
-Cc: "'Paul Mundt'" <lethal@linux-sh.org>, <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-References: <00c601cba463$69533750$3bf9a5f0$@mprc.pku.edu.cn> <20110106075553.GC15914@linux-sh.org> <023601cbaef7$850f2af0$8f2d80d0$@mprc.pku.edu.cn> <20110108072053.GA10552@merkur.ravnborg.org> <023c01cbaf24$85a99cc0$90fcd640$@mprc.pku.edu.cn> <20110108114826.GA7915@merkur.ravnborg.org>
-In-Reply-To: <20110108114826.GA7915@merkur.ravnborg.org>
-Subject: RE: [PATCHv1 01/12] unicore32 core architecture: build	infrastructure
-Date: Mon, 10 Jan 2011 20:12:18 +0800
-Message-ID: <002201cbb0bf$a20e9d60$e62bd820$@mprc.pku.edu.cn>
+	id S1753916Ab1AJMMt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 07:12:49 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39455 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753883Ab1AJMMr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 07:12:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=PP1cEIFv4Gq8ftxrTLoffWGVjYt3Bh40rOl9LM2B3wt3m6WiHBYvO9iwiUY+cMU217
+         xpncyE3aO+nlLuVUA0x/GGj6b1Kwm4NGgHM+7ddm9jiXjIFqBbGYT7x9lHRuo9dJHp2M
+         54ILeHdSddd4Ef0baZ9FldKc3QPZ5+/KxN6sI=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQEfSwmwFZxtPXz+EiWqnhCTy4B4ZAEbQqKvAoaCX2cCTHiU4QIu/uxyAMPdVASU291zgA==
-Content-Language: zh-cn
+In-Reply-To: <201101101244.24932.christoph.paasch@uclouvain.be>
+References: <1294606534-28522-1-git-send-email-christoph.paasch@uclouvain.be>
+	<1294614389.2823.35.camel@localhost>
+	<AANLkTik7mug7j=VLz80DX_hJokeO3=ie+KRcMViSL4kB@mail.gmail.com>
+	<201101101244.24932.christoph.paasch@uclouvain.be>
+Date: Mon, 10 Jan 2011 14:12:46 +0200
+Message-ID: <AANLkTim0U22b+S=9qZj5BP5TTxEM=U2BhpO4ZjfQAuOz@mail.gmail.com>
+Subject: Re: [PATCH] Cleanup include/net/tcp.h include-files and coding-style
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: christoph.paasch@uclouvain.be
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2011/1/10 Christoph Paasch <christoph.paasch@uclouvain.be>:
+>
+> On Monday, January 10, 2011 wrote Alexey Dobriyan:
+>> >> linux/percpu_counter.h (needed for percpu_counter_sum_positive)
+>> >
+>> > Yes.
+>>
+>> Currently code compiles fine, so necessary headers are in place,
+>> so simply adding new headers doesn't help anything.
+>
+> I totally agree with you.
+> However we need a consistent coding style.
+>
+> Or we just include the minimum necessary headers (as originally proposed by
+> me).
+> Or we include every header whose structs/functions are referenced.
 
+This is false dichotomy and extreme siding.
 
-> -----Original Message-----
-> From: Sam Ravnborg [mailto:sam@ravnborg.org]
-> Sent: Saturday, January 08, 2011 7:48 PM
-> To: Guan Xuetao
-> Cc: 'Paul Mundt'; linux-arch@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCHv1 01/12] unicore32 core architecture: build infrastructure
-> 
-> > > > +textofs-y	:= 0x00408000
-> > > > +
-> > > > +# The byte offset of the kernel image in RAM from the start of RAM.
-> > > > +TEXT_OFFSET := $(textofs-y)
-> > >
-> > > If you are going to have different TEXT_OFFSET's then I suggest to move
-> > > this to KConfig as an "hex "Text offset" config option.
-> > > You can set default values dependign on BSP etc.
-> > There is no different TEXT_OFFSET.
-> >
-> > >
-> > > Also defiing stuff here just to export it for use in boot/
-> > > has always looked like a strange concept - but many archs do so today.
-> > > You do not export TEXT_OFFSET but I guess this is a bug?
-> > I need TEXT_OFFSET for kernel/ and boot/, so export it.
-> 
-> I would suggest to move this to you Kconfig file.
-> something like this:
-> 
-> # The byte offset of the kernel image in RAM from the start of RAM
-> config UNICORE32_TEXT_OFFSET
-> 	hex
-> 	default 0x00408000
-> 
-> Then you have the symbol available as CONFIG_UNICORE32_TEXT_OFFSET
-> both in your Makefiles and in your source files.
-Thanks.
-Because TEXT_OFFSET is not changed in different machines or in configuration time,
-I move it into mach-spec memory.h and rename it KERNEL_IMAGE_START.
+We need code that compiles.
+We need headers to include realistically minimum amount of stuff (not
+#include lines,
+but stuff)
 
-Guan Xuetao
+> In my opinion the current "mixed" state is not ok, because some includes are
+> there because there *are* references (even if these includes could be omitted,
+> e.g., linux/list.h).
+> Other includes (like linux/percpu_counter.h) are not there, because they are
+> indirectly included by another header and thus the code compiles. Even if
+> there are references.
+> And there are no rules/guidelines to identify the headers that should be
+> included and those that should not.
 
+That because the issue not that important. :-)
