@@ -1,126 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754075Ab1AJNtK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 08:49:10 -0500
-Received: from casper.infradead.org ([85.118.1.10]:35285 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753715Ab1AJNtI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 08:49:08 -0500
-Subject: Re: [tip:perf/urgent] tracing: Include module.h in define_trace.h
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        rostedt@goodmis.org, srostedt@redhat.com, tglx@linutronix.de
-Cc: linux-tip-commits@vger.kernel.org
-In-Reply-To: <tip-3a9f987b3141f086de27832514aad9f50a53f754@git.kernel.org>
-References: <tip-3a9f987b3141f086de27832514aad9f50a53f754@git.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 10 Jan 2011 14:49:37 +0100
-Message-ID: <1294667377.11896.3.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752455Ab1AJNwL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 08:52:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6219 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751066Ab1AJNwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 08:52:09 -0500
+Date: Mon, 10 Jan 2011 11:50:53 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Zachary Amsden <zamsden@redhat.com>, Juan Quintela <quintela@redhat.com>
+Cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Glauber Costa <glommer@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [KVM TSC trapping / migration 2/2] Add TSC KHZ MSR
+Message-ID: <20110110135053.GA12991@amt.cnet>
+References: <1294308645-31113-1-git-send-email-zamsden@redhat.com>
+ <1294308645-31113-3-git-send-email-zamsden@redhat.com>
+ <20110107104859.GA12056@amt.cnet>
+ <4D277B24.5000409@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D277B24.5000409@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-01-09 at 21:09 +0000, tip-bot for Steven Rostedt wrote:
-> Commit-ID:  3a9f987b3141f086de27832514aad9f50a53f754
-> Gitweb:     http://git.kernel.org/tip/3a9f987b3141f086de27832514aad9f50a53f754
-> Author:     Steven Rostedt <srostedt@redhat.com>
-> AuthorDate: Fri, 7 Jan 2011 15:40:10 -0500
-> Committer:  Steven Rostedt <rostedt@goodmis.org>
-> CommitDate: Fri, 7 Jan 2011 15:44:56 -0500
+On Fri, Jan 07, 2011 at 10:44:20AM -1000, Zachary Amsden wrote:
+> On 01/07/2011 12:48 AM, Marcelo Tosatti wrote:
+> >On Thu, Jan 06, 2011 at 12:10:45AM -1000, Zachary Amsden wrote:
+> >>Use an MSR to allow "soft" migration to hosts which do not support
+> >>TSC trapping.  Rather than make this a required element of any
+> >>migration protocol, we allow the TSC rate to be exported as a data
+> >>field (useful in its own right), but we also allow a one time write
+> >>of the MSR during VM creation.  The result is that for the common
+> >>use case, no protocol change is required to communicate TSC rate
+> >>to the receiving host.
+> >Migration to hosts which do not support the feature can be achieved by
+> >saving/restoring the TSC rate + flags in a subsection. A subsection
+> >seems more appropriate than an MSR for this.
 > 
-> tracing: Include module.h in define_trace.h
+> Yes, I looked at that, but it looked to me like a subsection was
+> intended for an optional feature which MUST be present on the
+> destination if the source is using the feature.  This way, newer
+> hosts without the feature enabled can migrate to older hosts which
+> do not support the feature.
+
+Right. But you can use a subsection to achieve the same effect. Just
+consider that the source is not using the feature if you want to migrate
+to an older host without support for it. Juan, is there a problem to
+use subsections in this fashion?
+
+With the MSR scheme, there is no way for management to enforce support
+of the feature on the destination (at least not that i can see). And 
+you create an MSR that does not exist on real hardware.
+
 > 
-> While doing some developing, Peter Zijlstra and I have found
-> that if a CREATE_TRACE_POINTS include is done before module.h
-> is included, it can break the build.
+> The TSC rate migration is slightly different; we may wish to migrate
+> from a host with the TSC rate feature enabled to a host which does
+> not support the TSC rate feature.  This is exactly the current
+> behavior, the TSC rate will change on that migration, and I wanted
+> to preserve that behavior.  I don't advise that mode of usage, but
+> there may be use cases for it and it should be decided by policy,
+> not dictated by our feature set.
 > 
-> We have been lucky so far that this has not broke the build
-> since module.h is included in almost everything.
-> 
-> Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  include/trace/define_trace.h |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/trace/define_trace.h b/include/trace/define_trace.h
-> index b0b4eb2..da39b22 100644
-> --- a/include/trace/define_trace.h
-> +++ b/include/trace/define_trace.h
-> @@ -21,6 +21,16 @@
->  #undef CREATE_TRACE_POINTS
->  
->  #include <linux/stringify.h>
-> +/*
-> + * module.h includes tracepoints, and because ftrace.h
-> + * pulls in module.h:
-> + *  trace/ftrace.h -> linux/ftrace_event.h -> linux/perf_event.h ->
-> + *  linux/ftrace.h -> linux/module.h
-> + * we must include module.h here before we play with any of
-> + * the TRACE_EVENT() macros, otherwise the tracepoints included
-> + * by module.h may break the build.
-> + */
-> +#include <linux/module.h>
->  
->  #undef TRACE_EVENT
->  #define TRACE_EVENT(name, proto, args, tstruct, assign, print)	\
-
-After I got everything building on that tree I was working on, the above
-was found to compile but not to link, since it makes every:
-
- #define CREATE_TRACE_POINTS
- #include <trace/event/foo.h>
-
-site also create the trace/event/module.h tracepoints, thus confusing
-the linker with tons of duplicate symbols.
-
-The below patch makes things compile and link:
-
----
- include/trace/define_trace.h |   23 +++++++++++++----------
- 1 files changed, 13 insertions(+), 10 deletions(-)
-
-diff --git a/include/trace/define_trace.h b/include/trace/define_trace.h
-index da39b22..9ebd0d3 100644
---- a/include/trace/define_trace.h
-+++ b/include/trace/define_trace.h
-@@ -21,16 +21,6 @@
- #undef CREATE_TRACE_POINTS
- 
- #include <linux/stringify.h>
--/*
-- * module.h includes tracepoints, and because ftrace.h
-- * pulls in module.h:
-- *  trace/ftrace.h -> linux/ftrace_event.h -> linux/perf_event.h ->
-- *  linux/ftrace.h -> linux/module.h
-- * we must include module.h here before we play with any of
-- * the TRACE_EVENT() macros, otherwise the tracepoints included
-- * by module.h may break the build.
-- */
--#include <linux/module.h>
- 
- #undef TRACE_EVENT
- #define TRACE_EVENT(name, proto, args, tstruct, assign, print)	\
-@@ -120,4 +110,17 @@
- /* We may be processing more files */
- #define CREATE_TRACE_POINTS
- 
-+#else /* CREATE_TRACE_POINTS */
-+
-+/*
-+ * module.h includes tracepoints, and because ftrace.h
-+ * pulls in module.h:
-+ *  trace/ftrace.h -> linux/ftrace_event.h -> linux/perf_event.h ->
-+ *  linux/ftrace.h -> linux/module.h
-+ * we must include module.h here before we play with any of
-+ * the TRACE_EVENT() macros, otherwise the tracepoints included
-+ * by module.h may break the build.
-+ */
-+#include <linux/module.h>
-+
- #endif /* CREATE_TRACE_POINTS */
+> That said, I'm happy to remove the MSR if we truly don't want to
+> support that mode of usage.
 
