@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631Ab1AJKf7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 05:35:59 -0500
+	id S1753653Ab1AJKhB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 05:37:01 -0500
 Received: from smtp02.citrix.com ([66.165.176.63]:36877 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753587Ab1AJKfy (ORCPT
+	with ESMTP id S1753562Ab1AJKfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 05:35:54 -0500
+	Mon, 10 Jan 2011 05:35:51 -0500
 X-IronPort-AV: E=Sophos;i="4.60,299,1291611600"; 
-   d="scan'208";a="130293798"
+   d="scan'208";a="130293792"
 From: stefano.stabellini@eu.citrix.com
 To: linux-kernel@vger.kernel.org
 Cc: xen-devel@lists.xensource.com, Jeremy.Fitzhardinge@citrix.com,
         konrad.wilk@oracle.com,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 09/12] xen p2m: transparently change the p2m mappings in the m2p override
-Date: Mon, 10 Jan 2011 10:36:38 +0000
-Message-Id: <1294655801-16230-9-git-send-email-stefano.stabellini@eu.citrix.com>
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 07/12] xen/gntdev: stop using "token" argument
+Date: Mon, 10 Jan 2011 10:36:36 +0000
+Message-Id: <1294655801-16230-7-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <alpine.DEB.2.00.1101101012190.2390@kaball-desktop>
 References: <alpine.DEB.2.00.1101101012190.2390@kaball-desktop>
-X-OriginalArrivalTime: 10 Jan 2011 10:35:53.0799 (UTC) FILETIME=[285C3570:01CBB0B2]
+X-OriginalArrivalTime: 10 Jan 2011 10:35:49.0924 (UTC) FILETIME=[260CEE40:01CBB0B2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-In m2p_add_override store the original mfn into page->index and then
-change the p2m mapping, setting mfns as FOREIGN_FRAME.
+It's the struct page of the L1 pte page.  But we can get its mfn
+by simply doing an arbitrary_virt_to_machine() on it anyway (which is
+the safe conservative choice; since we no longer allow HIGHPTE pages,
+we would never expect to be operating on a mapped pte page).
 
-In m2p_remove_override restore the original mapping.
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/xen/p2m.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+ drivers/xen/gntdev.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 8db19d5..b3b19d4 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -407,8 +407,11 @@ static unsigned long mfn_hash(unsigned long mfn)
- void m2p_add_override(unsigned long mfn, struct page *page)
- {
- 	unsigned long flags;
-+	unsigned long pfn = page_to_pfn(page);
- 	page->private = mfn;
-+	page->index = pfn_to_mfn(pfn);
+diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
+index 888d763..a2ea533 100644
+--- a/drivers/xen/gntdev.c
++++ b/drivers/xen/gntdev.c
+@@ -209,8 +209,8 @@ static int find_grant_ptes(pte_t *pte, pgtable_t token,
+ 	u64 pte_maddr;
  
-+	__set_phys_to_machine(pfn, FOREIGN_FRAME(mfn));
- 	spin_lock_irqsave(&m2p_override_lock, flags);
- 	list_add(&page->lru,  &m2p_overrides[mfn_hash(mfn)]);
- 	spin_unlock_irqrestore(&m2p_override_lock, flags);
-@@ -417,9 +420,18 @@ void m2p_add_override(unsigned long mfn, struct page *page)
- void m2p_remove_override(struct page *page)
- {
- 	unsigned long flags;
-+	unsigned long mfn;
-+	unsigned long pfn;
+ 	BUG_ON(pgnr >= map->count);
+-	pte_maddr  = (u64)pfn_to_mfn(page_to_pfn(token)) << PAGE_SHIFT;
+-	pte_maddr += (unsigned long)pte & ~PAGE_MASK;
++	pte_maddr = arbitrary_virt_to_machine(pte).maddr;
 +
-+	pfn = page_to_pfn(page);
-+	mfn = get_phys_to_machine(pfn);
-+	if (mfn == INVALID_P2M_ENTRY || !(mfn & FOREIGN_FRAME_BIT))
-+		return;
-+
- 	spin_lock_irqsave(&m2p_override_lock, flags);
- 	list_del(&page->lru);
- 	spin_unlock_irqrestore(&m2p_override_lock, flags);
-+	__set_phys_to_machine(pfn, page->index);
- }
- 
- struct page *m2p_find_override(unsigned long mfn)
+ 	gnttab_set_map_op(&map->map_ops[pgnr], pte_maddr,
+ 			  GNTMAP_contains_pte | map->flags,
+ 			  map->grants[pgnr].ref,
 -- 
 1.5.6.5
 
