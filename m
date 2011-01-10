@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504Ab1AJTzM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 14:55:12 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20144 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754133Ab1AJTzK (ORCPT
+	id S1754276Ab1AJT7K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 14:59:10 -0500
+Received: from brigitte.telenet-ops.be ([195.130.137.66]:41646 "EHLO
+	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565Ab1AJT7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 14:55:10 -0500
-Message-ID: <4D2B63C1.6050606@kernel.org>
-Date: Mon, 10 Jan 2011 11:53:37 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Mon, 10 Jan 2011 14:59:07 -0500
+Date: Mon, 10 Jan 2011 20:58:59 +0100 (CET)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: [git pull] m68k updates for 2.6.38
+Message-ID: <alpine.DEB.2.00.1101082222060.25612@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-usb@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [PATCH 2/3] x86: early_quirk check all dev/func in domain 0
-References: <4D2A1152.1040903@kernel.org> <4D2A13AA.5070501@kernel.org> <20110110160117.GD5275@kroah.com>
-In-Reply-To: <20110110160117.GD5275@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2011 08:01 AM, Greg KH wrote:
-> On Sun, Jan 09, 2011 at 11:59:38AM -0800, Yinghai Lu wrote:
->>
->> go with all buses instead of bus0.
-> 
-> Why?  Why limit yourself here?
+	Hi Linus,
 
-early stage pci access is via cf8, and we can not use domain there. aka domain is 0.
+The following changes since commit 3c0eee3fe6a3a1c745379547c7e7c904aa64f6d5:
+  Linus Torvalds (1):
+        Linux 2.6.37
 
-> 
-> What's to say I will not have a USB controller on the second domain?  If
-> you are going to change this, might as well be "correct", right?
+are available in the git repository at:
 
-later pci-quirks is still there. for the domain 0's will do it early. later pci-quirks will check it again.
+  master.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
 
-> 
-> Or, if it really doesn't matter, stick with what we have today.
+The m68knommu changes have been acked by Greg Ungerer.
 
-we can avoid to adjust apic timer delta with pm-timer.
+Al Viro (16):
+      m68k: Resetting sa_handler in local copy of k_sigaction is pointless
+      m68k: Switch to saner sigsuspend()
+      m68k: Simplify the singlestepping handling in signals
+      m68k: Don't lose state if sigframe setup fails
+      m68k: If we fail to set sigframe up, just leave regs alone...
+      m68k: Fix stack mangling logics in sigreturn
+      m68k: Missing syscall_trace() on sigreturn
+      m68k: Check __get_user()/__put_user() return value
+      m68knommu: Don't bother with SA_ONESHOT
+      m68knommu: Switch to saner sigsuspend
+      m68knommu: Handle multiple pending signals
+      m68knommu: Don't lose state if sigframe setup fails
+      m68knommu: f_pcr has been gone since headers' merge
+      m68knommu: Equivalent of "m68k: handle new gcc's"
+      m68knommu: signal.c __user annotations
+      m68knommu: Need to check __get_user()/__put_user() result
 
-Thanks
+Geert Uytterhoeven (1):
+      m68k/sun3: Kill pte_unmap() warnings
 
-Yinghai
+ arch/m68k/include/asm/sun3_pgtable.h     |    5 +-
+ arch/m68k/include/asm/thread_info.h      |    1 +
+ arch/m68k/include/asm/unistd.h           |    1 +
+ arch/m68k/kernel/entry.S                 |   30 +---
+ arch/m68k/kernel/signal.c                |  314 +++++++++++++-----------------
+ arch/m68knommu/kernel/entry.S            |   16 --
+ arch/m68knommu/kernel/signal.c           |  188 ++++++++----------
+ arch/m68knommu/platform/68328/entry.S    |    7 +-
+ arch/m68knommu/platform/68360/entry.S    |    7 +-
+ arch/m68knommu/platform/coldfire/entry.S |    5 +-
+ 10 files changed, 231 insertions(+), 343 deletions(-)
+
+Thanks for pulling!
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
