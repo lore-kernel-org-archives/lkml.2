@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab1AJVjd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 16:39:33 -0500
-Received: from cantor.suse.de ([195.135.220.2]:43304 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754237Ab1AJVjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 16:39:31 -0500
-Date: Mon, 10 Jan 2011 22:39:27 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Chris Ball <cjb@laptop.org>
-Cc: Jesper Juhl <jj@chaosbits.net>, Wolfram Sang <w.sang@pengutronix.de>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Axel Lin <axel.lin@gmail.com>, David Vrabel <david.vrabel@csr.com>
-Subject: Re: [PATCH] USB SD Host Controller: Including usb.h once is enough
-In-Reply-To: <20110110213735.GA6509@void.printf.net>
-Message-ID: <alpine.LNX.2.00.1101102239030.26685@pobox.suse.cz>
-References: <alpine.LNX.2.00.1101102153280.32164@swampdragon.chaosbits.net> <20110110210509.GD31011@pengutronix.de> <alpine.LNX.2.00.1101102214500.32164@swampdragon.chaosbits.net> <20110110213735.GA6509@void.printf.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754789Ab1AJVkP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 16:40:15 -0500
+Received: from 26.mail-out.ovh.net ([91.121.27.225]:46435 "HELO
+	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753802Ab1AJVkL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 16:40:11 -0500
+Date: Mon, 10 Jan 2011 22:39:49 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Andrea Gelmini <andrea.gelmini@gelma.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Russell King <linux@arm.linux.org.uk>, trivial@kernel.org
+Subject: Re: [PATCH] ARM AT91SAM9M10G45: Remove duplicate inclusion of
+ mach/hardware.h
+Message-ID: <20110110213949.GL11726@game.jcrosoft.org>
+References: <alpine.LNX.2.00.1101102225550.32164@swampdragon.chaosbits.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1101102225550.32164@swampdragon.chaosbits.net>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 8991718132701375242
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Jan 2011, Chris Ball wrote:
-
-> Hi Jesper,
+On 22:29 Mon 10 Jan     , Jesper Juhl wrote:
+> Remove duplicate inclusion of mach/hardware.h
 > 
-> On Mon, Jan 10, 2011 at 10:19:11PM +0100, Jesper Juhl wrote:
-> > > On Mon, Jan 10, 2011 at 09:56:08PM +0100, Jesper Juhl wrote:
-> > > > 
-> > > > Including usb.h once is enough in drivers/mmc/host/ushc.c
-> > > > This removes the duplicate.
-> > > > 
-> > > > 
-> > > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> 
-> Thanks, queued for .38.
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-Perfect, dropped from my queue, thanks Chris.
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Best Regards,
+J.
