@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276Ab1AJT7K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 14:59:10 -0500
-Received: from brigitte.telenet-ops.be ([195.130.137.66]:41646 "EHLO
-	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565Ab1AJT7H (ORCPT
+	id S1754470Ab1AJUA6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 15:00:58 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:54232 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754217Ab1AJUA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 14:59:07 -0500
-Date: Mon, 10 Jan 2011 20:58:59 +0100 (CET)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>
-Subject: [git pull] m68k updates for 2.6.38
-Message-ID: <alpine.DEB.2.00.1101082222060.25612@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 10 Jan 2011 15:00:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=Y7gwFyPJpUXvoJvxYcCE66+pdFVZyMqCG0l16PXEQ1sj/Eq9uD7PeNDtas1PbBb+0h
+         92y+R1vXY4klMszVuWm6btfGA9pkbDGjVHhDyqkPXu0qbLBPpBFwQQWpYwd5mt/DHIXx
+         5EYr3NfwW0m/RoKVhKK8XPuu+Qp+0aEFrS658=
+Date: Mon, 10 Jan 2011 18:00:32 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <daahern@cisco.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, tzanussi@gmail.com,
+        Paul Mackerras <paulus@samba.org>, imunsie@au1.ibm.com,
+        linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org
+Subject: Re: perf: commit 55b4462 causes perf record to hang
+Message-ID: <20110110200032.GA19703@ghostprotocols.net>
+References: <4D2B544F.1050803@cisco.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D2B544F.1050803@cisco.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Linus,
+Em Mon, Jan 10, 2011 at 11:47:43AM -0700, David Ahern escreveu:
+> With latest version of perf-core branch, a variant of perf record hangs:
+> # /tmp/build-perf/perf record -v -e cs -fo /tmp/perf.data  -- sleep 1
+> [ perf record: Captured and wrote 0.003 MB /tmp/perf.data (~120 samples) ]
+> 
+> It sits there forever. Back trace is:
+> 
+> (gdb) bt
+> #0  0x0000000000447658 in __perf_session__process_events (session=0xab9500, data_offset=208, data_size=2896, file_size=3104, ops=0x685580) at util/session.c:1006
+> #1  0x00000000004107dd in process_buildids () at builtin-record.c:466
+> #2  0x000000000041084d in atexit_header () at builtin-record.c:477
+ 
+> git bisect traced the hang to
+> 
+> commit 55b44629f599a2305265ae9c77f9d9bcfd6ddc17
+> Author: Thomas Gleixner <tglx@linutronix.de>
+> Date:   Tue Nov 30 17:49:46 2010 +0000
 
-The following changes since commit 3c0eee3fe6a3a1c745379547c7e7c904aa64f6d5:
-  Linus Torvalds (1):
-        Linux 2.6.37
+Can you try with this patch, not reverting tglx's patch?
 
-are available in the git repository at:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
-  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
-
-The m68knommu changes have been acked by Greg Ungerer.
-
-Al Viro (16):
-      m68k: Resetting sa_handler in local copy of k_sigaction is pointless
-      m68k: Switch to saner sigsuspend()
-      m68k: Simplify the singlestepping handling in signals
-      m68k: Don't lose state if sigframe setup fails
-      m68k: If we fail to set sigframe up, just leave regs alone...
-      m68k: Fix stack mangling logics in sigreturn
-      m68k: Missing syscall_trace() on sigreturn
-      m68k: Check __get_user()/__put_user() return value
-      m68knommu: Don't bother with SA_ONESHOT
-      m68knommu: Switch to saner sigsuspend
-      m68knommu: Handle multiple pending signals
-      m68knommu: Don't lose state if sigframe setup fails
-      m68knommu: f_pcr has been gone since headers' merge
-      m68knommu: Equivalent of "m68k: handle new gcc's"
-      m68knommu: signal.c __user annotations
-      m68knommu: Need to check __get_user()/__put_user() result
-
-Geert Uytterhoeven (1):
-      m68k/sun3: Kill pte_unmap() warnings
-
- arch/m68k/include/asm/sun3_pgtable.h     |    5 +-
- arch/m68k/include/asm/thread_info.h      |    1 +
- arch/m68k/include/asm/unistd.h           |    1 +
- arch/m68k/kernel/entry.S                 |   30 +---
- arch/m68k/kernel/signal.c                |  314 +++++++++++++-----------------
- arch/m68knommu/kernel/entry.S            |   16 --
- arch/m68knommu/kernel/signal.c           |  188 ++++++++----------
- arch/m68knommu/platform/68328/entry.S    |    7 +-
- arch/m68knommu/platform/68360/entry.S    |    7 +-
- arch/m68knommu/platform/coldfire/entry.S |    5 +-
- 10 files changed, 231 insertions(+), 343 deletions(-)
-
-Thanks for pulling!
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 6fb4694..313dac2 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1007,7 +1007,7 @@ more:
+ 	if (size == 0)
+ 		size = 8;
+ 
+-	if (head + event->header.size >= mmap_size) {
++	if (head + event->header.size > mmap_size) {
+ 		if (mmaps[map_idx]) {
+ 			munmap(mmaps[map_idx], mmap_size);
+ 			mmaps[map_idx] = NULL;
