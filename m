@@ -1,93 +1,442 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab1AJMIl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 07:08:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14860 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752349Ab1AJMIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 07:08:39 -0500
-Date: Mon, 10 Jan 2011 14:08:08 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Milton Miller <miltonm@bga.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jamie Lokier <jamie@shareable.org>, Thomas Weber <swirl@gmx.li>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio: remove virtio-pci root device
-Message-ID: <20110110120808.GA15554@redhat.com>
-References: <20110105191711.GA27489@redhat.com>
- <virtio-pci-whynotsimplify@mdm.bga.com>
- <virtio-pci-noroot@mdm.bga.com>
- <20110109151821.GA9063@redhat.com>
- <20110110111859.GC2202@redhat.com>
- <20110110112205.GC12065@redhat.com>
- <20110110112739.GD2202@redhat.com>
- <20110110114219.GE2202@redhat.com>
+	id S1753900Ab1AJMJu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 07:09:50 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47834 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753806Ab1AJMJr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 07:09:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=KaPIBtDUpwJ9uQrzeshBCrhCnfsjJYzC+Wo44M6W7butJ83LUayXylBq+Abne+pASb
+         Sz8/BnxJgHRVyWxCJ6PHEILc4dEEafln7z3t720rM9wQuJ6qF9focPeaZCltf/uYFxEC
+         sSWBMRJorpYev9nNFJquB9Q06jLaemEH0G5ag=
+Message-ID: <4D2AF706.1050600@gmail.com>
+Date: Mon, 10 Jan 2011 13:09:42 +0100
+From: Angelo Dureghello <angelo70@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101030 Icedove/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110110114219.GE2202@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-m68k@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Fwd: [RFC v3 PATCH] m68knommu: added dm9000 support
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 01:42:19PM +0200, Gleb Natapov wrote:
-> On Mon, Jan 10, 2011 at 01:27:39PM +0200, Gleb Natapov wrote:
-> > On Mon, Jan 10, 2011 at 01:22:05PM +0200, Michael S. Tsirkin wrote:
-> > > On Mon, Jan 10, 2011 at 01:18:59PM +0200, Gleb Natapov wrote:
-> > > > On Sun, Jan 09, 2011 at 05:18:21PM +0200, Michael S. Tsirkin wrote:
-> > > > > On Fri, Jan 07, 2011 at 02:55:06AM -0600, Milton Miller wrote:
-> > > > > > We sometimes need to map between the virtio device and
-> > > > > > the given pci device. One such use is OS installer that
-> > > > > > gets the boot pci device from BIOS and needs to
-> > > > > > find the relevant block device. Since it can't,
-> > > > > > installation fails.
-> > > > > > 
-> > > > > > Instead of creating a top-level devices/virtio-pci
-> > > > > > directory, create each device under the corresponding
-> > > > > > pci device node.  Symlinks to all virtio-pci
-> > > > > > devices can be found under the pci driver link in
-> > > > > > bus/pci/drivers/virtio-pci/devices, and all virtio
-> > > > > > devices under drivers/bus/virtio/devices.
-> > > > > > 
-> > > > > > Signed-off-by: Milton Miller <miltonm@bga.com>
-> > > > > 
-> > > > > OK, this works fine for me.  I played with options to add compat
-> > > > > softlinks under devices/virtio-pci but we still don't get exactly the
-> > > > > same layout and since I don't think anyone actually uses them, it's
-> > > > > probably ok to just to the simple thing.
-> > > > > 
-> > > > > Tested/Acked-by: Michael S. Tsirkin <mst@redhat.com>
-> > > > > 
-> > > > > Rusty, since this help fix at least one user, any chance this can be put
-> > > > > in 2.6.38? OK to backport to -stable?
-> > > > > 
-> > > > > Gleb, could you try this out too?
-> > > > > 
-> > > > With this patch if I have 3 virtio disks for a VM I get:
-> > > > /sys/devices/pci0000:00/0000:00:04.0/virtio0/block/vda
-> > > > /sys/devices/pci0000:00/0000:00:05.0/virtio1/block/vdb
-> > > > /sys/devices/pci0000:00/0000:00:06.0/virtio2/block/vdc
-> > > > 
-> > > > Number after virtio has no much sense. It either should be dropped at all
-> > > > or be always zero in case we will support more then one virtio controller
-> > > > per pci card. In that case each virtio controller will have directories
-> > > > virtio0/virtio1/virtio2... under same pci device directory.
-> > > 
-> > > Yes. But this is the bus name.  It must be unique - all devices
-> > > also appear under /sys/bus/virtio/devices.
-> > > 
-> > It is very strange king of bus that is spread over several PCI devices :)
-> > It doesn't make much sense IMHO, but I can leave with it.
-> > 
-> I can't "leave" with it, but I can "live" with it.
+Hi all,
 
-The virtio bus is an attempt to make as many applications as
-possible work transparently on any virtio system,
-be it lguest, s390 or pci. Arbitrary IDs is just a hint to the
-applications 'don't rely on the name at all'.
+is there any feedback on the patch ?
 
-> --
-> 			Gleb.
+thanks,
+angelo
+
+-------- Original Message --------
+Subject: [RFC v3 PATCH] m68knommu: added dm9000 support
+Date: Sat, 08 Jan 2011 10:08:13 +0100
+From: Angelo Dureghello <angelo70@gmail.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,  linux-m68k@vger.kernel.org
+
+This patch allows to use the dm9000 network chip with a m68knommu
+big-endian cpu. From the data bus circuit-wiring point of view,
+the cpu data bus connected to the dm9000 chip should be hardware-byte-swapped,
+crossing the bytes wires (D0:7 to D24:31, etc.). 
+In anyway, has been also added an option to swap the bytes in the driver, 
+if some cpu has been wired straight D0:D31 to dm9000.
+
+Signed-off-by: Angelo Dureghello <angelo70@gmail.com>
+
+---
+--- linux/drivers/net/Kconfig.orig	2011-01-05 17:11:37.992376124 +0100
++++ linux/drivers/net/Kconfig	2011-01-08 09:53:48.231300064 +0100
+@@ -960,7 +960,7 @@ config TI_DAVINCI_EMAC
+ 
+ config DM9000
+ 	tristate "DM9000 support"
+-	depends on ARM || BLACKFIN || MIPS
++	depends on COLDFIRE || ARM || BLACKFIN || MIPS
+ 	select CRC32
+ 	select MII
+ 	---help---
+@@ -986,6 +986,14 @@ config DM9000_FORCE_SIMPLE_PHY_POLL
+ 	  costly MII PHY reads. Note, this will not work if the chip is
+ 	  operating with an external PHY.
+ 
++config DM9000_32BIT_SW_SWAP
++	bool "Software byte swap for 32 bit data bus"
++	depends on DM9000 && COLDFIRE
++	---help---
++	  This configuration allows to swap data bytes from the dm9000
++	  driver itself, when the big endian cpu is wired straight to
++	  the dm9000 32 bit data bus.
++
+ config ENC28J60
+ 	tristate "ENC28J60 support"
+ 	depends on EXPERIMENTAL && SPI && NET_ETHERNET
+
+--- linux/drivers/net/dm9000.c.orig	2010-12-30 23:19:39.747836070 +0100
++++ linux/drivers/net/dm9000.c	2011-01-08 09:54:28.543551323 +0100
+@@ -158,9 +158,17 @@ dm9000_reset(board_info_t * db)
+ 	dev_dbg(db->dev, "resetting device\n");
+ 
+ 	/* RESET device */
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++	writel(DM9000_NCR, db->io_addr);
++#else
+ 	writeb(DM9000_NCR, db->io_addr);
++#endif
+ 	udelay(200);
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++	writel(NCR_RST, db->io_data);
++#else
+ 	writeb(NCR_RST, db->io_data);
++#endif
+ 	udelay(200);
+ }
+ 
+@@ -170,8 +178,13 @@ dm9000_reset(board_info_t * db)
+ static u8
+ ior(board_info_t * db, int reg)
+ {
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++	writel(reg, db->io_addr);
++	return (u8)readl(db->io_data);
++#else
+ 	writeb(reg, db->io_addr);
+ 	return readb(db->io_data);
++#endif
+ }
+ 
+ /*
+@@ -181,43 +194,72 @@ ior(board_info_t * db, int reg)
+ static void
+ iow(board_info_t * db, int reg, int value)
+ {
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++	writel(reg, db->io_addr);
++	writel(value, db->io_data);
++#else
+ 	writeb(reg, db->io_addr);
+ 	writeb(value, db->io_data);
++#endif
+ }
+ 
+ /* routines for sending block to chip */
+ 
+ static void dm9000_outblk_8bit(void __iomem *reg, void *data, int count)
+ {
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++	writesbsw(reg, data, count);
++#else
+ 	writesb(reg, data, count);
++#endif
+ }
+ 
+ static void dm9000_outblk_16bit(void __iomem *reg, void *data, int count)
+ {
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++	writeswsw(reg, data, (count+1) >> 1);
++#else
+ 	writesw(reg, data, (count+1) >> 1);
++#endif
+ }
+ 
+ static void dm9000_outblk_32bit(void __iomem *reg, void *data, int count)
+ {
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++	writeslsw(reg, data, (count+3) >> 2);
++#else
+ 	writesl(reg, data, (count+3) >> 2);
++#endif
+ }
+ 
+ /* input block from chip to memory */
+ 
+ static void dm9000_inblk_8bit(void __iomem *reg, void *data, int count)
+ {
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++	readsbsw(reg, data, count);
++#else
+ 	readsb(reg, data, count);
++#endif
+ }
+ 
+ 
+ static void dm9000_inblk_16bit(void __iomem *reg, void *data, int count)
+ {
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++	readswsw(reg, data, (count+1) >> 1);
++#else
+ 	readsw(reg, data, (count+1) >> 1);
++#endif
+ }
+ 
+ static void dm9000_inblk_32bit(void __iomem *reg, void *data, int count)
+ {
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++	readslsw(reg, data, (count+3) >> 2);
++#else
+ 	readsl(reg, data, (count+3) >> 2);
++#endif
+ }
+ 
+ /* dump block from chip to null */
+@@ -863,8 +905,12 @@ static void dm9000_timeout(struct net_de
+ 	netif_wake_queue(dev);
+ 
+ 	/* Restore previous register address */
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++	writel(reg_save, db->io_addr);
++#else
+ 	writeb(reg_save, db->io_addr);
+-	spin_unlock_irqrestore(&db->lock, flags);
++#endif
++	spin_unlock_irqrestore(&db->lock,flags);
+ }
+ 
+ static void dm9000_send_packet(struct net_device *dev,
+@@ -908,7 +954,11 @@ dm9000_start_xmit(struct sk_buff *skb, s
+ 	spin_lock_irqsave(&db->lock, flags);
+ 
+ 	/* Move data to DM9000 TX RAM */
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++   writel(DM9000_MWCMD, db->io_addr);
++#else
+ 	writeb(DM9000_MWCMD, db->io_addr);
++#endif	
+ 
+ 	(db->outblk)(db->io_data, skb->data, skb->len);
+ 	dev->stats.tx_bytes += skb->len;
+@@ -981,7 +1031,11 @@ dm9000_rx(struct net_device *dev)
+ 		ior(db, DM9000_MRCMDX);	/* Dummy read */
+ 
+ 		/* Get most updated data */
+-		rxbyte = readb(db->io_data);
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++      rxbyte = (u8)readl(db->io_data);
++#else
++      rxbyte = readb(db->io_data);
++#endif
+ 
+ 		/* Status check: this byte must be 0 or 1 */
+ 		if (rxbyte & DM9000_PKT_ERR) {
+@@ -996,7 +1050,12 @@ dm9000_rx(struct net_device *dev)
+ 
+ 		/* A packet ready now  & Get status/length */
+ 		GoodPacket = true;
++
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++		writel(DM9000_MRCMD, db->io_addr);
++#else
+ 		writeb(DM9000_MRCMD, db->io_addr);
++#endif
+ 
+ 		(db->inblk)(db->io_data, &rxhdr, sizeof(rxhdr));
+ 
+@@ -1085,7 +1144,11 @@ static irqreturn_t dm9000_interrupt(int
+ 	spin_lock_irqsave(&db->lock, flags);
+ 
+ 	/* Save previous register address */
+-	reg_save = readb(db->io_addr);
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++   reg_save = (u8)readl(db->io_addr);
++#else
++   reg_save = readb(db->io_addr);
++#endif
+ 
+ 	/* Disable all interrupts */
+ 	iow(db, DM9000_IMR, IMR_PAR);
+@@ -1116,7 +1179,11 @@ static irqreturn_t dm9000_interrupt(int
+ 	iow(db, DM9000_IMR, db->imr_all);
+ 
+ 	/* Restore previous register address */
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++	writel(reg_save, db->io_addr);
++#else
+ 	writeb(reg_save, db->io_addr);
++#endif
+ 
+ 	spin_unlock_irqrestore(&db->lock, flags);
+ 
+@@ -1237,7 +1304,11 @@ dm9000_phy_read(struct net_device *dev,
+ 	spin_lock_irqsave(&db->lock,flags);
+ 
+ 	/* Save previous register address */
+-	reg_save = readb(db->io_addr);
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++   reg_save = (u8)readl(db->io_addr);
++#else
++   reg_save = readb(db->io_addr);
++#endif
+ 
+ 	/* Fill the phyxcer register into REG_0C */
+ 	iow(db, DM9000_EPAR, DM9000_PHY | reg);
+@@ -1250,7 +1321,11 @@ dm9000_phy_read(struct net_device *dev,
+ 	dm9000_msleep(db, 1);		/* Wait read complete */
+ 
+ 	spin_lock_irqsave(&db->lock,flags);
+-	reg_save = readb(db->io_addr);
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++   reg_save = (u8)readl(db->io_addr);
++#else
++   reg_save = readb(db->io_addr);
++#endif
+ 
+ 	iow(db, DM9000_EPCR, 0x0);	/* Clear phyxcer read command */
+ 
+@@ -1258,7 +1333,11 @@ dm9000_phy_read(struct net_device *dev,
+ 	ret = (ior(db, DM9000_EPDRH) << 8) | ior(db, DM9000_EPDRL);
+ 
+ 	/* restore the previous address */
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++	writel(reg_save, db->io_addr);
++#else
+ 	writeb(reg_save, db->io_addr);
++#endif
+ 	spin_unlock_irqrestore(&db->lock,flags);
+ 
+ 	mutex_unlock(&db->addr_lock);
+@@ -1284,7 +1363,11 @@ dm9000_phy_write(struct net_device *dev,
+ 	spin_lock_irqsave(&db->lock,flags);
+ 
+ 	/* Save previous register address */
+-	reg_save = readb(db->io_addr);
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++   reg_save = (u8)readl(db->io_addr);
++#else
++   reg_save = readb(db->io_addr);
++#endif
+ 
+ 	/* Fill the phyxcer register into REG_0C */
+ 	iow(db, DM9000_EPAR, DM9000_PHY | reg);
+@@ -1295,18 +1378,30 @@ dm9000_phy_write(struct net_device *dev,
+ 
+ 	iow(db, DM9000_EPCR, EPCR_EPOS | EPCR_ERPRW);	/* Issue phyxcer write command */
+ 
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++	writel(reg_save, db->io_addr);
++#else
+ 	writeb(reg_save, db->io_addr);
++#endif
+ 	spin_unlock_irqrestore(&db->lock, flags);
+ 
+ 	dm9000_msleep(db, 1);		/* Wait write complete */
+ 
+ 	spin_lock_irqsave(&db->lock,flags);
+-	reg_save = readb(db->io_addr);
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++   reg_save = (u8)readl(db->io_addr);
++#else
++   reg_save = readb(db->io_addr);
++#endif
+ 
+ 	iow(db, DM9000_EPCR, 0x0);	/* Clear phyxcer write command */
+ 
+ 	/* restore the previous address */
++#ifdef CONFIG_DM9000_32BIT_SW_SWAP
++	writel(reg_save, db->io_addr);
++#else
+ 	writeb(reg_save, db->io_addr);
++#endif
+ 
+ 	spin_unlock_irqrestore(&db->lock, flags);
+ 	mutex_unlock(&db->addr_lock);
+
+--- linux/arch/m68k/include/asm/io_no.h.orig	2011-01-08 09:53:16.835301417 +0100
++++ linux/arch/m68k/include/asm/io_no.h	2011-01-08 09:53:18.523299757 +0100
+@@ -47,6 +47,90 @@ static inline unsigned int _swapl(volati
+ #define writew(b,addr) (void)((*(volatile unsigned short *) (addr)) = (b))
+ #define writel(b,addr) (void)((*(volatile unsigned int *) (addr)) = (b))
+ 
++static inline void writesb (void __iomem *reg, void *data, int count)
++{
++	unsigned char *p = (unsigned char*) data;
++
++	while (count--) writeb(*p++, reg);
++}
++
++static inline void writesbsw (void __iomem *reg, void *data, int count)
++{
++	unsigned char *p = (unsigned char *) data;
++
++	while (count--) writel((int)(*p++), reg);
++}
++
++static inline void writesw (void __iomem *reg, void *data, int count)
++{
++   unsigned short *p = (unsigned short*) data;
++
++   while (count--) writew(*p++, reg);
++}
++
++static inline void writeswsw (void __iomem *reg, void *data, int count)
++{
++   unsigned short *p = (unsigned short *) data;
++
++   while (count--) writel((int)(_swapw(*p++)), reg);
++}
++
++static inline void writesl (void __iomem *reg, void *data, int count)
++{
++   unsigned long *p = (unsigned long*) data;
++
++   while (count--) writel(*p++, reg);
++}
++
++static inline void writeslsw (void __iomem *reg, void *data, int count)
++{
++   unsigned long *p = (unsigned long *) data;
++
++   while (count--) writel((int)(_swapl(*p++)), reg);
++}
++
++static inline void readsb (void __iomem *reg, void *data, int count)
++{
++   unsigned char *p = (unsigned char *) data;
++
++   while (count--) *p++ = readb(reg);
++}
++
++static inline void readsbsw (void __iomem *reg, void *data, int count)
++{
++   unsigned char *p = (unsigned char *) data;
++
++   while (count--) *p++ = (unsigned char)readl(reg);
++}
++
++static inline void readsw (void __iomem *reg, void *data, int count)
++{
++   unsigned short *p = (unsigned short *) data;
++
++   while (count--) *p++ = readb(reg);
++}
++
++static inline void readswsw (void __iomem *reg, void *data, int count)
++{
++   unsigned short *p = (unsigned short *) data;
++
++   while (count--) *p++ = _swapw((unsigned short)readw(reg));
++}
++
++static inline void readsl (void __iomem *reg, void *data, int count)
++{
++   unsigned long *p = (unsigned long *) data;
++
++   while (count--) *p++ = readb(reg);
++}
++
++static inline void readslsw (void __iomem *reg, void *data, int count)
++{
++   unsigned long *p = (unsigned long *) data;
++
++   while (count--) *p++ = _swapl(readl(reg));
++}
++
+ #define __raw_readb readb
+ #define __raw_readw readw
+ #define __raw_readl readl
+
