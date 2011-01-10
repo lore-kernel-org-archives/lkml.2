@@ -1,122 +1,343 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033Ab1AJNbC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 08:31:02 -0500
-Received: from 81-174-11-161.staticnet.ngi.it ([81.174.11.161]:37942 "EHLO
-	mail.enneenne.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1752203Ab1AJNa7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 08:30:59 -0500
-Date: Mon, 10 Jan 2011 14:30:55 +0100
-From: Rodolfo Giometti <giometti@enneenne.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, Russell Coker <russell@coker.com.au>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>
-Message-ID: <20110110133055.GM23771@enneenne.com>
-Mail-Followup-To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-	linux-kernel@vger.kernel.org, Russell Coker <russell@coker.com.au>,
-	Greg Kroah-Hartman <gregkh@suse.de>,
-	Randy Dunlap <randy.dunlap@oracle.com>
-References: <1294664819-17960-1-git-send-email-giometti@linux.it>
- <1294664819-17960-2-git-send-email-giometti@linux.it>
- <20110110131332.622e8a0d@lxorguk.ukuu.org.uk>
+	id S1754052Ab1AJNcC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 08:32:02 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:54943 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752327Ab1AJNb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 08:31:57 -0500
+From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
+To: "'Sam Ravnborg'" <sam@ravnborg.org>,
+        "'lkml'" <linux-kernel@vger.kernel.org>,
+        "'linux-kbuild'" <linux-kbuild@vger.kernel.org>,
+        "'linux arch'" <linux-arch@vger.kernel.org>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, "'Michal Marek'" <mmarek@suse.cz>
+References: <20110108130302.GA21698@merkur.ravnborg.org> <20110109192707.GA12387@merkur.ravnborg.org> <20110109192907.GA12403@merkur.ravnborg.org>
+In-Reply-To: <20110109192907.GA12403@merkur.ravnborg.org>
+Subject: RE: [PATCH 1/2] kbuild: asm-generic support
+Date: Mon, 10 Jan 2011 21:31:39 +0800
+Message-ID: <005001cbb0ca$b6bbe280$2433a780$@mprc.pku.edu.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110110131332.622e8a0d@lxorguk.ukuu.org.uk>
-Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
-X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 192.168.32.37
-X-SA-Exim-Mail-From: giometti@enneenne.com
-Subject: Re: [PATCH 1/1] char nvtty: Network Virtual Terminal support
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on mail.enneenne.com)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQIVRfr/5g4pH+HCwkBSapEbzIVlUQFFgFFvAdGKISOTHk9+UA==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 01:13:32PM +0000, Alan Cox wrote:
-> > By using these devices and a proper compatible server (not included
-> > here but you can use sredird) you can get access to a remote tty
-> > device as the tty device itself was conneted with your local host.
-> > All data and settings are sent and received through the network.
+Sam:
+There is a big problem in previous patch set.
+When re-compile kernel image, almost all source files will be re-compiled since
+arch/*/include/generated/asm/* being re-created.
+So I add a judgment before auto-generation, as following:
+
+commit 03e63f75b37a4d6e5668bc07ae385a174efd6e8c
+Author: GuanXuetao <gxt@mprc.pku.edu.cn>
+Date:   Sun Jan 9 22:35:24 2011 +0800
+
+    unicore32: adjust auto-generated asm-generic headers method
+    	solve the problem:
+    		former method will re-generate headers each compile processing
+    	attention for new method:
+    		when add new auto-generated asm-generic header
+    		"make mrproper" is needed first
+
+diff --git a/arch/unicore32/Makefile b/arch/unicore32/Makefile
+index 0be046d..de1ce7d 100644
+--- a/arch/unicore32/Makefile
++++ b/arch/unicore32/Makefile
+@@ -76,11 +76,13 @@ ASM_GENERIC_HEADERS	+= ucontext.h unaligned.h user.h
+ ASM_GENERIC_HEADERS	+= vga.h
+ ASM_GENERIC_HEADERS	+= xor.h
+ 
+-%.h:
++archprepare:
++ifneq ($(ASM_GENERATED_DIR), $(wildcard $(ASM_GENERATED_DIR)))
+ 	$(Q)mkdir -p $(ASM_GENERATED_DIR)/asm
+-	$(Q)echo '#include <asm-generic/$(notdir $@)>' > $(ASM_GENERATED_DIR)/asm/$@
+-
+-archprepare: $(ASM_GENERIC_HEADERS)
++	$(Q)$(foreach a, $(ASM_GENERIC_HEADERS),	\
++		echo '#include <asm-generic/$a>'	\
++			> $(ASM_GENERATED_DIR)/asm/$a; )
++endif
+ 
+ boot			:= arch/unicore32/boot
+
+> -----Original Message-----
+> From: Sam Ravnborg [mailto:sam@ravnborg.org]
+> Sent: Monday, January 10, 2011 3:29 AM
+> To: lkml; linux-kbuild; linux arch; Arnd Bergmann; Guan Xuetao; Michal Marek
+> Subject: [PATCH 1/2] kbuild: asm-generic support
 > 
-> And this is still something that should be done in userspace if necessary
-> by fixing up the tty layer to support pty/tty pair modem lines and
-> termios change reporting, or some kind of *generic* vt that can also
-> expose all the config other net protocols might need.
-
-If I well understood the pty/tty pair modem lines they can be used to
-send receive serial data but they cannot be used to set the serial
-parameters since the slave doesn't send to the master the serial
-settings a userland application does on it, doesn't it?
-
-> > +	default:
-> > +		tty->termios->c_cflag = B0;
+> >From 1c33973f2e4a099eadfb1a37cd3a28a3c8d3202f Mon Sep 17 00:00:00 2001
+> From: Sam Ravnborg <sam@ravnborg.org>
+> Date: Sun, 9 Jan 2011 19:45:40 +0100
+> Subject: [PATCH 1/2] kbuild: asm-generic support
 > 
-> This btw is wrong - if you don't recognize the baud rate you want to
-> force a new one. Also you shouldn't be writing all of c_cflag here just
-> the baud bits, also you shouldn't in fact ever be hand mangling the baud
-> bits but using the helpers.
-
-Ok.
-
+> There is an increasing amount of header files
+> shared between individual architectures in asm-generic.
+> To avoid a lot of dummy wrapper files that just
+> include the corresponding file in asm-generic provide
+> some basic support in kbuild for this.
 > 
-> > +	}
-> > +}
-> > +#undef TEST_SET_BAUDRATE
-> > +
-> > +#define TEST_SET_DATASIZE(b)	case b: tty->termios->c_cflag |= CS ## b ; break
-> > +static void nvtty_set_datasize(struct nvtty_serial *info, unsigned int datasize)
-> > +{
-> > +	struct tty_struct *tty = info->tty;
-> > +
-> > +	nvtty_dbg(info, "datasize=%d", datasize);
-> > +
-> > +	tty->termios->c_cflag &= ~CSIZE;
-> > +	switch (datasize) {
-> > +	TEST_SET_DATASIZE(5);
-> > +	TEST_SET_DATASIZE(6);
-> > +	TEST_SET_DATASIZE(7);
-> > +	TEST_SET_DATASIZE(8);
-> > +	default:
-> > +		tty->termios->c_cflag = CS5;
+> With the following patch an architecture can maintain
+> a list of files in the file arch/$(ARCH)/include/asm/Kbuild
 > 
-> Should be |=
-
-Ok.
-
-> > +static void nvtty_set_parity(struct nvtty_serial *info, unsigned int parity)
-> > +{
-> > +	struct tty_struct *tty = info->tty;
-> > +
-> > +	nvtty_dbg(info, "parity=%d", parity);
-> > +
-> > +	tty->termios->c_cflag &= ~(PARENB | PARODD);
+> To use a generic file just add:
 > 
-> Needs to consider the CMSPAR bit.
+>         generic-y += <name-of-header-file.h>
+> 
+> For each file listed kbuild will generate the necessary
+> wrapper in arch/$(ARCH)/include/generated/asm.
+> 
+> When installing userspace headers a wrapper is likewise created.
+> 
+> The original inspiration for this came from the unicore32
+> patchset - although is used a different method.
+> 
+> The patch includes several improvements from Arnd Bergmann.
+> 
+> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+> Cc: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  .gitignore                         |    1 +
+>  Documentation/kbuild/makefiles.txt |   36 ++++++++++++++++++++++++++++++++++++
+>  Makefile                           |   15 +++++++++++----
+>  scripts/Makefile.headersinst       |   18 +++++++++++++++---
+>  scripts/asm-generic.sh             |   33 +++++++++++++++++++++++++++++++++
+>  5 files changed, 96 insertions(+), 7 deletions(-)
+>  create mode 100644 scripts/asm-generic.sh
+> 
+> diff --git a/.gitignore b/.gitignore
+> index 8faa6c0..e3cfd57 100644
+> --- a/.gitignore
+> +++ b/.gitignore
+> @@ -56,6 +56,7 @@ modules.builtin
+>  include/config
+>  include/linux/version.h
+>  include/generated
+> +arch/*/include/generated
+> 
+>  # stgit generated dirs
+>  patches-*
+> diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
+> index 0ef00bd..bc79a3d 100644
+> --- a/Documentation/kbuild/makefiles.txt
+> +++ b/Documentation/kbuild/makefiles.txt
+> @@ -40,11 +40,13 @@ This document describes the Linux kernel Makefiles.
+>  	   --- 6.6 Commands useful for building a boot image
+>  	   --- 6.7 Custom kbuild commands
+>  	   --- 6.8 Preprocessing linker scripts
+> +	   --- 6.9 Generic header files
+> 
+>  	=== 7 Kbuild syntax for exported headers
+>  		--- 7.1 header-y
+>  		--- 7.2 objhdr-y
+>  		--- 7.3 destination-y
+> +		--- 7.4 generic-y
+> 
+>  	=== 8 Kbuild Variables
+>  	=== 9 Makefile language
+> @@ -1194,6 +1196,14 @@ When kbuild executes, the following steps are followed (roughly):
+>  	The kbuild infrastructure for *lds file are used in several
+>  	architecture-specific files.
+> 
+> +--- 6.9 Generic header files
+> +
+> +	The directory include/asm-generic contains the header files
+> +	that may be shared between individual architectures.
+> +	The recommended approach how to use a generic header file is
+> +	to list the file in the Kbuild file.
+> +	See "7.4 generic-y" for further info on syntax etc.
+> +
+>  === 7 Kbuild syntax for exported headers
+> 
+>  The kernel include a set of headers that is exported to userspace.
+> @@ -1250,6 +1260,32 @@ See subsequent chapter for the syntax of the Kbuild file.
+>  	In the example above all exported headers in the Kbuild file
+>  	will be located in the directory "include/linux" when exported.
+> 
+> +	--- 7.4 generic-y
+> +
+> +	If an architecture uses a verbatim copy of a header from
+> +	include/asm-generic then this is listed in the file
+> +	arch/$(ARCH)/include/asm/Kbuild like this:
+> +
+> +		Example:
+> +			#arch/x86/include/asm/Kbuild
+> +			generic-y += termios.h
+> +			generic-y += rtc.h
+> +
+> +	During the prepare phase of the build a wrapper include
+> +	file is generated in the directory:
+> +
+> +		arch/$(ARCH)/include/generated/asm
+> +
+> +	When a header is exported where the architecture uses
+> +	the generic header a similar wrapper is generated as part
+> +	of the set of exported headers in the directory:
+> +
+> +		usr/include/asm
+> +
+> +	The generated wrapper will in both cases look like the following:
+> +
+> +		Example: termios.h
+> +			#include <asm-generic/termios.h>
+> 
+>  === 8 Kbuild Variables
+> 
+> diff --git a/Makefile b/Makefile
+> index 74b2555..263eb65 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -344,7 +344,8 @@ CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
+> 
+>  # Use LINUXINCLUDE when you must reference the include/ directory.
+>  # Needed to be compatible with the O= option
+> -LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include -Iinclude \
+> +LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
+> +                   -Iarch/$(hdr-arch)/include/generated -Iinclude \
+>                     $(if $(KBUILD_SRC), -I$(srctree)/include) \
+>                     -include include/generated/autoconf.h
+> 
+> @@ -411,6 +412,11 @@ ifneq ($(KBUILD_SRC),)
+>  	    $(srctree) $(objtree) $(VERSION) $(PATCHLEVEL)
+>  endif
+> 
+> +# Support for using generic headers in asm-generic
+> +PHONY += asm-generic
+> +asm-generic:
+> +	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/asm-generic.sh $(SRCARCH)
+> +
+>  # To make sure we do not include .config for any of the *config targets
+>  # catch them early, and hand them over to scripts/kconfig/Makefile
+>  # It is allowed to specify more targets when calling make, including
+> @@ -942,7 +948,7 @@ ifneq ($(KBUILD_SRC),)
+>  endif
+> 
+>  # prepare2 creates a makefile if using a separate output directory
+> -prepare2: prepare3 outputmakefile
+> +prepare2: prepare3 outputmakefile asm-generic
+> 
+>  prepare1: prepare2 include/linux/version.h include/generated/utsrelease.h \
+>                     include/config/auto.conf
+> @@ -1016,7 +1022,7 @@ hdr-inst := -rR -f $(srctree)/scripts/Makefile.headersinst obj
+>  hdr-dst = $(if $(KBUILD_HEADERS), dst=include/asm-$(hdr-arch), dst=include/asm)
+> 
+>  PHONY += __headers
+> -__headers: include/linux/version.h scripts_basic FORCE
+> +__headers: include/linux/version.h scripts_basic asm-generic FORCE
+>  	$(Q)$(MAKE) $(build)=scripts scripts/unifdef
+> 
+>  PHONY += headers_install_all
+> @@ -1131,7 +1137,8 @@ CLEAN_FILES +=	vmlinux System.map \
+>                  .tmp_kallsyms* .tmp_version .tmp_vmlinux* .tmp_System.map
+> 
+>  # Directories & files removed with 'make mrproper'
+> -MRPROPER_DIRS  += include/config usr/include include/generated
+> +MRPROPER_DIRS  += include/config usr/include include/generated          \
+> +                  arch/*/include/generated
+>  MRPROPER_FILES += .config .config.old .version .old_version             \
+>                    include/linux/version.h                               \
+>  		  Module.symvers tags TAGS cscope*
+> diff --git a/scripts/Makefile.headersinst b/scripts/Makefile.headersinst
+> index f89cb87..7960b19 100644
+> --- a/scripts/Makefile.headersinst
+> +++ b/scripts/Makefile.headersinst
+> @@ -14,6 +14,7 @@ kbuild-file := $(srctree)/$(obj)/Kbuild
+>  include $(kbuild-file)
+> 
+>  _dst := $(if $(destination-y),$(destination-y),$(_dst))
+> +_src := $(srctree)/$(obj)
+> 
+>  include scripts/Kbuild.include
+> 
+> @@ -27,10 +28,16 @@ header-y      := $(filter-out %/, $(header-y))
+>  install-file  := $(install)/.install
+>  check-file    := $(install)/.check
+> 
+> +# generic-y list all files an architecture uses from asm-generic
+> +# Use this to build a list of headers which require a wrapper
+> +wrapper-files := $(filter $(header-y), $(generic-y))
+> +
+>  # all headers files for this dir
+> -all-files     := $(header-y) $(objhdr-y)
+> -input-files   := $(addprefix $(srctree)/$(obj)/,$(header-y)) \
+> +header-y      := $(filter-out $(generic-y), $(header-y))
+> +all-files     := $(header-y) $(objhdr-y) $(wrapper-files)
+> +input-files   := $(addprefix $(_src)/,$(header-y)) \
+>                   $(addprefix $(objtree)/$(obj)/,$(objhdr-y))
+> +
+>  output-files  := $(addprefix $(install)/, $(all-files))
+> 
+>  # Work out what needs to be removed
+> @@ -47,8 +54,12 @@ quiet_cmd_install = INSTALL $(printdir) ($(words $(all-files))\
+>        cmd_install = \
+>          $(PERL) $< $(srctree)/$(obj) $(install) $(SRCARCH) $(header-y); \
+>          $(PERL) $< $(objtree)/$(obj) $(install) $(SRCARCH) $(objhdr-y); \
+> +        for F in $(wrapper-files); do                                   \
+> +                echo "\#include <asm-generic/$$F>" > $(install)/$$F;    \
+> +        done;                                                           \
+>          touch $@
+> 
+> +
+>  quiet_cmd_remove = REMOVE  $(unwanted)
+>        cmd_remove = rm -f $(unwanted-file)
+> 
+> @@ -69,7 +80,8 @@ __headersinst: $(subdirs) $(install-file)
+>  	@:
+> 
+>  targets += $(install-file)
+> -$(install-file): scripts/headers_install.pl $(input-files) FORCE
+> +$(install-file): scripts/headers_install.pl \
+> +                 $(input-files) FORCE
+>  	$(if $(unwanted),$(call cmd,remove),)
+>  	$(if $(wildcard $(dir $@)),,$(shell mkdir -p $(dir $@)))
+>  	$(call if_changed,install)
+> diff --git a/scripts/asm-generic.sh b/scripts/asm-generic.sh
+> new file mode 100644
+> index 0000000..d28127f
+> --- /dev/null
+> +++ b/scripts/asm-generic.sh
+> @@ -0,0 +1,33 @@
+> +#!/bin/sh
+> +#
+> +# include/asm-generic contains a lot of files that are used
+> +# verbatim by several architectures.
+> +#
+> +# This scripts read the file arch/$(ARCH)/include/asm/Kbuild
+> +# and for each file listed in this file with generic-y create
+> +# a small wrapper file in arch/$(ARCH)/include/generated/
+> +
+> +# read list of header files form Kbuild
+> +# The file has make syntax which looks like this:
+> +#
+> +# generic-y += <filename>
+> +
+> +srcdir=${srctree}/arch/$1/include/asm
+> +gendir=arch/$1/include/generated/asm
+> +
+> +# Read the list of files (note that the list uses make syntax)
+> +files=$( cat ${srcdir}/Kbuild | \
+> +          grep -v ^# | grep generic-y | cut -d '=' -f 2)
+> +
+> +mkdir -p ${gendir}
+> +
+> +# create include files for each file used form asm-generic
+> +for F in ${files}; do
+> +	if [ -f ${srcdir}/$F ]; then
+> +		echo "ERROR: ${srcdir}/$F exists"
+> +		echo "$F is also listed as generic-y in ${srcdir}/Kbuild"
+> +		echo "Did you forget to remove the file?"
+> +		exit 1
+> +	fi
+> +	echo "#include <asm-generic/$F>" > ${gendir}/$F
+> +done
+> --
+> 1.6.0.6
 
-Ok.
-
-I'm going to fix these issues ASAP.
-
-> Otherwise its a very nice implementation of something I don't think we
-> should have implemented in the kernel.
-
-Thanks, but I still don't understand how I can set the serial settings
-without a specific tty driver and just using the pty/tty pair modem
-lines... :'(
-
-Ciao,
-
-Rodolfo
-
--- 
-
-GNU/Linux Solutions                  e-mail: giometti@enneenne.com
-Linux Device Driver                          giometti@linux.it
-Embedded Systems                     phone:  +39 349 2432127
-UNIX programming                     skype:  rodolfo.giometti
-Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
