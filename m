@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165Ab1AJTem (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 14:34:42 -0500
-Received: from straum.hexapodia.org ([207.7.131.186]:35696 "EHLO
-	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751606Ab1AJTeh (ORCPT
+	id S1754299Ab1AJTfm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 14:35:42 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51372 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751606Ab1AJTfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 14:34:37 -0500
-Date: Mon, 10 Jan 2011 11:34:37 -0800
-From: Andy Isaacson <adi@hexapodia.org>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: Drunkard Zhang <gongfan193@gmail.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.37 BUG at inode.c:1616 (was Re: 2.6.37: Bug on btrfs while
-	umount)
-Message-ID: <20110110193437.GA19021@hexapodia.org>
-References: <AANLkTikb2UhU3XwFWjon=BRiFgcAni54ZN7PVCBZDaVf@mail.gmail.com> <1294363682-sup-7971@think> <20110110080815.GA7508@hexapodia.org>
+	Mon, 10 Jan 2011 14:35:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110110080815.GA7508@hexapodia.org>
-X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
-X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
-X-Domestic-Surveillance: money launder bomb tax evasion
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1294687767.3349.28.camel@heimdal.trondhjem.org>
+References: <AANLkTimusF4KCJ4vHPn+T1dUiKxapXaT0QTtFvh8Ykdd@mail.gmail.com>
+ <1294426405.2929.23.camel@heimdal.trondhjem.org> <20110107190229.GX31708@n2100.arm.linux.org.uk>
+ <1294427467.4895.66.camel@mulgrave.site> <1294505384.4181.14.camel@heimdal.trondhjem.org>
+ <1294528551.4181.19.camel@heimdal.trondhjem.org> <20110110105019.GC24920@pengutronix.de>
+ <1294676734.3349.10.camel@heimdal.trondhjem.org> <4D2B3D03.8050504@pengutronix.de>
+ <1294680035.3349.19.camel@heimdal.trondhjem.org> <20110110192552.GG24920@pengutronix.de>
+ <1294687767.3349.28.camel@heimdal.trondhjem.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 10 Jan 2011 11:34:49 -0800
+Message-ID: <AANLkTinFenq3BEiUQRsxDy6EKwqSM33RcwFG4fs-sXLJ@mail.gmail.com>
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, linux-arch@vger.kernel.org,
+        linux-nfs@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 12:08:15AM -0800, Andy Isaacson wrote:
-> On Thu, Jan 06, 2011 at 08:29:12PM -0500, Chris Mason wrote:
-> > > [50010.838804] ------------[ cut here ]------------
-> > > [50010.838931] kernel BUG at fs/btrfs/inode.c:1616!
-> > > [50010.839053] invalid opcode: 0000 [#1] PREEMPT SMP
-> [snip]
-> > > [50010.839653] Pid: 1681, comm: btrfs-endio-wri Not tainted 2.6.37 #1
-> > 
-> > Could you please pull from the master branch of the btrfs unstable tree.
-> > We had a late fix that is related to this.
-> 
-> I saw BUG at inode.c:1616 while running 2.6.37-rc6-11882-g55ec86f, I saw
+2011/1/10 Trond Myklebust <Trond.Myklebust@netapp.com>:
+>
+> I usually do this, but there is a slight problem with that approach:
+> Greg gets to do all the work of figuring out to which stable kernels
+> this particular patch applies. In this case, since we're only talking
+> about the 2.6.37 kernel, I prefer to use the mailing lists.
 
-Just got this again, same BUG and same stack trace.  This machine +
-fs ran great for several months under approximately the same workload,
-but the FS is slowly filling up; is this a regression in .37 or is the
-bug a function of the FS load?
+Just do
 
--andy
+  Cc: stable@kernel.org  [2.6.37]
+
+or similar. It's quite common.
+
+So EVEN IF you want to email people around about the patch separately,
+do add the "Cc: stable" marker. It's worthwhile information about the
+patch for everybody involved.
+
+                     Linus
