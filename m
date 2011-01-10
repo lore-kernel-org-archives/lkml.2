@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab1AJOPr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 09:15:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31351 "EHLO mx1.redhat.com"
+	id S1753921Ab1AJORo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 09:17:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42572 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751756Ab1AJOPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 09:15:46 -0500
-Date: Mon, 10 Jan 2011 15:08:17 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [BUG stable, 2.6.32.27] sched: delayed cleanup of user_struct
-Message-ID: <20110110140817.GA31708@redhat.com>
-References: <4D2AB8F7.7030506@profihost.ag> <20110110114913.GA22298@redhat.com> <20110110123630.GA27057@redhat.com> <4D2AFFB5.5000807@profihost.ag> <20110110133545.GA30163@redhat.com> <4D2B113A.2060303@profihost.ag>
+	id S1751098Ab1AJORn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 09:17:43 -0500
+Message-ID: <4D2B1505.5070404@redhat.com>
+Date: Mon, 10 Jan 2011 09:17:41 -0500
+From: Dave Anderson <anderson@redhat.com>
+User-Agent: Thunderbird 2.0.0.14 (X11/20080515)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D2B113A.2060303@profihost.ag>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: linux-kernel@vger.kernel.org
+CC: fweisbec@gmail.com
+Subject: /proc/kcore: fix seeking
+Content-Type: multipart/mixed;
+ boundary="------------070603050406010801090705"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10, Stefan Priebe - Profihost AG wrote:
->
-> Main problem - right i can't reproduce it. But the system was crashing
-> two times more in the past.
->
-> You can find the logs here:
-> http://pastebin.com/hNd15E8K
+This is a multi-part message in MIME format.
+--------------070603050406010801090705
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Good. Sadly, I didn't see this trace before...
 
-	kernel BUG at kernel/workqueue.c:287!
+From: Dave Anderson <anderson@redhat.com>
 
-this matches "INIT_DELAYED_WORK() can corrupt the pending work" I
-mentioned.
+Commit 34aacb2920667d405a8df15968b7f71ba46c8f18
+("procfs: Use generic_file_llseek in /proc/kcore")
+broke seeking on /proc/kcore.  This changes it back
+to use default_llseek in order to restore the original
+behavior.
 
->> Or. You can revert
->> 	b00bc0b237055b4c45816325ee14f0bd83e6f590
->> 	uids: Prevent tear down race
->>
->> 	3959214f971417f4162926ac52ad4cd042958caa
->> 	sched: delayed cleanup of user_struct
-> Not sure if it is a good idea to introduce another race again.
+The problem with generic_file_llseek is that it only
+allows seeks up to inode->i_sb->s_maxbytes, which is
+2GB-1 on procfs, where the memory file offset values in
+the /proc/kcore PT_LOAD segments may exceed or start
+beyond that offset value.
 
-Which race? b00bc0b237055b4c45816325ee14f0bd83e6f590 fixes the race, yes.
-But this race was introduced by 3959214f971417f4162926ac52ad4cd042958caa.
-And afaics the latter commit is optimization...
+A similar revert was made for /proc/vmcore.
 
-Anyway, this is up to you, of course.
+Signed-off-by: Dave Anderson <anderson@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+---
 
-Oleg.
+--------------070603050406010801090705
+Content-Type: text/x-patch;
+ name="kcore.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename="kcore.patch"
 
+--- linux-2.6.37/fs/proc/kcore.c.orig
++++ linux-2.6.37/fs/proc/kcore.c
+@@ -558,7 +558,7 @@ static int open_kcore(struct inode *inod
+ static const struct file_operations proc_kcore_operations = {
+ 	.read		= read_kcore,
+ 	.open		= open_kcore,
+-	.llseek		= generic_file_llseek,
++	.llseek		= default_llseek,
+ };
+ 
+ #ifdef CONFIG_MEMORY_HOTPLUG
+
+--------------070603050406010801090705--
