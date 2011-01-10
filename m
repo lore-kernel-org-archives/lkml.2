@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147Ab1AJO1b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 09:27:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16082 "EHLO mx1.redhat.com"
+	id S1754143Ab1AJOaT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 09:30:19 -0500
+Received: from mga02.intel.com ([134.134.136.20]:8512 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752994Ab1AJO13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 09:27:29 -0500
-Date: Mon, 10 Jan 2011 15:19:59 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [BUG stable, 2.6.32.27] sched: delayed cleanup of user_struct
-Message-ID: <20110110141959.GA312@redhat.com>
-References: <4D2AB8F7.7030506@profihost.ag> <20110110114913.GA22298@redhat.com> <20110110123630.GA27057@redhat.com> <4D2AFFB5.5000807@profihost.ag> <20110110133545.GA30163@redhat.com> <4D2B113A.2060303@profihost.ag> <20110110140817.GA31708@redhat.com> <4D2B1658.20201@profihost.ag>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D2B1658.20201@profihost.ag>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752994Ab1AJOaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 09:30:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,301,1291622400"; 
+   d="scan'208";a="591497122"
+Date: Mon, 10 Jan 2011 14:05:38 +0000
+From: Alan Cox <alan@linux.intel.com>
+To: "Gorby, Russ" <russ.gorby@intel.com>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "segoon@openwall.com" <segoon@openwall.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ahmed, Suhail" <suhail.ahmed@intel.com>
+Subject: Re: [PATCH 4/7] serial: ifx6x60: set SPI max_speed_hz based on
+ platform type
+Message-ID: <20110110140538.2d584937@bob.linux.org.uk>
+In-Reply-To: <4C5E6457CD7911469A07260381288C28CB7E0263@orsmsx502.amr.corp.intel.com>
+References: <[PATCH 0/7] IFX6X60 patchset: 01/05/2011>
+	<1294272313-15899-5-git-send-email-russ.gorby@intel.com>
+	<20110106002716.06a396c7@bob.linux.org.uk>
+	<4C5E6457CD7911469A07260381288C28CB7E0263@orsmsx502.amr.corp.intel.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10, Stefan Priebe - Profihost AG wrote:
->
->>> You can find the logs here:
->>> http://pastebin.com/hNd15E8K
->>
->> Good. Sadly, I didn't see this trace before...
->>
->> 	kernel BUG at kernel/workqueue.c:287!
->>
->> this matches "INIT_DELAYED_WORK() can corrupt the pending work" I
->> mentioned.
-> Sorry to ask this but this could also be "workarounded" by disabled
-> GROUP_SCHED? Or is this another thing?
+> Use_dma is used so the protocol driver matches the expectations
+> (capabilities) of the controller driver it attaches to. In the
+> general case I would think it could support several different
+> controller drivers that might have differing capabilities. Currently
+> the driver does assume the value of use_dma is constant for a
+> platform so putting this indication in the platform data would
+> suffice (for now) but to me, this is not really a platform attribute.
+> Is there a better way to handle this is?
 
-Yes, this looks like the same thing.
+The driver should know nothing about the plumbing itself. So the
+platform data should deal with this and pass it in generic terms.
 
-But let me repeat, today I looked at this code for the first time ;)
+In the Intel MID case arch/x86/platform/mrst/ should know about whether
+DMA can be used and what mode the SFI controller should be in. The bits
+that are in ifx6x60.c should be as architecture neutral as possible.
 
-> Will wait if greg or anybody else can tell
-> us something about it.
-
-Indeed.
-
-Oleg.
-
+Alan
