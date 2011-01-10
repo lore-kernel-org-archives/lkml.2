@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab1AJSb5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 13:31:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60308 "EHLO mx2.suse.de"
+	id S1754204Ab1AJScO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 13:32:14 -0500
+Received: from cantor.suse.de ([195.135.220.2]:38265 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751619Ab1AJSbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 13:31:55 -0500
-Date: Mon, 10 Jan 2011 10:23:17 -0800
-From: Greg KH <gregkh@suse.de>
-To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
-Cc: Oleg Nesterov <oleg@redhat.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        Dhaval Giani <dhaval@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [BUG stable, 2.6.32.27] sched: delayed cleanup of user_struct
-Message-ID: <20110110182317.GA16694@suse.de>
-References: <4D2AB8F7.7030506@profihost.ag>
- <20110110114913.GA22298@redhat.com>
- <20110110123630.GA27057@redhat.com>
- <4D2AFFB5.5000807@profihost.ag>
- <20110110133545.GA30163@redhat.com>
- <4D2B113A.2060303@profihost.ag>
- <20110110140817.GA31708@redhat.com>
- <4D2B1658.20201@profihost.ag>
+	id S1754177Ab1AJScM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 13:32:12 -0500
+Date: Mon, 10 Jan 2011 19:32:10 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Cc: Stephane Chatty <chatty@enac.fr>, Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC v3 0/5] hid-multitouch: a first step towards multitouch
+ unification 
+In-Reply-To: <alpine.LNX.2.00.1101082224130.26685@pobox.suse.cz>
+Message-ID: <alpine.LNX.2.00.1101101931200.26685@pobox.suse.cz>
+References: <1294425762-29730-1-git-send-email-benjamin.tissoires@enac.fr> <alpine.LNX.2.00.1101072355200.26685@pobox.suse.cz> <alpine.LNX.2.00.1101072359450.26685@pobox.suse.cz> <alpine.LNX.2.00.1101082224130.26685@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D2B1658.20201@profihost.ag>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 03:23:20PM +0100, Stefan Priebe - Profihost AG wrote:
-> >>You can find the logs here:
-> >>http://pastebin.com/hNd15E8K
-> >
-> >Good. Sadly, I didn't see this trace before...
-> >
-> >	kernel BUG at kernel/workqueue.c:287!
-> >
-> >this matches "INIT_DELAYED_WORK() can corrupt the pending work" I
-> >mentioned.
-> Sorry to ask this but this could also be "workarounded" by disabled
-> GROUP_SCHED? Or is this another thing?
+On Sat, 8 Jan 2011, Jiri Kosina wrote:
+
+> > > I have now applied the patchset as-is to the 'multitouch' branch in my 
+> > > tree.
+> > 
+> > Which means -- could you please send any followup patches on top of that 
+> > branch (i.e. on top of the v3 patchset)? It would help my workflow and 
+> > make the merging process smoother.
 > 
-> >>>Or. You can revert
-> >>>	b00bc0b237055b4c45816325ee14f0bd83e6f590
-> >>>	uids: Prevent tear down race
-> >>>
-> >>>	3959214f971417f4162926ac52ad4cd042958caa
-> >>>	sched: delayed cleanup of user_struct
-> >>Not sure if it is a good idea to introduce another race again.
-> >
-> >Which race? b00bc0b237055b4c45816325ee14f0bd83e6f590 fixes the race, yes.
-> >But this race was introduced by 3959214f971417f4162926ac52ad4cd042958caa.
-> >And afaics the latter commit is optimization...
-> >
-> >Anyway, this is up to you, of course.
-> ah OK sorry didn't get this. Will wait if greg or anybody else can
-> tell us something about it.
+> 'multitouch' brach now builds, as Linus has taken Dmitry's pull request 
+> and I have merged from Linus.
+> 
+> So once you have fixed for the minor issues raised by Henrik and once you 
+> have finished your testing, please send the additional fixes to me and I 
+> will be merging the branch upstream.
 
-Tell us about what?  I'm totally confused here, what is the problem?
+Hi Benjamin,
 
-thanks,
+we are now slowly aproaching the point in time in which I would like to 
+prepare second round of HID tree merge with Linus.
 
-greg k-h
+Have you finished your testing / fixing the minor issues raised by Henrik 
+please?
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
