@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab1AJQFX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 11:05:23 -0500
-Received: from kroah.org ([198.145.64.141]:59638 "EHLO coco.kroah.org"
+	id S1753497Ab1AJQGG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 11:06:06 -0500
+Received: from kroah.org ([198.145.64.141]:59644 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751606Ab1AJQFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 11:05:21 -0500
-Date: Mon, 10 Jan 2011 07:57:24 -0800
+	id S1752639Ab1AJQFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 11:05:22 -0500
+Date: Mon, 10 Jan 2011 07:57:45 -0800
 From: Greg KH <greg@kroah.com>
 To: Yinghai Lu <yinghai@kernel.org>
 Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
@@ -16,25 +16,25 @@ Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
         linux-usb@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: Re: [PATCH 0/3] x86, usb, pci: Disable usb legacy support early
-Message-ID: <20110110155724.GA5275@kroah.com>
-References: <4D2A1382.7010407@kernel.org>
+Subject: Re: [PATCH 1/3] pci, usb: Seperate usb handoff func to another file
+Message-ID: <20110110155745.GB5275@kroah.com>
+References: <4D2A1152.1040903@kernel.org>
+ <4D2A139A.6010108@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D2A1382.7010407@kernel.org>
+In-Reply-To: <4D2A139A.6010108@kernel.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 09, 2011 at 11:58:58AM -0800, Yinghai Lu wrote:
-> move quirks for usb handoff early for x86.
+On Sun, Jan 09, 2011 at 11:59:22AM -0800, Yinghai Lu wrote:
 > 
-> So we can get stable result when trying to calibrate apic timer with pm-timer.
+> Make those func can take early, num, slot, func. So later could reuse them
+> to do usb handoff much early.
 
-Is this a real problem today?  What is the symptom of the issue?  Where
-was it reported as a problem?
+As Ben pointed out, this isn't ok at all, sorry.
 
 thanks,
 
