@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369Ab1AJRCG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 12:02:06 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:59430 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753828Ab1AJRCD convert rfc822-to-8bit (ORCPT
+	id S1754403Ab1AJRCM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 12:02:12 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:41578 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754372Ab1AJRCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 12:02:03 -0500
+	Mon, 10 Jan 2011 12:02:08 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nYTTD8okzq8X444E3MVMh6eRuBVQS7ahzB00c+bv2ECCmbaDbyVwmZr6BXIc2qvDH8
-         u1wCkrWIi2+R37q0w6WJf1X92cBrpwx6Sw/cn7O+aRcSWS1X43rvr8tUtd1//CjXKWaZ
-         jEtTzXHDrks2AETYHphAvT4q2B++GJfcGkJe0=
+         :cc:content-type;
+        b=qpLXJn71Mw6pPvfDuzLX2GUGrRP7pqpvLzYerp5qQmsGIKG+zXx/BH1mlhI4l1WtTe
+         mcqlvfhr/MRFAiugUkPjwp1e9yjlXCsZJ+VLwOOkJX6kzHEhrAcYzgc1Btz1TzM2pT6Q
+         YJeMjsuXh9a5cUKnhdUtb2lazeeQZAdkNJtnw=
 MIME-Version: 1.0
-In-Reply-To: <77BC89B5-DFC2-4908-8875-59BCD00DC10F@marvell.com>
-References: <cover.1294588491.git.tardyp@gmail.com>
-	<6191610532f25d7cda435781ce9b83bfdb677b5a.1294588491.git.tardyp@gmail.com>
-	<77BC89B5-DFC2-4908-8875-59BCD00DC10F@marvell.com>
-Date: Mon, 10 Jan 2011 18:02:02 +0100
-Message-ID: <AANLkTinKp6-eR9zK4pddqnBTKoawiaoq4zfEUKk2Qr=u@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mmc: add per device quirk placeholder
-From: Pierre Tardy <tardyp@gmail.com>
-To: Philip Rakity <prakity@marvell.com>
-Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pierre Tardy <pierre.tardy@intel.com>
+In-Reply-To: <20110110083024.ab3bad25.rdunlap@xenotime.net>
+References: <1294606534-28522-1-git-send-email-christoph.paasch@uclouvain.be>
+	<201101101244.24932.christoph.paasch@uclouvain.be>
+	<20110110075032.e38955ef.rdunlap@xenotime.net>
+	<201101101724.46023.christoph.paasch@uclouvain.be>
+	<20110110083024.ab3bad25.rdunlap@xenotime.net>
+Date: Mon, 10 Jan 2011 19:02:06 +0200
+Message-ID: <AANLkTim38gKQqrh=wKC+NRf=ypKus1t8mdtmGtW-3rKU@mail.gmail.com>
+Subject: Re: [PATCH] Cleanup include/net/tcp.h include-files and coding-style
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: christoph.paasch@uclouvain.be, Ben Hutchings <bhutchings@solarflare.com>,
+        davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +
->> +     for (f = mmc_fixup_methods; f->hook; f++) {
->> +             if ((f->vendor == card->cis.vendor
->> +                  || f->vendor == (u16) SDIO_ANY_ID) &&
->> +                 (f->device == card->cis.device
->> +                  || f->device == (u16) SDIO_ANY_ID)) {
->> +                     dev_dbg(&card->dev, "calling %pF\n", f->hook);
->> +                     f->hook(card, f->data);
->
->
-> hook is not a very nice name ---  something more meaningful:  vendor_fixup  ?
-I just copied the pci/quirks.c way of doing. I think is more coherent
-to keep is this way, this name will forever appear only in 4 lines
-inside the kernel, so I dont care that much.
-I'll change that if you really do care. :-)
+On Mon, Jan 10, 2011 at 6:30 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> If you just want to fix source files that are missing header files, then
+> the patches should be accepted, even if they are not "needed" in some
+> strong sense of that word.
 
-Waiting for a few more comments to do all in a row.
-
-Thanks,
--- 
-Pierre
+This will create a lot of noise. As if we haven't seen enough before.
