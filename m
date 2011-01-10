@@ -1,94 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104Ab1AJOOy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 09:14:54 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:61234 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754038Ab1AJOOv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 09:14:51 -0500
-X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=YGCV5_ce828A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=bCwPElMxWi0QCRWP4EAA:9 a=BAAq-hmf_nVX0fXsFmAA:7 a=8jeM7uJwjjMTFqL4po2o1rjfSDgA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [tip:perf/urgent] tracing: Include module.h in define_trace.h
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        srostedt@redhat.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-In-Reply-To: <1294667377.11896.3.camel@laptop>
-References: <tip-3a9f987b3141f086de27832514aad9f50a53f754@git.kernel.org>
-	 <1294667377.11896.3.camel@laptop>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 10 Jan 2011 09:14:48 -0500
-Message-ID: <1294668888.26623.238.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754038Ab1AJOPr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 09:15:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31351 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751756Ab1AJOPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 09:15:46 -0500
+Date: Mon, 10 Jan 2011 15:08:17 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+Cc: Kay Sievers <kay.sievers@vrfy.org>,
+        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [BUG stable, 2.6.32.27] sched: delayed cleanup of user_struct
+Message-ID: <20110110140817.GA31708@redhat.com>
+References: <4D2AB8F7.7030506@profihost.ag> <20110110114913.GA22298@redhat.com> <20110110123630.GA27057@redhat.com> <4D2AFFB5.5000807@profihost.ag> <20110110133545.GA30163@redhat.com> <4D2B113A.2060303@profihost.ag>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D2B113A.2060303@profihost.ag>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-10 at 14:49 +0100, Peter Zijlstra wrote:
-> After I got everything building on that tree I was working on, the above
-> was found to compile but not to link, since it makes every:
-> 
->  #define CREATE_TRACE_POINTS
->  #include <trace/event/foo.h>
-> 
-> site also create the trace/event/module.h tracepoints, thus confusing
-> the linker with tons of duplicate symbols.
-> 
-> The below patch makes things compile and link:
-> 
-> ---
->  include/trace/define_trace.h |   23 +++++++++++++----------
->  1 files changed, 13 insertions(+), 10 deletions(-)
-> 
-> diff --git a/include/trace/define_trace.h b/include/trace/define_trace.h
-> index da39b22..9ebd0d3 100644
-> --- a/include/trace/define_trace.h
-> +++ b/include/trace/define_trace.h
-> @@ -21,16 +21,6 @@
->  #undef CREATE_TRACE_POINTS
+On 01/10, Stefan Priebe - Profihost AG wrote:
+>
+> Main problem - right i can't reproduce it. But the system was crashing
+> two times more in the past.
+>
+> You can find the logs here:
+> http://pastebin.com/hNd15E8K
 
-But here we undefine CREATE_TRACE_POINTS, why would this cause a problem
-in module.h?
+Good. Sadly, I didn't see this trace before...
 
--- Steve
+	kernel BUG at kernel/workqueue.c:287!
 
->  
->  #include <linux/stringify.h>
-> -/*
-> - * module.h includes tracepoints, and because ftrace.h
-> - * pulls in module.h:
-> - *  trace/ftrace.h -> linux/ftrace_event.h -> linux/perf_event.h ->
-> - *  linux/ftrace.h -> linux/module.h
-> - * we must include module.h here before we play with any of
-> - * the TRACE_EVENT() macros, otherwise the tracepoints included
-> - * by module.h may break the build.
-> - */
-> -#include <linux/module.h>
->  
->  #undef TRACE_EVENT
->  #define TRACE_EVENT(name, proto, args, tstruct, assign, print)	\
-> @@ -120,4 +110,17 @@
->  /* We may be processing more files */
->  #define CREATE_TRACE_POINTS
->  
-> +#else /* CREATE_TRACE_POINTS */
-> +
-> +/*
-> + * module.h includes tracepoints, and because ftrace.h
-> + * pulls in module.h:
-> + *  trace/ftrace.h -> linux/ftrace_event.h -> linux/perf_event.h ->
-> + *  linux/ftrace.h -> linux/module.h
-> + * we must include module.h here before we play with any of
-> + * the TRACE_EVENT() macros, otherwise the tracepoints included
-> + * by module.h may break the build.
-> + */
-> +#include <linux/module.h>
-> +
->  #endif /* CREATE_TRACE_POINTS */
+this matches "INIT_DELAYED_WORK() can corrupt the pending work" I
+mentioned.
 
+>> Or. You can revert
+>> 	b00bc0b237055b4c45816325ee14f0bd83e6f590
+>> 	uids: Prevent tear down race
+>>
+>> 	3959214f971417f4162926ac52ad4cd042958caa
+>> 	sched: delayed cleanup of user_struct
+> Not sure if it is a good idea to introduce another race again.
+
+Which race? b00bc0b237055b4c45816325ee14f0bd83e6f590 fixes the race, yes.
+But this race was introduced by 3959214f971417f4162926ac52ad4cd042958caa.
+And afaics the latter commit is optimization...
+
+Anyway, this is up to you, of course.
+
+Oleg.
 
