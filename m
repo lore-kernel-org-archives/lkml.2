@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab1AJVSJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 16:18:09 -0500
-Received: from ns2.cypress.com ([157.95.67.5]:48562 "EHLO ns2.cypress.com"
+	id S1754865Ab1AJVSp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 16:18:45 -0500
+Received: from mga02.intel.com ([134.134.136.20]:39919 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754730Ab1AJVSH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 16:18:07 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1754730Ab1AJVSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 16:18:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,303,1291622400"; 
+   d="scan'208";a="695402788"
+From: Seth Heasley <seth.heasley@intel.com>
+Organization: Intel Corporation
+To: jbarnes@virtuousgeek.org
+Subject: [PATCH 2.6.37] lpc: irq and pci_ids patch for Intel DH89xxCC DeviceIDs
+Date: Mon, 10 Jan 2011 13:08:37 -0800
+User-Agent: KMail/1.10.3 (Linux/2.6.27.7-9-default; KDE/4.1.3; x86_64; ; )
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        khali@linux-fr.org, seth.heasley@intel.com
 MIME-Version: 1.0
 Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [v4 1/3] 1/3 Touchscreen: Cypress TTSP G3 Core Driver
-Date: Mon, 10 Jan 2011 13:17:41 -0800
-Message-ID: <FB9C2CB29A07AB45B575A4E8D2AABC0901400A80@labamba.mis.cypress.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [v4 1/3] 1/3 Touchscreen: Cypress TTSP G3 Core Driver
-Thread-Index: AcuxCul0f6RPIsV0QW+3qa+BVCKX8AAANtrg
-References: <kev@cypress.com> <1294188847-24728-1-git-send-email-kev@cypress.com> <20110105085942.GA23321@polaris.bitmath.org> <FB9C2CB29A07AB45B575A4E8D2AABC09014003B8@labamba.mis.cypress.com> <20110105173403.GA2146@polaris.bitmath.org> <FB9C2CB29A07AB45B575A4E8D2AABC0901400A3F@labamba.mis.cypress.com> <20110110211103.GA16332@core.coreip.homeip.net>
-From: "Kevin McNeely" <Kevin.McNeely@cypress.com>
-To: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
-Cc: "Henrik Rydberg" <rydberg@euromail.se>,
-        "David Brown" <davidb@codeaurora.org>,
-        "Trilok Soni" <tsoni@codeaurora.org>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        "Eric Miao" <eric.y.miao@gmail.com>,
-        "Mike Frysinger" <vapier@gentoo.org>,
-        "Alan Cox" <alan@linux.intel.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 10 Jan 2011 21:17:42.0887 (UTC) FILETIME=[D190B770:01CBB10B]
-X-Brightmail-Tracker: AAAAAA==
-X-MailScanner: 
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201101101308.37805.seth.heasley@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok. Thank you Dmitry,
-Kevin
+This patch adds the LPC Controller DeviceIDs for the Intel DH89xxCC PCH.
 
+The code for capturing ranges of LPC Controller DeviceIDs has also been updated.
 
-> -----Original Message-----
-> From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
-> Sent: Monday, January 10, 2011 1:11 PM
-> To: Kevin McNeely
-> Cc: Henrik Rydberg; David Brown; Trilok Soni; Samuel Ortiz; Eric Miao;
-> Mike Frysinger; Alan Cox; linux-input@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [v4 1/3] 1/3 Touchscreen: Cypress TTSP G3 Core Driver
-> 
-> On Mon, Jan 10, 2011 at 11:27:33AM -0800, Kevin McNeely wrote:
-> > Hello Henrik,
-> >
-> > As there have been no other changes requested for the v4 (other than
-> > your modifications), will you merge your modification patch along
-> with
-> > my  v4 SPI and v4 I2C patches?
-> >
-> > Do I need to submit a v5 with your patch in order to get merged?
-> >
-> 
-> Hi Kevin,
-> 
-> I have a few comments/changes, let me try to sort through them
-> tonight/tomorrow.
-> 
-> Thanks.
-> 
-> --
-> Dmitry
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
 
----------------------------------------------------------------
-This message and any attachments may contain Cypress (or its
-subsidiaries) confidential information. If it has been received
-in error, please advise the sender and immediately delete this
-message.
----------------------------------------------------------------
-
+--- linux-2.6.37/include/linux/pci_ids.h.orig	2011-01-04 16:50:19.000000000 -0800
++++ linux-2.6.37/include/linux/pci_ids.h	2011-01-10 11:23:19.000000000 -0800
+@@ -2469,6 +2469,9 @@
+ #define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX	0x1c5f
+ #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS	0x1d22
+ #define PCI_DEVICE_ID_INTEL_PATSBURG_LPC	0x1d40
++#define PCI_DEVICE_ID_INTEL_DH89XXCC_LPC_MIN	0x2310
++#define PCI_DEVICE_ID_INTEL_DH89XXCC_LPC_MAX	0x231f
++#define PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS	0x2330
+ #define PCI_DEVICE_ID_INTEL_82801AA_0	0x2410
+ #define PCI_DEVICE_ID_INTEL_82801AA_1	0x2411
+ #define PCI_DEVICE_ID_INTEL_82801AA_3	0x2413
+--- linux-2.6.37/arch/x86/pci/irq.c.orig	2011-01-04 16:50:19.000000000 -0800
++++ linux-2.6.37/arch/x86/pci/irq.c	2011-01-10 11:31:02.000000000 -0800
+@@ -596,21 +596,18 @@
+ 		return 1;
+ 	}
+ 
+-	if ((device >= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MIN) && 
+-		(device <= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MAX)) {
++	if ((device >= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MIN && 
++	     device <= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MAX) 
++	||  (device >= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MIN && 
++	     device <= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX)
++	||  (device >= PCI_DEVICE_ID_INTEL_DH89XXCC_LPC_MIN &&
++	     device <= PCI_DEVICE_ID_INTEL_DH89XXCC_LPC_MAX)) {
+ 		r->name = "PIIX/ICH";
+ 		r->get = pirq_piix_get;
+ 		r->set = pirq_piix_set;
+ 		return 1;
+ 	}
+ 
+-	if ((device >= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MIN) && 
+-		(device <= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX)) {
+-		r->name = "PIIX/ICH";
+-		r->get = pirq_piix_get;
+-		r->set = pirq_piix_set;
+-		return 1;
+-	}
+ 	return 0;
+ }
+ 
