@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab1AJTbp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 14:31:45 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39498 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753828Ab1AJTbm (ORCPT
+	id S1754374Ab1AJTb6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 14:31:58 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48942 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754325Ab1AJTbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 14:31:42 -0500
-MIME-Version: 1.0
-In-Reply-To: <4D2ACFA7.6000502@redhat.com>
-References: <4D2ACFA7.6000502@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 10 Jan 2011 11:31:21 -0800
-Message-ID: <AANLkTimOOUjXa7WCTirHRrrLfiev4T9iD7spb2VrB_ET@mail.gmail.com>
-Subject: Re: [GIT PULL] KVM updates for the 2.6.38 merge window
-To: Avi Kivity <avi@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 10 Jan 2011 14:31:55 -0500
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, linux-arch@vger.kernel.org,
+        linux-nfs@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1294687767.3349.28.camel@heimdal.trondhjem.org>
+References: <AANLkTimusF4KCJ4vHPn+T1dUiKxapXaT0QTtFvh8Ykdd@mail.gmail.com>
+	 <1294426405.2929.23.camel@heimdal.trondhjem.org>
+	 <20110107190229.GX31708@n2100.arm.linux.org.uk>
+	 <1294427467.4895.66.camel@mulgrave.site>
+	 <1294505384.4181.14.camel@heimdal.trondhjem.org>
+	 <1294528551.4181.19.camel@heimdal.trondhjem.org>
+	 <20110110105019.GC24920@pengutronix.de>
+	 <1294676734.3349.10.camel@heimdal.trondhjem.org>
+	 <4D2B3D03.8050504@pengutronix.de>
+	 <1294680035.3349.19.camel@heimdal.trondhjem.org>
+	 <20110110192552.GG24920@pengutronix.de>
+	 <1294687767.3349.28.camel@heimdal.trondhjem.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 10 Jan 2011 22:31:49 +0300
+Message-ID: <1294687909.6706.885.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 1:21 AM, Avi Kivity <avi@redhat.com> wrote:
->
-> - asynchronous page faults, which allow a guest to continue processing
-> interrupts even when its memory is being paged in; in the case of a Linux
-> 2.6.38+ guest, it will receive a notification that the host is servicing a
-> page fault, and may switch into another guest process
+On Mon, 2011-01-10 at 14:29 -0500, Trond Myklebust wrote:
+> I usually do this, but there is a slight problem with that approach:
+> Greg gets to do all the work of figuring out to which stable kernels
+> this particular patch applies. In this case, since we're only talking
+> about the 2.6.37 kernel, I prefer to use the mailing lists.
 
-So quite frankly, I don't like how this was done.
+So the non-standard, but accepted way of doing this is
 
-When you touch files like mm/memory.c, you don't just touch them. You
-get sign-offs and acks from the VM maintainers. Seriously.
+Cc: Stable Tree <stable@kernel.org>	[2.6.37]
 
-In this case, I pulled, looked, and then unpulled. I just don't want
-it, and I think the new FAULT_FLAG_MINOR is seriously mis-named and
-hacky.
+James
 
-Is it about atomicity? Is it about IO? Why wasn't I notified
-before-hand? Was Andrew cc'd?
 
-Not pulled.
-
-                     Linus
