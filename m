@@ -1,75 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434Ab1AJRDI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 12:03:08 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24795 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754363Ab1AJRDF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 12:03:05 -0500
-Date: Mon, 10 Jan 2011 09:00:59 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: linux-acpi@vger.kernel.org
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, akpm <akpm@linux-foundation.org>,
-        Zhang Rui <rui.zhang@intel.com>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Zimny Lech <napohybelskurwysynom2010@gmail.com>
-Subject: Re: [PATCH -next] thermal: depends on NET
-Message-Id: <20110110090059.6f4d739d.randy.dunlap@oracle.com>
-In-Reply-To: <20101213112033.d0060e6c.randy.dunlap@oracle.com>
-References: <20101213163607.0b0a7c3a.sfr@canb.auug.org.au>
-	<20101213112033.d0060e6c.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754414Ab1AJREK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 12:04:10 -0500
+Received: from thunk.org ([69.25.196.29]:39230 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754359Ab1AJREF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 12:04:05 -0500
+Date: Mon, 10 Jan 2011 12:04:01 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: linux-kernel@vger.kernel.org, sandeen@redhat.com
+Subject: Re: [PATCH] ext4: fix possible overflow in ext4_trim_fs()
+Message-ID: <20110110170401.GC3128@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org,
+	sandeen@redhat.com
+References: <1290694277-29462-1-git-send-email-lczerner@redhat.com>
+ <20101220123521.GH23626@thunk.org>
+ <alpine.LFD.2.00.1101101221570.3095@dhcp-lab-213.englab.brq.redhat.com>
+ <20110110163556.GB3128@thunk.org>
+ <alpine.LFD.2.00.1101101752290.3095@dhcp-lab-213.englab.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1101101752290.3095@dhcp-lab-213.englab.brq.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Dec 2010 11:20:33 -0800 Randy Dunlap wrote:
-
-This is still needed in linux-next 20110110.
-
-Adding linux-acpi.
-
-Ping.  Is anybody there?  It has only been 4 weeks now with no reply...
-
-
-
-> From: Randy Dunlap <randy.dunlap@oracle.com>
+On Mon, Jan 10, 2011 at 05:52:49PM +0100, Lukas Czerner wrote:
 > 
-> ERROR: "genl_register_family" [drivers/thermal/thermal_sys.ko] undefined!
-> ERROR: "genl_unregister_family" [drivers/thermal/thermal_sys.ko] undefined!
-> ERROR: "init_net" [drivers/thermal/thermal_sys.ko] undefined!
-> ERROR: "__alloc_skb" [drivers/thermal/thermal_sys.ko] undefined!
-> ERROR: "netlink_broadcast" [drivers/thermal/thermal_sys.ko] undefined!
-> ERROR: "kfree_skb" [drivers/thermal/thermal_sys.ko] undefined!
-> ERROR: "genl_register_mc_group" [drivers/thermal/thermal_sys.ko] undefined!
-> ERROR: "nla_reserve" [drivers/thermal/thermal_sys.ko] undefined!
-> ERROR: "skb_put" [drivers/thermal/thermal_sys.ko] undefined!
+> It is the replacement for the previous one.
 > 
-> Reported-by: Zimny Lech <napohybelskurwysynom2010@gmail.com>
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Cc: Zhang Rui <rui.zhang@intel.com>
-> ---
->  drivers/thermal/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> --- linux-next-20101213.orig/drivers/thermal/Kconfig
-> +++ linux-next-20101213/drivers/thermal/Kconfig
-> @@ -4,6 +4,7 @@
->  
->  menuconfig THERMAL
->  	tristate "Generic Thermal sysfs driver"
-> +	depends on NET
->  	help
->  	  Generic Thermal Sysfs driver offers a generic mechanism for
->  	  thermal management. Usually it's made up of one or more thermal
-> --
 
+Ah, I see, I got it confused with another trim_fs patch.  I wish you
+had sent this to me earlier, but ok, I'll fix it up.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+    	      	    	     	     	  - Ted
