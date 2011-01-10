@@ -1,81 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab1AJMGo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 07:06:44 -0500
-Received: from sh.osrg.net ([192.16.179.4]:47764 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752349Ab1AJMGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 07:06:41 -0500
-Date: Mon, 10 Jan 2011 21:06:34 +0900 (JST)
-Message-Id: <20110110.210634.69343822.ryusuke@osrg.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        linux-nilfs@vger.kernel.org
-Subject: [GIT PULL] nilfs2 updates for 2.6.38
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 10 Jan 2011 21:06:35 +0900 (JST)
+	id S1753876Ab1AJMIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 07:08:13 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:46816 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752349Ab1AJMIK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 07:08:10 -0500
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH v2] net/r8169: Update the function of parsing firmware
+Date: Mon, 10 Jan 2011 20:07:25 +0800
+X-BOX-Message-Id: p0AC83oN025829
+Message-ID: <1294661245-2191-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.7.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Update rtl_phy_write_fw function. The new function could
+parse the complex firmware which is used by RTL8111E and later.
+The new firmware may read data and do some operations, not just
+do writing only.
 
-please pull from
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/r8169.c |  122 ++++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 110 insertions(+), 12 deletions(-)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
+diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+index 27a7c20..1e71912 100644
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -1632,36 +1632,134 @@ rtl_phy_write_fw(struct rtl8169_private *tp, const struct firmware *fw)
+ {
+ 	__le32 *phytable = (__le32 *)fw->data;
+ 	struct net_device *dev = tp->dev;
+-	size_t i;
++	size_t index, fw_size = fw->size / sizeof(*phytable);
++	u32 predata, count;
+ 
+ 	if (fw->size % sizeof(*phytable)) {
+ 		netif_err(tp, probe, dev, "odd sized firmware %zd\n", fw->size);
+ 		return;
+ 	}
+ 
+-	for (i = 0; i < fw->size / sizeof(*phytable); i++) {
+-		u32 action = le32_to_cpu(phytable[i]);
++	for (index = 0; index < fw_size; index++) {
++		u32 action = le32_to_cpu(phytable[index]);
++		u32 regno = (action & 0x0fff0000) >> 16;
+ 
+-		if (!action)
++		switch(action & 0xf0000000) {
++		case PHY_READ:
++		case PHY_DATA_OR:
++		case PHY_DATA_AND:
++		case PHY_READ_EFUSE:
++		case PHY_CLEAR_READCOUNT:
++		case PHY_WRITE:
++		case PHY_WRITE_PREVIOUS:
++		case PHY_DELAY_MS:
+ 			break;
+ 
+-		if ((action & 0xf0000000) != PHY_WRITE) {
+-			netif_err(tp, probe, dev,
+-				  "unknown action 0x%08x\n", action);
++		case PHY_BJMPN:
++			if (regno > index) {
++				netif_err(tp, probe, tp->dev,
++					"Out of range of firmware\n");
++				return;
++			}
++			break;
++		case PHY_READCOUNT_EQ_SKIP:
++			if (index + 2 >= fw_size) {
++				netif_err(tp, probe, tp->dev,
++					"Out of range of firmware\n");
++				return;
++			}
++			break;
++		case PHY_COMP_EQ_SKIPN:
++		case PHY_COMP_NEQ_SKIPN:
++		case PHY_SKIPN:
++			if (index + 1 + regno >= fw_size) {
++				netif_err(tp, probe, tp->dev,
++					"Out of range of firmware\n");
++				return;
++			}
++			break;
++
++		case PHY_READ_MAC_BYTE:
++		case PHY_WRITE_MAC_BYTE:
++		case PHY_WRITE_ERI_WORD:
++		default:
++			netif_err(tp, probe, tp->dev,
++				  "Invalid action 0x%08x\n", action);
+ 			return;
+ 		}
+ 	}
+ 
+-	while (i-- != 0) {
+-		u32 action = le32_to_cpu(*phytable);
++	predata = 0;
++	count = 0;
++
++	for (index = 0; index < fw_size; ) {
++		u32 action = le32_to_cpu(phytable[index]);
+ 		u32 data = action & 0x0000ffff;
+-		u32 reg = (action & 0x0fff0000) >> 16;
++		u32 regno = (action & 0x0fff0000) >> 16;
++
++		if (!action)
++			break;
+ 
+ 		switch(action & 0xf0000000) {
++		case PHY_READ:
++			predata = rtl_readphy(tp, regno);
++			count++;
++			index++;
++			break;
++		case PHY_DATA_OR:
++			predata |= data;
++			index++;
++			break;
++		case PHY_DATA_AND:
++			predata &= data;
++			index++;
++			break;
++		case PHY_BJMPN:
++			index -= regno;
++			break;
++		case PHY_READ_EFUSE:
++			predata = rtl8168d_efuse_read(tp->mmio_addr, regno);
++			index++;
++			break;
++		case PHY_CLEAR_READCOUNT:
++			count = 0;
++			index++;
++			break;
+ 		case PHY_WRITE:
+-			rtl_writephy(tp, reg, data);
+-			phytable++;
++			rtl_writephy(tp, regno, data);
++			index++;
++			break;
++		case PHY_READCOUNT_EQ_SKIP:
++			if (count == data)
++				index += 2;
++			else
++				index += 1;
++			break;
++		case PHY_COMP_EQ_SKIPN:
++			if (predata == data)
++				index += regno;
++			index++;
++			break;
++		case PHY_COMP_NEQ_SKIPN:
++			if (predata != data)
++				index += regno;
++			index++;
++			break;
++		case PHY_WRITE_PREVIOUS:
++			rtl_writephy(tp, regno, predata);
++			index++;
+ 			break;
++		case PHY_SKIPN:
++			index += regno + 1;
++			break;
++		case PHY_DELAY_MS:
++			mdelay(data);
++			index++;
++			break;
++
++		case PHY_READ_MAC_BYTE:
++		case PHY_WRITE_MAC_BYTE:
++		case PHY_WRITE_ERI_WORD:
+ 		default:
+ 			BUG();
+ 		}
+-- 
+1.7.3.2
 
-to receive the following nilfs2 updates.  The only noticeable change
-is fiemap support, otherwise it's mostly cleanups and minor fixes.
-
-Thanks!
-
-Ryusuke Konishi
---
-The following changes since commit 0c21e3aaf6ae85bee804a325aa29c325209180fd:
-
-  Merge branch 'for-next' of git://git.kernel.org/pub/scm/linux/kernel/git/hch/hfsplus (2011-01-07 17:16:27 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
-
-Joe Perches (1):
-      fs/nilfs2/super.c: Use printf extension %pV
-
-Ryusuke Konishi (10):
-      MAINTAINERS: add nilfs2 git tree entry
-      nilfs2: call nilfs_error inside bmap routines
-      nilfs2: mark buffer heads as delayed until the data is written to disk
-      nilfs2: fiemap support
-      nilfs2: fix a checkpatch error in page.c
-      nilfs2: get rid of loaded flag from nilfs object
-      nilfs2: simplify nilfs_mdt_freeze_buffer
-      nilfs2: get rid of nilfs_mount_options structure
-      nilfs2: do not pass sbi to functions which can get it from inode
-      nilfs2: unfold nilfs_dat_inode function
-
- MAINTAINERS           |    1 +
- fs/nilfs2/bmap.c      |   47 ++++++++++---
- fs/nilfs2/btnode.c    |    3 +-
- fs/nilfs2/dir.c       |    3 +-
- fs/nilfs2/file.c      |    1 +
- fs/nilfs2/ifile.c     |   11 +--
- fs/nilfs2/inode.c     |  180 ++++++++++++++++++++++++++++++++++++++++--------
- fs/nilfs2/ioctl.c     |   12 ++--
- fs/nilfs2/mdt.c       |   32 +++------
- fs/nilfs2/namei.c     |    1 +
- fs/nilfs2/nilfs.h     |   13 +---
- fs/nilfs2/page.c      |   86 +++++++++++++++++++++++-
- fs/nilfs2/page.h      |    3 +
- fs/nilfs2/recovery.c  |    2 +-
- fs/nilfs2/sb.h        |    8 --
- fs/nilfs2/segment.c   |   43 +++---------
- fs/nilfs2/super.c     |   29 +++++---
- fs/nilfs2/the_nilfs.c |    6 +-
- fs/nilfs2/the_nilfs.h |    3 -
- 19 files changed, 337 insertions(+), 147 deletions(-)
