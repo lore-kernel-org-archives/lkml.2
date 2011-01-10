@@ -1,186 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab1AJVMw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 16:12:52 -0500
-Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:34299
-	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753751Ab1AJVMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 16:12:49 -0500
-Date: Mon, 10 Jan 2011 21:14:07 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: LSM <linux-security-module@vger.kernel.org>,
-        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
-        containers@lists.linux-foundation.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: [PATCH 6/7] user namespaces: convert all capable checks in
- kernel/sys.c
-Message-ID: <20110110211406.GF22564@mail.hallyn.com>
-References: <20110110211135.GA22446@mail.hallyn.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110110211135.GA22446@mail.hallyn.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754863Ab1AJVM2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 16:12:28 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49868
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754731Ab1AJVMZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 16:12:25 -0500
+Date: Mon, 10 Jan 2011 13:12:57 -0800 (PST)
+Message-Id: <20110110.131257.212413498.davem@davemloft.net>
+To: gwingerde@gmail.com
+Cc: eric.dumazet@gmail.com, torvalds@linux-foundation.org,
+        alex.arnautu96@gmail.com, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org
+Subject: Re: Kernel 2.6.37-rc5 rc7 Oops
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4D2B7550.5000008@gmail.com>
+References: <1293652965.7150.13.camel@edumazet-laptop>
+	<20110110.000650.124002380.davem@davemloft.net>
+	<4D2B7550.5000008@gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows setuid/setgid in containers.  It also fixes some
-corner cases where kernel logic foregoes capability checks when
-uids are equivalent.  The latter will need to be done throughout
-the whole kernel.
+From: Gertjan van Wingerde <gwingerde@gmail.com>
+Date: Mon, 10 Jan 2011 22:08:32 +0100
 
-Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
----
- kernel/sys.c |   35 ++++++++++++++++++++---------------
- 1 files changed, 20 insertions(+), 15 deletions(-)
+> On 01/10/11 09:06, David Miller wrote:
+>> From: Eric Dumazet <eric.dumazet@gmail.com>
+>> Date: Wed, 29 Dec 2010 21:02:45 +0100
+>> 
+>>> Le mercredi 29 décembre 2010 à 11:23 -0800, Linus Torvalds a écrit :
+>>>> On Wed, Dec 29, 2010 at 4:26 AM, Alex Arnautu <alex.arnautu96@gmail.com> wrote:
+>>>>>
+>>>>> I get an oops with 2.6.37-rc5 and 2.6.37-rc7-git1.
+>>>>> http://www.fotoshack.us/fotos/19044P271210_15.14_[01].jpg
+>>>>
+>>>> Hmm. Davem added to the list of people involved. This _may_ be fixed
+>>>> by the "always clone skbs" commit in -rc8 (commit 173021072), but
+>>>> David can make a better judgment call.
+>>>>
+>>>
+>>> Very unlikely, as commit 173021072 only fix a bug in case mirred is
+>>> used.
+>> 
+>> This should be taken to the wireless list (now CC:'d) as the rt2xxx
+>> driver and the wireless stack are both in that backtrace.
+> 
+> Hmmm, the jpg images of the oops don't seem to be available anymore
+> (a 404 not found is returned on the URL.
+> Does anybody still have the backtrace? Otherwise it will be very hard to look
+> into this.
 
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 9b9b03b..2278e87 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -125,8 +125,10 @@ static int set_one_prio(struct task_struct *p, int niceval, int error)
- 	const struct cred *cred = current_cred(), *pcred = __task_cred(p);
- 	int no_nice;
- 
--	if (pcred->uid  != cred->euid &&
--	    pcred->euid != cred->euid && !capable(CAP_SYS_NICE)) {
-+	if (pcred->user->user_ns != cred->user->user_ns &&
-+	    pcred->uid  != cred->euid &&
-+	    pcred->euid != cred->euid &&
-+	    !ns_capable(pcred->user->user_ns, CAP_SYS_NICE)) {
- 		error = -EPERM;
- 		goto out;
- 	}
-@@ -496,7 +498,7 @@ SYSCALL_DEFINE2(setregid, gid_t, rgid, gid_t, egid)
- 	if (rgid != (gid_t) -1) {
- 		if (old->gid == rgid ||
- 		    old->egid == rgid ||
--		    capable(CAP_SETGID))
-+		    ns_capable(current_user_ns(), CAP_SETGID))
- 			new->gid = rgid;
- 		else
- 			goto error;
-@@ -505,7 +507,7 @@ SYSCALL_DEFINE2(setregid, gid_t, rgid, gid_t, egid)
- 		if (old->gid == egid ||
- 		    old->egid == egid ||
- 		    old->sgid == egid ||
--		    capable(CAP_SETGID))
-+		    ns_capable(current_user_ns(), CAP_SETGID))
- 			new->egid = egid;
- 		else
- 			goto error;
-@@ -540,7 +542,7 @@ SYSCALL_DEFINE1(setgid, gid_t, gid)
- 	old = current_cred();
- 
- 	retval = -EPERM;
--	if (capable(CAP_SETGID))
-+	if (ns_capable(current_user_ns(), CAP_SETGID))
- 		new->gid = new->egid = new->sgid = new->fsgid = gid;
- 	else if (gid == old->gid || gid == old->sgid)
- 		new->egid = new->fsgid = gid;
-@@ -607,7 +609,7 @@ SYSCALL_DEFINE2(setreuid, uid_t, ruid, uid_t, euid)
- 		new->uid = ruid;
- 		if (old->uid != ruid &&
- 		    old->euid != ruid &&
--		    !capable(CAP_SETUID))
-+		    !ns_capable(current_user_ns(), CAP_SETUID))
- 			goto error;
- 	}
- 
-@@ -616,7 +618,7 @@ SYSCALL_DEFINE2(setreuid, uid_t, ruid, uid_t, euid)
- 		if (old->uid != euid &&
- 		    old->euid != euid &&
- 		    old->suid != euid &&
--		    !capable(CAP_SETUID))
-+		    !ns_capable(current_user_ns(), CAP_SETUID))
- 			goto error;
- 	}
- 
-@@ -664,7 +666,7 @@ SYSCALL_DEFINE1(setuid, uid_t, uid)
- 	old = current_cred();
- 
- 	retval = -EPERM;
--	if (capable(CAP_SETUID)) {
-+	if (ns_capable(current_user_ns(), CAP_SETUID)) {
- 		new->suid = new->uid = uid;
- 		if (uid != old->uid) {
- 			retval = set_user(new);
-@@ -706,7 +708,7 @@ SYSCALL_DEFINE3(setresuid, uid_t, ruid, uid_t, euid, uid_t, suid)
- 	old = current_cred();
- 
- 	retval = -EPERM;
--	if (!capable(CAP_SETUID)) {
-+	if (!ns_capable(current_user_ns(), CAP_SETUID)) {
- 		if (ruid != (uid_t) -1 && ruid != old->uid &&
- 		    ruid != old->euid  && ruid != old->suid)
- 			goto error;
-@@ -770,7 +772,7 @@ SYSCALL_DEFINE3(setresgid, gid_t, rgid, gid_t, egid, gid_t, sgid)
- 	old = current_cred();
- 
- 	retval = -EPERM;
--	if (!capable(CAP_SETGID)) {
-+	if (!ns_capable(current_user_ns(), CAP_SETGID)) {
- 		if (rgid != (gid_t) -1 && rgid != old->gid &&
- 		    rgid != old->egid  && rgid != old->sgid)
- 			goto error;
-@@ -830,7 +832,7 @@ SYSCALL_DEFINE1(setfsuid, uid_t, uid)
- 
- 	if (uid == old->uid  || uid == old->euid  ||
- 	    uid == old->suid || uid == old->fsuid ||
--	    capable(CAP_SETUID)) {
-+	    ns_capable(current_user_ns(), CAP_SETUID)) {
- 		if (uid != old_fsuid) {
- 			new->fsuid = uid;
- 			if (security_task_fix_setuid(new, old, LSM_SETID_FS) == 0)
-@@ -863,7 +865,7 @@ SYSCALL_DEFINE1(setfsgid, gid_t, gid)
- 
- 	if (gid == old->gid  || gid == old->egid  ||
- 	    gid == old->sgid || gid == old->fsgid ||
--	    capable(CAP_SETGID)) {
-+	    ns_capable(current_user_ns(), CAP_SETGID)) {
- 		if (gid != old_fsgid) {
- 			new->fsgid = gid;
- 			goto change_okay;
-@@ -1220,7 +1222,7 @@ SYSCALL_DEFINE2(setdomainname, char __user *, name, int, len)
- 	int errno;
- 	char tmp[__NEW_UTS_LEN];
- 
--	if (!capable(CAP_SYS_ADMIN))
-+	if (!ns_capable(current->nsproxy->uts_ns->user_ns, CAP_SYS_ADMIN))
- 		return -EPERM;
- 	if (len < 0 || len > __NEW_UTS_LEN)
- 		return -EINVAL;
-@@ -1335,6 +1337,8 @@ int do_prlimit(struct task_struct *tsk, unsigned int resource,
- 	rlim = tsk->signal->rlim + resource;
- 	task_lock(tsk->group_leader);
- 	if (new_rlim) {
-+		/* Keep the capable check against init_user_ns until
-+		   cgroups can contain all limits */
- 		if (new_rlim->rlim_max > rlim->rlim_max &&
- 				!capable(CAP_SYS_RESOURCE))
- 			retval = -EPERM;
-@@ -1379,13 +1383,14 @@ static int check_prlimit_permission(struct task_struct *task)
- 	const struct cred *cred = current_cred(), *tcred;
- 
- 	tcred = __task_cred(task);
--	if ((cred->uid != tcred->euid ||
-+	if ((cred->user->user_ns != tcred->user->user_ns ||
-+	     cred->uid != tcred->euid ||
- 	     cred->uid != tcred->suid ||
- 	     cred->uid != tcred->uid  ||
- 	     cred->gid != tcred->egid ||
- 	     cred->gid != tcred->sgid ||
- 	     cred->gid != tcred->gid) &&
--	     !capable(CAP_SYS_RESOURCE)) {
-+	     !ns_capable(tcred->user->user_ns, CAP_SYS_RESOURCE)) {
- 		return -EPERM;
- 	}
- 
--- 
-1.7.0.4
+You must have copy-and-paste'd it wrong, the URL works perfectly fine
+for me.
 
+I also put up a copy at:
+
+http://vger.kernel.org/~davem/crash.jpg
