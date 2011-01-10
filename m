@@ -1,122 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab1AJXt5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 18:49:57 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:44720 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710Ab1AJXt4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 18:49:56 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=NkYFRUIza4rym3FYt1tQcKYIVme5kxn4MaUaFCPuAqCuQd0Ga1nbzOJUvzFVgJx5ib
-         FABQ8hILrJrX3XnejWuw==
+	id S1754771Ab1AJXuv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 18:50:51 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:43056 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751710Ab1AJXur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 18:50:47 -0500
+Date: Mon, 10 Jan 2011 15:49:59 -0800
+From: Kees Cook <kees.cook@canonical.com>
+To: matthieu castet <castet.matthieu@free.fr>
+Cc: Ingo Molnar <mingo@elte.hu>, Xiaotian Feng <xtfeng@gmail.com>,
+        Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
+        Arjan van de Ven <arjan@infradead.org>,
+        James Morris <jmorris@namei.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
+        Siarhei Liakh <sliakh.lkml@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 3/3 V13] RO/NX protection for loadable kernel
+Message-ID: <20110110234959.GE4979@outflux.net>
+References: <4CE2F914.9070106@free.fr>
+ <24422.1290656467@localhost>
+ <20101126182355.62615dff@mat-laptop>
+ <20101208221951.GO5750@outflux.net>
+ <20101211001857.4c5e0794@mat-laptop>
+ <20101222124019.GG10809@elte.hu>
+ <34428.1293053719@localhost>
+ <AANLkTin55DXcQnK3NY7y-v8TXj5w-XT2rTJo9p90tj4g@mail.gmail.com>
+ <20110107130426.GA24259@elte.hu>
+ <20110108122455.38d31524@mat-laptop>
 MIME-Version: 1.0
-In-Reply-To: <1292509608.5532.3.camel@maggy.simson.net>
-References: <20101216031016.186364650@google.com> <20101216031038.067028969@google.com>
- <1292497423.6803.4572.camel@twins> <1292509608.5532.3.camel@maggy.simson.net>
-From: Paul Turner <pjt@google.com>
-Date: Mon, 10 Jan 2011 15:49:21 -0800
-Message-ID: <AANLkTikWFiUWHgddJeeStonVMuSgqPHFo=MAJM4qYzyo@mail.gmail.com>
-Subject: Re: [patch 1/2] sched: move periodic share updates to entity_tick()
-To: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110108122455.38d31524@mat-laptop>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Back from the Holidays and catching up on email -- Peter, looks like
-this fix still needs merging?
+Hi,
 
-On Thu, Dec 16, 2010 at 6:26 AM, Mike Galbraith <efault@gmx.de> wrote:
-> On Thu, 2010-12-16 at 12:03 +0100, Peter Zijlstra wrote:
->> I made that:
->
-> Box is ill, I'll test these as soon as it's all better.
->
->> ---
->> Subject: sched: Move periodic share updates to entity_tick()
->> From: Paul Turner <pjt@google.com>
->> Date: Wed, 15 Dec 2010 19:10:17 -0800
->>
->> Long running entities that do not block (dequeue) require periodic updates to
->> maintain accurate share values.  (Note: group entities with several threads are
->> quite likely to be non-blocking in many circumstances).
->>
->> By virtue of being long-running however, we will see entity ticks (otherwise
->> the required update occurs in dequeue/put and we are done).  Thus we can move
->> the detection (and associated work) for these updates into the periodic path.
->>
->> This restores the 'atomicity' of update_curr() with respect to accounting.
->>
->> Signed-off-by: Paul Turner <pjt@google.com>
->> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> LKML-Reference: <20101216031038.067028969@google.com>
->> ---
->>  kernel/sched_fair.c |   21 +++++++++++++++++----
->>  1 file changed, 17 insertions(+), 4 deletions(-)
->>
->> Index: linux-2.6/kernel/sched_fair.c
->> ===================================================================
->> --- linux-2.6.orig/kernel/sched_fair.c
->> +++ linux-2.6/kernel/sched_fair.c
->> @@ -564,10 +564,6 @@ __update_curr(struct cfs_rq *cfs_rq, str
->>
->>  #if defined CONFIG_SMP && defined CONFIG_FAIR_GROUP_SCHED
->>       cfs_rq->load_unacc_exec_time += delta_exec;
->> -     if (cfs_rq->load_unacc_exec_time > sysctl_sched_shares_window) {
->> -             update_cfs_load(cfs_rq, 0);
->> -             update_cfs_shares(cfs_rq, 0);
->> -     }
->>  #endif
->>  }
->>
->> @@ -809,6 +805,14 @@ static void update_cfs_shares(struct cfs
->>
->>       reweight_entity(cfs_rq_of(se), se, shares);
->>  }
->> +
->> +static void update_entity_shares_tick(struct cfs_rq *cfs_rq)
->> +{
->> +     if (cfs_rq->load_unacc_exec_time > sysctl_sched_shares_window) {
->> +             update_cfs_load(cfs_rq, 0);
->> +             update_cfs_shares(cfs_rq, 0);
->> +     }
->> +}
->>  #else /* CONFIG_FAIR_GROUP_SCHED */
->>  static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
->>  {
->> @@ -817,6 +821,10 @@ static void update_cfs_load(struct cfs_r
->>  static inline void update_cfs_shares(struct cfs_rq *cfs_rq, long weight_delta)
->>  {
->>  }
->> +
->> +static inline void update_entity_shares_tick(struct cfs_rq *cfs_rq)
->> +{
->> +}
->>  #endif /* CONFIG_FAIR_GROUP_SCHED */
->>
->>  static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
->> @@ -1133,6 +1141,11 @@ entity_tick(struct cfs_rq *cfs_rq, struc
->>        */
->>       update_curr(cfs_rq);
->>
->> +     /*
->> +      * Update share accounting for long-running entities.
->> +      */
->> +     update_entity_shares_tick(cfs_rq);
->> +
->>  #ifdef CONFIG_SCHED_HRTICK
->>       /*
->>        * queued ticks are scheduled to match the slice, so don't bother
->>
->
->
->
+I was just shown this[1] on Xen from an Ubuntu bug report[2].
+
+[    1.230382] NX-protecting the kernel data: 3884k
+[    1.231002] BUG: unable to handle kernel paging request at c1782ae0
+...
+[    1.231145] Call Trace:
+[    1.231152]  [<c0138481>] ? __change_page_attr+0x2c1/0x370
+[    1.231161]  [<c02163a1>] ? __purge_vmap_area_lazy+0xc1/0x180
+[    1.231169]  [<c013857c>] ? __change_page_attr_set_clr+0x4c/0xb0
+[    1.231176]  [<c0138838>] ? change_page_attr_set_clr+0x128/0x300
+[    1.231183]  [<c010798e>] ? __raw_callee_save_xen_restore_fl+0x6/0x8
+[    1.231192]  [<c0159ca1>] ? vprintk+0x171/0x3f0
+[    1.231198]  [<c0138bdf>] ? set_memory_nx+0x5f/0x70
+
+
+Does Xen have different size page table allocations or something weird?
+
+-Kees
+
+[1] http://launchpadlibrarian.net/61853131/natty-failed-boot-ec2.txt
+[2] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/699828
+
+-- 
+Kees Cook
+Ubuntu Security Team
