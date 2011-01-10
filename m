@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527Ab1AJHWd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 02:22:33 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43315 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751756Ab1AJHWa (ORCPT
+	id S1752460Ab1AJH1x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 02:27:53 -0500
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:54230 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750852Ab1AJH1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 02:22:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=kin81r1vaWU4T3Df3368osQhrPyWaWrO916+PakfbBkNeMrLbE9NRju6pnFG7Egahc
-         YdyMGsdOLIjkkRkvrHCumpwxt2bR9jYiit93DNnojIyF/eVXN5iIYbeq0unVykwgRpOq
-         B6Th4px1bBbb61s2NiFVR9T1XLBwX4VE+Mqvw=
-Date: Mon, 10 Jan 2011 08:22:26 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
-        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
-        Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH V8 02/13] ntp: add ADJ_SETOFFSET mode bit
-Message-ID: <20110110072226.GB4864@riccoc20.at.omicron.at>
-References: <cover.1293820862.git.richard.cochran@omicron.at>
- <fe2bec763bec155381d62721aa9da84aeca2785c.1293820862.git.richard.cochran@omicron.at>
- <AANLkTini2WdT-1v4k9V3JOZYDkA59P+SyscTe8-fK2Wk@mail.gmail.com>
- <20110108175028.GA22308@riccoc20.at.omicron.at>
- <AANLkTikigXGSACF6R6kfNHyKZ7GFWrUrCMxygvL3fUC6@mail.gmail.com>
+	Mon, 10 Jan 2011 02:27:52 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAM9DKk1R8G9r/2dsb2JhbACkPnS7EA2FPwQ
+Date: Mon, 10 Jan 2011 08:27:50 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Philippe De Muyter <phdm@macqel.be>
+Subject: Re: linux-next: build failure after merge of the watchdog tree
+Message-ID: <20110110072750.GL3801@infomag.iguana.be>
+References: <20110110141250.78947d61.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTikigXGSACF6R6kfNHyKZ7GFWrUrCMxygvL3fUC6@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110110141250.78947d61.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 06:07:26AM +0900, Kuwahara,T. wrote:
-> 
-> Another problem remains:  How do you deal with leap seconds?  I mean,
+Hi Stephen,
 
-Since you have changed the topic, does that mean that you now agree
-with adding a new mode bit? ;)
+> After merging the watchdog tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
 
-Richard
+This driver is for the m68K architecture. I apparently missed checking
+the dependancy in Kconfig. I'll fix it today.
+
+Kind regards,
+Wim.
+
