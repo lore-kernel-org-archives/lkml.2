@@ -1,102 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab1AJT3g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 14:29:36 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:65371 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751606Ab1AJT3c convert rfc822-to-8bit (ORCPT
+	id S1754181Ab1AJT3t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 14:29:49 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:37138 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab1AJT3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 14:29:32 -0500
-X-IronPort-AV: E=Sophos;i="4.60,302,1291622400"; 
-   d="scan'208";a="503675048"
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>, linux-arch@vger.kernel.org,
-        linux-nfs@vger.kernel.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20110110192552.GG24920@pengutronix.de>
-References: <AANLkTimusF4KCJ4vHPn+T1dUiKxapXaT0QTtFvh8Ykdd@mail.gmail.com>
-	 <1294426405.2929.23.camel@heimdal.trondhjem.org>
-	 <20110107190229.GX31708@n2100.arm.linux.org.uk>
-	 <1294427467.4895.66.camel@mulgrave.site>
-	 <1294505384.4181.14.camel@heimdal.trondhjem.org>
-	 <1294528551.4181.19.camel@heimdal.trondhjem.org>
-	 <20110110105019.GC24920@pengutronix.de>
-	 <1294676734.3349.10.camel@heimdal.trondhjem.org>
-	 <4D2B3D03.8050504@pengutronix.de>
-	 <1294680035.3349.19.camel@heimdal.trondhjem.org>
-	 <20110110192552.GG24920@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Mon, 10 Jan 2011 14:29:27 -0500
-Message-ID: <1294687767.3349.28.camel@heimdal.trondhjem.org>
+	Mon, 10 Jan 2011 14:29:46 -0500
+Date: Mon, 10 Jan 2011 20:29:34 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: "Heasley, Seth" <seth.heasley@intel.com>
+Cc: "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 2.6.37] irq: irq and pci_ids patch for Intel DH89xxCC 
+ DeviceIDs
+Message-ID: <20110110202934.5e4924b8@endymion.delvare>
+In-Reply-To: <CF9C39F99A89134C9CF9C4CCB68B8DDF25C1AF9090@orsmsx501.amr.corp.intel.com>
+References: <201101101058.13515.seth.heasley@intel.com>
+	<20110110201430.7ab599c4@endymion.delvare>
+	<CF9C39F99A89134C9CF9C4CCB68B8DDF25C1AF9090@orsmsx501.amr.corp.intel.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 10 Jan 2011 19:29:29.0630 (UTC) FILETIME=[B34853E0:01CBB0FC]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-10 at 20:25 +0100, Uwe Kleine-König wrote: 
-> Hello Trond,
+On Mon, 10 Jan 2011 11:19:15 -0800, Heasley, Seth wrote:
+> >> --- linux-2.6.37/arch/x86/pci/irq.c.orig	2011-01-04
+> >16:50:19.000000000 -0800
+> >> +++ linux-2.6.37/arch/x86/pci/irq.c	2011-01-06 14:16:00.000000000
+> >-0800
+> >> @@ -611,6 +611,15 @@
+> >>  		r->set = pirq_piix_set;
+> >>  		return 1;
+> >>  	}
+> >> +
+> >> +	if ((device >= PCI_DEVICE_ID_INTEL_DH89XXCC_LPC_MIN) &&
+> >> +		(device <= PCI_DEVICE_ID_INTEL_DH89XXCC_LPC_MAX)) {
+> >> +		r->name = "PIIX/ICH";
+> >> +		r->get = pirq_piix_get;
+> >> +		r->set = pirq_piix_set;
+> >> +		return 1;
+> >> +	}
+> >> +
+> >
+> >I'm curious why we have separate sections for INTEL_5_3400_SERIES,
+> >INTEL_COUGARPOINT and now INTEL_DH89XXCC? We do the same thing for all
+> >3, so it would make sense to merge the tests to avoid duplicating the
+> >code.
 > 
-> On Mon, Jan 10, 2011 at 12:20:35PM -0500, Trond Myklebust wrote:
-> > On Mon, 2011-01-10 at 18:08 +0100, Marc Kleine-Budde wrote: 
-> > > On 01/10/2011 05:25 PM, Trond Myklebust wrote:
-> > > > On Mon, 2011-01-10 at 11:50 +0100, Uwe Kleine-König wrote: 
-> > > >> Hi Trond,
-> > > >>
-> > > >> On Sat, Jan 08, 2011 at 06:15:51PM -0500, Trond Myklebust wrote:
-> > > >>> ----------------------------------------------------------------------------------- 
-> > > >> It would be great if you could add a "8<" in the line above next time.
-> > > >> Then git-am -c does the right thing (at least I think so).
-> > > > 
-> > > > Sorry. I wasn't aware of that particular idiom. So something like
-> > > > 
-> > > > 8<------------------------------------------------------------
-> > > > From: Trond Myklebust <Trond.Myklebust@netapp.com>
-> > > > Subject: .....
-> > > 
-> > > Yes.
-> > > 
-> > > From "man git-mailinfo":
-> > > "A line that mainly consists of scissors (either ">8" or "8<") and
-> > > perforation (dash "-")"
-> > > 
-> > > BTW:
-> > > Is this patch a candidate for stable?
-> > 
-> > Yes. I'm planning on sending it to the stable list after Linus merges it
-> > into mainline.
-> So there is another idiom for you:  just put
-> 
-> 	Cc: stable@kernel.org
-> 
-> in the S-o-b block and Greg will pick it off "automatically".  (Just in
-> case you don't know, and if you do, maybe someone else learned
-> something.)
+> Some products are defining a range of DeviceIDs rather than one or two specific IDs, so these blocks are for catching any DeviceID in the range.  I'm certainly open to suggestion for a better way to handle these, and I agree that the current way is awkward.
 
-I usually do this, but there is a slight problem with that approach:
-Greg gets to do all the work of figuring out to which stable kernels
-this particular patch applies. In this case, since we're only talking
-about the 2.6.37 kernel, I prefer to use the mailing lists.
+I understand the need to have separate blocks for separate IDs and for
+ID ranges. But all the ranges could be covered by the same block:
 
-Cheers
-  Trond
+	if ((device >= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MIN && 
+	     device <= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MAX)
+	 || (device >= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MIN && 
+	     device <= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX)) {
+		r->name = "PIIX/ICH";
+		r->get = pirq_piix_get;
+		r->set = pirq_piix_set;
+		return 1;
+	}
+
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+Jean Delvare
