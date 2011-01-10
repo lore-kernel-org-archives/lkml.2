@@ -1,85 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482Ab1AJRU5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 12:20:57 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:14182 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752622Ab1AJRUx convert rfc822-to-8bit (ORCPT
+	id S1754522Ab1AJRWP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 12:22:15 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:57973 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752622Ab1AJRWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 12:20:53 -0500
-X-IronPort-AV: E=Sophos;i="4.60,301,1291622400"; 
-   d="scan'208";a="503623049"
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
-In-Reply-To: <4D2B3D03.8050504@pengutronix.de>
-References: <1294268808.2952.18.camel@heimdal.trondhjem.org>
-	 <1294270104.16957.73.camel@mulgrave.site>
-	 <1294335614.22825.154.camel@mulgrave.site>
-	 <1294336054.2905.1.camel@heimdal.trondhjem.org>
-	 <AANLkTimusF4KCJ4vHPn+T1dUiKxapXaT0QTtFvh8Ykdd@mail.gmail.com>
-	 <1294426405.2929.23.camel@heimdal.trondhjem.org>
-	 <20110107190229.GX31708@n2100.arm.linux.org.uk>
-	 <1294427467.4895.66.camel@mulgrave.site>
-	 <1294505384.4181.14.camel@heimdal.trondhjem.org>
-	 <1294528551.4181.19.camel@heimdal.trondhjem.org>
-	 <20110110105019.GC24920@pengutronix.de>
-	 <1294676734.3349.10.camel@heimdal.trondhjem.org>
-	 <4D2B3D03.8050504@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Mon, 10 Jan 2011 12:20:35 -0500
-Message-ID: <1294680035.3349.19.camel@heimdal.trondhjem.org>
+	Mon, 10 Jan 2011 12:22:13 -0500
+Date: Mon, 10 Jan 2011 09:19:59 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Rob Landley <rlandley@parallels.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, <trivial@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-embedded@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH] Move an assert under DEBUG_KERNEL. (attempt 2)
+Message-Id: <20110110091959.ff4a2bfe.randy.dunlap@oracle.com>
+In-Reply-To: <4D2AC4D5.5070503@parallels.com>
+References: <4D2579B2.7060704@parallels.com>
+	<20110106154120.b69118c9.akpm@linux-foundation.org>
+	<4D2AC4D5.5070503@parallels.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 10 Jan 2011 17:20:36.0672 (UTC) FILETIME=[B2149400:01CBB0EA]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-10 at 18:08 +0100, Marc Kleine-Budde wrote: 
-> On 01/10/2011 05:25 PM, Trond Myklebust wrote:
-> > On Mon, 2011-01-10 at 11:50 +0100, Uwe Kleine-König wrote: 
-> >> Hi Trond,
-> >>
-> >> On Sat, Jan 08, 2011 at 06:15:51PM -0500, Trond Myklebust wrote:
-> >>> ----------------------------------------------------------------------------------- 
-> >> It would be great if you could add a "8<" in the line above next time.
-> >> Then git-am -c does the right thing (at least I think so).
+On Mon, 10 Jan 2011 02:35:33 -0600 Rob Landley wrote:
+
+> On 01/06/2011 05:41 PM, Andrew Morton wrote:
+> > Probably a worthwhile thing to do, IMO.  If there's some net-specific
+> > CONFIG_DEBUG_ setting then that wold be a better thing to use.
 > > 
-> > Sorry. I wasn't aware of that particular idiom. So something like
-> > 
-> > 8<------------------------------------------------------------
-> > From: Trond Myklebust <Trond.Myklebust@netapp.com>
-> > Subject: .....
+> > However the patch was a) wordwrapped, b) space-stuffed and c) not cc'ed
+> > to the networking list.  So its prospects are dim.
 > 
-> Yes.
+> Ok, either I've beaten thunderbird into submission, or I'll be submitting a patch to Documentation/email-clients.txt.  (Whether or not I need to find a different smtp server to send this through remains an open question.)
 > 
-> From "man git-mailinfo":
-> "A line that mainly consists of scissors (either ">8" or "8<") and
-> perforation (dash "-")"
+> (Confirming: I looked for a more specific DEBUG symbol, but couldn't find one.  I can add one, but this seems a bit small to have its own symbol, and DEBUG_KERNEL is already used in a few *.c files.)
 > 
-> BTW:
-> Is this patch a candidate for stable?
+> From: Rob Landley <rlandley@parallels.com>
+> 
+> Move an assert under DEBUG_KERNEL.  (Minor cleanup to save a few bytes.)
+> 
+> Signed-off-by: Rob Landley <rlandley@parallels.com>
+> ---
+> 
+>  include/linux/rtnetlink.h |    4 ++++
+>  1 file changed, 4 insertions(+)
 
-Yes. I'm planning on sending it to the stable list after Linus merges it
-into mainline.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+Hm, cc to linux-net should be to netdev instead (so I changed it).
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
 
+> diff --git a/include/linux/rtnetlink.h b/include/linux/rtnetlink.h
+> index bbad657..28c4025 100644
+> --- a/include/linux/rtnetlink.h
+> +++ b/include/linux/rtnetlink.h
+> @@ -782,6 +782,7 @@ extern struct netdev_queue *dev_ingress_queue_create(struct net_device *dev);
+>  extern void rtnetlink_init(void);
+>  extern void __rtnl_unlock(void);
+>  
+> +#ifdef CONFIG_DEBUG_KERNEL
+>  #define ASSERT_RTNL() do { \
+>  	if (unlikely(!rtnl_is_locked())) { \
+>  		printk(KERN_ERR "RTNL: assertion failed at %s (%d)\n", \
+> @@ -789,6 +790,9 @@ extern void __rtnl_unlock(void);
+>  		dump_stack(); \
+>  	} \
+>  } while(0)
+> +#else
+> +#define ASSERT_RTNL()
+> +#endif
+
+Empty macros in Linux usually take the (preferred) form of this one from kernel.h:
+
+#define might_resched() do { } while (0)
+
+although it's up to DaveM in this case.
+
+
+>  
+>  static inline u32 rtm_get_table(struct rtattr **rta, u8 table)
+>  {
+> --
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
