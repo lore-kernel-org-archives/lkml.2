@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528Ab1AJQZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 11:25:59 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:35306 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753153Ab1AJQZ4 convert rfc822-to-8bit (ORCPT
+	id S1753479Ab1AJQ1J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 11:27:09 -0500
+Received: from pqueueb.post.tele.dk ([193.162.153.10]:34397 "EHLO
+	pqueueb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752073Ab1AJQ1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 11:25:56 -0500
-X-IronPort-AV: E=Sophos;i="4.60,301,1291622400"; 
-   d="scan'208";a="503598106"
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
-In-Reply-To: <20110110105019.GC24920@pengutronix.de>
-References: <1294268808.2952.18.camel@heimdal.trondhjem.org>
-	 <1294270104.16957.73.camel@mulgrave.site>
-	 <1294335614.22825.154.camel@mulgrave.site>
-	 <1294336054.2905.1.camel@heimdal.trondhjem.org>
-	 <AANLkTimusF4KCJ4vHPn+T1dUiKxapXaT0QTtFvh8Ykdd@mail.gmail.com>
-	 <1294426405.2929.23.camel@heimdal.trondhjem.org>
-	 <20110107190229.GX31708@n2100.arm.linux.org.uk>
-	 <1294427467.4895.66.camel@mulgrave.site>
-	 <1294505384.4181.14.camel@heimdal.trondhjem.org>
-	 <1294528551.4181.19.camel@heimdal.trondhjem.org>
-	 <20110110105019.GC24920@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Mon, 10 Jan 2011 11:25:34 -0500
-Message-ID: <1294676734.3349.10.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 10 Jan 2011 16:25:35.0571 (UTC) FILETIME=[02788A30:01CBB0E3]
+	Mon, 10 Jan 2011 11:27:06 -0500
+Date: Mon, 10 Jan 2011 17:26:39 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+Cc: "'lkml'" <linux-kernel@vger.kernel.org>,
+        "'linux-kbuild'" <linux-kbuild@vger.kernel.org>,
+        "'linux arch'" <linux-arch@vger.kernel.org>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, "'Michal Marek'" <mmarek@suse.cz>
+Subject: Re: [PATCH 1/2] kbuild: asm-generic support
+Message-ID: <20110110162639.GB13763@merkur.ravnborg.org>
+References: <20110108130302.GA21698@merkur.ravnborg.org> <20110109192707.GA12387@merkur.ravnborg.org> <20110109192907.GA12403@merkur.ravnborg.org> <004e01cbb0c8$4de80470$e9b80d50$@mprc.pku.edu.cn>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <004e01cbb0c8$4de80470$e9b80d50$@mprc.pku.edu.cn>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-10 at 11:50 +0100, Uwe Kleine-König wrote: 
-> Hi Trond,
+Hi Guan (I will try to spell you name correct fom now on!)
+
+> > +	During the prepare phase of the build a wrapper include
+> > +	file is generated in the directory:
+> > +
+> > +		arch/$(ARCH)/include/generated/asm
+> IMHO, the directory could be include/generated/asm
+
+We have moved all the arch specific files away from include/*
+which is why I invented arch/$(ARCH)/include/generated.
+
+I was actually considering:
+
+   arch/$(ARCH)/generated.
+
+But using include/generated just seems wrong.
+
+> > 
+> >  # Work out what needs to be removed
+> > @@ -47,8 +54,12 @@ quiet_cmd_install = INSTALL $(printdir) ($(words $(all-files))\
+> >        cmd_install = \
+> >          $(PERL) $< $(srctree)/$(obj) $(install) $(SRCARCH) $(header-y); \
+> >          $(PERL) $< $(objtree)/$(obj) $(install) $(SRCARCH) $(objhdr-y); \
+> > +        for F in $(wrapper-files); do                                   \
+> > +                echo "\#include <asm-generic/$$F>" > $(install)/$$F;    \
+> > +        done;                                                           \
+> >          touch $@
+> > 
+> > +
+> Empty line.
 > 
-> On Sat, Jan 08, 2011 at 06:15:51PM -0500, Trond Myklebust wrote:
-> > ----------------------------------------------------------------------------------- 
-> It would be great if you could add a "8<" in the line above next time.
-> Then git-am -c does the right thing (at least I think so).
 
-Sorry. I wasn't aware of that particular idiom. So something like
+Will fix.
 
-8<------------------------------------------------------------
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: .....
+As noticed in another mail the patchset has the same issue with rebuilding.
+This will likewise be included in next version.
 
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+	Sam
