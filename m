@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab1AJXNO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 18:13:14 -0500
-Received: from cantor.suse.de ([195.135.220.2]:46113 "EHLO mx1.suse.de"
+	id S1754081Ab1AJXU1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 18:20:27 -0500
+Received: from void.printf.net ([89.145.121.20]:57864 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751469Ab1AJXNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 18:13:12 -0500
-Date: Mon, 10 Jan 2011 14:56:18 -0800
-From: Greg KH <gregkh@suse.de>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
-Subject: Re: Linux 2.6.32.28
-Message-ID: <20110110225618.GA27939@suse.de>
-References: <20110107234939.GA18703@kroah.com>
- <20110110223657.GA13083@elliptictech.com>
+	id S1751628Ab1AJXUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 18:20:25 -0500
+Date: Mon, 10 Jan 2011 23:20:20 +0000
+From: Chris Ball <cjb@laptop.org>
+To: Chuanxiao Dong <chuanxiao.dong@intel.com>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH v6 0/3]mmc: implement eMMC4.4 standard HW reset feature
+Message-ID: <20110110232020.GA7920@void.printf.net>
+References: <20101227101305.GA20143@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110110223657.GA13083@elliptictech.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101227101305.GA20143@intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 05:36:57PM -0500, Nick Bowler wrote:
-> On 2011-01-07 15:49 -0800, Greg KH wrote:
-> > I'm announcing the release of the 2.6.32.28 kernel.
-> > 
-> > All users of the 2.6.32 kernel series must upgrade.
-> > 
-> > The updated 2.6.32.y git tree can be found at:
-> >         git://git.kernel.org/pub/scm/linux/kernel/git/longterm/linux-2.6.32.y.git
-> > and can be browsed at the normal kernel.org git web browser:
-> >         http://git.kernel.org/?p=linux/kernel/git/longterm/linux-2.6.32.y.git;a=summary
+Hi Chuanxiao,
+
+On Mon, Dec 27, 2010 at 06:13:05PM +0800, Chuanxiao Dong wrote:
+> Hi all,
+>    This is the version 6 of hardware reset feature implementation. When eMMC
+>    card cannot response any command, signal RST_n can help to reset eMMC
+>    card.
 > 
-> Would it be possible to make an amalgamated -longterm git tree
-> containing a branch for each longterm kernel like we currently
-> have for -stable (stable/linux-2.6-stable.git)?
+>    patch1: enable HW reset capability if card supports.
+>    patch2: do hardware reset if card occurs read/write/erase timeout
+>    patch3: implement hwreset_emmc and reinit_emmc callbacks. In this patch,
+>    hwreset_emmc callback will pull up/down the corresponded GPIO line number
+>    to trigger RST_n signal.
 
-That is an automatically generated tree, it is on the todo list for
-people to look at implementing sometime soon.  But as I am not the one
-doing it, I really can't say when it will happen.
+Sorry for the very late reply.  I'm simply not sure what to do about
+this patchset -- I'm extremely reluctant to touch the once-only
+programmable bits on the eMMC, and especially to do so silently by
+default.
 
-thanks,
+Also, where exactly do you assign host->rst_gpio?  It isn't assigned
+to in this patch, so where will it be set?  It looks like you could
+end up strobing GPIO0 if a gpio isn't passed in at all.
 
-greg k-h
+I haven't seen any other reports of -ETIMEDOUT from eMMC controllers
+not responding to CMD0; I wonder if only your controller has this
+problem, and if that should change how we handle it.
+
+Does anyone else on the list have feedback on how best to proceed?
+
+Thanks,
+
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
