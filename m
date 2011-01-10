@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab1AJTud (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 14:50:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18815 "EHLO mx1.redhat.com"
+	id S1754328Ab1AJTwS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 14:52:18 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:46041 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751651Ab1AJTuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 14:50:32 -0500
-Date: Mon, 10 Jan 2011 20:50:27 +0100 (CET)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-lab-213.englab.brq.redhat.com
-To: "Ted Ts'o" <tytso@mit.edu>
-cc: Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org,
-        sandeen@redhat.com
-Subject: Re: [PATCH] ext4: fix possible overflow in ext4_trim_fs()
-In-Reply-To: <20110110170401.GC3128@thunk.org>
-Message-ID: <alpine.LFD.2.00.1101102049580.3095@dhcp-lab-213.englab.brq.redhat.com>
-References: <1290694277-29462-1-git-send-email-lczerner@redhat.com> <20101220123521.GH23626@thunk.org> <alpine.LFD.2.00.1101101221570.3095@dhcp-lab-213.englab.brq.redhat.com> <20110110163556.GB3128@thunk.org> <alpine.LFD.2.00.1101101752290.3095@dhcp-lab-213.englab.brq.redhat.com>
- <20110110170401.GC3128@thunk.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751931Ab1AJTwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 14:52:16 -0500
+Date: Mon, 10 Jan 2011 13:52:11 -0600
+From: Jack Steiner <steiner@sgi.com>
+To: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.co
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] x86, UV: Fix APICID shift for westmere processors
+Message-ID: <20110110195210.GA18737@sgi.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Jan 2011, Ted Ts'o wrote:
+Westmere processors use a different algorithm for
+assigning APICIDs on SGI UV systems. The location of the
+node number within the apicid is now a function of the
+processor type.
 
-> On Mon, Jan 10, 2011 at 05:52:49PM +0100, Lukas Czerner wrote:
-> > 
-> > It is the replacement for the previous one.
-> > 
-> 
-> Ah, I see, I got it confused with another trim_fs patch.  I wish you
-> had sent this to me earlier, but ok, I'll fix it up.
-> 
->     	      	    	     	     	  - Ted
-> 
+Signed-off-by: Jack Steiner <steiner@sgi.com>
 
-Yes, sorry about that and thanks.
+---
+ arch/x86/kernel/apic/x2apic_uv_x.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
--Lukas
+Index: linux/arch/x86/kernel/apic/x2apic_uv_x.c
+===================================================================
+--- linux.orig/arch/x86/kernel/apic/x2apic_uv_x.c	2010-12-31 10:53:26.878105424 -0600
++++ linux/arch/x86/kernel/apic/x2apic_uv_x.c	2010-12-31 10:54:45.291099878 -0600
+@@ -378,7 +378,7 @@ struct apic __refdata apic_x2apic_uv_x =
+ 
+ static __cpuinit void set_x2apic_extra_bits(int pnode)
+ {
+-	__get_cpu_var(x2apic_extra_bits) = (pnode << 6);
++	__get_cpu_var(x2apic_extra_bits) = (pnode << uvh_apicid.s.pnode_shift);
+ }
+ 
+ /*
