@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900Ab1AJV3e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 16:29:34 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:15243 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754506Ab1AJV3d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 16:29:33 -0500
-Date: Mon, 10 Jan 2011 22:29:32 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-arm-kernel@lists.infradead.org
-cc: linux-kernel@vger.kernel.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Andrea Gelmini <andrea.gelmini@gelma.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Russell King <linux@arm.linux.org.uk>, trivial@kernel.org
-Subject: [PATCH] ARM AT91SAM9M10G45: Remove duplicate inclusion of
- mach/hardware.h
-Message-ID: <alpine.LNX.2.00.1101102225550.32164@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754666Ab1AJVhm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 16:37:42 -0500
+Received: from void.printf.net ([89.145.121.20]:44731 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754325Ab1AJVhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 16:37:40 -0500
+Date: Mon, 10 Jan 2011 21:37:36 +0000
+From: Chris Ball <cjb@laptop.org>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, linux-mmc@vger.kernel.org,
+        trivial@kernel.org, linux-kernel@vger.kernel.org,
+        Axel Lin <axel.lin@gmail.com>, David Vrabel <david.vrabel@csr.com>
+Subject: Re: [PATCH] USB SD Host Controller: Including usb.h once is enough
+Message-ID: <20110110213735.GA6509@void.printf.net>
+References: <alpine.LNX.2.00.1101102153280.32164@swampdragon.chaosbits.net> <20110110210509.GD31011@pengutronix.de> <alpine.LNX.2.00.1101102214500.32164@swampdragon.chaosbits.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1101102214500.32164@swampdragon.chaosbits.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove duplicate inclusion of mach/hardware.h
+Hi Jesper,
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- board-sam9m10g45ek.c |    1 -
- 1 file changed, 1 deletion(-)
+On Mon, Jan 10, 2011 at 10:19:11PM +0100, Jesper Juhl wrote:
+> > On Mon, Jan 10, 2011 at 09:56:08PM +0100, Jesper Juhl wrote:
+> > > 
+> > > Including usb.h once is enough in drivers/mmc/host/ushc.c
+> > > This removes the duplicate.
+> > > 
+> > > 
+> > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-  Completely untested. I don't have any way of even compiling this, but I 
-  think it's fairly obviously correct.
+Thanks, queued for .38.
 
-diff --git a/arch/arm/mach-at91/board-sam9m10g45ek.c b/arch/arm/mach-at91/board-sam9m10g45ek.c
-index 86ff4b5..6c999db 100644
---- a/arch/arm/mach-at91/board-sam9m10g45ek.c
-+++ b/arch/arm/mach-at91/board-sam9m10g45ek.c
-@@ -29,23 +29,22 @@
- #include <mach/hardware.h>
- #include <video/atmel_lcdc.h>
- 
- #include <asm/setup.h>
- #include <asm/mach-types.h>
- #include <asm/irq.h>
- 
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
- #include <asm/mach/irq.h>
- 
--#include <mach/hardware.h>
- #include <mach/board.h>
- #include <mach/gpio.h>
- #include <mach/at91sam9_smc.h>
- #include <mach/at91_shdwc.h>
- 
- #include "sam9_smc.h"
- #include "generic.h"
- 
- 
- static void __init ek_map_io(void)
- {
+> No reason.
+> Didn't think of it as "newlines in the commit-msg", just as newlines 
+> providing a nice seperation between patch description and the patch 
+> itself. It never occurred to me that anyone would actually copy those 
+> blank lines into an actual commit message.
 
+I don't copy anything into the commit message -- I like to run git-am
+on the patch mail in my mailbox directly.  In this case, git-am seems
+to have removed the extra newlines itself, which was nice of it, but in
+general please send mail such that from the start of the body of the
+mail up to the "---" separator will become the commit message.  Thanks!
 
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
