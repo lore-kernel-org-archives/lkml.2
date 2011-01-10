@@ -1,96 +1,474 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab1AJHKT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 02:10:19 -0500
-Received: from mga02.intel.com ([134.134.136.20]:58330 "EHLO mga02.intel.com"
+	id S1752411Ab1AJHPU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 02:15:20 -0500
+Received: from mga03.intel.com ([143.182.124.21]:33140 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751593Ab1AJHKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 02:10:16 -0500
+	id S1751730Ab1AJHPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 02:15:17 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,299,1291622400"; 
-   d="scan'208";a="695183271"
-Date: Mon, 10 Jan 2011 15:10:13 +0800
+   d="scan'208";a="372237804"
+Date: Mon, 10 Jan 2011 15:15:14 +0800
 From: Yin Kangkai <kangkai.yin@linux.intel.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: platform-driver-x86 <platform-driver-x86@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, "Wang, Yong Y" <yong.y.wang@intel.com>,
+To: platform-driver-x86@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "Wang, Yong Y" <yong.y.wang@intel.com>,
         "Liu, Bing Wei" <bing.wei.liu@intel.com>,
-        Corentin Chary <corentin.chary@gmail.com>
-Subject: Re: [PATCH V2] platform-driver-x86: ACPI EC Extra driver for
- Oaktrail
-Message-ID: <20110110071013.GJ30215@kai-debian>
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH V3] platform-driver-x86: EC Extra driver for Oaktrail
+Message-ID: <20110110071514.GK30215@kai-debian>
 References: <20110106025949.GJ9496@kai-debian>
- <20110107074115.GH30215@kai-debian>
- <20110107220940.GA32575@srcf.ucam.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110107220940.GA32575@srcf.ucam.org>
+In-Reply-To: <20110106025949.GJ9496@kai-debian>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-01-07, 22:09 +0000, Matthew Garrett wrote:
-> On Fri, Jan 07, 2011 at 03:41:15PM +0800, Yin Kangkai wrote:
-> 
-> > This driver implements an Extra ACPI EC driver for products based on Intel
-> > Oaktrail platform.  It is programming the EC space, through existing ACPI EC
-> > driver, to provide user space layer the sysfs and rfkill interfaces to
-> > enable/disable the Camera, Bluetooth, GPS, WiFi, 3G, and to show the status of
-> > Touchscreen.
-> 
-> As far as I can tell, the only ACPI aspect of this driver is that it 
-> makes use of the ACPI EC driver? In that case I think the name's 
-> misleading.
+Patch V3
 
-OK, am rename the driver "EC Extra driver...", 
+Changes from V2 to V3:
 
-> > @@ -0,0 +1,13 @@
-> > +What:		/sys/devices/platform/intel_oaktrail/camera
-> > +Date:		Jan 2011
-> > +KernelVersion:	2.6.37
-> > +Contact:	"Yin Kangkai" <kangkai.yin@intel.com>
-> > +Description:
-> > +		Control the camera. 1 means on, 0 means off.
-> 
-> We really need a better approach for this kind of thing...
-> 
-> > +What:		/sys/devices/platform/intel_oaktrail/touchscreen
-> > +Date:		Jan 2011
-> > +KernelVersion:	2.6.37
-> > +Contact:	"Yin Kangkai" <kangkai.yin@intel.com>
-> > +Description:
-> > +		Show the status of the touch screen. 1 means on, 0 means off.
-> 
-> And this one, but we don't have one yet so I think this is ok.
-> 
-> > +	wwan_rfkill = oaktrail_rfkill_new("oaktrail-wwan",
-> > +					  RFKILL_TYPE_WWAN,
-> > +					  OT_EC_WWAN_MASK);
-> 
-> Do you have any way to identify whether the hardware has all these 
-> features before registering?
+  - add rfkill_init_sw_state() during rfkill setup, to make sure the rfkill
+    initial state is right.
+  - change _oaktrail_rfkill_cleanup to __oaktrail_rfkill_cleanup.
+  - remove two un-needed "return".
+  - depends on RFKILL || RFKILL = n
 
-AFAIK, no, sorry.
+Changes from V1 to V2:
+  - remove wifi, bt, gps, wwan from /sys/devices/platform.
+  - add some helper function for rfkill alloc and rfkill cleanup.
+  - add MODULE_ALIAS.
+  - add Documentation/ABI/testing/sysfs-platform-intel-oaktrail
+  - various other minor changes.
+  - bump driver version from 0.1 to 0.2
 
-> > +static struct dmi_system_id __initdata oaktrail_dmi_table[] = {
-> > +	{
-> > +		.ident = "OakTrail platform",
-> > +		.matches = {
-> > +			DMI_MATCH(DMI_PRODUCT_NAME, "OakTrail platform"),
-> > +		},
-> > +		.callback = dmi_check_cb
-> > +	},
-> > +	{ }
-> > +};
-> 
-> Is any hardware actually going to ship with this identifier, or will 
-> vendors change the string?
+Thanks for the review.
 
+>From c3ff0517cfa3afcabd48dafe657a02c05e1bbfee Mon Sep 17 00:00:00 2001
+From: Yin Kangkai <kangkai.yin@intel.com>
+Date: Wed, 22 Dec 2010 10:53:36 +0800
+Subject: [PATCH] platform-driver-x86: EC Extra driver for Oaktrail
 
-I think vendors and OEMs will change this string. But we can add the
-DMI_BOARD_NAME, DMI_BOARD_VERSION, etc. back later, can we?
+This driver implements an Extra ACPI EC driver for products based on Intel
+Oaktrail platform.  It is programming the EC space, through existing ACPI EC
+driver, to provide user space layer the sysfs and rfkill interfaces to
+enable/disable the Camera, Bluetooth, GPS, WiFi, 3G, and to show the status of
+Touchscreen.
 
-Thanks.
+Signed-off-by: Yin Kangkai <kangkai.yin@intel.com>
+---
+ .../ABI/testing/sysfs-platform-intel-oaktrail      |   13 +
+ drivers/platform/x86/Kconfig                       |    9 +
+ drivers/platform/x86/Makefile                      |    1 +
+ drivers/platform/x86/intel_oaktrail.c              |  348 ++++++++++++++++++++
+ 4 files changed, 371 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-platform-intel-oaktrail
+ create mode 100644 drivers/platform/x86/intel_oaktrail.c
+
+diff --git a/Documentation/ABI/testing/sysfs-platform-intel-oaktrail b/Documentation/ABI/testing/sysfs-platform-intel-oaktrail
+new file mode 100644
+index 0000000..0512235
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-platform-intel-oaktrail
+@@ -0,0 +1,13 @@
++What:		/sys/devices/platform/intel_oaktrail/camera
++Date:		Jan 2011
++KernelVersion:	2.6.37
++Contact:	"Yin Kangkai" <kangkai.yin@intel.com>
++Description:
++		Control the camera. 1 means on, 0 means off.
++
++What:		/sys/devices/platform/intel_oaktrail/touchscreen
++Date:		Jan 2011
++KernelVersion:	2.6.37
++Contact:	"Yin Kangkai" <kangkai.yin@intel.com>
++Description:
++		Show the status of the touch screen. 1 means on, 0 means off.
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index 2b4038a..61ede7f 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -655,4 +655,13 @@ config XO1_RFKILL
+ 	  Support for enabling/disabling the WLAN interface on the OLPC XO-1
+ 	  laptop.
+ 
++config INTEL_OAKTRAIL
++	tristate "Intel Oaktrail Platform Extras"
++	depends on ACPI
++	depends on RFKILL || RFKILL = n
++	---help---
++	  Intel Oaktrail platform need this driver to provide interfaces to
++	  enable/disable the Camera, WiFi, BT etc. devices. If in doubt, say Y
++	  here; it will only load on supported platforms.
++
+ endif # X86_PLATFORM_DEVICES
+diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
+index 7ff60e6..add8ab7 100644
+--- a/drivers/platform/x86/Makefile
++++ b/drivers/platform/x86/Makefile
+@@ -35,3 +35,4 @@ obj-$(CONFIG_INTEL_IPS)		+= intel_ips.o
+ obj-$(CONFIG_GPIO_INTEL_PMIC)	+= intel_pmic_gpio.o
+ obj-$(CONFIG_XO1_RFKILL)	+= xo1-rfkill.o
+ obj-$(CONFIG_IBM_RTL)		+= ibm_rtl.o
++obj-$(CONFIG_INTEL_OAKTRAIL)	+= intel_oaktrail.o
+diff --git a/drivers/platform/x86/intel_oaktrail.c b/drivers/platform/x86/intel_oaktrail.c
+new file mode 100644
+index 0000000..abc62a6
+--- /dev/null
++++ b/drivers/platform/x86/intel_oaktrail.c
+@@ -0,0 +1,348 @@
++/*
++  Copyright (C) 2010 Intel Corporation
++  Author: Yin Kangkai (kangkai.yin@intel.com)
++
++  based on Compal driver
++
++  Copyright (C) 2008 Cezary Jackiewicz <cezary.jackiewicz (at) gmail.com>
++
++  based on MSI driver
++
++  Copyright (C) 2006 Lennart Poettering <mzxreary (at) 0pointer (dot) de>
++
++  This program is free software; you can redistribute it and/or modify
++  it under the terms of the GNU General Public License as published by
++  the Free Software Foundation; either version 2 of the License, or
++  (at your option) any later version.
++
++  This program is distributed in the hope that it will be useful, but
++  WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the GNU
++  General Public License for more details.
++
++  You should have received a copy of the GNU General Public License
++  along with this program; if not, write to the Free Software
++  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++  02110-1301, USA.
++ */
++
++/*
++ * intel_oaktrail.c - Intel OakTrail Platform support.
++ *
++ * This driver exports a few files in /sys/devices/platform/intel_oaktrail/:
++ *
++ * camera - Camera subsystem enabled: contains either 0 or 1. (rw)
++ * touchscreen - Touchscreen subsystem enabled: contains either 0 or 1. (ro)
++ *
++ * In addition to these platform device attributes, the driver registers itself
++ * in the Linux rfkill subsystem for these components:
++ *
++ * wifi
++ * bluetooth
++ * wwan (3g)
++ * gps
++ *
++ * and is available to userspace under /sys/class/rfkill/rfkillX/
++ *
++ * This driver might work on other products based on Oaktrail. If you
++ * want to try it you can pass force=1 as argument to the module which
++ * will force it to load even when the DMI data doesn't identify the
++ * product as compatible.
++ */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/acpi.h>
++#include <linux/platform_device.h>
++#include <linux/dmi.h>
++#include <linux/rfkill.h>
++
++#define DRIVER_NAME	"intel_oaktrail"
++#define DRIVER_VERSION	"0.2"
++
++/*
++ * This is the devices status address in EC space, and the control bits
++ * definition:
++ *
++ * (1 << 0):	Camera enable/disable, RW.
++ * (1 << 1):	Bluetooth enable/disable, RW.
++ * (1 << 2):	GPS enable/disable, RW.
++ * (1 << 3):	WiFi enable/disable, RW.
++ * (1 << 4):	WWAN (3G) enable/disalbe, RW.
++ * (1 << 5):	Touchscreen enable/disable, Read Only.
++ */
++#define OT_EC_DEVICE_STATE_ADDRESS	0xD6
++
++#define OT_EC_CAMERA_MASK	(1 << 0)
++#define OT_EC_BT_MASK		(1 << 1)
++#define OT_EC_GPS_MASK		(1 << 2)
++#define OT_EC_WIFI_MASK		(1 << 3)
++#define OT_EC_WWAN_MASK		(1 << 4)
++#define OT_EC_TS_MASK		(1 << 5)
++
++static int force;
++module_param(force, bool, 0);
++MODULE_PARM_DESC(force, "Force driver load, ignore DMI data");
++
++static struct platform_device *oaktrail_device;
++static struct rfkill *bt_rfkill;
++static struct rfkill *gps_rfkill;
++static struct rfkill *wifi_rfkill;
++static struct rfkill *wwan_rfkill;
++
++#define SIMPLE_MASKED_STORE_SHOW(NAME, MASK)				\
++static ssize_t NAME##_show(struct device *dev,				\
++	struct device_attribute *attr, char *buf)			\
++{									\
++	u8 value;							\
++	ec_read(OT_EC_DEVICE_STATE_ADDRESS, &value);			\
++	return sprintf(buf, "%d\n", ((value & MASK) != 0));		\
++}									\
++static ssize_t NAME##_store(struct device *dev,				\
++	struct device_attribute *attr, const char *buf, size_t count)	\
++{									\
++	int state;							\
++	u8 old_val;							\
++	ec_read(OT_EC_DEVICE_STATE_ADDRESS, &old_val);			\
++	if (sscanf(buf, "%d", &state) != 1 || (state < 0 || state > 1))	\
++		return -EINVAL;						\
++	ec_write(OT_EC_DEVICE_STATE_ADDRESS, state ?			\
++		 (old_val | MASK) : (old_val & ~MASK));			\
++	return count;							\
++}
++
++SIMPLE_MASKED_STORE_SHOW(camera, OT_EC_CAMERA_MASK)
++SIMPLE_MASKED_STORE_SHOW(touchscreen, OT_EC_TS_MASK)
++
++static DEVICE_ATTR(camera, 0644, camera_show, camera_store);
++static DEVICE_ATTR(touchscreen, 0444, touchscreen_show, NULL);
++
++static struct attribute *oaktrail_attributes[] = {
++	&dev_attr_camera.attr,
++	&dev_attr_touchscreen.attr,
++	NULL
++};
++
++static struct attribute_group oaktrail_attribute_group = {
++	.attrs = oaktrail_attributes
++};
++
++static int oaktrail_rfkill_set(void *data, bool blocked)
++{
++	u8 value;
++	u8 result;
++	unsigned long radio = (unsigned long) data;
++
++	ec_read(OT_EC_DEVICE_STATE_ADDRESS, &result);
++
++	if (!blocked)
++		value = (u8) (result | radio);
++	else
++		value = (u8) (result & ~radio);
++
++	ec_write(OT_EC_DEVICE_STATE_ADDRESS, value);
++
++	return 0;
++}
++
++static const struct rfkill_ops oaktrail_rfkill_ops = {
++	.set_block = oaktrail_rfkill_set,
++};
++
++static struct rfkill *oaktrail_rfkill_new(char *name, enum rfkill_type type,
++					  unsigned long mask)
++{
++	struct rfkill *rfkill_dev;
++	u8 value;
++	int err;
++
++	rfkill_dev = rfkill_alloc(name, &oaktrail_device->dev, type,
++				  &oaktrail_rfkill_ops, (void *)mask);
++	if (!rfkill_dev)
++		return ERR_PTR(-ENOMEM);
++
++	ec_read(OT_EC_DEVICE_STATE_ADDRESS, &value);
++	rfkill_init_sw_state(rfkill_dev, (value & mask) != 1);
++
++	err = rfkill_register(rfkill_dev);
++	if (err) {
++		rfkill_destroy(rfkill_dev);
++		return ERR_PTR(err);
++	}
++
++	return rfkill_dev;
++}
++
++static inline void __oaktrail_rfkill_cleanup(struct rfkill *rf)
++{
++	if (rf) {
++		rfkill_unregister(rf);
++		rfkill_destroy(rf);
++	}
++}
++
++static void oaktrail_rfkill_cleanup(void)
++{
++	__oaktrail_rfkill_cleanup(wifi_rfkill);
++	__oaktrail_rfkill_cleanup(bt_rfkill);
++	__oaktrail_rfkill_cleanup(gps_rfkill);
++	__oaktrail_rfkill_cleanup(wwan_rfkill);
++}
++
++static int oaktrail_rfkill_init(void)
++{
++	int ret;
++
++	wifi_rfkill = oaktrail_rfkill_new("oaktrail-wifi",
++					  RFKILL_TYPE_WLAN,
++					  OT_EC_WIFI_MASK);
++	if (IS_ERR(wifi_rfkill)) {
++		ret = PTR_ERR(wifi_rfkill);
++		wifi_rfkill = NULL;
++		goto cleanup;
++	}
++
++	bt_rfkill = oaktrail_rfkill_new("oaktrail-bluetooth",
++					RFKILL_TYPE_BLUETOOTH,
++					OT_EC_BT_MASK);
++	if (IS_ERR(bt_rfkill)) {
++		ret = PTR_ERR(bt_rfkill);
++		bt_rfkill = NULL;
++		goto cleanup;
++	}
++
++	gps_rfkill = oaktrail_rfkill_new("oaktrail-gps",
++					 RFKILL_TYPE_GPS,
++					 OT_EC_GPS_MASK);
++	if (IS_ERR(gps_rfkill)) {
++		ret = PTR_ERR(gps_rfkill);
++		gps_rfkill = NULL;
++		goto cleanup;
++	}
++
++	wwan_rfkill = oaktrail_rfkill_new("oaktrail-wwan",
++					  RFKILL_TYPE_WWAN,
++					  OT_EC_WWAN_MASK);
++	if (IS_ERR(wwan_rfkill)) {
++		ret = PTR_ERR(wwan_rfkill);
++		wwan_rfkill = NULL;
++		goto cleanup;
++	}
++
++	return 0;
++
++cleanup:
++	oaktrail_rfkill_cleanup();
++	return ret;
++}
++
++static int __devinit oaktrail_probe(struct platform_device *pdev)
++{
++	return sysfs_create_group(&pdev->dev.kobj, &oaktrail_attribute_group);
++}
++
++static int __devexit oaktrail_remove(struct platform_device *pdev)
++{
++	sysfs_remove_group(&pdev->dev.kobj, &oaktrail_attribute_group);
++
++	return 0;
++}
++
++static struct platform_driver oaktrail_driver = {
++	.driver = {
++		.name = DRIVER_NAME,
++		.owner = THIS_MODULE,
++	},
++	.probe	= oaktrail_probe,
++	.remove	= __devexit_p(oaktrail_remove)
++};
++
++static int dmi_check_cb(const struct dmi_system_id *id)
++{
++	pr_info("Identified model '%s'\n", id->ident);
++	return 0;
++}
++
++static struct dmi_system_id __initdata oaktrail_dmi_table[] = {
++	{
++		.ident = "OakTrail platform",
++		.matches = {
++			DMI_MATCH(DMI_PRODUCT_NAME, "OakTrail platform"),
++		},
++		.callback = dmi_check_cb
++	},
++	{ }
++};
++
++static int __init oaktrail_init(void)
++{
++	int ret;
++
++	if (acpi_disabled) {
++		pr_err("ACPI needs to be enabled for this driver to work!\n");
++		return -ENODEV;
++	}
++
++	if (!force && !dmi_check_system(oaktrail_dmi_table)) {
++		pr_err("Platform not recognized (You could try the module's force-parameter)");
++		return -ENODEV;
++	}
++
++	ret = platform_driver_register(&oaktrail_driver);
++	if (ret) {
++		pr_warning("Unable to register platform driver\n");
++		goto err_driver_reg;
++	}
++
++	oaktrail_device = platform_device_alloc(DRIVER_NAME, -1);
++	if (!oaktrail_device) {
++		pr_warning("Unable to allocate platform device\n");
++		ret = -ENOMEM;
++		goto err_device_alloc;
++	}
++
++	ret = platform_device_add(oaktrail_device);
++	if (ret) {
++		pr_warning("Unable to add platform device\n");
++		goto err_device_add;
++	}
++
++	ret = oaktrail_rfkill_init();
++	if (ret) {
++		pr_warning("Setup rfkill failed\n");
++		goto err_rfkill;
++	}
++
++	pr_info("Driver "DRIVER_VERSION" successfully loaded\n");
++	return 0;
++
++err_rfkill:
++	platform_device_del(oaktrail_device);
++err_device_add:
++	platform_device_put(oaktrail_device);
++err_device_alloc:
++	platform_driver_unregister(&oaktrail_driver);
++err_driver_reg:
++	return ret;
++}
++
++static void __exit oaktrail_cleanup(void)
++{
++	platform_device_unregister(oaktrail_device);
++	platform_driver_unregister(&oaktrail_driver);
++	oaktrail_rfkill_cleanup();
++
++	pr_info("Driver unloaded\n");
++}
++
++module_init(oaktrail_init);
++module_exit(oaktrail_cleanup);
++
++MODULE_AUTHOR("Yin Kangkai (kangkai.yin@intel.com)");
++MODULE_DESCRIPTION("Intel Oaktrail Platform ACPI Extras");
++MODULE_VERSION(DRIVER_VERSION);
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("dmi:*:svnIntelCorporation:pnOakTrailplatform:*");
+-- 
+1.6.5
 
