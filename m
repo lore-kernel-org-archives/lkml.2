@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751511Ab1AJFQt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 00:16:49 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:44202 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982Ab1AJFQr (ORCPT
+	id S1751577Ab1AJFW2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 00:22:28 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:52109 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab1AJFW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 00:16:47 -0500
-Date: Mon, 10 Jan 2011 10:46:43 +0530
-From: Bharata B Rao <bharata@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH -tip 2/2] sched: Display autogroup names in /proc/sched_debug.
-Message-ID: <20110110051643.GD2772@in.ibm.com>
-Reply-To: bharata@linux.vnet.ibm.com
-References: <20110110051445.GB2772@in.ibm.com>
+	Mon, 10 Jan 2011 00:22:27 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=C5Si4dbmuI381o3D7NkCud0kInQm+ro+YW8JPVBMs4Mr/Utx4G044u1ims9sHuo3K9
+         zuQK+ZQehS4Akw+Vr2dQP+ME7zu+7mxLmst2iH0H/hTftZjISrU6kZkd1F7YUA+KgfnX
+         hBFHr69hrxGqeVKUitYBxCZVaExUgJDoRoA8k=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110110051445.GB2772@in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Mon, 10 Jan 2011 08:22:25 +0300
+Message-ID: <AANLkTimwDpUz9GUmx3UutYir0UuoTSAXNzphWeEX9sKh@mail.gmail.com>
+Subject: ext3: deleting files doesn't free up space
+From: Dan Carpenter <error27@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sched: Display autogroup names in /proc/sched_debug.
+I filled up my partition last night.
+I deleted 5 gigs of movies.
+The "Used" number went down to 125G.
+The "Free" number stayed at 0.
+I rebooted the system but it's still the same.
 
-Add autogroup name to cfs_rq and tasks information in /proc/sched_debug.
+$ echo foo > foo
+bash: echo: write error: No space left on device
 
-Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
----
- kernel/sched_debug.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+$ df .
+Filesystem           1K-blocks      Used Available Use% Mounted on
+/dev/sda1            136236548 130363620         0 100% /media/old_sys
 
---- a/kernel/sched_debug.c
-+++ b/kernel/sched_debug.c
-@@ -92,6 +92,14 @@ static void print_cfs_group_stats(struct
- #ifdef CONFIG_CGROUP_SCHED
- static char * task_group_path(struct task_group *tg)
- {
-+#ifdef CONFIG_SCHED_AUTOGROUP
-+	int enabled = ACCESS_ONCE(sysctl_sched_autogroup_enabled);
-+
-+	if (enabled && tg->autogroup) {
-+		autogroup_path(tg, group_path, PATH_MAX);
-+		return group_path;
-+	}
-+#endif
- 	/*
- 	 * May be NULL if the underlying cgroup isn't fully-created yet
- 	 */
+$ mount | grep old
+/dev/sda1 on /media/old_sys type ext3 (rw,nosuid,nodev)
+/media/old_sys/home on /home type none (rw,bind)
+
+This is with 2.6.37-rc5+.  Is there a way to debug this?
+
+regards,
+dan carpenter
