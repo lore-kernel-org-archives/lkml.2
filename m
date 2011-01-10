@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550Ab1AJSus (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 13:50:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61461 "EHLO mx1.redhat.com"
+	id S1754279Ab1AJSwU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 13:52:20 -0500
+Received: from mx1.fusionio.com ([64.244.102.30]:38656 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754271Ab1AJSur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 13:50:47 -0500
-Date: Mon, 10 Jan 2011 19:43:04 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Dhaval Giani <dhaval@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [BUG stable, 2.6.32.27] sched: delayed cleanup of user_struct
-Message-ID: <20110110184303.GA12393@redhat.com>
-References: <4D2AB8F7.7030506@profihost.ag> <20110110114913.GA22298@redhat.com> <20110110123630.GA27057@redhat.com> <4D2AFFB5.5000807@profihost.ag> <20110110133545.GA30163@redhat.com> <4D2B113A.2060303@profihost.ag> <20110110140817.GA31708@redhat.com> <4D2B1658.20201@profihost.ag> <20110110182317.GA16694@suse.de>
+	id S1754008Ab1AJSwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 13:52:19 -0500
+X-ASG-Debug-ID: 1294685538-17894ee60001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D2B555C.5090109@fusionio.com>
+Date: Mon, 10 Jan 2011 19:52:12 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110110182317.GA16694@suse.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "ltuikov@yahoo.com" <ltuikov@yahoo.com>
+CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [BLOCK] Allow tag 0 to be generated
+References: <1266.36669.qm@web31807.mail.mud.yahoo.com> <4D2B54CE.3080301@fusionio.com>
+X-ASG-Orig-Subj: Re: [PATCH] [BLOCK] Allow tag 0 to be generated
+In-Reply-To: <4D2B54CE.3080301@fusionio.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1294685538
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.4566 1.0000 0.0000
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.51996
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10, Greg KH wrote:
->
-> Tell us about what?  I'm totally confused here, what is the problem?
+On 2011-01-10 19:49, Jens Axboe wrote:
+> On 2011-01-10 18:26, Luben Tuikov wrote:
+>> Commit 67869fb9fdfa04503b250d59e086c15f1698aea0
+> 
+> That commit isn't a valid sha in my tree. What commit do you mean?
+> 
+>> skipped tag 0 by virtue of setting last_tag to
+>> 0. This commit sets it to -1, in order to start
+>> and loop over from 0, thus generating tags
+>> [0,max_tag-1], instead of [1,max_tag-1].
+> 
+> Irregardless, patch looks good. That's definitely a bug. Thanks!
 
-Please look at http://marc.info/?l=linux-kernel&m=129466345327931
+But not in my kernel, what tree are you looking at? I don't remember
+seeing any tag patches, and they should be in my tree if there are.
 
-I think that free_user's delayed logic is buggy, and the traces
-from Stefan seems to confirm the theory.
 
-As Mike suggests, we can just remove the deprecated USER_SCHED
-code and forget about this problem.
-
-Oleg.
+-- 
+Jens Axboe
 
