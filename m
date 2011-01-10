@@ -1,89 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab1AJRQI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 12:16:08 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24291 "EHLO
+	id S1754452Ab1AJRSS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 12:18:18 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28148 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176Ab1AJRQE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 12:16:04 -0500
-Date: Mon, 10 Jan 2011 09:15:09 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Rob Landley <rlandley@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, <trivial@kernel.org>,
-        <linux-net@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-embedded@vger.kernel.org>
-Subject: Re: [PATCH] Move an assert under DEBUG_KERNEL. (attempt 2)
-Message-Id: <20110110091509.f7d338eb.randy.dunlap@oracle.com>
-In-Reply-To: <4D2AC4D5.5070503@parallels.com>
-References: <4D2579B2.7060704@parallels.com>
-	<20110106154120.b69118c9.akpm@linux-foundation.org>
-	<4D2AC4D5.5070503@parallels.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	with ESMTP id S1752749Ab1AJRSR (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 10 Jan 2011 12:18:17 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+        hpa@zytor.com, Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>, xen-devel@lists.xensource.com,
+        Jan Beulich <JBeulich@novell.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 7/7] xen/debug: WARN_ON when identity PFN has no _PAGE_IOMAP flag set.
+Date: Mon, 10 Jan 2011 12:17:39 -0500
+Message-Id: <1294679859-30029-8-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1294679859-30029-1-git-send-email-konrad.wilk@oracle.com>
+References: <1294679859-30029-1-git-send-email-konrad.wilk@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Jan 2011 02:35:33 -0600 Rob Landley wrote:
+Only enabled if XEN_DEBUG is enabled. We print a warning
+when:
 
-> On 01/06/2011 05:41 PM, Andrew Morton wrote:
-> > Probably a worthwhile thing to do, IMO.  If there's some net-specific
-> > CONFIG_DEBUG_ setting then that wold be a better thing to use.
-> > 
-> > However the patch was a) wordwrapped, b) space-stuffed and c) not cc'ed
-> > to the networking list.  So its prospects are dim.
-> 
-> Ok, either I've beaten thunderbird into submission, or I'll be submitting a patch to Documentation/email-clients.txt.  (Whether or not I need to find a different smtp server to send this through remains an open question.)
+ pfn_to_mfn(pfn) == pfn, but no VM_IO (_PAGE_IOMAP) flag set
+	(and pfn is an identity mapped pfn)
+ pfn_to_mfn(pfn) != pfn, and VM_IO flag is set.
+	(ditto, pfn is an identity mapped pfn)
 
+[v3: Fix compiler warning]
+[v2: Make it dependent on CONFIG_XEN_DEBUG instead of ..DEBUG_FS]
 
-Hi Rob,
-The patch applies cleanly.  However, if you have any additions/updates to
-Documentation/email-clients.txt, please send them along.
-
-and please do hard CR/LF every 70-72 characters or so, instead of very_long_lines.
-
-
-> (Confirming: I looked for a more specific DEBUG symbol, but couldn't find one.  I can add one, but this seems a bit small to have its own symbol, and DEBUG_KERNEL is already used in a few *.c files.)
-> 
-> From: Rob Landley <rlandley@parallels.com>
-> 
-> Move an assert under DEBUG_KERNEL.  (Minor cleanup to save a few bytes.)
-> 
-> Signed-off-by: Rob Landley <rlandley@parallels.com>
-> ---
-> 
->  include/linux/rtnetlink.h |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/include/linux/rtnetlink.h b/include/linux/rtnetlink.h
-> index bbad657..28c4025 100644
-> --- a/include/linux/rtnetlink.h
-> +++ b/include/linux/rtnetlink.h
-> @@ -782,6 +782,7 @@ extern struct netdev_queue *dev_ingress_queue_create(struct net_device *dev);
->  extern void rtnetlink_init(void);
->  extern void __rtnl_unlock(void);
->  
-> +#ifdef CONFIG_DEBUG_KERNEL
->  #define ASSERT_RTNL() do { \
->  	if (unlikely(!rtnl_is_locked())) { \
->  		printk(KERN_ERR "RTNL: assertion failed at %s (%d)\n", \
-> @@ -789,6 +790,9 @@ extern void __rtnl_unlock(void);
->  		dump_stack(); \
->  	} \
->  } while(0)
-> +#else
-> +#define ASSERT_RTNL()
-> +#endif
->  
->  static inline u32 rtm_get_table(struct rtattr **rta, u8 table)
->  {
-> --
-
-
+Reviewed-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ arch/x86/xen/Kconfig |    8 ++++++++
+ arch/x86/xen/mmu.c   |   38 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 46 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
+index 5b54892..e4343fe 100644
+--- a/arch/x86/xen/Kconfig
++++ b/arch/x86/xen/Kconfig
+@@ -48,3 +48,11 @@ config XEN_DEBUG_FS
+ 	help
+ 	  Enable statistics output and various tuning options in debugfs.
+ 	  Enabling this option may incur a significant performance overhead.
++
++config XEN_DEBUG
++	bool "Enable Xen debug checks"
++	depends on XEN
++	default n
++	help
++	  Enable various WARN_ON checks in the Xen MMU code.
++	  Enabling this option WILL incur a significant performance overhead.
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 6164323..72ca435 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1013,6 +1013,41 @@ pte_t xen_make_pte(pteval_t pte)
+ }
+ PV_CALLEE_SAVE_REGS_THUNK(xen_make_pte);
+ 
++#ifdef CONFIG_XEN_DEBUG
++pte_t xen_make_pte_debug(pteval_t pte)
++{
++	phys_addr_t addr = (pte & PTE_PFN_MASK);
++	phys_addr_t other_addr;
++	bool io_page = false;
++	pte_t _pte;
++
++	if (pte & _PAGE_IOMAP)
++		io_page = true;
++
++	_pte = xen_make_pte(pte);
++
++	if (!addr)
++		return _pte;
++
++	if (io_page &&
++	    (xen_initial_domain() || addr >= ISA_END_ADDRESS)) {
++		other_addr = pfn_to_mfn(addr >> PAGE_SHIFT) << PAGE_SHIFT;
++		WARN(addr != other_addr,
++			"0x%lx is using VM_IO, but it is 0x%lx!\n",
++			(unsigned long)addr, (unsigned long)other_addr);
++	} else {
++		pteval_t iomap_set = (_pte.pte & PTE_FLAGS_MASK) & _PAGE_IOMAP;
++		other_addr = (_pte.pte & PTE_PFN_MASK);
++		WARN((addr == other_addr) && (!io_page) && (!iomap_set),
++			"0x%lx is missing VM_IO (and wasn't fixed)!\n",
++			(unsigned long)addr);
++	}
++
++	return _pte;
++}
++PV_CALLEE_SAVE_REGS_THUNK(xen_make_pte_debug);
++#endif
++
+ pgd_t xen_make_pgd(pgdval_t pgd)
+ {
+ 	pgd = pte_pfn_to_mfn(pgd);
+@@ -2423,6 +2458,9 @@ __init void xen_ident_map_ISA(void)
+ 
+ static __init void xen_post_allocator_init(void)
+ {
++#ifdef CONFIG_XEN_DEBUG
++	pv_mmu_ops.make_pte = PV_CALLEE_SAVE(xen_make_pte_debug);
++#endif
+ 	pv_mmu_ops.set_pte = xen_set_pte;
+ 	pv_mmu_ops.set_pmd = xen_set_pmd;
+ 	pv_mmu_ops.set_pud = xen_set_pud;
+-- 
+1.7.1
+
