@@ -1,78 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480Ab1AJR02 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 12:26:28 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45846 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754493Ab1AJR0Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 12:26:25 -0500
-Message-ID: <4D2B4134.8050508@pengutronix.de>
-Date: Mon, 10 Jan 2011 18:26:12 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1754511Ab1AJR30 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 12:29:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58558 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753063Ab1AJR3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 12:29:24 -0500
+Date: Mon, 10 Jan 2011 18:29:19 +0100
+From: Jan Kara <jack@suse.cz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jan Kara <jack@suse.cz>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>
+Subject: Re: linux-next: build warnings after merge of the final tree (ext3
+ tree related)
+Message-ID: <20110110172919.GC4904@quack.suse.cz>
+References: <20110107140414.43d5b980.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-References: <1294268808.2952.18.camel@heimdal.trondhjem.org>	 <1294270104.16957.73.camel@mulgrave.site>	 <1294335614.22825.154.camel@mulgrave.site>	 <1294336054.2905.1.camel@heimdal.trondhjem.org>	 <AANLkTimusF4KCJ4vHPn+T1dUiKxapXaT0QTtFvh8Ykdd@mail.gmail.com>	 <1294426405.2929.23.camel@heimdal.trondhjem.org>	 <20110107190229.GX31708@n2100.arm.linux.org.uk>	 <1294427467.4895.66.camel@mulgrave.site>	 <1294505384.4181.14.camel@heimdal.trondhjem.org>	 <1294528551.4181.19.camel@heimdal.trondhjem.org>	 <20110110105019.GC24920@pengutronix.de>	 <1294676734.3349.10.camel@heimdal.trondhjem.org>	 <4D2B3D03.8050504@pengutronix.de> <1294680035.3349.19.camel@heimdal.trondhjem.org>
-In-Reply-To: <1294680035.3349.19.camel@heimdal.trondhjem.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigB03AD1C9E96D095802186A7B"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110107140414.43d5b980.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigB03AD1C9E96D095802186A7B
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+  Hi Stephen,
 
-On 01/10/2011 06:20 PM, Trond Myklebust wrote:
->> Is this patch a candidate for stable?
->=20
-> Yes. I'm planning on sending it to the stable list after Linus merges i=
-t
-> into mainline.
+On Fri 07-01-11 14:04:14, Stephen Rothwell wrote:
+> After merging the final tree, today's linux-next build (powerpc
+> ppc44x_defconfig) produced these warnings:
+> 
+> fs/ext3/balloc.c: In function 'ext3_get_group_no_and_offset':
+> fs/ext3/balloc.c:53: warning: comparison of distinct pointer types lacks a cast
+> fs/ext3/balloc.c:53: warning: right shift count >= width of type
+> fs/ext3/balloc.c:53: warning: passing argument 1 of '__div64_32' from incompatible pointer type
+> include/asm-generic/div64.h:35: note: expected 'uint64_t *' but argument is of type 'ext3_fsblk_t *'
+> 
+> Caused by commit 3e5eb5c509e311fdea2468be913ec264edd4f617 ("ext3: Add
+> batched discard support for ext3").
+  Thanks for spotting this. It should be fixed in my tree now.
 
-Fine!
-
-regards, Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enigB03AD1C9E96D095802186A7B
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk0rQTcACgkQjTAFq1RaXHO9MQCgmA21avxf6PdqzeplTRBQdkNG
-LpcAn3jizA94+Hir13eNM71rLh7GPz0M
-=NEJ5
------END PGP SIGNATURE-----
-
---------------enigB03AD1C9E96D095802186A7B--
+									Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
