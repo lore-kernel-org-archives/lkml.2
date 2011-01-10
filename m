@@ -1,142 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753619Ab1AJT1x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 14:27:53 -0500
-Received: from web31809.mail.mud.yahoo.com ([68.142.207.72]:28885 "HELO
-	web31809.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751606Ab1AJT1u (ORCPT
+	id S1753987Ab1AJT2D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 14:28:03 -0500
+Received: from ns2.cypress.com ([157.95.67.5]:41682 "EHLO ns2.cypress.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753800Ab1AJT17 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 14:27:50 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
-  b=6bE2tPj1BwUYqbqEZ2Vp072FBgiuG5lk0/6YMW8v1sOQJXO6uaggC06IEnaqbEeS4RLGrtKagc8AhiJ8d28ouPw73TdfVY/9lSa08yKE0AEcO7zTHU1sfSo95UJQXGS5b13T5Y9EJIt8Y/zV0h/ABil9BUzZrUcVXJ44rL1Jdog=;
-Message-ID: <835205.47474.qm@web31809.mail.mud.yahoo.com>
-X-YMail-OSG: ghXfNVwVM1nbMF_J1PWZRDS2V1B9.c.F7UE1PMrNYoXu1Jd
- 0uqhoBte3u_g3uKAsRWKPo8aUcBG51U.U8S0XUYWv6tNy7PrXBLki12C5Nyx
- wEGNN25NeTa7Ue4T0c4Ahawl7OCcsa7o2wn9eSbub0QFOFAePJlWw2KO8ij7
- LiWSISaY20EYlXpKKONzoGgVqiw7awwa9b4frocpVQz5KoIeXRwVmJ4FilXt
- Ke.wq7DwPK1n8pifM6nWngGtsZSkmRG8IUx._h3tAGHlUTpAB09Ht5ZJL._2
- QVBpVk4gzKfpTl5R4XtsiNSGT.h3rtw4l0vHYcL.t8tAog6rEK3bnGi1zIzI
- sd1WKVGjSFsZvhDNF4GQ5_T4u9we8Zpin2bYtXZOF5IxsSBfGCo743iMy.ve
- Yoh01QXpmeCI-
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.108.291010
-Date: Mon, 10 Jan 2011 11:27:49 -0800 (PST)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: Re: [PATCH] [BLOCK] Allow tag 0 to be generated
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <4D2B555C.5090109@fusionio.com>
+	Mon, 10 Jan 2011 14:27:59 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [v4 1/3] 1/3 Touchscreen: Cypress TTSP G3 Core Driver
+Date: Mon, 10 Jan 2011 11:27:33 -0800
+Message-ID: <FB9C2CB29A07AB45B575A4E8D2AABC0901400A3F@labamba.mis.cypress.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [v4 1/3] 1/3 Touchscreen: Cypress TTSP G3 Core Driver
+Thread-Index: Acus/t93V77wsWGtT9CB9CajFsNChQD/SRLQ
+References: <kev@cypress.com> <1294188847-24728-1-git-send-email-kev@cypress.com> <20110105085942.GA23321@polaris.bitmath.org> <FB9C2CB29A07AB45B575A4E8D2AABC09014003B8@labamba.mis.cypress.com> <20110105173403.GA2146@polaris.bitmath.org>
+From: "Kevin McNeely" <Kevin.McNeely@cypress.com>
+To: "Henrik Rydberg" <rydberg@euromail.se>
+Cc: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        "David Brown" <davidb@codeaurora.org>,
+        "Trilok Soni" <tsoni@codeaurora.org>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        "Eric Miao" <eric.y.miao@gmail.com>,
+        "Mike Frysinger" <vapier@gentoo.org>,
+        "Alan Cox" <alan@linux.intel.com>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 10 Jan 2011 19:27:36.0287 (UTC) FILETIME=[6FB98EF0:01CBB0FC]
+X-Brightmail-Tracker: AAAAAA==
+X-MailScanner: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Mon, 1/10/11, Jens Axboe <jaxboe@fusionio.com> wrote:
-> > That commit isn't a valid sha in my tree. What commit
-> do you mean?
-> > 
-> >> skipped tag 0 by virtue of setting last_tag to
-> >> 0. This commit sets it to -1, in order to start
-> >> and loop over from 0, thus generating tags
-> >> [0,max_tag-1], instead of [1,max_tag-1].
-> > 
-> > Irregardless, patch looks good. That's definitely a
-> bug. Thanks!
+Hello Henrik,
+
+As there have been no other changes requested for the v4 (other than
+your modifications), will you merge your modification patch along with
+my  v4 SPI and v4 I2C patches?
+
+Do I need to submit a v5 with your patch in order to get merged?
+
+Thanks and best regards,
+Kevin
+
+
+> -----Original Message-----
+> From: Henrik Rydberg [mailto:rydberg@euromail.se]
+> Sent: Wednesday, January 05, 2011 9:34 AM
+> To: Kevin McNeely
+> Cc: Dmitry Torokhov; David Brown; Trilok Soni; Samuel Ortiz; Eric
+Miao;
+> Mike Frysinger; Alan Cox; linux-input@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [v4 1/3] 1/3 Touchscreen: Cypress TTSP G3 Core Driver
 > 
-> But not in my kernel, what tree are you looking at? I don't
-> remember
-> seeing any tag patches, and they should be in my tree if
-> there are.
+> Hi Kevin,
+> 
+> > Hi Henrik,
+> >
+> > Thank you for the code modifications.
+> > The mods work for both I2C and SPI builds.
+> 
+> Great!
+> 
+> > Can you post your modified patch?
+> 
+> There might be more comments to v4, so if there is a v5, you can just
+> send it then. Otherwise, we have what we need.
+> 
+> Thanks,
+> Henrik
 
-It applies on top of this patch:
-
->From 67869fb9fdfa04503b250d59e086c15f1698aea0 Mon Sep 17 00:00:00 2001
-From: Luben Tuikov <ltuikov@yahoo.com>
-Date: Wed, 24 Nov 2010 14:18:27 -0800
-Subject: [PATCH] [BLOCK] Preliminary increasing tag sequence implementation
-
-Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
----
- block/blk-tag.c        |   15 +++++++++++++--
- include/linux/blkdev.h |    1 +
- 2 files changed, 14 insertions(+), 2 deletions(-)
-
-diff --git a/block/blk-tag.c b/block/blk-tag.c
-index ece65fc..f792e98 100644
---- a/block/blk-tag.c
-+++ b/block/blk-tag.c
-@@ -130,6 +130,7 @@ init_tag_map(struct request_queue *q, struct blk_queue_tag *tags, int depth)
-        tags->max_depth = depth;
-        tags->tag_index = tag_index;
-        tags->tag_map = tag_map;
-+       tags->last_tag = 0;
- 
-        return 0;
- fail:
-@@ -222,7 +223,7 @@ int blk_queue_resize_tags(struct request_queue *q, int new_depth)
-        struct blk_queue_tag *bqt = q->queue_tags;
-        struct request **tag_index;
-        unsigned long *tag_map;
--       int max_depth, nr_ulongs;
-+       int max_depth, nr_ulongs, last_tag;
- 
-        if (!bqt)
-                return -ENXIO;
-@@ -251,6 +252,7 @@ int blk_queue_resize_tags(struct request_queue *q, int new_depth)
-        tag_index = bqt->tag_index;
-        tag_map = bqt->tag_map;
-        max_depth = bqt->real_max_depth;
-+       last_tag = bqt->last_tag;
- 
-        if (init_tag_map(q, bqt, new_depth))
-                return -ENOMEM;
-@@ -258,6 +260,7 @@ int blk_queue_resize_tags(struct request_queue *q, int new_depth)
-        memcpy(bqt->tag_index, tag_index, max_depth * sizeof(struct request *));
-        nr_ulongs = ALIGN(max_depth, BITS_PER_LONG) / BITS_PER_LONG;
-        memcpy(bqt->tag_map, tag_map, nr_ulongs * sizeof(unsigned long));
-+       bqt->last_tag = last_tag;
- 
-        kfree(tag_index);
-        kfree(tag_map);
-@@ -364,12 +367,20 @@ int blk_queue_start_tag(struct request_queue *q, struct request *rq)
-                        return 1;
-        }
- 
-+       if (bqt->last_tag == bqt->max_depth-1)
-+               bqt->last_tag = 0;
-+
-        do {
--               tag = find_first_zero_bit(bqt->tag_map, max_depth);
-+               tag = find_next_zero_bit(bqt->tag_map,
-+                                        max_depth,
-+                                        bqt->last_tag+1);
-                if (tag >= max_depth)
-                        return 1;
- 
-        } while (test_and_set_bit_lock(tag, bqt->tag_map));
-+
-+       bqt->last_tag = tag;
-+
-        /*
-         * We need lock ordering semantics given by test_and_set_bit_lock.
-         * See blk_queue_end_tag for details.
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index aae86fd..228efcc 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -224,6 +224,7 @@ struct blk_queue_tag {
-        int max_depth;                  /* what we will send to device */
-        int real_max_depth;             /* what the array can hold */
-        atomic_t refcnt;                /* map can be shared */
-+       int last_tag;
- };
- 
- #define BLK_SCSI_MAX_CMDS      (256)
--- 
-1.7.2.2.165.gbc382
-
+---------------------------------------------------------------
+This message and any attachments may contain Cypress (or its
+subsidiaries) confidential information. If it has been received
+in error, please advise the sender and immediately delete this
+message.
+---------------------------------------------------------------
 
