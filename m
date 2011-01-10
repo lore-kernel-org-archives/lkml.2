@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab1AJSw2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 13:52:28 -0500
-Received: from utopia.booyaka.com ([72.9.107.138]:56323 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754341Ab1AJSwZ (ORCPT
+	id S1754603Ab1AJSw5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 13:52:57 -0500
+Received: from h1047321.serverkompetenz.net ([85.214.67.163]:60703 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754292Ab1AJSw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 13:52:25 -0500
-Date: Mon, 10 Jan 2011 11:52:24 -0700 (MST)
-From: Paul Walmsley <paul@pwsan.com>
-To: Anand Gadiyar <gadiyar@ti.com>
-cc: linux-omap@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
-        Felipe Balbi <balbi@ti.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] arm: omap4: pandaboard: turn on PHY reference clock at
- init
-In-Reply-To: <1294670535-9059-1-git-send-email-gadiyar@ti.com>
-Message-ID: <alpine.DEB.2.00.1101101152040.5731@utopia.booyaka.com>
-References: <1294670535-9059-1-git-send-email-gadiyar@ti.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 10 Jan 2011 13:52:56 -0500
+X-Greylist: delayed 1991 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Jan 2011 13:52:56 EST
+Message-ID: <4D2B4CE4.9080309@ahsoftware.de>
+Date: Mon, 10 Jan 2011 19:16:04 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: linux-kernel@vger.kernel.org
+CC: linux-arm-kernel@lists.arm.linux.org.uk, linux@arm.linux.org.uk
+Subject: ARM: relocation out of range (when loading a module)
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Jan 2011, Anand Gadiyar wrote:
+Hello,
 
-> The SMSC 3320 USB PHY on the OMAP4 Pandaboard needs a 19.2 MHz
-> reference clock. This clock is provided from the OMAP4's fref_clk3
-> pad.
-> 
-> Recent changes to clock44xx_data.c made the clock framework aware
-> of the existence of these fref_clk[i] lines. If the option
-> CONFIG_OMAP_RESET_CLOCKS is enabled in the kernel, then the
-> clock framework will turn these clocks off during bootup.
-> 
-> Explicitly request and keep this clock enabled at init for the
-> Pandaboard, so that the PHY receives this clock at all times.
-> 
-> Reported-by: Ming Lei <tom.leiming@gmail.com>
-> Signed-off-by: Anand Gadiyar <gadiyar@ti.com>
-> Cc: Benoit Cousson <b-cousson@ti.com>
-> Cc: Paul Walmsley <paul@pwsan.com>
-> Cc: Tony Lindgren <tony@atomide.com>
+I've build a kernel 2.6.37 for an armv5-device which includes an 
+initramfs of about 16MB (uncompressed, result is a kernel of about 6MB) 
+and I now getting errors when trying to load a module (which is included 
+in that initramfs):
 
-Reviewed-by: Paul Walmsley <paul@pwsan.com>
+----------------------------
+# modprobe ipv6
+modprobe: 'kernel/net/ipv6/ipv6.ko': invalid module format
+# dmesg | tail -n 1
+[  107.327672] ipv6: relocation out of range, section 2 reloc 0 sym 
+'snmp_mib_free'
+----------------------------
 
+To compile the kernel I've used gcc 4.5.2 and binutils 2.21.
 
-- Paul
+If I apply the patch found at
+
+http://lists.arm.linux.org.uk/lurker/message/20100729.090437.85f82ebd.en.html
+
+the output from dmesg will be
+----------------------------
+[   58.211776] ipv6: section 2 reloc 0 sym 'snmp_mib_free': relocation 
+28 out of range (0xbf0000a4 -> 0xc11b4858)
+----------------------------
+
+I don't know much about how the memory is organized and the relocation 
+is done for arm, but reading that output it seems the 32MB limit is 
+reached. Is that because of the initramfs (just speculating) and is 
+there a workaround to still include such an initramfs in the kernel?
+
+An excerpt from my config:
+
+----------------------------
+CONFIG_ARM_THUMB=y
+...
+# CONFIG_HIGHMEM is not set
+# CONFIG_ARCH_SPARSEMEM_DEFAULT is not set
+# CONFIG_ARCH_SELECT_MEMORY_MODEL is not set
+# CONFIG_HIGHMEM is not set
+CONFIG_SELECT_MEMORY_MODEL=y
+CONFIG_FLATMEM_MANUAL=y
+CONFIG_FLATMEM=y
+CONFIG_FLAT_NODE_MEM_MAP=y
+CONFIG_HAVE_MEMBLOCK=y
+CONFIG_PAGEFLAGS_EXTENDED=y
+----------------------------
+
+Regards,
+
+Alexander
