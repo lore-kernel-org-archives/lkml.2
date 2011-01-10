@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab1AJVRc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 16:17:32 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:61700 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754733Ab1AJVRb (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 10 Jan 2011 16:17:31 -0500
-Date: Mon, 10 Jan 2011 16:16:18 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Derek G. Murray" <Derek.Murray@cl.cam.ac.uk>,
-        Gerd Hoffmann <kraxel@redhat.com>
-Subject: Re: [PATCH 06/11] xen: gntdev: move use of GNTMAP_contains_pte
- next to the map_op
-Message-ID: <20110110211617.GB15016@dumpdata.com>
-References: <alpine.DEB.2.00.1012151259510.2390@kaball-desktop>
- <1292420446-3348-6-git-send-email-stefano.stabellini@eu.citrix.com>
- <20110105202425.GD29993@dumpdata.com>
- <alpine.DEB.2.00.1101071403390.2390@kaball-desktop>
+	id S1754843Ab1AJVSJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 16:18:09 -0500
+Received: from ns2.cypress.com ([157.95.67.5]:48562 "EHLO ns2.cypress.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754730Ab1AJVSH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 16:18:07 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1101071403390.2390@kaball-desktop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [v4 1/3] 1/3 Touchscreen: Cypress TTSP G3 Core Driver
+Date: Mon, 10 Jan 2011 13:17:41 -0800
+Message-ID: <FB9C2CB29A07AB45B575A4E8D2AABC0901400A80@labamba.mis.cypress.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [v4 1/3] 1/3 Touchscreen: Cypress TTSP G3 Core Driver
+Thread-Index: AcuxCul0f6RPIsV0QW+3qa+BVCKX8AAANtrg
+References: <kev@cypress.com> <1294188847-24728-1-git-send-email-kev@cypress.com> <20110105085942.GA23321@polaris.bitmath.org> <FB9C2CB29A07AB45B575A4E8D2AABC09014003B8@labamba.mis.cypress.com> <20110105173403.GA2146@polaris.bitmath.org> <FB9C2CB29A07AB45B575A4E8D2AABC0901400A3F@labamba.mis.cypress.com> <20110110211103.GA16332@core.coreip.homeip.net>
+From: "Kevin McNeely" <Kevin.McNeely@cypress.com>
+To: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
+Cc: "Henrik Rydberg" <rydberg@euromail.se>,
+        "David Brown" <davidb@codeaurora.org>,
+        "Trilok Soni" <tsoni@codeaurora.org>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        "Eric Miao" <eric.y.miao@gmail.com>,
+        "Mike Frysinger" <vapier@gentoo.org>,
+        "Alan Cox" <alan@linux.intel.com>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 10 Jan 2011 21:17:42.0887 (UTC) FILETIME=[D190B770:01CBB10B]
+X-Brightmail-Tracker: AAAAAA==
+X-MailScanner: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 10:32:51AM +0000, Stefano Stabellini wrote:
-> On Wed, 5 Jan 2011, Konrad Rzeszutek Wilk wrote:
-> > On Wed, Dec 15, 2010 at 01:40:41PM +0000, stefano.stabellini@eu.citrix.com wrote:
-> > > From: Ian Campbell <ian.campbell@citrix.com>
-> > > 
-> > > This flag controls the meaning of gnttab_map_grant_ref.host_addr and
-> > > specifies that the field contains a refernce to the pte entry to be
-> >                                       ^^^^^^^^ - reference
-> 
-> fixed it
-> 
-> > > diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
-> > > index cf61c7d..b916d6b 100644
-> > > --- a/drivers/xen/gntdev.c
-> > > +++ b/drivers/xen/gntdev.c
-> > > @@ -205,10 +205,12 @@ static int find_grant_ptes(pte_t *pte, pgtable_t token, unsigned long addr, void
-> > >  	BUG_ON(pgnr >= map->count);
-> > >  	pte_maddr  = (u64)pfn_to_mfn(page_to_pfn(token)) << PAGE_SHIFT;
-> > >  	pte_maddr += (unsigned long)pte & ~PAGE_MASK;
-> > > -	gnttab_set_map_op(&map->map_ops[pgnr], pte_maddr, map->flags,
-> > > +	gnttab_set_map_op(&map->map_ops[pgnr], pte_maddr,
-> > > +			  GNTMAP_contains_pte | map->flags,
-> > 
-> > Ok, but the gnttab_set_map_op will do the exact thing it did before. It still does this:
-> > 
-> > map->host_addr = addr;
-> > 
-> > irregardless if you pass in any flag.
-> > 
-> 
-> Yes, but the flags are set in map_ops and that is critical because it
-> changes the meanings of the hypercall arguments.
+Ok. Thank you Dmitry,
+Kevin
 
-Aaaaaah.. That is what I missed. Thx
+
+> -----Original Message-----
+> From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
+> Sent: Monday, January 10, 2011 1:11 PM
+> To: Kevin McNeely
+> Cc: Henrik Rydberg; David Brown; Trilok Soni; Samuel Ortiz; Eric Miao;
+> Mike Frysinger; Alan Cox; linux-input@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [v4 1/3] 1/3 Touchscreen: Cypress TTSP G3 Core Driver
+> 
+> On Mon, Jan 10, 2011 at 11:27:33AM -0800, Kevin McNeely wrote:
+> > Hello Henrik,
+> >
+> > As there have been no other changes requested for the v4 (other than
+> > your modifications), will you merge your modification patch along
+> with
+> > my  v4 SPI and v4 I2C patches?
+> >
+> > Do I need to submit a v5 with your patch in order to get merged?
+> >
+> 
+> Hi Kevin,
+> 
+> I have a few comments/changes, let me try to sort through them
+> tonight/tomorrow.
+> 
+> Thanks.
+> 
+> --
+> Dmitry
+
+---------------------------------------------------------------
+This message and any attachments may contain Cypress (or its
+subsidiaries) confidential information. If it has been received
+in error, please advise the sender and immediately delete this
+message.
+---------------------------------------------------------------
+
