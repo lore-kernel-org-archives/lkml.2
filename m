@@ -1,112 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab1AJOaq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 09:30:46 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:15205 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947Ab1AJOap convert rfc822-to-8bit (ORCPT
+	id S1754101Ab1AJOiE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 09:38:04 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44434 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752203Ab1AJOiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 09:30:45 -0500
+	Mon, 10 Jan 2011 09:38:01 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=q7L8rWVG0zhFry9EZnuznIl3D5t0IPnnRY/6/ce4Tz71amvzK7LnSYKKE+vbtM0SYX
-         hLnW7H+Hxyyn2FIuG6SA==
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=m6GKqCd3/zKR0vOwvqoiD3212DS0mnWFkFpBZmUpbLCVxVRhn+1oMzHQx7e2IEmH9Y
+         kN6I7bB4Imhz2NJCVygb+pmK1g3sqWFfvvIabPwCJODtwyc+wCIsbQC1Qehv7IfJX0z1
+         eSjFN+WEYibG5Oga2U4wrK3oGOVLZIGw9TaVA=
+Message-ID: <4D2B19C5.5060709@gmail.com>
+Date: Mon, 10 Jan 2011 15:37:57 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <1294308909.2016.321.camel@laptop>
-References: <4d2205a1.8b02e30a.3541.ffff8aee@mx.google.com>
-	<1294226618.2016.259.camel@laptop>
-	<AANLkTin_NMwsymSaTaCkuMmkQ91YbW3VChhc2Mx41KN5@mail.gmail.com>
-	<AANLkTinGaHThAxO+0ObCtv+28W8bKULBEtV1KQ4Nax8H@mail.gmail.com>
-	<1294308909.2016.321.camel@laptop>
-Date: Mon, 10 Jan 2011 15:30:39 +0100
-Message-ID: <AANLkTimSS=xOSqpS5sVbWXhSp2tCsx=iEBPn07qowP76@mail.gmail.com>
-Subject: Re: [PATCH 4/5] perf_events: add cgroup support (v7)
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
-        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
-        lizf@cn.fujitsu.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: linux-kernel@vger.kernel.org
+CC: akpm@linux-foundation.org, mm-commits@vger.kernel.org, linux-mm@kvack.org,
+        aarcange@redhat.com, kvm@vger.kernel.org
+Subject: qemu-kvm defunct due to THP [was: mmotm 2011-01-06-15-41 uploaded]
+References: <201101070014.p070Egpo023959@imap1.linux-foundation.org>
+In-Reply-To: <201101070014.p070Egpo023959@imap1.linux-foundation.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+On 01/07/2011 12:41 AM, akpm@linux-foundation.org wrote:
+> The mm-of-the-moment snapshot 2011-01-06-15-41 has been uploaded to
 
-There is indeed a problem in the exit path. We cannot use TASK_DEAD.
-Using task->flags & PF_EXITING would work, but there is one last gotcha.
+Hi, something of the following breaks qemu-kvm:
 
-We need to have the sequence:
-        perf_event_exit_task(tsk);
-        cgroup_exit(tsk, 1);
+> thp-add-pmd-mangling-generic-functions.patch
+> thp-add-pmd-mangling-generic-functions-fix-pgtableh-build-for-um.patch
+> thp-add-pmd-mangling-functions-to-x86.patch
+> thp-bail-out-gup_fast-on-splitting-pmd.patch
+> thp-pte-alloc-trans-splitting.patch
+> thp-pte-alloc-trans-splitting-fix.patch
+> thp-pte-alloc-trans-splitting-fix-checkpatch-fixes.patch
+> thp-add-pmd-mmu_notifier-helpers.patch
+> thp-clear-page-compound.patch
+> thp-add-pmd_huge_pte-to-mm_struct.patch
+> thp-split_huge_page_mm-vma.patch
+> thp-split_huge_page-paging.patch
+> thp-clear_copy_huge_page.patch
+> thp-kvm-mmu-transparent-hugepage-support.patch
+> thp-_gfp_no_kswapd.patch
+> thp-dont-alloc-harder-for-gfp-nomemalloc-even-if-nowait.patch
+> thp-transparent-hugepage-core.patch
+> thp-split_huge_page-anon_vma-ordering-dependency.patch
+> thp-verify-pmd_trans_huge-isnt-leaking.patch
+> thp-madvisemadv_hugepage.patch
+> thp-add-pagetranscompound.patch
+> thp-pmd_trans_huge-migrate-bugcheck.patch
+> thp-memcg-compound.patch
+> thp-transhuge-memcg-commit-tail-pages-at-charge.patch
+> thp-memcg-huge-memory.patch
+> thp-transparent-hugepage-vmstat.patch
+> thp-khugepaged.patch
+> thp-khugepaged-vma-merge.patch
+> thp-skip-transhuge-pages-in-ksm-for-now.patch
+> thp-remove-pg_buddy.patch
+> thp-add-x86-32bit-support.patch
+> thp-mincore-transparent-hugepage-support.patch
+> thp-add-pmd_modify.patch
+> thp-mprotect-pass-vma-down-to-page-table-walkers.patch
+> thp-mprotect-transparent-huge-page-support.patch
+> thp-set-recommended-min-free-kbytes.patch
+> thp-enable-direct-defrag.patch
+> thp-add-numa-awareness-to-hugepage-allocations.patch
+> thp-allocate-memory-in-khugepaged-outside-of-mmap_sem-write-mode.patch
+> thp-allocate-memory-in-khugepaged-outside-of-mmap_sem-write-mode-fix.patch
+> thp-transparent-hugepage-config-choice.patch
+> thp-select-config_compaction-if-transparent_hugepage-enabled.patch
+> thp-transhuge-isolate_migratepages.patch
+> thp-avoid-breaking-huge-pmd-invariants-in-case-of-vma_adjust-failures.patch
+> thp-dont-allow-transparent-hugepage-support-without-pse.patch
+> thp-mmu_notifier_test_young.patch
+> thp-freeze-khugepaged-and-ksmd.patch
+> thp-use-compaction-in-kswapd-for-gfp_atomic-order-0.patch
+> thp-use-compaction-for-all-allocation-orders.patch
+> thp-disable-transparent-hugepages-by-default-on-small-systems.patch
+> thp-fix-anon-memory-statistics-with-transparent-hugepages.patch
+> thp-scale-nr_rotated-to-balance-memory-pressure.patch
+> thp-transparent-hugepage-sysfs-meminfo.patch
+> thp-add-debug-checks-for-mapcount-related-invariants.patch
+> thp-fix-memory-failure-hugetlbfs-vs-thp-collision.patch
+> thp-compound_trans_order.patch
+> thp-compound_trans_order-fix.patch
+> thp-mm-define-madv_nohugepage.patch
+> thp-madvisemadv_nohugepage.patch
+> thp-khugepaged-make-khugepaged-aware-of-madvise.patch
+> thp-khugepaged-make-khugepaged-aware-of-madvise-fix.patch
 
-Be atomic w.r.t., IPI. I am running into timing problem (time_ena,
-time_run) if you
-have an IPI to read the counts between perf_event_exit_task() and cgroup_exit().
-The issue is that during that time window, tsk->cgrp == current->cgrp, thus the
-timing code assumes cgroup monitoring is still on and it updates the cgroup time
-(time_enabled).
+The series is unbisectable, build errors occur. It needs to be fixed too.
 
-I am working on a solution that does not involve interrupt masking for those
-two calls.
+The kernel complains:
+BUG: Bad page state in process qemu-kvm  pfn:1bec05
+page:ffffea00061ba118 count:1883770 mapcount:0 mapping:          (null)
+index:0x0
+page flags: 0x8000000000008000(tail)
+Pid: 4221, comm: qemu-kvm Not tainted 2.6.37-mm1_64 #2
+Call Trace:
+ [<ffffffff810cefcb>] ? bad_page+0xab/0x120
+ [<ffffffff810cf4a1>] ? free_pages_prepare+0xa1/0xd0
+ [<ffffffff810cfebd>] ? __free_pages_ok+0x2d/0xc0
+ [<ffffffff810cff66>] ? free_compound_page+0x16/0x20
+ [<ffffffff810d44f7>] ? __put_compound_page+0x17/0x20
+ [<ffffffff810d4578>] ? put_compound_page+0x48/0x170
+ [<ffffffff810d49ae>] ? release_pages+0x24e/0x260
+ [<ffffffff810f757d>] ? free_pages_and_swap_cache+0x8d/0xb0
+ [<ffffffff81108b30>] ? zap_huge_pmd+0x130/0x1b0
+ [<ffffffff810e9877>] ? unmap_vmas+0x877/0xbb0
+ [<ffffffff810ec14a>] ? exit_mmap+0xda/0x170
+ [<ffffffff810697fa>] ? mmput+0x4a/0x110
+ [<ffffffff8106e11b>] ? exit_mm+0x12b/0x170
+ [<ffffffff81070299>] ? do_exit+0x6d9/0x820
+ [<ffffffff810973cc>] ? futex_wake+0x10c/0x130
+ [<ffffffff81070423>] ? do_group_exit+0x43/0xb0
+ [<ffffffff8107c59a>] ? get_signal_to_deliver+0x1ba/0x390
+ [<ffffffff8103028f>] ? do_notify_resume+0xef/0x850
+ [<ffffffff8107aae3>] ? dequeue_signal+0x93/0x160
+ [<ffffffff8107add7>] ? sys_rt_sigtimedwait+0x227/0x230
+ [<ffffffff81099cce>] ? sys_futex+0x7e/0x150
+ [<ffffffff8103101b>] ? int_signal+0x12/0x17
 
-
-
-On Thu, Jan 6, 2011 at 11:15 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2011-01-05 at 22:39 +0100, Stephane Eranian wrote:
->> Peter,
->>
->> On Wed, Jan 5, 2011 at 2:01 PM, Stephane Eranian <eranian@google.com> wrote:
->> > On Wed, Jan 5, 2011 at 12:23 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> >> On Mon, 2011-01-03 at 18:20 +0200, Stephane Eranian wrote:
->> >>> +void
->> >>> +perf_cgroup_switch(struct task_struct *task, struct task_struct *next)
->> >>> +{
->> >>> +     struct perf_cgroup *cgrp_out = perf_cgroup_from_task(task);
->> >>> +     struct perf_cgroup *cgrp_in = perf_cgroup_from_task(next);
->> >>> +     struct perf_cpu_context *cpuctx;
->> >>> +     struct pmu *pmu;
->> >>> +     /*
->> >>> +      * if task is DEAD, then css_out is irrelevant, it has
->> >>> +      * been changed to init_cgrp in cgroup_exit() from do_exit().
->> >>> +      * Furthermore, perf_cgroup_exit_task(), has scheduled out
->> >>> +      * all css constrained events, only unconstrained events
->> >>> +      * remain. Therefore we need to reschedule based on css_in.
->> >>> +      */
->> >>> +     if (task->state != TASK_DEAD && cgrp_out == cgrp_in)
->> >>> +             return;
->> >>
->> >> I think that check is broken, TASK_DEAD is set way after calling
->> >> cgroup_exit(), so if we get preempted in between there you'll still go
->> >> funny.
->> >>
->>
->> I looked at this part again.
->>
->> The original code checking for TASK_DEAD is correct.
->>
->> The reason is simple, you're looking at perf_cgroup_switch() which is
->> invoked as part of schedule() and NOT perf_event_task_exit() (called
->> prior to cgroup_exit()).
->> Thus, by the time you do the final schedule(), the task state has indeed
->> been switched to TASK_DEAD.
->>
->> I remember testing for this condition during the debug phase.
->
-> But, cgroup_exit() detaches the task from the cgroup, after which the
-> cgroup can disappear. Furthermore, we can schedule after cgroup_exit()
-> and before the explicit schedule() invocation.
->
-> Some of the exit functions (say proc_exit_connector) can block and cause
-> scheduling, and with PREEMPT=y we can get preempted.
->
-> This means you'll be context switching, and thus possibly calling
-> perf_cgroup_switch(), on a task who's cgroup is possibly destroyed.
->
-> So I'm not at all seeing how this is correct.
->
+regards,
+-- 
+js
