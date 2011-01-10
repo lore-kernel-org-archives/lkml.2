@@ -1,65 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab1AJSJH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 13:09:07 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:60242 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754292Ab1AJSJD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 13:09:03 -0500
-Message-ID: <4D2B4B38.80102@austin.ibm.com>
-Date: Mon, 10 Jan 2011 12:08:56 -0600
-From: Nathan Fontenot <nfont@austin.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Robin Holt <holt@sgi.com>
-Subject: [PATCH 0/4] De-couple sysfs memory directories from memory sections
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754544Ab1AJSK3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 13:10:29 -0500
+Received: from mail-in-08.arcor-online.net ([151.189.21.48]:53350 "EHLO
+	mail-in-08.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751619Ab1AJSK0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 13:10:26 -0500
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-01.arcor-online.net C5D0A5A296
+Subject: Re: [InfraSchlot SPAM Check] Re: [PATCH] DVB Satellite Channel Routing support for DVB-S
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: =?iso-8859-1?Q?Thomas_Schl=F6ter?= <thomas.schloeter@gmx.net>
+In-Reply-To: <201101101828.40752@orion.escape-edv.de>
+Date: Mon, 10 Jan 2011 19:10:19 +0100
+Cc: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C20366D6-935B-43DE-8A73-9C4B6B5A3051@gmx.net>
+References: <BDD0B014-3AD5-4693-82D9-026F47A7F8A4@gmx.net> <C8296DFF-0E53-4AA2-A6ED-CA8B83D424F2@gmx.net> <4D2B2BA6.7030009@linuxtv.org> <201101101828.40752@orion.escape-edv.de>
+To: linux-media@vger.kernel.org
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a re-send of the remaining patches that did not make it
-into the last kernel release for de-coupling sysfs memory
-directories from memory sections.  The first three patches of the
-previous set went in, and this is the remaining patches that
-need to be applied.
+Hello Oliver,
 
-The patches decouple the concept that a single memory
-section corresponds to a single directory in 
-/sys/devices/system/memory/.  On systems
-with large amounts of memory (1+ TB) there are performance issues
-related to creating the large number of sysfs directories.  For
-a powerpc machine with 1 TB of memory we are creating 63,000+
-directories.  This is resulting in boot times of around 45-50
-minutes for systems with 1 TB of memory and 8 hours for systems
-with 2 TB of memory.  With this patch set applied I am now seeing
-boot times of 5 minutes or less.
+Am 10.01.2011 um 18:28 schrieb Oliver Endriss:
 
-The root of this issue is in sysfs directory creation. Every time
-a directory is created a string compare is done against all sibling
-directories to ensure we do not create duplicates.  The list of
-directory nodes in sysfs is kept as an unsorted list which results
-in this being an exponentially longer operation as the number of
-directories are created.
+> Ack, this stuff should be implemented as a userspace library.
+> (Btw, there is an experimental unicable patch for VDR.)
 
-The solution solved by this patch set is to allow a single
-directory in sysfs to span multiple memory sections.  This is
-controlled by an optional architecturally defined function
-memory_block_size_bytes().  The default definition of this
-routine returns a memory block size equal to the memory section
-size. This maintains the current layout of sysfs memory
-directories as it appears to userspace to remain the same as it
-is today.
+Yes, there is. I have not testet it as I am going to use MythTV, but for what I have read in some forums, many people have problems using that patch. This is why I decided to make a kernel implementation for my system. But I agree it could also be implemented as a wrapper application between frontend device and viewer application (the quick and dirty way) or native support in a userspace library (which will take some time until it is used in all DVB applications).
 
-For architectures that define their own version of this routine,
-as is done for powerpc and x86 in this patchset, the view in userspace
-would change such that each memoryXXX directory would span
-multiple memory sections.  The number of sections spanned would
-depend on the value reported by memory_block_size_bytes.
+What I thought makes my solution attractive is, that you can even use dvbscan, szap etc. without modification, which works perfectly in my setup. But anyway the purpose might be too special to have it inside the kernel.
 
--Nathan Fontenot
+Regards,
+Thomas
