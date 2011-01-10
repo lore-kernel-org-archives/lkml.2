@@ -1,79 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565Ab1AJIDp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 03:03:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27063 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752168Ab1AJIDn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 03:03:43 -0500
-Date: Mon, 10 Jan 2011 10:03:21 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
-        virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jes.Sorensen@redhat.com,
-        stable@kernel.org
-Subject: [PATCH] vhost: fix signed/unsigned comparison
-Message-ID: <20110110080320.GA10846@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752538Ab1AJIGV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 03:06:21 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38102
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751700Ab1AJIGS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 03:06:18 -0500
+Date: Mon, 10 Jan 2011 00:06:50 -0800 (PST)
+Message-Id: <20110110.000650.124002380.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: torvalds@linux-foundation.org, alex.arnautu96@gmail.com,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: Re: Kernel 2.6.37-rc5 rc7 Oops
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1293652965.7150.13.camel@edumazet-laptop>
+References: <AANLkTinCD5Jf-dEUpv7hu4YKrxS0DGqqqBU94iCJ8602@mail.gmail.com>
+	<AANLkTinJAEW-xAiEKnfxo1+3FiGwFXFii5Rh6d8tAtB-@mail.gmail.com>
+	<1293652965.7150.13.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To detect that a sequence number is done, we are doing math on unsigned
-integers so the result is unsigned too. Not what was intended for the <=
-comparison. The result is user stuck forever in flush call.
-Convert to int to fix this.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Wed, 29 Dec 2010 21:02:45 +0100
 
-Further, get rid of ({}) to make code clearer.
+> Le mercredi 29 décembre 2010 à 11:23 -0800, Linus Torvalds a écrit :
+>> On Wed, Dec 29, 2010 at 4:26 AM, Alex Arnautu <alex.arnautu96@gmail.com> wrote:
+>> >
+>> > I get an oops with 2.6.37-rc5 and 2.6.37-rc7-git1.
+>> > http://www.fotoshack.us/fotos/19044P271210_15.14_[01].jpg
+>> 
+>> Hmm. Davem added to the list of people involved. This _may_ be fixed
+>> by the "always clone skbs" commit in -rc8 (commit 173021072), but
+>> David can make a better judgment call.
+>> 
+> 
+> Very unlikely, as commit 173021072 only fix a bug in case mirred is
+> used.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
-
-I've put this on my vhost.git tree.
-
- drivers/vhost/vhost.c |   18 +++++++++++-------
- 1 files changed, 11 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 159c77a..522b8fc 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -98,22 +98,26 @@ void vhost_poll_stop(struct vhost_poll *poll)
- 	remove_wait_queue(poll->wqh, &poll->wait);
- }
- 
-+static bool vhost_work_seq_done(struct vhost_dev *dev, struct vhost_work *work,
-+				unsigned seq)
-+{
-+	int left;
-+	spin_lock_irq(&dev->work_lock);
-+	left = seq - work->done_seq;
-+	spin_unlock_irq(&dev->work_lock);
-+	return left <= 0;
-+}
-+
- static void vhost_work_flush(struct vhost_dev *dev, struct vhost_work *work)
- {
- 	unsigned seq;
--	int left;
- 	int flushing;
- 
- 	spin_lock_irq(&dev->work_lock);
- 	seq = work->queue_seq;
- 	work->flushing++;
- 	spin_unlock_irq(&dev->work_lock);
--	wait_event(work->done, ({
--		   spin_lock_irq(&dev->work_lock);
--		   left = seq - work->done_seq <= 0;
--		   spin_unlock_irq(&dev->work_lock);
--		   left;
--	}));
-+	wait_event(work->done, vhost_work_seq_done(dev, work, seq));
- 	spin_lock_irq(&dev->work_lock);
- 	flushing = --work->flushing;
- 	spin_unlock_irq(&dev->work_lock);
--- 
-1.7.3.2.91.g446ac
+This should be taken to the wireless list (now CC:'d) as the rt2xxx
+driver and the wireless stack are both in that backtrace.
