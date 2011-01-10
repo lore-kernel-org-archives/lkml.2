@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab1AJTci (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 14:32:38 -0500
-Received: from mga03.intel.com ([143.182.124.21]:50224 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754208Ab1AJTcf convert rfc822-to-8bit (ORCPT
+	id S1754165Ab1AJTem (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 14:34:42 -0500
+Received: from straum.hexapodia.org ([207.7.131.186]:35696 "EHLO
+	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab1AJTeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 14:32:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,302,1291622400"; 
-   d="scan'208";a="372515623"
-From: "Heasley, Seth" <seth.heasley@intel.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Date: Mon, 10 Jan 2011 11:32:32 -0800
-Subject: RE: [PATCH 2.6.37] irq: irq and pci_ids patch for Intel DH89xxCC
-  DeviceIDs
-Thread-Topic: [PATCH 2.6.37] irq: irq and pci_ids patch for Intel DH89xxCC
-  DeviceIDs
-Thread-Index: Acuw/L45AXJkLlfCR027z1+YXxX+VwAACLnA
-Message-ID: <CF9C39F99A89134C9CF9C4CCB68B8DDF25C1AF90E0@orsmsx501.amr.corp.intel.com>
-References: <201101101058.13515.seth.heasley@intel.com>
-	<20110110201430.7ab599c4@endymion.delvare>
-	<CF9C39F99A89134C9CF9C4CCB68B8DDF25C1AF9090@orsmsx501.amr.corp.intel.com>
- <20110110202934.5e4924b8@endymion.delvare>
-In-Reply-To: <20110110202934.5e4924b8@endymion.delvare>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 10 Jan 2011 14:34:37 -0500
+Date: Mon, 10 Jan 2011 11:34:37 -0800
+From: Andy Isaacson <adi@hexapodia.org>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Drunkard Zhang <gongfan193@gmail.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.37 BUG at inode.c:1616 (was Re: 2.6.37: Bug on btrfs while
+	umount)
+Message-ID: <20110110193437.GA19021@hexapodia.org>
+References: <AANLkTikb2UhU3XwFWjon=BRiFgcAni54ZN7PVCBZDaVf@mail.gmail.com> <1294363682-sup-7971@think> <20110110080815.GA7508@hexapodia.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110110080815.GA7508@hexapodia.org>
+X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
+X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
+X-Domestic-Surveillance: money launder bomb tax evasion
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Some products are defining a range of DeviceIDs rather than one or two
->specific IDs, so these blocks are for catching any DeviceID in the
->range.  I'm certainly open to suggestion for a better way to handle
->these, and I agree that the current way is awkward.
->
->I understand the need to have separate blocks for separate IDs and for
->ID ranges. But all the ranges could be covered by the same block:
->
->	if ((device >= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MIN &&
->	     device <= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MAX)
->	 || (device >= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MIN &&
->	     device <= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX)) {
->		r->name = "PIIX/ICH";
->		r->get = pirq_piix_get;
->		r->set = pirq_piix_set;
->		return 1;
->	}
+On Mon, Jan 10, 2011 at 12:08:15AM -0800, Andy Isaacson wrote:
+> On Thu, Jan 06, 2011 at 08:29:12PM -0500, Chris Mason wrote:
+> > > [50010.838804] ------------[ cut here ]------------
+> > > [50010.838931] kernel BUG at fs/btrfs/inode.c:1616!
+> > > [50010.839053] invalid opcode: 0000 [#1] PREEMPT SMP
+> [snip]
+> > > [50010.839653] Pid: 1681, comm: btrfs-endio-wri Not tainted 2.6.37 #1
+> > 
+> > Could you please pull from the master branch of the btrfs unstable tree.
+> > We had a late fix that is related to this.
+> 
+> I saw BUG at inode.c:1616 while running 2.6.37-rc6-11882-g55ec86f, I saw
 
-Not sure why I didn't do it this way.  Thanks for the help!
+Just got this again, same BUG and same stack trace.  This machine +
+fs ran great for several months under approximately the same workload,
+but the FS is slowly filling up; is this a regression in .37 or is the
+bug a function of the FS load?
 
--Seth
+-andy
