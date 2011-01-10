@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab1AJKqL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 05:46:11 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:39772 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753168Ab1AJKqJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 05:46:09 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] scripts/checkpatch.pl: reset rpt_cleaners warnings
-Date: Mon, 10 Jan 2011 05:53:54 -0500
-Message-Id: <1294656834-6293-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.4.rc1
+	id S1752235Ab1AJKsJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 05:48:09 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:12913 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753278Ab1AJKsE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 05:48:04 -0500
+Date: Mon, 10 Jan 2011 11:47:50 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>, Juerg Haefliger <juergh@gmail.com>
+Subject: Re: linux-next: manual merge of the hwmon-staging tree with the 
+ jdelvare-hwmon tree
+Message-ID: <20110110114750.7e1849ea@endymion.delvare>
+In-Reply-To: <20110110101623.GA29314@ericsson.com>
+References: <20110110132057.bc5d54a0.sfr@canb.auug.org.au>
+	<20110110034638.GA28007@ericsson.com>
+	<20110110095743.7616b7b3@endymion.delvare>
+	<20110110101623.GA29314@ericsson.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If you run checkpatch against multiple patches, and one of them has a
-whitespace issue which can be helped via a script (rpt_cleaners), you
-will see the same NOTE over and over for all subsequent patches.  It
-makes it seem like those patches also have whitespace problems when in
-reality, there's only one or two bad apples.
+On Mon, 10 Jan 2011 02:16:23 -0800, Guenter Roeck wrote:
+> On Mon, Jan 10, 2011 at 03:57:43AM -0500, Jean Delvare wrote:
+> > Let's be good citizens and sort out the conflict before sending the
+> > patches to Linus. I shall pick the pr_fmt change patch in my own tree.
+> > 
+> > But where do I pick it?
+> > ftp://pub.kernel.org/pub/linux/kernel/people/groeck/linux-staging/ is
+> > no longer relevant, right? Maybe you can delete it altogether to clear
+> > up the confusion. Care to point me to somewhere I can download the
+> > pr_fmt change patch?
+> > 
+> Try again; I updated it.
+> 
+> hwmon-next/0007-hwmon-dme1737-Use-pr_fmt-and-pr_-level.patch
 
-So reset rpt_cleaners back to 0 after we've issued the note so that it
-only shows up near the patch with the actual problems.
+Hmm, apparently syncing is down or slow, I don't see it yet. Will look
+again later.
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
- scripts/checkpatch.pl |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> In general, I keep my git tree up to date.
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git
+> 
+> You can get it from there as well.
+> 
+> > As for sending your patches to Linus for 2.6.38, yes, please send them
+> > as soon as possible. I am still not done processing all the mails I
+> > received during my vacation, and I must send my i2c patches too, so
+> > it's better if you don't wait for me and send your patches first.
+> > 
+> Ok. Do you want me to take out the dme1737 patch ?
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index e3c7fc0..94aba76 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2934,6 +2934,7 @@ sub process {
- 		if ($rpt_cleaners) {
- 			print "NOTE: whitespace errors detected, you may wish to use scripts/cleanpatch or\n";
- 			print "      scripts/cleanfile\n\n";
-+			$rpt_cleaners = 0;
- 		}
- 	}
- 
+If you send your patches to Linus today, it doesn't actually make a
+difference. So, whatever is easier for you.
+
 -- 
-1.7.4.rc1
-
+Jean Delvare
