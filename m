@@ -1,114 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab1AJRpQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 12:45:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23093 "EHLO mx1.redhat.com"
+	id S1753948Ab1AJRqq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 12:46:46 -0500
+Received: from vostochny.stro.at ([78.47.22.85]:43244 "EHLO vostochny.stro.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751220Ab1AJRpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 12:45:13 -0500
-Date: Mon, 10 Jan 2011 19:44:30 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Milton Miller <miltonm@bga.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jamie Lokier <jamie@shareable.org>, Thomas Weber <swirl@gmx.li>,
-        Gleb Natapov <gleb@redhat.com>,
-        virtualization@lists.linux-foundation.org,
+	id S1751393Ab1AJRqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 12:46:43 -0500
+Date: Mon, 10 Jan 2011 18:46:40 +0100
+From: maximilian attems <max@stro.at>
+To: linux-kbuild@vger.kernel.org
+Cc: Michal Marek <mmarek@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio: remove virtio-pci root device
-Message-ID: <20110110174430.GA30450@redhat.com>
-References: <20110105191711.GA27489@redhat.com>
- <virtio-pci-whynotsimplify@mdm.bga.com>
- <virtio-pci-noroot@mdm.bga.com>
+Subject: Re: [PATCH] kbuild: create linux-headers package in deb-pkg
+Message-ID: <20110110174640.GA619@stro.at>
+References: <1293201730-1583-1-git-send-email-tytso@mit.edu>
+ <20101225112026.GF20262@vostochny.stro.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <virtio-pci-noroot@mdm.bga.com>
+In-Reply-To: <20101225112026.GF20262@vostochny.stro.at>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 07, 2011 at 02:55:06AM -0600, Milton Miller wrote:
-> We sometimes need to map between the virtio device and
-> the given pci device. One such use is OS installer that
-> gets the boot pci device from BIOS and needs to
-> find the relevant block device. Since it can't,
-> installation fails.
-> 
-> Instead of creating a top-level devices/virtio-pci
-> directory, create each device under the corresponding
-> pci device node.  Symlinks to all virtio-pci
-> devices can be found under the pci driver link in
-> bus/pci/drivers/virtio-pci/devices, and all virtio
-> devices under drivers/bus/virtio/devices.
-> 
-> Signed-off-by: Milton Miller <miltonm@bga.com>
+Seems review went unnoticed, due to using signature.
 
-Tested-by: "Daniel P. Berrange" <berrange@redhat.com>
+On Sat, 25 Dec 2010, maximilian attems wrote:
+> > +# Build header package
+> > +find . -name Makefile -o -name Kconfig\* -o -name \*.pl > /tmp/files$$
+> > +find arch/x86/include include scripts -type f >> /tmp/files$$
+> x86 centric?
 
-> ---
-> 
-> This is an alternative to the patch by Michael S. Tsirkin
-> titled "virtio-pci: add softlinks between virtio and pci"
-> https://patchwork.kernel.org/patch/454581/
-> 
-> It creates simpler code, uses less memory, and should
-> be even easier use by the installer as it won't have to
-> know a virtio symlink to follow (just follow none).
-> 
-> Compile tested only as I don't have kvm setup.
-> 
-> 
-> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-> index ef8d9d5..4fb5b2b 100644
-> --- a/drivers/virtio/virtio_pci.c
-> +++ b/drivers/virtio/virtio_pci.c
-> @@ -96,11 +96,6 @@ static struct pci_device_id virtio_pci_id_table[] = {
->  
->  MODULE_DEVICE_TABLE(pci, virtio_pci_id_table);
->  
-> -/* A PCI device has it's own struct device and so does a virtio device so
-> - * we create a place for the virtio devices to show up in sysfs.  I think it
-> - * would make more sense for virtio to not insist on having it's own device. */
-> -static struct device *virtio_pci_root;
-> -
->  /* Convert a generic virtio device to our structure */
->  static struct virtio_pci_device *to_vp_device(struct virtio_device *vdev)
->  {
-> @@ -629,7 +624,7 @@ static int __devinit virtio_pci_probe(struct pci_dev *pci_dev,
->  	if (vp_dev == NULL)
->  		return -ENOMEM;
->  
-> -	vp_dev->vdev.dev.parent = virtio_pci_root;
-> +	vp_dev->vdev.dev.parent = &pci_dev->dev;
->  	vp_dev->vdev.dev.release = virtio_pci_release_dev;
->  	vp_dev->vdev.config = &virtio_pci_config_ops;
->  	vp_dev->pci_dev = pci_dev;
-> @@ -717,17 +712,7 @@ static struct pci_driver virtio_pci_driver = {
->  
->  static int __init virtio_pci_init(void)
->  {
-> -	int err;
-> -
-> -	virtio_pci_root = root_device_register("virtio-pci");
-> -	if (IS_ERR(virtio_pci_root))
-> -		return PTR_ERR(virtio_pci_root);
-> -
-> -	err = pci_register_driver(&virtio_pci_driver);
-> -	if (err)
-> -		root_device_unregister(virtio_pci_root);
-> -
-> -	return err;
-> +	return pci_register_driver(&virtio_pci_driver);
->  }
->  
->  module_init(virtio_pci_init);
-> @@ -735,7 +720,6 @@ module_init(virtio_pci_init);
->  static void __exit virtio_pci_exit(void)
->  {
->  	pci_unregister_driver(&virtio_pci_driver);
-> -	root_device_unregister(virtio_pci_root);
->  }
->  
->  module_exit(virtio_pci_exit);
+this will break on any non x86 arch, what is the correct variable
+for $ARCH?
+
+> > +(cd $objtree; find .config Module.symvers include scripts -type f >> /tmp/objfiles$$)
+> > +destdir=$hdrdir/usr/src/linux-headers-$version
+> > +mkdir -p "$destdir" "$hdrdir/DEBIAN" "$hdrdir/usr/share/doc/$hdrpackagename"
+> could move up to the other mkdir calls.
+
+we did that already.
+
+> > +tar -c -f - -T /tmp/files$$ | (cd $destdir; tar -xf -)
+> > +(cd $objtree; tar -c -f - -T /tmp/objfiles$$) | (cd $destdir; tar -xf -)
+> > +rm -f /tmp/files$$ /tmp/objfiles$$
+> > +arch=$(dpkg --print-architecture)
+> > +
+> > +cat <<EOF >> debian/control
+> > +
+> > +Package: $hdrpackagename
+> > +Provides: linux-headers, linux-headers-2.6
+> > +Architecture: $arch
+> not sure if that will interfere with the new crosscompile feature
+> of deb-pkg in linux-next.
+
+aboves arch call seems redundant with what we already have.
+
+> > +Description: Linux kernel headers for $KERNELRELEASE on $arch
+> > + This package provides kernel header files for $KERNELRELEASE on $arch
+> > + .
+> > + This is useful for people who need to build external modules
+> > +EOF
+> > +
+> > +create_package "$hdrpackagename" "$hdrdir"
+> > +
+> >  # Do we have firmware? Move it out of the way and build it into a package.
+> >  if [ -e "$tmpdir/lib/firmware" ]; then
+> >  	mv "$tmpdir/lib/firmware" "$fwdir/lib/"
+
+-- 
+maks
