@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456Ab1AJRIY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 12:08:24 -0500
-Received: from lo.gmane.org ([80.91.229.12]:35041 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754426Ab1AJRIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 12:08:22 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-Mail-Followup-To: linux-kernel@vger.kernel.org
-To: linux-kernel@vger.kernel.org
-From: Nikolaus Rath <Nikolaus@rath.org>
-Subject: Re: CPU Initiated DMA
-Date: Mon, 10 Jan 2011 12:08:00 -0500
-Message-ID: <8739p0u1ov.fsf@inspiron.ap.columbia.edu>
-References: <87mxncv3ge.fsf@inspiron.ap.columbia.edu>
-	<AANLkTi=QV7wF3Z7J8eh3MkOJ1K=ZNLgHFinX8dJSuYeJ@mail.gmail.com>
+	id S1754409Ab1AJRIT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 12:08:19 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:43223 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1754359Ab1AJRIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 12:08:17 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19mEygndc9mv5ou+EN3O7XJAjX2ULs++/7e6DO3rs
+	KMfgYQdpAq/VS0
+Subject: Re: [BUG stable, 2.6.32.27] sched: delayed cleanup of user_struct
+From: Mike Galbraith <efault@gmx.de>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <20110110141959.GA312@redhat.com>
+References: <4D2AB8F7.7030506@profihost.ag>
+	 <20110110114913.GA22298@redhat.com> <20110110123630.GA27057@redhat.com>
+	 <4D2AFFB5.5000807@profihost.ag> <20110110133545.GA30163@redhat.com>
+	 <4D2B113A.2060303@profihost.ag> <20110110140817.GA31708@redhat.com>
+	 <4D2B1658.20201@profihost.ag>  <20110110141959.GA312@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 10 Jan 2011 18:07:50 +0100
+Message-ID: <1294679270.8345.12.camel@marge.simson.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: ebox.rath.org
-Mail-Copies-To: never
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-Cancel-Lock: sha1:C1I2mGZxrW0RehiLrUM0KdLxKbY=
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ming Lei <tom.leiming@gmail.com> writes:
-> 2011/1/8 Nikolaus Rath <Nikolaus@rath.org>:
-> Hi,
->
->> Hello,
->>
->> I want to write a driver for a rather dumb PCI card, which cannot become
->> bus master itself. Is it possible to use a DMA controller on the
->> mainboard to still transfer data to the card without occupying the CPU?
->>
->> (I believe this is the way DMA used to work on ISA cards, but do recent
->> x86 systems still have a DMA controller for the CPU?)
->>
->> Any pointers are greatly appreciated. I looked into "Linux Device
->> Drivers", but the DMA chapter seems to be only about the device becoming
->> busmaster.
->
-> Generally speaking, you can do it certainly if there is dma controller on
-> your system.
+On Mon, 2011-01-10 at 15:19 +0100, Oleg Nesterov wrote:
+> On 01/10, Stefan Priebe - Profihost AG wrote:
+> >
+> >>> You can find the logs here:
+> >>> http://pastebin.com/hNd15E8K
+> >>
+> >> Good. Sadly, I didn't see this trace before...
+> >>
+> >> 	kernel BUG at kernel/workqueue.c:287!
+> >>
+> >> this matches "INIT_DELAYED_WORK() can corrupt the pending work" I
+> >> mentioned.
+> > Sorry to ask this but this could also be "workarounded" by disabled
+> > GROUP_SCHED? Or is this another thing?
+> 
+> Yes, this looks like the same thing.
+> 
+> But let me repeat, today I looked at this code for the first time ;)
+> 
+> > Will wait if greg or anybody else can tell
+> > us something about it.
+> 
+> Indeed.
 
-That sounds promising, thanks. How do I find out if my system has a DMA
-controller? (I don't need general C code, I just want to check if I'll
-be able to test the driver on my system).
+I'd be inclined to just shoot USER_SCHED, since it's dead upstream.  I'm
+putting a small backport series together, and could add that to the mix.
 
-
-Thanks,
-
-   -Nikolaus
-
--- 
- »Time flies like an arrow, fruit flies like a Banana.«
-
-  PGP fingerprint: 5B93 61F8 4EA2 E279 ABF6  02CF A9AD B7F8 AE4E 425C
+	-Mike
 
