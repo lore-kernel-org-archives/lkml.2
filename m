@@ -1,80 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562Ab1AJQf2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 11:35:28 -0500
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:23375 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753153Ab1AJQfZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 11:35:25 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: U5VUihcVM1kIG8cc8yetThjkAjkr2Jolrk2QlQT_Gb8JeAZ
- ooaFTkVPVsSiRHRV0ysFRNgi0gVit7QQ0Fe.dSempnoILmNf6507ZEWJVJX_
- s5gp3fRUWXp.lExIOXDIBFZDRJP8mBSRiULXj60Od_82ePkw9rdrcMKL892T
- kyp6PDQ79lAGEX4J5eSbTrMy6FA9x6cBnaYYV3Au3tYcRs8Pd.MTC_uTUON5
- f_wuQGpMcuVoXUdIF7c2nK5xIFF9bT6AhUwy6Sh_lp0o09_ZSgb0ldpSJCsc
- .Mu3gWQ4ua1rG997ueV.DkbZJiiY6pD243GoQLNpSaTxr1Zg-
-X-Yahoo-Newman-Property: ymail-3
-Date: Mon, 10 Jan 2011 10:35:23 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Tejun Heo <tj@kernel.org>
-cc: linux-kernel@vger.kernel.org
-Subject: x86,percpu: Move out of place 64 bit ops into X86_64 section
-Message-ID: <alpine.DEB.2.00.1101101034290.12243@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753649Ab1AJQgQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 11:36:16 -0500
+Received: from thunk.org ([69.25.196.29]:58657 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752883Ab1AJQgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 11:36:14 -0500
+Date: Mon, 10 Jan 2011 11:35:56 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: linux-kernel@vger.kernel.org, sandeen@redhat.com
+Subject: Re: [PATCH] ext4: fix possible overflow in ext4_trim_fs()
+Message-ID: <20110110163556.GB3128@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org,
+	sandeen@redhat.com
+References: <1290694277-29462-1-git-send-email-lczerner@redhat.com>
+ <20101220123521.GH23626@thunk.org>
+ <alpine.LFD.2.00.1101101221570.3095@dhcp-lab-213.englab.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1101101221570.3095@dhcp-lab-213.englab.brq.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 10, 2011 at 12:25:05PM +0100, Lukas Czerner wrote:
+> 
+> Actually the patch is not enough, there is still a possibility for
+> overflow to happen. Jan Kara notice the same bug in ext3 batched discard
+> implementation. I am sorry for this, I'll sen updated patch ASAP.
+> 
 
-Subject: x86,percpu: Move out of place 64 bit ops into X86_64 section
+This isn't a new patch, and not a replacement for the previous one,
+correct?
 
-Some operations that operate on 64 bit operands are defined for 32 bit.
-Move them into the correct section.
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
----
- arch/x86/include/asm/percpu.h |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-Index: linux-2.6/arch/x86/include/asm/percpu.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/percpu.h	2011-01-10 10:29:29.000000000 -0600
-+++ linux-2.6/arch/x86/include/asm/percpu.h	2011-01-10 10:30:22.000000000 -0600
-@@ -414,8 +414,6 @@ do {									\
- #define this_cpu_xchg_1(pcp, nval)	percpu_xchg_op(pcp, nval)
- #define this_cpu_xchg_2(pcp, nval)	percpu_xchg_op(pcp, nval)
- #define this_cpu_xchg_4(pcp, nval)	percpu_xchg_op(pcp, nval)
--#define this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
--#define this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-
- #define irqsafe_cpu_add_1(pcp, val)	percpu_add_op((pcp), val)
- #define irqsafe_cpu_add_2(pcp, val)	percpu_add_op((pcp), val)
-@@ -432,8 +430,6 @@ do {									\
- #define irqsafe_cpu_xchg_1(pcp, nval)	percpu_xchg_op(pcp, nval)
- #define irqsafe_cpu_xchg_2(pcp, nval)	percpu_xchg_op(pcp, nval)
- #define irqsafe_cpu_xchg_4(pcp, nval)	percpu_xchg_op(pcp, nval)
--#define irqsafe_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
--#define irqsafe_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-
- #ifndef CONFIG_M386
- #define __this_cpu_add_return_1(pcp, val) percpu_add_return_op(pcp, val)
-@@ -475,11 +471,15 @@ do {									\
- #define this_cpu_or_8(pcp, val)		percpu_to_op("or", (pcp), val)
- #define this_cpu_xor_8(pcp, val)	percpu_to_op("xor", (pcp), val)
- #define this_cpu_add_return_8(pcp, val)	percpu_add_return_op(pcp, val)
-+#define this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-
- #define irqsafe_cpu_add_8(pcp, val)	percpu_add_op((pcp), val)
- #define irqsafe_cpu_and_8(pcp, val)	percpu_to_op("and", (pcp), val)
- #define irqsafe_cpu_or_8(pcp, val)	percpu_to_op("or", (pcp), val)
- #define irqsafe_cpu_xor_8(pcp, val)	percpu_to_op("xor", (pcp), val)
-+#define irqsafe_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define irqsafe_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
- #endif
-
- /* This is not atomic against other CPUs -- CPU preemption needs to be off */
+						- Ted
