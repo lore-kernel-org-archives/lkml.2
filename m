@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab1AJKaF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 05:30:05 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:40645 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753090Ab1AJKaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 05:30:04 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18ZvM8RXGYZaLiQENH/yurysRKJ5ckI0X2omwNboB
-	Vlw7RLcvCqTQu6
-Subject: [patch] Re: autogroup: sched_setscheduler() fails
-From: Mike Galbraith <efault@gmx.de>
-To: bharata@linux.vnet.ibm.com
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110110091622.GF2772@in.ibm.com>
-References: <20110110091622.GF2772@in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Jan 2011 11:29:48 +0100
-Message-ID: <1294655388.8197.22.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1753367Ab1AJKay (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 05:30:54 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:33438 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753090Ab1AJKaw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 05:30:52 -0500
+X-IronPort-AV: E=Sophos;i="4.60,299,1291593600"; 
+   d="scan'208";a="3677674"
+Date: Mon, 10 Jan 2011 10:32:19 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+Subject: Re: [PATCH 09/11] xen: introduce gnttab_map_refs and
+ gnttab_unmap_refs
+In-Reply-To: <20110105202355.GB29993@dumpdata.com>
+Message-ID: <alpine.DEB.2.00.1101071357420.2390@kaball-desktop>
+References: <alpine.DEB.2.00.1012151259510.2390@kaball-desktop> <1292420446-3348-9-git-send-email-stefano.stabellini@eu.citrix.com> <20110105202355.GB29993@dumpdata.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-10 at 14:46 +0530, Bharata B Rao wrote:
-> Hi,
+On Wed, 5 Jan 2011, Konrad Rzeszutek Wilk wrote:
+> > +
+> > +	ret = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, map_ops, count);
+> > +
+> > +	for (i = 0; i < count; i++) {
+> > +		pfn = mfn_to_pfn(map_ops[i].host_addr >> PAGE_SHIFT);
 > 
-> With autogroup ON, sched_setscheduler() fails when I try to change the
-> scheduling policy of a normal task to either RR or FIFO.
+> Shouldn't you be checking the flag to see if this a bus address? You could
+> also use the PFN_DOWN macro here..
+
+Yes, actually I should be checking for GNTMAP_contains_pte.
+
+> > +		pte = (pte_t *) __va((pfn << PAGE_SHIFT) +
+> > +				(map_ops[i].host_addr & ~PAGE_MASK));
 > 
-> sched_setscheduler() returns -EPERM when it finds that the group doesn't
-> have any rt bandwidth. This is expected because with autogroup, the task
-> is in an autogroup for which task_group(p)->rt_bandwidth.rt_runtime is 0.
+> PFN_PHYS(pfn)? Or better You could use the mfn_to_virt macro here:
 > 
-> I guess the task needs to be moved to appropriate cgroup (from its current
-> autogroup) when such policy change is requested, but I wasn't sure if
-> group change from sched_setscheduler() can be achieved easily.
+> 		pte = (pte_t *) mfn_to_virt(PFN_DOWN(map_ops[i].ost_addr));
+> 		pte += (map_ops[i].host_addr & _PAGE_MASK);
+> 
 
-Right, autogroup should be excluding CONFIG_RT_GROUP_SCHED, since it
-doesn't currently support it.
+Good suggestion, I have applied it (plus a small change to the pointer
+arithmetic).
 
-sched: SCHED_AUTOGROUP selection excludes RT_GROUP_SCHED
+> > +		val = *pte;
+> > +		mfn = (native_pte_val(val) & PTE_PFN_MASK) >> PAGE_SHIFT;
+> 
+> mfn = pte_mfn(pte) ?
+> 
 
-Autogroup does not support realtime task groups, so make selection of
-SCHED_AUTOGROUP exclude RT_GROUP_SCHED.
-
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Reported-by:Bharata B Rao <bharata@linux.vnet.ibm.com>
-
----
- init/Kconfig |    5 +++++
- 1 file changed, 5 insertions(+)
-
-Index: linux-2.6/init/Kconfig
-===================================================================
---- linux-2.6.orig/init/Kconfig
-+++ linux-2.6/init/Kconfig
-@@ -699,6 +699,7 @@ config RT_GROUP_SCHED
- 	bool "Group scheduling for SCHED_RR/FIFO"
- 	depends on EXPERIMENTAL
- 	depends on CGROUP_SCHED
-+	depends on !SCHED_AUTOGROUP
- 	default n
- 	help
- 	  This feature lets you explicitly allocate real CPU bandwidth
-@@ -807,6 +808,10 @@ config SCHED_AUTOGROUP
- 	  desktop applications.  Task group autogeneration is currently based
- 	  upon task session.
- 
-+	  Note: SCHED_AUTOGROUP does not support realtime tasks, and prevents
-+	  enabling RT_GROUP_SCHED.  If you intend to use group scheduling for
-+	  realtime tasks, do not enable this option.
-+
- config MM_OWNER
- 	bool
- 
-
+yep, done that.
 
