@@ -1,526 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939Ab1AJMOS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 07:14:18 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40517 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753802Ab1AJMOH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 07:14:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=QaamcjUnWNdhNjdD0JhDEwtO40j34DCwBtjiZwUbHcqfvv64AbBdYPmjg/lGINTyA1
-         W1hSn8FVojAFMfi4voFiniLvAn/A84PNevYGg90oLW+viWZFgftHsoNGm4/qexULZpev
-         W8sIksm5mXlwOx86xpdwNjk6sHDodBTYZ/npY=
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Marek Belisko <marek.belisko@open-nandra.com>,
-        Stano Lanci <chl.pixo@gmail.com>
-Subject: [PATCH v2] staging: ft1000-pcmcia: Fix compilation errors.
-Date: Mon, 10 Jan 2011 13:14:28 +0100
-Message-Id: <1294661668-21051-2-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1294661668-21051-1-git-send-email-marek.belisko@open-nandra.com>
-References: <1294661668-21051-1-git-send-email-marek.belisko@open-nandra.com>
+	id S1753675Ab1AJMSW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 07:18:22 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:56633 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752361Ab1AJMSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 07:18:20 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+To: uclinux-dist-devel@blackfin.uclinux.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 00/52] Blackfin updates for 2.6.38
+Date: Mon, 10 Jan 2011 07:26:05 -0500
+Message-Id: <1294662365-25109-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.4.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following patch will fix all compilation errors. Main problems
-was with pcmcia API changes. Also remove BROKEN as now driver
-is properly build.
+We've got a bunch of SMP updates, processor header clean ups, and more
+work in pushing down global defines into more peripheral-specific headers.
+There's some asm-generic improvements, some serial port overhauls, and
+a new board port.  Not to mention the standard sprinkling of bug fixes.
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
-Signed-off-by: Stano Lanci <chl.pixo@gmail.com>
----
- drivers/staging/ft1000/Kconfig                     |    2 +-
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c   |  263 +++-----------------
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.h   |    1 -
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c |    2 +-
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c   |   34 ++--
- 5 files changed, 55 insertions(+), 247 deletions(-)
- delete mode 100644 drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.h
+Andreas Schallenberg (1):
+  Blackfin: DNP5370: new board port
 
-diff --git a/drivers/staging/ft1000/Kconfig b/drivers/staging/ft1000/Kconfig
-index d6da130..c54b4e8 100644
---- a/drivers/staging/ft1000/Kconfig
-+++ b/drivers/staging/ft1000/Kconfig
-@@ -13,7 +13,7 @@ config FT1000_USB
- 
- config FT1000_PCMCIA
- 	tristate "Driver for ft1000 pcmcia device."
--	depends on PCMCIA && BROKEN
-+	depends on PCMCIA
- 	depends on NET
- 	help
- 	  Say Y if you want to have support for Flarion card also called
-diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
-index 2163eae..874919c 100644
---- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
-+++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
-@@ -39,9 +39,6 @@
- #include <linux/netdevice.h>
- #include <linux/etherdevice.h>
- 
--//#include <pcmcia/version.h>		// Slavius 21.10.2009 removed from kernel
--#include <pcmcia/cs_types.h>
--#include <pcmcia/cs.h>
- #include <pcmcia/cistpl.h>
- #include <pcmcia/cisreg.h>
- #include <pcmcia/ds.h>
-@@ -51,8 +48,6 @@
- #include <asm/byteorder.h>
- #include <asm/uaccess.h>
- 
--#include "ft1000_cs.h"			// Slavius 21.10.2009 because CS_SUCCESS constant is missing due to removed pcmcia/version.h
--
- /*====================================================================*/
- 
- /* Module parameters */
-@@ -82,9 +77,8 @@ MODULE_LICENSE("GPL");
- 
- /*====================================================================*/
- 
--struct net_device *init_ft1000_card(int, int, unsigned char *,
--					void *ft1000_reset, struct pcmcia_device * link,
--					struct device *fdev);
-+struct net_device *init_ft1000_card(struct pcmcia_device *link,
-+					void *ft1000_reset);
- void stop_ft1000_card(struct net_device *);
- 
- static int ft1000_config(struct pcmcia_device *link);
-@@ -111,73 +105,7 @@ typedef struct local_info_t {
- 
- static void ft1000_reset(struct pcmcia_device * link)
- {
--	conf_reg_t reg;
--
--	DEBUG(0, "ft1000_cs:ft1000_reset is called................\n");
--
--	/* Soft-Reset card */
--	reg.Action = CS_WRITE;
--	reg.Offset = CISREG_COR;
--	reg.Value = COR_SOFT_RESET;
--	pcmcia_access_configuration_register(link, &reg);
--
--	/* Wait until the card has acknowledged our reset */
--	udelay(2);
--
--	/* Restore original COR configuration index */
--	/* Need at least 2 write to respond */
--	reg.Action = CS_WRITE;
--	reg.Offset = CISREG_COR;
--	reg.Value = COR_DEFAULT;
--	pcmcia_access_configuration_register(link, &reg);
--
--	/* Wait until the card has finished restarting */
--	udelay(1);
--
--	reg.Action = CS_WRITE;
--	reg.Offset = CISREG_COR;
--	reg.Value = COR_DEFAULT;
--	pcmcia_access_configuration_register(link, &reg);
--
--	/* Wait until the card has finished restarting */
--	udelay(1);
--
--	reg.Action = CS_WRITE;
--	reg.Offset = CISREG_COR;
--	reg.Value = COR_DEFAULT;
--	pcmcia_access_configuration_register(link, &reg);
--
--	/* Wait until the card has finished restarting */
--	udelay(1);
--
--}
--
--/*====================================================================*/
--
--static int get_tuple_first(struct pcmcia_device *link, tuple_t * tuple,
--			   cisparse_t * parse)
--{
--	int i;
--	i = pcmcia_get_first_tuple(link, tuple);
--	if (i != CS_SUCCESS)
--		return i;
--	i = pcmcia_get_tuple_data(link, tuple);
--	if (i != CS_SUCCESS)
--		return i;
--	return pcmcia_parse_tuple(tuple, parse);	// Slavius 21.10.2009 removed unused link parameter
--}
--
--static int get_tuple_next(struct pcmcia_device *link, tuple_t * tuple,
--			  cisparse_t * parse)
--{
--	int i;
--	i = pcmcia_get_next_tuple(link, tuple);
--	if (i != CS_SUCCESS)
--		return i;
--	i = pcmcia_get_tuple_data(link, tuple);
--	if (i != CS_SUCCESS)
--		return i;
--	return pcmcia_parse_tuple(tuple, parse);	// Slavius 21.10.2009 removed unused link parameter
-+	pcmcia_reset_card(link->socket);
- }
- 
- /*======================================================================
-@@ -202,13 +130,10 @@ static int ft1000_attach(struct pcmcia_device *link)
- 	link->priv = local;
- 	local->dev = NULL;
- 
--	link->irq.Attributes = IRQ_TYPE_EXCLUSIVE;
--	link->irq.IRQInfo1 = IRQ_LEVEL_ID;
--	link->conf.Attributes = CONF_ENABLE_IRQ;
--	link->conf.IntType = INT_MEMORY_AND_IO;
--	link->irq.Handler = NULL;
-+	link->config_flags |= CONF_ENABLE_IRQ | CONF_AUTO_SET_IO;
- 
- 	return ft1000_config(link);
-+
- }				/* ft1000_attach */
- 
- /*======================================================================
-@@ -235,7 +160,7 @@ static void ft1000_detach(struct pcmcia_device *link)
- 		stop_ft1000_card(dev);
- 	}
- 
--	ft1000_release(link);
-+	pcmcia_disable_device(link);
- 
- 	/* This points to the parent local_info_t struct */
- 	free_netdev(dev);
-@@ -244,166 +169,53 @@ static void ft1000_detach(struct pcmcia_device *link)
- 
- /*======================================================================
- 
-+   Check if the io window is configured
-+
-+======================================================================*/
-+int ft1000_confcheck(struct pcmcia_device *link, void *priv_data)
-+{
-+
-+	return pcmcia_request_io(link);
-+}				/* ft1000_confcheck */
-+
-+/*======================================================================
-+
-     ft1000_config() is scheduled to run after a CARD_INSERTION event
-     is received, to configure the PCMCIA socket, and to make the
-     device available to the system.
- 
- ======================================================================*/
- 
--#define CS_CHECK(fn, ret) \
--	do { last_fn = (fn); if ((last_ret = (ret)) != 0) goto cs_failed; } while (0)
--
--#define CFG_CHECK(fn, ret) \
--	last_fn = (fn); if ((last_ret = (ret)) != 0) goto next_entry
--
--static int ft1000_config(struct pcmcia_device * link)
-+static int ft1000_config(struct pcmcia_device *link)
- {
--	tuple_t tuple;
--	cisparse_t parse;
--	int last_fn, last_ret, i;
--	u_char buf[64];
--	cistpl_lan_node_id_t *node_id;
--	cistpl_cftable_entry_t dflt = { 0 };
--	cistpl_cftable_entry_t *cfg;
--	unsigned char mac_address[6];
-+	int  ret;
- 
--	DEBUG(0, "ft1000_cs: ft1000_config(0x%p)\n", link);
--
--	/*
--	   This reads the card's CONFIG tuple to find its configuration
--	   registers.
--	 */
--//	tuple.DesiredTuple = CISTPL_CONFIG;
--//	tuple.Attributes = 0;
--	tuple.TupleData = buf;
--	tuple.TupleDataMax = sizeof(buf);
--	tuple.TupleOffset = 0;
--//	CS_CHECK(GetFirstTuple, pcmcia_get_first_tuple(link, &tuple));
--//	CS_CHECK(GetTupleData, pcmcia_get_tuple_data(link, &tuple));
--//	CS_CHECK(ParseTuple, pcmcia_parse_tuple(link, &tuple, &parse));
--//	link->conf.ConfigBase = parse.config.base;
--//	link->conf.Present = parse.config.rmask[0];
-+	dev_dbg(&link->dev, "ft1000_cs: ft1000_config(0x%p)\n", link);
- 
--	/*
--	   In this loop, we scan the CIS for configuration table entries,
--	   each of which describes a valid card configuration, including
--	   voltage, IO window, memory window, and interrupt settings.
--
--	   We make no assumptions about the card to be configured: we use
--	   just the information available in the CIS.  In an ideal world,
--	   this would work for any PCMCIA card, but it requires a complete
--	   and accurate CIS.  In practice, a driver usually "knows" most of
--	   these things without consulting the CIS, and most client drivers
--	   will only use the CIS to fill in implementation-defined details.
--	 */
--	tuple.DesiredTuple = CISTPL_CFTABLE_ENTRY;
--	tuple.Attributes = 0;
--	CS_CHECK(GetFirstTuple, pcmcia_get_first_tuple(link, &tuple));
--	while (1) {
--		cfg = &(parse.cftable_entry);
--		CFG_CHECK(GetTupleData, pcmcia_get_tuple_data(link, &tuple));
--		CFG_CHECK(ParseTuple,
--			  pcmcia_parse_tuple(&tuple, &parse));		// Slavius 21.10.2009 removed unused link parameter
--
--		if (cfg->flags & CISTPL_CFTABLE_DEFAULT)
--			dflt = *cfg;
--		if (cfg->index == 0)
--			goto next_entry;
--		link->conf.ConfigIndex = cfg->index;
--
--		/* Do we need to allocate an interrupt? */
--		if (cfg->irq.IRQInfo1 || dflt.irq.IRQInfo1)
--			link->conf.Attributes |= CONF_ENABLE_IRQ;
--
--		/* IO window settings */
--		link->io.NumPorts1 = link->io.NumPorts2 = 0;
--		if ((cfg->io.nwin > 0) || (dflt.io.nwin > 0)) {
--			cistpl_io_t *io = (cfg->io.nwin) ? &cfg->io : &dflt.io;
--			link->io.Attributes1 = IO_DATA_PATH_WIDTH_AUTO;
--			if (!(io->flags & CISTPL_IO_8BIT)) {
--				DEBUG(0, "ft1000_cs: IO_DATA_PATH_WIDTH_16\n");
--				link->io.Attributes1 = IO_DATA_PATH_WIDTH_16;
--			}
--			if (!(io->flags & CISTPL_IO_16BIT)) {
--				DEBUG(0, "ft1000_cs: IO_DATA_PATH_WIDTH_8\n");
--				link->io.Attributes1 = IO_DATA_PATH_WIDTH_8;
--			}
--			link->io.IOAddrLines = io->flags & CISTPL_IO_LINES_MASK;
--			link->io.BasePort1 = io->win[0].base;
--			link->io.NumPorts1 = io->win[0].len;
--			if (io->nwin > 1) {
--				link->io.Attributes2 = link->io.Attributes1;
--				link->io.BasePort2 = io->win[1].base;
--				link->io.NumPorts2 = io->win[1].len;
--			}
--			/* This reserves IO space but doesn't actually enable it */
--			pcmcia_request_io(link, &link->io);
--		}
--
--		break;
--
--	 next_entry:
--		last_ret = pcmcia_get_next_tuple(link, &tuple);
--	}
--	if (last_ret != CS_SUCCESS) {
--		cs_error(link, RequestIO, last_ret);
--		goto failed;
-+	/* setup IO window */
-+	ret = pcmcia_loop_config(link, ft1000_confcheck, NULL);
-+	if (ret) {
-+		printk(KERN_INFO "ft1000: Could not configure pcmcia\n");
-+		return -ENODEV;
- 	}
- 
--	/*
--	   Allocate an interrupt line.  Note that this does not assign a
--	   handler to the interrupt, unless the 'Handler' member of the
--	   irq structure is initialized.
--	 */
--		CS_CHECK(RequestIRQ, pcmcia_request_irq(link, &link->irq));
--
--	/*
--	   This actually configures the PCMCIA socket -- setting up
--	   the I/O windows and the interrupt mapping, and putting the
--	   card and host interface into "Memory and IO" mode.
--	 */
--	CS_CHECK(RequestConfiguration,
--		 pcmcia_request_configuration(link, &link->conf));
--
--	/* Get MAC address from tuples */
--
--	tuple.Attributes = tuple.TupleOffset = 0;
--	tuple.TupleData = buf;
--	tuple.TupleDataMax = sizeof(buf);
--
--	/* Check for a LAN function extension tuple */
--	tuple.DesiredTuple = CISTPL_FUNCE;
--	i = get_tuple_first(link, &tuple, &parse);
--	while (i == CS_SUCCESS) {
--		if (parse.funce.type == CISTPL_FUNCE_LAN_NODE_ID)
--			break;
--		i = get_tuple_next(link, &tuple, &parse);
-+	/* configure device */
-+	ret = pcmcia_enable_device(link);
-+	if (ret) {
-+		printk(KERN_INFO "ft1000: could not enable pcmcia\n");
-+		goto failed;
- 	}
- 
--	if (i == CS_SUCCESS) {
--		node_id = (cistpl_lan_node_id_t *) parse.funce.data;
--		if (node_id->nb == 6) {
--			for (i = 0; i < 6; i++)
--				mac_address[i] = node_id->id[i];
--		}
-+	((local_info_t *) link->priv)->dev = init_ft1000_card(link,
-+								&ft1000_reset);
-+	if (((local_info_t *) link->priv)->dev == NULL) {
-+		printk(KERN_INFO "ft1000: Could not register as network device\n");
-+		goto failed;
- 	}
- 
--	((local_info_t *) link->priv)->dev =
--		init_ft1000_card(link->irq.AssignedIRQ, link->io.BasePort1,
--				 &mac_address[0], ft1000_reset, link,
--				 &handle_to_dev(link));
--
--	/*
--	   At this point, the dev_node_t structure(s) need to be
--	   initialized and arranged in a linked list at link->dev.
--	 */
--
- 	/* Finally, report what we've done */
- 
- 	return 0;
--
--cs_failed:
--	cs_error(link, last_fn, last_ret);
- failed:
- 	ft1000_release(link);
- 	return -ENODEV;
-@@ -429,14 +241,11 @@ static void ft1000_release(struct pcmcia_device * link)
- 	   no one will try to access the device or its data structures.
- 	 */
- 
--	/* Unlink the device chain */
--	link->dev_node = NULL;
--
- 	/*
- 	   In a normal driver, additional code may be needed to release
- 	   other kernel data structures associated with this device.
- 	 */
--
-+	kfree((local_info_t *) link->priv);
- 	/* Don't bother checking to see if these succeed or not */
- 
- 	 pcmcia_disable_device(link);
-diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.h b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.h
-deleted file mode 100644
-index 2b5e383..0000000
---- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.h
-+++ /dev/null
-@@ -1 +0,0 @@
--#define CS_SUCCESS	0x00
-diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
-index 0bf398d..c56f588 100644
---- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
-+++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
-@@ -310,7 +310,7 @@ USHORT hdr_checksum(PPSEUDO_HDR pHdr)
- 	return chksum;
- }
- 
--int card_download(struct net_device *dev, void *pFileStart, UINT FileLength)
-+int card_download(struct net_device *dev, const u8 *pFileStart, UINT FileLength)
- {
- 	FT1000_INFO *info = (PFT1000_INFO) netdev_priv(dev);
- 	int Status = SUCCESS;
-diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-index 588afd5..5bc6811 100644
---- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-+++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-@@ -43,6 +43,10 @@
- #include <linux/firmware.h>
- #include <linux/ethtool.h>
- 
-+#include <pcmcia/cistpl.h>
-+#include <pcmcia/cisreg.h>
-+#include <pcmcia/ds.h>
-+
- #ifdef FT_DEBUG
- #define DEBUG(n, args...) printk(KERN_DEBUG args);
- #else
-@@ -53,7 +57,7 @@
- #include "ft1000_dev.h"
- #include "ft1000.h"
- 
--int card_download(struct net_device *dev, void *pFileStart, UINT FileLength);
-+int card_download(struct net_device *dev, const u8 *pFileStart, UINT FileLength);
- 
- void ft1000InitProc(struct net_device *dev);
- void ft1000CleanupProc(struct net_device *dev);
-@@ -2148,13 +2152,11 @@ static const struct ethtool_ops ops = {
- 	.get_link = ft1000_get_link
- };
- 
--struct net_device *init_ft1000_card(unsigned short irq, int port,
--					unsigned char *mac_addr, void *ft1000_reset,
--					void *link, struct device *fdev)
-+struct net_device *init_ft1000_card(struct pcmcia_device *link,
-+					void *ft1000_reset)
- {
- 	FT1000_INFO *info;
- 	struct net_device *dev;
--	int i;
- 
- 	static const struct net_device_ops ft1000ops =		// Slavius 21.10.2009 due to kernel changes
- 	{
-@@ -2165,8 +2167,8 @@ struct net_device *init_ft1000_card(unsigned short irq, int port,
- 	};
- 
- 	DEBUG(1, "ft1000_hw: init_ft1000_card()\n");
--	DEBUG(1, "ft1000_hw: irq = %d\n", irq);
--	DEBUG(1, "ft1000_hw: port = 0x%04x\n", port);
-+	DEBUG(1, "ft1000_hw: irq = %d\n", link->irq);
-+	DEBUG(1, "ft1000_hw: port = 0x%04x\n", link->resource[0]->start);
- 
- 	flarion_ft1000_cnt++;
- 
-@@ -2184,7 +2186,7 @@ struct net_device *init_ft1000_card(unsigned short irq, int port,
- 		return NULL;
- 	}
- 
--	SET_NETDEV_DEV(dev, fdev);
-+	SET_NETDEV_DEV(dev, &link->dev);
- 	info = netdev_priv(dev);
- 
- 	memset(info, 0, sizeof(FT1000_INFO));
-@@ -2227,15 +2229,13 @@ struct net_device *init_ft1000_card(unsigned short irq, int port,
- 
- 	DEBUG(0, "device name = %s\n", dev->name);
- 
--	for (i = 0; i < 6; i++) {
--		dev->dev_addr[i] = mac_addr[i];
--		DEBUG(1, "ft1000_hw: mac_addr %d = 0x%02x\n", i, mac_addr[i]);
-+	dev->irq = link->irq;
-+	dev->base_addr = link->resource[0]->start;
-+	if (pcmcia_get_mac_from_cis(link, dev)) {
-+		printk(KERN_ERR "ft1000: Could not read mac address\n");
-+		goto err_dev;
- 	}
- 
--	netif_stop_queue(dev);
--	dev->irq = irq;
--	dev->base_addr = port;
--
- 	if (request_irq(dev->irq, ft1000_interrupt, IRQF_SHARED, dev->name, dev)) {
- 		printk(KERN_ERR "ft1000: Could not request_irq\n");
- 		goto err_dev;
-@@ -2254,13 +2254,13 @@ struct net_device *init_ft1000_card(unsigned short irq, int port,
- 	info->AsicID = ft1000_read_reg(dev, FT1000_REG_ASIC_ID);
- 	if (info->AsicID == ELECTRABUZZ_ID) {
- 		DEBUG(0, "ft1000_hw: ELECTRABUZZ ASIC\n");
--		if (request_firmware(&fw_entry, "ft1000.img", fdev) != 0) {
-+		if (request_firmware(&fw_entry, "ft1000.img", &link->dev) != 0) {
- 			printk(KERN_INFO "ft1000: Could not open ft1000.img\n");
- 			goto err_unreg;
- 		}
- 	} else {
- 		DEBUG(0, "ft1000_hw: MAGNEMITE ASIC\n");
--		if (request_firmware(&fw_entry, "ft2000.img", fdev) != 0) {
-+		if (request_firmware(&fw_entry, "ft2000.img", &link->dev) != 0) {
- 			printk(KERN_INFO "ft1000: Could not open ft2000.img\n");
- 			goto err_unreg;
- 		}
+Bob Liu (1):
+  Blackfin: musb-boards: push clkin value to platform resources
+
+Graf Yang (7):
+  Blackfin: SMP: fix hotplug building after irq header shuffle
+  Blackfin: SMP: rename the arch_xxx lock funcs to __raw_xxx
+  Blackfin: SMP: fix cpumask misbehavior
+  Blackfin: SMP: tweak platform_request_ipi() usage
+  Blackfin: bf561: fix mem_map.h SMP overrides
+  Blackfin: SMP: add missing arch_{read,write}_lock_flags helpers
+  Blackfin: SMP: relocate blackfin_core_id() definition
+
+Michael Hennerich (1):
+  MAINTAINERS: update Analog Devices support info
+
+Mike Frysinger (29):
+  net/irda: bfin_sir: pull in serial headers for defines
+  Blackfin: bfin_serial.h: unify heavily duplicated serial code
+  net/irda: bfin_sir: back out transitional defines
+  asm-generic/io.h: add reads[bwl]/writes[bwl] helpers
+  Blackfin: switch to asm-generic/io.h
+  Blackfin: bfin_dma.h: start a header for DMA MMR layout
+  Blackfin: standardize DMAC traffic control MMRs & MDMA MMRs
+  Blackfin: dma: constify MMR pointer array
+  Blackfin: bf54x: drop unused legacy MMR names
+  Blackfin: push gpio (port) defines into common headers
+  Blackfin: bf533: convert boards to gpio framework
+  Blackfin: bf561-ezkit: add SMP defconfig
+  Blackfin: bf533: merge fio_flag back into normal mach headers
+  Blackfin: clean up mach header includes
+  Blackfin: bf51x/bf52x: drop redundant "base" def/cdef header
+  Blackfin: drop asm/irq.h include from mach headers
+  Blackfin: bf561: update a few more SIC_SYSCR locations
+  Blackfin: SMP: fix asm/bitops.h errors
+  Blackfin: SMP: fix build breakage in cache.h
+  Blackfin: unify pll.h headers
+  Blackfin: bf561: SMP: add multicore pll handlers
+  Blackfin: bf54x: add MMR layout for PINT
+  Blackfin: dpmc.h: pull in new pll.h
+  Blackfin: fix building IPIPE code when XIP is enabled
+  Blackfin: move "-m elf32bfin" to general LDFLAGS
+  Blackfin: boards: add missing "static" to peripheral lists
+  Blackfin: sram_free_with_lsl: do not ignore return value of sram_free
+  Blackfin: bf54x: don't ack GPIO ints when unmasking them
+  Blackfin: encode cpu-rev into uImage name
+
+Sonic Zhang (9):
+  serial: bfin_5xx: move resources into board files
+  Blackfin: no-mpu: fix masking of small uncached dma region
+  Blackfin: bf527-ezkit: add adau1373 chip address
+  Blackfin: sport_uart resources: remove unused secondary RX/TX pins
+  Blackfin: SMP: kgdb: flush core internal write buffer before flushinv
+  Blackfin: SMP: kgdb: apply anomaly 257 work around
+  Blackfin: kgdb: disable interrupt when single stepping in ADEOS
+  Blackfin: kgdb: disable preempt schedule when running single step in
+    kgdb
+  Blackfin: bf518f-ezbrd: fix dsa resources
+
+Stefan Weil (1):
+  Blackfin: tll6527m: fix spelling in unused code (struct name)
+
+Steven Miao (1):
+  Blackfin: pm: drop irq save/restore in standby and suspend to mem
+    callback
+
+Vivi Li (1):
+  Blackfin: kgdb_test: make sure to initialize num2
+
+Yi Li (1):
+  Blackfin: SMP: rewrite IPI handling to avoid memory allocation
+
+ MAINTAINERS                                        |   82 +-
+ arch/blackfin/Makefile                             |    9 +-
+ arch/blackfin/boot/Makefile                        |    2 +-
+ arch/blackfin/configs/BF561-EZKIT-SMP_defconfig    |  113 ++
+ arch/blackfin/configs/DNP5370_defconfig            |  121 ++
+ arch/blackfin/include/asm/bfin_dma.h               |   91 +
+ arch/blackfin/include/asm/bfin_serial.h            |  275 +++
+ arch/blackfin/include/asm/bitops.h                 |    2 +
+ arch/blackfin/include/asm/cache.h                  |    2 +
+ arch/blackfin/include/asm/cacheflush.h             |    3 +
+ arch/blackfin/include/asm/dma.h                    |   37 +-
+ arch/blackfin/include/asm/dpmc.h                   |    2 +
+ arch/blackfin/include/asm/io.h                     |  268 +---
+ arch/blackfin/include/asm/irqflags.h               |    3 -
+ arch/blackfin/include/asm/processor.h              |    4 +-
+ arch/blackfin/include/asm/spinlock.h               |   28 +-
+ arch/blackfin/include/mach-common/pll.h            |   86 +
+ arch/blackfin/include/mach-common/ports-a.h        |   25 +
+ arch/blackfin/include/mach-common/ports-b.h        |   25 +
+ arch/blackfin/include/mach-common/ports-c.h        |   25 +
+ arch/blackfin/include/mach-common/ports-d.h        |   25 +
+ arch/blackfin/include/mach-common/ports-e.h        |   25 +
+ arch/blackfin/include/mach-common/ports-f.h        |   25 +
+ arch/blackfin/include/mach-common/ports-g.h        |   25 +
+ arch/blackfin/include/mach-common/ports-h.h        |   25 +
+ arch/blackfin/include/mach-common/ports-i.h        |   25 +
+ arch/blackfin/include/mach-common/ports-j.h        |   25 +
+ arch/blackfin/kernel/cplb-nompu/cplbinit.c         |    2 +-
+ arch/blackfin/kernel/kgdb.c                        |   26 +
+ arch/blackfin/kernel/kgdb_test.c                   |    4 +
+ arch/blackfin/mach-bf518/boards/ezbrd.c            |   29 +-
+ arch/blackfin/mach-bf518/boards/tcm-bf518.c        |   12 +-
+ arch/blackfin/mach-bf518/dma.c                     |    2 +-
+ .../blackfin/mach-bf518/include/mach/bfin_serial.h |   14 +
+ .../mach-bf518/include/mach/bfin_serial_5xx.h      |   73 +-
+ arch/blackfin/mach-bf518/include/mach/blackfin.h   |   68 +-
+ arch/blackfin/mach-bf518/include/mach/cdefBF512.h  | 1038 ++++++++++-
+ arch/blackfin/mach-bf518/include/mach/cdefBF514.h  |    5 +-
+ arch/blackfin/mach-bf518/include/mach/cdefBF516.h  |    5 +-
+ arch/blackfin/mach-bf518/include/mach/cdefBF518.h  |    5 +-
+ .../mach-bf518/include/mach/cdefBF51x_base.h       | 1061 ----------
+ arch/blackfin/mach-bf518/include/mach/defBF512.h   | 1388 +++++++++++++-
+ .../mach-bf518/include/mach/defBF51x_base.h        | 1495 --------------
+ arch/blackfin/mach-bf518/include/mach/gpio.h       |    4 +
+ arch/blackfin/mach-bf518/include/mach/pll.h        |   64 +-
+ arch/blackfin/mach-bf527/boards/ad7160eval.c       |   13 +-
+ arch/blackfin/mach-bf527/boards/cm_bf527.c         |   13 +-
+ arch/blackfin/mach-bf527/boards/ezbrd.c            |   13 +-
+ arch/blackfin/mach-bf527/boards/ezkit.c            |   18 +-
+ arch/blackfin/mach-bf527/boards/tll6527m.c         |   14 +-
+ arch/blackfin/mach-bf527/dma.c                     |    2 +-
+ .../blackfin/mach-bf527/include/mach/bfin_serial.h |   14 +
+ .../mach-bf527/include/mach/bfin_serial_5xx.h      |   73 +-
+ arch/blackfin/mach-bf527/include/mach/blackfin.h   |   48 +-
+ arch/blackfin/mach-bf527/include/mach/cdefBF522.h  | 1092 ++++++++++-
+ arch/blackfin/mach-bf527/include/mach/cdefBF525.h  |    7 +-
+ arch/blackfin/mach-bf527/include/mach/cdefBF527.h  |    7 +-
+ .../mach-bf527/include/mach/cdefBF52x_base.h       | 1113 -----------
+ arch/blackfin/mach-bf527/include/mach/defBF522.h   | 1393 +++++++++++++-
+ arch/blackfin/mach-bf527/include/mach/defBF525.h   |    2 +-
+ arch/blackfin/mach-bf527/include/mach/defBF527.h   |    2 +-
+ .../mach-bf527/include/mach/defBF52x_base.h        | 1506 --------------
+ arch/blackfin/mach-bf527/include/mach/gpio.h       |    4 +
+ arch/blackfin/mach-bf527/include/mach/pll.h        |   64 +-
+ arch/blackfin/mach-bf533/boards/H8606.c            |    2 +-
+ arch/blackfin/mach-bf533/boards/blackstamp.c       |   25 +-
+ arch/blackfin/mach-bf533/boards/cm_bf533.c         |   10 +-
+ arch/blackfin/mach-bf533/boards/ezkit.c            |    2 +-
+ arch/blackfin/mach-bf533/boards/ip0x.c             |   11 +-
+ arch/blackfin/mach-bf533/boards/stamp.c            |   30 +-
+ arch/blackfin/mach-bf533/dma.c                     |    2 +-
+ .../blackfin/mach-bf533/include/mach/bfin_serial.h |   14 +
+ .../mach-bf533/include/mach/bfin_serial_5xx.h      |   74 +-
+ arch/blackfin/mach-bf533/include/mach/blackfin.h   |   30 +-
+ arch/blackfin/mach-bf533/include/mach/cdefBF532.h  |   63 +-
+ arch/blackfin/mach-bf533/include/mach/defBF532.h   |  128 +--
+ arch/blackfin/mach-bf533/include/mach/fio_flag.h   |   55 -
+ arch/blackfin/mach-bf533/include/mach/gpio.h       |    2 +
+ arch/blackfin/mach-bf533/include/mach/pll.h        |   58 +-
+ arch/blackfin/mach-bf537/boards/Kconfig            |    6 +
+ arch/blackfin/mach-bf537/boards/Makefile           |    1 +
+ arch/blackfin/mach-bf537/boards/cm_bf537e.c        |   12 +-
+ arch/blackfin/mach-bf537/boards/cm_bf537u.c        |   12 +-
+ arch/blackfin/mach-bf537/boards/dnp5370.c          |  418 ++++
+ arch/blackfin/mach-bf537/boards/minotaur.c         |   12 +-
+ arch/blackfin/mach-bf537/boards/pnav10.c           |    4 +-
+ arch/blackfin/mach-bf537/boards/stamp.c            |   18 +-
+ arch/blackfin/mach-bf537/boards/tcm_bf537.c        |   12 +-
+ arch/blackfin/mach-bf537/dma.c                     |    2 +-
+ .../blackfin/mach-bf537/include/mach/bfin_serial.h |   14 +
+ .../mach-bf537/include/mach/bfin_serial_5xx.h      |   72 +-
+ arch/blackfin/mach-bf537/include/mach/blackfin.h   |   38 +-
+ arch/blackfin/mach-bf537/include/mach/cdefBF534.h  |   27 +-
+ arch/blackfin/mach-bf537/include/mach/cdefBF537.h  |    5 +-
+ arch/blackfin/mach-bf537/include/mach/defBF534.h   |  111 +-
+ arch/blackfin/mach-bf537/include/mach/defBF537.h   |    5 +-
+ arch/blackfin/mach-bf537/include/mach/gpio.h       |    4 +
+ arch/blackfin/mach-bf537/include/mach/pll.h        |   58 +-
+ arch/blackfin/mach-bf538/boards/ezkit.c            |   20 +-
+ arch/blackfin/mach-bf538/dma.c                     |   18 +-
+ .../blackfin/mach-bf538/include/mach/bfin_serial.h |   14 +
+ .../mach-bf538/include/mach/bfin_serial_5xx.h      |   73 +-
+ arch/blackfin/mach-bf538/include/mach/blackfin.h   |   37 +-
+ arch/blackfin/mach-bf538/include/mach/cdefBF538.h  |  504 ++---
+ arch/blackfin/mach-bf538/include/mach/cdefBF539.h  |    8 +-
+ arch/blackfin/mach-bf538/include/mach/defBF538.h   | 1825 +++++++++++++++++
+ arch/blackfin/mach-bf538/include/mach/defBF539.h   | 2095 +-------------------
+ arch/blackfin/mach-bf538/include/mach/gpio.h       |    5 +
+ arch/blackfin/mach-bf538/include/mach/pll.h        |   64 +-
+ arch/blackfin/mach-bf548/boards/cm_bf548.c         |   23 +-
+ arch/blackfin/mach-bf548/boards/ezkit.c            |   23 +-
+ arch/blackfin/mach-bf548/dma.c                     |    2 +-
+ .../blackfin/mach-bf548/include/mach/bfin_serial.h |   16 +
+ .../mach-bf548/include/mach/bfin_serial_5xx.h      |   60 +-
+ arch/blackfin/mach-bf548/include/mach/blackfin.h   |   70 +-
+ arch/blackfin/mach-bf548/include/mach/cdefBF542.h  |   10 +-
+ arch/blackfin/mach-bf548/include/mach/cdefBF544.h  |   10 +-
+ arch/blackfin/mach-bf548/include/mach/cdefBF547.h  |   10 +-
+ arch/blackfin/mach-bf548/include/mach/cdefBF548.h  |   10 +-
+ arch/blackfin/mach-bf548/include/mach/cdefBF549.h  |   10 +-
+ .../mach-bf548/include/mach/cdefBF54x_base.h       |   23 +-
+ arch/blackfin/mach-bf548/include/mach/defBF542.h   |    7 +-
+ arch/blackfin/mach-bf548/include/mach/defBF544.h   |    7 +-
+ arch/blackfin/mach-bf548/include/mach/defBF547.h   |    7 +-
+ arch/blackfin/mach-bf548/include/mach/defBF548.h   |    7 +-
+ arch/blackfin/mach-bf548/include/mach/defBF549.h   |    7 +-
+ .../mach-bf548/include/mach/defBF54x_base.h        |  321 +---
+ arch/blackfin/mach-bf548/include/mach/gpio.h       |   11 +
+ arch/blackfin/mach-bf548/include/mach/irq.h        |   22 +
+ arch/blackfin/mach-bf548/include/mach/pll.h        |   70 +-
+ arch/blackfin/mach-bf561/atomic.S                  |    5 +
+ arch/blackfin/mach-bf561/boards/acvilon.c          |    2 +-
+ arch/blackfin/mach-bf561/boards/cm_bf561.c         |    2 +-
+ arch/blackfin/mach-bf561/boards/ezkit.c            |    2 +-
+ arch/blackfin/mach-bf561/boards/tepla.c            |    2 +-
+ arch/blackfin/mach-bf561/dma.c                     |   18 +-
+ arch/blackfin/mach-bf561/hotplug.c                 |    2 +
+ arch/blackfin/mach-bf561/include/mach/anomaly.h    |    6 +-
+ .../blackfin/mach-bf561/include/mach/bfin_serial.h |   14 +
+ .../mach-bf561/include/mach/bfin_serial_5xx.h      |   74 +-
+ arch/blackfin/mach-bf561/include/mach/blackfin.h   |   26 +-
+ arch/blackfin/mach-bf561/include/mach/cdefBF561.h  |  503 ++---
+ arch/blackfin/mach-bf561/include/mach/defBF561.h   |  408 ++---
+ arch/blackfin/mach-bf561/include/mach/gpio.h       |    2 +
+ arch/blackfin/mach-bf561/include/mach/mem_map.h    |   16 +-
+ arch/blackfin/mach-bf561/include/mach/pll.h        |   83 +-
+ arch/blackfin/mach-bf561/include/mach/smp.h        |   10 +-
+ arch/blackfin/mach-bf561/smp.c                     |   29 +-
+ arch/blackfin/mach-common/entry.S                  |    4 +-
+ arch/blackfin/mach-common/ints-priority.c          |    1 -
+ arch/blackfin/mach-common/pm.c                     |   10 -
+ arch/blackfin/mach-common/smp.c                    |  204 +--
+ arch/blackfin/mm/sram-alloc.c                      |   18 +-
+ drivers/net/irda/bfin_sir.h                        |    2 +
+ drivers/serial/Kconfig                             |   70 +-
+ drivers/serial/bfin_5xx.c                          |  638 ++++---
+ include/asm-generic/io.h                           |   30 +
+ 157 files changed, 9963 insertions(+), 11015 deletions(-)
+ create mode 100644 arch/blackfin/configs/BF561-EZKIT-SMP_defconfig
+ create mode 100644 arch/blackfin/configs/DNP5370_defconfig
+ create mode 100644 arch/blackfin/include/asm/bfin_dma.h
+ create mode 100644 arch/blackfin/include/asm/bfin_serial.h
+ create mode 100644 arch/blackfin/include/mach-common/pll.h
+ create mode 100644 arch/blackfin/include/mach-common/ports-a.h
+ create mode 100644 arch/blackfin/include/mach-common/ports-b.h
+ create mode 100644 arch/blackfin/include/mach-common/ports-c.h
+ create mode 100644 arch/blackfin/include/mach-common/ports-d.h
+ create mode 100644 arch/blackfin/include/mach-common/ports-e.h
+ create mode 100644 arch/blackfin/include/mach-common/ports-f.h
+ create mode 100644 arch/blackfin/include/mach-common/ports-g.h
+ create mode 100644 arch/blackfin/include/mach-common/ports-h.h
+ create mode 100644 arch/blackfin/include/mach-common/ports-i.h
+ create mode 100644 arch/blackfin/include/mach-common/ports-j.h
+ create mode 100644 arch/blackfin/mach-bf518/include/mach/bfin_serial.h
+ delete mode 100644 arch/blackfin/mach-bf518/include/mach/cdefBF51x_base.h
+ delete mode 100644 arch/blackfin/mach-bf518/include/mach/defBF51x_base.h
+ create mode 100644 arch/blackfin/mach-bf527/include/mach/bfin_serial.h
+ delete mode 100644 arch/blackfin/mach-bf527/include/mach/cdefBF52x_base.h
+ delete mode 100644 arch/blackfin/mach-bf527/include/mach/defBF52x_base.h
+ create mode 100644 arch/blackfin/mach-bf533/include/mach/bfin_serial.h
+ delete mode 100644 arch/blackfin/mach-bf533/include/mach/fio_flag.h
+ create mode 100644 arch/blackfin/mach-bf537/boards/dnp5370.c
+ create mode 100644 arch/blackfin/mach-bf537/include/mach/bfin_serial.h
+ create mode 100644 arch/blackfin/mach-bf538/include/mach/bfin_serial.h
+ create mode 100644 arch/blackfin/mach-bf538/include/mach/defBF538.h
+ create mode 100644 arch/blackfin/mach-bf548/include/mach/bfin_serial.h
+ create mode 100644 arch/blackfin/mach-bf561/include/mach/bfin_serial.h
+
 -- 
-1.7.1
+1.7.4.rc1
 
