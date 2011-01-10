@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab1AJV6z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 16:58:55 -0500
-Received: from wavehammer.waldi.eu.org ([82.139.201.20]:57564 "EHLO
+	id S1754933Ab1AJV7s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 16:59:48 -0500
+Received: from wavehammer.waldi.eu.org ([82.139.201.20]:57573 "EHLO
 	wavehammer.waldi.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325Ab1AJV6x (ORCPT
+	with ESMTP id S1754598Ab1AJV7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 16:58:53 -0500
-X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Jan 2011 16:58:52 EST
-Date: Mon, 10 Jan 2011 22:52:40 +0100
+	Mon, 10 Jan 2011 16:59:45 -0500
+Date: Mon, 10 Jan 2011 22:59:37 +0100
 From: Bastian Blank <bastian@waldi.eu.org>
 To: "Serge E. Hallyn" <serge@hallyn.com>
 Cc: containers@lists.linux-foundation.org,
@@ -18,8 +17,9 @@ Cc: containers@lists.linux-foundation.org,
         Kees Cook <kees.cook@canonical.com>,
         Alexey Dobriyan <adobriyan@gmail.com>,
         Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH 4/7] allow killing tasks in your own or child userns
-Message-ID: <20110110215240.GA21351@wavehammer.waldi.eu.org>
+Subject: Re: [PATCH 6/7] user namespaces: convert all capable checks in
+ kernel/sys.c
+Message-ID: <20110110215937.GB21351@wavehammer.waldi.eu.org>
 Mail-Followup-To: Bastian Blank <bastian@waldi.eu.org>,
 	"Serge E. Hallyn" <serge@hallyn.com>,
 	containers@lists.linux-foundation.org,
@@ -30,56 +30,41 @@ Mail-Followup-To: Bastian Blank <bastian@waldi.eu.org>,
 	Alexey Dobriyan <adobriyan@gmail.com>,
 	Michael Kerrisk <mtk.manpages@gmail.com>
 References: <20110110211135.GA22446@mail.hallyn.com>
- <20110110211334.GD22564@mail.hallyn.com>
+ <20110110211406.GF22564@mail.hallyn.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110110211334.GD22564@mail.hallyn.com>
+In-Reply-To: <20110110211406.GF22564@mail.hallyn.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 09:13:34PM +0000, Serge E. Hallyn wrote:
-> +	const struct cred *cred = current_cred();
-> +	const struct cred *tcred = __task_cred(t);
-> +
-> +	if (cred->user->user_ns != tcred->user->user_ns) {
-> +		/* userids are not equivalent - either you have the
-> +		   capability to the target user ns or you don't */
-> +		if (ns_capable(tcred->user->user_ns, CAP_KILL))
-> +			return 1;
-> +		return 0;
-> +	}
-> +
-> +	/* same user namespace - usual credentials checks apply */
-> +	if ((cred->euid ^ tcred->suid) &&
-> +	    (cred->euid ^ tcred->uid) &&
-> +	    (cred->uid  ^ tcred->suid) &&
-> +	    (cred->uid  ^ tcred->uid) &&
-> +	    !ns_capable(tcred->user->user_ns, CAP_KILL))
-> +		return 0;
-> +
-> +	return 1;
+On Mon, Jan 10, 2011 at 09:14:07PM +0000, Serge E. Hallyn wrote:
+> -	if (pcred->uid  != cred->euid &&
+> -	    pcred->euid != cred->euid && !capable(CAP_SYS_NICE)) {
+> +	if (pcred->user->user_ns != cred->user->user_ns &&
+> +	    pcred->uid  != cred->euid &&
+> +	    pcred->euid != cred->euid &&
+> +	    !ns_capable(pcred->user->user_ns, CAP_SYS_NICE)) {
 
-Isn't that equal to this?
+I don't think this is correct. This would not error out if the both
+userns are the same. Because the same patern (check uid if same userns,
+otherwise only capability) shows up in several parts of the code, maybe
+this should be factored out.
 
-	if (ns_capable(tcred->user->user_ns, CAP_KILL))
-		return 1;
+> @@ -496,7 +498,7 @@ SYSCALL_DEFINE2(setregid, gid_t, rgid, gid_t, egid)
+>  	if (rgid != (gid_t) -1) {
+>  		if (old->gid == rgid ||
+>  		    old->egid == rgid ||
+> -		    capable(CAP_SETGID))
+> +		    ns_capable(current_user_ns(), CAP_SETGID))
 
-	if (cred->user->user_ns == tcred->user->user_ns &&
-	    (cred->euid == tcred->suid ||
-	     cred->euid == tcred->uid ||
-	     cred->uid == tcred->suid ||
-	     cred->uid == tcred->uid))
-		return 1;
-
-	return 0;
-
-I would consider this much easier to read.
+Would it not possible to add another function (nsown_capable?) that
+checks against the own userns?
 
 Bastian
 
 -- 
-I'm a soldier, not a diplomat.  I can only tell the truth.
-		-- Kirk, "Errand of Mercy", stardate 3198.9
+Change is the essential process of all existence.
+		-- Spock, "Let That Be Your Last Battlefield", stardate 5730.2
