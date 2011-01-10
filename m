@@ -1,52 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739Ab1AJFs7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 00:48:59 -0500
-Received: from kroah.org ([198.145.64.141]:49737 "EHLO coco.kroah.org"
+	id S1751709Ab1AJF4v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 00:56:51 -0500
+Received: from gate.crashing.org ([63.228.1.57]:34427 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751468Ab1AJFsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 00:48:55 -0500
-Date: Sun, 9 Jan 2011 21:49:47 -0800
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build warnings after merge of the tty tree
-Message-ID: <20110110054947.GA21969@kroah.com>
-References: <20101221181158.53f62590.sfr@canb.auug.org.au>
- <20101221194204.GA11611@kroah.com>
- <20110110114959.691c20f1.sfr@canb.auug.org.au>
- <20110110005601.GA19570@kroah.com>
- <20110110125908.4251eb45.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110110125908.4251eb45.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751009Ab1AJF4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 00:56:50 -0500
+Subject: Re: [PATCH] memblock: Don't adjust size in memblock_find_base()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>
+In-Reply-To: <4D277A8C.5010502@kernel.org>
+References: <AANLkTikknHfA4TQw+SMH-EyJBHoNHXk8Rheq4=K4jNWA@mail.gmail.com>
+	 <alpine.DEB.2.00.1012291637270.6040@chino.kir.corp.google.com>
+	 <4D1BD928.50701@zytor.com>
+	 <alpine.DEB.2.00.1012291702180.7374@chino.kir.corp.google.com>
+	 <4D1BE615.4000700@zytor.com> <20101230090648.GB7306@elte.hu>
+	 <20101230102815.GA29822@elte.hu> <20101230103002.GA30020@elte.hu>
+	 <AANLkTimeqrLzDuqBoSvmkSJWMc7u3PeRf37vjzBca2Lh@mail.gmail.com>
+	 <AANLkTimpyRXS9dNFATh4GqtA46uynutAvK7Qb5S7WPFO@mail.gmail.com>
+	 <20110105134434.GA22816@elte.hu>  <4D277A8C.5010502@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 10 Jan 2011 16:56:29 +1100
+Message-ID: <1294638989.17779.296.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 12:59:08PM +1100, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> On Sun, 9 Jan 2011 16:56:01 -0800 Greg KH <greg@kroah.com> wrote:
-> >
-> > Yes, Kay just sent me a patch to fix this, which I will queue up after
-> > .38-rc1 is out.
-> 
-> It is surely a pretty obvious patch, why not just do a quick test and
-> send it on to Linus (or at least your tty-current tree)?
-> 
-> /me gets annoyed by more warnings than necessary - especially when they
-> should have never been introduced in the first place.
+On Fri, 2011-01-07 at 12:41 -0800, Yinghai Lu wrote:
+> While applying patch to use memblock to find aperture for 64bit x86.
+> Ingo found system with 1g + force_iommu
 
-Sorry, I try to keep patches that were not in -next from getting into
-Linus's tree before -rc1, but you are right, this should be fixed.  I'll
-forward it on later this week, or bundle it up in the "move tty drivers
-around" patch that I have for Linus right after -rc1 is out.
+Please run that through DaveM. I seem to remember that he relies on the
+size alignment to ensure that a lot of tiny allocations get properly
+coalesced or he runs out of regions at boot time.
 
-thanks,
+A better option would be to use a fixed alignment, or sized based but
+with a max threshold such as PAGE_SIZE.
 
-greg k-h
+Cheers,
+Ben.
+
+> > No AGP bridge found
+> > Node 0: aperture @ 38000000 size 32 MB
+> > Aperture pointing to e820 RAM. Ignoring.
+> > Your BIOS doesn't leave a aperture memory hole
+> > Please enable the IOMMU option in the BIOS setup
+> > This costs you 64 MB of RAM
+> > Cannot allocate aperture memory hole (0,65536K)
+> 
+> the corresponding code:
+> 	addr = memblock_find_in_range(0, 1ULL<<32, aper_size, 512ULL<<20);
+> 	if (addr == MEMBLOCK_ERROR || addr + aper_size > 0xffffffff) {
+> 		printk(KERN_ERR
+> 			"Cannot allocate aperture memory hole (%lx,%uK)\n",
+> 				addr, aper_size>>10);
+> 		return 0;
+> 	}
+> 	memblock_x86_reserve_range(addr, addr + aper_size, "aperture64")
+> 
+> it fails because memblock core code align the size with 512M. that could make
+> size way too big.
+> 
+> So don't align the size in that case.
+> 
+> actually __memblock_alloc_base, the another caller already align that before calling that function.
+> 
+> BTW. x86 does not use __memblock_alloc_base...
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  mm/memblock.c |    2 --
+>  1 file changed, 2 deletions(-)
+> 
+> Index: linux-2.6/mm/memblock.c
+> ===================================================================
+> --- linux-2.6.orig/mm/memblock.c
+> +++ linux-2.6/mm/memblock.c
+> @@ -137,8 +137,6 @@ static phys_addr_t __init_memblock membl
+>  
+>  	BUG_ON(0 == size);
+>  
+> -	size = memblock_align_up(size, align);
+> -
+>  	/* Pump up max_addr */
+>  	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
+>  		end = memblock.current_limit;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
