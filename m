@@ -1,115 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab1AJRLO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 12:11:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51020 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753351Ab1AJRLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 12:11:13 -0500
-Date: Mon, 10 Jan 2011 19:10:46 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Milton Miller <miltonm@bga.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jamie Lokier <jamie@shareable.org>, Thomas Weber <swirl@gmx.li>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio: remove virtio-pci root device
-Message-ID: <20110110171046.GB27292@redhat.com>
-References: <20110105191711.GA27489@redhat.com>
- <virtio-pci-whynotsimplify@mdm.bga.com>
- <virtio-pci-noroot@mdm.bga.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <virtio-pci-noroot@mdm.bga.com>
+	id S1754379Ab1AJRQI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 12:16:08 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:24291 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab1AJRQE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 12:16:04 -0500
+Date: Mon, 10 Jan 2011 09:15:09 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Rob Landley <rlandley@parallels.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, <trivial@kernel.org>,
+        <linux-net@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-embedded@vger.kernel.org>
+Subject: Re: [PATCH] Move an assert under DEBUG_KERNEL. (attempt 2)
+Message-Id: <20110110091509.f7d338eb.randy.dunlap@oracle.com>
+In-Reply-To: <4D2AC4D5.5070503@parallels.com>
+References: <4D2579B2.7060704@parallels.com>
+	<20110106154120.b69118c9.akpm@linux-foundation.org>
+	<4D2AC4D5.5070503@parallels.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 07, 2011 at 02:55:06AM -0600, Milton Miller wrote:
-> We sometimes need to map between the virtio device and
-> the given pci device. One such use is OS installer that
-> gets the boot pci device from BIOS and needs to
-> find the relevant block device. Since it can't,
-> installation fails.
-> 
-> Instead of creating a top-level devices/virtio-pci
-> directory, create each device under the corresponding
-> pci device node.  Symlinks to all virtio-pci
-> devices can be found under the pci driver link in
-> bus/pci/drivers/virtio-pci/devices, and all virtio
-> devices under drivers/bus/virtio/devices.
-> 
-> Signed-off-by: Milton Miller <miltonm@bga.com>
-Acked-by: Gleb Natapov <gleb@redhat.com>
+On Mon, 10 Jan 2011 02:35:33 -0600 Rob Landley wrote:
 
+> On 01/06/2011 05:41 PM, Andrew Morton wrote:
+> > Probably a worthwhile thing to do, IMO.  If there's some net-specific
+> > CONFIG_DEBUG_ setting then that wold be a better thing to use.
+> > 
+> > However the patch was a) wordwrapped, b) space-stuffed and c) not cc'ed
+> > to the networking list.  So its prospects are dim.
+> 
+> Ok, either I've beaten thunderbird into submission, or I'll be submitting a patch to Documentation/email-clients.txt.  (Whether or not I need to find a different smtp server to send this through remains an open question.)
+
+
+Hi Rob,
+The patch applies cleanly.  However, if you have any additions/updates to
+Documentation/email-clients.txt, please send them along.
+
+and please do hard CR/LF every 70-72 characters or so, instead of very_long_lines.
+
+
+> (Confirming: I looked for a more specific DEBUG symbol, but couldn't find one.  I can add one, but this seems a bit small to have its own symbol, and DEBUG_KERNEL is already used in a few *.c files.)
+> 
+> From: Rob Landley <rlandley@parallels.com>
+> 
+> Move an assert under DEBUG_KERNEL.  (Minor cleanup to save a few bytes.)
+> 
+> Signed-off-by: Rob Landley <rlandley@parallels.com>
 > ---
 > 
-> This is an alternative to the patch by Michael S. Tsirkin
-> titled "virtio-pci: add softlinks between virtio and pci"
-> https://patchwork.kernel.org/patch/454581/
+>  include/linux/rtnetlink.h |    4 ++++
+>  1 file changed, 4 insertions(+)
 > 
-> It creates simpler code, uses less memory, and should
-> be even easier use by the installer as it won't have to
-> know a virtio symlink to follow (just follow none).
-> 
-> Compile tested only as I don't have kvm setup.
-> 
-> 
-> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-> index ef8d9d5..4fb5b2b 100644
-> --- a/drivers/virtio/virtio_pci.c
-> +++ b/drivers/virtio/virtio_pci.c
-> @@ -96,11 +96,6 @@ static struct pci_device_id virtio_pci_id_table[] = {
+> diff --git a/include/linux/rtnetlink.h b/include/linux/rtnetlink.h
+> index bbad657..28c4025 100644
+> --- a/include/linux/rtnetlink.h
+> +++ b/include/linux/rtnetlink.h
+> @@ -782,6 +782,7 @@ extern struct netdev_queue *dev_ingress_queue_create(struct net_device *dev);
+>  extern void rtnetlink_init(void);
+>  extern void __rtnl_unlock(void);
 >  
->  MODULE_DEVICE_TABLE(pci, virtio_pci_id_table);
+> +#ifdef CONFIG_DEBUG_KERNEL
+>  #define ASSERT_RTNL() do { \
+>  	if (unlikely(!rtnl_is_locked())) { \
+>  		printk(KERN_ERR "RTNL: assertion failed at %s (%d)\n", \
+> @@ -789,6 +790,9 @@ extern void __rtnl_unlock(void);
+>  		dump_stack(); \
+>  	} \
+>  } while(0)
+> +#else
+> +#define ASSERT_RTNL()
+> +#endif
 >  
-> -/* A PCI device has it's own struct device and so does a virtio device so
-> - * we create a place for the virtio devices to show up in sysfs.  I think it
-> - * would make more sense for virtio to not insist on having it's own device. */
-> -static struct device *virtio_pci_root;
-> -
->  /* Convert a generic virtio device to our structure */
->  static struct virtio_pci_device *to_vp_device(struct virtio_device *vdev)
+>  static inline u32 rtm_get_table(struct rtattr **rta, u8 table)
 >  {
-> @@ -629,7 +624,7 @@ static int __devinit virtio_pci_probe(struct pci_dev *pci_dev,
->  	if (vp_dev == NULL)
->  		return -ENOMEM;
->  
-> -	vp_dev->vdev.dev.parent = virtio_pci_root;
-> +	vp_dev->vdev.dev.parent = &pci_dev->dev;
->  	vp_dev->vdev.dev.release = virtio_pci_release_dev;
->  	vp_dev->vdev.config = &virtio_pci_config_ops;
->  	vp_dev->pci_dev = pci_dev;
-> @@ -717,17 +712,7 @@ static struct pci_driver virtio_pci_driver = {
->  
->  static int __init virtio_pci_init(void)
->  {
-> -	int err;
-> -
-> -	virtio_pci_root = root_device_register("virtio-pci");
-> -	if (IS_ERR(virtio_pci_root))
-> -		return PTR_ERR(virtio_pci_root);
-> -
-> -	err = pci_register_driver(&virtio_pci_driver);
-> -	if (err)
-> -		root_device_unregister(virtio_pci_root);
-> -
-> -	return err;
-> +	return pci_register_driver(&virtio_pci_driver);
->  }
->  
->  module_init(virtio_pci_init);
-> @@ -735,7 +720,6 @@ module_init(virtio_pci_init);
->  static void __exit virtio_pci_exit(void)
->  {
->  	pci_unregister_driver(&virtio_pci_driver);
-> -	root_device_unregister(virtio_pci_root);
->  }
->  
->  module_exit(virtio_pci_exit);
+> --
 
---
-			Gleb.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
