@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630Ab1AJUal (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 15:30:41 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:15056 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749Ab1AJUak (ORCPT
+	id S1754649Ab1AJUd2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 15:33:28 -0500
+Received: from sj-iport-1.cisco.com ([171.71.176.70]:30562 "EHLO
+	sj-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528Ab1AJUd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 15:30:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=dvdtZiG/iJ1PyjsyzLI6f1+7xns7Qfjtwkk1uyiHoMVmQGyRG8UXX0jE/2ANIGfRAY
-         JGRuLUCKyVfeOdyb6s/w==
-Date: Mon, 10 Jan 2011 12:30:33 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@linux.com>
-cc: Pekka Enberg <penberg@kernel.org>, Bart Van Assche <bvanassche@acm.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] slub: Fix sysfs circular locking dependency
-In-Reply-To: <alpine.DEB.2.00.1101101014470.12243@router.home>
-Message-ID: <alpine.DEB.2.00.1101101230190.11969@chino.kir.corp.google.com>
-References: <1294172717-6044-1-git-send-email-penberg@kernel.org>  <alpine.DEB.2.00.1101041939030.27551@chino.kir.corp.google.com>  <alpine.DEB.2.00.1101050943120.13032@router.home>  <alpine.DEB.2.00.1101051108520.14761@router.home>
- <AANLkTinft80dXqE-U=YDB23d9=BgXLCxJzgiA_gF4cVL@mail.gmail.com>  <AANLkTinCZzJWYGnxXq_Nwv7QSkEV4Tg-te-1y0PCeRRY@mail.gmail.com>  <AANLkTinQMahgVrWLxR0J6Zbh-_SPjxVJ-wuZt8B5TNjc@mail.gmail.com>  <alpine.DEB.2.00.1101060019140.25879@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1101061107500.8655@router.home>  <20110107091106.aaa07abe.kamezawa.hiroyu@jp.fujitsu.com>  <alpine.DEB.2.00.1101070922100.3014@router.home>  <alpine.DEB.2.00.1101071227160.31653@chino.kir.corp.google.com>  <AANLkTin6N2s1RN6PBX=f0v69Ny-NkEKk_iAgqscuYgMM@mail.gmail.com>
- <1294475323.5248.74.camel@jaguar> <alpine.DEB.2.00.1101101014470.12243@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 10 Jan 2011 15:33:26 -0500
+Authentication-Results: sj-iport-1.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAMz7Kk2rR7H+/2dsb2JhbACkS3OiephIhUwEhGeGIw
+From: Roland Dreier <rdreier@cisco.com>
+To: "J.H." <warthog9@kernel.org>
+Cc: David Brown <davidb@codeaurora.org>, sedat.dilek@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
+        ftpadmin@kernel.org, webmaster@kernel.org
+Subject: Re: patchwork.kernel.org down
+References: <AANLkTik4ktaeyDG3ihh-YRB+WVLxA46wSLOgWy6iY_68@mail.gmail.com>
+	<20101220204936.GA21290@huya.qualcomm.com>
+	<4D0FFC4B.9050301@kernel.org> <ada62u3dkv2.fsf@cisco.com>
+	<adaei8k8ubh.fsf@cisco.com> <4D2B664F.7050106@kernel.org>
+X-Message-Flag: Warning: May contain useful information
+Date: Mon, 10 Jan 2011 12:33:23 -0800
+In-Reply-To: <4D2B664F.7050106@kernel.org> (J. H.'s message of "Mon, 10 Jan
+	2011 12:04:31 -0800")
+Message-ID: <ada1v4k8pnw.fsf@cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Jan 2011, Christoph Lameter wrote:
+ > Not yet, I'm adding it in this afternoon.  I did the upgrade to Fedora
+ > 14 (and thus 2.6.35.10) and seem to be getting, if not the same bug, a
+ > darned similar one:
+ > 
+ > http://pastebin.osuosl.org/36644
 
-> New patch that just covers the slub changes.
-> 
-> Subject: slub: Avoid use of slub_lock in show_slab_objects()
-> 
-> The purpose of the locking is to prevent removal and additions
-> of nodes when statistics are gathered for a slab cache. So we
-> need to avoid racing with memory hotplug functionality.
-> 
-> It is enough to take the memory hotplug locks there instead
-> of the slub_lock.
-> 
-> online_pages() currently does not acquire the memory_hotplug
-> lock. Another patch will be submitted by the memory hotplug
-> authors to take the memory hotplug lock and describe the
-> uses of the memory hotplug lock to protect against
-> adding and removal of nodes from non hotplug data structures.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
+Actually that looks pretty different; the trace is
 
-Acked-by: David Rientjes <rientjes@google.com>
+ put_ldisc+0x8d/0xb4
+ tty_ldisc_reinit+0x43/0x5c
+ tty_ldisc_hangup+0x10d/0x19d
+ do_tty_hangup+0x108/0x343
+ ? __raw_local_irq_save+0x1d/0x23
+ tty_vhangup_self+0x27/0x34
+ sys_vhangup+0x22/0x29
+ system_call_fastpath+0x16/0x1b
+
+which doesn't involve any /proc/net file being closed at all.
+
+Hmm...
