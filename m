@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab1AJSw5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 13:52:57 -0500
-Received: from h1047321.serverkompetenz.net ([85.214.67.163]:60703 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754292Ab1AJSw4 (ORCPT
+	id S1754621Ab1AJSxD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 13:53:03 -0500
+Received: from sj-iport-3.cisco.com ([171.71.176.72]:15484 "EHLO
+	sj-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754606Ab1AJSxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 13:52:56 -0500
-X-Greylist: delayed 1991 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Jan 2011 13:52:56 EST
-Message-ID: <4D2B4CE4.9080309@ahsoftware.de>
-Date: Mon, 10 Jan 2011 19:16:04 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
+	Mon, 10 Jan 2011 13:53:01 -0500
+Authentication-Results: sj-iport-3.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEANPkKk2rR7Ht/2dsb2JhbACkR3OjF5gvhUwEhGeGIw
+From: Roland Dreier <rdreier@cisco.com>
+To: "J.H." <warthog9@kernel.org>
+Cc: David Brown <davidb@codeaurora.org>, sedat.dilek@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
+        ftpadmin@kernel.org, webmaster@kernel.org
+Subject: Re: patchwork.kernel.org down
+References: <AANLkTik4ktaeyDG3ihh-YRB+WVLxA46wSLOgWy6iY_68@mail.gmail.com>
+	<20101220204936.GA21290@huya.qualcomm.com>
+	<4D0FFC4B.9050301@kernel.org> <ada62u3dkv2.fsf@cisco.com>
+X-Message-Flag: Warning: May contain useful information
+Date: Mon, 10 Jan 2011 10:52:50 -0800
+In-Reply-To: <ada62u3dkv2.fsf@cisco.com> (Roland Dreier's message of "Wed, 05
+	Jan 2011 14:52:17 -0800")
+Message-ID: <adaei8k8ubh.fsf@cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: linux-arm-kernel@lists.arm.linux.org.uk, linux@arm.linux.org.uk
-Subject: ARM: relocation out of range (when loading a module)
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+ >  > More excitement from https://bugzilla.kernel.org/show_bug.cgi?id=20702
+ >  > 
+ >  > Anyone want to take a stab at it?  I know I'd be appreciative.  I am
+ >  > running a debug kernel with everything I could find and enable I even
+ >  > remotely thought might prove helpful.  Nothing has jumped out yet though.
+ > 
+ > A little late, but perhaps running with the patch below might help us
+ > make a bit of progress.  The idea is to dump the last /proc/net file
+ > opened and closed, so we can at least have a clue as to where the crash
+ > is coming from.  This should add lines like 
+ > 
+ >     last procfs open:  /proc/2443/net/arp
+ >     last procfs close: /proc/2443/net/arp
+ > 
+ > to the oops output, so maybe we can zero in on things after you get a
+ > crash with this applied.
 
-I've build a kernel 2.6.37 for an armv5-device which includes an 
-initramfs of about 16MB (uncompressed, result is a kernel of about 6MB) 
-and I now getting errors when trying to load a module (which is included 
-in that initramfs):
+Just curious -- did you get a chance to run with this patch applied?
+Did you collect any oopses yet?
 
-----------------------------
-# modprobe ipv6
-modprobe: 'kernel/net/ipv6/ipv6.ko': invalid module format
-# dmesg | tail -n 1
-[  107.327672] ipv6: relocation out of range, section 2 reloc 0 sym 
-'snmp_mib_free'
-----------------------------
-
-To compile the kernel I've used gcc 4.5.2 and binutils 2.21.
-
-If I apply the patch found at
-
-http://lists.arm.linux.org.uk/lurker/message/20100729.090437.85f82ebd.en.html
-
-the output from dmesg will be
-----------------------------
-[   58.211776] ipv6: section 2 reloc 0 sym 'snmp_mib_free': relocation 
-28 out of range (0xbf0000a4 -> 0xc11b4858)
-----------------------------
-
-I don't know much about how the memory is organized and the relocation 
-is done for arm, but reading that output it seems the 32MB limit is 
-reached. Is that because of the initramfs (just speculating) and is 
-there a workaround to still include such an initramfs in the kernel?
-
-An excerpt from my config:
-
-----------------------------
-CONFIG_ARM_THUMB=y
-...
-# CONFIG_HIGHMEM is not set
-# CONFIG_ARCH_SPARSEMEM_DEFAULT is not set
-# CONFIG_ARCH_SELECT_MEMORY_MODEL is not set
-# CONFIG_HIGHMEM is not set
-CONFIG_SELECT_MEMORY_MODEL=y
-CONFIG_FLATMEM_MANUAL=y
-CONFIG_FLATMEM=y
-CONFIG_FLAT_NODE_MEM_MAP=y
-CONFIG_HAVE_MEMBLOCK=y
-CONFIG_PAGEFLAGS_EXTENDED=y
-----------------------------
-
-Regards,
-
-Alexander
+ - R.
