@@ -1,42 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab1AJT0S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 14:26:18 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42317 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753961Ab1AJT0Q (ORCPT
+	id S1753619Ab1AJT1x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 14:27:53 -0500
+Received: from web31809.mail.mud.yahoo.com ([68.142.207.72]:28885 "HELO
+	web31809.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751606Ab1AJT1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 14:26:16 -0500
+	Mon, 10 Jan 2011 14:27:50 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=6bE2tPj1BwUYqbqEZ2Vp072FBgiuG5lk0/6YMW8v1sOQJXO6uaggC06IEnaqbEeS4RLGrtKagc8AhiJ8d28ouPw73TdfVY/9lSa08yKE0AEcO7zTHU1sfSo95UJQXGS5b13T5Y9EJIt8Y/zV0h/ABil9BUzZrUcVXJ44rL1Jdog=;
+Message-ID: <835205.47474.qm@web31809.mail.mud.yahoo.com>
+X-YMail-OSG: ghXfNVwVM1nbMF_J1PWZRDS2V1B9.c.F7UE1PMrNYoXu1Jd
+ 0uqhoBte3u_g3uKAsRWKPo8aUcBG51U.U8S0XUYWv6tNy7PrXBLki12C5Nyx
+ wEGNN25NeTa7Ue4T0c4Ahawl7OCcsa7o2wn9eSbub0QFOFAePJlWw2KO8ij7
+ LiWSISaY20EYlXpKKONzoGgVqiw7awwa9b4frocpVQz5KoIeXRwVmJ4FilXt
+ Ke.wq7DwPK1n8pifM6nWngGtsZSkmRG8IUx._h3tAGHlUTpAB09Ht5ZJL._2
+ QVBpVk4gzKfpTl5R4XtsiNSGT.h3rtw4l0vHYcL.t8tAog6rEK3bnGi1zIzI
+ sd1WKVGjSFsZvhDNF4GQ5_T4u9we8Zpin2bYtXZOF5IxsSBfGCo743iMy.ve
+ Yoh01QXpmeCI-
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.108.291010
+Date: Mon, 10 Jan 2011 11:27:49 -0800 (PST)
+From: Luben Tuikov <ltuikov@yahoo.com>
+Reply-To: ltuikov@yahoo.com
+Subject: Re: [PATCH] [BLOCK] Allow tag 0 to be generated
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D2B555C.5090109@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.00.1101101136001.21289@tundra.namei.org>
-References: <alpine.LRH.2.00.1101101136001.21289@tundra.namei.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 10 Jan 2011 11:25:54 -0800
-Message-ID: <AANLkTinU2mNyTEc55=ypDPXWah_ozaV1BHWBqCenxp1Z@mail.gmail.com>
-Subject: Re: [GIT] Security subsystem changes for 2.6.38
-To: James Morris <jmorris@namei.org>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 9, 2011 at 4:46 PM, James Morris <jmorris@namei.org> wrote:
->
-> Also, following discussion at the kernel summit, several sub-maintainers
-> have now established public git trees from which I pull.
+--- On Mon, 1/10/11, Jens Axboe <jaxboe@fusionio.com> wrote:
+> > That commit isn't a valid sha in my tree. What commit
+> do you mean?
+> > 
+> >> skipped tag 0 by virtue of setting last_tag to
+> >> 0. This commit sets it to -1, in order to start
+> >> and loop over from 0, thus generating tags
+> >> [0,max_tag-1], instead of [1,max_tag-1].
+> > 
+> > Irregardless, patch looks good. That's definitely a
+> bug. Thanks!
+> 
+> But not in my kernel, what tree are you looking at? I don't
+> remember
+> seeing any tag patches, and they should be in my tree if
+> there are.
 
-Pulled. However, looking at it, there's a couple of things that
-strikes me as having room for improvement. Eg a missing sign-off in
-commit 676dac4b1bee, and several "merge branch 'master'" where the
-merge message leaves people with absolutely zero idea what the merge
-was (which master? What?) or why.
+It applies on top of this patch:
 
-The ability to create merges without any commentary is admittedly a
-git misfeature - it's _way_ too easy to create a merge which doesn't
-actually tell what's going on. So I apologize for that, but I would
-ask people to keep it in mind when doing "git pull" or "git merge" -
-think about what the merge message actually tells others about what is
-going on.
+>From 67869fb9fdfa04503b250d59e086c15f1698aea0 Mon Sep 17 00:00:00 2001
+From: Luben Tuikov <ltuikov@yahoo.com>
+Date: Wed, 24 Nov 2010 14:18:27 -0800
+Subject: [PATCH] [BLOCK] Preliminary increasing tag sequence implementation
 
-                             Linus
+Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
+---
+ block/blk-tag.c        |   15 +++++++++++++--
+ include/linux/blkdev.h |    1 +
+ 2 files changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/block/blk-tag.c b/block/blk-tag.c
+index ece65fc..f792e98 100644
+--- a/block/blk-tag.c
++++ b/block/blk-tag.c
+@@ -130,6 +130,7 @@ init_tag_map(struct request_queue *q, struct blk_queue_tag *tags, int depth)
+        tags->max_depth = depth;
+        tags->tag_index = tag_index;
+        tags->tag_map = tag_map;
++       tags->last_tag = 0;
+ 
+        return 0;
+ fail:
+@@ -222,7 +223,7 @@ int blk_queue_resize_tags(struct request_queue *q, int new_depth)
+        struct blk_queue_tag *bqt = q->queue_tags;
+        struct request **tag_index;
+        unsigned long *tag_map;
+-       int max_depth, nr_ulongs;
++       int max_depth, nr_ulongs, last_tag;
+ 
+        if (!bqt)
+                return -ENXIO;
+@@ -251,6 +252,7 @@ int blk_queue_resize_tags(struct request_queue *q, int new_depth)
+        tag_index = bqt->tag_index;
+        tag_map = bqt->tag_map;
+        max_depth = bqt->real_max_depth;
++       last_tag = bqt->last_tag;
+ 
+        if (init_tag_map(q, bqt, new_depth))
+                return -ENOMEM;
+@@ -258,6 +260,7 @@ int blk_queue_resize_tags(struct request_queue *q, int new_depth)
+        memcpy(bqt->tag_index, tag_index, max_depth * sizeof(struct request *));
+        nr_ulongs = ALIGN(max_depth, BITS_PER_LONG) / BITS_PER_LONG;
+        memcpy(bqt->tag_map, tag_map, nr_ulongs * sizeof(unsigned long));
++       bqt->last_tag = last_tag;
+ 
+        kfree(tag_index);
+        kfree(tag_map);
+@@ -364,12 +367,20 @@ int blk_queue_start_tag(struct request_queue *q, struct request *rq)
+                        return 1;
+        }
+ 
++       if (bqt->last_tag == bqt->max_depth-1)
++               bqt->last_tag = 0;
++
+        do {
+-               tag = find_first_zero_bit(bqt->tag_map, max_depth);
++               tag = find_next_zero_bit(bqt->tag_map,
++                                        max_depth,
++                                        bqt->last_tag+1);
+                if (tag >= max_depth)
+                        return 1;
+ 
+        } while (test_and_set_bit_lock(tag, bqt->tag_map));
++
++       bqt->last_tag = tag;
++
+        /*
+         * We need lock ordering semantics given by test_and_set_bit_lock.
+         * See blk_queue_end_tag for details.
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index aae86fd..228efcc 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -224,6 +224,7 @@ struct blk_queue_tag {
+        int max_depth;                  /* what we will send to device */
+        int real_max_depth;             /* what the array can hold */
+        atomic_t refcnt;                /* map can be shared */
++       int last_tag;
+ };
+ 
+ #define BLK_SCSI_MAX_CMDS      (256)
+-- 
+1.7.2.2.165.gbc382
+
+
