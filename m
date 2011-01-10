@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754336Ab1AJSEh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 13:04:37 -0500
-Received: from rs22.lvs.iif.hu ([193.225.14.172]:45225 "EHLO rs22.lvs.iif.hu"
+	id S1754526Ab1AJSFH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 13:05:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59763 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752061Ab1AJSEg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 13:04:36 -0500
-From: Ferenc Wagner <wferi@niif.hu>
-To: Andi Kleen <ak@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org
-Cc: Ferenc Wagner <wferi@niif.hu>
-Subject: [PATCH] Capitalize description of SYSFS_DEPRECATED{_V2} options
-Date: Mon, 10 Jan 2011 19:04:22 +0100
-Message-Id: <be17fee40f3056463861d70e5e89205bc144b781.1294682175.git.wferi@niif.hu>
-X-Mailer: git-send-email 1.6.5
+	id S1754378Ab1AJSFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 13:05:05 -0500
+Date: Mon, 10 Jan 2011 19:04:25 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH -mm] fix powerpc/sparc build
+Message-ID: <20110110180425.GK9506@random.random>
+References: <201101070014.p070Egpo023959@imap1.linux-foundation.org>
+ <20110108104208.ca085298.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110108104208.ca085298.sfr@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Ferenc Wagner <wferi@niif.hu>
----
- init/Kconfig |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+This would become
+thp-add-pmd-mangling-generic-functions-fix-pgtableh-build-for-um-2.patch
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 8dfd094..5166f43 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -811,7 +811,7 @@ config MM_OWNER
- 	bool
- 
- config SYSFS_DEPRECATED
--	bool "enable deprecated sysfs features to support old userspace tools"
-+	bool "Enable deprecated sysfs features to support old userspace tools"
- 	depends on SYSFS
- 	default n
- 	help
-@@ -834,7 +834,7 @@ config SYSFS_DEPRECATED
- 	  need to say Y here.
- 
- config SYSFS_DEPRECATED_V2
--	bool "enabled deprecated sysfs features by default"
-+	bool "Enable deprecated sysfs features by default"
- 	default n
- 	depends on SYSFS
- 	depends on SYSFS_DEPRECATED
--- 
-1.6.5
+=====
+Subject: thp: build fix for pmdp_get_and_clear
+
+From: Andrea Arcangeli <aarcange@redhat.com>
+
+__pmd should return a valid pmd_t for every arch.
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+
+
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -93,7 +93,7 @@ static inline pmd_t pmdp_get_and_clear(s
+ 				       pmd_t *pmdp)
+ {
+ 	BUG();
+-	return (pmd_t){ 0 };
++	return __pmd(0);
+ }
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+ #endif
 
