@@ -1,78 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754572Ab1AJUHl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 15:07:41 -0500
-Received: from sj-iport-3.cisco.com ([171.71.176.72]:45674 "EHLO
-	sj-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754072Ab1AJUHj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 15:07:39 -0500
-Authentication-Results: sj-iport-3.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAP/0Kk2rR7Ht/2dsb2JhbACkS3Oie5hJhUwEhGeGI4Mg
-Message-ID: <4D2B6707.3070908@cisco.com>
-Date: Mon, 10 Jan 2011 13:07:35 -0700
-From: David Ahern <daahern@cisco.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1754600Ab1AJUH6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 15:07:58 -0500
+Received: from mms3.broadcom.com ([216.31.210.19]:1333 "EHLO MMS3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754081Ab1AJUHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 15:07:55 -0500
+X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+Date: Mon, 10 Jan 2011 12:07:44 -0800
+From: "Henry Ptasinski" <henryp@broadcom.com>
+To: "Ben Hutchings" <ben@decadent.org.uk>
+cc: "David Woodhouse" <dwmw2@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Henry Ptasinski" <henryp@broadcom.com>
+Subject: Re: [PATCH 1/2] brcm80211: Remove version number from
+ filenames, matching the driver
+Message-ID: <20110110200744.GA6933@broadcom.com>
+References: <1294527372.3283.43.camel@localhost>
+ <1294527461.3283.45.camel@localhost>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, tzanussi@gmail.com,
-        Paul Mackerras <paulus@samba.org>, imunsie@au1.ibm.com,
-        linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org
-Subject: Re: perf: commit 55b4462 causes perf record to hang
-References: <4D2B544F.1050803@cisco.com> <20110110200032.GA19703@ghostprotocols.net>
-In-Reply-To: <20110110200032.GA19703@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1294527461.3283.45.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-WSS-ID: 6135B8D01VG3463473-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 01/10/11 13:00, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Jan 10, 2011 at 11:47:43AM -0700, David Ahern escreveu:
->> With latest version of perf-core branch, a variant of perf record hangs:
->> # /tmp/build-perf/perf record -v -e cs -fo /tmp/perf.data  -- sleep 1
->> [ perf record: Captured and wrote 0.003 MB /tmp/perf.data (~120 samples) ]
->>
->> It sits there forever. Back trace is:
->>
->> (gdb) bt
->> #0  0x0000000000447658 in __perf_session__process_events (session=0xab9500, data_offset=208, data_size=2896, file_size=3104, ops=0x685580) at util/session.c:1006
->> #1  0x00000000004107dd in process_buildids () at builtin-record.c:466
->> #2  0x000000000041084d in atexit_header () at builtin-record.c:477
->  
->> git bisect traced the hang to
->>
->> commit 55b44629f599a2305265ae9c77f9d9bcfd6ddc17
->> Author: Thomas Gleixner <tglx@linutronix.de>
->> Date:   Tue Nov 30 17:49:46 2010 +0000
+On Sat, Jan 08, 2011 at 02:57:41PM -0800, Ben Hutchings wrote:
+> The driver generates filenames like this:
 > 
-> Can you try with this patch, not reverting tglx's patch?
+>                 sprintf(fw_name, "%s-%d.fw", wl_firmwares[i],
+>                         UCODE_LOADER_API_VER);
+>                 ...
+>                 sprintf(fw_name, "%s_hdr-%d.fw", wl_firmwares[i],
+>                         UCODE_LOADER_API_VER);
 > 
-> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> index 6fb4694..313dac2 100644
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -1007,7 +1007,7 @@ more:
->  	if (size == 0)
->  		size = 8;
+> which implies the filenames should be:
+> 
+>     brcm/bcm43xx-0.fw
+>     brcm/bcm43xx_hdr-0.fw
+> 
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> ---
+>  WHENCE                          |    5 +++--
+>  brcm/bcm43xx-0-610-809-0.fw     |  Bin 97376 -> 0 bytes
+>  brcm/bcm43xx-0.fw               |  Bin 0 -> 97376 bytes
+>  brcm/bcm43xx_hdr-0-610-809-0.fw |  Bin 180 -> 0 bytes
+>  brcm/bcm43xx_hdr-0.fw           |  Bin 0 -> 180 bytes
+>  5 files changed, 3 insertions(+), 2 deletions(-)
+>  delete mode 100644 brcm/bcm43xx-0-610-809-0.fw
+>  create mode 100644 brcm/bcm43xx-0.fw
+>  delete mode 100644 brcm/bcm43xx_hdr-0-610-809-0.fw
+>  create mode 100644 brcm/bcm43xx_hdr-0.fw
+> 
+> diff --git a/WHENCE b/WHENCE
+> index 0bc162c..cec7478 100644
+> --- a/WHENCE
+> +++ b/WHENCE
+> @@ -1403,8 +1403,9 @@ Licence:
 >  
-> -	if (head + event->header.size >= mmap_size) {
-> +	if (head + event->header.size > mmap_size) {
->  		if (mmaps[map_idx]) {
->  			munmap(mmaps[map_idx], mmap_size);
->  			mmaps[map_idx] = NULL;
+>  Driver: brcm80211 - Broadcom 802.11n wireless LAN driver.
+>  
+> -File: brcm/bcm43xx-0-610-809-0.fw
+> -File: brcm/bcm43xx_hdr-0-610-809-0.fw
+> +File: brcm/bcm43xx-0.fw
+> +File: brcm/bcm43xx_hdr-0.fw
+> +Version: 610.809.0
+>  
+>  Licence: Redistributable. See LICENCE.broadcom_bcm43xx for details.
+>  
+> [binary changes omitted]
+> 
+
+The brcmfmac files need renaming as well.  This patch (finally generated
+with the -M flag) renames all the firmware files and fixes up the WHENCE:
 
 
-That does the trick -- perf-record exits fine.
+>From 93e6654ddc60e92fa97726ce3e8acc8ab6ee9e11 Mon Sep 17 00:00:00 2001
+From: Henry Ptasinski <henryp@broadcom.com>
+Date: Mon, 10 Jan 2011 12:04:55 -0800
+Subject: [PATCH] brcm: Removed codeversion from firmware filenames.
 
-David
+The basename-apiversion-codeversion construction for firmware filenames is not
+used by most other firmware files, adds complexity, and is not providing any
+value.  Renamed the firmware files using just basename-apiversion.  Also, fixed
+WHENCE to have correct path to brcmfmac files.
+
+Signed-off-by: Henry Ptasinski <henryp@broadcom.com>
+---
+ WHENCE                                             |   10 +++++-----
+ ...llmac-4-218-248-5.bin => bcm4329-fullmac-4.bin} |  Bin 269595 -> 269595 bytes
+ ...llmac-4-218-248-5.txt => bcm4329-fullmac-4.txt} |    0
+ brcm/{bcm43xx-0-610-809-0.fw => bcm43xx-0.fw}      |  Bin 97376 -> 97376 bytes
+ ...bcm43xx_hdr-0-610-809-0.fw => bcm43xx_hdr-0.fw} |  Bin 180 -> 180 bytes
+ 5 files changed, 5 insertions(+), 5 deletions(-)
+ rename brcm/{bcm4329-fullmac-4-218-248-5.bin => bcm4329-fullmac-4.bin} (100%)
+ rename brcm/{bcm4329-fullmac-4-218-248-5.txt => bcm4329-fullmac-4.txt} (100%)
+ rename brcm/{bcm43xx-0-610-809-0.fw => bcm43xx-0.fw} (100%)
+ rename brcm/{bcm43xx_hdr-0-610-809-0.fw => bcm43xx_hdr-0.fw} (100%)
+
+diff --git a/WHENCE b/WHENCE
+index d807e25..6e1c63f 100644
+--- a/WHENCE
++++ b/WHENCE
+@@ -1413,17 +1413,17 @@ Licence:
+ 
+ Driver: brcm80211 - Broadcom 802.11n wireless LAN driver.
+ 
+-File: brcm/bcm43xx-0-610-809-0.fw
+-File: brcm/bcm43xx_hdr-0-610-809-0.fw
++File: brcm/bcm43xx-0.fw
++File: brcm/bcm43xx_hdr-0.fw
+ 
+ Licence: Redistributable. See LICENCE.broadcom_bcm43xx for details.
+ 
+ --------------------------------------------------------------------------
+ 
+-Driver: brcm80211 - Broadcom 802.11n wireless LAN driver.
++Driver: brcmfmac - Broadcom 802.11n wireless LAN driver.
+ 
+-File: bcm4329-fullmac-4-218-248-5.bin
+-File: bcm4329-fullmac-4-218-248-5.txt
++File: brcm/bcm4329-fullmac-4.bin
++File: brcm/bcm4329-fullmac-4.txt
+ 
+ Licence: Redistributable. See LICENCE.broadcom_bcm43xx for details.
+ 
+diff --git a/brcm/bcm4329-fullmac-4-218-248-5.txt b/brcm/bcm4329-fullmac-4.txt
+similarity index 100%
+rename from brcm/bcm4329-fullmac-4-218-248-5.txt
+rename to brcm/bcm4329-fullmac-4.txt
+-- 
+1.7.1
 
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-perf-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
