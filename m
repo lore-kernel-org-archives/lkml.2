@@ -1,851 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab1AJKfZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 05:35:25 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:37924 "EHLO
+	id S1753526Ab1AJKfa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 05:35:30 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:24430 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753407Ab1AJKfW (ORCPT
+	with ESMTP id S1753351Ab1AJKf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 05:35:22 -0500
+	Mon, 10 Jan 2011 05:35:26 -0500
 X-IronPort-AV: E=Sophos;i="4.60,299,1291611600"; 
-   d="scan'208";a="130293735"
+   d="scan'208";a="130293742"
 From: stefano.stabellini@eu.citrix.com
 To: linux-kernel@vger.kernel.org
 Cc: xen-devel@lists.xensource.com, Jeremy.Fitzhardinge@citrix.com,
-        konrad.wilk@oracle.com, Gerd Hoffmann <kraxel@redhat.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 02/12] xen/gntdev: allow usermode to map granted pages
-Date: Mon, 10 Jan 2011 10:36:31 +0000
-Message-Id: <1294655801-16230-2-git-send-email-stefano.stabellini@eu.citrix.com>
+        konrad.wilk@oracle.com,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 05/12] xen: add m2p override mechanism
+Date: Mon, 10 Jan 2011 10:36:34 +0000
+Message-Id: <1294655801-16230-5-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <alpine.DEB.2.00.1101101012190.2390@kaball-desktop>
 References: <alpine.DEB.2.00.1101101012190.2390@kaball-desktop>
-X-OriginalArrivalTime: 10 Jan 2011 10:35:21.0081 (UTC) FILETIME=[14DBD690:01CBB0B2]
+X-OriginalArrivalTime: 10 Jan 2011 10:35:25.0565 (UTC) FILETIME=[17880AD0:01CBB0B2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gerd Hoffmann <kraxel@redhat.com>
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-The gntdev driver allows usermode to map granted pages from other
-domains.  This is typically used to implement a Xen backend driver
-in user mode.
+Add a simple hashtable based mechanism to override some portions of the
+m2p, so that we can find out the pfn corresponding to an mfn of a
+granted page. In fact entries corresponding to granted pages in the m2p
+hold the original pfn value of the page in the source domain that
+granted it.
 
-Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
-Signed-off-by: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- drivers/xen/Kconfig  |    7 +
- drivers/xen/Makefile |    2 +
- drivers/xen/gntdev.c |  635 ++++++++++++++++++++++++++++++++++++++++++++++++++
- include/xen/gntdev.h |  119 ++++++++++
- 4 files changed, 763 insertions(+), 0 deletions(-)
- create mode 100644 drivers/xen/gntdev.c
- create mode 100644 include/xen/gntdev.h
+ arch/x86/include/asm/xen/page.h |   16 ++++++-
+ arch/x86/xen/p2m.c              |   80 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 93 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
-index 6e6180c..bd3095f 100644
---- a/drivers/xen/Kconfig
-+++ b/drivers/xen/Kconfig
-@@ -62,6 +62,13 @@ config XEN_SYS_HYPERVISOR
- 	 virtual environment, /sys/hypervisor will still be present,
- 	 but will have no xen contents.
+diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
+index 8760cc6..50f0a0f 100644
+--- a/arch/x86/include/asm/xen/page.h
++++ b/arch/x86/include/asm/xen/page.h
+@@ -42,6 +42,11 @@ extern unsigned int   machine_to_phys_order;
+ extern unsigned long get_phys_to_machine(unsigned long pfn);
+ extern bool set_phys_to_machine(unsigned long pfn, unsigned long mfn);
  
-+config XEN_GNTDEV
-+	tristate "userspace grant access device driver"
-+	depends on XEN
-+	select MMU_NOTIFIER
-+	help
-+	  Allows userspace processes to use grants.
++extern void m2p_add_override(unsigned long mfn, struct page *page);
++extern void m2p_remove_override(struct page *page);
++extern struct page *m2p_find_override(unsigned long mfn);
++extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
 +
- config XEN_PLATFORM_PCI
- 	tristate "xen platform pci device driver"
- 	depends on XEN_PVHVM
-diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-index 533a199..674fdb5 100644
---- a/drivers/xen/Makefile
-+++ b/drivers/xen/Makefile
-@@ -9,6 +9,7 @@ obj-$(CONFIG_HOTPLUG_CPU)	+= cpu_hotplug.o
- obj-$(CONFIG_XEN_XENCOMM)	+= xencomm.o
- obj-$(CONFIG_XEN_BALLOON)	+= balloon.o
- obj-$(CONFIG_XEN_DEV_EVTCHN)	+= xen-evtchn.o
-+obj-$(CONFIG_XEN_GNTDEV)	+= xen-gntdev.o
- obj-$(CONFIG_XENFS)		+= xenfs/
- obj-$(CONFIG_XEN_SYS_HYPERVISOR)	+= sys-hypervisor.o
- obj-$(CONFIG_XEN_PLATFORM_PCI)	+= platform-pci.o
-@@ -16,4 +17,5 @@ obj-$(CONFIG_SWIOTLB_XEN)	+= swiotlb-xen.o
- obj-$(CONFIG_XEN_DOM0)		+= pci.o
+ static inline unsigned long pfn_to_mfn(unsigned long pfn)
+ {
+ 	unsigned long mfn;
+@@ -72,9 +77,6 @@ static inline unsigned long mfn_to_pfn(unsigned long mfn)
+ 	if (xen_feature(XENFEAT_auto_translated_physmap))
+ 		return mfn;
  
- xen-evtchn-y			:= evtchn.o
-+xen-gntdev-y				:= gntdev.o
+-	if (unlikely((mfn >> machine_to_phys_order) != 0))
+-		return ~0;
+-
+ 	pfn = 0;
+ 	/*
+ 	 * The array access can fail (e.g., device space beyond end of RAM).
+@@ -83,6 +85,14 @@ static inline unsigned long mfn_to_pfn(unsigned long mfn)
+ 	 */
+ 	__get_user(pfn, &machine_to_phys_mapping[mfn]);
  
-diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
-new file mode 100644
-index 0000000..cfe0633
---- /dev/null
-+++ b/drivers/xen/gntdev.c
-@@ -0,0 +1,635 @@
-+/******************************************************************************
-+ * gntdev.c
-+ *
-+ * Device for accessing (in user-space) pages that have been granted by other
-+ * domains.
-+ *
-+ * Copyright (c) 2006-2007, D G Murray.
-+ *           (c) 2009 Gerd Hoffmann <kraxel@redhat.com>
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
++	/*
++	 * If this appears to be a foreign mfn (because the pfn
++	 * doesn't map back to the mfn), then check the local override
++	 * table to see if there's a better pfn to use.
++	 */
++	if (get_phys_to_machine(pfn) != mfn)
++		pfn = m2p_find_override_pfn(mfn, pfn);
 +
-+#undef DEBUG
+ 	return pfn;
+ }
+ 
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index 259ec3b..8db19d5 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -27,6 +27,8 @@
+ 
+ #include <linux/init.h>
+ #include <linux/module.h>
++#include <linux/list.h>
++#include <linux/hash.h>
+ 
+ #include <asm/cache.h>
+ #include <asm/setup.h>
+@@ -37,6 +39,8 @@
+ 
+ #include "xen-ops.h"
+ 
++static void __init m2p_override_init(void);
 +
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/miscdevice.h>
-+#include <linux/fs.h>
-+#include <linux/mm.h>
-+#include <linux/mman.h>
-+#include <linux/mmu_notifier.h>
-+#include <linux/types.h>
-+#include <linux/uaccess.h>
-+#include <linux/sched.h>
-+#include <linux/spinlock.h>
-+#include <linux/slab.h>
+ unsigned long xen_max_p2m_pfn __read_mostly;
+ 
+ #define P2M_PER_PAGE		(PAGE_SIZE / sizeof(unsigned long))
+@@ -234,6 +238,8 @@ void __init xen_build_dynamic_phys_to_machine(void)
+ 
+ 		p2m_top[topidx][mididx] = &mfn_list[pfn];
+ 	}
 +
-+#include <xen/xen.h>
-+#include <xen/grant_table.h>
-+#include <xen/gntdev.h>
-+#include <asm/xen/hypervisor.h>
-+#include <asm/xen/hypercall.h>
-+#include <asm/xen/page.h>
++	m2p_override_init();
+ }
+ 
+ unsigned long get_phys_to_machine(unsigned long pfn)
+@@ -374,3 +380,77 @@ bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+ 
+ 	return true;
+ }
 +
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Derek G. Murray <Derek.Murray@cl.cam.ac.uk>, "
-+	      "Gerd Hoffmann <kraxel@redhat.com>");
-+MODULE_DESCRIPTION("User-space granted page access driver");
++#define M2P_OVERRIDE_HASH_SHIFT	10
++#define M2P_OVERRIDE_HASH	(1 << M2P_OVERRIDE_HASH_SHIFT)
 +
-+static int limit = 1024;
-+module_param(limit, int, 0644);
-+MODULE_PARM_DESC(limit, "Maximum number of grants that may be mapped at "
-+		"once by a gntdev instance");
++static RESERVE_BRK_ARRAY(struct list_head, m2p_overrides, M2P_OVERRIDE_HASH);
++static DEFINE_SPINLOCK(m2p_override_lock);
 +
-+struct gntdev_priv {
-+	struct list_head maps;
-+	uint32_t used;
-+	uint32_t limit;
-+	/* lock protects maps from concurrent changes */
-+	spinlock_t lock;
-+	struct mm_struct *mm;
-+	struct mmu_notifier mn;
-+};
-+
-+struct grant_map {
-+	struct list_head next;
-+	struct gntdev_priv *priv;
-+	struct vm_area_struct *vma;
-+	int index;
-+	int count;
-+	int flags;
-+	int is_mapped;
-+	struct ioctl_gntdev_grant_ref *grants;
-+	struct gnttab_map_grant_ref   *map_ops;
-+	struct gnttab_unmap_grant_ref *unmap_ops;
-+};
-+
-+/* ------------------------------------------------------------------ */
-+
-+static void gntdev_print_maps(struct gntdev_priv *priv,
-+			      char *text, int text_index)
++static void __init m2p_override_init(void)
 +{
-+#ifdef DEBUG
-+	struct grant_map *map;
++	unsigned i;
 +
-+	pr_debug("maps list (priv %p, usage %d/%d)\n",
-+	       priv, priv->used, priv->limit);
++	m2p_overrides = extend_brk(sizeof(*m2p_overrides) * M2P_OVERRIDE_HASH,
++				   sizeof(unsigned long));
 +
-+	list_for_each_entry(map, &priv->maps, next)
-+		pr_debug("  index %2d, count %2d %s\n",
-+		       map->index, map->count,
-+		       map->index == text_index && text ? text : "");
-+#endif
++	for (i = 0; i < M2P_OVERRIDE_HASH; i++)
++		INIT_LIST_HEAD(&m2p_overrides[i]);
 +}
 +
-+static struct grant_map *gntdev_alloc_map(struct gntdev_priv *priv, int count)
++static unsigned long mfn_hash(unsigned long mfn)
 +{
-+	struct grant_map *add;
-+
-+	add = kzalloc(sizeof(struct grant_map), GFP_KERNEL);
-+	if (NULL == add)
-+		return NULL;
-+
-+	add->grants    = kzalloc(sizeof(add->grants[0])    * count, GFP_KERNEL);
-+	add->map_ops   = kzalloc(sizeof(add->map_ops[0])   * count, GFP_KERNEL);
-+	add->unmap_ops = kzalloc(sizeof(add->unmap_ops[0]) * count, GFP_KERNEL);
-+	if (NULL == add->grants  ||
-+	    NULL == add->map_ops ||
-+	    NULL == add->unmap_ops)
-+		goto err;
-+
-+	add->index = 0;
-+	add->count = count;
-+	add->priv  = priv;
-+
-+	if (add->count + priv->used > priv->limit)
-+		goto err;
-+
-+	return add;
-+
-+err:
-+	kfree(add->grants);
-+	kfree(add->map_ops);
-+	kfree(add->unmap_ops);
-+	kfree(add);
-+	return NULL;
++	return hash_long(mfn, M2P_OVERRIDE_HASH_SHIFT);
 +}
 +
-+static void gntdev_add_map(struct gntdev_priv *priv, struct grant_map *add)
++/* Add an MFN override for a particular page */
++void m2p_add_override(unsigned long mfn, struct page *page)
 +{
-+	struct grant_map *map;
++	unsigned long flags;
++	page->private = mfn;
 +
-+	list_for_each_entry(map, &priv->maps, next) {
-+		if (add->index + add->count < map->index) {
-+			list_add_tail(&add->next, &map->next);
-+			goto done;
++	spin_lock_irqsave(&m2p_override_lock, flags);
++	list_add(&page->lru,  &m2p_overrides[mfn_hash(mfn)]);
++	spin_unlock_irqrestore(&m2p_override_lock, flags);
++}
++
++void m2p_remove_override(struct page *page)
++{
++	unsigned long flags;
++	spin_lock_irqsave(&m2p_override_lock, flags);
++	list_del(&page->lru);
++	spin_unlock_irqrestore(&m2p_override_lock, flags);
++}
++
++struct page *m2p_find_override(unsigned long mfn)
++{
++	unsigned long flags;
++	struct list_head *bucket = &m2p_overrides[mfn_hash(mfn)];
++	struct page *p, *ret;
++
++	ret = NULL;
++
++	spin_lock_irqsave(&m2p_override_lock, flags);
++
++	list_for_each_entry(p, bucket, lru) {
++		if (p->private == mfn) {
++			ret = p;
++			break;
 +		}
-+		add->index = map->index + map->count;
-+	}
-+	list_add_tail(&add->next, &priv->maps);
-+
-+done:
-+	priv->used += add->count;
-+	gntdev_print_maps(priv, "[new]", add->index);
-+}
-+
-+static struct grant_map *gntdev_find_map_index(struct gntdev_priv *priv,
-+		int index, int count)
-+{
-+	struct grant_map *map;
-+
-+	list_for_each_entry(map, &priv->maps, next) {
-+		if (map->index != index)
-+			continue;
-+		if (map->count != count)
-+			continue;
-+		return map;
-+	}
-+	return NULL;
-+}
-+
-+static struct grant_map *gntdev_find_map_vaddr(struct gntdev_priv *priv,
-+					       unsigned long vaddr)
-+{
-+	struct grant_map *map;
-+
-+	list_for_each_entry(map, &priv->maps, next) {
-+		if (!map->vma)
-+			continue;
-+		if (vaddr < map->vma->vm_start)
-+			continue;
-+		if (vaddr >= map->vma->vm_end)
-+			continue;
-+		return map;
-+	}
-+	return NULL;
-+}
-+
-+static int gntdev_del_map(struct grant_map *map)
-+{
-+	int i;
-+
-+	if (map->vma)
-+		return -EBUSY;
-+	for (i = 0; i < map->count; i++)
-+		if (map->unmap_ops[i].handle)
-+			return -EBUSY;
-+
-+	map->priv->used -= map->count;
-+	list_del(&map->next);
-+	return 0;
-+}
-+
-+static void gntdev_free_map(struct grant_map *map)
-+{
-+	if (!map)
-+		return;
-+	kfree(map->grants);
-+	kfree(map->map_ops);
-+	kfree(map->unmap_ops);
-+	kfree(map);
-+}
-+
-+/* ------------------------------------------------------------------ */
-+
-+static int find_grant_ptes(pte_t *pte, pgtable_t token,
-+		unsigned long addr, void *data)
-+{
-+	struct grant_map *map = data;
-+	unsigned int pgnr = (addr - map->vma->vm_start) >> PAGE_SHIFT;
-+	u64 pte_maddr;
-+
-+	BUG_ON(pgnr >= map->count);
-+	pte_maddr  = (u64)pfn_to_mfn(page_to_pfn(token)) << PAGE_SHIFT;
-+	pte_maddr += (unsigned long)pte & ~PAGE_MASK;
-+	gnttab_set_map_op(&map->map_ops[pgnr], pte_maddr, map->flags,
-+			  map->grants[pgnr].ref,
-+			  map->grants[pgnr].domid);
-+	gnttab_set_unmap_op(&map->unmap_ops[pgnr], pte_maddr, map->flags,
-+			    0 /* handle */);
-+	return 0;
-+}
-+
-+static int map_grant_pages(struct grant_map *map)
-+{
-+	int i, err = 0;
-+
-+	pr_debug("map %d+%d\n", map->index, map->count);
-+	err = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref,
-+					map->map_ops, map->count);
-+	if (err)
-+		return err;
-+
-+	for (i = 0; i < map->count; i++) {
-+		if (map->map_ops[i].status)
-+			err = -EINVAL;
-+		map->unmap_ops[i].handle = map->map_ops[i].handle;
-+	}
-+	return err;
-+}
-+
-+static int unmap_grant_pages(struct grant_map *map, int offset, int pages)
-+{
-+	int i, err = 0;
-+
-+	pr_debug("map %d+%d [%d+%d]\n", map->index, map->count, offset, pages);
-+	err = HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref,
-+					map->unmap_ops + offset, pages);
-+	if (err)
-+		return err;
-+
-+	for (i = 0; i < pages; i++) {
-+		if (map->unmap_ops[offset+i].status)
-+			err = -EINVAL;
-+		map->unmap_ops[offset+i].handle = 0;
-+	}
-+	return err;
-+}
-+
-+/* ------------------------------------------------------------------ */
-+
-+static void gntdev_vma_close(struct vm_area_struct *vma)
-+{
-+	struct grant_map *map = vma->vm_private_data;
-+
-+	pr_debug("close %p\n", vma);
-+	map->is_mapped = 0;
-+	map->vma = NULL;
-+	vma->vm_private_data = NULL;
-+}
-+
-+static int gntdev_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-+{
-+	pr_debug("vaddr %p, pgoff %ld (shouldn't happen)\n",
-+			vmf->virtual_address, vmf->pgoff);
-+	vmf->flags = VM_FAULT_ERROR;
-+	return 0;
-+}
-+
-+static struct vm_operations_struct gntdev_vmops = {
-+	.close = gntdev_vma_close,
-+	.fault = gntdev_vma_fault,
-+};
-+
-+/* ------------------------------------------------------------------ */
-+
-+static void mn_invl_range_start(struct mmu_notifier *mn,
-+				struct mm_struct *mm,
-+				unsigned long start, unsigned long end)
-+{
-+	struct gntdev_priv *priv = container_of(mn, struct gntdev_priv, mn);
-+	struct grant_map *map;
-+	unsigned long mstart, mend;
-+	int err;
-+
-+	spin_lock(&priv->lock);
-+	list_for_each_entry(map, &priv->maps, next) {
-+		if (!map->vma)
-+			continue;
-+		if (!map->is_mapped)
-+			continue;
-+		if (map->vma->vm_start >= end)
-+			continue;
-+		if (map->vma->vm_end <= start)
-+			continue;
-+		mstart = max(start, map->vma->vm_start);
-+		mend   = min(end,   map->vma->vm_end);
-+		pr_debug("map %d+%d (%lx %lx), range %lx %lx, mrange %lx %lx\n",
-+				map->index, map->count,
-+				map->vma->vm_start, map->vma->vm_end,
-+				start, end, mstart, mend);
-+		err = unmap_grant_pages(map,
-+					(mstart - map->vma->vm_start) >> PAGE_SHIFT,
-+					(mend - mstart) >> PAGE_SHIFT);
-+		WARN_ON(err);
-+	}
-+	spin_unlock(&priv->lock);
-+}
-+
-+static void mn_invl_page(struct mmu_notifier *mn,
-+			 struct mm_struct *mm,
-+			 unsigned long address)
-+{
-+	mn_invl_range_start(mn, mm, address, address + PAGE_SIZE);
-+}
-+
-+static void mn_release(struct mmu_notifier *mn,
-+		       struct mm_struct *mm)
-+{
-+	struct gntdev_priv *priv = container_of(mn, struct gntdev_priv, mn);
-+	struct grant_map *map;
-+	int err;
-+
-+	spin_lock(&priv->lock);
-+	list_for_each_entry(map, &priv->maps, next) {
-+		if (!map->vma)
-+			continue;
-+		pr_debug("map %d+%d (%lx %lx)\n",
-+				map->index, map->count,
-+				map->vma->vm_start, map->vma->vm_end);
-+		err = unmap_grant_pages(map, /* offset */ 0, map->count);
-+		WARN_ON(err);
-+	}
-+	spin_unlock(&priv->lock);
-+}
-+
-+struct mmu_notifier_ops gntdev_mmu_ops = {
-+	.release                = mn_release,
-+	.invalidate_page        = mn_invl_page,
-+	.invalidate_range_start = mn_invl_range_start,
-+};
-+
-+/* ------------------------------------------------------------------ */
-+
-+static int gntdev_open(struct inode *inode, struct file *flip)
-+{
-+	struct gntdev_priv *priv;
-+	int ret = 0;
-+
-+	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
-+
-+	INIT_LIST_HEAD(&priv->maps);
-+	spin_lock_init(&priv->lock);
-+	priv->limit = limit;
-+
-+	priv->mm = get_task_mm(current);
-+	if (!priv->mm) {
-+		kfree(priv);
-+		return -ENOMEM;
-+	}
-+	priv->mn.ops = &gntdev_mmu_ops;
-+	ret = mmu_notifier_register(&priv->mn, priv->mm);
-+	mmput(priv->mm);
-+
-+	if (ret) {
-+		kfree(priv);
-+		return ret;
 +	}
 +
-+	flip->private_data = priv;
-+	pr_debug("priv %p\n", priv);
++	spin_unlock_irqrestore(&m2p_override_lock, flags);
 +
-+	return 0;
++	return ret;
 +}
 +
-+static int gntdev_release(struct inode *inode, struct file *flip)
++unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn)
 +{
-+	struct gntdev_priv *priv = flip->private_data;
-+	struct grant_map *map;
-+	int err;
++	struct page *p = m2p_find_override(mfn);
++	unsigned long ret = pfn;
 +
-+	pr_debug("priv %p\n", priv);
++	if (p)
++		ret = page_to_pfn(p);
 +
-+	spin_lock(&priv->lock);
-+	while (!list_empty(&priv->maps)) {
-+		map = list_entry(priv->maps.next, struct grant_map, next);
-+		err = gntdev_del_map(map);
-+		if (WARN_ON(err))
-+			gntdev_free_map(map);
-+
-+	}
-+	spin_unlock(&priv->lock);
-+
-+	mmu_notifier_unregister(&priv->mn, priv->mm);
-+	kfree(priv);
-+	return 0;
++	return ret;
 +}
-+
-+static long gntdev_ioctl_map_grant_ref(struct gntdev_priv *priv,
-+				       struct ioctl_gntdev_map_grant_ref __user *u)
-+{
-+	struct ioctl_gntdev_map_grant_ref op;
-+	struct grant_map *map;
-+	int err;
-+
-+	if (copy_from_user(&op, u, sizeof(op)) != 0)
-+		return -EFAULT;
-+	pr_debug("priv %p, add %d\n", priv, op.count);
-+	if (unlikely(op.count <= 0))
-+		return -EINVAL;
-+	if (unlikely(op.count > priv->limit))
-+		return -EINVAL;
-+
-+	err = -ENOMEM;
-+	map = gntdev_alloc_map(priv, op.count);
-+	if (!map)
-+		return err;
-+	if (copy_from_user(map->grants, &u->refs,
-+			   sizeof(map->grants[0]) * op.count) != 0) {
-+		gntdev_free_map(map);
-+		return err;
-+	}
-+
-+	spin_lock(&priv->lock);
-+	gntdev_add_map(priv, map);
-+	op.index = map->index << PAGE_SHIFT;
-+	spin_unlock(&priv->lock);
-+
-+	if (copy_to_user(u, &op, sizeof(op)) != 0) {
-+		spin_lock(&priv->lock);
-+		gntdev_del_map(map);
-+		spin_unlock(&priv->lock);
-+		gntdev_free_map(map);
-+		return err;
-+	}
-+	return 0;
-+}
-+
-+static long gntdev_ioctl_unmap_grant_ref(struct gntdev_priv *priv,
-+					 struct ioctl_gntdev_unmap_grant_ref __user *u)
-+{
-+	struct ioctl_gntdev_unmap_grant_ref op;
-+	struct grant_map *map;
-+	int err = -ENOENT;
-+
-+	if (copy_from_user(&op, u, sizeof(op)) != 0)
-+		return -EFAULT;
-+	pr_debug("priv %p, del %d+%d\n", priv, (int)op.index, (int)op.count);
-+
-+	spin_lock(&priv->lock);
-+	map = gntdev_find_map_index(priv, op.index >> PAGE_SHIFT, op.count);
-+	if (map)
-+		err = gntdev_del_map(map);
-+	spin_unlock(&priv->lock);
-+	if (!err)
-+		gntdev_free_map(map);
-+	return err;
-+}
-+
-+static long gntdev_ioctl_get_offset_for_vaddr(struct gntdev_priv *priv,
-+					      struct ioctl_gntdev_get_offset_for_vaddr __user *u)
-+{
-+	struct ioctl_gntdev_get_offset_for_vaddr op;
-+	struct grant_map *map;
-+
-+	if (copy_from_user(&op, u, sizeof(op)) != 0)
-+		return -EFAULT;
-+	pr_debug("priv %p, offset for vaddr %lx\n", priv, (unsigned long)op.vaddr);
-+
-+	spin_lock(&priv->lock);
-+	map = gntdev_find_map_vaddr(priv, op.vaddr);
-+	if (map == NULL ||
-+	    map->vma->vm_start != op.vaddr) {
-+		spin_unlock(&priv->lock);
-+		return -EINVAL;
-+	}
-+	op.offset = map->index << PAGE_SHIFT;
-+	op.count = map->count;
-+	spin_unlock(&priv->lock);
-+
-+	if (copy_to_user(u, &op, sizeof(op)) != 0)
-+		return -EFAULT;
-+	return 0;
-+}
-+
-+static long gntdev_ioctl_set_max_grants(struct gntdev_priv *priv,
-+					struct ioctl_gntdev_set_max_grants __user *u)
-+{
-+	struct ioctl_gntdev_set_max_grants op;
-+
-+	if (copy_from_user(&op, u, sizeof(op)) != 0)
-+		return -EFAULT;
-+	pr_debug("priv %p, limit %d\n", priv, op.count);
-+	if (op.count > limit)
-+		return -E2BIG;
-+
-+	spin_lock(&priv->lock);
-+	priv->limit = op.count;
-+	spin_unlock(&priv->lock);
-+	return 0;
-+}
-+
-+static long gntdev_ioctl(struct file *flip,
-+			 unsigned int cmd, unsigned long arg)
-+{
-+	struct gntdev_priv *priv = flip->private_data;
-+	void __user *ptr = (void __user *)arg;
-+
-+	switch (cmd) {
-+	case IOCTL_GNTDEV_MAP_GRANT_REF:
-+		return gntdev_ioctl_map_grant_ref(priv, ptr);
-+
-+	case IOCTL_GNTDEV_UNMAP_GRANT_REF:
-+		return gntdev_ioctl_unmap_grant_ref(priv, ptr);
-+
-+	case IOCTL_GNTDEV_GET_OFFSET_FOR_VADDR:
-+		return gntdev_ioctl_get_offset_for_vaddr(priv, ptr);
-+
-+	case IOCTL_GNTDEV_SET_MAX_GRANTS:
-+		return gntdev_ioctl_set_max_grants(priv, ptr);
-+
-+	default:
-+		pr_debug("priv %p, unknown cmd %x\n", priv, cmd);
-+		return -ENOIOCTLCMD;
-+	}
-+
-+	return 0;
-+}
-+
-+static int gntdev_mmap(struct file *flip, struct vm_area_struct *vma)
-+{
-+	struct gntdev_priv *priv = flip->private_data;
-+	int index = vma->vm_pgoff;
-+	int count = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
-+	struct grant_map *map;
-+	int err = -EINVAL;
-+
-+	if ((vma->vm_flags & VM_WRITE) && !(vma->vm_flags & VM_SHARED))
-+		return -EINVAL;
-+
-+	pr_debug("map %d+%d at %lx (pgoff %lx)\n",
-+			index, count, vma->vm_start, vma->vm_pgoff);
-+
-+	spin_lock(&priv->lock);
-+	map = gntdev_find_map_index(priv, index, count);
-+	if (!map)
-+		goto unlock_out;
-+	if (map->vma)
-+		goto unlock_out;
-+	if (priv->mm != vma->vm_mm) {
-+		printk(KERN_WARNING "Huh? Other mm?\n");
-+		goto unlock_out;
-+	}
-+
-+	vma->vm_ops = &gntdev_vmops;
-+
-+	vma->vm_flags |= VM_RESERVED|VM_DONTCOPY|VM_DONTEXPAND;
-+
-+	vma->vm_private_data = map;
-+	map->vma = vma;
-+
-+	map->flags = GNTMAP_host_map | GNTMAP_application_map | GNTMAP_contains_pte;
-+	if (!(vma->vm_flags & VM_WRITE))
-+		map->flags |= GNTMAP_readonly;
-+
-+	err = apply_to_page_range(vma->vm_mm, vma->vm_start,
-+				  vma->vm_end - vma->vm_start,
-+				  find_grant_ptes, map);
-+	if (err) {
-+		printk(KERN_WARNING "find_grant_ptes() failure.\n");
-+		goto unlock_out;
-+	}
-+
-+	err = map_grant_pages(map);
-+	if (err) {
-+		printk(KERN_WARNING "map_grant_pages() failure.\n");
-+		goto unlock_out;
-+	}
-+	map->is_mapped = 1;
-+
-+unlock_out:
-+	spin_unlock(&priv->lock);
-+	return err;
-+}
-+
-+static const struct file_operations gntdev_fops = {
-+	.owner = THIS_MODULE,
-+	.open = gntdev_open,
-+	.release = gntdev_release,
-+	.mmap = gntdev_mmap,
-+	.unlocked_ioctl = gntdev_ioctl
-+};
-+
-+static struct miscdevice gntdev_miscdev = {
-+	.minor        = MISC_DYNAMIC_MINOR,
-+	.name         = "xen/gntdev",
-+	.fops         = &gntdev_fops,
-+};
-+
-+/* ------------------------------------------------------------------ */
-+
-+static int __init gntdev_init(void)
-+{
-+	int err;
-+
-+	if (!xen_domain())
-+		return -ENODEV;
-+
-+	err = misc_register(&gntdev_miscdev);
-+	if (err != 0) {
-+		printk(KERN_ERR "Could not register gntdev device\n");
-+		return err;
-+	}
-+	return 0;
-+}
-+
-+static void __exit gntdev_exit(void)
-+{
-+	misc_deregister(&gntdev_miscdev);
-+}
-+
-+module_init(gntdev_init);
-+module_exit(gntdev_exit);
-+
-+/* ------------------------------------------------------------------ */
-diff --git a/include/xen/gntdev.h b/include/xen/gntdev.h
-new file mode 100644
-index 0000000..eb23f41
---- /dev/null
-+++ b/include/xen/gntdev.h
-@@ -0,0 +1,119 @@
-+/******************************************************************************
-+ * gntdev.h
-+ * 
-+ * Interface to /dev/xen/gntdev.
-+ * 
-+ * Copyright (c) 2007, D G Murray
-+ * 
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License version 2
-+ * as published by the Free Software Foundation; or, when distributed
-+ * separately from the Linux kernel or incorporated into other
-+ * software packages, subject to the following license:
-+ * 
-+ * Permission is hereby granted, free of charge, to any person obtaining a copy
-+ * of this source file (the "Software"), to deal in the Software without
-+ * restriction, including without limitation the rights to use, copy, modify,
-+ * merge, publish, distribute, sublicense, and/or sell copies of the Software,
-+ * and to permit persons to whom the Software is furnished to do so, subject to
-+ * the following conditions:
-+ * 
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ * 
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-+ * IN THE SOFTWARE.
-+ */
-+
-+#ifndef __LINUX_PUBLIC_GNTDEV_H__
-+#define __LINUX_PUBLIC_GNTDEV_H__
-+
-+struct ioctl_gntdev_grant_ref {
-+	/* The domain ID of the grant to be mapped. */
-+	uint32_t domid;
-+	/* The grant reference of the grant to be mapped. */
-+	uint32_t ref;
-+};
-+
-+/*
-+ * Inserts the grant references into the mapping table of an instance
-+ * of gntdev. N.B. This does not perform the mapping, which is deferred
-+ * until mmap() is called with @index as the offset.
-+ */
-+#define IOCTL_GNTDEV_MAP_GRANT_REF \
-+_IOC(_IOC_NONE, 'G', 0, sizeof(struct ioctl_gntdev_map_grant_ref))
-+struct ioctl_gntdev_map_grant_ref {
-+	/* IN parameters */
-+	/* The number of grants to be mapped. */
-+	uint32_t count;
-+	uint32_t pad;
-+	/* OUT parameters */
-+	/* The offset to be used on a subsequent call to mmap(). */
-+	uint64_t index;
-+	/* Variable IN parameter. */
-+	/* Array of grant references, of size @count. */
-+	struct ioctl_gntdev_grant_ref refs[1];
-+};
-+
-+/*
-+ * Removes the grant references from the mapping table of an instance of
-+ * of gntdev. N.B. munmap() must be called on the relevant virtual address(es)
-+ * before this ioctl is called, or an error will result.
-+ */
-+#define IOCTL_GNTDEV_UNMAP_GRANT_REF \
-+_IOC(_IOC_NONE, 'G', 1, sizeof(struct ioctl_gntdev_unmap_grant_ref))
-+struct ioctl_gntdev_unmap_grant_ref {
-+	/* IN parameters */
-+	/* The offset was returned by the corresponding map operation. */
-+	uint64_t index;
-+	/* The number of pages to be unmapped. */
-+	uint32_t count;
-+	uint32_t pad;
-+};
-+
-+/*
-+ * Returns the offset in the driver's address space that corresponds
-+ * to @vaddr. This can be used to perform a munmap(), followed by an
-+ * UNMAP_GRANT_REF ioctl, where no state about the offset is retained by
-+ * the caller. The number of pages that were allocated at the same time as
-+ * @vaddr is returned in @count.
-+ *
-+ * N.B. Where more than one page has been mapped into a contiguous range, the
-+ *      supplied @vaddr must correspond to the start of the range; otherwise
-+ *      an error will result. It is only possible to munmap() the entire
-+ *      contiguously-allocated range at once, and not any subrange thereof.
-+ */
-+#define IOCTL_GNTDEV_GET_OFFSET_FOR_VADDR \
-+_IOC(_IOC_NONE, 'G', 2, sizeof(struct ioctl_gntdev_get_offset_for_vaddr))
-+struct ioctl_gntdev_get_offset_for_vaddr {
-+	/* IN parameters */
-+	/* The virtual address of the first mapped page in a range. */
-+	uint64_t vaddr;
-+	/* OUT parameters */
-+	/* The offset that was used in the initial mmap() operation. */
-+	uint64_t offset;
-+	/* The number of pages mapped in the VM area that begins at @vaddr. */
-+	uint32_t count;
-+	uint32_t pad;
-+};
-+
-+/*
-+ * Sets the maximum number of grants that may mapped at once by this gntdev
-+ * instance.
-+ *
-+ * N.B. This must be called before any other ioctl is performed on the device.
-+ */
-+#define IOCTL_GNTDEV_SET_MAX_GRANTS \
-+_IOC(_IOC_NONE, 'G', 3, sizeof(struct ioctl_gntdev_set_max_grants))
-+struct ioctl_gntdev_set_max_grants {
-+	/* IN parameter */
-+	/* The maximum number of grants that may be mapped at once. */
-+	uint32_t count;
-+};
-+
-+#endif /* __LINUX_PUBLIC_GNTDEV_H__ */
 -- 
 1.5.6.5
 
