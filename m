@@ -1,140 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555Ab1AJLVz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 06:21:55 -0500
-Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:39436 "EHLO
-	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752349Ab1AJLVx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 06:21:53 -0500
-Message-ID: <4D2AEB84.6060804@st.com>
-Date: Mon, 10 Jan 2011 16:50:36 +0530
-From: pratyush <pratyush.anand@st.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1753575Ab1AJLXH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 06:23:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49842 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751193Ab1AJLXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 06:23:04 -0500
+Date: Mon, 10 Jan 2011 13:22:05 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Milton Miller <miltonm@bga.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jamie Lokier <jamie@shareable.org>, Thomas Weber <swirl@gmx.li>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] virtio: remove virtio-pci root device
+Message-ID: <20110110112205.GC12065@redhat.com>
+References: <20110105191711.GA27489@redhat.com>
+ <virtio-pci-whynotsimplify@mdm.bga.com>
+ <virtio-pci-noroot@mdm.bga.com>
+ <20110109151821.GA9063@redhat.com>
+ <20110110111859.GC2202@redhat.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Viresh KUMAR <viresh.kumar@st.com>, Greg KH <greg@kroah.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Shiraz HASHIM <shiraz.hashim@st.com>
-Subject: Re: [PATCH V2] ST SPEAr: PCIE gadget suppport
-References: <137dfad4a093ea0ac80396f5eb7fbf0c382be698.1294314772.git.viresh.kumar@st.com> <201101072332.16985.arnd@arndb.de>
-In-Reply-To: <201101072332.16985.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110110111859.GC2202@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Arnd,
+On Mon, Jan 10, 2011 at 01:18:59PM +0200, Gleb Natapov wrote:
+> On Sun, Jan 09, 2011 at 05:18:21PM +0200, Michael S. Tsirkin wrote:
+> > On Fri, Jan 07, 2011 at 02:55:06AM -0600, Milton Miller wrote:
+> > > We sometimes need to map between the virtio device and
+> > > the given pci device. One such use is OS installer that
+> > > gets the boot pci device from BIOS and needs to
+> > > find the relevant block device. Since it can't,
+> > > installation fails.
+> > > 
+> > > Instead of creating a top-level devices/virtio-pci
+> > > directory, create each device under the corresponding
+> > > pci device node.  Symlinks to all virtio-pci
+> > > devices can be found under the pci driver link in
+> > > bus/pci/drivers/virtio-pci/devices, and all virtio
+> > > devices under drivers/bus/virtio/devices.
+> > > 
+> > > Signed-off-by: Milton Miller <miltonm@bga.com>
+> > 
+> > OK, this works fine for me.  I played with options to add compat
+> > softlinks under devices/virtio-pci but we still don't get exactly the
+> > same layout and since I don't think anyone actually uses them, it's
+> > probably ok to just to the simple thing.
+> > 
+> > Tested/Acked-by: Michael S. Tsirkin <mst@redhat.com>
+> > 
+> > Rusty, since this help fix at least one user, any chance this can be put
+> > in 2.6.38? OK to backport to -stable?
+> > 
+> > Gleb, could you try this out too?
+> > 
+> With this patch if I have 3 virtio disks for a VM I get:
+> /sys/devices/pci0000:00/0000:00:04.0/virtio0/block/vda
+> /sys/devices/pci0000:00/0000:00:05.0/virtio1/block/vdb
+> /sys/devices/pci0000:00/0000:00:06.0/virtio2/block/vdc
+> 
+> Number after virtio has no much sense. It either should be dropped at all
+> or be always zero in case we will support more then one virtio controller
+> per pci card. In that case each virtio controller will have directories
+> virtio0/virtio1/virtio2... under same pci device directory.
 
-Thanks for the comments!!!
+Yes. But this is the bus name.  It must be unique - all devices
+also appear under /sys/bus/virtio/devices.
 
-On 1/8/2011 4:02 AM, Arnd Bergmann wrote:
-> On Thursday 06 January 2011, Viresh Kumar wrote:
->> From: Pratyush Anand <pratyush.anand@st.com>
->>
->> This is a configurable gadget. can be configured by sysfs interface. Any
->> IP available at PCIE bus can be programmed to be used by host
->> controller.It supoorts both INTX and MSI.
->> By default, gadget is configured for INTX and SYSRAM1 is mapped to BAR0
->> with size 0x1000
+> > > ---
+> > > 
+> > > This is an alternative to the patch by Michael S. Tsirkin
+> > > titled "virtio-pci: add softlinks between virtio and pci"
+> > > https://patchwork.kernel.org/patch/454581/
+> > > 
+> > > It creates simpler code, uses less memory, and should
+> > > be even easier use by the installer as it won't have to
+> > > know a virtio symlink to follow (just follow none).
+> > > 
+> > > Compile tested only as I don't have kvm setup.
+> > > 
+> > > 
+> > > diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+> > > index ef8d9d5..4fb5b2b 100644
+> > > --- a/drivers/virtio/virtio_pci.c
+> > > +++ b/drivers/virtio/virtio_pci.c
+> > > @@ -96,11 +96,6 @@ static struct pci_device_id virtio_pci_id_table[] = {
+> > >  
+> > >  MODULE_DEVICE_TABLE(pci, virtio_pci_id_table);
+> > >  
+> > > -/* A PCI device has it's own struct device and so does a virtio device so
+> > > - * we create a place for the virtio devices to show up in sysfs.  I think it
+> > > - * would make more sense for virtio to not insist on having it's own device. */
+> > > -static struct device *virtio_pci_root;
+> > > -
+> > >  /* Convert a generic virtio device to our structure */
+> > >  static struct virtio_pci_device *to_vp_device(struct virtio_device *vdev)
+> > >  {
+> > > @@ -629,7 +624,7 @@ static int __devinit virtio_pci_probe(struct pci_dev *pci_dev,
+> > >  	if (vp_dev == NULL)
+> > >  		return -ENOMEM;
+> > >  
+> > > -	vp_dev->vdev.dev.parent = virtio_pci_root;
+> > > +	vp_dev->vdev.dev.parent = &pci_dev->dev;
+> > >  	vp_dev->vdev.dev.release = virtio_pci_release_dev;
+> > >  	vp_dev->vdev.config = &virtio_pci_config_ops;
+> > >  	vp_dev->pci_dev = pci_dev;
+> > > @@ -717,17 +712,7 @@ static struct pci_driver virtio_pci_driver = {
+> > >  
+> > >  static int __init virtio_pci_init(void)
+> > >  {
+> > > -	int err;
+> > > -
+> > > -	virtio_pci_root = root_device_register("virtio-pci");
+> > > -	if (IS_ERR(virtio_pci_root))
+> > > -		return PTR_ERR(virtio_pci_root);
+> > > -
+> > > -	err = pci_register_driver(&virtio_pci_driver);
+> > > -	if (err)
+> > > -		root_device_unregister(virtio_pci_root);
+> > > -
+> > > -	return err;
+> > > +	return pci_register_driver(&virtio_pci_driver);
+> > >  }
+> > >  
+> > >  module_init(virtio_pci_init);
+> > > @@ -735,7 +720,6 @@ module_init(virtio_pci_init);
+> > >  static void __exit virtio_pci_exit(void)
+> > >  {
+> > >  	pci_unregister_driver(&virtio_pci_driver);
+> > > -	root_device_unregister(virtio_pci_root);
+> > >  }
+> > >  
+> > >  module_exit(virtio_pci_exit);
 > 
-> The code looks reasonably clean, but I don't yet understand how you would
-> use this device for the interesting case of communicating with the host
-> side. I've put a lot of thought into similar hardware designs before, but
-> never got an implementation done myself.
-
-This driver has been developed just to show spear's capability to work as dual
-mode pcie controller.
-
-> 
-> Forwarding devices that don't need interrupts with your driver seems to
-> be the only case that will easily work, but that is also rather limited
-> in what you can use it for.
-> 
-
-Off-course, it will work best with non interrupting devices. One can use
-INTA assertion/de-assertion by software, but it would be very slow.
-
-> One concept that people have played with before is to export a virtio
-> channel through PCI that you can use with e.g. virtio-net  or virtfs.
-> This is very powerful and has  a lot of possible applications because
-> we have support for virtio drivers across a number of operating systems
-> and platforms already.
-> 
->>  Documentation/misc-devices/spear-pcie-gadget.txt |  125 ++++
->>  drivers/misc/Kconfig                             |   10 +
->>  drivers/misc/Makefile                            |    1 +
->>  drivers/misc/spear13xx_pcie_gadget.c             |  856 ++++++++++++++++++++++
-> 
-> Why would you put this under drivers/misc?
-> 
-> I think drivers/pci/gadget/ would be a better place. I would also
-> recommend splitting the user interface from the hardware dependent
-> parts, so someone else can easily do another gadget driver for
-> different hardware.
-> 
-
-Yes, can be done, if the interfaces which I have made is
-acceptable to community. 
-
->> +/*wait till link is up*/
->> +# cat sys/devices/platform/pcie-gadget-spear.0/link
->> +wait till it returns UP.
-> 
-> A blocking sysfs read is not a nice interface. This is probably where
-> the sysfs abstraction for your hardware stops making sense.
-> 
-
-This call is not blocking. User will have to recheck link status till he
-finds it UP. He may put some delay between two successive read. I will
-modify documentation to be more explicit.
-
->> +To assert INTA
->> +# echo 1 >> sys/devices/platform/pcie-gadget-spear.0/inta
->> +
->> +To de-assert INTA
->> +# echo 0 >> sys/devices/platform/pcie-gadget-spear.0/inta
-> 
-> And this looks somewhat impractical and slow. 
-> 
-
-Yes, it will be slow.
-
->> +to send msi vector 2
->> +# echo 2 >> sys/devices/platform/pcie-gadget-spear.0/send_msi
-> 
-> Using a sysfs file only for its side-effect is not very nice either.
-> 
-> The user interface for the interrupts looks to me like it should really
-> be based around a character device and either read/write/poll or
-> ioctl and poll. Using an eventfd might be cool here, because  then you
-> can combine this with other devices by passing the event file to
-> an interface that operates on eventfd. This would e.g. make it possible
-> to combine a UIO device generating interrupts with a PCIe gadget
-> sending the interrupts somewhere else, without leaving kernel
-> space.
-> 
-
-I do not have much idea about eventfd mechanism. But if we decide to
-split it in two layers (generic pcie gadget and HW specific) then I
-might try to do it in this way.
-
-Regards
-Pratyush
-
-> For setting up the basic parameters, sysfs (or configfs, as Greg suggested)
-> is a reasonable choice, so there is no need to change that.
-> 
-> I don't know what the rules for configfs are though, i.e. if eventfd
-> files or ioctls are ok or not.
-> 
-> 	Arnd
-> 
-> .
-> 
-
+> --
+> 			Gleb.
