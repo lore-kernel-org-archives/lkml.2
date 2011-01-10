@@ -1,96 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab1AJIqX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 03:46:23 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:22134 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752836Ab1AJIqV (ORCPT
+	id S1752745Ab1AJI6B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 03:58:01 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:1954 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751700Ab1AJI55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 03:46:21 -0500
-Message-ID: <4D2AC6D5.5040307@kernel.org>
-Date: Mon, 10 Jan 2011 00:44:05 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
-MIME-Version: 1.0
-To: Jesse Barnes <jbarnes@virtuousgeek.org>, Greg KH <greg@kroah.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-usb@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/4] x86: early_quirk check all dev/func in domain 0
-References: <4D2A1382.7010407@kernel.org> <4D2AC584.6010004@kernel.org>
-In-Reply-To: <4D2AC584.6010004@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 10 Jan 2011 03:57:57 -0500
+Date: Mon, 10 Jan 2011 09:57:43 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>, Juerg Haefliger <juergh@gmail.com>
+Subject: Re: linux-next: manual merge of the hwmon-staging tree with the 
+ jdelvare-hwmon tree
+Message-ID: <20110110095743.7616b7b3@endymion.delvare>
+In-Reply-To: <20110110034638.GA28007@ericsson.com>
+References: <20110110132057.bc5d54a0.sfr@canb.auug.org.au>
+	<20110110034638.GA28007@ericsson.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 9 Jan 2011 19:46:38 -0800, Guenter Roeck wrote:
+> On Sun, Jan 09, 2011 at 09:20:57PM -0500, Stephen Rothwell wrote:
+> > Hi Guenter,
+> > 
+> > Today's linux-next merge of the hwmon-staging tree got a conflict in
+> > drivers/hwmon/dme1737.c between commit
+> > b7f2a5c8c9190fcf0126d43972a8ad37eb98f5d0 ("hwmon: (dme1737) Minor
+> > cleanups") from the jdelvare-hwmon tree and commit
+> > 9c6e13b411cf0f656b7d7a78ec35bf0069f631bb ("hwmon: (dme1737) Use pr_fmt
+> > and pr_<level>") from the hwmon-staging tree.
+> > 
+> > Just context changes.  I fixed it up (see below) and can carry the fix as
+> > necessary.
+> > -- 
+> > Cheers,
+> > Stephen Rothwell                    sfr@canb.auug.org.au
+> > 
+> Hi Stephen,
+> 
+> thanks for the note. I suspected that would happen - sorry for the trouble.
+> 
+> Jean, do you want to take Joe's pr_fmt change from my tree and apply it to yours,
+> or should we just wait until the first of the trees was merged into Linus' tree ?
+> If the latter, do you want to send your patches to Linus first, or should I go first ?
+> I am ready to go.
 
-go with all buses instead of bus0.
-also only check header type on func0.
+Let's be good citizens and sort out the conflict before sending the
+patches to Linus. I shall pick the pr_fmt change patch in my own tree.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+But where do I pick it?
+ftp://pub.kernel.org/pub/linux/kernel/people/groeck/linux-staging/ is
+no longer relevant, right? Maybe you can delete it altogether to clear
+up the confusion. Care to point me to somewhere I can download the
+pr_fmt change patch?
 
----
- arch/x86/kernel/early-quirks.c |   29 ++++++++++++++++-------------
- 1 file changed, 16 insertions(+), 13 deletions(-)
+As for sending your patches to Linus for 2.6.38, yes, please send them
+as soon as possible. I am still not done processing all the mails I
+received during my vacation, and I must send my i2c patches too, so
+it's better if you don't wait for me and send your patches first.
 
-Index: linux-2.6/arch/x86/kernel/early-quirks.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/early-quirks.c
-+++ linux-2.6/arch/x86/kernel/early-quirks.c
-@@ -243,7 +243,7 @@ static int __init check_dev_quirk(int nu
- 	class = read_pci_config_16(num, slot, func, PCI_CLASS_DEVICE);
- 
- 	if (class == 0xffff)
--		return -1; /* no class, treat as single function */
-+		return 0; /* no class, func gap */
- 
- 	vendor = read_pci_config_16(num, slot, func, PCI_VENDOR_ID);
- 
-@@ -263,27 +263,30 @@ static int __init check_dev_quirk(int nu
- 			}
- 	}
- 
--	type = read_pci_config_byte(num, slot, func,
--				    PCI_HEADER_TYPE);
--	if (!(type & 0x80))
--		return -1;
-+	if (func == 0) {
-+		type = read_pci_config_byte(num, slot, func,
-+					    PCI_HEADER_TYPE);
-+		if (!(type & 0x80))
-+			return -1;
-+	}
- 
- 	return 0;
- }
- 
- void __init early_quirks(void)
- {
--	int slot, func;
-+	int num, slot, func;
- 
- 	if (!early_pci_allowed())
- 		return;
- 
- 	/* Poor man's PCI discovery */
--	/* Only scan the root bus */
--	for (slot = 0; slot < 32; slot++)
--		for (func = 0; func < 8; func++) {
--			/* Only probe function 0 on single fn devices */
--			if (check_dev_quirk(0, slot, func))
--				break;
--		}
-+	/* Only can scan first domain */
-+	for (num = 0; num < 256; num++)
-+		for (slot = 0; slot < 32; slot++)
-+			for (func = 0; func < 8; func++) {
-+				/* Only probe func 0 on single fn devices */
-+				if (check_dev_quirk(num, slot, func))
-+					break;
-+			}
- }
+Thanks,
+-- 
+Jean Delvare
