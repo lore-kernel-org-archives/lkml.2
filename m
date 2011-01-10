@@ -1,143 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575Ab1AJLXH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 06:23:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49842 "EHLO mx1.redhat.com"
+	id S1753530Ab1AJLZP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 06:25:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55026 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751193Ab1AJLXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 06:23:04 -0500
-Date: Mon, 10 Jan 2011 13:22:05 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Milton Miller <miltonm@bga.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jamie Lokier <jamie@shareable.org>, Thomas Weber <swirl@gmx.li>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio: remove virtio-pci root device
-Message-ID: <20110110112205.GC12065@redhat.com>
-References: <20110105191711.GA27489@redhat.com>
- <virtio-pci-whynotsimplify@mdm.bga.com>
- <virtio-pci-noroot@mdm.bga.com>
- <20110109151821.GA9063@redhat.com>
- <20110110111859.GC2202@redhat.com>
+	id S1752772Ab1AJLZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 06:25:11 -0500
+Date: Mon, 10 Jan 2011 12:25:05 +0100 (CET)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-lab-213.englab.brq.redhat.com
+To: "Ted Ts'o" <tytso@mit.edu>
+cc: Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org,
+        sandeen@redhat.com
+Subject: Re: [PATCH] ext4: fix possible overflow in ext4_trim_fs()
+In-Reply-To: <20101220123521.GH23626@thunk.org>
+Message-ID: <alpine.LFD.2.00.1101101221570.3095@dhcp-lab-213.englab.brq.redhat.com>
+References: <1290694277-29462-1-git-send-email-lczerner@redhat.com> <20101220123521.GH23626@thunk.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110110111859.GC2202@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 01:18:59PM +0200, Gleb Natapov wrote:
-> On Sun, Jan 09, 2011 at 05:18:21PM +0200, Michael S. Tsirkin wrote:
-> > On Fri, Jan 07, 2011 at 02:55:06AM -0600, Milton Miller wrote:
-> > > We sometimes need to map between the virtio device and
-> > > the given pci device. One such use is OS installer that
-> > > gets the boot pci device from BIOS and needs to
-> > > find the relevant block device. Since it can't,
-> > > installation fails.
-> > > 
-> > > Instead of creating a top-level devices/virtio-pci
-> > > directory, create each device under the corresponding
-> > > pci device node.  Symlinks to all virtio-pci
-> > > devices can be found under the pci driver link in
-> > > bus/pci/drivers/virtio-pci/devices, and all virtio
-> > > devices under drivers/bus/virtio/devices.
-> > > 
-> > > Signed-off-by: Milton Miller <miltonm@bga.com>
-> > 
-> > OK, this works fine for me.  I played with options to add compat
-> > softlinks under devices/virtio-pci but we still don't get exactly the
-> > same layout and since I don't think anyone actually uses them, it's
-> > probably ok to just to the simple thing.
-> > 
-> > Tested/Acked-by: Michael S. Tsirkin <mst@redhat.com>
-> > 
-> > Rusty, since this help fix at least one user, any chance this can be put
-> > in 2.6.38? OK to backport to -stable?
-> > 
-> > Gleb, could you try this out too?
-> > 
-> With this patch if I have 3 virtio disks for a VM I get:
-> /sys/devices/pci0000:00/0000:00:04.0/virtio0/block/vda
-> /sys/devices/pci0000:00/0000:00:05.0/virtio1/block/vdb
-> /sys/devices/pci0000:00/0000:00:06.0/virtio2/block/vdc
-> 
-> Number after virtio has no much sense. It either should be dropped at all
-> or be always zero in case we will support more then one virtio controller
-> per pci card. In that case each virtio controller will have directories
-> virtio0/virtio1/virtio2... under same pci device directory.
+On Mon, 20 Dec 2010, Ted Ts'o wrote:
 
-Yes. But this is the bus name.  It must be unique - all devices
-also appear under /sys/bus/virtio/devices.
-
-> > > ---
-> > > 
-> > > This is an alternative to the patch by Michael S. Tsirkin
-> > > titled "virtio-pci: add softlinks between virtio and pci"
-> > > https://patchwork.kernel.org/patch/454581/
-> > > 
-> > > It creates simpler code, uses less memory, and should
-> > > be even easier use by the installer as it won't have to
-> > > know a virtio symlink to follow (just follow none).
-> > > 
-> > > Compile tested only as I don't have kvm setup.
-> > > 
-> > > 
-> > > diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-> > > index ef8d9d5..4fb5b2b 100644
-> > > --- a/drivers/virtio/virtio_pci.c
-> > > +++ b/drivers/virtio/virtio_pci.c
-> > > @@ -96,11 +96,6 @@ static struct pci_device_id virtio_pci_id_table[] = {
-> > >  
-> > >  MODULE_DEVICE_TABLE(pci, virtio_pci_id_table);
-> > >  
-> > > -/* A PCI device has it's own struct device and so does a virtio device so
-> > > - * we create a place for the virtio devices to show up in sysfs.  I think it
-> > > - * would make more sense for virtio to not insist on having it's own device. */
-> > > -static struct device *virtio_pci_root;
-> > > -
-> > >  /* Convert a generic virtio device to our structure */
-> > >  static struct virtio_pci_device *to_vp_device(struct virtio_device *vdev)
-> > >  {
-> > > @@ -629,7 +624,7 @@ static int __devinit virtio_pci_probe(struct pci_dev *pci_dev,
-> > >  	if (vp_dev == NULL)
-> > >  		return -ENOMEM;
-> > >  
-> > > -	vp_dev->vdev.dev.parent = virtio_pci_root;
-> > > +	vp_dev->vdev.dev.parent = &pci_dev->dev;
-> > >  	vp_dev->vdev.dev.release = virtio_pci_release_dev;
-> > >  	vp_dev->vdev.config = &virtio_pci_config_ops;
-> > >  	vp_dev->pci_dev = pci_dev;
-> > > @@ -717,17 +712,7 @@ static struct pci_driver virtio_pci_driver = {
-> > >  
-> > >  static int __init virtio_pci_init(void)
-> > >  {
-> > > -	int err;
-> > > -
-> > > -	virtio_pci_root = root_device_register("virtio-pci");
-> > > -	if (IS_ERR(virtio_pci_root))
-> > > -		return PTR_ERR(virtio_pci_root);
-> > > -
-> > > -	err = pci_register_driver(&virtio_pci_driver);
-> > > -	if (err)
-> > > -		root_device_unregister(virtio_pci_root);
-> > > -
-> > > -	return err;
-> > > +	return pci_register_driver(&virtio_pci_driver);
-> > >  }
-> > >  
-> > >  module_init(virtio_pci_init);
-> > > @@ -735,7 +720,6 @@ module_init(virtio_pci_init);
-> > >  static void __exit virtio_pci_exit(void)
-> > >  {
-> > >  	pci_unregister_driver(&virtio_pci_driver);
-> > > -	root_device_unregister(virtio_pci_root);
-> > >  }
-> > >  
-> > >  module_exit(virtio_pci_exit);
+> On Thu, Nov 25, 2010 at 03:11:17PM +0100, Lukas Czerner wrote:
+> > When determining last group through ext4_get_group_no_and_offset() the
+> > result may be wrong in cases when range->start and range-len are too
+> > big, because it may overflow when summing up those two numbers.
+> > 
+> > Fix that by checking range->len and limit its value to
+> > ext4_blocks_count(). This commit was tested by myself with expected
+> > result.
+> > 
+> > Signed-off-by: Lukas Czerner <lczerner@redhat.com>
 > 
-> --
-> 			Gleb.
+> Added to the ext4 patch queue.  Thanks for the ping.
+> 
+>       	     	  		       	   - Ted
+> 
+
+Hi Ted,
+
+Actually the patch is not enough, there is still a possibility for
+overflow to happen. Jan Kara notice the same bug in ext3 batched discard
+implementation. I am sorry for this, I'll sen updated patch ASAP.
+
+-Lukas
