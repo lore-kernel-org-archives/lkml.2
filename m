@@ -1,64 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab1AJVM2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 16:12:28 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49868
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754731Ab1AJVMZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 16:12:25 -0500
-Date: Mon, 10 Jan 2011 13:12:57 -0800 (PST)
-Message-Id: <20110110.131257.212413498.davem@davemloft.net>
-To: gwingerde@gmail.com
-Cc: eric.dumazet@gmail.com, torvalds@linux-foundation.org,
-        alex.arnautu96@gmail.com, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org
-Subject: Re: Kernel 2.6.37-rc5 rc7 Oops
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4D2B7550.5000008@gmail.com>
-References: <1293652965.7150.13.camel@edumazet-laptop>
-	<20110110.000650.124002380.davem@davemloft.net>
-	<4D2B7550.5000008@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754903Ab1AJVNA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 16:13:00 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:34305
+	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753751Ab1AJVM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 16:12:57 -0500
+Date: Mon, 10 Jan 2011 21:14:14 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: LSM <linux-security-module@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
+        containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: [PATCH 7/7] user namespaces: convert several capable() calls
+Message-ID: <20110110211414.GG22564@mail.hallyn.com>
+References: <20110110211135.GA22446@mail.hallyn.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110110211135.GA22446@mail.hallyn.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gertjan van Wingerde <gwingerde@gmail.com>
-Date: Mon, 10 Jan 2011 22:08:32 +0100
+CAP_IPC_OWNER and CAP_IPC_LOCK can be checked against current_user_ns(),
+because the resource comes from current's own ipc namespace.
 
-> On 01/10/11 09:06, David Miller wrote:
->> From: Eric Dumazet <eric.dumazet@gmail.com>
->> Date: Wed, 29 Dec 2010 21:02:45 +0100
->> 
->>> Le mercredi 29 décembre 2010 à 11:23 -0800, Linus Torvalds a écrit :
->>>> On Wed, Dec 29, 2010 at 4:26 AM, Alex Arnautu <alex.arnautu96@gmail.com> wrote:
->>>>>
->>>>> I get an oops with 2.6.37-rc5 and 2.6.37-rc7-git1.
->>>>> http://www.fotoshack.us/fotos/19044P271210_15.14_[01].jpg
->>>>
->>>> Hmm. Davem added to the list of people involved. This _may_ be fixed
->>>> by the "always clone skbs" commit in -rc8 (commit 173021072), but
->>>> David can make a better judgment call.
->>>>
->>>
->>> Very unlikely, as commit 173021072 only fix a bug in case mirred is
->>> used.
->> 
->> This should be taken to the wireless list (now CC:'d) as the rt2xxx
->> driver and the wireless stack are both in that backtrace.
-> 
-> Hmmm, the jpg images of the oops don't seem to be available anymore
-> (a 404 not found is returned on the URL.
-> Does anybody still have the backtrace? Otherwise it will be very hard to look
-> into this.
+setuid/setgid are to uids in own namespace, so again checks can be
+against current_user_ns().
 
-You must have copy-and-paste'd it wrong, the URL works perfectly fine
-for me.
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+---
+ ipc/shm.c             |    2 +-
+ ipc/util.c            |    5 +++--
+ kernel/futex.c        |   11 ++++++++++-
+ kernel/futex_compat.c |   11 ++++++++++-
+ kernel/groups.c       |    2 +-
+ kernel/sched.c        |   25 ++++++++++++++++++++++---
+ kernel/uid16.c        |    2 +-
+ 7 files changed, 48 insertions(+), 10 deletions(-)
 
-I also put up a copy at:
+diff --git a/ipc/shm.c b/ipc/shm.c
+index 7d3bb22..13891f8 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -773,7 +773,7 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
+ 
+ 		audit_ipc_obj(&(shp->shm_perm));
+ 
+-		if (!capable(CAP_IPC_LOCK)) {
++		if (!ns_capable(current_user_ns(), CAP_IPC_LOCK)) {
+ 			uid_t euid = current_euid();
+ 			err = -EPERM;
+ 			if (euid != shp->shm_perm.uid &&
+diff --git a/ipc/util.c b/ipc/util.c
+index 69a0cc1..0e832b9 100644
+--- a/ipc/util.c
++++ b/ipc/util.c
+@@ -627,7 +627,7 @@ int ipcperms (struct kern_ipc_perm *ipcp, short flag)
+ 		granted_mode >>= 3;
+ 	/* is there some bit set in requested_mode but not in granted_mode? */
+ 	if ((requested_mode & ~granted_mode & 0007) && 
+-	    !capable(CAP_IPC_OWNER))
++	    !ns_capable(current->cred->user->user_ns, CAP_IPC_OWNER))
+ 		return -1;
+ 
+ 	return security_ipc_permission(ipcp, flag);
+@@ -800,7 +800,8 @@ struct kern_ipc_perm *ipcctl_pre_down(struct ipc_ids *ids, int id, int cmd,
+ 
+ 	euid = current_euid();
+ 	if (euid == ipcp->cuid ||
+-	    euid == ipcp->uid  || capable(CAP_SYS_ADMIN))
++	    euid == ipcp->uid  ||
++	    ns_capable(current->cred->user->user_ns, CAP_SYS_ADMIN))
+ 		return ipcp;
+ 
+ 	err = -EPERM;
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 3019b92..1025fd7 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2387,10 +2387,19 @@ SYSCALL_DEFINE3(get_robust_list, int, pid,
+ 			goto err_unlock;
+ 		ret = -EPERM;
+ 		pcred = __task_cred(p);
++		/* If victim is in different user_ns, then uids are not
++		   comparable, so we must have CAP_SYS_PTRACE */
++		if (cred->user->user_ns != pcred->user->user_ns) {
++			if (ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
++				goto ok;
++			goto err_unlock;
++		}
++		/* If victim is in same user_ns, then uids are comparable */
+ 		if (cred->euid != pcred->euid &&
+ 		    cred->euid != pcred->uid &&
+-		    !capable(CAP_SYS_PTRACE))
++		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+ 			goto err_unlock;
++ok:
+ 		head = p->robust_list;
+ 		rcu_read_unlock();
+ 	}
+diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
+index a7934ac..f84cb9a 100644
+--- a/kernel/futex_compat.c
++++ b/kernel/futex_compat.c
+@@ -153,10 +153,19 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
+ 			goto err_unlock;
+ 		ret = -EPERM;
+ 		pcred = __task_cred(p);
++		/* If victim is in different user_ns, then uids are not
++		   comparable, so we must have CAP_SYS_PTRACE */
++		if (cred->user->user_ns != pcred->user->user_ns) {
++			if (ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
++				goto ok;
++			goto err_unlock;
++		}
++		/* If victim is in same user_ns, then uids are comparable */
+ 		if (cred->euid != pcred->euid &&
+ 		    cred->euid != pcred->uid &&
+-		    !capable(CAP_SYS_PTRACE))
++		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+ 			goto err_unlock;
++ok:
+ 		head = p->compat_robust_list;
+ 		rcu_read_unlock();
+ 	}
+diff --git a/kernel/groups.c b/kernel/groups.c
+index 253dc0f..335586a 100644
+--- a/kernel/groups.c
++++ b/kernel/groups.c
+@@ -233,7 +233,7 @@ SYSCALL_DEFINE2(setgroups, int, gidsetsize, gid_t __user *, grouplist)
+ 	struct group_info *group_info;
+ 	int retval;
+ 
+-	if (!capable(CAP_SETGID))
++	if (!ns_capable(current_user_ns(), CAP_SETGID))
+ 		return -EPERM;
+ 	if ((unsigned)gidsetsize > NGROUPS_MAX)
+ 		return -EINVAL;
+diff --git a/kernel/sched.c b/kernel/sched.c
+index a0eb094..1078fe3 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -4761,8 +4761,11 @@ static bool check_same_owner(struct task_struct *p)
+ 
+ 	rcu_read_lock();
+ 	pcred = __task_cred(p);
+-	match = (cred->euid == pcred->euid ||
+-		 cred->euid == pcred->uid);
++	if (cred->user->user_ns != pcred->user->user_ns)
++		match = false;
++	match = (cred->user->user_ns == pcred->user->user_ns &&
++			(cred->euid == pcred->euid ||
++			 cred->euid == pcred->uid));
+ 	rcu_read_unlock();
+ 	return match;
+ }
+@@ -5058,6 +5061,22 @@ out_unlock:
+ 	return retval;
+ }
+ 
++/* TODO: Create a common helper to consolidate sched_capable and
++ * ptrace_capable, silly.
++ */
++static inline int sched_capable(struct task_struct *t, int cap)
++{
++	struct user_namespace *ns;
++	int ret;
++
++	rcu_read_lock();
++	ns = task_cred_xxx(t, user)->user_ns;
++	ret = ns_capable(ns, cap);
++	rcu_read_unlock();
++
++	return ret;
++}
++
+ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
+ {
+ 	cpumask_var_t cpus_allowed, new_mask;
+@@ -5087,7 +5106,7 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
+ 		goto out_free_cpus_allowed;
+ 	}
+ 	retval = -EPERM;
+-	if (!check_same_owner(p) && !capable(CAP_SYS_NICE))
++	if (!check_same_owner(p) && !sched_capable(p, CAP_SYS_NICE))
+ 		goto out_unlock;
+ 
+ 	retval = security_task_setscheduler(p);
+diff --git a/kernel/uid16.c b/kernel/uid16.c
+index 4192098..8a70480 100644
+--- a/kernel/uid16.c
++++ b/kernel/uid16.c
+@@ -189,7 +189,7 @@ SYSCALL_DEFINE2(setgroups16, int, gidsetsize, old_gid_t __user *, grouplist)
+ 	struct group_info *group_info;
+ 	int retval;
+ 
+-	if (!capable(CAP_SETGID))
++	if (!ns_capable(current_user_ns(), CAP_SETGID))
+ 		return -EPERM;
+ 	if ((unsigned)gidsetsize > NGROUPS_MAX)
+ 		return -EINVAL;
+-- 
+1.7.0.4
 
-http://vger.kernel.org/~davem/crash.jpg
