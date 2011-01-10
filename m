@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab1AJK6w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 05:58:52 -0500
-Received: from casper.infradead.org ([85.118.1.10]:32861 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982Ab1AJK6v convert rfc822-to-8bit (ORCPT
+	id S1753517Ab1AJLBH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 06:01:07 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44300 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982Ab1AJLBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 05:58:51 -0500
-Subject: Re: [patch] Re: autogroup: sched_setscheduler() fails
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Mike Galbraith <efault@gmx.de>
-Cc: bharata@linux.vnet.ibm.com, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1294655388.8197.22.camel@marge.simson.net>
-References: <20110110091622.GF2772@in.ibm.com>
-	 <1294655388.8197.22.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 10 Jan 2011 11:59:14 +0100
-Message-ID: <1294657154.2016.459.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 10 Jan 2011 06:01:04 -0500
+Date: Mon, 10 Jan 2011 11:00:29 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Ben Herrenchmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [PATCH 1/2] Add a common struct clk
+Message-ID: <20110110110028.GB12552@n2100.arm.linux.org.uk>
+References: <1294199462.347935.472473715866.0.gpush@pororo> <1294199462.348449.192344022926.1.gpush@pororo> <20110108131520.GE26617@pengutronix.de> <201101101043.05406.jeremy.kerr@canonical.com> <20110110104122.GI12078@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110110104122.GI12078@pengutronix.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-10 at 11:29 +0100, Mike Galbraith wrote:
-> 
-> Right, autogroup should be excluding CONFIG_RT_GROUP_SCHED, since it
-> doesn't currently support it.
-> 
-> sched: SCHED_AUTOGROUP selection excludes RT_GROUP_SCHED
-> 
-> Autogroup does not support realtime task groups, so make selection of
-> SCHED_AUTOGROUP exclude RT_GROUP_SCHED.
-> 
-> Signed-off-by: Mike Galbraith <efault@gmx.de>
-> Reported-by:Bharata B Rao <bharata@linux.vnet.ibm.com>
-> 
-> ---
->  init/Kconfig |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> Index: linux-2.6/init/Kconfig
-> ===================================================================
-> --- linux-2.6.orig/init/Kconfig
-> +++ linux-2.6/init/Kconfig
-> @@ -699,6 +699,7 @@ config RT_GROUP_SCHED
->         bool "Group scheduling for SCHED_RR/FIFO"
->         depends on EXPERIMENTAL
->         depends on CGROUP_SCHED
-> +       depends on !SCHED_AUTOGROUP
->         default n
->         help
->           This feature lets you explicitly allocate real CPU bandwidth
-> @@ -807,6 +808,10 @@ config SCHED_AUTOGROUP
->           desktop applications.  Task group autogeneration is currently based
->           upon task session.
->  
-> +         Note: SCHED_AUTOGROUP does not support realtime tasks, and prevents
-> +         enabling RT_GROUP_SCHED.  If you intend to use group scheduling for
-> +         realtime tasks, do not enable this option.
-> +
->  config MM_OWNER
->         bool
->   
+On Mon, Jan 10, 2011 at 11:41:22AM +0100, Sascha Hauer wrote:
+> This branch must be reworked because the correct locking is missing, but
+> the first branch should be ready for merging once your clk-common
+> patches are merged. I'll post the patches for review soon. I hope it's
+> clear soon that your clk-common patches get merged.
 
-Uhm, no. The right way is to put tasks back into the root group and then
-perform sched_setscheduler().
+Unless the locking problems can be resolved, the patches aren't ready.
+
+>From what I've seen there's still quite a problem with what kind of
+lock to use in the clock - mutex or spinlock.
+
+I don't see that having some clocks be one and others another is really
+acceptable - think about the resulting mess if you end up with some
+parent mux'd clocks which are a mutex and others which are a spinlock.
+Can a driver use an atomic call for that?  Sometimes depending on the
+mux, sometimes depending on whether a parent clock is already enabled.
+
+What if your clock was enabled while the mux selected another spinlock-
+locked clk, but then you switched to a different operating point and the
+mux then selected the mutex-locked clock.
+
+We could say that this is illegal - but then we need to have the code
+explicitly check this otherwise such situations will be created.
