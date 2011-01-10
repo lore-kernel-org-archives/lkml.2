@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab1AJLBH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 06:01:07 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44300 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982Ab1AJLBE (ORCPT
+	id S1753546Ab1AJLL0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 06:11:26 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56066 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982Ab1AJLLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 06:01:04 -0500
-Date: Mon, 10 Jan 2011 11:00:29 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Ben Herrenchmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH 1/2] Add a common struct clk
-Message-ID: <20110110110028.GB12552@n2100.arm.linux.org.uk>
-References: <1294199462.347935.472473715866.0.gpush@pororo> <1294199462.348449.192344022926.1.gpush@pororo> <20110108131520.GE26617@pengutronix.de> <201101101043.05406.jeremy.kerr@canonical.com> <20110110104122.GI12078@pengutronix.de>
+	Mon, 10 Jan 2011 06:11:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ZMNRGaZbLaVotr00QG/hzB+6vxnjZCK5O1J2iKbC1UwOoA9z8FoBqov06V5e3j2rr6
+         jHNy90k+Ou2A8AA7T3/pJTyNGtVrOWuH8lNc5RIl8dK4FuEtcTfY42W9VkHWqLLgeqxL
+         3gzngqSviaXuyditAh4tU4njPRfB7M69ypS14=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110110104122.GI12078@pengutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1294614389.2823.35.camel@localhost>
+References: <1294606534-28522-1-git-send-email-christoph.paasch@uclouvain.be>
+	<201101092232.19171.christoph.paasch@uclouvain.be>
+	<1294610141.2823.31.camel@localhost>
+	<201101092333.19406.christoph.paasch@uclouvain.be>
+	<1294614389.2823.35.camel@localhost>
+Date: Mon, 10 Jan 2011 13:11:21 +0200
+Message-ID: <AANLkTik7mug7j=VLz80DX_hJokeO3=ie+KRcMViSL4kB@mail.gmail.com>
+Subject: Re: [PATCH] Cleanup include/net/tcp.h include-files and coding-style
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: christoph.paasch@uclouvain.be, Randy Dunlap <rdunlap@xenotime.net>,
+        davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 11:41:22AM +0100, Sascha Hauer wrote:
-> This branch must be reworked because the correct locking is missing, but
-> the first branch should be ready for merging once your clk-common
-> patches are merged. I'll post the patches for review soon. I hope it's
-> clear soon that your clk-common patches get merged.
+On Mon, Jan 10, 2011 at 1:06 AM, Ben Hutchings
+<bhutchings@solarflare.com> wrote:
+> On Sun, 2011-01-09 at 23:33 +0100, Christoph Paasch wrote:
 
-Unless the locking problems can be resolved, the patches aren't ready.
+>> > If a file directly references definitions that are supposed to be
+>> > provided by a certain header, changing it to rely on indirect inclusion
+>> > of that header generally does *not* aid maintenance.
+>> But then, to be coherent, we would need to add the following includes (and I'm
+>> even not 100% sure if it's all we need):
+>>
+>> linux/percpu_counter.h (needed for percpu_counter_sum_positive)
+>
+> Yes.
 
->From what I've seen there's still quite a problem with what kind of
-lock to use in the clock - mutex or spinlock.
+Currently code compiles fine, so necessary headers are in place,
+so simply adding new headers doesn't help anything.
 
-I don't see that having some clocks be one and others another is really
-acceptable - think about the resulting mess if you end up with some
-parent mux'd clocks which are a mutex and others which are a spinlock.
-Can a driver use an atomic call for that?  Sometimes depending on the
-mux, sometimes depending on whether a parent clock is already enabled.
-
-What if your clock was enabled while the mux selected another spinlock-
-locked clk, but then you switched to a different operating point and the
-mux then selected the mutex-locked clock.
-
-We could say that this is illegal - but then we need to have the code
-explicitly check this otherwise such situations will be created.
+>> linux/mm_types.h (needed for struct page)
+>> linux/aio.h (needed for struct kiocb)
+>> net/inet_sock.h (needed for struct ip_options)
+>> linux/pipe_fs_i.h (needed for struct pipe_inode_info)
+>> linux/poll.h (needed for struct poll_table_struct)
+>
+> Or declarations of those structs.
+>
+>> linux/compiler.h (needed for __percpu)
+> [...]
+>
+> Yes.
