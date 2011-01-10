@@ -1,110 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204Ab1AJCnT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jan 2011 21:43:19 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:39900 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab1AJCnS (ORCPT
+	id S1753350Ab1AJCqv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jan 2011 21:46:51 -0500
+Received: from mga02.intel.com ([134.134.136.20]:63631 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751407Ab1AJCqs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jan 2011 21:43:18 -0500
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Subject: Re: [PATCH 1/2] Add a common struct clk
-Date: Mon, 10 Jan 2011 10:43:04 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.35-24-generic; KDE/4.5.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Ben Herrenchmidt <benh@kernel.crashing.org>,
-        "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
-	<u.kleine-koenig@pengutronix.de>
-References: <1294199462.347935.472473715866.0.gpush@pororo> <1294199462.348449.192344022926.1.gpush@pororo> <20110108131520.GE26617@pengutronix.de>
-In-Reply-To: <20110108131520.GE26617@pengutronix.de>
+	Sun, 9 Jan 2011 21:46:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,297,1291622400"; 
+   d="scan'208";a="591359748"
+From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
+To: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Chris Ball <cjb@laptop.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Date: Mon, 10 Jan 2011 10:46:11 +0800
+Subject: RE: [PATCH v6 0/3]mmc: implement eMMC4.4 standard HW reset feature
+Thread-Topic: [PATCH v6 0/3]mmc: implement eMMC4.4 standard HW reset feature
+Thread-Index: Aculr1ODdDfpQc8nS/CdvA1+I9CdFgKvnzow
+Message-ID: <5D8008F58939784290FAB48F549751983519F48E5D@shsmsx502.ccr.corp.intel.com>
+References: <20101227101305.GA20143@intel.com>
+In-Reply-To: <20101227101305.GA20143@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101101043.05406.jeremy.kerr@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sascha,
+Hi Chris,
+The HW ware reset patches have been pending for several weeks. The first version was sent at Oct.25th, and now I have updated them to be the version 6. So Chris, would you help me on this?. I want to know whether they are acceptable. And I am ready to fix all the comments from the community. Thanks a lot.
 
-> I'm currently thinking about how to get the locking right with this
-> approach. In the current i.MX implementation we have a global lock which
-> protects the clock enable counter and also the register accesses in the
-> clock code. With the common struct clock we have a lock per clock which
-> only protects the enable counter, so we have to introduce a second lock
-> to protect the register accesses.
+-Chuanxiao
 
-Are the registers shared between clocks? If not, you can just use the existing 
-per-clk lock. Otherwise it'd be reasonable to add a global register lock, 
-protecting accesses to the shared register set (and *only* protecting these 
-registers).
-
-> The problem comes with nested calls to for example clk_enable which
-> happens when the parent clock gets enabled. currently we do this with
-> clk->enable(clk->parent) which results in an unlocked clk_enable of the
-> parent. With common struct clk we would have to call
-> clk_enable(clk_get_parent(clk) which results in taking the lock a second
-> time.
-> Any ideas how to solve this?
-
-With the shared register lock, you just need to make sure that you don't 
-recurse to the parent while holding the lock.
-
-For clocks with a shared register set, the general pattern would be something 
-like:
-
-struct clk_foo {
-	struct clk clk;
-	u32        enable_reg;
-	u32        enable_mask;
-	struct clk *parent;
-};
-
-static DEFINE_SPINLOCK(clk_foo_register_lock);
-
-/* called with _clk->lock held */
-static int clk_foo_enable(struct clk *_clk)
-{
-	struct clk_foo *clk = to_clk_foo(_clk);
-	int reg, rc;
-
-	/* enable parent - will acquire and release the parent's per-clk lock */
-	rc = clk_enable(clk->parent);
-	if (rc)
-		return rc;
-
-	/* do register update, under global register lock */
-	spin_lock(&clk_foo_register_lock);
-
-	reg = __raw_readl(clk->reg);
-	__raw_writel(clk->reg, reg | clk->enable_mask);
-
-	spin_unlock(&clk_foo_register_lock);
-
-	return 0;
-}
-
-struct clk_foo_ops = {
-	.enable = clk_foo_enable;
-	[...]
-};
-
-However, because clk_mxc introduces its own set of abstractions, there may be 
-some merging to do here. For my work on mx51, I've done a very basic port:
-
- * changed plat-mxc's struct clk to struct clk_mxc
- * embedded struct clk into struct clk_mxc (ie, making it use the common API)
- * separated some of the simpler clocks to separate types (eg clk_fixed,
-   clk_pll, clk_ccgr).
-
-The goal here is to separate all of the clocks into their most basic types, 
-leaving no clk_mxc clocks remaining, then the locking should be much simpler.
-
-Cheers,
-
-
-Jeremy
-
-
+> -----Original Message-----
+> From: linux-mmc-owner@vger.kernel.org
+> [mailto:linux-mmc-owner@vger.kernel.org] On Behalf Of Chuanxiao Dong
+> Sent: Monday, December 27, 2010 6:13 PM
+> To: linux-mmc@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org; cjb@laptop.org; akpm@linux-foundation.org
+> Subject: [PATCH v6 0/3]mmc: implement eMMC4.4 standard HW reset feature
+> 
+> Hi all,
+>    This is the version 6 of hardware reset feature implementation. When eMMC
+>    card cannot response any command, signal RST_n can help to reset eMMC
+>    card.
+> 
+>    patch1: enable HW reset capability if card supports.
+>    patch2: do hardware reset if card occurs read/write/erase timeout
+>    patch3: implement hwreset_emmc and reinit_emmc callbacks. In this patch,
+>    hwreset_emmc callback will pull up/down the corresponded GPIO line number
+>    to trigger RST_n signal.
+> 
+>    change log:
+>    1. Move hardware_reset callback to mmc_bus_ops so that all kinds of host
+>    controller can use hardware_reset callback to trigger RST_n signal.
+>    Different host controller only needs to provide a GPIO line number to
+>    this callback.
+>    2. Add GPIO pull up/down part in hardware_reset callback.
+>    3. Remove reset_emmc callback in sdhci_ops.
+> 
+> Thanks
+> Chuanxiao
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
