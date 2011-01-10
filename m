@@ -1,139 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab1AJSLP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 13:11:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43122 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753816Ab1AJSLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 13:11:10 -0500
-Date: Mon, 10 Jan 2011 13:10:52 -0500
-From: Dave Jones <davej@redhat.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: correct fucked grammar in mips ops-bridge.c
-Message-ID: <20110110181052.GA20090@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Ralf Baechle <ralf@linux-mips.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1754331Ab1AJSLv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 13:11:51 -0500
+Received: from service87.mimecast.com ([94.185.240.25]:37185 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751908Ab1AJSLu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 13:11:50 -0500
+Subject: [PATCH] kmemleak: Reduce verbosity when memory allocation fails
+To: linux-kernel@vger.kernel.org
+From: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, "Ted Ts'o" <tytso@mit.edu>,
+        David Rientjes <rientjes@google.com>
+Date: Mon, 10 Jan 2011 18:11:33 +0000
+Message-ID: <20110110181133.14995.12364.stgit@e102109-lin.cambridge.arm.com>
+User-Agent: StGit/0.15-103-g0e84
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 10 Jan 2011 18:11:44.0346 (UTC) FILETIME=[D68E7BA0:01CBB0F1]
+X-MC-Unique: 111011018114700401
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I had no idea just how broken IOC3 was until I read this.
+This patch changes the kmemleak verbosity to avoid dumping the stack
+trace when memory allocation for the kmemleak internal metadata fails.
+It also passes __GFP_NOWARN to the slab allocator.
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Ted Ts'o <tytso@mit.edu>
+---
+ mm/kmemleak.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/arch/mips/pci/ops-bridge.c b/arch/mips/pci/ops-bridge.c
-index b46b3e2..4383194 100644
---- a/arch/mips/pci/ops-bridge.c
-+++ b/arch/mips/pci/ops-bridge.c
-@@ -56,7 +56,7 @@ static int pci_conf0_read_config(struct pci_bus *bus, unsigned int devfn,
- 		return PCIBIOS_DEVICE_NOT_FOUND;
+diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+index bd9bc21..eee8e31 100644
+--- a/mm/kmemleak.c
++++ b/mm/kmemleak.c
+@@ -113,7 +113,8 @@
+ #define BYTES_PER_POINTER	sizeof(void *)
  
- 	/*
--	 * IOC3 is fucked fucked beyond believe ...  Don't even give the
-+	 * IOC3 is fucking fucked beyond belief ...  Don't even give the
- 	 * generic PCI code a chance to look at it for real ...
- 	 */
- 	if (cf == (PCI_VENDOR_ID_SGI | (PCI_DEVICE_ID_SGI_IOC3 << 16)))
-@@ -76,7 +76,7 @@ static int pci_conf0_read_config(struct pci_bus *bus, unsigned int devfn,
- oh_my_gawd:
+ /* GFP bitmask for kmemleak internal allocations */
+-#define GFP_KMEMLEAK_MASK	(GFP_KERNEL | GFP_ATOMIC)
++#define gfp_kmemleak_mask(gfp)	((gfp) & (GFP_KERNEL | GFP_ATOMIC) | \
++				 __GFP_NOWARN)
  
- 	/*
--	 * IOC3 is fucked fucked beyond believe ...  Don't even give the
-+	 * IOC3 is fucking fucked beyond belief ...  Don't even give the
- 	 * generic PCI code a chance to look at the wrong register.
- 	 */
- 	if ((where >= 0x14 && where < 0x40) || (where >= 0x48)) {
-@@ -85,7 +85,7 @@ oh_my_gawd:
+ /* scanning area inside a memory block */
+ struct kmemleak_scan_area {
+@@ -511,9 +512,10 @@ static struct kmemleak_object *create_object(unsigned long ptr, size_t size,
+ 	struct kmemleak_object *object;
+ 	struct prio_tree_node *node;
+ 
+-	object = kmem_cache_alloc(object_cache, gfp & GFP_KMEMLEAK_MASK);
++	object = kmem_cache_alloc(object_cache, gfp_kmemleak_mask(gfp));
+ 	if (!object) {
+-		kmemleak_stop("Cannot allocate a kmemleak_object structure\n");
++		pr_warning("Cannot allocate a kmemleak_object structure\n");
++		kmemleak_disable();
+ 		return NULL;
  	}
  
- 	/*
--	 * IOC3 is fucked fucked beyond believe ...  Don't try to access
-+	 * IOC3 is fucking fucked beyond belief ...  Don't try to access
- 	 * anything but 32-bit words ...
- 	 */
- 	addr = &bridge->b_type0_cfg_dev[slot].f[fn].l[where >> 2];
-@@ -118,7 +118,7 @@ static int pci_conf1_read_config(struct pci_bus *bus, unsigned int devfn,
- 		return PCIBIOS_DEVICE_NOT_FOUND;
- 
- 	/*
--	 * IOC3 is fucked fucked beyond believe ...  Don't even give the
-+	 * IOC3 is fucking fucked beyond belief ...  Don't even give the
- 	 * generic PCI code a chance to look at it for real ...
- 	 */
- 	if (cf == (PCI_VENDOR_ID_SGI | (PCI_DEVICE_ID_SGI_IOC3 << 16)))
-@@ -139,7 +139,7 @@ static int pci_conf1_read_config(struct pci_bus *bus, unsigned int devfn,
- oh_my_gawd:
- 
- 	/*
--	 * IOC3 is fucked fucked beyond believe ...  Don't even give the
-+	 * IOC3 is fucking fucked beyond belief ...  Don't even give the
- 	 * generic PCI code a chance to look at the wrong register.
- 	 */
- 	if ((where >= 0x14 && where < 0x40) || (where >= 0x48)) {
-@@ -148,7 +148,7 @@ oh_my_gawd:
+@@ -734,9 +736,9 @@ static void add_scan_area(unsigned long ptr, size_t size, gfp_t gfp)
+ 		return;
  	}
  
- 	/*
--	 * IOC3 is fucked fucked beyond believe ...  Don't try to access
-+	 * IOC3 is fucking fucked beyond belief ...  Don't try to access
- 	 * anything but 32-bit words ...
- 	 */
- 	bridge->b_pci_cfg = (busno << 16) | (slot << 11);
-@@ -189,7 +189,7 @@ static int pci_conf0_write_config(struct pci_bus *bus, unsigned int devfn,
- 		return PCIBIOS_DEVICE_NOT_FOUND;
+-	area = kmem_cache_alloc(scan_area_cache, gfp & GFP_KMEMLEAK_MASK);
++	area = kmem_cache_alloc(scan_area_cache, gfp_kmemleak_mask(gfp));
+ 	if (!area) {
+-		kmemleak_warn("Cannot allocate a scan area\n");
++		pr_warning("Cannot allocate a scan area\n");
+ 		goto out;
+ 	}
  
- 	/*
--	 * IOC3 is fucked fucked beyond believe ...  Don't even give the
-+	 * IOC3 is fucking fucked beyond belief ...  Don't even give the
- 	 * generic PCI code a chance to look at it for real ...
- 	 */
- 	if (cf == (PCI_VENDOR_ID_SGI | (PCI_DEVICE_ID_SGI_IOC3 << 16)))
-@@ -213,14 +213,14 @@ static int pci_conf0_write_config(struct pci_bus *bus, unsigned int devfn,
- oh_my_gawd:
- 
- 	/*
--	 * IOC3 is fucked fucked beyond believe ...  Don't even give the
-+	 * IOC3 is fucking fucked beyond belief ...  Don't even give the
- 	 * generic PCI code a chance to touch the wrong register.
- 	 */
- 	if ((where >= 0x14 && where < 0x40) || (where >= 0x48))
- 		return PCIBIOS_SUCCESSFUL;
- 
- 	/*
--	 * IOC3 is fucked fucked beyond believe ...  Don't try to access
-+	 * IOC3 is fucking fucked beyond belief ...  Don't try to access
- 	 * anything but 32-bit words ...
- 	 */
- 	addr = &bridge->b_type0_cfg_dev[slot].f[fn].l[where >> 2];
-@@ -257,7 +257,7 @@ static int pci_conf1_write_config(struct pci_bus *bus, unsigned int devfn,
- 		return PCIBIOS_DEVICE_NOT_FOUND;
- 
- 	/*
--	 * IOC3 is fucked fucked beyond believe ...  Don't even give the
-+	 * IOC3 is fucking fucked beyond belief ...  Don't even give the
- 	 * generic PCI code a chance to look at it for real ...
- 	 */
- 	if (cf == (PCI_VENDOR_ID_SGI | (PCI_DEVICE_ID_SGI_IOC3 << 16)))
-@@ -281,14 +281,14 @@ static int pci_conf1_write_config(struct pci_bus *bus, unsigned int devfn,
- oh_my_gawd:
- 
- 	/*
--	 * IOC3 is fucked fucked beyond believe ...  Don't even give the
-+	 * IOC3 is fucking fucked beyond belief ...  Don't even give the
- 	 * generic PCI code a chance to touch the wrong register.
- 	 */
- 	if ((where >= 0x14 && where < 0x40) || (where >= 0x48))
- 		return PCIBIOS_SUCCESSFUL;
- 
- 	/*
--	 * IOC3 is fucked fucked beyond believe ...  Don't try to access
-+	 * IOC3 is fucking fucked beyond belief ...  Don't try to access
- 	 * anything but 32-bit words ...
- 	 */
- 	addr = &bridge->b_type0_cfg_dev[slot].f[fn].l[where >> 2];
+
+
