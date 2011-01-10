@@ -1,120 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359Ab1AJP65 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 10:58:57 -0500
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:50185 "HELO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751098Ab1AJP6z convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 10:58:55 -0500
-From: Philip Rakity <prakity@marvell.com>
-To: Pierre Tardy <tardyp@gmail.com>
-CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 10 Jan 2011 07:58:30 -0800
-Subject: Re: [PATCH 2/3] mmc: add MMC_QUIRK_BROKEN_CLK_GATING
-Thread-Topic: [PATCH 2/3] mmc: add MMC_QUIRK_BROKEN_CLK_GATING
-Thread-Index: Acuw3zrKgd9RrqSBTWKS1jovz89RnQ==
-Message-ID: <ADE0108D-6DF1-4230-B7FB-39D7AC7F63D1@marvell.com>
-References: <cover.1294588491.git.tardyp@gmail.com>
- <4663ceeebbd267abb11515570ac17702a6a482f4.1294588491.git.tardyp@gmail.com>
-In-Reply-To: <4663ceeebbd267abb11515570ac17702a6a482f4.1294588491.git.tardyp@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752821Ab1AJP7G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 10:59:06 -0500
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:31138 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752529Ab1AJP7E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 10:59:04 -0500
+Message-ID: <4D2B2CC1.2050203@shipmail.org>
+Date: Mon, 10 Jan 2011 16:58:57 +0100
+From: Thomas Hellstrom <thomas@shipmail.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100624 Mandriva/3.0.5-0.1mdv2009.1 (2009.1) Thunderbird/3.0.5
 MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: dri-devel@lists.freedesktop.org, airlied@linux.ie,
+        linux-kernel@vger.kernel.org, konrad@darnok.org
+Subject: Re: [RFC PATCH v2] Utilize the PCI API in the TTM framework.
+References: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com> <4D2B16F3.1070105@shipmail.org> <20110110152135.GA9732@dumpdata.com>
+In-Reply-To: <20110110152135.GA9732@dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/10/2011 04:21 PM, Konrad Rzeszutek Wilk wrote:
+> On Mon, Jan 10, 2011 at 03:25:55PM +0100, Thomas Hellstrom wrote:
+>    
+>> Konrad,
+>>
+>> Before looking further into the patch series, I need to make sure
+>> I've completely understood the problem and why you've chosen this
+>> solution: Please see inline.
+>>      
+> Of course.
+>
+> .. snip ..
+>    
+>>> The problem above can be easily reproduced on bare-metal if you pass in
+>>> "swiotlb=force iommu=soft".
+>>>
+>>>        
+>> At a first glance, this would seem to be a driver error since the
+>> drivers are not calling pci_page_sync(), however I understand that
+>> the TTM infrastructure and desire to avoid bounce buffers add more
+>> implications to this...
+>>      
+> <nods>
+>    
+>>      
+>>> There are two ways of fixing this:
+>>>
+>>>   1). Use the 'dma_alloc_coherent' (or pci_alloc_consistent if there is
+>>>       struct pcidev present), instead of alloc_page for GFP_DMA32. The
+>>>       'dma_alloc_coherent' guarantees that the allocated page fits
+>>>       within the device dma_mask (or uses the default DMA32 if no device
+>>>       is passed in). This also guarantees that any subsequent call
+>>>       to the PCI API for this page will return the same DMA (bus) address
+>>>       as the first call (so pci_alloc_consistent, and then pci_map_page
+>>>       will give the same DMA bus address).
+>>>        
+>>
+>> I guess dma_alloc_coherent() will allocate *real* DMA32 pages? that
+>> brings up a couple of questions:
+>> 1) Is it possible to change caching policy on pages allocated using
+>> dma_alloc_coherent?
+>>      
+> Yes. They are the same "form-factor" as any normal page, except
+> that the IOMMU makes extra efforts to set this page up.
+>
+>    
+>> 2) What about accounting? In a *non-Xen* environment, will the
+>> number of coherent pages be less than the number of DMA32 pages, or
+>> will dma_alloc_coherent just translate into a alloc_page(GFP_DMA32)?
+>>      
+> The code in the IOMMUs end up calling __get_free_pages, which ends up
+> in alloc_pages. So the call doe ends up in alloc_page(flags).
+>
+>
+> native SWIOTLB (so no IOMMU): GFP_DMA32
+> GART (AMD's old IOMMU): GFP_DMA32:
+>
+> For the hardware IOMMUs:
+>
+> AMD VI: if it is in Passthrough mode, it calls it with GFP_DMA32.
+>     If it is in DMA translation mode (normal mode) it allocates a page
+>     with GFP_ZERO | ~(__GFP_DMA | __GFP_HIGHMEM | __GFP_DMA32) and immediately
+>     translates the bus address.
+>
+> The flags change a bit:
+> VT-d: if there is no identity mapping, nor the PCI device is one of the special ones
+>     (GFX, Azalia), then it will pass it with GFP_DMA32.
+>     If it is in identity mapping state, and the device is a GFX or Azalia sound
+>     card, then it will ~(__GFP_DMA | GFP_DMA32) and immediately translate
+>     the buss address.
+>
+> However, the interesting thing is that I've passed in the 'NULL' as
+> the struct device (not intentionally - did not want to add more changes
+> to the API) so all of the IOMMUs end up doing GFP_DMA32.
+>
+> But it does mess up the accounting with the AMD-VI and VT-D as they strip
+> of the __GFP_DMA32 flag off. That is a big problem, I presume?
+>    
 
-On Jan 9, 2011, at 8:26 AM, Pierre Tardy wrote:
+Actually, I don't think it's a big problem. TTM allows a small 
+discrepancy between allocated pages and accounted pages to be able to 
+account on actual allocation result. IIRC, This means that a DMA32 page 
+will always be accounted as such, or at least we can make it behave that 
+way. As long as the device can always handle the page, we should be fine.
 
-> Some sdio card are not following sdio standard, and does not work
-> when the sdio bus's clock is gated
-> 
-> To keep functionnality for all legacy driver, we turn this quirk on
-> for every sdio card.
-> Drivers needs to disable the quirk manually when someone verified that their
-> supported card works with clock gating.
-> 
-> Signed-off-by: Pierre Tardy <tardyp@gmail.com>
-> ---
-> drivers/mmc/core/host.c   |    5 +----
-> drivers/mmc/core/quirks.c |   11 +++++++++++
-> include/linux/mmc/card.h  |    1 +
-> 3 files changed, 13 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
-> index b3ac6c5..461e6a1 100644
-> --- a/drivers/mmc/core/host.c
-> +++ b/drivers/mmc/core/host.c
-> @@ -160,10 +160,7 @@ static bool mmc_host_may_gate_card(struct mmc_card *card)
-> 	 * gate the clock, because there is somebody out there that may still
-> 	 * be using it.
-> 	 */
-> -	if (mmc_card_sdio(card))
-> -		return false;
-> -
-> -	return true;
-> +	return !(card->quirks & MMC_QUIRK_BROKEN_CLK_GATING);
-> }
+>    
+>> 3) Same as above, but in a Xen environment, what will stop multiple
+>> guests to exhaust the coherent pages? It seems that the TTM
+>> accounting mechanisms will no longer be valid unless the number of
+>> available coherent pages are split across the guests?
+>>      
+> Say I pass in four ATI Radeon cards (wherein each is a 32-bit card) to
+> four guests. Lets also assume that we are doing heavy operations in all
+> of the guests.  Since there are no communication between each TTM
+> accounting in each guest you could end up eating all of the 4GB physical
+> memory that is available to each guest. It could end up that the first
+> guess gets a lion share of the 4GB memory, while the other ones are
+> less so.
+>
+> And if one was to do that on baremetal, with four ATI Radeon cards, the
+> TTM accounting mechanism would realize it is nearing the watermark
+> and do.. something, right? What would it do actually?
+>
+> I think the error path would be the same in both cases?
+>    
 
+Not really. The really dangerous situation is if TTM is allowed to 
+exhaust all GFP_KERNEL memory. Then any application or kernel task might 
+fail with an OOM, so TTM doesn't really allow that to happen *). Within 
+a Xen guest OS using this patch that won't happen either, but TTM itself 
+may receive unexpected allocation failures, since the amount of 
+GFP_DMA32 memory TTM thinks is available is larger than actually available.
+It is possible to trigger such allocation failures on bare metal as 
+well, but they'd be much less likely. Those errors should result in 
+application OOM errors with a possible application crash.
+Anyway it's possible to adjust TTM's memory limits using sysfs (even on 
+the fly) so any advanced user should be able to do that.
 
-Since the code is not called that often could you change the above code to:  
+What *might* be possible, however, is that the GFP_KERNEL memory on the 
+host gets exhausted due to extensive TTM allocations in the guest, but I 
+guess that's a problem for XEN to resolve, not TTM.
 
-> 	if (mmc_card_sdio(card))
-> 		return !(card->quirks & MMC_QUIRK_BROKEN_CLK_GATING);
-	return true;
+>    
+>>      
+>>>   2). Use the pci_sync_range_* after sending a page to the graphics
+>>>       engine. If the bounce buffer is used then we end up copying the
+>>>       pages.
+>>>        
+>> Is the reason for choosing 1) instead of 2) purely a performance concern?
+>>      
+> Yes, and also not understanding where I should insert the pci_sync_range
+> calls in the drivers.
+>
+>    
+>>
+>> Finally, I wanted to ask why we need to pass / store the dma address
+>> of the TTM pages? Isn't it possible to just call into the DMA / PCI
+>> api to obtain it, and the coherent allocation will make sure it
+>> doesn't change?
+>>      
+> It won't change, but you need the dma address during de-allocation:
+> dma_free_coherent..
+>    
 
-more obvious that quirk only applies to sdio.
+Isn't there a quick way to determine the DMA address from the struct 
+page pointer, or would that require an explicit dma_map() operation?
 
-> 
-> /**
-> diff --git a/drivers/mmc/core/quirks.c b/drivers/mmc/core/quirks.c
-> index d8a5fec..fe467c8 100644
-> --- a/drivers/mmc/core/quirks.c
-> +++ b/drivers/mmc/core/quirks.c
-> @@ -32,7 +32,18 @@ static void add_quirk(struct mmc_card *card, int data)
-> 	card->quirks |= data;
-> }
-> 
-> +/*
-> + * This hook just adds a quirk for all sdio devices
-> + */
-> +static void add_quirk_for_sdio_devices(struct mmc_card *card, int data)
-> +{
-> +	if (mmc_card_sdio(card))
-> +		card->quirks |= data;
-> +}
-> +
-> static const struct mmc_fixup mmc_fixup_methods[] = {
-> +	{ SDIO_ANY_ID, SDIO_ANY_ID,
-> +		add_quirk_for_sdio_devices, MMC_QUIRK_BROKEN_CLK_GATING }
-> 	{ 0 }
-> };
-> 
-> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-> index a498d53..3fe9db0 100644
-> --- a/include/linux/mmc/card.h
-> +++ b/include/linux/mmc/card.h
-> @@ -121,6 +121,7 @@ struct mmc_card {
-> 						/* for byte mode */
-> #define MMC_QUIRK_NONSTD_SDIO	(1<<2)		/* non-standard SDIO card attached */
-> 						/* (missing CIA registers) */
-> +#define MMC_QUIRK_BROKEN_CLK_GATING (1<<3)	/* clock gating the sdio bus will make card fail */
-> 
-> 	unsigned int		erase_size;	/* erase size in sectors */
->  	unsigned int		erase_shift;	/* if erase unit is power 2 */
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+/Thomas
 
+*) I think gem's flink still is vulnerable to this, though, so it 
+affects Nvidia and Radeon.
