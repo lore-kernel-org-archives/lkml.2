@@ -1,123 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab1AJRTx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 12:19:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46918 "EHLO mx1.redhat.com"
+	id S1754482Ab1AJRU5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 12:20:57 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:14182 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754392Ab1AJRTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 12:19:51 -0500
-Date: Mon, 10 Jan 2011 19:19:04 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Milton Miller <miltonm@bga.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jamie Lokier <jamie@shareable.org>, Thomas Weber <swirl@gmx.li>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio: remove virtio-pci root device
-Message-ID: <20110110171904.GA30058@redhat.com>
-References: <20110105191711.GA27489@redhat.com>
- <virtio-pci-whynotsimplify@mdm.bga.com>
- <virtio-pci-noroot@mdm.bga.com>
- <20110110171046.GB27292@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110110171046.GB27292@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752622Ab1AJRUx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 12:20:53 -0500
+X-IronPort-AV: E=Sophos;i="4.60,301,1291622400"; 
+   d="scan'208";a="503623049"
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
+In-Reply-To: <4D2B3D03.8050504@pengutronix.de>
+References: <1294268808.2952.18.camel@heimdal.trondhjem.org>
+	 <1294270104.16957.73.camel@mulgrave.site>
+	 <1294335614.22825.154.camel@mulgrave.site>
+	 <1294336054.2905.1.camel@heimdal.trondhjem.org>
+	 <AANLkTimusF4KCJ4vHPn+T1dUiKxapXaT0QTtFvh8Ykdd@mail.gmail.com>
+	 <1294426405.2929.23.camel@heimdal.trondhjem.org>
+	 <20110107190229.GX31708@n2100.arm.linux.org.uk>
+	 <1294427467.4895.66.camel@mulgrave.site>
+	 <1294505384.4181.14.camel@heimdal.trondhjem.org>
+	 <1294528551.4181.19.camel@heimdal.trondhjem.org>
+	 <20110110105019.GC24920@pengutronix.de>
+	 <1294676734.3349.10.camel@heimdal.trondhjem.org>
+	 <4D2B3D03.8050504@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Mon, 10 Jan 2011 12:20:35 -0500
+Message-ID: <1294680035.3349.19.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 10 Jan 2011 17:20:36.0672 (UTC) FILETIME=[B2149400:01CBB0EA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 07:10:46PM +0200, Gleb Natapov wrote:
-> On Fri, Jan 07, 2011 at 02:55:06AM -0600, Milton Miller wrote:
-> > We sometimes need to map between the virtio device and
-> > the given pci device. One such use is OS installer that
-> > gets the boot pci device from BIOS and needs to
-> > find the relevant block device. Since it can't,
-> > installation fails.
+On Mon, 2011-01-10 at 18:08 +0100, Marc Kleine-Budde wrote: 
+> On 01/10/2011 05:25 PM, Trond Myklebust wrote:
+> > On Mon, 2011-01-10 at 11:50 +0100, Uwe Kleine-König wrote: 
+> >> Hi Trond,
+> >>
+> >> On Sat, Jan 08, 2011 at 06:15:51PM -0500, Trond Myklebust wrote:
+> >>> ----------------------------------------------------------------------------------- 
+> >> It would be great if you could add a "8<" in the line above next time.
+> >> Then git-am -c does the right thing (at least I think so).
 > > 
-> > Instead of creating a top-level devices/virtio-pci
-> > directory, create each device under the corresponding
-> > pci device node.  Symlinks to all virtio-pci
-> > devices can be found under the pci driver link in
-> > bus/pci/drivers/virtio-pci/devices, and all virtio
-> > devices under drivers/bus/virtio/devices.
+> > Sorry. I wasn't aware of that particular idiom. So something like
 > > 
-> > Signed-off-by: Milton Miller <miltonm@bga.com>
-> Acked-by: Gleb Natapov <gleb@redhat.com>
-
-Rusty, any comments?
-We are going to tell the installer guys that this
-is the interface, would be nice to know that the
-patch is queued before we do.
-
-
-> > ---
-> > 
-> > This is an alternative to the patch by Michael S. Tsirkin
-> > titled "virtio-pci: add softlinks between virtio and pci"
-> > https://patchwork.kernel.org/patch/454581/
-> > 
-> > It creates simpler code, uses less memory, and should
-> > be even easier use by the installer as it won't have to
-> > know a virtio symlink to follow (just follow none).
-> > 
-> > Compile tested only as I don't have kvm setup.
-> > 
-> > 
-> > diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-> > index ef8d9d5..4fb5b2b 100644
-> > --- a/drivers/virtio/virtio_pci.c
-> > +++ b/drivers/virtio/virtio_pci.c
-> > @@ -96,11 +96,6 @@ static struct pci_device_id virtio_pci_id_table[] = {
-> >  
-> >  MODULE_DEVICE_TABLE(pci, virtio_pci_id_table);
-> >  
-> > -/* A PCI device has it's own struct device and so does a virtio device so
-> > - * we create a place for the virtio devices to show up in sysfs.  I think it
-> > - * would make more sense for virtio to not insist on having it's own device. */
-> > -static struct device *virtio_pci_root;
-> > -
-> >  /* Convert a generic virtio device to our structure */
-> >  static struct virtio_pci_device *to_vp_device(struct virtio_device *vdev)
-> >  {
-> > @@ -629,7 +624,7 @@ static int __devinit virtio_pci_probe(struct pci_dev *pci_dev,
-> >  	if (vp_dev == NULL)
-> >  		return -ENOMEM;
-> >  
-> > -	vp_dev->vdev.dev.parent = virtio_pci_root;
-> > +	vp_dev->vdev.dev.parent = &pci_dev->dev;
-> >  	vp_dev->vdev.dev.release = virtio_pci_release_dev;
-> >  	vp_dev->vdev.config = &virtio_pci_config_ops;
-> >  	vp_dev->pci_dev = pci_dev;
-> > @@ -717,17 +712,7 @@ static struct pci_driver virtio_pci_driver = {
-> >  
-> >  static int __init virtio_pci_init(void)
-> >  {
-> > -	int err;
-> > -
-> > -	virtio_pci_root = root_device_register("virtio-pci");
-> > -	if (IS_ERR(virtio_pci_root))
-> > -		return PTR_ERR(virtio_pci_root);
-> > -
-> > -	err = pci_register_driver(&virtio_pci_driver);
-> > -	if (err)
-> > -		root_device_unregister(virtio_pci_root);
-> > -
-> > -	return err;
-> > +	return pci_register_driver(&virtio_pci_driver);
-> >  }
-> >  
-> >  module_init(virtio_pci_init);
-> > @@ -735,7 +720,6 @@ module_init(virtio_pci_init);
-> >  static void __exit virtio_pci_exit(void)
-> >  {
-> >  	pci_unregister_driver(&virtio_pci_driver);
-> > -	root_device_unregister(virtio_pci_root);
-> >  }
-> >  
-> >  module_exit(virtio_pci_exit);
+> > 8<------------------------------------------------------------
+> > From: Trond Myklebust <Trond.Myklebust@netapp.com>
+> > Subject: .....
 > 
-> --
-> 			Gleb.
+> Yes.
+> 
+> From "man git-mailinfo":
+> "A line that mainly consists of scissors (either ">8" or "8<") and
+> perforation (dash "-")"
+> 
+> BTW:
+> Is this patch a candidate for stable?
+
+Yes. I'm planning on sending it to the stable list after Linus merges it
+into mainline.
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
