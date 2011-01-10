@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab1AJJkF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 04:40:05 -0500
-Received: from gate.crashing.org ([63.228.1.57]:44515 "EHLO gate.crashing.org"
+	id S1753213Ab1AJJxa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 04:53:30 -0500
+Received: from ebb06.tieto.com ([131.207.168.38]:55712 "EHLO ebb06.tieto.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753149Ab1AJJkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 04:40:03 -0500
-Subject: Re: [PATCH 1/3] pci, usb: Seperate usb handoff func to another file
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Greg KH <greg@kroah.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-usb@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-In-Reply-To: <4D2AAEDD.5060604@kernel.org>
-References: <4D2A1152.1040903@kernel.org>  <4D2A139A.6010108@kernel.org>
-	 <1294607382.17779.282.camel@pasglop>  <4D2AAEDD.5060604@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Jan 2011 20:38:16 +1100
-Message-ID: <1294652296.17779.299.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751712Ab1AJJx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 04:53:27 -0500
+X-AuditID: 83cfa826-b7bc7ae000000e7b-c6-4d2ad716ec1c
+Date: Mon, 10 Jan 2011 17:54:13 +0800
+From: Pan Weiping <Weiping.Pan@tieto.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: pwp test v1
+Message-ID: <20110110095413.GA7264@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-01-09 at 23:01 -0800, Yinghai Lu wrote:
-> On 01/09/2011 01:09 PM, Benjamin Herrenschmidt wrote:
-> > acceptable ?
-> > 
-> > I think if you want to make the handoff happen -that- early, you have
-> > basically two options. One is to move it all to arch code, and the other
-> > one is to create early-boot "fake" struct pci_dev & bus that have the
-> > config callbacks implemented pointing to the early stuff. You can do
-> > that entirely within your arch code, and avoids most of the grossness
-> > above in the generic places.
-> 
-> good idea, will make one get_early_pci_dev() for x86 as dummy device.
-> 
-> > 
-> > It would avoid that turd too:
-> > 
-> >> +#include "usb_handoff.c"
-> 
-> may still need that to avoid some MMIO bar finding and remapping etc.
+>From e13fda08a59ad0d427fe67f89923b8b87e1418da Mon Sep 17 00:00:00 2001
+From: Pan Weiping <Weiping.Pan@tieto.com>
+Date: Mon, 10 Jan 2011 17:23:28 +0800
+Subject: [PATCH] pwp test
 
-Might be better to test for system state... a bit ugly too but less than
-#include'ing the C file.
+Signed-off-by: Pan Weiping <Weiping.Pan@tieto.com>
+---
+ COPYING |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Cheers,
-Ben.
-
+diff --git a/COPYING b/COPYING
+index ca442d3..d13c5b5 100644
+--- a/COPYING
++++ b/COPYING
+@@ -1,3 +1,4 @@
++pwp add
+ 
+    NOTE! This copyright does *not* cover user programs that use kernel
+  services by normal system calls - this is merely considered normal use
+-- 
+1.7.3.4
 
