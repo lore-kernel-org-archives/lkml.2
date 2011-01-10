@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641Ab1AJIOc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 03:14:32 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:57794 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009Ab1AJIOa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 03:14:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=FN2g7ZyjI98Uc/ze/kl/HuU94gbciOBj9vBB3rzMl3ESHelszRH2f85eXC+2tmQcR2
-         rdh2EFwXS28QJbhbsBgh8JeFmzGrJmrpn+WNBsCt3eX7/811eVEXHxlbjm7HKoGleI4F
-         vYb4eN4XnC8RhiNPU29QR8130y//V/75/aNLE=
-MIME-Version: 1.0
-In-Reply-To: <20110110080839.GA16066@atrey.karlin.mff.cuni.cz>
-References: <4D25AF02.60208@gmail.com>
-	<AANLkTimGt5hi+TpFHWxktJEg3tcDQmmARdqFqzAt++OQ@mail.gmail.com>
-	<4D2777FC.6040509@gmail.com>
-	<AANLkTimtvYfHXG=rMLbFLzVaKbfB6nrj_ZE1AH4quRG2@mail.gmail.com>
-	<4D281D65.1070102@gmail.com>
-	<20110110080839.GA16066@atrey.karlin.mff.cuni.cz>
-Date: Mon, 10 Jan 2011 09:14:29 +0100
-Message-ID: <AANLkTi=DbZ8eU05Sq0jxpCTNKm7rW52FWVNbR16U3Zse@mail.gmail.com>
-Subject: Re: [PATCH 01/17] pramfs: documentation
-From: Marco Stornelli <marco.stornelli@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Tony Luck <tony.luck@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Tim Bird <tim.bird@am.sony.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752780Ab1AJIO4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 03:14:56 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:44398 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752773Ab1AJIOy convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:5:1>);
+	Mon, 10 Jan 2011 03:14:54 -0500
+Message-Id: <4D2ACE08020000780002B481@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Mon, 10 Jan 2011 08:14:48 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Ingo Molnar" <mingo@elte.hu>, "David Rientjes" <rientjes@google.com>
+Cc: "Tejun Heo" <tj@kernel.org>, <tglx@linutronix.de>,
+        <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86: unify "numa=" command line option handling
+References: <4D2603BF020000780002ACA7@vpn.id2.novell.com>
+ <alpine.DEB.2.00.1101061235010.30820@chino.kir.corp.google.com>
+ <4D26D3FD020000780002AED9@vpn.id2.novell.com>
+ <alpine.DEB.2.00.1101070156050.19087@chino.kir.corp.google.com>
+ <4D26F3AE020000780002AF5D@vpn.id2.novell.com>
+ <20110107125722.GA23185@elte.hu>
+ <4D272413020000780002B009@vpn.id2.novell.com>
+ <20110107142203.GA12773@elte.hu>
+ <4D2730BE020000780002B040@vpn.id2.novell.com>
+ <20110107151254.GA418@elte.hu>
+ <alpine.DEB.2.00.1101071148120.31653@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1101071148120.31653@chino.kir.corp.google.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/1/10 Pavel Machek <pavel@ucw.cz>:
->> On 07/01/2011 22:59, Tony Luck wrote:
->> > On Fri, Jan 7, 2011 at 12:30 PM, Marco Stornelli
->> > <marco.stornelli@gmail.com> wrote:
->> >> constraint). About the errors: pramfs does not maintain file data in the
->> >> page caches for normal file I/O, so no writeback, the read/write
->> >> operation are done with direct io and they are always sync. The data are
->> >> write protected in hw when the arch provide this facility (x86 does).
->> >> Inode contains a checksum and when there are problems they are marked as
->> >> bad. Superblock contains checksum and there is a redundant superblock.
->> >
->> > But you can still get pramfs inconsistencies if the system crashes at an
->> > inopportune moment. E.g. when making files you write the new inode to
->> > pramfs, and then you insert the entry into the directory. A crash between
->> > these two operations leaves an allocated inode that doesn't appear in
->> > any directory.  Without a fsck option, it will be hard to see that you have
->> > this problem, and your only recovery option is to wipe *all* files by making
->> > a new filesystem.
->>
->> Is it a problem if you lost some logs? However do you expect that fsck
->> in this case will drop the inode?
->
-> Ask it the other way around.
->
-> What is persistent filesystem good for when it is only persistent
-> sometimes?
->
-> You'd be better running ext2 over special block device, it is quite simple.
->
+>>> On 07.01.11 at 20:55, David Rientjes <rientjes@google.com> wrote:
+> I still don't think it meets the stable kernel rules.  The changelog 
+> explicitly states that we do not want to disable ACPI completely, so the 
+> only numa= command line option that would possibly be useful on 32-bit is 
+> numa=off in this case.  If you're compiling a 32-bit kernel for a machine 
+> with SRAT entries that can't be parsed by the kernel, then there's still 
+> no explanation as to why CONFIG_NUMA=n won't fix it.
 
-Ok I can work on it. However can an userspace tool prevent the insert
-of fs in linux next?
+In distro kernels you have no control over the configuration, yet you
+may want the kernel to boot on a particular machine.
 
-Marco
+Jan
+
