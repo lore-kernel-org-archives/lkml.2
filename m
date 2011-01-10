@@ -1,68 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791Ab1AJVLl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 16:11:41 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:52118 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753751Ab1AJVLj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 16:11:39 -0500
-Subject: Re: [PATCH V8 02/13] ntp: add ADJ_SETOFFSET mode bit
-From: john stultz <johnstul@us.ibm.com>
-To: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
-Cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
-        Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <AANLkTimS0-ih=WZ_GvPi9NFjbYMT4OctWV943ri4GuTD@mail.gmail.com>
-References: <cover.1293820862.git.richard.cochran@omicron.at>
-	 <fe2bec763bec155381d62721aa9da84aeca2785c.1293820862.git.richard.cochran@omicron.at>
-	 <AANLkTini2WdT-1v4k9V3JOZYDkA59P+SyscTe8-fK2Wk@mail.gmail.com>
-	 <20110108175028.GA22308@riccoc20.at.omicron.at>
-	 <AANLkTikigXGSACF6R6kfNHyKZ7GFWrUrCMxygvL3fUC6@mail.gmail.com>
-	 <20110110071759.GA4864@riccoc20.at.omicron.at>
-	 <AANLkTimS0-ih=WZ_GvPi9NFjbYMT4OctWV943ri4GuTD@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Jan 2011 13:11:32 -0800
-Message-ID: <1294693892.3068.17.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754806Ab1AJVLw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 16:11:52 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:34266
+	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754793Ab1AJVLq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 16:11:46 -0500
+Date: Mon, 10 Jan 2011 21:13:04 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: LSM <linux-security-module@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
+        containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: [PATCH 1/7] Add a user_namespace as creator/owner of uts_namespace
+Message-ID: <20110110211304.GA22564@mail.hallyn.com>
+References: <20110110211135.GA22446@mail.hallyn.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110110211135.GA22446@mail.hallyn.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-11 at 05:47 +0900, Kuwahara,T. wrote:
-> On Mon, Jan 10, 2011 at 4:17 PM, Richard Cochran
-> <richardcochran@gmail.com> wrote:
-> > the PTP Hardware Clocks for which this whole patch
-> > set was created in the first place will keep their time as TAI.
-> 
-> Are you sure of that?  I don't have the standard handy (it's non-free,
-> right?) but it seems that the Annex B states differently.  But that's
-> not the point anyway.  My concern is that your patch not only adds the
-> useless (and broken) feature to the existing syscall but also makes a
-> permanent change to the public interface for your own use.  That's
-> what I'm against.  So if you stop touching the struct timex, I won't
-> complain anymore.
+copy_process() handles CLONE_NEWUSER before the rest of the
+namespaces.  So in the case of clone(CLONE_NEWUSER|CLONE_NEWUTS)
+the new uts namespace will have the new user namespace as its
+owner.  That is what we want, since we want root in that new
+userns to be able to have privilege over it.
 
-You still haven't explained *why* you're so protective of the timex and
-adjtimex interfaces.  While I do want to keep compatible the
-functionality where possible, I don't see why Linux should be limited by
-what other OSes do.
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+---
+ include/linux/utsname.h |    3 +++
+ init/version.c          |    2 ++
+ kernel/nsproxy.c        |    3 +++
+ kernel/user.c           |    8 ++++++--
+ kernel/utsname.c        |    4 ++++
+ 5 files changed, 18 insertions(+), 2 deletions(-)
 
-Injecting an offset to the system time seems like a reasonable thing for
-adjtimex to do (rather then adding a new syscall). Further utilizing a
-new mode bit for this functionality seems reasonable and cleaner then
-your suggestions for utilizing existing mode bits in combined with other
-magic bits. If there is a compelling reason why not to do this, do
-please let us know! We might just agree with you after hearing it. :)
-
-thanks
--john
-
+diff --git a/include/linux/utsname.h b/include/linux/utsname.h
+index 69f3997..85171be 100644
+--- a/include/linux/utsname.h
++++ b/include/linux/utsname.h
+@@ -37,9 +37,12 @@ struct new_utsname {
+ #include <linux/nsproxy.h>
+ #include <linux/err.h>
+ 
++struct user_namespace;
++
+ struct uts_namespace {
+ 	struct kref kref;
+ 	struct new_utsname name;
++	struct user_namespace *user_ns;
+ };
+ extern struct uts_namespace init_uts_ns;
+ 
+diff --git a/init/version.c b/init/version.c
+index adff586..97bb86f 100644
+--- a/init/version.c
++++ b/init/version.c
+@@ -21,6 +21,7 @@ extern int version_string(LINUX_VERSION_CODE);
+ int version_string(LINUX_VERSION_CODE);
+ #endif
+ 
++extern struct user_namespace init_user_ns;
+ struct uts_namespace init_uts_ns = {
+ 	.kref = {
+ 		.refcount	= ATOMIC_INIT(2),
+@@ -33,6 +34,7 @@ struct uts_namespace init_uts_ns = {
+ 		.machine	= UTS_MACHINE,
+ 		.domainname	= UTS_DOMAINNAME,
+ 	},
++	.user_ns = &init_user_ns,
+ };
+ EXPORT_SYMBOL_GPL(init_uts_ns);
+ 
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index f74e6c0..5a22dcf 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -74,6 +74,9 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
+ 		err = PTR_ERR(new_nsp->uts_ns);
+ 		goto out_uts;
+ 	}
++	put_user_ns(new_nsp->uts_ns->user_ns);
++	new_nsp->uts_ns->user_ns = task_cred_xxx(tsk, user)->user_ns;
++	get_user_ns(new_nsp->uts_ns->user_ns);
+ 
+ 	new_nsp->ipc_ns = copy_ipcs(flags, tsk->nsproxy->ipc_ns);
+ 	if (IS_ERR(new_nsp->ipc_ns)) {
+diff --git a/kernel/user.c b/kernel/user.c
+index 5c598ca..9e03e9c 100644
+--- a/kernel/user.c
++++ b/kernel/user.c
+@@ -17,9 +17,13 @@
+ #include <linux/module.h>
+ #include <linux/user_namespace.h>
+ 
++/*
++ * userns count is 1 for root user, 1 for init_uts_ns,
++ * and 1 for... ?
++ */
+ struct user_namespace init_user_ns = {
+ 	.kref = {
+-		.refcount	= ATOMIC_INIT(2),
++		.refcount	= ATOMIC_INIT(3),
+ 	},
+ 	.creator = &root_user,
+ };
+@@ -47,7 +51,7 @@ static struct kmem_cache *uid_cachep;
+  */
+ static DEFINE_SPINLOCK(uidhash_lock);
+ 
+-/* root_user.__count is 2, 1 for init task cred, 1 for init_user_ns->creator */
++/* root_user.__count is 2, 1 for init task cred, 1 for init_user_ns->user_ns */
+ struct user_struct root_user = {
+ 	.__count	= ATOMIC_INIT(2),
+ 	.processes	= ATOMIC_INIT(1),
+diff --git a/kernel/utsname.c b/kernel/utsname.c
+index 8a82b4b..a7b3a8d 100644
+--- a/kernel/utsname.c
++++ b/kernel/utsname.c
+@@ -14,6 +14,7 @@
+ #include <linux/utsname.h>
+ #include <linux/err.h>
+ #include <linux/slab.h>
++#include <linux/user_namespace.h>
+ 
+ static struct uts_namespace *create_uts_ns(void)
+ {
+@@ -40,6 +41,8 @@ static struct uts_namespace *clone_uts_ns(struct uts_namespace *old_ns)
+ 
+ 	down_read(&uts_sem);
+ 	memcpy(&ns->name, &old_ns->name, sizeof(ns->name));
++	ns->user_ns = old_ns->user_ns;
++	get_user_ns(ns->user_ns);
+ 	up_read(&uts_sem);
+ 	return ns;
+ }
+@@ -71,5 +74,6 @@ void free_uts_ns(struct kref *kref)
+ 	struct uts_namespace *ns;
+ 
+ 	ns = container_of(kref, struct uts_namespace, kref);
++	put_user_ns(ns->user_ns);
+ 	kfree(ns);
+ }
+-- 
+1.7.0.4
 
