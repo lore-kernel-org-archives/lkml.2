@@ -1,338 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724Ab1AJUxv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 15:53:51 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:63941 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752061Ab1AJUxq (ORCPT
+	id S1754717Ab1AJU4M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 15:56:12 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:14794 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754605Ab1AJU4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 15:53:46 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6222"; a="69724992"
-Message-ID: <4D2B71CB.1060004@codeaurora.org>
-Date: Tue, 11 Jan 2011 02:23:31 +0530
-From: Trilok Soni <tsoni@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Mon, 10 Jan 2011 15:56:09 -0500
+Date: Mon, 10 Jan 2011 21:56:08 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-mmc@vger.kernel.org
+cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        Axel Lin <axel.lin@gmail.com>, Chris Ball <cjb@laptop.org>,
+        David Vrabel <david.vrabel@csr.com>
+Subject: [PATCH] USB SD Host Controller: Including usb.h once is enough
+Message-ID: <alpine.LNX.2.00.1101102153280.32164@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: riyer@nvidia.com
-CC: jj@chaosbits.net, shubhrajyoti@ti.com, ccross@android.com,
-        konkers@android.com, olof@lixom.net, achew@nvidia.com,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH v3] input: tegra-kbc - Add tegra keyboard driver
-References: <1294422307-19107-1-git-send-email-riyer@nvidia.com>
-In-Reply-To: <1294422307-19107-1-git-send-email-riyer@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rakesh,
 
-On 1/7/2011 11:15 PM, riyer@nvidia.com wrote:
-> From: Rakesh Iyer <riyer@nvidia.com>
-> 
-> This patch adds support for the internal matrix keyboard controller for
-> Nvidia Tegra platforms.
-> 
-> Signed-off-by: Rakesh Iyer <riyer@nvidia.com>
-> ---
-> Removed NULL check before input_free_device as suggested by Jesper Juhl.
-
-Sorry for the delay. Few comments.
-
-> +
-> +#include <linux/module.h>
-> +#include <linux/input.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/delay.h>
-> +#include <linux/io.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/clk.h>
-> +#include <linux/slab.h>
-> +#include <mach/clk.h>
-
-You may not need this.
-
->
-> +
-> +static void tegra_kbc_keypress_timer(unsigned long data)
-> +{
-> +	struct tegra_kbc *kbc = (struct tegra_kbc *)data;
-> +	unsigned long flags;
-> +	u32 val;
-> +	int i;
-> +
-
-...
-
-> +	}
-> +	return;
-
-No need.
-
-> +}
-> +
-> +
-> +
-> +
-> +static int tegra_kbc_open(struct input_dev *dev)
-> +{
-> +	struct tegra_kbc *kbc = input_get_drvdata(dev);
-> +	unsigned long flags;
-> +	unsigned int debounce_cnt;
-> +	u32 val = 0;
-> +
-> +	clk_enable(kbc->clk);
-> +
-> +	/* Reset the KBC controller to clear all previous status.*/
-> +	tegra_periph_reset_assert(kbc->clk);
-> +	udelay(100);
-> +	tegra_periph_reset_deassert(kbc->clk);
-> +	udelay(100);
-> +
-> +	tegra_kbc_config_pins(kbc);
-> +	tegra_kbc_setup_wakekeys(kbc, false);
-> +
-> +	writel(kbc->pdata->repeat_cnt, kbc->mmio + KBC_RPT_DLY_0);
-> +
-> +	debounce_cnt = min_t(unsigned int, kbc->pdata->debounce_cnt, 0x3fful);
-> +	val = debounce_cnt << 4;
-> +	val |= 1<<14; /* fifo interrupt threshold = 1 entry */
-> +	val |= 1<<3;  /* interrupt on FIFO threshold reached */
-
-As mentioned below, try to get driver out of these magic nos.
-
-> +	val |= 1;     /* enable */
-> +	writel(val, kbc->mmio + KBC_CONTROL_0);
-> +
-> +	/* Compute the delay(ns) from interrupt mode to continuous polling mode
-> +	 * so the timer routine is scheduled appropriately. */
-> +	val = readl(kbc->mmio + KBC_INIT_DLY_0);
-> +	kbc->cp_dly_jiffies = usecs_to_jiffies((val & 0xfffff) * 32);
-> +
-> +	/* atomically clear out any remaining entries in the key FIFO
-> +	 * and enable keyboard interrupts */
-> +	spin_lock_irqsave(&kbc->lock, flags);
-> +	while (1) {
-> +		val = readl(kbc->mmio + KBC_INT_0);
-> +		val >>= 4;
-> +		if (val) {
-> +			val = readl(kbc->mmio + KBC_KP_ENT0_0);
-> +			val = readl(kbc->mmio + KBC_KP_ENT1_0);
-> +		} else {
-> +			break;
-> +		}
-> +	}
-> +	writel(0x7, kbc->mmio + KBC_INT_0);
-> +	spin_unlock_irqrestore(&kbc->lock, flags);
-> +
-> +	return 0;
-> +}
-> +
-> +
-
-> +
-> +static irqreturn_t tegra_kbc_isr(int irq, void *args)
-> +{
-> +	struct tegra_kbc *kbc = args;
-> +	u32 val, ctl;
-> +
-> +	/* until all keys are released, defer further processing to
-> +	 * the polling loop in tegra_kbc_keypress_timer */
-> +	ctl = readl(kbc->mmio + KBC_CONTROL_0);
-> +	ctl &= ~(1<<3);
-
-No magic nos. please. Add relevant #defines for it.
-
-> +	writel(ctl, kbc->mmio + KBC_CONTROL_0);
-> +
-> +	/* quickly bail out & reenable interrupts if the interrupt source
-> +	 * wasn't fifo count threshold */
-
-"wasn't equal to fifo count threshold" ?
-
-> +	val = readl(kbc->mmio + KBC_INT_0);
-> +	writel(val, kbc->mmio + KBC_INT_0);
-> +
-> +	if (!(val & (1<<2))) {
-> +		ctl |= 1<<3;
-
-As mentioned above, no magic nos. please.
-
-> +		writel(ctl, kbc->mmio + KBC_CONTROL_0);
-> +		return IRQ_HANDLED;
-> +	}
-> +
-> +	/* Schedule timer to run when hardware is in continuous polling mode. */
-> +	mod_timer(&kbc->timer, jiffies + kbc->cp_dly_jiffies);
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int __devinit tegra_kbc_probe(struct platform_device *pdev)
-> +{
-> +	struct tegra_kbc *kbc;
-> +	const struct tegra_kbc_platform_data *pdata = pdev->dev.platform_data;
-> +	struct resource *res;
-> +	int irq;
-> +	int err;
-> +	int rows[KBC_MAX_ROW];
-> +	int cols[KBC_MAX_COL];
-> +	int i, j;
-> +	int nr = 0;
-> +	unsigned int debounce_cnt;
-> +
-> +	if (!pdata)
-> +		return -EINVAL;
-> +
-> +	kbc = kzalloc(sizeof(*kbc), GFP_KERNEL);
-> +	if (!kbc)
-> +		return -ENOMEM;
-> +
-> +	kbc->pdata = pdata;
-> +	kbc->irq = -EINVAL;
-
-You don't need such assignments for irq.
-
-> +
-> +	memset(rows, 0, sizeof(rows));
-> +	memset(cols, 0, sizeof(cols));
-> +
-> +	kbc->idev = input_allocate_device();
-> +	if (!kbc->idev) {
-> +		err = -ENOMEM;
-> +		goto fail;
-> +	}
-> +
-> +	debounce_cnt = min_t(unsigned int, pdata->debounce_cnt, 0x3fful);
-> +	kbc->repoll_time = 5 + (16 + debounce_cnt) * nr + pdata->repeat_cnt;
-> +	kbc->repoll_time = (kbc->repoll_time + 31) / 32;
-
-Care to add note on this equation? Lot's of magic nos. used in this, so they better
-get documented. 
-
-> +
-> +	kbc->idev->evbit[0] = BIT_MASK(EV_KEY);
-> +
-> +	/* Override the default keycodes with the board supplied ones. */
-> +	if (pdata->plain_keycode) {
-> +		kbc->plain_keycode = pdata->plain_keycode;
-> +		kbc->fn_keycode = pdata->fn_keycode;
-> +	} else {
-> +		kbc->plain_keycode = plain_kbd_keycode;
-> +		kbc->fn_keycode = fn_kbd_keycode;
-> +	}
-> +
-> +	for (i = 0; i < KBC_MAX_COL; i++) {
-> +		if (!cols[i])
-> +			continue;
-> +		for (j = 0; j < KBC_MAX_ROW; j++) {
-> +			int keycode;
-> +
-> +			if (!rows[j])
-> +				continue;
-> +
-> +			/* enable all the mapped keys. */
-> +			keycode = tegra_kbc_keycode(kbc, j, i, false);
-> +			if (keycode != -1)
-> +				set_bit(keycode, kbc->idev->keybit);
-> +
-> +			keycode = tegra_kbc_keycode(kbc, j, i, true);
-> +			if (keycode != -1)
-> +				set_bit(keycode, kbc->idev->keybit);
-> +		}
-> +	}
-> +
-> +	setup_timer(&kbc->timer, tegra_kbc_keypress_timer, (unsigned long)kbc);
-> +	/* Initialize the FIFO to invalid entries */
-> +	for (i = 0; i < ARRAY_SIZE(kbc->fifo); i++)
-> +		kbc->fifo[i] = -1;
-> +
-> +	/* keycode FIFO needs to be read atomically; leave local
-> +	 * interrupts disabled when handling KBC interrupt */
-> +	err = request_irq(irq, tegra_kbc_isr, IRQF_TRIGGER_HIGH,
-> +		pdev->name, kbc);
-> +	if (err) {
-> +		dev_err(&pdev->dev, "failed to request keypad IRQ\n");
-> +		goto fail;
-> +	}
-> +	kbc->irq = irq;
-> +
-> +	err = input_register_device(kbc->idev);
-> +	if (err) {
-> +		dev_err(&pdev->dev, "failed to register input device\n");
-> +		goto fail;
-> +	}
-> +
-> +	device_init_wakeup(&pdev->dev, pdata->wakeup);
-> +	return 0;
-> +
-> +fail:
-
-It is better if you use multiple labels with differing names, as it will
-really improve your error patch and you don't need such if (...) checks against
-each of these resource release operations then. Please check other drivers..
-
-> +	input_free_device(kbc->idev);
-> +	if (kbc->irq >= 0)
-> +		free_irq(kbc->irq, pdev);
-> +	if (kbc->clk)
-> +		clk_put(kbc->clk);
-> +	if (kbc->mmio)
-> +		iounmap(kbc->mmio);
+Including usb.h once is enough in drivers/mmc/host/ushc.c
+This removes the duplicate.
 
 
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ ushc.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-> +	kfree(kbc);
-> +	return err;
-> +}
-> +
-> +#ifdef CONFIG_PM
-> +static int tegra_kbc_suspend(struct platform_device *pdev, pm_message_t state)
-> +{
-> +	struct tegra_kbc *kbc = platform_get_drvdata(pdev);
-> +
-> +	if (device_may_wakeup(&pdev->dev)) {
-> +		tegra_kbc_setup_wakekeys(kbc, true);
-> +		enable_irq_wake(kbc->irq);
-> +		/* Forcefully clear the interrupt status */
-> +		writel(0x7, kbc->mmio + KBC_INT_0);
-> +		msleep(30);
-> +	} else {
-> +		mutex_lock(&kbc->idev->mutex);
-> +		tegra_kbc_close(kbc->idev);
-
-Only if there are any users. Please add that check.
-
-> +		mutex_unlock(&kbc->idev->mutex);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int tegra_kbc_resume(struct platform_device *pdev)
-> +{
-> +	struct tegra_kbc *kbc = platform_get_drvdata(pdev);
-> +	int err = 0;
-> +
-> +	if (device_may_wakeup(&pdev->dev)) {
-> +		disable_irq_wake(kbc->irq);
-> +		tegra_kbc_setup_wakekeys(kbc, false);
-> +	} else if (kbc->idev->users) {
-> +		mutex_lock(&kbc->idev->mutex);
-> +		err = tegra_kbc_open(kbc->idev);
-
-As mentioned above.
-
-> +		mutex_unlock(&kbc->idev->mutex);
-> +	}
-> +
-> +	return err;
-> +}
-> +#endif
-> +
+diff --git a/drivers/mmc/host/ushc.c b/drivers/mmc/host/ushc.c
+index f8f65df..f08f944 100644
+--- a/drivers/mmc/host/ushc.c
++++ b/drivers/mmc/host/ushc.c
+@@ -19,7 +19,6 @@
+ #include <linux/module.h>
+ #include <linux/usb.h>
+ #include <linux/kernel.h>
+-#include <linux/usb.h>
+ #include <linux/slab.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/mmc/host.h>
 
 
 -- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
