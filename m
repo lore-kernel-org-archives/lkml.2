@@ -1,190 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab1AJOtZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 09:49:25 -0500
-Received: from novprvoes0310.provo.novell.com ([137.65.248.74]:36948 "EHLO
-	novprvoes0310.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754099Ab1AJOtX convert rfc822-to-8bit
-	(ORCPT <rfc822;groupwise-ghaskins@novell.com:7:1>);
-	Mon, 10 Jan 2011 09:49:23 -0500
-Message-Id: <4D2AD6200200005A0007A192@novprvoes0310.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Mon, 10 Jan 2011 07:49:20 -0700
-From: "Gregory Haskins" <ghaskins@novell.com>
-To: "Steven Rostedt" <rostedt@goodmis.org>
-Cc: "Lai Jiangshan" <laijs@cn.fujitsu.com>, "Ingo Molnar" <mingo@elte.hu>,
-        "Peter Zijlstra" <peterz@infradead.org>,
-        "ThomasGleixner" <tglx@linutronix.de>,
-        "Peter Morreale" <PMorreale@novell.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][RT][PATCH 3/4] rtmutex: Revert Optimize rt lock
- wakeup
-References: <20101223224755.078983538@goodmis.org>
- <20101223225116.729981172@goodmis.org>
- <4D13DF250200005A000793E1@novprvoes0310.provo.novell.com>
- <1293166464.22802.415.camel@gandalf.stny.rr.com>
- <4D19A8B20200005A00079658@novprvoes0310.provo.novell.com>
- <1294081596.3948.192.camel@gandalf.stny.rr.com>
-In-Reply-To: <1294081596.3948.192.camel@gandalf.stny.rr.com>
+	id S1754137Ab1AJOwz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 09:52:55 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:37177 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752350Ab1AJOwx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 09:52:53 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=YGCV5_ce828A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=5XapSVtpIriz-Wek_R0A:9 a=XHYarGKZdO06Y-IrXmo2ZySF0lMA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [tip:perf/urgent] tracing: Include module.h in define_trace.h
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        srostedt@redhat.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+In-Reply-To: <1294670334.11896.8.camel@laptop>
+References: <tip-3a9f987b3141f086de27832514aad9f50a53f754@git.kernel.org>
+	 <1294667377.11896.3.camel@laptop>
+	 <1294668888.26623.238.camel@gandalf.stny.rr.com>
+	 <1294670334.11896.8.camel@laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 10 Jan 2011 09:52:51 -0500
+Message-ID: <1294671171.26623.240.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Steve,
+On Mon, 2011-01-10 at 15:38 +0100, Peter Zijlstra wrote:
+> On Mon, 2011-01-10 at 09:14 -0500, Steven Rostedt wrote:
+> > > @@ -21,16 +21,6 @@
+> > >  #undef CREATE_TRACE_POINTS
+> > 
+> > But here we undefine CREATE_TRACE_POINTS, why would this cause a problem
+> > in module.h?
+> 
+> I'm not sure what's happening, all I know is that without this change I
+> get:
+> 
+>   LD      vmlinux.o
+> kernel/built-in.o:(__tracepoints+0xac0): multiple definition of `__tracepoint_module_request'
+> arch/x86/built-in.o:(__tracepoints+0x100): first defined here
+> kernel/built-in.o:(__tracepoints+0xa40): multiple definition of `__tracepoint_module_get'
+> arch/x86/built-in.o:(__tracepoints+0x80): first defined here
+> kernel/built-in.o:(__tracepoints+0x9c0): multiple definition of `__tracepoint_module_load'
+> arch/x86/built-in.o:(__tracepoints+0x0): first defined here
+> kernel/built-in.o:(__tracepoints+0xa80): multiple definition of `__tracepoint_module_put'
+> arch/x86/built-in.o:(__tracepoints+0xc0): first defined here
+> kernel/built-in.o:(__tracepoints+0xa00): multiple definition of `__tracepoint_module_free'
+> arch/x86/built-in.o:(__tracepoints+0x40): first defined here
 
-Just getting back online now....
+Hmm, OK, I'm able to reproduce it when I add:
 
->>> On 1/3/2011 at 02:06 PM, in message
-<1294081596.3948.192.camel@gandalf.stny.rr.com>, Steven Rostedt
-<rostedt@goodmis.org> wrote: 
-> On Tue, 2010-12-28 at 07:06 -0700, Gregory Haskins wrote:
->> >>> On 12/23/2010 at 11:54 PM, in message
-> 
->> > Sure, but as I said, it is mostly broken anyway. I could even insert
->> > some tracepoints to show that this is always missed (heck I'll add an
->> > unlikely and do the branch profiler ;-)
->> 
->> Well, I think that would be a good datapoint and is one of the things I'd 
-> like to see.
-> 
-> OK, here it is, after running a simple "dbench 10":
-> 
->  correct incorrect  %        Function                  File              
-> Line
->  ------- ---------  -        --------                  ----              ----
->      150   726979  99 wakeup_next_waiter             rtmutex.c            
-> 581
-> 
+#define CREATE_TRACE_POINTS
+#include <trace/events/syscalls.h>
+#undef CREATE_TRACE_POINTS
 
-Interesting, thanks for gathering the info
+as the first thing in ptrace.c. I'll investigate this further.
 
- 
-> 
-> Interesting that we hit 150 times that the new owner was already awake.
-> Perhaps it was because the new owner was about to spin on a spinlock
-> after it had put itself into the TASK_INTERRUPTIBLE state, and it was
-> woken up by someone else?
+Thanks!
 
-I speculate that what you are seeing is the waiter was an adaptive-spinner and it beat the releaser to change
-its state from INTERRUPTIBLE->RUNNING in parallel before the releaser checked the condition.  Its essentially
-a race condition that apparently only hits ~1% of the time.  Without further instrumentation, its just a guess,
-though.
-
-
-
-> 
-> 
->> 
->> > 
->> > The reason is that adaptive spinners spin in some other state than
->> > TASK_RUNNING, thus it does not help adaptive spinners at all. I first
->> > tried to fix that, but it made dbench run even slower.
->> 
->> This is why I am skeptical.  You are essentially asserting there are two 
-> issues here, IIUC:
->> 
->> 1) The intent of avoiding a wakeup is broken and we take the double whammy 
-> of a mb()
->> plus the wakeup() anyway.
-> 
-> Yep, this is what I believe is happening.
-> 
->> 
->> 2) mb() is apparently slower than wakeup().
-> 
-> Forget this point, as #1 seems to be the main issue. Also, I'm not sure
-> it is safe to "fix" this, as I started to try.
-
-ok
-
-> 
-> 
->> 
->> I agree (1) is plausible, though I would like to see the traces to confirm.  
-> Its been a long time
->> since I looked at that code, but I think the original code either ran in 
-> RUNNING_MUTEX and was
->> inadvertently broken in the mean time or the other cpu would have 
-> transitioned to RUNNING on
->> its own when we flipped the owner before the release-side check was 
-> performed.  Or perhaps
->> we just plain screwed this up and it was racy ;)  I'm not sure.  But as 
-> Peter (M) stated, it seems
->> like a shame to walk away from the concept without further investigation.  I 
-> think everyone can
->> agree that at the very least, if it is in fact taking a double whammy we 
-> should fix that.
-> 
-> [ cut out all the 2's since I'm not worried about that now, even if it 
->   is not a problem. ]
-> 
-> 
-> Now, the way I was going to fix this is to have the adaptive wait be in
-> TASK_RUNNING state, and then change the state iff we are going to sleep.
-> 
-> But this can be a bit more race. Especially with Lai's new changes. With
-> the new changes, the waiter->task does not get nulled anymore.
-> 
-> The test to take the lock, now needs to be under the lock->wait_lock
-> spinlock. We have to grab that lock, and see if the owner is null, and
-> that we are the next waiter in the queue. Thus, on taking the lock we
-> need to have something like this:
-> 
-> 
-> 	if (adaptive_wait(&waiter, orig_owner))
-> 		sleep = 1;
-> 	else
-> 		sleep = 0;
-> 
-> 	if (sleep)
-> 		raw_spin_lock(&lock->wait_lock);
-> 		saved_state = rt_set_current_block_state(saved_state);
-> 		if (!lock->owner && &waiter == rt_mutex_top_waiter(lock))
-> 			sleep = 0;
-> 		raw_spin_unlock(&lock->wait_lock);
-> 		if (sleep)
-> 			schedule_rt_mutex(lock);
-> 		saved_state = rt_restore_current_blocked_state(saved_state);
-> 	}
-> 
-> Otherwise we can risk the wakeup_next_waiter() missing the wakeup.
-
-Yep, you definitely need something like your proposal above if you want to mess with the state, I agree.
-
-> 
-> To clarify, we want the adaptive_wait() to run as TASK_RUNNING. Then if
-> we must sleep, then we must set the state to TASK_UNINTERRUPTIBLE, test
-> again if we can still the lock, and if not then sleep. Otherwise, if a
-> wakeup happens just before we set the state to TASK_UNINTERRUPTIBLE,
-> then we miss the wake up all together.
-> 
-> I can do this change, and see what impact it makes.
-> 
-> I'm also curious if this ever worked?
-
-Well, I _thought_ so, but it was so long ago I don't remember to specific level of granularity of the unit tests.
-
-> If it did not, then are you sure
-> your tests that show the benefit of it was true. I don't have a large
-> scale box at my disposal ATM, so I can only see what this does on 4way
-> machines.
-
-Yeah, me either.  At the time we had 16 and 32 core boxes, plus your 64 core box.  There were certainly
-substantial improvements throughout the series on these machines (which I think you also verified
-independently, or you wouldn't have accepted them ;).  Given that what you found amounts to a race,
-I suppose the code, even if it was racy from day 1, may have had a positive impact for certain workloads
-since the race will be environment specific.
-
-I digress: whether it worked once and broke in the meantime or was always broken is purely an exercise
-in evaluating my stupidity ;)  Ill leave that as an exercise to the community.  The important thing is to either
-fix the optimization (e.g. with a patch like yours above) or remove the optimization outright.  
-
-Bottom line: Nice find, and let me know if you need me to do anything.
-
--Greg
+-- Steve
 
 
