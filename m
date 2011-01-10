@@ -1,98 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872Ab1AJMuu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 07:50:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25125 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753710Ab1AJMut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 07:50:49 -0500
-Date: Mon, 10 Jan 2011 14:50:11 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Milton Miller <miltonm@bga.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jamie Lokier <jamie@shareable.org>, Thomas Weber <swirl@gmx.li>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio: remove virtio-pci root device
-Message-ID: <20110110125011.GI2202@redhat.com>
-References: <20110105191711.GA27489@redhat.com>
- <virtio-pci-whynotsimplify@mdm.bga.com>
- <virtio-pci-noroot@mdm.bga.com>
- <20110109151821.GA9063@redhat.com>
- <20110110111859.GC2202@redhat.com>
- <20110110112205.GC12065@redhat.com>
- <20110110112739.GD2202@redhat.com>
- <20110110114219.GE2202@redhat.com>
- <20110110120808.GA15554@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110110120808.GA15554@redhat.com>
+	id S1753898Ab1AJM5i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 07:57:38 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:45119 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753811Ab1AJM5g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 07:57:36 -0500
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=heD8I4ohhdAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Cd8IlHNGQIfiNYUOf-4A:9 a=k7j5S4YQdnJjzdFvAcUA:7 a=ZADWfKfBAgPfw-dk4d9RR_nbIpsA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] rtmutex: ensure only the top waiter or higher priority
+ task can take the lock and reduce unrelated boosting
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Young <hidave.darkstar@gmail.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <4D2AEF7E.8060901@cn.fujitsu.com>
+References: <4D07330A.7020600@cn.fujitsu.com>
+	 <alpine.LFD.2.00.1012141850460.12146@localhost6.localdomain6>
+	 <4D083900.1050801@cn.fujitsu.com>
+	 <1292386606.5015.1862.camel@gandalf.stny.rr.com>
+	 <4D0877D2.10000@cn.fujitsu.com>
+	 <1294325428.26623.187.camel@gandalf.stny.rr.com>
+	 <4D2AEF7E.8060901@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 10 Jan 2011 07:57:32 -0500
+Message-ID: <1294664252.26623.236.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 02:08:08PM +0200, Michael S. Tsirkin wrote:
-> On Mon, Jan 10, 2011 at 01:42:19PM +0200, Gleb Natapov wrote:
-> > On Mon, Jan 10, 2011 at 01:27:39PM +0200, Gleb Natapov wrote:
-> > > On Mon, Jan 10, 2011 at 01:22:05PM +0200, Michael S. Tsirkin wrote:
-> > > > On Mon, Jan 10, 2011 at 01:18:59PM +0200, Gleb Natapov wrote:
-> > > > > On Sun, Jan 09, 2011 at 05:18:21PM +0200, Michael S. Tsirkin wrote:
-> > > > > > On Fri, Jan 07, 2011 at 02:55:06AM -0600, Milton Miller wrote:
-> > > > > > > We sometimes need to map between the virtio device and
-> > > > > > > the given pci device. One such use is OS installer that
-> > > > > > > gets the boot pci device from BIOS and needs to
-> > > > > > > find the relevant block device. Since it can't,
-> > > > > > > installation fails.
-> > > > > > > 
-> > > > > > > Instead of creating a top-level devices/virtio-pci
-> > > > > > > directory, create each device under the corresponding
-> > > > > > > pci device node.  Symlinks to all virtio-pci
-> > > > > > > devices can be found under the pci driver link in
-> > > > > > > bus/pci/drivers/virtio-pci/devices, and all virtio
-> > > > > > > devices under drivers/bus/virtio/devices.
-> > > > > > > 
-> > > > > > > Signed-off-by: Milton Miller <miltonm@bga.com>
-> > > > > > 
-> > > > > > OK, this works fine for me.  I played with options to add compat
-> > > > > > softlinks under devices/virtio-pci but we still don't get exactly the
-> > > > > > same layout and since I don't think anyone actually uses them, it's
-> > > > > > probably ok to just to the simple thing.
-> > > > > > 
-> > > > > > Tested/Acked-by: Michael S. Tsirkin <mst@redhat.com>
-> > > > > > 
-> > > > > > Rusty, since this help fix at least one user, any chance this can be put
-> > > > > > in 2.6.38? OK to backport to -stable?
-> > > > > > 
-> > > > > > Gleb, could you try this out too?
-> > > > > > 
-> > > > > With this patch if I have 3 virtio disks for a VM I get:
-> > > > > /sys/devices/pci0000:00/0000:00:04.0/virtio0/block/vda
-> > > > > /sys/devices/pci0000:00/0000:00:05.0/virtio1/block/vdb
-> > > > > /sys/devices/pci0000:00/0000:00:06.0/virtio2/block/vdc
-> > > > > 
-> > > > > Number after virtio has no much sense. It either should be dropped at all
-> > > > > or be always zero in case we will support more then one virtio controller
-> > > > > per pci card. In that case each virtio controller will have directories
-> > > > > virtio0/virtio1/virtio2... under same pci device directory.
-> > > > 
-> > > > Yes. But this is the bus name.  It must be unique - all devices
-> > > > also appear under /sys/bus/virtio/devices.
-> > > > 
-> > > It is very strange king of bus that is spread over several PCI devices :)
-> > > It doesn't make much sense IMHO, but I can leave with it.
-> > > 
-> > I can't "leave" with it, but I can "live" with it.
-> 
-> The virtio bus is an attempt to make as many applications as
-> possible work transparently on any virtio system,
-> be it lguest, s390 or pci. Arbitrary IDs is just a hint to the
-> applications 'don't rely on the name at all'.
-> 
-Shouldn't sysfs directory reflect real device topology? There are other
-buses AFAIK that connected differently on different HW. How virtio is
-special? What applications this allow to work transparently?
+On Mon, 2011-01-10 at 19:37 +0800, Lai Jiangshan wrote:
 
---
-			Gleb.
+> After this patch applied, the topwaiter will not be deququed when the lock
+> is released(any waiter is dequeued only when it really get the lock or give up).
+> So the wait list will not be empty if someone is still waiting on.
+> 
+> I thought, in this code, this->task is waiting, so rt_mutex_next_owner()
+> will not return NULL. As you found, my thought is wrong, we should just
+> change the comment.
+
+Yes, I've done that. I'll be posting my new port of your patch today
+which has passed all my tests. I'm still looking to see what I can do
+with the adaptive spinlocks, as I'm hitting a "hung task" when running
+dbench 100 in a loop. But I just hit that same "hung task" with vanilla
+2.6.33 (no -rt), so I think the bug is not with my code ;-)
+
+-- Steve
+
+
