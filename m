@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab1AJUL2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 15:11:28 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:47850 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754418Ab1AJUL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 15:11:26 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: David Miller <davem@davemloft.net>
-Subject: Re: 2.6.37-rc8: Reported regressions from 2.6.36
-Date: Mon, 10 Jan 2011 21:11:06 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37+; KDE/4.4.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, maciej.rutecki@gmail.com,
-        florian@mickler.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, kernel-testers@vger.kernel.org,
-        netdev@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, linux-scsi@vger.kernel.org,
-        linux-wireless@vger.kernel.org, dri-devel@lists.freedesktop.org
-References: <96DQe4a_2tH.A.cFB.l27GNB@chimera> <20110110.000813.173856001.davem@davemloft.net>
-In-Reply-To: <20110110.000813.173856001.davem@davemloft.net>
+	id S1754668Ab1AJULx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 15:11:53 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:35546 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754202Ab1AJULv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 15:11:51 -0500
+Message-ID: <4D2B67C8.6010302@kernel.org>
+Date: Mon, 10 Jan 2011 12:10:48 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Greg KH <greg@kroah.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-usb@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: Re: [PATCH 0/3] x86, usb, pci: Disable usb legacy support early
+References: <4D2A1382.7010407@kernel.org>	<20110110155724.GA5275@kroah.com> <20110110102759.3780cfe6@jbarnes-desktop>
+In-Reply-To: <20110110102759.3780cfe6@jbarnes-desktop>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101102111.07266.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 10, 2011, David Miller wrote:
-> From: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Date: Wed, 29 Dec 2010 23:59:38 +0100 (CET)
+On 01/10/2011 10:27 AM, Jesse Barnes wrote:
+> On Mon, 10 Jan 2011 07:57:24 -0800
+> Greg KH <greg@kroah.com> wrote:
 > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24592
-> > Subject		: 2.6.37-rc5: NULL pointer oops in selinux_socket_unix_stream_connect
-> > Submitter	: Jeremy Fitzhardinge <jeremy@goop.org>
-> > Date		: 2010-12-08 21:09 (22 days old)
-> > Message-ID	: <4CFFF3F3.90100@goop.org>
-> > References	: http://marc.info/?l=linux-kernel&m=129184256629712&w=2
+>> On Sun, Jan 09, 2011 at 11:58:58AM -0800, Yinghai Lu wrote:
+>>> move quirks for usb handoff early for x86.
+>>>
+>>> So we can get stable result when trying to calibrate apic timer with pm-timer.
+>>
+>> Is this a real problem today?  What is the symptom of the issue?  Where
+>> was it reported as a problem?
 > 
-> This bug is intended to be fixed by:
-> 
-> commit 3610cda53f247e176bcbb7a7cca64bc53b12acdb
-> Author: David S. Miller <davem@davemloft.net>
-> Date:   Wed Jan 5 15:38:53 2011 -0800
-> 
->     af_unix: Avoid socket->sk NULL OOPS in stream connect security hooks.
->     
->     unix_release() can asynchornously set socket->sk to NULL, and
->     it does so without holding the unix_state_lock() on "other"
->     during stream connects.
->     
->     However, the reverse mapping, sk->sk_socket, is only transitioned
->     to NULL under the unix_state_lock().
->     
->     Therefore make the security hooks follow the reverse mapping instead
->     of the forward mapping.
->     
->     Reported-by: Jeremy Fitzhardinge <jeremy@goop.org>
->     Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
->     Signed-off-by: David S. Miller <davem@davemloft.net>
+> Yes, please give us a rationale for all this mess.  I really don't like
+> the sleep wrappers or the "early" PCI device; would it be easier to
+> extract some of the core disabling MMIO from the quirks and re-use it
+> for a totally separate set of early quirk functions?  Like Ben
+> suggested, making it totally arch specific would be a good option,
+> though presumably most arches don't need this
+
+sure, will have new version to address that.
+
+> (again if you explained
+> why/when this was needed maybe we could come up with a better
+> solution, or just ignore the problem if you're trying to fix a
+> pre-production board again with all sorts of broken stuff).
 > 
 
-OK, thanks for the info, closing.
+not on pre-production board.
 
-Rafael
+v3 should be clean enough. will send out later.
+
+Thanks
+
+Yinghai
