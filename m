@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496Ab1AJKbv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 05:31:51 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:8818 "EHLO
+	id S1753421Ab1AJKeo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 05:34:44 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:45545 "EHLO
 	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753449Ab1AJKbs (ORCPT
+	with ESMTP id S1753101Ab1AJKen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 05:31:48 -0500
+	Mon, 10 Jan 2011 05:34:43 -0500
 X-IronPort-AV: E=Sophos;i="4.60,299,1291593600"; 
-   d="scan'208";a="3677714"
-Date: Mon, 10 Jan 2011 10:33:15 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+   d="scan'208";a="3677795"
+Date: Mon, 10 Jan 2011 10:36:05 +0000
+From: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
 X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: Re: [PATCH 10/11] xen gntdev: use gnttab_map_refs and
- gnttab_unmap_refs
-In-Reply-To: <20110105202349.GA29993@dumpdata.com>
-Message-ID: <alpine.DEB.2.00.1101071357180.2390@kaball-desktop>
-References: <alpine.DEB.2.00.1012151259510.2390@kaball-desktop> <1292420446-3348-10-git-send-email-stefano.stabellini@eu.citrix.com> <20110105202349.GA29993@dumpdata.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH v2 00/12] xen: allow usermode to map granted pages
+Message-ID: <alpine.DEB.2.00.1101101012190.2390@kaball-desktop>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
@@ -29,84 +26,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Jan 2011, Konrad Rzeszutek Wilk wrote:
-> On Wed, Dec 15, 2010 at 01:40:45PM +0000, stefano.stabellini@eu.citrix.com wrote:
-> > From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > 
-> > Use gnttab_map_refs and gnttab_unmap_refs to map and unmap the grant
-> > ref, so that we can have a corresponding struct page.
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> > ---
-> >  drivers/xen/gntdev.c |   37 ++++++++++++++++++++++++++++++-------
-> >  1 files changed, 30 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
-> > index fc5e420..35de6bb 100644
-> > --- a/drivers/xen/gntdev.c
-> > +++ b/drivers/xen/gntdev.c
-> > @@ -68,6 +68,7 @@ struct grant_map {
-> >  	struct ioctl_gntdev_grant_ref *grants;
-> >  	struct gnttab_map_grant_ref   *map_ops;
-> >  	struct gnttab_unmap_grant_ref *unmap_ops;
-> > +	struct page **pages;
-> >  };
-> >  
-> >  /* ------------------------------------------------------------------ */
-> > @@ -88,6 +89,7 @@ static void gntdev_print_maps(struct gntdev_priv *priv,
-> >  static struct grant_map *gntdev_alloc_map(struct gntdev_priv *priv, int count)
-> >  {
-> >  	struct grant_map *add;
-> > +	int i;
-> 
-> So 'int' here.
-> >  
-> >  	add = kzalloc(sizeof(struct grant_map), GFP_KERNEL);
-> >  	if (NULL == add)
-> > @@ -96,11 +98,19 @@ static struct grant_map *gntdev_alloc_map(struct gntdev_priv *priv, int count)
-> >  	add->grants    = kzalloc(sizeof(add->grants[0])    * count, GFP_KERNEL);
-> >  	add->map_ops   = kzalloc(sizeof(add->map_ops[0])   * count, GFP_KERNEL);
-> >  	add->unmap_ops = kzalloc(sizeof(add->unmap_ops[0]) * count, GFP_KERNEL);
-> > -	if (NULL == add->grants  ||
-> > -	    NULL == add->map_ops ||
-> > -	    NULL == add->unmap_ops)
-> > +	add->pages     = kzalloc(sizeof(add->pages[0])     * count, GFP_KERNEL);
-> > +	if (NULL == add->grants    ||
-> > +	    NULL == add->map_ops   ||
-> > +	    NULL == add->unmap_ops ||
-> > +	    NULL == add->pages)
-> >  		goto err;
-> >  
-> > +	for (i = 0; i < count; i++) {
-> > +		add->pages[i] = alloc_page(GFP_KERNEL | __GFP_HIGHMEM);
-> > +		if (add->pages[i] == NULL)
-> > +			goto err;
-> > +	}
-> > +
-> >  	add->index = 0;
-> >  	add->count = count;
-> >  	add->priv  = priv;
-> > @@ -111,6 +121,12 @@ static struct grant_map *gntdev_alloc_map(struct gntdev_priv *priv, int count)
-> >  	return add;
-> >  
-> >  err:
-> > +	if (add->pages)
-> > +		for (i = 0; i < count; i++) {
-> > +			if (add->pages[i])
-> > +				__free_page(add->pages[i]);
-> > +		}
-> > +	kfree(add->pages);
-> >  	kfree(add->grants);
-> >  	kfree(add->map_ops);
-> >  	kfree(add->unmap_ops);
-> > @@ -186,8 +202,17 @@ static int gntdev_del_map(struct grant_map *map)
-> >  
-> >  static void gntdev_free_map(struct grant_map *map)
-> >  {
-> > +	unsigned i;
-> 
-> But 'unsigned' here?
-> 
+Hi all,
+this patch series introduces the gntdev device that allows usermode
+to map granted pages; gntdev is used by qemu to implement Xen backends
+in userspace.
 
-Good eye! Changed both to int.
+Considering that granted pages still have the same entry in the m2p
+as before being granted, the following patches also add a mechanism to
+override portions of the m2p so that we can find out the pfn
+corresponding to the mfn of a granted page in the "receiver" domain.
+This is needed so that we can have pte_page work correctly for these
+pages. Once this requirement is satisfied, __get_user_pages_fast can
+work on granted pages and userspace applications (the xen block backend
+implemented in qemu) can use AIO on them.
+
+
+Changes compared to v1:
+
+- a new patch by Daniel De Graaf has been added to fix a circular
+locking dependency problem;
+
+- changed an unsigned into an int in "xen gntdev: use gnttab_map_refs
+and gnttab_unmap_refs" for conformity, addressing Konrad's comments;
+
+- cleanups and fixes applied to "xen: introduce gnttab_map_refs and
+gnttab_unmap_refs", addressing Konrad's comments;
+
+- fixed a typo in "gntdev: move use of GNTMAP_contains_pte next to the
+map_op", addressing Konrad's comments;
+
+- several cleanups applied to "xen/gntdev: allow usermode to map granted
+pages", addressing Konrad's comments;
+
+- a check for the validity of the page passed as argument has been added
+to m2p_remove_override;
+
+- the code of "xen p2m: clear the old pte when adding a page to
+m2p_override" has been rearranged to return an error before modifying
+the p2m.
+
+
+
+The list of patches and the diffstat follow:
+
+Daniel De Graaf (1):
+      xen/gntdev: Fix circular locking dependency
+
+Gerd Hoffmann (1):
+      xen/gntdev: allow usermode to map granted pages
+
+Ian Campbell (2):
+      xen: define gnttab_set_map_op/unmap_op
+      xen: gntdev: move use of GNTMAP_contains_pte next to the map_op
+
+Jeremy Fitzhardinge (5):
+      xen/gntdev: add VM_PFNMAP to vma
+      xen: move p2m handling to separate file
+      xen: add m2p override mechanism
+      xen/gntdev: stop using "token" argument
+      xen p2m: clear the old pte when adding a page to m2p_override
+
+Stefano Stabellini (3):
+      xen p2m: transparently change the p2m mappings in the m2p override
+      xen: introduce gnttab_map_refs and gnttab_unmap_refs
+      xen gntdev: use gnttab_map_refs and gnttab_unmap_refs
+
+ arch/x86/include/asm/xen/page.h |   16 +-
+ arch/x86/xen/Makefile           |    3 +-
+ arch/x86/xen/mmu.c              |  365 ---------------------
+ arch/x86/xen/p2m.c              |  509 ++++++++++++++++++++++++++++++
+ drivers/xen/Kconfig             |    7 +
+ drivers/xen/Makefile            |    2 +
+ drivers/xen/gntdev.c            |  665 +++++++++++++++++++++++++++++++++++++++
+ drivers/xen/grant-table.c       |   46 +++
+ include/xen/gntdev.h            |  119 +++++++
+ include/xen/grant_table.h       |   44 +++-
+ 10 files changed, 1406 insertions(+), 370 deletions(-)
+
+
+A git branch with this series on top of Linux 2.6.37-rc5 is available
+here:
+
+git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.37-rc5-gntdev-2
+
+Cheers,
+
+Stefano
+
