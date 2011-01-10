@@ -1,107 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643Ab1AJKgk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 05:36:40 -0500
+	id S1753631Ab1AJKf7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 05:35:59 -0500
 Received: from smtp02.citrix.com ([66.165.176.63]:36877 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753600Ab1AJKfz (ORCPT
+	with ESMTP id S1753587Ab1AJKfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 05:35:55 -0500
+	Mon, 10 Jan 2011 05:35:54 -0500
 X-IronPort-AV: E=Sophos;i="4.60,299,1291611600"; 
-   d="scan'208";a="130293799"
+   d="scan'208";a="130293798"
 From: stefano.stabellini@eu.citrix.com
 To: linux-kernel@vger.kernel.org
 Cc: xen-devel@lists.xensource.com, Jeremy.Fitzhardinge@citrix.com,
         konrad.wilk@oracle.com,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 10/12] xen: introduce gnttab_map_refs and gnttab_unmap_refs
-Date: Mon, 10 Jan 2011 10:36:39 +0000
-Message-Id: <1294655801-16230-10-git-send-email-stefano.stabellini@eu.citrix.com>
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 09/12] xen p2m: transparently change the p2m mappings in the m2p override
+Date: Mon, 10 Jan 2011 10:36:38 +0000
+Message-Id: <1294655801-16230-9-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <alpine.DEB.2.00.1101101012190.2390@kaball-desktop>
 References: <alpine.DEB.2.00.1101101012190.2390@kaball-desktop>
-X-OriginalArrivalTime: 10 Jan 2011 10:35:55.0299 (UTC) FILETIME=[29411730:01CBB0B2]
+X-OriginalArrivalTime: 10 Jan 2011 10:35:53.0799 (UTC) FILETIME=[285C3570:01CBB0B2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-gnttab_map_refs maps some grant refs and uses the new m2p override to
-set a proper m2p mapping for the granted pages.
+In m2p_add_override store the original mfn into page->index and then
+change the p2m mapping, setting mfns as FOREIGN_FRAME.
 
-gnttab_unmap_refs unmaps the granted refs and removes th mappings from
-the m2p override.
+In m2p_remove_override restore the original mapping.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- drivers/xen/grant-table.c |   36 ++++++++++++++++++++++++++++++++++++
- include/xen/grant_table.h |    5 +++++
- 2 files changed, 41 insertions(+), 0 deletions(-)
+ arch/x86/xen/p2m.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index 6c45318..1afd569 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -447,6 +447,42 @@ unsigned int gnttab_max_grant_frames(void)
- }
- EXPORT_SYMBOL_GPL(gnttab_max_grant_frames);
- 
-+int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
-+		    struct page **pages, unsigned int count)
-+{
-+	int i, ret;
-+	pte_t *pte;
-+	unsigned long mfn;
-+
-+	ret = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, map_ops, count);
-+
-+	for (i = 0; i < count; i++) {
-+		/* m2p override only supported for GNTMAP_contains_pte mappings */
-+		if (!(map_ops[i].flags & GNTMAP_contains_pte))
-+			continue;
-+		pte = (pte_t *) (mfn_to_virt(PFN_DOWN(map_ops[i].host_addr)) +
-+				(map_ops[i].host_addr & ~PAGE_MASK));
-+		mfn = pte_mfn(*pte);
-+		m2p_add_override(mfn, pages[i]);
-+	}
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(gnttab_map_refs);
-+
-+int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
-+		struct page **pages, unsigned int count)
-+{
-+	int i, ret;
-+
-+	ret = HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, unmap_ops, count);
-+	for (i = 0; i < count; i++)
-+		m2p_remove_override(pages[i]);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(gnttab_unmap_refs);
-+
- static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index 8db19d5..b3b19d4 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -407,8 +407,11 @@ static unsigned long mfn_hash(unsigned long mfn)
+ void m2p_add_override(unsigned long mfn, struct page *page)
  {
- 	struct gnttab_setup_table setup;
-diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
-index 1821aa1..b1fab6b 100644
---- a/include/xen/grant_table.h
-+++ b/include/xen/grant_table.h
-@@ -155,4 +155,9 @@ unsigned int gnttab_max_grant_frames(void);
+ 	unsigned long flags;
++	unsigned long pfn = page_to_pfn(page);
+ 	page->private = mfn;
++	page->index = pfn_to_mfn(pfn);
  
- #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
- 
-+int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
-+		    struct page **pages, unsigned int count);
-+int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
-+		      struct page **pages, unsigned int count);
++	__set_phys_to_machine(pfn, FOREIGN_FRAME(mfn));
+ 	spin_lock_irqsave(&m2p_override_lock, flags);
+ 	list_add(&page->lru,  &m2p_overrides[mfn_hash(mfn)]);
+ 	spin_unlock_irqrestore(&m2p_override_lock, flags);
+@@ -417,9 +420,18 @@ void m2p_add_override(unsigned long mfn, struct page *page)
+ void m2p_remove_override(struct page *page)
+ {
+ 	unsigned long flags;
++	unsigned long mfn;
++	unsigned long pfn;
 +
- #endif /* __ASM_GNTTAB_H__ */
++	pfn = page_to_pfn(page);
++	mfn = get_phys_to_machine(pfn);
++	if (mfn == INVALID_P2M_ENTRY || !(mfn & FOREIGN_FRAME_BIT))
++		return;
++
+ 	spin_lock_irqsave(&m2p_override_lock, flags);
+ 	list_del(&page->lru);
+ 	spin_unlock_irqrestore(&m2p_override_lock, flags);
++	__set_phys_to_machine(pfn, page->index);
+ }
+ 
+ struct page *m2p_find_override(unsigned long mfn)
 -- 
 1.5.6.5
 
