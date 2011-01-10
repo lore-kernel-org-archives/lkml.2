@@ -1,89 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab1AJMoo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 07:44:44 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33050 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753727Ab1AJMon (ORCPT
+	id S1753945Ab1AJMqw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 07:46:52 -0500
+Received: from server655-han.de-nserver.de ([85.158.177.45]:33990 "EHLO
+	server655-han.de-nserver.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753659Ab1AJMqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 07:44:43 -0500
-Message-ID: <4D2AFF29.4060008@pengutronix.de>
-Date: Mon, 10 Jan 2011 13:44:25 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix
+	Mon, 10 Jan 2011 07:46:46 -0500
+Message-ID: <4D2AFFB5.5000807@profihost.ag>
+Date: Mon, 10 Jan 2011 13:46:45 +0100
+From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?B?VXdlIA==?= =?UTF-8?B?S2xlaW5lLUvDtm5pZw==?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Parisc List <linux-parisc@vger.kernel.org>, linux-arch@vger.kernel.org
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-References: <20110105210448.GM8638@n2100.arm.linux.org.uk>	 <AANLkTi=EXXBTW7oWHq3D+PHsx=thF1CpkRjn0ax2p5rm@mail.gmail.com>	 <1294262208.2952.4.camel@heimdal.trondhjem.org>	 <AANLkTi=3Gu-rz=-OdNtUXn4qw60Df6=YePnzvB=s-+Ov@mail.gmail.com>	 <1294268808.2952.18.camel@heimdal.trondhjem.org>	 <1294270104.16957.73.camel@mulgrave.site>	 <1294335614.22825.154.camel@mulgrave.site>	 <1294336054.2905.1.camel@heimdal.trondhjem.org>	 <AANLkTimusF4KCJ4vHPn+T1dUiKxapXaT0QTtFvh8Ykdd@mail.gmail.com>	 <1294426405.2929.23.camel@heimdal.trondhjem.org>	 <20110107190229.GX31708@n2100.arm.linux.org.uk>	 <1294427467.4895.66.camel@mulgrave.site>	 <1294505384.4181.14.camel@heimdal.trondhjem.org> <1294528551.4181.19.camel@heimdal.trondhjem.org>
-In-Reply-To: <1294528551.4181.19.camel@heimdal.trondhjem.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigAA42886BC7558FC86E191B1B"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Kay Sievers <kay.sievers@vrfy.org>,
+        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [BUG stable, 2.6.32.27] sched: delayed cleanup of user_struct
+References: <4D2AB8F7.7030506@profihost.ag> <20110110114913.GA22298@redhat.com> <20110110123630.GA27057@redhat.com>
+In-Reply-To: <20110110123630.GA27057@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-User-Auth: Auth by hostmaster@profihost.com through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigAA42886BC7558FC86E191B1B
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On 01/09/2011 12:15 AM, Trond Myklebust wrote:
-> From 8b2e60cef5c65eef41ab61286f62dec6bfb1ac27 Mon Sep 17 00:00:00 2001
-> From: Trond Myklebust <Trond.Myklebust@netapp.com>
-> Date: Sat, 8 Jan 2011 17:45:38 -0500
-> Subject: [PATCH] NFS: Don't use vm_map_ram() in readdir
->=20
-> vm_map_ram() is not available on NOMMU platforms, and causes trouble
-> on incoherrent architectures such as ARM when we access the page data
-> through both the direct and the virtual mapping.
->=20
-> The alternative is to use the direct mapping to access page data
-> for the case when we are not crossing a page boundary, but to copy
-> the data into a linear scratch buffer when we are accessing data
-> that spans page boundaries.
->=20
-> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Tested-by: Marc Kleine-Budde <mkl@pengutronix.de>
+is it a workaround to disable CONFIG_GROUP_SCHED?
 
-=2E.on AT91 (armv5)
-
-regards, Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enigAA42886BC7558FC86E191B1B
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk0q/ywACgkQjTAFq1RaXHPKVACfSbwPgXZNF3YdnU/W6Auad80e
-/c0An3M92CG7Kp5W7OS1nHc/jof1yoS1
-=1Bum
------END PGP SIGNATURE-----
-
---------------enigAA42886BC7558FC86E191B1B--
+Stefan
