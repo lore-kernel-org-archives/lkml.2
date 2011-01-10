@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721Ab1AJXrr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 18:47:47 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:17058 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab1AJXrq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 18:47:46 -0500
-Date: Tue, 11 Jan 2011 00:47:44 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-wireless@vger.kernel.org
-cc: users@rt2x00.serialmonkey.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Gertjan van Wingerde <gwingerde@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Ivo van Doorn <IvDoorn@gmail.com>
-Subject: [PATCH] rt2x00: Don't leak mem in error path of
- rt2x00lib_request_firmware()
-Message-ID: <alpine.LNX.2.00.1101110044580.32164@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754742Ab1AJXsr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 18:48:47 -0500
+Received: from kroah.org ([198.145.64.141]:45602 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751710Ab1AJXso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 18:48:44 -0500
+Date: Mon, 10 Jan 2011 15:48:25 -0800
+From: Greg KH <gregkh@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PATCH] driver core patches for .38
+Message-ID: <20110110234825.GA30018@kroah.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to release_firmware() in order not to leak memory.
+Here's the "big" driver core merge for the .38 tree.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- rt2x00firmware.c |    1 +
- 1 file changed, 1 insertion(+)
+Yeah, really tiny, not much of anything went on in this area of the
+kernel for the past 3 months.
 
-diff --git a/drivers/net/wireless/rt2x00/rt2x00firmware.c b/drivers/net/wireless/rt2x00/rt2x00firmware.c
-index f0e1eb7..be0ff78 100644
---- a/drivers/net/wireless/rt2x00/rt2x00firmware.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00firmware.c
-@@ -58,6 +58,7 @@ static int rt2x00lib_request_firmware(struct rt2x00_dev *rt2x00dev)
- 
- 	if (!fw || !fw->size || !fw->data) {
- 		ERROR(rt2x00dev, "Failed to read Firmware.\n");
-+		release_firmware(fw);
- 		return -ENOENT;
- 	}
- 
+Please pull from:
+	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/driver-core-2.6.git/ driver-core-next
 
+All of these patches have been in the linux-next and mm trees for a
+while now.
 
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+The patches will be sent as a follow-on to this message to lkml for
+people to see.
+
+thanks,
+
+greg k-h
+
+------------
+
+ drivers/base/base.h    |   62 +++++++++++++++++++----------------------------
+ drivers/base/bus.c     |   13 ++++-----
+ drivers/base/class.c   |   42 ++++++++++++++++----------------
+ drivers/base/core.c    |   24 ++++++++++--------
+ fs/sysfs/group.c       |   10 +------
+ include/linux/device.h |    7 ++---
+ 6 files changed, 70 insertions(+), 88 deletions(-)
+
+---------------
+
+Alan Stern (1):
+      sysfs: remove useless test from sysfs_merge_group
+
+Brandon Philips (1):
+      driver core: fix whitespace in class_attr_string
+
+Kay Sievers (1):
+      driver-core: merge private parts of class and bus
+
+Michael Ellerman (1):
+      driver core: Document that device_rename() is only for networking
 
