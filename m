@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab1AJNw1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 08:52:27 -0500
-Received: from mail.digidescorp.com ([66.244.163.200]:22341 "EHLO
-	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753420Ab1AJNwZ (ORCPT
+	id S1753783Ab1AJNyA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 08:54:00 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:36751 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab1AJNx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 08:52:25 -0500
-X-Greylist: delayed 454 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Jan 2011 08:52:25 EST
-X-Spam-Processed: mail.digidescorp.com, Mon, 10 Jan 2011 07:44:50 -0600
-X-Authenticated-Sender: steve@digidescorp.com
-X-Return-Path: prvs=19910c6f74=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-Subject: Re: CPU Initiated DMA
-From: "Steven J. Magnani" <steve@digidescorp.com>
-To: Robert Hancock <hancockrwd@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <4D28A9EF.3050400@gmail.com>
-References: <87mxncv3ge.fsf@inspiron.ap.columbia.edu>
-	 <4D28A9EF.3050400@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Jan 2011 07:44:45 -0600
-Message-ID: <1294667085.3139.3.camel@iscandar.digidescorp.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Jan 2011 08:53:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=s13Tc2I58ZDHsMRMC9BmhtxfARIQy+IX60bKTBeEYm2lFjg78nDVMmLByHmPlvjtGI
+         hxe8R8H9YpLjT3+6a94zgquwEHFKS78NU7EYUqDbmm4RBuBUSkDrkfNJ8ueEonDkhOpd
+         Qd729XrV0a+pxuHMWR+muQMxMG/vus7YOfTxg=
+MIME-Version: 1.0
+In-Reply-To: <f853a77e2aebea4130fc486bdbf4aa06@mail.gmail.com>
+References: <20101223171859.f6842045.sfr@canb.auug.org.au>
+	<4D139517.3010608@ti.com>
+	<AANLkTi=pTNg2iWN+=uEv=CyZHHCoddF51pmmCMjPeMUF@mail.gmail.com>
+	<4ce0f816f951f24ca3de9c84d9f70842@mail.gmail.com>
+	<AANLkTimA5UOVn6+xe0ofV1F3_XhAP0daBvOAX2k1u_dU@mail.gmail.com>
+	<AANLkTimzQ1PHN986fqPF0yjd1M+390nSUDYJ65pu0z_f@mail.gmail.com>
+	<4D271E0E.8050401@ti.com>
+	<AANLkTikLQRHyp-TS_idEp5Fr74qC3vDoMqqsAA2v_oV8@mail.gmail.com>
+	<c822ad4569a9dc865b5ccf39e12c828b@mail.gmail.com>
+	<f853a77e2aebea4130fc486bdbf4aa06@mail.gmail.com>
+Date: Mon, 10 Jan 2011 21:53:54 +0800
+Message-ID: <AANLkTimakCyo5WB4v677-y+V=EO3nPiMTh+msnxkJiwH@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the usb tree with the omap tree
+From: Ming Lei <tom.leiming@gmail.com>
+To: Anand Gadiyar <gadiyar@ti.com>
+Cc: Benoit Cousson <b-cousson@ti.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Paul Walmsley <paul@pwsan.com>, Greg KH <greg@kroah.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
+        linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-01-08 at 12:16 -0600, Robert Hancock wrote:
-> On 01/07/2011 02:55 PM, Nikolaus Rath wrote:
-> > Hello,
-> >
-> > I want to write a driver for a rather dumb PCI card, which cannot become
-> > bus master itself. Is it possible to use a DMA controller on the
-> > mainboard to still transfer data to the card without occupying the CPU?
-> >
-> > (I believe this is the way DMA used to work on ISA cards, but do recent
-> > x86 systems still have a DMA controller for the CPU?)
-> 
-> The legacy ISA DMA controller worked like that, but you can't use that 
-> with PCI devices. Essentially there is no way to do this, barring 
-> perhaps some wierd platform specific feature.
+Hi,
 
-I believe a DMA Engine would work here - platform-specific, yes, but I
-wouldn't call it "wierd"  :)
+2011/1/7 Anand Gadiyar <gadiyar@ti.com>:
 
-See Documentation/dmaengine.txt.
+> Update: I disabled CONFIG_OMAP_RESET_CLOCKS and the PHY and other
+> connected devices enumerate just fine. Could you try this out on
+> your board as well?
 
-Regards,
-------------------------------------------------------------------------
- Steven J. Magnani               "I claim this network for MARS!
- www.digidescorp.com              Earthling, return my space modulator!"
+Yes, it does work for me if CONFIG_OMAP_RESET_CLOCKS is disabled.
 
- #include <standard.disclaimer>
-
-
-
+thanks,
+-- 
+Lei Ming
