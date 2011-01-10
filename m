@@ -1,39 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544Ab1AJSK3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 13:10:29 -0500
-Received: from mail-in-08.arcor-online.net ([151.189.21.48]:53350 "EHLO
-	mail-in-08.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751619Ab1AJSK0 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 13:10:26 -0500
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-01.arcor-online.net C5D0A5A296
-Subject: Re: [InfraSchlot SPAM Check] Re: [PATCH] DVB Satellite Channel Routing support for DVB-S
-Mime-Version: 1.0 (Apple Message framework v1082)
+	id S1754566Ab1AJSLP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 13:11:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43122 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753816Ab1AJSLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 13:11:10 -0500
+Date: Mon, 10 Jan 2011 13:10:52 -0500
+From: Dave Jones <davej@redhat.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: correct fucked grammar in mips ops-bridge.c
+Message-ID: <20110110181052.GA20090@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Ralf Baechle <ralf@linux-mips.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: =?iso-8859-1?Q?Thomas_Schl=F6ter?= <thomas.schloeter@gmx.net>
-In-Reply-To: <201101101828.40752@orion.escape-edv.de>
-Date: Mon, 10 Jan 2011 19:10:19 +0100
-Cc: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C20366D6-935B-43DE-8A73-9C4B6B5A3051@gmx.net>
-References: <BDD0B014-3AD5-4693-82D9-026F47A7F8A4@gmx.net> <C8296DFF-0E53-4AA2-A6ED-CA8B83D424F2@gmx.net> <4D2B2BA6.7030009@linuxtv.org> <201101101828.40752@orion.escape-edv.de>
-To: linux-media@vger.kernel.org
-X-Mailer: Apple Mail (2.1082)
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Oliver,
+I had no idea just how broken IOC3 was until I read this.
 
-Am 10.01.2011 um 18:28 schrieb Oliver Endriss:
+Signed-off-by: Dave Jones <davej@redhat.com>
 
-> Ack, this stuff should be implemented as a userspace library.
-> (Btw, there is an experimental unicable patch for VDR.)
-
-Yes, there is. I have not testet it as I am going to use MythTV, but for what I have read in some forums, many people have problems using that patch. This is why I decided to make a kernel implementation for my system. But I agree it could also be implemented as a wrapper application between frontend device and viewer application (the quick and dirty way) or native support in a userspace library (which will take some time until it is used in all DVB applications).
-
-What I thought makes my solution attractive is, that you can even use dvbscan, szap etc. without modification, which works perfectly in my setup. But anyway the purpose might be too special to have it inside the kernel.
-
-Regards,
-Thomas
+diff --git a/arch/mips/pci/ops-bridge.c b/arch/mips/pci/ops-bridge.c
+index b46b3e2..4383194 100644
+--- a/arch/mips/pci/ops-bridge.c
++++ b/arch/mips/pci/ops-bridge.c
+@@ -56,7 +56,7 @@ static int pci_conf0_read_config(struct pci_bus *bus, unsigned int devfn,
+ 		return PCIBIOS_DEVICE_NOT_FOUND;
+ 
+ 	/*
+-	 * IOC3 is fucked fucked beyond believe ...  Don't even give the
++	 * IOC3 is fucking fucked beyond belief ...  Don't even give the
+ 	 * generic PCI code a chance to look at it for real ...
+ 	 */
+ 	if (cf == (PCI_VENDOR_ID_SGI | (PCI_DEVICE_ID_SGI_IOC3 << 16)))
+@@ -76,7 +76,7 @@ static int pci_conf0_read_config(struct pci_bus *bus, unsigned int devfn,
+ oh_my_gawd:
+ 
+ 	/*
+-	 * IOC3 is fucked fucked beyond believe ...  Don't even give the
++	 * IOC3 is fucking fucked beyond belief ...  Don't even give the
+ 	 * generic PCI code a chance to look at the wrong register.
+ 	 */
+ 	if ((where >= 0x14 && where < 0x40) || (where >= 0x48)) {
+@@ -85,7 +85,7 @@ oh_my_gawd:
+ 	}
+ 
+ 	/*
+-	 * IOC3 is fucked fucked beyond believe ...  Don't try to access
++	 * IOC3 is fucking fucked beyond belief ...  Don't try to access
+ 	 * anything but 32-bit words ...
+ 	 */
+ 	addr = &bridge->b_type0_cfg_dev[slot].f[fn].l[where >> 2];
+@@ -118,7 +118,7 @@ static int pci_conf1_read_config(struct pci_bus *bus, unsigned int devfn,
+ 		return PCIBIOS_DEVICE_NOT_FOUND;
+ 
+ 	/*
+-	 * IOC3 is fucked fucked beyond believe ...  Don't even give the
++	 * IOC3 is fucking fucked beyond belief ...  Don't even give the
+ 	 * generic PCI code a chance to look at it for real ...
+ 	 */
+ 	if (cf == (PCI_VENDOR_ID_SGI | (PCI_DEVICE_ID_SGI_IOC3 << 16)))
+@@ -139,7 +139,7 @@ static int pci_conf1_read_config(struct pci_bus *bus, unsigned int devfn,
+ oh_my_gawd:
+ 
+ 	/*
+-	 * IOC3 is fucked fucked beyond believe ...  Don't even give the
++	 * IOC3 is fucking fucked beyond belief ...  Don't even give the
+ 	 * generic PCI code a chance to look at the wrong register.
+ 	 */
+ 	if ((where >= 0x14 && where < 0x40) || (where >= 0x48)) {
+@@ -148,7 +148,7 @@ oh_my_gawd:
+ 	}
+ 
+ 	/*
+-	 * IOC3 is fucked fucked beyond believe ...  Don't try to access
++	 * IOC3 is fucking fucked beyond belief ...  Don't try to access
+ 	 * anything but 32-bit words ...
+ 	 */
+ 	bridge->b_pci_cfg = (busno << 16) | (slot << 11);
+@@ -189,7 +189,7 @@ static int pci_conf0_write_config(struct pci_bus *bus, unsigned int devfn,
+ 		return PCIBIOS_DEVICE_NOT_FOUND;
+ 
+ 	/*
+-	 * IOC3 is fucked fucked beyond believe ...  Don't even give the
++	 * IOC3 is fucking fucked beyond belief ...  Don't even give the
+ 	 * generic PCI code a chance to look at it for real ...
+ 	 */
+ 	if (cf == (PCI_VENDOR_ID_SGI | (PCI_DEVICE_ID_SGI_IOC3 << 16)))
+@@ -213,14 +213,14 @@ static int pci_conf0_write_config(struct pci_bus *bus, unsigned int devfn,
+ oh_my_gawd:
+ 
+ 	/*
+-	 * IOC3 is fucked fucked beyond believe ...  Don't even give the
++	 * IOC3 is fucking fucked beyond belief ...  Don't even give the
+ 	 * generic PCI code a chance to touch the wrong register.
+ 	 */
+ 	if ((where >= 0x14 && where < 0x40) || (where >= 0x48))
+ 		return PCIBIOS_SUCCESSFUL;
+ 
+ 	/*
+-	 * IOC3 is fucked fucked beyond believe ...  Don't try to access
++	 * IOC3 is fucking fucked beyond belief ...  Don't try to access
+ 	 * anything but 32-bit words ...
+ 	 */
+ 	addr = &bridge->b_type0_cfg_dev[slot].f[fn].l[where >> 2];
+@@ -257,7 +257,7 @@ static int pci_conf1_write_config(struct pci_bus *bus, unsigned int devfn,
+ 		return PCIBIOS_DEVICE_NOT_FOUND;
+ 
+ 	/*
+-	 * IOC3 is fucked fucked beyond believe ...  Don't even give the
++	 * IOC3 is fucking fucked beyond belief ...  Don't even give the
+ 	 * generic PCI code a chance to look at it for real ...
+ 	 */
+ 	if (cf == (PCI_VENDOR_ID_SGI | (PCI_DEVICE_ID_SGI_IOC3 << 16)))
+@@ -281,14 +281,14 @@ static int pci_conf1_write_config(struct pci_bus *bus, unsigned int devfn,
+ oh_my_gawd:
+ 
+ 	/*
+-	 * IOC3 is fucked fucked beyond believe ...  Don't even give the
++	 * IOC3 is fucking fucked beyond belief ...  Don't even give the
+ 	 * generic PCI code a chance to touch the wrong register.
+ 	 */
+ 	if ((where >= 0x14 && where < 0x40) || (where >= 0x48))
+ 		return PCIBIOS_SUCCESSFUL;
+ 
+ 	/*
+-	 * IOC3 is fucked fucked beyond believe ...  Don't try to access
++	 * IOC3 is fucking fucked beyond belief ...  Don't try to access
+ 	 * anything but 32-bit words ...
+ 	 */
+ 	addr = &bridge->b_type0_cfg_dev[slot].f[fn].l[where >> 2];
