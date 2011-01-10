@@ -1,56 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578Ab1AJRny (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 12:43:54 -0500
-Received: from vms173003pub.verizon.net ([206.46.173.3]:52461 "EHLO
-	vms173003pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852Ab1AJRnx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 12:43:53 -0500
-Date: Mon, 10 Jan 2011 12:43:29 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, Rob <roblinux@gmail.com>,
+	id S1753667Ab1AJRpQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 12:45:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23093 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751220Ab1AJRpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 12:45:13 -0500
+Date: Mon, 10 Jan 2011 19:44:30 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Milton Miller <miltonm@bga.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jamie Lokier <jamie@shareable.org>, Thomas Weber <swirl@gmx.li>,
+        Gleb Natapov <gleb@redhat.com>,
+        virtualization@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org
-Subject: Re: TSC as clocksource
-In-reply-to: <alpine.LFD.2.00.1101101452290.12146@localhost6.localdomain6>
-Message-id: <alpine.LFD.2.02.1101101237420.25082@x980>
-References: <AANLkTikBu6vggpTUQy_MeTG_PJ9WWoHVyDL0OLPa6v=_@mail.gmail.com>
- <1294667092.11896.0.camel@laptop>
- <alpine.LFD.2.00.1101101452290.12146@localhost6.localdomain6>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+Subject: Re: [PATCH] virtio: remove virtio-pci root device
+Message-ID: <20110110174430.GA30450@redhat.com>
+References: <20110105191711.GA27489@redhat.com>
+ <virtio-pci-whynotsimplify@mdm.bga.com>
+ <virtio-pci-noroot@mdm.bga.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <virtio-pci-noroot@mdm.bga.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > On Mon, 2011-01-10 at 09:54 +1100, Rob wrote:
-> > > Want to use TSC as clocksource
-> > > have a Intel Core2 Duo with constant_tsc flag
-> > > TSC should be stable at C1 + C2, it is debatable whether C3 is stable
-
-no debate, TSC on Core2 stops in C3.
-
-> > > Using processor.max_cstate=2 to use only C1 + C2 changes nothing, still get
-> > > Monitor-Mwait will be used to enter C-3 state
-> > > there should be checks before this is forced
+On Fri, Jan 07, 2011 at 02:55:06AM -0600, Milton Miller wrote:
+> We sometimes need to map between the virtio device and
+> the given pci device. One such use is OS installer that
+> gets the boot pci device from BIOS and needs to
+> find the relevant block device. Since it can't,
+> installation fails.
 > 
-> We unconditinally set TSC unstable for anything > C1. The reason is
-> that we had a lot of troubles with BIOSes which advertise C2, but in
-> fact implement C3. Unfortunately we can't verify that.
+> Instead of creating a top-level devices/virtio-pci
+> directory, create each device under the corresponding
+> pci device node.  Symlinks to all virtio-pci
+> devices can be found under the pci driver link in
+> bus/pci/drivers/virtio-pci/devices, and all virtio
+> devices under drivers/bus/virtio/devices.
+> 
+> Signed-off-by: Milton Miller <miltonm@bga.com>
 
-Right.
-There are some Core2 where what ACPI advertises as C2 the TSC works,
-and some where it does something other than "hardware C2",
-such as "hardware C3" and the TSC stops, so Linux is conservative here.
+Tested-by: "Daniel P. Berrange" <berrange@redhat.com>
 
-If you want a stable TSC on Core2 (and before)
-then you need to use either idle=poll or processor.max_cstate=1.
-
-Nehalem and newer (Core i7 etc) have an invarient TSC that works no matter
-what C-states are present.
-
-cheers,
-Len Brown, Intel Open Source Technology Center
+> ---
+> 
+> This is an alternative to the patch by Michael S. Tsirkin
+> titled "virtio-pci: add softlinks between virtio and pci"
+> https://patchwork.kernel.org/patch/454581/
+> 
+> It creates simpler code, uses less memory, and should
+> be even easier use by the installer as it won't have to
+> know a virtio symlink to follow (just follow none).
+> 
+> Compile tested only as I don't have kvm setup.
+> 
+> 
+> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+> index ef8d9d5..4fb5b2b 100644
+> --- a/drivers/virtio/virtio_pci.c
+> +++ b/drivers/virtio/virtio_pci.c
+> @@ -96,11 +96,6 @@ static struct pci_device_id virtio_pci_id_table[] = {
+>  
+>  MODULE_DEVICE_TABLE(pci, virtio_pci_id_table);
+>  
+> -/* A PCI device has it's own struct device and so does a virtio device so
+> - * we create a place for the virtio devices to show up in sysfs.  I think it
+> - * would make more sense for virtio to not insist on having it's own device. */
+> -static struct device *virtio_pci_root;
+> -
+>  /* Convert a generic virtio device to our structure */
+>  static struct virtio_pci_device *to_vp_device(struct virtio_device *vdev)
+>  {
+> @@ -629,7 +624,7 @@ static int __devinit virtio_pci_probe(struct pci_dev *pci_dev,
+>  	if (vp_dev == NULL)
+>  		return -ENOMEM;
+>  
+> -	vp_dev->vdev.dev.parent = virtio_pci_root;
+> +	vp_dev->vdev.dev.parent = &pci_dev->dev;
+>  	vp_dev->vdev.dev.release = virtio_pci_release_dev;
+>  	vp_dev->vdev.config = &virtio_pci_config_ops;
+>  	vp_dev->pci_dev = pci_dev;
+> @@ -717,17 +712,7 @@ static struct pci_driver virtio_pci_driver = {
+>  
+>  static int __init virtio_pci_init(void)
+>  {
+> -	int err;
+> -
+> -	virtio_pci_root = root_device_register("virtio-pci");
+> -	if (IS_ERR(virtio_pci_root))
+> -		return PTR_ERR(virtio_pci_root);
+> -
+> -	err = pci_register_driver(&virtio_pci_driver);
+> -	if (err)
+> -		root_device_unregister(virtio_pci_root);
+> -
+> -	return err;
+> +	return pci_register_driver(&virtio_pci_driver);
+>  }
+>  
+>  module_init(virtio_pci_init);
+> @@ -735,7 +720,6 @@ module_init(virtio_pci_init);
+>  static void __exit virtio_pci_exit(void)
+>  {
+>  	pci_unregister_driver(&virtio_pci_driver);
+> -	root_device_unregister(virtio_pci_root);
+>  }
+>  
+>  module_exit(virtio_pci_exit);
