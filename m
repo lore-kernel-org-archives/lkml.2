@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799Ab1AJF6y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 00:58:54 -0500
-Received: from sh.osrg.net ([192.16.179.4]:33034 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751468Ab1AJF6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 00:58:52 -0500
-Date: Mon, 10 Jan 2011 14:58:23 +0900 (JST)
-Message-Id: <20110110.145823.220041803.ryusuke@osrg.net>
-To: sfr@canb.auug.org.au
-Cc: konishi.ryusuke@lab.ntt.co.jp, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, npiggin@kernel.dk
-Subject: Re: linux-next: manual merge of the nilfs2 tree with the tree
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-In-Reply-To: <20110110120746.7cd287b0.sfr@canb.auug.org.au>
-References: <20110110120746.7cd287b0.sfr@canb.auug.org.au>
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 10 Jan 2011 14:58:25 +0900 (JST)
+	id S1751758Ab1AJGHu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 01:07:50 -0500
+Received: from vms173011pub.verizon.net ([206.46.173.11]:59986 "EHLO
+	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab1AJGHt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 01:07:49 -0500
+To: Dan Carpenter <error27@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+        nicholas.dokos@hp.com
+From: Nick Dokos <nicholas.dokos@hp.com>
+Reply-to: nicholas.dokos@hp.com
+Subject: Re: ext3: deleting files doesn't free up space
+In-reply-to: Message from Dan Carpenter <error27@gmail.com> of
+ "Mon, 10 Jan 2011 08:22:25 +0300."
+ <AANLkTimwDpUz9GUmx3UutYir0UuoTSAXNzphWeEX9sKh@mail.gmail.com>
+References: <AANLkTimwDpUz9GUmx3UutYir0UuoTSAXNzphWeEX9sKh@mail.gmail.com>
+X-Mailer: MH-E 8.2; nmh 1.2; GNU Emacs 23.2.50
+Date: Mon, 10 Jan 2011 01:07:37 -0500
+Message-id: <18505.1294639657@gamaville.dokosmarshall.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Jan 2011 12:07:46 +1100, Stephen Rothwell wrote:
-> Hi Ryusuke,
+> I filled up my partition last night.
+> I deleted 5 gigs of movies.
+> The "Used" number went down to 125G.
+> The "Free" number stayed at 0.
+> I rebooted the system but it's still the same.
 > 
-> Today's linux-next merge of the nilfs2 tree got a conflict in
-> fs/nilfs2/nilfs.h between commit b74c79e99389cd79b31fcc08f82c24e492e63c7e
-> ("fs: provide rcu-walk aware permission i_ops") from Linus' tree and
-> commit aa9ded135baf342ec5a299b254f0e0dbd5c3c0f0 ("nilfs2: do not pass sbi
-> to functions which can get it from inode") from the nilfs2 tree.
+> $ echo foo > foo
+> bash: echo: write error: No space left on device
 > 
-> Just context changes.  I fixed it up (see below) and can carry the fix as
-> necessary.
+> $ df .
+> Filesystem           1K-blocks      Used Available Use% Mounted on
+> /dev/sda1            136236548 130363620         0 100% /media/old_sys
+> 
+> $ mount | grep old
+> /dev/sda1 on /media/old_sys type ext3 (rw,nosuid,nodev)
+> /media/old_sys/home on /home type none (rw,bind)
+> 
+> This is with 2.6.37-rc5+.  Is there a way to debug this?
+> 
 
-Thanks Stephen.  The fix looks good to me.
+I don't think there is anything to debug. ext3 reserves by default 5% of
+the space for root's use. You will see "Available" go positive when
+"Used" is reduced to below 0.95*136236548 blocks = 129424720 blocks
+roughly.  You can check your numbers by running
 
-I'll apply it soon and resolve the conflict.
+    dumpe2fs -h /dev/sda1
 
-Ryusuke Konishi
+and checking the "Block count" and "Reserved block count" fields.
+
+You should be able to write to the filesystem as root though, as long
+as Used < Total number of blocks. And you can adjust the reserved space
+with ``tune2fs -m <N>''.
+
+See e.g https://wiki.archlinux.org/index.php/Ext3_Filesystem_Tips
+(the first hit from a Google search for "ext3 reserved").
+
+Nick
