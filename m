@@ -1,102 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab1AJWAA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 17:00:00 -0500
-Received: from [211.233.36.121] ([211.233.36.121]:59443 "EHLO mail.nstek.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754764Ab1AJV7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 16:59:46 -0500
-Message-Id: <201101102155.p0ALt9Gb031029@mail.nstek.com>
-Reply-To: <athur.lee77@info.al>
-From: "Dr Athur Lee." <athur.lee2009@gmail.com>
-Subject: I HOPE TO HEAR FROM YOU.
-Date: Tue, 11 Jan 2011 04:55:26 +0700
+	id S1754949Ab1AJWAm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 17:00:42 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:59967 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754829Ab1AJWAk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 17:00:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=uHj0l9OvhFHxtmi2pB5wtxFeeYmVXcbU4+LjUu+71GSs8KiA0VTHEh6TNNljqdvHgW
+         roMxPV+PSn+7yPbe7KtfSNxSNSuABAJs5dpgoOS4h68Udfuwatv3Lkr4c7iTrDpol8Lu
+         CcGUAxrdKlmfgo5YDQ+ZvBN1JlgJx5c30oHzA=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-To: <linuxgnu@yahoo.com.au>
-To: <linuxfilesystem@yahoo.com.au>
-To: <linus_welch@yahoo.com>
-To: <linurse7@yahoo.com>
-To: <linsueford@yahoo.com>
-To: <linsma22@yahoo.com>
-To: <lins0724@yahoo.com>
-To: <linp012003@yahoo.com>
-To: <linooshka@yahoo.com>
-To: <linogalvan@yahoo.com>
-To: <linoyvarghese@yahoo.co.in>
-To: <lintang_galuh@yahoo.co.id>
-To: <linux-kernel@vger.kernel.org>
-To: <linsey.ab@verizon.net>
-To: <linux-howto@sunsite.unc.edu>
-To: <linuxgam@sunsite.dk>
-To: <lins@stkhi.com>
-To: <linux-gcc@soemail.rutgers.edu>
-To: <linux@seaq.com.co>
-To: <linus@sbcglobal.net>
-To: <lintotomy@rediffmail.com>
-To: <linparnell@q.com>
-To: <linshumg@public.bta.net.cn>
-To: <linping@ns.ccidc.com.cn>
-To: <linping@nortel.com>
-To: <linux@murphyslantech.de>
-To: <linus1397@msn.com>
-To: <linnhodges@mindspring.com>
-To: <linuxgr@linuxvn.com>
-To: <linux@linux.ucla.edu>
-To: <linuxdoctor@linux.ca>
-To: <linux-cvs@linux-mips.org>
-To: <linux-aio@kvack.org>
-To: <linux-future@khim.sch57.msk.ru>
-To: <linov@hotmail.com>
-To: <lino_bri@hotmail.com>
-To: <linux-howto@hacktik.org>
-To: <linuxbsdfreak@gmail.com>
-To: <linsonmatrix@gmail.com>
-To: <linntate@gmail.com>
-To: <linux4michelle@freenet.de>
-To: <linshop@earthlink.net>
-To: <linux-megaraid-devel@dell.com>
-To: <linux-megaraid-announce@dell.com>
-To: <linux@cyberramp.net>
-To: <linux-delhi@bhairavi.newdelhi.sgi.com>
-To: <lintonpd@bektel.com>
-To: <linspen@att.net>
-To: <linus343@aol.com>
-To: <linranran@263.net>
+In-Reply-To: <alpine.DEB.2.00.1101101232580.11969@chino.kir.corp.google.com>
+References: <20110110181133.14995.12364.stgit@e102109-lin.cambridge.arm.com>
+	<alpine.DEB.2.00.1101101232580.11969@chino.kir.corp.google.com>
+Date: Mon, 10 Jan 2011 22:00:39 +0000
+X-Google-Sender-Auth: LmzK4Ya5LYCecdlwh2vT7A_QIJo
+Message-ID: <AANLkTik-NwSioPg96EFUDzuK=zK0kNbvUeQbt0rwQAtX@mail.gmail.com>
+Subject: Re: [PATCH] kmemleak: Reduce verbosity when memory allocation fails
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, "Ted Ts'o" <tytso@mit.edu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ATHUR LEE & ASSOCIATE CHAMBERS
-Bangkok Thailand 10240
-Email:athur.lee77@info.al
-Website: www.sbcinterlaw.com
+On Monday, 10 January 2011, David Rientjes <rientjes@google.com> wrote:
+> On Mon, 10 Jan 2011, Catalin Marinas wrote:
+>
+>> diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+>> index bd9bc21..eee8e31 100644
+>> --- a/mm/kmemleak.c
+>> +++ b/mm/kmemleak.c
+>> @@ -113,7 +113,8 @@
+>>  #define BYTES_PER_POINTER    sizeof(void *)
+>>
+>>  /* GFP bitmask for kmemleak internal allocations */
+>> -#define GFP_KMEMLEAK_MASK    (GFP_KERNEL | GFP_ATOMIC)
+>> +#define gfp_kmemleak_mask(gfp)       ((gfp) & (GFP_KERNEL | GFP_ATOMIC) | \
+>> +                              __GFP_NOWARN)
+>
+> It would be a shame if the allocation were __GFP_NORETRY and kmemleak
+> ended up looping forever because it suppresses the bit for a single page,
+> it uses __GFP_NOMEMALLOC and kmemleak ends up allocating from memory
+> reserves, or it uses __GFP_HARDWALL and kmemleak is allocating metadata in
+> a different cpuset.
+>
+> I'm not sure why you're not just masking __GFP_NOFAIL and __GFP_REPEAT and
+> then failing gracefully?  (And __GFP_ZERO and __GFP_COMP, too, of course.)
 
+The reason I wouldn't allow kmemleak allocations to fail is that once
+it happened kmemleak cannot recover. Once it missed an allocation for
+its metadata, the corresponding memory block cannot be tracked nor
+scanned leading to false positives. I had thought about even passing
+__GFP_REPEAT but I think this is kind of implied for 0-order
+allocations.
 
+If the user calling the kernel alloc function cannot get memory,
+kmemleak won't be called anyway.
 
-I am DR, ATHUR LEE. A , a Solicitor. I am the Personal Attorney to MR, OLIVE GREENE who used to work with Siamrak Company Limited.On the 21st of April 2006, his wife and their three children were involved in a car accident along Sukhumvit Express Road.
-
-Unfortunately, they all lost their lives in the event of the accident. Since then I have made several inquiries to your Embassy to locate any of my client\'s relatives, this has also proved unsuccessful. After these several unsuccessful attempts, I decided to trace his relatives over the Internet to locate any member of his family but to no avail, hence, I contacted you to assist in repatriating the money left behind in Particularly bank where the deceased deposited the US$15 Million (Fifteen Million United States Dollars only).Consequently, this bank issued me a notice to provide the Next of Kin to claim the US$15 Million (Fifteen Million United States Dollars only) in their custody within the next ten official working days. Since I have been unsuccessful in locating the relatives for over 4 years now, I seek your consent to present you as the next of kin of the deceased to claim the fund as the Next of Kin to him so that the fund will be transferred into your account by th!
-e bank.
-
-
-Upon receipt of the fund, I will come over to your country to meet with you for the disbursement of the fund and then you and I will share the money in this order: 60% will be for me, 40% will be for you. I have all the necessary legal documents that can back our claim we will make with the bank.
-
-All I require is your honest co-operation to enable us seeing this deal through. I guarantee that this will be executed under a legitimate arrangement that will protect you from any breach of the law.
-
-You are needed as a next of kin to be presented before the bank to inherit the fund, please i advice you to reply me back to my above private email address which is as the same as this :athur.lee77@info.al for security reasons.
-
-Hope to hear from you soon.
-
-Many Thanks.
-
-Yours Sincerely,
-
-LLB. DR, ATHUR LEE.
-Website: www.sbcinterlaw.com
+-- 
+Catalin
