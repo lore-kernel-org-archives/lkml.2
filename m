@@ -1,86 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987Ab1AJT2D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 14:28:03 -0500
-Received: from ns2.cypress.com ([157.95.67.5]:41682 "EHLO ns2.cypress.com"
+	id S1754127Ab1AJT3g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 14:29:36 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:65371 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753800Ab1AJT17 convert rfc822-to-8bit (ORCPT
+	id S1751606Ab1AJT3c convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 14:27:59 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+	Mon, 10 Jan 2011 14:29:32 -0500
+X-IronPort-AV: E=Sophos;i="4.60,302,1291622400"; 
+   d="scan'208";a="503675048"
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>, linux-arch@vger.kernel.org,
+        linux-nfs@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20110110192552.GG24920@pengutronix.de>
+References: <AANLkTimusF4KCJ4vHPn+T1dUiKxapXaT0QTtFvh8Ykdd@mail.gmail.com>
+	 <1294426405.2929.23.camel@heimdal.trondhjem.org>
+	 <20110107190229.GX31708@n2100.arm.linux.org.uk>
+	 <1294427467.4895.66.camel@mulgrave.site>
+	 <1294505384.4181.14.camel@heimdal.trondhjem.org>
+	 <1294528551.4181.19.camel@heimdal.trondhjem.org>
+	 <20110110105019.GC24920@pengutronix.de>
+	 <1294676734.3349.10.camel@heimdal.trondhjem.org>
+	 <4D2B3D03.8050504@pengutronix.de>
+	 <1294680035.3349.19.camel@heimdal.trondhjem.org>
+	 <20110110192552.GG24920@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Subject: RE: [v4 1/3] 1/3 Touchscreen: Cypress TTSP G3 Core Driver
-Date: Mon, 10 Jan 2011 11:27:33 -0800
-Message-ID: <FB9C2CB29A07AB45B575A4E8D2AABC0901400A3F@labamba.mis.cypress.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [v4 1/3] 1/3 Touchscreen: Cypress TTSP G3 Core Driver
-Thread-Index: Acus/t93V77wsWGtT9CB9CajFsNChQD/SRLQ
-References: <kev@cypress.com> <1294188847-24728-1-git-send-email-kev@cypress.com> <20110105085942.GA23321@polaris.bitmath.org> <FB9C2CB29A07AB45B575A4E8D2AABC09014003B8@labamba.mis.cypress.com> <20110105173403.GA2146@polaris.bitmath.org>
-From: "Kevin McNeely" <Kevin.McNeely@cypress.com>
-To: "Henrik Rydberg" <rydberg@euromail.se>
-Cc: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
-        "David Brown" <davidb@codeaurora.org>,
-        "Trilok Soni" <tsoni@codeaurora.org>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        "Eric Miao" <eric.y.miao@gmail.com>,
-        "Mike Frysinger" <vapier@gentoo.org>,
-        "Alan Cox" <alan@linux.intel.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 10 Jan 2011 19:27:36.0287 (UTC) FILETIME=[6FB98EF0:01CBB0FC]
-X-Brightmail-Tracker: AAAAAA==
-X-MailScanner: 
+Organization: NetApp Inc
+Date: Mon, 10 Jan 2011 14:29:27 -0500
+Message-ID: <1294687767.3349.28.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 10 Jan 2011 19:29:29.0630 (UTC) FILETIME=[B34853E0:01CBB0FC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Henrik,
-
-As there have been no other changes requested for the v4 (other than
-your modifications), will you merge your modification patch along with
-my  v4 SPI and v4 I2C patches?
-
-Do I need to submit a v5 with your patch in order to get merged?
-
-Thanks and best regards,
-Kevin
-
-
-> -----Original Message-----
-> From: Henrik Rydberg [mailto:rydberg@euromail.se]
-> Sent: Wednesday, January 05, 2011 9:34 AM
-> To: Kevin McNeely
-> Cc: Dmitry Torokhov; David Brown; Trilok Soni; Samuel Ortiz; Eric
-Miao;
-> Mike Frysinger; Alan Cox; linux-input@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [v4 1/3] 1/3 Touchscreen: Cypress TTSP G3 Core Driver
+On Mon, 2011-01-10 at 20:25 +0100, Uwe Kleine-König wrote: 
+> Hello Trond,
 > 
-> Hi Kevin,
+> On Mon, Jan 10, 2011 at 12:20:35PM -0500, Trond Myklebust wrote:
+> > On Mon, 2011-01-10 at 18:08 +0100, Marc Kleine-Budde wrote: 
+> > > On 01/10/2011 05:25 PM, Trond Myklebust wrote:
+> > > > On Mon, 2011-01-10 at 11:50 +0100, Uwe Kleine-König wrote: 
+> > > >> Hi Trond,
+> > > >>
+> > > >> On Sat, Jan 08, 2011 at 06:15:51PM -0500, Trond Myklebust wrote:
+> > > >>> ----------------------------------------------------------------------------------- 
+> > > >> It would be great if you could add a "8<" in the line above next time.
+> > > >> Then git-am -c does the right thing (at least I think so).
+> > > > 
+> > > > Sorry. I wasn't aware of that particular idiom. So something like
+> > > > 
+> > > > 8<------------------------------------------------------------
+> > > > From: Trond Myklebust <Trond.Myklebust@netapp.com>
+> > > > Subject: .....
+> > > 
+> > > Yes.
+> > > 
+> > > From "man git-mailinfo":
+> > > "A line that mainly consists of scissors (either ">8" or "8<") and
+> > > perforation (dash "-")"
+> > > 
+> > > BTW:
+> > > Is this patch a candidate for stable?
+> > 
+> > Yes. I'm planning on sending it to the stable list after Linus merges it
+> > into mainline.
+> So there is another idiom for you:  just put
 > 
-> > Hi Henrik,
-> >
-> > Thank you for the code modifications.
-> > The mods work for both I2C and SPI builds.
+> 	Cc: stable@kernel.org
 > 
-> Great!
-> 
-> > Can you post your modified patch?
-> 
-> There might be more comments to v4, so if there is a v5, you can just
-> send it then. Otherwise, we have what we need.
-> 
-> Thanks,
-> Henrik
+> in the S-o-b block and Greg will pick it off "automatically".  (Just in
+> case you don't know, and if you do, maybe someone else learned
+> something.)
 
----------------------------------------------------------------
-This message and any attachments may contain Cypress (or its
-subsidiaries) confidential information. If it has been received
-in error, please advise the sender and immediately delete this
-message.
----------------------------------------------------------------
+I usually do this, but there is a slight problem with that approach:
+Greg gets to do all the work of figuring out to which stable kernels
+this particular patch applies. In this case, since we're only talking
+about the 2.6.37 kernel, I prefer to use the mailing lists.
+
+Cheers
+  Trond
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
