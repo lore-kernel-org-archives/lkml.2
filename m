@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538Ab1AJIGV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 03:06:21 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38102
+	id S1752689Ab1AJIHo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 03:07:44 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38110
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751700Ab1AJIGS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 03:06:18 -0500
-Date: Mon, 10 Jan 2011 00:06:50 -0800 (PST)
-Message-Id: <20110110.000650.124002380.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: torvalds@linux-foundation.org, alex.arnautu96@gmail.com,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Subject: Re: Kernel 2.6.37-rc5 rc7 Oops
+	by vger.kernel.org with ESMTP id S1751552Ab1AJIHl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 03:07:41 -0500
+Date: Mon, 10 Jan 2011 00:08:13 -0800 (PST)
+Message-Id: <20110110.000813.173856001.davem@davemloft.net>
+To: rjw@sisk.pl
+Cc: linux-kernel@vger.kernel.org, maciej.rutecki@gmail.com,
+        florian@mickler.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, kernel-testers@vger.kernel.org,
+        netdev@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, linux-scsi@vger.kernel.org,
+        linux-wireless@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: 2.6.37-rc8: Reported regressions from 2.6.36
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1293652965.7150.13.camel@edumazet-laptop>
-References: <AANLkTinCD5Jf-dEUpv7hu4YKrxS0DGqqqBU94iCJ8602@mail.gmail.com>
-	<AANLkTinJAEW-xAiEKnfxo1+3FiGwFXFii5Rh6d8tAtB-@mail.gmail.com>
-	<1293652965.7150.13.camel@edumazet-laptop>
+In-Reply-To: <96DQe4a_2tH.A.cFB.l27GNB@chimera>
+References: <96DQe4a_2tH.A.cFB.l27GNB@chimera>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Wed, 29 Dec 2010 21:02:45 +0100
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+Date: Wed, 29 Dec 2010 23:59:38 +0100 (CET)
 
-> Le mercredi 29 décembre 2010 à 11:23 -0800, Linus Torvalds a écrit :
->> On Wed, Dec 29, 2010 at 4:26 AM, Alex Arnautu <alex.arnautu96@gmail.com> wrote:
->> >
->> > I get an oops with 2.6.37-rc5 and 2.6.37-rc7-git1.
->> > http://www.fotoshack.us/fotos/19044P271210_15.14_[01].jpg
->> 
->> Hmm. Davem added to the list of people involved. This _may_ be fixed
->> by the "always clone skbs" commit in -rc8 (commit 173021072), but
->> David can make a better judgment call.
->> 
-> 
-> Very unlikely, as commit 173021072 only fix a bug in case mirred is
-> used.
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24592
+> Subject		: 2.6.37-rc5: NULL pointer oops in selinux_socket_unix_stream_connect
+> Submitter	: Jeremy Fitzhardinge <jeremy@goop.org>
+> Date		: 2010-12-08 21:09 (22 days old)
+> Message-ID	: <4CFFF3F3.90100@goop.org>
+> References	: http://marc.info/?l=linux-kernel&m=129184256629712&w=2
 
-This should be taken to the wireless list (now CC:'d) as the rt2xxx
-driver and the wireless stack are both in that backtrace.
+This bug is intended to be fixed by:
+
+commit 3610cda53f247e176bcbb7a7cca64bc53b12acdb
+Author: David S. Miller <davem@davemloft.net>
+Date:   Wed Jan 5 15:38:53 2011 -0800
+
+    af_unix: Avoid socket->sk NULL OOPS in stream connect security hooks.
+    
+    unix_release() can asynchornously set socket->sk to NULL, and
+    it does so without holding the unix_state_lock() on "other"
+    during stream connects.
+    
+    However, the reverse mapping, sk->sk_socket, is only transitioned
+    to NULL under the unix_state_lock().
+    
+    Therefore make the security hooks follow the reverse mapping instead
+    of the forward mapping.
+    
+    Reported-by: Jeremy Fitzhardinge <jeremy@goop.org>
+    Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
