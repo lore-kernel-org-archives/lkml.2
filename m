@@ -1,126 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753616Ab1AJL0W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 06:26:22 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:57667 "EHLO mprc.pku.edu.cn"
+	id S1753634Ab1AJL2V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 06:28:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13244 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752768Ab1AJL0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 06:26:20 -0500
-From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
-To: "'Arnd Bergmann'" <arnd@arndb.de>
-Cc: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <00cc01cba464$16e6a410$44b3ec30$@mprc.pku.edu.cn> <201101070104.57770.arnd@arndb.de>
-In-Reply-To: <201101070104.57770.arnd@arndb.de>
-Subject: RE: [PATCHv1 04/12] unicore32 core architecture: low level entry and setup code
-Date: Mon, 10 Jan 2011 19:26:11 +0800
-Message-ID: <002001cbb0b9$2fd88b30$8f89a190$@mprc.pku.edu.cn>
+	id S1753192Ab1AJL2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 06:28:20 -0500
+Date: Mon, 10 Jan 2011 13:27:39 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Milton Miller <miltonm@bga.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jamie Lokier <jamie@shareable.org>, Thomas Weber <swirl@gmx.li>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] virtio: remove virtio-pci root device
+Message-ID: <20110110112739.GD2202@redhat.com>
+References: <20110105191711.GA27489@redhat.com>
+ <virtio-pci-whynotsimplify@mdm.bga.com>
+ <virtio-pci-noroot@mdm.bga.com>
+ <20110109151821.GA9063@redhat.com>
+ <20110110111859.GC2202@redhat.com>
+ <20110110112205.GC12065@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQLkfK7wkHNAbtLb1MGvO4jX+F+/pwGBDH/YkYxuV/A=
-Content-Language: zh-cn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110110112205.GC12065@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 10, 2011 at 01:22:05PM +0200, Michael S. Tsirkin wrote:
+> On Mon, Jan 10, 2011 at 01:18:59PM +0200, Gleb Natapov wrote:
+> > On Sun, Jan 09, 2011 at 05:18:21PM +0200, Michael S. Tsirkin wrote:
+> > > On Fri, Jan 07, 2011 at 02:55:06AM -0600, Milton Miller wrote:
+> > > > We sometimes need to map between the virtio device and
+> > > > the given pci device. One such use is OS installer that
+> > > > gets the boot pci device from BIOS and needs to
+> > > > find the relevant block device. Since it can't,
+> > > > installation fails.
+> > > > 
+> > > > Instead of creating a top-level devices/virtio-pci
+> > > > directory, create each device under the corresponding
+> > > > pci device node.  Symlinks to all virtio-pci
+> > > > devices can be found under the pci driver link in
+> > > > bus/pci/drivers/virtio-pci/devices, and all virtio
+> > > > devices under drivers/bus/virtio/devices.
+> > > > 
+> > > > Signed-off-by: Milton Miller <miltonm@bga.com>
+> > > 
+> > > OK, this works fine for me.  I played with options to add compat
+> > > softlinks under devices/virtio-pci but we still don't get exactly the
+> > > same layout and since I don't think anyone actually uses them, it's
+> > > probably ok to just to the simple thing.
+> > > 
+> > > Tested/Acked-by: Michael S. Tsirkin <mst@redhat.com>
+> > > 
+> > > Rusty, since this help fix at least one user, any chance this can be put
+> > > in 2.6.38? OK to backport to -stable?
+> > > 
+> > > Gleb, could you try this out too?
+> > > 
+> > With this patch if I have 3 virtio disks for a VM I get:
+> > /sys/devices/pci0000:00/0000:00:04.0/virtio0/block/vda
+> > /sys/devices/pci0000:00/0000:00:05.0/virtio1/block/vdb
+> > /sys/devices/pci0000:00/0000:00:06.0/virtio2/block/vdc
+> > 
+> > Number after virtio has no much sense. It either should be dropped at all
+> > or be always zero in case we will support more then one virtio controller
+> > per pci card. In that case each virtio controller will have directories
+> > virtio0/virtio1/virtio2... under same pci device directory.
+> 
+> Yes. But this is the bus name.  It must be unique - all devices
+> also appear under /sys/bus/virtio/devices.
+> 
+It is very strange king of bus that is spread over several PCI devices :)
+It doesn't make much sense IMHO, but I can leave with it.
 
+> > > > ---
+> > > > 
+> > > > This is an alternative to the patch by Michael S. Tsirkin
+> > > > titled "virtio-pci: add softlinks between virtio and pci"
+> > > > https://patchwork.kernel.org/patch/454581/
+> > > > 
+> > > > It creates simpler code, uses less memory, and should
+> > > > be even easier use by the installer as it won't have to
+> > > > know a virtio symlink to follow (just follow none).
+> > > > 
+> > > > Compile tested only as I don't have kvm setup.
+> > > > 
+> > > > 
+> > > > diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+> > > > index ef8d9d5..4fb5b2b 100644
+> > > > --- a/drivers/virtio/virtio_pci.c
+> > > > +++ b/drivers/virtio/virtio_pci.c
+> > > > @@ -96,11 +96,6 @@ static struct pci_device_id virtio_pci_id_table[] = {
+> > > >  
+> > > >  MODULE_DEVICE_TABLE(pci, virtio_pci_id_table);
+> > > >  
+> > > > -/* A PCI device has it's own struct device and so does a virtio device so
+> > > > - * we create a place for the virtio devices to show up in sysfs.  I think it
+> > > > - * would make more sense for virtio to not insist on having it's own device. */
+> > > > -static struct device *virtio_pci_root;
+> > > > -
+> > > >  /* Convert a generic virtio device to our structure */
+> > > >  static struct virtio_pci_device *to_vp_device(struct virtio_device *vdev)
+> > > >  {
+> > > > @@ -629,7 +624,7 @@ static int __devinit virtio_pci_probe(struct pci_dev *pci_dev,
+> > > >  	if (vp_dev == NULL)
+> > > >  		return -ENOMEM;
+> > > >  
+> > > > -	vp_dev->vdev.dev.parent = virtio_pci_root;
+> > > > +	vp_dev->vdev.dev.parent = &pci_dev->dev;
+> > > >  	vp_dev->vdev.dev.release = virtio_pci_release_dev;
+> > > >  	vp_dev->vdev.config = &virtio_pci_config_ops;
+> > > >  	vp_dev->pci_dev = pci_dev;
+> > > > @@ -717,17 +712,7 @@ static struct pci_driver virtio_pci_driver = {
+> > > >  
+> > > >  static int __init virtio_pci_init(void)
+> > > >  {
+> > > > -	int err;
+> > > > -
+> > > > -	virtio_pci_root = root_device_register("virtio-pci");
+> > > > -	if (IS_ERR(virtio_pci_root))
+> > > > -		return PTR_ERR(virtio_pci_root);
+> > > > -
+> > > > -	err = pci_register_driver(&virtio_pci_driver);
+> > > > -	if (err)
+> > > > -		root_device_unregister(virtio_pci_root);
+> > > > -
+> > > > -	return err;
+> > > > +	return pci_register_driver(&virtio_pci_driver);
+> > > >  }
+> > > >  
+> > > >  module_init(virtio_pci_init);
+> > > > @@ -735,7 +720,6 @@ module_init(virtio_pci_init);
+> > > >  static void __exit virtio_pci_exit(void)
+> > > >  {
+> > > >  	pci_unregister_driver(&virtio_pci_driver);
+> > > > -	root_device_unregister(virtio_pci_root);
+> > > >  }
+> > > >  
+> > > >  module_exit(virtio_pci_exit);
+> > 
+> > --
+> > 			Gleb.
 
-> -----Original Message-----
-> From: Arnd Bergmann [mailto:arnd@arndb.de]
-> Sent: Friday, January 07, 2011 8:05 AM
-> To: Guan Xuetao
-> Cc: linux-arch@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCHv1 04/12] unicore32 core architecture: low level entry and setup code
-> 
-> On Saturday 25 December 2010, Guan Xuetao wrote:
-> > +#ifdef __KERNEL__
-> > +
-> > +/*
-> > + * Memory map description
-> > + */
-> > +# define NR_BANKS 8
-> > +
-> > +struct membank {
-> > +	unsigned long start;
-> > +	unsigned long size;
-> > +	unsigned int highmem;
-> > +};
-> > +
-> > +struct meminfo {
-> > +	int nr_banks;
-> > +	struct membank bank[NR_BANKS];
-> > +};
-> > +
-> > +extern struct meminfo meminfo;
-> > +
-> > +#define for_each_bank(iter, mi)				\
-> > +	for (iter = 0; iter < (mi)->nr_banks; iter++)
-> > +
-> > +#define bank_pfn_start(bank)	__phys_to_pfn((bank)->start)
-> > +#define bank_pfn_end(bank)	__phys_to_pfn((bank)->start + (bank)->size)
-> > +#define bank_pfn_size(bank)	((bank)->size >> PAGE_SHIFT)
-> > +#define bank_phys_start(bank)	((bank)->start)
-> > +#define bank_phys_end(bank)	((bank)->start + (bank)->size)
-> > +#define bank_phys_size(bank)	((bank)->size)
-> 
-> The membank stuff looks like a variation of the generic memblock interfaces.
-Memblock  codes came from arm,  and I can only find similar definitions in arm, unicore32,
-and perhaps xtensa's sysmem_info.
-So, I suggest an empty memblock.h is preferred, and perhaps more architectures could use it.
-
-> 
-> > +/*
-> > + * Handle all unrecognised system calls.
-> > + *  0x9f0000 - 0x9fffff are some more esoteric system calls
-> > + */
-> > +#define NR(x) ((__UNICORE_NR_##x) - __UNICORE_NR_BASE)
-> > +asmlinkage int uc32_syscall(int no, struct pt_regs *regs)
-> > +{
-> > +	if ((no >> 16) != (__UNICORE_NR_BASE >> 16))
-> > +		return -ENOSYS;
-> > +
-> > +	switch (no & 0xffff) {
-> > +	/*
-> > +	 * Flush a region from virtual address 'r0' to virtual address 'r1'
-> > +	 * _exclusive_.  There is no alignment requirement on either address;
-> > +	 * user space does not need to know the hardware cache layout.
-> > +	 *
-> > +	 * r2 contains flags.  It should ALWAYS be passed as ZERO until it
-> > +	 * is defined to be something else.  For now we ignore it, but may
-> > +	 * the fires of hell burn in your belly if you break this rule. ;)
-> > +	 *
-> > +	 * (at a later date, we may want to allow this call to not flush
-> > +	 * various aspects of the cache.  Passing '0' will guarantee that
-> > +	 * everything necessary gets flushed to maintain consistency in
-> > +	 * the specified region).
-> > +	 */
-> > +	case NR(cacheflush):
-> > +		do_cache_op(regs->UCreg_00, regs->UCreg_01, regs->UCreg_02);
-> > +		return 0;
-> > +
-> > +	case NR(cmpxchg):
-> > +		return do_cmpxchg_op(regs);
-> > +
-> > +	default:
-> > +		return -ENOSYS;
-> > +	}
-> > +}
-> 
-> With the generic system cal interface, this function should be replaced
-> with straight system calls for each of the subfunctions.
-> 
-> Just use things definitions like
-> 
-> #define __NR_cacheflush __NR_arch_specific_syscall
-> __SYSCALL(__NR_cacheflush, sys_uc32_cacheflush)
-> #define __NR_cmpxchg __NR_arch_specific_syscall+1
-> __SYSCALL(__NR_cmpxchg, sys_uc32_cacheflush
-> 
-> in your asm/unistd.h file.
-Yes. Thanks. It's high time to do this work for me.
-
-Guan Xuetao
-
-
+--
+			Gleb.
