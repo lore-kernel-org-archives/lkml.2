@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab1AJVLN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 16:11:13 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58512 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753751Ab1AJVLK (ORCPT
+	id S1754791Ab1AJVLl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 16:11:41 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:52118 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753751Ab1AJVLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 16:11:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=pisajv4FrG+27uzM+DivFyYhDq2DTvET6mnPMSSSAVYGd/hWPF0+1pPbDvS1DguXkm
-         L9M6K2f0a47KG/zWdKrOuyPS1vCTGtvcxHULheBavjr3uT7h+zDObK2TxyASJRNTTe/S
-         lE3s8AVRkVz136ODNXBjVBEqm2d743B9xuMGA=
-Date: Mon, 10 Jan 2011 13:11:03 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Kevin McNeely <Kevin.McNeely@cypress.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>, David Brown <davidb@codeaurora.org>,
-        Trilok Soni <tsoni@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Eric Miao <eric.y.miao@gmail.com>, Mike Frysinger <vapier@gentoo.org>,
-        Alan Cox <alan@linux.intel.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [v4 1/3] 1/3 Touchscreen: Cypress TTSP G3 Core Driver
-Message-ID: <20110110211103.GA16332@core.coreip.homeip.net>
-References: <kev@cypress.com>
- <1294188847-24728-1-git-send-email-kev@cypress.com>
- <20110105085942.GA23321@polaris.bitmath.org>
- <FB9C2CB29A07AB45B575A4E8D2AABC09014003B8@labamba.mis.cypress.com>
- <20110105173403.GA2146@polaris.bitmath.org>
- <FB9C2CB29A07AB45B575A4E8D2AABC0901400A3F@labamba.mis.cypress.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <FB9C2CB29A07AB45B575A4E8D2AABC0901400A3F@labamba.mis.cypress.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 10 Jan 2011 16:11:39 -0500
+Subject: Re: [PATCH V8 02/13] ntp: add ADJ_SETOFFSET mode bit
+From: john stultz <johnstul@us.ibm.com>
+To: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
+Cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <AANLkTimS0-ih=WZ_GvPi9NFjbYMT4OctWV943ri4GuTD@mail.gmail.com>
+References: <cover.1293820862.git.richard.cochran@omicron.at>
+	 <fe2bec763bec155381d62721aa9da84aeca2785c.1293820862.git.richard.cochran@omicron.at>
+	 <AANLkTini2WdT-1v4k9V3JOZYDkA59P+SyscTe8-fK2Wk@mail.gmail.com>
+	 <20110108175028.GA22308@riccoc20.at.omicron.at>
+	 <AANLkTikigXGSACF6R6kfNHyKZ7GFWrUrCMxygvL3fUC6@mail.gmail.com>
+	 <20110110071759.GA4864@riccoc20.at.omicron.at>
+	 <AANLkTimS0-ih=WZ_GvPi9NFjbYMT4OctWV943ri4GuTD@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 10 Jan 2011 13:11:32 -0800
+Message-ID: <1294693892.3068.17.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 11:27:33AM -0800, Kevin McNeely wrote:
-> Hello Henrik,
+On Tue, 2011-01-11 at 05:47 +0900, Kuwahara,T. wrote:
+> On Mon, Jan 10, 2011 at 4:17 PM, Richard Cochran
+> <richardcochran@gmail.com> wrote:
+> > the PTP Hardware Clocks for which this whole patch
+> > set was created in the first place will keep their time as TAI.
 > 
-> As there have been no other changes requested for the v4 (other than
-> your modifications), will you merge your modification patch along with
-> my  v4 SPI and v4 I2C patches?
-> 
-> Do I need to submit a v5 with your patch in order to get merged?
-> 
+> Are you sure of that?  I don't have the standard handy (it's non-free,
+> right?) but it seems that the Annex B states differently.  But that's
+> not the point anyway.  My concern is that your patch not only adds the
+> useless (and broken) feature to the existing syscall but also makes a
+> permanent change to the public interface for your own use.  That's
+> what I'm against.  So if you stop touching the struct timex, I won't
+> complain anymore.
 
-Hi Kevin,
+You still haven't explained *why* you're so protective of the timex and
+adjtimex interfaces.  While I do want to keep compatible the
+functionality where possible, I don't see why Linux should be limited by
+what other OSes do.
 
-I have a few comments/changes, let me try to sort through them
-tonight/tomorrow.
+Injecting an offset to the system time seems like a reasonable thing for
+adjtimex to do (rather then adding a new syscall). Further utilizing a
+new mode bit for this functionality seems reasonable and cleaner then
+your suggestions for utilizing existing mode bits in combined with other
+magic bits. If there is a compelling reason why not to do this, do
+please let us know! We might just agree with you after hearing it. :)
 
-Thanks.
+thanks
+-john
 
--- 
-Dmitry
+
