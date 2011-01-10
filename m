@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166Ab1AJOzy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 09:55:54 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40389 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350Ab1AJOzx (ORCPT
+	id S1754207Ab1AJPBB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 10:01:01 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:62757 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751800Ab1AJPA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 09:55:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=vrfy.org; s=google;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=FljHm+h7dfXSQFPosL4cQ2yG872ADOJnH4S3xgjZpsnOzHFrqxajmKNdFspLBlqCh5
-         6PGaltIc+PnnwWQUeXmMwNK3Zv9uk/wXs89VpfdSKgNckQ5w2nB29XVcgt1Q5GB9VAlv
-         PJcoDR2d9wU1Y1eCTg0EklVEkZOckggivKkmQ=
-MIME-Version: 1.0
-In-Reply-To: <20110110125908.4251eb45.sfr@canb.auug.org.au>
-References: <20101221181158.53f62590.sfr@canb.auug.org.au> <20101221194204.GA11611@kroah.com>
- <20110110114959.691c20f1.sfr@canb.auug.org.au> <20110110005601.GA19570@kroah.com>
- <20110110125908.4251eb45.sfr@canb.auug.org.au>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Mon, 10 Jan 2011 15:55:35 +0100
-Message-ID: <AANLkTimd1oOzHau3OoyfLzNTRKJTpwxU5-+bQM6Xssm=@mail.gmail.com>
-Subject: Re: linux-next: build warnings after merge of the tty tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Linus <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 10 Jan 2011 10:00:59 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=YGCV5_ce828A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=fpJaJQQJr7WXlpoWl_AA:9 a=bIylCc_IV3IOcoFCdjxovEd-wlIA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [tip:perf/urgent] tracing: Include module.h in define_trace.h
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        srostedt@redhat.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+In-Reply-To: <1294671171.26623.240.camel@gandalf.stny.rr.com>
+References: <tip-3a9f987b3141f086de27832514aad9f50a53f754@git.kernel.org>
+	 <1294667377.11896.3.camel@laptop>
+	 <1294668888.26623.238.camel@gandalf.stny.rr.com>
+	 <1294670334.11896.8.camel@laptop>
+	 <1294671171.26623.240.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 10 Jan 2011 10:00:57 -0500
+Message-ID: <1294671657.26623.242.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 02:59, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Greg,
->
-> On Sun, 9 Jan 2011 16:56:01 -0800 Greg KH <greg@kroah.com> wrote:
->>
->> Yes, Kay just sent me a patch to fix this, which I will queue up after
->> .38-rc1 is out.
->
-> It is surely a pretty obvious patch, why not just do a quick test and
-> send it on to Linus (or at least your tty-current tree)?
->
-> /me gets annoyed by more warnings than necessary - especially when they
-> should have never been introduced in the first place.
+On Mon, 2011-01-10 at 09:52 -0500, Steven Rostedt wrote:
 
-Honestly, just disable these mindless warnings. They *might* be a hint
-for a developer, but they should not be triggered in any non-manual
-build.
+> >   LD      vmlinux.o
+> > kernel/built-in.o:(__tracepoints+0xac0): multiple definition of `__tracepoint_module_request'
+> > arch/x86/built-in.o:(__tracepoints+0x100): first defined here
+> > kernel/built-in.o:(__tracepoints+0xa40): multiple definition of `__tracepoint_module_get'
+> > arch/x86/built-in.o:(__tracepoints+0x80): first defined here
+> > kernel/built-in.o:(__tracepoints+0x9c0): multiple definition of `__tracepoint_module_load'
+> > arch/x86/built-in.o:(__tracepoints+0x0): first defined here
+> > kernel/built-in.o:(__tracepoints+0xa80): multiple definition of `__tracepoint_module_put'
+> > arch/x86/built-in.o:(__tracepoints+0xc0): first defined here
+> > kernel/built-in.o:(__tracepoints+0xa00): multiple definition of `__tracepoint_module_free'
+> > arch/x86/built-in.o:(__tracepoints+0x40): first defined here
+> 
+> Hmm, OK, I'm able to reproduce it when I add:
 
-These warnings usually just misguide people to make make random
-trivial things fatal at bootup, which even prevent a box from coming
-up and allow to find the real error. If these return values would
-really be important, the called function would log the error itself,
-not force the caller.
+Correction, I only reproduced this because I'm an idiot ;-)
 
-I personally think they are as useless as the dumb 80 char limit
-checkpatch likes to warn about. It just makes things worse, hard to
-read -- while it possibly should just warn about to many indents,
-never the line length.
+> 
+> #define CREATE_TRACE_POINTS
+> #include <trace/events/syscalls.h>
+> #undef CREATE_TRACE_POINTS
+> 
+> as the first thing in ptrace.c. I'll investigate this further.
 
-Like the must_check nonsense, it's all stuff with well-intended, but
-with really bad results in reality.
+I added this, but forgot to remove:
 
-People should really stop imposing these sick rules everywhere in
-tools -- everybody of us has enough personal issues already, I really
-don't need our software to throw the issues of other people at me on
-top. :)
+#define CREATE_TRACE_POINTS
+#include <trace/events/syscalls.h>
 
-Kay
+that is at the bottom, causing the duplicate definitions.
+
+Removing the second installation, it complies fine.
+
+Thus, it works fine for me. :-/
+
+-- Steve
+
+
+
