@@ -1,377 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903Ab1AJEt6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Jan 2011 23:49:58 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:33366 "EHLO smtps.tip.net.au"
+	id S1753396Ab1AJE4r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Jan 2011 23:56:47 -0500
+Received: from d1.icnet.pl ([212.160.220.21]:48309 "EHLO d1.icnet.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752768Ab1AJEty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Jan 2011 23:49:54 -0500
-Date: Mon, 10 Jan 2011 15:49:47 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for January 10
-Message-Id: <20110110154947.31c3eac7.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__10_Jan_2011_15_49_47_+1100_6dR+UkEzNsnVkQC1"
+	id S1751683Ab1AJE4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Jan 2011 23:56:44 -0500
+From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Organization: Tele-Info-System, Poznan, PL
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH v3] LEDS: Add output invertion option to backlight trigger
+Date: Mon, 10 Jan 2011 05:54:32 +0100
+User-Agent: KMail/1.9.10
+Cc: Richard Purdie <rpurdie@rpsys.net>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Richard Purdie <rpurdie@linux.intel.com>
+References: <201012091441.51846.jkrzyszt@tis.icnet.pl> <20110106130440.cfd77c8e.akpm@linux-foundation.org>
+In-Reply-To: <20110106130440.cfd77c8e.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201101100554.34677.jkrzyszt@tis.icnet.pl>
+X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__10_Jan_2011_15_49_47_+1100_6dR+UkEzNsnVkQC1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch extends the LED backlight tirgger driver with an option that 
+allows for inverting the trigger output polarity.
 
-Hi all,
+With the invertion option provided, I (ab)use the backlight trigger for 
+driving a LED that indicates LCD display blank condtition on my Amstrad 
+Delta videophone. Since the machine has no dedicated power LED, it was 
+not possible to distinguish if the display was blanked, or the machine 
+was turned off, without touching it.
 
-Reminder: do not add any v2.6.39 material to your linux-next included
-trees until after v2.6.38-rc1 is released.
+The invert sysfs control is patterned after a similiar function of the 
+GPIO trigger driver.
 
-Changes since 20110107:
+Created and tested against linux-2.6.37 on Amstrad Delta.
 
-Various conflicts are moving between trees as stuff gets merged by Linus.
+Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+---
 
-The omap tree lost its conflict.
+v2 -> v3 changes, all provided, requested or inspired by Andrew Morton 
+  (thanks!):
+- sysfs file should show "0" or "1" to match the thing which the user
+  wrote there,
+- use strict_strtoul() so the kernel correctly rejects non-numerical 
+  input,
+- disallow any input other than 0 or 1,
+- new sysfs file should be documented,
+- the new sysfs file name could be consistent with the one already used 
+  by the gpio trigger for a similiar function.
 
-The rmobile tree lost its conflicts.
+v1 -> v2 changes:
+- improve some conditional expressions to be more readable; thanks to 
+  Ralph Corderoy (from e3-hacking) and Lars-Peter Clausen for their 
+  suggestions,
+- refresh against linux-2.6.36-rc5.
 
-The nilfs2 tree gained a conflict against Linus' tree.
+ Documentation/ABI/testing/sysfs-class-led |   10 ++++
+ drivers/leds/ledtrig-backlight.c          |   61 ++++++++++++++++++++++++++++--
+ 2 files changed, 67 insertions(+), 4 deletions(-)
 
-The pci tree gained a build failure so I used the version from
-next-20110107.
-
-The hwmon-staging tree gained a conflict against the jdelvare-hwmon tree.
-
-The net tree lost its conflicts.
-
-The input tree lost its conflicts.
-
-The block tree lost its build failure.
-
-The security-testing lost its conflict.
-
-The watchdog tree gained a build failure so I used the version from
-next-20110107.
-
-The spi tree lost its conflicts.
-
-The swiotlb-xen tree lost a conflict.
-
-The percpu tree lost its conflicts.
-
-The workqueues tree lost its conflicts.
-
-The usb tree lost its conflicts.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 184 trees (counting Linus' and 26 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/rc-fixes
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging gcl-current/merge
-Merging arm/devel
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging linux-spec/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-CONFLICT (content): Merge conflict in arch/arm/mach-tegra/timer.c
-Merging ux500-core/ux500-core
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-Merging galak/next
-Merging s390/features
-Merging sh/sh-latest
-Merging rmobile/rmobile-latest
-Merging sparc/master
-Merging tile/master
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-CONFLICT (content): Merge conflict in fs/fuse/inode.c
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-CONFLICT (content): Merge conflict in Documentation/filesystems/Locking
-Merging nilfs2/for-next
-CONFLICT (content): Merge conflict in fs/nilfs2/nilfs.h
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-CONFLICT (content): Merge conflict in fs/9p/vfs_inode.c
-CONFLICT (content): Merge conflict in net/9p/protocol.c
-Applying: v9fs: merge fix for changes in the vfs-scale tree
-Merging ubifs/linux-next
-Merging xfs/master
-CONFLICT (content): Merge conflict in fs/xfs/xfs_iget.c
-Merging vfs/for-next
-Merging vfs-scale/vfs-scale-working
-Merging pci/linux-next
-CONFLICT (content): Merge conflict in drivers/net/skge.c
-CONFLICT (content): Merge conflict in drivers/net/sky2.c
-$ git reset --hard HEAD^
-Merging refs/next/20110107/pci
-CONFLICT (content): Merge conflict in drivers/net/skge.c
-CONFLICT (content): Merge conflict in drivers/net/sky2.c
-[master 3c0dc4d] Merge commit 'refs/next/20110107/pci'
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-CONFLICT (rename/rename): Rename "arch/arm/mach-pxa/include/mach/pxa2xx_spi=
-.h"->"arch/arm/mach-s5pv310/include/mach/dma.h" in branch "HEAD" rename "ar=
-ch/arm/mach-pxa/include/mach/pxa2xx_spi.h"->"include/linux/spi/pxa2xx_spi.h=
-" in "bjdooks-i2c/next-i2c"
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/devices.c
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/poodle.c
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/pxa27x.c
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/pxa3xx.c
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/trizeps4.c
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/z2.c
-$ git rm -f arch/arm/mach-pxa/include/mach/pxa2xx_spi.h
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-CONFLICT (content): Merge conflict in drivers/hwmon/dme1737.c
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-Merging wireless/master
-Merging bluetooth/master
-Merging mtd/master
-Merging crypto/master
-Merging sound-asoc/for-next
-Merging sound/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-Merging input-mt/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-CONFLICT (content): Merge conflict in drivers/mfd/Makefile
-CONFLICT (content): Merge conflict in drivers/mfd/wm8994-core.c
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-Merging voltage/for-next
-CONFLICT (content): Merge conflict in drivers/regulator/core.c
-CONFLICT (content): Merge conflict in drivers/regulator/mc13783-regulator.c
-Merging security-testing/next
-Merging selinux/master
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-$ git reset --hard HEAD^
-Merging refs/next/20110107/watchdog
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-core=
-.c
-CONFLICT (content): Merge conflict in fs/ext4/ext4.h
-Merging audit/for-next
-Merging suspend/linux-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging catalin/for-next
-Merging alacrity/linux-next
-CONFLICT (content): Merge conflict in drivers/Makefile
-CONFLICT (content): Merge conflict in include/linux/Kbuild
-CONFLICT (content): Merge conflict in lib/Kconfig
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/next-devicetree
-CONFLICT (content): Merge conflict in arch/sparc/prom/tree_32.c
-CONFLICT (content): Merge conflict in drivers/mtd/Kconfig
-Merging spi/next-spi
-Merging tip/auto-latest
-CONFLICT (content): Merge conflict in MAINTAINERS
-CONFLICT (content): Merge conflict in drivers/rtc/rtc-dev.c
-Merging rcu/rcu/next
-Merging oprofile/for-next
-Merging xen/upstream/xen
-Merging swiotlb-xen/master
-CONFLICT (content): Merge conflict in drivers/xen/Kconfig
-Merging xen-pvhvm/linux-next
-Merging edac-amd/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-Merging usb/usb-next
-Merging staging/staging-next
-CONFLICT (rename/modify): Merge conflict in drivers/video/udlfb.c
-Merging slabh/slabh
-Merging bkl-trivial/trivial
-Merging bkl-llseek/llseek
-Merging bkl-vfs/vfs
-Merging bkl-config/config
-CONFLICT (content): Merge conflict in arch/powerpc/kernel/setup_64.c
-CONFLICT (delete/modify): drivers/staging/stradis/Kconfig deleted in HEAD a=
-nd modified in bkl-config/config. Version bkl-config/config of drivers/stag=
-ing/stradis/Kconfig left in tree.
-CONFLICT (content): Merge conflict in fs/nfsd/nfs4state.c
-CONFLICT (content): Merge conflict in include/linux/hardirq.h
-CONFLICT (content): Merge conflict in include/linux/smp_lock.h
-$ git rm -f drivers/staging/stradis/Kconfig
-Merging irqflags/master
-Merging cleancache/linux-next
-CONFLICT (content): Merge conflict in fs/ocfs2/super.c
-CONFLICT (content): Merge conflict in fs/super.c
-CONFLICT (content): Merge conflict in include/linux/fs.h
-CONFLICT (content): Merge conflict in mm/Kconfig
-Merging scsi-post-merge/merge-base:master
-$ git checkout scsi-post-merge/master
-Applying: [SCSI] sd: implement sd_check_events()
-Applying: [SCSI] sd,sr: kill compat SDEV_MEDIA_CHANGE event
-Applying: [SCSI] target: Add LIO target core v4.0.0-rc6
-
---Signature=_Mon__10_Jan_2011_15_49_47_+1100_6dR+UkEzNsnVkQC1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNKo/rAAoJEDMEi1NhKgbsiC8H/jUd0Zv5yhhOH0RDoRdNJdY/
-AVLNK1/y0ixd/GjPhQ9nUPbfaZ5s/ojTheOkUE13iNGchsSM+r/XgN15rQl4IzQV
-B5szYElveqAZA8yf5nkqEQvajRcc70RVxdeE8HDzZjEjK0FbbYPlyDGxojBaUFdu
-ZuO8NF26QePdd1+ZBsCx/qhHjdlC57ofZwmrk1iE+jOI652sCc1zVEYsfgTKcQMv
-c05eWaYKMZXpwrfkDAYeaF7smf49tTmKgIQNrdq8pMvm/DNMXyH/NNnJK/E4Mj8X
-7b56BTf7+O75jwwkV4ycMAPpByhzEeR/fErpwb5/xuhF0I/JaJzThipCOUfY9Cg=
-=+Nsv
------END PGP SIGNATURE-----
-
---Signature=_Mon__10_Jan_2011_15_49_47_+1100_6dR+UkEzNsnVkQC1--
+--- linux-2.6.37/drivers/leds/ledtrig-backlight.c.orig	2011-01-10 02:55:26.000000000 +0100
++++ linux-2.6.37/drivers/leds/ledtrig-backlight.c	2011-01-10 03:12:46.000000000 +0100
+@@ -26,6 +26,7 @@ struct bl_trig_notifier {
+ 	int brightness;
+ 	int old_status;
+ 	struct notifier_block notifier;
++	unsigned invert;
+ };
+ 
+ static int fb_notifier_callback(struct notifier_block *p,
+@@ -36,23 +37,64 @@ static int fb_notifier_callback(struct n
+ 	struct led_classdev *led = n->led;
+ 	struct fb_event *fb_event = data;
+ 	int *blank = fb_event->data;
++	int new_status = *blank ? BLANK : UNBLANK;
+ 
+ 	switch (event) {
+ 	case FB_EVENT_BLANK :
+-		if (*blank && n->old_status == UNBLANK) {
++		if (new_status == n->old_status)
++			break;
++
++		if ((n->old_status == UNBLANK) ^ n->invert) {
+ 			n->brightness = led->brightness;
+ 			led_set_brightness(led, LED_OFF);
+-			n->old_status = BLANK;
+-		} else if (!*blank && n->old_status == BLANK) {
++		} else {
+ 			led_set_brightness(led, n->brightness);
+-			n->old_status = UNBLANK;
+ 		}
++
++		n->old_status = new_status;
++
+ 		break;
+ 	}
+ 
+ 	return 0;
+ }
+ 
++static ssize_t bl_trig_invert_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct led_classdev *led = dev_get_drvdata(dev);
++	struct bl_trig_notifier *n = led->trigger_data;
++
++	return sprintf(buf, "%u\n", n->invert);
++}
++
++static ssize_t bl_trig_invert_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t num)
++{
++	struct led_classdev *led = dev_get_drvdata(dev);
++	struct bl_trig_notifier *n = led->trigger_data;
++	unsigned long invert;
++	int ret;
++
++	ret = strict_strtoul(buf, 10, &invert);
++	if (ret < 0)
++		return ret;
++
++	if (invert > 1)
++		return -EINVAL;
++
++	n->invert = invert;
++
++	/* After inverting, we need to update the LED. */
++	if ((n->old_status == BLANK) ^ n->invert)
++		led_set_brightness(led, LED_OFF);
++	else
++		led_set_brightness(led, n->brightness);
++
++	return num;
++}
++static DEVICE_ATTR(inverted, 0644, bl_trig_invert_show, bl_trig_invert_store);
++
+ static void bl_trig_activate(struct led_classdev *led)
+ {
+ 	int ret;
+@@ -66,6 +108,10 @@ static void bl_trig_activate(struct led_
+ 		return;
+ 	}
+ 
++	ret = device_create_file(led->dev, &dev_attr_inverted);
++	if (ret)
++		goto err_invert;
++
+ 	n->led = led;
+ 	n->brightness = led->brightness;
+ 	n->old_status = UNBLANK;
+@@ -74,6 +120,12 @@ static void bl_trig_activate(struct led_
+ 	ret = fb_register_client(&n->notifier);
+ 	if (ret)
+ 		dev_err(led->dev, "unable to register backlight trigger\n");
++
++	return;
++
++err_invert:
++	led->trigger_data = NULL;
++	kfree(n);
+ }
+ 
+ static void bl_trig_deactivate(struct led_classdev *led)
+@@ -82,6 +134,7 @@ static void bl_trig_deactivate(struct le
+ 		(struct bl_trig_notifier *) led->trigger_data;
+ 
+ 	if (n) {
++		device_remove_file(led->dev, &dev_attr_inverted);
+ 		fb_unregister_client(&n->notifier);
+ 		kfree(n);
+ 	}
+--- linux-2.6.37/Documentation/ABI/testing/sysfs-class-led.orig	2011-01-10 02:42:16.000000000 +0100
++++ linux-2.6.37/Documentation/ABI/testing/sysfs-class-led	2011-01-10 03:38:28.000000000 +0100
+@@ -26,3 +26,13 @@ Description:
+ 		scheduler is chosen. Trigger specific parameters can appear in
+ 		/sys/class/leds/<led> once a given trigger is selected.
+ 
++What:		/sys/class/leds/<led>/inverted
++Date:		January 2011
++KernelVersion:	2.6.38
++Contact:	Richard Purdie <rpurdie@rpsys.net>
++Description:
++		Invert the LED on/off state. This parameter is specific to
++		gpio and backlight triggers. In case of the backlight trigger,
++		it is usefull when driving a LED which is intended to indicate
++		a device in a standby like state.
++
