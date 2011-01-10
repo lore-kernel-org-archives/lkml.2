@@ -1,134 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751859Ab1AJTBb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 14:01:31 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:50058 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab1AJTB2 (ORCPT
+	id S1752073Ab1AJTGQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 14:06:16 -0500
+Received: from utopia.booyaka.com ([72.9.107.138]:55737 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab1AJTGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 14:01:28 -0500
-From: Dima Zavin <dima@android.com>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: Gregory Bean <gbean@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+	Mon, 10 Jan 2011 14:06:14 -0500
+Date: Mon, 10 Jan 2011 12:06:13 -0700 (MST)
+From: Paul Walmsley <paul@pwsan.com>
+To: Jean Pihet <jean.pihet@newoldbits.com>
+cc: mingo@elte.hu, trenn@suse.de, Kevin Hilman <khilman@deeprootsystems.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Dima Zavin <dima@android.com>
-Subject: [PATCH] ARM: msm: 7x30: don't force a gpiomux table for the whole arch
-Date: Mon, 10 Jan 2011 11:00:30 -0800
-Message-Id: <1294686030-9817-1-git-send-email-dima@android.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1294680810.12298.2.camel@c-dwalke-linux.qualcomm.com>
-References: <1294680810.12298.2.camel@c-dwalke-linux.qualcomm.com>
-X-System-Of-Record: true
+        Arjan van de Ven <arjan@linux.intel.com>,
+        linux-perf-users@vger.kernel.org, rjw@sisk.pl,
+        Jean Pihet <j-pihet@ti.com>
+Subject: Re: [PATCH 2/3] perf: add OMAP support for the new power events
+In-Reply-To: <AANLkTi=3pek3+Vv+c1TCxBH2RJcoSXq8TL8CyK9ABMeu@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1101101205130.5731@utopia.booyaka.com>
+References: <1294136263-24020-1-git-send-email-j-pihet@ti.com> <1294138484-24729-1-git-send-email-j-pihet@ti.com> <alpine.DEB.2.00.1101041146160.19319@utopia.booyaka.com> <AANLkTi=3pek3+Vv+c1TCxBH2RJcoSXq8TL8CyK9ABMeu@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is completely board specific and therefore must be provided
-on a per-board basis.
+Hello Jean,
 
-Change-Id: I96f922ad9bb9cbce7874c5ae6ac0d7479b7a2124
-Signed-off-by: Dima Zavin <dima@android.com>
----
- arch/arm/mach-msm/Makefile        |    2 +-
- arch/arm/mach-msm/board-msm7x30.c |   22 +++++++++++++++++++++
- arch/arm/mach-msm/gpiomux-7x30.c  |   38 -------------------------------------
- 3 files changed, 23 insertions(+), 39 deletions(-)
- delete mode 100644 arch/arm/mach-msm/gpiomux-7x30.c
+On Wed, 5 Jan 2011, Jean Pihet wrote:
 
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index b5a7b07..b5695ce 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -25,7 +25,7 @@ obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
- obj-$(CONFIG_ARCH_QSD8X50) += board-qsd8x50.o devices-qsd8x50.o
- obj-$(CONFIG_ARCH_MSM8X60) += board-msm8x60.o
- 
--obj-$(CONFIG_ARCH_MSM7X30) += gpiomux-7x30.o gpiomux-v1.o gpiomux.o
-+obj-$(CONFIG_ARCH_MSM7X30) += gpiomux-v1.o gpiomux.o
- obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o gpiomux-v1.o gpiomux.o
- obj-$(CONFIG_ARCH_MSM8X60) += gpiomux-8x60.o gpiomux-v2.o gpiomux.o
- ifndef CONFIG_MSM_V2_TLMM
-diff --git a/arch/arm/mach-msm/board-msm7x30.c b/arch/arm/mach-msm/board-msm7x30.c
-index 05241df..431be40 100644
---- a/arch/arm/mach-msm/board-msm7x30.c
-+++ b/arch/arm/mach-msm/board-msm7x30.c
-@@ -35,10 +35,32 @@
- 
- #include <mach/vreg.h>
- #include "devices.h"
-+#include "gpiomux.h"
- #include "proc_comm.h"
- 
- extern struct sys_timer msm_timer;
- 
-+struct msm_gpiomux_config msm_gpiomux_configs[GPIOMUX_NGPIOS] = {
-+#ifdef CONFIG_SERIAL_MSM_CONSOLE
-+	[49] = { /* UART2 RFR */
-+		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
-+			     GPIOMUX_FUNC_2 | GPIOMUX_VALID,
-+	},
-+	[50] = { /* UART2 CTS */
-+		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
-+			     GPIOMUX_FUNC_2 | GPIOMUX_VALID,
-+	},
-+	[51] = { /* UART2 RX */
-+		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
-+			     GPIOMUX_FUNC_2 | GPIOMUX_VALID,
-+	},
-+	[52] = { /* UART2 TX */
-+		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
-+			     GPIOMUX_FUNC_2 | GPIOMUX_VALID,
-+	},
-+#endif
-+};
-+
- static struct platform_device *devices[] __initdata = {
- #if defined(CONFIG_SERIAL_MSM) || defined(CONFIG_MSM_SERIAL_DEBUGGER)
-         &msm_device_uart2,
-diff --git a/arch/arm/mach-msm/gpiomux-7x30.c b/arch/arm/mach-msm/gpiomux-7x30.c
-deleted file mode 100644
-index 6ce41c5..0000000
---- a/arch/arm/mach-msm/gpiomux-7x30.c
-+++ /dev/null
-@@ -1,38 +0,0 @@
--/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 and
-- * only version 2 as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-- * 02110-1301, USA.
-- */
--#include "gpiomux.h"
--
--struct msm_gpiomux_config msm_gpiomux_configs[GPIOMUX_NGPIOS] = {
--#ifdef CONFIG_SERIAL_MSM_CONSOLE
--	[49] = { /* UART2 RFR */
--		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
--			     GPIOMUX_FUNC_2 | GPIOMUX_VALID,
--	},
--	[50] = { /* UART2 CTS */
--		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
--			     GPIOMUX_FUNC_2 | GPIOMUX_VALID,
--	},
--	[51] = { /* UART2 RX */
--		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
--			     GPIOMUX_FUNC_2 | GPIOMUX_VALID,
--	},
--	[52] = { /* UART2 TX */
--		.suspended = GPIOMUX_DRV_2MA | GPIOMUX_PULL_DOWN |
--			     GPIOMUX_FUNC_2 | GPIOMUX_VALID,
--	},
--#endif
--};
--- 
-1.7.3.1
+> On Tue, Jan 4, 2011 at 7:48 PM, Paul Walmsley <paul@pwsan.com> wrote:
+>
+> > If the latter, then it might make sense to put these
+> > trace points into the functions that actually change the hardware
+> > registers, e.g., omap2_dflt_clk_{enable,disable}(), etc., since a
+> > clk_enable() on a leaf clock may result in many internal system clocks
+> > being enabled up the clock tree.
+> I agree with you it is better to track the actual clock changes instead.
+> I propose to move the tracepoints to omap2_clk_{enable...} which
+> enables all the clocks irrespectively of the installed handler.
 
+Yes, that is a better place.
+
+> Note about the clock handlers: omap2_dflt_clk_enable happens to be the
+> handler for all controllable clocks but could that change in the
+> future?
+
+Yes, it certainly could.
+
+
+- Paul
