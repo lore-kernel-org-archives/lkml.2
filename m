@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886Ab1AJVWo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 16:22:44 -0500
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:1046 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753710Ab1AJVWm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 16:22:42 -0500
-X-Greylist: delayed 848 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Jan 2011 16:22:42 EST
-Message-ID: <4D2B7550.5000008@gmail.com>
-Date: Mon, 10 Jan 2011 22:08:32 +0100
-From: Gertjan van Wingerde <gwingerde@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101211 Lanikai/3.1.7
+	id S1754831Ab1AJV2F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 16:28:05 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:46855 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754506Ab1AJV2B (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 10 Jan 2011 16:28:01 -0500
+Date: Mon, 10 Jan 2011 16:26:28 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Haavard Skinnemoen <hskinnemoen@atmel.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Xen-devel <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 2/9] mm: add apply_to_page_range_batch()
+Message-ID: <20110110212628.GC15016@dumpdata.com>
+References: <cover.1292450600.git.jeremy.fitzhardinge@citrix.com>
+ <8c28c76840fcc7b76c7c8ce4dc28a57241243df7.1292450600.git.jeremy.fitzhardinge@citrix.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: eric.dumazet@gmail.com, torvalds@linux-foundation.org,
-        alex.arnautu96@gmail.com, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org
-Subject: Re: Kernel 2.6.37-rc5 rc7 Oops
-References: <AANLkTinCD5Jf-dEUpv7hu4YKrxS0DGqqqBU94iCJ8602@mail.gmail.com>	<AANLkTinJAEW-xAiEKnfxo1+3FiGwFXFii5Rh6d8tAtB-@mail.gmail.com>	<1293652965.7150.13.camel@edumazet-laptop> <20110110.000650.124002380.davem@davemloft.net>
-In-Reply-To: <20110110.000650.124002380.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 10 Jan 2011 21:08:32.0817 (UTC) FILETIME=[89B2B210:01CBB10A]
-X-RcptDomain: vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8c28c76840fcc7b76c7c8ce4dc28a57241243df7.1292450600.git.jeremy.fitzhardinge@citrix.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/11 09:06, David Miller wrote:
-> From: Eric Dumazet <eric.dumazet@gmail.com>
-> Date: Wed, 29 Dec 2010 21:02:45 +0100
-> 
->> Le mercredi 29 décembre 2010 à 11:23 -0800, Linus Torvalds a écrit :
->>> On Wed, Dec 29, 2010 at 4:26 AM, Alex Arnautu <alex.arnautu96@gmail.com> wrote:
->>>>
->>>> I get an oops with 2.6.37-rc5 and 2.6.37-rc7-git1.
->>>> http://www.fotoshack.us/fotos/19044P271210_15.14_[01].jpg
->>>
->>> Hmm. Davem added to the list of people involved. This _may_ be fixed
->>> by the "always clone skbs" commit in -rc8 (commit 173021072), but
->>> David can make a better judgment call.
->>>
->>
->> Very unlikely, as commit 173021072 only fix a bug in case mirred is
->> used.
-> 
-> This should be taken to the wireless list (now CC:'d) as the rt2xxx
-> driver and the wireless stack are both in that backtrace.
+. snip..
+>  static int apply_to_pte_range(struct mm_struct *mm, pmd_t *pmd,
+>  				     unsigned long addr, unsigned long end,
+> -				     pte_fn_t fn, void *data)
+> +				     pte_batch_fn_t fn, void *data)
+>  {
+>  	pte_t *pte;
+>  	int err;
+> -	pgtable_t token;
+>  	spinlock_t *uninitialized_var(ptl);
+>  
+>  	pte = (mm == &init_mm) ?
+> @@ -1940,25 +1939,17 @@ static int apply_to_pte_range(struct mm_struct *mm, pmd_t *pmd,
+>  	BUG_ON(pmd_huge(*pmd));
+>  
+>  	arch_enter_lazy_mmu_mode();
+> -
+> -	token = pmd_pgtable(*pmd);
+> -
+> -	do {
+> -		err = fn(pte++, addr, data);
+> -		if (err)
+> -			break;
+> -	} while (addr += PAGE_SIZE, addr != end);
+> -
+> +	err = fn(pte, (end - addr) / PAGE_SIZE, addr, data);
+>  	arch_leave_lazy_mmu_mode();
+>  
+>  	if (mm != &init_mm)
+> -		pte_unmap_unlock(pte-1, ptl);
+> +		pte_unmap_unlock(pte, ptl);
 
-Hmmm, the jpg images of the oops don't seem to be available anymore
-(a 404 not found is returned on the URL.
-Does anybody still have the backtrace? Otherwise it will be very hard to look
-into this.
+That looks like a bug fix as well? Did this hit us before the change or was
+it masked by the fact that the code never go to here?
 
----
-Gertjan.
+>  	return err;
+>  }
