@@ -1,62 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814Ab1AJIIn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 03:08:43 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:41584 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751552Ab1AJIIl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 03:08:41 -0500
-Date: Mon, 10 Jan 2011 09:08:39 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Tony Luck <tony.luck@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Tim Bird <tim.bird@am.sony.com>
-Subject: Re: [PATCH 01/17] pramfs: documentation
-Message-ID: <20110110080839.GA16066@atrey.karlin.mff.cuni.cz>
-References: <4D25AF02.60208@gmail.com> <AANLkTimGt5hi+TpFHWxktJEg3tcDQmmARdqFqzAt++OQ@mail.gmail.com> <4D2777FC.6040509@gmail.com> <AANLkTimtvYfHXG=rMLbFLzVaKbfB6nrj_ZE1AH4quRG2@mail.gmail.com> <4D281D65.1070102@gmail.com>
+	id S1752647Ab1AJIK7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 03:10:59 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:48869 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751399Ab1AJIK6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 03:10:58 -0500
+From: "Desai, Kashyap" <Kashyap.Desai@lsi.com>
+To: Jesper Juhl <jj@chaosbits.net>,
+        DL-MPT Fusion Linux <DL-MPTFusionLinux@lsi.com>
+CC: "Moore, Eric" <Eric.Moore@lsi.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Support, Software" <support@lsi.com>
+Date: Mon, 10 Jan 2011 13:41:28 +0530
+Subject: RE: [PATCH] SCSI, LSI Fusion MPT: Fix memory leak in
+ mptctl_getiocinfo()
+Thread-Topic: [PATCH] SCSI, LSI Fusion MPT: Fix memory leak in
+ mptctl_getiocinfo()
+Thread-Index: AculQz/lCNQ9PQ54Tb6wKWuskXHyyQLWqUwA
+Message-ID: <B2FD678A64EAAD45B089B123FDFC3ED70916AAA4@inbmail01.lsi.com>
+References: <alpine.LNX.2.00.1012262207380.20797@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1012262207380.20797@swampdragon.chaosbits.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D281D65.1070102@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 07/01/2011 22:59, Tony Luck wrote:
-> > On Fri, Jan 7, 2011 at 12:30 PM, Marco Stornelli
-> > <marco.stornelli@gmail.com> wrote:
-> >> constraint). About the errors: pramfs does not maintain file data in the
-> >> page caches for normal file I/O, so no writeback, the read/write
-> >> operation are done with direct io and they are always sync. The data are
-> >> write protected in hw when the arch provide this facility (x86 does).
-> >> Inode contains a checksum and when there are problems they are marked as
-> >> bad. Superblock contains checksum and there is a redundant superblock.
-> > 
-> > But you can still get pramfs inconsistencies if the system crashes at an
-> > inopportune moment. E.g. when making files you write the new inode to
-> > pramfs, and then you insert the entry into the directory. A crash between
-> > these two operations leaves an allocated inode that doesn't appear in
-> > any directory.  Without a fsck option, it will be hard to see that you have
-> > this problem, and your only recovery option is to wipe *all* files by making
-> > a new filesystem.
+Jesper, Your finding is correct.
+
+Please consider this patch as an ACKed by me.
+
+~ Kashyap
+
+
+> -----Original Message-----
+> From: Jesper Juhl [mailto:jj@chaosbits.net]
+> Sent: Monday, December 27, 2010 2:44 AM
+> To: DL-MPT Fusion Linux
+> Cc: Moore, Eric; linux-scsi@vger.kernel.org; linux-
+> kernel@vger.kernel.org; Support, Software
+> Subject: [PATCH] SCSI, LSI Fusion MPT: Fix memory leak in
+> mptctl_getiocinfo()
 > 
-> Is it a problem if you lost some logs? However do you expect that fsck
-> in this case will drop the inode?
+> Hi,
+> 
+> A 'kfree(karg)' is missing in a failure path in
+> drivers/message/fusion/mptctl.c::mptctl_getiocinfo() which can cause a
+> memory leak. This patch should take care of that.
+> 
+> Hope I didn't miss something obvious, but to me it looks like adding
+> this
+> kfree() is the right thing to do. If you disagree feel free to correct
+> me
+> :-)
+> 
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  mptctl.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+>   compile tested only since I don't have proper hardware to test for
+> real.
+> 
+> diff --git a/drivers/message/fusion/mptctl.c
+> b/drivers/message/fusion/mptctl.c
+> index a3856ed..1dcc13a 100644
+> --- a/drivers/message/fusion/mptctl.c
+> +++ b/drivers/message/fusion/mptctl.c
+> @@ -1307,8 +1307,10 @@ mptctl_getiocinfo (unsigned long arg, unsigned
+> int data_size)
+>  	else
+>  		karg->adapterType = MPT_IOCTL_INTERFACE_SCSI;
+> 
+> -	if (karg->hdr.port > 1)
+> +	if (karg->hdr.port > 1) {
+> +		kfree(karg);
+>  		return -EINVAL;
+> +	}
+>  	port = karg->hdr.port;
+> 
+>  	karg->port = port;
+> 
+> 
+> --
+> Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+> Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+> Plain text mails only, please.
 
-Ask it the other way around.
-
-What is persistent filesystem good for when it is only persistent
-sometimes?
-
-You'd be better running ext2 over special block device, it is quite simple.
-
-
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
