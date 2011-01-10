@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424Ab1AJQFc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 11:05:32 -0500
-Received: from kroah.org ([198.145.64.141]:59664 "EHLO coco.kroah.org"
+	id S1753388Ab1AJQFa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 11:05:30 -0500
+Received: from kroah.org ([198.145.64.141]:59655 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752896Ab1AJQFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 11:05:25 -0500
-Date: Mon, 10 Jan 2011 08:01:17 -0800
+	id S1751606Ab1AJQFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 11:05:24 -0500
+Date: Mon, 10 Jan 2011 08:00:01 -0800
 From: Greg KH <greg@kroah.com>
 To: Yinghai Lu <yinghai@kernel.org>
 Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
@@ -18,29 +18,41 @@ Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Borislav Petkov <borislav.petkov@amd.com>,
         Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [PATCH 2/3] x86: early_quirk check all dev/func in domain 0
-Message-ID: <20110110160117.GD5275@kroah.com>
+Subject: Re: [PATCH 3/3] x86: usb handoff in early_quirk
+Message-ID: <20110110160001.GC5275@kroah.com>
 References: <4D2A1152.1040903@kernel.org>
- <4D2A13AA.5070501@kernel.org>
+ <4D2A13BC.3000003@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D2A13AA.5070501@kernel.org>
+In-Reply-To: <4D2A13BC.3000003@kernel.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 09, 2011 at 11:59:38AM -0800, Yinghai Lu wrote:
+On Sun, Jan 09, 2011 at 11:59:56AM -0800, Yinghai Lu wrote:
 > 
-> go with all buses instead of bus0.
+> some systems keep getting
+>   APIC calibration not consistent with PM-Timer: 139ms instead of 100ms
+>   APIC delta adjusted to PM-Timer: 831249 (1163736)
+> 
+> USB legacy SMI handler is not disabled at that time.
+> 
+> Try to disable USB legacy support early with this patch.
+> So later APIC Timer calibration don't get messed up by USB legacy support SMI handler.
+> After this patch, that warning never show up for 100 reboot tests.
 
-Why?  Why limit yourself here?
+But is that warning a real issue?  Does it cause problems for the user
+(becides annoying them of course)?
 
-What's to say I will not have a USB controller on the second domain?  If
-you are going to change this, might as well be "correct", right?
+> reuse code from drivers/usb/host/pci-quirks.c
+> with changes
+> 1. delay and sleep  ===> io_delay
+> 2. dev_warn etc to pr_warn(num, slot, func...)
 
-Or, if it really doesn't matter, stick with what we have today.
+Why change this function?  What's wrong with dev_warn()?  It's much more
+descriptive of the device that is being referred to.
 
 thanks,
 
