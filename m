@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab1AJRwo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 12:52:44 -0500
-Received: from THUNK.ORG ([69.25.196.29]:45448 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753358Ab1AJRwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 12:52:43 -0500
-Date: Mon, 10 Jan 2011 12:52:34 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Hugh Dickins <hughd@google.com>
-Cc: Amir Goldstein <amir73il@users.sf.net>, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
-Subject: Re: ext4: ext23 support leaks buffer pages
-Message-ID: <20110110175234.GD3128@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Hugh Dickins <hughd@google.com>,
-	Amir Goldstein <amir73il@users.sf.net>,
-	linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-References: <alpine.LSU.2.00.1101100242530.2000@sister.anvils>
+	id S1754296Ab1AJSAF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 13:00:05 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:36024 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754280Ab1AJSAB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 13:00:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:cc:content-type;
+        b=I7T066sd07S3M1i332elB+l7AYeXSAgYJI4GqwqwwK/fCmyAMdfONMMjLEgf+fOEKy
+         r97RfpMb1reVlBX4ejxEquc9fOT4p0gAeHRaW2Wt6Z+PAwMi40BcqI5ewiqWfgiz1EUs
+         6S0xtzH+e3HtauQeYivYdE27+KVPXaJSibocc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1101100242530.2000@sister.anvils>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+Date: Mon, 10 Jan 2011 19:00:00 +0100
+X-Google-Sender-Auth: H5_8nDItecwb7bXMv3YLERiWkgk
+Message-ID: <AANLkTimHzjRLxGLabXgh7bvoD+f9jOC8CRS0YFeKzMDz@mail.gmail.com>
+Subject: [GIT PULL] ux500-core leftovers
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Rabin VINCENT <rabin.vincent@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 02:54:26AM -0800, Hugh Dickins wrote:
-> I switched to CONFIG_EXT4_USE_FOR_EXT23=y with 2.6.37, but was
-> then surprised by OOM kills: 2.6.36 and current are also bad.
+Linus, could you please pull:
 
-Oops.  Yeah, the problem was when ext4_forget() was moved out of
-ext4_free_branches, we needed to replace it with a call to brelse().
-Thanks for pointing this out.
+      git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-stericsson.git
+for-torvalds
 
-Patch follows...
+This is based on commit 0c21e3a and contains
+the following patches that couldn't be merged through
+Russell's ARM tree due to cross-branch dependencies
+now sorted out in your tree:
 
-					- Ted
+Rabin Vincent (5):
+      ux500: remove build-time changing macros
+      ux500: rename MOP board Kconfig
+      ux500: dynamic SOC detection
+      ux500: modem_irq is only for 5500
+      ux500: allow 5500 and 8500 to be built together
+
+Yours,
+Linus Walleij
