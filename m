@@ -1,123 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706Ab1AJOTl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 09:19:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2646 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751756Ab1AJOTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 09:19:40 -0500
-Date: Mon, 10 Jan 2011 16:19:04 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Milton Miller <miltonm@bga.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jamie Lokier <jamie@shareable.org>, Thomas Weber <swirl@gmx.li>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio: remove virtio-pci root device
-Message-ID: <20110110141902.GA26406@redhat.com>
-References: <virtio-pci-noroot@mdm.bga.com>
- <20110109151821.GA9063@redhat.com>
- <20110110111859.GC2202@redhat.com>
- <20110110112205.GC12065@redhat.com>
- <20110110112739.GD2202@redhat.com>
- <20110110114219.GE2202@redhat.com>
- <20110110120808.GA15554@redhat.com>
- <20110110125011.GI2202@redhat.com>
- <20110110133140.GB15554@redhat.com>
- <20110110134050.GK2202@redhat.com>
+	id S1754015Ab1AJOVu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 09:21:50 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37828 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752350Ab1AJOVt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 09:21:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=iMpANa/9lPlEO/lT5F0tFrwRyjcgVz9N2dsY9KUyQtIlW8LYeoWVo95hAlWtWrkpFw
+         AuWQsoJPz5WRwXWzPkqd2mA5gkyENJUb9kkz/94TH+Ma1oe5VfngvvKkXIfUtjyU/QuU
+         m9fHUcfaIFNR/ByxDDLvX1MilcyswNEcglou4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110110134050.GK2202@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87mxncv3ge.fsf@inspiron.ap.columbia.edu>
+References: <87mxncv3ge.fsf@inspiron.ap.columbia.edu>
+Date: Mon, 10 Jan 2011 22:21:48 +0800
+Message-ID: <AANLkTi=QV7wF3Z7J8eh3MkOJ1K=ZNLgHFinX8dJSuYeJ@mail.gmail.com>
+Subject: Re: CPU Initiated DMA
+From: Ming Lei <tom.leiming@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 03:40:50PM +0200, Gleb Natapov wrote:
-> On Mon, Jan 10, 2011 at 03:31:40PM +0200, Michael S. Tsirkin wrote:
-> > On Mon, Jan 10, 2011 at 02:50:11PM +0200, Gleb Natapov wrote:
-> > > On Mon, Jan 10, 2011 at 02:08:08PM +0200, Michael S. Tsirkin wrote:
-> > > > On Mon, Jan 10, 2011 at 01:42:19PM +0200, Gleb Natapov wrote:
-> > > > > On Mon, Jan 10, 2011 at 01:27:39PM +0200, Gleb Natapov wrote:
-> > > > > > On Mon, Jan 10, 2011 at 01:22:05PM +0200, Michael S. Tsirkin wrote:
-> > > > > > > On Mon, Jan 10, 2011 at 01:18:59PM +0200, Gleb Natapov wrote:
-> > > > > > > > On Sun, Jan 09, 2011 at 05:18:21PM +0200, Michael S. Tsirkin wrote:
-> > > > > > > > > On Fri, Jan 07, 2011 at 02:55:06AM -0600, Milton Miller wrote:
-> > > > > > > > > > We sometimes need to map between the virtio device and
-> > > > > > > > > > the given pci device. One such use is OS installer that
-> > > > > > > > > > gets the boot pci device from BIOS and needs to
-> > > > > > > > > > find the relevant block device. Since it can't,
-> > > > > > > > > > installation fails.
-> > > > > > > > > > 
-> > > > > > > > > > Instead of creating a top-level devices/virtio-pci
-> > > > > > > > > > directory, create each device under the corresponding
-> > > > > > > > > > pci device node.  Symlinks to all virtio-pci
-> > > > > > > > > > devices can be found under the pci driver link in
-> > > > > > > > > > bus/pci/drivers/virtio-pci/devices, and all virtio
-> > > > > > > > > > devices under drivers/bus/virtio/devices.
-> > > > > > > > > > 
-> > > > > > > > > > Signed-off-by: Milton Miller <miltonm@bga.com>
-> > > > > > > > > 
-> > > > > > > > > OK, this works fine for me.  I played with options to add compat
-> > > > > > > > > softlinks under devices/virtio-pci but we still don't get exactly the
-> > > > > > > > > same layout and since I don't think anyone actually uses them, it's
-> > > > > > > > > probably ok to just to the simple thing.
-> > > > > > > > > 
-> > > > > > > > > Tested/Acked-by: Michael S. Tsirkin <mst@redhat.com>
-> > > > > > > > > 
-> > > > > > > > > Rusty, since this help fix at least one user, any chance this can be put
-> > > > > > > > > in 2.6.38? OK to backport to -stable?
-> > > > > > > > > 
-> > > > > > > > > Gleb, could you try this out too?
-> > > > > > > > > 
-> > > > > > > > With this patch if I have 3 virtio disks for a VM I get:
-> > > > > > > > /sys/devices/pci0000:00/0000:00:04.0/virtio0/block/vda
-> > > > > > > > /sys/devices/pci0000:00/0000:00:05.0/virtio1/block/vdb
-> > > > > > > > /sys/devices/pci0000:00/0000:00:06.0/virtio2/block/vdc
-> > > > > > > > 
-> > > > > > > > Number after virtio has no much sense. It either should be dropped at all
-> > > > > > > > or be always zero in case we will support more then one virtio controller
-> > > > > > > > per pci card. In that case each virtio controller will have directories
-> > > > > > > > virtio0/virtio1/virtio2... under same pci device directory.
-> > > > > > > 
-> > > > > > > Yes. But this is the bus name.  It must be unique - all devices
-> > > > > > > also appear under /sys/bus/virtio/devices.
-> > > > > > > 
-> > > > > > It is very strange king of bus that is spread over several PCI devices :)
-> > > > > > It doesn't make much sense IMHO, but I can leave with it.
-> > > > > > 
-> > > > > I can't "leave" with it, but I can "live" with it.
-> > > > 
-> > > > The virtio bus is an attempt to make as many applications as
-> > > > possible work transparently on any virtio system,
-> > > > be it lguest, s390 or pci. Arbitrary IDs is just a hint to the
-> > > > applications 'don't rely on the name at all'.
-> > > > 
-> > > Shouldn't sysfs directory reflect real device topology?
-> > 
-> > What exactly is proposed here? Are you acking or nacking this patch?
-> > Prefer the older version? Can send your own?
-> > 
-> What exactly is proposed is to get rid of random number in virtio
-> directory name. If this is complicated, as I said above, I can live
-> with it as is.
+2011/1/8 Nikolaus Rath <Nikolaus@rath.org>:
+Hi,
 
-Certainly more complicated than this patch:
-core currently uses same dev_name everywhere.
+> Hello,
+>
+> I want to write a driver for a rather dumb PCI card, which cannot become
+> bus master itself. Is it possible to use a DMA controller on the
+> mainboard to still transfer data to the card without occupying the CPU?
+>
+> (I believe this is the way DMA used to work on ISA cards, but do recent
+> x86 systems still have a DMA controller for the CPU?)
+>
+> Any pointers are greatly appreciated. I looked into "Linux Device
+> Drivers", but the DMA chapter seems to be only about the device becoming
+> busmaster.
 
-> > > There are other buses AFAIK that connected differently on different
-> > > HW. How virtio is special?
-> > > What applications this allow to work transparently?
-> > 
-> > I don't know which applications use the current sysfs topology
-> > but the assumption that there are none and we can break it
-> > arbitrarily seems a bit drastic.
-> > 
-> > > --
-> > > 			Gleb.
-> 
-> --
-> 			Gleb.
+Generally speaking, you can do it certainly if there is dma controller on
+your system.
 
+thanks,
+-- 
+Lei Ming
