@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219Ab1AJPg2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 10:36:28 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:53248 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311Ab1AJPgZ (ORCPT
+	id S1751767Ab1AJPjF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 10:39:05 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:44168 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982Ab1AJPjC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 10:36:25 -0500
-From: Thomas Weber <weber@corscience.de>
-To: linux-fbdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Thomas Weber <weber@corscience.de>
-Subject: [PATCH] Drivers: video: Add modes for Devkit8000 displays
-Date: Mon, 10 Jan 2011 16:34:32 +0100
-Message-Id: <1294673672-30924-1-git-send-email-weber@corscience.de>
-X-Mailer: git-send-email 1.7.4.rc1
-X-Provags-ID: V02:K0:XsApzvfyKKagP7KcSVl1ICnqc2XtCb6yS4ILB38lqqL
- aSvCbOsyhNEXAF3jNj6+l6dyP9jyMMGusBi1Qpe0WQWqtXFosM
- HeSBkKrQGii0eJRH1+y1OBv2ZzGRCELzOGJJ8UvRFGJQL43Re9
- xZCRR8/yCo8hmq+Ku8P6XX8aFZFt/BWhFXo2RC/eWSdq6vZWmZ
- r6Q0PQzbRiLvTvG4I2CtA==
+	Mon, 10 Jan 2011 10:39:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=R15p4j3uhINQR8PhwQ1Vy5MmCJr9nGV4ZBPJFCtRXsA/ElH7r3NQ71GY2ibCa87cts
+         8wqqbyKFEBNgKFyDIlhLXr2ueD3dxM2DI0dQvyh8Z9WlChXTem+Algrvv9xNGVrcJ8uA
+         S8mHersToIAu/2Wxkdvl+EMX7CS+CMbXZVPrs=
+MIME-Version: 1.0
+In-Reply-To: <20110108221635.GB23189@cmpxchg.org>
+References: <cover.1293982522.git.minchan.kim@gmail.com>
+	<39f5e90f69d523d7f69f8ba283e318def6538307.1293982522.git.minchan.kim@gmail.com>
+	<20110108221635.GB23189@cmpxchg.org>
+Date: Tue, 11 Jan 2011 00:39:00 +0900
+Message-ID: <AANLkTi=tkOgiPUSqo3OLVNJrSUrp97sdhQ1Jn0tLhi9Y@mail.gmail.com>
+Subject: Re: [PATCH v2 1/7] Introduce delete_from_page_cache
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the video modes for the 4.3, 5.6 and 7 inch panels that
-are sold with the devkit8000.
+On Sun, Jan 9, 2011 at 7:16 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> On Mon, Jan 03, 2011 at 12:44:30AM +0900, Minchan Kim wrote:
+>> This function works as just wrapper remove_from_page_cache.
+>> The difference is that it decreases page references in itself.
+>> So caller have to make sure it has a page reference before calling.
+>>
+>> This patch is ready for removing remove_from_page_cache.
+>>
+>> Cc: Christoph Hellwig <hch@infradead.org>
+>> Acked-by: Hugh Dickins <hughd@google.com>
+>> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+>> ---
+>>  include/linux/pagemap.h |    1 +
+>>  mm/filemap.c            |   17 +++++++++++++++++
+>>  2 files changed, 18 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+>> index 9c66e99..7a1cb49 100644
+>> --- a/include/linux/pagemap.h
+>> +++ b/include/linux/pagemap.h
+>> @@ -457,6 +457,7 @@ int add_to_page_cache_lru(struct page *page, struct address_space *mapping,
+>>                               pgoff_t index, gfp_t gfp_mask);
+>>  extern void remove_from_page_cache(struct page *page);
+>>  extern void __remove_from_page_cache(struct page *page);
+>> +extern void delete_from_page_cache(struct page *page);
+>>
+>>  /*
+>>   * Like add_to_page_cache_locked, but used to add newly allocated pages:
+>> diff --git a/mm/filemap.c b/mm/filemap.c
+>> index 095c393..1ca7475 100644
+>> --- a/mm/filemap.c
+>> +++ b/mm/filemap.c
+>> @@ -166,6 +166,23 @@ void remove_from_page_cache(struct page *page)
+>>  }
+>>  EXPORT_SYMBOL(remove_from_page_cache);
+>>
+>> +/**
+>> + * delete_from_page_cache - delete page from page cache
+>> + *
+>
+> This empty line is invalid kerneldoc, the argument descriptions must
+> follow the short function description line immediately.
 
-Signed-off-by: Thomas Weber <weber@corscience.de>
----
- drivers/video/modedb.c |   14 +++++++++++++-
- 1 files changed, 13 insertions(+), 1 deletions(-)
+Thanks, Hannes.
+Will fix.
 
-diff --git a/drivers/video/modedb.c b/drivers/video/modedb.c
-index de450c1..7b2581c 100644
---- a/drivers/video/modedb.c
-+++ b/drivers/video/modedb.c
-@@ -274,7 +274,19 @@ static const struct fb_videomode modedb[] = {
-        /* 800x520i @ 50 Hz, 15.625 kHz hsync (PAL RGB) */
-        NULL, 50, 800, 520, 58823, 144, 64, 72, 28, 80, 5,
-        0, FB_VMODE_INTERLACED
--    },
-+    }, {
-+       /* 480x272 @ 60 Hz */
-+       NULL, 60, 480, 272, KHZ2PICOS(10164), 2, 2, 2, 2, 41, 10,
-+       0, FB_VMODE_NONINTERLACED
-+    }, {
-+       /* 640x480 @ 60 Hz */
-+       NULL, 60, 640, 480, KHZ2PICOS(25000), 16, 134, 32, 11, 10, 2,
-+       0, FB_VMODE_NONINTERLACED
-+    }, {
-+       /* 800x480 @ 60 Hz */
-+       NULL, 60, 800, 480, KHZ2PICOS(30000), 40, 40, 13, 29, 48, 3,
-+       0, FB_VMODE_NONINTERLACED
-+    }
- };
- 
- #ifdef CONFIG_FB_MODE_HELPERS
+>
+> Otherwise,
+> Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+>
+
+
 -- 
-1.7.4.rc1
-
+Kind regards,
+Minchan Kim
