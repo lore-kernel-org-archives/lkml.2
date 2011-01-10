@@ -1,93 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522Ab1AJRWP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 12:22:15 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:57973 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622Ab1AJRWN (ORCPT
+	id S1754459Ab1AJR0R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 12:26:17 -0500
+Received: from web31807.mail.mud.yahoo.com ([68.142.207.70]:48240 "HELO
+	web31807.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751011Ab1AJR0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 12:22:13 -0500
-Date: Mon, 10 Jan 2011 09:19:59 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Rob Landley <rlandley@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, <trivial@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-embedded@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH] Move an assert under DEBUG_KERNEL. (attempt 2)
-Message-Id: <20110110091959.ff4a2bfe.randy.dunlap@oracle.com>
-In-Reply-To: <4D2AC4D5.5070503@parallels.com>
-References: <4D2579B2.7060704@parallels.com>
-	<20110106154120.b69118c9.akpm@linux-foundation.org>
-	<4D2AC4D5.5070503@parallels.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Jan 2011 12:26:16 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type;
+  b=4cuvk1nEeCG+VMZnaFeyAwEgLP6MTBlXMier5fM+G0EKC6S64f9tPKYlllMwsrD/dZTKVUkWqLJ3HZnc5jVOn9d/UhzznZ8gnfJwI0MURCl5F2NQuJn5fUQ9PWBjS3i1P+BlxjvstKngelR5nHYv12jNGmKoAZEk9Vstox3eeyw=;
+Message-ID: <1266.36669.qm@web31807.mail.mud.yahoo.com>
+X-YMail-OSG: lrFfkcMVM1k2ODXThpz18v7HNJBKjbVncztOQFisRKJN0oI
+ 4BOLpkK94M3sDRxCPoVrTZbjuMW_8vGRTg3oFKc10oRYhEbf6SHf6fuKvy1A
+ lAO5kHbAXYw78s8AMGKp._sTWYG1VedtO3GVHdwYzbqb64Ekhs0Dt_QilIzX
+ .rej._p0XlgaUMnScL5m.1X_fA8w4JPSuQZ5jP20ivtNcKZaAvgAAo.TksmG
+ TslMI2AbTHQ7GKjBnM8JE7_ihW0GyWsiih.sUJ6Q9RX_klrZP0gicoOO7G.O
+ Zpz7yz326u6_ajTM1dUDZukkRQKyyrdoryiQpZyHWQ1aUYjXskzoZZLmQek1
+ hvlo49rz_PlXlq6iA7p2kqlvJxngVIiofergVUDn19_lwH1iIhk33qXPAJYZ
+ _d8gRv.fUrSXUjw--
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.108.291010
+Date: Mon, 10 Jan 2011 09:26:13 -0800 (PST)
+From: Luben Tuikov <ltuikov@yahoo.com>
+Reply-To: ltuikov@yahoo.com
+Subject: [PATCH] [BLOCK] Allow tag 0 to be generated
+To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: jaxboe@fusionio.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Jan 2011 02:35:33 -0600 Rob Landley wrote:
+Commit 67869fb9fdfa04503b250d59e086c15f1698aea0
+skipped tag 0 by virtue of setting last_tag to
+0. This commit sets it to -1, in order to start
+and loop over from 0, thus generating tags
+[0,max_tag-1], instead of [1,max_tag-1].
 
-> On 01/06/2011 05:41 PM, Andrew Morton wrote:
-> > Probably a worthwhile thing to do, IMO.  If there's some net-specific
-> > CONFIG_DEBUG_ setting then that wold be a better thing to use.
-> > 
-> > However the patch was a) wordwrapped, b) space-stuffed and c) not cc'ed
-> > to the networking list.  So its prospects are dim.
-> 
-> Ok, either I've beaten thunderbird into submission, or I'll be submitting a patch to Documentation/email-clients.txt.  (Whether or not I need to find a different smtp server to send this through remains an open question.)
-> 
-> (Confirming: I looked for a more specific DEBUG symbol, but couldn't find one.  I can add one, but this seems a bit small to have its own symbol, and DEBUG_KERNEL is already used in a few *.c files.)
-> 
-> From: Rob Landley <rlandley@parallels.com>
-> 
-> Move an assert under DEBUG_KERNEL.  (Minor cleanup to save a few bytes.)
-> 
-> Signed-off-by: Rob Landley <rlandley@parallels.com>
-> ---
-> 
->  include/linux/rtnetlink.h |    4 ++++
->  1 file changed, 4 insertions(+)
-
-
-Hm, cc to linux-net should be to netdev instead (so I changed it).
-
-
-> diff --git a/include/linux/rtnetlink.h b/include/linux/rtnetlink.h
-> index bbad657..28c4025 100644
-> --- a/include/linux/rtnetlink.h
-> +++ b/include/linux/rtnetlink.h
-> @@ -782,6 +782,7 @@ extern struct netdev_queue *dev_ingress_queue_create(struct net_device *dev);
->  extern void rtnetlink_init(void);
->  extern void __rtnl_unlock(void);
->  
-> +#ifdef CONFIG_DEBUG_KERNEL
->  #define ASSERT_RTNL() do { \
->  	if (unlikely(!rtnl_is_locked())) { \
->  		printk(KERN_ERR "RTNL: assertion failed at %s (%d)\n", \
-> @@ -789,6 +790,9 @@ extern void __rtnl_unlock(void);
->  		dump_stack(); \
->  	} \
->  } while(0)
-> +#else
-> +#define ASSERT_RTNL()
-> +#endif
-
-Empty macros in Linux usually take the (preferred) form of this one from kernel.h:
-
-#define might_resched() do { } while (0)
-
-although it's up to DaveM in this case.
-
-
->  
->  static inline u32 rtm_get_table(struct rtattr **rta, u8 table)
->  {
-> --
-
-
+Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ For a reference to the original patch see here:
+ git://github.com/ltuikov/linux-2.6.git
+
+ block/blk-tag.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/block/blk-tag.c b/block/blk-tag.c
+index f792e98..744cea6 100644
+--- a/block/blk-tag.c
++++ b/block/blk-tag.c
+@@ -130,7 +130,7 @@ init_tag_map(struct request_queue *q, struct blk_queue_tag *tags, int depth)
+        tags->max_depth = depth;
+        tags->tag_index = tag_index;
+        tags->tag_map = tag_map;
+-       tags->last_tag = 0;
++       tags->last_tag = -1;
+ 
+        return 0;
+ fail:
+@@ -340,7 +340,7 @@ EXPORT_SYMBOL(blk_queue_end_tag);
+ int blk_queue_start_tag(struct request_queue *q, struct request *rq)
+ {
+        struct blk_queue_tag *bqt = q->queue_tags;
+-       unsigned max_depth;
++       int max_depth;
+        int tag;
+ 
+        if (unlikely((rq->cmd_flags & REQ_QUEUED))) {
+@@ -361,14 +361,14 @@ int blk_queue_start_tag(struct request_queue *q, struct request *rq)
+        max_depth = bqt->max_depth;
+        if (!rq_is_sync(rq) && max_depth > 1) {
+                max_depth -= 2;
+-               if (!max_depth)
++               if (max_depth <= 0)
+                        max_depth = 1;
+                if (q->in_flight[BLK_RW_ASYNC] > max_depth)
+                        return 1;
+        }
+ 
+        if (bqt->last_tag == bqt->max_depth-1)
+-               bqt->last_tag = 0;
++               bqt->last_tag = -1;
+ 
+        do {
+                tag = find_next_zero_bit(bqt->tag_map,
+-- 
+1.7.2.2.165.gbc382
+
