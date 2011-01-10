@@ -1,102 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742Ab1AJPyV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 10:54:21 -0500
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:48093 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751931Ab1AJPyT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 10:54:19 -0500
-Date: Mon, 10 Jan 2011 17:54:14 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Anand Gadiyar <gadiyar@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
-        Felipe Balbi <balbi@ti.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Benoit Cousson <b-cousson@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] arm: omap4: pandaboard: turn on PHY reference clock at
- init
-Message-ID: <20110110155414.GC5573@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1294670535-9059-1-git-send-email-gadiyar@ti.com>
+	id S1752359Ab1AJP65 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 10:58:57 -0500
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:50185 "HELO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751098Ab1AJP6z convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 10:58:55 -0500
+From: Philip Rakity <prakity@marvell.com>
+To: Pierre Tardy <tardyp@gmail.com>
+CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 10 Jan 2011 07:58:30 -0800
+Subject: Re: [PATCH 2/3] mmc: add MMC_QUIRK_BROKEN_CLK_GATING
+Thread-Topic: [PATCH 2/3] mmc: add MMC_QUIRK_BROKEN_CLK_GATING
+Thread-Index: Acuw3zrKgd9RrqSBTWKS1jovz89RnQ==
+Message-ID: <ADE0108D-6DF1-4230-B7FB-39D7AC7F63D1@marvell.com>
+References: <cover.1294588491.git.tardyp@gmail.com>
+ <4663ceeebbd267abb11515570ac17702a6a482f4.1294588491.git.tardyp@gmail.com>
+In-Reply-To: <4663ceeebbd267abb11515570ac17702a6a482f4.1294588491.git.tardyp@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294670535-9059-1-git-send-email-gadiyar@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Mon, Jan 10, 2011 at 08:12:15PM +0530, Anand Gadiyar wrote:
-> The SMSC 3320 USB PHY on the OMAP4 Pandaboard needs a 19.2 MHz
-> reference clock. This clock is provided from the OMAP4's fref_clk3
-> pad.
+On Jan 9, 2011, at 8:26 AM, Pierre Tardy wrote:
+
+> Some sdio card are not following sdio standard, and does not work
+> when the sdio bus's clock is gated
 > 
-> Recent changes to clock44xx_data.c made the clock framework aware
-> of the existence of these fref_clk[i] lines. If the option
-> CONFIG_OMAP_RESET_CLOCKS is enabled in the kernel, then the
-> clock framework will turn these clocks off during bootup.
+> To keep functionnality for all legacy driver, we turn this quirk on
+> for every sdio card.
+> Drivers needs to disable the quirk manually when someone verified that their
+> supported card works with clock gating.
 > 
-> Explicitly request and keep this clock enabled at init for the
-> Pandaboard, so that the PHY receives this clock at all times.
-> 
-> Reported-by: Ming Lei <tom.leiming@gmail.com>
-> Signed-off-by: Anand Gadiyar <gadiyar@ti.com>
-> Cc: Benoit Cousson <b-cousson@ti.com>
-> Cc: Paul Walmsley <paul@pwsan.com>
-> Cc: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Pierre Tardy <tardyp@gmail.com>
 > ---
-> Tony,
+> drivers/mmc/core/host.c   |    5 +----
+> drivers/mmc/core/quirks.c |   11 +++++++++++
+> include/linux/mmc/card.h  |    1 +
+> 3 files changed, 13 insertions(+), 4 deletions(-)
 > 
-> The clock database changes were merged just before Christmas, so
-> we did not detect this sooner. Would be nice to get this merged in
-> the -rc series, so that we get EHCI and ethernet functional on the Panda.
-> 
-> Ming Lei,
-> 
-> Could you please test this and confirm it fixes the issue for you?
-> 
-> - Anand
-> 
->  arch/arm/mach-omap2/board-omap4panda.c |   10 ++++++++++
->  1 file changed, 10 insertions(+)
-> 
-> Index: linux-2.6/arch/arm/mach-omap2/board-omap4panda.c
-> ===================================================================
-> --- linux-2.6.orig/arch/arm/mach-omap2/board-omap4panda.c
-> +++ linux-2.6/arch/arm/mach-omap2/board-omap4panda.c
-> @@ -19,6 +19,7 @@
->  #include <linux/kernel.h>
->  #include <linux/init.h>
->  #include <linux/platform_device.h>
-> +#include <linux/clk.h>
->  #include <linux/io.h>
->  #include <linux/leds.h>
->  #include <linux/gpio.h>
-> @@ -95,7 +96,16 @@ static const struct ehci_hcd_omap_platfo
->  static void __init omap4_ehci_init(void)
->  {
->  	int ret;
-> +	struct clk *phy_ref_clk;
->  
-> +	/* FREF_CLK3 provides the 19.2 MHz reference clock to the PHY */
-> +	phy_ref_clk = clk_get(NULL, "auxclk3_ck");
-> +	if (IS_ERR(phy_ref_clk)) {
-> +		pr_err("Cannot request auxclk3\n");
-> +		goto error1;
-> +	}
-> +	clk_set_rate(phy_ref_clk, 19200000);
-> +	clk_enable(phy_ref_clk);
+> diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
+> index b3ac6c5..461e6a1 100644
+> --- a/drivers/mmc/core/host.c
+> +++ b/drivers/mmc/core/host.c
+> @@ -160,10 +160,7 @@ static bool mmc_host_may_gate_card(struct mmc_card *card)
+> 	 * gate the clock, because there is somebody out there that may still
+> 	 * be using it.
+> 	 */
+> -	if (mmc_card_sdio(card))
+> -		return false;
+> -
+> -	return true;
+> +	return !(card->quirks & MMC_QUIRK_BROKEN_CLK_GATING);
+> }
 
-shouldn't you be enabling a child of this clock which would be the PHY's
-reference clock ? What about PM, are you keeping this clock on forever ?
-Wouldn't it be better to, at least, pass down a function pointer to
-driver so it uses during probe() (to enable clocks) and suspend/resume
-??
 
--- 
-balbi
+Since the code is not called that often could you change the above code to:  
+
+> 	if (mmc_card_sdio(card))
+> 		return !(card->quirks & MMC_QUIRK_BROKEN_CLK_GATING);
+	return true;
+
+more obvious that quirk only applies to sdio.
+
+> 
+> /**
+> diff --git a/drivers/mmc/core/quirks.c b/drivers/mmc/core/quirks.c
+> index d8a5fec..fe467c8 100644
+> --- a/drivers/mmc/core/quirks.c
+> +++ b/drivers/mmc/core/quirks.c
+> @@ -32,7 +32,18 @@ static void add_quirk(struct mmc_card *card, int data)
+> 	card->quirks |= data;
+> }
+> 
+> +/*
+> + * This hook just adds a quirk for all sdio devices
+> + */
+> +static void add_quirk_for_sdio_devices(struct mmc_card *card, int data)
+> +{
+> +	if (mmc_card_sdio(card))
+> +		card->quirks |= data;
+> +}
+> +
+> static const struct mmc_fixup mmc_fixup_methods[] = {
+> +	{ SDIO_ANY_ID, SDIO_ANY_ID,
+> +		add_quirk_for_sdio_devices, MMC_QUIRK_BROKEN_CLK_GATING }
+> 	{ 0 }
+> };
+> 
+> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+> index a498d53..3fe9db0 100644
+> --- a/include/linux/mmc/card.h
+> +++ b/include/linux/mmc/card.h
+> @@ -121,6 +121,7 @@ struct mmc_card {
+> 						/* for byte mode */
+> #define MMC_QUIRK_NONSTD_SDIO	(1<<2)		/* non-standard SDIO card attached */
+> 						/* (missing CIA registers) */
+> +#define MMC_QUIRK_BROKEN_CLK_GATING (1<<3)	/* clock gating the sdio bus will make card fail */
+> 
+> 	unsigned int		erase_size;	/* erase size in sectors */
+>  	unsigned int		erase_shift;	/* if erase unit is power 2 */
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
