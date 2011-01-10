@@ -1,277 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab1AJVBY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 16:01:24 -0500
-Received: from smtp-vbr4.xs4all.nl ([194.109.24.24]:4079 "EHLO
-	smtp-vbr4.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754653Ab1AJVBV (ORCPT
+	id S1754769Ab1AJVC5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 16:02:57 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52090 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754113Ab1AJVCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 16:01:21 -0500
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: manjunatha_halli@ti.com
-Subject: Re: [RFC V9 3/7] drivers:media:radio: wl128x: FM Driver Common  sources
-Date: Mon, 10 Jan 2011 22:01:12 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-tschai; KDE/4.4.5; x86_64; ; )
-Cc: mchehab@infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-References: <1294664700-26949-1-git-send-email-manjunatha_halli@ti.com> <1294664700-26949-3-git-send-email-manjunatha_halli@ti.com> <1294664700-26949-4-git-send-email-manjunatha_halli@ti.com>
-In-Reply-To: <1294664700-26949-4-git-send-email-manjunatha_halli@ti.com>
+	Mon, 10 Jan 2011 16:02:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=A3TO/5+Y/AOiEMcuXOOsv+hvbKpE16vMYDOJdCXjMxLL+p/5RYOJ4NfqrSdxbyAe4Z
+         frdVl7o7RbwVjFGJMuAgWahcAkMoWwXVeKnLjc5TfZYDSme5gQVF+oRD2RJuDIqlQ8QZ
+         BBKzOa/rhYeYUdjVuxt7DUhOrPtojm0V3/Z6U=
+Message-ID: <4D2B73FA.807@gmail.com>
+Date: Mon, 10 Jan 2011 22:02:50 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, linux-mm@kvack.org, kvm@vger.kernel.org
+Subject: Re: qemu-kvm defunct due to THP [was: mmotm 2011-01-06-15-41 uploaded]
+References: <201101070014.p070Egpo023959@imap1.linux-foundation.org> <4D2B19C5.5060709@gmail.com> <20110110150128.GC9506@random.random>
+In-Reply-To: <20110110150128.GC9506@random.random>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101102201.12318.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Manjunatha,
-
-Thanks for all the work, it looks much better now!
-
-I found a few little things here, but otherwise you can stick a
-
-Reviewed-by: Hans Verkuil <hverkuil@xs4all.nl>
-
-tag in the whole driver series.
-
-On Monday, January 10, 2011 14:04:56 manjunatha_halli@ti.com wrote:
-> From: Manjunatha Halli <manjunatha_halli@ti.com>
+On 01/10/2011 04:01 PM, Andrea Arcangeli wrote:
+> On Mon, Jan 10, 2011 at 03:37:57PM +0100, Jiri Slaby wrote:
+>> On 01/07/2011 12:41 AM, akpm@linux-foundation.org wrote:
+>>> The mm-of-the-moment snapshot 2011-01-06-15-41 has been uploaded to
+>>
+>> Hi, something of the following breaks qemu-kvm:
 > 
-> These are the sources for the common interfaces required by the
-> FM V4L2 driver for TI WL127x and WL128x chips.
+> Thanks for the report. It's already fixed and I posted this a few days
+> ago to linux-mm.
 > 
-> These implement the FM channel-8 protocol communication with the
-> chip. This makes use of the Shared Transport as its transport.
+> I had to rewrite the KVM THP support when merging THP in -mm, because
+> the kvm code in -mm has async page faults and doing so I eliminated
+> one gfn_to_page lookup for each kvm secondary mmu page fault. But
+> first new attempt wasn't entirely successful ;), the below incremental
+> fix should work. Please test it and let me know if any trouble is
+> left.
 > 
-> Signed-off-by: Manjunatha Halli <manjunatha_halli@ti.com>
+> Also note again on linux-mm I posted two more patches, I recommend to
+> apply the other two as well. The second adds KSM THP support, the
+> third cleanup some code but I like to have it tested.
+> 
+> Thanks a lot,
+> Andrea
+> 
+> ====
+> Subject: thp: fix for KVM THP support
+> 
+> From: Andrea Arcangeli <aarcange@redhat.com>
+> 
+> There were several bugs: dirty_bitmap ignored (migration shutoff largepages),
+> has_wrprotect_page(directory_level) ignored, refcount taken on tail page and
+> refcount released on pfn head page post-adjustment (now it's being transferred
+> during the adjustment, that's where KSM over THP tripped inside
+> split_huge_page, the rest I found it by code review).
+> 
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 > ---
->  drivers/media/radio/wl128x/fmdrv_common.c | 1693 +++++++++++++++++++++++++++++
->  drivers/media/radio/wl128x/fmdrv_common.h |  402 +++++++
->  2 files changed, 2095 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/media/radio/wl128x/fmdrv_common.c
->  create mode 100644 drivers/media/radio/wl128x/fmdrv_common.h
-> 
-> diff --git a/drivers/media/radio/wl128x/fmdrv_common.c b/drivers/media/radio/wl128x/fmdrv_common.c
-> new file mode 100644
-> index 0000000..46f5fe4
-> --- /dev/null
-> +++ b/drivers/media/radio/wl128x/fmdrv_common.c
+>  arch/x86/kvm/mmu.c         |   97 ++++++++++++++++++++++++++++++++-------------
+>  arch/x86/kvm/paging_tmpl.h |   10 +++-
+>  2 files changed, 79 insertions(+), 28 deletions(-)
 
-<snip>
+Yup, this works for me. If you point me to the other 2, I will test them
+too...
 
-> +u32 fmc_set_freq(struct fmdev *fmdev, u32 freq_to_set)
-> +{
-> +	switch (fmdev->curr_fmmode) {
-> +	case FM_MODE_RX:
-> +		return fm_rx_set_freq(fmdev, freq_to_set);
-> +		break;
-
-'break' after a 'return' can be removed. This is repeated several times.
-
-> +
-> +	case FM_MODE_TX:
-> +		return fm_tx_set_freq(fmdev, freq_to_set);
-> +		break;
-> +
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +}
-> +
-> +u32 fmc_get_freq(struct fmdev *fmdev, u32 *cur_tuned_frq)
-> +{
-> +	if (fmdev->rx.freq == FM_UNDEFINED_FREQ) {
-> +		fmerr("RX frequency is not set\n");
-> +		return -EPERM;
-> +	}
-> +	if (cur_tuned_frq == NULL) {
-> +		fmerr("Invalid memory\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	switch (fmdev->curr_fmmode) {
-> +	case FM_MODE_RX:
-> +		*cur_tuned_frq = fmdev->rx.freq;
-> +		break;
-> +
-> +	case FM_MODE_TX:
-> +		*cur_tuned_frq = 0;	/* TODO : Change this later */
-> +		break;
-> +
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +u32 fmc_set_region(struct fmdev *fmdev, u8 region_to_set)
-> +{
-> +	switch (fmdev->curr_fmmode) {
-> +	case FM_MODE_RX:
-> +		return fm_rx_set_region(fmdev, region_to_set);
-> +		break;
-> +
-> +	case FM_MODE_TX:
-> +		return fm_tx_set_region(fmdev, region_to_set);
-> +		break;
-> +
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +}
-> +
-> +u32 fmc_set_mute_mode(struct fmdev *fmdev, u8 mute_mode_toset)
-> +{
-> +	switch (fmdev->curr_fmmode) {
-> +	case FM_MODE_RX:
-> +		return fm_rx_set_mute_mode(fmdev, mute_mode_toset);
-> +		break;
-> +
-> +	case FM_MODE_TX:
-> +		return fm_tx_set_mute_mode(fmdev, mute_mode_toset);
-> +		break;
-> +
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +}
-> +
-> +u32 fmc_set_stereo_mono(struct fmdev *fmdev, u16 mode)
-> +{
-> +	switch (fmdev->curr_fmmode) {
-> +	case FM_MODE_RX:
-> +		return fm_rx_set_stereo_mono(fmdev, mode);
-> +		break;
-> +
-> +	case FM_MODE_TX:
-> +		return fm_tx_set_stereo_mono(fmdev, mode);
-> +		break;
-> +
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +}
-> +
-> +u32 fmc_set_rds_mode(struct fmdev *fmdev, u8 rds_en_dis)
-> +{
-> +	switch (fmdev->curr_fmmode) {
-> +	case FM_MODE_RX:
-> +		return fm_rx_set_rds_mode(fmdev, rds_en_dis);
-> +		break;
-> +
-> +	case FM_MODE_TX:
-> +		return fm_tx_set_rds_mode(fmdev, rds_en_dis);
-> +		break;
-> +
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +}
-> +
-> +/* Sends power off command to the chip */
-> +static u32 fm_power_down(struct fmdev *fmdev)
-> +{
-> +	u16 payload;
-> +	u32 ret = 0;
-> +
-> +	if (!test_bit(FM_CORE_READY, &fmdev->flag)) {
-> +		fmerr("FM core is not ready\n");
-> +		return -EPERM;
-> +	}
-> +	if (fmdev->curr_fmmode == FM_MODE_OFF) {
-> +		fmdbg("FM chip is already in OFF state\n");
-> +		return ret;
-> +	}
-> +
-> +	payload = 0x0;
-> +	ret = fmc_send_cmd(fmdev, FM_POWER_MODE, REG_WR, &payload,
-> +		sizeof(payload), NULL, NULL);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = fmc_release(fmdev);
-
-Just do 'return fmc_release(fmdev);' here.
-
-> +
-> +	return ret;
-> +}
-> +
-> +/* Reads init command from FM firmware file and loads to the chip */
-> +static u32 fm_download_firmware(struct fmdev *fmdev, const u8 *fw_name)
-> +{
-> +	const struct firmware *fw_entry;
-> +	struct bts_header *fw_header;
-> +	struct bts_action *action;
-> +	struct bts_action_delay *delay;
-> +	u8 *fw_data;
-> +	int ret, fw_len, cmd_cnt;
-> +
-> +	cmd_cnt = 0;
-> +	set_bit(FM_FW_DW_INPROGRESS, &fmdev->flag);
-> +
-> +	ret = request_firmware(&fw_entry, fw_name,
-> +				&fmdev->radio_dev->dev);
-> +	if (ret < 0) {
-> +		fmerr("Unable to read firmware(%s) content\n", fw_name);
-> +		return ret;
-> +	}
-> +	fmdbg("Firmware(%s) length : %d bytes\n", fw_name, fw_entry->size);
-> +
-> +	fw_data = (void *)fw_entry->data;
-> +	fw_len = fw_entry->size;
-> +
-> +	fw_header = (struct bts_header *)fw_data;
-> +	if (fw_header->magic != FM_FW_FILE_HEADER_MAGIC) {
-> +		fmerr("%s not a legal TI firmware file\n", fw_name);
-> +		ret = -EINVAL;
-> +		goto rel_fw;
-> +	}
-> +	fmdbg("FW(%s) magic number : 0x%x\n", fw_name, fw_header->magic);
-> +
-> +	/* Skip file header info , we already verified it */
-> +	fw_data += sizeof(struct bts_header);
-> +	fw_len -= sizeof(struct bts_header);
-> +
-> +	while (fw_data && fw_len > 0) {
-> +		action = (struct bts_action *)fw_data;
-> +
-> +		switch (action->type) {
-> +		case ACTION_SEND_COMMAND:	/* Send */
-> +			if (fmc_send_cmd(fmdev, 0, 0, action->data,
-> +						action->size, NULL, NULL))
-> +				goto rel_fw;
-> +
-> +			cmd_cnt++;
-> +			break;
-> +
-> +		case ACTION_DELAY:	/* Delay */
-> +			delay = (struct bts_action_delay *)action->data;
-> +			mdelay(delay->msec);
-> +			break;
-> +		}
-> +
-> +		fw_data += (sizeof(struct bts_action) + (action->size));
-> +		fw_len -= (sizeof(struct bts_action) + (action->size));
-> +	}
-> +	fmdbg("Firmare commands(%d) loaded to chip\n", cmd_cnt);
-
-Firmare -> Firmware
-
-> +rel_fw:
-> +	release_firmware(fw_entry);
-> +	clear_bit(FM_FW_DW_INPROGRESS, &fmdev->flag);
-> +
-> +	return ret;
-> +}
-
-<snip>
-
-Regards,
-
-	Hans
-
+thanks,
 -- 
-Hans Verkuil - video4linux developer - sponsored by Cisco
+js
