@@ -1,118 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131Ab1AJQSP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 11:18:15 -0500
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:39605 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751193Ab1AJQSM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 11:18:12 -0500
-Message-ID: <4D2B3131.7040604@ti.com>
-Date: Mon, 10 Jan 2011 21:47:53 +0530
-From: Anand Gadiyar <gadiyar@ti.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: balbi@ti.com
-CC: linux-omap@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Benoit Cousson <b-cousson@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] arm: omap4: pandaboard: turn on PHY reference clock at
- init
-References: <1294670535-9059-1-git-send-email-gadiyar@ti.com> <20110110155414.GC5573@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20110110155414.GC5573@legolas.emea.dhcp.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753406Ab1AJQU3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 11:20:29 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:44495 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752073Ab1AJQU2 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:5:1>);
+	Mon, 10 Jan 2011 11:20:28 -0500
+Message-Id: <4D2B3FD7020000780002B67D@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Mon, 10 Jan 2011 16:20:23 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: "Andreas Herrmann3" <Andreas.Herrmann3@amd.com>,
+        "Joerg Roedel" <joerg.roedel@amd.com>,
+        "Robert Richter" <robert.richter@amd.com>,
+        "Jeremy Fitzhardinge" <jeremy@goop.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH, v2] x86: use PCI method for enabling AMD extended
+	 config space before MSR method
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/10/2011 9:24 PM, Felipe Balbi wrote:
-> Hi,
-> 
-> On Mon, Jan 10, 2011 at 08:12:15PM +0530, Anand Gadiyar wrote:
->> The SMSC 3320 USB PHY on the OMAP4 Pandaboard needs a 19.2 MHz
->> reference clock. This clock is provided from the OMAP4's fref_clk3
->> pad.
->>
->> Recent changes to clock44xx_data.c made the clock framework aware
->> of the existence of these fref_clk[i] lines. If the option
->> CONFIG_OMAP_RESET_CLOCKS is enabled in the kernel, then the
->> clock framework will turn these clocks off during bootup.
->>
->> Explicitly request and keep this clock enabled at init for the
->> Pandaboard, so that the PHY receives this clock at all times.
->>
->> Reported-by: Ming Lei <tom.leiming@gmail.com>
->> Signed-off-by: Anand Gadiyar <gadiyar@ti.com>
->> Cc: Benoit Cousson <b-cousson@ti.com>
->> Cc: Paul Walmsley <paul@pwsan.com>
->> Cc: Tony Lindgren <tony@atomide.com>
->> ---
->> Tony,
->>
->> The clock database changes were merged just before Christmas, so
->> we did not detect this sooner. Would be nice to get this merged in
->> the -rc series, so that we get EHCI and ethernet functional on the Panda.
->>
->> Ming Lei,
->>
->> Could you please test this and confirm it fixes the issue for you?
->>
->> - Anand
->>
->>  arch/arm/mach-omap2/board-omap4panda.c |   10 ++++++++++
->>  1 file changed, 10 insertions(+)
->>
->> Index: linux-2.6/arch/arm/mach-omap2/board-omap4panda.c
->> ===================================================================
->> --- linux-2.6.orig/arch/arm/mach-omap2/board-omap4panda.c
->> +++ linux-2.6/arch/arm/mach-omap2/board-omap4panda.c
->> @@ -19,6 +19,7 @@
->>  #include <linux/kernel.h>
->>  #include <linux/init.h>
->>  #include <linux/platform_device.h>
->> +#include <linux/clk.h>
->>  #include <linux/io.h>
->>  #include <linux/leds.h>
->>  #include <linux/gpio.h>
->> @@ -95,7 +96,16 @@ static const struct ehci_hcd_omap_platfo
->>  static void __init omap4_ehci_init(void)
->>  {
->>  	int ret;
->> +	struct clk *phy_ref_clk;
->>  
->> +	/* FREF_CLK3 provides the 19.2 MHz reference clock to the PHY */
->> +	phy_ref_clk = clk_get(NULL, "auxclk3_ck");
->> +	if (IS_ERR(phy_ref_clk)) {
->> +		pr_err("Cannot request auxclk3\n");
->> +		goto error1;
->> +	}
->> +	clk_set_rate(phy_ref_clk, 19200000);
->> +	clk_enable(phy_ref_clk);
-> 
-> shouldn't you be enabling a child of this clock which would be the PHY's
-> reference clock ? What about PM, are you keeping this clock on forever ?
+While both methods should work equivalently well for the native case,
+the Xen Dom0 case can't reliably work with the MSR one, since there's
+no guarantee that the virtual CPUs it has available fully cover all
+necessary physical ones.
 
-This is simply one of 5 reference clock-outs that the OMAP provides to
-various components on the PCB. It's a simple divide-down from the OMAP's
-own reference system clock, or DPLLs. There are no children for this
-clock right now.
+As per the suggestion of Robert Richter the patch only adds the PCI
+method, but leaves the MSR one as a fallback to cover new systems the
+PCI IDs of which may not have got added to the code base yet.
 
-Keeping this on forever was intentional. There's no reason to control
-this clock dynamically at this point, given the driver doesn't currently
-gate other clocks.
+The only change in v2 is the breaking out of the new CPI initialization
+method into a separate function, as requested by Ingo.
 
-We haven't yet come up with a policy for when this clock can be safely
-turned off, and that's not what this patch is supposed to do right now.
-In this patch, we're only restoring behavior that existed before the
-clock data was updated to include this clock.
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Acked-by: Robert Richter <robert.richter@amd.com>
+Cc: Joerg Roedel <Joerg.Roedel@amd.com>
+Cc: Andreas Herrmann <Andreas.Herrmann3@amd.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
 
-> Wouldn't it be better to, at least, pass down a function pointer to
-> driver so it uses during probe() (to enable clocks) and suspend/resume
-> ??
+---
+ arch/x86/include/asm/amd_nb.h |    7 ++++++
+ arch/x86/kernel/amd_nb.c      |    7 ++++++
+ arch/x86/kernel/aperture_64.c |   44 +++++++++++++++---------------------------
+ arch/x86/pci/amd_bus.c        |   33 ++++++++++++++++++++++++++++
+ 4 files changed, 63 insertions(+), 28 deletions(-)
 
-Yes, this would work, but it didn't seem to be useful, given that
-only the Panda uses this right now. It's very much board specific.
+--- tip/arch/x86/include/asm/amd_nb.h
++++ tip-x86-amd-ecs/arch/x86/include/asm/amd_nb.h
+@@ -3,7 +3,14 @@
+ 
+ #include <linux/pci.h>
+ 
++struct amd_nb_bus_dev_range {
++	u8 bus;
++	u8 dev_base;
++	u8 dev_limit;
++};
++
+ extern struct pci_device_id amd_nb_misc_ids[];
++extern const struct amd_nb_bus_dev_range amd_nb_bus_dev_ranges[];
+ struct bootnode;
+ 
+ extern int early_is_amd_nb(u32 value);
+--- tip/arch/x86/kernel/amd_nb.c
++++ tip-x86-amd-ecs/arch/x86/kernel/amd_nb.c
+@@ -20,6 +20,13 @@ struct pci_device_id amd_nb_misc_ids[
+ };
+ EXPORT_SYMBOL(amd_nb_misc_ids);
+ 
++const struct amd_nb_bus_dev_range amd_nb_bus_dev_ranges[] __initconst = {
++	{ 0x00, 0x18, 0x20 },
++	{ 0xff, 0x00, 0x20 },
++	{ 0xfe, 0x00, 0x20 },
++	{ }
++};
++
+ struct amd_northbridge_info amd_northbridges;
+ EXPORT_SYMBOL(amd_northbridges);
+ 
+--- tip/arch/x86/kernel/aperture_64.c
++++ tip-x86-amd-ecs/arch/x86/kernel/aperture_64.c
+@@ -39,18 +39,6 @@ int fallback_aper_force __initdata;
+ 
+ int fix_aperture __initdata = 1;
+ 
+-struct bus_dev_range {
+-	int bus;
+-	int dev_base;
+-	int dev_limit;
+-};
+-
+-static struct bus_dev_range bus_dev_ranges[] __initdata = {
+-	{ 0x00, 0x18, 0x20},
+-	{ 0xff, 0x00, 0x20},
+-	{ 0xfe, 0x00, 0x20}
+-};
+-
+ static struct resource gart_resource = {
+ 	.name	= "GART",
+ 	.flags	= IORESOURCE_MEM,
+@@ -294,13 +282,13 @@ void __init early_gart_iommu_check(void)
+ 	search_agp_bridge(&agp_aper_order, &valid_agp);
+ 
+ 	fix = 0;
+-	for (i = 0; i < ARRAY_SIZE(bus_dev_ranges); i++) {
++	for (i = 0; amd_nb_bus_dev_ranges[i].dev_limit; i++) {
+ 		int bus;
+ 		int dev_base, dev_limit;
+ 
+-		bus = bus_dev_ranges[i].bus;
+-		dev_base = bus_dev_ranges[i].dev_base;
+-		dev_limit = bus_dev_ranges[i].dev_limit;
++		bus = amd_nb_bus_dev_ranges[i].bus;
++		dev_base = amd_nb_bus_dev_ranges[i].dev_base;
++		dev_limit = amd_nb_bus_dev_ranges[i].dev_limit;
+ 
+ 		for (slot = dev_base; slot < dev_limit; slot++) {
+ 			if (!early_is_amd_nb(read_pci_config(bus, slot, 3, 0x00)))
+@@ -349,13 +337,13 @@ void __init early_gart_iommu_check(void)
+ 		return;
+ 
+ 	/* disable them all at first */
+-	for (i = 0; i < ARRAY_SIZE(bus_dev_ranges); i++) {
++	for (i = 0; i < amd_nb_bus_dev_ranges[i].dev_limit; i++) {
+ 		int bus;
+ 		int dev_base, dev_limit;
+ 
+-		bus = bus_dev_ranges[i].bus;
+-		dev_base = bus_dev_ranges[i].dev_base;
+-		dev_limit = bus_dev_ranges[i].dev_limit;
++		bus = amd_nb_bus_dev_ranges[i].bus;
++		dev_base = amd_nb_bus_dev_ranges[i].dev_base;
++		dev_limit = amd_nb_bus_dev_ranges[i].dev_limit;
+ 
+ 		for (slot = dev_base; slot < dev_limit; slot++) {
+ 			if (!early_is_amd_nb(read_pci_config(bus, slot, 3, 0x00)))
+@@ -390,14 +378,14 @@ int __init gart_iommu_hole_init(void)
+ 
+ 	fix = 0;
+ 	node = 0;
+-	for (i = 0; i < ARRAY_SIZE(bus_dev_ranges); i++) {
++	for (i = 0; i < amd_nb_bus_dev_ranges[i].dev_limit; i++) {
+ 		int bus;
+ 		int dev_base, dev_limit;
+ 		u32 ctl;
+ 
+-		bus = bus_dev_ranges[i].bus;
+-		dev_base = bus_dev_ranges[i].dev_base;
+-		dev_limit = bus_dev_ranges[i].dev_limit;
++		bus = amd_nb_bus_dev_ranges[i].bus;
++		dev_base = amd_nb_bus_dev_ranges[i].dev_base;
++		dev_limit = amd_nb_bus_dev_ranges[i].dev_limit;
+ 
+ 		for (slot = dev_base; slot < dev_limit; slot++) {
+ 			if (!early_is_amd_nb(read_pci_config(bus, slot, 3, 0x00)))
+@@ -505,7 +493,7 @@ out:
+ 	}
+ 
+ 	/* Fix up the north bridges */
+-	for (i = 0; i < ARRAY_SIZE(bus_dev_ranges); i++) {
++	for (i = 0; i < amd_nb_bus_dev_ranges[i].dev_limit; i++) {
+ 		int bus, dev_base, dev_limit;
+ 
+ 		/*
+@@ -514,9 +502,9 @@ out:
+ 		 */
+ 		u32 ctl = DISTLBWALKPRB | aper_order << 1;
+ 
+-		bus = bus_dev_ranges[i].bus;
+-		dev_base = bus_dev_ranges[i].dev_base;
+-		dev_limit = bus_dev_ranges[i].dev_limit;
++		bus = amd_nb_bus_dev_ranges[i].bus;
++		dev_base = amd_nb_bus_dev_ranges[i].dev_base;
++		dev_limit = amd_nb_bus_dev_ranges[i].dev_limit;
+ 		for (slot = dev_base; slot < dev_limit; slot++) {
+ 			if (!early_is_amd_nb(read_pci_config(bus, slot, 3, 0x00)))
+ 				continue;
+--- tip/arch/x86/pci/amd_bus.c
++++ tip-x86-amd-ecs/arch/x86/pci/amd_bus.c
+@@ -4,6 +4,7 @@
+ #include <linux/cpu.h>
+ #include <linux/range.h>
+ 
++#include <asm/amd_nb.h>
+ #include <asm/pci_x86.h>
+ 
+ #include <asm/pci-direct.h>
+@@ -378,6 +379,34 @@ static struct notifier_block __cpuinitda
+ 	.notifier_call	= amd_cpu_notify,
+ };
+ 
++static void __init pci_enable_pci_io_ecs(void)
++{
++#ifdef CONFIG_AMD_NB
++	unsigned int i, n;
++
++	for (n = i = 0; !n && amd_nb_bus_dev_ranges[i].dev_limit; ++i) {
++		u8 bus = amd_nb_bus_dev_ranges[i].bus;
++		u8 slot = amd_nb_bus_dev_ranges[i].dev_base;
++		u8 limit = amd_nb_bus_dev_ranges[i].dev_limit;
++
++		for (; slot < limit; ++slot) {
++			u32 val = read_pci_config(bus, slot, 3, 0);
++
++			if (!early_is_amd_nb(val))
++				continue;
++
++			val = read_pci_config(bus, slot, 3, 0x8c);
++			if (!(val & (ENABLE_CF8_EXT_CFG >> 32))) {
++				val |= ENABLE_CF8_EXT_CFG >> 32;
++				write_pci_config(bus, slot, 3, 0x8c, val);
++			}
++			++n;
++		}
++	}
++	pr_info("Extended Config Space enabled on %u nodes\n", n);
++#endif
++}
++
+ static int __init pci_io_ecs_init(void)
+ {
+ 	int cpu;
+@@ -386,6 +415,10 @@ static int __init pci_io_ecs_init(void)
+         if (boot_cpu_data.x86 < 0x10)
+ 		return 0;
+ 
++	/* Try the PCI method first. */
++	if (early_pci_allowed())
++		pci_enable_pci_io_ecs();
++
+ 	register_cpu_notifier(&amd_cpu_notifier);
+ 	for_each_online_cpu(cpu)
+ 		amd_cpu_notify(&amd_cpu_notifier, (unsigned long)CPU_ONLINE,
+
 
