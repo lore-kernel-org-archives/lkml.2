@@ -1,100 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab1AKBYs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 20:24:48 -0500
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:60213 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753407Ab1AKBYj (ORCPT
+	id S1755251Ab1AKB1U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 20:27:20 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:54755 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754301Ab1AKB1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 20:24:39 -0500
-From: Kevin Hilman <khilman@ti.com>
-To: Thomas Renninger <trenn@suse.de>
-Cc: Jean Pihet <jean.pihet@newoldbits.com>, Paul Walmsley <paul@pwsan.com>,
-        mingo@elte.hu, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        linux-perf-users@vger.kernel.org, rjw@sisk.pl,
-        Jean Pihet <j-pihet@ti.com>
-Subject: Re: [PATCH 2/3] perf: add OMAP support for the new power events
-Organization: Texas Instruments, Inc.
-References: <1294136263-24020-1-git-send-email-j-pihet@ti.com>
-	<alpine.DEB.2.00.1101041146160.19319@utopia.booyaka.com>
-	<AANLkTi=3pek3+Vv+c1TCxBH2RJcoSXq8TL8CyK9ABMeu@mail.gmail.com>
-	<201101101514.32355.trenn@suse.de>
-Date: Mon, 10 Jan 2011 17:24:35 -0800
-In-Reply-To: <201101101514.32355.trenn@suse.de> (Thomas Renninger's message of
-	"Mon, 10 Jan 2011 15:14:31 +0100")
-Message-ID: <8739p0grl8.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Mon, 10 Jan 2011 20:27:14 -0500
+Message-ID: <4D2BB1A4.5090404@kernel.org>
+Date: Mon, 10 Jan 2011 17:25:56 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Greg KH <greg@kroah.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-usb@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v3 0/4] x86, usb, pci: Disable usb legacy support early
+References: <4D2A1382.7010407@kernel.org> <4D2AC6BF.3010907@kernel.org> <4D2BA8FE.9090204@kernel.org> <20110111010739.GC32585@kroah.com>
+In-Reply-To: <20110111010739.GC32585@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Renninger <trenn@suse.de> writes:
+On 01/10/2011 05:07 PM, Greg KH wrote:
+> On Mon, Jan 10, 2011 at 04:49:02PM -0800, Yinghai Lu wrote:
+>>
+>> Move quirks for usb handoff early for x86.
+>>
+>> So we can get stable result when trying to calibrate apic timer with pm-timer.
+> 
+> I still fail to understand _why_ you are making these changes.
+> 
+> Exactly what problem do you currently have, on what hardware, that this
+> patch set solves?
+1. remove the warning 
+2. apic timer clockevent will be more accurate instead of use PM to calibrate it.
 
-> On Wednesday 05 January 2011 12:05:18 Jean Pihet wrote:
->> Hi Paul,
->> 
->> On Tue, Jan 4, 2011 at 7:48 PM, Paul Walmsley <paul@pwsan.com> wrote:
->> > Hello Jean,
->> >
->> > On Tue, 4 Jan 2011, jean.pihet@newoldbits.com wrote:
->> >
->> >> From: Jean Pihet <j-pihet@ti.com>
->> >>
->> >> The patch adds the new power management trace points for
->> >> the OMAP architecture.
->> >>
->> >> The trace points are for:
->> >> - default idle handler. Since the cpuidle framework is
->> >>   instrumented in the generic way there is no need to
->> >>   add trace points in the OMAP specific cpuidle handler;
->> >> - cpufreq (DVFS),
->> >> - clocks changes (enable, disable, set_rate),
->> >
->> > A question about these.  Are these only meant to track calls to these
->> > functions from outside the clock code?  Or meant to track actual hardware
->> > clock changes?
->> The former: this is used to track the clock requests from outside the
->> clock framework.
->> 
->> > If the latter, then it might make sense to put these
->> > trace points into the functions that actually change the hardware
->> > registers, e.g., omap2_dflt_clk_{enable,disable}(), etc., since a
->> > clk_enable() on a leaf clock may result in many internal system clocks
->> > being enabled up the clock tree.
->> I agree with you it is better to track the actual clock changes instead.
->> I propose to move the tracepoints to omap2_clk_{enable...} which
->> enables all the clocks irrespectively of the installed handler.
->> Note about the clock handlers: omap2_dflt_clk_enable happens to be the
->> handler for all controllable clocks but could that change in the
->> future?
+on Intel newer system with 128 logical cpus or more.
 
-> Looks like there is cpuidle34xx using cpuidle framework on specific
-> boards only.  And pm34xx.c and others override pm_idle and use the
-> same low level functions to reduce power consumption as cpuidle34xx.
-> Ideally pm34xx.c (and others) would not override pm_idle, but register as
-> a cpuidle driver. Then the idle events would be tracked by the
-> cpuidle subsystem automatically (with my latest patches).
-> But this would be a more intrusive change (are there efforts to do that?).
+guess SMI handler for USB legacy support may need more time coordinate between those cpus.
 
-Whenever CPUidle is enabled though, the cpuidle34xx code is used so the
-pm_idle in pm34xx is not used. This allows us to have a way to do PM
-with and without CPUidle, so without CPUidle, we can still get some
-basic PM in idle.
+Thanks
 
-> Even if it should happen at some point, adding some additional events for
-> people to better debug/monitor the stuff now does not hurt.
-
-I agree, as the two both very useful.
-
-Tracking CPUidle transitions gives us some high-level information on PM
-transitions, but what is most interesting for real PM analysis on OMAP
-is exactly which powerdomains, clockdomains and clocks transitions (or
-didn't transition) for a given state.
-
-Kevin
-
+Yinghai 
