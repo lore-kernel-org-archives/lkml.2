@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932146Ab1AKNsh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 08:48:37 -0500
-Received: from www.tglx.de ([62.245.132.106]:39827 "EHLO www.tglx.de"
+	id S1756064Ab1AKNuT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 08:50:19 -0500
+Received: from www.tglx.de ([62.245.132.106]:34858 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754144Ab1AKNsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 08:48:33 -0500
-Date: Tue, 11 Jan 2011 14:48:21 +0100 (CET)
+	id S1753540Ab1AKNuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 08:50:17 -0500
+Date: Tue, 11 Jan 2011 14:49:58 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT pull] timers/rtc for 2.6.38
-Message-ID: <alpine.LFD.2.00.1101111446240.12146@localhost6.localdomain6>
+cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT pull] x86 updates for 2.6.38
+Message-ID: <alpine.LFD.2.00.1101111448310.12146@localhost6.localdomain6>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -22,1002 +22,879 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest timers-for-linus git tree from:
+Please pull the latest x86-urgent-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timers-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-urgent-for-linus
+
+
+out-of-topic modifications in x86-urgent-for-linus:
+---------------------------------------------------
+include/linux/pci_ids.h            # ca86828: x86, AMD, PCI: Add AMD northbridg
+
 
 Thanks,
 
 	tglx
 
 ------------------>
-John Stultz (2):
-      RTC: Rework RTC code to use timerqueue for events
-      RTC: Remove UIE emulation
+Alek Du (1):
+      x86/gpio: Implement x86 gpio_to_irq convert function
+
+Arjan van de Ven (1):
+      x86: Fix Moorestown VRTC fixmap placement
+
+David Rientjes (6):
+      x86, numa: Reduce minimum fake node size to 32M
+      x86, numa: Avoid compiling NUMA emulation functions without CONFIG_NUMA_EMU
+      x86, numa: Fake apicid and pxm mappings for NUMA emulation
+      x86, numa: Fake node-to-cpumask for NUMA emulation
+      x86, numa: Fix cpu to node mapping for sparse node ids
+      x86, numa: Fix CONFIG_DEBUG_PER_CPU_MAPS without NUMA emulation
+
+Jack Steiner (1):
+      x86, UV: Fix APICID shift for Westmere processors
+
+Jan Beulich (1):
+      x86: Use PCI method for enabling AMD extended config space before MSR method
+
+Pierre Tardy (1):
+      x86, lapic-timer: Increase the max_delta to 31 bits
+
+Randy Dunlap (1):
+      x86: Fix sparse non-ANSI function warnings in smpboot.c
+
+Robert Richter (1):
+      x86, AMD, PCI: Add AMD northbridge PCI device id for CPU families 12h and 14h
 
 Thomas Gleixner (1):
-      rtc: Namespace fixup
+      x86: tsc: Prevent delayed init if initial tsc calibration failed
 
 
- drivers/rtc/class.c     |   13 +
- drivers/rtc/interface.c |  574 ++++++++++++++++++++++++++++------------------
- drivers/rtc/rtc-dev.c   |  104 ---------
- drivers/rtc/rtc-lib.c   |   28 +++
- include/linux/rtc.h     |   51 +++--
- 5 files changed, 426 insertions(+), 344 deletions(-)
+ arch/x86/include/asm/acpi.h        |   11 +--
+ arch/x86/include/asm/amd_nb.h      |   13 +++-
+ arch/x86/include/asm/fixmap.h      |    4 +-
+ arch/x86/include/asm/gpio.h        |    5 +-
+ arch/x86/include/asm/numa_64.h     |    2 +-
+ arch/x86/kernel/amd_nb.c           |    7 ++
+ arch/x86/kernel/aperture_64.c      |   44 ++++-------
+ arch/x86/kernel/apic/apic.c        |    2 +-
+ arch/x86/kernel/apic/x2apic_uv_x.c |    2 +-
+ arch/x86/kernel/smpboot.c          |    4 +-
+ arch/x86/kernel/tsc.c              |    2 +-
+ arch/x86/mm/amdtopology_64.c       |   86 ++++++++++++++++---
+ arch/x86/mm/numa_64.c              |  157 ++++++++++++++++++++++++++++--------
+ arch/x86/mm/srat_64.c              |   26 ++++--
+ arch/x86/pci/amd_bus.c             |   33 ++++++++
+ include/linux/pci_ids.h            |    1 +
+ 16 files changed, 297 insertions(+), 102 deletions(-)
 
-diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
-index 565562b..3243832 100644
---- a/drivers/rtc/class.c
-+++ b/drivers/rtc/class.c
-@@ -16,6 +16,7 @@
- #include <linux/kdev_t.h>
- #include <linux/idr.h>
- #include <linux/slab.h>
-+#include <linux/workqueue.h>
+diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+index 55d106b..211ca3f 100644
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -185,17 +185,16 @@ struct bootnode;
  
- #include "rtc-core.h"
- 
-@@ -152,6 +153,18 @@ struct rtc_device *rtc_device_register(const char *name, struct device *dev,
- 	spin_lock_init(&rtc->irq_task_lock);
- 	init_waitqueue_head(&rtc->irq_queue);
- 
-+	/* Init timerqueue */
-+	timerqueue_init_head(&rtc->timerqueue);
-+	INIT_WORK(&rtc->irqwork, rtc_timer_do_work);
-+	/* Init aie timer */
-+	rtc_timer_init(&rtc->aie_timer, rtc_aie_update_irq, (void *)rtc);
-+	/* Init uie timer */
-+	rtc_timer_init(&rtc->uie_rtctimer, rtc_uie_update_irq, (void *)rtc);
-+	/* Init pie timer */
-+	hrtimer_init(&rtc->pie_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-+	rtc->pie_timer.function = rtc_pie_update_irq;
-+	rtc->pie_enabled = 0;
+ #ifdef CONFIG_ACPI_NUMA
+ extern int acpi_numa;
+-extern int acpi_get_nodes(struct bootnode *physnodes);
++extern void acpi_get_nodes(struct bootnode *physnodes, unsigned long start,
++				unsigned long end);
+ extern int acpi_scan_nodes(unsigned long start, unsigned long end);
+ #define NR_NODE_MEMBLKS (MAX_NUMNODES*2)
 +
- 	strlcpy(rtc->name, name, RTC_DEVICE_NAME_SIZE);
- 	dev_set_name(&rtc->dev, "rtc%d", id);
- 
-diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
-index a0c8162..90384b9 100644
---- a/drivers/rtc/interface.c
-+++ b/drivers/rtc/interface.c
-@@ -14,15 +14,11 @@
- #include <linux/rtc.h>
- #include <linux/sched.h>
- #include <linux/log2.h>
-+#include <linux/workqueue.h>
- 
--int rtc_read_time(struct rtc_device *rtc, struct rtc_time *tm)
-+static int __rtc_read_time(struct rtc_device *rtc, struct rtc_time *tm)
- {
- 	int err;
--
--	err = mutex_lock_interruptible(&rtc->ops_lock);
--	if (err)
--		return err;
--
- 	if (!rtc->ops)
- 		err = -ENODEV;
- 	else if (!rtc->ops->read_time)
-@@ -31,7 +27,18 @@ int rtc_read_time(struct rtc_device *rtc, struct rtc_time *tm)
- 		memset(tm, 0, sizeof(struct rtc_time));
- 		err = rtc->ops->read_time(rtc->dev.parent, tm);
- 	}
-+	return err;
-+}
-+
-+int rtc_read_time(struct rtc_device *rtc, struct rtc_time *tm)
-+{
-+	int err;
- 
-+	err = mutex_lock_interruptible(&rtc->ops_lock);
-+	if (err)
-+		return err;
-+
-+	err = __rtc_read_time(rtc, tm);
- 	mutex_unlock(&rtc->ops_lock);
- 	return err;
- }
-@@ -106,188 +113,54 @@ int rtc_set_mmss(struct rtc_device *rtc, unsigned long secs)
- }
- EXPORT_SYMBOL_GPL(rtc_set_mmss);
- 
--static int rtc_read_alarm_internal(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
-+int rtc_read_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
- {
- 	int err;
- 
- 	err = mutex_lock_interruptible(&rtc->ops_lock);
- 	if (err)
- 		return err;
--
--	if (rtc->ops == NULL)
--		err = -ENODEV;
--	else if (!rtc->ops->read_alarm)
--		err = -EINVAL;
--	else {
--		memset(alarm, 0, sizeof(struct rtc_wkalrm));
--		err = rtc->ops->read_alarm(rtc->dev.parent, alarm);
--	}
--
-+	alarm->enabled = rtc->aie_timer.enabled;
-+	if (alarm->enabled)
-+		alarm->time = rtc_ktime_to_tm(rtc->aie_timer.node.expires);
- 	mutex_unlock(&rtc->ops_lock);
--	return err;
-+
-+	return 0;
- }
-+EXPORT_SYMBOL_GPL(rtc_read_alarm);
- 
--int rtc_read_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
-+int __rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
- {
-+	struct rtc_time tm;
-+	long now, scheduled;
- 	int err;
--	struct rtc_time before, now;
--	int first_time = 1;
--	unsigned long t_now, t_alm;
--	enum { none, day, month, year } missing = none;
--	unsigned days;
--
--	/* The lower level RTC driver may return -1 in some fields,
--	 * creating invalid alarm->time values, for reasons like:
--	 *
--	 *   - The hardware may not be capable of filling them in;
--	 *     many alarms match only on time-of-day fields, not
--	 *     day/month/year calendar data.
--	 *
--	 *   - Some hardware uses illegal values as "wildcard" match
--	 *     values, which non-Linux firmware (like a BIOS) may try
--	 *     to set up as e.g. "alarm 15 minutes after each hour".
--	 *     Linux uses only oneshot alarms.
--	 *
--	 * When we see that here, we deal with it by using values from
--	 * a current RTC timestamp for any missing (-1) values.  The
--	 * RTC driver prevents "periodic alarm" modes.
--	 *
--	 * But this can be racey, because some fields of the RTC timestamp
--	 * may have wrapped in the interval since we read the RTC alarm,
--	 * which would lead to us inserting inconsistent values in place
--	 * of the -1 fields.
--	 *
--	 * Reading the alarm and timestamp in the reverse sequence
--	 * would have the same race condition, and not solve the issue.
--	 *
--	 * So, we must first read the RTC timestamp,
--	 * then read the RTC alarm value,
--	 * and then read a second RTC timestamp.
--	 *
--	 * If any fields of the second timestamp have changed
--	 * when compared with the first timestamp, then we know
--	 * our timestamp may be inconsistent with that used by
--	 * the low-level rtc_read_alarm_internal() function.
--	 *
--	 * So, when the two timestamps disagree, we just loop and do
--	 * the process again to get a fully consistent set of values.
--	 *
--	 * This could all instead be done in the lower level driver,
--	 * but since more than one lower level RTC implementation needs it,
--	 * then it's probably best best to do it here instead of there..
--	 */
- 
--	/* Get the "before" timestamp */
--	err = rtc_read_time(rtc, &before);
--	if (err < 0)
-+	err = rtc_valid_tm(&alarm->time);
-+	if (err)
- 		return err;
--	do {
--		if (!first_time)
--			memcpy(&before, &now, sizeof(struct rtc_time));
--		first_time = 0;
--
--		/* get the RTC alarm values, which may be incomplete */
--		err = rtc_read_alarm_internal(rtc, alarm);
--		if (err)
--			return err;
--		if (!alarm->enabled)
--			return 0;
--
--		/* full-function RTCs won't have such missing fields */
--		if (rtc_valid_tm(&alarm->time) == 0)
--			return 0;
--
--		/* get the "after" timestamp, to detect wrapped fields */
--		err = rtc_read_time(rtc, &now);
--		if (err < 0)
--			return err;
--
--		/* note that tm_sec is a "don't care" value here: */
--	} while (   before.tm_min   != now.tm_min
--		 || before.tm_hour  != now.tm_hour
--		 || before.tm_mon   != now.tm_mon
--		 || before.tm_year  != now.tm_year);
--
--	/* Fill in the missing alarm fields using the timestamp; we
--	 * know there's at least one since alarm->time is invalid.
--	 */
--	if (alarm->time.tm_sec == -1)
--		alarm->time.tm_sec = now.tm_sec;
--	if (alarm->time.tm_min == -1)
--		alarm->time.tm_min = now.tm_min;
--	if (alarm->time.tm_hour == -1)
--		alarm->time.tm_hour = now.tm_hour;
--
--	/* For simplicity, only support date rollover for now */
--	if (alarm->time.tm_mday == -1) {
--		alarm->time.tm_mday = now.tm_mday;
--		missing = day;
--	}
--	if (alarm->time.tm_mon == -1) {
--		alarm->time.tm_mon = now.tm_mon;
--		if (missing == none)
--			missing = month;
--	}
--	if (alarm->time.tm_year == -1) {
--		alarm->time.tm_year = now.tm_year;
--		if (missing == none)
--			missing = year;
--	}
--
--	/* with luck, no rollover is needed */
--	rtc_tm_to_time(&now, &t_now);
--	rtc_tm_to_time(&alarm->time, &t_alm);
--	if (t_now < t_alm)
--		goto done;
--
--	switch (missing) {
-+	rtc_tm_to_time(&alarm->time, &scheduled);
- 
--	/* 24 hour rollover ... if it's now 10am Monday, an alarm that
--	 * that will trigger at 5am will do so at 5am Tuesday, which
--	 * could also be in the next month or year.  This is a common
--	 * case, especially for PCs.
--	 */
--	case day:
--		dev_dbg(&rtc->dev, "alarm rollover: %s\n", "day");
--		t_alm += 24 * 60 * 60;
--		rtc_time_to_tm(t_alm, &alarm->time);
--		break;
--
--	/* Month rollover ... if it's the 31th, an alarm on the 3rd will
--	 * be next month.  An alarm matching on the 30th, 29th, or 28th
--	 * may end up in the month after that!  Many newer PCs support
--	 * this type of alarm.
-+	/* Make sure we're not setting alarms in the past */
-+	err = __rtc_read_time(rtc, &tm);
-+	rtc_tm_to_time(&tm, &now);
-+	if (scheduled <= now)
-+		return -ETIME;
-+	/*
-+	 * XXX - We just checked to make sure the alarm time is not
-+	 * in the past, but there is still a race window where if
-+	 * the is alarm set for the next second and the second ticks
-+	 * over right here, before we set the alarm.
- 	 */
--	case month:
--		dev_dbg(&rtc->dev, "alarm rollover: %s\n", "month");
--		do {
--			if (alarm->time.tm_mon < 11)
--				alarm->time.tm_mon++;
--			else {
--				alarm->time.tm_mon = 0;
--				alarm->time.tm_year++;
--			}
--			days = rtc_month_days(alarm->time.tm_mon,
--					alarm->time.tm_year);
--		} while (days < alarm->time.tm_mday);
--		break;
--
--	/* Year rollover ... easy except for leap years! */
--	case year:
--		dev_dbg(&rtc->dev, "alarm rollover: %s\n", "year");
--		do {
--			alarm->time.tm_year++;
--		} while (rtc_valid_tm(&alarm->time) != 0);
--		break;
--
--	default:
--		dev_warn(&rtc->dev, "alarm rollover not handled\n");
--	}
- 
--done:
--	return 0;
-+	if (!rtc->ops)
-+		err = -ENODEV;
-+	else if (!rtc->ops->set_alarm)
-+		err = -EINVAL;
-+	else
-+		err = rtc->ops->set_alarm(rtc->dev.parent, alarm);
-+
-+	return err;
- }
--EXPORT_SYMBOL_GPL(rtc_read_alarm);
- 
- int rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
- {
-@@ -300,16 +173,18 @@ int rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
- 	err = mutex_lock_interruptible(&rtc->ops_lock);
- 	if (err)
- 		return err;
--
--	if (!rtc->ops)
--		err = -ENODEV;
--	else if (!rtc->ops->set_alarm)
--		err = -EINVAL;
--	else
--		err = rtc->ops->set_alarm(rtc->dev.parent, alarm);
--
-+	if (rtc->aie_timer.enabled) {
-+		rtc_timer_remove(rtc, &rtc->aie_timer);
-+		rtc->aie_timer.enabled = 0;
-+	}
-+	rtc->aie_timer.node.expires = rtc_tm_to_ktime(alarm->time);
-+	rtc->aie_timer.period = ktime_set(0, 0);
-+	if (alarm->enabled) {
-+		rtc->aie_timer.enabled = 1;
-+		rtc_timer_enqueue(rtc, &rtc->aie_timer);
-+	}
- 	mutex_unlock(&rtc->ops_lock);
--	return err;
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(rtc_set_alarm);
- 
-@@ -319,6 +194,16 @@ int rtc_alarm_irq_enable(struct rtc_device *rtc, unsigned int enabled)
- 	if (err)
- 		return err;
- 
-+	if (rtc->aie_timer.enabled != enabled) {
-+		if (enabled) {
-+			rtc->aie_timer.enabled = 1;
-+			rtc_timer_enqueue(rtc, &rtc->aie_timer);
-+		} else {
-+			rtc_timer_remove(rtc, &rtc->aie_timer);
-+			rtc->aie_timer.enabled = 0;
-+		}
-+	}
-+
- 	if (!rtc->ops)
- 		err = -ENODEV;
- 	else if (!rtc->ops->alarm_irq_enable)
-@@ -337,52 +222,53 @@ int rtc_update_irq_enable(struct rtc_device *rtc, unsigned int enabled)
- 	if (err)
- 		return err;
- 
--#ifdef CONFIG_RTC_INTF_DEV_UIE_EMUL
--	if (enabled == 0 && rtc->uie_irq_active) {
--		mutex_unlock(&rtc->ops_lock);
--		return rtc_dev_update_irq_enable_emul(rtc, enabled);
-+	/* make sure we're changing state */
-+	if (rtc->uie_rtctimer.enabled == enabled)
-+		goto out;
-+
-+	if (enabled) {
-+		struct rtc_time tm;
-+		ktime_t now, onesec;
-+
-+		__rtc_read_time(rtc, &tm);
-+		onesec = ktime_set(1, 0);
-+		now = rtc_tm_to_ktime(tm);
-+		rtc->uie_rtctimer.node.expires = ktime_add(now, onesec);
-+		rtc->uie_rtctimer.period = ktime_set(1, 0);
-+		rtc->uie_rtctimer.enabled = 1;
-+		rtc_timer_enqueue(rtc, &rtc->uie_rtctimer);
-+	} else {
-+		rtc_timer_remove(rtc, &rtc->uie_rtctimer);
-+		rtc->uie_rtctimer.enabled = 0;
- 	}
--#endif
--
--	if (!rtc->ops)
--		err = -ENODEV;
--	else if (!rtc->ops->update_irq_enable)
--		err = -EINVAL;
--	else
--		err = rtc->ops->update_irq_enable(rtc->dev.parent, enabled);
- 
-+out:
- 	mutex_unlock(&rtc->ops_lock);
--
--#ifdef CONFIG_RTC_INTF_DEV_UIE_EMUL
--	/*
--	 * Enable emulation if the driver did not provide
--	 * the update_irq_enable function pointer or if returned
--	 * -EINVAL to signal that it has been configured without
--	 * interrupts or that are not available at the moment.
--	 */
--	if (err == -EINVAL)
--		err = rtc_dev_update_irq_enable_emul(rtc, enabled);
--#endif
- 	return err;
-+
- }
- EXPORT_SYMBOL_GPL(rtc_update_irq_enable);
- 
-+
- /**
-- * rtc_update_irq - report RTC periodic, alarm, and/or update irqs
-- * @rtc: the rtc device
-- * @num: how many irqs are being reported (usually one)
-- * @events: mask of RTC_IRQF with one or more of RTC_PF, RTC_AF, RTC_UF
-- * Context: any
-+ * rtc_handle_legacy_irq - AIE, UIE and PIE event hook
-+ * @rtc: pointer to the rtc device
-+ *
-+ * This function is called when an AIE, UIE or PIE mode interrupt
-+ * has occured (or been emulated).
-+ *
-+ * Triggers the registered irq_task function callback.
-  */
--void rtc_update_irq(struct rtc_device *rtc,
--		unsigned long num, unsigned long events)
-+static void rtc_handle_legacy_irq(struct rtc_device *rtc, int num, int mode)
- {
- 	unsigned long flags;
- 
-+	/* mark one irq of the appropriate mode */
- 	spin_lock_irqsave(&rtc->irq_lock, flags);
--	rtc->irq_data = (rtc->irq_data + (num << 8)) | events;
-+	rtc->irq_data = (rtc->irq_data + (num << 8)) | (RTC_IRQF|mode);
- 	spin_unlock_irqrestore(&rtc->irq_lock, flags);
- 
-+	/* call the task func */
- 	spin_lock_irqsave(&rtc->irq_task_lock, flags);
- 	if (rtc->irq_task)
- 		rtc->irq_task->func(rtc->irq_task->private_data);
-@@ -391,6 +277,69 @@ void rtc_update_irq(struct rtc_device *rtc,
- 	wake_up_interruptible(&rtc->irq_queue);
- 	kill_fasync(&rtc->async_queue, SIGIO, POLL_IN);
- }
-+
-+
-+/**
-+ * rtc_aie_update_irq - AIE mode rtctimer hook
-+ * @private: pointer to the rtc_device
-+ *
-+ * This functions is called when the aie_timer expires.
-+ */
-+void rtc_aie_update_irq(void *private)
-+{
-+	struct rtc_device *rtc = (struct rtc_device *)private;
-+	rtc_handle_legacy_irq(rtc, 1, RTC_AF);
-+}
-+
-+
-+/**
-+ * rtc_uie_update_irq - UIE mode rtctimer hook
-+ * @private: pointer to the rtc_device
-+ *
-+ * This functions is called when the uie_timer expires.
-+ */
-+void rtc_uie_update_irq(void *private)
-+{
-+	struct rtc_device *rtc = (struct rtc_device *)private;
-+	rtc_handle_legacy_irq(rtc, 1,  RTC_UF);
-+}
-+
-+
-+/**
-+ * rtc_pie_update_irq - PIE mode hrtimer hook
-+ * @timer: pointer to the pie mode hrtimer
-+ *
-+ * This function is used to emulate PIE mode interrupts
-+ * using an hrtimer. This function is called when the periodic
-+ * hrtimer expires.
-+ */
-+enum hrtimer_restart rtc_pie_update_irq(struct hrtimer *timer)
-+{
-+	struct rtc_device *rtc;
-+	ktime_t period;
-+	int count;
-+	rtc = container_of(timer, struct rtc_device, pie_timer);
-+
-+	period = ktime_set(0, NSEC_PER_SEC/rtc->irq_freq);
-+	count = hrtimer_forward_now(timer, period);
-+
-+	rtc_handle_legacy_irq(rtc, count, RTC_PF);
-+
-+	return HRTIMER_RESTART;
-+}
-+
-+/**
-+ * rtc_update_irq - Triggered when a RTC interrupt occurs.
-+ * @rtc: the rtc device
-+ * @num: how many irqs are being reported (usually one)
-+ * @events: mask of RTC_IRQF with one or more of RTC_PF, RTC_AF, RTC_UF
-+ * Context: any
-+ */
-+void rtc_update_irq(struct rtc_device *rtc,
-+		unsigned long num, unsigned long events)
-+{
-+	schedule_work(&rtc->irqwork);
-+}
- EXPORT_SYMBOL_GPL(rtc_update_irq);
- 
- static int __rtc_match(struct device *dev, void *data)
-@@ -477,18 +426,20 @@ int rtc_irq_set_state(struct rtc_device *rtc, struct rtc_task *task, int enabled
- 	int err = 0;
- 	unsigned long flags;
- 
--	if (rtc->ops->irq_set_state == NULL)
--		return -ENXIO;
--
- 	spin_lock_irqsave(&rtc->irq_task_lock, flags);
- 	if (rtc->irq_task != NULL && task == NULL)
- 		err = -EBUSY;
- 	if (rtc->irq_task != task)
- 		err = -EACCES;
--	spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
- 
--	if (err == 0)
--		err = rtc->ops->irq_set_state(rtc->dev.parent, enabled);
-+	if (enabled) {
-+		ktime_t period = ktime_set(0, NSEC_PER_SEC/rtc->irq_freq);
-+		hrtimer_start(&rtc->pie_timer, period, HRTIMER_MODE_REL);
-+	} else {
-+		hrtimer_cancel(&rtc->pie_timer);
-+	}
-+	rtc->pie_enabled = enabled;
-+	spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
- 
- 	return err;
- }
-@@ -509,21 +460,194 @@ int rtc_irq_set_freq(struct rtc_device *rtc, struct rtc_task *task, int freq)
- 	int err = 0;
- 	unsigned long flags;
- 
--	if (rtc->ops->irq_set_freq == NULL)
--		return -ENXIO;
--
- 	spin_lock_irqsave(&rtc->irq_task_lock, flags);
- 	if (rtc->irq_task != NULL && task == NULL)
- 		err = -EBUSY;
- 	if (rtc->irq_task != task)
- 		err = -EACCES;
--	spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
--
- 	if (err == 0) {
--		err = rtc->ops->irq_set_freq(rtc->dev.parent, freq);
--		if (err == 0)
--			rtc->irq_freq = freq;
-+		rtc->irq_freq = freq;
-+		if (rtc->pie_enabled) {
-+			ktime_t period;
-+			hrtimer_cancel(&rtc->pie_timer);
-+			period = ktime_set(0, NSEC_PER_SEC/rtc->irq_freq);
-+			hrtimer_start(&rtc->pie_timer, period,
-+					HRTIMER_MODE_REL);
-+		}
- 	}
-+	spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
- 	return err;
- }
- EXPORT_SYMBOL_GPL(rtc_irq_set_freq);
-+
-+/**
-+ * rtc_timer_enqueue - Adds a rtc_timer to the rtc_device timerqueue
-+ * @rtc rtc device
-+ * @timer timer being added.
-+ *
-+ * Enqueues a timer onto the rtc devices timerqueue and sets
-+ * the next alarm event appropriately.
-+ *
-+ * Must hold ops_lock for proper serialization of timerqueue
-+ */
-+void rtc_timer_enqueue(struct rtc_device *rtc, struct rtc_timer *timer)
-+{
-+	timerqueue_add(&rtc->timerqueue, &timer->node);
-+	if (&timer->node == timerqueue_getnext(&rtc->timerqueue)) {
-+		struct rtc_wkalrm alarm;
-+		int err;
-+		alarm.time = rtc_ktime_to_tm(timer->node.expires);
-+		alarm.enabled = 1;
-+		err = __rtc_set_alarm(rtc, &alarm);
-+		if (err == -ETIME)
-+			schedule_work(&rtc->irqwork);
-+	}
-+}
-+
-+/**
-+ * rtc_timer_remove - Removes a rtc_timer from the rtc_device timerqueue
-+ * @rtc rtc device
-+ * @timer timer being removed.
-+ *
-+ * Removes a timer onto the rtc devices timerqueue and sets
-+ * the next alarm event appropriately.
-+ *
-+ * Must hold ops_lock for proper serialization of timerqueue
-+ */
-+void rtc_timer_remove(struct rtc_device *rtc, struct rtc_timer *timer)
-+{
-+	struct timerqueue_node *next = timerqueue_getnext(&rtc->timerqueue);
-+	timerqueue_del(&rtc->timerqueue, &timer->node);
-+
-+	if (next == &timer->node) {
-+		struct rtc_wkalrm alarm;
-+		int err;
-+		next = timerqueue_getnext(&rtc->timerqueue);
-+		if (!next)
-+			return;
-+		alarm.time = rtc_ktime_to_tm(next->expires);
-+		alarm.enabled = 1;
-+		err = __rtc_set_alarm(rtc, &alarm);
-+		if (err == -ETIME)
-+			schedule_work(&rtc->irqwork);
-+	}
-+}
-+
-+/**
-+ * rtc_timer_do_work - Expires rtc timers
-+ * @rtc rtc device
-+ * @timer timer being removed.
-+ *
-+ * Expires rtc timers. Reprograms next alarm event if needed.
-+ * Called via worktask.
-+ *
-+ * Serializes access to timerqueue via ops_lock mutex
-+ */
-+void rtc_timer_do_work(struct work_struct *work)
-+{
-+	struct rtc_timer *timer;
-+	struct timerqueue_node *next;
-+	ktime_t now;
-+	struct rtc_time tm;
-+
-+	struct rtc_device *rtc =
-+		container_of(work, struct rtc_device, irqwork);
-+
-+	mutex_lock(&rtc->ops_lock);
-+again:
-+	__rtc_read_time(rtc, &tm);
-+	now = rtc_tm_to_ktime(tm);
-+	while ((next = timerqueue_getnext(&rtc->timerqueue))) {
-+		if (next->expires.tv64 > now.tv64)
-+			break;
-+
-+		/* expire timer */
-+		timer = container_of(next, struct rtc_timer, node);
-+		timerqueue_del(&rtc->timerqueue, &timer->node);
-+		timer->enabled = 0;
-+		if (timer->task.func)
-+			timer->task.func(timer->task.private_data);
-+
-+		/* Re-add/fwd periodic timers */
-+		if (ktime_to_ns(timer->period)) {
-+			timer->node.expires = ktime_add(timer->node.expires,
-+							timer->period);
-+			timer->enabled = 1;
-+			timerqueue_add(&rtc->timerqueue, &timer->node);
-+		}
-+	}
-+
-+	/* Set next alarm */
-+	if (next) {
-+		struct rtc_wkalrm alarm;
-+		int err;
-+		alarm.time = rtc_ktime_to_tm(next->expires);
-+		alarm.enabled = 1;
-+		err = __rtc_set_alarm(rtc, &alarm);
-+		if (err == -ETIME)
-+			goto again;
-+	}
-+
-+	mutex_unlock(&rtc->ops_lock);
-+}
-+
-+
-+/* rtc_timer_init - Initializes an rtc_timer
-+ * @timer: timer to be intiialized
-+ * @f: function pointer to be called when timer fires
-+ * @data: private data passed to function pointer
-+ *
-+ * Kernel interface to initializing an rtc_timer.
-+ */
-+void rtc_timer_init(struct rtc_timer *timer, void (*f)(void* p), void* data)
-+{
-+	timerqueue_init(&timer->node);
-+	timer->enabled = 0;
-+	timer->task.func = f;
-+	timer->task.private_data = data;
-+}
-+
-+/* rtc_timer_start - Sets an rtc_timer to fire in the future
-+ * @ rtc: rtc device to be used
-+ * @ timer: timer being set
-+ * @ expires: time at which to expire the timer
-+ * @ period: period that the timer will recur
-+ *
-+ * Kernel interface to set an rtc_timer
-+ */
-+int rtc_timer_start(struct rtc_device *rtc, struct rtc_timer* timer,
-+			ktime_t expires, ktime_t period)
-+{
-+	int ret = 0;
-+	mutex_lock(&rtc->ops_lock);
-+	if (timer->enabled)
-+		rtc_timer_remove(rtc, timer);
-+
-+	timer->node.expires = expires;
-+	timer->period = period;
-+
-+	timer->enabled = 1;
-+	rtc_timer_enqueue(rtc, timer);
-+
-+	mutex_unlock(&rtc->ops_lock);
-+	return ret;
-+}
-+
-+/* rtc_timer_cancel - Stops an rtc_timer
-+ * @ rtc: rtc device to be used
-+ * @ timer: timer being set
-+ *
-+ * Kernel interface to cancel an rtc_timer
-+ */
-+int rtc_timer_cancel(struct rtc_device *rtc, struct rtc_timer* timer)
-+{
-+	int ret = 0;
-+	mutex_lock(&rtc->ops_lock);
-+	if (timer->enabled)
-+		rtc_timer_remove(rtc, timer);
-+	timer->enabled = 0;
-+	mutex_unlock(&rtc->ops_lock);
-+	return ret;
-+}
-+
-+
-diff --git a/drivers/rtc/rtc-dev.c b/drivers/rtc/rtc-dev.c
-index 62227cd..212b16e 100644
---- a/drivers/rtc/rtc-dev.c
-+++ b/drivers/rtc/rtc-dev.c
-@@ -46,105 +46,6 @@ static int rtc_dev_open(struct inode *inode, struct file *file)
- 	return err;
- }
- 
--#ifdef CONFIG_RTC_INTF_DEV_UIE_EMUL
--/*
-- * Routine to poll RTC seconds field for change as often as possible,
-- * after first RTC_UIE use timer to reduce polling
-- */
--static void rtc_uie_task(struct work_struct *work)
++#ifdef CONFIG_NUMA_EMU
+ extern void acpi_fake_nodes(const struct bootnode *fake_nodes,
+ 				   int num_nodes);
+-#else
+-static inline void acpi_fake_nodes(const struct bootnode *fake_nodes,
+-				   int num_nodes)
 -{
--	struct rtc_device *rtc =
--		container_of(work, struct rtc_device, uie_task);
--	struct rtc_time tm;
--	int num = 0;
--	int err;
--
--	err = rtc_read_time(rtc, &tm);
--
--	spin_lock_irq(&rtc->irq_lock);
--	if (rtc->stop_uie_polling || err) {
--		rtc->uie_task_active = 0;
--	} else if (rtc->oldsecs != tm.tm_sec) {
--		num = (tm.tm_sec + 60 - rtc->oldsecs) % 60;
--		rtc->oldsecs = tm.tm_sec;
--		rtc->uie_timer.expires = jiffies + HZ - (HZ/10);
--		rtc->uie_timer_active = 1;
--		rtc->uie_task_active = 0;
--		add_timer(&rtc->uie_timer);
--	} else if (schedule_work(&rtc->uie_task) == 0) {
--		rtc->uie_task_active = 0;
--	}
--	spin_unlock_irq(&rtc->irq_lock);
--	if (num)
--		rtc_update_irq(rtc, num, RTC_UF | RTC_IRQF);
 -}
--static void rtc_uie_timer(unsigned long data)
--{
--	struct rtc_device *rtc = (struct rtc_device *)data;
--	unsigned long flags;
--
--	spin_lock_irqsave(&rtc->irq_lock, flags);
--	rtc->uie_timer_active = 0;
--	rtc->uie_task_active = 1;
--	if ((schedule_work(&rtc->uie_task) == 0))
--		rtc->uie_task_active = 0;
--	spin_unlock_irqrestore(&rtc->irq_lock, flags);
--}
--
--static int clear_uie(struct rtc_device *rtc)
--{
--	spin_lock_irq(&rtc->irq_lock);
--	if (rtc->uie_irq_active) {
--		rtc->stop_uie_polling = 1;
--		if (rtc->uie_timer_active) {
--			spin_unlock_irq(&rtc->irq_lock);
--			del_timer_sync(&rtc->uie_timer);
--			spin_lock_irq(&rtc->irq_lock);
--			rtc->uie_timer_active = 0;
--		}
--		if (rtc->uie_task_active) {
--			spin_unlock_irq(&rtc->irq_lock);
--			flush_scheduled_work();
--			spin_lock_irq(&rtc->irq_lock);
--		}
--		rtc->uie_irq_active = 0;
--	}
--	spin_unlock_irq(&rtc->irq_lock);
--	return 0;
--}
--
--static int set_uie(struct rtc_device *rtc)
--{
--	struct rtc_time tm;
--	int err;
--
--	err = rtc_read_time(rtc, &tm);
--	if (err)
--		return err;
--	spin_lock_irq(&rtc->irq_lock);
--	if (!rtc->uie_irq_active) {
--		rtc->uie_irq_active = 1;
--		rtc->stop_uie_polling = 0;
--		rtc->oldsecs = tm.tm_sec;
--		rtc->uie_task_active = 1;
--		if (schedule_work(&rtc->uie_task) == 0)
--			rtc->uie_task_active = 0;
--	}
--	rtc->irq_data = 0;
--	spin_unlock_irq(&rtc->irq_lock);
--	return 0;
--}
--
--int rtc_dev_update_irq_enable_emul(struct rtc_device *rtc, unsigned int enabled)
--{
--	if (enabled)
--		return set_uie(rtc);
--	else
--		return clear_uie(rtc);
--}
--EXPORT_SYMBOL(rtc_dev_update_irq_enable_emul);
--
--#endif /* CONFIG_RTC_INTF_DEV_UIE_EMUL */
+ #endif
++#endif /* CONFIG_ACPI_NUMA */
  
- static ssize_t
- rtc_dev_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
-@@ -493,11 +394,6 @@ void rtc_dev_prepare(struct rtc_device *rtc)
+ #define acpi_unlazy_tlb(x)	leave_mm(x)
  
- 	rtc->dev.devt = MKDEV(MAJOR(rtc_devt), rtc->id);
+diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
+index 6aee50d..64dc82e 100644
+--- a/arch/x86/include/asm/amd_nb.h
++++ b/arch/x86/include/asm/amd_nb.h
+@@ -3,16 +3,27 @@
  
--#ifdef CONFIG_RTC_INTF_DEV_UIE_EMUL
--	INIT_WORK(&rtc->uie_task, rtc_uie_task);
--	setup_timer(&rtc->uie_timer, rtc_uie_timer, (unsigned long)rtc);
--#endif
--
- 	cdev_init(&rtc->char_dev, &rtc_dev_fops);
- 	rtc->char_dev.owner = rtc->owner;
- }
-diff --git a/drivers/rtc/rtc-lib.c b/drivers/rtc/rtc-lib.c
-index 773851f..075f170 100644
---- a/drivers/rtc/rtc-lib.c
-+++ b/drivers/rtc/rtc-lib.c
-@@ -117,4 +117,32 @@ int rtc_tm_to_time(struct rtc_time *tm, unsigned long *time)
- }
- EXPORT_SYMBOL(rtc_tm_to_time);
+ #include <linux/pci.h>
  
-+/*
-+ * Convert rtc_time to ktime
-+ */
-+ktime_t rtc_tm_to_ktime(struct rtc_time tm)
-+{
-+	time_t time;
-+	rtc_tm_to_time(&tm, &time);
-+	return ktime_set(time, 0);
-+}
-+EXPORT_SYMBOL_GPL(rtc_tm_to_ktime);
-+
-+/*
-+ * Convert ktime to rtc_time
-+ */
-+struct rtc_time rtc_ktime_to_tm(ktime_t kt)
-+{
-+	struct timespec ts;
-+	struct rtc_time ret;
-+
-+	ts = ktime_to_timespec(kt);
-+	/* Round up any ns */
-+	if (ts.tv_nsec)
-+		ts.tv_sec++;
-+	rtc_time_to_tm(ts.tv_sec, &ret);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(rtc_ktime_to_tm);
-+
- MODULE_LICENSE("GPL");
-diff --git a/include/linux/rtc.h b/include/linux/rtc.h
-index 14dbc83..3c995b4 100644
---- a/include/linux/rtc.h
-+++ b/include/linux/rtc.h
-@@ -107,12 +107,17 @@ extern int rtc_year_days(unsigned int day, unsigned int month, unsigned int year
- extern int rtc_valid_tm(struct rtc_time *tm);
- extern int rtc_tm_to_time(struct rtc_time *tm, unsigned long *time);
- extern void rtc_time_to_tm(unsigned long time, struct rtc_time *tm);
-+ktime_t rtc_tm_to_ktime(struct rtc_time tm);
-+struct rtc_time rtc_ktime_to_tm(ktime_t kt);
-+
- 
- #include <linux/device.h>
- #include <linux/seq_file.h>
- #include <linux/cdev.h>
- #include <linux/poll.h>
- #include <linux/mutex.h>
-+#include <linux/timerqueue.h>
-+#include <linux/workqueue.h>
- 
- extern struct class *rtc_class;
- 
-@@ -151,7 +156,19 @@ struct rtc_class_ops {
- };
- 
- #define RTC_DEVICE_NAME_SIZE 20
--struct rtc_task;
-+typedef struct rtc_task {
-+	void (*func)(void *private_data);
-+	void *private_data;
-+} rtc_task_t;
-+
-+
-+struct rtc_timer {
-+	struct rtc_task	task;
-+	struct timerqueue_node node;
-+	ktime_t period;
-+	int enabled;
++struct amd_nb_bus_dev_range {
++	u8 bus;
++	u8 dev_base;
++	u8 dev_limit;
 +};
 +
+ extern struct pci_device_id amd_nb_misc_ids[];
++extern const struct amd_nb_bus_dev_range amd_nb_bus_dev_ranges[];
+ struct bootnode;
  
- /* flags */
- #define RTC_DEV_BUSY 0
-@@ -179,16 +196,13 @@ struct rtc_device
- 	spinlock_t irq_task_lock;
- 	int irq_freq;
- 	int max_user_freq;
--#ifdef CONFIG_RTC_INTF_DEV_UIE_EMUL
--	struct work_struct uie_task;
--	struct timer_list uie_timer;
--	/* Those fields are protected by rtc->irq_lock */
--	unsigned int oldsecs;
--	unsigned int uie_irq_active:1;
--	unsigned int stop_uie_polling:1;
--	unsigned int uie_task_active:1;
--	unsigned int uie_timer_active:1;
--#endif
+ extern int early_is_amd_nb(u32 value);
+ extern int amd_cache_northbridges(void);
+ extern void amd_flush_garts(void);
+-extern int amd_get_nodes(struct bootnode *nodes);
+ extern int amd_numa_init(unsigned long start_pfn, unsigned long end_pfn);
+ extern int amd_scan_nodes(void);
+ 
++#ifdef CONFIG_NUMA_EMU
++extern void amd_fake_nodes(const struct bootnode *nodes, int nr_nodes);
++extern void amd_get_nodes(struct bootnode *nodes);
++#endif
 +
-+	struct timerqueue_head timerqueue;
-+	struct rtc_timer aie_timer;
-+	struct rtc_timer uie_rtctimer;
-+	struct hrtimer pie_timer; /* sub second exp, so needs hrtimer */
-+	int pie_enabled;
-+	struct work_struct irqwork;
+ struct amd_northbridge {
+ 	struct pci_dev *misc;
  };
- #define to_rtc_device(d) container_of(d, struct rtc_device, dev)
- 
-@@ -224,15 +238,22 @@ extern int rtc_alarm_irq_enable(struct rtc_device *rtc, unsigned int enabled);
- extern int rtc_dev_update_irq_enable_emul(struct rtc_device *rtc,
- 						unsigned int enabled);
- 
--typedef struct rtc_task {
--	void (*func)(void *private_data);
--	void *private_data;
--} rtc_task_t;
-+void rtc_aie_update_irq(void *private);
-+void rtc_uie_update_irq(void *private);
-+enum hrtimer_restart rtc_pie_update_irq(struct hrtimer *timer);
- 
- int rtc_register(rtc_task_t *task);
- int rtc_unregister(rtc_task_t *task);
- int rtc_control(rtc_task_t *t, unsigned int cmd, unsigned long arg);
- 
-+void rtc_timer_enqueue(struct rtc_device *rtc, struct rtc_timer *timer);
-+void rtc_timer_remove(struct rtc_device *rtc, struct rtc_timer *timer);
-+void rtc_timer_init(struct rtc_timer *timer, void (*f)(void* p), void* data);
-+int rtc_timer_start(struct rtc_device *rtc, struct rtc_timer* timer,
-+			ktime_t expires, ktime_t period);
-+int rtc_timer_cancel(struct rtc_device *rtc, struct rtc_timer* timer);
-+void rtc_timer_do_work(struct work_struct *work);
+diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
+index 0141b23..4729b2b 100644
+--- a/arch/x86/include/asm/fixmap.h
++++ b/arch/x86/include/asm/fixmap.h
+@@ -116,11 +116,11 @@ enum fixed_addresses {
+ #endif
+ 	FIX_TEXT_POKE1,	/* reserve 2 pages for text_poke() */
+ 	FIX_TEXT_POKE0, /* first page is last, because allocation is backward */
+-	__end_of_permanent_fixed_addresses,
+-
+ #ifdef	CONFIG_X86_MRST
+ 	FIX_LNW_VRTC,
+ #endif
++	__end_of_permanent_fixed_addresses,
 +
- static inline bool is_leap_year(unsigned int year)
+ 	/*
+ 	 * 256 temporary boot-time mappings, used by early_ioremap(),
+ 	 * before ioremap() is functional.
+diff --git a/arch/x86/include/asm/gpio.h b/arch/x86/include/asm/gpio.h
+index 49dbfdf..91d915a 100644
+--- a/arch/x86/include/asm/gpio.h
++++ b/arch/x86/include/asm/gpio.h
+@@ -38,12 +38,9 @@ static inline int gpio_cansleep(unsigned int gpio)
+ 	return __gpio_cansleep(gpio);
+ }
+ 
+-/*
+- * Not implemented, yet.
+- */
+ static inline int gpio_to_irq(unsigned int gpio)
  {
- 	return (!(year % 4) && (year % 100)) || !(year % 400);
+-	return -ENOSYS;
++	return __gpio_to_irq(gpio);
+ }
+ 
+ static inline int irq_to_gpio(unsigned int irq)
+diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
+index 823e070..5ae8728 100644
+--- a/arch/x86/include/asm/numa_64.h
++++ b/arch/x86/include/asm/numa_64.h
+@@ -38,7 +38,7 @@ extern void __cpuinit numa_add_cpu(int cpu);
+ extern void __cpuinit numa_remove_cpu(int cpu);
+ 
+ #ifdef CONFIG_NUMA_EMU
+-#define FAKE_NODE_MIN_SIZE	((u64)64 << 20)
++#define FAKE_NODE_MIN_SIZE	((u64)32 << 20)
+ #define FAKE_NODE_MIN_HASH_MASK	(~(FAKE_NODE_MIN_SIZE - 1UL))
+ #endif /* CONFIG_NUMA_EMU */
+ #else
+diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
+index affacb5..0a99f71 100644
+--- a/arch/x86/kernel/amd_nb.c
++++ b/arch/x86/kernel/amd_nb.c
+@@ -20,6 +20,13 @@ struct pci_device_id amd_nb_misc_ids[] = {
+ };
+ EXPORT_SYMBOL(amd_nb_misc_ids);
+ 
++const struct amd_nb_bus_dev_range amd_nb_bus_dev_ranges[] __initconst = {
++	{ 0x00, 0x18, 0x20 },
++	{ 0xff, 0x00, 0x20 },
++	{ 0xfe, 0x00, 0x20 },
++	{ }
++};
++
+ struct amd_northbridge_info amd_northbridges;
+ EXPORT_SYMBOL(amd_northbridges);
+ 
+diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
+index dcd7c83..5955a78 100644
+--- a/arch/x86/kernel/aperture_64.c
++++ b/arch/x86/kernel/aperture_64.c
+@@ -39,18 +39,6 @@ int fallback_aper_force __initdata;
+ 
+ int fix_aperture __initdata = 1;
+ 
+-struct bus_dev_range {
+-	int bus;
+-	int dev_base;
+-	int dev_limit;
+-};
+-
+-static struct bus_dev_range bus_dev_ranges[] __initdata = {
+-	{ 0x00, 0x18, 0x20},
+-	{ 0xff, 0x00, 0x20},
+-	{ 0xfe, 0x00, 0x20}
+-};
+-
+ static struct resource gart_resource = {
+ 	.name	= "GART",
+ 	.flags	= IORESOURCE_MEM,
+@@ -294,13 +282,13 @@ void __init early_gart_iommu_check(void)
+ 	search_agp_bridge(&agp_aper_order, &valid_agp);
+ 
+ 	fix = 0;
+-	for (i = 0; i < ARRAY_SIZE(bus_dev_ranges); i++) {
++	for (i = 0; amd_nb_bus_dev_ranges[i].dev_limit; i++) {
+ 		int bus;
+ 		int dev_base, dev_limit;
+ 
+-		bus = bus_dev_ranges[i].bus;
+-		dev_base = bus_dev_ranges[i].dev_base;
+-		dev_limit = bus_dev_ranges[i].dev_limit;
++		bus = amd_nb_bus_dev_ranges[i].bus;
++		dev_base = amd_nb_bus_dev_ranges[i].dev_base;
++		dev_limit = amd_nb_bus_dev_ranges[i].dev_limit;
+ 
+ 		for (slot = dev_base; slot < dev_limit; slot++) {
+ 			if (!early_is_amd_nb(read_pci_config(bus, slot, 3, 0x00)))
+@@ -349,13 +337,13 @@ void __init early_gart_iommu_check(void)
+ 		return;
+ 
+ 	/* disable them all at first */
+-	for (i = 0; i < ARRAY_SIZE(bus_dev_ranges); i++) {
++	for (i = 0; i < amd_nb_bus_dev_ranges[i].dev_limit; i++) {
+ 		int bus;
+ 		int dev_base, dev_limit;
+ 
+-		bus = bus_dev_ranges[i].bus;
+-		dev_base = bus_dev_ranges[i].dev_base;
+-		dev_limit = bus_dev_ranges[i].dev_limit;
++		bus = amd_nb_bus_dev_ranges[i].bus;
++		dev_base = amd_nb_bus_dev_ranges[i].dev_base;
++		dev_limit = amd_nb_bus_dev_ranges[i].dev_limit;
+ 
+ 		for (slot = dev_base; slot < dev_limit; slot++) {
+ 			if (!early_is_amd_nb(read_pci_config(bus, slot, 3, 0x00)))
+@@ -390,14 +378,14 @@ int __init gart_iommu_hole_init(void)
+ 
+ 	fix = 0;
+ 	node = 0;
+-	for (i = 0; i < ARRAY_SIZE(bus_dev_ranges); i++) {
++	for (i = 0; i < amd_nb_bus_dev_ranges[i].dev_limit; i++) {
+ 		int bus;
+ 		int dev_base, dev_limit;
+ 		u32 ctl;
+ 
+-		bus = bus_dev_ranges[i].bus;
+-		dev_base = bus_dev_ranges[i].dev_base;
+-		dev_limit = bus_dev_ranges[i].dev_limit;
++		bus = amd_nb_bus_dev_ranges[i].bus;
++		dev_base = amd_nb_bus_dev_ranges[i].dev_base;
++		dev_limit = amd_nb_bus_dev_ranges[i].dev_limit;
+ 
+ 		for (slot = dev_base; slot < dev_limit; slot++) {
+ 			if (!early_is_amd_nb(read_pci_config(bus, slot, 3, 0x00)))
+@@ -505,7 +493,7 @@ out:
+ 	}
+ 
+ 	/* Fix up the north bridges */
+-	for (i = 0; i < ARRAY_SIZE(bus_dev_ranges); i++) {
++	for (i = 0; i < amd_nb_bus_dev_ranges[i].dev_limit; i++) {
+ 		int bus, dev_base, dev_limit;
+ 
+ 		/*
+@@ -514,9 +502,9 @@ out:
+ 		 */
+ 		u32 ctl = DISTLBWALKPRB | aper_order << 1;
+ 
+-		bus = bus_dev_ranges[i].bus;
+-		dev_base = bus_dev_ranges[i].dev_base;
+-		dev_limit = bus_dev_ranges[i].dev_limit;
++		bus = amd_nb_bus_dev_ranges[i].bus;
++		dev_base = amd_nb_bus_dev_ranges[i].dev_base;
++		dev_limit = amd_nb_bus_dev_ranges[i].dev_limit;
+ 		for (slot = dev_base; slot < dev_limit; slot++) {
+ 			if (!early_is_amd_nb(read_pci_config(bus, slot, 3, 0x00)))
+ 				continue;
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index ce65d44..1efd378 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -684,7 +684,7 @@ static int __init calibrate_APIC_clock(void)
+ 	lapic_clockevent.mult = div_sc(delta, TICK_NSEC * LAPIC_CAL_LOOPS,
+ 				       lapic_clockevent.shift);
+ 	lapic_clockevent.max_delta_ns =
+-		clockevent_delta2ns(0x7FFFFF, &lapic_clockevent);
++		clockevent_delta2ns(0x7FFFFFFF, &lapic_clockevent);
+ 	lapic_clockevent.min_delta_ns =
+ 		clockevent_delta2ns(0xF, &lapic_clockevent);
+ 
+diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
+index 2a3f2a7..f4f9e95 100644
+--- a/arch/x86/kernel/apic/x2apic_uv_x.c
++++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -378,7 +378,7 @@ struct apic __refdata apic_x2apic_uv_x = {
+ 
+ static __cpuinit void set_x2apic_extra_bits(int pnode)
+ {
+-	__get_cpu_var(x2apic_extra_bits) = (pnode << 6);
++	__get_cpu_var(x2apic_extra_bits) = (pnode << uvh_apicid.s.pnode_shift);
+ }
+ 
+ /*
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index ee886fe..5fdc095 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -97,12 +97,12 @@ static DEFINE_PER_CPU(struct task_struct *, idle_thread_array);
+  */
+ static DEFINE_MUTEX(x86_cpu_hotplug_driver_mutex);
+ 
+-void cpu_hotplug_driver_lock()
++void cpu_hotplug_driver_lock(void)
+ {
+         mutex_lock(&x86_cpu_hotplug_driver_mutex);
+ }
+ 
+-void cpu_hotplug_driver_unlock()
++void cpu_hotplug_driver_unlock(void)
+ {
+         mutex_unlock(&x86_cpu_hotplug_driver_mutex);
+ }
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index 356a0d4..463901e 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -965,7 +965,7 @@ out:
+ 
+ static int __init init_tsc_clocksource(void)
+ {
+-	if (!cpu_has_tsc || tsc_disabled > 0)
++	if (!cpu_has_tsc || tsc_disabled > 0 || !tsc_khz)
+ 		return 0;
+ 
+ 	if (tsc_clocksource_reliable)
+diff --git a/arch/x86/mm/amdtopology_64.c b/arch/x86/mm/amdtopology_64.c
+index 08a0069..f21962c 100644
+--- a/arch/x86/mm/amdtopology_64.c
++++ b/arch/x86/mm/amdtopology_64.c
+@@ -27,6 +27,7 @@
+ #include <asm/amd_nb.h>
+ 
+ static struct bootnode __initdata nodes[8];
++static unsigned char __initdata nodeids[8];
+ static nodemask_t __initdata nodes_parsed = NODE_MASK_NONE;
+ 
+ static __init int find_northbridge(void)
+@@ -68,19 +69,6 @@ static __init void early_get_boot_cpu_id(void)
+ #endif
+ }
+ 
+-int __init amd_get_nodes(struct bootnode *physnodes)
+-{
+-	int i;
+-	int ret = 0;
+-
+-	for_each_node_mask(i, nodes_parsed) {
+-		physnodes[ret].start = nodes[i].start;
+-		physnodes[ret].end = nodes[i].end;
+-		ret++;
+-	}
+-	return ret;
+-}
+-
+ int __init amd_numa_init(unsigned long start_pfn, unsigned long end_pfn)
+ {
+ 	unsigned long start = PFN_PHYS(start_pfn);
+@@ -113,7 +101,7 @@ int __init amd_numa_init(unsigned long start_pfn, unsigned long end_pfn)
+ 		base = read_pci_config(0, nb, 1, 0x40 + i*8);
+ 		limit = read_pci_config(0, nb, 1, 0x44 + i*8);
+ 
+-		nodeid = limit & 7;
++		nodeids[i] = nodeid = limit & 7;
+ 		if ((base & 3) == 0) {
+ 			if (i < numnodes)
+ 				pr_info("Skipping disabled node %d\n", i);
+@@ -193,6 +181,76 @@ int __init amd_numa_init(unsigned long start_pfn, unsigned long end_pfn)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_NUMA_EMU
++static s16 fake_apicid_to_node[MAX_LOCAL_APIC] __initdata = {
++	[0 ... MAX_LOCAL_APIC-1] = NUMA_NO_NODE
++};
++
++void __init amd_get_nodes(struct bootnode *physnodes)
++{
++	int i;
++
++	for_each_node_mask(i, nodes_parsed) {
++		physnodes[i].start = nodes[i].start;
++		physnodes[i].end = nodes[i].end;
++	}
++}
++
++static int __init find_node_by_addr(unsigned long addr)
++{
++	int ret = NUMA_NO_NODE;
++	int i;
++
++	for (i = 0; i < 8; i++)
++		if (addr >= nodes[i].start && addr < nodes[i].end) {
++			ret = i;
++			break;
++		}
++	return ret;
++}
++
++/*
++ * For NUMA emulation, fake proximity domain (_PXM) to node id mappings must be
++ * setup to represent the physical topology but reflect the emulated
++ * environment.  For each emulated node, the real node which it appears on is
++ * found and a fake pxm to nid mapping is created which mirrors the actual
++ * locality.  node_distance() then represents the correct distances between
++ * emulated nodes by using the fake acpi mappings to pxms.
++ */
++void __init amd_fake_nodes(const struct bootnode *nodes, int nr_nodes)
++{
++	unsigned int bits;
++	unsigned int cores;
++	unsigned int apicid_base = 0;
++	int i;
++
++	bits = boot_cpu_data.x86_coreid_bits;
++	cores = 1 << bits;
++	early_get_boot_cpu_id();
++	if (boot_cpu_physical_apicid > 0)
++		apicid_base = boot_cpu_physical_apicid;
++
++	for (i = 0; i < nr_nodes; i++) {
++		int index;
++		int nid;
++		int j;
++
++		nid = find_node_by_addr(nodes[i].start);
++		if (nid == NUMA_NO_NODE)
++			continue;
++
++		index = nodeids[nid] << bits;
++		if (fake_apicid_to_node[index + apicid_base] == NUMA_NO_NODE)
++			for (j = apicid_base; j < cores + apicid_base; j++)
++				fake_apicid_to_node[index + j] = i;
++#ifdef CONFIG_ACPI_NUMA
++		__acpi_map_pxm_to_node(nid, i);
++#endif
++	}
++	memcpy(apicid_to_node, fake_apicid_to_node, sizeof(apicid_to_node));
++}
++#endif /* CONFIG_NUMA_EMU */
++
+ int __init amd_scan_nodes(void)
+ {
+ 	unsigned int bits;
+diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+index 7762a51..1e72102 100644
+--- a/arch/x86/mm/numa_64.c
++++ b/arch/x86/mm/numa_64.c
+@@ -260,30 +260,30 @@ void __init numa_init_array(void)
+ #ifdef CONFIG_NUMA_EMU
+ /* Numa emulation */
+ static struct bootnode nodes[MAX_NUMNODES] __initdata;
+-static struct bootnode physnodes[MAX_NUMNODES] __initdata;
++static struct bootnode physnodes[MAX_NUMNODES] __cpuinitdata;
+ static char *cmdline __initdata;
+ 
+ static int __init setup_physnodes(unsigned long start, unsigned long end,
+ 					int acpi, int amd)
+ {
+-	int nr_nodes = 0;
+ 	int ret = 0;
+ 	int i;
+ 
++	memset(physnodes, 0, sizeof(physnodes));
+ #ifdef CONFIG_ACPI_NUMA
+ 	if (acpi)
+-		nr_nodes = acpi_get_nodes(physnodes);
++		acpi_get_nodes(physnodes, start, end);
+ #endif
+ #ifdef CONFIG_AMD_NUMA
+ 	if (amd)
+-		nr_nodes = amd_get_nodes(physnodes);
++		amd_get_nodes(physnodes);
+ #endif
+ 	/*
+ 	 * Basic sanity checking on the physical node map: there may be errors
+ 	 * if the SRAT or AMD code incorrectly reported the topology or the mem=
+ 	 * kernel parameter is used.
+ 	 */
+-	for (i = 0; i < nr_nodes; i++) {
++	for (i = 0; i < MAX_NUMNODES; i++) {
+ 		if (physnodes[i].start == physnodes[i].end)
+ 			continue;
+ 		if (physnodes[i].start > end) {
+@@ -298,17 +298,6 @@ static int __init setup_physnodes(unsigned long start, unsigned long end,
+ 			physnodes[i].start = start;
+ 		if (physnodes[i].end > end)
+ 			physnodes[i].end = end;
+-	}
+-
+-	/*
+-	 * Remove all nodes that have no memory or were truncated because of the
+-	 * limited address range.
+-	 */
+-	for (i = 0; i < nr_nodes; i++) {
+-		if (physnodes[i].start == physnodes[i].end)
+-			continue;
+-		physnodes[ret].start = physnodes[i].start;
+-		physnodes[ret].end = physnodes[i].end;
+ 		ret++;
+ 	}
+ 
+@@ -324,6 +313,24 @@ static int __init setup_physnodes(unsigned long start, unsigned long end,
+ 	return ret;
+ }
+ 
++static void __init fake_physnodes(int acpi, int amd, int nr_nodes)
++{
++	int i;
++
++	BUG_ON(acpi && amd);
++#ifdef CONFIG_ACPI_NUMA
++	if (acpi)
++		acpi_fake_nodes(nodes, nr_nodes);
++#endif
++#ifdef CONFIG_AMD_NUMA
++	if (amd)
++		amd_fake_nodes(nodes, nr_nodes);
++#endif
++	if (!acpi && !amd)
++		for (i = 0; i < nr_cpu_ids; i++)
++			numa_set_node(i, 0);
++}
++
+ /*
+  * Setups up nid to range from addr to addr + size.  If the end
+  * boundary is greater than max_addr, then max_addr is used instead.
+@@ -352,8 +359,7 @@ static int __init setup_node_range(int nid, u64 *addr, u64 size, u64 max_addr)
+  * Sets up nr_nodes fake nodes interleaved over physical nodes ranging from addr
+  * to max_addr.  The return value is the number of nodes allocated.
+  */
+-static int __init split_nodes_interleave(u64 addr, u64 max_addr,
+-						int nr_phys_nodes, int nr_nodes)
++static int __init split_nodes_interleave(u64 addr, u64 max_addr, int nr_nodes)
+ {
+ 	nodemask_t physnode_mask = NODE_MASK_NONE;
+ 	u64 size;
+@@ -384,7 +390,7 @@ static int __init split_nodes_interleave(u64 addr, u64 max_addr,
+ 		return -1;
+ 	}
+ 
+-	for (i = 0; i < nr_phys_nodes; i++)
++	for (i = 0; i < MAX_NUMNODES; i++)
+ 		if (physnodes[i].start != physnodes[i].end)
+ 			node_set(i, physnode_mask);
+ 
+@@ -553,11 +559,9 @@ static int __init numa_emulation(unsigned long start_pfn,
+ {
+ 	u64 addr = start_pfn << PAGE_SHIFT;
+ 	u64 max_addr = last_pfn << PAGE_SHIFT;
+-	int num_phys_nodes;
+ 	int num_nodes;
+ 	int i;
+ 
+-	num_phys_nodes = setup_physnodes(addr, max_addr, acpi, amd);
+ 	/*
+ 	 * If the numa=fake command-line contains a 'M' or 'G', it represents
+ 	 * the fixed node size.  Otherwise, if it is just a single number N,
+@@ -572,7 +576,7 @@ static int __init numa_emulation(unsigned long start_pfn,
+ 		unsigned long n;
+ 
+ 		n = simple_strtoul(cmdline, NULL, 0);
+-		num_nodes = split_nodes_interleave(addr, max_addr, num_phys_nodes, n);
++		num_nodes = split_nodes_interleave(addr, max_addr, n);
+ 	}
+ 
+ 	if (num_nodes < 0)
+@@ -595,7 +599,8 @@ static int __init numa_emulation(unsigned long start_pfn,
+ 						nodes[i].end >> PAGE_SHIFT);
+ 		setup_node_bootmem(i, nodes[i].start, nodes[i].end);
+ 	}
+-	acpi_fake_nodes(nodes, num_nodes);
++	setup_physnodes(addr, max_addr, acpi, amd);
++	fake_physnodes(acpi, amd, num_nodes);
+ 	numa_init_array();
+ 	return 0;
+ }
+@@ -610,8 +615,12 @@ void __init initmem_init(unsigned long start_pfn, unsigned long last_pfn,
+ 	nodes_clear(node_online_map);
+ 
+ #ifdef CONFIG_NUMA_EMU
++	setup_physnodes(start_pfn << PAGE_SHIFT, last_pfn << PAGE_SHIFT,
++			acpi, amd);
+ 	if (cmdline && !numa_emulation(start_pfn, last_pfn, acpi, amd))
+ 		return;
++	setup_physnodes(start_pfn << PAGE_SHIFT, last_pfn << PAGE_SHIFT,
++			acpi, amd);
+ 	nodes_clear(node_possible_map);
+ 	nodes_clear(node_online_map);
+ #endif
+@@ -767,6 +776,7 @@ void __cpuinit numa_clear_node(int cpu)
+ 
+ #ifndef CONFIG_DEBUG_PER_CPU_MAPS
+ 
++#ifndef CONFIG_NUMA_EMU
+ void __cpuinit numa_add_cpu(int cpu)
+ {
+ 	cpumask_set_cpu(cpu, node_to_cpumask_map[early_cpu_to_node(cpu)]);
+@@ -776,34 +786,115 @@ void __cpuinit numa_remove_cpu(int cpu)
+ {
+ 	cpumask_clear_cpu(cpu, node_to_cpumask_map[early_cpu_to_node(cpu)]);
+ }
++#else
++void __cpuinit numa_add_cpu(int cpu)
++{
++	unsigned long addr;
++	u16 apicid;
++	int physnid;
++	int nid = NUMA_NO_NODE;
++
++	apicid = early_per_cpu(x86_cpu_to_apicid, cpu);
++	if (apicid != BAD_APICID)
++		nid = apicid_to_node[apicid];
++	if (nid == NUMA_NO_NODE)
++		nid = early_cpu_to_node(cpu);
++	BUG_ON(nid == NUMA_NO_NODE || !node_online(nid));
++
++	/*
++	 * Use the starting address of the emulated node to find which physical
++	 * node it is allocated on.
++	 */
++	addr = node_start_pfn(nid) << PAGE_SHIFT;
++	for (physnid = 0; physnid < MAX_NUMNODES; physnid++)
++		if (addr >= physnodes[physnid].start &&
++		    addr < physnodes[physnid].end)
++			break;
++
++	/*
++	 * Map the cpu to each emulated node that is allocated on the physical
++	 * node of the cpu's apic id.
++	 */
++	for_each_online_node(nid) {
++		addr = node_start_pfn(nid) << PAGE_SHIFT;
++		if (addr >= physnodes[physnid].start &&
++		    addr < physnodes[physnid].end)
++			cpumask_set_cpu(cpu, node_to_cpumask_map[nid]);
++	}
++}
++
++void __cpuinit numa_remove_cpu(int cpu)
++{
++	int i;
++
++	for_each_online_node(i)
++		cpumask_clear_cpu(cpu, node_to_cpumask_map[i]);
++}
++#endif /* !CONFIG_NUMA_EMU */
+ 
+ #else /* CONFIG_DEBUG_PER_CPU_MAPS */
++static struct cpumask __cpuinit *debug_cpumask_set_cpu(int cpu, int enable)
++{
++	int node = early_cpu_to_node(cpu);
++	struct cpumask *mask;
++	char buf[64];
++
++	mask = node_to_cpumask_map[node];
++	if (!mask) {
++		pr_err("node_to_cpumask_map[%i] NULL\n", node);
++		dump_stack();
++		return NULL;
++	}
++
++	cpulist_scnprintf(buf, sizeof(buf), mask);
++	printk(KERN_DEBUG "%s cpu %d node %d: mask now %s\n",
++		enable ? "numa_add_cpu" : "numa_remove_cpu",
++		cpu, node, buf);
++	return mask;
++}
+ 
+ /*
+  * --------- debug versions of the numa functions ---------
+  */
++#ifndef CONFIG_NUMA_EMU
+ static void __cpuinit numa_set_cpumask(int cpu, int enable)
+ {
+-	int node = early_cpu_to_node(cpu);
+ 	struct cpumask *mask;
+-	char buf[64];
+ 
+-	mask = node_to_cpumask_map[node];
+-	if (mask == NULL) {
+-		printk(KERN_ERR "node_to_cpumask_map[%i] NULL\n", node);
+-		dump_stack();
++	mask = debug_cpumask_set_cpu(cpu, enable);
++	if (!mask)
+ 		return;
+-	}
+ 
+ 	if (enable)
+ 		cpumask_set_cpu(cpu, mask);
+ 	else
+ 		cpumask_clear_cpu(cpu, mask);
++}
++#else
++static void __cpuinit numa_set_cpumask(int cpu, int enable)
++{
++	int node = early_cpu_to_node(cpu);
++	struct cpumask *mask;
++	int i;
+ 
+-	cpulist_scnprintf(buf, sizeof(buf), mask);
+-	printk(KERN_DEBUG "%s cpu %d node %d: mask now %s\n",
+-		enable ? "numa_add_cpu" : "numa_remove_cpu", cpu, node, buf);
++	for_each_online_node(i) {
++		unsigned long addr;
++
++		addr = node_start_pfn(i) << PAGE_SHIFT;
++		if (addr < physnodes[node].start ||
++					addr >= physnodes[node].end)
++			continue;
++		mask = debug_cpumask_set_cpu(cpu, enable);
++		if (!mask)
++			return;
++
++		if (enable)
++			cpumask_set_cpu(cpu, mask);
++		else
++			cpumask_clear_cpu(cpu, mask);
++	}
+ }
++#endif /* CONFIG_NUMA_EMU */
+ 
+ void __cpuinit numa_add_cpu(int cpu)
+ {
+diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
+index 171a0aa..603d285 100644
+--- a/arch/x86/mm/srat_64.c
++++ b/arch/x86/mm/srat_64.c
+@@ -349,18 +349,19 @@ static int __init nodes_cover_memory(const struct bootnode *nodes)
+ 
+ void __init acpi_numa_arch_fixup(void) {}
+ 
+-int __init acpi_get_nodes(struct bootnode *physnodes)
++#ifdef CONFIG_NUMA_EMU
++void __init acpi_get_nodes(struct bootnode *physnodes, unsigned long start,
++				unsigned long end)
+ {
+ 	int i;
+-	int ret = 0;
+ 
+ 	for_each_node_mask(i, nodes_parsed) {
+-		physnodes[ret].start = nodes[i].start;
+-		physnodes[ret].end = nodes[i].end;
+-		ret++;
++		cutoff_node(i, start, end);
++		physnodes[i].start = nodes[i].start;
++		physnodes[i].end = nodes[i].end;
+ 	}
+-	return ret;
+ }
++#endif /* CONFIG_NUMA_EMU */
+ 
+ /* Use the information discovered above to actually set up the nodes. */
+ int __init acpi_scan_nodes(unsigned long start, unsigned long end)
+@@ -505,8 +506,6 @@ void __init acpi_fake_nodes(const struct bootnode *fake_nodes, int num_nodes)
+ {
+ 	int i, j;
+ 
+-	printk(KERN_INFO "Faking PXM affinity for fake nodes on real "
+-			 "topology.\n");
+ 	for (i = 0; i < num_nodes; i++) {
+ 		int nid, pxm;
+ 
+@@ -526,6 +525,17 @@ void __init acpi_fake_nodes(const struct bootnode *fake_nodes, int num_nodes)
+ 			    fake_apicid_to_node[j] == NUMA_NO_NODE)
+ 				fake_apicid_to_node[j] = i;
+ 	}
++
++	/*
++	 * If there are apicid-to-node mappings for physical nodes that do not
++	 * have a corresponding emulated node, it should default to a guaranteed
++	 * value.
++	 */
++	for (i = 0; i < MAX_LOCAL_APIC; i++)
++		if (apicid_to_node[i] != NUMA_NO_NODE &&
++		    fake_apicid_to_node[i] == NUMA_NO_NODE)
++			fake_apicid_to_node[i] = 0;
++
+ 	for (i = 0; i < num_nodes; i++)
+ 		__acpi_map_pxm_to_node(fake_node_to_pxm_map[i], i);
+ 	memcpy(apicid_to_node, fake_apicid_to_node, sizeof(apicid_to_node));
+diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
+index fc1e8fe..e27dffb 100644
+--- a/arch/x86/pci/amd_bus.c
++++ b/arch/x86/pci/amd_bus.c
+@@ -4,6 +4,7 @@
+ #include <linux/cpu.h>
+ #include <linux/range.h>
+ 
++#include <asm/amd_nb.h>
+ #include <asm/pci_x86.h>
+ 
+ #include <asm/pci-direct.h>
+@@ -378,6 +379,34 @@ static struct notifier_block __cpuinitdata amd_cpu_notifier = {
+ 	.notifier_call	= amd_cpu_notify,
+ };
+ 
++static void __init pci_enable_pci_io_ecs(void)
++{
++#ifdef CONFIG_AMD_NB
++	unsigned int i, n;
++
++	for (n = i = 0; !n && amd_nb_bus_dev_ranges[i].dev_limit; ++i) {
++		u8 bus = amd_nb_bus_dev_ranges[i].bus;
++		u8 slot = amd_nb_bus_dev_ranges[i].dev_base;
++		u8 limit = amd_nb_bus_dev_ranges[i].dev_limit;
++
++		for (; slot < limit; ++slot) {
++			u32 val = read_pci_config(bus, slot, 3, 0);
++
++			if (!early_is_amd_nb(val))
++				continue;
++
++			val = read_pci_config(bus, slot, 3, 0x8c);
++			if (!(val & (ENABLE_CF8_EXT_CFG >> 32))) {
++				val |= ENABLE_CF8_EXT_CFG >> 32;
++				write_pci_config(bus, slot, 3, 0x8c, val);
++			}
++			++n;
++		}
++	}
++	pr_info("Extended Config Space enabled on %u nodes\n", n);
++#endif
++}
++
+ static int __init pci_io_ecs_init(void)
+ {
+ 	int cpu;
+@@ -386,6 +415,10 @@ static int __init pci_io_ecs_init(void)
+         if (boot_cpu_data.x86 < 0x10)
+ 		return 0;
+ 
++	/* Try the PCI method first. */
++	if (early_pci_allowed())
++		pci_enable_pci_io_ecs();
++
+ 	register_cpu_notifier(&amd_cpu_notifier);
+ 	for_each_online_cpu(cpu)
+ 		amd_cpu_notify(&amd_cpu_notifier, (unsigned long)CPU_ONLINE,
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index cb845c1..dd7d4e2 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -518,6 +518,7 @@
+ #define PCI_DEVICE_ID_AMD_11H_NB_MISC	0x1303
+ #define PCI_DEVICE_ID_AMD_11H_NB_LINK	0x1304
+ #define PCI_DEVICE_ID_AMD_15H_NB_MISC	0x1603
++#define PCI_DEVICE_ID_AMD_CNB17H_F3	0x1703
+ #define PCI_DEVICE_ID_AMD_LANCE		0x2000
+ #define PCI_DEVICE_ID_AMD_LANCE_HOME	0x2001
+ #define PCI_DEVICE_ID_AMD_SCSI		0x2020
