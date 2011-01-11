@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219Ab1AKPSS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 10:18:18 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43533 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932145Ab1AKPSR (ORCPT
+	id S932257Ab1AKPS5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 10:18:57 -0500
+Received: from ausxippc101.us.dell.com ([143.166.85.207]:33889 "EHLO
+	ausxippc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756093Ab1AKPSz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 10:18:17 -0500
-Date: Tue, 11 Jan 2011 16:18:16 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 14/16] can: mpc5xxx_can: don't treat NULL clk as an
- error
-Message-ID: <20110111151816.GC25741@pengutronix.de>
-References: <1294749833-32019-1-git-send-email-jamie@jamieiles.com>
- <1294749833-32019-15-git-send-email-jamie@jamieiles.com>
+	Tue, 11 Jan 2011 10:18:55 -0500
+X-Loopcount0: from 10.175.216.251
+From: <Narendra_K@Dell.com>
+To: <sfr@canb.auug.org.au>
+CC: <jbarnes@virtuousgeek.org>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <Narendra_K@Dell.com>,
+        <Jordan_Hargrave@Dell.com>, <Matt_Domsch@Dell.com>
+Date: Tue, 11 Jan 2011 20:48:21 +0530
+Subject: Re: linux-next: build failure after merge of the pci tree
+Thread-Topic: linux-next: build failure after merge of the pci tree
+Thread-Index: AcuxoshHJzxMMZ4lR6eSLZ5DBXWN2g==
+Message-ID: <20110111154214.GA16157@fedora14-r610.oslab.blr.amer.dell.com>
+References: <20110110125411.2f45fd2f.sfr@canb.auug.org.au>
+In-Reply-To: <20110110125411.2f45fd2f.sfr@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mutt/1.5.21 (2010-09-15)
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WfZ7S8PLGjBY9Voh"
-Content-Disposition: inline
-In-Reply-To: <1294749833-32019-15-git-send-email-jamie@jamieiles.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 10, 2011 at 07:24:11AM +0530, Stephen Rothwell wrote:
+> Hi Jesse,
+> 
+> After merging the pci tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+> 
+> drivers/built-in.o: In function `T.647':
+> pci-label.c:(.text+0x28514): undefined reference to `utf16s_to_utf8s'
+> 
+> Caused by commit a6247cd4be20cb5439db5cb7b0b6cc67fdc8e2a2 ("PCI: export
+> ACPI _DSM provided firmware instance number and string to sysfs").
+> 
+> I have used the pci tree from next-20110107 for today.
 
---WfZ7S8PLGjBY9Voh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[ It looks like my earlier post did not hit the lists, so reposting ]
 
-On Tue, Jan 11, 2011 at 12:43:51PM +0000, Jamie Iles wrote:
-> clk_get() returns a struct clk cookie to the driver and some platforms
-> may return NULL if they only support a single clock.  clk_get() has only
-> failed if it returns a ERR_PTR() encoded pointer.
->=20
-> Cc: netdev@vger.kernel.org
-> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+Hi, 
 
-Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
+I did a git pull of linux-next-20110110 (topmost commit is 
+4c897f27ad2668534f719202a3b88abe8ec31011) and applied the patch. With 
+CONFIG_DMI and CONFIG_ACPI both set, I did not encounter this build failure. 
+The definition for `utf16s_to_utf8s' is available in 'include/linux/nls.h' 
+which is included in 'drivers/pci/pci-label.c' and the build succeeded. Sorry 
+if I am missing something here.
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Stephen,
 
---WfZ7S8PLGjBY9Voh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+Could you share the .config which caused this build failure ?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+With regards,
+Narendra K
 
-iEYEARECAAYFAk0sdLgACgkQD27XaX1/VRtQnACbBVlCmsALlYDz/7pb+2JF76Tc
-XNYAn21sV5OOiMGT5GxfJdwTzkroVCWt
-=LJdm
------END PGP SIGNATURE-----
 
---WfZ7S8PLGjBY9Voh--
