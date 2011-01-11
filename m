@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932431Ab1AKQhz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 11:37:55 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:62631 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932399Ab1AKQhx (ORCPT
+	id S932412Ab1AKQkh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 11:40:37 -0500
+Received: from mail-ww0-f66.google.com ([74.125.82.66]:42616 "EHLO
+	mail-ww0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932209Ab1AKQkf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 11:37:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ElB00KtKzNfH/6ZYQ0h8U+IdH7DFde0P3CNRM2L6bEirQg0zo41czPrFYSx3UPj67X
-         5PjX886VDkm+wkDMGx0uTyoOSWpfEu/CODmE6WuDkBEdgGA02lUA9i4vFOXrXiCvMq/t
-         87yJm6anIMVz4NZjdjB/dDVzCHxqLGQfgKMvk=
-Date: Tue, 11 Jan 2011 08:37:42 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: "James T. Dickson" <james.dickson@jtdata.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: introduce 'notimeout' blacklist for Dell Vostro
- V13 (was Re: Synaptics touchpad on Dell Vostro V13)
-Message-ID: <20110111163741.GA8596@core.coreip.homeip.net>
-References: <8583070.26.1294325869588.JavaMail.root@butch.jtdata.net>
- <alpine.LNX.2.00.1101071105350.26685@pobox.suse.cz>
- <20110107172847.GA28785@core.coreip.homeip.net>
- <alpine.LNX.2.00.1101111359410.26685@pobox.suse.cz>
+	Tue, 11 Jan 2011 11:40:35 -0500
+Date: Tue, 11 Jan 2011 16:40:24 +0000
+From: Jamie Iles <jamie@jamieiles.com>
+To: Aaro Koskinen <aaro.koskinen@nokia.com>
+Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH 07/16] staging: tidspbridge: don't treat NULL clk as an
+ error
+Message-ID: <20110111164024.GA3181@pulham.picochip.com>
+References: <1294749833-32019-1-git-send-email-jamie@jamieiles.com>
+ <1294749833-32019-8-git-send-email-jamie@jamieiles.com>
+ <alpine.DEB.1.10.1101111739400.18906@esdhcp041196.research.nokia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1101111359410.26685@pobox.suse.cz>
+In-Reply-To: <alpine.DEB.1.10.1101111739400.18906@esdhcp041196.research.nokia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 02:00:27PM +0100, Jiri Kosina wrote:
-> On Fri, 7 Jan 2011, Dmitry Torokhov wrote:
-> 
-> > > Dmitry, what is your current plan with the notimeout thing for V13, 
-> > > please? Still .38 material?
-> > 
-> > Yeah, especially given that not all V13 seem to suffer from
-> > suspend/resume issue.
-> 
-> Hi Dmitry,
-> 
-> I can see that you applied the patch, thanks.
-> 
-> It seems to be in 'next' branch -- does that mean that it will not go in 
-> this merge window still?
-> 
+Hi Aaro,
 
-Hi Jiri,
+On Tue, Jan 11, 2011 at 05:50:06PM +0200, Aaro Koskinen wrote:
+> On Tue, 11 Jan 2011, Jamie Iles wrote:
+[...]
+> >#include <dspbridge/dbdefs.h>
+> >@@ -60,15 +61,15 @@ int dsp_wdt_init(void)
+> >
+> >	dsp_wdt.fclk = clk_get(NULL, "wdt3_fck");
+> >
+> >-	if (dsp_wdt.fclk) {
+> >+	if (!IS_ERR(dsp_wdt.fclk)) {
+> >		dsp_wdt.iclk = clk_get(NULL, "wdt3_ick");
+> >-		if (!dsp_wdt.iclk) {
+> >+		if (IS_ERR(dsp_wdt.iclk)) {
+> >			clk_put(dsp_wdt.fclk);
+> >			dsp_wdt.fclk = NULL;
+> >-			ret = -EFAULT;
+> >+			ret = PTR_ERR(dsp_wdt.iclk);
+> >		}
+> >	} else
+> >-		ret = -EFAULT;
+> >+		ret = PTR_ERR(dsp_wdt.fclk);
+> 
+> There are also other places in this driver where dsp_wdt.[if]clk is
+> checked against NULL, so this change alone is not sufficient.
 
-It is in the next because I wanted to start staging 2nd pull before
-Linus pulled first one so I used 'next' for that. I will be merging next
-and for-linus tonight and it should be in 38-rc1 unless Linus surprises
-us.
+Yes, you're quite right.
 
-Thanks.
+On closer inspection it looks to me like the error handling in 
+drivers/staging/tidspbridge/io_sm.c::bridge_io_create needs to be fixed 
+up first otherwise we can end up calling dsp_wdt_exit() through 
+bridge_io_destroy() without the contents of dsp_wdt being coherently 
+initialized (there are also failure paths where the wdt irq and tasklet 
+can be freed/killed without first being setup).
 
--- 
-Dmitry
+Jamie
