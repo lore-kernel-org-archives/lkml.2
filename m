@@ -1,137 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755709Ab1AKLFn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 06:05:43 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35557 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754540Ab1AKLFl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 06:05:41 -0500
-Date: Tue, 11 Jan 2011 12:05:39 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: kernel@pengutronix.de
-Subject: BUG: spinlock recursion (sys_chdir, user_path_at, do_path_lookup
- ...)
-Message-ID: <20110111110539.GP24920@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1755767Ab1AKLHf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 06:07:35 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48396 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755812Ab1AKLHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 06:07:33 -0500
+From: manjunatha_halli@ti.com
+To: mchehab@infradead.org, hverkuil@xs4all.nl
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        Manjunatha Halli <manjunatha_halli@ti.com>
+Subject: [RFC V10 1/7] drivers:media:radio: wl128x: FM Driver common header file
+Date: Tue, 11 Jan 2011 06:31:21 -0500
+Message-Id: <1294745487-29138-2-git-send-email-manjunatha_halli@ti.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1294745487-29138-1-git-send-email-manjunatha_halli@ti.com>
+References: <1294745487-29138-1-git-send-email-manjunatha_halli@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Manjunatha Halli <manjunatha_halli@ti.com>
 
-when testing yesterday's Linus' master branch
-(a08948812b30653eb2c536ae613b635a989feb6f + some arch support including
-Trond's latest nfsfix[1]) I hit the following reproducibly:
+These are common headers used in FM submodules (FM V4L2,
+FM common, FM Rx,and FM TX).
 
-[    5.580000] BUG: spinlock recursion on CPU#0, init/1
-[    5.580000]  lock: c7487e10, .magic: dead4ead, .owner: init/1, .owner_cpu: 0
-[    5.590000] Backtrace: 
-[    5.590000] [<c0037c2c>] (dump_backtrace+0x0/0x110) from [<c028240c>] (dump_stack+0x1c/0x20)
-[    5.600000]  r7:c7487e10 r6:c0321368 r5:c7487e10 r4:c7848000
-[    5.610000] [<c02823f0>] (dump_stack+0x0/0x20) from [<c01b516c>] (spin_bug+0x90/0xa4)
-[    5.620000] [<c01b50dc>] (spin_bug+0x0/0xa4) from [<c01b52d4>] (do_raw_spin_lock+0x50/0x154)
-[    5.620000]  r6:c7487e10 r5:c7487e10 r4:00000000
-[    5.630000] [<c01b5284>] (do_raw_spin_lock+0x0/0x154) from [<c028524c>] (_raw_spin_lock_nested+0x40/0x48)
-[    5.640000] [<c028520c>] (_raw_spin_lock_nested+0x0/0x48) from [<c00f436c>] (nameidata_dentry_drop_rcu+0x90/0x1a4)
-[    5.650000]  r5:c7843efc r4:c7487dc0
-[    5.650000] [<c00f42dc>] (nameidata_dentry_drop_rcu+0x0/0x1a4) from [<c00f44c0>] (d_revalidate+0x40/0x68)
-[    5.660000] [<c00f4480>] (d_revalidate+0x0/0x68) from [<c00f6ed4>] (link_path_walk+0xb84/0xbf0)
-[    5.670000]  r6:c7843efc r5:c7843efc r4:00000000
-[    5.680000] [<c00f6350>] (link_path_walk+0x0/0xbf0) from [<c00f7164>] (do_path_lookup+0x48/0xd4)
-[    5.680000] [<c00f711c>] (do_path_lookup+0x0/0xd4) from [<c00f7c08>] (user_path_at+0x64/0x9c)
-[    5.690000] [<c00f7ba4>] (user_path_at+0x0/0x9c) from [<c00e9614>] (sys_chdir+0x2c/0x78)
-[    5.700000]  r8:c0034108 r7:0000000c r6:be961ee4 r5:c7843f88 r4:00063015
-[    5.710000] [<c00e95e8>] (sys_chdir+0x0/0x78) from [<c0033e80>] (ret_fast_syscall+0x0/0x44)
-[    5.720000]  r5:be961ee4 r4:00063015
-[   11.720000] BUG: spinlock lockup on CPU#0, init/1, c7487e10
-[   11.730000] Backtrace: 
-[   11.730000] [<c0037c2c>] (dump_backtrace+0x0/0x110) from [<c028240c>] (dump_stack+0x1c/0x20)
-[   11.740000]  r7:c7842000 r6:c7487e10 r5:00000000 r4:00000000
-[   11.740000] [<c02823f0>] (dump_stack+0x0/0x20) from [<c01b539c>] (do_raw_spin_lock+0x118/0x154)
-[   11.750000] [<c01b5284>] (do_raw_spin_lock+0x0/0x154) from [<c028524c>] (_raw_spin_lock_nested+0x40/0x48)
-[   11.760000] [<c028520c>] (_raw_spin_lock_nested+0x0/0x48) from [<c00f436c>] (nameidata_dentry_drop_rcu+0x90/0x1a4)
-[   11.770000]  r5:c7843efc r4:c7487dc0
-[   11.780000] [<c00f42dc>] (nameidata_dentry_drop_rcu+0x0/0x1a4) from [<c00f44c0>] (d_revalidate+0x40/0x68)
-[   11.790000] [<c00f4480>] (d_revalidate+0x0/0x68) from [<c00f6ed4>] (link_path_walk+0xb84/0xbf0)
-[   11.790000]  r6:c7843efc r5:c7843efc r4:00000000
-[   11.800000] [<c00f6350>] (link_path_walk+0x0/0xbf0) from [<c00f7164>] (do_path_lookup+0x48/0xd4)
-[   11.810000] [<c00f711c>] (do_path_lookup+0x0/0xd4) from [<c00f7c08>] (user_path_at+0x64/0x9c)
-[   11.820000] [<c00f7ba4>] (user_path_at+0x0/0x9c) from [<c00e9614>] (sys_chdir+0x2c/0x78)
-[   11.820000]  r8:c0034108 r7:0000000c r6:be961ee4 r5:c7843f88 r4:00063015
-[   11.830000] [<c00e95e8>] (sys_chdir+0x0/0x78) from [<c0033e80>] (ret_fast_syscall+0x0/0x44)
-[   11.840000]  r5:be961ee4 r4:00063015
-[   75.280000] BUG: soft lockup - CPU#0 stuck for 64s! [init:1]
-[   75.280000] Modules linked in:
-[   75.280000] irq event stamp: 113662
-[   75.280000] hardirqs last  enabled at (113662): [<c0285a7c>] _raw_spin_unlock_irqrestore+0x48/0x50
-[   75.280000] hardirqs last disabled at (113661): [<c0285398>] _raw_spin_lock_irqsave+0x30/0x64
-[   75.280000] softirqs last  enabled at (113509): [<c026447c>] rpc_wake_up_next+0x1b0/0x1c4
-[   75.280000] softirqs last disabled at (113507): [<c02854f0>] _raw_spin_lock_bh+0x20/0x58
-[   75.280000] 
-[   75.280000] Pid: 1, comm:                 init
-[   75.280000] CPU: 0    Not tainted  (2.6.37-04021-gb8b018c-dirty #41)
-[   75.280000] PC is at do_raw_spin_lock+0xac/0x154
-[   75.280000] LR is at do_raw_spin_lock+0xc0/0x154
-[   75.280000] pc : [<c01b5330>]    lr : [<c01b5344>]    psr: 20000013
-[   75.280000] sp : c7843dd0  ip : c7843cd4  fp : c7843e04
-[   75.280000] r10: 06bd0000  r9 : 00000000  r8 : 00000000
-[   75.280000] r7 : c7842000  r6 : c7487e10  r5 : 00000000  r4 : 03dd5aca
-[   75.280000] r3 : 00000000  r2 : 00000001  r1 : c0285a74  r0 : 00000001
-[   75.280000] Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-[   75.280000] Control: 0005317f  Table: 479a8000  DAC: 00000015
-[   75.280000] [<c00356c4>] (show_regs+0x0/0x54) from [<c0089dac>] (watchdog_timer_fn+0x13c/0x1a4)
-[   75.280000]  r4:c7842000
-[   75.280000] [<c0089c70>] (watchdog_timer_fn+0x0/0x1a4) from [<c006cb58>] (__run_hrtimer+0x114/0x1f0)
-[   75.280000] [<c006ca44>] (__run_hrtimer+0x0/0x1f0) from [<c006ced8>] (hrtimer_interrupt+0x154/0x338)
-[   75.280000] [<c006cd84>] (hrtimer_interrupt+0x0/0x338) from [<c003e36c>] (mxs_timer_interrupt+0x28/0x34)
-[   75.280000] [<c003e344>] (mxs_timer_interrupt+0x0/0x34) from [<c008a408>] (handle_IRQ_event+0x7c/0x1a8)
-[   75.280000] [<c008a38c>] (handle_IRQ_event+0x0/0x1a8) from [<c008c948>] (handle_level_irq+0xc8/0x148)
-[   75.280000] [<c008c880>] (handle_level_irq+0x0/0x148) from [<c002d320>] (asm_do_IRQ+0x80/0xa4)
-[   75.280000]  r7:c7842000 r6:c7487e10 r5:00000000 r4:00000030
-[   75.280000] [<c002d2a0>] (asm_do_IRQ+0x0/0xa4) from [<c0033ab8>] (__irq_svc+0x38/0x80)
-[   75.280000] Exception stack(0xc7843d88 to 0xc7843dd0)
-[   75.280000] 3d80:                   00000001 c0285a74 00000001 00000000 03dd5aca 00000000
-[   75.280000] 3da0: c7487e10 c7842000 00000000 00000000 06bd0000 c7843e04 c7843cd4 c7843dd0
-[   75.280000] 3dc0: c01b5344 c01b5330 20000013 ffffffff
-[   75.280000]  r5:f5000000 r4:ffffffff
-[   75.280000] [<c01b5284>] (do_raw_spin_lock+0x0/0x154) from [<c028524c>] (_raw_spin_lock_nested+0x40/0x48)
-[   75.280000] [<c028520c>] (_raw_spin_lock_nested+0x0/0x48) from [<c00f436c>] (nameidata_dentry_drop_rcu+0x90/0x1a4)
-[   75.280000]  r5:c7843efc r4:c7487dc0
-[   75.280000] [<c00f42dc>] (nameidata_dentry_drop_rcu+0x0/0x1a4) from [<c00f44c0>] (d_revalidate+0x40/0x68)
-[   75.280000] [<c00f4480>] (d_revalidate+0x0/0x68) from [<c00f6ed4>] (link_path_walk+0xb84/0xbf0)
-[   75.280000]  r6:c7843efc r5:c7843efc r4:00000000
-[   75.280000] [<c00f6350>] (link_path_walk+0x0/0xbf0) from [<c00f7164>] (do_path_lookup+0x48/0xd4)
-[   75.280000] [<c00f711c>] (do_path_lookup+0x0/0xd4) from [<c00f7c08>] (user_path_at+0x64/0x9c)
-[   75.280000] [<c00f7ba4>] (user_path_at+0x0/0x9c) from [<c00e9614>] (sys_chdir+0x2c/0x78)
-[   75.280000]  r8:c0034108 r7:0000000c r6:be961ee4 r5:c7843f88 r4:00063015
-[   75.280000] [<c00e95e8>] (sys_chdir+0x0/0x78) from [<c0033e80>] (ret_fast_syscall+0x0/0x44)
-[   75.280000]  r5:be961ee4 r4:00063015
+Signed-off-by: Manjunatha Halli <manjunatha_halli@ti.com>
+Reviewed-by: Hans Verkuil <hverkuil@xs4all.nl>
+---
+ drivers/media/radio/wl128x/fmdrv.h |  244 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 244 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/media/radio/wl128x/fmdrv.h
 
-I started to bisect, but already the first test case showed a different
-error (my getty dying every few seconds).
-
-Does this ring a bell for someone?
-
-If you have questions don't hesitate to ask.
-
-Hardware: mxs-based arm9
-
-Best regards
-Uwe
-
-[1] http://mid.gmane.org/1294528551.4181.19.camel@heimdal.trondhjem.org
-
+diff --git a/drivers/media/radio/wl128x/fmdrv.h b/drivers/media/radio/wl128x/fmdrv.h
+new file mode 100644
+index 0000000..392b62d
+--- /dev/null
++++ b/drivers/media/radio/wl128x/fmdrv.h
+@@ -0,0 +1,244 @@
++/*
++ *  FM Driver for Connectivity chip of Texas Instruments.
++ *
++ *  Common header for all FM driver sub-modules.
++ *
++ *  Copyright (C) 2011 Texas Instruments
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ */
++
++#ifndef _FM_DRV_H
++#define _FM_DRV_H
++
++#include <linux/skbuff.h>
++#include <linux/interrupt.h>
++#include <sound/core.h>
++#include <sound/initval.h>
++#include <linux/timer.h>
++#include <linux/version.h>
++#include <media/v4l2-ioctl.h>
++#include <media/v4l2-common.h>
++#include <media/v4l2-ctrls.h>
++
++#define FM_DRV_VERSION            "0.09"
++/* Should match with FM_DRV_VERSION */
++#define FM_DRV_RADIO_VERSION      KERNEL_VERSION(0, 0, 1)
++#define FM_DRV_NAME               "ti_fmdrv"
++#define FM_DRV_CARD_SHORT_NAME    "TI FM Radio"
++#define FM_DRV_CARD_LONG_NAME     "Texas Instruments FM Radio"
++
++/* Flag info */
++#define FM_INTTASK_RUNNING            0
++#define FM_INTTASK_SCHEDULE_PENDING   1
++#define FM_FW_DW_INPROGRESS     2
++#define FM_CORE_READY                 3
++#define FM_CORE_TRANSPORT_READY       4
++#define FM_AF_SWITCH_INPROGRESS	      5
++#define FM_CORE_TX_XMITING	      6
++
++#define FM_TUNE_COMPLETE	      0x1
++#define FM_BAND_LIMIT		      0x2
++
++#define FM_DRV_TX_TIMEOUT      (5*HZ)	/* 5 seconds */
++#define FM_DRV_RX_SEEK_TIMEOUT (20*HZ)	/* 20 seconds */
++
++#define NO_OF_ENTRIES_IN_ARRAY(array) (sizeof(array) / sizeof(array[0]))
++
++#define fmerr(format, ...) \
++	printk(KERN_ERR "fmdrv: " format, ## __VA_ARGS__)
++#define fmwarn(format, ...) \
++	printk(KERN_WARNING "fmdrv: " format, ##__VA_ARGS__)
++#ifdef DEBUG
++#define fmdbg(format, ...) \
++	printk(KERN_DEBUG "fmdrv: " format, ## __VA_ARGS__)
++#else /* DEBUG */
++#define fmdbg(format, ...)
++#endif
++enum {
++	FM_MODE_OFF,
++	FM_MODE_TX,
++	FM_MODE_RX,
++	FM_MODE_ENTRY_MAX
++};
++
++#define FM_RX_RDS_INFO_FIELD_MAX	8	/* 4 Group * 2 Bytes */
++
++/* RX RDS data format */
++struct fm_rdsdata_format {
++	union {
++		struct {
++			u8 buff[FM_RX_RDS_INFO_FIELD_MAX];
++		} groupdatabuff;
++		struct {
++			u16 pidata;
++			u8 blk_b[2];
++			u8 blk_c[2];
++			u8 blk_d[2];
++		} groupgeneral;
++		struct {
++			u16 pidata;
++			u8 blk_b[2];
++			u8 af[2];
++			u8 ps[2];
++		} group0A;
++		struct {
++			u16 pi[2];
++			u8 blk_b[2];
++			u8 ps[2];
++		} group0B;
++	} data;
++};
++
++/* FM region (Europe/US, Japan) info */
++struct region_info {
++	u32 chanl_space;
++	u32 bot_freq;
++	u32 top_freq;
++	u8 fm_band;
++};
++struct fmdev;
++typedef void (*int_handler_prototype) (struct fmdev *);
++
++/* FM Interrupt processing related info */
++struct fm_irq {
++	u8 stage;
++	u16 flag;	/* FM interrupt flag */
++	u16 mask;	/* FM interrupt mask */
++	/* Interrupt process timeout handler */
++	struct timer_list timer;
++	u8 retry;
++	int_handler_prototype *handlers;
++};
++
++/* RDS info */
++struct fm_rds {
++	u8 flag;	/* RX RDS on/off status */
++	u8 last_blk_idx;	/* Last received RDS block */
++
++	/* RDS buffer */
++	wait_queue_head_t read_queue;
++	u32 buf_size;	/* Size is always multiple of 3 */
++	u32 wr_idx;
++	u32 rd_idx;
++	u8 *buff;
++};
++
++#define FM_RDS_MAX_AF_LIST		25
++
++/*
++ * Current RX channel Alternate Frequency cache.
++ * This info is used to switch to other freq (AF)
++ * when current channel signal strengh is below RSSI threshold.
++ */
++struct tuned_station_info {
++	u16 picode;
++	u32 af_cache[FM_RDS_MAX_AF_LIST];
++	u8 afcache_size;
++	u8 af_list_max;
++};
++
++/* FM RX mode info */
++struct fm_rx {
++	struct region_info region;	/* Current selected band */
++	u32 freq;	/* Current RX frquency */
++	u8 mute_mode;	/* Current mute mode */
++	u8 deemphasis_mode; /* Current deemphasis mode */
++	/* RF dependent soft mute mode */
++	u8 rf_depend_mute;
++	u16 volume;	/* Current volume level */
++	u16 rssi_threshold;	/* Current RSSI threshold level */
++	/* Holds the index of the current AF jump */
++	u8 afjump_idx;
++	/* Will hold the frequency before the jump */
++	u32 freq_before_jump;
++	u8 rds_mode;	/* RDS operation mode (RDS/RDBS) */
++	u8 af_mode;	/* Alternate frequency on/off */
++	struct tuned_station_info stat_info;
++	struct fm_rds rds;
++};
++
++#define FMTX_RDS_TXT_STR_SIZE	25
++/*
++ * FM TX RDS data
++ *
++ * @ text_type: is the text following PS or RT
++ * @ text: radio text string which could either be PS or RT
++ * @ af_freq: alternate frequency for Tx
++ * TODO: to be declared in application
++ */
++struct tx_rds {
++	u8 text_type;
++	u8 text[FMTX_RDS_TXT_STR_SIZE];
++	u8 flag;
++	u32 af_freq;
++};
++/*
++ * FM TX global data
++ *
++ * @ pwr_lvl: Power Level of the Transmission from mixer control
++ * @ xmit_state: Transmission state = Updated locally upon Start/Stop
++ * @ audio_io: i2S/Analog
++ * @ tx_frq: Transmission frequency
++ */
++struct fmtx_data {
++	u8 pwr_lvl;
++	u8 xmit_state;
++	u8 audio_io;
++	u8 region;
++	u16 aud_mode;
++	u32 preemph;
++	u32 tx_frq;
++	struct tx_rds rds;
++};
++
++/* FM driver operation structure */
++struct fmdev {
++	struct video_device *radio_dev;	/* V4L2 video device pointer */
++	struct snd_card *card;	/* Card which holds FM mixer controls */
++	u16 asci_id;
++	spinlock_t rds_buff_lock; /* To protect access to RDS buffer */
++	spinlock_t resp_skb_lock; /* To protect access to received SKB */
++
++	long flag;		/*  FM driver state machine info */
++	u8 streg_cbdata; /* status of ST registration */
++
++	struct sk_buff_head rx_q;	/* RX queue */
++	struct tasklet_struct rx_task;	/* RX Tasklet */
++
++	struct sk_buff_head tx_q;	/* TX queue */
++	struct tasklet_struct tx_task;	/* TX Tasklet */
++	unsigned long last_tx_jiffies;	/* Timestamp of last pkt sent */
++	atomic_t tx_cnt;	/* Number of packets can send at a time */
++
++	struct sk_buff *resp_skb;	/* Response from the chip */
++	/* Main task completion handler */
++	struct completion maintask_comp;
++	/* Opcode of last command sent to the chip */
++	u8 pre_op;
++	/* Handler used for wakeup when response packet is received */
++	struct completion *resp_comp;
++	struct fm_irq irq_info;
++	u8 curr_fmmode; /* Current FM chip mode (TX, RX, OFF) */
++	struct fm_rx rx;	/* FM receiver info */
++	struct fmtx_data tx_data;
++
++	/* V4L2 ctrl framwork handler*/
++	struct v4l2_ctrl_handler ctrl_handler;
++
++	/* For core assisted locking */
++	struct mutex mutex;
++};
++#endif
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+1.5.6.3
+
