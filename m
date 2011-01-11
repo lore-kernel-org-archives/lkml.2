@@ -1,99 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932330Ab1AKRX1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 12:23:27 -0500
-Received: from casper.infradead.org ([85.118.1.10]:42571 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751320Ab1AKRXZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 12:23:25 -0500
-Date: Tue, 11 Jan 2011 15:23:10 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Kirill Smelkov <kirr@mns.spb.ru>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [BUG] perf top -> annotate broken; bisected to 69aad6f1
-Message-ID: <20110111172309.GC11968@ghostprotocols.net>
-References: <20110111163520.GA4554@tugrik.mns.mnsspb.ru> <20110111171124.GB11968@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110111171124.GB11968@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S932457Ab1AKRYP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 12:24:15 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:59439 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754023Ab1AKRYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 12:24:13 -0500
+Subject: Re: [PATCH] clocks_calc_mult_shift(): rename minsec argument
+ according to actual usage
+From: john stultz <johnstul@us.ibm.com>
+To: Nicolas Pitre <nico@fluxnic.net>, Thomas Gleixner <tglx@linutronix.de>
+Cc: lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <alpine.LFD.2.00.1101111207140.17086@xanadu.home>
+References: <alpine.LFD.2.00.1101111207140.17086@xanadu.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 11 Jan 2011 09:24:04 -0800
+Message-ID: <1294766644.3441.9.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Jan 11, 2011 at 03:11:24PM -0200, Arnaldo Carvalho de Melo escreveu:
-> Em Tue, Jan 11, 2011 at 07:35:20PM +0300, Kirill Smelkov escreveu:
-> > Hello up there,
-> > 
-> > Since 69aad6f1ee69546dea8535ab8f3da9f445d57328 (perf tools: Introduce
-> > event selectors; Jan 3 2011) annotating a symbol in perf top segfaults:
-> > 
-> >     Program received signal SIGSEGV, Segmentation fault.
-> >     [Switching to Thread 0xb714cb90 (LWP 4662)]
-> >     event_name (evsel=0x0) at util/parse-events.c:274
-> >     274             return __event_name(type, config);
-> >     (gdb) bt
-> >     #0  event_name (evsel=0x0) at util/parse-events.c:274
-> >     #1  0x0805f892 in display_thread (arg=0x9422448) at builtin-top.c:359
-> >     #2  0xb77234c0 in start_thread () from /lib/i686/cmov/libpthread.so.0
-> >     #3  0xb732b84e in clone () from /lib/i686/cmov/libc.so.6
-> > 
-> > 
-> > It used to work...
+On Tue, 2011-01-11 at 12:18 -0500, Nicolas Pitre wrote:
+> The minsec argument to clocks_calc_mult_shift() is misnamed. It is used 
+> to clamp the magnitude of the mult factor so that a multiplication with 
+> any value in the given range won't overflow a 64 bit result.  Let's 
+> rename it to match the actual usage.
 > 
-> Thanks for the report, working on a fix.
+> Signed-off-by: Nicolas Pitre <nicolas.pitre@linaro.org>
 
-Done, please test it and I'll add a Tested-by: you tag.
+Acked-by: John Stultz <johnstul@us.ibm.com>
 
-Thanks,
+Thomas, mind picking this up for 2.6.38?
 
-- Arnaldo
+thanks
+-john
 
-commit 347ad46af282994524510d62a4c70455929b6a9d
-Author: Arnaldo Carvalho de Melo <acme@redhat.com>
-Date:   Tue Jan 11 15:16:52 2011 -0200
+> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+> index c18d7ef..8588abc 100644
+> --- a/kernel/time/clocksource.c
+> +++ b/kernel/time/clocksource.c
+> @@ -113,7 +113,7 @@ EXPORT_SYMBOL_GPL(timecounter_cyc2time);
+>   * @shift:	pointer to shift variable
+>   * @from:	frequency to convert from
+>   * @to:		frequency to convert to
+> - * @minsec:	guaranteed runtime conversion range in seconds
+> + * @maxsec:	guaranteed runtime conversion range in seconds
+>   *
+>   * The function evaluates the shift/mult pair for the scaled math
+>   * operations of clocksources and clockevents.
+> @@ -122,7 +122,7 @@ EXPORT_SYMBOL_GPL(timecounter_cyc2time);
+>   * NSEC_PER_SEC == 1GHz and @from is the counter frequency. For clock
+>   * event @to is the counter frequency and @from is NSEC_PER_SEC.
+>   *
+> - * The @minsec conversion range argument controls the time frame in
+> + * The @maxsec conversion range argument controls the time frame in
+>   * seconds which must be covered by the runtime conversion with the
+>   * calculated mult and shift factors. This guarantees that no 64bit
+>   * overflow happens when the input value of the conversion is
+> @@ -131,7 +131,7 @@ EXPORT_SYMBOL_GPL(timecounter_cyc2time);
+>   * factors.
+>   */
+>  void
+> -clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 minsec)
+> +clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 maxsec)
+>  {
+>  	u64 tmp;
+>  	u32 sft, sftacc= 32;
+> @@ -140,7 +140,7 @@ clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 minsec)
+>  	 * Calculate the shift factor which is limiting the conversion
+>  	 * range:
+>  	 */
+> -	tmp = ((u64)minsec * from) >> 32;
+> +	tmp = ((u64)maxsec * from) >> 32;
+>  	while (tmp) {
+>  		tmp >>=1;
+>  		sftacc--;
 
-    perf top: Fix annotate segv
-    
-    Before we had sym_counter, it was initialized to zero and we used that
-    as an index in the global attrs variable, now we have a list of evsel
-    entries, and sym_counter became sym_evsel, that remained initialized to
-    zero (NULL): b00m.
-    
-    Fix it by initializing it to the first entry in the evsel list.
-    
-    Bug-introduced: 69aad6f
-    Reported-by: Kirill Smelkov <kirr@mns.spb.ru>
-    Cc: Frederic Weisbecker <fweisbec@gmail.com>
-    Cc: Ingo Molnar <mingo@elte.hu>
-    Cc: Kirill Smelkov <kirr@mns.spb.ru>
-    Cc: Mike Galbraith <efault@gmx.de>
-    Cc: Paul Mackerras <paulus@samba.org>
-    Cc: Peter Zijlstra <peterz@infradead.org>
-    Cc: Stephane Eranian <eranian@google.com>
-    Cc: Tom Zanussi <tzanussi@gmail.com>
-    LKML-Reference: <new-submission>
-    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 4b995ee..568b195 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1473,6 +1473,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
- 		pos->attr.sample_period = default_interval;
- 	}
- 
-+	sym_evsel = list_entry(evsel_list.next, struct perf_evsel, node);
-+
- 	symbol_conf.priv_size = (sizeof(struct sym_entry) +
- 				 (nr_counters + 1) * sizeof(unsigned long));
- 
