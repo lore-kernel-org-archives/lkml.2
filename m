@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805Ab1AKVGZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 16:06:25 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:44945 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754271Ab1AKVGY (ORCPT
+	id S1755965Ab1AKVHw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 16:07:52 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:43534 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289Ab1AKVHs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 16:06:24 -0500
+	Tue, 11 Jan 2011 16:07:48 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=wxirlM3PGrCKYZ/dJHFj3T89jsVBV/bIU68EWhX2NTTW6UiXhGLnw0syBCWx2OXRb3
-         xN3sg0eYvUA46MyTys0CG3+BtRngbL7lSrVCsQ4hqdNVdevJDaxdw+EVqE8sjOIlM9/M
-         +7eo5DEWzErqkp5j58bJBlcP/+YEwEkZ6gGHY=
-Subject: Re: [PATCH] new UDPCP Communication Protocol
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        davem@davemloft.net, netdev@vger.kernel.org, shemminger@vyatta.com,
-        jj@chaosbits.net, daniel.baluta@gmail.com, jochen@jochen.org,
-        hagen@jauu.net, torvalds@linux-foundation.org, pavel@ucw.cz
-In-Reply-To: <1294779020.16410.2.camel@wall-e>
-References: <1294764515-15356-1-git-send-email-stefani@seibold.net>
-	 <1294765273.2927.65.camel@edumazet-laptop>
-	 <1294779020.16410.2.camel@wall-e>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 11 Jan 2011 22:06:17 +0100
-Message-ID: <1294779977.3447.3.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=CzF6+raF0UXZztkzHL7r7V/GcyOQEpWlbgFMplQCXyHcW1YFKnHTJQd+swLzf71Wrl
+         R8XFWiXOLa784Fc6h7huNfsH/fv32M8SdJzpYqdNP1ycm4sYVu2HZq90QAPXTT74/RwE
+         xDe+mZuugfjtHhJ/sZ6DbaQcWavY5woqcLBBo=
+MIME-Version: 1.0
+In-Reply-To: <1294735916.1949.637.camel@sli10-conroe>
+References: <1294735916.1949.637.camel@sli10-conroe>
+Date: Tue, 11 Jan 2011 22:07:47 +0100
+Message-ID: <AANLkTim72yNM1svGbFTKW8pSnFP9W+YgvGs4moXq+pyo@mail.gmail.com>
+Subject: Re: [PATCH 1/2]block cfq: make queue preempt work for queues from
+ different workload
+From: Corrado Zoccolo <czoccolo@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 11 janvier 2011 à 21:50 +0100, Stefani Seibold a écrit :
-> Am Dienstag, den 11.01.2011, 18:01 +0100 schrieb Eric Dumazet:
-> > Le mardi 11 janvier 2011 à 17:48 +0100, stefani@seibold.net a écrit :
-> > > From: Stefani Seibold <stefani@seibold.net>
-> > > 
-> > ...
-> > > The implementation is clean and has absolut no side effects to the network
-> > > subsystems so i ask for merge it into linux, mm-tree or linux-next.
-> > > 
-> > > The patch is against the current linux git tree
-> > > 
-> > > - Stefani
-> > > 
-> > > Signed-off-by: Stefani Seibold <stefani@seibold.net>
-> > > ---
-> > >  
-> > 
-> > Reading again UDPCP specs, I find it is IPv4/IPv6 agnostic
-> > 
-> > You copied IPv4 UDP code, so this only handles IPv4...
-> > 
-> 
-> Right, but currently there is no need for an IPV6 implementation, non of
-> our base station provide it and non of our mobile network customers use
-> it.
-> 
-> If it will be required in the future it will be implemented.
-> 
-> 
+Hi Shaohua,
+On Tue, Jan 11, 2011 at 9:51 AM, Shaohua Li <shaohua.li@intel.com> wrote:
+> I got this:
+>             fio-874   [007]  2157.724514:   8,32   m   N cfq874 preempt
+>             fio-874   [007]  2157.724519:   8,32   m   N cfq830 slice expired t=1
+>             fio-874   [007]  2157.724520:   8,32   m   N cfq830 sl_used=1 disp=0 charge=1 iops=0 sect=0
+>             fio-874   [007]  2157.724521:   8,32   m   N cfq830 set_active wl_prio:0 wl_type:0
+>             fio-874   [007]  2157.724522:   8,32   m   N cfq830 Not idling. st->count:1
+> cfq830 is an async queue, and preempted by a sync queue cfq874. But since we
+> have cfqg->saved_workload_slice mechanism, the preempt is a nop.
+> Looks currently our preempt is totally broken if the two queues are not from
+> the same workload type.
+> Below patch fixes it. This will might make async queue starvation, but it's
+> what our old code does before cgroup is added.
+have you measured latency improvements by un-breaking preemption?
+AFAIK, preemption behaviour changed since 2.6.33, before cgroups were
+added, and the latency before the changes that weakened preemption in
+2.6.33 was far worse.
 
-All I wanted to point out is the implementation you did, using a copy of
-code instead of stacked layer, makes this ipv6 a whole rewrite.
-
-Better understand know the implications, before code inclusion.
-
-I understand your code satisfies your immediate needs (and companies
-that paid this development), but we should make a step forward in code
-reuse.
-
-
-
+Thanks,
+Corrado
+>
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+>
+> ---
+>  block/cfq-iosched.c |    9 +++++++++
+>  1 file changed, 9 insertions(+)
+>
+> Index: linux/block/cfq-iosched.c
+> ===================================================================
+> --- linux.orig/block/cfq-iosched.c      2011-01-11 16:24:56.000000000 +0800
+> +++ linux/block/cfq-iosched.c   2011-01-11 16:41:49.000000000 +0800
+> @@ -3284,10 +3284,19 @@ cfq_should_preempt(struct cfq_data *cfqd
+>  */
+>  static void cfq_preempt_queue(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+>  {
+> +       struct cfq_queue *old_cfqq = cfqd->active_queue;
+> +
+>        cfq_log_cfqq(cfqd, cfqq, "preempt");
+>        cfq_slice_expired(cfqd, 1);
+>
+>        /*
+> +        * workload type is changed, don't save slice, otherwise preempt
+> +        * doesn't happen
+> +        */
+> +       if (cfqq_type(old_cfqq) != cfqq_type(cfqq))
+> +               cfqq->cfqg->saved_workload_slice = 0;
+> +
+> +       /*
+>         * Put the new queue at the front of the of the current list,
+>         * so we know that it will be selected next.
+>         */
+>
+>
+>
