@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab1AKA4W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 19:56:22 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:60426 "EHLO
+	id S1755258Ab1AKA5Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 19:57:16 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60840 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755247Ab1AKA4T (ORCPT
+	with ESMTP id S1755104Ab1AKA5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 19:56:19 -0500
-Message-ID: <4D2BAA75.60001@kernel.org>
-Date: Mon, 10 Jan 2011 16:55:17 -0800
+	Mon, 10 Jan 2011 19:57:14 -0500
+Message-ID: <4D2BAA85.9060902@kernel.org>
+Date: Mon, 10 Jan 2011 16:55:33 -0800
 From: Yinghai Lu <yinghai@kernel.org>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
@@ -19,7 +19,7 @@ To: Jesse Barnes <jbarnes@virtuousgeek.org>, Greg KH <greg@kroah.com>,
 CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         linux-usb@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH -v3 1/4] pci, usb:  Make usb handoff func all take base remapping
+Subject: [PATCH -v3 4/4] x86: usb handoff in early_quirk
 References: <4D2A1382.7010407@kernel.org> <4D2AC6BF.3010907@kernel.org> <4D2BA8FE.9090204@kernel.org>
 In-Reply-To: <4D2BA8FE.9090204@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
@@ -29,369 +29,221 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-So later could reuse them to do usb handoff much early for x86.
+some systems keep getting
+  APIC calibration not consistent with PM-Timer: 139ms instead of 100ms
+  APIC delta adjusted to PM-Timer: 831249 (1163736)
 
-will make arch early code get MMIO BAR and do remapping itself.
+USB legacy SMI handler is not disabled at that time.
 
--v2: still keep pci_device *pdev as parameter according to BenH.
--v3: expose three functions that take *base instead of including .c file.
+Try to disable USB legacy support early with this patch.
+So later APIC Timer calibration don't get messed up by USB legacy support SMI handler.
+After this patch, that warning never show up for 100 reboot tests.
+
+reuse code from drivers/usb/host/pci-quirks.c
+with changes
+1. delay and sleep  ===> io_delay
+2. dev_warn etc to pr_warn(num, slot, func...)
+
+-v2: use get_early_pci_dev() etc.
+     fix typo with PARAVIRT according to Sander Eikelenboom <linux@eikelenboom.it>
+-v3: include .h instead of .c file
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
 ---
- drivers/usb/host/pci-quirks.c |  195 ++++++++++++++++++++++++------------------
- drivers/usb/host/pci-quirks.h |    6 +
- 2 files changed, 120 insertions(+), 81 deletions(-)
+ arch/x86/kernel/early-quirks.c |  175 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 175 insertions(+)
 
-Index: linux-2.6/drivers/usb/host/pci-quirks.c
+Index: linux-2.6/arch/x86/kernel/early-quirks.c
 ===================================================================
---- linux-2.6.orig/drivers/usb/host/pci-quirks.c
-+++ linux-2.6/drivers/usb/host/pci-quirks.c
-@@ -17,6 +17,19 @@
- #include "pci-quirks.h"
- #include "xhci-ext-caps.h"
+--- linux-2.6.orig/arch/x86/kernel/early-quirks.c
++++ linux-2.6/arch/x86/kernel/early-quirks.c
+@@ -19,6 +19,179 @@
+ #include <asm/iommu.h>
+ #include <asm/gart.h>
  
-+static void default_usb_handoff_udelay(unsigned long usecs)
++#include "../../../drivers/usb/host/pci-quirks.h"
++
++static inline void early_udelay2(void)
 +{
-+	udelay(usecs);
++#ifndef CONFIG_PARAVIRT
++	native_io_delay();
++#else
++	pv_cpu_ops.io_delay();
++#endif
 +}
 +
-+static void __devinit default_usb_handoff_msleep(unsigned long msecs)
++static void early_usb_handoff_udelay(unsigned long usecs)
 +{
-+	msleep(msecs);
++	unsigned long count;
++
++	count = usecs >> 1;
++
++	if (!count)
++		count = 1;
++
++	while (count-- > 0)
++		early_udelay2();
 +}
 +
-+void (*usb_handoff_udelay)(unsigned long) = default_usb_handoff_udelay;
-+void (*usb_handoff_msleep)(unsigned long) __devinitdata =
-+			default_usb_handoff_msleep;
- 
- #define UHCI_USBLEGSUP		0xc0		/* legacy support */
- #define UHCI_USBCMD		0		/* command register */
-@@ -71,7 +84,7 @@ void uhci_reset_hc(struct pci_dev *pdev,
- 	 */
- 	outw(UHCI_USBCMD_HCRESET, base + UHCI_USBCMD);
- 	mb();
--	udelay(5);
-+	(*usb_handoff_udelay)(5);
- 	if (inw(base + UHCI_USBCMD) & UHCI_USBCMD_HCRESET)
- 		dev_warn(&pdev->dev, "HCRESET not completed yet!\n");
- 
-@@ -106,78 +119,38 @@ int uhci_check_and_reset_hc(struct pci_d
- 	 */
- 	pci_read_config_word(pdev, UHCI_USBLEGSUP, &legsup);
- 	if (legsup & ~(UHCI_USBLEGSUP_RO | UHCI_USBLEGSUP_RWC)) {
--		dev_dbg(&pdev->dev, "%s: legsup = 0x%04x\n",
--				__func__, legsup);
-+		dev_printk(KERN_DEBUG, &pdev->dev,
-+				 "legsup = 0x%04x\n", legsup);
- 		goto reset_needed;
- 	}
- 
- 	cmd = inw(base + UHCI_USBCMD);
- 	if ((cmd & UHCI_USBCMD_RUN) || !(cmd & UHCI_USBCMD_CONFIGURE) ||
- 			!(cmd & UHCI_USBCMD_EGSM)) {
--		dev_dbg(&pdev->dev, "%s: cmd = 0x%04x\n",
--				__func__, cmd);
-+		dev_printk(KERN_DEBUG, &pdev->dev, "cmd = 0x%04x\n", cmd);
- 		goto reset_needed;
- 	}
- 
- 	intr = inw(base + UHCI_USBINTR);
- 	if (intr & (~UHCI_USBINTR_RESUME)) {
--		dev_dbg(&pdev->dev, "%s: intr = 0x%04x\n",
--				__func__, intr);
-+		dev_printk(KERN_DEBUG, &pdev->dev, "intr = 0x%04x\n", intr);
- 		goto reset_needed;
- 	}
- 	return 0;
- 
- reset_needed:
--	dev_dbg(&pdev->dev, "Performing full reset\n");
-+	dev_printk(KERN_DEBUG, &pdev->dev, "Performing full reset\n");
-+
- 	uhci_reset_hc(pdev, base);
-+
- 	return 1;
- }
- EXPORT_SYMBOL_GPL(uhci_check_and_reset_hc);
- 
--static inline int io_type_enabled(struct pci_dev *pdev, unsigned int mask)
--{
--	u16 cmd;
--	return !pci_read_config_word(pdev, PCI_COMMAND, &cmd) && (cmd & mask);
--}
--
--#define pio_enabled(dev) io_type_enabled(dev, PCI_COMMAND_IO)
--#define mmio_enabled(dev) io_type_enabled(dev, PCI_COMMAND_MEMORY)
--
--static void __devinit quirk_usb_handoff_uhci(struct pci_dev *pdev)
--{
--	unsigned long base = 0;
--	int i;
--
--	if (!pio_enabled(pdev))
--		return;
--
--	for (i = 0; i < PCI_ROM_RESOURCE; i++)
--		if ((pci_resource_flags(pdev, i) & IORESOURCE_IO)) {
--			base = pci_resource_start(pdev, i);
--			break;
--		}
--
--	if (base)
--		uhci_check_and_reset_hc(pdev, base);
--}
--
--static int __devinit mmio_resource_enabled(struct pci_dev *pdev, int idx)
-+void __devinit __usb_handoff_ohci(struct pci_dev *pdev, void __iomem *base)
- {
--	return pci_resource_start(pdev, idx) && mmio_enabled(pdev);
--}
--
--static void __devinit quirk_usb_handoff_ohci(struct pci_dev *pdev)
--{
--	void __iomem *base;
- 	u32 control;
- 
--	if (!mmio_resource_enabled(pdev, 0))
--		return;
--
--	base = pci_ioremap_bar(pdev, 0);
--	if (base == NULL)
--		return;
--
- 	control = readl(base + OHCI_CONTROL);
- 
- /* On PA-RISC, PDC can leave IR set incorrectly; ignore it there. */
-@@ -193,7 +166,7 @@ static void __devinit quirk_usb_handoff_
- 		while (wait_time > 0 &&
- 				readl(base + OHCI_CONTROL) & OHCI_CTRL_IR) {
- 			wait_time -= 10;
--			msleep(10);
-+			(*usb_handoff_msleep)(10);
- 		}
- 		if (wait_time <= 0)
- 			dev_warn(&pdev->dev, "OHCI: BIOS handoff failed"
-@@ -210,26 +183,17 @@ static void __devinit quirk_usb_handoff_
- 	 */
- 	writel(~(u32)0, base + OHCI_INTRDISABLE);
- 	writel(~(u32)0, base + OHCI_INTRSTATUS);
--
--	iounmap(base);
- }
- 
--static void __devinit quirk_usb_disable_ehci(struct pci_dev *pdev)
-+void __devinit __usb_handoff_ehci(struct pci_dev *pdev, void __iomem *base)
- {
- 	int wait_time, delta;
--	void __iomem *base, *op_reg_base;
-+	void *op_reg_base;
- 	u32	hcc_params, val;
- 	u8	offset, cap_length;
- 	int	count = 256/4;
- 	int	tried_handoff = 0;
- 
--	if (!mmio_resource_enabled(pdev, 0))
--		return;
--
--	base = pci_ioremap_bar(pdev, 0);
--	if (base == NULL)
--		return;
--
- 	cap_length = readb(base);
- 	op_reg_base = base + cap_length;
- 
-@@ -247,7 +211,8 @@ static void __devinit quirk_usb_disable_
- 		switch (cap & 0xff) {
- 		case 1:			/* BIOS/SMM/... handoff support */
- 			if ((cap & EHCI_USBLEGSUP_BIOS)) {
--				dev_dbg(&pdev->dev, "EHCI: BIOS handoff\n");
-+				dev_printk(KERN_DEBUG, &pdev->dev,
-+						"EHCI: BIOS handoff\n");
- 
- #if 0
- /* aleksey_gorelov@phoenix.com reports that some systems need SMI forced on,
-@@ -279,7 +244,7 @@ static void __devinit quirk_usb_disable_
- 			msec = 1000;
- 			while ((cap & EHCI_USBLEGSUP_BIOS) && (msec > 0)) {
- 				tried_handoff = 1;
--				msleep(10);
-+				(*usb_handoff_msleep)(10);
- 				msec -= 10;
- 				pci_read_config_dword(pdev, offset, &cap);
- 			}
-@@ -330,18 +295,15 @@ static void __devinit quirk_usb_disable_
- 		delta = 100;
- 		do {
- 			writel(0x3f, op_reg_base + EHCI_USBSTS);
--			udelay(delta);
-+			(*usb_handoff_udelay)(delta);
- 			wait_time -= delta;
- 			val = readl(op_reg_base + EHCI_USBSTS);
--			if ((val == ~(u32)0) || (val & EHCI_USBSTS_HALTED)) {
-+			if ((val == ~(u32)0) || (val & EHCI_USBSTS_HALTED))
- 				break;
--			}
- 		} while (wait_time > 0);
- 	}
- 	writel(0, op_reg_base + EHCI_USBINTR);
- 	writel(0x3f, op_reg_base + EHCI_USBSTS);
--
--	iounmap(base);
- }
- 
- /*
-@@ -357,7 +319,7 @@ static void __devinit quirk_usb_disable_
-  * Returns -ETIMEDOUT if this condition is not true after
-  * wait_usec microseconds have passed.
-  */
--static int handshake(void __iomem *ptr, u32 mask, u32 done,
-+static int __devinit handshake(void __iomem *ptr, u32 mask, u32 done,
- 		int wait_usec, int delay_usec)
- {
- 	u32	result;
-@@ -367,7 +329,7 @@ static int handshake(void __iomem *ptr,
- 		result &= mask;
- 		if (result == done)
- 			return 0;
--		udelay(delay_usec);
-+		(*usb_handoff_udelay)(delay_usec);
- 		wait_usec -= delay_usec;
- 	} while (wait_usec > 0);
- 	return -ETIMEDOUT;
-@@ -381,22 +343,13 @@ static int handshake(void __iomem *ptr,
-  * and then waits 5 seconds for the BIOS to hand over control.
-  * If we timeout, assume the BIOS is broken and take control anyway.
-  */
--static void __devinit quirk_usb_handoff_xhci(struct pci_dev *pdev)
-+void __usb_handoff_xhci(struct pci_dev *pdev, void __iomem *base)
- {
--	void __iomem *base;
- 	int ext_cap_offset;
- 	void __iomem *op_reg_base;
- 	u32 val;
- 	int timeout;
- 
--	if (!mmio_resource_enabled(pdev, 0))
--		return;
--
--	base = ioremap_nocache(pci_resource_start(pdev, 0),
--				pci_resource_len(pdev, 0));
--	if (base == NULL)
--		return;
--
- 	/*
- 	 * Find the Legacy Support Capability register -
- 	 * this is optional for xHCI host controllers.
-@@ -462,6 +415,86 @@ hc_init:
- 				"xHCI HW did not halt within %d usec "
- 				"status = 0x%x\n", XHCI_MAX_HALT_USEC, val);
- 	}
++static void early_usb_handoff_msleep(unsigned long msecs)
++{
++	while (msecs-- > 0)
++		early_usb_handoff_udelay(1000);
 +}
 +
-+static inline int io_type_enabled(struct pci_dev *pdev, unsigned int mask)
++static __init u32 get_usb_io_port(int num, int slot, int func)
 +{
-+	u16 cmd;
-+	return !pci_read_config_word(pdev, PCI_COMMAND, &cmd) && (cmd & mask);
-+}
-+
-+#define pio_enabled(dev) io_type_enabled(dev, PCI_COMMAND_IO)
-+#define mmio_enabled(dev) io_type_enabled(dev, PCI_COMMAND_MEMORY)
-+
-+static void __devinit quirk_usb_handoff_uhci(struct pci_dev *pdev)
-+{
-+	unsigned long base = 0;
 +	int i;
++	u16 cmd;
 +
-+	if (!pio_enabled(pdev))
-+		return;
++	cmd = read_pci_config_16(num, slot, func, PCI_COMMAND);
++	if (!(cmd & PCI_COMMAND_IO))
++		return 0;
 +
-+	for (i = 0; i < PCI_ROM_RESOURCE; i++)
-+		if ((pci_resource_flags(pdev, i) & IORESOURCE_IO)) {
-+			base = pci_resource_start(pdev, i);
-+			break;
-+		}
++	for (i = 0; i < PCI_ROM_RESOURCE; i++) {
++		u32 addr = read_pci_config(num, slot, func, 0x10 + (i<<2));
 +
++		if (!addr)
++			continue;
++		if ((addr&PCI_BASE_ADDRESS_SPACE) != PCI_BASE_ADDRESS_SPACE_IO)
++			continue;
++
++		addr &= PCI_BASE_ADDRESS_IO_MASK;
++		if (addr)
++			return addr;
++	}
++
++	return 0;
++}
++
++static void __init quirk_usb_handoff_uhci(int num, int slot, int func)
++{
++	unsigned long base;
++
++	base = get_usb_io_port(num, slot, func);
 +	if (!base)
 +		return;
 +
-+	uhci_check_and_reset_hc(pdev, base);
++	printk(KERN_DEBUG "%02x:%02x.%01x: uhci ioport = 0x%04lx\n",
++					num, slot, func, base);
++	uhci_check_and_reset_hc(get_early_pci_dev(num, slot, func), base);
 +}
 +
-+static int __devinit mmio_resource_enabled(struct pci_dev *pdev, int idx)
++static __init u32 get_usb_mmio_addr(int num, int slot, int func)
 +{
-+	return pci_resource_start(pdev, idx) && mmio_enabled(pdev);
++	u32 addr;
++	u16 cmd;
++
++	cmd = read_pci_config_16(num, slot, func, PCI_COMMAND);
++	if (!(cmd & PCI_COMMAND_MEMORY))
++		return 0;
++
++	addr = read_pci_config(num, slot, func, 0x10);
++	if (!addr)
++		return 0;
++	if ((addr & PCI_BASE_ADDRESS_SPACE) != PCI_BASE_ADDRESS_SPACE_MEMORY)
++		return 0;
++
++	addr &= PCI_BASE_ADDRESS_MEM_MASK;
++
++	return addr;
 +}
 +
-+static void __devinit quirk_usb_handoff_ohci(struct pci_dev *pdev)
-+{
-+	void __iomem *base;
-+
-+	if (!mmio_resource_enabled(pdev, 0))
-+		return;
-+
-+	base = pci_ioremap_bar(pdev, 0);
-+	if (base == NULL)
-+		return;
-+
-+	__usb_handoff_ohci(pdev, base);
-+
-+	iounmap(base);
-+}
-+
-+static void __devinit quirk_usb_handoff_ehci(struct pci_dev *pdev)
-+{
-+	void __iomem *base;
-+
-+	if (!mmio_resource_enabled(pdev, 0))
-+		return;
-+
-+	base = pci_ioremap_bar(pdev, 0);
-+	if (base == NULL)
-+		return;
-+
-+	__usb_handoff_ehci(pdev, base);
-+
-+	iounmap(base);
-+}
-+
-+static void __devinit quirk_usb_handoff_xhci(struct pci_dev *pdev)
++static __init void quirk_usb_handoff_ohci(int num, int slot, int func)
 +{
 +	void __iomem *base;
++	u32 addr;
 +
-+	if (!mmio_resource_enabled(pdev, 0))
++	addr = get_usb_mmio_addr(num, slot, func);
++	if (!addr)
 +		return;
 +
-+	base = pci_ioremap_bar(pdev, 0);
-+	if (base == NULL)
++	printk(KERN_DEBUG "%02x:%02x.%01x: ohci mmio = 0x%08x\n",
++				num, slot, func, addr);
++	base = early_ioremap(addr, 0x1000);
++	if (!base)
 +		return;
 +
-+	__usb_handoff_xhci(pdev, base);
- 
- 	iounmap(base);
- }
-@@ -473,7 +506,7 @@ static void __devinit quirk_usb_early_ha
- 	else if (pdev->class == PCI_CLASS_SERIAL_USB_OHCI)
- 		quirk_usb_handoff_ohci(pdev);
- 	else if (pdev->class == PCI_CLASS_SERIAL_USB_EHCI)
--		quirk_usb_disable_ehci(pdev);
-+		quirk_usb_handoff_ehci(pdev);
- 	else if (pdev->class == PCI_CLASS_SERIAL_USB_XHCI)
- 		quirk_usb_handoff_xhci(pdev);
- }
-Index: linux-2.6/drivers/usb/host/pci-quirks.h
-===================================================================
---- linux-2.6.orig/drivers/usb/host/pci-quirks.h
-+++ linux-2.6/drivers/usb/host/pci-quirks.h
-@@ -3,5 +3,11 @@
- 
- void uhci_reset_hc(struct pci_dev *pdev, unsigned long base);
- int uhci_check_and_reset_hc(struct pci_dev *pdev, unsigned long base);
-+void __usb_handoff_ohci(struct pci_dev *pdev, void __iomem *base);
-+void __usb_handoff_ehci(struct pci_dev *pdev, void __iomem *base);
-+void __usb_handoff_xhci(struct pci_dev *pdev, void __iomem *base);
++	__usb_handoff_ohci(get_early_pci_dev(num, slot, func), base);
 +
-+extern void (*usb_handoff_udelay)(unsigned long);
-+extern void (*usb_handoff_msleep)(unsigned long);
- 
- #endif  /*  __LINUX_USB_PCI_QUIRKS_H  */
++	early_iounmap(base, 0x1000);
++}
++
++static __init void quirk_usb_handoff_ehci(int num, int slot, int func)
++{
++	void __iomem *base;
++	u32 addr;
++
++	addr = get_usb_mmio_addr(num, slot, func);
++	if (!addr)
++		return;
++
++	printk(KERN_DEBUG "%02x:%02x.%01x: ehci mmio = 0x%08x\n",
++				 num, slot, func, addr);
++	base = early_ioremap(addr, 0x1000);
++	if (!base)
++		return;
++
++	__usb_handoff_ehci(get_early_pci_dev(num, slot, func), base);
++
++	early_iounmap(base, 0x1000);
++}
++
++static __init void quirk_usb_handoff_xhci(int num, int slot, int func)
++{
++	void __iomem *base;
++	u32 addr;
++
++	addr = get_usb_mmio_addr(num, slot, func);
++	if (!addr)
++		return;
++
++	printk(KERN_DEBUG "%02x:%02x.%01x: xhci mmio = 0x%08x\n",
++				num, slot, func, addr);
++	base = early_ioremap(addr, 0x1000);
++	if (!base)
++		return;
++
++	__usb_handoff_xhci(get_early_pci_dev(num, slot, func), base);
++
++	early_iounmap(base, 0x1000);
++}
++
++static __init void quirk_usb_handoff(int num, int slot, int func)
++{
++	u32 class;
++	void (*old_usb_handoff_udelay)(unsigned long) = usb_handoff_udelay;
++	void (*old_usb_handoff_msleep)(unsigned long) = usb_handoff_msleep;
++
++	usb_handoff_udelay = early_usb_handoff_udelay;
++	usb_handoff_msleep = early_usb_handoff_msleep;
++
++	class = read_pci_config(num, slot, func, PCI_CLASS_REVISION);
++	class >>= 8;
++
++	if (class == PCI_CLASS_SERIAL_USB_UHCI)
++		quirk_usb_handoff_uhci(num, slot, func);
++	else if (class == PCI_CLASS_SERIAL_USB_OHCI)
++		quirk_usb_handoff_ohci(num, slot, func);
++	else if (class == PCI_CLASS_SERIAL_USB_EHCI)
++		quirk_usb_handoff_ehci(num, slot, func);
++	else if (class == PCI_CLASS_SERIAL_USB_XHCI)
++		quirk_usb_handoff_xhci(num, slot, func);
++
++	usb_handoff_udelay = old_usb_handoff_udelay;
++	usb_handoff_msleep = old_usb_handoff_msleep;
++}
++
+ static void __init fix_hypertransport_config(int num, int slot, int func)
+ {
+ 	u32 htcfg;
+@@ -208,6 +381,8 @@ struct chipset {
+  * only matching on bus 0.
+  */
+ static struct chipset early_qrk[] __initdata = {
++	{ PCI_ANY_ID, PCI_ANY_ID,
++	  PCI_CLASS_SERIAL_USB, PCI_ANY_ID, 0, quirk_usb_handoff },
+ 	{ PCI_VENDOR_ID_NVIDIA, PCI_ANY_ID,
+ 	  PCI_CLASS_BRIDGE_PCI, PCI_ANY_ID, QFLAG_APPLY_ONCE, nvidia_bugs },
+ 	{ PCI_VENDOR_ID_VIA, PCI_ANY_ID,
