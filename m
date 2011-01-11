@@ -1,164 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab1AKT5R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 14:57:17 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:20295 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441Ab1AKT5P convert rfc822-to-8bit (ORCPT
+	id S932215Ab1AKUCL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 15:02:11 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58987 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756032Ab1AKUCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 14:57:15 -0500
+	Tue, 11 Jan 2011 15:02:07 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=jVAHGBVlQxGwHtSkWIvJ+OvRxcZLk5i4fdZF+GKw1XCTR7nVBwnco1QTq4QDaSnpRK
-         pZHRUnA0aC93Q2GVtmkQ==
-MIME-Version: 1.0
-In-Reply-To: <20110111065540.GA16036@aftab>
-References: <43835.148.87.67.136.1294700112.squirrel@xenotime.net>
- <1294700597-24239-1-git-send-email-mikew@google.com> <20110111065540.GA16036@aftab>
-From: Mike Waychison <mikew@google.com>
-Date: Tue, 11 Jan 2011 11:56:50 -0800
-Message-ID: <AANLkTimXfUH-PYpdRcLR4+QkG7uOzYzSC6VZ6HnkB9jE@mail.gmail.com>
-Subject: Re: [PATCH] x86: Add an option to disable decoding of MCE
-To: Borislav Petkov <bp@amd64.org>
-Cc: "mingo@elte.hu" <mingo@elte.hu>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=V8n/Fot47K9HIdwiKtuPh+HwlUizsfZhF9onTRSN2/TCNC0xF3binusNTgFVDOuAC4
+         KC5T3cQb5+wotSVc8A4vQ/+jN03zKy4MxJvNNcs1JAT4BKfQcirW9JjaKtRXOveoGNQ8
+         qIZgSU0T5qo3niZgLEbPOiOb5APoPFkq+6dek=
+Date: Tue, 11 Jan 2011 12:01:55 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Rakesh Iyer <riyer@nvidia.com>
+Cc: "'Pavel Machek'" <pavel@ucw.cz>, "jj@chaosbits.net" <jj@chaosbits.net>,
+        "tsoni@codeaurora.org" <tsoni@codeaurora.org>,
+        "shubhrajyoti@ti.com" <shubhrajyoti@ti.com>,
+        "ccross@android.com" <ccross@android.com>,
+        "konkers@android.com" <konkers@android.com>,
+        "olof@lixom.net" <olof@lixom.net>, Andrew Chew <AChew@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Duncan Laurie <dlaurie@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
+Subject: Re: [PATCH v3] input: tegra-kbc - Add tegra keyboard driver
+Message-ID: <20110111200155.GA20631@core.coreip.homeip.net>
+References: <1294422307-19107-1-git-send-email-riyer@nvidia.com>
+ <20110110221624.GA16445@core.coreip.homeip.net>
+ <1FC56210173BB445BD77F608D6FB8D03165A00805F@HQMAIL03.nvidia.com>
+ <20110110230622.GB16759@core.coreip.homeip.net>
+ <1FC56210173BB445BD77F608D6FB8D03165A008062@HQMAIL03.nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1FC56210173BB445BD77F608D6FB8D03165A008062@HQMAIL03.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 10:55 PM, Borislav Petkov <bp@amd64.org> wrote:
-> On Mon, Jan 10, 2011 at 06:03:17PM -0500, Mike Waychison wrote:
->> This patch applies to v2.6.37.
->>
->> Updated with documentation of the new option.
->> ---
->>
->> On our systems, we do not want to have any "decoders" called on machine
->> check events.  These decoders can easily spam our logs and cause space
->> problems on machines that have a lot of correctable error events.  We
->> _do_ however want to get the messages delivered via /dev/mcelog for
->> userland processing.
->
-> Ok, question: how do you guys process DRAM ECCs? And more specifically,
-> with a large number of machines, how do you do the mapping from the DRAM
-> ECC error address reported by MCA to a DIMM that's failing in userspace
-> on a particular machine?
+On Tue, Jan 11, 2011 at 11:34:09AM -0800, Rakesh Iyer wrote:
+> Hello All.
+> 
+> I have combined Pavel's and Dmitry's comments so I can address them as one issue.
+> 
+> Dmitry's comment
+> 
+> > On Mon, Jan 10, 2011 at 02:49:25PM -0800, Rakesh Iyer wrote:
+> > > > On Fri, Jan 07, 2011 at 09:45:07AM -0800, riyer@nvidia.com wrote:
+> > > > > +
+> > > > > +struct tegra_kbc {
+> > > > > +	void __iomem *mmio;
+> > > > > +	struct input_dev *idev;
+> > > > > +	int irq;
+> > > > > +	unsigned int wake_enable_rows;
+> > > > > +	unsigned int wake_enable_cols;
+> > > > > +	spinlock_t lock;
+> > > > > +	unsigned int repoll_time;
+> > > > > +	unsigned long cp_dly_jiffies;
+> > > > > +	int fifo[KBC_MAX_KPENT];
+> > > > > +	const struct tegra_kbc_platform_data *pdata;
+> > > > > +	int *plain_keycode;
+> > > > > +	int *fn_keycode;
+> > > >
+> > > > There should not be separate keycodes for FN and normal kys - FN is just
+> > > > a modifier, like SHIFT or CTRL or ALT are and shoudl be handled in upper
+> > > > layers.
+> > >
+> > > We had the same thought regarding Function as a modifier akin to Shift, Ctrl an Alt.
+> > > But this does not appear to be the case.
+> > >
+> > > This keyboard is used primarily for Laptop-like form factors where function keys are used
+> > to overload the existing keys.
+> > 
+> > So it is same SHIFT.
+> > 
+> > > In addition the Fn key mappings aren't identical in different keyboard layouts.
+> > 
+> > 
+> > Same as SHIFT - depending on layout used shifted KEY_1 produces either '!' or '1'.
+> 
+> The FN key modifiers are not identical to Shift Modifier. They map to
+> totally different keys for this keyboard.  If you are suggesting that
+> you weren't implying they map to the same thing, then I agree it can
+> be treated as a modifier.
 
-We process machine checks in userland, using carnal knowledge of the
-memory controller and the board specific addressing of the SPDs on the
-various i2c busses to deswizzle and make sense of the addresses and
-symptoms.  We then expose this digested data on the network, which is
-dealt with at the cluster level.
+Yes, I meant that FN is _similar_ to SHIFT, I did not suggest that they
+produce the same mapping.
 
->
-> Also, I've worked on trimming down all that decoding output to 3-5
-> lines. Now it looks like this:
->
-> [  521.677316] [Hardware Error]: MC4_STATUS[Over|UE|MiscV|PCC|AddrV|UECC]: 0xfe00200000080a0f
-> [  521.686467] [Hardware Error]: Northbridge Error (node 0): DRAM ECC error detected on the NB.
-> [  521.686498] EDAC MC0: UE page 0x0, offset 0x0, grain 0, row 0, labels ":": amd64_edac
-> [  521.686501] EDAC MC0: UE - no information available: UE bit is set
-> [  521.686503] [Hardware Error]: cache level: L3/GEN, mem/io: GEN, mem-tx: GEN, part-proc: RES (no timeout)
->
-> and the two lines starting with "EDAC MC0" will get trimmed even
-> more with time. I'm assuming this is not a lot but if you get a lot
-> of correctable error events, then output like that accumulates over
-> time.
+> But the problem is the higher layers don't necessarily do so. 
 
-This decoded information is great, but it's only really consumable by
-a human.  We'd _much_ rather have structured data that we know isn't
-as volatile (in terms of regexes that break with development churn)
-nor susceptible to corruption (as the logs are not transactional and
-are shared by all CPUs concurrently).   For the most part, we rarely
-rely on the anything automated consuming kernel printk logs, and the
-bits that do are there only for historical reasons (read: we haven't
-figured out how to replace them yet).  With almost every single kernel
-version bump we've had, we've found numerous places where strings in
-the logs have subtly changed, breaking our infrastructure :(  Finding
-these is a painful process and often shows up late in the deployment
-process.  This is disastrous to our deployment schedules as rebooting
-our number of machines, well, it takes a while...
+It is just a matter of setting it up. The console has option for adding
+modifiers, xkb as well so please use them. No need to push this task
+into the kernel.
 
-I'm sorry if this is tangential to your comment above, but I feel the
-need to have folks recognize that printk() is _not_ a good foundation
-on which to build automation.
+> The documentation I have read all suggest the Fn key isn't a valid
+> modifier for the operating system,
 
-As for using EDAC, I know we tried using it a few years ago, but have
-since reverted to processing MCE ourselves.  I don't know all the
-details as to why, however Duncan Laurie might be able to share more
-(CCed).
+Huh? Why not? It mabe not a standard modifier but to say that it is not
+a valid one is a stretch.
 
-> How about an error thresholding scheme in software then which
-> accumulates the error events and reports only when some configurable
-> thresholds per DRAM device in error have been reached?
+> and that most keyboard hardware
+> abstracts the Fn keypress and generates the modified key.
 
-This is pretty much the opposite of what we'd want.   We have no use
-for anything printed in the logs, though emitting these messages
-wouldn't be a problem except for those machines which very frequently
-have MCA events to report.  On those machines, the chatter in the logs
-can potentially wedge our root filesystem (which is tiny) and has the
-downside that it forces logs to rotate quickly (which means there is
-less useful data for a human to consume when analyzing what happened
-on the host).  Our policy has been to neuter bits of the kernel that
-don't know when to stfu :)
+Some hardware, like keyboards in most laptops, does abstract FN key.
+They do it by emitting completely different scancode. With such hardware
+the fact that FN is depressed is completely undetectable to the OS.
 
+Your case is different, FN is regular key to whuch you assign a special
+meaning, like you do for SHIFT, CTRL. ALT and other modifiers. And just
+like SHIFT, CTRL, ALT and others it should not be hardcoded in the
+kernel.
 
->>
->> +static void call_decoders(struct mce *m)
->
-> Yeah, let's call this decode_mce().
+Thanks.
 
-OK.
-
->
->> +{
->> +     if (mce_dont_decode)
->> +             return;
->> +     /*
->> +      * Print out human-readable details about the MCE error,
->> +      * (if the CPU has an implementation for that)
->> +      */
->> +     atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
->> +}
->> +
->>  static void print_mce(struct mce *m)
->>  {
->>       pr_emerg(HW_ERR "CPU %d: Machine Check Exception: %Lx Bank %d: %016Lx\n",
->> @@ -234,11 +246,7 @@ static void print_mce(struct mce *m)
->>       pr_emerg(HW_ERR "PROCESSOR %u:%x TIME %llu SOCKET %u APIC %x\n",
->>               m->cpuvendor, m->cpuid, m->time, m->socketid, m->apicid);
->>
->> -     /*
->> -      * Print out human-readable details about the MCE error,
->> -      * (if the CPU has an implementation for that)
->> -      */
->> -     atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
->> +     call_decoders(m);
->>  }
->>
->>  #define PANIC_TIMEOUT 5 /* 5 seconds */
->> @@ -588,7 +596,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
->>                */
->>               if (!(flags & MCP_DONTLOG) && !mce_dont_log_ce) {
->>                       mce_log(&m);
->
-> Also, there's another hook in the function above that does
-> edac_mce_parse(mce) (which shouldnt've been there actually) which is
-> used by the Nehalem driver i7core_edac which does also decode DRAM ECCs.
-
-What should we do with this guy?  I'd be happy to send a patch in, but
-as I mentioned above, we don't use EDAC at all (which is probably why
-I didn't notice this guy).
-
->
-> @Mauro: how about dropping the whole <drivers/edac/edac_mce.c> and using
-> a simple notifier which is much smaller in code and does the same thing?
+-- 
+Dmitry
