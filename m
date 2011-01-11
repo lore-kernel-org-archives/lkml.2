@@ -1,57 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176Ab1AKRFP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 12:05:15 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:65126 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753020Ab1AKRFM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 12:05:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=t9aMGXZ/hAf0oRYuMrVSskghspXzld2Z42DtuCvUZ1COMtxBOkcg27/qjIsf+/6zVr
-         EScFY6A9YqxdmOLih3jOO3bzXQVjfz6kfmOgFZK1NVxmhy8EupxPEPorOQdpz2UMaV1U
-         jgSZ7v7zSUUewseGhpUFVGsS4w1LZMYRHn/+c=
+	id S932349Ab1AKRJD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 12:09:03 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:57318 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753020Ab1AKRI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 12:08:58 -0500
+From: Alex Elder <aelder@sgi.com>
+Message-Id: <201101111708.p0BH8s0L010204@stout.americas.sgi.com>
+Date: Tue, 11 Jan 2011 11:08:54 -0600
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update for 2.6.38-rc1
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
+User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
-In-Reply-To: <20110111164834.GA28175@srcf.ucam.org>
-References: <4D145EB5.7090205@aquazul.com>
-	<20110104143651.8f6d62e0.akpm@linux-foundation.org>
-	<4D2C8864.8030909@aquazul.com>
-	<20110111164834.GA28175@srcf.ucam.org>
-Date: Tue, 11 Jan 2011 17:05:11 +0000
-Message-ID: <AANLkTinovDucigOX+kidh+KwekbZP65moy7P2pYNn25L@mail.gmail.com>
-Subject: Re: mbp_nvidia_bl: Remove DMI dependency (was: Re: [PATCH,RESEND]
- backlight: mbp_nvidia_bl - add support for MacBookPro7,1)
-From: Richard Hughes <hughsient@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Mourad De Clerck <mourad@aquazul.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Purdie <rpurdie@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Richard Hughes <richard@hughsie.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 January 2011 16:48, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Tue, Jan 11, 2011 at 05:42:12PM +0100, Mourad De Clerck wrote:
->> A bit late, but I tested this patch series and it works for me.
->>
->> The only slight change is that gnome-power-manager needs to be updated
->> to use /sys/class/backlight/apple_backlight instead of mbp_backlight.
->
-> gnome-power-manager needs not to have a hardcoded list of backlights.
+Linus, please pull the following XFS updates for 2.6.38.  I have two
+branches for you to choose from this time:
 
-It's only uses the PolicyKit-enabled utility if there is no XBACKLIGHT
-driver support. The list is put there as for a long time people had
-multiple backlights, where, for instance thinkpad_screen worked but
-not acpi_video1.
+    git://oss.sgi.com/xfs/xfs for-linus-merged  (recommended)
+	This version includes one additional commit, a manual merge
+	I completed to fix a merge conflict due to Nick Piggin's
+	scalability changes.
 
-If the named backlight file isn't present in the override list, then
-we just use the first one in /sys/class/backlight
+    git://oss.sgi.com/xfs/xfs for-linus
+	This version contains the XFS changes only, in case you want
+	to do the merge yourself.
 
-Mourad, how many devices do you have in /sys/class/backlight?
+Thank you.
 
-Richard.
+					-Alex
+
+The following changes since commit 5b2eef966cb2ae307aa4ef1767f7307774bc96ca:
+
+  Merge branch 'drm-core-next' of git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6 (2011-01-10 17:11:39 -0800)
+
+are available in the git repository at:
+
+  git://oss.sgi.com/xfs/xfs for-linus-merged
+
+Alex Elder (1):
+      Merge branch 'master' into for-linus-merged
+
+Christoph Hellwig (16):
+      xfs: remove leftovers of old buffer log items in recovery code
+      xfs: use struct list_head for the buf cancel table
+      xfs: refactor xlog_recover_commit_trans
+      xfs: untangle phase1 vs phase2 recovery helpers
+      xfs: improve mapping type check in xfs_vm_writepage
+      xfs: remove some dead bio handling code
+      xfs: a few small tweaks for overwrites in xfs_vm_writepage
+      xfs: cleanup the xfs_iomap_write_* helpers
+      xfs: kill xfs_iomap
+      xfs: simplify xfs_map_blocks
+      xfs: remove xfs_probe_cluster
+      xfs: remove the all_bh flag from xfs_convert_page
+      xfs: refactor xfs_vm_writepage
+      xfs: simplify xfs_map_at_offset
+      xfs: clean up xfs_alloc_ag_vextent_exact
+      xfs: factor duplicate code in xfs_alloc_ag_vextent_near into a helper
+
+Dave Chinner (30):
+      xfs: provide a inode iolock lockdep class
+      xfs: use KM_NOFS for allocations during attribute list operations
+      xfs: dynamic speculative EOF preallocation
+      xfs: don't truncate prealloc from frequently accessed inodes
+      xfs: rcu free inodes
+      xfs: convert inode cache lookups to use RCU locking
+      xfs: convert pag_ici_lock to a spin lock
+      xfs: convert xfsbud shrinker to a per-buftarg shrinker.
+      xfs: add a lru to the XFS buffer cache
+      xfs: connect up buffer reclaim priority hooks
+      xfs: fix EFI transaction cancellation.
+      xfs: Pull EFI/EFD handling out from under the AIL lock
+      xfs: clean up xfs_ail_delete()
+      xfs: bulk AIL insertion during transaction commit
+      xfs: reduce the number of AIL push wakeups
+      xfs: consume iodone callback items on buffers as they are processed
+      xfs: remove all the inodes on a buffer from the AIL in bulk
+      xfs: use AIL bulk update function to implement single updates
+      xfs: use AIL bulk delete function to implement single delete
+      xfs: convert log grant ticket queues to list heads
+      xfs: fact out common grant head/log tail verification code
+      xfs: rework log grant space calculations
+      xfs: combine grant heads into a single 64 bit integer
+      xfs: use wait queues directly for the log wait queues
+      xfs: make AIL tail pushing independent of the grant lock
+      xfs: convert l_last_sync_lsn to an atomic variable
+      xfs: convert l_tail_lsn to an atomic variable.
+      xfs: convert log grant heads to atomic variables
+      xfs: introduce new locks for the log grant ticket wait queues
+      xfs: convert grant head manipulations to lockless algorithm
+
+Samuel Kvasnica (1):
+      xfs: fix exporting with left over 64-bit inodes
+
+ fs/xfs/linux-2.6/sv.h         |   59 ----
+ fs/xfs/linux-2.6/xfs_aops.c   |  425 ++++++++++--------------
+ fs/xfs/linux-2.6/xfs_aops.h   |   16 +
+ fs/xfs/linux-2.6/xfs_buf.c    |  235 +++++++++-----
+ fs/xfs/linux-2.6/xfs_buf.h    |   22 +-
+ fs/xfs/linux-2.6/xfs_export.c |   12 +-
+ fs/xfs/linux-2.6/xfs_linux.h  |    1 -
+ fs/xfs/linux-2.6/xfs_super.c  |   22 +-
+ fs/xfs/linux-2.6/xfs_sync.c   |   92 ++++--
+ fs/xfs/linux-2.6/xfs_trace.h  |   59 ++--
+ fs/xfs/quota/xfs_dquot.c      |    1 -
+ fs/xfs/xfs_ag.h               |    2 +-
+ fs/xfs/xfs_alloc.c            |  351 ++++++++------------
+ fs/xfs/xfs_attr_leaf.c        |    4 +-
+ fs/xfs/xfs_btree.c            |    9 +-
+ fs/xfs/xfs_buf_item.c         |   32 ++-
+ fs/xfs/xfs_buf_item.h         |   11 -
+ fs/xfs/xfs_extfree_item.c     |   97 +++---
+ fs/xfs/xfs_extfree_item.h     |   11 +-
+ fs/xfs/xfs_fsops.c            |    1 +
+ fs/xfs/xfs_iget.c             |   79 ++++-
+ fs/xfs/xfs_inode.c            |   54 +++-
+ fs/xfs/xfs_inode.h            |   15 +-
+ fs/xfs/xfs_inode_item.c       |   92 +++++-
+ fs/xfs/xfs_iomap.c            |  233 +++++---------
+ fs/xfs/xfs_iomap.h            |   27 +--
+ fs/xfs/xfs_log.c              |  739 +++++++++++++++++++----------------------
+ fs/xfs/xfs_log_cil.c          |   17 +-
+ fs/xfs/xfs_log_priv.h         |  127 ++++++--
+ fs/xfs/xfs_log_recover.c      |  620 ++++++++++++++---------------------
+ fs/xfs/xfs_mount.c            |   23 ++-
+ fs/xfs/xfs_mount.h            |   14 +
+ fs/xfs/xfs_trans.c            |   79 +++++-
+ fs/xfs/xfs_trans.h            |    2 +-
+ fs/xfs/xfs_trans_ail.c        |  232 +++++++------
+ fs/xfs/xfs_trans_extfree.c    |    8 +-
+ fs/xfs/xfs_trans_priv.h       |   35 ++-
+ fs/xfs/xfs_vnodeops.c         |   61 +++--
+ 38 files changed, 1998 insertions(+), 1921 deletions(-)
+ delete mode 100644 fs/xfs/linux-2.6/sv.h
