@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199Ab1AKAyG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 19:54:06 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:53353 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753990Ab1AKAyD (ORCPT
+	id S1755218Ab1AKAyf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 19:54:35 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:42410 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754978Ab1AKAye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 19:54:03 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 11 Jan 2011 09:47:20 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>, David Rientjes <rientjes@google.com>,
-        Bart Van Assche <bvanassche@acm.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] slub: Fix sysfs circular locking dependency
-Message-Id: <20110111094720.e0a16a60.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <alpine.DEB.2.00.1101101011250.12243@router.home>
-References: <1294172717-6044-1-git-send-email-penberg@kernel.org>
-	<alpine.DEB.2.00.1101041939030.27551@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1101050943120.13032@router.home>
-	<alpine.DEB.2.00.1101051108520.14761@router.home>
-	<AANLkTinft80dXqE-U=YDB23d9=BgXLCxJzgiA_gF4cVL@mail.gmail.com>
-	<AANLkTinCZzJWYGnxXq_Nwv7QSkEV4Tg-te-1y0PCeRRY@mail.gmail.com>
-	<AANLkTinQMahgVrWLxR0J6Zbh-_SPjxVJ-wuZt8B5TNjc@mail.gmail.com>
-	<alpine.DEB.2.00.1101060019140.25879@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1101061107500.8655@router.home>
-	<20110107091106.aaa07abe.kamezawa.hiroyu@jp.fujitsu.com>
-	<alpine.DEB.2.00.1101070922100.3014@router.home>
-	<alpine.DEB.2.00.1101071227160.31653@chino.kir.corp.google.com>
-	<AANLkTikf-qO-NkysOsgRvH08ju-NkvrqwdfJ=pFjP6WA@mail.gmail.com>
-	<alpine.DEB.2.00.1101101011250.12243@router.home>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 10 Jan 2011 19:54:34 -0500
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 1/2] Add a common struct clk
+Date: Tue, 11 Jan 2011 08:54:15 +0800
+User-Agent: KMail/1.13.5 (Linux/2.6.35-24-generic; KDE/4.5.1; x86_64; ; )
+Cc: Sascha Hauer <s.hauer@pengutronix.de>,
+        Ben Herrenchmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
+	<u.kleine-koenig@pengutronix.de>
+References: <1294199462.347935.472473715866.0.gpush@pororo> <20110110104122.GI12078@pengutronix.de> <20110110110028.GB12552@n2100.arm.linux.org.uk>
+In-Reply-To: <20110110110028.GB12552@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101110854.15653.jeremy.kerr@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Jan 2011 10:12:09 -0600 (CST)
-Christoph Lameter <cl@linux.com> wrote:
+Hi Russell,
 
-> On Sat, 8 Jan 2011, Pekka Enberg wrote:
+> Unless the locking problems can be resolved, the patches aren't ready.
 > 
-> > On Fri, Jan 7, 2011 at 10:34 PM, David Rientjes <rientjes@google.com> wrote:
-> > >  [ Should probably be seperated out into two patches, one for the
-> > >   memory hotplug locking addition and one for the slub fix, both
-> > >   should be pushed during this merge window.  If so, a comment
-> > >   describing the new semantics of lock_memory_hotplug() to protect
-> > >   data structures that may be modified in hotplug notifier
-> > >   callbacks would be appreciated. ]
-> >
-> > Agreed.
-> 
-> Kame-san: Could you do the hotplug piece and the description of the use
-> of the memory hotplug locks to protect extensions of data structures for
-> new nodes?
+> From what I've seen there's still quite a problem with what kind of
+> lock to use in the clock - mutex or spinlock.
 
-will do.
+Yes, the clock driver may either use a spinlock or mutex.
 
-Thanks,
--Kame
+However, this exactly the same as the current clock code, my patches do not 
+alter what we currently have.
 
+I do agree that we should define some specific semantics for the clock API 
+with regards to sleeping, and I'll start a new thread about that. But we 
+should definitely separate that issue from the problem of having multiple 
+definitions for struct clk, which is what these patches address.
+
+Cheers,
+
+
+Jeremy
