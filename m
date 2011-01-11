@@ -1,83 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750964Ab1AKFAV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 00:00:21 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:6601 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722Ab1AKFAS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 00:00:18 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6222"; a="69780506"
-Message-ID: <4D2BE3E1.5060706@codeaurora.org>
-Date: Mon, 10 Jan 2011 21:00:17 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1751262Ab1AKFHW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 00:07:22 -0500
+Received: from void.printf.net ([89.145.121.20]:42085 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750765Ab1AKFHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 00:07:17 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: [GIT PULL] MMC updates for 2.6.38-rc1
+Date: Tue, 11 Jan 2011 00:12:11 -0500
+Message-ID: <m3lj2s58ic.fsf@pullcord.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.0.60 (gnu/linux)
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: mm: Poison freed init memory
-References: <1294256845-29517-1-git-send-email-sboyd@codeaurora.org> <20110105202645.GL8638@n2100.arm.linux.org.uk> <4D255263.7040106@codeaurora.org> <20110106090741.GQ8638@n2100.arm.linux.org.uk>
-In-Reply-To: <20110106090741.GQ8638@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2011 01:07 AM, Russell King - ARM Linux wrote:
-> On Wed, Jan 05, 2011 at 09:25:55PM -0800, Stephen Boyd wrote:
->> On 01/05/2011 12:26 PM, Russell King - ARM Linux wrote:
->>> On Wed, Jan 05, 2011 at 11:47:25AM -0800, Stephen Boyd wrote:
->>>> Poisoning __init marked memory can be useful when tracking down
->>>> obscure memory corruption bugs. When a pointer is 0xCCCCCCCC in an
->>>
->>> That's a bad idea for a value.  With a 3GB page offset and 256MB or
->>> more memory, accesses to such an address will always succeed.
->>>
->>> There's two things to be considered when selecting a possible poison
->>> value:
->>>
->>> 1. what value is guaranteed to provoke an undefined instruction exception?
->>> 2. what value when used as an address and dereferenced is mostly always
->>>    going to abort?
->>>
->>> 1 for ARM mode implies an 0xe7fXXXfX value.  For Thumb mode 0xdeXX.  We
->>> use this space for breakpoints.
->>>
->>> 2 unfortunately depends on the platform. 
->>
->> A coworker proposed we use a SWI instruction. We could do that if the
->> poison is 0xEF and then do something in the SWI handler where that
->> number causes us to blow up?
->
-> Doesn't work with EABI - the comment field in the SWI instruction is
-> ignored on EABI.
->
->> If I'm following correctly, point 1 is about __init functions and point
->> 2 is about __initdata. I'm more concerned about __initdata because
->> __init functions called from non __init marked functions are usually
->> caught with section mismatch checks. Also, if we're jumping to
->> 0xCCCCCCCC we're probably not in the text section of the kernel with a
->
-> But, as I pointed out, you don't know that 0xCCCCCCCC isn't a valid
-> address _and_ on modern platforms it won't fault.  So it's pointless
-> to use it as a poison value.
+Hi Linus,
 
-Ok it seems that 0xcc was chosen by Pavel since it's a breakpoint
-instruction (sorry for not noticing that earlier [1]). There was some
-discussion about handling initdata with Pavel's patch but it seems that
-nothing came of it? I assume that's because we don't differentiate
-between the two types of init markings.
+Please pull from:
 
-How about we use 0xe7fddef0? This seems to satisfy at least your first
-point for both ARM and Thumb mode (Thumb will branch to the 0xdef0
-instruction).
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
 
-[1] http://lkml.indiana.edu/hypermail/linux/kernel/0410.0/2040.html for
-those interested
+to receive the MMC merge for 2.6.38-rc1.  There are currently no merge
+conflicts, and the patches have been tested in linux-next.  Thanks.
+
+Highlights are:
+Core:
+ * Clock gating framework from Linus Walleij.
+ * Bus-width testing for MMC devices.
+Drivers:
+ * Support for the Marvell Dove SDHCI controller.
+ * Support for the JMicron 388 SD/MMC controller.
+ * Support for the Tegra SoC SDHCI controller.
+ * Support for the Synopsys DesignWare SD/MMC controller.
+ * SDIO interrupt support for DaVinci and TMIO controllers.
+ (TMIO comes with an MFD subsystem change that has a maintainer ACK.)
+
+
+The following changes since commit 5b2eef966cb2ae307aa4ef1767f7307774bc96ca:
+
+  Merge branch 'drm-core-next' of git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6 (2011-01-10 17:11:39 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
+
+Alagu Sankar (1):
+      mmc: davinci: add support for SDIO irq handling
+
+Alberto Panizzo (2):
+      mmc: mxcmmc: Allow binding a regulator to manage the MMC card voltage
+      mmc: mxcmmc: update the regulator support code to the latest API
+
+Andy Ross (1):
+      mmc: Fix sd/sdio/mmc initialization frequency retries
+
+Aries Lee (1):
+      mmc: Test bus-width for old MMC devices
+
+Arnd Hannemann (5):
+      mmc: tmio_mmc: silence compiler warnings
+      mmc: tmio_mmc: implement SDIO IRQ support
+      mfd: sh_mobile_sdhi: activate SDIO IRQ for tmio_mmc
+      mmc: tmio_mmc: handle missing HW interrupts
+      mmc: tmio_mmc: fix CMD irq handling
+
+Axel Lin (1):
+      mmc: mxcmmc: remove a unnecessary release_resource() call
+
+Chris Ball (2):
+      mmc: Explain why we make adjacent mmc_bus_{put,get} calls during rescan.
+      mmc: MMC_BLOCK_MINORS should depend on MMC_BLOCK.
+
+Guennadi Liakhovetski (5):
+      mmc: tmio_mmc: allow multi-element scatter-gather lists
+      mmc: tmio_mmc: fix PIO fallback on DMA descriptor allocation failure
+      mmc: tmio_mmc: merge the private header into the driver
+      mmc: tmio_mmc: implement a bounce buffer for unaligned DMA
+      mfd: sdhi: require the tmio-mmc driver to bounce unaligned buffers
+
+Jennifer Li (1):
+      mmc: sdhci: Disable ADMA on some O2Micro SD/MMC parts.
+
+Jeongbae Seo (2):
+      mmc: sdhci-s3c: Support additional host capabilities
+      mmc: sdhci-s3c: Support controllers with no internal clock divider
+
+Joe Perches (1):
+      mmc: davinci_mmc: Remove unnecessary semicolon
+
+Linus Walleij (3):
+      mmc: Aggressive clock gating framework
+      mmc: check for > 1 clk_requests when disabling gating
+      mmc: fix division by zero in MMC core
+
+Michal Miroslaw (1):
+      mmc: fix detection of memory part of SD-combo card with broken SDIO
+
+Mike Rapoport (2):
+      mmc: Add support for the Marvell Dove SDHCI controller
+      ARM: dove: Switch SDHCI devices over to "sdhci-dove" driver
+
+Ohad Ben-Cohen (3):
+      mmc: skip detection of nonremovable cards on rescan
+      mmc: sdio: don't power up cards on system suspend
+      mmc: sdio: don't reinitialize nonremovable powered-resumed cards
+
+Olof Johansson (2):
+      mmc: sdhci: add quirk for max len ADMA descriptors
+      mmc: add sdhci-tegra driver for Tegra SoCs
+
+Philip Rakity (1):
+      mmc: sdhci: print SD Command and CAPABILITY_1 when dumping registers
+
+Takashi Iwai (3):
+      mmc: Add support for JMicron 388 SD/MMC controller
+      mmc: sdhci: Enable bus-width test for JMicron controllers
+      mmc: fix mmc_set_bus_width_ddr() call without bus-width-test cap
+
+Viresh Kumar (1):
+      mmc: Register debugfs dir before calling card probe function.
+
+Will Newton (1):
+      mmc: dw_mmc: Add Synopsys DesignWare mmc host driver.
+
+ arch/arm/mach-dove/common.c              |    4 +-
+ arch/arm/mach-tegra/include/mach/sdhci.h |   29 +
+ drivers/mfd/sh_mobile_sdhi.c             |    6 +
+ drivers/mmc/card/Kconfig                 |    1 +
+ drivers/mmc/core/Kconfig                 |   11 +
+ drivers/mmc/core/bus.c                   |    8 +-
+ drivers/mmc/core/core.c                  |  206 ++--
+ drivers/mmc/core/core.h                  |    9 +-
+ drivers/mmc/core/debugfs.c               |    5 +
+ drivers/mmc/core/host.c                  |  206 ++++-
+ drivers/mmc/core/host.h                  |   21 +
+ drivers/mmc/core/mmc.c                   |   91 +-
+ drivers/mmc/core/mmc_ops.c               |  101 ++
+ drivers/mmc/core/mmc_ops.h               |    1 +
+ drivers/mmc/core/sd.c                    |   16 +-
+ drivers/mmc/core/sdio.c                  |   36 +-
+ drivers/mmc/core/sdio_bus.c              |   32 -
+ drivers/mmc/host/Kconfig                 |   37 +
+ drivers/mmc/host/Makefile                |    3 +
+ drivers/mmc/host/davinci_mmc.c           |   80 ++-
+ drivers/mmc/host/dw_mmc.c                | 1796 ++++++++++++++++++++++++++++++
+ drivers/mmc/host/dw_mmc.h                |  168 +++
+ drivers/mmc/host/mxcmmc.c                |   53 +-
+ drivers/mmc/host/sdhci-dove.c            |   70 ++
+ drivers/mmc/host/sdhci-pci.c             |  161 +++-
+ drivers/mmc/host/sdhci-pltfm.c           |    6 +
+ drivers/mmc/host/sdhci-pltfm.h           |    2 +
+ drivers/mmc/host/sdhci-s3c.c             |   66 ++
+ drivers/mmc/host/sdhci-tegra.c           |  257 +++++
+ drivers/mmc/host/sdhci.c                 |   45 +-
+ drivers/mmc/host/sdhci.h                 |    3 +-
+ drivers/mmc/host/tmio_mmc.c              |  561 +++++++++--
+ drivers/mmc/host/tmio_mmc.h              |  228 ----
+ include/linux/mfd/tmio.h                 |    5 +
+ include/linux/mmc/dw_mmc.h               |  217 ++++
+ include/linux/mmc/host.h                 |   19 +
+ include/linux/mmc/mmc.h                  |    2 +
+ include/linux/mmc/sdhci.h                |    6 +
+ include/linux/pci_ids.h                  |    7 +
+ 39 files changed, 4083 insertions(+), 492 deletions(-)
+ create mode 100644 arch/arm/mach-tegra/include/mach/sdhci.h
+ create mode 100644 drivers/mmc/host/dw_mmc.c
+ create mode 100644 drivers/mmc/host/dw_mmc.h
+ create mode 100644 drivers/mmc/host/sdhci-dove.c
+ create mode 100644 drivers/mmc/host/sdhci-tegra.c
+ delete mode 100644 drivers/mmc/host/tmio_mmc.h
+ create mode 100644 include/linux/mmc/dw_mmc.h
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
