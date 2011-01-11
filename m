@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739Ab1AKE4i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 23:56:38 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:57523 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752044Ab1AKE4a (ORCPT
+	id S1750964Ab1AKFAV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 00:00:21 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:6601 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750722Ab1AKFAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 23:56:30 -0500
-Date: Tue, 11 Jan 2011 13:54:23 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Uwe Kleine-K??nig <u.kleine-koenig@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
-Subject: Re: Locking in the clk API
-Message-ID: <20110111045423.GP3760@linux-sh.org>
-References: <201101111016.42819.jeremy.kerr@canonical.com> <20110111031552.GJ3760@linux-sh.org> <201101111211.30172.jeremy.kerr@canonical.com>
+	Tue, 11 Jan 2011 00:00:18 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6222"; a="69780506"
+Message-ID: <4D2BE3E1.5060706@codeaurora.org>
+Date: Mon, 10 Jan 2011 21:00:17 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201101111211.30172.jeremy.kerr@canonical.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm: mm: Poison freed init memory
+References: <1294256845-29517-1-git-send-email-sboyd@codeaurora.org> <20110105202645.GL8638@n2100.arm.linux.org.uk> <4D255263.7040106@codeaurora.org> <20110106090741.GQ8638@n2100.arm.linux.org.uk>
+In-Reply-To: <20110106090741.GQ8638@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeremy,
+On 01/06/2011 01:07 AM, Russell King - ARM Linux wrote:
+> On Wed, Jan 05, 2011 at 09:25:55PM -0800, Stephen Boyd wrote:
+>> On 01/05/2011 12:26 PM, Russell King - ARM Linux wrote:
+>>> On Wed, Jan 05, 2011 at 11:47:25AM -0800, Stephen Boyd wrote:
+>>>> Poisoning __init marked memory can be useful when tracking down
+>>>> obscure memory corruption bugs. When a pointer is 0xCCCCCCCC in an
+>>>
+>>> That's a bad idea for a value.  With a 3GB page offset and 256MB or
+>>> more memory, accesses to such an address will always succeed.
+>>>
+>>> There's two things to be considered when selecting a possible poison
+>>> value:
+>>>
+>>> 1. what value is guaranteed to provoke an undefined instruction exception?
+>>> 2. what value when used as an address and dereferenced is mostly always
+>>>    going to abort?
+>>>
+>>> 1 for ARM mode implies an 0xe7fXXXfX value.  For Thumb mode 0xdeXX.  We
+>>> use this space for breakpoints.
+>>>
+>>> 2 unfortunately depends on the platform. 
+>>
+>> A coworker proposed we use a SWI instruction. We could do that if the
+>> poison is 0xEF and then do something in the SWI handler where that
+>> number causes us to blow up?
+>
+> Doesn't work with EABI - the comment field in the SWI instruction is
+> ignored on EABI.
+>
+>> If I'm following correctly, point 1 is about __init functions and point
+>> 2 is about __initdata. I'm more concerned about __initdata because
+>> __init functions called from non __init marked functions are usually
+>> caught with section mismatch checks. Also, if we're jumping to
+>> 0xCCCCCCCC we're probably not in the text section of the kernel with a
+>
+> But, as I pointed out, you don't know that 0xCCCCCCCC isn't a valid
+> address _and_ on modern platforms it won't fault.  So it's pointless
+> to use it as a poison value.
 
-On Tue, Jan 11, 2011 at 12:11:29PM +0800, Jeremy Kerr wrote:
-> > This looks like a complete disaster, and is also completely inconsistent
-> > with how the API is being used by the vast majority of users today.
-> 
-> I've been basing this on the mxc clock code, which acquires a mutex for all 
-> clk_enable()s. This may not be representative of the majority of clock usage.
-> 
-> From a quick search there are a few other cases of non-atomic clock usage:
-> 
-> tcc:		clk_enable() acquires a global clocks_mutex
-> tegra:	has a clk_enable_cansleep()
-> davinci: clk_set_parent() aquires a global clocks_mutex
-> 
-> Excluding the davinci code (we won't worry about set_parent for now...), if we 
-> can port mxc and tcc to a sleepable clk_enable, perhaps we could just go with 
-> purely atomic operations.
-> 
-> We'd still need some method of using sleeping clocks though. How about making 
-> clk_enable() BUG if the clock is not atomic, and add clk_enable_cansleep() for 
-> the cases where clk->ops.enable may sleep.
-> 
-Yes, that sounds reasonable. I don't particularly care for the atomic
-flag on the clock however since that's really the default behaviour for
-almost everyone at the moment. On the other hand, the mutex API will
-already blow up if someone tries to grab it within atomic context (with
-the _trylock exception). Still, making the API explicit and tossing in a
-might_sleep() or so will at least help figure out which assumptions are
-being made and/or violated.
+Ok it seems that 0xcc was chosen by Pavel since it's a breakpoint
+instruction (sorry for not noticing that earlier [1]). There was some
+discussion about handling initdata with Pavel's patch but it seems that
+nothing came of it? I assume that's because we don't differentiate
+between the two types of init markings.
 
-> Do we need something similar for other parts of the API? (clk_set_rate?)
-> 
-I suppose that's an inevitable thing at least in terms of keeping the API
-balanced and consistent.
+How about we use 0xe7fddef0? This seems to satisfy at least your first
+point for both ARM and Thumb mode (Thumb will branch to the 0xdef0
+instruction).
 
-One other thing to be aware of is that the clkdev code maintains its own
-list mutex, so the addition and deletion of clkdev lookups in addition to
-the clkdev-backed clk_get() will all be sleepable. It would however be
-possible to back a one-shot atomic-safe clk_get() with a mutex_trylock()
-for the common cases, but it's not entirely obvious that it would be
-worth the complexity it would introduce.
+[1] http://lkml.indiana.edu/hypermail/linux/kernel/0410.0/2040.html for
+those interested
 
-If you're going to do this work it would also be helpful to spell out the
-locking semantics within linux/clk.h at the same time (it might even be
-worthwhile doing this incrementally and getting all of the platforms
-in-line before attempting to consolidate things too aggressively), as
-it's apparent from the cases you cite there are at least a couple of
-boards that aren't quite in line with what everyone else is doing.
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-In general we have to accept that the dynamic creation, deletion, and
-looking up of clocks is going to be a sleepable case, and the rest will
-likely have to be split out in to _cansleep and default atomic-safe
-variants.
-
-set_rate/parent and friends likewise are done atomically for some and
-sleepable for others, so it doesn't seem like there's going to be much
-choice other than simply splitting out the API for these cases.
-
-Also, I'm not sure if you've noticed yet or not, but note that there is
-now a drivers/clk due to the shuffling of the clkdev code, so you may
-want to piggyback on top of this instead of using the top-level kernel/
