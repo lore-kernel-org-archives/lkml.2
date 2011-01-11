@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab1AKLId (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 06:08:33 -0500
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:57657 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755776Ab1AKLIO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 06:08:14 -0500
-To: Nick Piggin <npiggin@gmail.com>
-CC: marco.stornelli@gmail.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-reply-to: <AANLkTikJjL6XEDJiYSh_J_rT+5LRUNj5EKDzCQ-852D7@mail.gmail.com>
-	(message from Nick Piggin on Tue, 11 Jan 2011 20:57:58 +1100)
-Subject: Re: Important for fs devs: rcu-walk merged upstream
-References: <AANLkTimBrR1LkVHOxZA=UUmKsnxfsFLr9z_AhXUHQ_7N@mail.gmail.com>
-	<4D282A17.4040104@gmail.com> <AANLkTikJjL6XEDJiYSh_J_rT+5LRUNj5EKDzCQ-852D7@mail.gmail.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Message-Id: <E1Pcc5C-0007PC-LS@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Tue, 11 Jan 2011 12:08:10 +0100
+	id S1755891Ab1AKLJE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 06:09:04 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:52619 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755818Ab1AKLHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 06:07:34 -0500
+From: manjunatha_halli@ti.com
+To: mchehab@infradead.org, hverkuil@xs4all.nl
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        Manjunatha Halli <manjunatha_halli@ti.com>
+Subject: [RFC V10 7/7] drivers:media:radio: Update Kconfig and Makefile for wl128x FM driver.
+Date: Tue, 11 Jan 2011 06:31:27 -0500
+Message-Id: <1294745487-29138-8-git-send-email-manjunatha_halli@ti.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1294745487-29138-7-git-send-email-manjunatha_halli@ti.com>
+References: <1294745487-29138-1-git-send-email-manjunatha_halli@ti.com>
+ <1294745487-29138-2-git-send-email-manjunatha_halli@ti.com>
+ <1294745487-29138-3-git-send-email-manjunatha_halli@ti.com>
+ <1294745487-29138-4-git-send-email-manjunatha_halli@ti.com>
+ <1294745487-29138-5-git-send-email-manjunatha_halli@ti.com>
+ <1294745487-29138-6-git-send-email-manjunatha_halli@ti.com>
+ <1294745487-29138-7-git-send-email-manjunatha_halli@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Jan 2011, Nick Piggin wrote:
-> On Saturday, 8 January 2011, Marco Stornelli <marco.stornelli@gmail.com> wrote:
-> > Il 08/01/2011 03:54, Nick Piggin ha scritto:
-> >> The vfs-scale branch is now upstream. If you haven't
-> >> looked yet, your filesystem is likely to have been
-> >> touched, so check it out.
-> >>
-> >> Also look at Documentation/filesystems/porting and
-> >> path-lookup.txt.
-> >
-> > Nick, in the porting file I read:
-> >
-> > ..........hazards on dentries and inodes (see
-> > Documentation/filesystems/path-walk.txt). ..........
-> >  ^^^^^^^^^^^^^
-> >
-> > Should it be "path-lookup.txt"?
-> >
-> > Marco
-> >
-> 
-> Hi, yes thanks I'll fix it
+From: Manjunatha Halli <manjunatha_halli@ti.com>
 
-Also you use IPERM_RCU instead of IPERM_FLAG_RCU in the documentation.
+Signed-off-by: Manjunatha Halli <manjunatha_halli@ti.com>
+Reviewed-by: Hans Verkuil <hverkuil@xs4all.nl>
+---
+ drivers/media/radio/Kconfig  |    3 +++
+ drivers/media/radio/Makefile |    1 +
+ 2 files changed, 4 insertions(+), 0 deletions(-)
 
-Thanks,
-Miklos
-
-
-diff --git a/Documentation/filesystems/porting b/Documentation/filesystems/porting
-index 07a32b4..c2819ee 100644
---- a/Documentation/filesystems/porting
-+++ b/Documentation/filesystems/porting
-@@ -383,5 +383,5 @@ Documentation/filesystems/vfs.txt for more details.
+diff --git a/drivers/media/radio/Kconfig b/drivers/media/radio/Kconfig
+index 83567b8..4529bc7 100644
+--- a/drivers/media/radio/Kconfig
++++ b/drivers/media/radio/Kconfig
+@@ -452,4 +452,7 @@ config RADIO_TIMBERDALE
+ 	  found behind the Timberdale FPGA on the Russellville board.
+ 	  Enabling this driver will automatically select the DSP and tuner.
  
- 	permission and check_acl are inode permission checks that are called
- on many or all directory inodes on the way down a path walk (to check for
--exec permission). These must now be rcu-walk aware (flags & IPERM_RCU). See
--Documentation/filesystems/vfs.txt for more details.
-+exec permission). These must now be rcu-walk aware (flags & IPERM_FLAG_RCU).
-+See Documentation/filesystems/vfs.txt for more details.
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index fbb324e..de8a967 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -415,9 +415,9 @@ otherwise noted.
-   permission: called by the VFS to check for access rights on a POSIX-like
-   	filesystem.
++# TI's ST based wl128x FM radio
++source "drivers/media/radio/wl128x/Kconfig"
++
+ endif # RADIO_ADAPTERS
+diff --git a/drivers/media/radio/Makefile b/drivers/media/radio/Makefile
+index f615583..b71f448 100644
+--- a/drivers/media/radio/Makefile
++++ b/drivers/media/radio/Makefile
+@@ -26,5 +26,6 @@ obj-$(CONFIG_RADIO_TEA5764) += radio-tea5764.o
+ obj-$(CONFIG_RADIO_SAA7706H) += saa7706h.o
+ obj-$(CONFIG_RADIO_TEF6862) += tef6862.o
+ obj-$(CONFIG_RADIO_TIMBERDALE) += radio-timb.o
++obj-$(CONFIG_RADIO_WL128X) += wl128x/
  
--	May be called in rcu-walk mode (flags & IPERM_RCU). If in rcu-walk
--	mode, the filesystem must check the permission without blocking or
--	storing to the inode.
-+	May be called in rcu-walk mode (flags & IPERM_FLAG_RCU). If in
-+	rcu-walk mode, the filesystem must check the permission without
-+	blocking or storing to the inode.
- 
- 	If a situation is encountered that rcu-walk cannot handle, return
- 	-ECHILD and it will be called again in ref-walk mode.
-5B5B
+ EXTRA_CFLAGS += -Isound
+-- 
+1.5.6.3
+
