@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755930Ab1AKBJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 20:09:27 -0500
-Received: from kroah.org ([198.145.64.141]:35041 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754288Ab1AKBJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 20:09:20 -0500
-Date: Mon, 10 Jan 2011 17:09:03 -0800
-From: Greg KH <greg@kroah.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-usb@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/4]  x86: early_quirk check all dev/func in domain 0
-Message-ID: <20110111010903.GE32585@kroah.com>
-References: <4D2A1382.7010407@kernel.org>
- <4D2AC6BF.3010907@kernel.org>
- <4D2BA8FE.9090204@kernel.org>
- <4D2BAA7B.3030800@kernel.org>
+	id S1754586Ab1AKBUV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 20:20:21 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:39229 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753150Ab1AKBUP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 20:20:15 -0500
+From: "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>
+To: "'Greg KH'" <gregkh@suse.de>,
+        "'Jean Delvare \(PC drivers, core\)'" <khali@linux-fr.org>,
+        "'Ben Dooks \(embedded platforms\)'" <ben-linux@fluff.org>,
+        "'Samuel Ortiz'" <sameo@linux.intel.com>,
+        "'Linus Walleij'" <linus.walleij@stericsson.com>,
+        "'Wolfram Sang'" <w.sang@pengutronix.de>,
+        "'Ralf Baechle'" <ralf@linux-mips.org>,
+        "'srinidhi kasagar'" <srinidhi.kasagar@stericsson.com>,
+        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Cc: "'Toshiharu Okada'" <toshiharu-linux@dsn.okisemi.com>, <qi.wang@intel.com>,
+        <andrew.chih.howe.khor@intel.com>, <yong.y.wang@intel.com>,
+        <kok.howg.ewe@intel.com>
+References: 
+Subject: RE: [PATCH v2] EG20T: Update PCH_I2C driver to 2.6.37
+Date: Tue, 11 Jan 2011 10:20:09 +0900
+Message-ID: <C99BA6EC029B4372B68EF6492D615777@hacdom.okisemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D2BAA7B.3030800@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: 
+Thread-Index: AcutZi9i36yGeCC9QS2geYO3xNgjpgDxTpsg
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 04:55:23PM -0800, Yinghai Lu wrote:
-> 
-> go with all buses instead of bus0.
+Hi Ben,
+ 
+I need your help !!!
+This patch has NOT been reviewed since Dec-07-2010.
+We do want you to accept the driver to be integrated for 2.6.38.
 
-Why?
+Could you review this patch, please?
 
-> also only check header type on func0.
+Thanks,
+---
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD. 
 
-Why?
-
-Please be more verbose in your change log comments, it cuts down on
-emails like this one...
-
-thanks,
-
-greg k-h
