@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932248Ab1AKPZq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 10:25:46 -0500
-Received: from freeflow.nu ([178.79.134.28]:51831 "EHLO freeflow.nu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932192Ab1AKPZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 10:25:45 -0500
-Subject: Re: [PATCH] one more lock on memory hotplug (Re: [PATCH] slub: Fix
- sysfs circular locking dependency
-From: Pekka Enberg <penberg@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Bart Van Assche <bvanassche@acm.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1101110841230.8657@router.home>
-References: <1294172717-6044-1-git-send-email-penberg@kernel.org>
-	 <alpine.DEB.2.00.1101050943120.13032@router.home>
-	 <alpine.DEB.2.00.1101051108520.14761@router.home>
-	 <AANLkTinft80dXqE-U=YDB23d9=BgXLCxJzgiA_gF4cVL@mail.gmail.com>
-	 <AANLkTinCZzJWYGnxXq_Nwv7QSkEV4Tg-te-1y0PCeRRY@mail.gmail.com>
-	 <AANLkTinQMahgVrWLxR0J6Zbh-_SPjxVJ-wuZt8B5TNjc@mail.gmail.com>
-	 <alpine.DEB.2.00.1101060019140.25879@chino.kir.corp.google.com>
-	 <alpine.DEB.2.00.1101061107500.8655@router.home>
-	 <20110107091106.aaa07abe.kamezawa.hiroyu@jp.fujitsu.com>
-	 <alpine.DEB.2.00.1101070922100.3014@router.home>
-	 <alpine.DEB.2.00.1101071227160.31653@chino.kir.corp.google.com>
-	 <AANLkTin6N2s1RN6PBX=f0v69Ny-NkEKk_iAgqscuYgMM@mail.gmail.com>
-	 <1294475323.5248.74.camel@jaguar>
-	 <alpine.DEB.2.00.1101101014470.12243@router.home>
-	 <alpine.DEB.2.00.1101101230190.11969@chino.kir.corp.google.com>
-	 <4D2BFAA9.2050200@kernel.org>
-	 <20110111164401.3b1e5d8a.kamezawa.hiroyu@jp.fujitsu.com>
-	 <alpine.DEB.2.00.1101110841230.8657@router.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 11 Jan 2011 17:25:42 +0200
-Message-ID: <1294759542.5248.197.camel@jaguar>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756170Ab1AKPdl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 10:33:41 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:55463 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756151Ab1AKPdi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 10:33:38 -0500
+From: Bernhard Walle <walle@corscience.de>
+To: dbrownell@users.sourceforge.net, grant.likely@secretlab.ca
+Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] spi: spidev: Add 32 bit compat ioctl()
+Date: Tue, 11 Jan 2011 16:32:52 +0100
+Message-Id: <1294759972-10028-1-git-send-email-walle@corscience.de>
+X-Mailer: git-send-email 1.7.1
+X-Provags-ID: V02:K0:OnlNUjN5KJr6vjLYbPORv4R/VEY+uGyyu6/CieB3Z6x
+ /pff8IsinoqdShQVOP5AHXbYf87gJJV8PAxvacnXItmGcWktSr
+ GpJluAr4eJ5+L1Ild6P05GQv81tTTAXuv3p4MWK+o3YjgMOJph
+ 6iS1Z+PUo3sn7AGtfE5cJ/tTS77/y54Nx/omQRFs2gMMnr3Mvp
+ n7H8KcdZjlNPBdikS9/2Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Add the compat_ioctl for operations on /dev/spi* so that 32 bit
+userspace applications can access SPI. As far as I can see all data
+structure are already prepared for that, so no additional conversion has
+to be done.
 
-I picked up both patches in slab.git in 'slub/hotplug' branch and queued
-them for linux-next. Andrew, just holler if you want me to send them to
-you; otherwise I'll send them to Linus myself.
+My use case is MIPS with N32 userspace ABI and toolchain, and that was
+also the platform where I tested it successfully (Cavium Octeon).
 
-			Pekka
+Signed-off-by: Bernhard Walle <walle@corscience.de>
+---
+ drivers/spi/spidev.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
+index 4e6245e..bb24ad8 100644
+--- a/drivers/spi/spidev.c
++++ b/drivers/spi/spidev.c
+@@ -543,6 +543,7 @@ static const struct file_operations spidev_fops = {
+ 	.write =	spidev_write,
+ 	.read =		spidev_read,
+ 	.unlocked_ioctl = spidev_ioctl,
++	.compat_ioctl = spidev_ioctl,
+ 	.open =		spidev_open,
+ 	.release =	spidev_release,
+ 	.llseek =	no_llseek,
+-- 
+1.7.1
 
