@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932523Ab1AKR4a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 12:56:30 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:34446 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753549Ab1AKR42 (ORCPT
+	id S1756255Ab1AKR6o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 12:58:44 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64047 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756154Ab1AKR6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 12:56:28 -0500
+	Tue, 11 Jan 2011 12:58:41 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZJagVhDLmr4fbP0QFeHig49fapZqY8pNkIW+iUNJvxayvsj8SaefyWjZdB3kcuqDha
-         qaiNznAA2gShRFCKnNUy/CcIeV9eQWJIecKx93beWHwJmb9cO2ZEzURgjOG+bU1DTLAu
-         Dx+Lyq83sZbvX8tdWV+TANXpzeZDrFfCsBmKI=
-Date: Tue, 11 Jan 2011 18:56:21 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: x86,percpu: Move out of place 64 bit ops into X86_64 section
-Message-ID: <20110111175621.GE15933@htj.dyndns.org>
-References: <alpine.DEB.2.00.1101101034290.12243@router.home>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=uvrzZvNyNNHofEL3+lRL8mwH2x7BL2gb+4YzRLJob9Fk+DSzKxM5/Ma4FpDI9akxuV
+         VJknY0TGpVualVH5wt3yLHBS1jCuWRYM1pl1RD0aOZJiFqvET9okpVwLUuG390X5l0wy
+         LJgBILSvGnI/bXdoATH2hDtUDmywVP0z/UP/0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1101101034290.12243@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTiknirXaqkvR4DoA34Te=Dj8kentQynrP-Dn=Dk8@mail.gmail.com>
+References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie>
+	<AANLkTinW8Yp1K1w+G+BgLa-fPaFANkGsRjqH_W8N+9VL@mail.gmail.com>
+	<AANLkTim5oVZqMBtan5_TMOxaWbqkF=aDcBYFNYy55kt_@mail.gmail.com>
+	<0aea052d-70ff-41ea-8776-c6d974c10337@email.android.com>
+	<AANLkTim0rn7Vem6YJM5tVKM0PX4YdnNmaeqmpS=Vp7rc@mail.gmail.com>
+	<AANLkTimx0hWByYw1dXKS6y0B9a84gYOxBu-Gnjm+cCwa@mail.gmail.com>
+	<AANLkTiknirXaqkvR4DoA34Te=Dj8kentQynrP-Dn=Dk8@mail.gmail.com>
+Date: Tue, 11 Jan 2011 19:58:39 +0200
+Message-ID: <AANLkTinNjdh2c20qymMoc1HzJZ0Rjs6RpRmLTzgGtAb+@mail.gmail.com>
+Subject: Re: [git pull] drm for rc1
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Dave Airlie <airlied@gmail.com>,
+        Dave Airlie <airlied@linux.ie>,
+        Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 10:35:23AM -0600, Christoph Lameter wrote:
-> 
-> Subject: x86,percpu: Move out of place 64 bit ops into X86_64 section
-> 
-> Some operations that operate on 64 bit operands are defined for 32 bit.
-> Move them into the correct section.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Applied to percpu#fixes-2.6.38.  Thank you.
-
--- 
-tejun
+Dave, in the future, can you make pull requests like Ingo ?
+What I mean:
+non-drm
+generic
+power
+nouveau
+radeon
+intel
+others
