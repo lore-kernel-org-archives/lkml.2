@@ -1,102 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165Ab1AKPZH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 10:25:07 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:19153 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756151Ab1AKPZE (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 11 Jan 2011 10:25:04 -0500
-Date: Tue, 11 Jan 2011 10:24:40 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: Re: [PATCH 05/12] xen: add m2p override mechanism
-Message-ID: <20110111152439.GB10897@dumpdata.com>
-References: <alpine.DEB.2.00.1101101012190.2390@kaball-desktop>
- <1294655801-16230-5-git-send-email-stefano.stabellini@eu.citrix.com>
- <20110110231121.GB16550@dumpdata.com>
- <alpine.DEB.2.00.1101111202020.7277@kaball-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1101111202020.7277@kaball-desktop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932248Ab1AKPZq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 10:25:46 -0500
+Received: from freeflow.nu ([178.79.134.28]:51831 "EHLO freeflow.nu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932192Ab1AKPZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 10:25:45 -0500
+Subject: Re: [PATCH] one more lock on memory hotplug (Re: [PATCH] slub: Fix
+ sysfs circular locking dependency
+From: Pekka Enberg <penberg@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Bart Van Assche <bvanassche@acm.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1101110841230.8657@router.home>
+References: <1294172717-6044-1-git-send-email-penberg@kernel.org>
+	 <alpine.DEB.2.00.1101050943120.13032@router.home>
+	 <alpine.DEB.2.00.1101051108520.14761@router.home>
+	 <AANLkTinft80dXqE-U=YDB23d9=BgXLCxJzgiA_gF4cVL@mail.gmail.com>
+	 <AANLkTinCZzJWYGnxXq_Nwv7QSkEV4Tg-te-1y0PCeRRY@mail.gmail.com>
+	 <AANLkTinQMahgVrWLxR0J6Zbh-_SPjxVJ-wuZt8B5TNjc@mail.gmail.com>
+	 <alpine.DEB.2.00.1101060019140.25879@chino.kir.corp.google.com>
+	 <alpine.DEB.2.00.1101061107500.8655@router.home>
+	 <20110107091106.aaa07abe.kamezawa.hiroyu@jp.fujitsu.com>
+	 <alpine.DEB.2.00.1101070922100.3014@router.home>
+	 <alpine.DEB.2.00.1101071227160.31653@chino.kir.corp.google.com>
+	 <AANLkTin6N2s1RN6PBX=f0v69Ny-NkEKk_iAgqscuYgMM@mail.gmail.com>
+	 <1294475323.5248.74.camel@jaguar>
+	 <alpine.DEB.2.00.1101101014470.12243@router.home>
+	 <alpine.DEB.2.00.1101101230190.11969@chino.kir.corp.google.com>
+	 <4D2BFAA9.2050200@kernel.org>
+	 <20110111164401.3b1e5d8a.kamezawa.hiroyu@jp.fujitsu.com>
+	 <alpine.DEB.2.00.1101110841230.8657@router.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 11 Jan 2011 17:25:42 +0200
+Message-ID: <1294759542.5248.197.camel@jaguar>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 12:44:39PM +0000, Stefano Stabellini wrote:
-> On Mon, 10 Jan 2011, Konrad Rzeszutek Wilk wrote:
-> > > @@ -83,6 +85,14 @@ static inline unsigned long mfn_to_pfn(unsigned long mfn)
-> > >  	 */
-> > >  	__get_user(pfn, &machine_to_phys_mapping[mfn]);
-> > >  
-> > > +	/*
-> > > +	 * If this appears to be a foreign mfn (because the pfn
-> > > +	 * doesn't map back to the mfn), then check the local override
-> > > +	 * table to see if there's a better pfn to use.
-> > > +	 */
-> > > +	if (get_phys_to_machine(pfn) != mfn)
-> > 
-> > Any reason to not use 'pfn_to_mfn' call instead? If we do want
-> > to use the get_hhys_to_machine wouldn't be easier to just
-> > check for 'FOREIGN_FRAME_BIT' set? Or is just mostly a copy-n-paste
-> > of mfn_to_local_pfn?
-> 
-> 
-> pfn in this case is the return value of m2p(mfn); there are 3 possible
-> cases:
-> 
-> 1) the mfn was a regular ram page belonging to the domain so
-> get_phys_to_machine(pfn) == mfn. Nothing to see here.
-> 
-> 2) the mfn was a granted page so pfn is actually the pfn in the source
-> domain and doesn't mean anything in our domain. 
-> In this case get_phys_to_machine(pfn) is always different from mfn,
-> either because the mapping in our domain is just different or because
-> the FOREIGN_FRAME_BIT is set.
-> 
-> 3) the pfn belongs to a 1:1 region. In this case
-> get_phys_to_machine(pfn) != mfn because of the IDENTITY_FRAME_BIT but we
-> don't actually want to look in the m2p_override because we are not going
-> to find anything useful there.
-> 
-> 
-> Considering all this, I propose this change:
-> 
-> if (get_phys_to_machine(pfn) != mfn)
-> 
-> into
-> 
-> if (pfn_to_mfn(pfn) != mfn)
-> 
-> because:
-> 
-> - it won't make any differences in case 1);
-> 
-> - it will avoid false potives in case 3);
-> 
-> - in case 2) if p2m(pfn) => mfn in both the source and the destination
-> domain then we might skip the check in the m2p_override but we don't
-> care because by luck we got the correct value anyway (m2p(mfn) ==
-> m2p_override(mfn)).
-> 
-> 
-> 
-> However I understand that it might be subtle and needs a very long
-> comment so a simpler alternative would be to explicitly remove the
-> IDENTITY_FRAME_BIT from the check:
-> 
-> if ((get_phys_to_machine(pfn) & ~IDENTITY_FRAME_BIT) != mfn)
+Hi all,
 
-Thank you analyzing this in such depth. Let me create a branch with
-this patchset (devel/grantdev.v2), merge it with the devel/p2m-identity one and
-then on top of that create a patch that will what you just suggested (removing
-the IDENTITY_FRAME_BIT) and make the author you.
+I picked up both patches in slab.git in 'slub/hotplug' branch and queued
+them for linux-next. Andrew, just holler if you want me to send them to
+you; otherwise I'll send them to Linus myself.
 
-That way we have something we can test with both modifications to the
-P2M and M2P lookups and weed out any bugs.
+			Pekka
 
