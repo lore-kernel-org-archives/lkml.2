@@ -1,96 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932596Ab1AKS6h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 13:58:37 -0500
-Received: from casper.infradead.org ([85.118.1.10]:34061 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932549Ab1AKS6e (ORCPT
+	id S932590Ab1AKTBH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 14:01:07 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35677 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932544Ab1AKTBG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 13:58:34 -0500
-Date: Tue, 11 Jan 2011 16:58:16 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: David Ahern <daahern@cisco.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [PATCH 3/6] perf tools: Emit clearer message for
- sys_perf_event_open ENOENT return
-Message-ID: <20110111185816.GA22120@ghostprotocols.net>
-References: <1294705692-9537-1-git-send-email-acme@infradead.org>
- <1294705692-9537-4-git-send-email-acme@infradead.org>
- <4D2CA417.7030407@cisco.com>
+	Tue, 11 Jan 2011 14:01:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D2CA417.7030407@cisco.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <AANLkTim0rn7Vem6YJM5tVKM0PX4YdnNmaeqmpS=Vp7rc@mail.gmail.com>
+References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie>
+ <AANLkTinW8Yp1K1w+G+BgLa-fPaFANkGsRjqH_W8N+9VL@mail.gmail.com>
+ <AANLkTim5oVZqMBtan5_TMOxaWbqkF=aDcBYFNYy55kt_@mail.gmail.com>
+ <0aea052d-70ff-41ea-8776-c6d974c10337@email.android.com> <AANLkTim0rn7Vem6YJM5tVKM0PX4YdnNmaeqmpS=Vp7rc@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 11 Jan 2011 11:00:13 -0800
+Message-ID: <AANLkTi=eRHbgerpdPYdoOo45LruNTk0rNsWvOO-kYxyQ@mail.gmail.com>
+Subject: Re: [git pull] drm for rc1
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Dave Airlie <airlied@gmail.com>, Dave Airlie <airlied@linux.ie>,
+        Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Jan 11, 2011 at 11:40:23AM -0700, David Ahern escreveu:
-> 
-> 
-> On 01/10/11 17:28, Arnaldo Carvalho de Melo wrote:
-> > From: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > 
-> > Improve sys_perf_event_open ENOENT return handling in top and record, just
-> > like 5a3446b does for stat.
-> > 
-> > Cc: David Ahern <daahern@cisco.com>
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Mike Galbraith <efault@gmx.de>
-> > Cc: Paul Mackerras <paulus@samba.org>
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > Cc: Stephane Eranian <eranian@google.com>
-> > Cc: Tom Zanussi <tzanussi@gmail.com>
-> > LKML-Reference: <new-submission>
-> > Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > ---
-> >  tools/perf/builtin-record.c |    3 +++
-> >  tools/perf/builtin-top.c    |    2 ++
-> >  2 files changed, 5 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> > index 7bc0490..7069bd3 100644
-> > --- a/tools/perf/builtin-record.c
-> > +++ b/tools/perf/builtin-record.c
-> > @@ -331,6 +331,9 @@ try_again:
-> >  			else if (err ==  ENODEV && cpu_list) {
-> >  				die("No such device - did you specify"
-> >  					" an out-of-range profile CPU?\n");
-> > +			} else if (err == ENOENT) {
-> > +				die("%s event is not supported. ",
-> > +				     event_name(evsel));
-> 
-> I think this interferes with the fallback from hardware profiling to
-> software profiling. .e.g., in a VM with no PMU.
+On Tue, Jan 11, 2011 at 8:01 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> But yes, it worked before pulling Dave's tree, IOW, I haven't seen
+> this message on this machine before.
 
-Argh, you're right, in both cases (top and record) :-\ Reverting.
- 
-> David
-> 
-> 
-> >  			} else if (err == EINVAL && sample_id_all_avail) {
-> >  				/*
-> >  				 * Old kernel, no attr->sample_id_type_all field
-> > diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-> > index 1e67ab9..6ce4042 100644
-> > --- a/tools/perf/builtin-top.c
-> > +++ b/tools/perf/builtin-top.c
-> > @@ -1247,6 +1247,8 @@ try_again:
-> >  				die("Permission error - are you root?\n"
-> >  					"\t Consider tweaking"
-> >  					" /proc/sys/kernel/perf_event_paranoid.\n");
-> > +			if (err == ENOENT)
-> > +				die("%s event is not supported. ", event_name(evsel));
-> >  			/*
-> >  			 * If it's cycles then fall back to hrtimer
-> >  			 * based cpu-clock-tick sw counter, which
+.. and it's not a fluke. It happened again, and once more while I was
+away from the machine and the screen saver was running. So it does
+seem to have something to do with power-saving modes or something.
+
+     Linus
