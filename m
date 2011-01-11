@@ -1,103 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236Ab1AKVwY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 16:52:24 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:63108 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755662Ab1AKVwW convert rfc822-to-8bit (ORCPT
+	id S1756223Ab1AKV5G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 16:57:06 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36859 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753804Ab1AKV5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 16:52:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=ixrIOhEB6fxz6QI8/bImDcdUUbgkN2GutEKKPbC+JNw12A5O6rPxILpP+VD69slqRp
-         7fYP+lVH9MN92d8VRzkQ==
-MIME-Version: 1.0
-In-Reply-To: <20110111204909.GE17619@aftab>
-References: <43835.148.87.67.136.1294700112.squirrel@xenotime.net>
- <1294700597-24239-1-git-send-email-mikew@google.com> <20110111065540.GA16036@aftab>
- <AANLkTimXfUH-PYpdRcLR4+QkG7uOzYzSC6VZ6HnkB9jE@mail.gmail.com> <20110111204909.GE17619@aftab>
-From: Mike Waychison <mikew@google.com>
-Date: Tue, 11 Jan 2011 13:51:57 -0800
-Message-ID: <AANLkTimQNnxnoFPWjh6cHp_x9ZayDdcXdV+qbee8XK_r@mail.gmail.com>
-Subject: Re: [PATCH] x86: Add an option to disable decoding of MCE
-To: Borislav Petkov <bp@amd64.org>
-Cc: "mingo@elte.hu" <mingo@elte.hu>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Duncan Laurie <dlaurie@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Tue, 11 Jan 2011 16:57:04 -0500
+Date: Tue, 11 Jan 2011 13:55:47 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, hughd@google.com, mel@csn.ul.ie
+Subject: Re: +
+ mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclaim-avoid-a-potential-deadlock-due-to-lock_page-during-direct-compaction-fix.patch
+ added to -mm tree
+Message-Id: <20110111135547.ce6c273c.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1101111341590.7551@chino.kir.corp.google.com>
+References: <201101112046.p0BKk2Js005902@imap1.linux-foundation.org>
+	<alpine.DEB.2.00.1101111341590.7551@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 12:49 PM, Borislav Petkov <bp@amd64.org> wrote:
-> Ok, let me preface this with an even easier suggestion: Can you simply
-> not compile EDAC (which includes CONFIG_EDAC_DECODE_MCE) in your kernels
-> and the whole issue with decoding disappears simply because no module
-> registers as a decoder...?
+On Tue, 11 Jan 2011 13:43:06 -0800 (PST)
+David Rientjes <rientjes@google.com> wrote:
 
-The trouble here is that default_decode_mce() is still getting called
-no matter what :(  It didn't really cause problems until you added
-atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, &m) to
-machine_check_poll().
+> On Tue, 11 Jan 2011, akpm@linux-foundation.org wrote:
+> 
+> > diff -puN mm/page_alloc.c~mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclaim-avoid-a-potential-deadlock-due-to-lock_page-during-direct-compaction-fix mm/page_alloc.c
+> > --- a/mm/page_alloc.c~mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclaim-avoid-a-potential-deadlock-due-to-lock_page-during-direct-compaction-fix
+> > +++ a/mm/page_alloc.c
+> > @@ -1815,15 +1815,15 @@ __alloc_pages_direct_compact(gfp_t gfp_m
+> >  	int migratetype, unsigned long *did_some_progress)
+> >  {
+> >  	struct page *page;
+> > -	struct task_struct *p = current;
+> > +	struct task_struct *tsk = current;
+> >  
+> >  	if (!order || compaction_deferred(preferred_zone))
+> >  		return NULL;
+> >  
+> > -	p->flags |= PF_MEMALLOC;
+> > +	tsk->flags |= PF_MEMALLOC;
+> >  	*did_some_progress = try_to_compact_pages(zonelist, order, gfp_mask,
+> >  								nodemask);
+> > -	p->flags &= ~PF_MEMALLOC;
+> > +	tsk->flags &= ~PF_MEMALLOC;
+> >  	if (*did_some_progress != COMPACT_SKIPPED) {
+> >  
+> >  		/* Page migration frees to the PCP lists but we want merging */
+> 
+> This could be done for all of the page allocator functions in 
+> mm/page_alloc.c, I think it would be inconsistent and slightly harder to 
+> read if it were done in only one.
 
-> On Tue, Jan 11, 2011 at 02:56:50PM -0500, Mike Waychison wrote:
->> >> On our systems, we do not want to have any "decoders" called on machine
->> >> check events.  These decoders can easily spam our logs and cause space
->> >> problems on machines that have a lot of correctable error events.  We
->> >> _do_ however want to get the messages delivered via /dev/mcelog for
->> >> userland processing.
->> >
->> > Ok, question: how do you guys process DRAM ECCs? And more specifically,
->> > with a large number of machines, how do you do the mapping from the DRAM
->> > ECC error address reported by MCA to a DIMM that's failing in userspace
->> > on a particular machine?
->>
->> We process machine checks in userland, using carnal knowledge of the
->> memory controller and the board specific addressing of the SPDs on the
->> various i2c busses to deswizzle and make sense of the addresses and
->> symptoms.  We then expose this digested data on the network, which is
->> dealt with at the cluster level.
->
-> Right, and this means that you need to know all the memory controller
-> topologies of all the different architectures and also the SPD accessing
-> based on a board type could be a pain. One of the main reasons for
-> fleshing out MCE decoding in the kernel was to avoid needless trouble
-> like that.
+Using "p" for any identifier which has less-than-teeny scope is plain
+dumb.  It's meaningless and useless.
 
-It's not that painful for us.  Our firmware guys own this userland
-code :)  I can see it being a pain for others however.
+Anyway...
 
-Doing this all in userland does have it's upsides as well fwiw.  For
-example, MC4 is usually kept around across a reset, which means that
-the firmware can pick it up when the system goes down due to a
-processor context corruption.  We rely on these libraries as well to
-decode egregious uncorrectable memory errors as well as bus errors
-(like hypertransport sync floods).
 
-*snip*
+Subject: mm/page_alloc.c: don't cache `current' in a local
+From: Andrew Morton <akpm@linux-foundation.org>
 
-> I've
-> heard similar troubles reported by other big server farm people and
-> what I'm currently working on is a RAS daemon that hooks into perf thus
-> enabling persistent performance events. This way, you could open a
-> debugfs file (this'll move to sysfs someday) and read the same decoded
-> data by mmaping the perf ringbuffer.
+It's old-fashioned and unneeded.
 
-I'll definitely keep an eye out for your developments with RAS :)
+akpm:/usr/src/25> size mm/page_alloc.o
+   text    data     bss     dec     hex filename
+  39884 1241317   18808 1300009  13d629 mm/page_alloc.o (before)
+  39838 1241317   18808 1299963  13d5fb mm/page_alloc.o (after)
 
->
-> I think this is also easy disabled by not configuring EDAC, as I said
-> above. Basically, if you don't enable EDAC, you can drop that patch
-> too and run your kernels without any modification, or am I missing
-> something..?
+Cc: David Rientjes <rientjes@google.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
 
-See the comment above.  It's the spamming for the default decoder that
-I wanted to disable specifically, though my approach was a knob to
-disable decoders generally.
+ mm/page_alloc.c |   24 ++++++++++--------------
+ 1 file changed, 10 insertions(+), 14 deletions(-)
+
+diff -puN mm/page_alloc.c~mm-page_allocc-dont-cache-current-in-a-local mm/page_alloc.c
+--- a/mm/page_alloc.c~mm-page_allocc-dont-cache-current-in-a-local
++++ a/mm/page_alloc.c
+@@ -1809,15 +1809,14 @@ __alloc_pages_direct_compact(gfp_t gfp_m
+ 	bool sync_migration)
+ {
+ 	struct page *page;
+-	struct task_struct *tsk = current;
+ 
+ 	if (!order || compaction_deferred(preferred_zone))
+ 		return NULL;
+ 
+-	tsk->flags |= PF_MEMALLOC;
++	current->flags |= PF_MEMALLOC;
+ 	*did_some_progress = try_to_compact_pages(zonelist, order, gfp_mask,
+ 						nodemask, sync_migration);
+-	tsk->flags &= ~PF_MEMALLOC;
++	current->flags &= ~PF_MEMALLOC;
+ 	if (*did_some_progress != COMPACT_SKIPPED) {
+ 
+ 		/* Page migration frees to the PCP lists but we want merging */
+@@ -1869,23 +1868,22 @@ __alloc_pages_direct_reclaim(gfp_t gfp_m
+ {
+ 	struct page *page = NULL;
+ 	struct reclaim_state reclaim_state;
+-	struct task_struct *p = current;
+ 	bool drained = false;
+ 
+ 	cond_resched();
+ 
+ 	/* We now go into synchronous reclaim */
+ 	cpuset_memory_pressure_bump();
+-	p->flags |= PF_MEMALLOC;
++	current->flags |= PF_MEMALLOC;
+ 	lockdep_set_current_reclaim_state(gfp_mask);
+ 	reclaim_state.reclaimed_slab = 0;
+-	p->reclaim_state = &reclaim_state;
++	current->reclaim_state = &reclaim_state;
+ 
+ 	*did_some_progress = try_to_free_pages(zonelist, order, gfp_mask, nodemask);
+ 
+-	p->reclaim_state = NULL;
++	current->reclaim_state = NULL;
+ 	lockdep_clear_current_reclaim_state();
+-	p->flags &= ~PF_MEMALLOC;
++	current->flags &= ~PF_MEMALLOC;
+ 
+ 	cond_resched();
+ 
+@@ -1950,7 +1948,6 @@ void wake_all_kswapd(unsigned int order,
+ static inline int
+ gfp_to_alloc_flags(gfp_t gfp_mask)
+ {
+-	struct task_struct *p = current;
+ 	int alloc_flags = ALLOC_WMARK_MIN | ALLOC_CPUSET;
+ 	const gfp_t wait = gfp_mask & __GFP_WAIT;
+ 
+@@ -1977,12 +1974,12 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+ 		 * See also cpuset_zone_allowed() comment in kernel/cpuset.c.
+ 		 */
+ 		alloc_flags &= ~ALLOC_CPUSET;
+-	} else if (unlikely(rt_task(p)) && !in_interrupt())
++	} else if (unlikely(rt_task(current)) && !in_interrupt())
+ 		alloc_flags |= ALLOC_HARDER;
+ 
+ 	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
+ 		if (!in_interrupt() &&
+-		    ((p->flags & PF_MEMALLOC) ||
++		    ((current->flags & PF_MEMALLOC) ||
+ 		     unlikely(test_thread_flag(TIF_MEMDIE))))
+ 			alloc_flags |= ALLOC_NO_WATERMARKS;
+ 	}
+@@ -2001,7 +1998,6 @@ __alloc_pages_slowpath(gfp_t gfp_mask, u
+ 	int alloc_flags;
+ 	unsigned long pages_reclaimed = 0;
+ 	unsigned long did_some_progress;
+-	struct task_struct *p = current;
+ 	bool sync_migration = false;
+ 
+ 	/*
+@@ -2060,7 +2056,7 @@ rebalance:
+ 		goto nopage;
+ 
+ 	/* Avoid recursion of direct reclaim */
+-	if (p->flags & PF_MEMALLOC)
++	if (current->flags & PF_MEMALLOC)
+ 		goto nopage;
+ 
+ 	/* Avoid allocations with no watermarks from looping endlessly */
+@@ -2153,7 +2149,7 @@ nopage:
+ 	if (!(gfp_mask & __GFP_NOWARN) && printk_ratelimit()) {
+ 		printk(KERN_WARNING "%s: page allocation failure."
+ 			" order:%d, mode:0x%x\n",
+-			p->comm, order, gfp_mask);
++			current->comm, order, gfp_mask);
+ 		dump_stack();
+ 		show_mem();
+ 	}
+_
+
