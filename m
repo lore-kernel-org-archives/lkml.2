@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932535Ab1AKX3p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 18:29:45 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50002 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755584Ab1AKX3n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 18:29:43 -0500
+	id S1756369Ab1AKXcb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 18:32:31 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:59426 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754199Ab1AKXc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 18:32:29 -0500
+Date: Tue, 11 Jan 2011 15:31:35 -0800
+From: Kees Cook <kees.cook@canonical.com>
+To: mingo@redhat.com, hpa@zytor.com, sliakh.lkml@gmail.com, jmorris@namei.org,
+        linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
+        torvalds@linux-foundation.org, ak@muc.de, davej@redhat.com,
+        jiang@cs.ncsu.edu, arjan@infradead.org, castet.matthieu@free.fr,
+        tglx@linutronix.de, sfr@canb.auug.org.au, mingo@elte.hu,
+        Stefan Bader <stefan.bader@canonical.com>
+Subject: Re: [tip:x86/security] x86: Add NX protection for kernel data
+Message-ID: <20110111233135.GL4979@outflux.net>
+References: <4CE2F82E.60601@free.fr>
+ <tip-5bd5a452662bc37c54fb6828db1a3faf87e6511c@git.kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <4D2CE5C8.60601@de.ibm.com>
-References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie> <4D2CE5C8.60601@de.ibm.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 11 Jan 2011 15:28:51 -0800
-Message-ID: <AANLkTimr4WX3Ay8vC23MKOM+dOcpV+Ca5rg_gcei38nk@mail.gmail.com>
-Subject: Re: [git pull] drm for rc1
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: Dave Airlie <airlied@linux.ie>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <tip-5bd5a452662bc37c54fb6828db1a3faf87e6511c@git.kernel.org>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 3:20 PM, Christian Borntraeger
-<borntraeger@de.ibm.com> wrote:
->
-> Now nouveau framebuffer is completely broken on my T61p (01:00.0 VGA compatible controller: nVidia Corporation G84M [Quadro FX 570M] (rev a1))
-> During startup the framebuffer shows only stripes and a blank
-> screen after suspend/resume.
-> I also see lots of TRAP messages. (see below).
-> X11 seems to work fine though...
+On Thu, Nov 18, 2010 at 02:08:22PM +0000, tip-bot for Matthieu Castet wrote:
+> Commit-ID:  5bd5a452662bc37c54fb6828db1a3faf87e6511c
+> Gitweb:     http://git.kernel.org/tip/5bd5a452662bc37c54fb6828db1a3faf87e6511c
+> Author:     Matthieu Castet <castet.matthieu@free.fr>
+> AuthorDate: Tue, 16 Nov 2010 22:31:26 +0100
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Thu, 18 Nov 2010 12:52:04 +0100
+> 
+> x86: Add NX protection for kernel data
 
-Can you try to bisect?
+[I'd sent this in reply to the wrong patch before, resending now...]
 
-It's a *bit* easier to do if you start out at the drm merge, and only
-bisect that part, ie
+Hi,
 
-  MERGE=5b2eef966cb2ae307aa4ef1767f7307774bc96ca
-  git bisect start
-  git bisect bad $MERGE^2
-  git bisect good $MERGE^1
+I was just shown this[1] on Xen from an Ubuntu bug report[2].
 
-(the above assumes that the merge itself isn't what caused the
-problems) and that way you should only need to bisect through the
-actual new DRM commits.
+[    1.230382] NX-protecting the kernel data: 3884k
+[    1.231002] BUG: unable to handle kernel paging request at c1782ae0
+...
+[    1.231145] Call Trace:
+[    1.231152]  [<c0138481>] ? __change_page_attr+0x2c1/0x370
+[    1.231161]  [<c02163a1>] ? __purge_vmap_area_lazy+0xc1/0x180
+[    1.231169]  [<c013857c>] ? __change_page_attr_set_clr+0x4c/0xb0
+[    1.231176]  [<c0138838>] ? change_page_attr_set_clr+0x128/0x300
+[    1.231183]  [<c010798e>] ? __raw_callee_save_xen_restore_fl+0x6/0x8
+[    1.231192]  [<c0159ca1>] ? vprintk+0x171/0x3f0
+[    1.231198]  [<c0138bdf>] ? set_memory_nx+0x5f/0x70
 
-                   Linus
+
+Does Xen have different size page table allocations or something weird?
+
+-Kees
+
+[1] http://launchpadlibrarian.net/61853131/natty-failed-boot-ec2.txt
+[2] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/699828
+
+-- 
+Kees Cook
+Ubuntu Security Team
