@@ -1,158 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932587Ab1AKS41 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 13:56:27 -0500
-Received: from sj-iport-6.cisco.com ([171.71.176.117]:43403 "EHLO
-	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932575Ab1AKS4Y (ORCPT
+	id S932589Ab1AKS5j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 13:57:39 -0500
+Received: from mms1.broadcom.com ([216.31.210.17]:4130 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932549Ab1AKS5g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 13:56:24 -0500
-Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAMo2LE2rRN+J/2dsb2JhbACkOXOjZJhqhUwEhGiGJoMg
-Message-ID: <4D2CA7D6.2070203@cisco.com>
-Date: Tue, 11 Jan 2011 11:56:22 -0700
-From: David Ahern <daahern@cisco.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
+	Tue, 11 Jan 2011 13:57:36 -0500
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+From: "Jian Peng" <jipeng@broadcom.com>
+To: "Tejun Heo" <tj@kernel.org>
+cc: "Robert Hancock" <hancockrwd@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jgarzik@pobox.com" <jgarzik@pobox.com>,
+        ide <linux-ide@vger.kernel.org>
+Date: Tue, 11 Jan 2011 10:55:13 -0800
+Subject: RE: questions regarding possible violation of AHCI spec in AHCI
+ driver
+Thread-Topic: questions regarding possible violation of AHCI spec in
+ AHCI driver
+Thread-Index: AcuxvLEYfxTI8DClTzu6mB1CuO9wEAABGKc5
+Message-ID: <E18F441196CA634DB8E1F1C56A50A874319FA7E37B@IRVEXCHCCR01.corp.ad.broadcom.com>
+References: <4CFF58D2.4040006@kernel.org>
+ <E18F441196CA634DB8E1F1C56A50A874319FA38C43@IRVEXCHCCR01.corp.ad.broadcom.com>
+ <4CFFCD56.6050608@kernel.org>
+ <E18F441196CA634DB8E1F1C56A50A874319FA7E36E@IRVEXCHCCR01.corp.ad.broadcom.com>
+ <4CFFD3EB.10800@kernel.org>
+ <E18F441196CA634DB8E1F1C56A50A874319FA7E36F@IRVEXCHCCR01.corp.ad.broadcom.com>
+ <4CFFE29C.7080205@kernel.org>
+ <E18F441196CA634DB8E1F1C56A50A874319FA38CD3@IRVEXCHCCR01.corp.ad.broadcom.com>
+ <4D000C8B.5040904@kernel.org>
+ <E18F441196CA634DB8E1F1C56A50A874319FD72B23@IRVEXCHCCR01.corp.ad.broadcom.com>,<20110111182323.GG15933@htj.dyndns.org>
+In-Reply-To: <20110111182323.GG15933@htj.dyndns.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-To: Thomas Renninger <trenn@suse.de>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-perf-users@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: perf timechart broken
-References: <201101071104.37576.trenn@suse.de> <20110111013625.GE2570@nowhere> <201101110955.37560.trenn@suse.de>
-In-Reply-To: <201101110955.37560.trenn@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-WSS-ID: 613277EF3P055232404-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi, Tejun,
+
+Here is new patch based on your suggestion (against 2.6.37 release)
+
+--- libahci.c.orig	2011-01-11 10:46:56.623991326 -0800
++++ libahci.c	2011-01-11 10:52:19.634036938 -0800
+@@ -542,6 +542,15 @@
+ {
+ 	void __iomem *port_mmio = ahci_port_base(ap);
+ 	u32 tmp;
++	u8 status;
++	
++	status = readl(port_mmio + PORT_TFDATA);
++	if (status & (ATA_BUSY | ATA_DRQ) ||
++	    ahci_scr_read(&ap->link, SCR_STATUS, &tmp) ||
++	    (tmp & 0x0f) != 0x03) {
++		printk(KERN_DEBUG "START bit was not set in %s\n", __func__);
++		return;
++	}	
+ 
+ 	/* start DMA */
+ 	tmp = readl(port_mmio + PORT_CMD);
+
+I will test host controller made by other vendors and report issues soon.
+
+Thanks,
+Jian
+
+________________________________________
+From: Tejun Heo [htejun@gmail.com] On Behalf Of Tejun Heo [tj@kernel.org]
+Sent: Tuesday, January 11, 2011 10:23 AM
+To: Jian Peng
+Cc: Robert Hancock; linux-kernel@vger.kernel.org; jgarzik@pobox.com; ide
+Subject: Re: questions regarding possible violation of AHCI spec in AHCI driver
+
+Hello,
+
+On Tue, Jan 11, 2011 at 10:09:08AM -0800, Jian Peng wrote:
+> Happy Holiday! I want to revisit this issue and hopefully get
+> consensus on it asap.
+
+Happy new year!
+
+> Here is the sequence that will cause problem if BSY|DRQ and SSTS.DET
+> was not checked in start_engine:
+>
+> 1. SUD bit was set in ahci_power_up() to start communication between
+>    host and device
+> 2. START bit was set in ahci_start_engine() to prepare for data
+>    transfer (should check condition and do not set START bit here
+>    per spec)
+> By the time, host did not receive first FIS so BSY|DRQ was not
+> cleared
+> 3. inside ahci_hardreset(), call ahci_stop_engine() first, host
+>    controller will take time to clean up internal pipeline and
+>    transit to idle state
+> 4. toggle SCTL.DET to reset interface, now COMRESET was not sent
+>    since internal state machine stuck at #2 and #3 (per> spec),
+>    BSY|DRQ bit was not cleared
+> 5. call ahci_start_engine() again and try to read ID from device but
+>    interface is busy since BSY bit was not cleared, failed here
+>
+> At the end of section 10.1 of AHCI spec (rev 1.3), it states
+>
+> Software shall not set PxCMD.ST to '1' until it is determined that a
+> functional device is present on the port as determined by
+> PxTFD.STS.BSY = '0', PxTFD.STS.DRQ = '0', and PxSSTS.DET = 3h.
+>
+> It is likely used to prevent host controller from jumping into wrong
+> state before first FIS was received.
+
+I still have to say it's pretty silly of the controller to stall
+inrecoverably.
+
+> Please review this issue, and let me know how to resolve it by
+> either adopting my previous patch, or creating a new patch.
+
+You haven't really brought up any new issue so my comment stays the
+same.
+
+>> I'm not objecting to the change but you guys probably want to fix
+>> the controller in following revisions.  If we're gonna make the
+>> change, I'd like to go with the previous version without the vendor
+>> check.  What is the timeframe for the controller release?  Would it
+>> be enough to merge the change during 2.6.38-rc1?  After baking it
+>> for some time in 2.6.38, we can propagate the change back through
+>> -stable.
+
+So, yeah, let's proceed with the patch.  Please make the following
+changes and resubmit.
+
+* Please don't do readl() on the same line as variable declaration and
+  drop the unnecessary & 0xff.
+
+* Hmmm... please consider adding a KERN_DEBUG message when
+  ahci_start_port() exits without starting the port.  Just in case it
+  causes problems on other controllers.
+
+Thank you.
+
+--
+tejun
 
 
-On 01/11/11 01:55, Thomas Renninger wrote:
-> On Tuesday 11 January 2011 02:36:28 Frederic Weisbecker wrote:
->> On Fri, Jan 07, 2011 at 11:04:37AM +0100, Thomas Renninger wrote:
->>> Hi,
->>>
->>> Latest x86 tip has another perf timechart issue introduce
->>> by latest commits.
->>>
->>> ./perf timechart
->>> gives me:
->>> "no trace data in the file"
->>>
->>> I reverted  the latest changes and things seem to break
->>> between d854861c4292a4e675a5d3bfd862c5f7421c81e8
->>> and
->>> 69aad6f1ee69546dea8535ab8f3da9f445d57328
->>> (linux-2.6-x86 tree ids)
->>>
->>> Be aware that ./perf timechart is currently broken
->>> and segfaults on idle events (in 2.6.36 and 2.6.37).
->>
->> You mean .36 perf tools faults on .37 kernel? or the opposite?
->> Is it because power_idle events weren't present on old tools?
->> Do you have a pointer to those patches?
-> perf timechart
-> will segfault if perf.data has power_{start,end} events included
-> on 2.6.36 and 2.6.37 kernels.
-
-Is this the same segfault you are seeing?
-
-http://www.mail-archive.com/linux-perf-users@vger.kernel.org/msg00057.html
-
-David
-
-
-> 
->>> I submitted a patch to stable@ but it did not get accepted,
->>> becaust it's not mainline yet.
->>> I concentrated on my latest patches instead of making sure
->>> the tiny fix gets into 2.6.37 first.
->>>
->>> Ingo: It's a bit late for 2.6.37, if there is any chance
->>> to still get it in, the patch below is against linus master...
->>> otherwise I'll submit it for stable 36+37 asap.
->>
->> It's too late for .37, but it's fine, we just need to add
->> a "Cc: stable@kernel.org" tag in the patch for it to be
->> backported.
-> I'll submit it to stable@ (it wasn't taken because
-> the patch which included the fix wasn't mainline yet and I
-> forgot to submit it for 2.6.37-rcX). 
-> 
-> I can take care of that, but it would be great if someone
-> could look at the issue that perf timechart shows:
-> "no trace data in the file"
-> in x86/tip which seems introduced by one of Arnaldo's latest
-> commits. Reverting some of his latest patches, solved it for
-> me.
-> 
->>> Anyway to test above regression this mail is about, first
->>> apply below patch otherwise you get a segfault if idle
->>> (power_start/end) events got logged.
->>>
->>> Thanks,
->>>
->>>    Thomas
->>>
->>> ---
->>> perf timechart: Fix segfault on cpu idle (power_start/end) events
->>>
->>> power_end event does not have type and other attributes and thus does
->>> not match struct power_event.
->>> Another struct could be created, but data.cpu is fine for fixing the segfault
->>> and will work as long as C-states got initiated on the same CPU the idle state
->>> takes place which is the case for all recent HW.
->>>
->>> The power_start/end events get deprecated anyway, thus this is an easy,
->>> riskless and sufficient solution for the segfault problem.
->>>
->>> Signed-off-by: Thomas Renninger <trenn@suse.de>
->>> CC: mingo@elte.hu
->>> CC: arjan@linux.intel.com
->>>
->>> ---
->>>  tools/perf/builtin-timechart.c |    2 +-
->>>  1 files changed, 1 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
->>> index 9bcc38f..b3028eb 100644
->>> --- a/tools/perf/builtin-timechart.c
->>> +++ b/tools/perf/builtin-timechart.c
->>> @@ -502,7 +502,7 @@ static int process_sample_event(event_t *event, struct perf_session *session)
->>>  			c_state_start(pe->cpu_id, data.time, pe->value);
->>>  
->>>  		if (strcmp(event_str, "power:power_end") == 0)
->>> -			c_state_end(pe->cpu_id, data.time);
->>> +			c_state_end(data.cpu, data.time);
->>
->> On which tree is this based of?
-> Linus master (2.6.37-rc8).
-> 
->> What I have by looking at tip/master is:
-> Yes, this commit includes the patch (should have been a seperate one...):
-> 20c457b8587bee4644d998331d9e13be82e05b4c
-> perf timechart: Adjust perf timechart to the new power events
-> 
->    Thomas
-> 
->>
->> 		else if (strcmp(event_str, "power:power_end") == 0)
->> 			c_state_end(sample->cpu, sample->time);
->>
->>>  
->>>  		if (strcmp(event_str, "power:power_frequency") == 0)
->>>  			p_state_change(pe->cpu_id, data.time, pe->value);
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-perf-users" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-perf-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
