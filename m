@@ -1,91 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854Ab1AKGZq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 01:25:46 -0500
-Received: from mga11.intel.com ([192.55.52.93]:58786 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751072Ab1AKGZk convert rfc822-to-8bit (ORCPT
+	id S1752861Ab1AKG2Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 01:28:16 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:55313 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469Ab1AKG2J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 01:25:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,305,1291622400"; 
-   d="scan'208";a="645556523"
-From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
-To: Chris Ball <cjb@laptop.org>
-CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Date: Tue, 11 Jan 2011 14:24:30 +0800
-Subject: RE: [PATCH v6 0/3]mmc: implement eMMC4.4 standard HW reset feature
-Thread-Topic: [PATCH v6 0/3]mmc: implement eMMC4.4 standard HW reset feature
-Thread-Index: AcuxHPdq0wiqNancSaa3w9dvu27bLgANu7Dw
-Message-ID: <5D8008F58939784290FAB48F549751983519F49499@shsmsx502.ccr.corp.intel.com>
-References: <20101227101305.GA20143@intel.com>
- <20110110232020.GA7920@void.printf.net>
-In-Reply-To: <20110110232020.GA7920@void.printf.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 Jan 2011 01:28:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=nLme2Vuudei9nABDFKkB+lN6/sFgPK1rBY0WRiGxLJlNiSmPiayAogfwbHIztPvF77
+         oYMborh7UxUhoAOIakaLz06EtKEQFZ+XIY2fbtKR27k5YuvAYB2TrfFkSuL+VPtBazZy
+         jvQ6NjiFnwEaNNtxMm7HZtsYyu/v58yP7RKbs=
 MIME-Version: 1.0
+In-Reply-To: <0aea052d-70ff-41ea-8776-c6d974c10337@email.android.com>
+References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie>
+	<AANLkTinW8Yp1K1w+G+BgLa-fPaFANkGsRjqH_W8N+9VL@mail.gmail.com>
+	<AANLkTim5oVZqMBtan5_TMOxaWbqkF=aDcBYFNYy55kt_@mail.gmail.com>
+	<0aea052d-70ff-41ea-8776-c6d974c10337@email.android.com>
+Date: Tue, 11 Jan 2011 16:28:08 +1000
+Message-ID: <AANLkTikYzz0Rs-vdX5uFDm6CpXDOx62cUYfbqEAXSame@mail.gmail.com>
+Subject: Re: [git pull] drm for rc1
+From: Dave Airlie <airlied@gmail.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Airlie <airlied@linux.ie>,
+        Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris, Thanks for your review! Below is my answer about your concerns.
+On Tue, Jan 11, 2011 at 4:06 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> "Dave Airlie" <airlied@gmail.com> wrote:
+>
+>>On Tue, Jan 11, 2011 at 2:16 PM, Linus Torvalds
+>><torvalds@linux-foundation.org> wrote:
+>>> On Mon, Jan 10, 2011 at 2:59 PM, Dave Airlie <airlied@linux.ie>
+>>wrote:
+>>>> Highlights:
+>>>> core/drivers: add support for high precision vblank timestamps
+>>>> radeon: pageflipping support, Gen2 PCIE support
+>>>> nouveau: reworked VRAM and VM support
+>>>> intel: better ILK/SNB powersaving support, Full GTT support
+>>>
+>>> Lowlights: it's broken.
+>>>
+>>> I get millions of messages like:
+>>>
+>>>  ...
+>>>  [ 8482.000414] [drm:i915_hangcheck_ring_idle] *ERROR* Hangcheck
+>>> timer elapsed... render ring idle [waiting on 30938, at 30938],
+>>missed
+>>> IRQ?
+>>>  [ 8485.918124] [drm:i915_hangcheck_ring_idle] *ERROR* Hangcheck
+>>> timer elapsed... render ring idle [waiting on 31068, at 31068],
+>>missed
+>>> IRQ?
+>>>  [ 8487.926963] [drm:i915_hangcheck_ring_idle] *ERROR* Hangcheck
+>>> timer elapsed... render ring idle [waiting on 31129, at 31129],
+>>missed
+>>> IRQ?
+>>>  ...
+>>>
+>>> and everything is very choppy. I assume it's the power saving thing
+>>> that broke again, but that's just a total random guess, I have
+>>nothing
+>>> to actually back that up with.
+>>>
+>>> It worked fine after boot, but those problems began at 8287.139375
+>>> (about two hours after boot - it may have coincided with screen
+>>saver,
+>>> but who knows?)  and have been happening constantly since. The
+>>machine
+>>> is not really usable, I'm writing this with annoying 2-second pauses
+>>> every once in a while.
+>>
+>>Okay I'll try and reproduce and curse Chris and Jesse, does booting
+>>with
+>>i915.powersave=0 help any?
+>>
+>>Dave.
+>
+> Arg.  It's been ok on my ILK systems, but Chris has found some issues with out watermarking code iirc; apparently we're underflowing the display FIFO, causing all sorts of trouble.  If it works before the pull of Dave's tree, can you bisect?
+>
 
-> -----Original Message-----
-> From: Chris Ball [mailto:cjb@laptop.org]
-> Sent: Tuesday, January 11, 2011 7:20 AM
-> To: Dong, Chuanxiao
-> Cc: linux-mmc@vger.kernel.org; linux-kernel@vger.kernel.org;
-> akpm@linux-foundation.org
-> Subject: Re: [PATCH v6 0/3]mmc: implement eMMC4.4 standard HW reset feature
-> 
-> Hi Chuanxiao,
-> 
-> On Mon, Dec 27, 2010 at 06:13:05PM +0800, Chuanxiao Dong wrote:
-> > Hi all,
-> >    This is the version 6 of hardware reset feature implementation. When eMMC
-> >    card cannot response any command, signal RST_n can help to reset eMMC
-> >    card.
-> >
-> >    patch1: enable HW reset capability if card supports.
-> >    patch2: do hardware reset if card occurs read/write/erase timeout
-> >    patch3: implement hwreset_emmc and reinit_emmc callbacks. In this patch,
-> >    hwreset_emmc callback will pull up/down the corresponded GPIO line
-> number
-> >    to trigger RST_n signal.
-> 
-> Sorry for the very late reply.  I'm simply not sure what to do about
-> this patchset -- I'm extremely reluctant to touch the once-only
-> programmable bits on the eMMC, and especially to do so silently by
-> default.
-Some eMMC4.4 or later new features need to touch the once-only programmable bits...If we support such features, we cannot avoid doing this. So do you think it is better for driver only read such once-only programmable bits? Writing such bits can leave to the manufactory line?
-Or using a Kconfig option to notice user is better?
+I think he'd fixed them in the tree I pulled locally to test, I'm
+guessing this might be that we are running the Fedora userspace driver
+and you guys are all on master or something, which would mean some ABI
+guarantee got busted.
 
-> 
-> Also, where exactly do you assign host->rst_gpio?  It isn't assigned
-> to in this patch, so where will it be set?  It looks like you could
-Yes. host->rst_gpio was planned to put in host controller driver. But there is a dependence for getting the reset gpio number since different platform may use different gpios. I will send it out with my host controller support in the next submission for your review.
+I'm going to try a local test upgrade to 2.14.0 just to see.
 
-> end up strobing GPIO0 if a gpio isn't passed in at all.
-Yes. If the rst_gpio was initialized by -ENODEV during host probing by default, this problem will be gone.
-
-> 
-> I haven't seen any other reports of -ETIMEDOUT from eMMC controllers
-> not responding to CMD0; I wonder if only your controller has this
-> problem, and if that should change how we handle it.
-My host controller can also responding to CMD0. I am not sure if there will happen such scenario: eMMC card is in some error state and cannot respond any command in case during read/write/erase, host controller can still have another way to reset card and make it back to a normal working state. If such scenario occurs, HW reset feature can be used.
-
-> 
-> Does anyone else on the list have feedback on how best to proceed?
-> 
-> Thanks,
-> 
-> --
-> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-> One Laptop Per Child
+Dave.
