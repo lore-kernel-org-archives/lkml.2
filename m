@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932254Ab1AKOn5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 09:43:57 -0500
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:26189 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932179Ab1AKOn4 (ORCPT
+	id S932251Ab1AKOsC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 09:48:02 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:33406 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932181Ab1AKOsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 09:43:56 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 1BqYoP0VM1lNwFy5W8a.Pz6gLP5MengE9hNXETBpHsfg0da
- 3UFFwROPG_LYClReQlec8ezRFWlKH_Z3V1nLXRbXScC03rUjbyliT4AYzhFX
- 3APdb7pEtNaxyz.jWcHTsrlKij7L3B5OrQfFti0ff8LkoAvWedXvafm0GwNC
- DW4YQt9cCqeXuVONWZPulakFpNvLbftpZshCpS0grjx3qzcrIKxTDLUroAOh
- eD7mT6VKpptTIWpPDAC_Mb8j3yLLOaDF.GHr_S6AzRjRR3UGWyI5AV9c.k7w
- geA9KOKpLTdatN2xPCc5n3LSJTA0AhbSZP80.yrvRU1Mkqf1UPRM-
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 11 Jan 2011 08:43:51 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: "Kirill A. Shutemov" <kirill@shutemov.name>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: BUG: sleeping function called from invalid context at
- mm/slub.c:793
-In-Reply-To: <AANLkTim4VM7GjGonXwTs9zwuaOTzegbNKHLpN1QEE1th@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1101110843360.8657@router.home>
-References: <20110110105433.GA17881@shutemov.name> <alpine.DEB.2.00.1101101051260.12243@router.home> <20110110193117.GA20027@shutemov.name> <4D2C279D.5050309@redhat.com> <4D2C3115.9030301@redhat.com> <20110111111345.GA23544@shutemov.name>
- <AANLkTim4VM7GjGonXwTs9zwuaOTzegbNKHLpN1QEE1th@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 11 Jan 2011 09:48:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=EsTECssbGTmgrzTr/crWInS2nREDPXrArX5RCWZqOxT94pqSutbC1HehD12oCa8mZt
+         NgPaxfvRArSGHzBA7o7rVn3ZNZNr+T8P/c36bWbRwD2mgwxnm0ph85VpNyQjASZAsHzz
+         fts9tPPrksla6OMho1n1oLwywYsy9SqpxFOOA=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110111133320.GB10705@atrey.karlin.mff.cuni.cz>
+References: <AANLkTikKA-nStyNjkdsVa8hd=PFQR3tYTJh3MnfpNkD8@mail.gmail.com>
+	<20110106104816.GA4026@tiehlicka.suse.cz>
+	<20110111133320.GB10705@atrey.karlin.mff.cuni.cz>
+Date: Tue, 11 Jan 2011 15:47:59 +0100
+Message-ID: <AANLkTinU2XqyQJGu-Hmhafa37J_wgGEpMJwUGQQNoNaO@mail.gmail.com>
+Subject: Re: Linux 2.6.37
+From: Alex Riesen <raa.lkml@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Michal Hocko <mhocko@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 11, 2011 at 14:33, Pavel Machek <pavel@ucw.cz> wrote:
+>> I can reproduce the problem easily by:
+>> xset dpms force standby; sleep 3s; xset dpms force on
+>
+> (You are using "vesa" or "fbcon" X11 driver, right? I seen same problem
+> until I switched to "intel" X11 driver).
 
-
-Reviewed-by: Christoph Lameter <cl@linux.com>
-
+No, the "intel".
