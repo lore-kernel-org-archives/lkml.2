@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755973Ab1AKM3Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 07:29:24 -0500
-Received: from hera.kernel.org ([140.211.167.34]:47455 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753471Ab1AKM3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 07:29:19 -0500
-Date: Tue, 11 Jan 2011 12:28:58 GMT
-From: tip-bot for Arjan van de Ven <arjan@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com, hpa@zytor.com,
-        mingo@redhat.com, arjan@linux.intel.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, arjan@linux.intel.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110111105544.24448.27607.stgit@bob.linux.org.uk>
-References: <20110111105544.24448.27607.stgit@bob.linux.org.uk>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Fix Moorestown VRTC fixmap placement
-Message-ID: <tip-fa36e956c5027d9a985d555d104d293c0a98d2c3@git.kernel.org>
-Git-Commit-ID: fa36e956c5027d9a985d555d104d293c0a98d2c3
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1755927Ab1AKMmo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 07:42:44 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:62944 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755814Ab1AKMml convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 07:42:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=OI43Ou8NSM17VkPnFmN9NL4DC+NTtWUE6OUrpQe64Mx68LSKHoL/aa+ywIFDSUyP25
+         fxyzwYeYAtO7uiIyrED2mPl3LC62tOQse4UdPOTEk7EESkp9Y0G1y8Ub2KJCYQ9baP5M
+         JzSMtdAPj7eZtHNmuRQFsgMYYymPXKLXYqrfI=
 MIME-Version: 1.0
+In-Reply-To: <20110111112434.GE2385@legolas.emea.dhcp.ti.com>
+References: <1294745487-29138-1-git-send-email-manjunatha_halli@ti.com>
+	<1294745487-29138-2-git-send-email-manjunatha_halli@ti.com>
+	<1294745487-29138-3-git-send-email-manjunatha_halli@ti.com>
+	<1294745487-29138-4-git-send-email-manjunatha_halli@ti.com>
+	<20110111112434.GE2385@legolas.emea.dhcp.ti.com>
+Date: Tue, 11 Jan 2011 18:12:40 +0530
+Message-ID: <AANLkTi=TF9uYEv2Y3qwMKham=K2cCxo4UOTn8Vf+S-KC@mail.gmail.com>
+Subject: Re: [RFC V10 3/7] drivers:media:radio: wl128x: FM Driver Common sources
+From: Raja Mani <rajambsc@gmail.com>
+To: balbi@ti.com
+Cc: manjunatha_halli@ti.com, mchehab@infradead.org, hverkuil@xs4all.nl,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 11 Jan 2011 12:28:58 +0000 (UTC)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fa36e956c5027d9a985d555d104d293c0a98d2c3
-Gitweb:     http://git.kernel.org/tip/fa36e956c5027d9a985d555d104d293c0a98d2c3
-Author:     Arjan van de Ven <arjan@linux.intel.com>
-AuthorDate: Tue, 11 Jan 2011 10:55:56 +0000
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 11 Jan 2011 12:46:16 +0100
+balbi,
 
-x86: Fix Moorestown VRTC fixmap placement
+  Agree , interrupt pkts could have handled in thread context . But in
+the current way , FM driver never create any additional task in the
+system
+  to handle FM interrupt. In fact, there is no task being created in
+this driver to handle FM RDS data, AF,etc.
 
-The x86 fixmaps need to be all together... unfortunately the
-VRTC one was misplaced.
+  This method is suitable for light weight system where we want to
+reduce number of thread in the system.
 
-This patch makes sure the MRST VRTC fixmap is put prior to the
-__end_of_permanent_fixed_addresses marker.
+ On Tue, Jan 11, 2011 at 4:54 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Tue, Jan 11, 2011 at 06:31:23AM -0500, manjunatha_halli@ti.com wrote:
+>> From: Manjunatha Halli <manjunatha_halli@ti.com>
+>>
+>> These are the sources for the common interfaces required by the
+>> FM V4L2 driver for TI WL127x and WL128x chips.
+>>
+>> These implement the FM channel-8 protocol communication with the
+>> chip. This makes use of the Shared Transport as its transport.
+>>
+>> Signed-off-by: Manjunatha Halli <manjunatha_halli@ti.com>
+>> Reviewed-by: Hans Verkuil <hverkuil@xs4all.nl>
+>
+> looks like this is implementing a "proprietary" (by that I mean: for
+> this driver only) IRQ API. Why aren't you using GENIRQ with threaded
+> IRQs support ?
+>
+> Core IRQ Subsystem would handle a lot of stuff for you.
+>
+> --
+> balbi
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-LKML-Reference: <20110111105544.24448.27607.stgit@bob.linux.org.uk>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/fixmap.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
-index 0141b23..4729b2b 100644
---- a/arch/x86/include/asm/fixmap.h
-+++ b/arch/x86/include/asm/fixmap.h
-@@ -116,11 +116,11 @@ enum fixed_addresses {
- #endif
- 	FIX_TEXT_POKE1,	/* reserve 2 pages for text_poke() */
- 	FIX_TEXT_POKE0, /* first page is last, because allocation is backward */
--	__end_of_permanent_fixed_addresses,
--
- #ifdef	CONFIG_X86_MRST
- 	FIX_LNW_VRTC,
- #endif
-+	__end_of_permanent_fixed_addresses,
-+
- 	/*
- 	 * 256 temporary boot-time mappings, used by early_ioremap(),
- 	 * before ioremap() is functional.
+
+-- 
+Regards,
+Raja.
