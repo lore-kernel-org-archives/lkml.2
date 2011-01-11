@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab1AKR6o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 12:58:44 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64047 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756154Ab1AKR6l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 12:58:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=uvrzZvNyNNHofEL3+lRL8mwH2x7BL2gb+4YzRLJob9Fk+DSzKxM5/Ma4FpDI9akxuV
-         VJknY0TGpVualVH5wt3yLHBS1jCuWRYM1pl1RD0aOZJiFqvET9okpVwLUuG390X5l0wy
-         LJgBILSvGnI/bXdoATH2hDtUDmywVP0z/UP/0=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTiknirXaqkvR4DoA34Te=Dj8kentQynrP-Dn=Dk8@mail.gmail.com>
-References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie>
-	<AANLkTinW8Yp1K1w+G+BgLa-fPaFANkGsRjqH_W8N+9VL@mail.gmail.com>
-	<AANLkTim5oVZqMBtan5_TMOxaWbqkF=aDcBYFNYy55kt_@mail.gmail.com>
-	<0aea052d-70ff-41ea-8776-c6d974c10337@email.android.com>
-	<AANLkTim0rn7Vem6YJM5tVKM0PX4YdnNmaeqmpS=Vp7rc@mail.gmail.com>
-	<AANLkTimx0hWByYw1dXKS6y0B9a84gYOxBu-Gnjm+cCwa@mail.gmail.com>
-	<AANLkTiknirXaqkvR4DoA34Te=Dj8kentQynrP-Dn=Dk8@mail.gmail.com>
-Date: Tue, 11 Jan 2011 19:58:39 +0200
-Message-ID: <AANLkTinNjdh2c20qymMoc1HzJZ0Rjs6RpRmLTzgGtAb+@mail.gmail.com>
-Subject: Re: [git pull] drm for rc1
-From: Anca Emanuel <anca.emanuel@gmail.com>
+	id S932526Ab1AKR6v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 12:58:51 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:57673 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932274Ab1AKR6t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 12:58:49 -0500
+Subject: Re: [announce] vfs-scale git tree update
+From: Alex Elder <aelder@sgi.com>
+Reply-To: aelder@sgi.com
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Dave Airlie <airlied@gmail.com>,
-        Dave Airlie <airlied@linux.ie>,
-        Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTin67OXYYKk6y+_MKfXEXBz-F_+qAH0cpiJ24yEQ@mail.gmail.com>
+References: <20110107075831.GA14915@amd> <1294763679.2435.72.camel@doink>
+	 <AANLkTin67OXYYKk6y+_MKfXEXBz-F_+qAH0cpiJ24yEQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 11 Jan 2011 11:57:48 -0600
+Message-ID: <1294768668.2435.177.camel@doink>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 11 Jan 2011 17:57:49.0337 (UTC) FILETIME=[0F43F890:01CBB1B9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave, in the future, can you make pull requests like Ingo ?
-What I mean:
-non-drm
-generic
-power
-nouveau
-radeon
-intel
-others
+On Tue, 2011-01-11 at 08:51 -0800, Linus Torvalds wrote:
+> On Tue, Jan 11, 2011 at 8:34 AM, Alex Elder <aelder@sgi.com> wrote:
+> >
+> > FYI, when using this code, as merged by Linus, I hit the
+> > BUG_ON() at the beginning of d_set_d_op() when it's called
+> > by autofs4_dir_mkdir().  I managed to work around it by
+> > just commenting out those BUG_ON() calls but it's something
+> > that ought to get addressed properly.
+> 
+> Yeah, removing the BUG_ON() isn't the right thing to do - it means
+> that autofs4 is obviously setting the dentry ops twice for the same
+> dentry.
+> 
+> Possibly the thing could be relaxed to allow setting the _same_ d_op
+> pointer, ie do something like
+> 
+>    if (dentry->d_op == op)
+>       return;
+> 
+> at the top of that function. But looking at it, I don't think that
+> fixes the autofs4 issue.
+
+That's easy enough, but it seems everybody else ensures
+this gets done just once per dentry, and it would be nice
+to preserve that "tightness" if possible.
+
+> The fact that autofs4 does "d_add()" before it sets the d_ops (or
+> other dentry state, for that matter) looks a bit scary. To me that
+> smells like it might get a  dentry lookup hit before it's actually
+> fully done.
+
+Agreed.
+
+> Does it make any difference if you move the various d_add() calls down
+> to the end of the functions to when the "dentry" has really been
+> instantiated?
+
+Looking at it quickly, I don't think that would matter for
+the case at hand.  I.e., that might be safer but it doesn't
+address the fact that these fields are getting initialized
+multiple times.
+
+					-Alex
+
