@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756077Ab1AKO1o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 09:27:44 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:56760 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753799Ab1AKO1m convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:5:1>);
-	Tue, 11 Jan 2011 09:27:42 -0500
-Message-Id: <4D2C76E9020000780002BB73@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Tue, 11 Jan 2011 14:27:37 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Ian Campbell" <Ian.Campbell@eu.citrix.com>
-Cc: "Stefano Stabellini" <Stefano.Stabellini@eu.citrix.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen: use PCI interfaces to request IO
-	 and MEM resources on platform device.
-References: <1294746628-20396-1-git-send-email-ian.campbell@citrix.com>
- <4D2C5FA5020000780002BB21@vpn.id2.novell.com>
- <1294750884.3831.5866.camel@zakaz.uk.xensource.com>
- <4D2C72FA020000780002BB58@vpn.id2.novell.com>
- <1294755483.3831.5872.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1294755483.3831.5872.camel@zakaz.uk.xensource.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S932225Ab1AKO25 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 09:28:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59258 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756008Ab1AKO24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 09:28:56 -0500
+Date: Tue, 11 Jan 2011 15:28:51 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: Linux 2.6.37
+Message-ID: <20110111142851.GA16306@tiehlicka.suse.cz>
+References: <AANLkTikKA-nStyNjkdsVa8hd=PFQR3tYTJh3MnfpNkD8@mail.gmail.com>
+ <20110106104816.GA4026@tiehlicka.suse.cz>
+ <20110111133320.GB10705@atrey.karlin.mff.cuni.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20110111133320.GB10705@atrey.karlin.mff.cuni.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 11.01.11 at 15:18, Ian Campbell <Ian.Campbell@eu.citrix.com> wrote:
->> >> I'm mainly asking because if it really addresses some problem,
->> >> then unmodified_drivers/linux-2.6/platform-pci/platform-pci.c
->> >> in -unstable should probably get updated too.
->> > 
->> > Assuming the pci_* interfaces exist back as far as we care about for
->> > those drivers then I don't see why not to apply it.
->> 
->> I checked back to .5, where they exist; the question is - how far
->> back do we care?
+On Tue 11-01-11 14:33:20, Pavel Machek wrote:
+> > Hi,
+> > 
+> > On Tue 04-01-11 17:15:45, Linus Torvalds wrote:
+> > [...]
+> > > We did have another revert to fix hopefullythe last "blank screen"
+> > > regression on intel graphics.
+> > 
+> > It seems that there is still a regression for intel graphic cards
+> > backlight. One report is https://bugzilla.kernel.org/show_bug.cgi?id=22672.
+> > I can reproduce the problem easily by:
+> > xset dpms force standby; sleep 3s; xset dpms force on
 > 
-> You mean 2.6.5? That's old enough to be the cut off IMHO.
-> 
-> I'm not sure how much actual use these drivers get these days though.
+> (You are using "vesa" or "fbcon" X11 driver, right? I seen same problem
+> until I switched to "intel" X11 driver).
 
-We're building ours from that code.
+I am using intel X11 driver:
+[...]
+(II) Loading extension DRI2
+(II) LoadModule: "intel"
+(II) Loading /usr/lib/xorg/modules/drivers/intel_drv.so
+[...]
 
-Are you going to submit this for -unstable then too, or are you
-expecting me to do so?
+So this doesn't look like the case.
 
-Jan
-
+-- 
+Michal Hocko
+L3 team 
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
