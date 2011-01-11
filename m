@@ -1,62 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185Ab1AKVnO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 16:43:14 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:13165 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753902Ab1AKVnL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 16:43:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=Q7EGpX+vADWpnN9oQilObbK2wHRdgw2v8PeA7XlCIGqmG9xCkiOAmiPZwOO2vWkcmz
-         6hcbKc/7d0RuEV/nxGHQ==
-Date: Tue, 11 Jan 2011 13:43:06 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: linux-kernel@vger.kernel.org
-cc: mm-commits@vger.kernel.org, akpm@linux-foundation.org, hughd@google.com,
-        mel@csn.ul.ie
-Subject: Re: + mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclaim-avoid-a-potential-deadlock-due-to-lock_page-during-direct-compaction-fix.patch
- added to -mm tree
-In-Reply-To: <201101112046.p0BKk2Js005902@imap1.linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1101111341590.7551@chino.kir.corp.google.com>
-References: <201101112046.p0BKk2Js005902@imap1.linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756195Ab1AKVp1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 16:45:27 -0500
+Received: from fieldses.org ([174.143.236.118]:43950 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753902Ab1AKVpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 16:45:23 -0500
+Date: Tue, 11 Jan 2011 16:44:58 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, neilb@suse.de,
+        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu,
+        stable@kernel.org
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/core] sched: Change wait_for_completion_*_timeout()
+ to return a signed long
+Message-ID: <20110111214457.GD28537@fieldses.org>
+References: <20110105125016.64ccab0e@notabene.brown>
+ <tip-6bf4123760a5aece6e4829ce90b70b6ffd751d65@git.kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <tip-6bf4123760a5aece6e4829ce90b70b6ffd751d65@git.kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Jan 2011, akpm@linux-foundation.org wrote:
+Doesn't this belong in 2.6.37.y as well?
 
-> diff -puN mm/page_alloc.c~mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclaim-avoid-a-potential-deadlock-due-to-lock_page-during-direct-compaction-fix mm/page_alloc.c
-> --- a/mm/page_alloc.c~mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclaim-avoid-a-potential-deadlock-due-to-lock_page-during-direct-compaction-fix
-> +++ a/mm/page_alloc.c
-> @@ -1815,15 +1815,15 @@ __alloc_pages_direct_compact(gfp_t gfp_m
->  	int migratetype, unsigned long *did_some_progress)
+--b.
+
+On Wed, Jan 05, 2011 at 02:07:12PM +0000, tip-bot for NeilBrown wrote:
+> Commit-ID:  6bf4123760a5aece6e4829ce90b70b6ffd751d65
+> Gitweb:     http://git.kernel.org/tip/6bf4123760a5aece6e4829ce90b70b6ffd751d65
+> Author:     NeilBrown <neilb@suse.de>
+> AuthorDate: Wed, 5 Jan 2011 12:50:16 +1100
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Wed, 5 Jan 2011 14:15:50 +0100
+> 
+> sched: Change wait_for_completion_*_timeout() to return a signed long
+> 
+> wait_for_completion_*_timeout() can return:
+> 
+>    0: if the wait timed out
+>  -ve: if the wait was interrupted
+>  +ve: if the completion was completed.
+> 
+> As they currently return an 'unsigned long', the last two cases
+> are not easily distinguished which can easily result in buggy
+> code, as is the case for the recently added
+> wait_for_completion_interruptible_timeout() call in
+> net/sunrpc/cache.c
+> 
+> So change them both to return 'long'.  As MAX_SCHEDULE_TIMEOUT
+> is LONG_MAX, a large +ve return value should never overflow.
+> 
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: J.  Bruce Fields <bfields@fieldses.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> LKML-Reference: <20110105125016.64ccab0e@notabene.brown>
+> Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> ---
+>  include/linux/completion.h |    8 ++++----
+>  kernel/sched.c             |    4 ++--
+>  2 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/include/linux/completion.h b/include/linux/completion.h
+> index 36d57f7..51494e6 100644
+> --- a/include/linux/completion.h
+> +++ b/include/linux/completion.h
+> @@ -81,10 +81,10 @@ extern int wait_for_completion_interruptible(struct completion *x);
+>  extern int wait_for_completion_killable(struct completion *x);
+>  extern unsigned long wait_for_completion_timeout(struct completion *x,
+>  						   unsigned long timeout);
+> -extern unsigned long wait_for_completion_interruptible_timeout(
+> -			struct completion *x, unsigned long timeout);
+> -extern unsigned long wait_for_completion_killable_timeout(
+> -			struct completion *x, unsigned long timeout);
+> +extern long wait_for_completion_interruptible_timeout(
+> +	struct completion *x, unsigned long timeout);
+> +extern long wait_for_completion_killable_timeout(
+> +	struct completion *x, unsigned long timeout);
+>  extern bool try_wait_for_completion(struct completion *x);
+>  extern bool completion_done(struct completion *x);
+>  
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index f2f914e..114a0de 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -4395,7 +4395,7 @@ EXPORT_SYMBOL(wait_for_completion_interruptible);
+>   * This waits for either a completion of a specific task to be signaled or for a
+>   * specified timeout to expire. It is interruptible. The timeout is in jiffies.
+>   */
+> -unsigned long __sched
+> +long __sched
+>  wait_for_completion_interruptible_timeout(struct completion *x,
+>  					  unsigned long timeout)
 >  {
->  	struct page *page;
-> -	struct task_struct *p = current;
-> +	struct task_struct *tsk = current;
->  
->  	if (!order || compaction_deferred(preferred_zone))
->  		return NULL;
->  
-> -	p->flags |= PF_MEMALLOC;
-> +	tsk->flags |= PF_MEMALLOC;
->  	*did_some_progress = try_to_compact_pages(zonelist, order, gfp_mask,
->  								nodemask);
-> -	p->flags &= ~PF_MEMALLOC;
-> +	tsk->flags &= ~PF_MEMALLOC;
->  	if (*did_some_progress != COMPACT_SKIPPED) {
->  
->  		/* Page migration frees to the PCP lists but we want merging */
-
-This could be done for all of the page allocator functions in 
-mm/page_alloc.c, I think it would be inconsistent and slightly harder to 
-read if it were done in only one.
+> @@ -4428,7 +4428,7 @@ EXPORT_SYMBOL(wait_for_completion_killable);
+>   * signaled or for a specified timeout to expire. It can be
+>   * interrupted by a kill signal. The timeout is in jiffies.
+>   */
+> -unsigned long __sched
+> +long __sched
+>  wait_for_completion_killable_timeout(struct completion *x,
+>  				     unsigned long timeout)
+>  {
