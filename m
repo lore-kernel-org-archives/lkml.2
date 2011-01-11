@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab1AKFXV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 00:23:21 -0500
+	id S1752813Ab1AKFXQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 00:23:16 -0500
 Received: from mail-yx0-f174.google.com ([209.85.213.174]:63404 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178Ab1AKFW4 (ORCPT
+	with ESMTP id S1751880Ab1AKFWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 00:22:56 -0500
+	Tue, 11 Jan 2011 00:22:52 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=XxbjKhBVVXrMJrs42tUmV9Ti79N6ImxhEsApzg8v9KszUP+TabfzfOrnIsSpg2TMMN
-         XF9rH0jqB5l+GsVnM1bcCrn4RfznPpf18/rWGjSwcV5+c2epNX0g7d27zxzvJ8T3i4nz
-         VKKNPFOMTQexIAOf7S+crkZORAf1zcjtAj2fw=
+        b=k1Io75xADPo1iW8VuL5P9WxyEledWPQaR6mYMWB4ocoGB/DWiqNvn17mhxwREgUK6Z
+         uJBJbSwZPFRUR1vJuiZGBc82LVZPIU4OSUt+sfuMxx9T3IDp+UEVbU/eXsReXDDbvjh3
+         fmCTJN8/kSGyTybQ3j8fJvlJyA1JCminvmK+4=
 From: Minchan Kim <minchan.kim@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
@@ -20,13 +20,10 @@ Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Hugh Dickins <hughd@google.com>, Mel Gorman <mel@csn.ul.ie>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andi Kleen <andi@firstfloor.org>, Nick Piggin <npiggin@kernel.dk>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH v3 5/7] truncate: Change remove_from_page_cache
-Date: Tue, 11 Jan 2011 14:22:09 +0900
-Message-Id: <0a67c9d4b1a2cdcc2a7b43147d73766c986531f4.1294723009.git.minchan.kim@gmail.com>
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: [PATCH v3 4/7] shmem: Change remove_from_page_cache
+Date: Tue, 11 Jan 2011 14:22:08 +0900
+Message-Id: <e33f0b326f5f62fe2a87344dade5a1ded521240b.1294723009.git.minchan.kim@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <cover.1294723009.git.minchan.kim@gmail.com>
 References: <cover.1294723009.git.minchan.kim@gmail.com>
@@ -40,40 +37,37 @@ This patch series changes remove_from_page_cache's page ref counting
 rule. Page cache ref count is decreased in delete_from_page_cache.
 So we don't need decreasing page reference by caller.
 
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Acked-by: Hugh Dickins <hughd@google.com>
+Acked-by:Hugh Dickins <hughd@google.com>
 Acked-by: Mel Gorman <mel@csn.ul.ie>
 Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
 Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 ---
- mm/truncate.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ mm/shmem.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/mm/truncate.c b/mm/truncate.c
-index 9ee5673..85404b0 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -108,13 +108,12 @@ truncate_complete_page(struct address_space *mapping, struct page *page)
- 	cancel_dirty_page(page, PAGE_CACHE_SIZE);
+diff --git a/mm/shmem.c b/mm/shmem.c
+index fa9acc9..079cced 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1081,7 +1081,7 @@ static int shmem_writepage(struct page *page, struct writeback_control *wbc)
+ 	shmem_recalc_inode(inode);
  
- 	clear_page_mlock(page);
--	remove_from_page_cache(page);
-+	delete_from_page_cache(page);
- 	ClearPageMappedToDisk(page);
--	/* this must be after the remove_from_page_cache which
-+	/* this must be after the delete_from_page_cache which
- 	 * calls cleancache_put_page (and note page->mapping is now NULL)
- 	 */
- 	cleancache_flush_page(mapping, page);
--	page_cache_release(page);	/* pagecache ref */
- 	return 0;
- }
- 
+ 	if (swap.val && add_to_swap_cache(page, swap, GFP_ATOMIC) == 0) {
+-		remove_from_page_cache(page);
++		delete_from_page_cache(page);
+ 		shmem_swp_set(info, entry, swap.val);
+ 		shmem_swp_unmap(entry);
+ 		if (list_empty(&info->swaplist))
+@@ -1091,7 +1091,6 @@ static int shmem_writepage(struct page *page, struct writeback_control *wbc)
+ 		spin_unlock(&info->lock);
+ 		swap_shmem_alloc(swap);
+ 		BUG_ON(page_mapped(page));
+-		page_cache_release(page);	/* pagecache ref */
+ 		swap_writepage(page, wbc);
+ 		if (inode) {
+ 			mutex_lock(&shmem_swaplist_mutex);
 -- 
 1.7.0.4
 
