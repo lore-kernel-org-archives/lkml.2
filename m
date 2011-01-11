@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932257Ab1AKPS5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 10:18:57 -0500
-Received: from ausxippc101.us.dell.com ([143.166.85.207]:33889 "EHLO
-	ausxippc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756093Ab1AKPSz convert rfc822-to-8bit (ORCPT
+	id S1756146Ab1AKPUa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 10:20:30 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52751 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756093Ab1AKPU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 10:18:55 -0500
-X-Loopcount0: from 10.175.216.251
-From: <Narendra_K@Dell.com>
-To: <sfr@canb.auug.org.au>
-CC: <jbarnes@virtuousgeek.org>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <Narendra_K@Dell.com>,
-        <Jordan_Hargrave@Dell.com>, <Matt_Domsch@Dell.com>
-Date: Tue, 11 Jan 2011 20:48:21 +0530
-Subject: Re: linux-next: build failure after merge of the pci tree
-Thread-Topic: linux-next: build failure after merge of the pci tree
-Thread-Index: AcuxoshHJzxMMZ4lR6eSLZ5DBXWN2g==
-Message-ID: <20110111154214.GA16157@fedora14-r610.oslab.blr.amer.dell.com>
-References: <20110110125411.2f45fd2f.sfr@canb.auug.org.au>
-In-Reply-To: <20110110125411.2f45fd2f.sfr@canb.auug.org.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mutt/1.5.21 (2010-09-15)
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 Jan 2011 10:20:26 -0500
+Date: Tue, 11 Jan 2011 08:20:21 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net
+Subject: Re: [PATCH 15/16] spi: dw_spi: don't treat NULL clk as an error
+Message-ID: <20110111152021.GA2707@angua.secretlab.ca>
+References: <1294749833-32019-1-git-send-email-jamie@jamieiles.com>
+ <1294749833-32019-16-git-send-email-jamie@jamieiles.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294749833-32019-16-git-send-email-jamie@jamieiles.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 07:24:11AM +0530, Stephen Rothwell wrote:
-> Hi Jesse,
+On Tue, Jan 11, 2011 at 12:43:52PM +0000, Jamie Iles wrote:
+> clk_get() returns a struct clk cookie to the driver and some platforms
+> may return NULL if they only support a single clock.  clk_get() has only
+> failed if it returns a ERR_PTR() encoded pointer.
 > 
-> After merging the pci tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
+> Cc: spi-devel-general@lists.sourceforge.net
+> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+
+Applied, thanks.
+
+g.
+
+> ---
+>  drivers/spi/dw_spi_mmio.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
 > 
-> drivers/built-in.o: In function `T.647':
-> pci-label.c:(.text+0x28514): undefined reference to `utf16s_to_utf8s'
+> diff --git a/drivers/spi/dw_spi_mmio.c b/drivers/spi/dw_spi_mmio.c
+> index db35bd9..2fa012c 100644
+> --- a/drivers/spi/dw_spi_mmio.c
+> +++ b/drivers/spi/dw_spi_mmio.c
+> @@ -9,6 +9,7 @@
+>   */
+>  
+>  #include <linux/clk.h>
+> +#include <linux/err.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/slab.h>
+> @@ -68,8 +69,8 @@ static int __devinit dw_spi_mmio_probe(struct platform_device *pdev)
+>  	}
+>  
+>  	dwsmmio->clk = clk_get(&pdev->dev, NULL);
+> -	if (!dwsmmio->clk) {
+> -		ret = -ENODEV;
+> +	if (IS_ERR(dwsmmio->clk)) {
+> +		ret = PTR_ERR(dwsmmio->clk);
+>  		goto err_irq;
+>  	}
+>  	clk_enable(dwsmmio->clk);
+> -- 
+> 1.7.3.4
 > 
-> Caused by commit a6247cd4be20cb5439db5cb7b0b6cc67fdc8e2a2 ("PCI: export
-> ACPI _DSM provided firmware instance number and string to sysfs").
 > 
-> I have used the pci tree from next-20110107 for today.
-
-[ It looks like my earlier post did not hit the lists, so reposting ]
-
-Hi, 
-
-I did a git pull of linux-next-20110110 (topmost commit is 
-4c897f27ad2668534f719202a3b88abe8ec31011) and applied the patch. With 
-CONFIG_DMI and CONFIG_ACPI both set, I did not encounter this build failure. 
-The definition for `utf16s_to_utf8s' is available in 'include/linux/nls.h' 
-which is included in 'drivers/pci/pci-label.c' and the build succeeded. Sorry 
-if I am missing something here.
-
-Stephen,
-
-Could you share the .config which caused this build failure ?
-
-With regards,
-Narendra K
-
-
+> ------------------------------------------------------------------------------
+> Gaining the trust of online customers is vital for the success of any company
+> that requires sensitive data to be transmitted over the Web.   Learn how to 
+> best implement a security strategy that keeps consumers' information secure 
+> and instills the confidence they need to proceed with transactions.
+> http://p.sf.net/sfu/oracle-sfdevnl 
+> _______________________________________________
+> spi-devel-general mailing list
+> spi-devel-general@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/spi-devel-general
