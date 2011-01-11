@@ -1,90 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab1AKVHw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 16:07:52 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:43534 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754289Ab1AKVHs convert rfc822-to-8bit (ORCPT
+	id S1755868Ab1AKVKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 16:10:33 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:48464 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289Ab1AKVKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 16:07:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=CzF6+raF0UXZztkzHL7r7V/GcyOQEpWlbgFMplQCXyHcW1YFKnHTJQd+swLzf71Wrl
-         R8XFWiXOLa784Fc6h7huNfsH/fv32M8SdJzpYqdNP1ycm4sYVu2HZq90QAPXTT74/RwE
-         xDe+mZuugfjtHhJ/sZ6DbaQcWavY5woqcLBBo=
+	Tue, 11 Jan 2011 16:10:31 -0500
+Date: Tue, 11 Jan 2011 13:10:22 -0800
+From: Ram Pai <linuxram@us.ibm.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Ram Pai <linuxram@us.ibm.com>, Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        clemens@ladisch.de, Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        peter.henriksson@gmail.com, ebiederm@aristanetworks.com
+Subject: Re: [PATCH 1/1] PCI: ignore failure to preallocate minimal
+ resources to hotplug bridges
+Message-ID: <20110111211021.GA26352@ram-laptop>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <20101006225834.GE2945@ram-laptop>
+ <201010081416.57454.bjorn.helgaas@hp.com>
+ <20101012070515.GA549@ram-laptop>
+ <201010121301.54402.bjorn.helgaas@hp.com>
+ <20101018131010.0e4771eb@jbarnes-desktop>
+ <20101019171740.GC8437@ram-laptop>
+ <20101019112439.53c4901e@jbarnes-desktop>
+ <20101022171640.GE24820@ram-laptop>
+ <20110107143208.036a3c01@jbarnes-desktop>
 MIME-Version: 1.0
-In-Reply-To: <1294735916.1949.637.camel@sli10-conroe>
-References: <1294735916.1949.637.camel@sli10-conroe>
-Date: Tue, 11 Jan 2011 22:07:47 +0100
-Message-ID: <AANLkTim72yNM1svGbFTKW8pSnFP9W+YgvGs4moXq+pyo@mail.gmail.com>
-Subject: Re: [PATCH 1/2]block cfq: make queue preempt work for queues from
- different workload
-From: Corrado Zoccolo <czoccolo@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        "jmoyer@redhat.com" <jmoyer@redhat.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110107143208.036a3c01@jbarnes-desktop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Shaohua,
-On Tue, Jan 11, 2011 at 9:51 AM, Shaohua Li <shaohua.li@intel.com> wrote:
-> I got this:
->             fio-874   [007]  2157.724514:   8,32   m   N cfq874 preempt
->             fio-874   [007]  2157.724519:   8,32   m   N cfq830 slice expired t=1
->             fio-874   [007]  2157.724520:   8,32   m   N cfq830 sl_used=1 disp=0 charge=1 iops=0 sect=0
->             fio-874   [007]  2157.724521:   8,32   m   N cfq830 set_active wl_prio:0 wl_type:0
->             fio-874   [007]  2157.724522:   8,32   m   N cfq830 Not idling. st->count:1
-> cfq830 is an async queue, and preempted by a sync queue cfq874. But since we
-> have cfqg->saved_workload_slice mechanism, the preempt is a nop.
-> Looks currently our preempt is totally broken if the two queues are not from
-> the same workload type.
-> Below patch fixes it. This will might make async queue starvation, but it's
-> what our old code does before cgroup is added.
-have you measured latency improvements by un-breaking preemption?
-AFAIK, preemption behaviour changed since 2.6.33, before cgroups were
-added, and the latency before the changes that weakened preemption in
-2.6.33 was far worse.
+On Fri, Jan 07, 2011 at 02:32:08PM -0800, Jesse Barnes wrote:
+> On Fri, 22 Oct 2010 10:16:40 -0700
+> Ram Pai <linuxram@us.ibm.com> wrote:
+> 
+> >         PCI: ignore failure to preallocate minimal resources to 
+> > 		hotplug bridges
+> > 
+> > 	Linux tries to pre-allocate minimal resources to hotplug 
+> > 	bridges.  This 	works 	fine as long as there are enough 
+> > 	resources  to  satisfy   all   other   genuine  resource
+> > 	requirements.  However  if  enough  resources   are  not 
+> > 	available    to    satisfy    the    pre-allocation, the 
+> > 	resource-allocator reports errors and returns failure.
+> > 	
+> > 	This patch distinguishes between must-need resources and
+> > 	nice-to-have   resources.   Any   failure   to  allocate 
+> > 	nice-to-have resources are ignored. 
+> > 
+> > 	This  behavior  can  be  particularly  useful to trigger 
+> > 	automatic  reallocation, if  the  OS  discovers  genuine 
+> > 	resource  allocation  conflicts  or  genuine unallocated 
+> > 	BARs  caused  by not-so-smart allocation behavior of the 
+> > 	native BIOS.
+> > 
+> > 	The motivation for this patch is due a issue reported in 
+> > 	https://bugzilla.kernel.org/show_bug.cgi?id=15960
+> > 
+> > Signed-off-by: Ram Pai <linuxram@us.ibm.com>
+> > 
+> 
+> Seems like we want a fix like this; did you see Bjorn's comments?
+> Maybe we can adjust the order of allocation instead?
+> 
+> What issues do you still have outstanding wrt resource allocation?  Do
+> you still think you need the big "reallocate everything" option?
 
-Thanks,
-Corrado
->
-> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
->
-> ---
->  block/cfq-iosched.c |    9 +++++++++
->  1 file changed, 9 insertions(+)
->
-> Index: linux/block/cfq-iosched.c
-> ===================================================================
-> --- linux.orig/block/cfq-iosched.c      2011-01-11 16:24:56.000000000 +0800
-> +++ linux/block/cfq-iosched.c   2011-01-11 16:41:49.000000000 +0800
-> @@ -3284,10 +3284,19 @@ cfq_should_preempt(struct cfq_data *cfqd
->  */
->  static void cfq_preempt_queue(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->  {
-> +       struct cfq_queue *old_cfqq = cfqd->active_queue;
-> +
->        cfq_log_cfqq(cfqd, cfqq, "preempt");
->        cfq_slice_expired(cfqd, 1);
->
->        /*
-> +        * workload type is changed, don't save slice, otherwise preempt
-> +        * doesn't happen
-> +        */
-> +       if (cfqq_type(old_cfqq) != cfqq_type(cfqq))
-> +               cfqq->cfqg->saved_workload_slice = 0;
-> +
-> +       /*
->         * Put the new queue at the front of the of the current list,
->         * so we know that it will be selected next.
->         */
->
->
->
+Jesse,
+
+ Yes I saw Bjorn's comment but then i got pulled into something else and
+ made no progress. Just yesterday I started looking into this and co-incidently
+ see your mail too.
+
+ I am not sure how to order the allocation given the current organization
+ of the code.
+	
+ The real problem  is that the kernel wants to pre-allocate some minimum
+ memory and ioport to hotplug bridges. On a system with just enough resources to
+ satisfy the currently installed devices, the current code organization makes it
+ hard to organize the allocation order such that atleast the must-have requests
+ are satisfied.
+	
+ An ideal solution should first satisfy the must-have requests and if
+ any additional resources are still available then pre-allocate nice-to-have
+ requests.
+
+ I am thinking of structuring the code the following way.
+
+ a) note down the must-have requirement as well as the nice-to-way requirement
+	for each pci-resource.
+ b) run through each resource and satisfy the must-have requirement. 
+ c) if (b) succeeds, run through each resource and *try* to satisfy the
+	nice-to-way requirement.
+
+ The other solution is to simply ignore preallocation to hotplug bridges.
+
+Please suggest,
+RP
+	
+
+> 
+> Thanks,
+> -- 
+> Jesse Barnes, Intel Open Source Technology Center
+
+-- 
+Ram Pai
+System X Device-Driver Enablement Lead
+Linux Technology Center
+Beaverton OR-97006
+503-5783752 t/l 7753752
+linuxram@us.ibm.com
