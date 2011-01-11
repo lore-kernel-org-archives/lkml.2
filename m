@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab1AKPNf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 10:13:35 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:63240 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755457Ab1AKPNc (ORCPT
+	id S1756141Ab1AKPPb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 10:15:31 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57539 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753786Ab1AKPPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 10:13:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=c7jivg6l1BRaINyYgOILiU8esJpmWwDfCsaGAj3NhZ9KYIcr3T57w5m5nvqU1mn0zS
-         ryMXxiCmLlPVjYmjUQmIH6S6K4oReB8U1GFH0fbLcqh/skJtPHVM9IT96Z5X2Q2wj6iV
-         dV02lGIwbjGH+gFTpyBAWZ/5pWTqYIef3ue+4=
-Date: Tue, 11 Jan 2011 16:13:26 +0100
-From: Tejun Heo <tj@kernel.org>
-To: "Desai, Kashyap" <Kashyap.Desai@lsi.com>
-Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
-        "fujita.tomonori@lab.ntt.co.jp" <fujita.tomonori@lab.ntt.co.jp>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Moore, Eric" <Eric.Moore@lsi.com>,
-        "dgilbert@interlog.com" <dgilbert@interlog.com>
-Subject: Re: [PATCH 4/6] fusion: don't use flush_scheduled_work()
-Message-ID: <20110111151326.GA15933@htj.dyndns.org>
-References: <1292943721-4519-1-git-send-email-tj@kernel.org>
- <1292943721-4519-5-git-send-email-tj@kernel.org>
- <B2FD678A64EAAD45B089B123FDFC3ED70916AAA0@inbmail01.lsi.com>
+	Tue, 11 Jan 2011 10:15:30 -0500
+Date: Tue, 11 Jan 2011 16:15:28 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: linux-kernel@vger.kernel.org, Vincent Sanders <support@simtec.co.uk>,
+        linux-mtd@lists.infradead.org
+Subject: Re: [PATCH 12/16] mtd: mpc5121_nfc: don't treat NULL clk as an
+ error
+Message-ID: <20110111151528.GB25741@pengutronix.de>
+References: <1294749833-32019-1-git-send-email-jamie@jamieiles.com>
+ <1294749833-32019-13-git-send-email-jamie@jamieiles.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="eAbsdosE1cNLO4uF"
 Content-Disposition: inline
-In-Reply-To: <B2FD678A64EAAD45B089B123FDFC3ED70916AAA0@inbmail01.lsi.com>
+In-Reply-To: <1294749833-32019-13-git-send-email-jamie@jamieiles.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 01:00:58PM +0530, Desai, Kashyap wrote:
-> Need to add header of function mptspi_suspend.  Logical part of the
-> patch looks OK to me. Please consider this patch as an ACKed by me.
 
-Will do so.  Thank you.
+--eAbsdosE1cNLO4uF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-tejun
+On Tue, Jan 11, 2011 at 12:43:49PM +0000, Jamie Iles wrote:
+> clk_get() returns a struct clk cookie to the driver and some platforms
+> may return NULL if they only support a single clock.  clk_get() has only
+> failed if it returns a ERR_PTR() encoded pointer.
+>=20
+> Cc: Vincent Sanders <support@simtec.co.uk>
+> Cc: linux-mtd@lists.infradead.org
+> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+
+Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--eAbsdosE1cNLO4uF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk0sdBAACgkQD27XaX1/VRvKDACeJn3lvW2SQdz1ysVcRupikh5Q
+/isAnir2WsLgJx0cTB1uXmP8YH4Sol+N
+=4GrT
+-----END PGP SIGNATURE-----
+
+--eAbsdosE1cNLO4uF--
