@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582Ab1AKK0q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 05:26:46 -0500
-Received: from www.tglx.de ([62.245.132.106]:59089 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752577Ab1AKK0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 05:26:39 -0500
-Date: Tue, 11 Jan 2011 11:26:11 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, johnstul@us.ibm.com, williams@redhat.com,
-        schwidefsky@de.ibm.com, mingo@elte.hu,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/tsc] x86: Improve TSC calibration using a delayed
- workqueue
-In-Reply-To: <20110111095640.GC22867@shutemov.name>
-Message-ID: <alpine.LFD.2.00.1101111124590.12146@localhost6.localdomain6>
-References: <1289003985-29060-1-git-send-email-johnstul@us.ibm.com> <tip-08ec0c58fb8a05d3191d5cb6f5d6f81adb419798@git.kernel.org> <20110111081352.GA22867@shutemov.name> <alpine.LFD.2.00.1101110926040.12146@localhost6.localdomain6> <20110111083054.GB22867@shutemov.name>
- <alpine.LFD.2.00.1101110936291.12146@localhost6.localdomain6> <20110111095640.GC22867@shutemov.name>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755609Ab1AKK10 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 05:27:26 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:35864 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755565Ab1AKK1V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 05:27:21 -0500
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: [PATCH 1/2] Add a common struct clk
+Date: Tue, 11 Jan 2011 18:27:11 +0800
+User-Agent: KMail/1.13.5 (Linux/2.6.35-24-generic; KDE/4.5.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Ben Herrenchmidt <benh@kernel.crashing.org>,
+        "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
+	<u.kleine-koenig@pengutronix.de>
+References: <1294199462.347935.472473715866.0.gpush@pororo> <1294199462.348449.192344022926.1.gpush@pororo> <20110111101636.GF26617@pengutronix.de>
+In-Reply-To: <20110111101636.GF26617@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101111827.12291.jeremy.kerr@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Jan 2011, Kirill A. Shutemov wrote:
-> On Tue, Jan 11, 2011 at 09:37:15AM +0100, Thomas Gleixner wrote:
-> > Does the patch below fix it ? We can end up with tsc_khz=0 there :(
-> 
-> Yes, it does.
-> 
-> Bisected-and-tested-by: Kirill A. Shutemov <kas@openvz.org>
-
-Looking deeper, we should avoid to schedule the delayed init
-completely. Does that work as well ?
-
-Thanks,
-
-	tglx
----
-
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 03d2ea8..823f79a 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -965,7 +965,7 @@ out:
+Hi Sascha,
  
- static int __init init_tsc_clocksource(void)
- {
--	if (!cpu_has_tsc || tsc_disabled > 0)
-+	if (!cpu_has_tsc || tsc_disabled > 0 || !tsc_khz)
- 		return 0;
- 
- 	if (tsc_clocksource_reliable)
+> The i.MX clk implementation disables the old parent if clk is enabled
+> and enables the new parent if clk is enabled (modulo bugs). Shouldn't
+> we do this here aswell?
+
+Sounds reasonable, yes.
+
+> I thought about returning -EBUSY if clk_set_parent is called for an
+> enabled clk, but this way we could never reparent the cpu clock which I
+> think is done in the Freescale BSP for power saving.
+
+I think that the possibility for changing the parent really depends on the 
+implementation; in some cases we may want to disallow it, in others it might 
+be fine.
+
+Related: do we really need globally-accessible clk_{get,set}_parent in the clk 
+API? For cases where we need to set the parent, we probably need details about 
+the platform clock configuration (eg, which clocks are possible parents). In 
+this case, we could just call into the clock driver directly.
+
+Cheers,
+
+
+Jeremy
