@@ -1,52 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251Ab1AKB1U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 20:27:20 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:54755 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754301Ab1AKB1O (ORCPT
+	id S1755269Ab1AKB21 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 20:28:27 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46203 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754301Ab1AKB2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 20:27:14 -0500
-Message-ID: <4D2BB1A4.5090404@kernel.org>
-Date: Mon, 10 Jan 2011 17:25:56 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Mon, 10 Jan 2011 20:28:21 -0500
+Date: Mon, 10 Jan 2011 17:28:13 -0800
+From: Joel Becker <jlbec@evilplan.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mark Fasheh <mfasheh@suse.com>, Andrew Morton <akpm@linux-foundation.org>,
+        ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ocfs2 updates for 2.6.38-rc
+Message-ID: <20110111012812.GF4879@mail.oracle.com>
+Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	Mark Fasheh <mfasheh@suse.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-usb@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v3 0/4] x86, usb, pci: Disable usb legacy support early
-References: <4D2A1382.7010407@kernel.org> <4D2AC6BF.3010907@kernel.org> <4D2BA8FE.9090204@kernel.org> <20110111010739.GC32585@kroah.com>
-In-Reply-To: <20110111010739.GC32585@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2011 05:07 PM, Greg KH wrote:
-> On Mon, Jan 10, 2011 at 04:49:02PM -0800, Yinghai Lu wrote:
->>
->> Move quirks for usb handoff early for x86.
->>
->> So we can get stable result when trying to calibrate apic timer with pm-timer.
-> 
-> I still fail to understand _why_ you are making these changes.
-> 
-> Exactly what problem do you currently have, on what hardware, that this
-> patch set solves?
-1. remove the warning 
-2. apic timer clockevent will be more accurate instead of use PM to calibrate it.
+Linus et al,
+	Here are the ocfs2 updates for 2.6.38-rc.  We've added some
+statistics tracking and the ability to replay our truncate logs in the
+allocation path.
+	Please pull.
 
-on Intel newer system with 128 logical cpus or more.
+The following changes since commit b0c3844d8af6b9f3f18f31e1b0502fbefa2166be:
 
-guess SMI handler for USB legacy support may need more time coordinate between those cpus.
+  Linux 2.6.37-rc6 (2010-12-15 17:24:48 -0800)
 
-Thanks
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2.git upstream-linus
 
-Yinghai 
+Dan Carpenter (1):
+      ocfs2/cluster: dereferencing before checking in nst_seq_show()
+
+Joel Becker (1):
+      MAINTAINERS: Update Joel Becker's email address
+
+Randy Dunlap (1):
+      ocfs2: fix build for OCFS2_FS_STATS not enabled
+
+Sunil Mushran (15):
+      ocfs2/dlm: Cleanup mlogs in dlmthread.c, dlmast.c and dlmdomain.c
+      ocfs2/cluster: Pin the remote node item in configfs
+      ocfs2/cluster: Remove dropped region from o2hb quorum region bitmap
+      ocfs2/cluster: Pin/unpin o2hb regions
+      ocfs2/cluster: Show pin state for each o2hb region
+      ocfs2/cluster: Pin the local node when o2hb thread starts
+      ocfs2/dlm: Cleanup dlmdebug.c
+      ocfs2/dlm: Minor cleanup
+      ocfs2/dlm: Hard code the values for enums
+      ocfs2: Add DEBUG_FS dependency
+      ocfs2/cluster: Replace timeval with ktime in struct o2net_send_tracking
+      ocfs2/cluster: Use ktime instead of timeval in struct o2net_sock_container
+      ocfs2/cluster: Track send message timing stats for each socket
+      ocfs2/cluster: Track process message timing stats for each socket
+      ocfs2/cluster: Show o2net timing statistics
+
+Tao Ma (3):
+      ocfs2: Try to free truncate log when meeting ENOSPC in write.
+      ocfs2: Release buffer_head in case of error in ocfs2_double_lock.
+      ocfs2: Remove unused truncate function from alloc.c
+
+Wengang Wang (1):
+      ocfs2/dlm: make existing convertion precedent over new lock
+
+ MAINTAINERS                     |    5 +-
+ fs/ocfs2/Kconfig                |    2 +-
+ fs/ocfs2/alloc.c                |   77 +----------
+ fs/ocfs2/alloc.h                |    4 -
+ fs/ocfs2/aops.c                 |   59 ++++++++-
+ fs/ocfs2/cluster/heartbeat.c    |  246 ++++++++++++++++++++++++++++-----
+ fs/ocfs2/cluster/netdebug.c     |  286 ++++++++++++++++++++++++++-------------
+ fs/ocfs2/cluster/tcp.c          |  145 ++++++++++++++------
+ fs/ocfs2/cluster/tcp_internal.h |   33 +++--
+ fs/ocfs2/dlm/dlmast.c           |   76 +++++++----
+ fs/ocfs2/dlm/dlmcommon.h        |   86 ++++++------
+ fs/ocfs2/dlm/dlmdebug.c         |  200 ++++++++++-----------------
+ fs/ocfs2/dlm/dlmdebug.h         |    5 -
+ fs/ocfs2/dlm/dlmdomain.c        |   10 +-
+ fs/ocfs2/dlm/dlmlock.c          |    3 +
+ fs/ocfs2/dlm/dlmthread.c        |  132 +++++++++---------
+ fs/ocfs2/namei.c                |    5 +-
+ fs/ocfs2/ocfs2.h                |    5 +
+ 18 files changed, 845 insertions(+), 534 deletions(-)
+
+-- 
+
+"I don't want to achieve immortality through my work; I want to
+ achieve immortality through not dying."
+        - Woody Allen
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
