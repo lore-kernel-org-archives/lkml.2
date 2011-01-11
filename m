@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932459Ab1AKQtW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 11:49:22 -0500
-Received: from mail.mnsspb.ru ([84.204.75.2]:46310 "EHLO mail.mnsspb.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932405Ab1AKQtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 11:49:18 -0500
-X-Greylist: delayed 888 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Jan 2011 11:49:18 EST
-Date: Tue, 11 Jan 2011 19:35:20 +0300
-From: Kirill Smelkov <kirr@mns.spb.ru>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org
-Subject: [BUG] perf top -> annotate broken; bisected to 69aad6f1
-Message-ID: <20110111163520.GA4554@tugrik.mns.mnsspb.ru>
+	id S932341Ab1AKQwh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 11:52:37 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53618 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753395Ab1AKQwf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 11:52:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: Marine Bridge & Navigation Systems
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1294763679.2435.72.camel@doink>
+References: <20110107075831.GA14915@amd> <1294763679.2435.72.camel@doink>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 11 Jan 2011 08:51:42 -0800
+Message-ID: <AANLkTin67OXYYKk6y+_MKfXEXBz-F_+qAH0cpiJ24yEQ@mail.gmail.com>
+Subject: Re: [announce] vfs-scale git tree update
+To: aelder@sgi.com
+Cc: Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello up there,
+On Tue, Jan 11, 2011 at 8:34 AM, Alex Elder <aelder@sgi.com> wrote:
+>
+> FYI, when using this code, as merged by Linus, I hit the
+> BUG_ON() at the beginning of d_set_d_op() when it's called
+> by autofs4_dir_mkdir().  I managed to work around it by
+> just commenting out those BUG_ON() calls but it's something
+> that ought to get addressed properly.
 
-Since 69aad6f1ee69546dea8535ab8f3da9f445d57328 (perf tools: Introduce
-event selectors; Jan 3 2011) annotating a symbol in perf top segfaults:
+Yeah, removing the BUG_ON() isn't the right thing to do - it means
+that autofs4 is obviously setting the dentry ops twice for the same
+dentry.
 
-    Program received signal SIGSEGV, Segmentation fault.
-    [Switching to Thread 0xb714cb90 (LWP 4662)]
-    event_name (evsel=0x0) at util/parse-events.c:274
-    274             return __event_name(type, config);
-    (gdb) bt
-    #0  event_name (evsel=0x0) at util/parse-events.c:274
-    #1  0x0805f892 in display_thread (arg=0x9422448) at builtin-top.c:359
-    #2  0xb77234c0 in start_thread () from /lib/i686/cmov/libpthread.so.0
-    #3  0xb732b84e in clone () from /lib/i686/cmov/libc.so.6
+Possibly the thing could be relaxed to allow setting the _same_ d_op
+pointer, ie do something like
 
+   if (dentry->d_op == op)
+      return;
 
-It used to work...
+at the top of that function. But looking at it, I don't think that
+fixes the autofs4 issue.
 
-Thanks,
-Kirill
+The fact that autofs4 does "d_add()" before it sets the d_ops (or
+other dentry state, for that matter) looks a bit scary. To me that
+smells like it might get a  dentry lookup hit before it's actually
+fully done.
+
+Does it make any difference if you move the various d_add() calls down
+to the end of the functions to when the "dentry" has really been
+instantiated?
+
+                      Linus
