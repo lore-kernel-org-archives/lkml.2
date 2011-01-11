@@ -1,139 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487Ab1AKIzr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 03:55:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49496 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752984Ab1AKIzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 03:55:41 -0500
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: perf timechart broken
-Date: Tue, 11 Jan 2011 09:55:36 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-18-desktop; KDE/4.5.3; x86_64; ; )
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-perf-users@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-References: <201101071104.37576.trenn@suse.de> <20110111013625.GE2570@nowhere>
-In-Reply-To: <20110111013625.GE2570@nowhere>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101110955.37560.trenn@suse.de>
+	id S1755471Ab1AKI5s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 03:57:48 -0500
+Received: from verro.fugedabout.it ([78.46.95.7]:56627 "EHLO
+	verro.fugedabout.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752984Ab1AKI5n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 03:57:43 -0500
+From: "Fabio M. Di Nitto" <fabbione@fabbione.net>
+To: linux-kernel@vger.kernel.org
+Cc: "Fabio M. Di Nitto" <fabbione@fabbione.net>
+Subject: [PATCH] debug: allow to retain boot console via boot option keep_bootcon
+Date: Tue, 11 Jan 2011 09:57:32 +0100
+Message-Id: <1294736252-26624-1-git-send-email-fabbione@fabbione.net>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 January 2011 02:36:28 Frederic Weisbecker wrote:
-> On Fri, Jan 07, 2011 at 11:04:37AM +0100, Thomas Renninger wrote:
-> > Hi,
-> > 
-> > Latest x86 tip has another perf timechart issue introduce
-> > by latest commits.
-> > 
-> > ./perf timechart
-> > gives me:
-> > "no trace data in the file"
-> > 
-> > I reverted  the latest changes and things seem to break
-> > between d854861c4292a4e675a5d3bfd862c5f7421c81e8
-> > and
-> > 69aad6f1ee69546dea8535ab8f3da9f445d57328
-> > (linux-2.6-x86 tree ids)
-> > 
-> > Be aware that ./perf timechart is currently broken
-> > and segfaults on idle events (in 2.6.36 and 2.6.37).
-> 
-> You mean .36 perf tools faults on .37 kernel? or the opposite?
-> Is it because power_idle events weren't present on old tools?
-> Do you have a pointer to those patches?
-perf timechart
-will segfault if perf.data has power_{start,end} events included
-on 2.6.36 and 2.6.37 kernels.
+On some architectures, the boot process involves de-registering the boot
+console (early boot), initialize drivers and then re-register the console.
 
-> > I submitted a patch to stable@ but it did not get accepted,
-> > becaust it's not mainline yet.
-> > I concentrated on my latest patches instead of making sure
-> > the tiny fix gets into 2.6.37 first.
-> > 
-> > Ingo: It's a bit late for 2.6.37, if there is any chance
-> > to still get it in, the patch below is against linus master...
-> > otherwise I'll submit it for stable 36+37 asap.
-> 
-> It's too late for .37, but it's fine, we just need to add
-> a "Cc: stable@kernel.org" tag in the patch for it to be
-> backported.
-I'll submit it to stable@ (it wasn't taken because
-the patch which included the fix wasn't mainline yet and I
-forgot to submit it for 2.6.37-rcX). 
+This mechanism introduces a window in which no printk can happen on the console
+and messages are buffered and then printed once the new console is available.
 
-I can take care of that, but it would be great if someone
-could look at the issue that perf timechart shows:
-"no trace data in the file"
-in x86/tip which seems introduced by one of Arnaldo's latest
-commits. Reverting some of his latest patches, solved it for
-me.
+If a kernel crashes during this window, all it's left on the boot console
+is "console [foo] enabled, bootconsole disabled" making debug of the crash
+rather 'interesting'.
 
-> > Anyway to test above regression this mail is about, first
-> > apply below patch otherwise you get a segfault if idle
-> > (power_start/end) events got logged.
-> > 
-> > Thanks,
-> > 
-> >    Thomas
-> > 
-> > ---
-> > perf timechart: Fix segfault on cpu idle (power_start/end) events
-> > 
-> > power_end event does not have type and other attributes and thus does
-> > not match struct power_event.
-> > Another struct could be created, but data.cpu is fine for fixing the segfault
-> > and will work as long as C-states got initiated on the same CPU the idle state
-> > takes place which is the case for all recent HW.
-> > 
-> > The power_start/end events get deprecated anyway, thus this is an easy,
-> > riskless and sufficient solution for the segfault problem.
-> > 
-> > Signed-off-by: Thomas Renninger <trenn@suse.de>
-> > CC: mingo@elte.hu
-> > CC: arjan@linux.intel.com
-> > 
-> > ---
-> >  tools/perf/builtin-timechart.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-> > index 9bcc38f..b3028eb 100644
-> > --- a/tools/perf/builtin-timechart.c
-> > +++ b/tools/perf/builtin-timechart.c
-> > @@ -502,7 +502,7 @@ static int process_sample_event(event_t *event, struct perf_session *session)
-> >  			c_state_start(pe->cpu_id, data.time, pe->value);
-> >  
-> >  		if (strcmp(event_str, "power:power_end") == 0)
-> > -			c_state_end(pe->cpu_id, data.time);
-> > +			c_state_end(data.cpu, data.time);
-> 
-> On which tree is this based of?
-Linus master (2.6.37-rc8).
+By adding "keep_bootcon" option, do not unregister the boot console, that
+will allow to printk everything that is happening up to the crash.
 
-> What I have by looking at tip/master is:
-Yes, this commit includes the patch (should have been a seperate one...):
-20c457b8587bee4644d998331d9e13be82e05b4c
-perf timechart: Adjust perf timechart to the new power events
+The option is clearly meant only for debugging purposes as it introduces lots
+of duplicated info printed on console, but will make bug report from users
+easier as it doesn't require a kernel build just to figure out where we crash.
 
-   Thomas
+Signed-off-by: Fabio M. Di Nitto <fabbione@fabbione.net>
+Acked-by: David S. Miller <davem@davemloft.net>
+---
+ Documentation/kernel-parameters.txt |    6 ++++++
+ kernel/printk.c                     |   16 +++++++++++++++-
+ 2 files changed, 21 insertions(+), 1 deletions(-)
 
-> 
-> 		else if (strcmp(event_str, "power:power_end") == 0)
-> 			c_state_end(sample->cpu, sample->time);
-> 
-> >  
-> >  		if (strcmp(event_str, "power:power_frequency") == 0)
-> >  			p_state_change(pe->cpu_id, data.time, pe->value);
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-perf-users" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index f3dc951..56e8fd6 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -865,6 +865,12 @@ and is between 256 and 4096 characters. It is defined in the file
+ 			       If specified, z/VM IUCV HVC accepts connections
+ 			       from listed z/VM user IDs only.
+ 
++	keep_bootcon	[KNL]
++			Do not unregister boot console at start. This is only
++			useful for debugging when something happens in the window
++			between unregistering the boot console and initializing
++			the real console.
++
+ 	i2c_bus=	[HW] Override the default board specific I2C bus speed
+ 			     or register an additional I2C bus that is not
+ 			     registered from board initialization code.
+diff --git a/kernel/printk.c b/kernel/printk.c
+index f64b899..9264f37 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1221,6 +1221,18 @@ void console_start(struct console *console)
+ }
+ EXPORT_SYMBOL(console_start);
+ 
++static int __read_mostly keep_bootcon = 0;
++
++static int __init  keep_bootcon_setup(char *str)
++{
++	keep_bootcon = 1;
++	printk(KERN_INFO "debug: skip boot console de-registration.\n");
++
++	return 0;
++}
++
++early_param("keep_bootcon", keep_bootcon_setup);
++
+ /*
+  * The console driver calls this routine during kernel initialization
+  * to register the console printing procedure with printk() and to
+@@ -1368,7 +1380,9 @@ void register_console(struct console *newcon)
+ 	 * users know there might be something in the kernel's log buffer that
+ 	 * went to the bootconsole (that they do not see on the real console)
+ 	 */
+-	if (bcon && ((newcon->flags & (CON_CONSDEV | CON_BOOT)) == CON_CONSDEV)) {
++	if (bcon &&
++	    ((newcon->flags & (CON_CONSDEV | CON_BOOT)) == CON_CONSDEV) &&
++	    !keep_bootcon) {
+ 		/* we need to iterate through twice, to make sure we print
+ 		 * everything out, before we unregister the console(s)
+ 		 */
+-- 
+1.7.3.4
 
