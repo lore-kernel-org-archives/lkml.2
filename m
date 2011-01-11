@@ -1,152 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab1AKHuL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 02:50:11 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53003 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270Ab1AKHuI (ORCPT
+	id S1754217Ab1AKHuu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 02:50:50 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52949 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270Ab1AKHun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 02:50:08 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 11 Jan 2011 16:44:01 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Bart Van Assche <bvanassche@acm.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] one more lock on memory hotplug (Re: [PATCH] slub: Fix
- sysfs circular locking dependency
-Message-Id: <20110111164401.3b1e5d8a.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4D2BFAA9.2050200@kernel.org>
-References: <1294172717-6044-1-git-send-email-penberg@kernel.org>
-	<alpine.DEB.2.00.1101041939030.27551@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1101050943120.13032@router.home>
-	<alpine.DEB.2.00.1101051108520.14761@router.home>
-	<AANLkTinft80dXqE-U=YDB23d9=BgXLCxJzgiA_gF4cVL@mail.gmail.com>
-	<AANLkTinCZzJWYGnxXq_Nwv7QSkEV4Tg-te-1y0PCeRRY@mail.gmail.com>
-	<AANLkTinQMahgVrWLxR0J6Zbh-_SPjxVJ-wuZt8B5TNjc@mail.gmail.com>
-	<alpine.DEB.2.00.1101060019140.25879@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1101061107500.8655@router.home>
-	<20110107091106.aaa07abe.kamezawa.hiroyu@jp.fujitsu.com>
-	<alpine.DEB.2.00.1101070922100.3014@router.home>
-	<alpine.DEB.2.00.1101071227160.31653@chino.kir.corp.google.com>
-	<AANLkTin6N2s1RN6PBX=f0v69Ny-NkEKk_iAgqscuYgMM@mail.gmail.com>
-	<1294475323.5248.74.camel@jaguar>
-	<alpine.DEB.2.00.1101101014470.12243@router.home>
-	<alpine.DEB.2.00.1101101230190.11969@chino.kir.corp.google.com>
-	<4D2BFAA9.2050200@kernel.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Jan 2011 02:50:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=hy9a519nr+mrQT01ggJMiqdEX7HdvpT1heiby+NGVDiUOzJXFn2s4l0204c7bgTNuS
+         cWG/gT+WB9dh02vz6w88lBGX9eCJ1uo0MVpNfDKuFODri6utjyynw9dclIzALB59qgHH
+         nPApVJWgFlv3yVeCu4t9UnlYCEK1zROAfxCyA=
+MIME-Version: 1.0
+In-Reply-To: <20110110223154.GA9739@merz.inka.de>
+References: <20110110223154.GA9739@merz.inka.de>
+Date: Tue, 11 Jan 2011 09:50:42 +0200
+X-Google-Sender-Auth: RcuRPM-jaQ-t1K3rER2bk-SYJaA
+Message-ID: <AANLkTi=hnWtpHgv-j0u3n5sG4T-GU0KG_vAMe4vevY05@mail.gmail.com>
+Subject: Re: Regression in linux 2.6.37: failure to boot, caused by commit
+ 37d57443d5 (mm/slub.c)
+From: Pekka Enberg <penberg@kernel.org>
+To: Matthias Merz <linux@merz-ka.de>
+Cc: Christoph Lameter <cl@linux.com>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org, Tero Roponen <tero.roponen@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Jan 2011 08:37:29 +0200
-Pekka Enberg <penberg@kernel.org> wrote:
+On Tue, Jan 11, 2011 at 12:31 AM, Matthias Merz <linux@merz-ka.de> wrote:
+> Hello together,
+>
+> I hope, I've got the right list of people from scripts/get_maintainer.pl
+> and the commit-log, just omitting LKML as Rcpt.
+>
+> This morning I tried vanilla 2.6.37 on my Desktop system, which failed
+> to boot but continued displaying Debug-Messages too fast to read. Using
+> netconsole I was then able to capture them (see attached file). I was
+> able to trigger this bug even with init=/bin/bash by a simple call of
+> "mount -o remount,rw /" with my / being an ext4 filesystem.
+>
+> Using git bisect I could identify commit 37d57443d5 as "the culprit" -
+> once I reverted that bugfix locally, my system booted happily. This ist
+> surely not a fix, but a local workaround for me - I would appreciate, if
+> someone with knowledge of the code could find a real fix.
+>
+> The attached dmesg-output was "anonymized" wrt. MAC-Addresses, but is
+> complete otherwise.
 
-> On 1/10/11 10:30 PM, David Rientjes wrote:
-> > On Mon, 10 Jan 2011, Christoph Lameter wrote:
-> >
-> >> New patch that just covers the slub changes.
-> >>
-> >> Subject: slub: Avoid use of slub_lock in show_slab_objects()
-> >>
-> >> The purpose of the locking is to prevent removal and additions
-> >> of nodes when statistics are gathered for a slab cache. So we
-> >> need to avoid racing with memory hotplug functionality.
-> >>
-> >> It is enough to take the memory hotplug locks there instead
-> >> of the slub_lock.
-> >>
-> >> online_pages() currently does not acquire the memory_hotplug
-> >> lock. Another patch will be submitted by the memory hotplug
-> >> authors to take the memory hotplug lock and describe the
-> >> uses of the memory hotplug lock to protect against
-> >> adding and removal of nodes from non hotplug data structures.
-> >>
-> >> Signed-off-by: Christoph Lameter<cl@linux.com>
-> > Acked-by: David Rientjes<rientjes@google.com>
-> 
-> Is this safe to be applied without the other hotplug parts?
-> 
-> 
+Now here's an interesting bug! Commit 37d57443d5 shouldn't change
+anything unless you actually access the affected sysfs files. I'm but
+lost with your oops as well so lets CC some scheduler people to see if
+they can help us out:
 
-How about this ? 
-==
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+BUG: scheduling while atomic: swapper/0/0x10010000
+Modules linked in: i2c_viapro usbhid snd_via82xx via_ircc
+snd_mpu401_uart parport_pc sata_promise sata_sil tmscsim evdev
+snd_bt87x tda9887 snd_seq_dummy snd_seq_oss snd_seq_midi
+snd_seq_midi_event snd_seq snd_pcm_oss snd_mixer_oss snd_ens1371
+snd_rawmidi snd_seq_device snd_ac97_codec ac97_bus snd_pcm snd_timer
+snd snd_page_alloc parport irtty_sir actisys_sir sir_dev irda
+crc_ccitt tuner_simple tuner_types msp3400 ir_lirc_codec lirc_dev
+ir_sony_decoder bttv ir_jvc_decoder ir_rc6_decoder videobuf_dma_sg
+videobuf_core ir_rc5_decoder btcx_risc ir_nec_decoder ir_common
+ir_core tveeprom tuner v4l2_common videodev v4l1_compat analog
+gameport uhci_hcd ehci_hcd e100
+Modules linked in: i2c_viapro usbhid snd_via82xx via_ircc
+snd_mpu401_uart parport_pc sata_promise sata_sil tmscsim evdev
+snd_bt87x tda9887 snd_seq_dummy snd_seq_oss snd_seq_midi
+snd_seq_midi_event snd_seq snd_pcm_oss snd_mixer_oss snd_ens1371
+snd_rawmidi snd_seq_device snd_ac97_codec ac97_bus snd_pcm snd_timer
+snd snd_page_alloc parport irtty_sir actisys_sir sir_dev irda
+crc_ccitt tuner_simple tuner_types msp3400 ir_lirc_codec lirc_dev
+ir_sony_decoder bttv ir_jvc_decoder ir_rc6_decoder videobuf_dma_sg
+videobuf_core ir_rc5_decoder btcx_risc ir_nec_decoder ir_common
+ir_core tveeprom tuner v4l2_common videodev v4l1_compat analog
+gameport uhci_hcd ehci_hcd e100
 
-Now, memory_hotplug_(un)lock() is used for add/remove/offline pages
-for avoiding races with hibernation. But this should be held in
-online_pages(), too. It seems asymmetric.
+Pid: 0, comm: swapper Not tainted 2.6.37-matthias #28 A7V8X/System Name
+EIP: 0060:[<c10088ba>] EFLAGS: 00000246 CPU: 0
+EIP is at default_idle+0x2a/0x40
+EAX: 00000000 EBX: c1596140 ECX: 00000000 EDX: 00000000
+ESI: 0008d800 EDI: c153d000 EBP: c153bfbc ESP: c153bfbc
+ DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+Process swapper (pid: 0, ti=f6004000 task=c1541300 task.ti=c153a000)
+Stack:
+ c153bfc4 c1001c7c c153bfcc c13e72a2 c153bfe4 c15706cd 000000a0 c15702b9
+ c1596140 00000000 c153bff8 c157006b 01606d60 00000000 c14b0e88 01827003
+ 00000000
+Call Trace:
+ [<c1001c7c>] ? cpu_idle+0x2c/0x50
+ [<c13e72a2>] ? rest_init+0x52/0x60
+ [<c15706cd>] ? start_kernel+0x242/0x248
+ [<c15702b9>] ? unknown_bootoption+0x0/0x19c
+ [<c157006b>] ? i386_start_kernel+0x6b/0x6d
+Code: 00 55 8b 0d 18 67 5c c1 89 e5 85 c9 75 2b 80 3d 05 d5 56 c1 00
+74 22 89 e0 25 00 e0 ff ff 83 60 0c fb 8b 40 08 a8 08 75 15 fb f4 <89>
+e0 25 00 e0 ff ff 83 48 0c 04 c9 c3 90 fb f3 90 c9 c3 fb eb
 
-There are cases where one has to avoid a race with memory hotplug
-notifier and his own local code, and hotplug v.s. hotplug.
-This will add a generic solution for avoiding races. In other view,
-having lock here has no big impacts. online pages is tend to be
-done by udev script at el against each memory section one by one.
+Full log available here:
 
-Then, it's better to have lock here, too.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- include/linux/memory_hotplug.h |    6 ++++++
- mm/memory_hotplug.c            |    4 ++++
- 2 files changed, 10 insertions(+)
-
-Index: linux-2.6.37.org/include/linux/memory_hotplug.h
-===================================================================
---- linux-2.6.37.org.orig/include/linux/memory_hotplug.h
-+++ linux-2.6.37.org/include/linux/memory_hotplug.h
-@@ -161,6 +161,12 @@ extern void register_page_bootmem_info_n
- extern void put_page_bootmem(struct page *page);
- #endif
- 
-+/*
-+ * Lock for memory hotplug guarantees 1) all callbacks for memory hotplug
-+ * notifier will be called under this. 2) offline/online/add/remove memory
-+ * will not run simultaneously.
-+ */
-+
- void lock_memory_hotplug(void);
- void unlock_memory_hotplug(void);
- 
-Index: linux-2.6.37.org/mm/memory_hotplug.c
-===================================================================
---- linux-2.6.37.org.orig/mm/memory_hotplug.c
-+++ linux-2.6.37.org/mm/memory_hotplug.c
-@@ -407,6 +407,7 @@ int online_pages(unsigned long pfn, unsi
- 	int ret;
- 	struct memory_notify arg;
- 
-+	lock_memory_hotplug();
- 	arg.start_pfn = pfn;
- 	arg.nr_pages = nr_pages;
- 	arg.status_change_nid = -1;
-@@ -419,6 +420,7 @@ int online_pages(unsigned long pfn, unsi
- 	ret = notifier_to_errno(ret);
- 	if (ret) {
- 		memory_notify(MEM_CANCEL_ONLINE, &arg);
-+		unlock_memory_hotplug();
- 		return ret;
- 	}
- 	/*
-@@ -443,6 +445,7 @@ int online_pages(unsigned long pfn, unsi
- 		printk(KERN_DEBUG "online_pages %lx at %lx failed\n",
- 			nr_pages, pfn);
- 		memory_notify(MEM_CANCEL_ONLINE, &arg);
-+		unlock_memory_hotplug();
- 		return ret;
- 	}
- 
-@@ -467,6 +470,7 @@ int online_pages(unsigned long pfn, unsi
- 
- 	if (onlined_pages)
- 		memory_notify(MEM_ONLINE, &arg);
-+	unlock_memory_hotplug();
- 
- 	return 0;
- }
-
+http://www.spinics.net/lists/linux-mm/msg13451.html
