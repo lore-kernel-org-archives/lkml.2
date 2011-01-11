@@ -1,75 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461Ab1AKIiM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 03:38:12 -0500
-Received: from www.tglx.de ([62.245.132.106]:49806 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751044Ab1AKIiC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 03:38:02 -0500
-Date: Tue, 11 Jan 2011 09:37:15 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, johnstul@us.ibm.com, williams@redhat.com,
-        schwidefsky@de.ibm.com, mingo@elte.hu,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/tsc] x86: Improve TSC calibration using a delayed
- workqueue
-In-Reply-To: <20110111083054.GB22867@shutemov.name>
-Message-ID: <alpine.LFD.2.00.1101110936291.12146@localhost6.localdomain6>
-References: <1289003985-29060-1-git-send-email-johnstul@us.ibm.com> <tip-08ec0c58fb8a05d3191d5cb6f5d6f81adb419798@git.kernel.org> <20110111081352.GA22867@shutemov.name> <alpine.LFD.2.00.1101110926040.12146@localhost6.localdomain6>
- <20110111083054.GB22867@shutemov.name>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755381Ab1AKIt5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 03:49:57 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39897 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035Ab1AKItu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 03:49:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=hItr7TPvlkh9tiquEK6rAhXRrfpTaXH4wGhe+GduCZpTTVjnzofguXkl9oTzlRwheP
+         wFZsBjEVmYBE43RXwcUFu2B5+P4wNufehQ/wDAXchSQ2NmDK4UlBJ9n8+i7hU1AyiGzO
+         SledOdlfug0nu9/0RJxIezhESBjSjL3+aePMY=
+Date: Tue, 11 Jan 2011 17:49:36 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [PATCH] memcg: remove charge variable in unmap_and_move
+Message-ID: <20110111084936.GD2113@barrios-desktop>
+References: <1294725650-4732-1-git-send-email-minchan.kim@gmail.com>
+ <20110111153513.1c09fa21.nishimura@mxp.nes.nec.co.jp>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110111153513.1c09fa21.nishimura@mxp.nes.nec.co.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Jan 2011, Kirill A. Shutemov wrote:
-
-> On Tue, Jan 11, 2011 at 09:26:48AM +0100, Thomas Gleixner wrote:
-> > On Tue, 11 Jan 2011, Kirill A. Shutemov wrote:
-> > 
-> > > On Sun, Dec 05, 2010 at 11:18:53AM +0000, tip-bot for John Stultz wrote:
-> > > > Commit-ID:  08ec0c58fb8a05d3191d5cb6f5d6f81adb419798
-> > > > Gitweb:     http://git.kernel.org/tip/08ec0c58fb8a05d3191d5cb6f5d6f81adb419798
-> > > > Author:     John Stultz <johnstul@us.ibm.com>
-> > > > AuthorDate: Tue, 27 Jul 2010 17:00:00 -0700
-> > > > Committer:  John Stultz <john.stultz@linaro.org>
-> > > > CommitDate: Thu, 2 Dec 2010 16:48:37 -0800
-> > > > 
-> > > > x86: Improve TSC calibration using a delayed workqueue
-> > > 
-> > > This commit breaks booting the kernel in qemu with enabled KVM on my machine.
-> > > .config attached.
-> > > 
-> > > [    0.424013] divide error: 0000 [#1] 
-> > 
-> > Got fixed by a8760ec (x86: Check tsc available/disabled in the delayed
-> > init function)
+On Tue, Jan 11, 2011 at 03:35:13PM +0900, Daisuke Nishimura wrote:
+> Hi,
 > 
-> No, it didn't. :(
+> On Tue, 11 Jan 2011 15:00:50 +0900
+> Minchan Kim <minchan.kim@gmail.com> wrote:
 > 
-> I am able to reproduce it on current Linus' tree (v2.6.37-4700-g8adbf8d).
+> > memcg charge/uncharge could be handled by mem_cgroup_[prepare/end]
+> > migration itself so charge local variable in unmap_and_move lost the role
+> > since we introduced 01b1ae63c2.
+> > 
+> > In addition, the variable name is not good like below.
+> > 
+> > int unmap_and_move()
+> > {
+> > 	charge = mem_cgroup_prepare_migration(xxx);
+> > 	..
+> > 		BUG_ON(charge); <-- BUG if it is charged?
+> > 		..
+> > 		uncharge:
+> > 		if (!charge)    <-- why do we have to uncharge !charge?
+> > 			mem_group_end_migration(xxx);
+> > 	..
+> > }
+> > 
+> > So let's remove unnecessary and confusing variable.
+> > 
+> > Suggested-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> > Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> > Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
+> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > ---
+> >  mm/migrate.c |   12 ++++--------
+> >  1 files changed, 4 insertions(+), 8 deletions(-)
+> > 
+> > diff --git a/mm/migrate.c b/mm/migrate.c
+> > index b8a32da..e393841 100644
+> > --- a/mm/migrate.c
+> > +++ b/mm/migrate.c
+> > @@ -623,7 +623,6 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+> >  	struct page *newpage = get_new_page(page, private, &result);
+> >  	int remap_swapcache = 1;
+> >  	int rcu_locked = 0;
+> > -	int charge = 0;
+> >  	struct mem_cgroup *mem = NULL;
+> >  	struct anon_vma *anon_vma = NULL;
+> >  
+> > @@ -662,12 +661,10 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+> >  	}
+> >  
+> >  	/* charge against new page */
+> > -	charge = mem_cgroup_prepare_migration(page, newpage, &mem);
+> > -	if (charge == -ENOMEM) {
+> > -		rc = -ENOMEM;
+> > +	rc = mem_cgroup_prepare_migration(page, newpage, &mem);
+> > +	if (rc == -ENOMEM)
+> >  		goto unlock;
+> > -	}
+> > -	BUG_ON(charge);
+> > +	BUG_ON(rc);
+> >  
+> >  	if (PageWriteback(page)) {
+> >  		if (!force || !sync)
+> > @@ -760,8 +757,7 @@ rcu_unlock:
+> >  	if (rcu_locked)
+> >  		rcu_read_unlock();
+> >  uncharge:
+> > -	if (!charge)
+> > -		mem_cgroup_end_migration(mem, page, newpage, rc == 0);
+> > +	mem_cgroup_end_migration(mem, page, newpage, rc == 0);
+> >  unlock:
+> >  	unlock_page(page);
+> >  
+> I proposed pseud code like above, but it's wrong unfortunately.
+> If mem_cgroup_prepare_migration() has succeeded, rc is overwritten to 0.
+> So even if we failed before calling move_to_new_page(), rc is 0 and
+> mem_cgroup_end_migration() mis-understand this migration has succeeded.
 
-Does the patch below fix it ? We can end up with tsc_khz=0 there :(
+Right. I missed it.
+Thanks for the review.
 
-Thanks,
+> 
+> And, it seems to be just a bit off-topic, the place of the comment
+> "prepare cgroup just returns 0 or -ENOMEM" isn't good, seeing the commit e8589cc1,
+> which introduced the comment first.
+> 
+> So, we should do like:
+> 
+> 	/* charge against new page */
+> 	if (mem_cgroup_end_migration(page, &newpage, &mem)) {
+> 		/* prepare_migration just returns 0 or -ENOMEM */
+> 		rc = -ENOMEM;
+> 		goto unlock;
+> 	}
 
-	tglx
----
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 03d2ea8..6a7d726 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -959,7 +959,8 @@ static void tsc_refine_calibration_work(struct work_struct *work)
- 					(unsigned long)tsc_khz % 1000);
- 
- out:
--	clocksource_register_khz(&clocksource_tsc, tsc_khz);
-+	if (tsc_khz)
-+		clocksource_register_khz(&clocksource_tsc, tsc_khz);
- }
- 
- 
+Hmm.. I don't think so. The comment should be in there which is initialized the
+variable but comment is confusing. So instead of moving, I will fix the comment.
+
+
+> 
+> 	if (PageWriteback(page)) {
+> 		...
+> 
+> uncharge:
+> 	mem_cgroup_end_migration(mem, page, newpage, rc == 0);
+> 
+> or, overwrite rc to -EAGAIN again.
+> I don't stick to checking "BUG_ON(charge)" personally.
+
+I agree. BUG_ON is meaningless.
+I will resend the patch.
+
+Thanks. :)
+
+> 
+> 
+> Thanks,
+> Daisuke Nishimura.
+
+-- 
+Kind regards,
+Minchan Kim
