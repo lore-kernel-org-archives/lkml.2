@@ -1,51 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218Ab1AKAyf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 19:54:35 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:42410 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754978Ab1AKAye (ORCPT
+	id S1755212Ab1AKAzv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 19:55:51 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59336 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754190Ab1AKAzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 19:54:34 -0500
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 1/2] Add a common struct clk
-Date: Tue, 11 Jan 2011 08:54:15 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.35-24-generic; KDE/4.5.1; x86_64; ; )
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-        Ben Herrenchmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
-	<u.kleine-koenig@pengutronix.de>
-References: <1294199462.347935.472473715866.0.gpush@pororo> <20110110104122.GI12078@pengutronix.de> <20110110110028.GB12552@n2100.arm.linux.org.uk>
-In-Reply-To: <20110110110028.GB12552@n2100.arm.linux.org.uk>
+	Mon, 10 Jan 2011 19:55:48 -0500
+Message-ID: <4D2BAA80.7060803@kernel.org>
+Date: Mon, 10 Jan 2011 16:55:28 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Jesse Barnes <jbarnes@virtuousgeek.org>, Greg KH <greg@kroah.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-usb@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/4] x86, pci: add dummy pci device for early stage
+References: <4D2A1382.7010407@kernel.org> <4D2AC6BF.3010907@kernel.org> <4D2BA8FE.9090204@kernel.org>
+In-Reply-To: <4D2BA8FE.9090204@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101110854.15653.jeremy.kerr@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
 
-> Unless the locking problems can be resolved, the patches aren't ready.
-> 
-> From what I've seen there's still quite a problem with what kind of
-> lock to use in the clock - mutex or spinlock.
+So we can pass pci_dev *dev to reuse some generic pci functions.
 
-Yes, the clock driver may either use a spinlock or mutex.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-However, this exactly the same as the current clock code, my patches do not 
-alter what we currently have.
+---
+ arch/x86/include/asm/pci-direct.h |    2 +
+ arch/x86/pci/early.c              |   75 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 77 insertions(+)
 
-I do agree that we should define some specific semantics for the clock API 
-with regards to sleeping, and I'll start a new thread about that. But we 
-should definitely separate that issue from the problem of having multiple 
-definitions for struct clk, which is what these patches address.
-
-Cheers,
-
-
-Jeremy
+Index: linux-2.6/arch/x86/include/asm/pci-direct.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/pci-direct.h
++++ linux-2.6/arch/x86/include/asm/pci-direct.h
+@@ -18,4 +18,6 @@ extern int early_pci_allowed(void);
+ extern unsigned int pci_early_dump_regs;
+ extern void early_dump_pci_device(u8 bus, u8 slot, u8 func);
+ extern void early_dump_pci_devices(void);
++
++struct pci_dev *get_early_pci_dev(int num, int slot, int func);
+ #endif /* _ASM_X86_PCI_DIRECT_H */
+Index: linux-2.6/arch/x86/pci/early.c
+===================================================================
+--- linux-2.6.orig/arch/x86/pci/early.c
++++ linux-2.6/arch/x86/pci/early.c
+@@ -109,3 +109,78 @@ void early_dump_pci_devices(void)
+ 		}
+ 	}
+ }
++
++static __init int
++early_pci_read(struct pci_bus *bus, unsigned int devfn, int where,
++			int size, u32 *value)
++{
++	int num, slot, func;
++
++	num = bus->number;
++	slot = devfn >> 3;
++	func = devfn & 7;
++	switch (size) {
++	case 1:
++		*value = read_pci_config_byte(num, slot, func, where);
++		break;
++	case 2:
++		*value = read_pci_config_16(num, slot, func, where);
++		break;
++	case 4:
++		*value = read_pci_config(num, slot, func, where);
++		break;
++	}
++
++	return 0;
++}
++
++static __init int
++early_pci_write(struct pci_bus *bus, unsigned int devfn, int where,
++			int size, u32 value)
++{
++	int num, slot, func;
++
++	num = bus->number;
++	slot = devfn >> 3;
++	func = devfn & 7;
++	switch (size) {
++	case 1:
++		write_pci_config_byte(num, slot, func, where, (u8)value);
++		break;
++	case 2:
++		write_pci_config_16(num, slot, func, where, (u16)value);
++		break;
++	case 4:
++		write_pci_config(num, slot, func, where, (u32)value);
++		break;
++	}
++
++	return 0;
++}
++
++static __initdata struct pci_ops pci_early_ops = {
++	.read = early_pci_read,
++	.write = early_pci_write,
++};
++
++static __initdata struct pci_bus pci_early_bus = {
++	.ops = &pci_early_ops,
++};
++
++static __initdata char pci_device_init_name[8];
++static __initdata struct pci_dev pci_early_dev = {
++	.bus = &pci_early_bus,
++};
++
++__init struct pci_dev *get_early_pci_dev(int num, int slot, int func)
++{
++	struct pci_dev *pdev;
++
++	pdev = &pci_early_dev;
++	pdev->devfn = (slot<<3) | (func & 7);
++	pdev->bus->number = num;
++	sprintf(pci_device_init_name, "%02x:%02x.%01x", num, slot, func);
++	pdev->dev.init_name = pci_device_init_name;
++
++	return pdev;
++}
