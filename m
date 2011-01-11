@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755498Ab1AKJGl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 04:06:41 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42675 "EHLO
+	id S1755505Ab1AKJQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 04:16:29 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46592 "EHLO
 	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753015Ab1AKJG3 (ORCPT
+	with ESMTP id S1753015Ab1AKJQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 04:06:29 -0500
-Date: Tue, 11 Jan 2011 09:06:15 +0000
+	Tue, 11 Jan 2011 04:16:24 -0500
+Date: Tue, 11 Jan 2011 09:16:07 +0000
 From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: mm: Poison freed init memory
-Message-ID: <20110111090615.GH12552@n2100.arm.linux.org.uk>
-References: <1294256845-29517-1-git-send-email-sboyd@codeaurora.org> <20110105202645.GL8638@n2100.arm.linux.org.uk> <4D255263.7040106@codeaurora.org> <20110106090741.GQ8638@n2100.arm.linux.org.uk> <4D2BE3E1.5060706@codeaurora.org>
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: Locking in the clk API
+Message-ID: <20110111091607.GI12552@n2100.arm.linux.org.uk>
+References: <201101111016.42819.jeremy.kerr@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D2BE3E1.5060706@codeaurora.org>
+In-Reply-To: <201101111016.42819.jeremy.kerr@canonical.com>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 09:00:17PM -0800, Stephen Boyd wrote:
-> Ok it seems that 0xcc was chosen by Pavel since it's a breakpoint
-> instruction (sorry for not noticing that earlier [1]).
+On Tue, Jan 11, 2011 at 10:16:42AM +0800, Jeremy Kerr wrote:
+> At present, we can satisfy these with:
+> 
+> * clk_enable: may sleep
 
-It may be on x86, but on ARM:
+I object to this as one of the purposes behind the clk API is to allow
+power savings to be made, and unless we can perform clk enable/disable
+from atomic contexts, the best you can do is enable the clock when the
+device is probed and disable it when it's released.
 
-   0:   cccccccc        stclgt  12, cr12, [ip], {204}
+For a lot of systems, modules are loaded at boot, and devices are probed
+at boot time.  They're never unloaded.
 
-That's a co-processor #12 instruction which will only be executed of
-the processor condition codes satisfy 'gt'.
+This means that clocks will be enabled at boot time and never turned off.
 
-> There was some discussion about handling initdata with Pavel's patch
-> but it seems that nothing came of it?
+If you're lucky, there may be open/release methods which can be used to
+enable/disable the clock, which reduces the 'clock on' period down to
+the point where userspace opens/closes the device.  That's still
+insufficient and in some cases there aren't calls for this.
 
-I'm not sure who this Pavel is who you keep referring to - the message
-you link to is a discussion between William Irvin and hpa.
+Sometimes the only point that you know you need the clock enabled is when
+your driver has already been called in an atomic context.
 
-> How about we use 0xe7fddef0? This seems to satisfy at least your first
-> point for both ARM and Thumb mode (Thumb will branch to the 0xdef0
-> instruction).
-
-Yup.
+If such a requirement is imposed, it means that a driver would either have
+to leave the clock always on, or would have to drop such calls if the
+clock wasn't already enabled.
