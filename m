@@ -1,78 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225Ab1AKRTV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 12:19:21 -0500
-Received: from cantor.suse.de ([195.135.220.2]:45754 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751542Ab1AKRTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 12:19:19 -0500
-Date: Tue, 11 Jan 2011 18:19:17 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        dri-devel@lists.freedesktop.org, indan@nul.nu
-Subject: Re: Linux 2.6.37
-Message-ID: <20110111171744.GA3854@tiehlicka.suse.cz>
-References: <AANLkTikKA-nStyNjkdsVa8hd=PFQR3tYTJh3MnfpNkD8@mail.gmail.com>
- <20110106104816.GA4026@tiehlicka.suse.cz>
+	id S932330Ab1AKRX1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 12:23:27 -0500
+Received: from casper.infradead.org ([85.118.1.10]:42571 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320Ab1AKRXZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 12:23:25 -0500
+Date: Tue, 11 Jan 2011 15:23:10 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Kirill Smelkov <kirr@mns.spb.ru>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] perf top -> annotate broken; bisected to 69aad6f1
+Message-ID: <20110111172309.GC11968@ghostprotocols.net>
+References: <20110111163520.GA4554@tugrik.mns.mnsspb.ru> <20110111171124.GB11968@ghostprotocols.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110106104816.GA4026@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110111171124.GB11968@ghostprotocols.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Let's CC Indan - author of the bugzilla patches]
+Em Tue, Jan 11, 2011 at 03:11:24PM -0200, Arnaldo Carvalho de Melo escreveu:
+> Em Tue, Jan 11, 2011 at 07:35:20PM +0300, Kirill Smelkov escreveu:
+> > Hello up there,
+> > 
+> > Since 69aad6f1ee69546dea8535ab8f3da9f445d57328 (perf tools: Introduce
+> > event selectors; Jan 3 2011) annotating a symbol in perf top segfaults:
+> > 
+> >     Program received signal SIGSEGV, Segmentation fault.
+> >     [Switching to Thread 0xb714cb90 (LWP 4662)]
+> >     event_name (evsel=0x0) at util/parse-events.c:274
+> >     274             return __event_name(type, config);
+> >     (gdb) bt
+> >     #0  event_name (evsel=0x0) at util/parse-events.c:274
+> >     #1  0x0805f892 in display_thread (arg=0x9422448) at builtin-top.c:359
+> >     #2  0xb77234c0 in start_thread () from /lib/i686/cmov/libpthread.so.0
+> >     #3  0xb732b84e in clone () from /lib/i686/cmov/libc.so.6
+> > 
+> > 
+> > It used to work...
+> 
+> Thanks for the report, working on a fix.
 
-On Thu 06-01-11 11:48:16, Michal Hocko wrote:
-> Hi,
-> 
-> On Tue 04-01-11 17:15:45, Linus Torvalds wrote:
-> [...]
-> > We did have another revert to fix hopefullythe last "blank screen"
-> > regression on intel graphics.
-> 
-> It seems that there is still a regression for intel graphic cards
-> backlight. One report is https://bugzilla.kernel.org/show_bug.cgi?id=22672.
-> I can reproduce the problem easily by:
-> xset dpms force standby; sleep 3s; xset dpms force on
-> 
-> backlight doesn't get up (there is really dark picture though which
-> doesn't get brighter by function keys which work normally) after dpms on
-> until I close and open lid. 
-> 
-> The problem wasn't present in 2.6.36
+Done, please test it and I'll add a Tested-by: you tag.
 
-I can confirm that this problem is not present if both patches from
-bko#22672 are applied on top of 2.6.37 kernel.
-I haven't tried both patches separately, but I can surely try it if it
-makes any sense.
+Thanks,
 
-> 
-> $ lspci -vv
-> [...]
-> 00:02.0 VGA compatible controller: Intel Corporation Mobile 945GM/GMS, 943/940GML Express Integrated Graphics Controller (rev 03) (prog-if 00 [VGA controller])
->         Subsystem: Fujitsu Limited. Device 137a
->         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
->         Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
->         Latency: 0
->         Interrupt: pin A routed to IRQ 16
->         Region 0: Memory at f0300000 (32-bit, non-prefetchable) [size=512K]
->         Region 1: I/O ports at 1800 [size=8]
->         Region 2: Memory at e0000000 (32-bit, prefetchable) [size=256M]
->         Region 3: Memory at f0400000 (32-bit, non-prefetchable) [size=256K]
->         Expansion ROM at <unassigned> [disabled]
->         Capabilities: <access denied>
->         Kernel driver in use: i915
-[...]
+- Arnaldo
 
--- 
-Michal Hocko
-L3 team 
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+commit 347ad46af282994524510d62a4c70455929b6a9d
+Author: Arnaldo Carvalho de Melo <acme@redhat.com>
+Date:   Tue Jan 11 15:16:52 2011 -0200
+
+    perf top: Fix annotate segv
+    
+    Before we had sym_counter, it was initialized to zero and we used that
+    as an index in the global attrs variable, now we have a list of evsel
+    entries, and sym_counter became sym_evsel, that remained initialized to
+    zero (NULL): b00m.
+    
+    Fix it by initializing it to the first entry in the evsel list.
+    
+    Bug-introduced: 69aad6f
+    Reported-by: Kirill Smelkov <kirr@mns.spb.ru>
+    Cc: Frederic Weisbecker <fweisbec@gmail.com>
+    Cc: Ingo Molnar <mingo@elte.hu>
+    Cc: Kirill Smelkov <kirr@mns.spb.ru>
+    Cc: Mike Galbraith <efault@gmx.de>
+    Cc: Paul Mackerras <paulus@samba.org>
+    Cc: Peter Zijlstra <peterz@infradead.org>
+    Cc: Stephane Eranian <eranian@google.com>
+    Cc: Tom Zanussi <tzanussi@gmail.com>
+    LKML-Reference: <new-submission>
+    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 4b995ee..568b195 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1473,6 +1473,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+ 		pos->attr.sample_period = default_interval;
+ 	}
+ 
++	sym_evsel = list_entry(evsel_list.next, struct perf_evsel, node);
++
+ 	symbol_conf.priv_size = (sizeof(struct sym_entry) +
+ 				 (nr_counters + 1) * sizeof(unsigned long));
+ 
