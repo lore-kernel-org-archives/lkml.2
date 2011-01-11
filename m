@@ -1,252 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756309Ab1AKWOG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 17:14:06 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:41936 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756046Ab1AKWOF (ORCPT
+	id S1756328Ab1AKWRT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 17:17:19 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49670 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756305Ab1AKWRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 17:14:05 -0500
-Date: Tue, 11 Jan 2011 15:14:01 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, sodaville@linutronix.de, x86@kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH v2 05/15] x86/dtb: add early parsing of APIC and IO APIC
-Message-ID: <20110111221401.GB2131@angua.secretlab.ca>
-References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>
- <1292600033-12271-6-git-send-email-bigeasy@linutronix.de>
- <20101230085451.GF11721@angua.secretlab.ca>
- <20110104132302.GB21359@www.tglx.de>
+	Tue, 11 Jan 2011 17:17:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110104132302.GB21359@www.tglx.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTikMMG1S6qp0-jKnQUcR5DgC+WWVfgOo2PExFA2w@mail.gmail.com>
+References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie>
+ <AANLkTinW8Yp1K1w+G+BgLa-fPaFANkGsRjqH_W8N+9VL@mail.gmail.com>
+ <AANLkTim5oVZqMBtan5_TMOxaWbqkF=aDcBYFNYy55kt_@mail.gmail.com>
+ <0aea052d-70ff-41ea-8776-c6d974c10337@email.android.com> <AANLkTim0rn7Vem6YJM5tVKM0PX4YdnNmaeqmpS=Vp7rc@mail.gmail.com>
+ <AANLkTi=eRHbgerpdPYdoOo45LruNTk0rNsWvOO-kYxyQ@mail.gmail.com>
+ <20110111111203.279eae50@jbarnes-desktop> <AANLkTikMMG1S6qp0-jKnQUcR5DgC+WWVfgOo2PExFA2w@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 11 Jan 2011 14:16:54 -0800
+Message-ID: <AANLkTinLmrSQ9cYvdu-pfEHizOjNGL5df4HfcSigvYpX@mail.gmail.com>
+Subject: Re: [git pull] drm for rc1
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Dave Airlie <airlied@gmail.com>, Dave Airlie <airlied@linux.ie>,
+        Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 04, 2011 at 02:23:02PM +0100, Sebastian Andrzej Siewior wrote:
-> The apic & ioapic have to be added to system early because
-> native_init_IRQ() requires it. In order to obtain the address of the
-> ioapic the device tree has to be unflattened because
-> of_address_to_resource() has to work.
-> The device tree is relocated to ensure it is always covered by the
-> kernel and the boot loader does not have to make assumptions about
-> kernel's memory layout.
+On Tue, Jan 11, 2011 at 11:25 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Maybe the screen just has to be inactive for a longer time: do you do
+> some dynamic "let's power things down if nothing is changing"?
 
-Hi Sebastian,
+So since this is _almost_ reproducible for me, I tried bisecting it.
 
-Some comments below...
+The bisection is a bit iffy, since it's not entirely clear how long I
+need to wait for the screen saver to cause the problem, but sine I hit
+a very similar issue while bisecting, I think it's a pretty solid
+(partial) bisect.
 
-> 
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
->  arch/x86/include/asm/prom.h |    7 +++
->  arch/x86/kernel/irqinit.c   |    2 +-
->  arch/x86/kernel/prom.c      |  121 +++++++++++++++++++++++++++++++++++++++++-
->  3 files changed, 126 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/prom.h b/arch/x86/include/asm/prom.h
-> index 9076ae4..3bc8ed5 100644
-> --- a/arch/x86/include/asm/prom.h
-> +++ b/arch/x86/include/asm/prom.h
-> @@ -22,10 +22,17 @@
->  #include <asm/irq_controller.h>
->  
->  #ifdef CONFIG_OF
-> +extern int of_ioapic;
-> +extern u64 initial_dtb;
->  extern void add_dtb(u64 data);
-> +void x86_dtb_find_config(void);
-> +void x86_dtb_get_config(unsigned int unused);
->  void add_interrupt_host(struct irq_domain *ih);
->  #else
->  static inline void add_dtb(u64 data) { }
-> +#define x86_dtb_find_config x86_init_noop
-> +#define x86_dtb_get_config x86_init_uint_noop
-> +#define of_ioapic 0
+What _seems_ to go on is that after commit b5ba177d8d71 ("drm/i915:
+Poll for seqno completion if IRQ is disabled") I get that "very chunky
+behavior". And _before_ that commit I actually get a BUG_ON(), and in
+fact that bug-on does not happen during normal use, but does trigger
+when the screen saver runs. So I think the old BUG_ON() is actually
+the exact same case that then causes the jerky problem for me.
 
-Nit: Personally, I prefer static inlines over preprocessor macros, but
-that isn't anything that will block this patch.
+NOTE! I didn't do a full bisect. I did verify that commit b5ba177d8d71
+does expose the bad behavior, and I also verified that a few commits
+before that gets the BUG_ON, but there's something like three or four
+commits in between that I didn't test. But we're literally talking
+just three commits or so (eg commit 8d5203ca6253 gets that BUG_ON(),
+and 71f4566084eb is marked as "good" too for me, so the only untested
+commits are 9097eef024db and b13c2b96bf15).
 
->  #endif
->  
->  extern char cmd_line[COMMAND_LINE_SIZE];
-> diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
-> index 149c87f..4cadf86 100644
-> --- a/arch/x86/kernel/irqinit.c
-> +++ b/arch/x86/kernel/irqinit.c
-> @@ -244,7 +244,7 @@ void __init native_init_IRQ(void)
->  			set_intr_gate(i, interrupt[i-FIRST_EXTERNAL_VECTOR]);
->  	}
->  
-> -	if (!acpi_ioapic)
-> +	if (!acpi_ioapic && !of_ioapic)
->  		setup_irq(2, &irq2);
->  
->  #ifdef CONFIG_X86_32
-> diff --git a/arch/x86/kernel/prom.c b/arch/x86/kernel/prom.c
-> index 53948cb..388fdff 100644
-> --- a/arch/x86/kernel/prom.c
-> +++ b/arch/x86/kernel/prom.c
-> @@ -6,15 +6,20 @@
->  #include <linux/interrupt.h>
->  #include <linux/list.h>
->  #include <linux/of.h>
-> +#include <linux/of_address.h>
->  #include <linux/of_platform.h>
->  #include <linux/slab.h>
->  
->  #include <asm/irq_controller.h>
-> +#include <asm/io_apic.h>
->  
-> +__initdata u64 initial_dtb;
->  char __initdata cmd_line[COMMAND_LINE_SIZE];
->  static LIST_HEAD(irq_domains);
->  static DEFINE_RAW_SPINLOCK(big_irq_lock);
->  
-> +int __initdata of_ioapic;
-> +
->  void add_interrupt_host(struct irq_domain *ih)
->  {
->  	unsigned long flags;
-> @@ -93,7 +98,117 @@ u64 __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
->  
->  void __init add_dtb(u64 data)
->  {
-> -	initial_boot_params = (struct boot_param_header *)
-> -		phys_to_virt((u64) (u32) data +
-> -				offsetof(struct setup_data, data));
-> +	initial_dtb = data + offsetof(struct setup_data, data);
-> +}
-> +
-> +static void __init dtb_lapic_setup(void)
-> +{
-> +#ifdef CONFIG_X86_LOCAL_APIC
-> +	if (apic_force_enable())
-> +		return;
-> +
-> +	smp_found_config = 1;
-> +	pic_mode = 1;
-> +	/* Required for ioapic registration */
-> +	set_fixmap_nocache(FIX_APIC_BASE, mp_lapic_addr);
-> +	if (boot_cpu_physical_apicid == -1U)
-> +		boot_cpu_physical_apicid = read_apic_id();
-> +
-> +	generic_processor_info(boot_cpu_physical_apicid,
-> +			GET_APIC_VERSION(apic_read(APIC_LVR)));
-> +#endif
-> +}
-> +
-> +#ifdef CONFIG_X86_IO_APIC
-> +static void __init dtb_add_ioapic(struct device_node *dn)
-> +{
-> +	unsigned int ioapic_id;
-> +	const __be32 *cell;
-> +	int len;
-> +	struct resource r;
-> +	int ret;
-> +
-> +	cell = of_get_property(dn, "id", &len);
-> +	if (!cell) {
-> +		printk(KERN_ERR "Node %s is missing id property.\n",
-> +				dn->full_name);
-> +		return;
-> +	}
-> +	ioapic_id = of_read_ulong(cell, len / 4);
+I'll test the merge, but I thought I'd send out this note already at
+this point, because I'm pretty sure this is it.
 
-This looks like poor usage practise for the device tree.  'id' or any
-kind of enumeration property in a device tree node is strongly
-discouraged.  As much as possible, let Linux dynamically enumerate
-devices rather than trying to explicitly specify the numbering.  Since
-you can explicitly describe the relationship between device nodes in
-the tree, you should find that explicitly specifying numbers is almost
-never required.
+The BUG_ON() that triggers is appended. And as mentioned, the jerky
+thing really seems to start happening in the exact same circumstance
+when this BUG_ON triggered.
 
-If you *really* need to enumerate devices in the device tree, then use
-properties in the /aliases node to assign globally unique numbers.
+                            Linus
 
-> +
-> +	ret = of_address_to_resource(dn, 0, &r);
-> +	if (ret) {
-> +		printk(KERN_ERR "Can't obtain address from node %s.\n",
-> +				dn->full_name);
-> +		return;
-> +	}
-> +	mp_register_ioapic(ioapic_id, r.start, gsi_top);
-> +}
-> +
-> +static void __init dtb_ioapic_setup(void)
-> +{
-> +	struct device_node *dn;
-> +
-> +	if (!smp_found_config)
-> +		return;
-> +
-> +	for_each_compatible_node(dn, NULL, "intel,ioapic")
-> +		dtb_add_ioapic(dn);
-> +
-> +	if (nr_ioapics) {
-> +		of_ioapic = 1;
-> +		return;
-> +	}
-> +	printk(KERN_ERR "Error: No information about IO-APIC in OF.\n");
-> +	smp_found_config = 0;
-> +}
-> +#else
-> +static void __init dtb_ioapic_setup(void) {}
-> +#endif
-> +
-> +static void __init dtb_apic_setup(void)
-> +{
-> +	dtb_lapic_setup();
-> +	dtb_ioapic_setup();
-> +}
-> +
-> +void __init x86_dtb_find_config(void)
-> +{
-> +	if (initial_dtb)
-> +		smp_found_config = 1;
-> +	else
-> +		printk(KERN_ERR "Missing device tree!.\n");
-> +}
-> +
-> +void __init x86_dtb_get_config(unsigned int unused)
-> +{
-> +	u32 size;
-> +	u32 map_len;
-> +	void *new_dtb;
-> +
-> +	if (!initial_dtb)
-> +		return;
-> +
-> +	map_len = max(PAGE_SIZE - (initial_dtb & ~PAGE_MASK),
-> +			(u64)sizeof(struct boot_param_header));
-> +
-> +	initial_boot_params = early_memremap(initial_dtb, map_len);
-> +	size = be32_to_cpu(initial_boot_params->totalsize);
-> +	if (map_len < size) {
-> +		early_iounmap(initial_boot_params, map_len);
-> +		initial_boot_params = early_memremap(initial_dtb, size);
-> +		map_len = size;
-> +	}
-> +
-> +	new_dtb = alloc_bootmem(size);
-> +	memcpy(new_dtb, initial_boot_params, size);
-> +	early_iounmap(initial_boot_params, map_len);
-> +
-> +	initial_boot_params = new_dtb;
-> +
-> +	/* root level address cells */
-> +	of_scan_flat_dt(early_init_dt_scan_root, NULL);
-> +
-> +	unflatten_device_tree();
-> +	dtb_apic_setup();
->  }
-> -- 
-> 1.7.3.2
-> 
+---
+[  330.023447] ------------[ cut here ]------------
+[  330.025136] kernel BUG at drivers/gpu/drm/i915/intel_ringbuffer.c:354!
+[  330.026758] invalid opcode: 0000 [#1] PREEMPT SMP
+[  330.028396] last sysfs file:
+/sys/devices/system/cpu/cpu3/cache/index2/shared_cpu_map
+[  330.030040] CPU 2
+[  330.030049] Modules linked in: [last unloaded: scsi_wait_scan]
+[  330.033313]
+[  330.034929] Pid: 2723, comm: Xorg Not tainted
+2.6.37-rc4-00295-g0cdab21 #16 P7H57D-V EVO/System Product Name
+[  330.036581] RIP: 0010:[<ffffffff812f1cbd>]  [<ffffffff812f1cbd>]
+render_ring_put_irq+0x20/0x88
+[  330.038266] RSP: 0018:ffff88023e001cf8  EFLAGS: 00010246
+[  330.039937] RAX: 0000000000000000 RBX: ffff88023fcdc030 RCX: 0000000000000000
+[  330.041607] RDX: 0000000000003736 RSI: 0000000000000001 RDI: ffff88023fcdc030
+[  330.043277] RBP: ffff88023e001d18 R08: ffff88023fcdd84c R09: 0000000000000000
+[  330.044917] R10: ffff88023e001cb8 R11: ffff88023e001cc8 R12: ffff88023fcdc000
+[  330.046571] R13: ffff88023ff69000 R14: ffff88023fcdd84c R15: ffff88023fcdc118
+[  330.048193] FS:  00007fe1b6342860(0000) GS:ffff8800bd900000(0000)
+knlGS:0000000000000000
+[  330.049822] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  330.051450] CR2: 00007f4379961000 CR3: 0000000229d41000 CR4: 00000000000006e0
+[  330.053088] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  330.054726] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  330.056364] Process Xorg (pid: 2723, threadinfo ffff88023e000000,
+task ffff880229db2c40)
+[  330.057991] Stack:
+[  330.059610]  ffff88023fcdc030 ffff88023fcdc000 00000000000026b7
+ffff88023fcdd84c
+[  330.061255]  ffff88023e001d98 ffffffff812da704 ffff88023e001e18
+ffff880200000000
+[  330.062908]  0000000000000000 ffff880229db2c40 ffffffff81051e35
+ffff88023e001d50
+[  330.064566] Call Trace:
+[  330.066202]  [<ffffffff812da704>] i915_gem_throttle_ioctl+0x163/0x1ac
+[  330.067863]  [<ffffffff81051e35>] ? autoremove_wake_function+0x0/0x34
+[  330.069510]  [<ffffffff812ba08f>] drm_ioctl+0x290/0x35c
+[  330.071136]  [<ffffffff81054f24>] ? lock_hrtimer_base.clone.29+0x24/0x48
+[  330.072769]  [<ffffffff812da5a1>] ? i915_gem_throttle_ioctl+0x0/0x1ac
+[  330.074397]  [<ffffffff81054f24>] ? lock_hrtimer_base.clone.29+0x24/0x48
+[  330.076025]  [<ffffffff8153c02c>] ? _raw_spin_unlock_irq+0x2b/0x53
+[  330.077651]  [<ffffffff810d2ed9>] do_vfs_ioctl+0x4c1/0x502
+[  330.079252]  [<ffffffff810c56cd>] ? fget_light+0x13a/0x31a
+[  330.080845]  [<ffffffff8100202c>] ? sysret_check+0x27/0x62
+[  330.082416]  [<ffffffff810d2f6b>] sys_ioctl+0x51/0x76
+[  330.083964]  [<ffffffff81001ffb>] system_call_fastpath+0x16/0x1b
+[  330.085501] Code: d7 f3 ab 5b 5b 41 5c 41 5d c9 c3 55 48 89 e5 41
+56 41 55 41 54 53 4c 8b 6f 18 41 83 bd e0 02 00 00 00 74 66 8b 47 60
+85 c0 75 02 <0f> 0b ff c8 89 47 60 85 c0 75 54 49 8b 9d 98 05 00 00 4c
+8d a3
+[  330.087351] RIP  [<ffffffff812f1cbd>] render_ring_put_irq+0x20/0x88
+[  330.089039]  RSP <ffff88023e001cf8>
+[  330.099760] ---[ end trace acfb1e4669bf8ace ]---
+[  330.376659] [drm:drm_release] *ERROR* Device busy: 1
