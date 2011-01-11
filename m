@@ -1,79 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932687Ab1AKXxd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 18:53:33 -0500
-Received: from mail132.messagelabs.com ([216.82.242.115]:34077 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932474Ab1AKXxa (ORCPT
+	id S932700Ab1AKXx6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 18:53:58 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36756 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932474Ab1AKXx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 18:53:30 -0500
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-14.tower-132.messagelabs.com!1294790006!10080043!9
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.97]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "cl@linux-foundation.org" <cl@linux-foundation.org>,
-        "penberg@cs.helsinki.fi" <penberg@cs.helsinki.fi>,
-        "mpm@selenic.com" <mpm@selenic.com>
-Date: Tue, 11 Jan 2011 17:49:32 -0600
-Subject: [PATCH] mm/slab.c: make local symbols static
-Thread-Topic: [PATCH] mm/slab.c: make local symbols static
-Thread-Index: Acux6jGOmxL+N3vkQUqOPlJH49Z3JA==
-Message-ID: <0D753D10438DA54287A00B027084269764CE0E54A2@AUSP01VMBX24.collaborationhost.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Tue, 11 Jan 2011 18:53:57 -0500
+Date: Tue, 11 Jan 2011 16:53:53 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, sodaville@linutronix.de, x86@kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 10/15] x86/ioapic: Add OF bindings for IO-APIC
+Message-ID: <20110111235353.GG2131@angua.secretlab.ca>
+References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>
+ <1292600033-12271-11-git-send-email-bigeasy@linutronix.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292600033-12271-11-git-send-email-bigeasy@linutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p0BNrf21022756
 
-Local symbols should be static.
+On Fri, Dec 17, 2010 at 04:33:48PM +0100, Sebastian Andrzej Siewior wrote:
+> ioapic_xlate provides a translation from the information in device tree
+> to ioapic related informations. This includes
+> - obtaining hw irq which is the vector number "=> pin number + gsi"
+> - obtaining type (level/edge/..)
+> - programming this information into ioapic
+> 
+> ioapic_add_ofnode adds an irq_domain based on informations from the device
+> tree. This information (irq_domain) is required in order to map a device to
+> its proper interrupt controller.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Matt Mackall <mpm@selenic.com>
+One question below, but otherwise looks okay to me.
 
----
+g.
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 2640374..37961d1f 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -284,7 +284,7 @@ struct kmem_list3 {
-  * Need this for bootstrapping a per node allocator.
-  */
- #define NUM_INIT_LISTS (3 * MAX_NUMNODES)
--struct kmem_list3 __initdata initkmem_list3[NUM_INIT_LISTS];
-+static struct kmem_list3 __initdata initkmem_list3[NUM_INIT_LISTS];
- #define	CACHE_CACHE 0
- #define	SIZE_AC MAX_NUMNODES
- #define	SIZE_L3 (2 * MAX_NUMNODES)
-@@ -4053,7 +4053,7 @@ static int enable_cpucache(struct kmem_cache *cachep, gfp_t gfp)
-  * necessary. Note that the l3 listlock also protects the array_cache
-  * if drain_array() is used on the shared array.
-  */
--void drain_array(struct kmem_cache *cachep, struct kmem_list3 *l3,
-+static void drain_array(struct kmem_cache *cachep, struct kmem_list3 *l3,
- 			 struct array_cache *ac, int force, int node)
- {
- 	int tofree;
-@@ -4317,7 +4317,7 @@ static const struct seq_operations slabinfo_op = {
-  * @count: data length
-  * @ppos: unused
-  */
--ssize_t slabinfo_write(struct file *file, const char __user * buffer,
-+static ssize_t slabinfo_write(struct file *file, const char __user *buffer,
- 		       size_t count, loff_t *ppos)
- {
- 	char kbuf[MAX_SLABINFO_WRITE + 1], *tmp;
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> 
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+> ---
+>  arch/x86/include/asm/io_apic.h |    7 +++
+>  arch/x86/include/asm/prom.h    |    2 +
+>  arch/x86/kernel/apic/io_apic.c |   99 ++++++++++++++++++++++++++++++++++++++++
+>  arch/x86/kernel/irqinit.c      |    6 ++
+>  arch/x86/kernel/prom.c         |   15 ++++++
+>  5 files changed, 129 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+> index f327d38..5a8b950 100644
+> --- a/arch/x86/include/asm/io_apic.h
+> +++ b/arch/x86/include/asm/io_apic.h
+> @@ -177,6 +177,13 @@ struct mp_ioapic_gsi{
+>  	u32 gsi_base;
+>  	u32 gsi_end;
+>  };
+> +#ifdef CONFIG_X86_OF
+> +struct mp_of_ioapic {
+> +	struct device_node *node;
+> +};
+> +extern struct mp_of_ioapic mp_of_ioapic[MAX_IO_APICS];
+> +void __init ioapic_add_ofnode(struct device_node *np);
+> +#endif
+>  extern struct mp_ioapic_gsi  mp_gsi_routing[];
+>  extern u32 gsi_top;
+>  int mp_find_ioapic(u32 gsi);
+> diff --git a/arch/x86/include/asm/prom.h b/arch/x86/include/asm/prom.h
+> index 9f7484e..8386685 100644
+> --- a/arch/x86/include/asm/prom.h
+> +++ b/arch/x86/include/asm/prom.h
+> @@ -26,6 +26,7 @@
+>  extern int of_ioapic;
+>  extern u64 initial_dtb;
+>  extern void add_dtb(u64 data);
+> +extern void x86_add_irq_domains(void);
+>  void x86_dtb_find_config(void);
+>  void x86_dtb_get_config(unsigned int unused);
+>  void add_interrupt_host(struct irq_domain *ih);
+> @@ -46,6 +47,7 @@ static inline struct device_node *pci_bus_to_OF_node(struct pci_bus *bus)
+>  
+>  #else
+>  static inline void add_dtb(u64 data) { }
+> +static inline void x86_add_irq_domains(void) { }
+>  static inline void x86_of_pci_init(void) { }
+>  #define x86_dtb_find_config x86_init_noop
+>  #define x86_dtb_get_config x86_init_uint_noop
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index 7eb0027..4dece80 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -43,6 +43,7 @@
+>  #include <linux/bootmem.h>
+>  #include <linux/dmar.h>
+>  #include <linux/hpet.h>
+> +#include <linux/of_address.h>
+>  
+>  #include <asm/idle.h>
+>  #include <asm/io.h>
+> @@ -60,6 +61,7 @@
+>  #include <asm/irq_remapping.h>
+>  #include <asm/hpet.h>
+>  #include <asm/hw_irq.h>
+> +#include <asm/irq_controller.h>
+>  
+>  #include <asm/apic.h>
+>  
+> @@ -88,6 +90,10 @@ int nr_ioapics;
+>  /* IO APIC gsi routing info */
+>  struct mp_ioapic_gsi  mp_gsi_routing[MAX_IO_APICS];
+>  
+> +#ifdef CONFIG_X86_OF
+> +/* OF -> IO APIC lookup */
+> +struct mp_of_ioapic mp_of_ioapic[MAX_IO_APICS];
+> +#endif
+>  /* The one past the highest gsi number used */
+>  u32 gsi_top;
+>  
+> @@ -4080,6 +4086,99 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
+>  	nr_ioapics++;
+>  }
+>  
+> +#ifdef CONFIG_X86_OF
+> +static int ioapic_xlate(struct irq_domain *id, const u32 *intspec, u32 intsize,
+> +		u32 *out_hwirq, u32 *out_type)
+> +{
+> +	u32 line;
+> +	u32 idx;
+> +	u32 type;
+> +	u32 trigger;
+> +	u32 polarity;
+> +	struct irq_cfg *cfg;
+> +	struct irq_desc *desc;
+> +
+> +	if (intsize < 1)
+> +		return -EINVAL;
+> +
+> +	line = *intspec;
+> +	idx = (u32) id->priv;
+> +	*out_hwirq = line + mp_gsi_routing[idx].gsi_base;
+> +	if (intsize > 1) {
+> +		intspec++;
+> +		type = *intspec;
+> +		switch (type) {
+> +		case 0:
+> +			*out_type = IRQ_TYPE_EDGE_RISING;
+> +			trigger = IOAPIC_EDGE;
+> +			polarity = 1;
+> +			break;
+> +		case 1:
+> +			*out_type = IRQ_TYPE_LEVEL_LOW;
+> +			trigger = IOAPIC_LEVEL;
+> +			polarity = 0;
+> +			break;
+> +		case 2:
+> +			*out_type = IRQ_TYPE_LEVEL_HIGH;
+> +			trigger = IOAPIC_LEVEL;
+> +			polarity = 1;
+> +			break;
+> +		case 3:
+> +			*out_type = IRQ_TYPE_EDGE_FALLING;
+> +			trigger = IOAPIC_EDGE;
+> +			polarity = 0;
+> +			break;
+> +		default:
+> +			*out_type = IRQ_TYPE_NONE;
+> +			trigger = IOAPIC_AUTO;
+> +			polarity = 0;
+> +			break;
+> +		};
+> +	} else {
+> +		*out_type = IRQ_TYPE_NONE;
+> +		trigger = IOAPIC_AUTO;
+> +		polarity = 0;
+> +	}
+> +	/* And now tell the IO APIC to make the line ready */
+> +	desc = irq_to_desc_alloc_node(*out_hwirq, 0);
+> +	cfg = irq_cfg(*out_hwirq);
+> +	add_pin_to_irq_node(cfg, 0, idx, line);
+> +	/* make it edge by default, settype will update it */
+> +	setup_ioapic_irq(idx, line, *out_hwirq, cfg, trigger, polarity);
+> +	return 0;
+> +}
+> +
+> +void __init ioapic_add_ofnode(struct device_node *np)
+> +{
+> +	int i;
+> +	int ret;
+> +	struct resource r;
+> +
+> +	ret = of_address_to_resource(np, 0, &r);
+> +	if (ret) {
+> +		printk(KERN_ERR "Failed to obtain address for %s\n",
+> +				np->full_name);
+> +		return;
+> +	}
+> +
+> +	for (i = 0; i < nr_ioapics; i++) {
+> +		if (r.start == mp_ioapics[i].apicaddr) {
+> +			struct irq_domain *id;
+> +
+> +			mp_of_ioapic[i].node = np;
+> +			id = kzalloc(sizeof(*id), GFP_KERNEL);
+> +			BUG_ON(!id);
+> +			id->controller = np;
+> +			id->xlate = ioapic_xlate;
+> +			id->priv = (void *)i;
+> +			add_interrupt_host(id);
+> +			return;
+> +		}
+
+I'm confused here.  Are there multiple ioapic's described by a single
+device tree node?
+
+> +	}
+> +	printk(KERN_ERR "IOxAPIC at %s is not registered.\n", np->full_name);
+> +}
+> +#endif
+> +
+>  /* Enable IOAPIC early just for system timer */
+>  void __init pre_init_apic_IRQ0(void)
+>  {
+> diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
+> index 4cadf86..9f76f89 100644
+> --- a/arch/x86/kernel/irqinit.c
+> +++ b/arch/x86/kernel/irqinit.c
+> @@ -119,6 +119,12 @@ void __init init_IRQ(void)
+>  	int i;
+>  
+>  	/*
+> +	 * We probably need a better place for this, but it works for
+> +	 * now ...
+> +	 */
+> +	x86_add_irq_domains();
+> +
+> +	/*
+>  	 * On cpu 0, Assign IRQ0_VECTOR..IRQ15_VECTOR's to IRQ 0..15.
+>  	 * If these IRQ's are handled by legacy interrupt-controllers like PIC,
+>  	 * then this configuration will likely be static after the boot. If
+> diff --git a/arch/x86/kernel/prom.c b/arch/x86/kernel/prom.c
+> index 6eddafd..edcaf1b 100644
+> --- a/arch/x86/kernel/prom.c
+> +++ b/arch/x86/kernel/prom.c
+> @@ -11,9 +11,11 @@
+>  #include <linux/slab.h>
+>  #include <linux/pci.h>
+>  #include <linux/of_pci.h>
+> +#include <linux/of_fdt.h>
+>  
+>  #include <asm/hpet.h>
+>  #include <asm/irq_controller.h>
+> +#include <asm/apic.h>
+>  #include <asm/io_apic.h>
+>  #include <asm/pci_x86.h>
+>  
+> @@ -332,3 +334,16 @@ void __init x86_dtb_get_config(unsigned int unused)
+>  	dtb_setup_hpet();
+>  	dtb_apic_setup();
+>  }
+> +
+> +void __init x86_add_irq_domains(void)
+> +{
+> +	struct device_node *dp;
+> +
+> +	if (!initial_boot_params)
+> +		return;
+> +
+> +	for_each_node_by_type(dp, "interrupt-controller") {
+> +		if (of_device_is_compatible(dp, "intel,ioapic"))
+> +			ioapic_add_ofnode(dp);
+> +	}
+> +}
+> -- 
+> 1.7.3.2
+> 
+> _______________________________________________
+> devicetree-discuss mailing list
+> devicetree-discuss@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/devicetree-discuss
