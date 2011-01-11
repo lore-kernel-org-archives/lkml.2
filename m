@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab1AKJQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 04:16:29 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46592 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753015Ab1AKJQY (ORCPT
+	id S1755514Ab1AKJWG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 04:22:06 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:62772 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753015Ab1AKJWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 04:16:24 -0500
-Date: Tue, 11 Jan 2011 09:16:07 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: Locking in the clk API
-Message-ID: <20110111091607.GI12552@n2100.arm.linux.org.uk>
-References: <201101111016.42819.jeremy.kerr@canonical.com>
+	Tue, 11 Jan 2011 04:22:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=ltB7BmVhN6F+kp3IiKkR5MPPu1tmiesQrq/5ebZtD8Ty+zTZuRlk88fTKaI/+2jujl
+         kWivZDraIqNdGDHKUqG+Hpv01LTvbVUwMRtXaVm5ZJg9aWq4HxvNbg7l38ATqYoYJric
+         6/t7gjwsOXIkW2bXZjGeHpuJq+EV78WlZUO3c=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201101111016.42819.jeremy.kerr@canonical.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1294731467.17779.352.camel@pasglop>
+References: <4D2A1382.7010407@kernel.org>
+	<4D2AC6BF.3010907@kernel.org>
+	<4D2BA8FE.9090204@kernel.org>
+	<4D2BAA75.60001@kernel.org>
+	<20110111010714.GB32585@kroah.com>
+	<4D2BB048.2050509@kernel.org>
+	<1294723290.17779.349.camel@pasglop>
+	<4D2BF9F3.5080709@kernel.org>
+	<1294731467.17779.352.camel@pasglop>
+Date: Tue, 11 Jan 2011 01:21:58 -0800
+X-Google-Sender-Auth: ecL_RaprH9TdGhUSstyLO4FqYtY
+Message-ID: <AANLkTika_bZxXO3PKek+BHoYqgYGPBPER-H9KJJXjJzn@mail.gmail.com>
+Subject: Re: [PATCH -v3 1/4] pci, usb: Make usb handoff func all take base remapping
+From: Yinghai Lu <yinghai@kernel.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Greg KH <greg@kroah.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-usb@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 10:16:42AM +0800, Jeremy Kerr wrote:
-> At present, we can satisfy these with:
-> 
-> * clk_enable: may sleep
+On Mon, Jan 10, 2011 at 11:37 PM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+> On Mon, 2011-01-10 at 22:34 -0800, Yinghai Lu wrote:
+>>
+>> system_state does not work.
+>> it only have BOOTING and RUNNING ...
+>> RUNNING is set in init/main.c::init_post().
+>> so early_quirk and pci_quirk all with BOOTING stage...
+>
+> Or we can make msleep() itself safe...
 
-I object to this as one of the purposes behind the clk API is to allow
-power savings to be made, and unless we can perform clk enable/disable
-from atomic contexts, the best you can do is enable the clock when the
-device is probed and disable it when it's released.
+still think the function pointer is more clean and safe.
 
-For a lot of systems, modules are loaded at boot, and devices are probed
-at boot time.  They're never unloaded.
-
-This means that clocks will be enabled at boot time and never turned off.
-
-If you're lucky, there may be open/release methods which can be used to
-enable/disable the clock, which reduces the 'clock on' period down to
-the point where userspace opens/closes the device.  That's still
-insufficient and in some cases there aren't calls for this.
-
-Sometimes the only point that you know you need the clock enabled is when
-your driver has already been called in an atomic context.
-
-If such a requirement is imposed, it means that a driver would either have
-to leave the clock always on, or would have to drop such calls if the
-clock wasn't already enabled.
+Yinghai
