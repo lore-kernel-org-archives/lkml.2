@@ -1,119 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab1AKIvh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 03:51:37 -0500
-Received: from mail-gw0-f66.google.com ([74.125.83.66]:63262 "EHLO
-	mail-gw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755472Ab1AKIv0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 03:51:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=UPcKCQ1j2R18FH3901gWG+keS+9ewRrgMB2/qhRL5w0o7WVsLJcIk80rJluoIeF66u
-         eDu+NvawJQLGjspfAMJ/sig4ISeE4Fm6lC9OT2Wm7ZA7jS4NBnsTd05it9oNJt73p2jK
-         7rY94IYcUKA8W/jlQCQSGsccEqk3bb0O8XocA=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: [PATCH 2/2] memcg: remove charge variable in unmap_and_move
-Date: Tue, 11 Jan 2011 17:51:12 +0900
-Message-Id: <f6f15f90ecf0df32586fcc103038fd7ea01acc16.1294735182.git.minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <41390917af25769cd59eb001370b80ef6520a8bb.1294735182.git.minchan.kim@gmail.com>
-References: <41390917af25769cd59eb001370b80ef6520a8bb.1294735182.git.minchan.kim@gmail.com>
-In-Reply-To: <41390917af25769cd59eb001370b80ef6520a8bb.1294735182.git.minchan.kim@gmail.com>
-References: <41390917af25769cd59eb001370b80ef6520a8bb.1294735182.git.minchan.kim@gmail.com>
+	id S1755481Ab1AKIwD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 03:52:03 -0500
+Received: from mga14.intel.com ([143.182.124.37]:50825 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751035Ab1AKIv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 03:51:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,306,1291622400"; 
+   d="scan'208";a="372786979"
+Subject: [PATCH 1/2]block cfq:  make queue preempt work for queues from
+ different workload
+From: Shaohua Li <shaohua.li@intel.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>,
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 11 Jan 2011 16:51:56 +0800
+Message-ID: <1294735916.1949.637.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memcg charge/uncharge could be handled by mem_cgroup_[prepare/end]
-migration itself so charge local variable in unmap_and_move lost the role
-since we introduced 01b1ae63c2.
+I got this:
+             fio-874   [007]  2157.724514:   8,32   m   N cfq874 preempt
+             fio-874   [007]  2157.724519:   8,32   m   N cfq830 slice expired t=1
+             fio-874   [007]  2157.724520:   8,32   m   N cfq830 sl_used=1 disp=0 charge=1 iops=0 sect=0
+             fio-874   [007]  2157.724521:   8,32   m   N cfq830 set_active wl_prio:0 wl_type:0
+             fio-874   [007]  2157.724522:   8,32   m   N cfq830 Not idling. st->count:1
+cfq830 is an async queue, and preempted by a sync queue cfq874. But since we
+have cfqg->saved_workload_slice mechanism, the preempt is a nop.
+Looks currently our preempt is totally broken if the two queues are not from
+the same workload type.
+Below patch fixes it. This will might make async queue starvation, but it's
+what our old code does before cgroup is added.
 
-In addition, the variable name is not good like below.
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 
-int unmap_and_move()
-{
-	charge = mem_cgroup_prepare_migration(xxx);
-	..
-		BUG_ON(charge); <-- BUG if it is charged?
-		..
-uncharge:
-		if (!charge)    <-- why do we have to uncharge !charge?
-			mem_group_end_migration(xxx);
-	..
-}
-
-So let's remove unnecessary and confusing variable.
-
-Suggested-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 ---
- mm/memcontrol.c |    1 +
- mm/migrate.c    |    9 +++------
- 2 files changed, 4 insertions(+), 6 deletions(-)
+ block/cfq-iosched.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 8ab8410..b1b572f 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2804,6 +2804,7 @@ static inline int mem_cgroup_move_swap_account(swp_entry_t entry,
- /*
-  * Before starting migration, account PAGE_SIZE to mem_cgroup that the old
-  * page belongs to.
-+ * Note : Should not return -EAGAIN. unmap_and_move depends on it.
+Index: linux/block/cfq-iosched.c
+===================================================================
+--- linux.orig/block/cfq-iosched.c	2011-01-11 16:24:56.000000000 +0800
++++ linux/block/cfq-iosched.c	2011-01-11 16:41:49.000000000 +0800
+@@ -3284,10 +3284,19 @@ cfq_should_preempt(struct cfq_data *cfqd
   */
- int mem_cgroup_prepare_migration(struct page *page,
- 	struct page *newpage, struct mem_cgroup **ptr)
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 8f0f131..5f2169f 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -623,7 +623,6 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 	struct page *newpage = get_new_page(page, private, &result);
- 	int remap_swapcache = 1;
- 	int rcu_locked = 0;
--	int charge = 0;
- 	struct mem_cgroup *mem = NULL;
- 	struct anon_vma *anon_vma = NULL;
+ static void cfq_preempt_queue(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ {
++	struct cfq_queue *old_cfqq = cfqd->active_queue;
++
+ 	cfq_log_cfqq(cfqd, cfqq, "preempt");
+ 	cfq_slice_expired(cfqd, 1);
  
-@@ -638,7 +637,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 		if (unlikely(split_huge_page(page)))
- 			goto move_newpage;
- 
--	/* prepare cgroup just returns 0 or -ENOMEM */
-+	/* mem_cgroup_prepare_migration never returns -EAGAIN */
- 	rc = -EAGAIN;
- 
- 	if (!trylock_page(page)) {
-@@ -662,8 +661,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 	}
- 
- 	/* charge against new page */
--	charge = mem_cgroup_prepare_migration(page, newpage, &mem);
--	if (charge == -ENOMEM) {
-+	if (mem_cgroup_prepare_migration(page, newpage, &mem)) {
- 		rc = -ENOMEM;
- 		goto unlock;
- 	}
-@@ -759,8 +757,7 @@ rcu_unlock:
- 	if (rcu_locked)
- 		rcu_read_unlock();
- uncharge:
--	if (!charge)
--		mem_cgroup_end_migration(mem, page, newpage, rc == 0);
-+	mem_cgroup_end_migration(mem, page, newpage, rc == 0);
- unlock:
- 	unlock_page(page);
- 
--- 
-1.7.0.4
+ 	/*
++	 * workload type is changed, don't save slice, otherwise preempt
++	 * doesn't happen
++	 */
++	if (cfqq_type(old_cfqq) != cfqq_type(cfqq))
++		cfqq->cfqg->saved_workload_slice = 0;
++
++	/*
+ 	 * Put the new queue at the front of the of the current list,
+ 	 * so we know that it will be selected next.
+ 	 */
+
 
