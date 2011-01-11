@@ -1,104 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693Ab1AKKru (ORCPT <rfc822;w@1wt.eu>);
+	id S1755724Ab1AKKsC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 05:48:02 -0500
+Received: from mga09.intel.com ([134.134.136.24]:62084 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755694Ab1AKKru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Jan 2011 05:47:50 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43056 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755598Ab1AKKrq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 05:47:46 -0500
-Date: Tue, 11 Jan 2011 10:47:09 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>, linux-sh@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: Re: Locking in the clk API
-Message-ID: <20110111104709.GB11039@n2100.arm.linux.org.uk>
-References: <201101111016.42819.jeremy.kerr@canonical.com> <20110111091607.GI12552@n2100.arm.linux.org.uk> <201101111744.59712.jeremy.kerr@canonical.com> <20110111103929.GN24920@pengutronix.de>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,306,1291622400"; 
+   d="scan'208";a="591804174"
+Date: Tue, 11 Jan 2011 11:47:46 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Andres Salomon <dilinger@queued.net>
+Cc: Jim Cromie <jim.cromie@gmail.com>, khali@linux-fr.org, ben-linux@fluff.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH] mfd: i2c: convert SCx200 driver from using raw PCI to
+ platform device
+Message-ID: <20110111104745.GC6616@sortiz-mobl>
+References: <20101230202733.2f01b62d@queued.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110111103929.GN24920@pengutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20101230202733.2f01b62d@queued.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 11:39:29AM +0100, Uwe Kleine-König wrote:
-> A quick look into Digi's BSP (digiEL-5.0) shows they implemented
-> something I suggested earlier here:
-> 
-> 	static int clk_enable_haslocknchange(struct clk *clk)
-> 	{
-> 		int ret = 0;
-> 
-> 		assert_spin_locked(&clk_lock);
-> 		BUG_ON(!test_bit(CLK_FLAG_CHANGESTATE, &clk->flags));
-> 
-> 		if (clk->usage++ == 0) {
-> 			if (clk->parent) {
-> 				ret = clk_enable_haslock(clk->parent);
-> 				if (ret)
-> 					goto err_enable_parent;
-> 			}
-> 
-> 			spin_unlock(&clk_lock);
-> 
-> 			if (clk->endisable)
-> 				ret = clk->endisable(clk, 1);
-> 
-> 			spin_lock(&clk_lock);
-> 
-> 			if (ret) {
-> 				clk_disable_parent_haslock(clk);
-> 	err_enable_parent:
-> 				clk->usage = 0;
-> 			}
-> 		}
-> 
-> 		return ret;
-> 	}
-> 
-> 	static int clk_enable_haslock(struct clk *clk)
-> 	{
-> 		int ret;
-> 		assert_spin_locked(&clk_lock);
-> 		if (__test_and_set_bit(CLK_FLAG_CHANGESTATE, &clk->flags))
-> 			return -EBUSY;
-> 
-> 		ret = clk_enable_haslocknchange(clk);
-> 
-> 		clear_bit(CLK_FLAG_CHANGESTATE, &clk->flags);
-> 
-> 		return ret;
-> 	}
-> 
-> 	int clk_enable(struct clk *clk)
-> 	{
-> 		...
-> 		spin_lock_irqsave(&clk_lock, flags);
-> 		ret = clk_enable_haslock(clk);
-> 		spin_unlock_irqrestore(&clk_lock, flags);
-> 		return ret;
-> 	}
-> 
-> 
-> I think the idea is nice.  At least it allows with a single lock to
-> implement both, sleeping and atomic clks without the need to mark the
-> atomicity in a global flag.
+Hi Andres,
 
-It doesn't.  clk_enable() here can still end up trying to sleep when
-it's called from IRQ context - the code doesn't solve that.  All it
-means is that the intermediate code doesn't care whether clk->endisable
-ends up sleeping or not.
+On Thu, Dec 30, 2010 at 08:27:33PM -0800, Andres Salomon wrote:
+> Note: this relies on the cs5535-mfd patches that are currently in the
+> MFD next tree.  It's been tested on CS5536 hardware, but I don't have
+> access to any old SCx200 hardware to verify that I didn't break the ISA
+> stuff.
+> 
+Patch applied, thanks.
 
-What it does do is return -EBUSY if there are two concurrent attempts
-to enable the same clock.  How many drivers today deal sanely with
-such an error from clk_enable(), and how many would just fail their
-probe() call on such an occurance?
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
