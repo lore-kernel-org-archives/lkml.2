@@ -1,63 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476Ab1AKFcZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 00:32:25 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64208 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200Ab1AKFcT convert rfc822-to-8bit (ORCPT
+	id S1752015Ab1AKFlY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 00:41:24 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48843 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888Ab1AKFlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 00:32:19 -0500
+	Tue, 11 Jan 2011 00:41:16 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=nFa2KQ6lx3MPdiOEz5YXJjtdvQI9Sx/AEBImnDCNW3lZI5prPtucWgoihorrcUOuYG
-         sI51688vBWKX7Or/hnQA5Cn3VRoAB4VuxyRiOAJKQiXLhDwwaLSzEHt0rc3LRUg0DUuk
-         LsakBV3P+1FCdP10DJYFoDNf6+WXRCahxz6aM=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=QpEFTs4iI9gzJuSVdwYJuPwT/7KqK8l8WEE+UwAkuc1/DyKgMHZXvHQ7F3Gb5mJ8we
+         YQQId+USV2+KgR9hEvwhE/NwSSK6AhmmwePm2TYeW6mvBC6/ZdbJFSCFz8ZnjLrUZsGK
+         I1P+IOLNurAnaf5NYSMNJJtN0FYa0n00RDA54=
+Date: Tue, 11 Jan 2011 14:41:07 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: add replace_page_cache_page() function
+Message-ID: <20110111054107.GC2113@barrios-desktop>
+References: <E1PbGxV-0001ug-2r@pomaz-ex.szeredi.hu>
 MIME-Version: 1.0
-In-Reply-To: <201101110441.33841.arnd@arndb.de>
-References: <1294713837-4929-1-git-send-email-vapier@gentoo.org>
- <AANLkTinnuxvx9+eNvCqjK2GW2XQPn4LjK4WfMj=f20Xw@mail.gmail.com> <201101110441.33841.arnd@arndb.de>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Tue, 11 Jan 2011 00:31:57 -0500
-X-Google-Sender-Auth: 1Plrnhf93SNYjzUkrs_NsDQJ2-c
-Message-ID: <AANLkTim1n+DNChvuqJKRTAKs2xjpDCV-yV_y9nyQc8RL@mail.gmail.com>
-Subject: Re: [PATCH] drivers: char: hvc: add Blackfin JTAG console support
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-serial@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1PbGxV-0001ug-2r@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 22:41, Arnd Bergmann wrote:
-> On Tuesday 11 January 2011, Mike Frysinger wrote:
->> throughput seems to be a bit lower.  the Blackfin JTAG hardware has
->> basically a 4 byte fifo that is filled/consumed in a single shot.  and
->> the Blackfin can produce much faster than the host can consume.  so
->> atm, i have it send out 4 bytes, and the hvc layers take care of
->> calling back into me at some point.  if i add a busy loop to run a few
->> hundred milliseconds (like HZ/4), it runs much nicer.  but obviously
->> doesnt give anyone else time to run.  i cant schedule or anything as
->> the write layers are called with a spin_lock_irqsave.  any tips for
->> how to speed this up a bit ?  or is it a wash with hvc ?
->
-> You could try lowering the hvc MIN_TIMEOUT value. If you want to
-> change it for blackfin, you could probably make it a configuration
-> option. However, if it really takes a few milliseconds that you need
-> to wait between two accesses, MIN_TIMEOUT should already be small
-> enough.
->
-> You should really not need to sleep in your output function, as
-> the khvcd() timeout logic tries handling this in the best way.
-> There may be a bug in that logic though (wouldn't be the first one
-> there), so try to see what the timeouts are when you get into
-> this problem.
+Hi Miklos,
 
-np, i'll poke around a bit.  i'm ok with merging this driver now since
-it seems to be functionality equivalent to the old code.
--mike
+On Fri, Jan 07, 2011 at 07:22:41PM +0100, Miklos Szeredi wrote:
+> Here's an updated patch, addressing the review comments.
+> 
+> Hiroyuki-san, can you please review the newly introduced
+> mem_cgroup_replace_cache_page(), as I'm not fully familiar with the
+> memory cgroup code.
+> 
+> Thanks,
+> Miklos
+> ---
+> 
+> From: Miklos Szeredi <mszeredi@suse.cz>
+> Subject: mm: add replace_page_cache_page() function
+> 
+> This function basically does:
+> 
+>      remove_from_page_cache(old);
+>      page_cache_release(old);
+>      add_to_page_cache_locked(new);
+> 
+> Except it does this atomically, so there's no possibility for the
+> "add" to fail because of a race.
+> 
+> This is used by fuse to move pages into the page cache.
+> 
+> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> ---
+>  fs/fuse/dev.c              |   10 +++------
+>  include/linux/memcontrol.h |    8 +++++++
+>  include/linux/pagemap.h    |    1 
+>  mm/filemap.c               |   50 +++++++++++++++++++++++++++++++++++++++++++++
+>  mm/memcontrol.c            |   38 ++++++++++++++++++++++++++++++++++
+>  5 files changed, 101 insertions(+), 6 deletions(-)
+> 
+> Index: linux-2.6/mm/filemap.c
+> ===================================================================
+> --- linux-2.6.orig/mm/filemap.c	2011-01-07 17:53:39.000000000 +0100
+> +++ linux-2.6/mm/filemap.c	2011-01-07 19:14:45.000000000 +0100
+> @@ -390,6 +390,56 @@ int filemap_write_and_wait_range(struct
+>  EXPORT_SYMBOL(filemap_write_and_wait_range);
+>  
+>  /**
+> + * replace_page_cache_page - replace a pagecache page with a new one
+> + * @old:	page to be replaced
+> + * @new:	page to replace with
+> + * @gfp_mask:	page allocation mode
+> + *
+> + * This function replaces a page in the pagecache with a new one.  On
+> + * success it acquires the pagecache reference for the new page and
+> + * drop it for the old page.  Both the old and new pages must be
+> + * locked.  This function does not add the new page to the LRU, the
+> + * caller must do that.
+> + *
+> + * The remove + add is atomic.  The only way this function can fail is
+> + * memory allocation failure.
+> + */
+> +int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
+> +{
+> +	int error;
+> +
+> +	VM_BUG_ON(!PageLocked(old));
+> +	VM_BUG_ON(!PageLocked(new));
+> +	VM_BUG_ON(new->mapping);
+> +
+> +	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
+> +	if (!error) {
+> +		struct address_space *mapping = old->mapping;
+> +		pgoff_t offset = old->index;
+> +
+> +		page_cache_get(new);
+> +		new->mapping = mapping;
+> +		new->index = offset;
+> +
+> +		spin_lock_irq(&mapping->tree_lock);
+> +		__remove_from_page_cache(old);
+
+Since v1, I tried to change page reference accouting semantics of
+remove_from_page_cache. At last, it changes API name from __remove_from_page_cache
+to __delete_from_page_cache.
+So this conflicts my series.
+If you are not urgent, could you resend based on my series after Andrew merges it?
+Or if Andrew has a concern about my series and he merged your patch, I will resend
+my series include fixing this part of your patch.
+
+Please wait Andrew's next step.
+
+-- 
+Kind regards,
+Minchan Kim
