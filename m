@@ -1,88 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755409Ab1AKER5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 23:17:57 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:63540 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755370Ab1AKERw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 23:17:52 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=_Kp_6M9sMtsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=5gGhRTZK2JgBjUD_UcYA:9 a=OetkvSXJ3JAVntUUcpAA:7 a=dMGjBFxK_QuicA-69PydaU8Ex_gA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: [GIT PULL] rtmutex: Fix comment about why new_owner can be NULL in
- wake_futex_pi()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Darren Hart <darren@dvhart.com>, Lai Jiangshan <eag0628@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 10 Jan 2011 23:17:49 -0500
-Message-ID: <1294719469.26623.246.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755339Ab1AKE1u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 23:27:50 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:55219 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755277Ab1AKE1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 23:27:42 -0500
+Message-ID: <4D2BDC29.3030408@parallels.com>
+Date: Mon, 10 Jan 2011 22:27:21 -0600
+From: Rob Landley <rlandley@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] update Thunderbird docs with wordwrap plugin.
+References: <4D2579B2.7060704@parallels.com>	<20110106154120.b69118c9.akpm@linux-foundation.org>	<4D2AC4D5.5070503@parallels.com> <20110110091509.f7d338eb.randy.dunlap@oracle.com>
+In-Reply-To: <20110110091509.f7d338eb.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/10/2011 11:15 AM, Randy Dunlap wrote:
+> On Mon, 10 Jan 2011 02:35:33 -0600 Rob Landley wrote:
+> 
+>> On 01/06/2011 05:41 PM, Andrew Morton wrote:
+>>> Probably a worthwhile thing to do, IMO.  If there's some 
+>>> net-specific CONFIG_DEBUG_ setting then that wold be a better 
+>>> thing to use.
+>>> 
+>>> However the patch was a) wordwrapped, b) space-stuffed and c)
+>>> not cc'ed to the networking list.  So its prospects are dim.
+>> 
+>> Ok, either I've beaten thunderbird into submission, or I'll be 
+>> submitting a patch to Documentation/email-clients.txt.  (Whether
+>> or not I need to find a different smtp server to send this through
+>>  remains an open question.)
+> 
+> 
+> Hi Rob, The patch applies cleanly.
 
-Ingo,
+Yay!
 
-While porting Lai Jiangshan's rt-pi patch to the -rt kernel, I found
-that the comment about why rt_mutex_next_owner() can return NULL is
-incorrect. This caused Lai to remove the following if condition, which
-caused a bit of headache in debugging why his patch was causing a crash.
+> However, if you have any additions/updates to 
+> Documentation/email-clients.txt, please send them along.
+> 
+> and please do hard CR/LF every 70-72 characters or so, instead of 
+> very_long_lines.
 
-Please pull the latest tip/futex tree, which can be found at:
+[Long rant about baked-in stupidity in Thunderbird mercifully deleted.]
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-tip/futex
+I dug up a wordwrap extension and installed it, giving me an "options->enable
+wordwrap" control.  I had to undo one of the steps in email-clients.txt to
+get it to work, and rewrote email-clients.txt accordingly:
 
+From: Rob Landley <rlandley@parallels.com>
 
-Steven Rostedt (1):
-      rtmutex: Fix comment about why new_owner can be NULL in wake_futex_pi()
+Show how to install the "toggle wordwrap" extension in thunderbird.
 
-----
- kernel/futex.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
----------------------------
-commit 03cb8f564241019619d52b8716a8194b4220871c
-Author: Steven Rostedt <srostedt@redhat.com>
-Date:   Thu Jan 6 15:08:29 2011 -0500
+Signed-off-by: Rob Landley <rlandley@parallels.com>
+---
 
-    rtmutex: Fix comment about why new_owner can be NULL in wake_futex_pi()
-    
-    The comment about why rt_mutex_next_owner() can return NULL in
-    wake_futex_pi() is not the normal case.
-    
-    Tracing the cause of why this occurs is more likely that waiter
-    simply timedout. But because it originally caused contention with
-    the futex, the owner will go into the kernel when it unlocks
-    the lock. Then it will hit this code path and
-    rt_mutex_next_owner() will return NULL.
-    
-    Cc: Thomas Gleixner <tglx@linutronix.de>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+ Documentation/email-clients.txt |   43 ++++++++++++++++--------------
+ 1 file changed, 23 insertions(+), 20 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 3019b92..5696d38 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -791,10 +791,9 @@ static int wake_futex_pi(u32 __user *uaddr, u32 uval, struct futex_q *this)
- 	new_owner = rt_mutex_next_owner(&pi_state->pi_mutex);
+diff --git a/Documentation/email-clients.txt b/Documentation/email-clients.txt
+index 945ff3f..714b8ca 100644
+--- a/Documentation/email-clients.txt
++++ b/Documentation/email-clients.txt
+@@ -179,26 +179,8 @@ Sylpheed (GUI)
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ Thunderbird (GUI)
  
- 	/*
--	 * This happens when we have stolen the lock and the original
--	 * pending owner did not enqueue itself back on the rt_mutex.
--	 * Thats not a tragedy. We know that way, that a lock waiter
--	 * is on the fly. We make the futex_q waiter the pending owner.
-+	 * It is possible that the next waiter (the one that brought
-+	 * this owner to the kernel) timed out and is no longer
-+	 * waiting on the lock.
- 	 */
- 	if (!new_owner)
- 		new_owner = this->task;
-
+-By default, thunderbird likes to mangle text, but there are ways to
+-coerce it into being nice.
+-
+-- Under account settings, composition and addressing, uncheck "Compose
+-  messages in HTML format".
+-
+-- Edit your Thunderbird config settings to tell it not to wrap lines:
+-      user_pref("mailnews.wraplength", 0);
+-
+-- Edit your Thunderbird config settings so that it won't use format=flowed:
+-      user_pref("mailnews.send_plaintext_flowed", false);
+-
+-- You need to get Thunderbird into preformat mode:
+-. If you compose HTML messages by default, it's not too hard. Just select
+-  "Preformat" from the drop-down box just under the subject line.
+-. If you compose in text by default, you have to tell it to compose a new
+-  message in HTML (just as a one-off), and then force it from there back to
+-  text, else it will wrap lines. To do this, use shift-click on the Write
+-  icon to compose to get HTML compose mode, then select "Preformat" from
+-  the drop-down box just under the subject line.
++Thunderbird is an Outlook clone that likes to mangle text, but there are ways
++to coerce it into behaving.
+ 
+ - Allows use of an external editor:
+   The easiest thing to do with Thunderbird and patches is to use an
+@@ -208,6 +190,27 @@ coerce it into being nice.
+   View->Toolbars->Customize... and finally just click on it when in the
+   Compose dialog.
+ 
++To beat some sense out of the internal editor, do this:
++
++- Under account settings, composition and addressing, uncheck "Compose
++  messages in HTML format".
++
++- Edit your Thunderbird config settings so that it won't use format=flowed.
++  Go to "edit->preferences->advanced->config editor" to bring up the
++  thunderbird's registry editor, and set "mailnews.send_plaintext_flowed" to
++  "false".
++
++- Enable "preformat" mode: Shft-click on the Write icon to bring up the HTML
++  composer, select "Preformat" from the drop-down box just under the subject
++  line, then close the message without saving.  (This setting also applies to
++  the text composer, but the only control for it is in the HTML composer.)
++
++- Install the "toggle wordwrap" extension.  Download the file from:
++    https://addons.mozilla.org/thunderbird/addon/2351/
++  Then go to "tools->add ons", select "install" at the bottom of the screen,
++  and browse to where you saved the .xul file.  This adds an "Enable
++  Wordwrap" entry under the Options menu of the message composer.
++
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ TkRat (GUI)
+ 
 
