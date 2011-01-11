@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab1AKGgg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 01:36:36 -0500
-Received: from h1047321.serverkompetenz.net ([85.214.67.163]:46387 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752904Ab1AKGg3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 01:36:29 -0500
-Message-ID: <4D2BFA08.5030104@ahsoftware.de>
-Date: Tue, 11 Jan 2011 07:34:48 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1754663Ab1AKGhh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 01:37:37 -0500
+Received: from freeflow.nu ([178.79.134.28]:53409 "EHLO freeflow.nu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752790Ab1AKGhb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 01:37:31 -0500
+Message-ID: <4D2BFAA9.2050200@kernel.org>
+Date: Tue, 11 Jan 2011 08:37:29 +0200
+From: Pekka Enberg <penberg@kernel.org>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Nicolas Pitre <nico@fluxnic.net>
-CC: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk
-Subject: Re: ARM: relocation out of range (when loading a module)
-References: <4D2B4CE4.9080309@ahsoftware.de> <alpine.LFD.2.00.1101101722470.9794@xanadu.home>
-In-Reply-To: <alpine.LFD.2.00.1101101722470.9794@xanadu.home>
-Content-Type: text/plain; charset=US-ASCII; format=flowed
+To: David Rientjes <rientjes@google.com>
+CC: Christoph Lameter <cl@linux.com>, Bart Van Assche <bvanassche@acm.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] slub: Fix sysfs circular locking dependency
+References: <1294172717-6044-1-git-send-email-penberg@kernel.org>  <alpine.DEB.2.00.1101041939030.27551@chino.kir.corp.google.com>  <alpine.DEB.2.00.1101050943120.13032@router.home>  <alpine.DEB.2.00.1101051108520.14761@router.home> <AANLkTinft80dXqE-U=YDB23d9=BgXLCxJzgiA_gF4cVL@mail.gmail.com>  <AANLkTinCZzJWYGnxXq_Nwv7QSkEV4Tg-te-1y0PCeRRY@mail.gmail.com>  <AANLkTinQMahgVrWLxR0J6Zbh-_SPjxVJ-wuZt8B5TNjc@mail.gmail.com>  <alpine.DEB.2.00.1101060019140.25879@chino.kir.corp.google.com> <alpine.DEB.2.00.1101061107500.8655@router.home>  <20110107091106.aaa07abe.kamezawa.hiroyu@jp.fujitsu.com>  <alpine.DEB.2.00.1101070922100.3014@router.home>  <alpine.DEB.2.00.1101071227160.31653@chino.kir.corp.google.com>  <AANLkTin6N2s1RN6PBX=f0v69Ny-NkEKk_iAgqscuYgMM@mail.gmail.com> <1294475323.5248.74.camel@jaguar> <alpine.DEB.2.00.1101101014470.12243@router.home> <alpine.DEB.2.00.1101101230190.11969@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1101101230190.11969@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 10.01.2011 23:26, schrieb Nicolas Pitre:
-> On Mon, 10 Jan 2011, Alexander Holler wrote:
+On 1/10/11 10:30 PM, David Rientjes wrote:
+> On Mon, 10 Jan 2011, Christoph Lameter wrote:
 >
->> I've build a kernel 2.6.37 for an armv5-device which includes an initramfs of
->> about 16MB (uncompressed, result is a kernel of about 6MB) and I now getting
->> errors when trying to load a module (which is included in that initramfs):
->
-> Do you really need to have such a bit initramfs?
+>> New patch that just covers the slub changes.
+>>
+>> Subject: slub: Avoid use of slub_lock in show_slab_objects()
+>>
+>> The purpose of the locking is to prevent removal and additions
+>> of nodes when statistics are gathered for a slab cache. So we
+>> need to avoid racing with memory hotplug functionality.
+>>
+>> It is enough to take the memory hotplug locks there instead
+>> of the slub_lock.
+>>
+>> online_pages() currently does not acquire the memory_hotplug
+>> lock. Another patch will be submitted by the memory hotplug
+>> authors to take the memory hotplug lock and describe the
+>> uses of the memory hotplug lock to protect against
+>> adding and removal of nodes from non hotplug data structures.
+>>
+>> Signed-off-by: Christoph Lameter<cl@linux.com>
+> Acked-by: David Rientjes<rientjes@google.com>
 
-Not really, but it is handier to use than a separate file.
+Is this safe to be applied without the other hotplug parts?
 
-> What you can do to work around this issue is to load your initramfs
-> separately as a initrd ramdisk image. , and not combine it with the
-> kernel image.
-
-Point is that I would like to understand why including an initramfs has 
-such consequences.
-
-I have to search for some pictures which are explaining the memory 
-layout (never had any interested in that before).
-
-I assume some memory near the kernel is reserved for the modules and an 
-initramfs will come inbetween the kernel and the reserved memory for 
-modules.
-
-Regards,
-
-Alexander
