@@ -1,46 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110Ab1AKNAn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 08:00:43 -0500
-Received: from 77.mail-out.ovh.net ([91.121.185.75]:49808 "HELO
-	77.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755890Ab1AKNAk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 08:00:40 -0500
-Message-ID: <4D2C52E3.2020702@example.com>
-Date: Tue, 11 Jan 2011 13:53:55 +0100
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	id S1755982Ab1AKNBS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 08:01:18 -0500
+Received: from csmtp1.one.com ([195.47.247.21]:59765 "EHLO csmtp1.one.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754144Ab1AKNBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 08:01:16 -0500
+From: "Henrik Rydberg" <rydberg@bitmath.org>
+Date: Tue, 11 Jan 2011 14:00:55 +0100
+To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Cc: Stephane Chatty <chatty@enac.fr>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC v3 3/5] hid-multitouch: support for PixCir-based panels
+Message-ID: <20110111130055.GB1961@polaris.bitmath.org>
+References: <1294425762-29730-1-git-send-email-benjamin.tissoires@enac.fr>
+ <1294425762-29730-4-git-send-email-benjamin.tissoires@enac.fr>
+ <20110107194918.GB29913@polaris.bitmath.org>
+ <AANLkTin8tHO5x2SBugSaEQ6mJ-7upS2YX9OANK1phmdM@mail.gmail.com>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Error in linux-2.6.37-git5 in btrfs in ctree.c
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 5973180481414918424
-X-Ovh-Remote: 79.185.217.3 (adtf3.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
-X-Ovh-Tracer-Id: 6235233684325757208
+In-Reply-To: <AANLkTin8tHO5x2SBugSaEQ6mJ-7upS2YX9OANK1phmdM@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(I send again because my previous message wasn't delivered.)
+> >> +static int mt_compute_slot(struct mt_device *td)
+> >> +{
+> >> +     struct mt_class *cls = td->mtclass;
+> >> +
+> >> +     if (cls->quirks & MT_QUIRK_SLOT_IS_CONTACTID)
+> >> +             return slot_is_contactid(td);
+> >
+> > No real need for a function call here...
+> 
+> just to prepare for the other patches
 
-Hello,
+I mean the line could simply read
 
-There is an error in here:
+	return td->curdata.contactid;
 
-In file included from fs/btrfs/ctree.c:21:
-fs/btrfs/ctree.h:1003: error: field â€˜super_kobjâ€™ has incomplete type
-fs/btrfs/ctree.h:1074: error: field â€˜root_kobjâ€™ has incomplete type
+[...]
+> >> +static int mt_event(struct hid_device *hid, struct hid_field *field,
+> >> +                             struct hid_usage *usage, __s32 value)
+> >> +{
+> >> +     struct mt_device *td = hid_get_drvdata(hid);
+> >> +
+> >> +     if (hid->claimed & HID_CLAIMED_INPUT) {
+> >> +             switch (usage->hid) {
+> >> +             case HID_DG_INRANGE:
+> >> +                     break;
+> >> +             case HID_DG_TIPSWITCH:
+> >> +                     td->curvalid = value;
+> >
+> > I do not think curvalid should depend on the touch state (which is
+> > what tipswitch is). Either move to INRANGE, or simply set to true.
+> 
+> INRANGE is not all the time used as curvalid as you are saying.
+> At least for Stantum, curvalid is given by CONFIDENCE.
 
-Kernel fails to build. linux-2.6.37-git5
+Yes.
 
--- 
-"Wiedza to wÅ‚adza. Ale niewiedza, niestety, nie oznacza jeszcze
-braku wÅ‚adzy." Niels Bohr
-NP: Patrick O'Hearn - Gradual Understanding
-NB: 2.6.37-next-20110110
+> The solution of giving the value true to curvalid is not working too:
+> Cypress devices can send their touches over 2 reports of 7 touches,
+> even if it handles 10 touches.
+
+Yes.
+ 
+> Solution:
+> 1) td->curvalid = td->num_received < td->mtclass->maxcontacts;
+> (not sure it will work for all devices)
+
+For the ones where NOT_SEEN_MEANS_UP, it ought to be true. For egalax,
+it is not true.
+
+> 
+> or 2) introduce MT_QUIRK_VALID_IS_INRANGE and MT_QUIRK_VALID_IS_CONFIDENCE
+
+Yes, I believe this is a good way to go.
+ 
+> or 3) let curvalid=value and disable the quirk
+> MT_QUIRK_NOT_SEEN_MEANS_UP (adding a FixMe comment above)
+
+This would mean setting curvalid = touch_state again, which according
+to the discussion is precisely what we should not do. We know we need
+to check whether the incoming packet represents data is whether it is
+just filling up the transfer protocol size. We just need to identify,
+per device, how that is done.
+
+> >> +                     if (value)
+> >> +                             td->num_expected = value - 1;
+> >
+> > The - 1 should be dropped here.
+> 
+> Here is the really tricky one:
+> 
+> if I drop -1,
+> 
+> the test below will be:
+>  if (field->index == td->last_field_index
+>       && td->num_received >= td->num_expected)
+> 
+> but during the init of the device, the kernel receive 1 event though
+> the driver is not ready.
+
+So the current code really needs to also check whether the driver is
+ready to events. Adding a state for it would be appropriate. As it
+stands, an unrelated syntatic oddity is covering up this fact.
+
+> 
+> During this time, num_expected is at 0, and when we receive the
+> last_field_index: segfault!
+> 
+> To sum up, no, we can't.
+
+Yes we can. :-)
+
+> >> +     if (field->index == td->last_field_index
+> >> +             && td->num_received > td->num_expected)
+> >
+> > A ">=" here.
+
+still applies then.
+
+Thanks,
+Henrik
