@@ -1,112 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932554Ab1AKSXb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 13:23:31 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39439 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932518Ab1AKSX3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 13:23:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=xqi+Gka3zINkY9zmMz91Ehkx9CvUBYDX1etCtG0a/q98iX7XP7lAjBQ+XKj29p69uR
-         0hdMfc/uK2vtI14AGWNVE2KdTd8piXzE9GzcHPwn/v8rpS6BCdKruCIfzqEWyahCKYY4
-         JPpahcT1EBhzU0If8L2pB5WLORoH7c1gC4CkM=
-Date: Tue, 11 Jan 2011 19:23:23 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Jian Peng <jipeng@broadcom.com>
-Cc: Robert Hancock <hancockrwd@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jgarzik@pobox.com" <jgarzik@pobox.com>,
-        ide <linux-ide@vger.kernel.org>
-Subject: Re: questions regarding possible violation of AHCI spec in AHCI
- driver
-Message-ID: <20110111182323.GG15933@htj.dyndns.org>
-References: <4CFF58D2.4040006@kernel.org>
- <E18F441196CA634DB8E1F1C56A50A874319FA38C43@IRVEXCHCCR01.corp.ad.broadcom.com>
- <4CFFCD56.6050608@kernel.org>
- <E18F441196CA634DB8E1F1C56A50A874319FA7E36E@IRVEXCHCCR01.corp.ad.broadcom.com>
- <4CFFD3EB.10800@kernel.org>
- <E18F441196CA634DB8E1F1C56A50A874319FA7E36F@IRVEXCHCCR01.corp.ad.broadcom.com>
- <4CFFE29C.7080205@kernel.org>
- <E18F441196CA634DB8E1F1C56A50A874319FA38CD3@IRVEXCHCCR01.corp.ad.broadcom.com>
- <4D000C8B.5040904@kernel.org>
- <E18F441196CA634DB8E1F1C56A50A874319FD72B23@IRVEXCHCCR01.corp.ad.broadcom.com>
+	id S932443Ab1AKSab (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 13:30:31 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:47137 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752416Ab1AKSa3 convert rfc822-to-8bit (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 11 Jan 2011 13:30:29 -0500
+Date: Tue, 11 Jan 2011 13:28:57 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Thomas Hellstrom <thomas@shipmail.org>, konrad@darnok.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [RFC PATCH v2] Utilize the PCI API in the TTM framework.
+Message-ID: <20110111182857.GC29223@dumpdata.com>
+References: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com>
+ <4D2B16F3.1070105@shipmail.org>
+ <20110110152135.GA9732@dumpdata.com>
+ <4D2B2CC1.2050203@shipmail.org>
+ <20110110164519.GA27066@dumpdata.com>
+ <4D2B70FB.3000504@shipmail.org>
+ <20110111155545.GD10897@dumpdata.com>
+ <AANLkTimarEHNAs-1hCJf05YhkRQP2qF1D9it81NA3VTb@mail.gmail.com>
+ <20110111165953.GI10897@dumpdata.com>
+ <AANLkTinkP8b9GNMFqWygJb0O17neB7RLnxTi-DaG13pR@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <E18F441196CA634DB8E1F1C56A50A874319FD72B23@IRVEXCHCCR01.corp.ad.broadcom.com>
+In-Reply-To: <AANLkTinkP8b9GNMFqWygJb0O17neB7RLnxTi-DaG13pR@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Tue, Jan 11, 2011 at 10:09:08AM -0800, Jian Peng wrote:
-> Happy Holiday! I want to revisit this issue and hopefully get
-> consensus on it asap.
-
-Happy new year!
-
-> Here is the sequence that will cause problem if BSY|DRQ and SSTS.DET
-> was not checked in start_engine:
+On Tue, Jan 11, 2011 at 01:12:57PM -0500, Alex Deucher wrote:
+> On Tue, Jan 11, 2011 at 11:59 AM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com> wrote:
+> >> >> Another thing that I was thinking of is what happens if you have a
+> >> >> huge gart and allocate a lot of coherent memory. Could that
+> >> >> potentially exhaust IOMMU resources?
+> >> >
+> >> > <scratches his head>
+> >> >
+> >> > So the GART is in the PCI space in one of the BARs of the device right?
+> >> > (We are talking about the discrete card GART, not the poor man AMD IOMMU?)
+> >> > The PCI space is under the 4GB, so it would be considered coherent by
+> >> > definition.
+> >>
+> >> GART is not a PCI BAR; it's just a remapper for system pages.  On
+> >> radeon GPUs at least there is a memory controller with 3 programmable
+> >> apertures: vram, internal gart, and agp gart.  You can map these
+> >
+> > To access it, ie, to program it, you would need to access the PCIe card
+> > MMIO regions, right? So that would be considered in PCI BAR space?
 > 
-> 1. SUD bit was set in ahci_power_up() to start communication between
->    host and device
-> 2. START bit was set in ahci_start_engine() to prepare for data
->    transfer (should check condition and do not set START bit here
->    per spec)
-> By the time, host did not receive first FIS so BSY|DRQ was not
-> cleared
-> 3. inside ahci_hardreset(), call ahci_stop_engine() first, host
->    controller will take time to clean up internal pipeline and
->    transit to idle state
-> 4. toggle SCTL.DET to reset interface, now COMRESET was not sent
->    since internal state machine stuck at #2 and #3 (per> spec),
->    BSY|DRQ bit was not cleared
-> 5. call ahci_start_engine() again and try to read ID from device but
->    interface is busy since BSY bit was not cleared, failed here
->
-> At the end of section 10.1 of AHCI spec (rev 1.3), it states
+> yes, you need access to the mmio aperture to configure the gpu.  I was
+> thinking you mean something akin the the framebuffer BAR only for gart
+> space which is not the case.
+
+Aaah, gotcha.
 > 
-> Software shall not set PxCMD.ST to '1' until it is determined that a
-> functional device is present on the port as determined by
-> PxTFD.STS.BSY = '0', PxTFD.STS.DRQ = '0', and PxSSTS.DET = 3h.
+> >
+> >> resources whereever you want in the GPU's address space and then the
+> >> memory controller takes care of the translation to off-board resources
+> >> like gart pages.  On chip memory clients (display controllers, texture
+> >> blocks, render blocks, etc.) write to internal GPU addresses.  The GPU
+> >> has it's own direct connection to vram, so that's not an issue.  For
+> >> AGP, the GPU specifies aperture base and size, and you point it to the
+> >> bus address of gart aperture provided by the northbridge's AGP
+> >> controller.  For internal gart, the GPU has a page table stored in
+> >
+> > I think we are just talking about the GART on the GPU, not the old AGP
+> > GART.
 > 
-> It is likely used to prevent host controller from jumping into wrong
-> state before first FIS was received.
+> Ok.  I just mentioned it for completeness.
 
-I still have to say it's pretty silly of the controller to stall
-inrecoverably.
+<nods>
+> 
+> >
+> >> either vram or uncached system memory depending on the asic.  It
+> >> provides a contiguous linear aperture to GPU clients and the memory
+> >> controller translates the transactions to the backing pages via the
+> >> pagetable.
+> >
+> > So I think I misunderstood what is meant by 'huge gart'. That sounds
+> > like linear address space provided by GPU. And hooking up a lot of coherent
+> > memory (so System RAM) to that linear address space would be no different that what
+> > is currently being done. When you allocate memory using page_alloc(GFP_DMA32)
+> > and hook up that memory to the linear space you exhaust the same amount of
+> > ZONE_DMA32 memory as if you were to use the PCI API. It comes from the same
+> > pool, except that doing it from the PCI API gets you the bus address right
+> > away.
+> >
+> 
+> In this case GPU clients refers to the hw blocks on the GPU; they are
+> the ones that see the contiguous linear aperture.  From the
+> application's perspective, gart memory looks like any other pages.
 
-> Please review this issue, and let me know how to resolve it by
-> either adopting my previous patch, or creating a new patch.
-
-You haven't really brought up any new issue so my comment stays the
-same.
-
->> I'm not objecting to the change but you guys probably want to fix
->> the controller in following revisions.  If we're gonna make the
->> change, I'd like to go with the previous version without the vendor
->> check.  What is the timeframe for the controller release?  Would it
->> be enough to merge the change during 2.6.38-rc1?  After baking it
->> for some time in 2.6.38, we can propagate the change back through
->> -stable.
-
-So, yeah, let's proceed with the patch.  Please make the following
-changes and resubmit.
-
-* Please don't do readl() on the same line as variable declaration and
-  drop the unnecessary & 0xff.
-
-* Hmmm... please consider adding a KERN_DEBUG message when
-  ahci_start_port() exits without starting the port.  Just in case it
-  causes problems on other controllers.
-
-Thank you.
-
--- 
-tejun
+<nods>. Those 'hw blocks' or 'gart memory' are in reality
+just pages received via the 'alloc_page()' (before this patchset and 
+also after this patchset) Oh wait, this 'hw blocks' or 'gart memory' can also
+refer to the VRAM memory right? In which case that is not memory allocated via
+'alloc_page' but using a different mechanism. Is TTM used then? If so how
+do you stick those VRAM pages under its accounting rules? Or do the drivers
+use some other mechanism for that that is dependent on each driver?
