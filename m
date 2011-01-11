@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095Ab1AKOPB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 09:15:01 -0500
-Received: from mga09.intel.com ([134.134.136.24]:18011 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755822Ab1AKOPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 09:15:00 -0500
-Message-Id: <0d30dc$knd39a@orsmga001.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,307,1291622400"; 
-   d="scan'208";a="695635242"
-Date: Tue, 11 Jan 2011 14:14:52 +0000
-To: Pavel Machek <pavel@ucw.cz>, Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [git pull] drm for rc1
-Cc: Dave Airlie <airlied@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Airlie <airlied@linux.ie>, Eric Anholt <eric@anholt.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-In-Reply-To: <20110111133329.GD10705@atrey.karlin.mff.cuni.cz>
-References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie> <AANLkTinW8Yp1K1w+G+BgLa-fPaFANkGsRjqH_W8N+9VL@mail.gmail.com> <AANLkTim5oVZqMBtan5_TMOxaWbqkF=aDcBYFNYy55kt_@mail.gmail.com> <0aea052d-70ff-41ea-8776-c6d974c10337@email.android.com> <20110111133329.GD10705@atrey.karlin.mff.cuni.cz>
-From: Chris Wilson <chris@chris-wilson.co.uk>
+	id S932196Ab1AKOSJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 09:18:09 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:23871 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753800Ab1AKOSG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 09:18:06 -0500
+X-IronPort-AV: E=Sophos;i="4.60,307,1291611600"; 
+   d="scan'208";a="130492440"
+Subject: Re: [Xen-devel] [PATCH] xen: use PCI interfaces to request IO	 and
+ MEM resources on platform device.
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Jan Beulich <JBeulich@novell.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D2C72FA020000780002BB58@vpn.id2.novell.com>
+References: <1294746628-20396-1-git-send-email-ian.campbell@citrix.com>
+	 <4D2C5FA5020000780002BB21@vpn.id2.novell.com>
+	 <1294750884.3831.5866.camel@zakaz.uk.xensource.com>
+	 <4D2C72FA020000780002BB58@vpn.id2.novell.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Tue, 11 Jan 2011 14:18:03 +0000
+Message-ID: <1294755483.3831.5872.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Jan 2011 14:33:29 +0100, Pavel Machek <pavel@ucw.cz> wrote:
-> Hi!
+On Tue, 2011-01-11 at 14:10 +0000, Jan Beulich wrote:
+> >>> On 11.01.11 at 14:01, Ian Campbell <Ian.Campbell@eu.citrix.com> wrote:
+> > The old way was correct circa 2.6.37-rc5 but broken in 2.6.37 final,
+> > there were a bunch of (reverts of) PCI resource changes in that window,
+> > If I had to make a guess I'd say it was something in there which did it.
 > 
-> > >>> Highlights:
-> > >>> core/drivers: add support for high precision vblank timestamps
-> > >>> radeon: pageflipping support, Gen2 PCIE support
-> > >>> nouveau: reworked VRAM and VM support
-> > >>> intel: better ILK/SNB powersaving support, Full GTT support
-> > >>
-> > >> Lowlights: it's broken.
+> Was it perhaps broken somewhere between -rc5 and -final, but
+> not in -final itself?
+
+No I'm working with 2.6.37 final and it is broken there.
+
+> >> I'm mainly asking because if it really addresses some problem,
+> >> then unmodified_drivers/linux-2.6/platform-pci/platform-pci.c
+> >> in -unstable should probably get updated too.
+> > 
+> > Assuming the pci_* interfaces exist back as far as we care about for
+> > those drivers then I don't see why not to apply it.
 > 
-> Heh, at this point I expected Linus to complain about milion merges in
-> changelog...
+> I checked back to .5, where they exist; the question is - how far
+> back do we care?
 
-Applying bug fixes to one tree and pushing those to 2.6.37 and doing
-feature work in another which also depend upon those same bug fixes...
-The merges I felt were fairly infrequent, either after a pull request and
-subsequent fast-forward of -fixes (so that -next was always a superset of
-the current upstream rc) or I applied a patch to -fixes that would
-conflict with -next. After those, I did an immediate merge to resolve the
-conflict whilst the code was still fresh.
+You mean 2.6.5? That's old enough to be the cut off IMHO.
 
-The whole point of trying to keep two trees intact is to be able to
-perform continuous testing on both. No matter how hard I try not to, it
-seems I always break Linus's machine.
+I'm not sure how much actual use these drivers get these days though.
 
-> > Arg.  It's been ok on my ILK systems, but Chris has found some
-> >issues with out watermarking code iirc; apparently we're underflowing
-> >the display FIFO, causing all sorts of trouble.  If it works before
-> >the pull of Dave's tree, can you bisect?
-> 
-> Watermarking code? What goes on there?
+Ian.
 
-FIFO watermarks, they determine when the display fetches from the scanout
-buffer to fill the pipe. If we run out of FIFO entries then the display
-flickers at best, at worst we may hard hang the machine.
--Chris
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
