@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932341Ab1AKQwh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 11:52:37 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53618 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753395Ab1AKQwf convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 11:52:35 -0500
-MIME-Version: 1.0
-In-Reply-To: <1294763679.2435.72.camel@doink>
-References: <20110107075831.GA14915@amd> <1294763679.2435.72.camel@doink>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 11 Jan 2011 08:51:42 -0800
-Message-ID: <AANLkTin67OXYYKk6y+_MKfXEXBz-F_+qAH0cpiJ24yEQ@mail.gmail.com>
-Subject: Re: [announce] vfs-scale git tree update
-To: aelder@sgi.com
-Cc: Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932408Ab1AKQ74 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 11:59:56 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:56220 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932276Ab1AKQ7y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 11:59:54 -0500
+From: Bernhard Walle <walle@corscience.de>
+To: lrodriguez@atheros.com, jmalinen@atheros.com, vasanth@atheros.com,
+        senthilkumar@atheros.com, linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] [RFC] ath9k: Fix reporting of RX STBC streams to userspace
+Date: Tue, 11 Jan 2011 17:59:54 +0100
+Message-Id: <1294765194-30542-1-git-send-email-walle@corscience.de>
+X-Mailer: git-send-email 1.7.1
+X-Provags-ID: V02:K0:RcMuxxqx8+mpjfQkJniZnLz3pkcXU1KbOru7zQ6s33f
+ lvohRglMGuMC4bNliFsfkFiGj8yOms5dR4haR8yxu4zrRjUbrk
+ YGFpC8BkAPhTYT597H8gL0TPenZNLprJ02bpcLGDOpxfuZ7MGO
+ 9SuRwfLgkuKHinmis2gLhnKSu/1tYzpPQhvEjp3pBSZqCnThLD
+ 92c2supySeb+QvtUTHO7A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 8:34 AM, Alex Elder <aelder@sgi.com> wrote:
->
-> FYI, when using this code, as merged by Linus, I hit the
-> BUG_ON() at the beginning of d_set_d_op() when it's called
-> by autofs4_dir_mkdir().  I managed to work around it by
-> just commenting out those BUG_ON() calls but it's something
-> that ought to get addressed properly.
+While the driver reports
 
-Yeah, removing the BUG_ON() isn't the right thing to do - it means
-that autofs4 is obviously setting the dentry ops twice for the same
-dentry.
+        ath: TX streams 2, RX streams: 2
 
-Possibly the thing could be relaxed to allow setting the _same_ d_op
-pointer, ie do something like
+in the kernel log (with ATH_DBG_CONFIG set in the debug module
+parameter), "iw list" only reported
 
-   if (dentry->d_op == op)
-      return;
+[...]
+        Capabilities: 0x12ce
+                HT20/HT40
+                SM Power Save disabled
+                RX HT40 SGI
+                TX STBC
+                RX STBC 1-streams
+[...]
 
-at the top of that function. But looking at it, I don't think that
-fixes the autofs4 issue.
+The driver seems to set the value as flag while the iw tool interprets
+it as number. This patch fixes that.
 
-The fact that autofs4 does "d_add()" before it sets the d_ops (or
-other dentry state, for that matter) looks a bit scary. To me that
-smells like it might get a  dentry lookup hit before it's actually
-fully done.
+Signed-off-by: Bernhard Walle <walle@corscience.de>
+---
+ drivers/net/wireless/ath/ath9k/init.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-Does it make any difference if you move the various d_add() calls down
-to the end of the functions to when the "dentry" has really been
-instantiated?
+diff --git a/drivers/net/wireless/ath/ath9k/init.c b/drivers/net/wireless/ath/ath9k/init.c
+index 639dc93..935b6c3 100644
+--- a/drivers/net/wireless/ath/ath9k/init.c
++++ b/drivers/net/wireless/ath/ath9k/init.c
+@@ -215,17 +215,17 @@ static void setup_ht_cap(struct ath_softc *sc,
+ 	else
+ 		max_streams = 2;
+ 
+-	if (AR_SREV_9280_20_OR_LATER(ah)) {
+-		if (max_streams >= 2)
+-			ht_info->cap |= IEEE80211_HT_CAP_TX_STBC;
+-		ht_info->cap |= (1 << IEEE80211_HT_CAP_RX_STBC_SHIFT);
+-	}
+-
+ 	/* set up supported mcs set */
+ 	memset(&ht_info->mcs, 0, sizeof(ht_info->mcs));
+ 	tx_streams = ath9k_cmn_count_streams(common->tx_chainmask, max_streams);
+ 	rx_streams = ath9k_cmn_count_streams(common->rx_chainmask, max_streams);
+ 
++	if (AR_SREV_9280_20_OR_LATER(ah)) {
++		if (max_streams >= 2)
++			ht_info->cap |= IEEE80211_HT_CAP_TX_STBC;
++		ht_info->cap |= (rx_streams << IEEE80211_HT_CAP_RX_STBC_SHIFT);
++	}
++
+ 	ath_print(common, ATH_DBG_CONFIG,
+ 		  "TX streams %d, RX streams: %d\n",
+ 		  tx_streams, rx_streams);
+-- 
+1.7.1
 
-                      Linus
