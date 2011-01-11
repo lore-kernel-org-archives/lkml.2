@@ -1,114 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313Ab1AKWDW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 17:03:22 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42622 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932144Ab1AKWDV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 17:03:21 -0500
-Date: Tue, 11 Jan 2011 15:03:17 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, sodaville@linutronix.de, x86@kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 04/15] x86/dtb: add irq domain abstraction
-Message-ID: <20110111220317.GA2131@angua.secretlab.ca>
-References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>
- <1292600033-12271-5-git-send-email-bigeasy@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1292600033-12271-5-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756298Ab1AKWH1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 17:07:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44392 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754584Ab1AKWHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 17:07:24 -0500
+Date: Wed, 12 Jan 2011 09:07:07 +1100
+From: NeilBrown <neilb@suse.de>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu,
+        stable@kernel.org, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/core] sched: Change wait_for_completion_*_timeout()
+ to return a signed long
+Message-ID: <20110112090707.4a794483@notabene.brown>
+In-Reply-To: <20110111214457.GD28537@fieldses.org>
+References: <20110105125016.64ccab0e@notabene.brown>
+	<tip-6bf4123760a5aece6e4829ce90b70b6ffd751d65@git.kernel.org>
+	<20110111214457.GD28537@fieldses.org>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 04:33:42PM +0100, Sebastian Andrzej Siewior wrote:
-> The here introduced irq_domain abstraction represents a generic irq
-> controller. It is a subset of powerpc's irq_host which is going to be
-> renamed to irq_domain and then become generic. This implementation will
-> be removed once it is generic.
+On Tue, 11 Jan 2011 16:44:58 -0500 "J. Bruce Fields" <bfields@fieldses.org>
+wrote:
+
+> Doesn't this belong in 2.6.37.y as well?
+
+Yes indeed!
+I should have tagged it for Cc:stable@kernel.org in the first place.  I had
+been meaning to forward it to stable@kernel.org, but you beat me to it!
+
+Thanks,
+NeilBrown
+
+
 > 
-> The xlate callback is resposible to parse irq informations like irq type
-> and number and returns the hardware irq number which is reported by the
-> hardware as active.
+> --b.
 > 
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> Tested-by: Dirk Brandewie <dirk.brandewie@gmail.com>
-> ---
->  arch/x86/include/asm/irq_controller.h |   12 ++++++++
->  arch/x86/include/asm/prom.h           |    2 +
->  arch/x86/kernel/prom.c                |   47 ++++++++++++++++++++++++++++++++-
->  3 files changed, 60 insertions(+), 1 deletions(-)
->  create mode 100644 arch/x86/include/asm/irq_controller.h
-> 
-> diff --git a/arch/x86/include/asm/irq_controller.h b/arch/x86/include/asm/irq_controller.h
-> new file mode 100644
-> index 0000000..423bbbd
-> --- /dev/null
-> +++ b/arch/x86/include/asm/irq_controller.h
-> @@ -0,0 +1,12 @@
-> +#ifndef __IRQ_CONTROLLER__
-> +#define __IRQ_CONTROLLER__
-> +
-> +struct irq_domain {
-> +	int (*xlate)(struct irq_domain *h, const u32 *intspec, u32 intsize,
-> +			u32 *out_hwirq, u32 *out_type);
-> +	void *priv;
-> +	struct device_node *controller;
-> +	struct list_head l;
-> +};
+> On Wed, Jan 05, 2011 at 02:07:12PM +0000, tip-bot for NeilBrown wrote:
+> > Commit-ID:  6bf4123760a5aece6e4829ce90b70b6ffd751d65
+> > Gitweb:     http://git.kernel.org/tip/6bf4123760a5aece6e4829ce90b70b6ffd751d65
+> > Author:     NeilBrown <neilb@suse.de>
+> > AuthorDate: Wed, 5 Jan 2011 12:50:16 +1100
+> > Committer:  Ingo Molnar <mingo@elte.hu>
+> > CommitDate: Wed, 5 Jan 2011 14:15:50 +0100
+> > 
+> > sched: Change wait_for_completion_*_timeout() to return a signed long
+> > 
+> > wait_for_completion_*_timeout() can return:
+> > 
+> >    0: if the wait timed out
+> >  -ve: if the wait was interrupted
+> >  +ve: if the completion was completed.
+> > 
+> > As they currently return an 'unsigned long', the last two cases
+> > are not easily distinguished which can easily result in buggy
+> > code, as is the case for the recently added
+> > wait_for_completion_interruptible_timeout() call in
+> > net/sunrpc/cache.c
+> > 
+> > So change them both to return 'long'.  As MAX_SCHEDULE_TIMEOUT
+> > is LONG_MAX, a large +ve return value should never overflow.
+> > 
+> > Signed-off-by: NeilBrown <neilb@suse.de>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Cc: J.  Bruce Fields <bfields@fieldses.org>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> > LKML-Reference: <20110105125016.64ccab0e@notabene.brown>
+> > Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> > ---
+> >  include/linux/completion.h |    8 ++++----
+> >  kernel/sched.c             |    4 ++--
+> >  2 files changed, 6 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/include/linux/completion.h b/include/linux/completion.h
+> > index 36d57f7..51494e6 100644
+> > --- a/include/linux/completion.h
+> > +++ b/include/linux/completion.h
+> > @@ -81,10 +81,10 @@ extern int wait_for_completion_interruptible(struct completion *x);
+> >  extern int wait_for_completion_killable(struct completion *x);
+> >  extern unsigned long wait_for_completion_timeout(struct completion *x,
+> >  						   unsigned long timeout);
+> > -extern unsigned long wait_for_completion_interruptible_timeout(
+> > -			struct completion *x, unsigned long timeout);
+> > -extern unsigned long wait_for_completion_killable_timeout(
+> > -			struct completion *x, unsigned long timeout);
+> > +extern long wait_for_completion_interruptible_timeout(
+> > +	struct completion *x, unsigned long timeout);
+> > +extern long wait_for_completion_killable_timeout(
+> > +	struct completion *x, unsigned long timeout);
+> >  extern bool try_wait_for_completion(struct completion *x);
+> >  extern bool completion_done(struct completion *x);
+> >  
+> > diff --git a/kernel/sched.c b/kernel/sched.c
+> > index f2f914e..114a0de 100644
+> > --- a/kernel/sched.c
+> > +++ b/kernel/sched.c
+> > @@ -4395,7 +4395,7 @@ EXPORT_SYMBOL(wait_for_completion_interruptible);
+> >   * This waits for either a completion of a specific task to be signaled or for a
+> >   * specified timeout to expire. It is interruptible. The timeout is in jiffies.
+> >   */
+> > -unsigned long __sched
+> > +long __sched
+> >  wait_for_completion_interruptible_timeout(struct completion *x,
+> >  					  unsigned long timeout)
+> >  {
+> > @@ -4428,7 +4428,7 @@ EXPORT_SYMBOL(wait_for_completion_killable);
+> >   * signaled or for a specified timeout to expire. It can be
+> >   * interrupted by a kill signal. The timeout is in jiffies.
+> >   */
+> > -unsigned long __sched
+> > +long __sched
+> >  wait_for_completion_killable_timeout(struct completion *x,
+> >  				     unsigned long timeout)
+> >  {
 
-True, it's not a full implementation, but I'd rather the same
-structure be used for both powerpc and x86.
-
-Thomas, this only touches x86, so I have no objection to you merging
-it, but I'd like to see a follow up patch to merge the x86 and powerpc
-irq_host/irq_domain structures.
-
-However, there is a defect below that must be fixed first....
-
->  unsigned int irq_create_of_mapping(struct device_node *controller,
->  		const u32 *intspec, unsigned int intsize)
->  {
-> -	return intspec[0];
-> +	struct irq_domain *ih;
-> +	u32 virq;
-> +	u32 type;
-> +	int ret;
->  
-> +	ih = get_ih_from_node(controller);
-> +	if (!ih)
-> +		return -ENODEV;
-
-Return value is an unsigned int.  0 or NO_IRQ is the correct thing to
-return if an IRQ cannot be mapped.
-
-> +	ret = ih->xlate(ih, intspec, intsize, &virq, &type);
-> +	if (ret)
-> +		return ret;
-
-Ditto here.  xlate is also supposed to return a virq number, not an
-error code, so the failure condition must be "if (!ret)" or
-"if (reg == NO_IRQ)".  The former is preferred since we're trying to
-eliminate references to NO_IRQ, not add more of them.
-
-> +	if (type == IRQ_TYPE_NONE)
-> +		return virq;
-> +	/* set the mask if it is different from current */
-> +	if (type == (irq_to_desc(virq)->status & IRQF_TRIGGER_MASK))
-> +		set_irq_type(virq, type);
-> +	return virq;
->  }
->  EXPORT_SYMBOL_GPL(irq_create_of_mapping);
->  
-> -- 
-> 1.7.3.2
-> 
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
