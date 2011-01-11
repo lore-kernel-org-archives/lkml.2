@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab1AKELp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 23:11:45 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:37957 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754177Ab1AKELm convert rfc822-to-8bit (ORCPT
+	id S1755368Ab1AKER0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 23:17:26 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34259 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754177Ab1AKERT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 23:11:42 -0500
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-To: Paul Mundt <lethal@linux-sh.org>
-Subject: Re: Locking in the clk API
-Date: Tue, 11 Jan 2011 12:11:29 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.35-24-generic; KDE/4.5.1; x86_64; ; )
-Cc: linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        "Uwe Kleine-K??nig" <u.kleine-koenig@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
-References: <201101111016.42819.jeremy.kerr@canonical.com> <20110111031552.GJ3760@linux-sh.org>
-In-Reply-To: <20110111031552.GJ3760@linux-sh.org>
+	Mon, 10 Jan 2011 23:17:19 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <201101111211.30172.jeremy.kerr@canonical.com>
+In-Reply-To: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie>
+References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 10 Jan 2011 20:16:57 -0800
+Message-ID: <AANLkTinW8Yp1K1w+G+BgLa-fPaFANkGsRjqH_W8N+9VL@mail.gmail.com>
+Subject: Re: [git pull] drm for rc1
+To: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, Eric Anholt <eric@anholt.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Mon, Jan 10, 2011 at 2:59 PM, Dave Airlie <airlied@linux.ie> wrote:
+> Highlights:
+> core/drivers: add support for high precision vblank timestamps
+> radeon: pageflipping support, Gen2 PCIE support
+> nouveau: reworked VRAM and VM support
+> intel: better ILK/SNB powersaving support, Full GTT support
 
-> This looks like a complete disaster, and is also completely inconsistent
-> with how the API is being used by the vast majority of users today.
+Lowlights: it's broken.
 
-I've been basing this on the mxc clock code, which acquires a mutex for all 
-clk_enable()s. This may not be representative of the majority of clock usage.
+I get millions of messages like:
 
->From a quick search there are a few other cases of non-atomic clock usage:
+  ...
+  [ 8482.000414] [drm:i915_hangcheck_ring_idle] *ERROR* Hangcheck
+timer elapsed... render ring idle [waiting on 30938, at 30938], missed
+IRQ?
+  [ 8485.918124] [drm:i915_hangcheck_ring_idle] *ERROR* Hangcheck
+timer elapsed... render ring idle [waiting on 31068, at 31068], missed
+IRQ?
+  [ 8487.926963] [drm:i915_hangcheck_ring_idle] *ERROR* Hangcheck
+timer elapsed... render ring idle [waiting on 31129, at 31129], missed
+IRQ?
+  ...
 
-tcc:		clk_enable() acquires a global clocks_mutex
-tegra:	has a clk_enable_cansleep()
-davinci: clk_set_parent() aquires a global clocks_mutex
+and everything is very choppy. I assume it's the power saving thing
+that broke again, but that's just a total random guess, I have nothing
+to actually back that up with.
 
-Excluding the davinci code (we won't worry about set_parent for now...), if we 
-can port mxc and tcc to a sleepable clk_enable, perhaps we could just go with 
-purely atomic operations.
+It worked fine after boot, but those problems began at 8287.139375
+(about two hours after boot - it may have coincided with screen saver,
+but who knows?)  and have been happening constantly since. The machine
+is not really usable, I'm writing this with annoying 2-second pauses
+every once in a while.
 
-We'd still need some method of using sleeping clocks though. How about making 
-clk_enable() BUG if the clock is not atomic, and add clk_enable_cansleep() for 
-the cases where clk->ops.enable may sleep.
+This is a regular Core i5-670 with up-to-date Fedora-14, fwiw. Not my
+sandybridge.
 
-Do we need something similar for other parts of the API? (clk_set_rate?)
-
-Cheers,
-
-
-Jeremy
+          Linus
