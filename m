@@ -1,131 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049Ab1AKVgX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 16:36:23 -0500
-Received: from thunk.org ([69.25.196.29]:55001 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753902Ab1AKVgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 16:36:21 -0500
-Date: Tue, 11 Jan 2011 16:36:15 -0500
-Message-Id: <E1Pclt1-000320-HF@tytso-glaptop>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ext4 update for 2.6.38
-From: "Theodore Ts'o" <tytso@mit.edu>
-Phone: (781) 391-3464
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1756131Ab1AKVjO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 16:39:14 -0500
+Received: from www84.your-server.de ([213.133.104.84]:49323 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751795Ab1AKVjM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 16:39:12 -0500
+Subject: Re: [PATCH] new UDPCP Communication Protocol
+From: Stefani Seibold <stefani@seibold.net>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, netdev@vger.kernel.org,
+        shemminger@vyatta.com, jj@chaosbits.net, daniel.baluta@gmail.com,
+        jochen@jochen.org, hagen@jauu.net, torvalds@linux-foundation.org,
+        pavel@ucw.cz
+In-Reply-To: <1294781427.3447.18.camel@edumazet-laptop>
+References: <1294764515-15356-1-git-send-email-stefani@seibold.net>
+	 <1294765273.2927.65.camel@edumazet-laptop>
+	 <1294779020.16410.2.camel@wall-e>
+	 <20110111.125254.133402589.davem@davemloft.net>
+	 <1294780480.17388.2.camel@wall-e>
+	 <1294781427.3447.18.camel@edumazet-laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 11 Jan 2011 22:40:01 +0100
+Message-ID: <1294782001.17531.16.camel@wall-e>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 8BIT
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Am Dienstag, den 11.01.2011, 22:30 +0100 schrieb Eric Dumazet:
+> Le mardi 11 janvier 2011 à 22:14 +0100, Stefani Seibold a écrit :
+> 
+> > If nobody need it and no user in the near future out there, why should i
+> > implement this? That is dogmatic only!
+> > 
+> 
+> Sure !
+> 
+> Problem is linux kernel code is not your own project.
+> 
+> Some community rules must be respected.
+> 
+> You call this dogmatic, you are right, since this makes your life less
+> easy.
+> 
 
-Please pull from:
+Sorry thats not right, i only want write code for the trash bin.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git for_linus
+> However, for hundred of people working to maintain/improve linux kernel
+> code, especially in network stacks, this ends in less stress, when a
+> problem must be located, and fixed.
+> 
+> Note : We are trying to help you, not fighting against you, in the long
+> term, its a win-win for everybody.
+> 
+> 
 
-It's a somewhat larger number of changes this time but it's all
-primarily cleanup and minor bug fixes.
+Sure, i know this and i would give you and all other contributers a big
+thank you for the review.
 
-						- Ted
+But it should also okay, to argues against some proposal which makes
+currently no sense.
 
-
- fs/ext2/xattr.c        |   10 +--
- fs/ext3/xattr.c        |    2 +-
- fs/ext4/balloc.c       |    3 +-
- fs/ext4/dir.c          |   58 ++++++----
- fs/ext4/ext4.h         |   93 ++++++++++------
- fs/ext4/ext4_extents.h |    8 +-
- fs/ext4/ext4_jbd2.h    |    2 +-
- fs/ext4/extents.c      |   88 +++++++++------
- fs/ext4/file.c         |   22 ++++
- fs/ext4/fsync.c        |    4 +-
- fs/ext4/ialloc.c       |    2 +-
- fs/ext4/inode.c        |   74 +++++++++----
- fs/ext4/mballoc.c      |   55 ++++-----
- fs/ext4/migrate.c      |    2 +-
- fs/ext4/namei.c        |   69 ++++++++----
- fs/ext4/page-io.c      |    7 +-
- fs/ext4/resize.c       |   64 ++++++++---
- fs/ext4/super.c        |  288 ++++++++++++++++++++++++++----------------------
- fs/ext4/xattr.c        |   28 +++---
- fs/jbd2/journal.c      |   34 +++---
- fs/jbd2/recovery.c     |    2 +-
- fs/jbd2/transaction.c  |    6 +-
- include/linux/jbd2.h   |   20 +++-
- 23 files changed, 562 insertions(+), 379 deletions(-)
-
-Andrew Morton (1):
-      ext4: fix uninitialized variable in ext4_register_li_request
-
-Dan Carpenter (2):
-      ext4: test the correct variable in ext4_init_pageio()
-      ext4: use IS_ERR() to check for errors in ext4_error_file
-
-Eric Paris (1):
-      ext4: ext4_ext_migrate should use NULL not 0
-
-Eric Sandeen (2):
-      ext4: zero out nanosecond timestamps for small inodes
-      ext4: don't pass entire map to check_eofblocks_fl
-
-Jan Kara (2):
-      ext4: fix trimming of a single group
-      ext4: fix trimming starting with block 0 with small blocksize
-
-Jesper Juhl (1):
-      ext4: use kmem_cache_zalloc() in ext4_init_io_end()
-
-Jiaying Zhang (1):
-      ext4: flush the i_completed_io_list during ext4_truncate
-
-Joe Perches (2):
-      ext4: Use vzalloc in ext4_fill_flex_info()
-      ext4: Use printf extension %pV
-
-Kazuya Mio (1):
-      ext4: fix 32bit overflow in ext4_ext_find_goal()
-
-Lukas Czerner (2):
-      ext4: fix possible overflow in ext4_trim_fs()
-      ext4: remove warning message from ext4_issue_discard helper
-
-Namhyung Kim (1):
-      ext4: add more error checks to ext4_mkdir()
-
-Theodore Ts'o (25):
-      ext4: Simplify the usage of clear_opt() and set_opt() macros
-      ext4: Move struct ext4_mount_options from ext4.h to super.c
-      ext4: Add second mount options field since the s_mount_opt is full up
-      ext4: Fix up comments in inode.c
-      ext4: Use pr_warning_ratelimited() instead of printk_ratelimit()
-      jbd2: Use pr_notice_ratelimited() in journal_alloc_journal_head()
-      jbd2: Fix a debug message in do_get_write_access()
-      jbd2: use offset_in_page() instead of manual calculation
-      jbd2: remove unnecessary goto statement
-      jbd2: move debug message into debug #ifdef
-      jbd2: simplify return path of journal_init_common
-      ext4: optimize ext4_check_dir_entry() with unlikely() annotations
-      ext4: Add error checking to kmem_cache_alloc() call in ext4_free_blocks()
-      ext4: clean up ext4_xattr_list()'s error code checking and return strategy
-      ext4: Use ext4_error_file() to print the pathname to the corrupted inode
-      ext4: replace i_delalloc_reserved_flag with EXT4_STATE_DELALLOC_RESERVED
-      ext4: use ext4_lblk_t instead of sector_t for logical blocks
-      ext4: drop ec_type from the ext4_ext_cache structure
-      ext4: reorder ext4_inode_info structure elements to remove unneeded padding
-      ext4: drop i_state_flags on architectures with 64-bit longs
-      ext4: dynamically allocate the jbd2_inode in ext4_inode_info as necessary
-      ext4: add error checking to calls to ext4_handle_dirty_metadata()
-      ext4: remove ext4_mb_return_to_preallocation()
-      ext4: fix memory leak in ext4_free_branches
-      ext4: revert buggy trim overflow patch
-
-Tobias Klauser (1):
-      ext4: Remove redundant unlikely()
-
-Wang Sheng-Hui (2):
-      ext2,ext3,ext4: clarify comment for extN_xattr_set_handle
-      ext2: remove dead code in ext2_xattr_get
 
