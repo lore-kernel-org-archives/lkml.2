@@ -1,75 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756159Ab1AKPVP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 10:21:15 -0500
-Received: from mail201c2.megamailservers.com ([69.49.111.102]:58614 "EHLO
-	mail201c2.megamailservers.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755817Ab1AKPVN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 10:21:13 -0500
-X-Greylist: delayed 4749 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Jan 2011 10:21:13 EST
-X-Authenticated-User: daniel.gaisler.com
-Message-ID: <4D2C6260.80403@gaisler.com>
-Date: Tue, 11 Jan 2011 15:00:00 +0100
-From: Daniel Hellstrom <daniel@gaisler.com>
-User-Agent: Mozilla Thunderbird 1.0.6 (X11/20050716)
-X-Accept-Language: en-us, en
+	id S1756165Ab1AKPZH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 10:25:07 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:19153 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756151Ab1AKPZE (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 11 Jan 2011 10:25:04 -0500
+Date: Tue, 11 Jan 2011 10:24:40 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+Subject: Re: [PATCH 05/12] xen: add m2p override mechanism
+Message-ID: <20110111152439.GB10897@dumpdata.com>
+References: <alpine.DEB.2.00.1101101012190.2390@kaball-desktop>
+ <1294655801-16230-5-git-send-email-stefano.stabellini@eu.citrix.com>
+ <20110110231121.GB16550@dumpdata.com>
+ <alpine.DEB.2.00.1101111202020.7277@kaball-desktop>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Greg KH <gregkh@suse.de>, "David S. Miller" <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [GIT PATCH] TTY/serial merge for .38
-References: <20110106215404.GA30624@kroah.com> <AANLkTi=mCKWKTcP7JVdwVkk4OVEGDNHYgb5-W+1NJmtQ@mail.gmail.com> <20110107234149.GA18421@suse.de>
-In-Reply-To: <20110107234149.GA18421@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-CSC: 0
-X-CHA: v=1.1 cv=7mdt3cZwcPjaoOsfh2HHasJqDel8T9IFNftJhWNFW5M= c=1 sm=1
-		a=MHLHY0zIDWcA:10 a=8nJEP1OIZ-IA:10 a=jXKJviUpWSOlMmIvGrHOfw==:17
-		a=oiANwhMaPnJIHX5ALfUA:9 a=1hwapEwxcVuVELjSyw3qU05_E_oA:4 a=wPNLvfGTeEIA:10
-		a=0kPLrQdw3YYA:10 a=jXKJviUpWSOlMmIvGrHOfw==:117
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1101111202020.7277@kaball-desktop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
+On Tue, Jan 11, 2011 at 12:44:39PM +0000, Stefano Stabellini wrote:
+> On Mon, 10 Jan 2011, Konrad Rzeszutek Wilk wrote:
+> > > @@ -83,6 +85,14 @@ static inline unsigned long mfn_to_pfn(unsigned long mfn)
+> > >  	 */
+> > >  	__get_user(pfn, &machine_to_phys_mapping[mfn]);
+> > >  
+> > > +	/*
+> > > +	 * If this appears to be a foreign mfn (because the pfn
+> > > +	 * doesn't map back to the mfn), then check the local override
+> > > +	 * table to see if there's a better pfn to use.
+> > > +	 */
+> > > +	if (get_phys_to_machine(pfn) != mfn)
+> > 
+> > Any reason to not use 'pfn_to_mfn' call instead? If we do want
+> > to use the get_hhys_to_machine wouldn't be easier to just
+> > check for 'FOREIGN_FRAME_BIT' set? Or is just mostly a copy-n-paste
+> > of mfn_to_local_pfn?
+> 
+> 
+> pfn in this case is the return value of m2p(mfn); there are 3 possible
+> cases:
+> 
+> 1) the mfn was a regular ram page belonging to the domain so
+> get_phys_to_machine(pfn) == mfn. Nothing to see here.
+> 
+> 2) the mfn was a granted page so pfn is actually the pfn in the source
+> domain and doesn't mean anything in our domain. 
+> In this case get_phys_to_machine(pfn) is always different from mfn,
+> either because the mapping in our domain is just different or because
+> the FOREIGN_FRAME_BIT is set.
+> 
+> 3) the pfn belongs to a 1:1 region. In this case
+> get_phys_to_machine(pfn) != mfn because of the IDENTITY_FRAME_BIT but we
+> don't actually want to look in the m2p_override because we are not going
+> to find anything useful there.
+> 
+> 
+> Considering all this, I propose this change:
+> 
+> if (get_phys_to_machine(pfn) != mfn)
+> 
+> into
+> 
+> if (pfn_to_mfn(pfn) != mfn)
+> 
+> because:
+> 
+> - it won't make any differences in case 1);
+> 
+> - it will avoid false potives in case 3);
+> 
+> - in case 2) if p2m(pfn) => mfn in both the source and the destination
+> domain then we might skip the check in the m2p_override but we don't
+> care because by luck we got the correct value anyway (m2p(mfn) ==
+> m2p_override(mfn)).
+> 
+> 
+> 
+> However I understand that it might be subtle and needs a very long
+> comment so a simpler alternative would be to explicitly remove the
+> IDENTITY_FRAME_BIT from the check:
+> 
+> if ((get_phys_to_machine(pfn) & ~IDENTITY_FRAME_BIT) != mfn)
 
->On Fri, Jan 07, 2011 at 02:44:14PM -0800, Linus Torvalds wrote:
->  
->
->>On Thu, Jan 6, 2011 at 1:54 PM, Greg KH <gregkh@suse.de> wrote:
->>    
->>
->>>Here is the big tty and serial merge for .38.  I'll be sending another
->>>smaller one that just moves drivers around after .38-rc1 is out, as is
->>>the norm for file moves to handle issues with other trees syncing up
->>>properly.
->>>      
->>>
->>Merged. However, the drivers/serial/apbuart.c file conflicted, and
->>both sides of the merge had some insanity in them.
->>
->>So I did an "evil merge" - a merge that actually changed the code to
->>match neither side - and it looks better to me. But maybe that's just
->>the drugs I'm taking talking.
->>
->>So people should check it out. In particular, look at the interaction
->>of "drivers: serial: apbuart: Handle OF failures gracefully" and the
->>"Added support for ampopts in APBUART driver. Used in AMP systems"
->>commit.
->>    
->>
->
->The merge looks ok to me, but I don't have this hardware, so I can't
->test it.  Thomas, can you verify this is ok?
->  
->
+Thank you analyzing this in such depth. Let me create a branch with
+this patchset (devel/grantdev.v2), merge it with the devel/p2m-identity one and
+then on top of that create a patch that will what you just suggested (removing
+the IDENTITY_FRAME_BIT) and make the author you.
 
-The code looks good and I have tested on the APBUART hardware - it works.
-
-Thanks,
-Daniel Hellstrom
+That way we have something we can test with both modifications to the
+P2M and M2P lookups and weed out any bugs.
 
