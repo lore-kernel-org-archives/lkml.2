@@ -1,125 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756298Ab1AKWH1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 17:07:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44392 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754584Ab1AKWHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 17:07:24 -0500
-Date: Wed, 12 Jan 2011 09:07:07 +1100
-From: NeilBrown <neilb@suse.de>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu,
-        stable@kernel.org, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/core] sched: Change wait_for_completion_*_timeout()
- to return a signed long
-Message-ID: <20110112090707.4a794483@notabene.brown>
-In-Reply-To: <20110111214457.GD28537@fieldses.org>
-References: <20110105125016.64ccab0e@notabene.brown>
-	<tip-6bf4123760a5aece6e4829ce90b70b6ffd751d65@git.kernel.org>
-	<20110111214457.GD28537@fieldses.org>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932347Ab1AKWHv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 17:07:51 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:43603 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756247Ab1AKWHs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 17:07:48 -0500
+Date: Tue, 11 Jan 2011 16:02:02 -0600
+From: "Serge E. Hallyn" <serge@canonical.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        serue@us.ibm.com, sgrubb@redhat.com, Andrew Morgan <morgan@kernel.org>
+Subject: Re: [PATCH] System Wide Capability Bounding Set
+Message-ID: <20110111220201.GA6446@localhost>
+References: <1294266337.3237.45.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294266337.3237.45.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Jan 2011 16:44:58 -0500 "J. Bruce Fields" <bfields@fieldses.org>
-wrote:
-
-> Doesn't this belong in 2.6.37.y as well?
-
-Yes indeed!
-I should have tagged it for Cc:stable@kernel.org in the first place.  I had
-been meaning to forward it to stable@kernel.org, but you beat me to it!
-
-Thanks,
-NeilBrown
-
-
+Quoting Eric Paris (eparis@redhat.com):
+> Not so long ago the global capability bounding set was removed from the
+> kernel.  Instead we created a new per task capability bounding set which
+> was inherited by children.  This feature is quite reasonable if you want
+> to start some task and its descendants in a limited capability box but
+> it is completely useless if you want to make system wide changes.  This
+> is the reason we had to add the /proc/sys/kernel/modules_disabled
+> tunable even though CAP_SYS_MODULE controls the operation.  There is
+> absolutely no way to eliminate a capability from the system.  At first I
+> thought maybe we could do something smart, like, drop the capability in
+> question by init before anything else ran, thus it would be gone from
+> the bounding set of every process.  But this is not even possible!  All
+> one must do it cause the kernel to attempt to auto load a module and
+> viola, you win!  The kernel will upcall to userspace
+> (maybe /sbin/modprobe, maybe something root dropped there, or maybe root
+> rewrote what's called with /proc/sys/kernel/modprobe) from a kernel
+> thread which has a full capability bounding set.  Thus whatever gets
+> called has everything.  And you can't drop privs.  Period.  We just
+> can't do it.
 > 
-> --b.
+> This patch reintroduces the global bounding set.  It's global.  Period.
+> Unlike the old days not even init can put things back.  It's a one way
+> street.  Notice that it only applies at the exec boundary, so programs
+> running before the bounding set is lowered are still able to use those
+> caps, but they cannot be passed onto children.  This does allow us to
+> drop caps very early by init and never have them come back.  Sure kernel
+> threads may still have them, but they will not be able to pass them onto
+> child tasks (like modprobe)
 > 
-> On Wed, Jan 05, 2011 at 02:07:12PM +0000, tip-bot for NeilBrown wrote:
-> > Commit-ID:  6bf4123760a5aece6e4829ce90b70b6ffd751d65
-> > Gitweb:     http://git.kernel.org/tip/6bf4123760a5aece6e4829ce90b70b6ffd751d65
-> > Author:     NeilBrown <neilb@suse.de>
-> > AuthorDate: Wed, 5 Jan 2011 12:50:16 +1100
-> > Committer:  Ingo Molnar <mingo@elte.hu>
-> > CommitDate: Wed, 5 Jan 2011 14:15:50 +0100
-> > 
-> > sched: Change wait_for_completion_*_timeout() to return a signed long
-> > 
-> > wait_for_completion_*_timeout() can return:
-> > 
-> >    0: if the wait timed out
-> >  -ve: if the wait was interrupted
-> >  +ve: if the completion was completed.
-> > 
-> > As they currently return an 'unsigned long', the last two cases
-> > are not easily distinguished which can easily result in buggy
-> > code, as is the case for the recently added
-> > wait_for_completion_interruptible_timeout() call in
-> > net/sunrpc/cache.c
-> > 
-> > So change them both to return 'long'.  As MAX_SCHEDULE_TIMEOUT
-> > is LONG_MAX, a large +ve return value should never overflow.
-> > 
-> > Signed-off-by: NeilBrown <neilb@suse.de>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: J.  Bruce Fields <bfields@fieldses.org>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> > LKML-Reference: <20110105125016.64ccab0e@notabene.brown>
-> > Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> > ---
-> >  include/linux/completion.h |    8 ++++----
-> >  kernel/sched.c             |    4 ++--
-> >  2 files changed, 6 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/include/linux/completion.h b/include/linux/completion.h
-> > index 36d57f7..51494e6 100644
-> > --- a/include/linux/completion.h
-> > +++ b/include/linux/completion.h
-> > @@ -81,10 +81,10 @@ extern int wait_for_completion_interruptible(struct completion *x);
-> >  extern int wait_for_completion_killable(struct completion *x);
-> >  extern unsigned long wait_for_completion_timeout(struct completion *x,
-> >  						   unsigned long timeout);
-> > -extern unsigned long wait_for_completion_interruptible_timeout(
-> > -			struct completion *x, unsigned long timeout);
-> > -extern unsigned long wait_for_completion_killable_timeout(
-> > -			struct completion *x, unsigned long timeout);
-> > +extern long wait_for_completion_interruptible_timeout(
-> > +	struct completion *x, unsigned long timeout);
-> > +extern long wait_for_completion_killable_timeout(
-> > +	struct completion *x, unsigned long timeout);
-> >  extern bool try_wait_for_completion(struct completion *x);
-> >  extern bool completion_done(struct completion *x);
-> >  
-> > diff --git a/kernel/sched.c b/kernel/sched.c
-> > index f2f914e..114a0de 100644
-> > --- a/kernel/sched.c
-> > +++ b/kernel/sched.c
-> > @@ -4395,7 +4395,7 @@ EXPORT_SYMBOL(wait_for_completion_interruptible);
-> >   * This waits for either a completion of a specific task to be signaled or for a
-> >   * specified timeout to expire. It is interruptible. The timeout is in jiffies.
-> >   */
-> > -unsigned long __sched
-> > +long __sched
-> >  wait_for_completion_interruptible_timeout(struct completion *x,
-> >  					  unsigned long timeout)
-> >  {
-> > @@ -4428,7 +4428,7 @@ EXPORT_SYMBOL(wait_for_completion_killable);
-> >   * signaled or for a specified timeout to expire. It can be
-> >   * interrupted by a kill signal. The timeout is in jiffies.
-> >   */
-> > -unsigned long __sched
-> > +long __sched
-> >  wait_for_completion_killable_timeout(struct completion *x,
-> >  				     unsigned long timeout)
-> >  {
+> Signed-off-by: Eric Paris <eparis@redhat.com>
+> ---
+> I'd love to hear comments.....
+> 
+>  include/linux/capability.h |    1 
+>  include/linux/security.h   |    5 ++++
+>  include/linux/sysctl.h     |    3 ++
+>  kernel/sysctl.c            |   56 +++++++++++++++++++++++++++++++++++++++++++++
+>  kernel/sysctl_binary.c     |    2 +
+>  security/commoncap.c       |   17 ++++++++++---
+>  6 files changed, 80 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/capability.h b/include/linux/capability.h
+> index 90012b9..2aebcb1 100644
+> --- a/include/linux/capability.h
+> +++ b/include/linux/capability.h
+> @@ -224,6 +224,7 @@ struct cpu_vfs_cap_data {
+>  #define CAP_IPC_OWNER        15
+>  
+>  /* Insert and remove kernel modules - modify kernel without limit */
+> +/* Remove from the global cap_bset */
+>  #define CAP_SYS_MODULE       16
+>  
+>  /* Allow ioperm/iopl access */
+> diff --git a/include/linux/security.h b/include/linux/security.h
+> index 02fcc0e..522d387 100644
+> --- a/include/linux/security.h
+> +++ b/include/linux/security.h
+> @@ -49,6 +49,11 @@ struct ctl_table;
+>  struct audit_krule;
+>  
+>  /*
+> + * Global bounding set
+> + */
+> +extern kernel_cap_t global_cap_bset;
+> +
+> +/*
+>   * These functions are in security/capability.c and are used
+>   * as the default capabilities functions
+>   */
+> diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+> index 7bb5cb6..4e80767 100644
+> --- a/include/linux/sysctl.h
+> +++ b/include/linux/sysctl.h
+> @@ -153,6 +153,7 @@ enum
+>  	KERN_MAX_LOCK_DEPTH=74, /* int: rtmutex's maximum lock depth */
+>  	KERN_NMI_WATCHDOG=75, /* int: enable/disable nmi watchdog */
+>  	KERN_PANIC_ON_NMI=76, /* int: whether we will panic on an unrecovered */
+> +	KERN_CAP_BSET=77,	/* int: global capability bset */
+>  };
+>  
+>  
+> @@ -968,6 +969,8 @@ extern int proc_dostring(struct ctl_table *, int,
+>  			 void __user *, size_t *, loff_t *);
+>  extern int proc_dointvec(struct ctl_table *, int,
+>  			 void __user *, size_t *, loff_t *);
+> +extern int proc_dointvec_bset(struct ctl_table *, int, struct file *,
+> +			      void __user *, size_t *, loff_t *);
+>  extern int proc_dointvec_minmax(struct ctl_table *, int,
+>  				void __user *, size_t *, loff_t *);
+>  extern int proc_dointvec_jiffies(struct ctl_table *, int,
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> index 5abfa15..6843f85 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -166,6 +166,8 @@ static int proc_do_cad_pid(struct ctl_table *table, int write,
+>  		  void __user *buffer, size_t *lenp, loff_t *ppos);
+>  static int proc_taint(struct ctl_table *table, int write,
+>  			       void __user *buffer, size_t *lenp, loff_t *ppos);
+> +static int proc_cap_bset(struct ctl_table *table, int write,
+> +			 void __user *buffer, size_t *lenp, loff_t *ppos);
+>  #endif
+>  
+>  #ifdef CONFIG_MAGIC_SYSRQ
+> @@ -428,6 +430,12 @@ static struct ctl_table kern_table[] = {
+>  		.mode		= 0644,
+>  		.proc_handler	= proc_dointvec,
+>  	},
+> +	{
+> +		.procname	= "cap-bound",
+> +		.maxlen		= _KERNEL_CAPABILITY_U32S * sizeof(unsigned long),
+> +		.mode		= 0600,
+> +		.proc_handler	= proc_cap_bset,
+> +	},
+>  #ifdef CONFIG_PROC_SYSCTL
+>  	{
+>  		.procname	= "tainted",
+> @@ -2365,6 +2373,54 @@ int proc_dointvec(struct ctl_table *table, int write,
+>  }
+>  
+>  /*
+> + * CAP_SYS_MODULE needed to drop bits.
+> + */
+> +static int proc_cap_bset(struct ctl_table *table, int write,
+> +			 void __user *buffer, size_t *lenp, loff_t *ppos)
+> +{
+> +	struct ctl_table t;
+> +	unsigned long bset[_KERNEL_CAPABILITY_U32S];
+> +	kernel_cap_t new_bset;
+> +	int err, i;
+> +
+> +	if (write && !capable(CAP_SYS_MODULE))
+> +		return -EPERM;
+> +
+> +	/*
+> +	 * convert from the global kernel_cap_t to the ulong array to print to
+> +	 * userspace if this is a read.
+> +	 */
+> +	for (i = 0; i < _KERNEL_CAPABILITY_U32S; i++)
+> +		bset[i] = global_cap_bset.cap[i];
+> +
+> +	t = *table;
+> +	t.data = &bset;
+> +
+> +	/*
+> +	 * actually read or write and array of ulongs from userspace.  Remember
+> +	 * these are least significant 32 bits first
+> +	 */
+> +	err = proc_doulongvec_minmax(&t, write, buffer, lenp, ppos);
+> +	if (err < 0)
+> +		return err;
+> +
+> +	/*
+> +	 * convert from the sysctl array of ulongs to the kernel_cap_t
+> +	 * internal representation
+> +	 */
+> +	for (i = 0; i < _KERNEL_CAPABILITY_U32S; i++)
+> +		new_bset.cap[i] = bset[i];
+> +
+> +	/*
+> +	 * Drop everything not in the new_bset (but don't add things)
+> +	 */
+> +	if (write)
+> +		global_cap_bset = cap_intersect(global_cap_bset, new_bset);
+> +
+> +	return 0;
+> +}
+> +
+> +/*
+>   * Taint values can only be increased
+>   * This means we can safely use a temporary.
+>   */
+> diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
+> index 1357c57..6486633 100644
+> --- a/kernel/sysctl_binary.c
+> +++ b/kernel/sysctl_binary.c
+> @@ -71,6 +71,8 @@ static const struct bin_table bin_kern_table[] = {
+>  	{ CTL_STR,	KERN_NODENAME,			"hostname" },
+>  	{ CTL_STR,	KERN_DOMAINNAME,		"domainname" },
+>  
+> +	{ CTL_INT,	KERN_CAP_BSET,			"cap-bound" },
+> +
+>  	{ CTL_INT,	KERN_PANIC,			"panic" },
+>  	{ CTL_INT,	KERN_REALROOTDEV,		"real-root-dev" },
+>  
+> diff --git a/security/commoncap.c b/security/commoncap.c
+> index 64c2ed9..e615224 100644
+> --- a/security/commoncap.c
+> +++ b/security/commoncap.c
+> @@ -11,6 +11,7 @@
+>  #include <linux/audit.h>
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+> +#include <linux/init_task.h> /* CAP_INIT_BSET */
+>  #include <linux/kernel.h>
+>  #include <linux/security.h>
+>  #include <linux/file.h>
+> @@ -28,6 +29,8 @@
+>  #include <linux/prctl.h>
+>  #include <linux/securebits.h>
+>  
+> +kernel_cap_t global_cap_bset = CAP_INIT_BSET;    /* systemwide capability bound */
+> +
+>  /*
+>   * If a non-root user executes a setuid-root binary in
+>   * !secure(SECURE_NOROOT) mode, then we raise capabilities.
+> @@ -201,6 +204,9 @@ int cap_capset(struct cred *new,
+>  	       const kernel_cap_t *inheritable,
+>  	       const kernel_cap_t *permitted)
+>  {
+> +	kernel_cap_t bset = cap_intersect(old->cap_bset,
+> +					  global_cap_bset);
+> +
+>  	if (cap_inh_is_capped() &&
+>  	    !cap_issubset(*inheritable,
+>  			  cap_combine(old->cap_inheritable,
+> @@ -209,8 +215,7 @@ int cap_capset(struct cred *new,
+>  		return -EPERM;
+>  
+>  	if (!cap_issubset(*inheritable,
+> -			  cap_combine(old->cap_inheritable,
+> -				      old->cap_bset)))
+> +			  cap_combine(old->cap_inheritable, bset)))
+>  		/* no new pI capabilities outside bounding set */
+>  		return -EPERM;
+>  
+> @@ -305,6 +310,8 @@ static inline int bprm_caps_from_vfs_caps(struct cpu_vfs_cap_data *caps,
+>  		new->cap_permitted.cap[i] =
+>  			(new->cap_bset.cap[i] & permitted) |
+>  			(new->cap_inheritable.cap[i] & inheritable);
+> +		/* the global set is global damn it */
+> +		new->cap_permitted.cap[i] &= global_cap_bset.cap[i];
 
+[ If I'm thinking right: ]
+
+Global may be global, but you're changing the formula (here, for a
+non-root task executing a file with filecaps) from
+
+	pP' = (X & fP) | (pI & fI)
+
+to
+
+	A  = (X & FP) | (pI & fI)
+	pP'= Z & A                    // Z == global bounding set
+
+In other words, you are not simply enforcing "the intersection of
+the global and per-process bounding sets".
+
+Whereas,
+
+>  		if (permitted & ~new->cap_permitted.cap[i])
+>  			/* insufficient to execute correctly */
+> @@ -438,6 +445,9 @@ int cap_bprm_set_creds(struct linux_binprm *bprm)
+>  		return ret;
+>  
+>  	if (!issecure(SECURE_NOROOT)) {
+> +		kernel_cap_t bset = cap_intersect(old->cap_bset,
+> +						  global_cap_bset);
+> +
+>  		/*
+>  		 * If the legacy file capability is set, then don't set privs
+>  		 * for a setuid root binary run by a non-root user.  Do set it
+> @@ -456,8 +466,7 @@ int cap_bprm_set_creds(struct linux_binprm *bprm)
+>  		 */
+>  		if (new->euid == 0 || new->uid == 0) {
+>  			/* pP' = (cap_bset & ~0) | (pI & ~0) */
+> -			new->cap_permitted = cap_combine(old->cap_bset,
+> -							 old->cap_inheritable);
+> +			new->cap_permitted = cap_combine(bset, old->cap_inheritable);
+
+here (for a root task) you are using 
+
+	pP' = (Z & X) | pI
+
+So the inheritable tasks get masked with the global bounding set for
+non-root tasks, but not for root tasks.
+
+>  		}
+>  		if (new->euid == 0)
+>  			effective = true;
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
