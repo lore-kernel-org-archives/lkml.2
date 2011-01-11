@@ -1,79 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080Ab1AKMPX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 07:15:23 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:58179 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932065Ab1AKMPU (ORCPT
+	id S1755946Ab1AKMQd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 07:16:33 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:60260 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755405Ab1AKMQc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 07:15:20 -0500
+	Tue, 11 Jan 2011 07:16:32 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=oge5wg5XndOzQDC7LSyUbkTV+6SkeSGcvEiwRM/5sX7jbi4xdCCssdpWkWTbap/uW/
-         w7GR1lOE5EXtAFw7qKjNP5NiqCW3/19gAT278rl0rSrpjLck6/SrQPG5M/IMRhxLn8mM
-         Q16lVZiUynIJbyqATx5fjqyGmYqLeQ+0R8bl8=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] dio: simple cleanup for direct_io_worker()
-Date: Tue, 11 Jan 2011 21:15:04 +0900
-Message-Id: <1294748104-7866-2-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.3.4.600.g982838b0
-In-Reply-To: <1294748104-7866-1-git-send-email-namhyung@gmail.com>
-References: <1294748104-7866-1-git-send-email-namhyung@gmail.com>
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=XJUlADVaa3JPbw/+4lpm5s+XVJdbmzFiyyXmTlzlPnqZQ8LD1pjiZATRUU2uugsP/e
+         rBgxrbb9btJ+tD+YfqGGXlaYTuw77e0XMiA5/WrRTG/1gGKrKOj4+R4gm4ZNqCj0MYgc
+         R49IFqaqdQdIgqvGa/Z8i1l1sqLyoE5EFQv/M=
+MIME-Version: 1.0
+In-Reply-To: <20110111112434.GE2385@legolas.emea.dhcp.ti.com>
+References: <1294745487-29138-1-git-send-email-manjunatha_halli@ti.com>
+ <1294745487-29138-2-git-send-email-manjunatha_halli@ti.com>
+ <1294745487-29138-3-git-send-email-manjunatha_halli@ti.com>
+ <1294745487-29138-4-git-send-email-manjunatha_halli@ti.com> <20110111112434.GE2385@legolas.emea.dhcp.ti.com>
+From: halli manjunatha <manjunatha_halli@ti.com>
+Date: Tue, 11 Jan 2011 17:46:10 +0530
+X-Google-Sender-Auth: VFZaYF9wdLq6mDpCZLg45YS54zI
+Message-ID: <AANLkTimbqsDJ1KNSwzJ_RTQ3ON=-XUj0CZpZHAkeH9dP@mail.gmail.com>
+Subject: Re: [RFC V10 3/7] drivers:media:radio: wl128x: FM Driver Common sources
+To: balbi@ti.com
+Cc: mchehab@infradead.org, hverkuil@xs4all.nl, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use DIV_ROUND_UP() and offset_in_page() to make code simpler.
+an 11, 2011 at 4:54 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Tue, Jan 11, 2011 at 06:31:23AM -0500, manjunatha_halli@ti.com wrote:
+>> From: Manjunatha Halli <manjunatha_halli@ti.com>
+>>
+>> These are the sources for the common interfaces required by the
+>> FM V4L2 driver for TI WL127x and WL128x chips.
+>>
+>> These implement the FM channel-8 protocol communication with the
+>> chip. This makes use of the Shared Transport as its transport.
+>>
+>> Signed-off-by: Manjunatha Halli <manjunatha_halli@ti.com>
+>> Reviewed-by: Hans Verkuil <hverkuil@xs4all.nl>
+>
+> looks like this is implementing a "proprietary" (by that I mean: for
+> this driver only) IRQ API. Why aren't you using GENIRQ with threaded
+> IRQs support ?
+>
+> Core IRQ Subsystem would handle a lot of stuff for you.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- fs/direct-io.c |   13 ++++++++-----
- 1 files changed, 8 insertions(+), 5 deletions(-)
+There is no concept of Interrupts/IRQ as such here, Hence no question of using
+GENIRQ.
 
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index 8201c2558d85..7ba681412bd4 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -1020,16 +1020,19 @@ direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode,
- 	for (seg = 0; seg < nr_segs; seg++) {
- 		user_addr = (unsigned long)iov[seg].iov_base;
- 		dio->pages_in_io +=
--			((user_addr+iov[seg].iov_len +PAGE_SIZE-1)/PAGE_SIZE
-+			(DIV_ROUND_UP(user_addr + iov[seg].iov_len, PAGE_SIZE)
- 				- user_addr/PAGE_SIZE);
- 	}
- 
- 	for (seg = 0; seg < nr_segs; seg++) {
-+		unsigned page_offset;
-+
- 		user_addr = (unsigned long)iov[seg].iov_base;
- 		dio->size += bytes = iov[seg].iov_len;
-+		page_offset = offset_in_page(user_addr);
- 
- 		/* Index into the first page of the first block */
--		dio->first_block_in_page = (user_addr & ~PAGE_MASK) >> blkbits;
-+		dio->first_block_in_page = page_offset >> blkbits;
- 		dio->final_block_in_request = dio->block_in_file +
- 						(bytes >> blkbits);
- 		/* Page fetching state */
-@@ -1038,11 +1041,11 @@ direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode,
- 		dio->curr_page = 0;
- 
- 		dio->total_pages = 0;
--		if (user_addr & (PAGE_SIZE-1)) {
-+		if (page_offset) {
- 			dio->total_pages++;
--			bytes -= PAGE_SIZE - (user_addr & (PAGE_SIZE - 1));
-+			bytes -= PAGE_SIZE - page_offset;
- 		}
--		dio->total_pages += (bytes + PAGE_SIZE - 1) / PAGE_SIZE;
-+		dio->total_pages += DIV_ROUND_UP(bytes, PAGE_SIZE);
- 		dio->curr_user_address = user_addr;
- 	
- 		ret = do_direct_IO(dio);
+The FM device WL128x is interfaced via the UART,
+(Internally inside the WL128x chip the BT-core on the chip
+communicates with FM chip via i2C, and would have dedicated interrupt
+lines may be...)
+
+So, Whenever we refer to interrupt or IRQ or handlers in the driver,
+It pretty much means a receive callback for the UART frame which
+constitutes the FM interrupt event.
+i.e FM interrupt would have occurred, If I receive a frame over UART
+which starts with 0x08 as 1st byte and has 0xFF as its 3rd byte.
+
+I hope this clarifies the non-usage of GENIRQ with threaded support.
+
+> --
+> balbi
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
+
+
 -- 
-1.7.3.4.600.g982838b0
-
+Regards
+Halli
