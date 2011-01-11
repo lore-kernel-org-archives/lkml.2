@@ -1,142 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932537Ab1AKSJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 13:09:29 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:1809 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756246Ab1AKSJY convert rfc822-to-8bit (ORCPT
+	id S932464Ab1AKSNC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 13:13:02 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:35774 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542Ab1AKSM7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 13:09:24 -0500
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-From: "Jian Peng" <jipeng@broadcom.com>
-To: "Tejun Heo" <tj@kernel.org>
-cc: "Robert Hancock" <hancockrwd@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jgarzik@pobox.com" <jgarzik@pobox.com>,
-        ide <linux-ide@vger.kernel.org>
-Date: Tue, 11 Jan 2011 10:09:08 -0800
-Subject: RE: questions regarding possible violation of AHCI spec in AHCI
- driver
-Thread-Topic: questions regarding possible violation of AHCI spec in
- AHCI driver
-Thread-Index: AcuXKv3f9b1YXwAXSnSrKGFxpppTuwaiwuSQ
-Message-ID: <E18F441196CA634DB8E1F1C56A50A874319FD72B23@IRVEXCHCCR01.corp.ad.broadcom.com>
-References: <E18F441196CA634DB8E1F1C56A50A874319F70C1F2@IRVEXCHCCR01.corp.ad.broadcom.com>
- <4CFEE569.4030204@gmail.com> <4CFF58D2.4040006@kernel.org>
- <E18F441196CA634DB8E1F1C56A50A874319FA38C43@IRVEXCHCCR01.corp.ad.broadcom.com>,<4CFFCD56.6050608@kernel.org>
- <E18F441196CA634DB8E1F1C56A50A874319FA7E36E@IRVEXCHCCR01.corp.ad.broadcom.com>,<4CFFD3EB.10800@kernel.org>
- <E18F441196CA634DB8E1F1C56A50A874319FA7E36F@IRVEXCHCCR01.corp.ad.broadcom.com>
- <4CFFE29C.7080205@kernel.org>
- <E18F441196CA634DB8E1F1C56A50A874319FA38CD3@IRVEXCHCCR01.corp.ad.broadcom.com>
- <4D000C8B.5040904@kernel.org>
-In-Reply-To: <4D000C8B.5040904@kernel.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Tue, 11 Jan 2011 13:12:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=cjQPdujBCezBYdOtrS+Ewbs5y1/D5Zapa+u8vlK9N/NXdGstIJjEyJ37BJTVfg+RYs
+         PQxxdKnr/ymmIgpeyViIYrXRSeFNQmTegfnrrhnYOYKt3xWVG5sXHSUXzKO5MVXZfFDf
+         qYCNRZX13qKdi/x+n0dnMmOE8HcQoIixNHklA=
 MIME-Version: 1.0
-X-WSS-ID: 613242983P055195875-01-01
-Content-Type: text/plain;
- charset=us-ascii
+In-Reply-To: <20110111165953.GI10897@dumpdata.com>
+References: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com>
+	<4D2B16F3.1070105@shipmail.org>
+	<20110110152135.GA9732@dumpdata.com>
+	<4D2B2CC1.2050203@shipmail.org>
+	<20110110164519.GA27066@dumpdata.com>
+	<4D2B70FB.3000504@shipmail.org>
+	<20110111155545.GD10897@dumpdata.com>
+	<AANLkTimarEHNAs-1hCJf05YhkRQP2qF1D9it81NA3VTb@mail.gmail.com>
+	<20110111165953.GI10897@dumpdata.com>
+Date: Tue, 11 Jan 2011 13:12:57 -0500
+Message-ID: <AANLkTinkP8b9GNMFqWygJb0O17neB7RLnxTi-DaG13pR@mail.gmail.com>
+Subject: Re: [RFC PATCH v2] Utilize the PCI API in the TTM framework.
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Thomas Hellstrom <thomas@shipmail.org>, konrad@darnok.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Tejun,
+On Tue, Jan 11, 2011 at 11:59 AM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+>> >> Another thing that I was thinking of is what happens if you have a
+>> >> huge gart and allocate a lot of coherent memory. Could that
+>> >> potentially exhaust IOMMU resources?
+>> >
+>> > <scratches his head>
+>> >
+>> > So the GART is in the PCI space in one of the BARs of the device right?
+>> > (We are talking about the discrete card GART, not the poor man AMD IOMMU?)
+>> > The PCI space is under the 4GB, so it would be considered coherent by
+>> > definition.
+>>
+>> GART is not a PCI BAR; it's just a remapper for system pages.  On
+>> radeon GPUs at least there is a memory controller with 3 programmable
+>> apertures: vram, internal gart, and agp gart.  You can map these
+>
+> To access it, ie, to program it, you would need to access the PCIe card
+> MMIO regions, right? So that would be considered in PCI BAR space?
 
-Happy Holiday! I want to revisit this issue and hopefully get consensus on it asap.
+yes, you need access to the mmio aperture to configure the gpu.  I was
+thinking you mean something akin the the framebuffer BAR only for gart
+space which is not the case.
 
-Here is the sequence that will cause problem if BSY|DRQ and SSTS.DET was not checked in start_engine:
+>
+>> resources whereever you want in the GPU's address space and then the
+>> memory controller takes care of the translation to off-board resources
+>> like gart pages.  On chip memory clients (display controllers, texture
+>> blocks, render blocks, etc.) write to internal GPU addresses.  The GPU
+>> has it's own direct connection to vram, so that's not an issue.  For
+>> AGP, the GPU specifies aperture base and size, and you point it to the
+>> bus address of gart aperture provided by the northbridge's AGP
+>> controller.  For internal gart, the GPU has a page table stored in
+>
+> I think we are just talking about the GART on the GPU, not the old AGP
+> GART.
 
-1. SUD bit was set in ahci_power_up() to start communication between host and device
-2. START bit was set in ahci_start_engine() to prepare for data transfer (should check condition and do not set START bit here per spec)
-By the time, host did not receive first FIS so BSY|DRQ was not cleared
-3. inside ahci_hardreset(), call ahci_stop_engine() first, host controller will take time to clean up internal pipeline and transit to idle state
-4. toggle SCTL.DET to reset interface, now COMRESET was not sent since internal state machine stuck at #2 and #3 (per spec), BSY|DRQ bit was not cleared
-5. call ahci_start_engine() again and try to read ID from device but interface is busy since BSY bit was not cleared, failed here
+Ok.  I just mentioned it for completeness.
 
-At the end of section 10.1 of AHCI spec (rev 1.3), it states
+>
+>> either vram or uncached system memory depending on the asic.  It
+>> provides a contiguous linear aperture to GPU clients and the memory
+>> controller translates the transactions to the backing pages via the
+>> pagetable.
+>
+> So I think I misunderstood what is meant by 'huge gart'. That sounds
+> like linear address space provided by GPU. And hooking up a lot of coherent
+> memory (so System RAM) to that linear address space would be no different that what
+> is currently being done. When you allocate memory using page_alloc(GFP_DMA32)
+> and hook up that memory to the linear space you exhaust the same amount of
+> ZONE_DMA32 memory as if you were to use the PCI API. It comes from the same
+> pool, except that doing it from the PCI API gets you the bus address right
+> away.
+>
 
-Software shall not set PxCMD.ST to '1' until it is determined that a functional device is present on the port
-as determined by PxTFD.STS.BSY = '0', PxTFD.STS.DRQ = '0', and PxSSTS.DET = 3h.
+In this case GPU clients refers to the hw blocks on the GPU; they are
+the ones that see the contiguous linear aperture.  From the
+application's perspective, gart memory looks like any other pages.
 
-It is likely used to prevent host controller from jumping into wrong state before first FIS was received.
-
-Please review this issue, and let me know how to resolve it by either adopting my previous patch, or creating a new patch.
-
-Thanks,
-Jian
-
-
-Here is my previous patch against 2.6.37-rc3
-
-> 
-> --- libahci.c.orig	2010-12-08 10:42:48.383976763 -0800
-> +++ libahci.c	2010-12-08 10:45:17.495156944 -0800
-> @@ -542,6 +542,13 @@
->  {
->  	void __iomem *port_mmio = ahci_port_base(ap);
->  	u32 tmp;
-> +	u8 status = readl(port_mmio + PORT_TFDATA) & 0xFF;
-> +
-> +	/* avoid race condition per spec (end of section 10.1.2) */
-> +	if (status & (ATA_BUSY | ATA_DRQ) ||
-> +	    ahci_scr_read(&ap->link, SCR_STATUS, &tmp) ||
-> +	    (tmp & 0x0f) != 0x03)
-> +		return;
->  
->  	/* start DMA */
->  	tmp = readl(port_mmio + PORT_CMD);
-
------Original Message-----
-From: Tejun Heo [mailto:tj@kernel.org] 
-Sent: Wednesday, December 08, 2010 2:54 PM
-To: Jian Peng
-Cc: Robert Hancock; linux-kernel@vger.kernel.org; jgarzik@pobox.com; ide
-Subject: Re: questions regarding possible violation of AHCI spec in AHCI driver
-
-Hello, Jian.
-
-On 12/08/2010 09:09 PM, Jian Peng wrote:
-> The controller may take much longer time to recover in this case,
-> and leads to wrong HW state after stop_engine() inside
-> ahci_hardreset() and cause device type checking failure due to
-> unfinished HW state change and missing D2H FIS after start_engine()
-> again inside ahci_hardreset(). I guess this is the reason why AHCI
-> spec try to emphasize.
-
-I don't necessarily agree there.  The requirement is impossible to
-reliably satisfy to begin with (it's inherently racy) and most specs
-are filled with "the outcome is undefined" when they don't _need_ to
-be well defined.  The hardware can do "eh.. well, whatever, I don't
-know" but shouldn't get lost and fail to react to further
-state-resetting actions.
-
-> Yes, without this change, Broadcom controller will fail due to above
-> reason.
-
-Okay, so, the controller goes bonkers if ST is set when prerequisites
-are not met.  You know that the problem can still happen with the
-proposed change, right?  It's much less likely but definitely can and
-actually is likely to happen once in a blue moon.  It isn't too
-uncommon for link to take some time to stabilize after a PHY event
-(including hardreset) and some devices will end up sending multiple
-D2H Reg FISes in the process with conflicting status.  Also, note that
-the delay between the check and ST setting could be substantial
-especially with parallel probing / booting.
-
-I'm not objecting to the change but you guys probably want to fix the
-controller in following revisions.  If we're gonna make the change,
-I'd like to go with the previous version without the vendor check.
-What is the timeframe for the controller release?  Would it be enough
-to merge the change during 2.6.38-rc1?  After baking it for some time
-in 2.6.38, we can propagate the change back through -stable.
-
-Thanks.
-
--- 
-tejun
-
-
+Alex
