@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967Ab1AKLZM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 06:25:12 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:11846 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755642Ab1AKLZJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 06:25:09 -0500
-Date: Tue, 11 Jan 2011 12:25:00 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux I2C <linux-i2c@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] i2c updates for 2.6.38
-Message-ID: <20110111122500.203c4ce4@endymion.delvare>
-In-Reply-To: <20110111111758.GH6541@sirena.org.uk>
-References: <20110110222145.31c40d8e@endymion.delvare>
-	<20110111111758.GH6541@sirena.org.uk>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755819Ab1AKL0P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 06:26:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50522 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752119Ab1AKL0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 06:26:13 -0500
+Message-ID: <4D2C3E4D.3070307@redhat.com>
+Date: Tue, 11 Jan 2011 19:26:05 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org
+Subject: Re: [Patch] kexec_load: check CAP_SYS_MODULE
+References: <1294302325-22593-1-git-send-email-amwang@redhat.com>	<m1bp3uifln.fsf@fess.ebiederm.org>	<AANLkTinLhAuSny735kofonAkaqwJvjjDHMUed_r03rVc@mail.gmail.com>	<m1k4igjwzf.fsf@fess.ebiederm.org>	<1294432333.3237.107.camel@localhost.localdomain>	<m18vywh1g7.fsf@fess.ebiederm.org>	<1294447189.3237.132.camel@localhost.localdomain> <m1k4ieesky.fsf@fess.ebiederm.org>
+In-Reply-To: <m1k4ieesky.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+于 2011年01月09日 10:09, Eric W. Biederman 写道:
+>
+> We aren't dealing with modules I think CAP_SYS_MODULE is totally
+> irrelevant in the context of kexec.
 
-On Tue, 11 Jan 2011 11:17:58 +0000, Mark Brown wrote:
-> On Mon, Jan 10, 2011 at 10:21:45PM +0100, Jean Delvare wrote:
-> > Hi Linus,
-> > 
-> > Please pull i2c subsystem updates for Linux 2.6.37 from:
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging.git i2c-for-linus
-> > 
-> > Not much this time around... Only the new generic I2C multiplexer using
-> > the GPIO API is worth mentioning.
-> 
-> It'd be good to also get the conversion to use the pm_generic_ stuff in
-> - that ends up fixing some bugs with the interaction between runtime and
-> system suspend and at least means that it's no longer the responsibility
-> of the I2C code to sort them out in future.  Linus merged the PM tree
-> bits for that already.
 
-Thanks for the reminder, I'll look into that as soon as possible and
-when the patches are ready, I'll send another pull request to Linus.
+Yeah, although I don't really understand CAP_SYS_MODULE, but it
+really confused me to add it to kexec_load() from its name.
 
--- 
-Jean Delvare
+>
+> I think to accomplish what you want we either need a way to disable
+> sys_kexec_load or possibly a new very targeted capability bit.
+>
+> You are making it so that giving someone CAP_SYS_MODULE is giving more
+> than the ability to load kernel modules.  Which seems non-intuitive from
+> a system management point of view.
+>
+
+How about CAP_SYS_KEXEC?
+
+Thanks.
