@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab1AKDkU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 22:40:20 -0500
-Received: from kroah.org ([198.145.64.141]:41680 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755326Ab1AKDj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 22:39:58 -0500
-Date: Mon, 10 Jan 2011 19:39:07 -0800
-From: Greg KH <greg@kroah.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-usb@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/4]  x86: early_quirk check all dev/func in domain 0
-Message-ID: <20110111033907.GF9709@kroah.com>
-References: <4D2A1382.7010407@kernel.org>
- <4D2AC6BF.3010907@kernel.org>
- <4D2BA8FE.9090204@kernel.org>
- <4D2BAA7B.3030800@kernel.org>
- <20110111010903.GE32585@kroah.com>
- <4D2BB684.3090109@kernel.org>
+	id S1755347Ab1AKDlp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 22:41:45 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:50373 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755300Ab1AKDli (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 22:41:38 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [PATCH] drivers: char: hvc: add Blackfin JTAG console support
+Date: Tue, 11 Jan 2011 04:41:33 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.5.1; x86_64; ; )
+Cc: linux-serial@vger.kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+References: <1294713837-4929-1-git-send-email-vapier@gentoo.org> <AANLkTinnuxvx9+eNvCqjK2GW2XQPn4LjK4WfMj=f20Xw@mail.gmail.com>
+In-Reply-To: <AANLkTinnuxvx9+eNvCqjK2GW2XQPn4LjK4WfMj=f20Xw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D2BB684.3090109@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101110441.33841.arnd@arndb.de>
+X-Provags-ID: V02:K0:g0PPb7s+Aszcu+dmXomgRxrCC8w5rqkDDr1G/rBoIPc
+ +fRfSIIY0b2QjjggNPjP57HNpV0tNAiXDZ4nUoWdJgpTQHU+MI
+ WkpFtkVtWyyeBGpsAOmctRL1xGUTrIj9dpzadM8c+S3IlkkWqJ
+ RAh3bOmGKlYVb/V/JTx4Q4VkvlXP8hIWIN/fQzjUFKLIGL1Uae
+ 100/aYXfvvuW/CwTUSPeQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 05:46:44PM -0800, Yinghai Lu wrote:
-> On 01/10/2011 05:09 PM, Greg KH wrote:
-> > On Mon, Jan 10, 2011 at 04:55:23PM -0800, Yinghai Lu wrote:
-> >>
-> >> go with all buses instead of bus0.
-> > 
-> > Why?
-> 
-> in cause USB host controller is not on Bus0.
-> 
-> > 
-> >> also only check header type on func0.
-> > 
-> > Why?
-> 
-> that is bug.
-> 
-> notice when there is 00:1a.0, 00:1a.1, 00:1a.2 00:1a.7
-> 
-> the quirk code will not be applied with 00:1a.2 and 00:1a.7
-> 
-> it will exit after checking 00:1a.1's header type.
+On Tuesday 11 January 2011, Mike Frysinger wrote:
+> throughput seems to be a bit lower.  the Blackfin JTAG hardware has
+> basically a 4 byte fifo that is filled/consumed in a single shot.  and
+> the Blackfin can produce much faster than the host can consume.  so
+> atm, i have it send out 4 bytes, and the hvc layers take care of
+> calling back into me at some point.  if i add a busy loop to run a few
+> hundred milliseconds (like HZ/4), it runs much nicer.  but obviously
+> doesnt give anyone else time to run.  i cant schedule or anything as
+> the write layers are called with a spin_lock_irqsave.  any tips for
+> how to speed this up a bit ?  or is it a wash with hvc ?
 
-Also, if this is a real bug, then just fix this in one patch, separate
-from the other patches.  Don't do more than one thing per patch.
+You could try lowering the hvc MIN_TIMEOUT value. If you want to
+change it for blackfin, you could probably make it a configuration
+option. However, if it really takes a few milliseconds that you need
+to wait between two accesses, MIN_TIMEOUT should already be small
+enough.
 
-thanks,
+You should really not need to sleep in your output function, as
+the khvcd() timeout logic tries handling this in the best way.
+There may be a bug in that logic though (wouldn't be the first one
+there), so try to see what the timeouts are when you get into 
+this problem.
 
-greg k-h
+	Arnd
