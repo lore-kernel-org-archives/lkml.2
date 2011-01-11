@@ -1,51 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932546Ab1AKSN5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 13:13:57 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42072 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932276Ab1AKSNy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 13:13:54 -0500
+	id S932534Ab1AKSXK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 13:23:10 -0500
+Received: from mail.mnsspb.ru ([84.204.75.2]:51586 "EHLO mail.mnsspb.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932286Ab1AKSXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 13:23:09 -0500
+Date: Tue, 11 Jan 2011 21:24:18 +0300
+From: Kirill Smelkov <kirr@mns.spb.ru>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] perf top -> annotate broken; bisected to 69aad6f1
+Message-ID: <20110111182418.GA3133@tugrik.mns.mnsspb.ru>
+References: <20110111163520.GA4554@tugrik.mns.mnsspb.ru> <20110111171124.GB11968@ghostprotocols.net> <20110111172309.GC11968@ghostprotocols.net>
 MIME-Version: 1.0
-In-Reply-To: <1294768668.2435.177.camel@doink>
-References: <20110107075831.GA14915@amd> <1294763679.2435.72.camel@doink>
- <AANLkTin67OXYYKk6y+_MKfXEXBz-F_+qAH0cpiJ24yEQ@mail.gmail.com> <1294768668.2435.177.camel@doink>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 11 Jan 2011 10:13:32 -0800
-Message-ID: <AANLkTikomwroDXYmtA1crJeEdcpo_T1-g=O1zhHie4sC@mail.gmail.com>
-Subject: Re: [announce] vfs-scale git tree update
-To: aelder@sgi.com, Ian Kent <raven@themaw.net>
-Cc: Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110111172309.GC11968@ghostprotocols.net>
+Organization: Marine Bridge & Navigation Systems
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Added Ian to cc - the BUG_ON() in d_set_d_op() triggers on autofs4,
-see lkml thread for more details if you care ]
+On Tue, Jan 11, 2011 at 03:23:10PM -0200, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Jan 11, 2011 at 03:11:24PM -0200, Arnaldo Carvalho de Melo escreveu:
+> > Em Tue, Jan 11, 2011 at 07:35:20PM +0300, Kirill Smelkov escreveu:
+> > > Hello up there,
+> > > 
+> > > Since 69aad6f1ee69546dea8535ab8f3da9f445d57328 (perf tools: Introduce
+> > > event selectors; Jan 3 2011) annotating a symbol in perf top segfaults:
+> > > 
+> > >     Program received signal SIGSEGV, Segmentation fault.
+> > >     [Switching to Thread 0xb714cb90 (LWP 4662)]
+> > >     event_name (evsel=0x0) at util/parse-events.c:274
+> > >     274             return __event_name(type, config);
+> > >     (gdb) bt
+> > >     #0  event_name (evsel=0x0) at util/parse-events.c:274
+> > >     #1  0x0805f892 in display_thread (arg=0x9422448) at builtin-top.c:359
+> > >     #2  0xb77234c0 in start_thread () from /lib/i686/cmov/libpthread.so.0
+> > >     #3  0xb732b84e in clone () from /lib/i686/cmov/libc.so.6
+> > > 
+> > > 
+> > > It used to work...
+> > 
+> > Thanks for the report, working on a fix.
+> 
+> Done, please test it and I'll add a Tested-by: you tag.
+> 
+> Thanks,
+> 
+> - Arnaldo
+> 
+> commit 347ad46af282994524510d62a4c70455929b6a9d
+> Author: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Date:   Tue Jan 11 15:16:52 2011 -0200
+> 
+>     perf top: Fix annotate segv
+>     
+>     Before we had sym_counter, it was initialized to zero and we used that
+>     as an index in the global attrs variable, now we have a list of evsel
+>     entries, and sym_counter became sym_evsel, that remained initialized to
+>     zero (NULL): b00m.
+>     
+>     Fix it by initializing it to the first entry in the evsel list.
+>     
+>     Bug-introduced: 69aad6f
+>     Reported-by: Kirill Smelkov <kirr@mns.spb.ru>
+>     Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>     Cc: Ingo Molnar <mingo@elte.hu>
+>     Cc: Kirill Smelkov <kirr@mns.spb.ru>
+>     Cc: Mike Galbraith <efault@gmx.de>
+>     Cc: Paul Mackerras <paulus@samba.org>
+>     Cc: Peter Zijlstra <peterz@infradead.org>
+>     Cc: Stephane Eranian <eranian@google.com>
+>     Cc: Tom Zanussi <tzanussi@gmail.com>
+>     LKML-Reference: <new-submission>
+>     Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+> index 4b995ee..568b195 100644
+> --- a/tools/perf/builtin-top.c
+> +++ b/tools/perf/builtin-top.c
+> @@ -1473,6 +1473,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+>  		pos->attr.sample_period = default_interval;
+>  	}
+>  
+> +	sym_evsel = list_entry(evsel_list.next, struct perf_evsel, node);
+> +
+>  	symbol_conf.priv_size = (sizeof(struct sym_entry) +
+>  				 (nr_counters + 1) * sizeof(unsigned long));
 
-On Tue, Jan 11, 2011 at 9:57 AM, Alex Elder <aelder@sgi.com> wrote:
->
-> Looking at it quickly, I don't think that would matter for
-> the case at hand.  I.e., that might be safer but it doesn't
-> address the fact that these fields are getting initialized
-> multiple times.
+Now it works again, thanks!
 
-You're right - without looking closer or thinking about it any more, I
-was thinking mkdir etc would create the new dentry, but it can easily
-be a pre-existing negative one. So it's not like mkdir is always going
-to be something new that can just be initialized.
-
-So yeah, no race or anything like that required - just regular acceses.
-
-That said, if we make sure that the d_op gets cleared (or the dentry
-dropped) when something turns negative, and a negative lookup never
-sets d_op, it should all basically work.
-
-Can you figure out the exact sequence that causes this? Is it enough
-to just mount something once?
-
-                 Linus
+Tested-by: Kirill Smelkov <kirr@mns.spb.ru>
