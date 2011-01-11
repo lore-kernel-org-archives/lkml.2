@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab1AKLJc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 06:09:32 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:55989 "EHLO mx3.mail.elte.hu"
+	id S1755854Ab1AKLKg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 06:10:36 -0500
+Received: from hera.kernel.org ([140.211.167.34]:36197 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755777Ab1AKLJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 06:09:28 -0500
-Date: Tue, 11 Jan 2011 12:09:14 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Darren Hart <darren@dvhart.com>, Lai Jiangshan <eag0628@gmail.com>
-Subject: Re: [GIT PULL] rtmutex: Fix comment about why new_owner can be NULL
- in wake_futex_pi()
-Message-ID: <20110111110914.GD5253@elte.hu>
-References: <1294719469.26623.246.camel@gandalf.stny.rr.com>
+	id S1755777Ab1AKLKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 06:10:32 -0500
+Date: Tue, 11 Jan 2011 11:09:48 GMT
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
+        peterz@infradead.org, efault@gmx.de, chris@csamuel.org,
+        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
+        efault@gmx.de, peterz@infradead.org, chris@csamuel.org,
+        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf sched: Fix allocation result check
+Message-ID: <tip-e462dc553ea5e09d4713e7c35a11ed331dc6f369@git.kernel.org>
+Git-Commit-ID: e462dc553ea5e09d4713e7c35a11ed331dc6f369
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1294719469.26623.246.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 11 Jan 2011 11:09:51 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  e462dc553ea5e09d4713e7c35a11ed331dc6f369
+Gitweb:     http://git.kernel.org/tip/e462dc553ea5e09d4713e7c35a11ed331dc6f369
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Mon, 10 Jan 2011 10:48:47 -0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 10 Jan 2011 10:48:47 -0200
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+perf sched: Fix allocation result check
 
-> 
-> Ingo,
-> 
-> While porting Lai Jiangshan's rt-pi patch to the -rt kernel, I found
-> that the comment about why rt_mutex_next_owner() can return NULL is
-> incorrect. This caused Lai to remove the following if condition, which
-> caused a bit of headache in debugging why his patch was causing a crash.
-> 
-> Please pull the latest tip/futex tree, which can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-> tip/futex
-> 
-> 
-> Steven Rostedt (1):
->       rtmutex: Fix comment about why new_owner can be NULL in wake_futex_pi()
-> 
-> ----
->  kernel/futex.c |    7 +++----
->  1 files changed, 3 insertions(+), 4 deletions(-)
+Bug introduced in ce47dc56.
 
-Pulled into tip:core/urgent, thanks Steve!
+Reported-by: Mike Galbraith <efault@gmx.de>
+Cc: Chris Samuel <chris@csamuel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-sched.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-	Ingo
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index 7a4ebeb..54024d2 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -1861,7 +1861,7 @@ static int __cmd_record(int argc, const char **argv)
+ 	rec_argc = ARRAY_SIZE(record_args) + argc - 1;
+ 	rec_argv = calloc(rec_argc + 1, sizeof(char *));
+ 
+-	if (rec_argv)
++	if (rec_argv == NULL)
+ 		return -ENOMEM;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(record_args); i++)
