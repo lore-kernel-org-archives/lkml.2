@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab1AKLpU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 06:45:20 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:33600 "EHLO gir.skynet.ie"
+	id S1755602Ab1AKLrO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 06:47:14 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:33625 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753534Ab1AKLpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 06:45:17 -0500
-Date: Tue, 11 Jan 2011 11:44:54 +0000
+	id S1755322Ab1AKLrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 06:47:11 -0500
+Date: Tue, 11 Jan 2011 11:46:48 +0000
 From: Mel Gorman <mel@csn.ul.ie>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        Andi Kleen <ak@linux.intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: fix migration hangs on anon_vma lock
-Message-ID: <20110111114453.GC11932@csn.ul.ie>
-References: <alpine.LSU.2.00.1101102259160.24988@sister.anvils>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        William Irwin <wli@holomorphy.com>
+Subject: Re: [PATCH v3 3/7] hugetlbfs: Change remove_from_page_cache
+Message-ID: <20110111114648.GE11932@csn.ul.ie>
+References: <cover.1294723009.git.minchan.kim@gmail.com> <95582288aa619785893385ac5f5e2ded45e0cc28.1294723009.git.minchan.kim@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1101102259160.24988@sister.anvils>
+In-Reply-To: <95582288aa619785893385ac5f5e2ded45e0cc28.1294723009.git.minchan.kim@gmail.com>
 User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 11:08:04PM -0800, Hugh Dickins wrote:
-> Increased usage of page migration in mmotm reveals that the anon_vma
-> locking in unmap_and_move() has been deficient since 2.6.36 (or even
-> earlier). 
-
-Hmm, a certain amount of the compaction work was spent fixing migration
-bugs. I wonder if there are mysterious bug reports out there related to the
-use of move_pages() that are only getting fixed now.
-
-> Review at the time of f18194275c39835cb84563500995e0d503a32d9a
-> "mm: fix hang on anon_vma->root->lock" missed the issue here: the anon_vma
-> to which we get a reference may already have been freed back to its slab
-> (it is in use when we check page_mapped, but that can change), and so its
-> anon_vma->root may be switched at any moment by reuse in anon_vma_prepare.
+On Tue, Jan 11, 2011 at 02:22:07PM +0900, Minchan Kim wrote:
+> This patch series changes remove_from_page_cache's page ref counting
+> rule. Page cache ref count is decreased in delete_from_page_cache.
+> So we don't need decreasing page reference by caller.
 > 
-> Perhaps we could fix that with a get_anon_vma_unless_zero(), but let's not:
-> just rely on page_lock_anon_vma() to do all the hard thinking for us, then
-> we don't need any rcu read locking over here.
-> 
-> In removing the rcu_unlock label: since PageAnon is a bit in page->mapping,
-> it's impossible for a !page->mapping page to be anon; but insert VM_BUG_ON
-> in case the implementation ever changes.
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Cc: stable@kernel.org [2.6.37, 2.6.36]
+> Cc: William Irwin <wli@holomorphy.com>
+> Acked-by: Hugh Dickins <hughd@google.com>
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 
-Reasoning and patch look correct. Light testing did not show up any
-obvious problems.
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 
-Reviewed-by: Mel Gorman <mel@csn.ul.ie>
+Thanks.
+
+> ---
+>  fs/hugetlbfs/inode.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+> index 9885082..b9eeb1c 100644
+> --- a/fs/hugetlbfs/inode.c
+> +++ b/fs/hugetlbfs/inode.c
+> @@ -332,8 +332,7 @@ static void truncate_huge_page(struct page *page)
+>  {
+>  	cancel_dirty_page(page, /* No IO accounting for huge pages? */0);
+>  	ClearPageUptodate(page);
+> -	remove_from_page_cache(page);
+> -	put_page(page);
+> +	delete_from_page_cache(page);
+>  }
+>  
+>  static void truncate_hugepages(struct inode *inode, loff_t lstart)
 
 -- 
 Mel Gorman
