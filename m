@@ -1,275 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336Ab1AKFxA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 00:53:00 -0500
-Received: from mga02.intel.com ([134.134.136.20]:21662 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751327Ab1AKFw4 convert rfc822-to-8bit (ORCPT
+	id S1752584Ab1AKGBW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 01:01:22 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35835 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035Ab1AKGBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 00:52:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,305,1291622400"; 
-   d="scan'208";a="591741024"
-From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
-To: Chris Ball <cjb@laptop.org>
-CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Mai, Leonard" <leonard.mai@intel.com>
-Date: Tue, 11 Jan 2011 13:52:18 +0800
-Subject: RE: [PATCH v2 1/1]mmc: export enhanced area info to user
-Thread-Topic: [PATCH v2 1/1]mmc: export enhanced area info to user
-Thread-Index: AcuwWdMY+4n0HAfOR8enUardyBkyCAA+HuXg
-Message-ID: <5D8008F58939784290FAB48F549751983519F4944C@shsmsx502.ccr.corp.intel.com>
-References: <20101208112101.GA14565@intel.com>
- <20110110000241.GA26898@void.printf.net>
-In-Reply-To: <20110110000241.GA26898@void.printf.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 11 Jan 2011 01:01:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=lmIS4zlmM8TcJCDAoj9eud1u2uB/2XYQHAgNu71EiBW5gMOnuycVjH4f2ZOvMTMGjr
+         bZL0Is3TcBTEkSgEUa6CSz45OH0OQOEHbYYSrb6EU5E30WgeCGRB1laLj+mxhxDO7Wxy
+         Zq7Uf0z++6waftCIwWdCwUW0wCzzOGuq3Gfrg=
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: [PATCH] memcg: remove charge variable in unmap_and_move
+Date: Tue, 11 Jan 2011 15:00:50 +0900
+Message-Id: <1294725650-4732-1-git-send-email-minchan.kim@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
-Thanks for your comments. It is really helpful!
+memcg charge/uncharge could be handled by mem_cgroup_[prepare/end]
+migration itself so charge local variable in unmap_and_move lost the role
+since we introduced 01b1ae63c2.
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org
-> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Chris Ball
-> Sent: Monday, January 10, 2011 8:03 AM
-> To: Dong, Chuanxiao
-> Cc: linux-mmc@vger.kernel.org; linux-kernel@vger.kernel.org; Mai, Leonard
-> Subject: Re: [PATCH v2 1/1]mmc: export enhanced area info to user
-> 
-> Hi Chuanxiao, sorry for the late review.
-> 
-> On Wed, Dec 08, 2010 at 07:21:01PM +0800, Chuanxiao Dong wrote:
-> > enhanced area is a new feature of eMMC4.41 card. Since the offsize and size
-> > of enhaneced area is one time programmable register, driver will not set
-> > them and just read these values out.
-> >
-> > So this patch just let host driver read out the enhanced area offsize and
-> > size if the eMMC card is enabled this feature. And expose these values to
-> > user space through sys fs for use. The feature enabling should be done in
-> > manufactory.
-> >
-> > Before read out these values, host driver also need set the ERASE_GROUP_DEF
-> > byte. If this setting this byte failed, driver will set the offsize and size
-> > to be 0. But not sure whether need to do this.
-> >
-> > Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
-> 
-> Which userspace applications do you imagine will use this feature?
-> If we're talking about a published interface, we should document this
-> in Documentation/ABI.  If this is just a tool to aid in debugging
-> pre-production hardware or host controller drivers, it should live
-> in debugfs instead.
-What we considered is that, if our eMMC card have some area been set to be an enhanced area, MMC driver can export the size and address of this area to user space so that user can use such area for a SWAP partition. Enhanced area has a good performance than the normal area.
-Chris, I will document this in Documentation/ABI, thanks a lot for making me clear.
+In addition, the variable name is not good like below.
 
-> 
-> > ---
-> >  drivers/mmc/core/mmc.c   |   92
-> ++++++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/mmc/card.h |    3 +
-> >  include/linux/mmc/mmc.h  |    3 +
-> >  3 files changed, 98 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-> > index 77f93c3..1f49778 100644
-> > --- a/drivers/mmc/core/mmc.c
-> > +++ b/drivers/mmc/core/mmc.c
-> > @@ -302,6 +302,64 @@ static int mmc_read_ext_csd(struct mmc_card *card)
-> >  	}
-> >
-> >  	if (card->ext_csd.rev >= 4) {
-> > +		/*
-> > +		 * Enhanced area feature support
-> > +		 * check whether eMMC card is enabled enhanced area,
-> > +		 * if so, export enhanced area offset and size to
-> > +		 * user by adding sysfs interface
-> > +		 */
-> > +		if ((ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x2) &&
-> > +				(ext_csd[EXT_CSD_PARTITION_ATTRIBUTE] & 0x1)) {
-> > +			u8 hc_erase_grp_sz =
-> > +				ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
-> > +			u8 hc_wp_grp_sz =
-> > +				ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
-> > +			 /*
-> > +			  * FIXME
-> > +			  * Not sure whether need to enable the
-> > +			  * ERASE_GROUP_DEF bit
-> > +			  */
-> > +			err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-> > +					EXT_CSD_ERASE_GROUP_DEF, 1);
-> > +
-> > +			if (err && err != -EBADMSG)
-> > +				goto out;
-> > +
-> > +			if (err) {
-> > +				/*
-> > +				 * ignore this err, just disable enhanced area
-> > +				 */
-> > +				err = 0;
-> > +				goto next;
-> > +			}
-> > +			/* update ext_csd ERASE_GRP_DEF bit */
-> > +			ext_csd[EXT_CSD_ERASE_GROUP_DEF] = 1;
-> > +			card->ext_csd.erase_group_def =
-> > +				ext_csd[EXT_CSD_ERASE_GROUP_DEF];
-> > +			/*
-> > +			 * set a flag to identify whether the enhanced
-> > +			 * user data are enabled
-> > +			 */
-> > +			card->ext_csd.enh_data_area_en = 1;
-> > +			/*
-> > +			 * caculate the enhanced data area offset, unit B
-> > +			 */
-> > +			card->ext_csd.enh_data_area_off =
-> > +				(ext_csd[139] << 24) + (ext_csd[138] << 16) +
-> > +				(ext_csd[137] << 8) + ext_csd[136];
-> > +			if (mmc_card_blockaddr(card))
-> > +				card->ext_csd.enh_data_area_off <<= 9;
-> > +			/*
-> > +			 * caculate the enhanced data area size, unit KB
-> > +			 */
-> > +			card->ext_csd.enh_data_area_sz =
-> > +				(ext_csd[142] << 16) + (ext_csd[141] << 8) +
-> > +				ext_csd[140];
-> > +			card->ext_csd.enh_data_area_sz *=
-> > +				(size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
-> > +			card->ext_csd.enh_data_area_sz <<= 9;
-> > +		}
-> > +next:
-> >  		card->ext_csd.sec_trim_mult =
-> >  			ext_csd[EXT_CSD_SEC_TRIM_MULT];
-> >  		card->ext_csd.sec_erase_mult =
-> > @@ -336,6 +394,9 @@ MMC_DEV_ATTR(manfid, "0x%06x\n",
-> card->cid.manfid);
-> >  MMC_DEV_ATTR(name, "%s\n", card->cid.prod_name);
-> >  MMC_DEV_ATTR(oemid, "0x%04x\n", card->cid.oemid);
-> >  MMC_DEV_ATTR(serial, "0x%08x\n", card->cid.serial);
-> > +MMC_DEV_ATTR(enhen, "%d\n", card->ext_csd.enh_data_area_en);
-> > +MMC_DEV_ATTR(enhoff, "0x%llxB\n", card->ext_csd.enh_data_area_off);
-> > +MMC_DEV_ATTR(enhsz, "0x%xKB\n", card->ext_csd.enh_data_area_sz);
-> 
-> If enhen == 0 and the user cats enhoff/enhsz, I think you should return
-> something like -EINVAL instead of 0.  (You could also instead consider
-> making the appearance of enhoff and enhsz conditional on enhen == 1,
-> and then just not export enhen to userspace at all?)
-I will use the second way which makes user much more clearly. :)
+int unmap_and_move()
+{
+	charge = mem_cgroup_prepare_migration(xxx);
+	..
+		BUG_ON(charge); <-- BUG if it is charged?
+		..
+		uncharge:
+		if (!charge)    <-- why do we have to uncharge !charge?
+			mem_group_end_migration(xxx);
+	..
+}
 
-> 
-> Regardless of where the files live, we should have much better names
-> for them.  It should be possible to work out what each file is for
-> without already knowing!  Perhaps enhanced_area_{enable,offset,size},
-> if that's not too long.
-Sure, I will give a better name to them in the next submission.
+So let's remove unnecessary and confusing variable.
 
-> 
-> >
-> >  static struct attribute *mmc_std_attrs[] = {
-> >  	&dev_attr_cid.attr,
-> > @@ -349,6 +410,9 @@ static struct attribute *mmc_std_attrs[] = {
-> >  	&dev_attr_name.attr,
-> >  	&dev_attr_oemid.attr,
-> >  	&dev_attr_serial.attr,
-> > +	&dev_attr_enhen.attr,
-> > +	&dev_attr_enhoff.attr,
-> > +	&dev_attr_enhsz.attr,
-> >  	NULL,
-> >  };
-> >
-> > @@ -472,6 +536,34 @@ static int mmc_init_card(struct mmc_host *host, u32
-> ocr,
-> >  			goto free_card;
-> >  	}
-> >
-> > +	/*
-> > +	 * If enh_data_are_en is TRUE, means this init card
-> > +	 * operation is used to reinit card after a reset
-> > +	 * ERASE_GRP_DEF register value will be lost everytime
-> > +	 * after a reset or power off.
-> > +	 *
-> > +	 * FIXME
-> > +	 * Not sure whether need to enable ERASE_GRP_DEF bit.
-> > +	 */
-> 
-> Can we find out somehow?
-Yes. ERASE_GRP_DEF bit needs to be set. Confirmed with our eMMC device vender.
+Suggested-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/migrate.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
-> 
-> > +	if (card->ext_csd.enh_data_area_en) {
-> > +		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-> > +				EXT_CSD_ERASE_GROUP_DEF, 1);
-> > +
-> > +		if (err && err != -EBADMSG)
-> > +			goto free_card;
-> > +
-> > +		if (err) {
-> > +			err = 0;
-> > +			/*
-> > +			 * Just disable enhanced area off & sz
-> > +			 * will try to enable ERASE_GROUP_DEF
-> > +			 * during next time reinit
-> > +			 */
-> > +			card->ext_csd.enh_data_area_off = 0;
-> > +			card->ext_csd.enh_data_area_sz = 0;
-> > +		}
-> > +	}
-> > +
-> >  	if (!oldcard) {
-> >  		/*
-> >  		 * Fetch and process extended CSD.
-> > diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-> > index 8ce0827..e850a39 100644
-> > --- a/include/linux/mmc/card.h
-> > +++ b/include/linux/mmc/card.h
-> > @@ -54,6 +54,9 @@ struct mmc_ext_csd {
-> >  	unsigned int		sec_trim_mult;	/* Secure trim multiplier  */
-> >  	unsigned int		sec_erase_mult;	/* Secure erase multiplier */
-> >  	unsigned int		trim_timeout;		/* In milliseconds */
-> > +	unsigned int		enh_data_area_en; /* enh area enable bit */
-> > +	loff_t				enh_data_area_off; /* enh area offset */
-> > +	size_t				enh_data_area_sz; /* enh area size */
-> >  };
-> >
-> >  struct sd_scr {
-> > diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
-> > index 956fbd8..97ca016 100644
-> > --- a/include/linux/mmc/mmc.h
-> > +++ b/include/linux/mmc/mmc.h
-> > @@ -251,6 +251,8 @@ struct _mmc_csd {
-> >   * EXT_CSD fields
-> >   */
-> >
-> > +#define EXT_CSD_PARTITION_ATTRIBUTE 156	/* R/W */
-> > +#define EXT_CSD_PARTITION_SUPPORT	160	/* RO */
-> >  #define EXT_CSD_ERASE_GROUP_DEF		175	/* R/W */
-> >  #define EXT_CSD_ERASED_MEM_CONT		181	/* RO */
-> >  #define EXT_CSD_BUS_WIDTH		183	/* R/W */
-> > @@ -260,6 +262,7 @@ struct _mmc_csd {
-> >  #define EXT_CSD_CARD_TYPE		196	/* RO */
-> >  #define EXT_CSD_SEC_CNT			212	/* RO, 4 bytes */
-> >  #define EXT_CSD_S_A_TIMEOUT		217	/* RO */
-> > +#define EXT_CSD_HC_WP_GRP_SIZE		221	/* RO */
-> >  #define EXT_CSD_ERASE_TIMEOUT_MULT	223	/* RO */
-> >  #define EXT_CSD_HC_ERASE_GRP_SIZE	224	/* RO */
-> >  #define EXT_CSD_SEC_TRIM_MULT		229	/* RO */
-> 
-> Thanks,
-> 
-> - Chris.
-> --
-> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-> One Laptop Per Child
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/mm/migrate.c b/mm/migrate.c
+index b8a32da..e393841 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -623,7 +623,6 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+ 	struct page *newpage = get_new_page(page, private, &result);
+ 	int remap_swapcache = 1;
+ 	int rcu_locked = 0;
+-	int charge = 0;
+ 	struct mem_cgroup *mem = NULL;
+ 	struct anon_vma *anon_vma = NULL;
+ 
+@@ -662,12 +661,10 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+ 	}
+ 
+ 	/* charge against new page */
+-	charge = mem_cgroup_prepare_migration(page, newpage, &mem);
+-	if (charge == -ENOMEM) {
+-		rc = -ENOMEM;
++	rc = mem_cgroup_prepare_migration(page, newpage, &mem);
++	if (rc == -ENOMEM)
+ 		goto unlock;
+-	}
+-	BUG_ON(charge);
++	BUG_ON(rc);
+ 
+ 	if (PageWriteback(page)) {
+ 		if (!force || !sync)
+@@ -760,8 +757,7 @@ rcu_unlock:
+ 	if (rcu_locked)
+ 		rcu_read_unlock();
+ uncharge:
+-	if (!charge)
+-		mem_cgroup_end_migration(mem, page, newpage, rc == 0);
++	mem_cgroup_end_migration(mem, page, newpage, rc == 0);
+ unlock:
+ 	unlock_page(page);
+ 
+-- 
+1.7.0.4
+
