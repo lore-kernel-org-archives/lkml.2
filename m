@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932235Ab1AKOcx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 09:32:53 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38765 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756016Ab1AKOct (ORCPT
+	id S1756104Ab1AKOds (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 09:33:48 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:59047 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755788Ab1AKOdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 09:32:49 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=iYKNGsI3XE0JeguPi1veSEKd502RS0Cq4itVQP5TCI3C+cja/RhM6e14LwxnqzeKV+
-         T+TPPSMkcbL/Me6cmZ+6JJ+pHDMqHizUrZAfJga/F65lvOOn60XYxry61tk62AKw68X8
-         PWKD0+l6DL+NP/niNoJDrG0hLQP3mu7hlRseo=
-Date: Tue, 11 Jan 2011 15:32:44 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: WARNING: at kernel/workqueue.c [was: mmotm 2011-01-06-15-41
- uploaded]
-Message-ID: <20110111143244.GC30607@htj.dyndns.org>
-References: <201101070014.p070Egpo023959@imap1.linux-foundation.org>
- <4D2ADD43.2020702@gmail.com>
- <AANLkTin7h=R0cfzpeuvpTAGRFCsFocJezpW7Riz5Za4z@mail.gmail.com>
- <AANLkTimeUN9m-roDmsfaMaiD4wZw1wETYsf+dONjpmyj@mail.gmail.com>
+	Tue, 11 Jan 2011 09:33:43 -0500
+Date: Tue, 11 Jan 2011 15:33:37 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Rakesh Iyer <riyer@nvidia.com>
+Cc: "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>,
+        "jj@chaosbits.net" <jj@chaosbits.net>,
+        "tsoni@codeaurora.org" <tsoni@codeaurora.org>,
+        "shubhrajyoti@ti.com" <shubhrajyoti@ti.com>,
+        "ccross@android.com" <ccross@android.com>,
+        "konkers@android.com" <konkers@android.com>,
+        "olof@lixom.net" <olof@lixom.net>, Andrew Chew <AChew@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
+Subject: Re: [PATCH v3] input: tegra-kbc - Add tegra keyboard driver
+Message-ID: <20110111143337.GB22390@atrey.karlin.mff.cuni.cz>
+References: <1294422307-19107-1-git-send-email-riyer@nvidia.com> <20110110221624.GA16445@core.coreip.homeip.net> <1FC56210173BB445BD77F608D6FB8D03165A00805F@HQMAIL03.nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTimeUN9m-roDmsfaMaiD4wZw1wETYsf+dONjpmyj@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1FC56210173BB445BD77F608D6FB8D03165A00805F@HQMAIL03.nvidia.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 03:36:09PM -0800, Tony Luck wrote:
-> > Here it is, too.
-> > mmotm-01-06
-> 
-> Also in today's linux-next (tag: next-20110110) on ia64:
-> 
-> 
-> ------------[ cut here ]------------
-> WARNING: at kernel/workqueue.c:1202 worker_enter_idle+0x3f0/0x4a0()
-> Hardware name: server rx2620
-> Modules linked in:
-> 
-> Call Trace:
->  [<a000000100014cb0>] show_stack+0x50/0xa0
->                                 sp=e0000040600d7c30 bsp=e0000040600d0dd0
->  [<a000000100bcaa20>] dump_stack+0x30/0x50
->                                 sp=e0000040600d7e00 bsp=e0000040600d0db8
->  [<a000000100082260>] warn_slowpath_common+0xc0/0x100
->                                 sp=e0000040600d7e00 bsp=e0000040600d0d78
->  [<a0000001000822e0>] warn_slowpath_null+0x40/0x60
->                                 sp=e0000040600d7e00 bsp=e0000040600d0d50
->  [<a0000001000b0830>] worker_enter_idle+0x3f0/0x4a0
->                                 sp=e0000040600d7e00 bsp=e0000040600d0d28
->  [<a0000001000b2c80>] worker_thread+0x8c0/0x980
->                                 sp=e0000040600d7e00 bsp=e0000040600d0c28
->  [<a0000001000c08c0>] kthread+0x120/0x160
->                                 sp=e0000040600d7e00 bsp=e0000040600d0be8
->  [<a000000100012ef0>] kernel_thread_helper+0x30/0x60
->                                 sp=e0000040600d7e30 bsp=e0000040600d0bc0
->  [<a00000010000a0c0>] start_kernel_thread+0x20/0x40
->                                 sp=e0000040600d7e30 bsp=e0000040600d0bc0
-> ---[ end trace 7e2fb881ec0622f8 ]---
+Hi!
 
-Ah, of course, it's commit 21ec12364bb78b72ad36b94269c64b3ee31b038f
-(workqueue: remove noop condition check in worker_clr_flags()).  The
-condition it removes is not a noop.  Reverting it.
+> > > +	int fifo[KBC_MAX_KPENT];
+> > > +	const struct tegra_kbc_platform_data *pdata;
+> > > +	int *plain_keycode;
+> > > +	int *fn_keycode;
+> > 
+> > There should not be separate keycodes for FN and normal kys - FN is just
+> > a modifier, like SHIFT or CTRL or ALT are and shoudl be handled in upper
+> > layers.
+> 
+> We had the same thought regarding Function as a modifier akin to Shift, Ctrl an Alt.
+> But this does not appear to be the case. 
+> 
+> This keyboard is used primarily for Laptop-like form factors where function keys are used to overload the existing keys. 
+> In addition the Fn key mappings aren't identical in different keyboard layouts.
+> 
+> So at this point in order to function with the target hardware and
+> the target operating system which is Chrome, this modifier
+> keymap is necessary.
 
-Thank you.
+Please find a way to do this cleanly. Other machines (zaurus) have
+similar keyboards...
+									Pavel
 
 -- 
-tejun
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
