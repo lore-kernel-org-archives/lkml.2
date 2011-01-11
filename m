@@ -1,65 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524Ab1AKJhH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 04:37:07 -0500
-Received: from cantor.suse.de ([195.135.220.2]:57770 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753015Ab1AKJhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 04:37:03 -0500
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH] cpuidle: Make cpuidle_enable_device() call poll_idle_init()
-Date: Tue, 11 Jan 2011 10:37:00 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-18-desktop; KDE/4.5.3; x86_64; ; )
-Cc: Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <201101080029.20744.rjw@sisk.pl> <201101110102.22204.rjw@sisk.pl> <201101110105.54166.rjw@sisk.pl>
-In-Reply-To: <201101110105.54166.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101111037.00543.trenn@suse.de>
+	id S1755530Ab1AKJil (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 04:38:41 -0500
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:46743 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752971Ab1AKJif (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 04:38:35 -0500
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+CC: kamezawa.hiroyu@jp.fujitsu.com, miklos@szeredi.hu,
+        akpm@linux-foundation.org, minchan.kim@gmail.com,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, nishimura@mxp.nes.nec.co.jp
+In-reply-to: <20110111125330.e416cff5.nishimura@mxp.nes.nec.co.jp> (message
+	from Daisuke Nishimura on Tue, 11 Jan 2011 12:53:30 +0900)
+Subject: Re: [PATCH] mm: add replace_page_cache_page() function
+References: <E1PbGxV-0001ug-2r@pomaz-ex.szeredi.hu>
+	<20110111112949.57fd6fd7.kamezawa.hiroyu@jp.fujitsu.com> <20110111125330.e416cff5.nishimura@mxp.nes.nec.co.jp>
+Message-Id: <E1PcagC-0007Ge-40@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Tue, 11 Jan 2011 10:38:16 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 January 2011 01:05:53 Rafael J. Wysocki wrote:
-> On Tuesday, January 11, 2011, Rafael J. Wysocki wrote:
-> > On Tuesday, January 11, 2011, Len Brown wrote:
-> > > >  /**
-> > > >   * cpuidle_enable_device - enables idle PM for a CPU
-> > > >   * @dev: the CPU
-> > > > @@ -176,6 +215,8 @@ int cpuidle_enable_device(struct cpuidle
-> > > >  		ret = __cpuidle_register_device(dev);
-> > > >  		if (ret)
-> > > >  			return ret;
-> > > > +	} else {
-> > > > +		poll_idle_init(dev);
-> > > >  	}
-> > > 
-> > > how about calling poll_idle_init() unconditionally here
-> > > and deleting the call to it from within __cpuidle_register_device()?
+On Tue, 11 Jan 2011, Daisuke Nishimura wrote:
+> > What I recommend is below. (Please see the newest -mm because of a bug fix for
+> > mem cgroup) Considering page management on radix-tree, it can be considerd as
+> > a kind of page-migration, which replaces pages on radix-tree.
 > > 
-> > Fine by me, as long as poll_idle_init() is called before the conditional. :-)
+> > ==
+> > 
+> > > +int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
+> > > +{
+> > > +	int error;
+> > > +
+> > > +	VM_BUG_ON(!PageLocked(old));
+> > > +	VM_BUG_ON(!PageLocked(new));
+> > > +	VM_BUG_ON(new->mapping);
+> > > +
+> > 	struct mem_cgroup *memcg;
+> > 
+> I think it should be initialized to NULL.
 > 
-> In fact, it even doesn't need to be called before the conditional.
+> > 	error = mem_cgroup_prepare_migration(old, new, &memcg);
 > 
-> So fine by me anyway.
-What exactly was broken?
-Is it only sysfs values?
-Looks like an uninitialized "poll" state can cause cpuidle
-to not enter "poll" state when it should or enter "poll" when
-it should not.
-Hm, if cpuidle would try to call state[0]->enter,
-it might even segfault?
-Even not that many machines might be affected because most won't
-implement runtime C-state changes, shouldn't this still be
-submitted for stable@ kernels?
+> I want some comments like:
+> 
+> 	/*
+> 	 * This is not page migration, but prepare_migration and end_migration
+> 	 * does enough work for charge replacement.
+> 	 */
+> 
+> > 	#
+> > 	# This function will charge against "newpage". But this expects
+> > 	# the caller allows GFP_KERNEL gfp_mask. 
+> > 	# After this, the newpage is in "charged" state.
+> > 	if (error)
+> > 		return -ENOMEM;
+> > 
+> > > +	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
+> > > +	if (!error) {
+> > > +		struct address_space *mapping = old->mapping;
+> > > +		pgoff_t offset = old->index;
+> > > +
+> > > +		page_cache_get(new);
+> > > +		new->mapping = mapping;
+> > > +		new->index = offset;
+> > > +
+> > > +		spin_lock_irq(&mapping->tree_lock);
+> > > +		__remove_from_page_cache(old);
+> > > +		error = radix_tree_insert(&mapping->page_tree, offset, new);
+> > > +		BUG_ON(error);
+> > > +		mapping->nrpages++;
+> > > +		__inc_zone_page_state(new, NR_FILE_PAGES);
+> > > +		if (PageSwapBacked(new))
+> > > +			__inc_zone_page_state(new, NR_SHMEM);
+> > > +		spin_unlock_irq(&mapping->tree_lock);
+> > > +		radix_tree_preload_end();
+> > 
+> > > +		mem_cgroup_replace_cache_page(old, new); <== remove this.
+> > 
+> > 		mem_cgroup_end_migraton(memcg, old, new, true);
+> > 
+> > > +		page_cache_release(old);
+> > > +	} 
+> > 	else 
+> > 		mem_cgroup_end_migration(memcg, old, new, false);
+> > 
+> > 	# Here, if the 4th argument is true, old page is uncharged.
+> > 	# if the 4th argument is false, the new page is uncharged.
+> > 	# Then, "charge" of the old page will be migrated onto the new page
+> > 	# if replacement is done.
+> > 
+> > 
+> > 
+> > > +
+> > > +	return error;
+> > > +}
+> > > +EXPORT_SYMBOL_GPL(replace_page_cache_page);
+> > > +
+> > 
+> > ==
+> > 
+> > I think this is enough simple and this covers all memory cgroup's racy
+> > problems.
+> > 
+> I agree.
+
+Thanks for the comments.
+
+Yeah, using existing infrastructure is undoubtedly simpler and less
+prone to bugs.  So going with this for a first implementation might
+do.
+
+However, replace_page_cache_page() is meant to be very efficient,
+otherwise any performance won by not copying the page contents are
+lost to the cost of page replacement.  My guess is,
+mem_cgroup_prepare_migration()/end_migration() are to heavyweight for
+this.
 
 Thanks,
-
-    Thomas
+Miklos
