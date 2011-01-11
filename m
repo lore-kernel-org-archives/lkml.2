@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab1AKIYf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 03:24:35 -0500
-Received: from www.tglx.de ([62.245.132.106]:39383 "EHLO www.tglx.de"
+	id S1755418Ab1AKI12 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 03:27:28 -0500
+Received: from www.tglx.de ([62.245.132.106]:39436 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754435Ab1AKIY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 03:24:28 -0500
-Date: Tue, 11 Jan 2011 09:24:04 +0100 (CET)
+	id S1754363Ab1AKI1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 03:27:21 -0500
+Date: Tue, 11 Jan 2011 09:26:48 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 0/5][RT] [GIT PULL] rt: Port of Lai Jiangshan's rt
- patch
-In-Reply-To: <20110111035355.643480133@goodmis.org>
-Message-ID: <alpine.LFD.2.00.1101110923020.12146@localhost6.localdomain6>
-References: <20110111035355.643480133@goodmis.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        andi@firstfloor.org, johnstul@us.ibm.com, williams@redhat.com,
+        schwidefsky@de.ibm.com, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/tsc] x86: Improve TSC calibration using a delayed
+ workqueue
+In-Reply-To: <20110111081352.GA22867@shutemov.name>
+Message-ID: <alpine.LFD.2.00.1101110926040.12146@localhost6.localdomain6>
+References: <1289003985-29060-1-git-send-email-johnstul@us.ibm.com> <tip-08ec0c58fb8a05d3191d5cb6f5d6f81adb419798@git.kernel.org> <20110111081352.GA22867@shutemov.name>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -24,18 +25,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Jan 2011, Steven Rostedt wrote:
-> Thomas,
-> 
-> I finally got Lai's patch to a point that I'm happy with it.
-> The first 4 patches are clean ups to help in applying Lai's patch
-> at the end.
-> 
-> I've tested this patch series by running dbench 100 in a loop
-> and it crashes as much as mainline 2.6.33 does ;-) so I'm pretty
-> happy with it.
+On Tue, 11 Jan 2011, Kirill A. Shutemov wrote:
 
-Crashes in what way? I'm not so happy about stuff which crashes :)
+> On Sun, Dec 05, 2010 at 11:18:53AM +0000, tip-bot for John Stultz wrote:
+> > Commit-ID:  08ec0c58fb8a05d3191d5cb6f5d6f81adb419798
+> > Gitweb:     http://git.kernel.org/tip/08ec0c58fb8a05d3191d5cb6f5d6f81adb419798
+> > Author:     John Stultz <johnstul@us.ibm.com>
+> > AuthorDate: Tue, 27 Jul 2010 17:00:00 -0700
+> > Committer:  John Stultz <john.stultz@linaro.org>
+> > CommitDate: Thu, 2 Dec 2010 16:48:37 -0800
+> > 
+> > x86: Improve TSC calibration using a delayed workqueue
+> 
+> This commit breaks booting the kernel in qemu with enabled KVM on my machine.
+> .config attached.
+> 
+> [    0.424013] divide error: 0000 [#1] 
+
+Got fixed by a8760ec (x86: Check tsc available/disabled in the delayed
+init function)
 
 Thanks,
 
