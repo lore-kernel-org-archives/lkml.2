@@ -1,37 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab1AKIAg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 03:00:36 -0500
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:47434 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753674Ab1AKIAa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 03:00:30 -0500
-Date: Tue, 11 Jan 2011 03:00:26 -0500 (EST)
-From: CAI Qian <caiqian@redhat.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-next <linux-next@vger.kernel.org>
-Message-ID: <1197944404.42526.1294732826847.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <704975885.41077.1294719050536.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-Subject: Re: bnx2 card cannot be detected (WAS Re: mmotm 2011-01-06-15-41
- uploaded)
+	id S1754404Ab1AKIHm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 03:07:42 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:48777 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752293Ab1AKIHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 03:07:36 -0500
+From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
+To: "Arnd Bergmann" <arnd@arndb.de>, <linux-arch@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] asm-generic headers: add arch-specific __strnlen_user calling in uaccess.h
+Date: Tue, 11 Jan 2011 16:07:27 +0800
+Message-ID: <008801cbb166$96cd0430$c4670c90$@mprc.pku.edu.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.5.72]
-X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AcuxZnPa0VBA8k7HRZm0eyNMm3Ehzg==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 
-> This was introduced again by this big patch,
-> linux-next.patch
-> 
-> GIT 47ec85165ad275a2ca62c4aca4bf029e9ffd6af0
-> git+ssh://master.kernel.org/pub/scmm
-> /linux/kernel/git/sfr/linux-next.git
-Tested in the linux-next tree, and the problem went away with 2.6.37-next-20110111.
+	This patch changes the implementation of strnlen_user in include/asm-generic/uaccess.h.
+	Originally, it calls strlen() function directly, which may not correctly handle the access of
+	user space in most mmu-enabled architectures.
+	New __strnlen_user is added for using as an architecture specific function.
 
-CAI Qian
+Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+---
+ include/asm-generic/uaccess.h |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/include/asm-generic/uaccess.h b/include/asm-generic/uaccess.h
+index b218b85..ac68c99 100644
+--- a/include/asm-generic/uaccess.h
++++ b/include/asm-generic/uaccess.h
+@@ -288,14 +288,16 @@ strncpy_from_user(char *dst, const char __user *src, long count)
+  *
+  * Return 0 on exception, a value greater than N if too long
+  */
+-#ifndef strnlen_user
++#ifndef __strnlen_user
++#define __strnlen_user strnlen
++#endif
++
+ static inline long strnlen_user(const char __user *src, long n)
+ {
+ 	if (!access_ok(VERIFY_READ, src, 1))
+ 		return 0;
+-	return strlen((void * __force)src) + 1;
++	return __strnlen_user(src, n);
+ }
+-#endif
+ 
+ static inline long strlen_user(const char __user *src)
+ {
+
+
