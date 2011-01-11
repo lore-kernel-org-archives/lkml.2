@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347Ab1AKDlp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 22:41:45 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:50373 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755300Ab1AKDli (ORCPT
+	id S1755338Ab1AKDon (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 22:44:43 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:52882 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754580Ab1AKDoh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 22:41:38 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [PATCH] drivers: char: hvc: add Blackfin JTAG console support
-Date: Tue, 11 Jan 2011 04:41:33 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.5.1; x86_64; ; )
-Cc: linux-serial@vger.kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-References: <1294713837-4929-1-git-send-email-vapier@gentoo.org> <AANLkTinnuxvx9+eNvCqjK2GW2XQPn4LjK4WfMj=f20Xw@mail.gmail.com>
-In-Reply-To: <AANLkTinnuxvx9+eNvCqjK2GW2XQPn4LjK4WfMj=f20Xw@mail.gmail.com>
+	Mon, 10 Jan 2011 22:44:37 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEABtgK015LcNW/2dsb2JhbACkNnS7RYVMBJA0
+Date: Tue, 11 Jan 2011 14:44:34 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch 8/8] fs: add i_op->sync_inode
+Message-ID: <20110111034434.GB5271@amd>
+References: <20101229151246.GA22033@infradead.org>
+ <20110104062725.GD3402@amd>
+ <20110104065736.GA8013@infradead.org>
+ <20110104080323.GC4090@amd>
+ <20110104083132.GA4485@amd>
+ <20110104092541.GC2760@infradead.org>
+ <20110104095231.GB4812@amd>
+ <20110106204911.GB2872@infradead.org>
+ <20110107044836.GB4552@amd>
+ <20110107072510.GB32308@infradead.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101110441.33841.arnd@arndb.de>
-X-Provags-ID: V02:K0:g0PPb7s+Aszcu+dmXomgRxrCC8w5rqkDDr1G/rBoIPc
- +fRfSIIY0b2QjjggNPjP57HNpV0tNAiXDZ4nUoWdJgpTQHU+MI
- WkpFtkVtWyyeBGpsAOmctRL1xGUTrIj9dpzadM8c+S3IlkkWqJ
- RAh3bOmGKlYVb/V/JTx4Q4VkvlXP8hIWIN/fQzjUFKLIGL1Uae
- 100/aYXfvvuW/CwTUSPeQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110107072510.GB32308@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 January 2011, Mike Frysinger wrote:
-> throughput seems to be a bit lower.  the Blackfin JTAG hardware has
-> basically a 4 byte fifo that is filled/consumed in a single shot.  and
-> the Blackfin can produce much faster than the host can consume.  so
-> atm, i have it send out 4 bytes, and the hvc layers take care of
-> calling back into me at some point.  if i add a busy loop to run a few
-> hundred milliseconds (like HZ/4), it runs much nicer.  but obviously
-> doesnt give anyone else time to run.  i cant schedule or anything as
-> the write layers are called with a spin_lock_irqsave.  any tips for
-> how to speed this up a bit ?  or is it a wash with hvc ?
+On Fri, Jan 07, 2011 at 02:25:10AM -0500, Christoph Hellwig wrote:
+> On Fri, Jan 07, 2011 at 03:48:36PM +1100, Nick Piggin wrote:
+> > OK, I don't exactly see why a sync_inode with appropriate flag could
+> > not solve that problem. I'll take a bit more look through nfs and
+> > xfs. Thanks...
+> 
+> We could also overload all inode operations into a single ioctl like
+> method, but that doesn't make it a good design.
 
-You could try lowering the hvc MIN_TIMEOUT value. If you want to
-change it for blackfin, you could probably make it a configuration
-option. However, if it really takes a few milliseconds that you need
-to wait between two accesses, MIN_TIMEOUT should already be small
-enough.
+I've been a bit busy lately and haven't had time to continue this
+discussion. Thanks for your input so far, and I'll get back to it soon.
 
-You should really not need to sleep in your output function, as
-the khvcd() timeout logic tries handling this in the best way.
-There may be a bug in that logic though (wouldn't be the first one
-there), so try to see what the timeouts are when you get into 
-this problem.
+I will try to get out a set of changes for current merge window that
+fix the bulk of the problems without going into areas you disagree
+with, and then we can have a smaller set of changes we to agree on for
+next merge window. I will come back and reply to your points when I
+get a bit more time.
 
-	Arnd
+
