@@ -1,143 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756326Ab1AKWrD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 17:47:03 -0500
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:15114 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087Ab1AKWrB (ORCPT
+	id S932492Ab1AKWrY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 17:47:24 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:52695 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756357Ab1AKWrW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 17:47:01 -0500
-Subject: [PATCH] hpsa: do not re-order commands in internal queues
-To: james.bottomley@hansenpartnership.com
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: linux-scsi@vger.kernel.org, mike.miller@hp.com,
-        linux-kernel@vger.kernel.org, thenzl@redhat.com,
-        akpm@linux-foundation.org, smcameron@yahoo.com
-Date: Tue, 11 Jan 2011 16:46:58 -0600
-Message-ID: <20110111224658.24457.62925.stgit@beardog.cce.hp.com>
-User-Agent: StGit/0.15
+	Tue, 11 Jan 2011 17:47:22 -0500
+Date: Tue, 11 Jan 2011 23:48:09 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Mike Waychison <mikew@google.com>
+Cc: "mingo@elte.hu" <mingo@elte.hu>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Duncan Laurie <dlaurie@google.com>
+Subject: Re: [PATCH] x86: Add an option to disable decoding of MCE
+Message-ID: <20110111224809.GA20839@aftab>
+References: <43835.148.87.67.136.1294700112.squirrel@xenotime.net>
+ <1294700597-24239-1-git-send-email-mikew@google.com>
+ <20110111065540.GA16036@aftab>
+ <AANLkTimXfUH-PYpdRcLR4+QkG7uOzYzSC6VZ6HnkB9jE@mail.gmail.com>
+ <20110111204909.GE17619@aftab>
+ <AANLkTimQNnxnoFPWjh6cHp_x9ZayDdcXdV+qbee8XK_r@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimQNnxnoFPWjh6cHp_x9ZayDdcXdV+qbee8XK_r@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+On Tue, Jan 11, 2011 at 04:51:57PM -0500, Mike Waychison wrote:
+> On Tue, Jan 11, 2011 at 12:49 PM, Borislav Petkov <bp@amd64.org> wrote:
+> > Ok, let me preface this with an even easier suggestion: Can you simply
+> > not compile EDAC (which includes CONFIG_EDAC_DECODE_MCE) in your kernels
+> > and the whole issue with decoding disappears simply because no module
+> > registers as a decoder...?
+> 
+> The trouble here is that default_decode_mce() is still getting called
+> no matter what :(  It didn't really cause problems until you added
+> atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, &m) to
+> machine_check_poll().
 
-Driver's internal queues should be FIFO, not LIFO.
-This is a port of an almost identical patch to cciss by Jens Axboe.
+Yeah, I figured as much... after hitting send :(. Feel free to add my
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
----
- 0 files changed, 0 insertions(+), 0 deletions(-)
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 959eeb2..8404ed2 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -314,9 +314,9 @@ static ssize_t host_show_commands_outstanding(struct device *dev,
- }
- 
- /* Enqueuing and dequeuing functions for cmdlists. */
--static inline void addQ(struct hlist_head *list, struct CommandList *c)
-+static inline void addQ(struct list_head *list, struct CommandList *c)
- {
--	hlist_add_head(&c->list, list);
-+	list_add_tail(&c->list, list);
- }
- 
- static inline u32 next_command(struct ctlr_info *h)
-@@ -366,9 +366,9 @@ static void enqueue_cmd_and_start_io(struct ctlr_info *h,
- 
- static inline void removeQ(struct CommandList *c)
- {
--	if (WARN_ON(hlist_unhashed(&c->list)))
-+	if (WARN_ON(list_empty(&c->list)))
- 		return;
--	hlist_del_init(&c->list);
-+	list_del_init(&c->list);
- }
- 
- static inline int is_hba_lunid(unsigned char scsi3addr[])
-@@ -2228,7 +2228,7 @@ static struct CommandList *cmd_alloc(struct ctlr_info *h)
- 
- 	c->cmdindex = i;
- 
--	INIT_HLIST_NODE(&c->list);
-+	INIT_LIST_HEAD(&c->list);
- 	c->busaddr = (u32) cmd_dma_handle;
- 	temp64.val = (u64) err_dma_handle;
- 	c->ErrDesc.Addr.lower = temp64.val32.lower;
-@@ -2266,7 +2266,7 @@ static struct CommandList *cmd_special_alloc(struct ctlr_info *h)
- 	}
- 	memset(c->err_info, 0, sizeof(*c->err_info));
- 
--	INIT_HLIST_NODE(&c->list);
-+	INIT_LIST_HEAD(&c->list);
- 	c->busaddr = (u32) cmd_dma_handle;
- 	temp64.val = (u64) err_dma_handle;
- 	c->ErrDesc.Addr.lower = temp64.val32.lower;
-@@ -2837,8 +2837,8 @@ static void start_io(struct ctlr_info *h)
- {
- 	struct CommandList *c;
- 
--	while (!hlist_empty(&h->reqQ)) {
--		c = hlist_entry(h->reqQ.first, struct CommandList, list);
-+	while (!list_empty(&h->reqQ)) {
-+		c = list_entry(h->reqQ.first, struct CommandList, list);
- 		/* can't do anything if fifo is full */
- 		if ((h->access.fifo_full(h))) {
- 			dev_warn(&h->pdev->dev, "fifo full\n");
-@@ -2929,10 +2929,9 @@ static inline u32 process_nonindexed_cmd(struct ctlr_info *h,
- {
- 	u32 tag;
- 	struct CommandList *c = NULL;
--	struct hlist_node *tmp;
- 
- 	tag = hpsa_tag_discard_error_bits(raw_tag);
--	hlist_for_each_entry(c, tmp, &h->cmpQ, list) {
-+	list_for_each_entry(c, &h->cmpQ, list) {
- 		if ((c->busaddr & 0xFFFFFFE0) == (tag & 0xFFFFFFE0)) {
- 			finish_cmd(c, raw_tag);
- 			return next_command(h);
-@@ -3761,8 +3760,8 @@ static int __devinit hpsa_init_one(struct pci_dev *pdev,
- 
- 	h->pdev = pdev;
- 	h->busy_initializing = 1;
--	INIT_HLIST_HEAD(&h->cmpQ);
--	INIT_HLIST_HEAD(&h->reqQ);
-+	INIT_LIST_HEAD(&h->cmpQ);
-+	INIT_LIST_HEAD(&h->reqQ);
- 	spin_lock_init(&h->lock);
- 	spin_lock_init(&h->scan_lock);
- 	rc = hpsa_pci_init(h);
-diff --git a/drivers/scsi/hpsa.h b/drivers/scsi/hpsa.h
-index 074d237..e898193 100644
---- a/drivers/scsi/hpsa.h
-+++ b/drivers/scsi/hpsa.h
-@@ -75,8 +75,8 @@ struct ctlr_info {
- 	struct access_method access;
- 
- 	/* queue and queue Info */
--	struct hlist_head reqQ;
--	struct hlist_head cmpQ;
-+	struct list_head reqQ;
-+	struct list_head cmpQ;
- 	unsigned int Qdepth;
- 	unsigned int maxQsinceinit;
- 	unsigned int maxSG;
-diff --git a/drivers/scsi/hpsa_cmd.h b/drivers/scsi/hpsa_cmd.h
-index 7910c14..785abdd 100644
---- a/drivers/scsi/hpsa_cmd.h
-+++ b/drivers/scsi/hpsa_cmd.h
-@@ -292,7 +292,7 @@ struct CommandList {
- 	struct ctlr_info	   *h;
- 	int			   cmd_type;
- 	long			   cmdindex;
--	struct hlist_node list;
-+	struct list_head list;
- 	struct request *rq;
- 	struct completion *waiting;
- 	void   *scsi_cmd;
+to your patch.
 
+> > Right, and this means that you need to know all the memory controller
+> > topologies of all the different architectures and also the SPD accessing
+> > based on a board type could be a pain. One of the main reasons for
+> > fleshing out MCE decoding in the kernel was to avoid needless trouble
+> > like that.
+> 
+> It's not that painful for us.  Our firmware guys own this userland
+> code :)  I can see it being a pain for others however.
+
+Yeah, what we actually need is a chipset-agnostic way (ACPI maybe?)
+of mapping chip selects to the actual DIMMs so all that above can be
+avoided...
+
+> Doing this all in userland does have it's upsides as well fwiw. For
+> example, MC4 is usually kept around across a reset, which means
+> that the firmware can pick it up when the system goes down due to a
+> processor context corruption.
+
+True, although not always reliable due to that context corruption. Tony
+Luck is adding code for writing the error information to a persistent
+storage _before_ you reset so on platforms with such a device you'll
+be able to look at MC4 (or any of the MCE regs, for that matter) after
+reset, which, I think, would make error analysis much more convenient.
+See http://marc.info/?l=linux-arch&m=129356804427008&w=2.
+
+> We rely on these libraries as well to decode egregious uncorrectable
+> memory errors as well as bus errors (like hypertransport sync floods).
+
+Yeah, I don't think error decoding would help, at least on AMD, with
+uncorrectable errors causing syncflood. We might do something about it
+though :).
+
+> > I've
+> > heard similar troubles reported by other big server farm people and
+> > what I'm currently working on is a RAS daemon that hooks into perf thus
+> > enabling persistent performance events. This way, you could open a
+> > debugfs file (this'll move to sysfs someday) and read the same decoded
+> > data by mmaping the perf ringbuffer.
+> 
+> I'll definitely keep an eye out for your developments with RAS :)
+
+Cool, I think I have the bulk of your requirements now, from your and
+Duncan's mails. I'm always open for other suggestions too.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
