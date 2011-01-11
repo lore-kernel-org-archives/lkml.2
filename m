@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755680Ab1AKUwi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 15:52:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42702 "EHLO mx2.suse.de"
+	id S932094Ab1AKUxM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 15:53:12 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:52947 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754673Ab1AKUwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 15:52:35 -0500
-Date: Tue, 11 Jan 2011 21:52:33 +0100
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
-Subject: [PULL REQUEST] UDF tree
-Message-ID: <20110111205233.GC4501@quack.suse.cz>
+	id S1753995Ab1AKUxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 15:53:09 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH] cpuidle: Make cpuidle_enable_device() call poll_idle_init()
+Date: Tue, 11 Jan 2011 21:52:19 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37+; KDE/4.4.4; x86_64; ; )
+Cc: Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <201101080029.20744.rjw@sisk.pl> <201101110105.54166.rjw@sisk.pl> <201101111037.00543.trenn@suse.de>
+In-Reply-To: <201101111037.00543.trenn@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101112152.19642.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello Linus,
+On Tuesday, January 11, 2011, Thomas Renninger wrote:
+> On Tuesday 11 January 2011 01:05:53 Rafael J. Wysocki wrote:
+> > On Tuesday, January 11, 2011, Rafael J. Wysocki wrote:
+> > > On Tuesday, January 11, 2011, Len Brown wrote:
+> > > > >  /**
+> > > > >   * cpuidle_enable_device - enables idle PM for a CPU
+> > > > >   * @dev: the CPU
+> > > > > @@ -176,6 +215,8 @@ int cpuidle_enable_device(struct cpuidle
+> > > > >  		ret = __cpuidle_register_device(dev);
+> > > > >  		if (ret)
+> > > > >  			return ret;
+> > > > > +	} else {
+> > > > > +		poll_idle_init(dev);
+> > > > >  	}
+> > > > 
+> > > > how about calling poll_idle_init() unconditionally here
+> > > > and deleting the call to it from within __cpuidle_register_device()?
+> > > 
+> > > Fine by me, as long as poll_idle_init() is called before the conditional. :-)
+> > 
+> > In fact, it even doesn't need to be called before the conditional.
+> > 
+> > So fine by me anyway.
+> What exactly was broken?
+> Is it only sysfs values?
 
-  could you please pull from
+Not only that, the entire state[0] was busted.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-udf-2.6.git for_linus
+> Looks like an uninitialized "poll" state can cause cpuidle
+> to not enter "poll" state when it should or enter "poll" when
+> it should not.
+> Hm, if cpuidle would try to call state[0]->enter,
+> it might even segfault?
 
-The largest portion of patches is BKL removal from UDF. Also there is a fix
-for a long standing directory corruption bug which I've hit while testing
-BKL removal patches.
+Yes, in theory.
 
-The full shortlog is:
+> Even not that many machines might be affected because most won't
+> implement runtime C-state changes, shouldn't this still be
+> submitted for stable@ kernels?
 
-Alessio Igor Bogani (3):
-      udf: Replace bkl with the UDF_I(inode)->i_data_sem for protect udf_inode_info struct
-      udf: Use of s_alloc_mutex to serialize udf_relocate_blocks() execution
-      udf: Remove unnecessary bkl usages
+I think it should.
 
-Jan Kara (10):
-      udf: Convert UDF_SB(sb)->s_flags to use bitops
-      udf: Remove BKL from udf_update_inode
-      udf: Move handling of uniqueID into a helper function and protect it by a s_alloc_mutex
-      udf: Protect all modifications of LVID with s_alloc_mutex
-      udf: Protect default inode credentials by rwlock
-      udf: Remove BKL from udf_put_super() and udf_remount_fs()
-      udf: Call udf_add_free_space() for more blocks at once in udf_free_blocks()
-      udf: Remove BKL from free space counting functions
-      udf: Protect udf_file_aio_write from possible races
-      udf: Fix directory corruption after extent merging
-
-Jesper Juhl (1):
-      UDF: Close small mem leak in udf_find_entry()
-
-Joe Perches (2):
-      fs/udf: Use vzalloc
-      fs/udf: Add printf format/argument verification
-
-The diffstat is
-
- fs/udf/balloc.c    |    3 +-
- fs/udf/dir.c       |    5 --
- fs/udf/file.c      |   11 ++---
- fs/udf/ialloc.c    |   21 +++-------
- fs/udf/inode.c     |   51 +++++++++++--------------
- fs/udf/namei.c     |  107 ++++++++++++++--------------------------------------
- fs/udf/partition.c |   27 +++++++++----
- fs/udf/super.c     |   67 ++++++++++++++++++++-------------
- fs/udf/symlink.c   |   12 +++--
- fs/udf/udf_i.h     |   13 ++++++
- fs/udf/udf_sb.h    |   22 +++++++++--
- fs/udf/udfdecl.h   |    4 +-
- 12 files changed, 164 insertions(+), 179 deletions(-)
-
-							Thanks
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Thanks,
+Rafael
