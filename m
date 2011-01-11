@@ -1,157 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755381Ab1AKIt5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 03:49:57 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39897 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035Ab1AKItu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 03:49:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=hItr7TPvlkh9tiquEK6rAhXRrfpTaXH4wGhe+GduCZpTTVjnzofguXkl9oTzlRwheP
-         wFZsBjEVmYBE43RXwcUFu2B5+P4wNufehQ/wDAXchSQ2NmDK4UlBJ9n8+i7hU1AyiGzO
-         SledOdlfug0nu9/0RJxIezhESBjSjL3+aePMY=
-Date: Tue, 11 Jan 2011 17:49:36 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [PATCH] memcg: remove charge variable in unmap_and_move
-Message-ID: <20110111084936.GD2113@barrios-desktop>
-References: <1294725650-4732-1-git-send-email-minchan.kim@gmail.com>
- <20110111153513.1c09fa21.nishimura@mxp.nes.nec.co.jp>
+	id S1755448Ab1AKIvN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 03:51:13 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:49930 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751035Ab1AKIvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 03:51:03 -0500
+From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
+To: "'Arnd Bergmann'" <arnd@arndb.de>, "'David Howells'" <dhowells@redhat.com>
+Cc: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <024501cbaf37$4e479fd0$ead6df70$@mprc.pku.edu.cn> <201101090128.25371.arnd@arndb.de> <005201cbb0ce$65e725f0$31b571d0$@mprc.pku.edu.cn> <201101110540.48489.arnd@arndb.de>
+In-Reply-To: <201101110540.48489.arnd@arndb.de>
+Subject: RE: [PATCH] asm-generic headers: modify stat.h in include/asm-generic to be applicable to more architectures
+Date: Tue, 11 Jan 2011 16:50:48 +0800
+Message-ID: <00b201cbb16c$a57f7890$f07e69b0$@mprc.pku.edu.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110111153513.1c09fa21.nishimura@mxp.nes.nec.co.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQHcrptIjxS/TXKdAV/Q702tjnnsngH7oe//A0DIO/IBwNkAUJNxkXtA
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 03:35:13PM +0900, Daisuke Nishimura wrote:
-> Hi,
-> 
-> On Tue, 11 Jan 2011 15:00:50 +0900
-> Minchan Kim <minchan.kim@gmail.com> wrote:
-> 
-> > memcg charge/uncharge could be handled by mem_cgroup_[prepare/end]
-> > migration itself so charge local variable in unmap_and_move lost the role
-> > since we introduced 01b1ae63c2.
-> > 
-> > In addition, the variable name is not good like below.
-> > 
-> > int unmap_and_move()
-> > {
-> > 	charge = mem_cgroup_prepare_migration(xxx);
-> > 	..
-> > 		BUG_ON(charge); <-- BUG if it is charged?
-> > 		..
-> > 		uncharge:
-> > 		if (!charge)    <-- why do we have to uncharge !charge?
-> > 			mem_group_end_migration(xxx);
-> > 	..
-> > }
-> > 
-> > So let's remove unnecessary and confusing variable.
-> > 
-> > Suggested-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> > Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> > Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
-> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> >  mm/migrate.c |   12 ++++--------
-> >  1 files changed, 4 insertions(+), 8 deletions(-)
-> > 
-> > diff --git a/mm/migrate.c b/mm/migrate.c
-> > index b8a32da..e393841 100644
-> > --- a/mm/migrate.c
-> > +++ b/mm/migrate.c
-> > @@ -623,7 +623,6 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
-> >  	struct page *newpage = get_new_page(page, private, &result);
-> >  	int remap_swapcache = 1;
-> >  	int rcu_locked = 0;
-> > -	int charge = 0;
-> >  	struct mem_cgroup *mem = NULL;
-> >  	struct anon_vma *anon_vma = NULL;
-> >  
-> > @@ -662,12 +661,10 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
-> >  	}
-> >  
-> >  	/* charge against new page */
-> > -	charge = mem_cgroup_prepare_migration(page, newpage, &mem);
-> > -	if (charge == -ENOMEM) {
-> > -		rc = -ENOMEM;
-> > +	rc = mem_cgroup_prepare_migration(page, newpage, &mem);
-> > +	if (rc == -ENOMEM)
-> >  		goto unlock;
-> > -	}
-> > -	BUG_ON(charge);
-> > +	BUG_ON(rc);
-> >  
-> >  	if (PageWriteback(page)) {
-> >  		if (!force || !sync)
-> > @@ -760,8 +757,7 @@ rcu_unlock:
-> >  	if (rcu_locked)
-> >  		rcu_read_unlock();
-> >  uncharge:
-> > -	if (!charge)
-> > -		mem_cgroup_end_migration(mem, page, newpage, rc == 0);
-> > +	mem_cgroup_end_migration(mem, page, newpage, rc == 0);
-> >  unlock:
-> >  	unlock_page(page);
-> >  
-> I proposed pseud code like above, but it's wrong unfortunately.
-> If mem_cgroup_prepare_migration() has succeeded, rc is overwritten to 0.
-> So even if we failed before calling move_to_new_page(), rc is 0 and
-> mem_cgroup_end_migration() mis-understand this migration has succeeded.
 
-Right. I missed it.
-Thanks for the review.
-
+> -----Original Message-----
+> From: Arnd Bergmann [mailto:arnd@arndb.de]
+> Sent: Tuesday, January 11, 2011 12:41 PM
+> To: Guan Xuetao; David Howells
+> Cc: linux-arch@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] asm-generic headers: modify stat.h in include/asm-generic to be applicable to more architectures
 > 
-> And, it seems to be just a bit off-topic, the place of the comment
-> "prepare cgroup just returns 0 or -ENOMEM" isn't good, seeing the commit e8589cc1,
-> which introduced the comment first.
+> On Monday 10 January 2011, Guan Xuetao wrote:
+> > IMO, asm-generic headers should be used in more architectures as far as possible.
 > 
-> So, we should do like:
+> They serve two purposes:
 > 
-> 	/* charge against new page */
-> 	if (mem_cgroup_end_migration(page, &newpage, &mem)) {
-> 		/* prepare_migration just returns 0 or -ENOMEM */
-> 		rc = -ENOMEM;
-> 		goto unlock;
-> 	}
-
-Hmm.. I don't think so. The comment should be in there which is initialized the
-variable but comment is confusing. So instead of moving, I will fix the comment.
-
-
+> 1. To be used by other architectures (with or without being modified by arch
+>    specific defines)
+> 2. As an example implementation to read by people understanding the kernel or
+>    porting to a new architecture.
 > 
-> 	if (PageWriteback(page)) {
-> 		...
+> Your patch helps the first cause, but it's counterproductive for the second.
 > 
-> uncharge:
-> 	mem_cgroup_end_migration(mem, page, newpage, rc == 0);
+> Also, if we wanted to make all these headers fully generic, we would no longer
+> need an asm-generic directory for the first use case, because then everything
+> in them could be put into the include/linux/*.h headers directly. This has
+> happened for a number of files in the past, but it's impractical for others.
 > 
-> or, overwrite rc to -EAGAIN again.
-> I don't stick to checking "BUG_ON(charge)" personally.
-
-I agree. BUG_ON is meaningless.
-I will resend the patch.
-
-Thanks. :)
-
+> > The patch of stat.h could be split into two parts to discuss.
+> > Firstly,  STAT64_HAS_BROKEN_ST_INO is defined in most architecture's asm/stat.h,
+> > and it should be considered as the part in asm-generic/stat.h.
 > 
+> This one is purely historical. The definition of st_ino was too short
+> initially, so the field was kept in place by renamed to __st_ino
+> instead. The __st_ino should however never be used by any application
+> you compile now, only by the kernel in order to remain compatible with
+> existing application binaries. No new architecture should need to see
+> this, because there are no preexisting binaries that use this field.
 > 
-> Thanks,
-> Daisuke Nishimura.
+> I intentionally left out all the backwards-compatibility fields from
+> the asm-generic headers that I wrote.
+> 
+> > Secondly, STAT64_PAD_BEFORE_* are misunderstanding definitions, and perhaps
+> > it should use STAT64_ST_SIZE_NEED_ALIGN_64.
+> 
+> It's much more complicated ;-)
+> 
+> The padding after st_rdev is usually from glibc trying to reserve a large
+> amount of space for future extensions of rdev. Padding around st_blocks
+> and st_size is usually for making it possible to extend those values
+> to full 64 bit when they are not already, but some architectures use
+> the padding just to provide natural alignment of the words.
+> 
+> Almost every architecture has a slightly different definition of
+> stat64, and most of them got at least one aspect slightly wrong.
+> 
+> The mistake that I made in the asm-generic version was that it uses 32 bit
+> st_*time, which should really be 64 bit in order to avoid the year 2038
+> overflow bug.
+> 
+> > Indeed, the macros are used for compatibility, but most architectures could make full use of
+> > asm-generic headers, and new architectures could just follow the default values.
+> 
+> I totally agree with the idea in generical (for other headers), but in case of the
+> stat.h file, it always gets more complicated than you think at first.
+> David Howells worked on a new 'struct xstat' for some time, if anything we should
+> just do that and keep struct stat hidden in the dark corners of the kernel.
+> 
+> 	Arnd
 
--- 
-Kind regards,
-Minchan Kim
+Ok, I see.
+Thanks.
+
+Guan Xuetao
+
