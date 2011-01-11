@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756082Ab1AKOK6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 09:10:58 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:45043 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755469Ab1AKOK4 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:5:1>);
-	Tue, 11 Jan 2011 09:10:56 -0500
-Message-Id: <4D2C72FA020000780002BB58@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Tue, 11 Jan 2011 14:10:50 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Ian Campbell" <Ian.Campbell@eu.citrix.com>
-Cc: "Stefano Stabellini" <Stefano.Stabellini@eu.citrix.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen: use PCI interfaces to request IO
-	 and MEM resources on platform device.
-References: <1294746628-20396-1-git-send-email-ian.campbell@citrix.com>
- <4D2C5FA5020000780002BB21@vpn.id2.novell.com>
- <1294750884.3831.5866.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1294750884.3831.5866.camel@zakaz.uk.xensource.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1756078Ab1AKONO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 09:13:14 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:36062 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754144Ab1AKONL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 09:13:11 -0500
+Date: Tue, 11 Jan 2011 15:13:59 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: "James C. Georgas" <james.georgas@yahoo.ca>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
+Subject: Re: can't resume from ACPI S3 with TICK_ONESHOT
+Message-ID: <20110111141359.GD17619@aftab>
+References: <1294191939.3889.49.camel@Tachyon>
+ <20110105120959.GB4927@kryptos.osrc.amd.com>
+ <1294242385.3650.38.camel@Tachyon>
+ <20110107111658.GE16507@aftab>
+ <1294420550.17472.1.camel@Tachyon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1294420550.17472.1.camel@Tachyon>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 11.01.11 at 14:01, Ian Campbell <Ian.Campbell@eu.citrix.com> wrote:
-> The old way was correct circa 2.6.37-rc5 but broken in 2.6.37 final,
-> there were a bunch of (reverts of) PCI resource changes in that window,
-> If I had to make a guess I'd say it was something in there which did it.
-
-Was it perhaps broken somewhere between -rc5 and -final, but
-not in -final itself?
-
->> I'm mainly asking because if it really addresses some problem,
->> then unmodified_drivers/linux-2.6/platform-pci/platform-pci.c
->> in -unstable should probably get updated too.
+On Fri, Jan 07, 2011 at 12:15:50PM -0500, James C. Georgas wrote:
+> On Fri, 2011-01-07 at 12:16 +0100, Borislav Petkov wrote:
+> > On Wed, Jan 05, 2011 at 10:46:25AM -0500, James C. Georgas wrote:
+> > > Let me know if you need more.
+> > 
+> > Yeah, what does
+> > 
+> > xxd /sys/firmware/acpi/tables/HPET
+> > 
+> > say?
+> > 
 > 
-> Assuming the pci_* interfaces exist back as far as we care about for
-> those drivers then I don't see why not to apply it.
+> Tachyon james # xxd /sys/firmware/acpi/tables/HPET
+> 0000000: 4850 4554 3800 0000 012a 5054 4c54 4420  HPET8....*PTLTD 
+> 0000010: 4850 4554 5442 4c20 0000 0406 204c 5450  HPETTBL .... LTP
+> 0000020: 0100 0000 1082 5343 0000 0000 0000 d0fe  ......SC........
+> 0000030: 0000 0000 0080 0000                      ........
+> Tachyon james # 
 
-I checked back to .5, where they exist; the question is - how far
-back do we care?
+Ok, I don't see anything irregular here. Can you try booting the
+original tickless (NO_HZ) configuration without the "nohpet" boot option
+and wait >= 5 mins after resume to see whether your machine comes to
+life afterall. The 5min means we want to wait until the 32-bit HPET
+counter overflows to see whether the timer gets programmed with an event
+in the past right after resume.
 
-Jan
+Thanks.
 
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
