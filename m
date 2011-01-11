@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932278Ab1AKOe4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 09:34:56 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:15880 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755804Ab1AKOey (ORCPT
+	id S1756115Ab1AKOgC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 09:36:02 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:58408 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756090Ab1AKOf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 09:34:54 -0500
-X-IronPort-AV: E=Sophos;i="4.60,307,1291611600"; 
-   d="scan'208";a="130495384"
-Subject: Re: [Xen-devel] [PATCH] xen: use PCI interfaces to request IO	 and
- MEM resources on platform device.
-From: Ian Campbell <Ian.Campbell@eu.citrix.com>
-To: Jan Beulich <JBeulich@novell.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <4D2C76E9020000780002BB73@vpn.id2.novell.com>
-References: <1294746628-20396-1-git-send-email-ian.campbell@citrix.com>
-	 <4D2C5FA5020000780002BB21@vpn.id2.novell.com>
-	 <1294750884.3831.5866.camel@zakaz.uk.xensource.com>
-	 <4D2C72FA020000780002BB58@vpn.id2.novell.com>
-	 <1294755483.3831.5872.camel@zakaz.uk.xensource.com>
-	 <4D2C76E9020000780002BB73@vpn.id2.novell.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Tue, 11 Jan 2011 14:33:55 +0000
-Message-ID: <1294756435.3831.5874.camel@zakaz.uk.xensource.com>
+	Tue, 11 Jan 2011 09:35:59 -0500
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+To: Paul Mundt <lethal@linux-sh.org>
+Subject: Re: Locking in the clk API
+Date: Tue, 11 Jan 2011 22:35:42 +0800
+User-Agent: KMail/1.13.5 (Linux/2.6.35-24-generic; KDE/4.5.1; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
+	<u.kleine-koenig@pengutronix.de>
+References: <201101111016.42819.jeremy.kerr@canonical.com> <201101111830.18597.jeremy.kerr@canonical.com> <20110111121816.GB774@linux-sh.org>
+In-Reply-To: <20110111121816.GB774@linux-sh.org>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201101112235.43061.jeremy.kerr@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-11 at 14:27 +0000, Jan Beulich wrote:
-> >>> On 11.01.11 at 15:18, Ian Campbell <Ian.Campbell@eu.citrix.com> wrote:
-> >> >> I'm mainly asking because if it really addresses some problem,
-> >> >> then unmodified_drivers/linux-2.6/platform-pci/platform-pci.c
-> >> >> in -unstable should probably get updated too.
-> >> > 
-> >> > Assuming the pci_* interfaces exist back as far as we care about for
-> >> > those drivers then I don't see why not to apply it.
-> >> 
-> >> I checked back to .5, where they exist; the question is - how far
-> >> back do we care?
-> > 
-> > You mean 2.6.5? That's old enough to be the cut off IMHO.
-> > 
-> > I'm not sure how much actual use these drivers get these days though.
-> 
-> We're building ours from that code.
+Hi Paul,
 
-OK.
+> Again, you are approaching it from the angle that an atomic clock is a
+> special requirement rather than the default behaviour.
 
-> Are you going to submit this for -unstable then too, or are you
-> expecting me to do so?
+I'm not considering it a special requirement, but it's still a requirement 
+(that the called function does not sleep).
 
-Since you can build/test it for the cases you care about I think it
-would be better if you did?
+The problem with the inverse logic (clk_enable/clk_enable_sleepable) is that 
+now you've made the caller need to know what kind of clock it has, or might 
+have one day.
 
-Ian.
+ * For clk_enable/clk_enable_atomic, the decision is: is this call in an
+   atomic context?
+
+ * For clk_enable/clk_enable_sleepable, the decision is: might the clock code
+   have given us a sleeping clock?
+
+Note that it's much easier to guarantee correctness for the first than it is 
+for the second.
+
+Cheers,
 
 
+Jeremy
