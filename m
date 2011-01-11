@@ -1,131 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982Ab1AKNBS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 08:01:18 -0500
-Received: from csmtp1.one.com ([195.47.247.21]:59765 "EHLO csmtp1.one.com"
+	id S932114Ab1AKNBb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 08:01:31 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:45936 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754144Ab1AKNBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 08:01:16 -0500
-From: "Henrik Rydberg" <rydberg@bitmath.org>
-Date: Tue, 11 Jan 2011 14:00:55 +0100
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Stephane Chatty <chatty@enac.fr>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC v3 3/5] hid-multitouch: support for PixCir-based panels
-Message-ID: <20110111130055.GB1961@polaris.bitmath.org>
-References: <1294425762-29730-1-git-send-email-benjamin.tissoires@enac.fr>
- <1294425762-29730-4-git-send-email-benjamin.tissoires@enac.fr>
- <20110107194918.GB29913@polaris.bitmath.org>
- <AANLkTin8tHO5x2SBugSaEQ6mJ-7upS2YX9OANK1phmdM@mail.gmail.com>
+	id S1755993Ab1AKNB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 08:01:27 -0500
+X-IronPort-AV: E=Sophos;i="4.60,307,1291611600"; 
+   d="scan'208";a="11871145"
+Subject: Re: [Xen-devel] [PATCH] xen: use PCI interfaces to request IO	 and
+ MEM resources on platform device.
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Jan Beulich <JBeulich@novell.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D2C5FA5020000780002BB21@vpn.id2.novell.com>
+References: <1294746628-20396-1-git-send-email-ian.campbell@citrix.com>
+	 <4D2C5FA5020000780002BB21@vpn.id2.novell.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Tue, 11 Jan 2011 13:01:24 +0000
+Message-ID: <1294750884.3831.5866.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTin8tHO5x2SBugSaEQ6mJ-7upS2YX9OANK1phmdM@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> +static int mt_compute_slot(struct mt_device *td)
-> >> +{
-> >> +     struct mt_class *cls = td->mtclass;
-> >> +
-> >> +     if (cls->quirks & MT_QUIRK_SLOT_IS_CONTACTID)
-> >> +             return slot_is_contactid(td);
-> >
-> > No real need for a function call here...
+On Tue, 2011-01-11 at 12:48 +0000, Jan Beulich wrote:
+> >>> On 11.01.11 at 12:50, Ian Campbell <ian.campbell@citrix.com> wrote:
+> > This is the correct interface to use and something has broken the use
+> > of the previous incorrect interface (which fails because the request
+> > conflicts with the resources assigned for the PCI device itself
+> > instead of nesting like the PCI interfaces do).
 > 
-> just to prepare for the other patches
+> While I agree that using the PCI interface is preferable, I can't see
+> how this can make a functional difference: __pci_request_region()
+> calls request_region() for the port resource and
+> __request_mem_region() for the mmio one exactly like what was
+> open coded before (request_mem_region() being equivalent to
+> __request_mem_region(..., 0), so I don't follow how this fixes
+> anything
 
-I mean the line could simply read
+request_mem_region was failing, the requested region appeared to
+conflict with the top level "PCI mem" resource. I don't know why and I
+didn't investigate deeper because using the pci_* interfaces is correct
+in its own right.
 
-	return td->curdata.contactid;
+The old way was correct circa 2.6.37-rc5 but broken in 2.6.37 final,
+there were a bunch of (reverts of) PCI resource changes in that window,
+If I had to make a guess I'd say it was something in there which did it.
 
-[...]
-> >> +static int mt_event(struct hid_device *hid, struct hid_field *field,
-> >> +                             struct hid_usage *usage, __s32 value)
-> >> +{
-> >> +     struct mt_device *td = hid_get_drvdata(hid);
-> >> +
-> >> +     if (hid->claimed & HID_CLAIMED_INPUT) {
-> >> +             switch (usage->hid) {
-> >> +             case HID_DG_INRANGE:
-> >> +                     break;
-> >> +             case HID_DG_TIPSWITCH:
-> >> +                     td->curvalid = value;
-> >
-> > I do not think curvalid should depend on the touch state (which is
-> > what tipswitch is). Either move to INRANGE, or simply set to true.
-> 
-> INRANGE is not all the time used as curvalid as you are saying.
-> At least for Stantum, curvalid is given by CONFIDENCE.
+>  but half of the potentially incorrect use of "long" for
+> mmio_addr.
 
-Yes.
+Hmm yes, that should probably have a better type, although we probably
+know it's going to be <4G. Can you spin a patch please?
 
-> The solution of giving the value true to curvalid is not working too:
-> Cypress devices can send their touches over 2 reports of 7 touches,
-> even if it handles 10 touches.
+> I'm mainly asking because if it really addresses some problem,
+> then unmodified_drivers/linux-2.6/platform-pci/platform-pci.c
+> in -unstable should probably get updated too.
 
-Yes.
- 
-> Solution:
-> 1) td->curvalid = td->num_received < td->mtclass->maxcontacts;
-> (not sure it will work for all devices)
+Assuming the pci_* interfaces exist back as far as we care about for
+those drivers then I don't see why not to apply it.
 
-For the ones where NOT_SEEN_MEANS_UP, it ought to be true. For egalax,
-it is not true.
+Ian.
 
 > 
-> or 2) introduce MT_QUIRK_VALID_IS_INRANGE and MT_QUIRK_VALID_IS_CONFIDENCE
-
-Yes, I believe this is a good way to go.
- 
-> or 3) let curvalid=value and disable the quirk
-> MT_QUIRK_NOT_SEEN_MEANS_UP (adding a FixMe comment above)
-
-This would mean setting curvalid = touch_state again, which according
-to the discussion is precisely what we should not do. We know we need
-to check whether the incoming packet represents data is whether it is
-just filling up the transfer protocol size. We just need to identify,
-per device, how that is done.
-
-> >> +                     if (value)
-> >> +                             td->num_expected = value - 1;
-> >
-> > The - 1 should be dropped here.
+> Jan
 > 
-> Here is the really tricky one:
+> > Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> > Cc: stable@kernel.org # 2.6.37 only
+> > ---
+> >  drivers/xen/platform-pci.c |   21 +++++++--------------
+> >  1 files changed, 7 insertions(+), 14 deletions(-)
+> > 
+> > diff --git a/drivers/xen/platform-pci.c b/drivers/xen/platform-pci.c
+> > index c01b5dd..afbe041 100644
+> > --- a/drivers/xen/platform-pci.c
+> > +++ b/drivers/xen/platform-pci.c
+> > @@ -105,7 +105,7 @@ static int __devinit platform_pci_init(struct pci_dev 
+> > *pdev,
+> >  				       const struct pci_device_id *ent)
+> >  {
+> >  	int i, ret;
+> > -	long ioaddr, iolen;
+> > +	long ioaddr;
+> >  	long mmio_addr, mmio_len;
+> >  	unsigned int max_nr_gframes;
+> >  
+> > @@ -114,7 +114,6 @@ static int __devinit platform_pci_init(struct pci_dev 
+> > *pdev,
+> >  		return i;
+> >  
+> >  	ioaddr = pci_resource_start(pdev, 0);
+> > -	iolen = pci_resource_len(pdev, 0);
+> >  
+> >  	mmio_addr = pci_resource_start(pdev, 1);
+> >  	mmio_len = pci_resource_len(pdev, 1);
+> > @@ -125,19 +124,13 @@ static int __devinit platform_pci_init(struct pci_dev 
+> > *pdev,
+> >  		goto pci_out;
+> >  	}
+> >  
+> > -	if (request_mem_region(mmio_addr, mmio_len, DRV_NAME) == NULL) {
+> > -		dev_err(&pdev->dev, "MEM I/O resource 0x%lx @ 0x%lx busy\n",
+> > -		       mmio_addr, mmio_len);
+> > -		ret = -EBUSY;
+> > +	ret = pci_request_region(pdev, 1, DRV_NAME);
+> > +	if (ret < 0)
+> >  		goto pci_out;
+> > -	}
+> >  
+> > -	if (request_region(ioaddr, iolen, DRV_NAME) == NULL) {
+> > -		dev_err(&pdev->dev, "I/O resource 0x%lx @ 0x%lx busy\n",
+> > -		       iolen, ioaddr);
+> > -		ret = -EBUSY;
+> > +	ret = pci_request_region(pdev, 0, DRV_NAME);
+> > +	if (ret < 0)
+> >  		goto mem_out;
+> > -	}
+> >  
+> >  	platform_mmio = mmio_addr;
+> >  	platform_mmiolen = mmio_len;
+> > @@ -169,9 +162,9 @@ static int __devinit platform_pci_init(struct pci_dev 
+> > *pdev,
+> >  	return 0;
+> >  
+> >  out:
+> > -	release_region(ioaddr, iolen);
+> > +	pci_release_region(pdev, 0);
+> >  mem_out:
+> > -	release_mem_region(mmio_addr, mmio_len);
+> > +	pci_release_region(pdev, 1);
+> >  pci_out:
+> >  	pci_disable_device(pdev);
+> >  	return ret;
 > 
-> if I drop -1,
 > 
-> the test below will be:
->  if (field->index == td->last_field_index
->       && td->num_received >= td->num_expected)
 > 
-> but during the init of the device, the kernel receive 1 event though
-> the driver is not ready.
-
-So the current code really needs to also check whether the driver is
-ready to events. Adding a state for it would be appropriate. As it
-stands, an unrelated syntatic oddity is covering up this fact.
-
 > 
-> During this time, num_expected is at 0, and when we receive the
-> last_field_index: segfault!
-> 
-> To sum up, no, we can't.
 
-Yes we can. :-)
 
-> >> +     if (field->index == td->last_field_index
-> >> +             && td->num_received > td->num_expected)
-> >
-> > A ">=" here.
-
-still applies then.
-
-Thanks,
-Henrik
