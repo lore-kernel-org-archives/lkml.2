@@ -1,174 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab1AKGzJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 01:55:09 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:39740 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001Ab1AKGzC (ORCPT
+	id S1755379Ab1AKHEl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 02:04:41 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:45110 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754217Ab1AKHEe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 01:55:02 -0500
-Date: Tue, 11 Jan 2011 07:55:40 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Mike Waychison <mikew@google.com>
-Cc: "mingo@elte.hu" <mingo@elte.hu>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: Re: [PATCH] x86: Add an option to disable decoding of MCE
-Message-ID: <20110111065540.GA16036@aftab>
-References: <43835.148.87.67.136.1294700112.squirrel@xenotime.net>
- <1294700597-24239-1-git-send-email-mikew@google.com>
+	Tue, 11 Jan 2011 02:04:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=txfHMbG9fppmIOk0yntoopvIfBmX4MXJesD0Mh9DKP1qvGXVflWuzYXMV4WjnImFcX
+         uPFBcDK34+N6lWAtCSYm9c1sE/ytCpmGnfJWSvwS5Tk/N/YlfGlMOBAsUlSDtFc+9LLj
+         3zf/yOv22HHPp5BnJtOaLqakAD1gwqoZBKX4U=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294700597-24239-1-git-send-email-mikew@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTikYzz0Rs-vdX5uFDm6CpXDOx62cUYfbqEAXSame@mail.gmail.com>
+References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie>
+	<AANLkTinW8Yp1K1w+G+BgLa-fPaFANkGsRjqH_W8N+9VL@mail.gmail.com>
+	<AANLkTim5oVZqMBtan5_TMOxaWbqkF=aDcBYFNYy55kt_@mail.gmail.com>
+	<0aea052d-70ff-41ea-8776-c6d974c10337@email.android.com>
+	<AANLkTikYzz0Rs-vdX5uFDm6CpXDOx62cUYfbqEAXSame@mail.gmail.com>
+Date: Tue, 11 Jan 2011 17:04:33 +1000
+Message-ID: <AANLkTi=L4f8KHes-=aU4Vctr7G8n8qWLh18vR7YM5TE+@mail.gmail.com>
+Subject: Re: [git pull] drm for rc1
+From: Dave Airlie <airlied@gmail.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Airlie <airlied@linux.ie>,
+        Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 06:03:17PM -0500, Mike Waychison wrote:
-> This patch applies to v2.6.37.
-> 
-> Updated with documentation of the new option.
-> ---
-> 
-> On our systems, we do not want to have any "decoders" called on machine
-> check events.  These decoders can easily spam our logs and cause space
-> problems on machines that have a lot of correctable error events.  We
-> _do_ however want to get the messages delivered via /dev/mcelog for
-> userland processing.
+On Tue, Jan 11, 2011 at 4:28 PM, Dave Airlie <airlied@gmail.com> wrote:
+> On Tue, Jan 11, 2011 at 4:06 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+>> "Dave Airlie" <airlied@gmail.com> wrote:
+>>
+>>>On Tue, Jan 11, 2011 at 2:16 PM, Linus Torvalds
+>>><torvalds@linux-foundation.org> wrote:
+>>>> On Mon, Jan 10, 2011 at 2:59 PM, Dave Airlie <airlied@linux.ie>
+>>>wrote:
+>>>>> Highlights:
+>>>>> core/drivers: add support for high precision vblank timestamps
+>>>>> radeon: pageflipping support, Gen2 PCIE support
+>>>>> nouveau: reworked VRAM and VM support
+>>>>> intel: better ILK/SNB powersaving support, Full GTT support
+>>>>
+>>>> Lowlights: it's broken.
+>>>>
+>>>> I get millions of messages like:
+>>>>
+>>>>  ...
+>>>>  [ 8482.000414] [drm:i915_hangcheck_ring_idle] *ERROR* Hangcheck
+>>>> timer elapsed... render ring idle [waiting on 30938, at 30938],
+>>>missed
+>>>> IRQ?
+>>>>  [ 8485.918124] [drm:i915_hangcheck_ring_idle] *ERROR* Hangcheck
+>>>> timer elapsed... render ring idle [waiting on 31068, at 31068],
+>>>missed
+>>>> IRQ?
+>>>>  [ 8487.926963] [drm:i915_hangcheck_ring_idle] *ERROR* Hangcheck
+>>>> timer elapsed... render ring idle [waiting on 31129, at 31129],
+>>>missed
+>>>> IRQ?
+>>>>  ...
+>>>>
+>>>> and everything is very choppy. I assume it's the power saving thing
+>>>> that broke again, but that's just a total random guess, I have
+>>>nothing
+>>>> to actually back that up with.
+>>>>
+>>>> It worked fine after boot, but those problems began at 8287.139375
+>>>> (about two hours after boot - it may have coincided with screen
+>>>saver,
+>>>> but who knows?)  and have been happening constantly since. The
+>>>machine
+>>>> is not really usable, I'm writing this with annoying 2-second pauses
+>>>> every once in a while.
+>>>
+>>>Okay I'll try and reproduce and curse Chris and Jesse, does booting
+>>>with
+>>>i915.powersave=0 help any?
+>>>
+>>>Dave.
+>>
+>> Arg.  It's been ok on my ILK systems, but Chris has found some issues with out watermarking code iirc; apparently we're underflowing the display FIFO, causing all sorts of trouble.  If it works before the pull of Dave's tree, can you bisect?
+>>
+>
+> I think he'd fixed them in the tree I pulled locally to test, I'm
+> guessing this might be that we are running the Fedora userspace driver
+> and you guys are all on master or something, which would mean some ABI
+> guarantee got busted.
+>
+> I'm going to try a local test upgrade to 2.14.0 just to see.
 
-Ok, question: how do you guys process DRAM ECCs? And more specifically,
-with a large number of machines, how do you do the mapping from the DRAM
-ECC error address reported by MCA to a DIMM that's failing in userspace
-on a particular machine?
+Okay that didn't help, dead in similar times, evince with a few flood
+maps from Brisbane seem to be a good trigger.
 
-Also, I've worked on trimming down all that decoding output to 3-5
-lines. Now it looks like this:
+I'm not sure I'll be in a good place for bisection, need laptop to
+keep track of disaster.
 
-[  521.677316] [Hardware Error]: MC4_STATUS[Over|UE|MiscV|PCC|AddrV|UECC]: 0xfe00200000080a0f
-[  521.686467] [Hardware Error]: Northbridge Error (node 0): DRAM ECC error detected on the NB.
-[  521.686498] EDAC MC0: UE page 0x0, offset 0x0, grain 0, row 0, labels ":": amd64_edac
-[  521.686501] EDAC MC0: UE - no information available: UE bit is set
-[  521.686503] [Hardware Error]: cache level: L3/GEN, mem/io: GEN, mem-tx: GEN, part-proc: RES (no timeout)
-
-and the two lines starting with "EDAC MC0" will get trimmed even
-more with time. I'm assuming this is not a lot but if you get a lot
-of correctable error events, then output like that accumulates over
-time. How about an error thresholding scheme in software then which
-accumulates the error events and reports only when some configurable
-thresholds per DRAM device in error have been reached?
-
-> Introduce an interface "dont_decode" that allows us to skip the
-> decoders.  We always call the decoders by default.
-> 
-> Google-Bug-Id: 3289142
-> Signed-off-by: Mike Waychison <mikew@google.com>
-> ---
->  Documentation/x86/x86_64/boot-options.txt |    5 +++++
->  Documentation/x86/x86_64/machinecheck     |    6 ++++++
->  arch/x86/kernel/cpu/mcheck/mce.c          |   24 ++++++++++++++++++------
->  3 files changed, 29 insertions(+), 6 deletions(-)
-> 
-> diff --git a/Documentation/x86/x86_64/boot-options.txt b/Documentation/x86/x86_64/boot-options.txt
-> index 7fbbaf8..dd7145a 100644
-> --- a/Documentation/x86/x86_64/boot-options.txt
-> +++ b/Documentation/x86/x86_64/boot-options.txt
-> @@ -22,6 +22,11 @@ Machine check
->  		as corrected are silently cleared by OS.
->  		This option will be useful if you have no interest in any
->  		of corrected errors.
-> +   mce=dont_decode
-> +		Disable in-kernel decoding of errors.  Setting this boot
-> +		option will cause EDAC to be skipped (if enabled) and no
-> +		messages to be printed into the logs.  Events will still
-> +		be available via /dev/mcelog however.
->     mce=ignore_ce
->  		Disable features for corrected errors, e.g. polling timer
->  		and CMCI.  All events reported as corrected are not cleared
-> diff --git a/Documentation/x86/x86_64/machinecheck b/Documentation/x86/x86_64/machinecheck
-> index b1fb302..7ef7003 100644
-> --- a/Documentation/x86/x86_64/machinecheck
-> +++ b/Documentation/x86/x86_64/machinecheck
-> @@ -65,6 +65,12 @@ tolerant
->  	Note this only makes a difference if the CPU allows recovery
->  	from a machine check exception. Current x86 CPUs generally do not.
->  
-> +dont_decode
-> +	Disable in-kernel decoding of any errors.  Setting this boot
-> +	option will cause EDAC to be skipped (if enabled) and no
-> +	messages to be printed into the logs.  Events will still be
-> +	available via /dev/mcelog however.
-> +
->  trigger
->  	Program to run when a machine check event is detected.
->  	This is an alternative to running mcelog regularly from cron
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 7a35b72..3c30057 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -82,6 +82,7 @@ static int			mce_bootlog		__read_mostly = -1;
->  static int			monarch_timeout		__read_mostly = -1;
->  static int			mce_panic_timeout	__read_mostly;
->  static int			mce_dont_log_ce		__read_mostly;
-> +static int			mce_dont_decode		__read_mostly;
->  int				mce_cmci_disabled	__read_mostly;
->  int				mce_ignore_ce		__read_mostly;
->  int				mce_ser			__read_mostly;
-> @@ -209,6 +210,17 @@ void mce_log(struct mce *mce)
->  	set_bit(0, &mce_need_notify);
->  }
->  
-> +static void call_decoders(struct mce *m)
-
-Yeah, let's call this decode_mce().
-
-> +{
-> +	if (mce_dont_decode)
-> +		return;
-> +	/*
-> +	 * Print out human-readable details about the MCE error,
-> +	 * (if the CPU has an implementation for that)
-> +	 */
-> +	atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
-> +}
-> +
->  static void print_mce(struct mce *m)
->  {
->  	pr_emerg(HW_ERR "CPU %d: Machine Check Exception: %Lx Bank %d: %016Lx\n",
-> @@ -234,11 +246,7 @@ static void print_mce(struct mce *m)
->  	pr_emerg(HW_ERR "PROCESSOR %u:%x TIME %llu SOCKET %u APIC %x\n",
->  		m->cpuvendor, m->cpuid, m->time, m->socketid, m->apicid);
->  
-> -	/*
-> -	 * Print out human-readable details about the MCE error,
-> -	 * (if the CPU has an implementation for that)
-> -	 */
-> -	atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
-> +	call_decoders(m);
->  }
->  
->  #define PANIC_TIMEOUT 5 /* 5 seconds */
-> @@ -588,7 +596,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
->  		 */
->  		if (!(flags & MCP_DONTLOG) && !mce_dont_log_ce) {
->  			mce_log(&m);
-
-Also, there's another hook in the function above that does
-edac_mce_parse(mce) (which shouldnt've been there actually) which is
-used by the Nehalem driver i7core_edac which does also decode DRAM ECCs.
-
-@Mauro: how about dropping the whole <drivers/edac/edac_mce.c> and using
-a simple notifier which is much smaller in code and does the same thing?
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Dave.
