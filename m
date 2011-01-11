@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953Ab1AKLVU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 06:21:20 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:41892 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755745Ab1AKLVS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 06:21:18 -0500
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 2/2] Fix Moorestown VRTC fixmap placement
-To: x86@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Date: Tue, 11 Jan 2011 10:55:56 +0000
-Message-ID: <20110111105544.24448.27607.stgit@bob.linux.org.uk>
-In-Reply-To: <20110111105439.24448.69863.stgit@bob.linux.org.uk>
-References: <20110111105439.24448.69863.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1755933Ab1AKLWO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 06:22:14 -0500
+Received: from mga01.intel.com ([192.55.52.88]:24146 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755583Ab1AKLWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 06:22:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,306,1291622400"; 
+   d="scan'208";a="645648141"
+Date: Tue, 11 Jan 2011 12:22:08 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>, myungjoo.ham@gmail.com
+Subject: Re: [PATCH v4 1/3] MFD MAX8998/LP3974: Support LP3974 RTC
+Message-ID: <20110111112207.GD6616@sortiz-mobl>
+References: <20101224113805.GI27832@sortiz-mobl>
+ <1294118261-18906-2-git-send-email-myungjoo.ham@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294118261-18906-2-git-send-email-myungjoo.ham@samsung.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arjan van de Ven <arjan@linux.intel.com>
+Hi MyungJoo,
 
-The x86 fixmaps need to be all together... unfortunately the VRTC one
-was misplaced.
+On Tue, Jan 04, 2011 at 02:17:39PM +0900, MyungJoo Ham wrote:
+> The first releases of LP3974 have a large delay in RTC registers,
+> which requires 2 seconds of delay after writing to a rtc register
+> (recommended by National Semiconductor's engineers)
+> before reading it.
+> 
+> If "rtc_delay" field of the platform data is true, the rtc driver
+> assumes that such delays are required. Although we have not seen
+> LP3974s without requiring such delays, we assume that such LP3974s
+> will be released soon (or they have done so already) and they are
+> supported by "lp3974" without setting "rtc_delay" at the platform
+> data.
+> 
+> This patch adds delays with msleep when writing values to RTC registers
+> if the platform data has rtc_delay set.
+Patch applied, many thanks.
 
-This patch makes sure the MRST VRTC fixmap is put prior to the
-__end_of_permanent_fixed_addresses marker.
+Cheers,
+Samuel.
 
-Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
-
- arch/x86/include/asm/fixmap.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-
-diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
-index 0141b23..4729b2b 100644
---- a/arch/x86/include/asm/fixmap.h
-+++ b/arch/x86/include/asm/fixmap.h
-@@ -116,11 +116,11 @@ enum fixed_addresses {
- #endif
- 	FIX_TEXT_POKE1,	/* reserve 2 pages for text_poke() */
- 	FIX_TEXT_POKE0, /* first page is last, because allocation is backward */
--	__end_of_permanent_fixed_addresses,
--
- #ifdef	CONFIG_X86_MRST
- 	FIX_LNW_VRTC,
- #endif
-+	__end_of_permanent_fixed_addresses,
-+
- 	/*
- 	 * 256 temporary boot-time mappings, used by early_ioremap(),
- 	 * before ioremap() is functional.
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
