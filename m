@@ -1,58 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932481Ab1AKROz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 12:14:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19341 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932463Ab1AKROx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932468Ab1AKROx (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 11 Jan 2011 12:14:53 -0500
-Message-ID: <4D2C8FF8.5060806@redhat.com>
-Date: Tue, 11 Jan 2011 19:14:32 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: [GIT PULL] KVM updates for the 2.6.38 merge window
-References: <4D2ACFA7.6000502@redhat.com> <AANLkTimOOUjXa7WCTirHRrrLfiev4T9iD7spb2VrB_ET@mail.gmail.com> <4D2C21FE.3000406@redhat.com> <AANLkTi=_WTXYGgb3G6eWAkSpfR_=pDC=w9feKtKK8zLV@mail.gmail.com>
-In-Reply-To: <AANLkTi=_WTXYGgb3G6eWAkSpfR_=pDC=w9feKtKK8zLV@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53463 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932276Ab1AKROt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 12:14:49 -0500
+Date: Tue, 11 Jan 2011 09:14:23 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-wireless@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        driverdevel <devel@driverdev.osuosl.org>
+Subject: Re: linux-next: Tree for January 11 (build errors/warnings summary)
+Message-Id: <20110111091423.818b5a15.randy.dunlap@oracle.com>
+In-Reply-To: <20110111143357.abe434a5.sfr@canb.auug.org.au>
+References: <20110111143357.abe434a5.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2011 06:19 PM, Linus Torvalds wrote:
-> On Tue, Jan 11, 2011 at 1:25 AM, Avi Kivity<avi@redhat.com>  wrote:
->> What are your issues with the patch?
-> My issues are mainly two-fold:
->
->   - I think "MINOR" is a totally idiotic and meaningless term. It has
-> no technical meaning. Why would IO be special? Is it because of
-> deadlock concerns with filesystem or block device layer locks? No. And
-> it clearly isn't about "sleeping", since a major fault can be
-> non-sleeping (think ramdisk, for example).
->
->     Look at the other FAULT_FLAG_xyzzy flags. They have _hard_
-> technical reasons. There's no ambiguity. And we ALREADY HAVE the one
-> that says "return if it would need to wait", and it's called
-> FAULT_FLAG_ALLOW_RETRY.
->
+On Tue, 11 Jan 2011 14:33:57 +1100 Stephen Rothwell wrote:
 
-Okay; I'll drop that patch, and look at reusing the existing infrastructure.
+> Hi all,
+> 
+> Reminder: do not add any v2.6.39 material to your linux-next included
+> trees until after v2.6.38-rc1 is released.
+> 
+> Changes since 20110110:
 
-> The other issue is:
->
->   - I wasn't aware of this, and clearly not enough other people were
-> either, or somebody would have told you that we already had people
-> working on the whole FAULT_FLAG_ALLOW_RETRY thing that is much fancier
-> and technically superior.
->
-> So it simply boils down to the fact that I don't think
-> FAULT_FLAG_MAJOR was a good idea. It's badly done, is a total and
-> utter hack, and I don't see why I should ever merge it.
 
-And I'll improve the process on core patches as well.
+drivers/thermal/thermal_sys.c build fails when CONFIG_NET is not enabled
+Patch has been posted but not merged.
 
+
+drivers/acpi/internal.h:94: warning: no return statement in function returning non-void
+
+
+drivers/staging/ath6kl/os/linux/cfg80211.c:1378: warning: initialization from incompatible pointer type
+drivers/staging/ath6kl/os/linux/cfg80211.c:1386: warning: initialization from incompatible pointer type
+drivers/staging/ath6kl/os/linux/ioctl.c: In function 'ar6000_ioctl':
+drivers/staging/ath6kl/os/linux/ioctl.c:4673: warning: the frame size of 1852 bytes is larger than 1024 bytes
+
+
+drivers/staging/rt2860/common/mlme.c: In function 'BssTableSortByRssi':
+drivers/staging/rt2860/common/mlme.c:4200: warning: the frame size of 1568 bytes is larger than 1024 bytes
+drivers/staging/rt2860/common/cmm_aes.c: In function 'AES_GTK_KEY_WRAP':
+drivers/staging/rt2860/common/cmm_aes.c:1248: warning: the frame size of 1084 bytes is larger than 1024 bytes
+drivers/staging/rt2860/sta/sync.c: In function 'PeerBeaconAtScanAction':
+drivers/staging/rt2860/sta/sync.c:663: warning: the frame size of 1248 bytes is larger than 1024 bytes
+drivers/staging/rt2860/sta/sync.c: In function 'PeerBeacon':
+drivers/staging/rt2860/sta/sync.c:1697: warning: the frame size of 1296 bytes is larger than 1024 bytes
+drivers/staging/rt2860/sta/sync.c: In function 'PeerBeaconAtJoinAction':
+drivers/staging/rt2860/sta/sync.c:1033: warning: the frame size of 1256 bytes is larger than 1024 bytes
+drivers/staging/rt2860/sta/sync.c: In function 'MlmeStartReqAction':
+drivers/staging/rt2860/sta/sync.c:545: warning: the frame size of 1060 bytes is larger than 1024 bytes
+drivers/staging/rt2860/sta/connect.c: In function 'CntlOidScanProc':
+drivers/staging/rt2860/sta/connect.c:321: warning: the frame size of 1596 bytes is larger than 1024 bytes
+drivers/staging/rt2860/rt_linux.c: In function 'send_monitor_packets':
+drivers/staging/rt2860/rt_linux.c:903: warning: the frame size of 1080 bytes is larger than 1024 bytes
+drivers/staging/rt2860/sta_ioctl.c: In function 'rt_ioctl_iwaplist':
+drivers/staging/rt2860/sta_ioctl.c:721: warning: the frame size of 1296 bytes is larger than 1024 bytes
+drivers/staging/rt2860/sta_ioctl.c: In function 'rt_ioctl_siwmlme':
+drivers/staging/rt2860/sta_ioctl.c:1615: warning: the frame size of 1584 bytes is larger than 1024 bytes
+
+
+drivers/staging/vt6655/device_main.c: In function 'device_ioctl':
+drivers/staging/vt6655/device_main.c:3579: warning: the frame size of 1296 bytes is larger than 1024 bytes
+drivers/staging/vt6655/iwctl.c: In function 'iwctl_giwaplist':
+drivers/staging/vt6655/iwctl.c:817: warning: the frame size of 1296 bytes is larger than 1024 bytes
+
+
+drivers/media/radio/radio-aimslab.c:76: error: implicit declaration of function 'msleep'
+(reported yesterday by Geert)
+
+
+arch/x86/kernel/e820.c:734: error: implicit declaration of function 'suspend_nvs_register'
+when CONFIG_ACPI is not enabled
+
+
+fs/btrfs/ctree.h:1003: error: field 'super_kobj' has incomplete type
+fs/btrfs/ctree.h:1074: error: field 'root_kobj' has incomplete type
+needs <linux/kobject.h>
+(already reported)
+
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
