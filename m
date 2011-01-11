@@ -1,185 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab1AKV5G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 16:57:06 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36859 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753804Ab1AKV5E (ORCPT
+	id S932087Ab1AKWAg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 17:00:36 -0500
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:20148 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751795Ab1AKWAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 16:57:04 -0500
-Date: Tue, 11 Jan 2011 13:55:47 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-kernel@vger.kernel.org, hughd@google.com, mel@csn.ul.ie
-Subject: Re: +
- mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclaim-avoid-a-potential-deadlock-due-to-lock_page-during-direct-compaction-fix.patch
- added to -mm tree
-Message-Id: <20110111135547.ce6c273c.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1101111341590.7551@chino.kir.corp.google.com>
-References: <201101112046.p0BKk2Js005902@imap1.linux-foundation.org>
-	<alpine.DEB.2.00.1101111341590.7551@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Jan 2011 17:00:33 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 24.130.172.179
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/qigJzcMA4yxsCZeMR011U
+Date: Tue, 11 Jan 2011 14:00:19 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Paul Walmsley <paul@pwsan.com>, Anand Gadiyar <gadiyar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [GIT PATCH] USB merge for .38
+Message-ID: <20110111220018.GW4957@atomide.com>
+References: <20110106235016.GA2212@kroah.com>
+ <AANLkTi=rwv2CW-x_p9SrKghcPKD4TeOAP=2mtp8EcS34@mail.gmail.com>
+ <20110107220012.GA26091@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110107220012.GA26091@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Jan 2011 13:43:06 -0800 (PST)
-David Rientjes <rientjes@google.com> wrote:
-
-> On Tue, 11 Jan 2011, akpm@linux-foundation.org wrote:
+* Greg KH <gregkh@suse.de> [110107 14:05]:
+> On Fri, Jan 07, 2011 at 01:22:40PM -0800, Linus Torvalds wrote:
+> > On Thu, Jan 6, 2011 at 3:50 PM, Greg KH <gregkh@suse.de> wrote:
+> > >
+> > > Nothing radical here at all, lots of musb changes, which touched a bunch
+> > > of arch-specific code, and some new drivers, mostly gadget ones.
+> > 
+> > There were also a number of conflicts with the ARM updates (omap clock
+> > data in particular - added aliases, changed names, you name it).
+> > 
+> > I spent some time trying to fix it up properly, and maybe I even
+> > succeeded, but you guys should really look the result over.
 > 
-> > diff -puN mm/page_alloc.c~mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclaim-avoid-a-potential-deadlock-due-to-lock_page-during-direct-compaction-fix mm/page_alloc.c
-> > --- a/mm/page_alloc.c~mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclaim-avoid-a-potential-deadlock-due-to-lock_page-during-direct-compaction-fix
-> > +++ a/mm/page_alloc.c
-> > @@ -1815,15 +1815,15 @@ __alloc_pages_direct_compact(gfp_t gfp_m
-> >  	int migratetype, unsigned long *did_some_progress)
-> >  {
-> >  	struct page *page;
-> > -	struct task_struct *p = current;
-> > +	struct task_struct *tsk = current;
-> >  
-> >  	if (!order || compaction_deferred(preferred_zone))
-> >  		return NULL;
-> >  
-> > -	p->flags |= PF_MEMALLOC;
-> > +	tsk->flags |= PF_MEMALLOC;
-> >  	*did_some_progress = try_to_compact_pages(zonelist, order, gfp_mask,
-> >  								nodemask);
-> > -	p->flags &= ~PF_MEMALLOC;
-> > +	tsk->flags &= ~PF_MEMALLOC;
-> >  	if (*did_some_progress != COMPACT_SKIPPED) {
-> >  
-> >  		/* Page migration frees to the PCP lists but we want merging */
+> The drivers/usb/* changes look good to me.  I know Tony was looking at
+> the omap merge issues, and if there was one, I think he had the needed
+> fixup.
 > 
-> This could be done for all of the page allocator functions in 
-> mm/page_alloc.c, I think it would be inconsistent and slightly harder to 
-> read if it were done in only one.
+> thanks for doing the merge.
 
-Using "p" for any identifier which has less-than-teeny scope is plain
-dumb.  It's meaningless and useless.
+The merge was good thanks. The clock changes in the omap tree caused
+a minor issue, I have the following patch queued up to fix it. Will
+post a pull request soonish along with few other patches.
 
-Anyway...
+Regards,
 
+Tony
 
-Subject: mm/page_alloc.c: don't cache `current' in a local
-From: Andrew Morton <akpm@linux-foundation.org>
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Date: Sun, 9 Jan 2011 22:16:13 +0000
+Subject: [PATCH] omap3: clocks: Fix build error 'CK_3430ES2' undeclared here
 
-It's old-fashioned and unneeded.
+At latest mainline commit 0c21e3aaf6a,  omap2plus build is broken. This
+patch is trivial fix for the missed usb clock node for CK_3430ES2PLUS
+flag update.
 
-akpm:/usr/src/25> size mm/page_alloc.o
-   text    data     bss     dec     hex filename
-  39884 1241317   18808 1300009  13d629 mm/page_alloc.o (before)
-  39838 1241317   18808 1299963  13d5fb mm/page_alloc.o (after)
+ CHK     include/generated/compile.h
+  CC      arch/arm/mach-omap2/clock3xxx_data.o
+arch/arm/mach-omap2/clock3xxx_data.c:3289: error: 'CK_3430ES2' undeclared
+here (not in a function)
+make[1]: *** [arch/arm/mach-omap2/clock3xxx_data.o] Error 1
+make: *** [arch/arm/mach-omap2] Error 2
 
-Cc: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Acked-by: Anand Gadiyar <gadiyar@ti.com>
+Acked-by: Paul Walmsley <paul@pwsan.com>
+[tony@atomide.com: updated mask to include CK_36XX]
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 
- mm/page_alloc.c |   24 ++++++++++--------------
- 1 file changed, 10 insertions(+), 14 deletions(-)
-
-diff -puN mm/page_alloc.c~mm-page_allocc-dont-cache-current-in-a-local mm/page_alloc.c
---- a/mm/page_alloc.c~mm-page_allocc-dont-cache-current-in-a-local
-+++ a/mm/page_alloc.c
-@@ -1809,15 +1809,14 @@ __alloc_pages_direct_compact(gfp_t gfp_m
- 	bool sync_migration)
- {
- 	struct page *page;
--	struct task_struct *tsk = current;
- 
- 	if (!order || compaction_deferred(preferred_zone))
- 		return NULL;
- 
--	tsk->flags |= PF_MEMALLOC;
-+	current->flags |= PF_MEMALLOC;
- 	*did_some_progress = try_to_compact_pages(zonelist, order, gfp_mask,
- 						nodemask, sync_migration);
--	tsk->flags &= ~PF_MEMALLOC;
-+	current->flags &= ~PF_MEMALLOC;
- 	if (*did_some_progress != COMPACT_SKIPPED) {
- 
- 		/* Page migration frees to the PCP lists but we want merging */
-@@ -1869,23 +1868,22 @@ __alloc_pages_direct_reclaim(gfp_t gfp_m
- {
- 	struct page *page = NULL;
- 	struct reclaim_state reclaim_state;
--	struct task_struct *p = current;
- 	bool drained = false;
- 
- 	cond_resched();
- 
- 	/* We now go into synchronous reclaim */
- 	cpuset_memory_pressure_bump();
--	p->flags |= PF_MEMALLOC;
-+	current->flags |= PF_MEMALLOC;
- 	lockdep_set_current_reclaim_state(gfp_mask);
- 	reclaim_state.reclaimed_slab = 0;
--	p->reclaim_state = &reclaim_state;
-+	current->reclaim_state = &reclaim_state;
- 
- 	*did_some_progress = try_to_free_pages(zonelist, order, gfp_mask, nodemask);
- 
--	p->reclaim_state = NULL;
-+	current->reclaim_state = NULL;
- 	lockdep_clear_current_reclaim_state();
--	p->flags &= ~PF_MEMALLOC;
-+	current->flags &= ~PF_MEMALLOC;
- 
- 	cond_resched();
- 
-@@ -1950,7 +1948,6 @@ void wake_all_kswapd(unsigned int order,
- static inline int
- gfp_to_alloc_flags(gfp_t gfp_mask)
- {
--	struct task_struct *p = current;
- 	int alloc_flags = ALLOC_WMARK_MIN | ALLOC_CPUSET;
- 	const gfp_t wait = gfp_mask & __GFP_WAIT;
- 
-@@ -1977,12 +1974,12 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
- 		 * See also cpuset_zone_allowed() comment in kernel/cpuset.c.
- 		 */
- 		alloc_flags &= ~ALLOC_CPUSET;
--	} else if (unlikely(rt_task(p)) && !in_interrupt())
-+	} else if (unlikely(rt_task(current)) && !in_interrupt())
- 		alloc_flags |= ALLOC_HARDER;
- 
- 	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
- 		if (!in_interrupt() &&
--		    ((p->flags & PF_MEMALLOC) ||
-+		    ((current->flags & PF_MEMALLOC) ||
- 		     unlikely(test_thread_flag(TIF_MEMDIE))))
- 			alloc_flags |= ALLOC_NO_WATERMARKS;
- 	}
-@@ -2001,7 +1998,6 @@ __alloc_pages_slowpath(gfp_t gfp_mask, u
- 	int alloc_flags;
- 	unsigned long pages_reclaimed = 0;
- 	unsigned long did_some_progress;
--	struct task_struct *p = current;
- 	bool sync_migration = false;
- 
- 	/*
-@@ -2060,7 +2056,7 @@ rebalance:
- 		goto nopage;
- 
- 	/* Avoid recursion of direct reclaim */
--	if (p->flags & PF_MEMALLOC)
-+	if (current->flags & PF_MEMALLOC)
- 		goto nopage;
- 
- 	/* Avoid allocations with no watermarks from looping endlessly */
-@@ -2153,7 +2149,7 @@ nopage:
- 	if (!(gfp_mask & __GFP_NOWARN) && printk_ratelimit()) {
- 		printk(KERN_WARNING "%s: page allocation failure."
- 			" order:%d, mode:0x%x\n",
--			p->comm, order, gfp_mask);
-+			current->comm, order, gfp_mask);
- 		dump_stack();
- 		show_mem();
- 	}
-_
-
+--- a/arch/arm/mach-omap2/clock3xxx_data.c
++++ b/arch/arm/mach-omap2/clock3xxx_data.c
+@@ -3286,7 +3286,7 @@ static struct omap_clk omap3xxx_clks[] = {
+ 	CLK(NULL,	"cpefuse_fck",	&cpefuse_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+ 	CLK(NULL,	"ts_fck",	&ts_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+ 	CLK(NULL,	"usbtll_fck",	&usbtll_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+-	CLK("ehci-omap.0",	"usbtll_fck",	&usbtll_fck,	CK_3430ES2 | CK_AM35XX),
++	CLK("ehci-omap.0",	"usbtll_fck",	&usbtll_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+ 	CLK("omap-mcbsp.1",	"prcm_fck",	&core_96m_fck,	CK_3XXX),
+ 	CLK("omap-mcbsp.5",	"prcm_fck",	&core_96m_fck,	CK_3XXX),
+ 	CLK(NULL,	"core_96m_fck",	&core_96m_fck,	CK_3XXX),
