@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372Ab1AKQXc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 11:23:32 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:48078 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932242Ab1AKQXa (ORCPT
+	id S932384Ab1AKQ0E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 11:26:04 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:39527 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932232Ab1AKQ0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 11:23:30 -0500
+	Tue, 11 Jan 2011 11:26:01 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=Y+lr2kOHwFMUDI9qgLxHAC0mzqDy5MwK+mnhO4brFHiVsdEjGpjCZBcTmzW64WL7+e
-         qDYrZinJ8DmyJwXQFGXRvevhO87YWxPvYmuWPbZB7eTa2S06be5lia1Bb0kENLfF4+a+
-         CUiwWbUEDuCPdINVuHbmKKdLqduxUQ572W30Q=
-Date: Tue, 11 Jan 2011 17:23:23 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: Dave Anderson <anderson@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] /proc/kcore: fix seeking
-Message-ID: <20110111162317.GA1703@nowhere>
-References: <4D2B1AD5.9000707@redhat.com>
- <20110111160437.GF17312@hack>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=KhSEzWme8MbhdvULkWNBumneV6Fxkqfb1iRlyJD93ephqf1IwAZsV9TsGMmiZqGWMq
+         TOvAEidvTfmS6cRWi5BUqbvHYXqUaQQueEf7LkXB5DGr8Y6laLLcxU8V9TsVHf8QSfM9
+         tVISyxGICQLNltlyj2oU4x81pzTnVupn+ps98=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110111160437.GF17312@hack>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTimx0hWByYw1dXKS6y0B9a84gYOxBu-Gnjm+cCwa@mail.gmail.com>
+References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie>
+	<AANLkTinW8Yp1K1w+G+BgLa-fPaFANkGsRjqH_W8N+9VL@mail.gmail.com>
+	<AANLkTim5oVZqMBtan5_TMOxaWbqkF=aDcBYFNYy55kt_@mail.gmail.com>
+	<0aea052d-70ff-41ea-8776-c6d974c10337@email.android.com>
+	<AANLkTim0rn7Vem6YJM5tVKM0PX4YdnNmaeqmpS=Vp7rc@mail.gmail.com>
+	<AANLkTimx0hWByYw1dXKS6y0B9a84gYOxBu-Gnjm+cCwa@mail.gmail.com>
+Date: Tue, 11 Jan 2011 18:25:59 +0200
+Message-ID: <AANLkTiknirXaqkvR4DoA34Te=Dj8kentQynrP-Dn=Dk8@mail.gmail.com>
+Subject: Re: [git pull] drm for rc1
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Dave Airlie <airlied@gmail.com>,
+        Dave Airlie <airlied@linux.ie>,
+        Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 12:04:37AM +0800, Américo Wang wrote:
-> On Mon, Jan 10, 2011 at 09:42:29AM -0500, Dave Anderson wrote:
-> >From: Dave Anderson <anderson@redhat.com>
-> >
-> >Commit 34aacb2920667d405a8df15968b7f71ba46c8f18
-> >("procfs: Use generic_file_llseek in /proc/kcore")
-> >broke seeking on /proc/kcore.  This changes it back
-> >to use default_llseek in order to restore the original
-> >behavior.
-> >
-> >The problem with generic_file_llseek is that it only
-> >allows seeks up to inode->i_sb->s_maxbytes, which is
-> >2GB-1 on procfs, where the memory file offset values in
-> >the /proc/kcore PT_LOAD segments may exceed or start
-> >beyond that offset value.
-> >
-> 
-> Is the race solved? Using default_llseek() still races
-> with read_kcore() on fpos, AFAIK.
+On Tue, Jan 11, 2011 at 6:11 PM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
+> Linus, 2.6.37-git4 works for me, can you unpull the DRM, and wait
+> until is more stable ?
 
-Hmm, how does it race there?
+What I have done:
+git bisect log
+git bisect start
+# bad: [5b2eef966cb2ae307aa4ef1767f7307774bc96ca] Merge branch
+'drm-core-next' of
+git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6
+git bisect bad 5b2eef966cb2ae307aa4ef1767f7307774bc96ca
+# good: [3c0eee3fe6a3a1c745379547c7e7c904aa64f6d5] Linux 2.6.37
+git bisect good 3c0eee3fe6a3a1c745379547c7e7c904aa64f6d5
+# good: [c413521eb4e2d7ffd5ce432a144708d479054bd3] ARM: mach-shmobile:
+update for SMP changes.
+git bisect good c413521eb4e2d7ffd5ce432a144708d479054bd3
+# bad: [78c92a9fd4b6abbbc1fe1ec335c697cb4e63f252] Merge branch
+'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6
+git bisect bad 78c92a9fd4b6abbbc1fe1ec335c697cb4e63f252
+# bad: [da40d036fd716f0efb2917076220814b1e927ae1] Merge
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi-misc-2.6
+git bisect bad da40d036fd716f0efb2917076220814b1e927ae1
+# bad: [dc69d1af9e8d9cbbabff88bb35a6782187a22229] omap2: Make
+OMAP2PLUS select OMAP_DM_TIMER
+git bisect bad dc69d1af9e8d9cbbabff88bb35a6782187a22229
 
-read_kcore() manipulates fpos, which can't be changed behind
-us inside the read callback as it's a snapshot. Also read_kcore()
-can change the value of fpos, which is writed back to file->fpos
-from sys_read().
-
-So the last resulting race here the natural one between
-seeking and reading, which is up to the user to take care
-of.
-
-Or am I missing something?
+Second bisect bad: nouveau not loaded, but I have an usable system.
+I don't feel I'm doing it right.
