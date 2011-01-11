@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab1AKVlC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 16:41:02 -0500
-Received: from www84.your-server.de ([213.133.104.84]:49360 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753902Ab1AKVk6 (ORCPT
+	id S1756185Ab1AKVnO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 16:43:14 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:13165 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753902Ab1AKVnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 16:40:58 -0500
-Subject: Re: [PATCH] new UDPCP Communication Protocol
-From: Stefani Seibold <stefani@seibold.net>
-To: David Miller <davem@davemloft.net>
-Cc: eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        shemminger@vyatta.com, jj@chaosbits.net, daniel.baluta@gmail.com,
-        jochen@jochen.org, hagen@jauu.net, torvalds@linux-foundation.org,
-        pavel@ucw.cz
-In-Reply-To: <20110111.131953.180400101.davem@davemloft.net>
-References: <1294779020.16410.2.camel@wall-e>
-	 <20110111.125254.133402589.davem@davemloft.net>
-	 <1294780480.17388.2.camel@wall-e>
-	 <20110111.131953.180400101.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 11 Jan 2011 22:41:57 +0100
-Message-ID: <1294782117.17531.18.camel@wall-e>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	Tue, 11 Jan 2011 16:43:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=Q7EGpX+vADWpnN9oQilObbK2wHRdgw2v8PeA7XlCIGqmG9xCkiOAmiPZwOO2vWkcmz
+         6hcbKc/7d0RuEV/nxGHQ==
+Date: Tue, 11 Jan 2011 13:43:06 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: linux-kernel@vger.kernel.org
+cc: mm-commits@vger.kernel.org, akpm@linux-foundation.org, hughd@google.com,
+        mel@csn.ul.ie
+Subject: Re: + mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclaim-avoid-a-potential-deadlock-due-to-lock_page-during-direct-compaction-fix.patch
+ added to -mm tree
+In-Reply-To: <201101112046.p0BKk2Js005902@imap1.linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1101111341590.7551@chino.kir.corp.google.com>
+References: <201101112046.p0BKk2Js005902@imap1.linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, den 11.01.2011, 13:19 -0800 schrieb David Miller:
-> From: Stefani Seibold <stefani@seibold.net>
-> Date: Tue, 11 Jan 2011 22:14:40 +0100
-> 
-> > If nobody need it and no user in the near future out there, why should i
-> > implement this? That is dogmatic only!
-> 
-> It's a hard requirement, sorry.
-> 
-> And I want you to do it especially because it shows clearly how poor
-> your implementation is, with all of it's code duplication.
-> 
+On Tue, 11 Jan 2011, akpm@linux-foundation.org wrote:
 
-First it is not so much code duplication. It it less than 20 percent of
-the whole code. And most of this code was adapted to the need of the
-protocol.
+> diff -puN mm/page_alloc.c~mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclaim-avoid-a-potential-deadlock-due-to-lock_page-during-direct-compaction-fix mm/page_alloc.c
+> --- a/mm/page_alloc.c~mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclaim-avoid-a-potential-deadlock-due-to-lock_page-during-direct-compaction-fix
+> +++ a/mm/page_alloc.c
+> @@ -1815,15 +1815,15 @@ __alloc_pages_direct_compact(gfp_t gfp_m
+>  	int migratetype, unsigned long *did_some_progress)
+>  {
+>  	struct page *page;
+> -	struct task_struct *p = current;
+> +	struct task_struct *tsk = current;
+>  
+>  	if (!order || compaction_deferred(preferred_zone))
+>  		return NULL;
+>  
+> -	p->flags |= PF_MEMALLOC;
+> +	tsk->flags |= PF_MEMALLOC;
+>  	*did_some_progress = try_to_compact_pages(zonelist, order, gfp_mask,
+>  								nodemask);
+> -	p->flags &= ~PF_MEMALLOC;
+> +	tsk->flags &= ~PF_MEMALLOC;
+>  	if (*did_some_progress != COMPACT_SKIPPED) {
+>  
+>  		/* Page migration frees to the PCP lists but we want merging */
 
-Second, the design is may in your opinion poor. I like it. What is
-really poor is the kernel_...() socket functions, which are only simple
-wrapper of the system calls without any performance improvement, skb
-support and memory saving.
-
-IPv6 would not very hard to implement and will be done if i get an go. 
-
-> You'll need yet another copy of all of this code to support ipv6.
-> 
-> Please implement this properly, and in doing so the ipv6 support will
-> be very simple if not trivial.
-
-The implementation is clean and fast, it has absolut no side effect. It
-is save to merge and all requirement was solved.
-
-
+This could be done for all of the page allocator functions in 
+mm/page_alloc.c, I think it would be inconsistent and slightly harder to 
+read if it were done in only one.
