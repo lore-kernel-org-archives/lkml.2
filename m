@@ -1,100 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861Ab1AKG2Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 01:28:16 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:55313 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab1AKG2J convert rfc822-to-8bit (ORCPT
+	id S1752750Ab1AKGd6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 01:33:58 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57576 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320Ab1AKGdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 01:28:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nLme2Vuudei9nABDFKkB+lN6/sFgPK1rBY0WRiGxLJlNiSmPiayAogfwbHIztPvF77
-         oYMborh7UxUhoAOIakaLz06EtKEQFZ+XIY2fbtKR27k5YuvAYB2TrfFkSuL+VPtBazZy
-         jvQ6NjiFnwEaNNtxMm7HZtsYyu/v58yP7RKbs=
-MIME-Version: 1.0
-In-Reply-To: <0aea052d-70ff-41ea-8776-c6d974c10337@email.android.com>
-References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie>
-	<AANLkTinW8Yp1K1w+G+BgLa-fPaFANkGsRjqH_W8N+9VL@mail.gmail.com>
-	<AANLkTim5oVZqMBtan5_TMOxaWbqkF=aDcBYFNYy55kt_@mail.gmail.com>
-	<0aea052d-70ff-41ea-8776-c6d974c10337@email.android.com>
-Date: Tue, 11 Jan 2011 16:28:08 +1000
-Message-ID: <AANLkTikYzz0Rs-vdX5uFDm6CpXDOx62cUYfbqEAXSame@mail.gmail.com>
-Subject: Re: [git pull] drm for rc1
-From: Dave Airlie <airlied@gmail.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Airlie <airlied@linux.ie>,
-        Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 Jan 2011 01:33:54 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 11 Jan 2011 15:27:52 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH] memcg: remove charge variable in unmap_and_move
+Message-Id: <20110111152752.88a2d142.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1294725650-4732-1-git-send-email-minchan.kim@gmail.com>
+References: <1294725650-4732-1-git-send-email-minchan.kim@gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 4:06 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> "Dave Airlie" <airlied@gmail.com> wrote:
->
->>On Tue, Jan 11, 2011 at 2:16 PM, Linus Torvalds
->><torvalds@linux-foundation.org> wrote:
->>> On Mon, Jan 10, 2011 at 2:59 PM, Dave Airlie <airlied@linux.ie>
->>wrote:
->>>> Highlights:
->>>> core/drivers: add support for high precision vblank timestamps
->>>> radeon: pageflipping support, Gen2 PCIE support
->>>> nouveau: reworked VRAM and VM support
->>>> intel: better ILK/SNB powersaving support, Full GTT support
->>>
->>> Lowlights: it's broken.
->>>
->>> I get millions of messages like:
->>>
->>>  ...
->>>  [ 8482.000414] [drm:i915_hangcheck_ring_idle] *ERROR* Hangcheck
->>> timer elapsed... render ring idle [waiting on 30938, at 30938],
->>missed
->>> IRQ?
->>>  [ 8485.918124] [drm:i915_hangcheck_ring_idle] *ERROR* Hangcheck
->>> timer elapsed... render ring idle [waiting on 31068, at 31068],
->>missed
->>> IRQ?
->>>  [ 8487.926963] [drm:i915_hangcheck_ring_idle] *ERROR* Hangcheck
->>> timer elapsed... render ring idle [waiting on 31129, at 31129],
->>missed
->>> IRQ?
->>>  ...
->>>
->>> and everything is very choppy. I assume it's the power saving thing
->>> that broke again, but that's just a total random guess, I have
->>nothing
->>> to actually back that up with.
->>>
->>> It worked fine after boot, but those problems began at 8287.139375
->>> (about two hours after boot - it may have coincided with screen
->>saver,
->>> but who knows?)  and have been happening constantly since. The
->>machine
->>> is not really usable, I'm writing this with annoying 2-second pauses
->>> every once in a while.
->>
->>Okay I'll try and reproduce and curse Chris and Jesse, does booting
->>with
->>i915.powersave=0 help any?
->>
->>Dave.
->
-> Arg.  It's been ok on my ILK systems, but Chris has found some issues with out watermarking code iirc; apparently we're underflowing the display FIFO, causing all sorts of trouble.  If it works before the pull of Dave's tree, can you bisect?
->
+On Tue, 11 Jan 2011 15:00:50 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-I think he'd fixed them in the tree I pulled locally to test, I'm
-guessing this might be that we are running the Fedora userspace driver
-and you guys are all on master or something, which would mean some ABI
-guarantee got busted.
+> memcg charge/uncharge could be handled by mem_cgroup_[prepare/end]
+> migration itself so charge local variable in unmap_and_move lost the role
+> since we introduced 01b1ae63c2.
+> 
+> In addition, the variable name is not good like below.
+> 
+> int unmap_and_move()
+> {
+> 	charge = mem_cgroup_prepare_migration(xxx);
+> 	..
+> 		BUG_ON(charge); <-- BUG if it is charged?
+> 		..
+> 		uncharge:
+> 		if (!charge)    <-- why do we have to uncharge !charge?
+> 			mem_group_end_migration(xxx);
+> 	..
+> }
+> 
+> So let's remove unnecessary and confusing variable.
+> 
+> Suggested-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-I'm going to try a local test upgrade to 2.14.0 just to see.
+Ack.
 
-Dave.
+Thanks,
+-Kame
+
