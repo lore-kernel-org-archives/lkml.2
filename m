@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156Ab1AKVaf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 16:30:35 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:52211 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756059Ab1AKVad (ORCPT
+	id S932106Ab1AKVel (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 16:34:41 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:7233 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753902Ab1AKVeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 16:30:33 -0500
+	Tue, 11 Jan 2011 16:34:37 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=mqkkS9vm+wq6ABSE3e2pjyqsB0iiJc7r+aBPzyaGVY7DJmJg8NEjT9HhnWX/hymZPW
-         QYVTQvHzzWNa4Oe6pckrh6DBTdhwevoEzAgCQkEwAuAHVfiw24Mww8bjlfE2jqNWDJeE
-         /waeV5t5RdKW+EIpNKbErD6RScmtxHpXdZPDo=
-Subject: Re: [PATCH] new UDPCP Communication Protocol
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        shemminger@vyatta.com, jj@chaosbits.net, daniel.baluta@gmail.com,
-        jochen@jochen.org, hagen@jauu.net, torvalds@linux-foundation.org,
-        pavel@ucw.cz
-In-Reply-To: <1294780480.17388.2.camel@wall-e>
-References: <1294764515-15356-1-git-send-email-stefani@seibold.net>
-	 <1294765273.2927.65.camel@edumazet-laptop>
-	 <1294779020.16410.2.camel@wall-e>
-	 <20110111.125254.133402589.davem@davemloft.net>
-	 <1294780480.17388.2.camel@wall-e>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 11 Jan 2011 22:30:27 +0100
-Message-ID: <1294781427.3447.18.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type:content-id;
+        b=PshelH2stHamCCczLz6aKuu959ntl01psGqApEIzEtjU+kun6vupQZpXnj7ESHuCO9
+         uhHw5GPh0TAkAl9FU/ag==
+Date: Tue, 11 Jan 2011 13:34:29 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Catalin Marinas <catalin.marinas@arm.com>
+cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, "Ted Ts'o" <tytso@mit.edu>
+Subject: Re: [PATCH] kmemleak: Reduce verbosity when memory allocation
+ fails
+In-Reply-To: <1294749841.4666.49.camel@e102109-lin.cambridge.arm.com>
+Message-ID: <alpine.DEB.2.00.1101111332330.7551@chino.kir.corp.google.com>
+References: <20110110181133.14995.12364.stgit@e102109-lin.cambridge.arm.com> <alpine.DEB.2.00.1101101232580.11969@chino.kir.corp.google.com> <AANLkTik-NwSioPg96EFUDzuK=zK0kNbvUeQbt0rwQAtX@mail.gmail.com> <alpine.DEB.2.00.1101101527580.15655@chino.kir.corp.google.com>
+ <1294749841.4666.49.camel@e102109-lin.cambridge.arm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="531368966-1944214422-1294781648=:7551"
+Content-ID: <alpine.DEB.2.00.1101111334240.7551@chino.kir.corp.google.com>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 11 janvier 2011 à 22:14 +0100, Stefani Seibold a écrit :
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> If nobody need it and no user in the near future out there, why should i
-> implement this? That is dogmatic only!
+--531368966-1944214422-1294781648=:7551
+Content-Type: TEXT/PLAIN; CHARSET=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-ID: <alpine.DEB.2.00.1101111334241.7551@chino.kir.corp.google.com>
+
+On Tue, 11 Jan 2011, Catalin Marinas wrote:
+
+> kmemleak: Allow kmemleak metadata allocations to fail
 > 
+> From: Catalin Marinas <catalin.marinas@arm.com>
+> 
+> This patch adds __GFP_NORETRY and __GFP_NOMEMALLOC flags to the kmemleak
+> metadata allocations so that it has a smaller effect on the users of the
+> kernel slab allocator. Since kmemleak allocations can now fail more
+> often, this patch also reduces the verbosity by passing __GFP_NOWARN and
+> not dumping the stack trace when a kmemleak allocation fails.
+> 
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+> Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Ted Ts'o <tytso@mit.edu>
 
-Sure !
-
-Problem is linux kernel code is not your own project.
-
-Some community rules must be respected.
-
-You call this dogmatic, you are right, since this makes your life less
-easy.
-
-However, for hundred of people working to maintain/improve linux kernel
-code, especially in network stacks, this ends in less stress, when a
-problem must be located, and fixed.
-
-Note : We are trying to help you, not fighting against you, in the long
-term, its a win-win for everybody.
-
-
-
+Acked-by: David Rientjes <rientjes@google.com>
+--531368966-1944214422-1294781648=:7551--
