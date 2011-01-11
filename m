@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718Ab1AKFXH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 00:23:07 -0500
+	id S1752945Ab1AKFXV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 00:23:21 -0500
 Received: from mail-yx0-f174.google.com ([209.85.213.174]:63404 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752228Ab1AKFWm (ORCPT
+	with ESMTP id S1752178Ab1AKFW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 00:22:42 -0500
+	Tue, 11 Jan 2011 00:22:56 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=dQouvSAbYQ7YfIQo9Zj72gaGxwA37xx/3tdDOyxvXj6iUmVlYzBhFpdBKOLDn3N10w
-         JbLHz2WV+ygv1b7KE+Nmfiv2s2rVo8Budbg5zKOkVf4g2FjNEAN71wAKHmk/gRVN01Gm
-         RUQ5he0RRb5oJT8wwFpfRzhgN+10Nhm6QeHAY=
+        b=XxbjKhBVVXrMJrs42tUmV9Ti79N6ImxhEsApzg8v9KszUP+TabfzfOrnIsSpg2TMMN
+         XF9rH0jqB5l+GsVnM1bcCrn4RfznPpf18/rWGjSwcV5+c2epNX0g7d27zxzvJ8T3i4nz
+         VKKNPFOMTQexIAOf7S+crkZORAf1zcjtAj2fw=
 From: Minchan Kim <minchan.kim@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
@@ -21,10 +21,12 @@ Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Johannes Weiner <hannes@cmpxchg.org>,
         Minchan Kim <minchan.kim@gmail.com>,
-        Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net
-Subject: [PATCH v3 2/7] fuse: Change remove_from_page_cache
-Date: Tue, 11 Jan 2011 14:22:06 +0900
-Message-Id: <a41d3be39d5ecf7549ae7cfb7fc63807fe07a394.1294723009.git.minchan.kim@gmail.com>
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andi Kleen <andi@firstfloor.org>, Nick Piggin <npiggin@kernel.dk>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH v3 5/7] truncate: Change remove_from_page_cache
+Date: Tue, 11 Jan 2011 14:22:09 +0900
+Message-Id: <0a67c9d4b1a2cdcc2a7b43147d73766c986531f4.1294723009.git.minchan.kim@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <cover.1294723009.git.minchan.kim@gmail.com>
 References: <cover.1294723009.git.minchan.kim@gmail.com>
@@ -38,8 +40,10 @@ This patch series changes remove_from_page_cache's page ref counting
 rule. Page cache ref count is decreased in delete_from_page_cache.
 So we don't need decreasing page reference by caller.
 
-Cc: Miklos Szeredi <miklos@szeredi.hu>
-Cc: fuse-devel@lists.sourceforge.net
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Nick Piggin <npiggin@kernel.dk>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 Acked-by: Hugh Dickins <hughd@google.com>
 Acked-by: Mel Gorman <mel@csn.ul.ie>
 Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
@@ -47,23 +51,29 @@ Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
 Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 ---
- fs/fuse/dev.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ mm/truncate.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
-index cf8d28d..1ef24fb 100644
---- a/fs/fuse/dev.c
-+++ b/fs/fuse/dev.c
-@@ -737,8 +737,7 @@ static int fuse_try_move_page(struct fuse_copy_state *cs, struct page **pagep)
- 	if (WARN_ON(PageMlocked(oldpage)))
- 		goto out_fallback_unlock;
+diff --git a/mm/truncate.c b/mm/truncate.c
+index 9ee5673..85404b0 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -108,13 +108,12 @@ truncate_complete_page(struct address_space *mapping, struct page *page)
+ 	cancel_dirty_page(page, PAGE_CACHE_SIZE);
  
--	remove_from_page_cache(oldpage);
--	page_cache_release(oldpage);
-+	delete_from_page_cache(oldpage);
+ 	clear_page_mlock(page);
+-	remove_from_page_cache(page);
++	delete_from_page_cache(page);
+ 	ClearPageMappedToDisk(page);
+-	/* this must be after the remove_from_page_cache which
++	/* this must be after the delete_from_page_cache which
+ 	 * calls cleancache_put_page (and note page->mapping is now NULL)
+ 	 */
+ 	cleancache_flush_page(mapping, page);
+-	page_cache_release(page);	/* pagecache ref */
+ 	return 0;
+ }
  
- 	err = add_to_page_cache_locked(newpage, mapping, index, GFP_KERNEL);
- 	if (err) {
 -- 
 1.7.0.4
 
