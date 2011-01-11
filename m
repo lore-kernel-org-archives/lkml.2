@@ -1,53 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab1AKAGP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 19:06:15 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:48233 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754681Ab1AKAGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 19:06:13 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH] cpuidle: Make cpuidle_enable_device() call poll_idle_init()
-Date: Tue, 11 Jan 2011 01:05:53 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37+; KDE/4.4.4; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Renninger <trenn@suse.de>
-References: <201101080029.20744.rjw@sisk.pl> <alpine.LFD.2.02.1101101754320.7945@x980> <201101110102.22204.rjw@sisk.pl>
-In-Reply-To: <201101110102.22204.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1754793Ab1AKANb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 19:13:31 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54364
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753358Ab1AKAN3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 19:13:29 -0500
+Date: Mon, 10 Jan 2011 16:14:02 -0800 (PST)
+Message-Id: <20110110.161402.236235481.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: romieu@fr.zoreil.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] net/r8169: Update the function of parsing firmware
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1294661245-2191-1-git-send-email-hayeswang@realtek.com>
+References: <1294661245-2191-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101110105.54166.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 11, 2011, Rafael J. Wysocki wrote:
-> On Tuesday, January 11, 2011, Len Brown wrote:
-> > >  /**
-> > >   * cpuidle_enable_device - enables idle PM for a CPU
-> > >   * @dev: the CPU
-> > > @@ -176,6 +215,8 @@ int cpuidle_enable_device(struct cpuidle
-> > >  		ret = __cpuidle_register_device(dev);
-> > >  		if (ret)
-> > >  			return ret;
-> > > +	} else {
-> > > +		poll_idle_init(dev);
-> > >  	}
-> > 
-> > how about calling poll_idle_init() unconditionally here
-> > and deleting the call to it from within __cpuidle_register_device()?
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Mon, 10 Jan 2011 20:07:25 +0800
+
+> Update rtl_phy_write_fw function. The new function could
+> parse the complex firmware which is used by RTL8111E and later.
+> The new firmware may read data and do some operations, not just
+> do writing only.
 > 
-> Fine by me, as long as poll_idle_init() is called before the conditional. :-)
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 
-In fact, it even doesn't need to be called before the conditional.
-
-So fine by me anyway.
-
-Thanks,
-Rafael
+Applied, thank you.
