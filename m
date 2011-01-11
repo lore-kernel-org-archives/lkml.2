@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878Ab1AKLUb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 06:20:31 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:49329 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755583Ab1AKLU2 (ORCPT
+	id S1755921Ab1AKLVC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 06:21:02 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:41890 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755583Ab1AKLVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 06:20:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=K79fuJEYAlxM7YbmxPtJG5NrMuFILHNgzGuuG3GNPQuI8ygfQoUyoBTPJHqRNdXhZJ
-         Gu9dAZzRYX59qYBVVb7jIYvrEldOO6djEEAjQYYbQ3QJMDByRx8aFOXBr2iZYuerbIZG
-         cuWBhYjJoQXeWP7+r7nVa9QAjQI9Jj3hL6mCY=
+	Tue, 11 Jan 2011 06:21:00 -0500
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH 1/2] gpio: implement x86 gpio_to_irq convert function
+To: x86@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Date: Tue, 11 Jan 2011 10:55:32 +0000
+Message-ID: <20110111105439.24448.69863.stgit@bob.linux.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <20110111111345.GA23544@shutemov.name>
-References: <20110110105433.GA17881@shutemov.name>
-	<alpine.DEB.2.00.1101101051260.12243@router.home>
-	<20110110193117.GA20027@shutemov.name>
-	<4D2C279D.5050309@redhat.com>
-	<4D2C3115.9030301@redhat.com>
-	<20110111111345.GA23544@shutemov.name>
-Date: Tue, 11 Jan 2011 13:20:27 +0200
-X-Google-Sender-Auth: AKH4d-Wp_Lu52plIZtSbd-K2GhU
-Message-ID: <AANLkTim4VM7GjGonXwTs9zwuaOTzegbNKHLpN1QEE1th@mail.gmail.com>
-Subject: Re: BUG: sleeping function called from invalid context at mm/slub.c:793
-From: Pekka Enberg <penberg@kernel.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Avi Kivity <avi@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 1:13 PM, Kirill A. Shutemov
-<kirill@shutemov.name> wrote:
->> Please try out the attached patch.
->
-> It helps.
->
-> Reported-and-tested-by: Kirill A. Shutemov <kas@openvz.org>
+From: Alek Du <alek.du@intel.com>
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+We need this for x86 MID platforms where GPIO interrupts are used. No special
+magic is needed so the default 1:1 behaviour will do nicely.
+
+Signed-off-by: Alek Du <alek.du@intel.com>
+Signed-off-by: Jacob Pan <jacob.jun.pan@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
+
+ arch/x86/include/asm/gpio.h |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
+
+
+diff --git a/arch/x86/include/asm/gpio.h b/arch/x86/include/asm/gpio.h
+index 49dbfdf..91d915a 100644
+--- a/arch/x86/include/asm/gpio.h
++++ b/arch/x86/include/asm/gpio.h
+@@ -38,12 +38,9 @@ static inline int gpio_cansleep(unsigned int gpio)
+ 	return __gpio_cansleep(gpio);
+ }
+ 
+-/*
+- * Not implemented, yet.
+- */
+ static inline int gpio_to_irq(unsigned int gpio)
+ {
+-	return -ENOSYS;
++	return __gpio_to_irq(gpio);
+ }
+ 
+ static inline int irq_to_gpio(unsigned int irq)
+
