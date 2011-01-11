@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab1AKQJZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 11:09:25 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48622 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756155Ab1AKQJV (ORCPT
+	id S932285Ab1AKQLo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 11:11:44 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34035 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756176Ab1AKQLl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 11:09:21 -0500
+	Tue, 11 Jan 2011 11:11:41 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=QiQDW7XIFaFctaYnW+u/LGfCPIWSYW3v4iBMidYT4+CCZ01Mkc2MCf6YPizViNYuCr
-         p+8xhAz/IioaK3ZsnfcQ2pMBzBWhtgZmhDmdtZ1Q2ocVn9AEKQ3L8ySdaqiaQuAlxfc5
-         w0n+DX8WwlnOaWaXvh1yrnENVaLowPxFeCxNk=
-Date: Wed, 12 Jan 2011 00:09:18 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Miles Lane <miles.lane@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steve French <sfrench@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: 2.6.37-git5 - Lots of undefined symbols (ewma_init,
- dev_getbyhwaddr_rcu, sysctl_max_syn_backlog, sysctl_ip_default_ttl,
- d_set_d_op, mntput_long, input_mt_init_slots, etc.)
-Message-ID: <20110111160918.GG17312@hack>
-References: <AANLkTi==VazfSaRYt4q2ehtzebCnYTJkfgt1Jtggn5kf@mail.gmail.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=f15au5spwDZttB7DE2mcM42F7m0AAAr3fz1VOr2EMbDPsBnRWVg/s5y7GP3ccJkDQ7
+         MgUNBQASjk0AluIz0Jlh/yrcytFf2ETdioj0wAz9U+/viquf66smh3zZUuOonqxhfSVc
+         zu3G1qfhxV1uEAdFZtuzIHdx1HJIUtVJAtD6w=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi==VazfSaRYt4q2ehtzebCnYTJkfgt1Jtggn5kf@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AANLkTim0rn7Vem6YJM5tVKM0PX4YdnNmaeqmpS=Vp7rc@mail.gmail.com>
+References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie>
+	<AANLkTinW8Yp1K1w+G+BgLa-fPaFANkGsRjqH_W8N+9VL@mail.gmail.com>
+	<AANLkTim5oVZqMBtan5_TMOxaWbqkF=aDcBYFNYy55kt_@mail.gmail.com>
+	<0aea052d-70ff-41ea-8776-c6d974c10337@email.android.com>
+	<AANLkTim0rn7Vem6YJM5tVKM0PX4YdnNmaeqmpS=Vp7rc@mail.gmail.com>
+Date: Tue, 11 Jan 2011 18:11:40 +0200
+Message-ID: <AANLkTimx0hWByYw1dXKS6y0B9a84gYOxBu-Gnjm+cCwa@mail.gmail.com>
+Subject: Re: [git pull] drm for rc1
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Dave Airlie <airlied@gmail.com>,
+        Dave Airlie <airlied@linux.ie>,
+        Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 11:00:19AM -0500, Miles Lane wrote:
->ERROR: "ewma_init" [net/mac80211/mac80211.ko] undefined!
->ERROR: "ewma_add" [net/mac80211/mac80211.ko] undefined!
->ERROR: "dev_getbyhwaddr_rcu" [net/llc/llc2.ko] undefined!
->ERROR: "sysctl_max_syn_backlog" [net/ipv6/ipv6.ko] undefined!
->ERROR: "rtnl_af_unregister" [net/ipv6/ipv6.ko] undefined!
->ERROR: "rtnl_af_register" [net/ipv6/ipv6.ko] undefined!
->ERROR: "__rtnl_af_unregister" [net/ipv6/ipv6.ko] undefined!
->ERROR: "tcp_v4_tw_get_peer" [net/ipv6/ipv6.ko] undefined!
->ERROR: "inet_getpeer" [net/ipv6/ipv6.ko] undefined!
->ERROR: "inet_putpeer" [net/ipv6/ipv6.ko] undefined!
->ERROR: "tcp_v4_get_peer" [net/ipv6/ipv6.ko] undefined!
->ERROR: "sysctl_ip_default_ttl" [net/ipv4/xfrm4_mode_tunnel.ko] undefined!
->ERROR: "sysctl_ip_default_ttl" [net/ipv4/netfilter/ipt_REJECT.ko] undefined!
->ERROR: "d_set_d_op" [fs/isofs/isofs.ko] undefined!
->ERROR: "d_set_d_op" [fs/hfsplus/hfsplus.ko] undefined!
->ERROR: "d_set_d_op" [fs/hfs/hfs.ko] undefined!
->ERROR: "d_set_d_op" [fs/fat/vfat.ko] undefined!
->ERROR: "d_set_d_op" [fs/fat/msdos.ko] undefined!
->ERROR: "d_set_d_op" [fs/fat/fat.ko] undefined!
->ERROR: "d_set_d_op" [fs/cifs/cifs.ko] undefined!
->ERROR: "d_drop" [fs/cifs/cifs.ko] undefined!
->ERROR: "d_set_d_op" [fs/autofs4/autofs4.ko] undefined!
->ERROR: "rename_lock" [fs/autofs4/autofs4.ko] undefined!
->ERROR: "__d_drop" [fs/autofs4/autofs4.ko] undefined!
->ERROR: "mntput_long" [drivers/mtd/mtdchar.ko] undefined!
->ERROR: "input_mt_init_slots" [drivers/input/mouse/psmouse.ko] undefined!
->ERROR: "input_mt_report_slot_state" [drivers/input/mouse/psmouse.ko] undefined!
->make[2]: *** [__modpost] Error 1
+On Tue, Jan 11, 2011 at 6:01 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Mon, Jan 10, 2011 at 10:06 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+>>
+>> Arg.  It's been ok on my ILK systems, but Chris has found some issues with out watermarking code iirc; apparently we're underflowing the display FIFO, causing all sorts of trouble.  If it works before the pull of Dave's tree, can you bisect?
+>
+> There's no way to bisect this thing - it started happening after 2
+> hours (first message at 8287.139375 seconds from boot, to be exact).
+> So far only once, but that's possibly because I've been asleep for the
+> last eight hours ;)
+>
+> But yes, it worked before pulling Dave's tree, IOW, I haven't seen
+> this message on this machine before.
+>
+> And as mentioned, this is a regular machine, not one of my
+> preproduction things that tend to have odd silicon or BIOSes.
+> Bog-standard Core i5 on an Asus P7H57D-V EVO motherboard. The fanciest
+> part of that machine is the silent case ;)
+>
+> Chris wrote:
+>> Linus, is anything else kicked off upon powersaving? A screen saver or is
+>> it just the blanking that triggers the mess?
+>
+> So I don't _know_ that it was the screen saver that triggered, but I
+> do know that it started happening while I was out to pick up a kid
+> from gymnastics. So the screen saver was pretty much the only thing
+> going on apart from an idle desktop with a few terminals and chrome.
+>
+> And it's not even a 3D screen saver or anything graphically fancy,
+> it's just the "show random photos" one (it eventually does blank too,
+> but I think I've set the blanking interval to an hour or something).
+> But compiz was on.
+>
+>                         Linus
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 >
 
-Try to rebuild the kernel from a clean directory.
-
--- 
-Live like a child, think like the god.
- 
+Linus, 2.6.37-git4 works for me, can you unpull the DRM, and wait
+until is more stable ?
