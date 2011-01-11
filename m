@@ -1,65 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106Ab1AKVel (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 16:34:41 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:7233 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753902Ab1AKVeh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 16:34:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type:content-id;
-        b=PshelH2stHamCCczLz6aKuu959ntl01psGqApEIzEtjU+kun6vupQZpXnj7ESHuCO9
-         uhHw5GPh0TAkAl9FU/ag==
-Date: Tue, 11 Jan 2011 13:34:29 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Catalin Marinas <catalin.marinas@arm.com>
-cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, "Ted Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH] kmemleak: Reduce verbosity when memory allocation
- fails
-In-Reply-To: <1294749841.4666.49.camel@e102109-lin.cambridge.arm.com>
-Message-ID: <alpine.DEB.2.00.1101111332330.7551@chino.kir.corp.google.com>
-References: <20110110181133.14995.12364.stgit@e102109-lin.cambridge.arm.com> <alpine.DEB.2.00.1101101232580.11969@chino.kir.corp.google.com> <AANLkTik-NwSioPg96EFUDzuK=zK0kNbvUeQbt0rwQAtX@mail.gmail.com> <alpine.DEB.2.00.1101101527580.15655@chino.kir.corp.google.com>
- <1294749841.4666.49.camel@e102109-lin.cambridge.arm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="531368966-1944214422-1294781648=:7551"
-Content-ID: <alpine.DEB.2.00.1101111334240.7551@chino.kir.corp.google.com>
-X-System-Of-Record: true
+	id S1756049Ab1AKVgX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 16:36:23 -0500
+Received: from thunk.org ([69.25.196.29]:55001 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753902Ab1AKVgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 16:36:21 -0500
+Date: Tue, 11 Jan 2011 16:36:15 -0500
+Message-Id: <E1Pclt1-000320-HF@tytso-glaptop>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ext4 update for 2.6.38
+From: "Theodore Ts'o" <tytso@mit.edu>
+Phone: (781) 391-3464
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi Linus,
 
---531368966-1944214422-1294781648=:7551
-Content-Type: TEXT/PLAIN; CHARSET=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-ID: <alpine.DEB.2.00.1101111334241.7551@chino.kir.corp.google.com>
+Please pull from:
 
-On Tue, 11 Jan 2011, Catalin Marinas wrote:
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git for_linus
 
-> kmemleak: Allow kmemleak metadata allocations to fail
-> 
-> From: Catalin Marinas <catalin.marinas@arm.com>
-> 
-> This patch adds __GFP_NORETRY and __GFP_NOMEMALLOC flags to the kmemleak
-> metadata allocations so that it has a smaller effect on the users of the
-> kernel slab allocator. Since kmemleak allocations can now fail more
-> often, this patch also reduces the verbosity by passing __GFP_NOWARN and
-> not dumping the stack trace when a kmemleak allocation fails.
-> 
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-> Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Ted Ts'o <tytso@mit.edu>
+It's a somewhat larger number of changes this time but it's all
+primarily cleanup and minor bug fixes.
 
-Acked-by: David Rientjes <rientjes@google.com>
---531368966-1944214422-1294781648=:7551--
+						- Ted
+
+
+ fs/ext2/xattr.c        |   10 +--
+ fs/ext3/xattr.c        |    2 +-
+ fs/ext4/balloc.c       |    3 +-
+ fs/ext4/dir.c          |   58 ++++++----
+ fs/ext4/ext4.h         |   93 ++++++++++------
+ fs/ext4/ext4_extents.h |    8 +-
+ fs/ext4/ext4_jbd2.h    |    2 +-
+ fs/ext4/extents.c      |   88 +++++++++------
+ fs/ext4/file.c         |   22 ++++
+ fs/ext4/fsync.c        |    4 +-
+ fs/ext4/ialloc.c       |    2 +-
+ fs/ext4/inode.c        |   74 +++++++++----
+ fs/ext4/mballoc.c      |   55 ++++-----
+ fs/ext4/migrate.c      |    2 +-
+ fs/ext4/namei.c        |   69 ++++++++----
+ fs/ext4/page-io.c      |    7 +-
+ fs/ext4/resize.c       |   64 ++++++++---
+ fs/ext4/super.c        |  288 ++++++++++++++++++++++++++----------------------
+ fs/ext4/xattr.c        |   28 +++---
+ fs/jbd2/journal.c      |   34 +++---
+ fs/jbd2/recovery.c     |    2 +-
+ fs/jbd2/transaction.c  |    6 +-
+ include/linux/jbd2.h   |   20 +++-
+ 23 files changed, 562 insertions(+), 379 deletions(-)
+
+Andrew Morton (1):
+      ext4: fix uninitialized variable in ext4_register_li_request
+
+Dan Carpenter (2):
+      ext4: test the correct variable in ext4_init_pageio()
+      ext4: use IS_ERR() to check for errors in ext4_error_file
+
+Eric Paris (1):
+      ext4: ext4_ext_migrate should use NULL not 0
+
+Eric Sandeen (2):
+      ext4: zero out nanosecond timestamps for small inodes
+      ext4: don't pass entire map to check_eofblocks_fl
+
+Jan Kara (2):
+      ext4: fix trimming of a single group
+      ext4: fix trimming starting with block 0 with small blocksize
+
+Jesper Juhl (1):
+      ext4: use kmem_cache_zalloc() in ext4_init_io_end()
+
+Jiaying Zhang (1):
+      ext4: flush the i_completed_io_list during ext4_truncate
+
+Joe Perches (2):
+      ext4: Use vzalloc in ext4_fill_flex_info()
+      ext4: Use printf extension %pV
+
+Kazuya Mio (1):
+      ext4: fix 32bit overflow in ext4_ext_find_goal()
+
+Lukas Czerner (2):
+      ext4: fix possible overflow in ext4_trim_fs()
+      ext4: remove warning message from ext4_issue_discard helper
+
+Namhyung Kim (1):
+      ext4: add more error checks to ext4_mkdir()
+
+Theodore Ts'o (25):
+      ext4: Simplify the usage of clear_opt() and set_opt() macros
+      ext4: Move struct ext4_mount_options from ext4.h to super.c
+      ext4: Add second mount options field since the s_mount_opt is full up
+      ext4: Fix up comments in inode.c
+      ext4: Use pr_warning_ratelimited() instead of printk_ratelimit()
+      jbd2: Use pr_notice_ratelimited() in journal_alloc_journal_head()
+      jbd2: Fix a debug message in do_get_write_access()
+      jbd2: use offset_in_page() instead of manual calculation
+      jbd2: remove unnecessary goto statement
+      jbd2: move debug message into debug #ifdef
+      jbd2: simplify return path of journal_init_common
+      ext4: optimize ext4_check_dir_entry() with unlikely() annotations
+      ext4: Add error checking to kmem_cache_alloc() call in ext4_free_blocks()
+      ext4: clean up ext4_xattr_list()'s error code checking and return strategy
+      ext4: Use ext4_error_file() to print the pathname to the corrupted inode
+      ext4: replace i_delalloc_reserved_flag with EXT4_STATE_DELALLOC_RESERVED
+      ext4: use ext4_lblk_t instead of sector_t for logical blocks
+      ext4: drop ec_type from the ext4_ext_cache structure
+      ext4: reorder ext4_inode_info structure elements to remove unneeded padding
+      ext4: drop i_state_flags on architectures with 64-bit longs
+      ext4: dynamically allocate the jbd2_inode in ext4_inode_info as necessary
+      ext4: add error checking to calls to ext4_handle_dirty_metadata()
+      ext4: remove ext4_mb_return_to_preallocation()
+      ext4: fix memory leak in ext4_free_branches
+      ext4: revert buggy trim overflow patch
+
+Tobias Klauser (1):
+      ext4: Remove redundant unlikely()
+
+Wang Sheng-Hui (2):
+      ext2,ext3,ext4: clarify comment for extN_xattr_set_handle
+      ext2: remove dead code in ext2_xattr_get
+
