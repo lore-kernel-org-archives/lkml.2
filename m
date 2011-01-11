@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932448Ab1AKQsp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 11:48:45 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:52248 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932405Ab1AKQsn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 11:48:43 -0500
-Date: Tue, 11 Jan 2011 16:48:34 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Mourad De Clerck <mourad@aquazul.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Richard Purdie <rpurdie@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Richard Hughes <richard@hughsie.com>
-Subject: Re: mbp_nvidia_bl: Remove DMI dependency (was: Re: [PATCH,RESEND]
-	backlight: mbp_nvidia_bl - add support for MacBookPro7,1)
-Message-ID: <20110111164834.GA28175@srcf.ucam.org>
-References: <4D145EB5.7090205@aquazul.com> <20110104143651.8f6d62e0.akpm@linux-foundation.org> <4D2C8864.8030909@aquazul.com>
+	id S932459Ab1AKQtW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 11:49:22 -0500
+Received: from mail.mnsspb.ru ([84.204.75.2]:46310 "EHLO mail.mnsspb.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932405Ab1AKQtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 11:49:18 -0500
+X-Greylist: delayed 888 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Jan 2011 11:49:18 EST
+Date: Tue, 11 Jan 2011 19:35:20 +0300
+From: Kirill Smelkov <kirr@mns.spb.ru>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [BUG] perf top -> annotate broken; bisected to 69aad6f1
+Message-ID: <20110111163520.GA4554@tugrik.mns.mnsspb.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D2C8864.8030909@aquazul.com>
+Organization: Marine Bridge & Navigation Systems
 User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 05:42:12PM +0100, Mourad De Clerck wrote:
-> A bit late, but I tested this patch series and it works for me.
-> 
-> The only slight change is that gnome-power-manager needs to be updated
-> to use /sys/class/backlight/apple_backlight instead of mbp_backlight.
+Hello up there,
 
-gnome-power-manager needs not to have a hardcoded list of backlights. 
-Richard?
+Since 69aad6f1ee69546dea8535ab8f3da9f445d57328 (perf tools: Introduce
+event selectors; Jan 3 2011) annotating a symbol in perf top segfaults:
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+    Program received signal SIGSEGV, Segmentation fault.
+    [Switching to Thread 0xb714cb90 (LWP 4662)]
+    event_name (evsel=0x0) at util/parse-events.c:274
+    274             return __event_name(type, config);
+    (gdb) bt
+    #0  event_name (evsel=0x0) at util/parse-events.c:274
+    #1  0x0805f892 in display_thread (arg=0x9422448) at builtin-top.c:359
+    #2  0xb77234c0 in start_thread () from /lib/i686/cmov/libpthread.so.0
+    #3  0xb732b84e in clone () from /lib/i686/cmov/libc.so.6
+
+
+It used to work...
+
+Thanks,
+Kirill
