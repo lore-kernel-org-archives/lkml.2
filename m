@@ -1,99 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448Ab1AKIvN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 03:51:13 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:49930 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751035Ab1AKIvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 03:51:03 -0500
-From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
-To: "'Arnd Bergmann'" <arnd@arndb.de>, "'David Howells'" <dhowells@redhat.com>
-Cc: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <024501cbaf37$4e479fd0$ead6df70$@mprc.pku.edu.cn> <201101090128.25371.arnd@arndb.de> <005201cbb0ce$65e725f0$31b571d0$@mprc.pku.edu.cn> <201101110540.48489.arnd@arndb.de>
-In-Reply-To: <201101110540.48489.arnd@arndb.de>
-Subject: RE: [PATCH] asm-generic headers: modify stat.h in include/asm-generic to be applicable to more architectures
-Date: Tue, 11 Jan 2011 16:50:48 +0800
-Message-ID: <00b201cbb16c$a57f7890$f07e69b0$@mprc.pku.edu.cn>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQHcrptIjxS/TXKdAV/Q702tjnnsngH7oe//A0DIO/IBwNkAUJNxkXtA
-Content-Language: zh-cn
+	id S1755473Ab1AKIv0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 03:51:26 -0500
+Received: from mail-yw0-f66.google.com ([209.85.213.66]:44638 "EHLO
+	mail-yw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035Ab1AKIvW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 03:51:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=xA5aG6m96k3IbWIyrKuCHxh650A/P8+pC/LAHckpTGP3jYYTkV9jPFhsraf2F3BF3S
+         M7OLivElBVVEHNQH0GuPxAFM7S7oqGV0ubUzmhnCcdLWpnKy+kVfNQ+xNvz8BwnKflsD
+         UtYIuBlAeB6sGAjAxFQ2jwn76MYf8AmEwKsYg=
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: [PATCH 1/2] memcg: remove unnecessary BUG_ON
+Date: Tue, 11 Jan 2011 17:51:11 +0900
+Message-Id: <41390917af25769cd59eb001370b80ef6520a8bb.1294735182.git.minchan.kim@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Now memcg in unmap_and_move checks BUG_ON of charge.
+mem_cgroup_prepare_migration returns either 0 or -ENOMEM.
+If it returns -ENOMEM, it jumps out unlock without the check.
+If it returns 0, it can pass BUG_ON. So it's meaningless.
+Let's remove it.
 
-> -----Original Message-----
-> From: Arnd Bergmann [mailto:arnd@arndb.de]
-> Sent: Tuesday, January 11, 2011 12:41 PM
-> To: Guan Xuetao; David Howells
-> Cc: linux-arch@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] asm-generic headers: modify stat.h in include/asm-generic to be applicable to more architectures
-> 
-> On Monday 10 January 2011, Guan Xuetao wrote:
-> > IMO, asm-generic headers should be used in more architectures as far as possible.
-> 
-> They serve two purposes:
-> 
-> 1. To be used by other architectures (with or without being modified by arch
->    specific defines)
-> 2. As an example implementation to read by people understanding the kernel or
->    porting to a new architecture.
-> 
-> Your patch helps the first cause, but it's counterproductive for the second.
-> 
-> Also, if we wanted to make all these headers fully generic, we would no longer
-> need an asm-generic directory for the first use case, because then everything
-> in them could be put into the include/linux/*.h headers directly. This has
-> happened for a number of files in the past, but it's impractical for others.
-> 
-> > The patch of stat.h could be split into two parts to discuss.
-> > Firstly,  STAT64_HAS_BROKEN_ST_INO is defined in most architecture's asm/stat.h,
-> > and it should be considered as the part in asm-generic/stat.h.
-> 
-> This one is purely historical. The definition of st_ino was too short
-> initially, so the field was kept in place by renamed to __st_ino
-> instead. The __st_ino should however never be used by any application
-> you compile now, only by the kernel in order to remain compatible with
-> existing application binaries. No new architecture should need to see
-> this, because there are no preexisting binaries that use this field.
-> 
-> I intentionally left out all the backwards-compatibility fields from
-> the asm-generic headers that I wrote.
-> 
-> > Secondly, STAT64_PAD_BEFORE_* are misunderstanding definitions, and perhaps
-> > it should use STAT64_ST_SIZE_NEED_ALIGN_64.
-> 
-> It's much more complicated ;-)
-> 
-> The padding after st_rdev is usually from glibc trying to reserve a large
-> amount of space for future extensions of rdev. Padding around st_blocks
-> and st_size is usually for making it possible to extend those values
-> to full 64 bit when they are not already, but some architectures use
-> the padding just to provide natural alignment of the words.
-> 
-> Almost every architecture has a slightly different definition of
-> stat64, and most of them got at least one aspect slightly wrong.
-> 
-> The mistake that I made in the asm-generic version was that it uses 32 bit
-> st_*time, which should really be 64 bit in order to avoid the year 2038
-> overflow bug.
-> 
-> > Indeed, the macros are used for compatibility, but most architectures could make full use of
-> > asm-generic headers, and new architectures could just follow the default values.
-> 
-> I totally agree with the idea in generical (for other headers), but in case of the
-> stat.h file, it always gets more complicated than you think at first.
-> David Howells worked on a new 'struct xstat' for some time, if anything we should
-> just do that and keep struct stat hidden in the dark corners of the kernel.
-> 
-> 	Arnd
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+---
+ mm/migrate.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Ok, I see.
-Thanks.
-
-Guan Xuetao
+diff --git a/mm/migrate.c b/mm/migrate.c
+index b8a32da..8f0f131 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -667,7 +667,6 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+ 		rc = -ENOMEM;
+ 		goto unlock;
+ 	}
+-	BUG_ON(charge);
+ 
+ 	if (PageWriteback(page)) {
+ 		if (!force || !sync)
+-- 
+1.7.0.4
 
