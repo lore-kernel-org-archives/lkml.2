@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932394Ab1AKRKy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 12:10:54 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:41992 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753020Ab1AKRKw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 12:10:52 -0500
-Date: Tue, 11 Jan 2011 22:40:46 +0530
-From: Bharata B Rao <bharata@linux.vnet.ibm.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] Re: autogroup: sched_setscheduler() fails
-Message-ID: <20110111171046.GL4772@in.ibm.com>
-Reply-To: bharata@linux.vnet.ibm.com
-References: <20110110091622.GF2772@in.ibm.com>
- <1294655388.8197.22.camel@marge.simson.net>
- <1294657154.2016.459.camel@laptop>
- <1294677746.8345.4.camel@marge.simson.net>
+	id S932414Ab1AKRL4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 12:11:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22028 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755463Ab1AKRLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 12:11:53 -0500
+Date: Tue, 11 Jan 2011 15:11:24 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Kirill Smelkov <kirr@mns.spb.ru>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] perf top -> annotate broken; bisected to 69aad6f1
+Message-ID: <20110111171124.GB11968@ghostprotocols.net>
+References: <20110111163520.GA4554@tugrik.mns.mnsspb.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1294677746.8345.4.camel@marge.simson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110111163520.GA4554@tugrik.mns.mnsspb.ru>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 05:42:26PM +0100, Mike Galbraith wrote:
-> Index: linux-2.6/kernel/sched_autogroup.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched_autogroup.c
-> +++ linux-2.6/kernel/sched_autogroup.c
-> @@ -73,6 +73,15 @@ static inline struct autogroup *autogrou
->  	ag->id = atomic_inc_return(&autogroup_seq_nr);
->  	ag->tg = tg;
->  	tg->autogroup = ag;
-> +#ifdef CONFIG_RT_GROUP_SCHED
-> +	/*
-> +	 * HACK: autogroup RT tasks run in the root task group.
-> +	 * This fools __sched_setscheduler() into proceeding on
-> +	 * so we can move the task to the appropriate runqueue
-> +	 * upon scheduling policy change.
-> +	 */
-> +	tg->rt_bandwidth.rt_runtime = RUNTIME_INF;
-> +#endif
+Em Tue, Jan 11, 2011 at 07:35:20PM +0300, Kirill Smelkov escreveu:
+> Hello up there,
 > 
->  	return ag;
+> Since 69aad6f1ee69546dea8535ab8f3da9f445d57328 (perf tools: Introduce
+> event selectors; Jan 3 2011) annotating a symbol in perf top segfaults:
 > 
-> @@ -143,6 +152,15 @@ autogroup_move_group(struct task_struct
->  	autogroup_kref_put(prev);
->  }
+>     Program received signal SIGSEGV, Segmentation fault.
+>     [Switching to Thread 0xb714cb90 (LWP 4662)]
+>     event_name (evsel=0x0) at util/parse-events.c:274
+>     274             return __event_name(type, config);
+>     (gdb) bt
+>     #0  event_name (evsel=0x0) at util/parse-events.c:274
+>     #1  0x0805f892 in display_thread (arg=0x9422448) at builtin-top.c:359
+>     #2  0xb77234c0 in start_thread () from /lib/i686/cmov/libpthread.so.0
+>     #3  0xb732b84e in clone () from /lib/i686/cmov/libc.so.6
 > 
-> +static inline void
-> +autogroup_setscheduler(struct task_struct *p, int on_rq)
-> +{
-> +	if (p->sched_class->task_move_group)
-> +		p->sched_class->task_move_group(p, on_rq);
-> +	else
-> +		set_task_rq(p, task_cpu(p));
-> +}
-> +
+> 
+> It used to work...
 
-IIUC, with the above changes you are actually queing the task into
-rt_rq of an autogroup. But the task's autogroup interface
-(/proc/<pid>/autogroup) allows you to control the bandwidth of only
-cfs_rq tasks, while the rt tasks in the group get RUNTIME_INF bandwidth.
+Thanks for the report, working on a fix.
 
-I think what we need is a real group change here (which is difficult I
-think) and not just sched_class change.
-
-Regards,
-Bharata.
+- Arnaldo
