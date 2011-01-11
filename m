@@ -1,104 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755808Ab1AKMOm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 07:14:42 -0500
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:41169 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755405Ab1AKMOj (ORCPT
+	id S1755942Ab1AKMPU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 07:15:20 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40497 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755862Ab1AKMPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 07:14:39 -0500
-To: linux-fsdevel@vger.kernel.org
-CC: npiggin@gmail.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] fuse: make fuse_permission() RCU aware
-Message-Id: <E1Pcd7R-0007XC-VO@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Tue, 11 Jan 2011 13:14:33 +0100
+	Tue, 11 Jan 2011 07:15:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=V55mBYQRsglfhD05SHgqeYumccskQmdXh1ZOeFofwxDC08rYNjdkBFoCp5MXiUQgSB
+         LsVkG8P0s+0R7xASW6WORD/3pXHgyQSaAHP1twqZ7aFU8ITFfk8wzGfsXx3WWjm0oS8Z
+         ryX9JD61chSx1hEUAsNk0rZUtMwKD9zePiYD8=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Kosina <trivial@kernel.org>
+Subject: [PATCH 1/2] dio: fix typos in comments
+Date: Tue, 11 Jan 2011 21:15:03 +0900
+Message-Id: <1294748104-7866-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.3.4.600.g982838b0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
-
-Only bail out of fuse_permission() on IPERM_FLAG_RCU when it is
-actually necessary.
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Cc: Jiri Kosina <trivial@kernel.org>
 ---
- fs/fuse/dir.c |   30 ++++++++++++++++++++++--------
- 1 file changed, 22 insertions(+), 8 deletions(-)
+ fs/direct-io.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Index: linux-2.6/fs/fuse/dir.c
-===================================================================
---- linux-2.6.orig/fs/fuse/dir.c	2011-01-11 11:30:03.000000000 +0100
-+++ linux-2.6/fs/fuse/dir.c	2011-01-11 12:38:59.000000000 +0100
-@@ -971,6 +971,14 @@ static int fuse_access(struct inode *ino
- 	return err;
- }
- 
-+static int fuse_perm_getattr(struct inode *inode, int flags)
-+{
-+	if (flags & IPERM_FLAG_RCU)
-+		return -ECHILD;
-+
-+	return fuse_do_getattr(inode, NULL, NULL);
-+}
-+
- /*
-  * Check permission.  The two basic access models of FUSE are:
-  *
-@@ -990,9 +998,6 @@ static int fuse_permission(struct inode
- 	bool refreshed = false;
- 	int err = 0;
- 
--	if (flags & IPERM_FLAG_RCU)
--		return -ECHILD;
--
- 	if (!fuse_allow_task(fc, current))
- 		return -EACCES;
- 
-@@ -1001,9 +1006,15 @@ static int fuse_permission(struct inode
- 	 */
- 	if ((fc->flags & FUSE_DEFAULT_PERMISSIONS) ||
- 	    ((mask & MAY_EXEC) && S_ISREG(inode->i_mode))) {
--		err = fuse_update_attributes(inode, NULL, NULL, &refreshed);
--		if (err)
--			return err;
-+		struct fuse_inode *fi = get_fuse_inode(inode);
-+
-+		if (fi->i_time < get_jiffies_64()) {
-+			refreshed = true;
-+
-+			err = fuse_perm_getattr(inode, flags);
-+			if (err)
-+				return err;
-+		}
- 	}
- 
- 	if (fc->flags & FUSE_DEFAULT_PERMISSIONS) {
-@@ -1013,7 +1024,7 @@ static int fuse_permission(struct inode
- 		   attributes.  This is also needed, because the root
- 		   node will at first have no permissions */
- 		if (err == -EACCES && !refreshed) {
--			err = fuse_do_getattr(inode, NULL, NULL);
-+			err = fuse_perm_getattr(inode, flags);
- 			if (!err)
- 				err = generic_permission(inode, mask,
- 							flags, NULL);
-@@ -1024,13 +1035,16 @@ static int fuse_permission(struct inode
- 		   noticed immediately, only after the attribute
- 		   timeout has expired */
- 	} else if (mask & (MAY_ACCESS | MAY_CHDIR)) {
-+		if (flags & IPERM_FLAG_RCU)
-+			return -ECHILD;
-+
- 		err = fuse_access(inode, mask);
- 	} else if ((mask & MAY_EXEC) && S_ISREG(inode->i_mode)) {
- 		if (!(inode->i_mode & S_IXUGO)) {
- 			if (refreshed)
- 				return -EACCES;
- 
--			err = fuse_do_getattr(inode, NULL, NULL);
-+			err = fuse_perm_getattr(inode, flags);
- 			if (!err && !(inode->i_mode & S_IXUGO))
- 				return -EACCES;
- 		}
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index 85882f6ba5f7..8201c2558d85 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -641,11 +641,11 @@ static int dio_send_cur_page(struct dio *dio)
+ 		/*
+ 		 * See whether this new request is contiguous with the old.
+ 		 *
+-		 * Btrfs cannot handl having logically non-contiguous requests
+-		 * submitted.  For exmple if you have
++		 * Btrfs cannot handle having logically non-contiguous requests
++		 * submitted.  For example if you have
+ 		 *
+ 		 * Logical:  [0-4095][HOLE][8192-12287]
+-		 * Phyiscal: [0-4095]      [4096-8181]
++		 * Physical: [0-4095]      [4096-8191]
+ 		 *
+ 		 * We cannot submit those pages together as one BIO.  So if our
+ 		 * current logical offset in the file does not equal what would
+-- 
+1.7.3.4.600.g982838b0
+
