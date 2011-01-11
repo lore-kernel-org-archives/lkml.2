@@ -1,40 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932556Ab1AKSfL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 13:35:11 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:37610 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932492Ab1AKSfI (ORCPT
+	id S932563Ab1AKSgx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 13:36:53 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:47432 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932191Ab1AKSgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 13:35:08 -0500
+	Tue, 11 Jan 2011 13:36:50 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=IbDKDFcw7yqYj85wTj2PtDUcbeXudR2chBnXSthQkFEoGo+SOXN07jbffSaUAyijvh
-         4rJx6BuGiHlVSPrQhy7Zj5aoT7gRzJH0+39EGGPBhbacidq3Lv+YfpH8CLcQGgmJX+Q5
-         DovO+BFuOeVr/0fqGCz2nYh/hU5GQSLAWy7OA=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=uykf1NhOF/b1BGNDO+tFMwvndFCwSvw9jtDvnAtSwEgkTBoR0nMkfI4s+nG8tXXjQY
+         pAGfRtan/NSqOIGNQxqSrjD24iP+idft/y9c9xap0tHa0JWFvdth2B11RUxi4z1NZjE2
+         lPCmClyd8jfk4V93F6bH0jeM1c+8F2+zIohxs=
 MIME-Version: 1.0
-Date: Tue, 11 Jan 2011 13:35:07 -0500
-Message-ID: <AANLkTim=8M3XbhPmP3Pata8tPxB2Oog4tOFkUjF9Hp_c@mail.gmail.com>
-Subject: Re: What has become of IP over Fiber Channel in Linux?
-From: Glen Duncan <playaspec@gmail.com>
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTimJMMC=LoD4igGCMdcFaBS9EpHVHh_x5=91_bbE@mail.gmail.com>
+References: <AANLkTik7tcZo8ka80y=FD-_UxwvB6-R8iRHRq+rkOSo+@mail.gmail.com>
+	<4d2654c410489a1b90@agluck-desktop.sc.intel.com>
+	<AANLkTi=0cf=JGGiJ6w3nanJTN1zyLvgVt8FUzwTWp2YG@mail.gmail.com>
+	<AANLkTimJMMC=LoD4igGCMdcFaBS9EpHVHh_x5=91_bbE@mail.gmail.com>
+Date: Tue, 11 Jan 2011 10:36:50 -0800
+X-Google-Sender-Auth: -onTe942oaO7lPdKNciBjDx6Wqs
+Message-ID: <AANLkTim6Qn5Ttc9w673c1jrT0dObm8x_Osvbf9Vhjfys@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/apic changes for v2.6.38
+From: Tony Luck <tony.luck@intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 9, 2011 at 5:37 PM, Glen Duncan <playaspec@gmail.com> wrote:
-> Hi all,
->
-> Please pardon my intrusion, I am trying to determine the status of IP
-> over Fiber Channel. From what I can tell there was once support for
-> either RFC 2625 or RFC 4338 in linux, but google's most recent accounts
-> suggest it has been removed. Is this permanent, or will it return?
->
-> Thanks,
->
-> Glen
+On Thu, Jan 6, 2011 at 4:17 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> Assume Tony will have another patch for IA64 to check that before
+> apply this patch.
 
-Bumping message. I can see it's easy to get lost in the torrent of
-activity. Than you all for making the kernel as incredible as it is.
+Ingo,
+
+Ok, I sent (a slightly modified version of) this patch up to Linus
+as part of the ia64 merge window pull ... so it is safe to update
+drivers/acpi/numa.c with a patch that will parse all the SRAT cpu
+entries down to ia64 now.
+
+-Tony
+
+Pasted version of commit - which gmail will munge ...
+
+
+commit 05f2f274c8a8747bbfb13ac8ee0c27d5f2ad8510
+Author: Tony Luck <tony.luck@intel.com>
+Date:   Fri Jan 7 09:11:55 2011 -0800
+
+    [IA64] Avoid array overflow if there are too many cpus in SRAT table
+
+    acpi_numa_init() has to parse the whole SRAT table, even if the
+    kernel wants to limit the number of cpus it will use (because the
+    ones it is going to use may be described by entries at the end of
+    the SRAT table).  Avoid overflowing the node_cpuid array.
+
+    Reported-by: Yinghai Lu <yinghai@kernel.org>
+    Signed-off-by: Tony Luck <tony.luck@intel.com>
+
+diff --git a/arch/ia64/kernel/acpi.c b/arch/ia64/kernel/acpi.c
+index c6c90f3..7b897b7 100644
+--- a/arch/ia64/kernel/acpi.c
++++ b/arch/ia64/kernel/acpi.c
+@@ -477,6 +477,12 @@ acpi_numa_processor_affinity_init(struct
+acpi_srat_cpu_affinity *pa)
+        if (!(pa->flags & ACPI_SRAT_CPU_ENABLED))
+                return;
+
++       if (srat_num_cpus >= ARRAY_SIZE(node_cpuid)) {
++               printk_once(KERN_WARNING
++                           "node_cpuid[%d] is too small, may not be
+able to use all cpus\n",
++                           ARRAY_SIZE(node_cpuid));
++               return;
++       }
+        pxm = get_processor_proximity_domain(pa);
+
+        /* record this node in proximity bitmap */
