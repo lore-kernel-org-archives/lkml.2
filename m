@@ -1,121 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996Ab1AKMs3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 07:48:29 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:41137 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753786Ab1AKMs1 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:6:1>);
-	Tue, 11 Jan 2011 07:48:27 -0500
-Message-Id: <4D2C5FA5020000780002BB21@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Tue, 11 Jan 2011 12:48:21 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Ian Campbell" <ian.campbell@citrix.com>
-Cc: <Stefano.Stabellini@eu.citrix.com>, <jeremy@goop.org>,
-        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen: use PCI interfaces to request IO
-	 and MEM resources on platform device.
-References: <1294746628-20396-1-git-send-email-ian.campbell@citrix.com>
-In-Reply-To: <1294746628-20396-1-git-send-email-ian.campbell@citrix.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755870Ab1AKM51 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 07:57:27 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:36004 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753540Ab1AKM5Y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 07:57:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=kxoXIuTNuESuu7PojRM9YapYAOGcNiTGV4ApDm7QhymcqsqA12HHe5podpO8XBss1I
+         0Cvy31ij7VMEzTZWxMrRpmmnsy0NisKZc0pznln804BxrvqHTHedT7xDmnqXPjoJwxE2
+         PPOm/FRCudZhTHD0IkzMTY52PZKrf3Mp/x4S0=
+MIME-Version: 1.0
+In-Reply-To: <22537.1294670327@jrobl>
+References: <AANLkTimBrR1LkVHOxZA=UUmKsnxfsFLr9z_AhXUHQ_7N@mail.gmail.com>
+	<22537.1294670327@jrobl>
+Date: Tue, 11 Jan 2011 23:57:22 +1100
+Message-ID: <AANLkTi=Mfj1WBO2567ogjU=8xwfGO9OVH5V+wmURa5qo@mail.gmail.com>
+Subject: Re: Important for fs devs: rcu-walk merged upstream
+From: Nick Piggin <npiggin@gmail.com>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 11.01.11 at 12:50, Ian Campbell <ian.campbell@citrix.com> wrote:
-> This is the correct interface to use and something has broken the use
-> of the previous incorrect interface (which fails because the request
-> conflicts with the resources assigned for the PCI device itself
-> instead of nesting like the PCI interfaces do).
+On Tuesday, January 11, 2011, J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
+>
+> Nick Piggin:
+>> This is a big and complex change by any measure, so
+>> please don't be afraid to ask for help or clarification. I'd
+>> also really like to be able to update documentation
+>> based on questions from fs maintainers (in and out of
+>> tree) who are trying to follow it and bring their code up to
+>> speed.
+>
+> Question about what d_lock protects.
+> Can we skip d_lock when we access d_inode and d_name during its parent
+> i_mutex is held?
 
-While I agree that using the PCI interface is preferable, I can't see
-how this can make a functional difference: __pci_request_region()
-calls request_region() for the port resource and
-__request_mem_region() for the mmio one exactly like what was
-open coded before (request_mem_region() being equivalent to
-__request_mem_region(..., 0), so I don't follow how this fixes
-anything but half of the potentially incorrect use of "long" for
-mmio_addr.
+That is a good observation. I think we are ok here because parent
+mutex should stabilize children names and linkages.
 
-I'm mainly asking because if it really addresses some problem,
-then unmodified_drivers/linux-2.6/platform-pci/platform-pci.c
-in -unstable should probably get updated too.
-
-Jan
-
-> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> Cc: stable@kernel.org # 2.6.37 only
-> ---
->  drivers/xen/platform-pci.c |   21 +++++++--------------
->  1 files changed, 7 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/xen/platform-pci.c b/drivers/xen/platform-pci.c
-> index c01b5dd..afbe041 100644
-> --- a/drivers/xen/platform-pci.c
-> +++ b/drivers/xen/platform-pci.c
-> @@ -105,7 +105,7 @@ static int __devinit platform_pci_init(struct pci_dev 
-> *pdev,
->  				       const struct pci_device_id *ent)
->  {
->  	int i, ret;
-> -	long ioaddr, iolen;
-> +	long ioaddr;
->  	long mmio_addr, mmio_len;
->  	unsigned int max_nr_gframes;
->  
-> @@ -114,7 +114,6 @@ static int __devinit platform_pci_init(struct pci_dev 
-> *pdev,
->  		return i;
->  
->  	ioaddr = pci_resource_start(pdev, 0);
-> -	iolen = pci_resource_len(pdev, 0);
->  
->  	mmio_addr = pci_resource_start(pdev, 1);
->  	mmio_len = pci_resource_len(pdev, 1);
-> @@ -125,19 +124,13 @@ static int __devinit platform_pci_init(struct pci_dev 
-> *pdev,
->  		goto pci_out;
->  	}
->  
-> -	if (request_mem_region(mmio_addr, mmio_len, DRV_NAME) == NULL) {
-> -		dev_err(&pdev->dev, "MEM I/O resource 0x%lx @ 0x%lx busy\n",
-> -		       mmio_addr, mmio_len);
-> -		ret = -EBUSY;
-> +	ret = pci_request_region(pdev, 1, DRV_NAME);
-> +	if (ret < 0)
->  		goto pci_out;
-> -	}
->  
-> -	if (request_region(ioaddr, iolen, DRV_NAME) == NULL) {
-> -		dev_err(&pdev->dev, "I/O resource 0x%lx @ 0x%lx busy\n",
-> -		       iolen, ioaddr);
-> -		ret = -EBUSY;
-> +	ret = pci_request_region(pdev, 0, DRV_NAME);
-> +	if (ret < 0)
->  		goto mem_out;
-> -	}
->  
->  	platform_mmio = mmio_addr;
->  	platform_mmiolen = mmio_len;
-> @@ -169,9 +162,9 @@ static int __devinit platform_pci_init(struct pci_dev 
-> *pdev,
->  	return 0;
->  
->  out:
-> -	release_region(ioaddr, iolen);
-> +	pci_release_region(pdev, 0);
->  mem_out:
-> -	release_mem_region(mmio_addr, mmio_len);
-> +	pci_release_region(pdev, 1);
->  pci_out:
->  	pci_disable_device(pdev);
->  	return ret;
+But the documentation for a lot of locking is not complete. It would
+be nice to improve.
 
 
-
-
+> Should these BUG_ON be placed after d_lock?
+>
+> void dentry_update_name_case(struct dentry *dentry, struct qstr *name)
+> {
+>         BUG_ON(!mutex_is_locked(&dentry->d_inode->i_mutex));
+>         BUG_ON(dentry->d_name.len != name->len); /* d_lookup gives this */
+>
+>         spin_lock(&dentry->d_lock);
+>         :::
+>
+>
+> J. R. Okajima
+>
