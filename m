@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab1AKLfM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 06:35:12 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:44239 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491Ab1AKLfJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 06:35:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=pURuSovpSScGGiajksDiZvNlMAOGBpL3u+0Md2KYN0VOk2YEoMas+v2D5CcWs6wP8E
-         h9WThweUl6BKbJC1lkdLP5gEvR9ft61QsQu6wroiMYo8XC0ljI+fG3QFY9f7ogbFF3Oi
-         l7UnypUl2vsnEfsUzn6BAgYiXAh1Ap40JYhGo=
-Date: Tue, 11 Jan 2011 09:35:02 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: David Ahern <daahern@cisco.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, tzanussi@gmail.com,
-        Paul Mackerras <paulus@samba.org>, imunsie@au1.ibm.com,
-        linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org
-Subject: Re: perf: commit 55b4462 causes perf record to hang
-Message-ID: <20110111113502.GC20234@ghostprotocols.net>
-References: <4D2B544F.1050803@cisco.com>
- <20110110200032.GA19703@ghostprotocols.net>
- <alpine.LFD.2.00.1101110927290.12146@localhost6.localdomain6>
+	id S1755479Ab1AKLpU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 06:45:20 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:33600 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753534Ab1AKLpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 06:45:17 -0500
+Date: Tue, 11 Jan 2011 11:44:54 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        Andi Kleen <ak@linux.intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: fix migration hangs on anon_vma lock
+Message-ID: <20110111114453.GC11932@csn.ul.ie>
+References: <alpine.LSU.2.00.1101102259160.24988@sister.anvils>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1101110927290.12146@localhost6.localdomain6>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LSU.2.00.1101102259160.24988@sister.anvils>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Jan 11, 2011 at 09:28:25AM +0100, Thomas Gleixner escreveu:
-> On Mon, 10 Jan 2011, Arnaldo Carvalho de Melo wrote:
-> > Can you try with this patch, not reverting tglx's patch?
-> > 
-> > diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> > index 6fb4694..313dac2 100644
-> > --- a/tools/perf/util/session.c
-> > +++ b/tools/perf/util/session.c
-> > @@ -1007,7 +1007,7 @@ more:
-> >  	if (size == 0)
-> >  		size = 8;
-> >  
-> > -	if (head + event->header.size >= mmap_size) {
-> > +	if (head + event->header.size > mmap_size) {
-> >  		if (mmaps[map_idx]) {
-> >  			munmap(mmaps[map_idx], mmap_size);
-> >  			mmaps[map_idx] = NULL;
-> > 
+On Mon, Jan 10, 2011 at 11:08:04PM -0800, Hugh Dickins wrote:
+> Increased usage of page migration in mmotm reveals that the anon_vma
+> locking in unmap_and_move() has been deficient since 2.6.36 (or even
+> earlier). 
+
+Hmm, a certain amount of the compaction work was spent fixing migration
+bugs. I wonder if there are mysterious bug reports out there related to the
+use of move_pages() that are only getting fixed now.
+
+> Review at the time of f18194275c39835cb84563500995e0d503a32d9a
+> "mm: fix hang on anon_vma->root->lock" missed the issue here: the anon_vma
+> to which we get a reference may already have been freed back to its slab
+> (it is in use when we check page_mapped, but that can change), and so its
+> anon_vma->root may be switched at any moment by reuse in anon_vma_prepare.
 > 
-> /me feels stupid
+> Perhaps we could fix that with a get_anon_vma_unless_zero(), but let's not:
+> just rely on page_lock_anon_vma() to do all the hard thinking for us, then
+> we don't need any rcu read locking over here.
+> 
+> In removing the rcu_unlock label: since PageAnon is a bit in page->mapping,
+> it's impossible for a !page->mapping page to be anon; but insert VM_BUG_ON
+> in case the implementation ever changes.
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> Cc: stable@kernel.org [2.6.37, 2.6.36]
 
-I feel like that sometimes too, probably more often than you :-P
+Reasoning and patch look correct. Light testing did not show up any
+obvious problems.
 
-- Arnaldo
+Reviewed-by: Mel Gorman <mel@csn.ul.ie>
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
