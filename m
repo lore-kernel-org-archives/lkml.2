@@ -1,236 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932666Ab1AKXvc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 18:51:32 -0500
-Received: from xenotime.net ([72.52.115.56]:38656 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756391Ab1AKXv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 18:51:27 -0500
-Date: Tue, 11 Jan 2011 15:51:24 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>,
-        Alex Dubov <oakad@yahoo.com>
-Subject: Re: [PATCH 1/4] scatterlist: new helper functions
-Message-Id: <20110111155124.ee61cd7f.rdunlap@xenotime.net>
-In-Reply-To: <1294788975-19584-2-git-send-email-maximlevitsky@gmail.com>
-References: <1294788975-19584-1-git-send-email-maximlevitsky@gmail.com>
-	<1294788975-19584-2-git-send-email-maximlevitsky@gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932687Ab1AKXxd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 18:53:33 -0500
+Received: from mail132.messagelabs.com ([216.82.242.115]:34077 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932474Ab1AKXxa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 18:53:30 -0500
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-14.tower-132.messagelabs.com!1294790006!10080043!9
+X-StarScan-Version: 6.2.9; banners=-,-,-
+X-Originating-IP: [216.166.12.97]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "cl@linux-foundation.org" <cl@linux-foundation.org>,
+        "penberg@cs.helsinki.fi" <penberg@cs.helsinki.fi>,
+        "mpm@selenic.com" <mpm@selenic.com>
+Date: Tue, 11 Jan 2011 17:49:32 -0600
+Subject: [PATCH] mm/slab.c: make local symbols static
+Thread-Topic: [PATCH] mm/slab.c: make local symbols static
+Thread-Index: Acux6jGOmxL+N3vkQUqOPlJH49Z3JA==
+Message-ID: <0D753D10438DA54287A00B027084269764CE0E54A2@AUSP01VMBX24.collaborationhost.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p0BNrf21022756
 
-On Wed, 12 Jan 2011 01:36:12 +0200 Maxim Levitsky wrote:
+Local symbols should be static.
 
-> While developing memstick driver for legacy memsticks
-> I found the need in few helpers that I think should be
-> in common scatterlist library
-> 
-> The functions that were added:
-> 
-> * sg_nents/sg_total_len - iterate over scatterlist to figure
-> out total length of memory it covers / number of entries.
-> Useful for not keeping that information in side channels.
-> 
-> * sg_copy/sg_advance - Allow to break scatterlists apart into smaller chunks.
-> sg_copy creates smaller scatterlist, spanning first 'len' bytes, while
-> sg_advance edits the scatterlist in such way that it skips over 'len' bytes.
-> 
-> 
-> * sg_compare_to_buffer - another function to hide gory details of access
-> to sg list by CPU.
-> Allows to transparently compare contents of the sg list to given linear
-> buffer.
-> If needed later, a function that compares two sgs can be added.
-> 
-> All of this code is used by my ms_block.c driver.
-> 
-> ---
->  include/linux/scatterlist.h |    6 ++
->  lib/scatterlist.c           |  137 +++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 143 insertions(+), 0 deletions(-)
-
-
-> diff --git a/lib/scatterlist.c b/lib/scatterlist.c
-> index 4ceb05d..2f18938 100644
-> --- a/lib/scatterlist.c
-> +++ b/lib/scatterlist.c
-> @@ -39,6 +39,77 @@ struct scatterlist *sg_next(struct scatterlist *sg)
->  EXPORT_SYMBOL(sg_next);
->  
->  /**
-> + * sg_advance - advance scatterlist by 'consumed' bytes
-> + * @sg - the current sg entry
-> + * @consumed - how much bytes to advance
-
-kernel-doc notation for parameters is like so:
-
- * @sg: the current sg entry
-
-> + *
-
-no empty line, please.
-
-> + */
-> +struct scatterlist *sg_advance(struct scatterlist *sg, int consumed)
-> +{
-> +	while (consumed >= sg->length) {
-> +		consumed -= sg->length;
-> +
-> +		sg = sg_next(sg);
-> +		if (!sg)
-> +			break;
-> +	}
-> +
-> +	WARN_ON(!sg && consumed);
-> +
-> +	if (!sg)
-> +		return NULL;
-> +
-> +	sg->offset += consumed;
-> +	sg->length -= consumed;
-> +
-> +	if (sg->offset >= PAGE_SIZE) {
-> +		struct page *page =
-> +			nth_page(sg_page(sg), sg->offset / PAGE_SIZE);
-> +		sg_set_page(sg, page, sg->length, sg->offset % PAGE_SIZE);
-> +	}
-> +
-> +	return sg;
-> +}
-> +EXPORT_SYMBOL(sg_advance);
-> +
-> +/**
-> + * sg_nents - calculate number of sg entries in sg list
-> + * @sg - the current sg entry
-
- * @sg:
-
-> + *
-> + * Allows to calculate dynamicly the lenght of the sg table, based on
-
-                          dynamically the length
-
-> + * assumption that last entry is NULL
-> + */
-> +int sg_nents(struct scatterlist *sg)
-> +{
-> +	int nents = 0;
-> +	while (sg) {
-> +		nents++;
-> +		sg = sg_next(sg);
-> +	}
-> +
-> +	return nents;
-> +}
-> +EXPORT_SYMBOL(sg_nents);
-> +
-> +/**
-> + * sg_total_len - calculate total lenght of scatterlist
-
-                                     length
-
-> + * @sg - the current sg entry
-
- * @sg:
-
-> + *
-> + * Dynamicly calculate total number of bytes in a sg list
-
-      Dynamically                               in an sg list
-
-> + * based on assumption that list ends with a NULL entry
-> + */
-> +int sg_total_len(struct scatterlist *sg)
-> +{
-> +	int len = 0;
-> +	while (sg) {
-> +		len += sg->length;
-> +		sg = sg_next(sg);
-> +	}
-> +	return len;
-> +}
-> +EXPORT_SYMBOL(sg_total_len);
-> +
-> +/**
->   * sg_last - return the last scatterlist entry in a list
->   * @sgl:	First entry in the scatterlist
->   * @nents:	Number of entries in the scatterlist
-> @@ -110,6 +181,33 @@ void sg_init_one(struct scatterlist *sg, const void *buf, unsigned int buflen)
->  }
->  EXPORT_SYMBOL(sg_init_one);
->  
-> +/**
-> + * sg_copy - copies sg entries from sg_from to sg_to, such
-> + * as sg_to covers first 'len' bytes from sg_from.
-
-Add function parameters to kernel-doc, please.
-
-> + */
-> +int sg_copy(struct scatterlist *sg_from, struct scatterlist *sg_to, int len)
-> +{
-> +	while (len > sg_from->length) {
-> +		len -= sg_from->length;
-> +
-> +		sg_set_page(sg_to, sg_page(sg_from),
-> +				sg_from->length, sg_from->offset);
-> +
-> +		sg_to = sg_next(sg_to);
-> +		sg_from = sg_next(sg_from);
-> +
-> +		if (len && (!sg_from || !sg_to))
-> +			return -ENOMEM;
-> +	}
-> +
-> +	if (len)
-> +		sg_set_page(sg_to, sg_page(sg_from),
-> +				len, sg_from->offset);
-> +	sg_mark_end(sg_to);
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(sg_copy);
-> +
->  /*
->   * The default behaviour of sg_alloc_table() is to use these kmalloc/kfree
->   * helpers.
-> @@ -517,3 +615,42 @@ size_t sg_copy_to_buffer(struct scatterlist *sgl, unsigned int nents,
->  	return sg_copy_buffer(sgl, nents, buf, buflen, 1);
->  }
->  EXPORT_SYMBOL(sg_copy_to_buffer);
-> +
-> +
-> +/**
-> + * sg_compare_to_buffer - compare contents of the data pointeted by sg table
-
-                                                          pointed to by sg table
-
-> + * to a kernel ram buffer
-
-                  RAM
-
-> + * @sg - the current sg entry
-> + * @buffer - linear buffer to compare with
-> + * @len - lenght of that buffer
-
- * @sg:
- * @buffer:
- * @len: length
-
-Returns 0 for equal or what??
-
-> + */
-> +bool sg_compare_to_buffer(struct scatterlist *sg, u8 *buffer, size_t len)
-> +{
-
-
-Thanks for adding the kernel-doc.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Matt Mackall <mpm@selenic.com>
 
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+
+diff --git a/mm/slab.c b/mm/slab.c
+index 2640374..37961d1f 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -284,7 +284,7 @@ struct kmem_list3 {
+  * Need this for bootstrapping a per node allocator.
+  */
+ #define NUM_INIT_LISTS (3 * MAX_NUMNODES)
+-struct kmem_list3 __initdata initkmem_list3[NUM_INIT_LISTS];
++static struct kmem_list3 __initdata initkmem_list3[NUM_INIT_LISTS];
+ #define	CACHE_CACHE 0
+ #define	SIZE_AC MAX_NUMNODES
+ #define	SIZE_L3 (2 * MAX_NUMNODES)
+@@ -4053,7 +4053,7 @@ static int enable_cpucache(struct kmem_cache *cachep, gfp_t gfp)
+  * necessary. Note that the l3 listlock also protects the array_cache
+  * if drain_array() is used on the shared array.
+  */
+-void drain_array(struct kmem_cache *cachep, struct kmem_list3 *l3,
++static void drain_array(struct kmem_cache *cachep, struct kmem_list3 *l3,
+ 			 struct array_cache *ac, int force, int node)
+ {
+ 	int tofree;
+@@ -4317,7 +4317,7 @@ static const struct seq_operations slabinfo_op = {
+  * @count: data length
+  * @ppos: unused
+  */
+-ssize_t slabinfo_write(struct file *file, const char __user * buffer,
++static ssize_t slabinfo_write(struct file *file, const char __user *buffer,
+ 		       size_t count, loff_t *ppos)
+ {
+ 	char kbuf[MAX_SLABINFO_WRITE + 1], *tmp;
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
