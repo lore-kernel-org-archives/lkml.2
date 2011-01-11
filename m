@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab1AKI3C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 03:29:02 -0500
-Received: from www.tglx.de ([62.245.132.106]:42909 "EHLO www.tglx.de"
+	id S1755459Ab1AKI3Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 03:29:16 -0500
+Received: from freeflow.nu ([178.79.134.28]:50383 "EHLO freeflow.nu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752515Ab1AKI2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 03:28:55 -0500
-Date: Tue, 11 Jan 2011 09:28:25 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-cc: David Ahern <daahern@cisco.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, tzanussi@gmail.com,
-        Paul Mackerras <paulus@samba.org>, imunsie@au1.ibm.com,
-        linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org
-Subject: Re: perf: commit 55b4462 causes perf record to hang
-In-Reply-To: <20110110200032.GA19703@ghostprotocols.net>
-Message-ID: <alpine.LFD.2.00.1101110927290.12146@localhost6.localdomain6>
-References: <4D2B544F.1050803@cisco.com> <20110110200032.GA19703@ghostprotocols.net>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754301Ab1AKI3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 03:29:13 -0500
+Message-ID: <4D2C14D7.1050007@kernel.org>
+Date: Tue, 11 Jan 2011 10:29:11 +0200
+From: Pekka Enberg <penberg@kernel.org>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, Bart Van Assche <bvanassche@acm.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] slub: Fix sysfs circular locking dependency
+References: <1294172717-6044-1-git-send-email-penberg@kernel.org>  <alpine.DEB.2.00.1101050943120.13032@router.home>  <alpine.DEB.2.00.1101051108520.14761@router.home> <AANLkTinft80dXqE-U=YDB23d9=BgXLCxJzgiA_gF4cVL@mail.gmail.com>  <AANLkTinCZzJWYGnxXq_Nwv7QSkEV4Tg-te-1y0PCeRRY@mail.gmail.com>  <AANLkTinQMahgVrWLxR0J6Zbh-_SPjxVJ-wuZt8B5TNjc@mail.gmail.com>  <alpine.DEB.2.00.1101060019140.25879@chino.kir.corp.google.com> <alpine.DEB.2.00.1101061107500.8655@router.home>  <20110107091106.aaa07abe.kamezawa.hiroyu@jp.fujitsu.com>  <alpine.DEB.2.00.1101070922100.3014@router.home>  <alpine.DEB.2.00.1101071227160.31653@chino.kir.corp.google.com>  <AANLkTin6N2s1RN6PBX=f0v69Ny-NkEKk_iAgqscuYgMM@mail.gmail.com> <1294475323.5248.74.camel@jaguar> <alpine.DEB.2.00.1101101014470.12243@router.home> <alpine.DEB.2.00.1101101230190.11969@chino.kir.corp.google.com> <4D2BFAA9.2050200@kernel.org> <alpine.DEB.2.00.1101110021470.21910@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1101110021470.21910@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Jan 2011, Arnaldo Carvalho de Melo wrote:
+On 1/11/11 10:24 AM, David Rientjes wrote:
+> On Tue, 11 Jan 2011, Pekka Enberg wrote:
+>
+>>>> New patch that just covers the slub changes.
+>>>>
+>>>> Subject: slub: Avoid use of slub_lock in show_slab_objects()
+>>>>
+>>>> The purpose of the locking is to prevent removal and additions
+>>>> of nodes when statistics are gathered for a slab cache. So we
+>>>> need to avoid racing with memory hotplug functionality.
+>>>>
+>>>> It is enough to take the memory hotplug locks there instead
+>>>> of the slub_lock.
+>>>>
+>>>> online_pages() currently does not acquire the memory_hotplug
+>>>> lock. Another patch will be submitted by the memory hotplug
+>>>> authors to take the memory hotplug lock and describe the
+>>>> uses of the memory hotplug lock to protect against
+>>>> adding and removal of nodes from non hotplug data structures.
+>>>>
+>>>> Signed-off-by: Christoph Lameter<cl@linux.com>
+>>> Acked-by: David Rientjes<rientjes@google.com>
+>> Is this safe to be applied without the other hotplug parts?
+> It's safe, but not protecting anything since it can race with memory
+> hot-add and cause inconsistent information to be displayed (since we
+> iterate over N_NORMAL_MEMORY several times in show_slab_objects() and the
+> memory hotplug code modifies it).  I'm hoping Andrew can push Kame's patch
+> to add lock_memory_hotplug() to online_pages() either during the merge
+> window or during -rc1 (it has good justification -- it can race with
+> memory hot-remove) and this can also be pushed during the rc series (to
+> fix the lockdep warning).
 
-> Em Mon, Jan 10, 2011 at 11:47:43AM -0700, David Ahern escreveu:
-> > With latest version of perf-core branch, a variant of perf record hangs:
-> > # /tmp/build-perf/perf record -v -e cs -fo /tmp/perf.data  -- sleep 1
-> > [ perf record: Captured and wrote 0.003 MB /tmp/perf.data (~120 samples) ]
-> > 
-> > It sits there forever. Back trace is:
-> > 
-> > (gdb) bt
-> > #0  0x0000000000447658 in __perf_session__process_events (session=0xab9500, data_offset=208, data_size=2896, file_size=3104, ops=0x685580) at util/session.c:1006
-> > #1  0x00000000004107dd in process_buildids () at builtin-record.c:466
-> > #2  0x000000000041084d in atexit_header () at builtin-record.c:477
->  
-> > git bisect traced the hang to
-> > 
-> > commit 55b44629f599a2305265ae9c77f9d9bcfd6ddc17
-> > Author: Thomas Gleixner <tglx@linutronix.de>
-> > Date:   Tue Nov 30 17:49:46 2010 +0000
-> 
-> Can you try with this patch, not reverting tglx's patch?
-> 
-> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> index 6fb4694..313dac2 100644
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -1007,7 +1007,7 @@ more:
->  	if (size == 0)
->  		size = 8;
->  
-> -	if (head + event->header.size >= mmap_size) {
-> +	if (head + event->header.size > mmap_size) {
->  		if (mmaps[map_idx]) {
->  			munmap(mmaps[map_idx], mmap_size);
->  			mmaps[map_idx] = NULL;
-> 
+I think the two patches should go in the same batch. Andrew, do you want 
+to pick up the slab patch as well or do you want me to pick up Kame's patch?
 
-/me feels stupid
+             Pekka
 
-      tglx
