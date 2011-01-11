@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab1AKA2y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 19:28:54 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:40133 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755033Ab1AKA20 (ORCPT
+	id S1754931Ab1AKApa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 19:45:30 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:36619 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651Ab1AKAp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 19:28:26 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Chris Samuel <chris@csamuel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 1/6] perf sched: Fix allocation result check
-Date: Mon, 10 Jan 2011 22:28:07 -0200
-Message-Id: <1294705692-9537-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1294705692-9537-1-git-send-email-acme@infradead.org>
-References: <1294705692-9537-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 10 Jan 2011 19:45:28 -0500
+Message-ID: <4D2BA81E.50600@kernel.org>
+Date: Mon, 10 Jan 2011 16:45:18 -0800
+From: "J.H." <warthog9@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Roland Dreier <rdreier@cisco.com>
+CC: David Brown <davidb@codeaurora.org>, sedat.dilek@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
+        ftpadmin@kernel.org, webmaster@kernel.org
+Subject: Re: patchwork.kernel.org down
+References: <AANLkTik4ktaeyDG3ihh-YRB+WVLxA46wSLOgWy6iY_68@mail.gmail.com>	<20101220204936.GA21290@huya.qualcomm.com>	<4D0FFC4B.9050301@kernel.org> <ada62u3dkv2.fsf@cisco.com>	<adaei8k8ubh.fsf@cisco.com> <4D2B664F.7050106@kernel.org> <ada1v4k8pnw.fsf@cisco.com>
+In-Reply-To: <ada1v4k8pnw.fsf@cisco.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.3 (shards.monkeyblade.net [198.137.202.13]); Mon, 10 Jan 2011 16:45:19 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On 01/10/2011 12:33 PM, Roland Dreier wrote:
+>  > Not yet, I'm adding it in this afternoon.  I did the upgrade to Fedora
+>  > 14 (and thus 2.6.35.10) and seem to be getting, if not the same bug, a
+>  > darned similar one:
+>  > 
+>  > http://pastebin.osuosl.org/36644
+> 
+> Actually that looks pretty different; the trace is
+> 
+>  put_ldisc+0x8d/0xb4
+>  tty_ldisc_reinit+0x43/0x5c
+>  tty_ldisc_hangup+0x10d/0x19d
+>  do_tty_hangup+0x108/0x343
+>  ? __raw_local_irq_save+0x1d/0x23
+>  tty_vhangup_self+0x27/0x34
+>  sys_vhangup+0x22/0x29
+>  system_call_fastpath+0x16/0x1b
+> 
+> which doesn't involve any /proc/net file being closed at all.
+> 
+> Hmm...
 
-Bug introduced in ce47dc56.
+My thoughts on why it was possibly similar is that it happens
 
-Reported-by: Mike Galbraith <efault@gmx.de>
-Cc: Chris Samuel <chris@csamuel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-sched.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+[  793.932076] kernel BUG at mm/slub.c:2834!
 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 7a4ebeb..54024d2 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1861,7 +1861,7 @@ static int __cmd_record(int argc, const char **argv)
- 	rec_argc = ARRAY_SIZE(record_args) + argc - 1;
- 	rec_argv = calloc(rec_argc + 1, sizeof(char *));
- 
--	if (rec_argv)
-+	if (rec_argv == NULL)
- 		return -ENOMEM;
- 
- 	for (i = 0; i < ARRAY_SIZE(record_args); i++)
--- 
-1.6.2.5
+where as 20702 is
 
+kernel BUG at mm/slub.c:2835!
+
+the rest didn't line up, and like I said I haven't specifically dug into it.
+
+As a note I did end up with a full panic in the last hour, but nothing
+got recorded (sadly).  I'm working on getting the kernel compiled up
+with everything now so hopefully I'll start getting some additional data
+to share.
+
+- John 'Warthog9' Hawley
