@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755767Ab1AKLHf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 06:07:35 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48396 "EHLO arroyo.ext.ti.com"
+	id S1755856Ab1AKLHn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 06:07:43 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48400 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755812Ab1AKLHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 06:07:33 -0500
+	id S1755821Ab1AKLHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 06:07:35 -0500
 From: manjunatha_halli@ti.com
 To: mchehab@infradead.org, hverkuil@xs4all.nl
 Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
         Manjunatha Halli <manjunatha_halli@ti.com>
-Subject: [RFC V10 1/7] drivers:media:radio: wl128x: FM Driver common header file
-Date: Tue, 11 Jan 2011 06:31:21 -0500
-Message-Id: <1294745487-29138-2-git-send-email-manjunatha_halli@ti.com>
+Subject: [RFC V10 5/7] drivers:media:radio: wl128x: FM driver TX sources
+Date: Tue, 11 Jan 2011 06:31:25 -0500
+Message-Id: <1294745487-29138-6-git-send-email-manjunatha_halli@ti.com>
 X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1294745487-29138-1-git-send-email-manjunatha_halli@ti.com>
+In-Reply-To: <1294745487-29138-5-git-send-email-manjunatha_halli@ti.com>
 References: <1294745487-29138-1-git-send-email-manjunatha_halli@ti.com>
+ <1294745487-29138-2-git-send-email-manjunatha_halli@ti.com>
+ <1294745487-29138-3-git-send-email-manjunatha_halli@ti.com>
+ <1294745487-29138-4-git-send-email-manjunatha_halli@ti.com>
+ <1294745487-29138-5-git-send-email-manjunatha_halli@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Manjunatha Halli <manjunatha_halli@ti.com>
 
-These are common headers used in FM submodules (FM V4L2,
-FM common, FM Rx,and FM TX).
+This has implementation for FM TX functionality.
+It communicates with FM V4l2 module and FM common module.
 
 Signed-off-by: Manjunatha Halli <manjunatha_halli@ti.com>
 Reviewed-by: Hans Verkuil <hverkuil@xs4all.nl>
 ---
- drivers/media/radio/wl128x/fmdrv.h |  244 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 244 insertions(+), 0 deletions(-)
- create mode 100644 drivers/media/radio/wl128x/fmdrv.h
+ drivers/media/radio/wl128x/fmdrv_tx.c |  425 +++++++++++++++++++++++++++++++++
+ drivers/media/radio/wl128x/fmdrv_tx.h |   37 +++
+ 2 files changed, 462 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/media/radio/wl128x/fmdrv_tx.c
+ create mode 100644 drivers/media/radio/wl128x/fmdrv_tx.h
 
-diff --git a/drivers/media/radio/wl128x/fmdrv.h b/drivers/media/radio/wl128x/fmdrv.h
+diff --git a/drivers/media/radio/wl128x/fmdrv_tx.c b/drivers/media/radio/wl128x/fmdrv_tx.c
 new file mode 100644
-index 0000000..392b62d
+index 0000000..be54068
 --- /dev/null
-+++ b/drivers/media/radio/wl128x/fmdrv.h
-@@ -0,0 +1,244 @@
++++ b/drivers/media/radio/wl128x/fmdrv_tx.c
+@@ -0,0 +1,425 @@
 +/*
 + *  FM Driver for Connectivity chip of Texas Instruments.
-+ *
-+ *  Common header for all FM driver sub-modules.
++ *  This sub-module of FM driver implements FM TX functionality.
 + *
 + *  Copyright (C) 2011 Texas Instruments
 + *
@@ -60,228 +65,453 @@ index 0000000..392b62d
 + *
 + */
 +
-+#ifndef _FM_DRV_H
-+#define _FM_DRV_H
++#include <linux/delay.h>
++#include "fmdrv.h"
++#include "fmdrv_common.h"
++#include "fmdrv_tx.h"
 +
-+#include <linux/skbuff.h>
-+#include <linux/interrupt.h>
-+#include <sound/core.h>
-+#include <sound/initval.h>
-+#include <linux/timer.h>
-+#include <linux/version.h>
-+#include <media/v4l2-ioctl.h>
-+#include <media/v4l2-common.h>
-+#include <media/v4l2-ctrls.h>
++u32 fm_tx_set_stereo_mono(struct fmdev *fmdev, u16 mode)
++{
++	u16 payload;
++	u32 ret;
 +
-+#define FM_DRV_VERSION            "0.09"
-+/* Should match with FM_DRV_VERSION */
-+#define FM_DRV_RADIO_VERSION      KERNEL_VERSION(0, 0, 1)
-+#define FM_DRV_NAME               "ti_fmdrv"
-+#define FM_DRV_CARD_SHORT_NAME    "TI FM Radio"
-+#define FM_DRV_CARD_LONG_NAME     "Texas Instruments FM Radio"
++	if (fmdev->tx_data.aud_mode == mode)
++		return 0;
 +
-+/* Flag info */
-+#define FM_INTTASK_RUNNING            0
-+#define FM_INTTASK_SCHEDULE_PENDING   1
-+#define FM_FW_DW_INPROGRESS     2
-+#define FM_CORE_READY                 3
-+#define FM_CORE_TRANSPORT_READY       4
-+#define FM_AF_SWITCH_INPROGRESS	      5
-+#define FM_CORE_TX_XMITING	      6
++	fmdbg("stereo mode: %d\n", mode);
 +
-+#define FM_TUNE_COMPLETE	      0x1
-+#define FM_BAND_LIMIT		      0x2
++	/* Set Stereo/Mono mode */
++	payload = (1 - mode);
++	ret = fmc_send_cmd(fmdev, MONO_SET, REG_WR, &payload,
++			sizeof(payload), NULL, NULL);
++	if (ret < 0)
++		return ret;
 +
-+#define FM_DRV_TX_TIMEOUT      (5*HZ)	/* 5 seconds */
-+#define FM_DRV_RX_SEEK_TIMEOUT (20*HZ)	/* 20 seconds */
++	fmdev->tx_data.aud_mode = mode;
 +
-+#define NO_OF_ENTRIES_IN_ARRAY(array) (sizeof(array) / sizeof(array[0]))
++	return ret;
++}
 +
-+#define fmerr(format, ...) \
-+	printk(KERN_ERR "fmdrv: " format, ## __VA_ARGS__)
-+#define fmwarn(format, ...) \
-+	printk(KERN_WARNING "fmdrv: " format, ##__VA_ARGS__)
-+#ifdef DEBUG
-+#define fmdbg(format, ...) \
-+	printk(KERN_DEBUG "fmdrv: " format, ## __VA_ARGS__)
-+#else /* DEBUG */
-+#define fmdbg(format, ...)
-+#endif
-+enum {
-+	FM_MODE_OFF,
-+	FM_MODE_TX,
-+	FM_MODE_RX,
-+	FM_MODE_ENTRY_MAX
-+};
++static u32 set_rds_text(struct fmdev *fmdev, u8 *rds_text)
++{
++	u16 payload;
++	u32 ret;
 +
-+#define FM_RX_RDS_INFO_FIELD_MAX	8	/* 4 Group * 2 Bytes */
++	ret = fmc_send_cmd(fmdev, RDS_DATA_SET, REG_WR, rds_text,
++			strlen(rds_text), NULL, NULL);
++	if (ret < 0)
++		return ret;
 +
-+/* RX RDS data format */
-+struct fm_rdsdata_format {
-+	union {
-+		struct {
-+			u8 buff[FM_RX_RDS_INFO_FIELD_MAX];
-+		} groupdatabuff;
-+		struct {
-+			u16 pidata;
-+			u8 blk_b[2];
-+			u8 blk_c[2];
-+			u8 blk_d[2];
-+		} groupgeneral;
-+		struct {
-+			u16 pidata;
-+			u8 blk_b[2];
-+			u8 af[2];
-+			u8 ps[2];
-+		} group0A;
-+		struct {
-+			u16 pi[2];
-+			u8 blk_b[2];
-+			u8 ps[2];
-+		} group0B;
-+	} data;
-+};
++	/* Scroll mode */
++	payload = (u16)0x1;
++	ret = fmc_send_cmd(fmdev, DISPLAY_MODE, REG_WR, &payload,
++			sizeof(payload), NULL, NULL);
++	if (ret < 0)
++		return ret;
 +
-+/* FM region (Europe/US, Japan) info */
-+struct region_info {
-+	u32 chanl_space;
-+	u32 bot_freq;
-+	u32 top_freq;
-+	u8 fm_band;
-+};
-+struct fmdev;
-+typedef void (*int_handler_prototype) (struct fmdev *);
++	return 0;
++}
 +
-+/* FM Interrupt processing related info */
-+struct fm_irq {
-+	u8 stage;
-+	u16 flag;	/* FM interrupt flag */
-+	u16 mask;	/* FM interrupt mask */
-+	/* Interrupt process timeout handler */
-+	struct timer_list timer;
-+	u8 retry;
-+	int_handler_prototype *handlers;
-+};
++static u32 set_rds_data_mode(struct fmdev *fmdev, u8 mode)
++{
++	u16 payload;
++	u32 ret;
 +
-+/* RDS info */
-+struct fm_rds {
-+	u8 flag;	/* RX RDS on/off status */
-+	u8 last_blk_idx;	/* Last received RDS block */
++	/* Setting unique PI TODO: how unique? */
++	payload = (u16)0xcafe;
++	ret = fmc_send_cmd(fmdev, PI_SET, REG_WR, &payload,
++			sizeof(payload), NULL, NULL);
++	if (ret < 0)
++		return ret;
 +
-+	/* RDS buffer */
-+	wait_queue_head_t read_queue;
-+	u32 buf_size;	/* Size is always multiple of 3 */
-+	u32 wr_idx;
-+	u32 rd_idx;
-+	u8 *buff;
-+};
++	/* Set decoder id */
++	payload = (u16)0xa;
++	ret = fmc_send_cmd(fmdev, DI_SET, REG_WR, &payload,
++			sizeof(payload), NULL, NULL);
++	if (ret < 0)
++		return ret;
 +
-+#define FM_RDS_MAX_AF_LIST		25
++	/* TODO: RDS_MODE_GET? */
++	return 0;
++}
++
++static u32 set_rds_len(struct fmdev *fmdev, u8 type, u16 len)
++{
++	u16 payload;
++	u32 ret;
++
++	len |= type << 8;
++	payload = len;
++	ret = fmc_send_cmd(fmdev, RDS_CONFIG_DATA_SET, REG_WR, &payload,
++			sizeof(payload), NULL, NULL);
++	if (ret < 0)
++		return ret;
++
++	/* TODO: LENGTH_GET? */
++	return 0;
++}
++
++u32 fm_tx_set_rds_mode(struct fmdev *fmdev, u8 rds_en_dis)
++{
++	u16 payload;
++	u32 ret;
++	u8 rds_text[] = "Zoom2\n";
++
++	fmdbg("rds_en_dis:%d(E:%d, D:%d)\n", rds_en_dis,
++		   FM_RDS_ENABLE, FM_RDS_DISABLE);
++
++	if (rds_en_dis == FM_RDS_ENABLE) {
++		/* Set RDS length */
++		set_rds_len(fmdev, 0, strlen(rds_text));
++
++		/* Set RDS text */
++		set_rds_text(fmdev, rds_text);
++
++		/* Set RDS mode */
++		set_rds_data_mode(fmdev, 0x0);
++	}
++
++	/* Send command to enable RDS */
++	if (rds_en_dis == FM_RDS_ENABLE)
++		payload = 0x01;
++	else
++		payload = 0x00;
++
++	ret = fmc_send_cmd(fmdev, RDS_DATA_ENB, REG_WR, &payload,
++			sizeof(payload), NULL, NULL);
++	if (ret < 0)
++		return ret;
++
++	if (rds_en_dis == FM_RDS_ENABLE) {
++		/* Set RDS length */
++		set_rds_len(fmdev, 0, strlen(rds_text));
++
++		/* Set RDS text */
++		set_rds_text(fmdev, rds_text);
++	}
++	fmdev->tx_data.rds.flag = rds_en_dis;
++
++	return 0;
++}
++
++u32 fm_tx_set_radio_text(struct fmdev *fmdev, u8 *rds_text, u8 rds_type)
++{
++	u16 payload;
++	u32 ret;
++
++	if (fmdev->curr_fmmode != FM_MODE_TX)
++		return -EPERM;
++
++	fm_tx_set_rds_mode(fmdev, 0);
++
++	/* Set RDS length */
++	set_rds_len(fmdev, rds_type, strlen(rds_text));
++
++	/* Set RDS text */
++	set_rds_text(fmdev, rds_text);
++
++	/* Set RDS mode */
++	set_rds_data_mode(fmdev, 0x0);
++
++	payload = 1;
++	ret = fmc_send_cmd(fmdev, RDS_DATA_ENB, REG_WR, &payload,
++			sizeof(payload), NULL, NULL);
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
++
++u32 fm_tx_set_af(struct fmdev *fmdev, u32 af)
++{
++	u16 payload;
++	u32 ret;
++
++	if (fmdev->curr_fmmode != FM_MODE_TX)
++		return -EPERM;
++
++	fmdbg("AF: %d\n", af);
++
++	af = (af - 87500) / 100;
++	payload = (u16)af;
++	ret = fmc_send_cmd(fmdev, TA_SET, REG_WR, &payload,
++			sizeof(payload), NULL, NULL);
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
++
++u32 fm_tx_set_region(struct fmdev *fmdev, u8 region)
++{
++	u16 payload;
++	u32 ret;
++
++	if (region != FM_BAND_EUROPE_US && region != FM_BAND_JAPAN) {
++		fmerr("Invalid band\n");
++		return -EINVAL;
++	}
++
++	/* Send command to set the band */
++	payload = (u16)region;
++	ret = fmc_send_cmd(fmdev, TX_BAND_SET, REG_WR, &payload,
++			sizeof(payload), NULL, NULL);
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
++
++u32 fm_tx_set_mute_mode(struct fmdev *fmdev, u8 mute_mode_toset)
++{
++	u16 payload;
++	u32 ret;
++
++	fmdbg("tx: mute mode %d\n", mute_mode_toset);
++
++	payload = mute_mode_toset;
++	ret = fmc_send_cmd(fmdev, MUTE, REG_WR, &payload,
++			sizeof(payload), NULL, NULL);
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
++
++/* Set TX Audio I/O */
++static u32 set_audio_io(struct fmdev *fmdev)
++{
++	struct fmtx_data *tx = &fmdev->tx_data;
++	u16 payload;
++	u32 ret;
++
++	/* Set Audio I/O Enable */
++	payload = tx->audio_io;
++	ret = fmc_send_cmd(fmdev, AUDIO_IO_SET, REG_WR, &payload,
++			sizeof(payload), NULL, NULL);
++	if (ret < 0)
++		return ret;
++
++	/* TODO: is audio set? */
++	return 0;
++}
++
++/* Start TX Transmission */
++static u32 enable_xmit(struct fmdev *fmdev, u8 new_xmit_state)
++{
++	struct fmtx_data *tx = &fmdev->tx_data;
++	unsigned long timeleft;
++	u16 payload;
++	u32 ret;
++
++	/* Enable POWER_ENB interrupts */
++	payload = FM_POW_ENB_EVENT;
++	ret = fmc_send_cmd(fmdev, INT_MASK_SET, REG_WR, &payload,
++			sizeof(payload), NULL, NULL);
++	if (ret < 0)
++		return ret;
++
++	/* Set Power Enable */
++	payload = new_xmit_state;
++	ret = fmc_send_cmd(fmdev, POWER_ENB_SET, REG_WR, &payload,
++			sizeof(payload), NULL, NULL);
++	if (ret < 0)
++		return ret;
++
++	/* Wait for Power Enabled */
++	init_completion(&fmdev->maintask_comp);
++	timeleft = wait_for_completion_timeout(&fmdev->maintask_comp,
++			FM_DRV_TX_TIMEOUT);
++	if (!timeleft) {
++		fmerr("Timeout(%d sec),didn't get tune ended interrupt\n",
++			   jiffies_to_msecs(FM_DRV_TX_TIMEOUT) / 1000);
++		return -ETIMEDOUT;
++	}
++
++	set_bit(FM_CORE_TX_XMITING, &fmdev->flag);
++	tx->xmit_state = new_xmit_state;
++
++	return 0;
++}
++
++/* Set TX power level */
++u32 fm_tx_set_pwr_lvl(struct fmdev *fmdev, u8 new_pwr_lvl)
++{
++	u16 payload;
++	struct fmtx_data *tx = &fmdev->tx_data;
++	u32 ret;
++
++	if (fmdev->curr_fmmode != FM_MODE_TX)
++		return -EPERM;
++	fmdbg("tx: pwr_level_to_set %ld\n", (long int)new_pwr_lvl);
++
++	/* If the core isn't ready update global variable */
++	if (!test_bit(FM_CORE_READY, &fmdev->flag)) {
++		tx->pwr_lvl = new_pwr_lvl;
++		return 0;
++	}
++
++	/* Set power level: Application will specify power level value in
++	 * units of dB/uV, whereas range and step are specific to FM chip.
++	 * For TI's WL chips, convert application specified power level value
++	 * to chip specific value by subtracting 122 from it. Refer to TI FM
++	 * data sheet for details.
++	 * */
++
++	payload = (FM_PWR_LVL_HIGH - new_pwr_lvl);
++	ret = fmc_send_cmd(fmdev, POWER_LEV_SET, REG_WR, &payload,
++			sizeof(payload), NULL, NULL);
++	if (ret < 0)
++		return ret;
++
++	/* TODO: is the power level set? */
++	tx->pwr_lvl = new_pwr_lvl;
++
++	return 0;
++}
 +
 +/*
-+ * Current RX channel Alternate Frequency cache.
-+ * This info is used to switch to other freq (AF)
-+ * when current channel signal strengh is below RSSI threshold.
++ * Sets FM TX pre-emphasis filter value (OFF, 50us, or 75us)
++ * Convert V4L2 specified filter values to chip specific filter values.
 + */
-+struct tuned_station_info {
-+	u16 picode;
-+	u32 af_cache[FM_RDS_MAX_AF_LIST];
-+	u8 afcache_size;
-+	u8 af_list_max;
-+};
++u32 fm_tx_set_preemph_filter(struct fmdev *fmdev, u32 preemphasis)
++{
++	struct fmtx_data *tx = &fmdev->tx_data;
++	u16 payload;
++	u32 ret;
 +
-+/* FM RX mode info */
-+struct fm_rx {
-+	struct region_info region;	/* Current selected band */
-+	u32 freq;	/* Current RX frquency */
-+	u8 mute_mode;	/* Current mute mode */
-+	u8 deemphasis_mode; /* Current deemphasis mode */
-+	/* RF dependent soft mute mode */
-+	u8 rf_depend_mute;
-+	u16 volume;	/* Current volume level */
-+	u16 rssi_threshold;	/* Current RSSI threshold level */
-+	/* Holds the index of the current AF jump */
-+	u8 afjump_idx;
-+	/* Will hold the frequency before the jump */
-+	u32 freq_before_jump;
-+	u8 rds_mode;	/* RDS operation mode (RDS/RDBS) */
-+	u8 af_mode;	/* Alternate frequency on/off */
-+	struct tuned_station_info stat_info;
-+	struct fm_rds rds;
-+};
++	if (fmdev->curr_fmmode != FM_MODE_TX)
++		return -EPERM;
 +
-+#define FMTX_RDS_TXT_STR_SIZE	25
++	switch (preemphasis) {
++	case V4L2_PREEMPHASIS_DISABLED:
++		payload = FM_TX_PREEMPH_OFF;
++		break;
++	case V4L2_PREEMPHASIS_50_uS:
++		payload = FM_TX_PREEMPH_50US;
++		break;
++	case V4L2_PREEMPHASIS_75_uS:
++		payload = FM_TX_PREEMPH_75US;
++		break;
++	}
++
++	ret = fmc_send_cmd(fmdev, PREMPH_SET, REG_WR, &payload,
++			sizeof(payload), NULL, NULL);
++	if (ret < 0)
++		return ret;
++
++	tx->preemph = payload;
++
++	return ret;
++}
++
++/* Get the TX tuning capacitor value.*/
++u32 fm_tx_get_tune_cap_val(struct fmdev *fmdev)
++{
++	u16 curr_val;
++	u32 ret, resp_len;
++
++	if (fmdev->curr_fmmode != FM_MODE_TX)
++		return -EPERM;
++
++	ret = fmc_send_cmd(fmdev, READ_FMANT_TUNE_VALUE, REG_RD,
++			NULL, sizeof(curr_val), &curr_val, &resp_len);
++	if (ret < 0)
++		return ret;
++
++	curr_val = be16_to_cpu(curr_val);
++
++	return curr_val;
++}
++
++/* Set TX Frequency */
++u32 fm_tx_set_freq(struct fmdev *fmdev, u32 freq_to_set)
++{
++	struct fmtx_data *tx = &fmdev->tx_data;
++	u16 payload, chanl_index;
++	u32 ret;
++
++	if (test_bit(FM_CORE_TX_XMITING, &fmdev->flag)) {
++		enable_xmit(fmdev, 0);
++		clear_bit(FM_CORE_TX_XMITING, &fmdev->flag);
++	}
++
++	/* Enable FR, BL interrupts */
++	payload = (FM_FR_EVENT | FM_BL_EVENT);
++	ret = fmc_send_cmd(fmdev, INT_MASK_SET, REG_WR, &payload,
++			sizeof(payload), NULL, NULL);
++	if (ret < 0)
++		return ret;
++
++	tx->tx_frq = (unsigned long)freq_to_set;
++	fmdbg("tx: freq_to_set %ld\n", (long int)tx->tx_frq);
++
++	chanl_index = freq_to_set / 10;
++
++	/* Set current tuner channel */
++	payload = chanl_index;
++	ret = fmc_send_cmd(fmdev, CHANL_SET, REG_WR, &payload,
++			sizeof(payload), NULL, NULL);
++	if (ret < 0)
++		return ret;
++
++	fm_tx_set_pwr_lvl(fmdev, tx->pwr_lvl);
++	fm_tx_set_preemph_filter(fmdev, tx->preemph);
++
++	tx->audio_io = 0x01;	/* I2S */
++	set_audio_io(fmdev);
++
++	enable_xmit(fmdev, 0x01);	/* Enable transmission */
++
++	tx->aud_mode = FM_STEREO_MODE;
++	tx->rds.flag = FM_RDS_DISABLE;
++
++	return 0;
++}
++
+diff --git a/drivers/media/radio/wl128x/fmdrv_tx.h b/drivers/media/radio/wl128x/fmdrv_tx.h
+new file mode 100644
+index 0000000..e393a2b
+--- /dev/null
++++ b/drivers/media/radio/wl128x/fmdrv_tx.h
+@@ -0,0 +1,37 @@
 +/*
-+ * FM TX RDS data
++ *  FM Driver for Connectivity chip of Texas Instruments.
++ *  FM TX module header.
 + *
-+ * @ text_type: is the text following PS or RT
-+ * @ text: radio text string which could either be PS or RT
-+ * @ af_freq: alternate frequency for Tx
-+ * TODO: to be declared in application
-+ */
-+struct tx_rds {
-+	u8 text_type;
-+	u8 text[FMTX_RDS_TXT_STR_SIZE];
-+	u8 flag;
-+	u32 af_freq;
-+};
-+/*
-+ * FM TX global data
++ *  Copyright (C) 2011 Texas Instruments
 + *
-+ * @ pwr_lvl: Power Level of the Transmission from mixer control
-+ * @ xmit_state: Transmission state = Updated locally upon Start/Stop
-+ * @ audio_io: i2S/Analog
-+ * @ tx_frq: Transmission frequency
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
 + */
-+struct fmtx_data {
-+	u8 pwr_lvl;
-+	u8 xmit_state;
-+	u8 audio_io;
-+	u8 region;
-+	u16 aud_mode;
-+	u32 preemph;
-+	u32 tx_frq;
-+	struct tx_rds rds;
-+};
 +
-+/* FM driver operation structure */
-+struct fmdev {
-+	struct video_device *radio_dev;	/* V4L2 video device pointer */
-+	struct snd_card *card;	/* Card which holds FM mixer controls */
-+	u16 asci_id;
-+	spinlock_t rds_buff_lock; /* To protect access to RDS buffer */
-+	spinlock_t resp_skb_lock; /* To protect access to received SKB */
++#ifndef _FMDRV_TX_H
++#define _FMDRV_TX_H
 +
-+	long flag;		/*  FM driver state machine info */
-+	u8 streg_cbdata; /* status of ST registration */
++u32 fm_tx_set_freq(struct fmdev *, u32);
++u32 fm_tx_set_pwr_lvl(struct fmdev *, u8);
++u32 fm_tx_set_region(struct fmdev *, u8);
++u32 fm_tx_set_mute_mode(struct fmdev *, u8);
++u32 fm_tx_set_stereo_mono(struct fmdev *, u16);
++u32 fm_tx_set_rds_mode(struct fmdev *, u8);
++u32 fm_tx_set_radio_text(struct fmdev *, u8 *, u8);
++u32 fm_tx_set_af(struct fmdev *, u32);
++u32 fm_tx_set_preemph_filter(struct fmdev *, u32);
++u32 fm_tx_get_tune_cap_val(struct fmdev *);
 +
-+	struct sk_buff_head rx_q;	/* RX queue */
-+	struct tasklet_struct rx_task;	/* RX Tasklet */
-+
-+	struct sk_buff_head tx_q;	/* TX queue */
-+	struct tasklet_struct tx_task;	/* TX Tasklet */
-+	unsigned long last_tx_jiffies;	/* Timestamp of last pkt sent */
-+	atomic_t tx_cnt;	/* Number of packets can send at a time */
-+
-+	struct sk_buff *resp_skb;	/* Response from the chip */
-+	/* Main task completion handler */
-+	struct completion maintask_comp;
-+	/* Opcode of last command sent to the chip */
-+	u8 pre_op;
-+	/* Handler used for wakeup when response packet is received */
-+	struct completion *resp_comp;
-+	struct fm_irq irq_info;
-+	u8 curr_fmmode; /* Current FM chip mode (TX, RX, OFF) */
-+	struct fm_rx rx;	/* FM receiver info */
-+	struct fmtx_data tx_data;
-+
-+	/* V4L2 ctrl framwork handler*/
-+	struct v4l2_ctrl_handler ctrl_handler;
-+
-+	/* For core assisted locking */
-+	struct mutex mutex;
-+};
 +#endif
++
 -- 
 1.5.6.3
 
