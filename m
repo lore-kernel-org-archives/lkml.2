@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755139Ab1AKA22 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 19:28:28 -0500
-Received: from casper.infradead.org ([85.118.1.10]:38362 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753990Ab1AKA2Y (ORCPT
+	id S1755216Ab1AKA2s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 19:28:48 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:40145 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755086Ab1AKA21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 19:28:24 -0500
+	Mon, 10 Jan 2011 19:28:27 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, David Ahern <daahern@cisco.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        a.p.zijlstra@chello.nl, Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/6] perf stat: better error message for unsupported events
-Date: Mon, 10 Jan 2011 22:28:08 -0200
-Message-Id: <1294705692-9537-3-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Chris Samuel <chris@csamuel.org>, David Ahern <daahern@cisco.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Jiri Pirko <jpirko@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>
+Subject: [GIT PULL 0/6] perf/urgent fixes and improvements
+Date: Mon, 10 Jan 2011 22:28:06 -0200
+Message-Id: <1294705692-9537-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1294705692-9537-1-git-send-email-acme@infradead.org>
-References: <1294705692-9537-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <daahern@cisco.com>
+Hi Ingo,
 
-For unsupported events (e.g., H/W events when running in a VM)
-perf stat currently fails with the error message:
+        Please consider pulling from:
 
-      Error: open_counter returned with 2 (No such file or directory).
-    /bin/dmesg may provide additional information.
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/urgent
 
-      Fatal: Not all events could be opened.
+Regards,
 
-dmesg is of no help and it is not clear as to why it fails to
-open the counter. This patch changes the error message to
+- Arnaldo
 
-      Error: cache-misses event is not supported.
-      Fatal: Not all events could be opened.
+Arnaldo Carvalho de Melo (4):
+  perf sched: Fix allocation result check
+  perf tools: Emit clearer message for sys_perf_event_open ENOENT return
+  perf evsel: Support perf_evsel__open(cpus > 1 && threads > 1)
+  perf session: Fix infinite loop in __perf_session__process_events
 
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: a.p.zijlstra@chello.nl
-LPU-Reference: <1294597272-17335-1-git-send-email-daahern@cisco.com>
-Signed-off-by: David Ahern <daahern@cisco.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-stat.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+David Ahern (1):
+  perf stat: better error message for unsupported events
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 2dfcb61..c385a63 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -316,6 +316,8 @@ static int run_perf_stat(int argc __used, const char **argv)
- 				      "\t Consider tweaking"
- 				      " /proc/sys/kernel/perf_event_paranoid or running as root.",
- 				      system_wide ? "system-wide " : "");
-+			} else if (errno == ENOENT) {
-+				error("%s event is not supported. ", event_name(counter));
- 			} else {
- 				error("open_counter returned with %d (%s). "
- 				      "/bin/dmesg may provide additional information.\n",
--- 
-1.6.2.5
+Jiri Pirko (1):
+  perf sched: Use PTHREAD_STACK_MIN to avoid pthread_attr_setstacksize() fail
+
+ tools/perf/builtin-record.c |    3 +
+ tools/perf/builtin-sched.c  |    5 +-
+ tools/perf/builtin-stat.c   |    2 +
+ tools/perf/builtin-test.c   |  110 +++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/builtin-top.c    |    2 +
+ tools/perf/util/evsel.c     |   82 +++++++++++++++++++-------------
+ tools/perf/util/session.c   |    2 +-
+ 7 files changed, 170 insertions(+), 36 deletions(-)
 
