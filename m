@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115Ab1AKOgC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 09:36:02 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:58408 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756090Ab1AKOf7 (ORCPT
+	id S932240Ab1AKOli (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 09:41:38 -0500
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:25571 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932179Ab1AKOlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 09:35:59 -0500
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-To: Paul Mundt <lethal@linux-sh.org>
-Subject: Re: Locking in the clk API
-Date: Tue, 11 Jan 2011 22:35:42 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.35-24-generic; KDE/4.5.1; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
-	<u.kleine-koenig@pengutronix.de>
-References: <201101111016.42819.jeremy.kerr@canonical.com> <201101111830.18597.jeremy.kerr@canonical.com> <20110111121816.GB774@linux-sh.org>
-In-Reply-To: <20110111121816.GB774@linux-sh.org>
+	Tue, 11 Jan 2011 09:41:37 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: Y9MqFQIVM1lb4BTPqscS5aZacbddFqvyWRMUpwBaEyRmmVX
+ oRhUxzXsExc6u8gSUf8l._lrGBh88.jO8YzAiQgUutBVlZd1PIAKgDBNIS.K
+ qK7aGgHRvYgU_.KYCVMdf7KAP7Y3Atulwm.3kjmW3YuUn8AB5pnQWHqOi.kS
+ q03oLBmO4WaO.jNxSQ2t5GOLK7JLuE2v.fpWl.7U8e3cwL4WnsAgNKHEmW4s
+ GF83rrkJhlsMcwHa70ondnfHrcGM0tsMLGiUO0vR4TkPFGNQ9NcFwP3Yf5GH
+ 7fmhcZ.Lr17hZk9O0WmqvW9.HqQ4382EbFhy0_d6.46WUqyHna08-
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 11 Jan 2011 08:41:32 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+cc: Pekka Enberg <penberg@kernel.org>, David Rientjes <rientjes@google.com>,
+        Bart Van Assche <bvanassche@acm.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] one more lock on memory hotplug (Re: [PATCH] slub: Fix
+ sysfs circular locking dependency
+In-Reply-To: <20110111164401.3b1e5d8a.kamezawa.hiroyu@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1101110841230.8657@router.home>
+References: <1294172717-6044-1-git-send-email-penberg@kernel.org> <alpine.DEB.2.00.1101050943120.13032@router.home> <alpine.DEB.2.00.1101051108520.14761@router.home> <AANLkTinft80dXqE-U=YDB23d9=BgXLCxJzgiA_gF4cVL@mail.gmail.com>
+ <AANLkTinCZzJWYGnxXq_Nwv7QSkEV4Tg-te-1y0PCeRRY@mail.gmail.com> <AANLkTinQMahgVrWLxR0J6Zbh-_SPjxVJ-wuZt8B5TNjc@mail.gmail.com> <alpine.DEB.2.00.1101060019140.25879@chino.kir.corp.google.com> <alpine.DEB.2.00.1101061107500.8655@router.home>
+ <20110107091106.aaa07abe.kamezawa.hiroyu@jp.fujitsu.com> <alpine.DEB.2.00.1101070922100.3014@router.home> <alpine.DEB.2.00.1101071227160.31653@chino.kir.corp.google.com> <AANLkTin6N2s1RN6PBX=f0v69Ny-NkEKk_iAgqscuYgMM@mail.gmail.com> <1294475323.5248.74.camel@jaguar>
+ <alpine.DEB.2.00.1101101014470.12243@router.home> <alpine.DEB.2.00.1101101230190.11969@chino.kir.corp.google.com> <4D2BFAA9.2050200@kernel.org> <20110111164401.3b1e5d8a.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101112235.43061.jeremy.kerr@canonical.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
 
-> Again, you are approaching it from the angle that an atomic clock is a
-> special requirement rather than the default behaviour.
-
-I'm not considering it a special requirement, but it's still a requirement 
-(that the called function does not sleep).
-
-The problem with the inverse logic (clk_enable/clk_enable_sleepable) is that 
-now you've made the caller need to know what kind of clock it has, or might 
-have one day.
-
- * For clk_enable/clk_enable_atomic, the decision is: is this call in an
-   atomic context?
-
- * For clk_enable/clk_enable_sleepable, the decision is: might the clock code
-   have given us a sleeping clock?
-
-Note that it's much easier to guarantee correctness for the first than it is 
-for the second.
-
-Cheers,
+Reviewed-by: Christoph Lameter <cl@linux.com>
 
 
-Jeremy
