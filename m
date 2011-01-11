@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167Ab1AKN5E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 08:57:04 -0500
-Received: from kroah.org ([198.145.64.141]:33027 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754144Ab1AKN5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 08:57:02 -0500
-Date: Tue, 11 Jan 2011 05:56:55 -0800
-From: Greg KH <greg@kroah.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-usb@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v3 1/4] pci, usb: Make usb handoff func all take base
- remapping
-Message-ID: <20110111135655.GA6901@kroah.com>
-References: <4D2A1382.7010407@kernel.org>
- <4D2AC6BF.3010907@kernel.org>
- <4D2BA8FE.9090204@kernel.org>
- <4D2BAA75.60001@kernel.org>
- <20110111010714.GB32585@kroah.com>
- <4D2BB048.2050509@kernel.org>
- <1294723290.17779.349.camel@pasglop>
- <4D2BF9F3.5080709@kernel.org>
- <1294731467.17779.352.camel@pasglop>
- <AANLkTika_bZxXO3PKek+BHoYqgYGPBPER-H9KJJXjJzn@mail.gmail.com>
+	id S1756075Ab1AKOAY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 09:00:24 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47837 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755788Ab1AKOAT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 09:00:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=wpGYqfAEmrn2NNkVkvZEClf/l74Hhjq9Anjo1tFlMqhvqVkcEP9BUhDnAhACIjrrsh
+         4mtx9dpVjvQubMlPW3S/uj2RMRVb5Xh1Rxkal6d6fOp5pF8P08GJ6OJ1a84yE700cwbY
+         wO70NYgfZOh7zDPCKjDDpe5AuBXqEdV4YA260=
+Date: Tue, 11 Jan 2011 22:00:05 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Bharata B Rao <bharata@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH -tip 1/2] [PATCH -tip 1/2] sched: Reinstate group names
+ in /proc/sched_debug.
+Message-ID: <20110111140005.GA6069@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <20110111101040.GD4772@in.ibm.com>
+ <20110111101153.GE4772@in.ibm.com>
+ <20110111124658.GA4507@zhy>
+ <20110111134244.GJ4772@in.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <AANLkTika_bZxXO3PKek+BHoYqgYGPBPER-H9KJJXjJzn@mail.gmail.com>
+In-Reply-To: <20110111134244.GJ4772@in.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 01:21:58AM -0800, Yinghai Lu wrote:
-> On Mon, Jan 10, 2011 at 11:37 PM, Benjamin Herrenschmidt
-> <benh@kernel.crashing.org> wrote:
-> > On Mon, 2011-01-10 at 22:34 -0800, Yinghai Lu wrote:
-> >>
-> >> system_state does not work.
-> >> it only have BOOTING and RUNNING ...
-> >> RUNNING is set in init/main.c::init_post().
-> >> so early_quirk and pci_quirk all with BOOTING stage...
-> >
-> > Or we can make msleep() itself safe...
-> 
-> still think the function pointer is more clean and safe.
+On Tue, Jan 11, 2011 at 07:12:44PM +0530, Bharata B Rao wrote:
+> The group name is generated in a global buffer which is protected by
+> this lock. Earlier small sized local buffer (on stack) was used for
+> this purpose which wasn't ideal. Also since we can be here from
+> interrupt context, I wanted to avoid allocation too. Hence went for
+> a global buffer protected by a lock.
 
-I do not.
+Sounds good ;)
+
+BTW, I guess we can also remove rcu_read_lock/unlock() in print_rt_stats()
+and print_cfs_stats() with sched_debug_lock hold.
+
+Thanks,
+Yong
