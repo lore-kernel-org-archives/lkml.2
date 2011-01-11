@@ -1,33 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755033Ab1AKCul (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 21:50:41 -0500
-Received: from web37606.mail.mud.yahoo.com ([209.191.87.89]:23996 "HELO
-	web37606.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753150Ab1AKCuh convert rfc822-to-8bit
+	id S1755249Ab1AKC6u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 21:58:50 -0500
+Received: from web37605.mail.mud.yahoo.com ([209.191.87.88]:39704 "HELO
+	web37605.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753708Ab1AKC6q convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 21:50:37 -0500
+	Mon, 10 Jan 2011 21:58:46 -0500
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
   s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=siUe0N9p9VBkTTtwrFwCwZHi+/wwrMEqOYYOXwkwT5YiqWcbVafIjcVqaElfkGXzlHk92nQfPSQqW4r0lZ/PUTSJ+FzEe9Y87PYFtAU59JiGxjMloEJj7SHqdEHq3ErIVHFJ6tBBzpoMONPMvOm1fn0H8gLDWSh0iUqD3mV6ukc=;
-Message-ID: <365479.91466.qm@web37606.mail.mud.yahoo.com>
-X-YMail-OSG: ARsH7T0VM1kNvhqAKqLy7SRJshiV3xX3I74L02xQWhe0yXh
- n.irP4KcS6JcUyqx8kRfTSP6ZLP5uKoiyNkR3BYojwk55Fd4dgog7HsN_Odu
- Z3QkgKaU56nq73.Z.HJSAMkynnjDPZmz8KG4JPcqlIGGndmqeM_eFCz0AQJO
- 1onDmLQNusHz6ETjK9dk_GMMZlVmXIJyWmNr3Q8XszHEQEB4tDR_oqENERcM
- F0v28ZjwtVpFvz.SEi5Ju1oHV5U_caL9sRNU5NKpWx1BivTXaJJbEe33SgcC
- aCiZsUT6GalWSbsLIF72I88OhlHkJ4sGbpZVKWKR4VvFPSZVY6FbA4nWGNuK
- LdfExs5ExQqeZNM0z2uqwcIgPGTgt3lQSk76tDoWxOZiBSF_dtvTyAW398Kd
- ZWQ.H26qnf02DdfR9
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=eOVWCqkGIuCqTcj3TJkG11mhEenEiHnbSWpj5FVyizvkxOl+2H5Yj3Va5w4LXXVq2Ij7oQgfbnJRejIFK7rwxo0wlYWGedo+HyP/licqut/KR3Md7i1ne38mxOHIQuT0DXvTEcp1CFZ6Uaii4bjcTOJv0yQeJrZavYJ/UVxbmNg=;
+Message-ID: <890633.77912.qm@web37605.mail.mud.yahoo.com>
+X-YMail-OSG: ob5VunIVM1kWXELgipAr1zDfglx5obT0SoZ7XMMd8rdR.2j
+ qxP16azD3qiqMr4cPqXRqOdHANubF0kta5HTmxV7_zsINqY4b2AjTT6DV2bD
+ DVoDmp3M.aOI2mLj.DpHPfn_ilL4OULXoWsDVAWRtgJiux6pbwEqewrEDwjU
+ IdUXkIxGJ3zj5LyPePBL0etNwsV2Qpytj.YFA8EMWjj7C8DJFRUKGYLcjExJ
+ pL._Hxg_szh.SuS7SUXCroxIyDLtTr8Lq2R5E2ygETwr9G1YWYjujO4Y18oK
+ Wa4.n1b0UaC_N5sEXDxxVDHfFkaCiGdEo1ompmZNCuhcAIq6tY05muHQysun
+ KdAoHnGFfU8aAo9g9YXZh44.orE3SieT7TTuISs_Ua46hC7azaW8pUMM0Xab
+ aLjZ.B7j7zZM_
 X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.285259
-Date: Mon, 10 Jan 2011 18:50:36 -0800 (PST)
+Date: Mon, 10 Jan 2011 18:58:45 -0800 (PST)
 From: Alex Dubov <oakad@yahoo.com>
-Subject: Re: [PATCH 2/4] memstick: Add driver for Ricoh R5C592 card reader.
+Subject: Re: [PATCH 1/4] scatterlist: new helper functions
 To: Andrew Morton <akpm@linux-foundation.org>,
         Maxim Levitsky <maximlevitsky@gmail.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>
-In-Reply-To: <1294710624-12379-3-git-send-email-maximlevitsky@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
@@ -35,9 +34,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Subject: [PATCH 2/4] memstick: Add driver for Ricoh R5C592 card reader
+> 
+> The functions that were added:
+> 
+> * sg_nents/sg_total_len - interate over sg list to figure
 
-Ok with me.
+You've got a typo here.
+
+> out its total len, number of entries.
+> Useful for not keeping that information in side channels.
+> 
+
+> Allows to transparetly compare contents of the sg list to
+> given linear
+
+And here.
+
+> buffer.
+> If needed later, a function that compares two sgs can be
+> added.
+> 
+> All of this code is used by my ms_block.c driver.
+> 
+
+I definitely find this useful.
+But, of course, we need to ask somebody from the memory management
+department to look at it, as this patch is intended to be not memorystick
+specific.
+
+
 
 
 
