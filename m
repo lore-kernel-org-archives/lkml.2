@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab1AKQEc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 11:04:32 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:41493 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756152Ab1AKQEa (ORCPT
+	id S1756207Ab1AKQIv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 11:08:51 -0500
+Received: from mail-ey0-f194.google.com ([209.85.215.194]:49626 "EHLO
+	mail-ey0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756152Ab1AKQIt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 11:04:30 -0500
+	Tue, 11 Jan 2011 11:08:49 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=n3KqJLSa05DAZYy/x2tE0WaXuI+jsL92rhQAUhJ7W/CHRTzkRugfFA5uayPKh1bjA2
-         ldfkwfWOwTR/bmNCkyHLU0fLYKtmYtxNd1KJZlWwWTX4xkdyo/j8bz8dLBdYmZUiH0Ro
-         koUQiioJzq0SIQ1O441AGB2Nqar3KixBmhByo=
-Date: Wed, 12 Jan 2011 00:04:37 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Dave Anderson <anderson@redhat.com>
-Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com
-Subject: Re: [PATCH] /proc/kcore: fix seeking
-Message-ID: <20110111160437.GF17312@hack>
-References: <4D2B1AD5.9000707@redhat.com>
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=qcWFynl5in+A+xgoZbwN2Pgw1T5w7h29VPVMSRg0ytpivop+gNcbaCTSj5m1ql10wE
+         nmkrnJEWnz5ihfgSec1VXu86owwHSlyyrqI7upjR6JaVTBXkmJ5gWc3tFIRn4/hvIEfQ
+         bPGfUnkcZYJ+A2+TqcFO2DfZlj+6S/3QfzEXc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D2B1AD5.9000707@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1294751426-3472-1-git-send-email-lee.jones@linaro.org>
+References: <1294751426-3472-1-git-send-email-lee.jones@linaro.org>
+From: Rabin Vincent <rabin@rab.in>
+Date: Tue, 11 Jan 2011 21:38:07 +0530
+X-Google-Sender-Auth: 74Fp-Kyo_BXmBTaXlAIvK_2xd3k
+Message-ID: <AANLkTimvS9rmrn86-veK3KwP31bqN7mzp2bEiwPEt_RR@mail.gmail.com>
+Subject: Re: [PATCH] ux500: Add Rohm BH1780GLI Light Sensor to i2c_board_info
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 09:42:29AM -0500, Dave Anderson wrote:
->From: Dave Anderson <anderson@redhat.com>
+On Tue, Jan 11, 2011 at 18:40, Lee Jones <lee.jones@linaro.org> wrote:
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  arch/arm/mach-ux500/board-mop500.c |   11 +++++++++++
+>  1 files changed, 11 insertions(+), 0 deletions(-)
 >
->Commit 34aacb2920667d405a8df15968b7f71ba46c8f18
->("procfs: Use generic_file_llseek in /proc/kcore")
->broke seeking on /proc/kcore.  This changes it back
->to use default_llseek in order to restore the original
->behavior.
+> diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
+> index 2635bb7..ff67408 100644
+> --- a/arch/arm/mach-ux500/board-mop500.c
+> +++ b/arch/arm/mach-ux500/board-mop500.c
+> @@ -134,6 +134,15 @@ static struct i2c_board_info mop500_i2c0_devices[] = {
+>        },
+>  };
 >
->The problem with generic_file_llseek is that it only
->allows seeks up to inode->i_sb->s_maxbytes, which is
->2GB-1 on procfs, where the memory file offset values in
->the /proc/kcore PT_LOAD segments may exceed or start
->beyond that offset value.
->
+> +static struct i2c_board_info mop500_i2c2_devices[] = {
+> +#if defined(CONFIG_SENSORS_BH1780)
+> +       {
+> +               /* Light sensor Rohm BH1780GLI */
+> +               I2C_BOARD_INFO("bh1780", 0x29),
+> +       },
+> +#endif
+> +};
 
-Is the race solved? Using default_llseek() still races
-with read_kcore() on fpos, AFAIK.
-
-
--- 
-Live like a child, think like the god.
- 
+You need to take care of the case where the driver is built as a module
+(by adding a || defined(..._MODULE)).  It would actually be better if
+you instead get rid of the ifdef entirely, since they get really ugly if
+you add them for every device here.
