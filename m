@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714Ab1AKK4T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 05:56:19 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46034 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755617Ab1AKK4Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 05:56:16 -0500
-Date: Tue, 11 Jan 2011 11:56:09 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>, linux-sh@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: Re: Locking in the clk API
-Message-ID: <20110111105609.GO24920@pengutronix.de>
-References: <201101111016.42819.jeremy.kerr@canonical.com>
- <20110111091607.GI12552@n2100.arm.linux.org.uk>
- <201101111744.59712.jeremy.kerr@canonical.com>
- <20110111103929.GN24920@pengutronix.de>
- <20110111104709.GB11039@n2100.arm.linux.org.uk>
+	id S1755686Ab1AKK6B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 05:58:01 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:48481 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751908Ab1AKK56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 05:57:58 -0500
+Date: Tue, 11 Jan 2011 11:57:08 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Chris Samuel <chris@csamuel.org>,
+        David Ahern <daahern@cisco.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Pirko <jpirko@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [GIT PULL 0/6] perf/urgent fixes and improvements
+Message-ID: <20110111105708.GA5253@elte.hu>
+References: <1294705692-9537-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110111104709.GB11039@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1294705692-9537-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Russell,
 
-On Tue, Jan 11, 2011 at 10:47:09AM +0000, Russell King - ARM Linux wrote:
-> On Tue, Jan 11, 2011 at 11:39:29AM +0100, Uwe Kleine-König wrote:
-> > A quick look into Digi's BSP (digiEL-5.0) shows they implemented
-> > something I suggested earlier here:
-> >
-> > [...]
-> > 
-> > 
-> > I think the idea is nice.  At least it allows with a single lock to
-> > implement both, sleeping and atomic clks without the need to mark the
-> > atomicity in a global flag.
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+
+> Hi Ingo,
 > 
-> It doesn't.  clk_enable() here can still end up trying to sleep when
-> it's called from IRQ context - the code doesn't solve that.  All it
-> means is that the intermediate code doesn't care whether clk->endisable
-> ends up sleeping or not.
-Obviousley you're right and your last sentence is all I intended to
-claim.
+>         Please consider pulling from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/urgent
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> Arnaldo Carvalho de Melo (4):
+>   perf sched: Fix allocation result check
+>   perf tools: Emit clearer message for sys_perf_event_open ENOENT return
+>   perf evsel: Support perf_evsel__open(cpus > 1 && threads > 1)
+>   perf session: Fix infinite loop in __perf_session__process_events
+> 
+> David Ahern (1):
+>   perf stat: better error message for unsupported events
+> 
+> Jiri Pirko (1):
+>   perf sched: Use PTHREAD_STACK_MIN to avoid pthread_attr_setstacksize() fail
+> 
+>  tools/perf/builtin-record.c |    3 +
+>  tools/perf/builtin-sched.c  |    5 +-
+>  tools/perf/builtin-stat.c   |    2 +
+>  tools/perf/builtin-test.c   |  110 +++++++++++++++++++++++++++++++++++++++++++
+>  tools/perf/builtin-top.c    |    2 +
+>  tools/perf/util/evsel.c     |   82 +++++++++++++++++++-------------
+>  tools/perf/util/session.c   |    2 +-
+>  7 files changed, 170 insertions(+), 36 deletions(-)
 
-> What it does do is return -EBUSY if there are two concurrent attempts
-> to enable the same clock.  How many drivers today deal sanely with
-> such an error from clk_enable(), and how many would just fail their
-> probe() call on such an occurance?
-Yes, that's the ugly part.
+Pulled, thanks a lot Arnaldo!
 
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+	Ingo
