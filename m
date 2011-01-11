@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab1AKUQB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 15:16:01 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49046 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752398Ab1AKUP7 (ORCPT
+	id S1754221Ab1AKUcq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 15:32:46 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:59641 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029Ab1AKUco convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 15:15:59 -0500
+	Tue, 11 Jan 2011 15:32:44 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=REOnFDj1GGwvqU2ru+Ct03DYzfoc3mKrl9oO1GclLjvfagFDLJO8h4IzBMsI+ZA5bM
-         auRv3qZkVsOUS6qMlSTTM58NKP5AQcGNYPUbqT1o996cxV5VCf4QXqzmAFY6ClkOxJkn
-         znI6jZy7hOfbZ1RoieZnHL+HBgfNTcNPPZwPE=
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=IxzPvuEiCoT3DwZaTU8XEhuUW1n8vndiCirmI9UhAXEBvh7aUw0TaZUkLKuhnrVqOF
+         FIsk0qA13DGAr+pg8XEQhNcjmKZV7yKl+IqemNnWfFJ4Z4IBPBR+5Dqb7WzSWdTpi20n
+         FzNAeKQMaIXj8HTL/ZMLc0cGoldELZ0CMn5Sk=
 MIME-Version: 1.0
-Date: Tue, 11 Jan 2011 14:15:57 -0600
-Message-ID: <AANLkTim-2Sr+dgKjKtbQGgJ8C-YEGkRcgb4Q9QFgtcXx@mail.gmail.com>
-Subject: [GIT PULL] 9p file system changes for the merge window
-From: Eric Van Hensbergen <ericvh@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        V9FS Developers <v9fs-developer@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1294693597.3068.12.camel@work-vm>
+References: <cover.1293820862.git.richard.cochran@omicron.at>
+ <fe2bec763bec155381d62721aa9da84aeca2785c.1293820862.git.richard.cochran@omicron.at>
+ <AANLkTini2WdT-1v4k9V3JOZYDkA59P+SyscTe8-fK2Wk@mail.gmail.com>
+ <20110108175028.GA22308@riccoc20.at.omicron.at> <AANLkTikigXGSACF6R6kfNHyKZ7GFWrUrCMxygvL3fUC6@mail.gmail.com>
+ <1294678145.3068.6.camel@work-vm> <AANLkTikdg4Pb5c4wcCU3d3Eku=mpiW_TEkBz0A2VPdVp@mail.gmail.com>
+ <1294693597.3068.12.camel@work-vm>
+From: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
+Date: Wed, 12 Jan 2011 05:32:03 +0900
+Message-ID: <AANLkTik+2udoJ6JyZMhkd1yhr2W9hSWO_vD_zdm+BoOG@mail.gmail.com>
+Subject: Re: [PATCH V8 02/13] ntp: add ADJ_SETOFFSET mode bit
+To: john stultz <johnstul@us.ibm.com>
+Cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 5b2eef966cb2ae307aa4ef1767f7307774bc96ca:
+On Tue, Jan 11, 2011 at 6:06 AM, john stultz <johnstul@us.ibm.com> wrote:
+> On Tue, 2011-01-11 at 05:45 +0900, Kuwahara,T. wrote:
+>> On Tue, Jan 11, 2011 at 1:49 AM, john stultz <johnstul@us.ibm.com> wrote:
+>> > Leapsecond processing is done via an absolute hrtimer. Thus when the
+>> > time offset is set, the hrtimers that should have expired will fire
+>> > (just like with settimeofday) and the adjustment will then be made.
+>>
+>> How do you convert relative time to absolute time?  It's not trivial
+>> because TAI offset is also a variable.
+>
+> I don't believe I understand what you're getting at.
+>
+> The proposed interface is almost identical in functionality to a
+> userland application doing the following:
+>
+>        offset = my_calculate_offset();
+>        clock_gettime(CLOCK_REALTIME, &now);
+>        newtime = my_add_ts(now, offset);
+>        settimeofday(&newtime, 0);
+>
+> The only difference is that you avoid the error from the delay between
+> the gettime call and the settime call. It just adds the offset directly
+> to the CLOCK_REALTIME.
 
-  Merge branch 'drm-core-next' of
-git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6
-(2011-01-10 17:11:39 -0800)
+For example, what time was it 3 seconds after 2008-12-31 23:59:59?
+You may say, of course it's 2009-01-01 00:00:02.  But it's not true.
+You wonder why?  Because a leap second had been added at midnight.
 
-are available in the git repository at:
+	unix time   UTC     offset
+	---------- -------- ---
+	1230767997 23:59:57  -2
+	1230767998 23:59:58  -1
+	1230767999 23:59:59   0
+	1230768000 23:59:60   1 (leap second)
+	1230768000 00:00:00   2
+	1230768001 00:00:01   3
+	1230768002 00:00:02   4
 
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/ericvh/v9fs.git for-linus
-
-Aneesh Kumar K.V (4):
-      fs/9p: Fix the return error on default acl removal
-      fs/9p: Move dotl inode operations into a seperate file
-      fs/9p: Simplify the .L create operation
-      fs/9p: Don't set dentry->d_op in create routines
-
-Eric Van Hensbergen (1):
-      fs/9p: fix spelling typo
-
-Joe Perches (1):
-      fs/9p: Remove unnecessary semicolons
-
-M. Mohan Kumar (2):
-      net/9p: Use proper data types
-      fs/9p: TREADLINK bugfix
-
-Randy Dunlap (1):
-      fs/9p: fix menu presentation
-
- fs/9p/Kconfig          |    5 +-
- fs/9p/Makefile         |    1 +
- fs/9p/acl.c            |    4 +-
- fs/9p/v9fs.h           |   42 +++-
- fs/9p/vfs_inode.c      |  871 +-----------------------------------------------
- fs/9p/vfs_inode_dotl.c |  824 +++++++++++++++++++++++++++++++++++++++++++++
- fs/9p/xattr.c          |    2 +-
- net/9p/protocol.c      |   22 +-
- 8 files changed, 887 insertions(+), 884 deletions(-)
- create mode 100644 fs/9p/vfs_inode_dotl.c
+That's why I said it's not trivial, and that your patch is broken and
+thus useless.  Unfortunately, there's no remedy for this as long as a
+nonlinear timescale such as the unix time is being used, since the
+leap second insertion/deletion is a non-deterministic event.
