@@ -1,61 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932293Ab1AKPtV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 10:49:21 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:63928 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932282Ab1AKPtU (ORCPT
+	id S932302Ab1AKPtu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 10:49:50 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:48391 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932192Ab1AKPts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 10:49:20 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
-Subject: Re: [PATCH] asm-generic headers: add arch-specific __strnlen_user calling in uaccess.h
-Date: Tue, 11 Jan 2011 16:49:14 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.5.1; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <008801cbb166$96cd0430$c4670c90$@mprc.pku.edu.cn>
-In-Reply-To: <008801cbb166$96cd0430$c4670c90$@mprc.pku.edu.cn>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101111649.14711.arnd@arndb.de>
-X-Provags-ID: V02:K0:a0TwV36bxA3q3UEeWGgOeNfYbkhQa4ld9WEZzRd6iKQ
- CL58E96UxWxateAp7pbfiLSafYaW+mmZ2Y1GuWk7UCP1UZp6Ry
- E64SO7xInxzRKejt9RAVH1BzmaYDBv4359o14KkGln6+hyAA3Z
- eR3+aCouMmyuHcBCajT8k79IL+q/xXCgVA5dh+8UXRnOis8Nui
- ggVIWCSK2grdW9KrzYCYQ==
+	Tue, 11 Jan 2011 10:49:48 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: v9fs-developer@lists.sourceforge.net
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH] fs/9p: Don't set dentry->d_op in create routines
+Date: Tue, 11 Jan 2011 21:19:42 +0530
+Message-Id: <1294760982-26732-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 January 2011, Guan Xuetao wrote:
-> diff --git a/include/asm-generic/uaccess.h b/include/asm-generic/uaccess.h
-> index b218b85..ac68c99 100644
-> --- a/include/asm-generic/uaccess.h
-> +++ b/include/asm-generic/uaccess.h
-> @@ -288,14 +288,16 @@ strncpy_from_user(char *dst, const char __user *src, long count)
->   *
->   * Return 0 on exception, a value greater than N if too long
->   */
-> -#ifndef strnlen_user
-> +#ifndef __strnlen_user
-> +#define __strnlen_user strnlen
-> +#endif
-> +
->  static inline long strnlen_user(const char __user *src, long n)
->  {
->         if (!access_ok(VERIFY_READ, src, 1))
->                 return 0;
-> -       return strlen((void * __force)src) + 1;
-> +       return __strnlen_user(src, n);
->  }
-> -#endif
->  
->  static inline long strlen_user(const char __user *src)
+We do set dentry->d_op in lookup even in case of ENOENT entries.
+That implies we should have dentry->d_op already set when
+create/mkdir/mknod/link/symlink routines are called
 
-Yes, looks good. I believe no architecture currently uses the generic
-uaccess.h file directly, so it's not surprising that you find problems
-like this in it.
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/9p/vfs_inode.c      |    6 ------
+ fs/9p/vfs_inode_dotl.c |   13 -------------
+ 2 files changed, 0 insertions(+), 19 deletions(-)
 
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+index 3923586..5076eeb 100644
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@ -537,12 +537,6 @@ v9fs_create(struct v9fs_session_info *v9ses, struct inode *dir,
+ 		P9_DPRINTK(P9_DEBUG_VFS, "inode creation failed %d\n", err);
+ 		goto error;
+ 	}
+-
+-	if (v9ses->cache)
+-		d_set_d_op(dentry, &v9fs_cached_dentry_operations);
+-	else
+-		d_set_d_op(dentry, &v9fs_dentry_operations);
+-
+ 	d_instantiate(dentry, inode);
+ 	err = v9fs_fid_add(dentry, fid);
+ 	if (err < 0)
+diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
+index b7f8dcb..8cb1eb8 100644
+--- a/fs/9p/vfs_inode_dotl.c
++++ b/fs/9p/vfs_inode_dotl.c
+@@ -211,11 +211,6 @@ v9fs_vfs_create_dotl(struct inode *dir, struct dentry *dentry, int omode,
+ 		P9_DPRINTK(P9_DEBUG_VFS, "inode creation failed %d\n", err);
+ 		goto error;
+ 	}
+-	if (v9ses->cache)
+-		dentry->d_op = &v9fs_cached_dentry_operations;
+-	else
+-		dentry->d_op = &v9fs_dentry_operations;
+-
+ 	d_instantiate(dentry, inode);
+ 	err = v9fs_fid_add(dentry, fid);
+ 	if (err < 0)
+@@ -312,7 +307,6 @@ static int v9fs_vfs_mkdir_dotl(struct inode *dir,
+ 				err);
+ 			goto error;
+ 		}
+-		d_set_d_op(dentry, &v9fs_cached_dentry_operations);
+ 		d_instantiate(dentry, inode);
+ 		err = v9fs_fid_add(dentry, fid);
+ 		if (err < 0)
+@@ -329,7 +323,6 @@ static int v9fs_vfs_mkdir_dotl(struct inode *dir,
+ 			err = PTR_ERR(inode);
+ 			goto error;
+ 		}
+-		d_set_d_op(dentry, &v9fs_dentry_operations);
+ 		d_instantiate(dentry, inode);
+ 	}
+ 	/* Now set the ACL based on the default value */
+@@ -560,7 +553,6 @@ v9fs_vfs_symlink_dotl(struct inode *dir, struct dentry *dentry,
+ 					err);
+ 			goto error;
+ 		}
+-		d_set_d_op(dentry, &v9fs_cached_dentry_operations);
+ 		d_instantiate(dentry, inode);
+ 		err = v9fs_fid_add(dentry, fid);
+ 		if (err < 0)
+@@ -573,7 +565,6 @@ v9fs_vfs_symlink_dotl(struct inode *dir, struct dentry *dentry,
+ 			err = PTR_ERR(inode);
+ 			goto error;
+ 		}
+-		d_set_d_op(dentry, &v9fs_dentry_operations);
+ 		d_instantiate(dentry, inode);
+ 	}
+ 
+@@ -648,8 +639,6 @@ v9fs_vfs_link_dotl(struct dentry *old_dentry, struct inode *dir,
+ 		 */
+ 		ihold(old_dentry->d_inode);
+ 	}
+-
+-	d_set_d_op(dentry, old_dentry->d_op);
+ 	d_instantiate(dentry, old_dentry->d_inode);
+ 
+ 	return err;
+@@ -728,7 +717,6 @@ v9fs_vfs_mknod_dotl(struct inode *dir, struct dentry *dentry, int omode,
+ 				err);
+ 			goto error;
+ 		}
+-		d_set_d_op(dentry, &v9fs_cached_dentry_operations);
+ 		d_instantiate(dentry, inode);
+ 		err = v9fs_fid_add(dentry, fid);
+ 		if (err < 0)
+@@ -744,7 +732,6 @@ v9fs_vfs_mknod_dotl(struct inode *dir, struct dentry *dentry, int omode,
+ 			err = PTR_ERR(inode);
+ 			goto error;
+ 		}
+-		d_set_d_op(dentry, &v9fs_dentry_operations);
+ 		d_instantiate(dentry, inode);
+ 	}
+ 	/* Now set the ACL based on the default value */
+-- 
+1.7.1
+
