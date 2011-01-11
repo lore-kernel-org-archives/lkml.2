@@ -1,54 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab1AKJ6I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 04:58:08 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:37174 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755500Ab1AKJ57 convert rfc822-to-8bit (ORCPT
+	id S1755548Ab1AKKKx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 05:10:53 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:47712 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753015Ab1AKKKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 04:57:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=q9GbelNkMLXTPgtuVGGcO+Ji9JQSIRs4lS0uLyTFPD6vKpJ0Xm1deLBFppBjGbqq/e
-         JTnG4sZoc5H430SD69gXXTjSeRjjf3vNcKe34IwpPoeohQHmw6o4eE4Fw0fNfb+7GEd3
-         nYUCGGA35h+UgDCP/z4ZJ+SMZE/bcC1f0QV4M=
+	Tue, 11 Jan 2011 05:10:48 -0500
+Date: Tue, 11 Jan 2011 15:40:40 +0530
+From: Bharata B Rao <bharata@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH -tip 0/2] sched: Get group names back in /proc/sched_debug -
+ v1
+Message-ID: <20110111101040.GD4772@in.ibm.com>
+Reply-To: bharata@linux.vnet.ibm.com
 MIME-Version: 1.0
-In-Reply-To: <4D282A17.4040104@gmail.com>
-References: <AANLkTimBrR1LkVHOxZA=UUmKsnxfsFLr9z_AhXUHQ_7N@mail.gmail.com>
-	<4D282A17.4040104@gmail.com>
-Date: Tue, 11 Jan 2011 20:57:58 +1100
-Message-ID: <AANLkTikJjL6XEDJiYSh_J_rT+5LRUNj5EKDzCQ-852D7@mail.gmail.com>
-Subject: Re: Important for fs devs: rcu-walk merged upstream
-From: Nick Piggin <npiggin@gmail.com>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, 8 January 2011, Marco Stornelli <marco.stornelli@gmail.com> wrote:
-> Il 08/01/2011 03:54, Nick Piggin ha scritto:
->> The vfs-scale branch is now upstream. If you haven't
->> looked yet, your filesystem is likely to have been
->> touched, so check it out.
->>
->> Also look at Documentation/filesystems/porting and
->> path-lookup.txt.
->
-> Nick, in the porting file I read:
->
-> ..........hazards on dentries and inodes (see
-> Documentation/filesystems/path-walk.txt). ..........
->  ^^^^^^^^^^^^^
->
-> Should it be "path-lookup.txt"?
->
-> Marco
->
+Hi,
 
-Hi, yes thanks I'll fix it
+This patchset adds group names back to /proc/sched_debug. This v1 post
+addresses the comments received during initial post (https://lkml.org/lkml/2011/1/10/2)
+
+Mike, you may want to add your sign off since I took pieces of your code
+from your review comments.
+
+Regards,
+Bharata.
