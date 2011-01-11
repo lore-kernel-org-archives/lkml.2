@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932478Ab1AKRgK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 12:36:10 -0500
-Received: from csmtp3.one.com ([91.198.169.23]:45799 "EHLO csmtp3.one.com"
+	id S932497Ab1AKRhp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 12:37:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37728 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753368Ab1AKRgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 12:36:08 -0500
-From: "Henrik Rydberg" <rydberg@bitmath.org>
-Date: Tue, 11 Jan 2011 18:35:53 +0100
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Stephane Chatty <chatty@enac.fr>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] hid-multitouch: changes from the review process
-Message-ID: <20110111173511.GA3461@polaris.bitmath.org>
-References: <1294760754-7885-1-git-send-email-benjamin.tissoires@enac.fr>
+	id S1753368Ab1AKRhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 12:37:43 -0500
+Date: Tue, 11 Jan 2011 18:37:41 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        dri-devel@lists.freedesktop.org, indan@nul.nu
+Subject: Re: Linux 2.6.37
+Message-ID: <20110111173741.GA3988@tiehlicka.suse.cz>
+References: <AANLkTikKA-nStyNjkdsVa8hd=PFQR3tYTJh3MnfpNkD8@mail.gmail.com>
+ <20110106104816.GA4026@tiehlicka.suse.cz>
+ <20110111171744.GA3854@tiehlicka.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1294760754-7885-1-git-send-email-benjamin.tissoires@enac.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110111171744.GA3854@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 04:45:54PM +0100, Benjamin Tissoires wrote:
-> * amended Kconfig (PixCir and Hanvon are the same panel but with
->   different name)
-> * insert field name in mt_class and retrieving it in mt_probe
-> * add 2 quirks: MT_QUIRK_VALID_IS_INRANGE, MT_QUIRK_VALID_IS_CONFIDENCE,
->   in order to find the field "valid"
-> * inlined slot_is_contactid and slot_is_contact_number
-> * cosmetics changes (tabs and comments)
-> * do not send unnecessary properties once the touch is up
+On Tue 11-01-11 18:17:44, Michal Hocko wrote:
+> [Let's CC Indan - author of the bugzilla patches]
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+> On Thu 06-01-11 11:48:16, Michal Hocko wrote:
+> > Hi,
+> > 
+> > On Tue 04-01-11 17:15:45, Linus Torvalds wrote:
+> > [...]
+> > > We did have another revert to fix hopefullythe last "blank screen"
+> > > regression on intel graphics.
+> > 
+> > It seems that there is still a regression for intel graphic cards
+> > backlight. One report is https://bugzilla.kernel.org/show_bug.cgi?id=22672.
+> > I can reproduce the problem easily by:
+> > xset dpms force standby; sleep 3s; xset dpms force on
+> > 
+> > backlight doesn't get up (there is really dark picture though which
+> > doesn't get brighter by function keys which work normally) after dpms on
+> > until I close and open lid. 
+> > 
+> > The problem wasn't present in 2.6.36
+> 
+> I can confirm that this problem is not present if both patches from
+> bko#22672 are applied on top of 2.6.37 kernel.
+> I haven't tried both patches separately, but I can surely try it if it
+> makes any sense.
 
-There are some syntactic suboptimalities in the resulting file that
-perhaps could be fixed, but content-wise, I have nothing further. So,
-given that it actually works,
+I have just tried that and they are really both necessary.
 
-Acked-by: Henrik Rydberg <rydberg@euromail.se>
 
-Thank you very much for your work, Benjamin.
-
-Henrik
+-- 
+Michal Hocko
+L3 team 
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
