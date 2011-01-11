@@ -1,97 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227Ab1AKCQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 21:16:58 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:37624 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753800Ab1AKCQx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 21:16:53 -0500
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-To: linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Locking in the clk API
-Date: Tue, 11 Jan 2011 10:16:42 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.35-24-generic; KDE/4.5.1; x86_64; ; )
-Cc: Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        "Uwe =?utf-8?q?Kleine-K=C3=B6nig?=" <u.kleine-koenig@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
+	id S1755087Ab1AKCUk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 21:20:40 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:43976 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753504Ab1AKCUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 21:20:35 -0500
+Date: Tue, 11 Jan 2011 13:20:30 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Clemens Ladisch <clemens@ladisch.de>
+Subject: linux-next: build failure after merge of the final tree (sound tree
+ related)
+Message-Id: <20110111132030.3179e682.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101111016.42819.jeremy.kerr@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi all,
 
-I'd like to define some locking semantics for the clk API, so that device 
-driver can have some assurance about when it is safe to call various clk_ 
-functions from atomic contexts.
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-Vincent - you mentioned in a conversation that your code had some specific 
-requirements for clock enable/disable at interrupt time - could you reply with 
-an outline of this? Also, Sascha and Uwe: do you have any thoughts from your 
-work with the common struct clk?
+sound/pci/oxygen/xonar_dg.c: In function 'dg_output_enable':
+sound/pci/oxygen/xonar_dg.c:138: error: implicit declaration of function 'msleep'
 
-== Requirements ==
+Caused by commit 66410bfdf14f7c2ad3b2d4a8adeab41d368b6f05 ("ALSA: oxygen:
+add Xonar DG support").
 
-To get things started, here are some basic requirements from the external API 
-side:
+See Rule 1 in Documentation/SubmitChecklist.
 
-1) clk_enable: the clock should be outputting a valid clock signal before
-   returning from this function.
+I added the following patch for today:
 
-    - drivers may require valid clock signal to be present for subsequent
-      device interactions.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 11 Jan 2011 13:17:16 +1100
+Subject: [PATCH] ALSA: include delay.h for msleep in Xonar DG support
 
-3) clk_disable: may be called from atomic context
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ sound/pci/oxygen/xonar_dg.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-    - Vincent: this is what I recall from our conversation, is it still true?
+diff --git a/sound/pci/oxygen/xonar_dg.c b/sound/pci/oxygen/xonar_dg.c
+index cc610ac1..dd45cf4 100644
+--- a/sound/pci/oxygen/xonar_dg.c
++++ b/sound/pci/oxygen/xonar_dg.c
+@@ -40,6 +40,7 @@
+  */
+ 
+ #include <linux/pci.h>
++#include <linux/delay.h>
+ #include <sound/control.h>
+ #include <sound/core.h>
+ #include <sound/info.h>
+-- 
+1.7.2.3
 
-4) clk_set_rate: clock should change to the new rate before this returns
-
-5) clk_get_rate: may be called from atomic context
-
-6) in general, drivers shouldn't require details about the clock
-   implementation
-
-And from the clock implementation side:
-
-7) interactions with clock hardware may require sleeping (eg, clocks on an i2c
-   bus)
-
-8) clk_enable() may require enabling a parent, which may also require
-   sleeping. Ideally, we shouldn't have to care about the parent's
-   implementation.
-
-I'm sure there are others, please feel free to add to this list.
-
-== Implementation ==
-
-At present, we can satisfy these with:
-
-* clk_enable: may sleep
-
-* clk_disable: may not sleep, but it's possible to make the global
-  clk_disable() atomic and defer the actual disable (clk->ops.disable()) to a
-  non-atomic context.
-
-* clk_get_rate: may not sleep
-
-* clk_set_rate: may sleep
-
-As we build up our requirements, we can adjust as suitable.
-
-I'm excluding clk_{get,set}_parent at present, as I'm not sure we want these 
-as part of the device-driver API (ie, they require knowledge of the platform 
-clock infrastructure).
-
-Thanks,
-
-
-Jeremy
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
