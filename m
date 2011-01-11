@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302Ab1AKDSF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 22:18:05 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:38512 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754691Ab1AKDR6 (ORCPT
+	id S1755310Ab1AKDTH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 22:19:07 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:10766 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754691Ab1AKDTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 22:17:58 -0500
-Date: Tue, 11 Jan 2011 12:15:52 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Uwe Kleine-K??nig <u.kleine-koenig@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
-Subject: Re: Locking in the clk API
-Message-ID: <20110111031552.GJ3760@linux-sh.org>
-References: <201101111016.42819.jeremy.kerr@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201101111016.42819.jeremy.kerr@canonical.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	Mon, 10 Jan 2011 22:19:04 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Mon, 10 Jan 2011 22:19:02 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>
+Subject: Re: [RFC] arm: Defer lookup of machine_type and vet of atags to setup.c
+In-reply-to: <20110111015409.18291.87166.stgit@localhost6.localdomain6>
+Message-id: <alpine.LFD.2.00.1101102211370.12076@xanadu.home>
+References: <20110111015409.18291.87166.stgit@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 10:16:42AM +0800, Jeremy Kerr wrote:
-> * clk_enable: may sleep
-> 
-> * clk_disable: may not sleep, but it's possible to make the global
->   clk_disable() atomic and defer the actual disable (clk->ops.disable()) to a
->   non-atomic context.
-> 
-> * clk_get_rate: may not sleep
-> 
-> * clk_set_rate: may sleep
-> 
-> As we build up our requirements, we can adjust as suitable.
-> 
-This looks like a complete disaster, and is also completely inconsistent
-with how the API is being used by the vast majority of users today. You
-have an API that can or can not sleep with no indication as to which is
-which based off of the API naming, which is just asking for trouble.
+On Mon, 10 Jan 2011, Grant Likely wrote:
 
-As it is today, most users expect that these are all usable from atomic
-context, and as far as I can tell the only special case you have are for
-some crap busses with insane latencies. In this case you should simply
-pile on _cansleep() versions of the API and make it apparent that those
-drivers are the special cases, not the other way around.
+> Since the debug macros no longer depend on the machine type
+> information, both the machine type lookup and the atags vetting can be
+> deferred to setup_arch() in setup.c which simplifies the code
+> somewhat.
+> 
+> This patch removes both __machine_type_lookup and __vet_atags() from
+> head.S.  The atags vetting is moved to setup_arch().  machine_type
+> lookup is already called from setup_machine() in addition to where it
+> was called from head.S.
 
-Having half of the API sleepable and the other not with no indication of
-which is which simply makes it completely unusable and error prone for
-both atomic and non-atomic contexts.
+While at it, you could also remove the code for __lookup_machine_type, 
+lookup_machine_type and __error_a, replacing that with a C 
+implementation living in setup.c instead.  If this code is not called 
+from head.S anymore, there is no reason to keep it there any longer.
+
+
+Nicolas
