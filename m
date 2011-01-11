@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab1AKVZU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 16:25:20 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64173 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795Ab1AKVZS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 16:25:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=sNuCwTv/f6Rl85COGTXATPd3XkQCFId7PKi4yR1/GMtfjGZoX1T9hl10qwASCKE2A1
-         7xYK/KTIA9nZTikm3vJ6bl02IMsmSwBCO+WvonMR51iurwVIUghnZuXMzfn86SKj9w3U
-         2arxY2bHEdtO9QZAfnAGTqVyJNaGZmMQo3bI0=
+	id S1756037Ab1AKVaU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 16:30:20 -0500
+Received: from thunk.org ([69.25.196.29]:39046 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751795Ab1AKVaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 16:30:18 -0500
+Date: Tue, 11 Jan 2011 16:30:07 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Lawrence Greenfield <leg@google.com>
+Cc: Dave Chinner <david@fromorbit.com>, Josef Bacik <josef@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        xfs@oss.sgi.com, joel.becker@oracle.com, cmm@us.ibm.com,
+        cluster-devel@redhat.com
+Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
+Message-ID: <20110111213007.GF2917@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Lawrence Greenfield <leg@google.com>,
+	Dave Chinner <david@fromorbit.com>, Josef Bacik <josef@redhat.com>,
+	linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+	linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	xfs@oss.sgi.com, joel.becker@oracle.com, cmm@us.ibm.com,
+	cluster-devel@redhat.com
+References: <1289248327-16308-1-git-send-email-josef@redhat.com>
+ <20101109011222.GD2715@dastard>
+ <20101109033038.GF3099@thunk.org>
+ <20101109044242.GH2715@dastard>
+ <20101109214147.GK3099@thunk.org>
+ <20101109234049.GQ2715@dastard>
+ <AANLkTimwmJ_ZoE9oAuA1WGhCgK585jDznqnc6k0=9Ntb@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTiknwXJF+pLJFQPqa7XPywi=boz-H+_JLk-T+Zp8@mail.gmail.com>
-References: <alpine.DEB.2.00.1101091110520.5270@tiger>
-	<AANLkTim0UBNG6bVgBDQsrBhVjS0FSdLbwaipBZGkTeWF@mail.gmail.com>
-	<AANLkTi=pvz-ou3_DK0dUSRYCARkwM_X9x7Xpnapjw_Ke@mail.gmail.com>
-	<AANLkTiknwXJF+pLJFQPqa7XPywi=boz-H+_JLk-T+Zp8@mail.gmail.com>
-Date: Tue, 11 Jan 2011 13:25:17 -0800
-X-Google-Sender-Auth: 3ArrpHRWs4g-41f0R4fqKwRArvA
-Message-ID: <AANLkTim29V8-w23zc=akW+F3CW-BKYR=jpWRVnr3x4E0@mail.gmail.com>
-Subject: Re: [GIT PULL] SLAB changes for v2.6.38
-From: Tony Luck <tony.luck@intel.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, cl@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimwmJ_ZoE9oAuA1WGhCgK585jDznqnc6k0=9Ntb@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 8:13 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+On Tue, Jan 11, 2011 at 04:13:42PM -0500, Lawrence Greenfield wrote:
+> > IOWs, all they want to do is avoid the unwritten extent conversion
+> > overhead. Time has shown that a bad security/performance tradeoff
+> > decision was made 13 years ago in XFS, so I see little reason to
+> > repeat it for ext4 today....
 
-> That said, "number of commits" is not a really meaningful measure
-> either. I really tend to like how the ACPI tree does things, with
-> separate branches for separate bugzilla entries - with nice relevant
-> branch naming (bug number or description) - and then merging them. At
-> that point you may well have a branch with just a single commit in it,
-> but now the extra merge actually _adds_ information and the history
-> looks better for it.
+I suspect things may have changed somewhat; both in terms of
+requirements and nature of cluter file systems, and the performance of
+various storage systems (including PCIe-attached flash devices).  
 
-There are some notes on this work flow in the git sources in
-Documentation/user-manual.txt in the [[maintaining-topic-branches]]
-chapter.
+> I'd make use of FALLOC_FL_EXPOSE_OLD_DATA. It's not the CPU overhead
+> of extent conversion. It's that extent conversion causes more metadata
+> operations than what you'd have otherwise, which means systems that
+> want to use O_DIRECT and make sure the data doesn't go away either
+> have to write O_DIRECT|O_DSYNC or need to call fdatasync().
+> 
+> cluster file system implementor,
 
--Tony
+One possibility might be to make it an optional feature which is only
+enabled via a mount option.  That way someone would have to explicit
+ask for this feature two ways (via a new flag to fallocate) and a
+mount option.
+
+It might not make sense for XFS, but for people who are using ext4 as
+the local storage file system back-end, and are doing all sorts of
+things to get the best performance, including disabling the journal, I
+suspect it really would make sense.  So it could always be an
+optional-to-implement flag, that not all file systems should feel
+obliged to implement.
+
+					- Ted
