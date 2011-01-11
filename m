@@ -1,288 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab1AKAQO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Jan 2011 19:16:14 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:34113 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753358Ab1AKAQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Jan 2011 19:16:13 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
-Subject: Pull request blackfin.git (for-linus branch)
-Date: Mon, 10 Jan 2011 19:23:58 -0500
-Message-Id: <1294705438-24398-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.4.rc1
-In-Reply-To: <1294662365-25109-1-git-send-email-vapier@gentoo.org>
-References: <1294662365-25109-1-git-send-email-vapier@gentoo.org>
+	id S1754953Ab1AKAR0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Jan 2011 19:17:26 -0500
+Received: from sncsmrelay2.nai.com ([67.97.80.206]:37441 "EHLO
+	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754136Ab1AKARY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Jan 2011 19:17:24 -0500
+Message-ID: <4D2BA0C3.7090908@snapgear.com>
+Date: Tue, 11 Jan 2011 10:13:55 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Al Viro <viro@zeniv.linux.org.uk>, Andreas Schwab <schwab@linux-m68k.org>,
+        Thorsten Glaser <tg@mirbsd.de>, <linux-kernel@vger.kernel.org>,
+        <linux-m68k@vger.kernel.org>
+Subject: Re: Signal patchset
+References: <AANLkTi=9B-8KN0oiXoiU+KqPt6B8Vs=d7yu9cui-7e1r@mail.gmail.com>	<20101215101027.GA31097@ZenIV.linux.org.uk>	<4D0A12EA.6040605@snapgear.com>	<AANLkTi=iddsbRr+N5iLuGBizbFFQ2JN9sgBFC_Q3uA2K@mail.gmail.com> <AANLkTik-9r_ZPkzVGowW2xT8h+QtVJ57q3mE6iKsuuVa@mail.gmail.com>
+In-Reply-To: <AANLkTik-9r_ZPkzVGowW2xT8h+QtVJ57q3mE6iKsuuVa@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 0c21e3aaf6ae85bee804a325aa29c325209180fd:
+On 07/01/11 23:17, Geert Uytterhoeven wrote:
+> On Thu, Jan 6, 2011 at 21:42, Geert Uytterhoeven<geert@linux-m68k.org>  wrote:
+>> On Thu, Dec 16, 2010 at 14:23, Greg Ungerer<gerg@snapgear.com>  wrote:
+>>> On 15/12/10 20:10, Al Viro wrote:
+>>>> On Sun, Dec 05, 2010 at 12:15:10PM +0100, Geert Uytterhoeven wrote:
+>>>>
+>>>>> Unless someone objects, I'm inclined to apply Al's patchset, as it
+>>>>> improves the
+>>>>> situation anyway.
+>>>>>
+>>>>> OK?
+>>>>
+>>>> FWIW, there's an m68knommu counterpart (ACKed by gerg a while ago).  The
+>>>> entire bunch is on ftp.linux.org.uk/pub/people/viro/m68k-signals - both m68k
+>>>> and m68knommu sets.  I don't know how you guys would prefer it done, since
+>>
+>> Thx, good the know the nommu part is there, as I don't seem to have it
+>> in my mailbox.
+>>
+>>>> there's a trivial dependency between m68k and m68knommu parts of series -
+>>>> the former has
+>>>> +#ifndef __uClinux__
+>>>> +#define __ARCH_WANT_SYS_RT_SIGSUSPEND
+>>>> +#endif
+>>>> in unistd.h and the latter does
+>>>> -#ifndef __uClinux__
+>>>>   #define __ARCH_WANT_SYS_RT_SIGSUSPEND
+>>>> -#endif
+>>>> Both parts switch to generic sys_rt_sigsuspend(), for mmu and nommu resp.,
+>>>> so they need __ARCH_WANT_SYS_RT_SIGSUSPEND defined as soon as conversion
+>>>> is done.  Other than that they are independent.
+>>>
+>>> I can make sure to send to Linus after Geert. Unless Geert you
+>>> want to take and send both the m68k and m68knommu changes?
+>>
+>> I can take the m68knommu changes with your ack, too.
+>> I'll try to take a look at it tomorrow...
+>
+> I applied the m68k part to master and for-2.6.38/for-linus.
+> In addition, I applied the m68knommu part with Greg's acks added to for-next.
+>
+> Greg, please let me know if this is OK, so I can send a pull request to Linus
+> after it's been cooking one night in linux-next.
 
-  Merge branch 'for-next' of git://git.kernel.org/pub/scm/linux/kernel/git/hch/hfsplus (2011-01-07 17:16:27 -0800)
+Oh, yes, that is ok. (I see the pull request now :-)
+I have a bunch of things in linux-next for m68knommu, and we
+hit nothing there so I think it is all good.
 
-are available in the git repository at:
+Regards
+Greg
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/vapier/blackfin.git for-linus
 
-Andreas Schallenberg (1):
-      Blackfin: DNP5370: new board port
+>
+>                          Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                  -- Linus Torvalds
+>
 
-Bob Liu (1):
-      Blackfin: musb-boards: push clkin value to platform resources
 
-Graf Yang (7):
-      Blackfin: SMP: fix hotplug building after irq header shuffle
-      Blackfin: SMP: rename the arch_xxx lock funcs to __raw_xxx
-      Blackfin: SMP: fix cpumask misbehavior
-      Blackfin: SMP: tweak platform_request_ipi() usage
-      Blackfin: bf561: fix mem_map.h SMP overrides
-      Blackfin: SMP: add missing arch_{read,write}_lock_flags helpers
-      Blackfin: SMP: relocate blackfin_core_id() definition
-
-Michael Hennerich (1):
-      MAINTAINERS: update Analog Devices support info
-
-Mike Frysinger (29):
-      net/irda: bfin_sir: pull in serial headers for defines
-      Blackfin: bfin_serial.h: unify heavily duplicated serial code
-      net/irda: bfin_sir: back out transitional defines
-      asm-generic/io.h: add reads[bwl]/writes[bwl] helpers
-      Blackfin: switch to asm-generic/io.h
-      Blackfin: bfin_dma.h: start a header for DMA MMR layout
-      Blackfin: standardize DMAC traffic control MMRs & MDMA MMRs
-      Blackfin: dma: constify MMR pointer array
-      Blackfin: bf54x: drop unused legacy MMR names
-      Blackfin: push gpio (port) defines into common headers
-      Blackfin: bf533: convert boards to gpio framework
-      Blackfin: bf561-ezkit: add SMP defconfig
-      Blackfin: bf533: merge fio_flag back into normal mach headers
-      Blackfin: clean up mach header includes
-      Blackfin: bf51x/bf52x: drop redundant "base" def/cdef header
-      Blackfin: drop asm/irq.h include from mach headers
-      Blackfin: bf561: update a few more SIC_SYSCR locations
-      Blackfin: SMP: fix asm/bitops.h errors
-      Blackfin: SMP: fix build breakage in cache.h
-      Blackfin: unify pll.h headers
-      Blackfin: bf561: SMP: add multicore pll handlers
-      Blackfin: bf54x: add MMR layout for PINT
-      Blackfin: dpmc.h: pull in new pll.h
-      Blackfin: fix building IPIPE code when XIP is enabled
-      Blackfin: move "-m elf32bfin" to general LDFLAGS
-      Blackfin: boards: add missing "static" to peripheral lists
-      Blackfin: sram_free_with_lsl: do not ignore return value of sram_free
-      Blackfin: bf54x: don't ack GPIO ints when unmasking them
-      Blackfin: encode cpu-rev into uImage name
-
-Sonic Zhang (9):
-      serial: bfin_5xx: move resources into board files
-      Blackfin: no-mpu: fix masking of small uncached dma region
-      Blackfin: bf527-ezkit: add adau1373 chip address
-      Blackfin: sport_uart resources: remove unused secondary RX/TX pins
-      Blackfin: SMP: kgdb: flush core internal write buffer before flushinv
-      Blackfin: SMP: kgdb: apply anomaly 257 work around
-      Blackfin: kgdb: disable interrupt when single stepping in ADEOS
-      Blackfin: kgdb: disable preempt schedule when running single step in kgdb
-      Blackfin: bf518f-ezbrd: fix dsa resources
-
-Stefan Weil (1):
-      Blackfin: tll6527m: fix spelling in unused code (struct name)
-
-Steven Miao (1):
-      Blackfin: pm: drop irq save/restore in standby and suspend to mem callback
-
-Vivi Li (1):
-      Blackfin: kgdb_test: make sure to initialize num2
-
-Yi Li (1):
-      Blackfin: SMP: rewrite IPI handling to avoid memory allocation
-
- MAINTAINERS                                        |   82 +-
- arch/blackfin/Makefile                             |    9 +-
- arch/blackfin/boot/Makefile                        |    2 +-
- arch/blackfin/configs/BF561-EZKIT-SMP_defconfig    |  113 ++
- arch/blackfin/configs/DNP5370_defconfig            |  121 ++
- arch/blackfin/include/asm/bfin_dma.h               |   91 +
- arch/blackfin/include/asm/bfin_serial.h            |  275 +++
- arch/blackfin/include/asm/bitops.h                 |    2 +
- arch/blackfin/include/asm/cache.h                  |    2 +
- arch/blackfin/include/asm/cacheflush.h             |    3 +
- arch/blackfin/include/asm/dma.h                    |   37 +-
- arch/blackfin/include/asm/dpmc.h                   |    2 +
- arch/blackfin/include/asm/io.h                     |  268 +---
- arch/blackfin/include/asm/irqflags.h               |    3 -
- arch/blackfin/include/asm/processor.h              |    4 +-
- arch/blackfin/include/asm/spinlock.h               |   28 +-
- arch/blackfin/include/mach-common/pll.h            |   86 +
- arch/blackfin/include/mach-common/ports-a.h        |   25 +
- arch/blackfin/include/mach-common/ports-b.h        |   25 +
- arch/blackfin/include/mach-common/ports-c.h        |   25 +
- arch/blackfin/include/mach-common/ports-d.h        |   25 +
- arch/blackfin/include/mach-common/ports-e.h        |   25 +
- arch/blackfin/include/mach-common/ports-f.h        |   25 +
- arch/blackfin/include/mach-common/ports-g.h        |   25 +
- arch/blackfin/include/mach-common/ports-h.h        |   25 +
- arch/blackfin/include/mach-common/ports-i.h        |   25 +
- arch/blackfin/include/mach-common/ports-j.h        |   25 +
- arch/blackfin/kernel/cplb-nompu/cplbinit.c         |    2 +-
- arch/blackfin/kernel/kgdb.c                        |   26 +
- arch/blackfin/kernel/kgdb_test.c                   |    4 +
- arch/blackfin/mach-bf518/boards/ezbrd.c            |   29 +-
- arch/blackfin/mach-bf518/boards/tcm-bf518.c        |   12 +-
- arch/blackfin/mach-bf518/dma.c                     |    2 +-
- .../blackfin/mach-bf518/include/mach/bfin_serial.h |   14 +
- .../mach-bf518/include/mach/bfin_serial_5xx.h      |   73 +-
- arch/blackfin/mach-bf518/include/mach/blackfin.h   |   68 +-
- arch/blackfin/mach-bf518/include/mach/cdefBF512.h  | 1038 ++++++++++-
- arch/blackfin/mach-bf518/include/mach/cdefBF514.h  |    5 +-
- arch/blackfin/mach-bf518/include/mach/cdefBF516.h  |    5 +-
- arch/blackfin/mach-bf518/include/mach/cdefBF518.h  |    5 +-
- .../mach-bf518/include/mach/cdefBF51x_base.h       | 1061 ----------
- arch/blackfin/mach-bf518/include/mach/defBF512.h   | 1388 +++++++++++++-
- .../mach-bf518/include/mach/defBF51x_base.h        | 1495 --------------
- arch/blackfin/mach-bf518/include/mach/gpio.h       |    4 +
- arch/blackfin/mach-bf518/include/mach/pll.h        |   64 +-
- arch/blackfin/mach-bf527/boards/ad7160eval.c       |   13 +-
- arch/blackfin/mach-bf527/boards/cm_bf527.c         |   13 +-
- arch/blackfin/mach-bf527/boards/ezbrd.c            |   13 +-
- arch/blackfin/mach-bf527/boards/ezkit.c            |   18 +-
- arch/blackfin/mach-bf527/boards/tll6527m.c         |   14 +-
- arch/blackfin/mach-bf527/dma.c                     |    2 +-
- .../blackfin/mach-bf527/include/mach/bfin_serial.h |   14 +
- .../mach-bf527/include/mach/bfin_serial_5xx.h      |   73 +-
- arch/blackfin/mach-bf527/include/mach/blackfin.h   |   48 +-
- arch/blackfin/mach-bf527/include/mach/cdefBF522.h  | 1092 ++++++++++-
- arch/blackfin/mach-bf527/include/mach/cdefBF525.h  |    7 +-
- arch/blackfin/mach-bf527/include/mach/cdefBF527.h  |    7 +-
- .../mach-bf527/include/mach/cdefBF52x_base.h       | 1113 -----------
- arch/blackfin/mach-bf527/include/mach/defBF522.h   | 1393 +++++++++++++-
- arch/blackfin/mach-bf527/include/mach/defBF525.h   |    2 +-
- arch/blackfin/mach-bf527/include/mach/defBF527.h   |    2 +-
- .../mach-bf527/include/mach/defBF52x_base.h        | 1506 --------------
- arch/blackfin/mach-bf527/include/mach/gpio.h       |    4 +
- arch/blackfin/mach-bf527/include/mach/pll.h        |   64 +-
- arch/blackfin/mach-bf533/boards/H8606.c            |    2 +-
- arch/blackfin/mach-bf533/boards/blackstamp.c       |   25 +-
- arch/blackfin/mach-bf533/boards/cm_bf533.c         |   10 +-
- arch/blackfin/mach-bf533/boards/ezkit.c            |    2 +-
- arch/blackfin/mach-bf533/boards/ip0x.c             |   11 +-
- arch/blackfin/mach-bf533/boards/stamp.c            |   30 +-
- arch/blackfin/mach-bf533/dma.c                     |    2 +-
- .../blackfin/mach-bf533/include/mach/bfin_serial.h |   14 +
- .../mach-bf533/include/mach/bfin_serial_5xx.h      |   74 +-
- arch/blackfin/mach-bf533/include/mach/blackfin.h   |   30 +-
- arch/blackfin/mach-bf533/include/mach/cdefBF532.h  |   63 +-
- arch/blackfin/mach-bf533/include/mach/defBF532.h   |  128 +--
- arch/blackfin/mach-bf533/include/mach/fio_flag.h   |   55 -
- arch/blackfin/mach-bf533/include/mach/gpio.h       |    2 +
- arch/blackfin/mach-bf533/include/mach/pll.h        |   58 +-
- arch/blackfin/mach-bf537/boards/Kconfig            |    6 +
- arch/blackfin/mach-bf537/boards/Makefile           |    1 +
- arch/blackfin/mach-bf537/boards/cm_bf537e.c        |   12 +-
- arch/blackfin/mach-bf537/boards/cm_bf537u.c        |   12 +-
- arch/blackfin/mach-bf537/boards/dnp5370.c          |  418 ++++
- arch/blackfin/mach-bf537/boards/minotaur.c         |   12 +-
- arch/blackfin/mach-bf537/boards/pnav10.c           |    4 +-
- arch/blackfin/mach-bf537/boards/stamp.c            |   18 +-
- arch/blackfin/mach-bf537/boards/tcm_bf537.c        |   12 +-
- arch/blackfin/mach-bf537/dma.c                     |    2 +-
- .../blackfin/mach-bf537/include/mach/bfin_serial.h |   14 +
- .../mach-bf537/include/mach/bfin_serial_5xx.h      |   72 +-
- arch/blackfin/mach-bf537/include/mach/blackfin.h   |   38 +-
- arch/blackfin/mach-bf537/include/mach/cdefBF534.h  |   27 +-
- arch/blackfin/mach-bf537/include/mach/cdefBF537.h  |    5 +-
- arch/blackfin/mach-bf537/include/mach/defBF534.h   |  111 +-
- arch/blackfin/mach-bf537/include/mach/defBF537.h   |    5 +-
- arch/blackfin/mach-bf537/include/mach/gpio.h       |    4 +
- arch/blackfin/mach-bf537/include/mach/pll.h        |   58 +-
- arch/blackfin/mach-bf538/boards/ezkit.c            |   20 +-
- arch/blackfin/mach-bf538/dma.c                     |   18 +-
- .../blackfin/mach-bf538/include/mach/bfin_serial.h |   14 +
- .../mach-bf538/include/mach/bfin_serial_5xx.h      |   73 +-
- arch/blackfin/mach-bf538/include/mach/blackfin.h   |   37 +-
- arch/blackfin/mach-bf538/include/mach/cdefBF538.h  |  504 ++---
- arch/blackfin/mach-bf538/include/mach/cdefBF539.h  |    8 +-
- arch/blackfin/mach-bf538/include/mach/defBF538.h   | 1825 +++++++++++++++++
- arch/blackfin/mach-bf538/include/mach/defBF539.h   | 2095 +-------------------
- arch/blackfin/mach-bf538/include/mach/gpio.h       |    5 +
- arch/blackfin/mach-bf538/include/mach/pll.h        |   64 +-
- arch/blackfin/mach-bf548/boards/cm_bf548.c         |   23 +-
- arch/blackfin/mach-bf548/boards/ezkit.c            |   23 +-
- arch/blackfin/mach-bf548/dma.c                     |    2 +-
- .../blackfin/mach-bf548/include/mach/bfin_serial.h |   16 +
- .../mach-bf548/include/mach/bfin_serial_5xx.h      |   60 +-
- arch/blackfin/mach-bf548/include/mach/blackfin.h   |   70 +-
- arch/blackfin/mach-bf548/include/mach/cdefBF542.h  |   10 +-
- arch/blackfin/mach-bf548/include/mach/cdefBF544.h  |   10 +-
- arch/blackfin/mach-bf548/include/mach/cdefBF547.h  |   10 +-
- arch/blackfin/mach-bf548/include/mach/cdefBF548.h  |   10 +-
- arch/blackfin/mach-bf548/include/mach/cdefBF549.h  |   10 +-
- .../mach-bf548/include/mach/cdefBF54x_base.h       |   23 +-
- arch/blackfin/mach-bf548/include/mach/defBF542.h   |    7 +-
- arch/blackfin/mach-bf548/include/mach/defBF544.h   |    7 +-
- arch/blackfin/mach-bf548/include/mach/defBF547.h   |    7 +-
- arch/blackfin/mach-bf548/include/mach/defBF548.h   |    7 +-
- arch/blackfin/mach-bf548/include/mach/defBF549.h   |    7 +-
- .../mach-bf548/include/mach/defBF54x_base.h        |  321 +---
- arch/blackfin/mach-bf548/include/mach/gpio.h       |   11 +
- arch/blackfin/mach-bf548/include/mach/irq.h        |   22 +
- arch/blackfin/mach-bf548/include/mach/pll.h        |   70 +-
- arch/blackfin/mach-bf561/atomic.S                  |    5 +
- arch/blackfin/mach-bf561/boards/acvilon.c          |    2 +-
- arch/blackfin/mach-bf561/boards/cm_bf561.c         |    2 +-
- arch/blackfin/mach-bf561/boards/ezkit.c            |    2 +-
- arch/blackfin/mach-bf561/boards/tepla.c            |    2 +-
- arch/blackfin/mach-bf561/dma.c                     |   18 +-
- arch/blackfin/mach-bf561/hotplug.c                 |    2 +
- arch/blackfin/mach-bf561/include/mach/anomaly.h    |    6 +-
- .../blackfin/mach-bf561/include/mach/bfin_serial.h |   14 +
- .../mach-bf561/include/mach/bfin_serial_5xx.h      |   74 +-
- arch/blackfin/mach-bf561/include/mach/blackfin.h   |   26 +-
- arch/blackfin/mach-bf561/include/mach/cdefBF561.h  |  503 ++---
- arch/blackfin/mach-bf561/include/mach/defBF561.h   |  408 ++---
- arch/blackfin/mach-bf561/include/mach/gpio.h       |    2 +
- arch/blackfin/mach-bf561/include/mach/mem_map.h    |   16 +-
- arch/blackfin/mach-bf561/include/mach/pll.h        |   83 +-
- arch/blackfin/mach-bf561/include/mach/smp.h        |   10 +-
- arch/blackfin/mach-bf561/smp.c                     |   29 +-
- arch/blackfin/mach-common/entry.S                  |    4 +-
- arch/blackfin/mach-common/ints-priority.c          |    1 -
- arch/blackfin/mach-common/pm.c                     |   10 -
- arch/blackfin/mach-common/smp.c                    |  204 +--
- arch/blackfin/mm/sram-alloc.c                      |   18 +-
- drivers/net/irda/bfin_sir.h                        |    2 +
- drivers/serial/Kconfig                             |   70 +-
- drivers/serial/bfin_5xx.c                          |  638 ++++---
- include/asm-generic/io.h                           |   30 +
- 157 files changed, 9963 insertions(+), 11015 deletions(-)
- create mode 100644 arch/blackfin/configs/BF561-EZKIT-SMP_defconfig
- create mode 100644 arch/blackfin/configs/DNP5370_defconfig
- create mode 100644 arch/blackfin/include/asm/bfin_dma.h
- create mode 100644 arch/blackfin/include/asm/bfin_serial.h
- create mode 100644 arch/blackfin/include/mach-common/pll.h
- create mode 100644 arch/blackfin/include/mach-common/ports-a.h
- create mode 100644 arch/blackfin/include/mach-common/ports-b.h
- create mode 100644 arch/blackfin/include/mach-common/ports-c.h
- create mode 100644 arch/blackfin/include/mach-common/ports-d.h
- create mode 100644 arch/blackfin/include/mach-common/ports-e.h
- create mode 100644 arch/blackfin/include/mach-common/ports-f.h
- create mode 100644 arch/blackfin/include/mach-common/ports-g.h
- create mode 100644 arch/blackfin/include/mach-common/ports-h.h
- create mode 100644 arch/blackfin/include/mach-common/ports-i.h
- create mode 100644 arch/blackfin/include/mach-common/ports-j.h
- create mode 100644 arch/blackfin/mach-bf518/include/mach/bfin_serial.h
- delete mode 100644 arch/blackfin/mach-bf518/include/mach/cdefBF51x_base.h
- delete mode 100644 arch/blackfin/mach-bf518/include/mach/defBF51x_base.h
- create mode 100644 arch/blackfin/mach-bf527/include/mach/bfin_serial.h
- delete mode 100644 arch/blackfin/mach-bf527/include/mach/cdefBF52x_base.h
- delete mode 100644 arch/blackfin/mach-bf527/include/mach/defBF52x_base.h
- create mode 100644 arch/blackfin/mach-bf533/include/mach/bfin_serial.h
- delete mode 100644 arch/blackfin/mach-bf533/include/mach/fio_flag.h
- create mode 100644 arch/blackfin/mach-bf537/boards/dnp5370.c
- create mode 100644 arch/blackfin/mach-bf537/include/mach/bfin_serial.h
- create mode 100644 arch/blackfin/mach-bf538/include/mach/bfin_serial.h
- create mode 100644 arch/blackfin/mach-bf538/include/mach/defBF538.h
- create mode 100644 arch/blackfin/mach-bf548/include/mach/bfin_serial.h
- create mode 100644 arch/blackfin/mach-bf561/include/mach/bfin_serial.h
+-- 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
