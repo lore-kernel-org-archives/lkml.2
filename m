@@ -1,121 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932215Ab1AKUCL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 15:02:11 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58987 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756032Ab1AKUCH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 15:02:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=V8n/Fot47K9HIdwiKtuPh+HwlUizsfZhF9onTRSN2/TCNC0xF3binusNTgFVDOuAC4
-         KC5T3cQb5+wotSVc8A4vQ/+jN03zKy4MxJvNNcs1JAT4BKfQcirW9JjaKtRXOveoGNQ8
-         qIZgSU0T5qo3niZgLEbPOiOb5APoPFkq+6dek=
-Date: Tue, 11 Jan 2011 12:01:55 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Rakesh Iyer <riyer@nvidia.com>
-Cc: "'Pavel Machek'" <pavel@ucw.cz>, "jj@chaosbits.net" <jj@chaosbits.net>,
-        "tsoni@codeaurora.org" <tsoni@codeaurora.org>,
-        "shubhrajyoti@ti.com" <shubhrajyoti@ti.com>,
-        "ccross@android.com" <ccross@android.com>,
-        "konkers@android.com" <konkers@android.com>,
-        "olof@lixom.net" <olof@lixom.net>, Andrew Chew <AChew@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: Re: [PATCH v3] input: tegra-kbc - Add tegra keyboard driver
-Message-ID: <20110111200155.GA20631@core.coreip.homeip.net>
-References: <1294422307-19107-1-git-send-email-riyer@nvidia.com>
- <20110110221624.GA16445@core.coreip.homeip.net>
- <1FC56210173BB445BD77F608D6FB8D03165A00805F@HQMAIL03.nvidia.com>
- <20110110230622.GB16759@core.coreip.homeip.net>
- <1FC56210173BB445BD77F608D6FB8D03165A008062@HQMAIL03.nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1FC56210173BB445BD77F608D6FB8D03165A008062@HQMAIL03.nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932308Ab1AKUFa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 15:05:30 -0500
+Received: from mga03.intel.com ([143.182.124.21]:61220 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753465Ab1AKUF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 15:05:28 -0500
+Message-Id: <849307$b3orev@azsmga001.ch.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,308,1291622400"; 
+   d="scan'208";a="373059039"
+Date: Tue, 11 Jan 2011 20:05:23 +0000
+To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [git pull] drm for rc1
+Cc: Dave Airlie <airlied@gmail.com>, Dave Airlie <airlied@linux.ie>,
+        Eric Anholt <eric@anholt.net>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+In-Reply-To: <20110111114505.0bd854c7@jbarnes-desktop>
+References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie> <AANLkTinW8Yp1K1w+G+BgLa-fPaFANkGsRjqH_W8N+9VL@mail.gmail.com> <AANLkTim5oVZqMBtan5_TMOxaWbqkF=aDcBYFNYy55kt_@mail.gmail.com> <0aea052d-70ff-41ea-8776-c6d974c10337@email.android.com> <AANLkTim0rn7Vem6YJM5tVKM0PX4YdnNmaeqmpS=Vp7rc@mail.gmail.com> <AANLkTi=eRHbgerpdPYdoOo45LruNTk0rNsWvOO-kYxyQ@mail.gmail.com> <20110111111203.279eae50@jbarnes-desktop> <AANLkTikMMG1S6qp0-jKnQUcR5DgC+WWVfgOo2PExFA2w@mail.gmail.com> <20110111114505.0bd854c7@jbarnes-desktop>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 11:34:09AM -0800, Rakesh Iyer wrote:
-> Hello All.
+On Tue, 11 Jan 2011 11:45:05 -0800, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> On Tue, 11 Jan 2011 11:25:39 -0800
+> Linus Torvalds <torvalds@linux-foundation.org> wrote:
 > 
-> I have combined Pavel's and Dmitry's comments so I can address them as one issue.
-> 
-> Dmitry's comment
-> 
-> > On Mon, Jan 10, 2011 at 02:49:25PM -0800, Rakesh Iyer wrote:
-> > > > On Fri, Jan 07, 2011 at 09:45:07AM -0800, riyer@nvidia.com wrote:
-> > > > > +
-> > > > > +struct tegra_kbc {
-> > > > > +	void __iomem *mmio;
-> > > > > +	struct input_dev *idev;
-> > > > > +	int irq;
-> > > > > +	unsigned int wake_enable_rows;
-> > > > > +	unsigned int wake_enable_cols;
-> > > > > +	spinlock_t lock;
-> > > > > +	unsigned int repoll_time;
-> > > > > +	unsigned long cp_dly_jiffies;
-> > > > > +	int fifo[KBC_MAX_KPENT];
-> > > > > +	const struct tegra_kbc_platform_data *pdata;
-> > > > > +	int *plain_keycode;
-> > > > > +	int *fn_keycode;
-> > > >
-> > > > There should not be separate keycodes for FN and normal kys - FN is just
-> > > > a modifier, like SHIFT or CTRL or ALT are and shoudl be handled in upper
-> > > > layers.
+> > On Tue, Jan 11, 2011 at 11:12 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
 > > >
-> > > We had the same thought regarding Function as a modifier akin to Shift, Ctrl an Alt.
-> > > But this does not appear to be the case.
-> > >
-> > > This keyboard is used primarily for Laptop-like form factors where function keys are used
-> > to overload the existing keys.
+> > > Have you tried reproducing it using xset dpms force off or similar?
 > > 
-> > So it is same SHIFT.
+> > That doesn't seem to do anything bad.
 > > 
-> > > In addition the Fn key mappings aren't identical in different keyboard layouts.
+> > In fact, I think the second time it happened the screen never went
+> > black - just the random photo thing was on. But no, forcing the screen
+> > saver on doesn't do it either (ie pressing the "lock screen" icon and
+> > waiting for a few pictures to cycle).
 > > 
-> > 
-> > Same as SHIFT - depending on layout used shifted KEY_1 produces either '!' or '1'.
+> > Maybe the screen just has to be inactive for a longer time: do you do
+> > some dynamic "let's power things down if nothing is changing"?
 > 
-> The FN key modifiers are not identical to Shift Modifier. They map to
-> totally different keys for this keyboard.  If you are suggesting that
-> you weren't implying they map to the same thing, then I agree it can
-> be treated as a modifier.
+> There are some timeouts, the FBC engine will recompress about once
+> every 15s; the self-refresh timers are much smaller though so it should
+> be active anytime the CPU enters a deep sleep state.  The clock
+> frequency changes in millisecond time too, you can check the status of
+> that in /sys/kernel/debug/dri/0/i915_drpc_status and i915_cur_delayinfo.
+> 
+> I wonder if re-enabling rc6 may have caused your issues?  That would be:
+> 
+> commit 29a15061ff5df5bf9bf49c05c17f41eb2807a55a
+> Author: Jesse Barnes <jbarnes@virtuousgeek.org>
+> Date:   Wed Jan 5 12:01:24 2011 -0800
+> 
+>     drm/i915: re-enable rc6 support for Ironlake+
 
-Yes, I meant that FN is _similar_ to SHIFT, I did not suggest that they
-produce the same mapping.
+We haven't actually got as far as that patch yet, that's waiting for a
+suitable juncture to send the request. Now that the trees have converged I
+can pick which patches need to go for rc1 and which can wait for -next.
 
-> But the problem is the higher layers don't necessarily do so. 
-
-It is just a matter of setting it up. The console has option for adding
-modifiers, xkb as well so please use them. No need to push this task
-into the kernel.
-
-> The documentation I have read all suggest the Fn key isn't a valid
-> modifier for the operating system,
-
-Huh? Why not? It mabe not a standard modifier but to say that it is not
-a valid one is a stretch.
-
-> and that most keyboard hardware
-> abstracts the Fn keypress and generates the modified key.
-
-Some hardware, like keyboards in most laptops, does abstract FN key.
-They do it by emitting completely different scancode. With such hardware
-the fact that FN is depressed is completely undetectable to the OS.
-
-Your case is different, FN is regular key to whuch you assign a special
-meaning, like you do for SHIFT, CTRL. ALT and other modifiers. And just
-like SHIFT, CTRL, ALT and others it should not be hardcoded in the
-kernel.
-
-Thanks.
+Looking at the set of outstanding patch, my suspect would be the ring irq
+refcounting which needed a fix and seems implicated by the error message.
+-Chris
 
 -- 
-Dmitry
+Chris Wilson, Intel Open Source Technology Centre
