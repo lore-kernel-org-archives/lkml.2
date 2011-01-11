@@ -1,51 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947Ab1AKLXU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 06:23:20 -0500
-Received: from mga01.intel.com ([192.55.52.88]:40744 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755585Ab1AKLXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 06:23:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,306,1291622400"; 
-   d="scan'208";a="645648369"
-Date: Tue, 11 Jan 2011 12:22:59 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>, myungjoo.ham@gmail.com
-Subject: Re: [PATCH v4 2/3] regulator MAX8998/LP3974: Support DVS-GPIO.
-Message-ID: <20110111112258.GE6616@sortiz-mobl>
-References: <20101224113805.GI27832@sortiz-mobl>
- <1294118261-18906-3-git-send-email-myungjoo.ham@samsung.com>
+	id S1755787Ab1AKLYY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 06:24:24 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53889 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755583Ab1AKLYW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 06:24:22 -0500
+Message-ID: <4D2C3DE0.1030503@monstr.eu>
+Date: Tue, 11 Jan 2011 12:24:16 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294118261-18906-3-git-send-email-myungjoo.ham@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arch/microblaze changes for 2.6.38
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Myungjoo,
+Hi Linus,
 
-On Tue, Jan 04, 2011 at 02:17:40PM +0900, MyungJoo Ham wrote:
-> The previous driver did not support BUCK1-DVS3, BUCK1-DVS4, and
-> BUCK2-DVS2 modes. This patch adds such modes and an option to block
-> setting buck1/2 voltages out of the preset values.
-> 
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-I applied this patch, thanks.
+please pull the following changes.
 
-Cheers,
-Samuel.
+Thanks,
+Michal
+
+
+The following changes since commit 3c0eee3fe6a3a1c745379547c7e7c904aa64f6d5:
+   Linus Torvalds (1):
+         Linux 2.6.37
+
+are available in the git repository at:
+
+   git://git.monstr.eu/linux-2.6-microblaze.git next
+
+Amerigo Wang (1):
+       microblaze: remove obsolete DEBUG_BOOTMEM
+
+Joe Perches (1):
+       arch/microblaze: Remove unnecessary semicolons
+
+Michal Simek (9):
+       microblaze: Fix initramfs
+       Revert "microblaze: Simplify syscall rutine"
+       microblaze: Add PVR for Microblaze v8.00.b
+       microblaze: Fix unaligned exception for little endian platform
+       microblaze: Remove useless early_init_dt_check_for_initrd
+       microblaze: Clear i/dcache for sw breakpoints
+       microblaze: Fix __muldi3 function for little-endian.
+       microblaze: trivial: Fix removed the part of line
+       Merge commit 'v2.6.37' into next
+
+roel kluin (1):
+       microblaze: Correct PVR access macros
+
+  arch/microblaze/Kconfig.debug                 |    4 -
+  arch/microblaze/Makefile                      |    2 +-
+  arch/microblaze/configs/mmu_defconfig         |    1 -
+  arch/microblaze/include/asm/pvr.h             |  185 
++++++++++++++------------
+  arch/microblaze/kernel/cpu/cpuinfo.c          |    1 +
+  arch/microblaze/kernel/entry.S                |   46 +++++-
+  arch/microblaze/kernel/exceptions.c           |    3 +
+  arch/microblaze/kernel/hw_exception_handler.S |    9 ++
+  arch/microblaze/kernel/prom.c                 |    4 +-
+  arch/microblaze/kernel/vmlinux.lds.S          |   16 +--
+  arch/microblaze/lib/memmove.c                 |    2 +-
+  arch/microblaze/lib/muldi3.S                  |  121 ----------------
+  arch/microblaze/lib/muldi3.c                  |   60 ++++++++
+  13 files changed, 214 insertions(+), 240 deletions(-)
+  delete mode 100644 arch/microblaze/lib/muldi3.S
+  create mode 100644 arch/microblaze/lib/muldi3.c
+
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
