@@ -1,55 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932323Ab1AKQUQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 11:20:16 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41421 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756125Ab1AKQUN (ORCPT
+	id S932355Ab1AKQVa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 11:21:30 -0500
+Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:19883 "EHLO
+	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756125Ab1AKQV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 11:20:13 -0500
+	Tue, 11 Jan 2011 11:21:28 -0500
+Message-ID: <20110111162121.8GSQQ.985028.root@web09-winn.ispmail.private.ntl.com>
+Date: Tue, 11 Jan 2011 16:21:21 +0000
+From: Robert Smith <b.cao@tesco.net>
+Reply-To: roberts101@rediffmail.com
+Subject: Investment
 MIME-Version: 1.0
-In-Reply-To: <4D2C21FE.3000406@redhat.com>
-References: <4D2ACFA7.6000502@redhat.com> <AANLkTimOOUjXa7WCTirHRrrLfiev4T9iD7spb2VrB_ET@mail.gmail.com>
- <4D2C21FE.3000406@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 11 Jan 2011 08:19:05 -0800
-Message-ID: <AANLkTi=_WTXYGgb3G6eWAkSpfR_=pDC=w9feKtKK8zLV@mail.gmail.com>
-Subject: Re: [GIT PULL] KVM updates for the 2.6.38 merge window
-To: Avi Kivity <avi@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+X-Originating-IP: from 41.217.65.11 by webmail.tesco.net; Tue, 11 Jan 2011 16:21:21 +0000
+X-Mailer: 4.2.7
+X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=reRN_k78R_QA:10 a=IkcTkHD0fZMA:10 a=K57tCgj2AAAA:8 a=4gGa3jzhhkde4qDDBecA:9 a=bXSmo8yx5mRwSrx40VCfq53ExBYA:4 a=QEXdDO2ut3YA:10 a=hdDQJsIvX-IA:10 a=fnWZxA5CVigA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 1:25 AM, Avi Kivity <avi@redhat.com> wrote:
->
-> What are your issues with the patch?
 
-My issues are mainly two-fold:
-
- - I think "MINOR" is a totally idiotic and meaningless term. It has
-no technical meaning. Why would IO be special? Is it because of
-deadlock concerns with filesystem or block device layer locks? No. And
-it clearly isn't about "sleeping", since a major fault can be
-non-sleeping (think ramdisk, for example).
-
-   Look at the other FAULT_FLAG_xyzzy flags. They have _hard_
-technical reasons. There's no ambiguity. And we ALREADY HAVE the one
-that says "return if it would need to wait", and it's called
-FAULT_FLAG_ALLOW_RETRY.
-
-The other issue is:
-
- - I wasn't aware of this, and clearly not enough other people were
-either, or somebody would have told you that we already had people
-working on the whole FAULT_FLAG_ALLOW_RETRY thing that is much fancier
-and technically superior.
-
-So it simply boils down to the fact that I don't think
-FAULT_FLAG_MAJOR was a good idea. It's badly done, is a total and
-utter hack, and I don't see why I should ever merge it.
-
-                          Linus
+--
+GWould you be interested in a  legitimate Investment offer in your country? Get back to me via my email for details :( roberts101@rediffmail.com ) 
