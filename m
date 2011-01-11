@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932414Ab1AKRL4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 12:11:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22028 "EHLO mx1.redhat.com"
+	id S932481Ab1AKROz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 12:14:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19341 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755463Ab1AKRLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 12:11:53 -0500
-Date: Tue, 11 Jan 2011 15:11:24 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Kirill Smelkov <kirr@mns.spb.ru>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [BUG] perf top -> annotate broken; bisected to 69aad6f1
-Message-ID: <20110111171124.GB11968@ghostprotocols.net>
-References: <20110111163520.GA4554@tugrik.mns.mnsspb.ru>
+	id S932463Ab1AKROx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 12:14:53 -0500
+Message-ID: <4D2C8FF8.5060806@redhat.com>
+Date: Tue, 11 Jan 2011 19:14:32 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110111163520.GA4554@tugrik.mns.mnsspb.ru>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>
+Subject: Re: [GIT PULL] KVM updates for the 2.6.38 merge window
+References: <4D2ACFA7.6000502@redhat.com> <AANLkTimOOUjXa7WCTirHRrrLfiev4T9iD7spb2VrB_ET@mail.gmail.com> <4D2C21FE.3000406@redhat.com> <AANLkTi=_WTXYGgb3G6eWAkSpfR_=pDC=w9feKtKK8zLV@mail.gmail.com>
+In-Reply-To: <AANLkTi=_WTXYGgb3G6eWAkSpfR_=pDC=w9feKtKK8zLV@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Jan 11, 2011 at 07:35:20PM +0300, Kirill Smelkov escreveu:
-> Hello up there,
-> 
-> Since 69aad6f1ee69546dea8535ab8f3da9f445d57328 (perf tools: Introduce
-> event selectors; Jan 3 2011) annotating a symbol in perf top segfaults:
-> 
->     Program received signal SIGSEGV, Segmentation fault.
->     [Switching to Thread 0xb714cb90 (LWP 4662)]
->     event_name (evsel=0x0) at util/parse-events.c:274
->     274             return __event_name(type, config);
->     (gdb) bt
->     #0  event_name (evsel=0x0) at util/parse-events.c:274
->     #1  0x0805f892 in display_thread (arg=0x9422448) at builtin-top.c:359
->     #2  0xb77234c0 in start_thread () from /lib/i686/cmov/libpthread.so.0
->     #3  0xb732b84e in clone () from /lib/i686/cmov/libc.so.6
-> 
-> 
-> It used to work...
+On 01/11/2011 06:19 PM, Linus Torvalds wrote:
+> On Tue, Jan 11, 2011 at 1:25 AM, Avi Kivity<avi@redhat.com>  wrote:
+>> What are your issues with the patch?
+> My issues are mainly two-fold:
+>
+>   - I think "MINOR" is a totally idiotic and meaningless term. It has
+> no technical meaning. Why would IO be special? Is it because of
+> deadlock concerns with filesystem or block device layer locks? No. And
+> it clearly isn't about "sleeping", since a major fault can be
+> non-sleeping (think ramdisk, for example).
+>
+>     Look at the other FAULT_FLAG_xyzzy flags. They have _hard_
+> technical reasons. There's no ambiguity. And we ALREADY HAVE the one
+> that says "return if it would need to wait", and it's called
+> FAULT_FLAG_ALLOW_RETRY.
+>
 
-Thanks for the report, working on a fix.
+Okay; I'll drop that patch, and look at reusing the existing infrastructure.
 
-- Arnaldo
+> The other issue is:
+>
+>   - I wasn't aware of this, and clearly not enough other people were
+> either, or somebody would have told you that we already had people
+> working on the whole FAULT_FLAG_ALLOW_RETRY thing that is much fancier
+> and technically superior.
+>
+> So it simply boils down to the fact that I don't think
+> FAULT_FLAG_MAJOR was a good idea. It's badly done, is a total and
+> utter hack, and I don't see why I should ever merge it.
+
+And I'll improve the process on core patches as well.
+
