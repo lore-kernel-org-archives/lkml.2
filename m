@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab1AKMQd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 07:16:33 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60260 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755405Ab1AKMQc convert rfc822-to-8bit (ORCPT
+	id S1755918Ab1AKMU0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 07:20:26 -0500
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:50841 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753800Ab1AKMUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 07:16:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=XJUlADVaa3JPbw/+4lpm5s+XVJdbmzFiyyXmTlzlPnqZQ8LD1pjiZATRUU2uugsP/e
-         rBgxrbb9btJ+tD+YfqGGXlaYTuw77e0XMiA5/WrRTG/1gGKrKOj4+R4gm4ZNqCj0MYgc
-         R49IFqaqdQdIgqvGa/Z8i1l1sqLyoE5EFQv/M=
+	Tue, 11 Jan 2011 07:20:23 -0500
+Date: Tue, 11 Jan 2011 21:18:16 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>
+Subject: Re: Locking in the clk API
+Message-ID: <20110111121816.GB774@linux-sh.org>
+References: <201101111016.42819.jeremy.kerr@canonical.com> <201101111744.59712.jeremy.kerr@canonical.com> <20110111101314.GA774@linux-sh.org> <201101111830.18597.jeremy.kerr@canonical.com>
 MIME-Version: 1.0
-In-Reply-To: <20110111112434.GE2385@legolas.emea.dhcp.ti.com>
-References: <1294745487-29138-1-git-send-email-manjunatha_halli@ti.com>
- <1294745487-29138-2-git-send-email-manjunatha_halli@ti.com>
- <1294745487-29138-3-git-send-email-manjunatha_halli@ti.com>
- <1294745487-29138-4-git-send-email-manjunatha_halli@ti.com> <20110111112434.GE2385@legolas.emea.dhcp.ti.com>
-From: halli manjunatha <manjunatha_halli@ti.com>
-Date: Tue, 11 Jan 2011 17:46:10 +0530
-X-Google-Sender-Auth: VFZaYF9wdLq6mDpCZLg45YS54zI
-Message-ID: <AANLkTimbqsDJ1KNSwzJ_RTQ3ON=-XUj0CZpZHAkeH9dP@mail.gmail.com>
-Subject: Re: [RFC V10 3/7] drivers:media:radio: wl128x: FM Driver Common sources
-To: balbi@ti.com
-Cc: mchehab@infradead.org, hverkuil@xs4all.nl, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201101111830.18597.jeremy.kerr@canonical.com>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-an 11, 2011 at 4:54 PM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Tue, Jan 11, 2011 at 06:31:23AM -0500, manjunatha_halli@ti.com wrote:
->> From: Manjunatha Halli <manjunatha_halli@ti.com>
->>
->> These are the sources for the common interfaces required by the
->> FM V4L2 driver for TI WL127x and WL128x chips.
->>
->> These implement the FM channel-8 protocol communication with the
->> chip. This makes use of the Shared Transport as its transport.
->>
->> Signed-off-by: Manjunatha Halli <manjunatha_halli@ti.com>
->> Reviewed-by: Hans Verkuil <hverkuil@xs4all.nl>
->
-> looks like this is implementing a "proprietary" (by that I mean: for
-> this driver only) IRQ API. Why aren't you using GENIRQ with threaded
-> IRQs support ?
->
-> Core IRQ Subsystem would handle a lot of stuff for you.
+On Tue, Jan 11, 2011 at 06:30:18PM +0800, Jeremy Kerr wrote:
+> Hi Paul,
+> 
+> > No, the sleeping clock case is and always will be a corner case, and I
+> > have no interest in pretending otherwise. On SH we have hundreds of
+> > clocks that are all usable in the atomic context and perhaps less than a
+> > dozen that aren't (and even in those cases much of the PLL negotiation is
+> > handled in hardware so there's never any visibility for the lock-down
+> > from the software side, other architectures also have similar behaviour).
+> 
+> I'm not too worried about the corner-cases on the *implementation* side, more 
+> the corner-cases on the API side: are we seeing more users of the API that 
+> require an atomic clock, or more that don't care?
+> 
+Again, you are approaching it from the angle that an atomic clock is a
+special requirement rather than the default behaviour. Sleeping for
+lookup, addition, and deletion are all quite acceptable, but
+enable/disable pairs have always been intended to be usable from atomic
+context. Anyone that doesn't count on that fact is either dealing with
+special case clocks (PLLs, root clocks, etc.) or simply hasn't bothered
+implementing any sort of fine grained runtime power management for their
+platform.
 
-There is no concept of Interrupts/IRQ as such here, Hence no question of using
-GENIRQ.
-
-The FM device WL128x is interfaced via the UART,
-(Internally inside the WL128x chip the BT-core on the chip
-communicates with FM chip via i2C, and would have dedicated interrupt
-lines may be...)
-
-So, Whenever we refer to interrupt or IRQ or handlers in the driver,
-It pretty much means a receive callback for the UART frame which
-constitutes the FM interrupt event.
-i.e FM interrupt would have occurred, If I receive a frame over UART
-which starts with 0x08 as 1st byte and has 0xFF as its 3rd byte.
-
-I hope this clarifies the non-usage of GENIRQ with threaded support.
-
-> --
-> balbi
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-
-
-
--- 
-Regards
-Halli
+It's unfortunate that you managed to pick one of the three or so
+platforms with broken semantics to base your implementation off of, but
+rest assured, everyone else did infact get it right, at least so far.
