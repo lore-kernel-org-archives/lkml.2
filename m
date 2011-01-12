@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932168Ab1ALRhb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 12:37:31 -0500
-Received: from mtagate4.uk.ibm.com ([194.196.100.164]:54487 "EHLO
-	mtagate4.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754691Ab1ALRh2 (ORCPT
+	id S932198Ab1ALRnI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 12:43:08 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47675 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523Ab1ALRnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 12:37:28 -0500
-Date: Wed, 12 Jan 2011 18:37:23 +0100 (CET)
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
-X-X-Sender: sebott@localhost6.localdomain6
-To: "Ted Ts'o" <tytso@mit.edu>
-cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Oops while going into hibernate
-In-Reply-To: <20110112172646.GB13496@thunk.org>
-Message-ID: <alpine.LFD.2.02.1101121836320.2011@localhost6.localdomain6>
-References: <alpine.LFD.2.02.1101121443230.1900@localhost6.localdomain6> <20110112162655.GA13496@thunk.org> <alpine.LFD.2.02.1101121755400.2011@localhost6.localdomain6> <20110112172646.GB13496@thunk.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-Organization: "IBM Deutschland Research & Development GmbH Vorsitzender des Aufsichtsrats: Martin Jetter Geschaeftsfuehrung: Dirk Wittkopp Sitz der Gesellschaft: Boeblingen Registergericht: Amtsgericht Stuttgart, HRB 243294"
+	Wed, 12 Jan 2011 12:43:06 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=GtXueAanyw+sACJQr25iI0GV/CvF4CxBjz0QgoWcNLp0J72gJxvf/WCsD7UoEyTxZ2
+         UFclAfVCNLSt+R52ViwhGM9bh7bLItqOlsnQnbK0pE/XZKpOw9VzcWy82crL7Q8muwbE
+         2LhPqpdNS34kdORYQKuwe0T5JGIvlajxzfP4M=
+Message-ID: <4D2DE824.10205@gmail.com>
+Date: Wed, 12 Jan 2011 12:43:00 -0500
+From: William Allen Simpson <william.allen.simpson@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Linux Kernel Developers <linux-kernel@vger.kernel.org>
+CC: Linux Kernel Network Developers <netdev@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: TCPCT API update for 2.6.37
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+With the recent flurry of messages related to TCPCT, I devoted a nice
+snowy Saturday afternoon to updating the socket option code.  Linux is
+rather behind on TCPCT implementation, so this will help with future
+software compatibility.
 
-On Wed, 12 Jan 2011, Ted Ts'o wrote:
-> Since I don't have a machine set up to test hibernation easily at
-> hand, I'd really appreciate it if you could try this patch to
-> determine which inode had the NULL jinode --- and then once you get
-> the device and inode number, to use debugfs's "ncheck" command to map
-> the inode number to a pathname.
-> 
-> If you could do that, it would be a huge help.
-ok, will do
+Currently, any userland programs written to RFC-to-be-6013 will not
+interoperate with Linux 2.6.33 and beyond.  I've made these patches
+for 2.6.37 -- they'll also need to be ported to earlier releases.
 
-> 
-> Thanks, regards,
-> 
-> 						- Ted
-> 
-> P.S.  Also, if you could try suspending once or twice, with different
-> programs running, to see if the inode number and pathname are constant
-> or vary, that would also be helpful.
-> 
-> diff --git a/fs/ext4/ext4_jbd2.h b/fs/ext4/ext4_jbd2.h
-> index d8b992e..7d6d7d7 100644
-> --- a/fs/ext4/ext4_jbd2.h
-> +++ b/fs/ext4/ext4_jbd2.h
-> @@ -252,8 +252,15 @@ static inline int ext4_journal_force_commit(journal_t *journal)
-> 
->  static inline int ext4_jbd2_file_inode(handle_t *handle, struct inode *inode)
->  {
-> -	if (ext4_handle_valid(handle))
-> +	if (ext4_handle_valid(handle)) {
-> +		if (unlikely(EXT4_I(inode)->jinode == NULL)) {
-> +			/* Should never happen */
-> +			ext4_msg(inode->i_sb, KERN_CRIT, 
-> +				 "inode #%lu has NULL jinode", inode->i_ino);
-> +			BUG();
-> +		}
->  		return jbd2_journal_file_inode(handle, EXT4_I(inode)->jinode);
-> +	}
->  	return 0;
->  }
-> 
-> 
+I'm not on this list, so anybody with comments should CC me.  Thanks.
