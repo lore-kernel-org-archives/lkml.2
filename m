@@ -1,21 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396Ab1ALVVZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 16:21:25 -0500
-Received: from mail.perches.com ([173.55.12.10]:3109 "EHLO mail.perches.com"
+	id S1756527Ab1ALVVl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 16:21:41 -0500
+Received: from mail.perches.com ([173.55.12.10]:3105 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755537Ab1ALVVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 16:21:23 -0500
+	id S1756375Ab1ALVVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 16:21:22 -0500
 From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: Brett Rudley <brudley@broadcom.com>, Henry Ptasinski <henryp@broadcom.com>,
-        Dowan Kim <dowan@broadcom.com>, Roland Vossen <rvossen@broadcom.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-wireless@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: [PATCH 3/3] staging: brcm80211: Remove unnecessary memset(,0,)
-Date: Wed, 12 Jan 2011 13:21:19 -0800
-Message-Id: <2edac359392f7f549ab508070f0c357e1cf39d65.1294867098.git.joe@perches.com>
+To: Rasesh Mody <rmody@brocade.com>, Debashis Dutt <ddutt@brocade.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/3] bna: Remove unnecessary memset(,0,)
+Date: Wed, 12 Jan 2011 13:21:18 -0800
+Message-Id: <0ed96bd1a053e61c827f2ac09e38cba59e32a21b.1294867098.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.3.398.g0b0cd.dirty
 In-Reply-To: <6f6d4a7a705949a3464471f364f77215f1e796f3.1294867098.git.joe@perches.com>
 References: <6f6d4a7a705949a3464471f364f77215f1e796f3.1294867098.git.joe@perches.com>
@@ -27,21 +23,21 @@ kzalloc'd memory doesn't need a memset to 0.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c |    1 -
+ drivers/net/bna/bnad_ethtool.c |    1 -
  1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
-index 991463f..2af0d6a 100644
---- a/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
-+++ b/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
-@@ -703,7 +703,6 @@ wl_run_iscan(struct wl_iscan_ctrl *iscan, struct wlc_ssid *ssid, u16 action)
- 	params = kzalloc(params_size, GFP_KERNEL);
- 	if (unlikely(!params))
- 		return -ENOMEM;
--	memset(params, 0, params_size);
- 	BUG_ON(unlikely(params_size >= WLC_IOCTL_SMLEN));
+diff --git a/drivers/net/bna/bnad_ethtool.c b/drivers/net/bna/bnad_ethtool.c
+index 99be5ae..142d604 100644
+--- a/drivers/net/bna/bnad_ethtool.c
++++ b/drivers/net/bna/bnad_ethtool.c
+@@ -275,7 +275,6 @@ bnad_get_drvinfo(struct net_device *netdev, struct ethtool_drvinfo *drvinfo)
  
- 	wl_iscan_prep(&params->params, ssid);
+ 	ioc_attr = kzalloc(sizeof(*ioc_attr), GFP_KERNEL);
+ 	if (ioc_attr) {
+-		memset(ioc_attr, 0, sizeof(*ioc_attr));
+ 		spin_lock_irqsave(&bnad->bna_lock, flags);
+ 		bfa_nw_ioc_get_attr(&bnad->bna.device.ioc, ioc_attr);
+ 		spin_unlock_irqrestore(&bnad->bna_lock, flags);
 -- 
 1.7.3.3.398.g0b0cd.dirty
 
