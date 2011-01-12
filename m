@@ -1,37 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932663Ab1ALCTH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 21:19:07 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47344 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756389Ab1ALCTG (ORCPT
+	id S932702Ab1ALCVV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 21:21:21 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:25539 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756393Ab1ALCVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 21:19:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=lk9OgGSbfrdHaTao1PD7GsIG2dn05a6sWd/VMjHO7ajD0Hf4JBQq2puvqvjHymTx9/
-         fOpVRnRjgFpSoIy3wy5Hh6FFkdPtx5yEV7f7VudGiDXOvxO4NWqQw+8MIkToGhxq4BQQ
-         XKITEkOdRXKRQJ5GL217jgdsdYJ+JoNqpOxEE=
-MIME-Version: 1.0
-In-Reply-To: <1294797775.20409.4.camel@mola>
-References: <1294797775.20409.4.camel@mola>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Tue, 11 Jan 2011 21:18:44 -0500
-Message-ID: <AANLkTinGU1KT+8y7B9WGph42MRwQdNQZ=gujWmNF8RWr@mail.gmail.com>
-Subject: Re: [PATCH] ASoC: Fix parameter for soc_unregister_ac97_dai_link
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, stable@kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 11 Jan 2011 21:21:19 -0500
+Date: Wed, 12 Jan 2011 11:21:12 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: [PATCH 08/16] ARM: samsung: serial: don't treat NULL clk as an
+ error
+In-reply-to: <1294749833-32019-9-git-send-email-jamie@jamieiles.com>
+To: "'Jamie Iles'" <jamie@jamieiles.com>, linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Message-id: <017601cbb1ff$63e80d00$2bb82700$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: AcuxjVEjH/PPgC/nS56x2kZ/Em3yeAAcecuA
+References: <1294749833-32019-1-git-send-email-jamie@jamieiles.com>
+ <1294749833-32019-9-git-send-email-jamie@jamieiles.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 21:02, Axel Lin wrote:
-> soc_unregister_ac97_dai_link takes a pointer to a codec.
+Jamie Iles wrote:
+> 
+> clk_get() returns a struct clk cookie to the driver and some platforms
+> may return NULL if they only support a single clock.  clk_get() has only
+> failed if it returns a ERR_PTR() encoded pointer.
+> 
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 
-thanks ... seems to work for me
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
+> Cc: linux-arm-kernel@lists.infradead.org
+> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+> ---
+>  drivers/serial/samsung.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/serial/samsung.c b/drivers/serial/samsung.c
+> index 7ac2bf5..be93d2f 100644
+> --- a/drivers/serial/samsung.c
+> +++ b/drivers/serial/samsung.c
+> @@ -42,6 +42,7 @@
+>  #include <linux/serial.h>
+>  #include <linux/delay.h>
+>  #include <linux/clk.h>
+> +#include <linux/err.h>
+>  #include <linux/cpufreq.h>
+> 
+>  #include <asm/irq.h>
+> @@ -522,7 +523,7 @@ static int s3c24xx_serial_calcbaud(struct baud_calc
+*calc,
+>  	unsigned long rate;
+> 
+>  	calc->src = clk_get(port->dev, clksrc->name);
+> -	if (calc->src == NULL || IS_ERR(calc->src))
+> +	if (IS_ERR(calc->src))
+>  		return 0;
+> 
+>  	rate = clk_get_rate(calc->src);
+> --
+1.7.3.4
+
