@@ -1,52 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086Ab1ALEzr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 23:55:47 -0500
-Received: from vms173005pub.verizon.net ([206.46.173.5]:50318 "EHLO
-	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754077Ab1ALEzp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 23:55:45 -0500
-Date: Tue, 11 Jan 2011 23:55:24 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Huang Ying <ying.huang@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH] ACPI, APEI, Generic Hardware Error Source POLL/IRQ/NMI
- notification type support
-In-reply-to: <1294362425.18956.7.camel@yhuang-dev>
-Message-id: <alpine.LFD.2.02.1101112341350.11311@x980>
-References: <1294362425.18956.7.camel@yhuang-dev>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S1750865Ab1ALFAU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 00:00:20 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:45789 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750708Ab1ALFAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 00:00:17 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+To: uclinux-dev@uclinux.org, David Howells <dhowells@redhat.com>,
+        David McCullough <davidm@snapgear.com>,
+        Greg Ungerer <gerg@uclinux.org>, Paul Mundt <lethal@linux-sh.org>
+Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] NOMMU: new vcoalesce helper function
+Date: Wed, 12 Jan 2011 00:08:08 -0500
+Message-Id: <1294808889-11453-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.4.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->        if (error_block_length > GHES_ESTATUS_MAX_SIZE) {
->-               pr_warning(FW_WARN GHES_PFX
->-                          "Error status block length is too long: %u for "
->-                          "generic hardware error source: %d.\n",
->+               pr_warning(
->+FW_WARN GHES_PFX "Error status block length is too long: %u for \n"
->+"generic hardware error source: %d.\n",
->                           error_block_length, generic->header.source_id);
->                error_block_length = GHES_ESTATUS_MAX_SIZE;
+We can't support vmap on NOMMU systems, so add a new vcoalesce function
+which combines maps via kmalloc.  A bit more overhead, but at least it
+works.  For MMU systems, vcoalesce simply redirects to vmap.
 
-Hi Ying,
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ include/linux/vmalloc.h |    3 +++
+ mm/nommu.c              |   22 +++++++++++++++++++++-
+ 2 files changed, 24 insertions(+), 1 deletions(-)
 
-I assume that you are tweaking these pr_warning() lines
-to beautify the output, but as far as source
-code readability, I liked the previous syntax better.
+diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
+index 44b54f6..1dec450 100644
+--- a/include/linux/vmalloc.h
++++ b/include/linux/vmalloc.h
+@@ -44,10 +44,13 @@ extern void vm_unmap_aliases(void);
+ 
+ #ifdef CONFIG_MMU
+ extern void __init vmalloc_init(void);
++#define vcoalesce(...) vmap(...)
+ #else
+ static inline void vmalloc_init(void)
+ {
+ }
++extern void *vcoalesce(struct page **pages, unsigned int count,
++			unsigned long flags, pgprot_t prot);
+ #endif
+ 
+ extern void *vmalloc(unsigned long size);
+diff --git a/mm/nommu.c b/mm/nommu.c
+index ef4045d..c1b8e39 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -402,6 +402,26 @@ void *vmalloc_32_user(unsigned long size)
+ }
+ EXPORT_SYMBOL(vmalloc_32_user);
+ 
++void *vcoalesce(struct page **pages, unsigned int count,
++	unsigned long flags, pgprot_t prot)
++{
++	unsigned int i;
++	void *new_map, *page_data;
++
++	new_map = kmalloc(count << PAGE_SHIFT, GFP_KERNEL);
++	if (!new_map)
++		return NULL;
++
++	for (i = 0; i < count; ++i) {
++		page_data = kmap(pages[i]);
++		memcpy(new_map + (i << PAGE_SHIFT), page_data, PAGE_SIZE);
++		kunmap(page_data);
++	}
++
++	return new_map;
++}
++EXPORT_SYMBOL(vcoalesce);
++
+ void *vmap(struct page **pages, unsigned int count, unsigned long flags, pgprot_t prot)
+ {
+ 	BUG();
+@@ -411,7 +431,7 @@ EXPORT_SYMBOL(vmap);
+ 
+ void vunmap(const void *addr)
+ {
+-	BUG();
++	kfree(addr);
+ }
+ EXPORT_SYMBOL(vunmap);
+ 
+-- 
+1.7.4.rc1
 
-Although maintainer's opinions vary, I generally do not
-strictly enforce the 80 column rule for printk strings.
-Ie. I think that code readability with good whitespace
-indentation plus printk string grep-ability are more
-important than strictly fitting within 80-columns.
-
-thanks,
-Len Brown, Intel Open Source Technology Center
