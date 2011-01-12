@@ -1,183 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755694Ab1ALT4x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 14:56:53 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36279 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845Ab1ALT4u (ORCPT
+	id S1755896Ab1ALUEo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 15:04:44 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:19932 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755441Ab1ALUEm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 14:56:50 -0500
-Date: Wed, 12 Jan 2011 19:56:40 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Nicolas Pitre <nicolas.pitre@canonical.com>
-Subject: Re: [PATCH v2] arm: Defer vetting of atags to setup.c
-Message-ID: <20110112195640.GJ11039@n2100.arm.linux.org.uk>
-References: <20110112180257.6824.33147.stgit@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110112180257.6824.33147.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 12 Jan 2011 15:04:42 -0500
+X-IronPort-AV: E=Sophos;i="4.60,314,1291622400"; 
+   d="scan'208";a="504662099"
+Subject: Re: vfs-scale, chroot
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: Nick Piggin <npiggin@gmail.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <29345.1294861630@jrobl>
+References: <29345.1294861630@jrobl>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Wed, 12 Jan 2011 15:04:40 -0500
+Message-ID: <1294862680.2971.51.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 12 Jan 2011 20:04:41.0825 (UTC) FILETIME=[F3133510:01CBB293]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch looks good to me, except for one small concerning point, which
-I should've thought about earlier - sorry.
-
-One of the things that __vet_atags does is to make sure that the data
-pointed to by 'r2' is actually an atag list.
-
-Historically, we haven't required boot loaders to set r2 to anything -
-it used not to be defined to mean anything at all.  So with older boot
-loaders, this could be pointing at anything - it all depends what the
-boot loader code last did, and how the compiler optimized that code.
-
-So, the __vet_atags asm tries dereferencing the values there after
-checking that it's word aligned.  We hope that we won't hit a read-
-sensitive device in doing so.  If we find a valid ATAG_CORE then we
-allow the pointer.  If we don't find those magic words, then we zero.
-
-For boot loaders which always pass valid r2 values, moving this code
-after the MMU makes no difference.  For older boot loaders, it may be
-that __phys_to_virt(r2) ends up pointing at unmapped memory, which will
-cause a MMU abort - and as the vectors haven't been setup, that could
-hang the kernel.
-
-So I think this has to stay in assembly code to make sure it works as
-required - to detect old boot loaders passing random values in r2 and
-allow the old method (atag address in machine_desc struct) to work.
-
-On Wed, Jan 12, 2011 at 11:03:07AM -0700, Grant Likely wrote:
-> Since the debug macros no longer depend on atag data, the vetting can
-> be deferred to setup_arch() in setup.c which simplifies the code
-> somewhat.
+On Thu, 2011-01-13 at 04:47 +0900, J. R. Okajima wrote: 
+> Hello Nick,
 > 
-> This patch removes __vet_atags() from head.S and moves it setup_arch().
-> I've tried to preserve the existing behaviour in this patch so the
-> extra atags vetting is only using when CONFIG_MMU is selected.
+> I've got a crash around d_lock.
 > 
-> v2: Move removal of __machine_type_lookup to a separate patch.
+> # mount -t nfs host:/dir /nfs
+> # chroot /nfs
 > 
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> ---
->  arch/arm/kernel/head-common.S |   51 +++++++----------------------------------
->  arch/arm/kernel/head.S        |    1 -
->  arch/arm/kernel/setup.c       |   16 +++++++++++++
->  3 files changed, 25 insertions(+), 43 deletions(-)
+> BUG: spinlock recursion on CPU#1, chroot/2524
+>  lock: ffff88001d106880, .magic: dead4ead, .owner: chroot/2524, .owner_cpu: 1
+> Call Trace:
+>  [<ffffffff8128ca52>] ? spin_bug+0xa2/0xf0
+>  [<ffffffff8128cd53>] ? do_raw_spin_lock+0x193/0x1b0
+>  [<ffffffff814eaa5e>] ? _raw_spin_lock_nested+0x4e/0x60
+>  [<ffffffff81137aef>] ? nameidata_dentry_drop_rcu+0xcf/0x1b0
+>  [<ffffffff814eaab3>] ? _raw_spin_lock+0x43/0x50
+>  [<ffffffff81137aef>] ? nameidata_dentry_drop_rcu+0xcf/0x1b0
+>  [<ffffffff81137c1b>] ? d_revalidate+0x4b/0x70
+>  [<ffffffff81139a75>] ? link_path_walk+0x655/0x1210
+>  [<ffffffff81138702>] ? path_init_rcu+0x1c2/0x370
+>  [<ffffffff811387e5>] ? path_init_rcu+0x2a5/0x370
+>  [<ffffffff81138702>] ? path_init_rcu+0x1c2/0x370
+>  [<ffffffff811059b3>] ? might_fault+0x53/0xb0
+>  [<ffffffff8113a9fe>] ? do_path_lookup+0x8e/0x1d0
+>  [<ffffffff8113b936>] ? user_path_at+0xa6/0xe0
+>  [<ffffffff8114c167>] ? vfsmount_lock_local_unlock+0x77/0x90
+>  [<ffffffff814ebab9>] ? retint_swapgs+0x13/0x1b
+>  [<ffffffff81090b15>] ? trace_hardirqs_on_caller+0x145/0x190
+>  [<ffffffff8112841e>] ? sys_chdir+0x2e/0x90
+>  [<ffffffff8100bfd2>] ? system_call_fastpath+0x16/0x1b
 > 
-> diff --git a/arch/arm/kernel/head-common.S b/arch/arm/kernel/head-common.S
-> index c84b57d..8bb1829 100644
-> --- a/arch/arm/kernel/head-common.S
-> +++ b/arch/arm/kernel/head-common.S
-> @@ -11,50 +11,8 @@
->   *
->   */
->  
-> -#define ATAG_CORE 0x54410001
-> -#define ATAG_CORE_SIZE ((2*4 + 3*4) >> 2)
-> -#define ATAG_CORE_SIZE_EMPTY ((2*4) >> 2)
-> -
-> -/*
-> - * Exception handling.  Something went wrong and we can't proceed.  We
-> - * ought to tell the user, but since we don't have any guarantee that
-> - * we're even running on the right architecture, we do virtually nothing.
-> - *
-> - * If CONFIG_DEBUG_LL is set we try to print out something about the error
-> - * and hope for the best (useful if bootloader fails to pass a proper
-> - * machine ID for example).
-> - */
->  	__HEAD
->  
-> -/* Determine validity of the r2 atags pointer.  The heuristic requires
-> - * that the pointer be aligned, in the first 16k of physical RAM and
-> - * that the ATAG_CORE marker is first and present.  Future revisions
-> - * of this function may be more lenient with the physical address and
-> - * may also be able to move the ATAGS block if necessary.
-> - *
-> - * Returns:
-> - *  r2 either valid atags pointer, or zero
-> - *  r5, r6 corrupted
-> - */
-> -__vet_atags:
-> -	tst	r2, #0x3			@ aligned?
-> -	bne	1f
-> -
-> -	ldr	r5, [r2, #0]			@ is first tag ATAG_CORE?
-> -	cmp	r5, #ATAG_CORE_SIZE
-> -	cmpne	r5, #ATAG_CORE_SIZE_EMPTY
-> -	bne	1f
-> -	ldr	r5, [r2, #4]
-> -	ldr	r6, =ATAG_CORE
-> -	cmp	r5, r6
-> -	bne	1f
-> -
-> -	mov	pc, lr				@ atag pointer is ok
-> -
-> -1:	mov	r2, #0
-> -	mov	pc, lr
-> -ENDPROC(__vet_atags)
-> -
->  /*
->   * The following fragment of code is executed with the MMU on in MMU mode,
->   * and uses absolute addresses; this is not position independent.
-> @@ -158,6 +116,15 @@ __lookup_processor_type_data:
->  	.long	__proc_info_end
->  	.size	__lookup_processor_type_data, . - __lookup_processor_type_data
->  
-> +/*
-> + * Exception handling.  Something went wrong and we can't proceed.  We
-> + * ought to tell the user, but since we don't have any guarantee that
-> + * we're even running on the right architecture, we do virtually nothing.
-> + *
-> + * If CONFIG_DEBUG_LL is set we try to print out something about the error
-> + * and hope for the best (useful if bootloader fails to pass a proper
-> + * machine ID for example).
-> + */
->  __error_p:
->  #ifdef CONFIG_DEBUG_LL
->  	adr	r0, str_p1
-> diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-> index 19f3909..4b0cf4a 100644
-> --- a/arch/arm/kernel/head.S
-> +++ b/arch/arm/kernel/head.S
-> @@ -92,7 +92,6 @@ ENTRY(stext)
->  	 * r1 = machine no, r2 = atags,
->  	 * r9 = cpuid, r10 = procinfo
->  	 */
-> -	bl	__vet_atags
->  #ifdef CONFIG_SMP_ON_UP
->  	bl	__fixup_smp
->  #endif
-> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-> index 77266a8..47cf110 100644
-> --- a/arch/arm/kernel/setup.c
-> +++ b/arch/arm/kernel/setup.c
-> @@ -851,6 +851,22 @@ void __init setup_arch(char **cmdline_p)
->  	if (mdesc->soft_reboot)
->  		reboot_setup("s");
->  
-> +#if defined(CONFIG_MMU)
-> +	/*
-> +	 * Determine validity of the atags pointer.  The heuristic requires
-> +	 * that the pointer be aligned, and that the ATAG_CORE marker is
-> +	 * first and present.
-> +	 */
-> +	if (__atags_pointer & 0x3)
-> +		__atags_pointer = 0;
-> +	if (__atags_pointer) {
-> +		struct tag *t = phys_to_virt(__atags_pointer);
-> +		if ((t->hdr.size != tag_size(tag_core)) &&
-> +		    (t->hdr.size != sizeof(struct tag_header)) &&
-> +		    (t->hdr.tag != ATAG_CORE))
-> +			__atags_pointer = 0;
-> +	}
-> +#endif
->  	if (__atags_pointer)
->  		tags = phys_to_virt(__atags_pointer);
->  	else if (mdesc->boot_params)
+> It looks like nameidata_dentry_drop_rcu() is trying spin_lock() twice
+> for the same dentry when parent == dentry.
 > 
+> - NFS ->d_revalidate() returns -ECHILD for LOOKUP_RCU
+> - VFS d_revalidate() will try ->d_revalidate() again after dropping
+>   LOOKUP_RCU by nameidata_dentry_drop_rcu().
+> - nameidata_dentry_drop_rcu() calls
+> 	spin_lock(&parent->d_lock);
+> 	spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
+> - it may happen on all fs which specifies FS_REVAL_DOT
+> 
+> If we have a function like below, it may be useful.
+> But are there so many cases like this problem?
+> If it is not so many, then the fix will be adding several
+> "if (!IS_ROOT(dentry)" into nameidata_dentry_drop_rcu(), I think.
+> 
+> int d_lock_parent_child(parent, child)
+> {
+> 	err = Success;
+> 	spin_lock(&parent->d_lock);
+> 	if (!IS_ROOT(dentry)) {
+> 		spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
+> 		if (unlikely(parent != dentry->d_parent)) {
+> 			spin_unlock(&parent->d_lock);
+> 			err = Error_Unmatch;
+> 		}
+> 	} else
+> 		err = Success_Root;
+> 	return err;
+> }
+> 
+> void d_unlock_parent_child(int stat, parent, child)
+> {
+> 	Assert(stat == Error_Unmatch);
+> 	if (stat == Success)
+> 		spin_unlock(&dentry->d_lock);
+> 	spin_unlock(&parent->d_lock);
+> }
+
+BTW, Nick: Given that some filesystems such as NFS are _always_ going to
+reject LOOKUP_RCU, it would appear to be completely out of place to use
+the 'unlikely()' keyword when testing the results of path_walk_rcu() and
+friends. In particular when the kernel is running with nfsroot, we're
+saying that 100% of all cases are 'unlikely'...
+
+Trond
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
