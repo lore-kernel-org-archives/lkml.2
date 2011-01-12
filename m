@@ -1,50 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932861Ab1ALEcO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 23:32:14 -0500
-Received: from vms173017pub.verizon.net ([206.46.173.17]:43561 "EHLO
-	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932791Ab1ALEcM (ORCPT
+	id S932858Ab1ALEhh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 23:37:37 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60363 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932791Ab1ALEhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 23:32:12 -0500
-Date: Tue, 11 Jan 2011 23:32:03 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: sfi-devel@simplefirmware.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] SFI: use ioremap_cache() instead of ioremap()
-Message-id: <alpine.LFD.2.02.1101112329590.11311@x980>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 11 Jan 2011 23:37:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=N7UXHrj0D+SZG8flhJp3seFWc86kcfGUdgaU5San8xYJldsyvW2s/Gx8KY3h8vknCt
+         uMBN9rCj/HSwW7fEpW3WRVHZWPB9r6sRof4NQGe39WpNmoXFih/qpXChdrOV5FSrOf+T
+         w16x6LCQgeowvEWQqxXMM3MdMScrvMhW6Kmj0=
+MIME-Version: 1.0
+In-Reply-To: <E1Pcd7R-0007XC-VO@pomaz-ex.szeredi.hu>
+References: <E1Pcd7R-0007XC-VO@pomaz-ex.szeredi.hu>
+Date: Wed, 12 Jan 2011 15:37:32 +1100
+Message-ID: <AANLkTik-=LqSHQ=7zDznx9oCJFViPpp406Yz7J5Z-quj@mail.gmail.com>
+Subject: Re: [PATCH] fuse: make fuse_permission() RCU aware
+From: Nick Piggin <npiggin@gmail.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Len Brown <len.brown@intel.com>
+On Tue, Jan 11, 2011 at 11:14 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> From: Miklos Szeredi <mszeredi@suse.cz>
+>
+> Only bail out of fuse_permission() on IPERM_FLAG_RCU when it is
+> actually necessary.
 
-We copied ACPI's oversight of using ioremap() and creating
-non-cached table mappings when we should have been using
-ioremap_cache().
-
-Signed-off-by: Len Brown <len.brown@intel.com>
----
- drivers/sfi/sfi_core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/sfi/sfi_core.c b/drivers/sfi/sfi_core.c
-index ceba593..04113e5 100644
---- a/drivers/sfi/sfi_core.c
-+++ b/drivers/sfi/sfi_core.c
-@@ -101,7 +101,7 @@ static void __iomem * __ref sfi_map_memory(u64 phys, u32 size)
- 		return NULL;
- 
- 	if (sfi_use_ioremap)
--		return ioremap(phys, size);
-+		return ioremap_cache(phys, size);
- 	else
- 		return early_ioremap(phys, size);
- }
--- 
-1.7.4.rc1.7.g2cf08
-
+Great, thanks for taking a look... How about d_revalidate?
