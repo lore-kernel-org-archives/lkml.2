@@ -1,50 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756019Ab1ALLWC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 06:22:02 -0500
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:59107 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753543Ab1ALLV7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 06:21:59 -0500
-Message-ID: <4D2D8ED0.6080807@de.ibm.com>
-Date: Wed, 12 Jan 2011 12:21:52 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100918 Lightning/1.0b2 Icedove/3.1.4
+	id S1755512Ab1ALLbI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 06:31:08 -0500
+Received: from hera.kernel.org ([140.211.167.34]:44703 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751766Ab1ALLbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 06:31:05 -0500
+Date: Wed, 12 Jan 2011 11:30:47 GMT
+From: tip-bot for Nicolas Pitre <nico@fluxnic.net>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        johnstul@us.ibm.com, nicolas.pitre@linaro.org, tglx@linutronix.de,
+        nico@fluxnic.net
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        johnstul@us.ibm.com, nicolas.pitre@linaro.org, tglx@linutronix.de,
+        nico@fluxnic.net
+In-Reply-To: <alpine.LFD.2.00.1101111207140.17086@xanadu.home>
+References: <alpine.LFD.2.00.1101111207140.17086@xanadu.home>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/urgent] time: Rename misnamed minsec argument of clocks_calc_mult_shift()
+Message-ID: <tip-5fdade95f26372154459347dfb9f60721d22cfc7@git.kernel.org>
+Git-Commit-ID: 5fdade95f26372154459347dfb9f60721d22cfc7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Dave Airlie <airlied@linux.ie>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org, James Simmons <jsimmons@infradead.org>
-Subject: Re: [git pull] drm for rc1
-References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie> <4D2CE5C8.60601@de.ibm.com> <AANLkTimr4WX3Ay8vC23MKOM+dOcpV+Ca5rg_gcei38nk@mail.gmail.com>
-In-Reply-To: <AANLkTimr4WX3Ay8vC23MKOM+dOcpV+Ca5rg_gcei38nk@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 12 Jan 2011 11:30:49 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 12.01.2011 00:28, schrieb Linus Torvalds:
-> On Tue, Jan 11, 2011 at 3:20 PM, Christian Borntraeger
-> <borntraeger@de.ibm.com> wrote:
->>
->> Now nouveau framebuffer is completely broken on my T61p (01:00.0 VGA compatible controller: nVidia Corporation G84M [Quadro FX 570M] (rev a1))
->> During startup the framebuffer shows only stripes and a blank
->> screen after suspend/resume.
->> I also see lots of TRAP messages. (see below).
->> X11 seems to work fine though...
-> 
-> Can you try to bisect?
+Commit-ID:  5fdade95f26372154459347dfb9f60721d22cfc7
+Gitweb:     http://git.kernel.org/tip/5fdade95f26372154459347dfb9f60721d22cfc7
+Author:     Nicolas Pitre <nico@fluxnic.net>
+AuthorDate: Tue, 11 Jan 2011 12:18:12 -0500
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 12 Jan 2011 12:23:12 +0100
 
-dfe63bb0ad9810db13aab0058caba97866e0a681 is the first bad commit
-commit dfe63bb0ad9810db13aab0058caba97866e0a681
-Author: James Simmons <jsimmons@infradead.org>
-Date:   Thu Dec 23 16:40:37 2010 +0000
+time: Rename misnamed minsec argument of clocks_calc_mult_shift()
 
-    drm: Update fbdev fb_fix_screeninfo
+The minsec argument to clocks_calc_mult_shift() is misnamed. It is used 
+to clamp the magnitude of the mult factor so that a multiplication with 
+any value in the given range won't overflow a 64 bit result.  Let's 
+rename it to match the actual usage.
 
+Signed-off-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+Acked-by: John Stultz <johnstul@us.ibm.com>
+LKML-Reference: <alpine.LFD.2.00.1101111207140.17086@xanadu.home>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-Reverting this on top of todays git also fixes my problem.
+---
+ kernel/time/clocksource.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-Christian
+diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+index c18d7ef..8588abc 100644
+--- a/kernel/time/clocksource.c
++++ b/kernel/time/clocksource.c
+@@ -113,7 +113,7 @@ EXPORT_SYMBOL_GPL(timecounter_cyc2time);
+  * @shift:	pointer to shift variable
+  * @from:	frequency to convert from
+  * @to:		frequency to convert to
+- * @minsec:	guaranteed runtime conversion range in seconds
++ * @maxsec:	guaranteed runtime conversion range in seconds
+  *
+  * The function evaluates the shift/mult pair for the scaled math
+  * operations of clocksources and clockevents.
+@@ -122,7 +122,7 @@ EXPORT_SYMBOL_GPL(timecounter_cyc2time);
+  * NSEC_PER_SEC == 1GHz and @from is the counter frequency. For clock
+  * event @to is the counter frequency and @from is NSEC_PER_SEC.
+  *
+- * The @minsec conversion range argument controls the time frame in
++ * The @maxsec conversion range argument controls the time frame in
+  * seconds which must be covered by the runtime conversion with the
+  * calculated mult and shift factors. This guarantees that no 64bit
+  * overflow happens when the input value of the conversion is
+@@ -131,7 +131,7 @@ EXPORT_SYMBOL_GPL(timecounter_cyc2time);
+  * factors.
+  */
+ void
+-clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 minsec)
++clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 maxsec)
+ {
+ 	u64 tmp;
+ 	u32 sft, sftacc= 32;
+@@ -140,7 +140,7 @@ clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 minsec)
+ 	 * Calculate the shift factor which is limiting the conversion
+ 	 * range:
+ 	 */
+-	tmp = ((u64)minsec * from) >> 32;
++	tmp = ((u64)maxsec * from) >> 32;
+ 	while (tmp) {
+ 		tmp >>=1;
+ 		sftacc--;
