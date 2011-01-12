@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134Ab1ALUXd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 15:23:33 -0500
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:43070 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752263Ab1ALUX3 (ORCPT
+	id S1756157Ab1ALU1y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 15:27:54 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39626 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752263Ab1ALU1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 15:23:29 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: y3nm_CoVM1mkVWh368Y11oLZnIz9keSxyk6mhPB_xIMZqPK
- AG.sAPGsOm9M9zJsE8eNr5ZyecCDNmlcHbGYF61CBWekpY_wPJjX0e3vVZ3M
- bjlbqpOXKT12wz4NbijV6tf5Jh3OuDCEB5QftguLVyK4VCgdXXGWhofpnErk
- i.WZNm4d9Fg_fb2eASekObdS0rd3xEcO2o3c2Xb.a8Ghye.3YOjvyW.4h0dO
- QthVSHSQfT0Q8zGspbBCb.jFbYcihQyEoGJto7R9l4pPaE.y5gMZoTHBgJn0
- aoMJb3VTT4EgiQQ9rVQgbZFMxJv8CpBvcwr1qTPIDRHxsQR4-
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 12 Jan 2011 14:23:25 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Eric B Munson <emunson@mgebm.net>
-cc: akpm@linux-foundation.org, linux-mm@kvack.org, mel@csn.ul.ie,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Rename struct task variables from p to tsk
-In-Reply-To: <20110112201602.GA25957@mgebm.net>
-Message-ID: <alpine.DEB.2.00.1101121421490.9271@router.home>
-References: <1294845571-11529-1-git-send-email-emunson@mgebm.net> <alpine.DEB.2.00.1101121205120.3053@router.home> <20110112201602.GA25957@mgebm.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 12 Jan 2011 15:27:51 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110112114649.5365d518@jbarnes-desktop>
+References: <alpine.DEB.2.00.1101120601100.6210@skynet.skynet.ie>
+ <AANLkTimgs8UfGWk5PCZi4PM5SsvejJd5Y4bb3nHGyZy2@mail.gmail.com> <20110112114649.5365d518@jbarnes-desktop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 12 Jan 2011 12:27:30 -0800
+Message-ID: <AANLkTinSygbLm=nmXy_Wf2ENV8WcQqCc0BKAAOsysvZd@mail.gmail.com>
+Subject: Re: [git pull] drm intel only fixes
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
+        linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: multipart/mixed; boundary=00221532c778efb5020499ac08d8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Jan 2011, Eric B Munson wrote:
+--00221532c778efb5020499ac08d8
+Content-Type: text/plain; charset=ISO-8859-1
 
-> On Wed, 12 Jan 2011, Christoph Lameter wrote:
-> > Use t instead of p? Its a local variable after all.
+On Wed, Jan 12, 2011 at 11:46 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
 >
-> I don't find t any more informative than p.  As a newcomer to most of this code
-> informative variable names, even for local variables, is a huge help.
+> Since I doubt we're actually offloading to our video decode kernels for
+> Flash video on your machine
 
-Local variables are short because they are defined close to the point of
-use.
+It's the latest 64-bit beta flash player, so maybe it does use hw acceleration.
 
-tsk is not that informative and the notion of a "task" can refer to
-various. However, when I see
 
-	struct task_struct *t;
+>                       it could very well be a memory bw issue.
+> Can you try this small patch to see if one of the low power watermarks
+> is giving you trouble (note: cut & pasted)?
 
-I know what it refers to.
+No difference.
 
+> It could also be the normal power watermarks though too; you could just
+> make plane-wm and cursor_wm higher to test that.
+
+I multiplied them by two, no difference. The patch I used attached.
+
+Does nobody else see this?
+
+                       Linus
+
+--00221532c778efb5020499ac08d8
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_giuolu2v0
+
+IGRyaXZlcnMvZ3B1L2RybS9pOTE1L2ludGVsX2Rpc3BsYXkuYyB8ICAgIDQgKysrKwogMSBmaWxl
+cyBjaGFuZ2VkLCA0IGluc2VydGlvbnMoKyksIDAgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEv
+ZHJpdmVycy9ncHUvZHJtL2k5MTUvaW50ZWxfZGlzcGxheS5jIGIvZHJpdmVycy9ncHUvZHJtL2k5
+MTUvaW50ZWxfZGlzcGxheS5jCmluZGV4IDI1ZDk2ODguLjJlYTFhNTEgMTAwNjQ0Ci0tLSBhL2Ry
+aXZlcnMvZ3B1L2RybS9pOTE1L2ludGVsX2Rpc3BsYXkuYworKysgYi9kcml2ZXJzL2dwdS9kcm0v
+aTkxNS9pbnRlbF9kaXNwbGF5LmMKQEAgLTM0NDUsNiArMzQ0NSw3IEBAIHN0YXRpYyBib29sIGly
+b25sYWtlX2NvbXB1dGVfd20wKHN0cnVjdCBkcm1fZGV2aWNlICpkZXYsCiAJCWVudHJpZXMgKz0g
+dGxiX21pc3M7CiAJZW50cmllcyA9IERJVl9ST1VORF9VUChlbnRyaWVzLCBkaXNwbGF5LT5jYWNo
+ZWxpbmVfc2l6ZSk7CiAJKnBsYW5lX3dtID0gZW50cmllcyArIGRpc3BsYXktPmd1YXJkX3NpemU7
+CisqcGxhbmVfd20gKj0yOwogCWlmICgqcGxhbmVfd20gPiAoaW50KWRpc3BsYXktPm1heF93bSkK
+IAkJKnBsYW5lX3dtID0gZGlzcGxheS0+bWF4X3dtOwogCkBAIC0zNDU3LDYgKzM0NTgsNyBAQCBz
+dGF0aWMgYm9vbCBpcm9ubGFrZV9jb21wdXRlX3dtMChzdHJ1Y3QgZHJtX2RldmljZSAqZGV2LAog
+CQllbnRyaWVzICs9IHRsYl9taXNzOwogCWVudHJpZXMgPSBESVZfUk9VTkRfVVAoZW50cmllcywg
+Y3Vyc29yLT5jYWNoZWxpbmVfc2l6ZSk7CiAJKmN1cnNvcl93bSA9IGVudHJpZXMgKyBjdXJzb3It
+Pmd1YXJkX3NpemU7CisqY3Vyc29yX3dtICo9IDI7CiAJaWYgKCpjdXJzb3Jfd20gPiAoaW50KWN1
+cnNvci0+bWF4X3dtKQogCQkqY3Vyc29yX3dtID0gKGludCljdXJzb3ItPm1heF93bTsKIApAQCAt
+MzYwNyw2ICszNjA5LDggQEAgc3RhdGljIHZvaWQgaXJvbmxha2VfdXBkYXRlX3dtKHN0cnVjdCBk
+cm1fZGV2aWNlICpkZXYsCiAJaWYgKGVuYWJsZWQgIT0gMSkKIAkJcmV0dXJuOwogCityZXR1cm47
+CisKIAljbG9jayA9IHBsYW5lYV9jbG9jayA/IHBsYW5lYV9jbG9jayA6IHBsYW5lYl9jbG9jazsK
+IAogCS8qIFdNMSAqLwo=
+--00221532c778efb5020499ac08d8--
