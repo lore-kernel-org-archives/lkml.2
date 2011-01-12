@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932737Ab1ALAxk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 19:53:40 -0500
-Received: from mga01.intel.com ([192.55.52.88]:19814 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756406Ab1ALAxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 19:53:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,309,1291622400"; 
-   d="scan'208";a="645933790"
-From: Feng Tang <feng.tang@intel.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        sameo@linux.intel.com, alan@linux.intel.com
-Cc: Feng Tang <feng.tang@intel.com>, Alek Du <alek.du@intel.com>
-Subject: [PATCH] langwell_gpio: modify EOI handling following change of kernel irq subsystem
-Date: Wed, 12 Jan 2011 08:54:05 +0800
-Message-Id: <1294793645-32663-1-git-send-email-feng.tang@intel.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S932748Ab1ALAxs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 19:53:48 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37162 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756406Ab1ALAxm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 19:53:42 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 12 Jan 2011 09:47:50 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 1/2] memcg: remove unnecessary BUG_ON
+Message-Id: <20110112094750.46623489.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <41390917af25769cd59eb001370b80ef6520a8bb.1294735182.git.minchan.kim@gmail.com>
+References: <41390917af25769cd59eb001370b80ef6520a8bb.1294735182.git.minchan.kim@gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Latest kernel has many changes in IRQ subsystem and its interfaces, like adding
-"irq_eoi" for struct irq_chip, this patch is a follow up change for that.
+On Tue, 11 Jan 2011 17:51:11 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-Also remove the unnecessary caster for a "void *".
+> Now memcg in unmap_and_move checks BUG_ON of charge.
+> mem_cgroup_prepare_migration returns either 0 or -ENOMEM.
+> If it returns -ENOMEM, it jumps out unlock without the check.
+> If it returns 0, it can pass BUG_ON. So it's meaningless.
+> Let's remove it.
+> 
+> Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 
-Cc: Alek Du <alek.du@intel.com>
-Signed-off-by: Feng Tang <feng.tang@intel.com>
----
- drivers/gpio/langwell_gpio.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpio/langwell_gpio.c b/drivers/gpio/langwell_gpio.c
-index 64db9dc..6cb3954 100644
---- a/drivers/gpio/langwell_gpio.c
-+++ b/drivers/gpio/langwell_gpio.c
-@@ -187,7 +187,7 @@ MODULE_DEVICE_TABLE(pci, lnw_gpio_ids);
- 
- static void lnw_irq_handler(unsigned irq, struct irq_desc *desc)
- {
--	struct lnw_gpio *lnw = (struct lnw_gpio *)get_irq_data(irq);
-+	struct lnw_gpio *lnw = get_irq_data(irq);
- 	u32 base, gpio;
- 	void __iomem *gedr;
- 	u32 gedr_v;
-@@ -206,7 +206,12 @@ static void lnw_irq_handler(unsigned irq, struct irq_desc *desc)
- 		/* clear the edge detect status bit */
- 		writel(gedr_v, gedr);
- 	}
--	desc->chip->eoi(irq);
-+
-+	if (desc->chip->irq_eoi)
-+		desc->chip->irq_eoi(irq_get_irq_data(irq));
-+	else
-+		dev_warn(lnw->chip.dev, "missing EOI handler for irq %d\n", irq);
-+
- }
- 
- static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
--- 
-1.7.0.4
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> 
 
