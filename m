@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab1ALLbg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 06:31:36 -0500
-Received: from hera.kernel.org ([140.211.167.34]:44723 "EHLO hera.kernel.org"
+	id S1755983Ab1ALLhP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 06:37:15 -0500
+Received: from hera.kernel.org ([140.211.167.34]:41181 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751901Ab1ALLbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 06:31:35 -0500
-Date: Wed, 12 Jan 2011 11:31:11 GMT
-From: tip-bot for H Hartley Sweeten <hartleys@visionengravers.com>
+	id S1752136Ab1ALLhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 06:37:13 -0500
+Date: Wed, 12 Jan 2011 11:36:49 GMT
+From: tip-bot for Tony Luck <tony.luck@intel.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        johnstul@us.ibm.com, hartleys@visionengravers.com, tglx@linutronix.de,
-        hsweeten@visionengravers.com
+        yinghai@kernel.org, torvalds@linux-foundation.org, tony.luck@intel.com,
+        bjorn.helgaas@hp.com, tglx@linutronix.de, fengguang.wu@intel.com,
+        mingo@elte.hu, len.brown@intel.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        johnstul@us.ibm.com, tglx@linutronix.de, hartleys@visionengravers.com,
-        hsweeten@visionengravers.com
-In-Reply-To: <0D753D10438DA54287A00B027084269764CE0E54B7@AUSP01VMBX24.collaborationhost.net>
-References: <0D753D10438DA54287A00B027084269764CE0E54B7@AUSP01VMBX24.collaborationhost.net>
+        yinghai@kernel.org, torvalds@linux-foundation.org, tony.luck@intel.com,
+        bjorn.helgaas@hp.com, tglx@linutronix.de, fengguang.wu@intel.com,
+        len.brown@intel.com, mingo@elte.hu
+In-Reply-To: <4D2D6B5D.4080208@kernel.org>
+References: <4D2D6B5D.4080208@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] timekeeping: Make local variables static
-Message-ID: <tip-afa14e7c553ebe45844d76208f66017a43abd0e2@git.kernel.org>
-Git-Commit-ID: afa14e7c553ebe45844d76208f66017a43abd0e2
+Subject: [tip:x86/urgent] x86, ia64, acpi: Clean up x86-ism in drivers/acpi/numa.c
+Message-ID: <tip-9378b63ccb32b9c071dab155c96357ad1e52a709@git.kernel.org>
+Git-Commit-ID: 9378b63ccb32b9c071dab155c96357ad1e52a709
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 12 Jan 2011 11:31:12 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 12 Jan 2011 11:36:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  afa14e7c553ebe45844d76208f66017a43abd0e2
-Gitweb:     http://git.kernel.org/tip/afa14e7c553ebe45844d76208f66017a43abd0e2
-Author:     H Hartley Sweeten <hartleys@visionengravers.com>
-AuthorDate: Tue, 11 Jan 2011 17:59:38 -0600
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 12 Jan 2011 12:23:13 +0100
+Commit-ID:  9378b63ccb32b9c071dab155c96357ad1e52a709
+Gitweb:     http://git.kernel.org/tip/9378b63ccb32b9c071dab155c96357ad1e52a709
+Author:     Tony Luck <tony.luck@intel.com>
+AuthorDate: Wed, 12 Jan 2011 00:50:37 -0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 12 Jan 2011 12:15:09 +0100
 
-timekeeping: Make local variables static
+x86, ia64, acpi: Clean up x86-ism in drivers/acpi/numa.c
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: John Stultz <johnstul@us.ibm.com>
-LKML-Reference: <0D753D10438DA54287A00B027084269764CE0E54B7@AUSP01VMBX24.collaborationhost.net>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+As pointed out by Linus CONFIG_X86 in drivers/acpi/numa.c is
+ugly.
 
+Builds and boots on ia64 (both normally and with maxcpus=8 to limit
+the number of cpus).
+
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Acked-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Len Brown <len.brown@intel.com>
+LKML-Reference: <4D2D6B5D.4080208@kernel.org>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/time/timekeeping.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/acpi/numa.c |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 5bb86da..eef7452 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -49,7 +49,7 @@ struct timekeeper {
- 	u32	mult;
- };
+diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
+index d9926af..5eb25eb 100644
+--- a/drivers/acpi/numa.c
++++ b/drivers/acpi/numa.c
+@@ -275,23 +275,19 @@ acpi_table_parse_srat(enum acpi_srat_type id,
+ int __init acpi_numa_init(void)
+ {
+ 	int ret = 0;
+-	int nr_cpu_entries = nr_cpu_ids;
  
--struct timekeeper timekeeper;
-+static struct timekeeper timekeeper;
+-#ifdef CONFIG_X86
+ 	/*
+ 	 * Should not limit number with cpu num that is from NR_CPUS or nr_cpus=
+ 	 * SRAT cpu entries could have different order with that in MADT.
+ 	 * So go over all cpu entries in SRAT to get apicid to node mapping.
+ 	 */
+-	nr_cpu_entries = MAX_LOCAL_APIC;
+-#endif
  
- /**
-  * timekeeper_setup_internals - Set up internals to use clocksource clock.
-@@ -164,7 +164,7 @@ static struct timespec total_sleep_time;
- /*
-  * The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock.
-  */
--struct timespec raw_time;
-+static struct timespec raw_time;
- 
- /* flag for if timekeeping is suspended */
- int __read_mostly timekeeping_suspended;
+ 	/* SRAT: Static Resource Affinity Table */
+ 	if (!acpi_table_parse(ACPI_SIG_SRAT, acpi_parse_srat)) {
+ 		acpi_table_parse_srat(ACPI_SRAT_TYPE_X2APIC_CPU_AFFINITY,
+-				     acpi_parse_x2apic_affinity, nr_cpu_entries);
++				     acpi_parse_x2apic_affinity, 0);
+ 		acpi_table_parse_srat(ACPI_SRAT_TYPE_CPU_AFFINITY,
+-				     acpi_parse_processor_affinity, nr_cpu_entries);
++				     acpi_parse_processor_affinity, 0);
+ 		ret = acpi_table_parse_srat(ACPI_SRAT_TYPE_MEMORY_AFFINITY,
+ 					    acpi_parse_memory_affinity,
+ 					    NR_NODE_MEMBLKS);
