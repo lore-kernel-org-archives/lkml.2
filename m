@@ -1,60 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932185Ab1ALI2f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 03:28:35 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:59761 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754750Ab1ALI2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 03:28:33 -0500
-Date: Wed, 12 Jan 2011 09:28:20 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Tony Luck <tony.luck@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>
-Subject: Re: [GIT PULL] x86/apic changes for v2.6.38
-Message-ID: <20110112082820.GC9868@elte.hu>
-References: <AANLkTik7tcZo8ka80y=FD-_UxwvB6-R8iRHRq+rkOSo+@mail.gmail.com>
- <4d2654c410489a1b90@agluck-desktop.sc.intel.com>
- <AANLkTi=0cf=JGGiJ6w3nanJTN1zyLvgVt8FUzwTWp2YG@mail.gmail.com>
- <AANLkTimJMMC=LoD4igGCMdcFaBS9EpHVHh_x5=91_bbE@mail.gmail.com>
- <AANLkTim6Qn5Ttc9w673c1jrT0dObm8x_Osvbf9Vhjfys@mail.gmail.com>
+	id S932272Ab1ALI3A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 03:29:00 -0500
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:48777 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932204Ab1ALI25 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 03:28:57 -0500
+From: Peppe CAVALLARO <peppe.cavallaro@st.com>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Wed, 12 Jan 2011 09:00:35 +0100
+Subject: Re: [PATCH 10/16] drivers/net: stmmac: don't treat NULL clk as an
+ error
+Thread-Topic: [PATCH 10/16] drivers/net: stmmac: don't treat NULL clk as an
+ error
+Thread-Index: AcuyLsxBP8BMMT0TSfGptTMdQKyIlg==
+Message-ID: <4D2D5FA3.507@st.com>
+References: <1294749833-32019-1-git-send-email-jamie@jamieiles.com>
+ <1294749833-32019-11-git-send-email-jamie@jamieiles.com>
+In-Reply-To: <1294749833-32019-11-git-send-email-jamie@jamieiles.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-enigmail-version: 1.1.1
+user-agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13)
+ Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+openpgp: url=wwwkeys.bri.st.com
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTim6Qn5Ttc9w673c1jrT0dObm8x_Osvbf9Vhjfys@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello
 
-* Tony Luck <tony.luck@intel.com> wrote:
+On 1/11/2011 1:43 PM, Jamie Iles wrote:
+>
+> clk_get() returns a struct clk cookie to the driver and some platforms
+> may return NULL if they only support a single clock.  clk_get() has only
+> failed if it returns a ERR_PTR() encoded pointer.
+>
+Thanks for the patch that actually useful.
+I'm going to rework this part of the driver.
+At any rate, all my new changes can be done on top of this patch.
 
-> On Thu, Jan 6, 2011 at 4:17 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> > Assume Tony will have another patch for IA64 to check that before
-> > apply this patch.
-> 
-> Ingo,
-> 
-> Ok, I sent (a slightly modified version of) this patch up to Linus
-> as part of the ia64 merge window pull ... so it is safe to update
-> drivers/acpi/numa.c with a patch that will parse all the SRAT cpu
-> entries down to ia64 now.
-
-Thanks Tony!
-
-Since the original commit d3bd058 is already upstream i suspect we should be fine 
-all around, right?
-
-	Ingo
+Regards,
+Peppe
+>
+>
+> Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+> ---
+>  drivers/net/stmmac/stmmac_timer.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/net/stmmac/stmmac_timer.c
+> b/drivers/net/stmmac/stmmac_timer.c
+> index 2a0e1ab..ebb1b37 100644
+> --- a/drivers/net/stmmac/stmmac_timer.c
+> +++ b/drivers/net/stmmac/stmmac_timer.c
+> @@ -91,6 +91,7 @@ int stmmac_close_ext_timer(void)
+>
+>  #elif defined(CONFIG_STMMAC_TMU_TIMER)
+>  #include <linux/clk.h>
+> +#include <linux/err.h>
+>  #define TMU_CHANNEL "tmu2_clk"
+>  static struct clk *timer_clock;
+>
+> @@ -109,7 +110,7 @@ int stmmac_open_ext_timer(struct net_device *dev,
+> struct stmmac_timer *tm)
+>  {
+>         timer_clock = clk_get(NULL, TMU_CHANNEL);
+>
+> -       if (timer_clock == NULL)
+> +       if (IS_ERR(timer_clock))
+>                 return -1;
+>
+>         if (tmu2_register_user(stmmac_timer_handler, (void *)dev) < 0) {
+> --
+> 1.7.3.4
+>
