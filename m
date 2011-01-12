@@ -1,73 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab1ALPTo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 10:19:44 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47234 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753784Ab1ALPTn (ORCPT
+	id S1754916Ab1ALPTu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 10:19:50 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:55749 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754829Ab1ALPTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 10:19:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=LpqKPUuE6j/YowQmAnEUTel6A7nKu8kZCI/lhXUGno4206VO6y5FwAWtLwKwTjMcLh
-         ch6S9oB3Q9dskNe9OInkEjDkh5+b3IO6lMolbjVUZZdogmvsjW03JByeh81RUr5Cfi00
-         o+1R+PMg4rnFuKz20ZgvNvmMxnZ38HuqXHRKE=
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: linux-fbdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] video: move SH_MIPI_DSI/SH_LCD_MIPI_DSI to the top of menu
-Date: Wed, 12 Jan 2011 18:19:35 +0300
-Message-Id: <1294845575-4508-1-git-send-email-dbaryshkov@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	Wed, 12 Jan 2011 10:19:47 -0500
+From: Eric B Munson <emunson@mgebm.net>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, mel@csn.ul.ie, linux-kernel@vger.kernel.org,
+        Eric B Munson <emunson@mgebm.net>
+Subject: [PATCH] Rename struct task variables from p to tsk
+Date: Wed, 12 Jan 2011 08:19:31 -0700
+Message-Id: <1294845571-11529-1-git-send-email-emunson@mgebm.net>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kconfig entries SH_MIPI_DSI and SH_LCD_MIPI_DSI while being invisible to
-the user, broke the FrameBuffer menu (at least in menuconfig), as they
-aren't depending on respective menuconfig item (FB). In result several
-items got moved to the main "Graphics support" menu. Move these two
-problematic items to the top of drivers/video/Kbuild to restore nice
-display of FB menu.
+p is not a meaningful identifier, this patch replaces all instances
+in page_alloc.c of p when used as a struct task with the more useful
+tsk.
 
-Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Signed-off-by: Eric B Munson <emunson@mgebm.net>
 ---
- drivers/video/Kconfig |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ mm/page_alloc.c |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index 27c1fb4..055e1a7 100644
---- a/drivers/video/Kconfig
-+++ b/drivers/video/Kconfig
-@@ -11,6 +11,13 @@ config HAVE_FB_ATMEL
- config HAVE_FB_IMX
- 	bool
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index ff7e158..acfbb20 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1852,23 +1852,23 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
+ {
+ 	struct page *page = NULL;
+ 	struct reclaim_state reclaim_state;
+-	struct task_struct *p = current;
++	struct task_struct *tsk = current;
+ 	bool drained = false;
  
-+config SH_MIPI_DSI
-+	tristate
-+	depends on (SUPERH || ARCH_SHMOBILE) && HAVE_CLK
-+
-+config SH_LCD_MIPI_DSI
-+	bool
-+
- source "drivers/char/agp/Kconfig"
+ 	cond_resched();
  
- source "drivers/gpu/vga/Kconfig"
-@@ -1898,13 +1905,6 @@ config FB_W100
+ 	/* We now go into synchronous reclaim */
+ 	cpuset_memory_pressure_bump();
+-	p->flags |= PF_MEMALLOC;
++	tsk->flags |= PF_MEMALLOC;
+ 	lockdep_set_current_reclaim_state(gfp_mask);
+ 	reclaim_state.reclaimed_slab = 0;
+-	p->reclaim_state = &reclaim_state;
++	tsk->reclaim_state = &reclaim_state;
  
- 	  If unsure, say N.
+ 	*did_some_progress = try_to_free_pages(zonelist, order, gfp_mask, nodemask);
  
--config SH_MIPI_DSI
--	tristate
--	depends on (SUPERH || ARCH_SHMOBILE) && HAVE_CLK
--
--config SH_LCD_MIPI_DSI
--	bool
--
- config FB_SH_MOBILE_LCDC
- 	tristate "SuperH Mobile LCDC framebuffer support"
- 	depends on FB && (SUPERH || ARCH_SHMOBILE) && HAVE_CLK
+-	p->reclaim_state = NULL;
++	tsk->reclaim_state = NULL;
+ 	lockdep_clear_current_reclaim_state();
+-	p->flags &= ~PF_MEMALLOC;
++	tsk->flags &= ~PF_MEMALLOC;
+ 
+ 	cond_resched();
+ 
+@@ -1932,7 +1932,7 @@ void wake_all_kswapd(unsigned int order, struct zonelist *zonelist,
+ static inline int
+ gfp_to_alloc_flags(gfp_t gfp_mask)
+ {
+-	struct task_struct *p = current;
++	struct task_struct *tsk = current;
+ 	int alloc_flags = ALLOC_WMARK_MIN | ALLOC_CPUSET;
+ 	const gfp_t wait = gfp_mask & __GFP_WAIT;
+ 
+@@ -1954,12 +1954,12 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+ 		 * See also cpuset_zone_allowed() comment in kernel/cpuset.c.
+ 		 */
+ 		alloc_flags &= ~ALLOC_CPUSET;
+-	} else if (unlikely(rt_task(p)) && !in_interrupt())
++	} else if (unlikely(rt_task(tsk)) && !in_interrupt())
+ 		alloc_flags |= ALLOC_HARDER;
+ 
+ 	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
+ 		if (!in_interrupt() &&
+-		    ((p->flags & PF_MEMALLOC) ||
++		    ((tsk->flags & PF_MEMALLOC) ||
+ 		     unlikely(test_thread_flag(TIF_MEMDIE))))
+ 			alloc_flags |= ALLOC_NO_WATERMARKS;
+ 	}
+@@ -1978,7 +1978,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+ 	int alloc_flags;
+ 	unsigned long pages_reclaimed = 0;
+ 	unsigned long did_some_progress;
+-	struct task_struct *p = current;
++	struct task_struct *tsk = current;
+ 
+ 	/*
+ 	 * In the slowpath, we sanity check order to avoid ever trying to
+@@ -2034,7 +2034,7 @@ rebalance:
+ 		goto nopage;
+ 
+ 	/* Avoid recursion of direct reclaim */
+-	if (p->flags & PF_MEMALLOC)
++	if (tsk->flags & PF_MEMALLOC)
+ 		goto nopage;
+ 
+ 	/* Avoid allocations with no watermarks from looping endlessly */
+@@ -2108,7 +2108,7 @@ nopage:
+ 	if (!(gfp_mask & __GFP_NOWARN) && printk_ratelimit()) {
+ 		printk(KERN_WARNING "%s: page allocation failure."
+ 			" order:%d, mode:0x%x\n",
+-			p->comm, order, gfp_mask);
++			tsk->comm, order, gfp_mask);
+ 		dump_stack();
+ 		show_mem();
+ 	}
 -- 
-1.7.2.3
+1.7.1
 
