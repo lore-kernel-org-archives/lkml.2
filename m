@@ -1,92 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255Ab1ALTrQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 14:47:16 -0500
-Received: from mtoichi13.ns.itscom.net ([219.110.2.183]:45501 "EHLO
-	mtoichi13.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171Ab1ALTrP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 14:47:15 -0500
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-To: Nick Piggin <npiggin@gmail.com>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: vfs-scale, chroot
-Date: Thu, 13 Jan 2011 04:47:10 +0900
-Message-ID: <29345.1294861630@jrobl>
+	id S932352Ab1ALTsT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 14:48:19 -0500
+Received: from mail.us.es ([193.147.175.20]:38528 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755836Ab1ALTsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 14:48:18 -0500
+Message-ID: <4D2E057D.30707@netfilter.org>
+Date: Wed, 12 Jan 2011 20:48:13 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100619 Icedove/3.0.5
+MIME-Version: 1.0
+To: Valdis.Kletnieks@vt.edu
+CC: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: XT_MATCH_REALM Kconfig whinge...
+References: <20519.1294859715@localhost>
+In-Reply-To: <20519.1294859715@localhost>
+X-Enigmail-Version: 1.0.1
+Content-Type: multipart/mixed;
+ boundary="------------040802060206090200020108"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a multi-part message in MIME format.
+--------------040802060206090200020108
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-Hello Nick,
+On 12/01/11 20:15, Valdis.Kletnieks@vt.edu wrote:
+> scripts/kconfig/conf --silentoldconfig Kconfig
+> warning: (NETFILTER_XT_MATCH_REALM) selects NET_CLS_ROUTE which has unmet direct dependencies (NET && NET_SCHED)
+> warning: (NETFILTER_XT_MATCH_REALM) selects NET_CLS_ROUTE which has unmet direct dependencies (NET && NET_SCHED)
 
-I've got a crash around d_lock.
+Does this fix your problem?
 
-# mount -t nfs host:/dir /nfs
-# chroot /nfs
+--------------040802060206090200020108
+Content-Type: text/x-patch;
+ name="realm.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="realm.patch"
 
-BUG: spinlock recursion on CPU#1, chroot/2524
- lock: ffff88001d106880, .magic: dead4ead, .owner: chroot/2524, .owner_cpu: 1
-Call Trace:
- [<ffffffff8128ca52>] ? spin_bug+0xa2/0xf0
- [<ffffffff8128cd53>] ? do_raw_spin_lock+0x193/0x1b0
- [<ffffffff814eaa5e>] ? _raw_spin_lock_nested+0x4e/0x60
- [<ffffffff81137aef>] ? nameidata_dentry_drop_rcu+0xcf/0x1b0
- [<ffffffff814eaab3>] ? _raw_spin_lock+0x43/0x50
- [<ffffffff81137aef>] ? nameidata_dentry_drop_rcu+0xcf/0x1b0
- [<ffffffff81137c1b>] ? d_revalidate+0x4b/0x70
- [<ffffffff81139a75>] ? link_path_walk+0x655/0x1210
- [<ffffffff81138702>] ? path_init_rcu+0x1c2/0x370
- [<ffffffff811387e5>] ? path_init_rcu+0x2a5/0x370
- [<ffffffff81138702>] ? path_init_rcu+0x1c2/0x370
- [<ffffffff811059b3>] ? might_fault+0x53/0xb0
- [<ffffffff8113a9fe>] ? do_path_lookup+0x8e/0x1d0
- [<ffffffff8113b936>] ? user_path_at+0xa6/0xe0
- [<ffffffff8114c167>] ? vfsmount_lock_local_unlock+0x77/0x90
- [<ffffffff814ebab9>] ? retint_swapgs+0x13/0x1b
- [<ffffffff81090b15>] ? trace_hardirqs_on_caller+0x145/0x190
- [<ffffffff8112841e>] ? sys_chdir+0x2e/0x90
- [<ffffffff8100bfd2>] ? system_call_fastpath+0x16/0x1b
+netfilter: xt_realm: fix unmet direct dependencies
 
-It looks like nameidata_dentry_drop_rcu() is trying spin_lock() twice
-for the same dentry when parent == dentry.
+scripts/kconfig/conf --silentoldconfig Kconfig
+warning: (NETFILTER_XT_MATCH_REALM) selects NET_CLS_ROUTE which has unmet direct dependencies (NET && NET_SCHED)
+warning: (NETFILTER_XT_MATCH_REALM) selects NET_CLS_ROUTE which has unmet direct dependencies (NET && NET_SCHED)
 
-- NFS ->d_revalidate() returns -ECHILD for LOOKUP_RCU
-- VFS d_revalidate() will try ->d_revalidate() again after dropping
-  LOOKUP_RCU by nameidata_dentry_drop_rcu().
-- nameidata_dentry_drop_rcu() calls
-	spin_lock(&parent->d_lock);
-	spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
-- it may happen on all fs which specifies FS_REVAL_DOT
+Reported by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 
-If we have a function like below, it may be useful.
-But are there so many cases like this problem?
-If it is not so many, then the fix will be adding several
-"if (!IS_ROOT(dentry)" into nameidata_dentry_drop_rcu(), I think.
+diff --git a/net/netfilter/Kconfig b/net/netfilter/Kconfig
+index 1534f2b..ae56764 100644
+--- a/net/netfilter/Kconfig
++++ b/net/netfilter/Kconfig
+@@ -886,7 +886,8 @@ config NETFILTER_XT_MATCH_RATEEST
+ config NETFILTER_XT_MATCH_REALM
+ 	tristate  '"realm" match support'
+ 	depends on NETFILTER_ADVANCED
+-	select NET_CLS_ROUTE
++	depends on NET_SCHED
++	depends on NET_CLS_ROUTE
+ 	help
+ 	  This option adds a `realm' match, which allows you to use the realm
+ 	  key from the routing subsystem inside iptables.
 
-int d_lock_parent_child(parent, child)
-{
-	err = Success;
-	spin_lock(&parent->d_lock);
-	if (!IS_ROOT(dentry)) {
-		spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
-		if (unlikely(parent != dentry->d_parent)) {
-			spin_unlock(&parent->d_lock);
-			err = Error_Unmatch;
-		}
-	} else
-		err = Success_Root;
-	return err;
-}
-
-void d_unlock_parent_child(int stat, parent, child)
-{
-	Assert(stat == Error_Unmatch);
-	if (stat == Success)
-		spin_unlock(&dentry->d_lock);
-	spin_unlock(&parent->d_lock);
-}
-
-
-J. R. Okajima
+--------------040802060206090200020108--
