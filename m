@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524Ab1ALV3t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 16:29:49 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33288 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756406Ab1ALV3s convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 16:29:48 -0500
+	id S1756514Ab1ALVfw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 16:35:52 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:46823 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755645Ab1ALVfu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 16:35:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=QTf9iYqalCVuZKYQIE0CFMtZsWdf93c1BHLucCF9cBEgycf/R8cqLDxwO2HceDS6ut
+         SZHb8RQsFlcCWm3i1TeQ4vAxXtaVgEe/KNai7C9jlA8ZgnQWkroIlxNb+QRsT6C3pk5y
+         n5fpS2scIEmQ1LwkaVgExK3BZWHRQAveTb2Iw=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinSygbLm=nmXy_Wf2ENV8WcQqCc0BKAAOsysvZd@mail.gmail.com>
-References: <alpine.DEB.2.00.1101120601100.6210@skynet.skynet.ie>
- <AANLkTimgs8UfGWk5PCZi4PM5SsvejJd5Y4bb3nHGyZy2@mail.gmail.com>
- <20110112114649.5365d518@jbarnes-desktop> <AANLkTinSygbLm=nmXy_Wf2ENV8WcQqCc0BKAAOsysvZd@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 12 Jan 2011 13:28:53 -0800
-Message-ID: <AANLkTimSKOa8XavLn_RsLZ2scZ=ujdYahcTkeJ2pxBFq@mail.gmail.com>
-Subject: Re: [git pull] drm intel only fixes
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
-        linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Wed, 12 Jan 2011 13:35:29 -0800
+Message-ID: <AANLkTinC=i24FaOtB3srbCUROza1V2TQ0zxNMq+QH+mj@mail.gmail.com>
+Subject: Power plug off / on - EXT4-fs (sda1): re-mounted. Opts: errors=remount-ro,commit=600
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 12:27 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wed, Jan 12, 2011 at 11:46 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
->>
->> Since I doubt we're actually offloading to our video decode kernels for
->> Flash video on your machine
->
-> It's the latest 64-bit beta flash player, so maybe it does use hw acceleration.
->
->
->>                       it could very well be a memory bw issue.
->> Can you try this small patch to see if one of the low power watermarks
->> is giving you trouble (note: cut & pasted)?
->
-> No difference.
+When I yank my power chord off of my Thinkpad T61 running 2.6.37 I get
+the following:
 
-Oh, and I'm also seeing corruption on my sandybridge machine. No video
-involved, the gdm login screen is already corrupted this way. Similar
-odd shifted lines etc, so I'd assume it's related.
+[   79.523778] Monitor-Mwait will be used to enter C-3 state
+[   81.195402] EXT4-fs (sda1): re-mounted. Opts: errors=remount-ro,commit=600
 
-                            Linus
+mcgrof@tux ~ $ mount| grep sda1
+/dev/sda1 on / type ext4 (rw,errors=remount-ro,commit=600)
+
+When I plug the power chord it back in I get:
+
+[  216.185265] EXT4-fs (sda1): re-mounted. Opts: errors=remount-ro,commit=0
+
+mcgrof@tux ~ $ mount | grep sda1
+/dev/sda1 on / type ext4 (rw,errors=remount-ro,commit=0)
+
+Is this to be expected?
+
+  Luis
