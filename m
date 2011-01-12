@@ -1,103 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252Ab1ALQaT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 11:30:19 -0500
-Received: from mail.mnsspb.ru ([84.204.75.2]:49855 "EHLO mail.mnsspb.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754552Ab1ALQaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 11:30:14 -0500
-Date: Wed, 12 Jan 2011 19:31:32 +0300
-From: Kirill Smelkov <kirr@mns.spb.ru>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
+	id S1755313Ab1ALQah (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 11:30:37 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:35952 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753484Ab1ALQag (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 11:30:36 -0500
+Date: Wed, 12 Jan 2011 14:30:22 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Kirill Smelkov <kirr@mns.spb.ru>, Frederic Weisbecker <fweisbec@gmail.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>
 Subject: Re: Q: perf log mode?
-Message-ID: <20110112163131.GA2924@tugrik.mns.mnsspb.ru>
-References: <20110112140613.GA11698@tugrik.mns.mnsspb.ru> <20110112152112.GE11968@ghostprotocols.net>
+Message-ID: <20110112163022.GF11968@ghostprotocols.net>
+References: <20110112140613.GA11698@tugrik.mns.mnsspb.ru> <1294841288.19601.49.camel@laptop> <20110112144240.GA1755@nowhere> <20110112145936.GA13992@tugrik.mns.mnsspb.ru> <1294844553.19601.53.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110112152112.GE11968@ghostprotocols.net>
-Organization: Marine Bridge & Navigation Systems
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1294844553.19601.53.camel@laptop>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 01:21:12PM -0200, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Jan 12, 2011 at 05:06:13PM +0300, Kirill Smelkov escreveu:
-> > I'm trying to use perf together with e.g. kprobes as a tool to show what
-> > is happening with my system in "live-log" mode. The problem is, for
-> > seldom events, actual info output is largely delayed because perf reads
-> > sample data in whole pages. Could something be done with it or am I'm
-> > missing something? Here is detailed description:
-> 
-> <SNIP>
+Em Wed, Jan 12, 2011 at 04:02:33PM +0100, Peter Zijlstra escreveu:
+> On Wed, 2011-01-12 at 17:59 +0300, Kirill Smelkov wrote:
 > > 
-> > Judging from timestamps, the events were coming with 1-2 seconds period
-> > (ping <host> running) and for e.g. first event we got 96-43=53 seconds
-> > delay (which is happening already at `perf record` stage -- I've
-> > monitored it's raw output).
+> > Anyway, maybe something like this could be useful?
 > > 
-> > Is it somehow possible to display events instantly as they are coming?
-> 
-> Look at how perf top works:
-> 
->         while (1) {
->                 int hits = samples;
-> 
->                 perf_session__mmap_read(session);
-> 
->                 if (hits == samples)
->                         ret = poll(evsel_list->pollfd, evsel_list->nr_fds, 100);
->         }
-> 
-> It will only call poll if no events were found so there
-> should be no delays.
-  ^^^^^^^^^^^^^^^^^^^
+> I guess that would be ok, but I'll leave that to Arnaldo.
 
-Hmm, if I understand it correctly, initially right after start,
-perf-record sees no events, goes to poll, and then we are sleeping there
-until the kernel will wake up us. As Peter pointed it, there are
-parameters which control wakeup rule, and for "wakeup immediately" we
-have to tune them.
+It is OK, I'll apply it to my perf/core, for the next merge window.
+ 
+> Also note that Arnaldo is revamping the whole script interface to make
+> it possible to open and use the perf fds from the script language itself
+> (the only sane way), completely removing the dependency on perf-record.
 
-I'm maybe wrong here, since I have only brief picture about how things
-work, but anyway...
+Yep, I'm librarising the ad-hoc counter creation routines we have in
+stat, top and record, factoring the common parts, etc, and creating
+'perf test' regression test routines for these new library functions.
 
-> perf script instead uses perf_session__process_events() and that, as
-> requested by 'perf script' queues events to make sure they are ordered,
-> so probably the problem is related to this latency, probably we'll need
-> to use some timer to flush this queue more often.
-> 
-> Try tweaking:
-> 
->         .ordering_requires_timestamps = true,
->         .ordered_samples = true,
-> 
-> in builtin-script.c, if you disable those there should be no queueing
-> and we'll test this theory.
-> 
-> Also try checking if there isn't any buffering in action because it uses
-> pipes to connect the record with the python script by printing the event
-> as it comes in the record part.
+After I finish the mmap bits, which should be soon, I'll start work on
+having a python binding for these routines and experiment plugging it to
+some other projects I worked on.
 
-As I wrote in my first mail, maybe a bit not explicitly (sorry then), the
-latency is introduced in perf-record. I'm telling this because I've
-visually monitored perf-record output to console (yes, binary output,
-but it does not matter) to see whether there is output progress at all.
+I'll also work on converting a few of the scripts we have to provide
+examples of use of this python binding.
 
-After initial startup there was no progress for long time and then bunch
-of data after 30-40 seconds.
+Other bindings and a C library can come later, after we settle on an API
+using the python binding as the guinea pig.
 
+Parts of this got into this merge window, for instance, perf stat uses
+the perf_evsel api to open and read counters, and perf test has new
+routines to stress them, new stuff I'm stashing at the perf/test branch
+in:
 
-And with the patch posted inline within reply-to-Peter mail, the delay
-goes away, so could you please consider applying it?
+http://git.kernel.org/?p=linux/kernel/git/acme/linux-2.6.git;a=shortlog;h=refs/heads/perf/test
 
-
-Thanks,
-Kirill
+- Arnaldo
