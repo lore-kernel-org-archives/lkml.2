@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755864Ab1ALXDy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 18:03:54 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:44663 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741Ab1ALXDw (ORCPT
+	id S1755907Ab1ALXFX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 18:05:23 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:44141 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752297Ab1ALXFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 18:03:52 -0500
+	Wed, 12 Jan 2011 18:05:20 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=GgtQGmo1lwfuVnIzKbE9PSTpRSnMPYKjEM+Rvds4s3Amm/eFBQNIsXoz4NcB/LSxTv
-         hTErsOHlTj8AXC6jtbApMnzjvbyZb2IPwxDhO9pl7QAuyCaQe2gj0Ubo75F4FFJhXRbA
-         ROZ6kDGKsOgsSmeOISCD20mpIoAgpeJJvtNsg=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vR5jSxDLFcyVMMJUcAELq+crbsK2eq26aS24oZx4SJfZ5ju/BfPC5TZewCbEOcxcic
+         COoCF1/yaix+hLbyyNNj7lef3Ln8muLFb1mX5Z9VU7Boe+p5NSPWfhbBubz3QbDTOQ2T
+         NbdAElCz7Zer7w1gfc2BtKS5reEUeP8rMsmSk=
+Date: Wed, 12 Jan 2011 15:05:14 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Power plug off / on - EXT4-fs (sda1): re-mounted. Opts:
+ errors=remount-ro,commit=600
+Message-ID: <20110112230513.GA9661@core.coreip.homeip.net>
+References: <AANLkTinC=i24FaOtB3srbCUROza1V2TQ0zxNMq+QH+mj@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1101122135070.22297@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1101122135070.22297@swampdragon.chaosbits.net>
-Date: Thu, 13 Jan 2011 08:03:51 +0900
-Message-ID: <AANLkTinqVZhUWqxJEOcC-j5ZPuU7ZVRnqSo_FoQ1DCs6@mail.gmail.com>
-Subject: Re: [PATCH] mm: Remove two memset calls in mm/memcontrol.c by using
- the zalloc variants of alloc functions
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-mm@kvack.org, Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Pavel Emelianov <xemul@openvz.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinC=i24FaOtB3srbCUROza1V2TQ0zxNMq+QH+mj@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 5:39 AM, Jesper Juhl <jj@chaosbits.net> wrote:
-> We can avoid two calls to memset() in mm/memcontrol.c by using
-> kzalloc_node(), kzalloc & vzalloc().
->
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+On Wed, Jan 12, 2011 at 01:35:29PM -0800, Luis R. Rodriguez wrote:
+> When I yank my power chord off of my Thinkpad T61 running 2.6.37 I get
+> the following:
+> 
+> [   79.523778] Monitor-Mwait will be used to enter C-3 state
+> [   81.195402] EXT4-fs (sda1): re-mounted. Opts: errors=remount-ro,commit=600
+> 
+> mcgrof@tux ~ $ mount| grep sda1
+> /dev/sda1 on / type ext4 (rw,errors=remount-ro,commit=600)
+> 
+> When I plug the power chord it back in I get:
+> 
+> [  216.185265] EXT4-fs (sda1): re-mounted. Opts: errors=remount-ro,commit=0
+> 
+> mcgrof@tux ~ $ mount | grep sda1
+> /dev/sda1 on / type ext4 (rw,errors=remount-ro,commit=0)
+> 
+> Is this to be expected?
+> 
+
+FWIW I do not observe anything like this on Dell Latitude d630.
 
 -- 
-Kind regards,
-Minchan Kim
+Dmitry
