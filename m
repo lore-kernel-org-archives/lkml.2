@@ -1,155 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932670Ab1ALAGW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 19:06:22 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41670 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756390Ab1ALAGT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 19:06:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=p47bRqmhximr5ppsLc5wimcubj0JuXWRbUlwtEWmvibe58UaYGbVvD9m7gPYJmlXj3
-         SPxQu7OkB3iY/BtGirVNaWjY/G+QRflvHqx+ize3XSK9o0eHYdCt9uSAZdPE2JeBgDP1
-         bGf4C61LK1aw26M8uhj6N5YgPP+QA/B+hToQk=
-Date: Wed, 12 Jan 2011 01:06:12 +0100
-From: Lutz Ballaschke <vegan.grindcore@googlemail.com>
-To: me@mortis.eu
-Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv4] watchdog: f71808e_wdt: add support for the F71862FG
-Message-ID: <20110112000612.GA9517@kreios.titan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932681Ab1ALAR3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 19:17:29 -0500
+Received: from gate.crashing.org ([63.228.1.57]:60028 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756405Ab1ALAR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 19:17:27 -0500
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 Jan 2011 11:16:44 +1100
+Message-ID: <1294791404.9586.10.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Lutz Ballaschke <vegan.grindcore@googlemail.com>
----
+Hi Linus !
 
- drivers/watchdog/Kconfig       |    4 +-
- drivers/watchdog/f71808e_wdt.c |   53 +++++++++++++++++++++++++++++++++++++--
- 2 files changed, 52 insertions(+), 5 deletions(-)
+Here's the powerpc bunch for this merge window. Small this time, looks
+like Kumar was too busy with holidays to send me anything from freescale
+this time around.
 
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index a5ad77e..b259ff8 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -409,11 +409,11 @@ config ALIM7101_WDT
- 	  Most people will say N.
- 
- config F71808E_WDT
--	tristate "Fintek F71808E, F71882FG and F71889FG Watchdog"
-+	tristate "Fintek F71808E, F71862FG, F71882FG and F71889FG Watchdog"
- 	depends on X86 && EXPERIMENTAL
- 	help
- 	  This is the driver for the hardware watchdog on the Fintek
--	  F71808E, F71882FG and F71889FG Super I/O controllers.
-+	  F71808E, F71862FG, F71882FG and F71889FG Super I/O controllers.
- 
- 	  You can compile this driver directly into the kernel, or use
- 	  it as a module.  The module will be called f71808e_wdt.
-diff --git a/drivers/watchdog/f71808e_wdt.c b/drivers/watchdog/f71808e_wdt.c
-index 65e5796..afec8d8 100644
---- a/drivers/watchdog/f71808e_wdt.c
-+++ b/drivers/watchdog/f71808e_wdt.c
-@@ -42,6 +42,11 @@
- #define SIO_REG_DEVID		0x20	/* Device ID (2 bytes) */
- #define SIO_REG_DEVREV		0x22	/* Device revision */
- #define SIO_REG_MANID		0x23	/* Fintek ID (2 bytes) */
-+#define SIO_REG_ROM_ADDR_SEL	0x27	/* ROM address select */
-+#define SIO_REG_MFUNCT1		0x29	/* Multi function select 1 */
-+#define SIO_REG_MFUNCT2		0x2a	/* Multi function select 2 */
-+#define SIO_REG_MFUNCT3		0x2b	/* Multi function select 3 */
-+#define SIO_REG_MFUNCT4		0x2c	/* Multi function select 4 */
- #define SIO_REG_ENABLE		0x30	/* Logical device enable */
- #define SIO_REG_ADDR		0x60	/* Logical device address (2 bytes) */
- 
-@@ -70,6 +75,8 @@
- #define WATCHDOG_MAX_TIMEOUT	(60 * 255)
- #define WATCHDOG_PULSE_WIDTH	125	/* 125 ms, default pulse width for
- 					   watchdog signal */
-+#define WATCHDOG_F71862FG_PIN	63	/* default watchdog reset output
-+					   pin number 63 */
- 
- static unsigned short force_id;
- module_param(force_id, ushort, 0);
-@@ -89,6 +96,12 @@ MODULE_PARM_DESC(pulse_width,
- 	"Watchdog signal pulse width. 0(=level), 1 ms, 25 ms, 125 ms or 5000 ms"
- 			" (default=" __MODULE_STRING(WATCHDOG_PULSE_WIDTH) ")");
- 
-+static unsigned int f71862fg_pin = WATCHDOG_F71862FG_PIN;
-+module_param(f71862fg_pin, uint, 0);
-+MODULE_PARM_DESC(f71862fg_pin,
-+	"Watchdog f71862fg reset output pin configuration. Choose pin 56 or 63"
-+			" (default=" __MODULE_STRING(WATCHDOG_F71862FG_PIN)")");
-+
- static int nowayout = WATCHDOG_NOWAYOUT;
- module_param(nowayout, bool, 0444);
- MODULE_PARM_DESC(nowayout, "Disable watchdog shutdown on close");
-@@ -282,6 +295,34 @@ exit_unlock:
- 	return err;
- }
- 
-+/*
-+ *      f71862fg_pin_configure:
-+ *      @ioaddr: system I/O-port address to access superio
-+ *
-+ *      The F71862FG chip provides two different pins which can be used
-+ *      as watchdog reset output. Pin dependent configuration is done here.
-+ *      NOTE: When ioaddr is non-zero the calling function has to take care of
-+ *      mutex handling and superio preparation!
-+ */
-+static int f71862fg_pin_configure(unsigned short ioaddr)
-+{
-+	if (f71862fg_pin == 63) {
-+		if (ioaddr) {
-+			/* SPI must be disabled first to use this pin! */
-+			superio_clear_bit(ioaddr, SIO_REG_ROM_ADDR_SEL, 6);
-+			superio_set_bit(ioaddr, SIO_REG_MFUNCT3, 4);
-+		}
-+	} else if (f71862fg_pin == 56) {
-+		if (ioaddr)
-+			superio_set_bit(ioaddr, SIO_REG_MFUNCT1, 1);
-+	} else {
-+		printk(KERN_ERR DRVNAME ": Invalid argument f71862fg_pin=%d\n",
-+				f71862fg_pin);
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+
- static int watchdog_start(void)
- {
- 	/* Make sure we don't die as soon as the watchdog is enabled below */
-@@ -303,6 +344,12 @@ static int watchdog_start(void)
- 		superio_clear_bit(watchdog.sioaddr, 0x2b, 3);
- 		break;
- 
-+	case f71862fg:
-+		err = f71862fg_pin_configure(watchdog.sioaddr);
-+		if (err)
-+			goto exit_superio;
-+		break;
-+
- 	case f71882fg:
- 		/* Set pin 56 to WDTRST# */
- 		superio_set_bit(watchdog.sioaddr, 0x29, 1);
-@@ -718,9 +765,9 @@ static int __init f71808e_find(int sioaddr)
- 		watchdog.type = f71889fg;
- 		break;
- 	case SIO_F71862_ID:
--		/* These have a watchdog, though it isn't implemented (yet). */
--		err = -ENOSYS;
--		goto exit;
-+		watchdog.type = f71862fg;
-+		err = f71862fg_pin_configure(0); /* validate module parameter */
-+		break;
- 	case SIO_F71858_ID:
- 		/* Confirmed (by datasheet) not to have a watchdog. */
- 		err = -ENODEV;
+There's some rework & cleanup of our nvram code, some support for the
+POWER7+ processors, various iommu cleanups, etc... in terms of features,
+we can note the support for some of IBM System P energy management and
+VPHN feature which improves NUMA topology informations under our
+hypervisor.
+
+The following changes since commit 5b2eef966cb2ae307aa4ef1767f7307774bc96ca:
+
+  Merge branch 'drm-core-next' of git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6 (2011-01-10 17:11:39 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git next
+
+Anatolij Gustschin (1):
+      powerpc/5xxx: extend mpc8xxx_gpio driver to support mpc512x gpios
+
+Andreas Schwab (2):
+      powerpc: Fix PPC_PTRACE_SETHWDEBUG on PPC_BOOK3S
+      powerpc: Update compat_arch_ptrace
+
+Anton Blanchard (5):
+      powerpc: Add support for popcnt instructions
+      powerpc/kdump: Override crash_free_reserved_phys_range to avoid freeing RTAS
+      powerpc: Hardcode popcnt instructions for old assemblers
+      powerpc: Fix incorrect comment about interrupt stack allocation
+      powerpc: iommu: Add device name to iommu error printks
+
+Benjamin Herrenschmidt (16):
+      powerpc/nvram: Move things out of asm/nvram.h
+      powerpc/nvram: More flexible nvram_create_partition()
+      powerpc/nvram: nvram_create_partitions() now uses bytes
+      powerpc/nvram: Ensure that the partition header/block size is right
+      powerpc/nvram: Completely clear a new partition
+      powerpc/nvram: Shuffle code around in nvram_create_partition()
+      powerpc/nvram: Improve partition removal
+      powerpc/nvram: Add nvram_find_partition()
+      powerpc/nvram: Change nvram_setup_partition() to use new helper
+      powerpc/nvram: Move the log partition stuff to pseries
+      powerpc/nvram: Rename ppc64,linux partition to ibm,rtas-log
+      Merge branch 'nvram' into next
+      Merge remote branch 'jwb/next' into next
+      powerpc/pseries: Pass phb only to iommu_table_setparms_lpar
+      Merge remote branch 'gcl/next' into next
+      powerpc/pseries: Fix build of topology stuff without CONFIG_NUMA
+
+Christian Dietrich (1):
+      powerpc: Removing undead ifdef __KERNEL__
+
+FUJITA Tomonori (1):
+      powerpc: enable ARCH_DMA_ADDR_T_64BIT with ARCH_PHYS_ADDR_T_64BIT
+
+Grant Likely (1):
+      Merge v2.6.37-rc8 into powerpc/next
+
+Heiko Schocher (1):
+      powerpc/time: printk time stamp init not correct
+
+Ilya Yanok (6):
+      powerpc/512x: scatter/gather dma fix
+      powerpc/512x: fix the hanged dma transfer issue
+      powerpc/512x: add MPC8308 dma support
+      powerpc/512x: try to free dma descriptors in case of allocation failure
+      powerpc/83xx: add DMA controller to mpc8308 device-tree node
+      powerpc/83xx: add mpc8308_p1m DMA controller device-tree node
+
+Jesper Juhl (3):
+      powerpc/cell: Use vzalloc rather than vmalloc and memset in spu_alloc_lscsa_std
+      powerpc/iseries: Remove unused mf_getSrcHistory function and caller.
+      powerpc: Remove unnecessary casts of void ptr
+
+Jesse Larrew (4):
+      powerpc: Add VPHN firmware feature
+      powerpc/pseries: Poll VPA for topology changes and update NUMA maps
+      powerpc: Disable VPHN polling during a suspend operation
+      powerpc/pseries: Fix VPHN build errors on non-SMP systems
+
+Jim Keniston (2):
+      powerpc/nvram: Fix NVRAM partition list setup
+      powerpc/nvram: Handle partition names >= 12 chars
+
+Joe Perches (2):
+      drivers/char/hvc_vio: Use static const char arrays
+      powerpc/pci: Use printf extension %pR for struct resource
+
+Lennert Buytenhek (1):
+      powerpc: Fix two typos in Documentation/powerpc/booting-without-of.txt
+
+Marc Zyngier (1):
+      powerpc/powermac: Make auto-loading of therm_pm72 possible
+
+Michael Ellerman (2):
+      powerpc: Consolidate obj-y assignments
+      powerpc: Record vma->phys_addr in ioremap()
+
+Michael Neuling (4):
+      powerpc: Remove unneeded cpu_setup/restore from POWER7 cputable entry
+      powerpc: Remove POWER6 oprofile workarounds for POWER7
+      powerpc: Add POWER7+ cputable entry
+      powerpc/mm: Avoid avoidable void* pointer
+
+Nishanth Aravamudan (11):
+      powerpc/vio: Use dma ops helpers
+      powerpc/pasemi: Clean up pasemi iommu table initializations
+      powerpc/cell: Beat dma ops cleanup
+      powerpc/dart: iommu table cleanup
+      powerpc/pseries: iommu cleanup
+      powerpc/macio: Ensure all dma routines get copied over
+      powerpc: Add memory_hotplug_max()
+      powerpc/iommu: Use coherent_dma_mask for alloc_coherent
+      powerpc/pseries: Do not search for dma-window property on dlpar remove
+      powerpc/pseries: Checking for pdn->parent is redundant
+      powerpc/pseries: Do not need to check for dma_window == NULL
+
+Sebastian Siewior (1):
+      of/address: Use propper endianess in get_flags
+
+Sonny Rao (2):
+      Powerpc: separate CONFIG_RELOCATABLE from CONFIG_CRASHDUMP in boot code
+      powerpc: Minor cleanups for machdep.h
+
+Srikanth Krishnakar (1):
+      rtc-cmos.c : Fix warning on PowerPC
+
+Stephen Rothwell (1):
+      powerpc: Remove second definition of STACK_FRAME_OVERHEAD
+
+Tracey Dent (1):
+      powerpc/ps3: Replace the use of <module>-objs with <module>-y
+
+Vaidyanathan Srinivasan (2):
+      powerpc: Cleanup APIs for cpu/thread/core mappings
+      powerpc: Add support for new hcall H_BEST_ENERGY
+
+Victor Gallardo (3):
+      powerpc/4xx: Add suspend and idle support
+      powerpc/4xx: Add Kilauea suspend and idle support
+      powerpc/4xx: Add Canyonlands suspend and idle support
+
+Will Schmidt (1):
+      powerpc/pseries: Add kernel parameter to disable batched hcalls
+
+ Documentation/kernel-parameters.txt             |    8 +
+ Documentation/powerpc/booting-without-of.txt    |    4 +-
+ Documentation/powerpc/dts-bindings/4xx/cpm.txt  |   52 +++
+ arch/powerpc/Kconfig                            |   16 +-
+ arch/powerpc/boot/dts/canyonlands.dts           |   31 +-
+ arch/powerpc/boot/dts/kilauea.dts               |    9 +
+ arch/powerpc/boot/dts/mpc8308_p1m.dts           |    8 +
+ arch/powerpc/boot/dts/mpc8308rdb.dts            |    8 +
+ arch/powerpc/configs/40x/kilauea_defconfig      |    5 +
+ arch/powerpc/configs/44x/canyonlands_defconfig  |    3 +
+ arch/powerpc/include/asm/bitops.h               |    9 +
+ arch/powerpc/include/asm/cputable.h             |    9 +-
+ arch/powerpc/include/asm/cputhreads.h           |   15 +-
+ arch/powerpc/include/asm/device.h               |    6 +
+ arch/powerpc/include/asm/firmware.h             |    3 +-
+ arch/powerpc/include/asm/hvcall.h               |    4 +-
+ arch/powerpc/include/asm/lppaca.h               |    5 +-
+ arch/powerpc/include/asm/machdep.h              |    6 +-
+ arch/powerpc/include/asm/mmzone.h               |    5 +
+ arch/powerpc/include/asm/nvram.h                |   52 +--
+ arch/powerpc/include/asm/ppc-opcode.h           |    8 +
+ arch/powerpc/include/asm/processor.h            |    2 -
+ arch/powerpc/include/asm/prom.h                 |    2 +-
+ arch/powerpc/include/asm/topology.h             |   15 +-
+ arch/powerpc/include/asm/vdso_datapage.h        |    2 -
+ arch/powerpc/kernel/Makefile                    |    9 +-
+ arch/powerpc/kernel/asm-offsets.c               |    1 -
+ arch/powerpc/kernel/cputable.c                  |   22 +-
+ arch/powerpc/kernel/crash_dump.c                |   33 ++
+ arch/powerpc/kernel/dma-iommu.c                 |    2 +-
+ arch/powerpc/kernel/entry_32.S                  |    1 +
+ arch/powerpc/kernel/exceptions-64s.S            |    1 +
+ arch/powerpc/kernel/fpu.S                       |    1 +
+ arch/powerpc/kernel/head_40x.S                  |    1 +
+ arch/powerpc/kernel/head_44x.S                  |    1 +
+ arch/powerpc/kernel/head_64.S                   |    7 +-
+ arch/powerpc/kernel/head_8xx.S                  |    1 +
+ arch/powerpc/kernel/head_fsl_booke.S            |    1 +
+ arch/powerpc/kernel/iommu.c                     |   14 +-
+ arch/powerpc/kernel/misc.S                      |    5 -
+ arch/powerpc/kernel/misc_32.S                   |    1 +
+ arch/powerpc/kernel/misc_64.S                   |    1 +
+ arch/powerpc/kernel/nvram_64.c                  |  481 ++++++++---------------
+ arch/powerpc/kernel/pci_64.c                    |    3 +-
+ arch/powerpc/kernel/ppc_ksyms.c                 |    7 +
+ arch/powerpc/kernel/ppc_save_regs.S             |    1 +
+ arch/powerpc/kernel/ptrace.c                    |   22 +-
+ arch/powerpc/kernel/ptrace32.c                  |    7 +
+ arch/powerpc/kernel/rtas.c                      |    3 +
+ arch/powerpc/kernel/setup_64.c                  |    4 +-
+ arch/powerpc/kernel/smp.c                       |   19 +-
+ arch/powerpc/kernel/time.c                      |    2 +-
+ arch/powerpc/kernel/vector.S                    |    1 +
+ arch/powerpc/kernel/vio.c                       |   15 +-
+ arch/powerpc/lib/Makefile                       |    2 +-
+ arch/powerpc/lib/hweight_64.S                   |  110 +++++
+ arch/powerpc/mm/hash_utils_64.c                 |    2 +-
+ arch/powerpc/mm/mmu_context_nohash.c            |   12 +-
+ arch/powerpc/mm/numa.c                          |  311 ++++++++++++++-
+ arch/powerpc/mm/pgtable_32.c                    |    3 +-
+ arch/powerpc/mm/pgtable_64.c                    |    2 +
+ arch/powerpc/platforms/44x/Makefile             |    5 +-
+ arch/powerpc/platforms/Kconfig                  |    7 +-
+ arch/powerpc/platforms/cell/beat_iommu.c        |    3 +-
+ arch/powerpc/platforms/cell/spufs/lscsa_alloc.c |    3 +-
+ arch/powerpc/platforms/chrp/time.c              |    4 +
+ arch/powerpc/platforms/iseries/mf.c             |   62 ---
+ arch/powerpc/platforms/pasemi/iommu.c           |   19 +-
+ arch/powerpc/platforms/powermac/setup.c         |    9 +
+ arch/powerpc/platforms/pseries/Kconfig          |   10 +
+ arch/powerpc/platforms/pseries/Makefile         |    1 +
+ arch/powerpc/platforms/pseries/firmware.c       |    1 +
+ arch/powerpc/platforms/pseries/hvCall.S         |    1 +
+ arch/powerpc/platforms/pseries/iommu.c          |   49 +--
+ arch/powerpc/platforms/pseries/lpar.c           |   12 +
+ arch/powerpc/platforms/pseries/nvram.c          |  205 ++++++++++
+ arch/powerpc/platforms/pseries/pseries_energy.c |  326 +++++++++++++++
+ arch/powerpc/sysdev/Makefile                    |    1 +
+ arch/powerpc/sysdev/dart_iommu.c                |    9 +-
+ arch/powerpc/sysdev/mpc8xxx_gpio.c              |   75 ++++-
+ arch/powerpc/sysdev/ppc4xx_cpm.c                |  346 ++++++++++++++++
+ arch/powerpc/sysdev/tsi108_dev.c                |    8 +-
+ drivers/char/hvc_vio.c                          |    2 +-
+ drivers/dma/Kconfig                             |    2 +-
+ drivers/dma/mpc512x_dma.c                       |  187 ++++++---
+ drivers/macintosh/macio_asic.c                  |    7 +-
+ drivers/macintosh/therm_pm72.c                  |   30 +--
+ drivers/of/address.c                            |   54 ++--
+ drivers/ps3/Makefile                            |    2 +-
+ drivers/rtc/rtc-cmos.c                          |    3 +-
+ include/linux/of_address.h                      |    6 +-
+ 91 files changed, 2103 insertions(+), 742 deletions(-)
+ create mode 100644 Documentation/powerpc/dts-bindings/4xx/cpm.txt
+ create mode 100644 arch/powerpc/lib/hweight_64.S
+ create mode 100644 arch/powerpc/platforms/pseries/pseries_energy.c
+ create mode 100644 arch/powerpc/sysdev/ppc4xx_cpm.c
+
+
