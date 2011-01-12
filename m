@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932735Ab1ALAvV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 19:51:21 -0500
-Received: from mail160.messagelabs.com ([216.82.253.99]:53599 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932715Ab1ALAvS (ORCPT
+	id S1756433Ab1ALAwB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 19:52:01 -0500
+Received: from mms3.broadcom.com ([216.31.210.19]:4812 "EHLO MMS3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756359Ab1ALAwA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 19:51:18 -0500
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-3.tower-160.messagelabs.com!1294793477!8409161!3
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.32]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: David Woodhouse <dwmw2@infradead.org>
-Date: Tue, 11 Jan 2011 18:46:10 -0600
-Subject: [PATCH] mtd_blkdevs: local symbols should be static
-Thread-Topic: [PATCH] mtd_blkdevs: local symbols should be static
-Thread-Index: Acux8hsVXOgyVaITRIq4pEdhos33uw==
-Message-ID: <0D753D10438DA54287A00B027084269764CE0E550B@AUSP01VMBX24.collaborationhost.net>
+	Tue, 11 Jan 2011 19:52:00 -0500
+X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+From: "Jian Peng" <jipeng@broadcom.com>
+To: Harik <harik.attar@gmail.com>
+cc: "Tejun Heo" <tj@kernel.org>, "Robert Hancock" <hancockrwd@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jgarzik@pobox.com" <jgarzik@pobox.com>,
+        ide <linux-ide@vger.kernel.org>
+Date: Tue, 11 Jan 2011 16:51:46 -0800
+Subject: RE: questions regarding possible violation of AHCI spec in AHCI
+ driver
+Thread-Topic: questions regarding possible violation of AHCI spec in
+ AHCI driver
+Thread-Index: Acux8jsJYrRtF5txQi2YnjvBxplanQAAKI6Q
+Message-ID: <E18F441196CA634DB8E1F1C56A50A874319FE61FEE@IRVEXCHCCR01.corp.ad.broadcom.com>
+References: <4CFF58D2.4040006@kernel.org>
+ <E18F441196CA634DB8E1F1C56A50A874319FA38C43@IRVEXCHCCR01.corp.ad.broadcom.com>
+ <4CFFCD56.6050608@kernel.org>
+ <E18F441196CA634DB8E1F1C56A50A874319FA7E36E@IRVEXCHCCR01.corp.ad.broadcom.com>
+ <4CFFD3EB.10800@kernel.org>
+ <E18F441196CA634DB8E1F1C56A50A874319FA7E36F@IRVEXCHCCR01.corp.ad.broadcom.com>
+ <4CFFE29C.7080205@kernel.org>
+ <E18F441196CA634DB8E1F1C56A50A874319FA38CD3@IRVEXCHCCR01.corp.ad.broadcom.com>
+ <4D000C8B.5040904@kernel.org>
+ <E18F441196CA634DB8E1F1C56A50A874319FD72B23@IRVEXCHCCR01.corp.ad.broadcom.com>
+ <20110111182323.GG15933@htj.dyndns.org>
+ <E18F441196CA634DB8E1F1C56A50A874319FA7E37B@IRVEXCHCCR01.corp.ad.broadcom.com>
+ <AANLkTinpWS4yzAoHE5nTPtQ3OAU1SvM1mN2tMjsur8BW@mail.gmail.com>
+In-Reply-To: <AANLkTinpWS4yzAoHE5nTPtQ3OAU1SvM1mN2tMjsur8BW@mail.gmail.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
+X-WSS-ID: 613224E51VG4376708-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p0C0pWhn022979
 
-The function blktrans_dev_release and blktrans_dev_put are only used
-locally in this file and should be static.
+Unfortunately, no
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
+-----Original Message-----
+From: Harik [mailto:harik.attar@gmail.com] 
+Sent: Tuesday, January 11, 2011 4:46 PM
+To: Jian Peng
+Cc: Tejun Heo; Robert Hancock; linux-kernel@vger.kernel.org; jgarzik@pobox.com; ide
+Subject: Re: questions regarding possible violation of AHCI spec in AHCI driver
 
----
+> +           (tmp & 0x0f) != 0x03) {
+> +               printk(KERN_DEBUG "START bit was not set in %s\n", __func__);
+> +               return;
+> +       }
 
-diff --git a/drivers/mtd/mtd_blkdevs.c b/drivers/mtd/mtd_blkdevs.c
-index cb20c67..3bcdf6c 100644
---- a/drivers/mtd/mtd_blkdevs.c
-+++ b/drivers/mtd/mtd_blkdevs.c
-@@ -40,7 +40,7 @@
- static LIST_HEAD(blktrans_majors);
- static DEFINE_MUTEX(blktrans_ref_mutex);
- 
--void blktrans_dev_release(struct kref *kref)
-+static void blktrans_dev_release(struct kref *kref)
- {
- 	struct mtd_blktrans_dev *dev =
- 		container_of(kref, struct mtd_blktrans_dev, ref);
-@@ -67,7 +67,7 @@ unlock:
- 	return dev;
- }
- 
--void blktrans_dev_put(struct mtd_blktrans_dev *dev)
-+static void blktrans_dev_put(struct mtd_blktrans_dev *dev)
- {
- 	mutex_lock(&blktrans_ref_mutex);
- 	kref_put(&dev->ref, blktrans_dev_release);
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Are there defines for the mask and result that you could use instead of raw hex?
+
+
