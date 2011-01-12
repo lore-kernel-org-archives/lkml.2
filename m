@@ -1,98 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932728Ab1ALBem (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 20:34:42 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:37568 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756397Ab1ALBej convert rfc822-to-8bit (ORCPT
+	id S932758Ab1ALBf5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 20:35:57 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:61953 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756476Ab1ALBfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 20:34:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=LRXn20gQ4k2zJwRvbFqDPd16GOqBpFnO/ZlWXdt3itLBWSrMrms9IS+fahKtTdarod
-         P4KUNxDPKE9wdWVBgivt+kP1Q2quAMN1VR6qHhCAW1nqVY6lXo8qRAg8TtZ9Wxr6Y3b+
-         qCc+9ApxbC8hMjdf2RZLwSzPmm6zIRMTep60A=
+	Tue, 11 Jan 2011 20:35:54 -0500
+Message-ID: <4D2D056B.6050006@kernel.org>
+Date: Tue, 11 Jan 2011 17:35:39 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <20110111143244.GC30607@htj.dyndns.org>
-References: <201101070014.p070Egpo023959@imap1.linux-foundation.org>
-	<4D2ADD43.2020702@gmail.com>
-	<AANLkTin7h=R0cfzpeuvpTAGRFCsFocJezpW7Riz5Za4z@mail.gmail.com>
-	<AANLkTimeUN9m-roDmsfaMaiD4wZw1wETYsf+dONjpmyj@mail.gmail.com>
-	<20110111143244.GC30607@htj.dyndns.org>
-Date: Wed, 12 Jan 2011 09:34:38 +0800
-Message-ID: <AANLkTinX5R7-CzrLW=b4PwC3v3QucQkgz7Vs6tnYG7Hr@mail.gmail.com>
-Subject: Re: WARNING: at kernel/workqueue.c [was: mmotm 2011-01-06-15-41 uploaded]
-From: Hillf Danton <dhillf@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Tony Luck <tony.luck@gmail.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Jiri Slaby <jirislaby@gmail.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
+To: David Miller <davem@davemloft.net>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] memblock: Don't adjust size in memblock_find_base()
+References: <AANLkTikknHfA4TQw+SMH-EyJBHoNHXk8Rheq4=K4jNWA@mail.gmail.com>	 <alpine.DEB.2.00.1012291637270.6040@chino.kir.corp.google.com>	 <4D1BD928.50701@zytor.com>	 <alpine.DEB.2.00.1012291702180.7374@chino.kir.corp.google.com>	 <4D1BE615.4000700@zytor.com> <20101230090648.GB7306@elte.hu>	 <20101230102815.GA29822@elte.hu> <20101230103002.GA30020@elte.hu>	 <AANLkTimeqrLzDuqBoSvmkSJWMc7u3PeRf37vjzBca2Lh@mail.gmail.com>	 <AANLkTimpyRXS9dNFATh4GqtA46uynutAvK7Qb5S7WPFO@mail.gmail.com>	 <20110105134434.GA22816@elte.hu>  <4D277A8C.5010502@kernel.org> <1294638989.17779.296.camel@pasglop>
+In-Reply-To: <1294638989.17779.296.camel@pasglop>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 10:32 PM, Tejun Heo <tj@kernel.org> wrote:
-> On Mon, Jan 10, 2011 at 03:36:09PM -0800, Tony Luck wrote:
->> > Here it is, too.
->> > mmotm-01-06
->>
->> Also in today's linux-next (tag: next-20110110) on ia64:
->>
->>
->> ------------[ cut here ]------------
->> WARNING: at kernel/workqueue.c:1202 worker_enter_idle+0x3f0/0x4a0()
->> Hardware name: server rx2620
->> Modules linked in:
->>
->> Call Trace:
->>  [<a000000100014cb0>] show_stack+0x50/0xa0
->>                                 sp=e0000040600d7c30 bsp=e0000040600d0dd0
->>  [<a000000100bcaa20>] dump_stack+0x30/0x50
->>                                 sp=e0000040600d7e00 bsp=e0000040600d0db8
->>  [<a000000100082260>] warn_slowpath_common+0xc0/0x100
->>                                 sp=e0000040600d7e00 bsp=e0000040600d0d78
->>  [<a0000001000822e0>] warn_slowpath_null+0x40/0x60
->>                                 sp=e0000040600d7e00 bsp=e0000040600d0d50
->>  [<a0000001000b0830>] worker_enter_idle+0x3f0/0x4a0
->>                                 sp=e0000040600d7e00 bsp=e0000040600d0d28
->>  [<a0000001000b2c80>] worker_thread+0x8c0/0x980
->>                                 sp=e0000040600d7e00 bsp=e0000040600d0c28
->>  [<a0000001000c08c0>] kthread+0x120/0x160
->>                                 sp=e0000040600d7e00 bsp=e0000040600d0be8
->>  [<a000000100012ef0>] kernel_thread_helper+0x30/0x60
->>                                 sp=e0000040600d7e30 bsp=e0000040600d0bc0
->>  [<a00000010000a0c0>] start_kernel_thread+0x20/0x40
->>                                 sp=e0000040600d7e30 bsp=e0000040600d0bc0
->> ---[ end trace 7e2fb881ec0622f8 ]---
->
-> Ah, of course, it's commit 21ec12364bb78b72ad36b94269c64b3ee31b038f
-> (workqueue: remove noop condition check in worker_clr_flags()).  The
-> condition it removes is not a noop.  Reverting it.
->
+On 01/09/2011 09:56 PM, Benjamin Herrenschmidt wrote:
+> On Fri, 2011-01-07 at 12:41 -0800, Yinghai Lu wrote:
+>> While applying patch to use memblock to find aperture for 64bit x86.
+>> Ingo found system with 1g + force_iommu
+> 
+> Please run that through DaveM. I seem to remember that he relies on the
+> size alignment to ensure that a lot of tiny allocations get properly
+> coalesced or he runs out of regions at boot time.
 
-Hey all
+David, can you check this patch on sparc?
 
-It looks that WORKER_NOT_RUNNING could be defined finer :/
+[PATCH] memblock: Don't adjust size in memblock_find_base()
 
-thanks
-Hillf
+While applying patch to use memblock to find aperture for 64bit x86.
+Ingo found system with 1g + force_iommu
+
+> No AGP bridge found
+> Node 0: aperture @ 38000000 size 32 MB
+> Aperture pointing to e820 RAM. Ignoring.
+> Your BIOS doesn't leave a aperture memory hole
+> Please enable the IOMMU option in the BIOS setup
+> This costs you 64 MB of RAM
+> Cannot allocate aperture memory hole (0,65536K)
+
+the corresponding code:
+	addr = memblock_find_in_range(0, 1ULL<<32, aper_size, 512ULL<<20);
+	if (addr == MEMBLOCK_ERROR || addr + aper_size > 0xffffffff) {
+		printk(KERN_ERR
+			"Cannot allocate aperture memory hole (%lx,%uK)\n",
+				addr, aper_size>>10);
+		return 0;
+	}
+	memblock_x86_reserve_range(addr, addr + aper_size, "aperture64")
+
+it failes because memblock core code align the size with 512M. that could make
+size way too big.
+
+So don't align the size in that case.
+
+acctually __memblock_alloc_base, the another caller already align that before calling that function.
+
+BTW. x86 does not use __memblock_alloc_base...
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
 ---
+ mm/memblock.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/kernel/workqueue.c	2011-01-05 08:50:20.000000000 +0800
-+++ b/kernel/workqueue.c	2011-01-12 09:40:56.000000000 +0800
-@@ -62,8 +62,9 @@ enum {
- 	WORKER_CPU_INTENSIVE	= 1 << 6,	/* cpu intensive */
- 	WORKER_UNBOUND		= 1 << 7,	/* worker is unbound */
-
--	WORKER_NOT_RUNNING	= WORKER_PREP | WORKER_ROGUE | WORKER_REBIND |
--				  WORKER_CPU_INTENSIVE | WORKER_UNBOUND,
-+	WORKER_NOT_RUNNING	= (WORKER_PREP | WORKER_ROGUE |
-+				   WORKER_REBIND | WORKER_CPU_INTENSIVE |
-+				   WORKER_UNBOUND),
-
- 	/* gcwq->trustee_state */
- 	TRUSTEE_START		= 0,		/* start */
+Index: linux-2.6/mm/memblock.c
+===================================================================
+--- linux-2.6.orig/mm/memblock.c
++++ linux-2.6/mm/memblock.c
+@@ -137,8 +137,6 @@ static phys_addr_t __init_memblock membl
+ 
+ 	BUG_ON(0 == size);
+ 
+-	size = memblock_align_up(size, align);
+-
+ 	/* Pump up max_addr */
+ 	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
+ 		end = memblock.current_limit;
