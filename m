@@ -1,84 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932769Ab1ALBbE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 20:31:04 -0500
-Received: from nbd.name ([46.4.11.11]:58244 "EHLO nbd.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932648Ab1ALBbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 20:31:03 -0500
-X-Greylist: delayed 664 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Jan 2011 20:31:03 EST
-Message-ID: <4D2D01B2.1050201@openwrt.org>
-Date: Tue, 11 Jan 2011 18:19:46 -0700
-From: Felix Fietkau <nbd@openwrt.org>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S932728Ab1ALBem (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 20:34:42 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37568 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756397Ab1ALBej convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 20:34:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=LRXn20gQ4k2zJwRvbFqDPd16GOqBpFnO/ZlWXdt3itLBWSrMrms9IS+fahKtTdarod
+         P4KUNxDPKE9wdWVBgivt+kP1Q2quAMN1VR6qHhCAW1nqVY6lXo8qRAg8TtZ9Wxr6Y3b+
+         qCc+9ApxbC8hMjdf2RZLwSzPmm6zIRMTep60A=
 MIME-Version: 1.0
-To: Bernhard Walle <walle@corscience.de>
-CC: lrodriguez@atheros.com, jmalinen@atheros.com, vasanth@atheros.com,
-        senthilkumar@atheros.com, linville@tuxdriver.com,
-        netdev@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [ath9k-devel] [PATCH] [RFC] ath9k: Fix reporting of RX STBC streams
- to userspace
-References: <1294765194-30542-1-git-send-email-walle@corscience.de>
-In-Reply-To: <1294765194-30542-1-git-send-email-walle@corscience.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110111143244.GC30607@htj.dyndns.org>
+References: <201101070014.p070Egpo023959@imap1.linux-foundation.org>
+	<4D2ADD43.2020702@gmail.com>
+	<AANLkTin7h=R0cfzpeuvpTAGRFCsFocJezpW7Riz5Za4z@mail.gmail.com>
+	<AANLkTimeUN9m-roDmsfaMaiD4wZw1wETYsf+dONjpmyj@mail.gmail.com>
+	<20110111143244.GC30607@htj.dyndns.org>
+Date: Wed, 12 Jan 2011 09:34:38 +0800
+Message-ID: <AANLkTinX5R7-CzrLW=b4PwC3v3QucQkgz7Vs6tnYG7Hr@mail.gmail.com>
+Subject: Re: WARNING: at kernel/workqueue.c [was: mmotm 2011-01-06-15-41 uploaded]
+From: Hillf Danton <dhillf@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Tony Luck <tony.luck@gmail.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Jiri Slaby <jirislaby@gmail.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-01-11 9:59 AM, Bernhard Walle wrote:
-> While the driver reports
+On Tue, Jan 11, 2011 at 10:32 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Mon, Jan 10, 2011 at 03:36:09PM -0800, Tony Luck wrote:
+>> > Here it is, too.
+>> > mmotm-01-06
+>>
+>> Also in today's linux-next (tag: next-20110110) on ia64:
+>>
+>>
+>> ------------[ cut here ]------------
+>> WARNING: at kernel/workqueue.c:1202 worker_enter_idle+0x3f0/0x4a0()
+>> Hardware name: server rx2620
+>> Modules linked in:
+>>
+>> Call Trace:
+>>  [<a000000100014cb0>] show_stack+0x50/0xa0
+>>                                 sp=e0000040600d7c30 bsp=e0000040600d0dd0
+>>  [<a000000100bcaa20>] dump_stack+0x30/0x50
+>>                                 sp=e0000040600d7e00 bsp=e0000040600d0db8
+>>  [<a000000100082260>] warn_slowpath_common+0xc0/0x100
+>>                                 sp=e0000040600d7e00 bsp=e0000040600d0d78
+>>  [<a0000001000822e0>] warn_slowpath_null+0x40/0x60
+>>                                 sp=e0000040600d7e00 bsp=e0000040600d0d50
+>>  [<a0000001000b0830>] worker_enter_idle+0x3f0/0x4a0
+>>                                 sp=e0000040600d7e00 bsp=e0000040600d0d28
+>>  [<a0000001000b2c80>] worker_thread+0x8c0/0x980
+>>                                 sp=e0000040600d7e00 bsp=e0000040600d0c28
+>>  [<a0000001000c08c0>] kthread+0x120/0x160
+>>                                 sp=e0000040600d7e00 bsp=e0000040600d0be8
+>>  [<a000000100012ef0>] kernel_thread_helper+0x30/0x60
+>>                                 sp=e0000040600d7e30 bsp=e0000040600d0bc0
+>>  [<a00000010000a0c0>] start_kernel_thread+0x20/0x40
+>>                                 sp=e0000040600d7e30 bsp=e0000040600d0bc0
+>> ---[ end trace 7e2fb881ec0622f8 ]---
 >
->          ath: TX streams 2, RX streams: 2
+> Ah, of course, it's commit 21ec12364bb78b72ad36b94269c64b3ee31b038f
+> (workqueue: remove noop condition check in worker_clr_flags()).  The
+> condition it removes is not a noop.  Reverting it.
 >
-> in the kernel log (with ATH_DBG_CONFIG set in the debug module
-> parameter), "iw list" only reported
->
-> [...]
->          Capabilities: 0x12ce
->                  HT20/HT40
->                  SM Power Save disabled
->                  RX HT40 SGI
->                  TX STBC
->                  RX STBC 1-streams
-> [...]
->
-> The driver seems to set the value as flag while the iw tool interprets
-> it as number. This patch fixes that.
->
-> Signed-off-by: Bernhard Walle<walle@corscience.de>
-> ---
->   drivers/net/wireless/ath/ath9k/init.c |   12 ++++++------
->   1 files changed, 6 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/net/wireless/ath/ath9k/init.c b/drivers/net/wireless/ath/ath9k/init.c
-> index 639dc93..935b6c3 100644
-> --- a/drivers/net/wireless/ath/ath9k/init.c
-> +++ b/drivers/net/wireless/ath/ath9k/init.c
-> @@ -215,17 +215,17 @@ static void setup_ht_cap(struct ath_softc *sc,
->   	else
->   		max_streams = 2;
->
-> -	if (AR_SREV_9280_20_OR_LATER(ah)) {
-> -		if (max_streams>= 2)
-> -			ht_info->cap |= IEEE80211_HT_CAP_TX_STBC;
-> -		ht_info->cap |= (1<<  IEEE80211_HT_CAP_RX_STBC_SHIFT);
-> -	}
-> -
->   	/* set up supported mcs set */
->   	memset(&ht_info->mcs, 0, sizeof(ht_info->mcs));
->   	tx_streams = ath9k_cmn_count_streams(common->tx_chainmask, max_streams);
->   	rx_streams = ath9k_cmn_count_streams(common->rx_chainmask, max_streams);
->
-> +	if (AR_SREV_9280_20_OR_LATER(ah)) {
-> +		if (max_streams>= 2)
-> +			ht_info->cap |= IEEE80211_HT_CAP_TX_STBC;
-> +		ht_info->cap |= (rx_streams<<  IEEE80211_HT_CAP_RX_STBC_SHIFT);
-> +	}
-> +
-Are you sure the card can actually receive multiple streams via STBC? As 
-far as I know, only one stream can be received properly via STBC, more 
-streams have to be sent without it.
 
-- Felix
+Hey all
+
+It looks that WORKER_NOT_RUNNING could be defined finer :/
+
+thanks
+Hillf
+---
+
+--- a/kernel/workqueue.c	2011-01-05 08:50:20.000000000 +0800
++++ b/kernel/workqueue.c	2011-01-12 09:40:56.000000000 +0800
+@@ -62,8 +62,9 @@ enum {
+ 	WORKER_CPU_INTENSIVE	= 1 << 6,	/* cpu intensive */
+ 	WORKER_UNBOUND		= 1 << 7,	/* worker is unbound */
+
+-	WORKER_NOT_RUNNING	= WORKER_PREP | WORKER_ROGUE | WORKER_REBIND |
+-				  WORKER_CPU_INTENSIVE | WORKER_UNBOUND,
++	WORKER_NOT_RUNNING	= (WORKER_PREP | WORKER_ROGUE |
++				   WORKER_REBIND | WORKER_CPU_INTENSIVE |
++				   WORKER_UNBOUND),
+
+ 	/* gcwq->trustee_state */
+ 	TRUSTEE_START		= 0,		/* start */
