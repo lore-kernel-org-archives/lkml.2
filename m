@@ -1,38 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932858Ab1ALEhh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 23:37:37 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60363 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932791Ab1ALEhe (ORCPT
+	id S932870Ab1ALEl2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 23:41:28 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:40503 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932791Ab1ALEl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 23:37:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=N7UXHrj0D+SZG8flhJp3seFWc86kcfGUdgaU5San8xYJldsyvW2s/Gx8KY3h8vknCt
-         uMBN9rCj/HSwW7fEpW3WRVHZWPB9r6sRof4NQGe39WpNmoXFih/qpXChdrOV5FSrOf+T
-         w16x6LCQgeowvEWQqxXMM3MdMScrvMhW6Kmj0=
-MIME-Version: 1.0
-In-Reply-To: <E1Pcd7R-0007XC-VO@pomaz-ex.szeredi.hu>
-References: <E1Pcd7R-0007XC-VO@pomaz-ex.szeredi.hu>
-Date: Wed, 12 Jan 2011 15:37:32 +1100
-Message-ID: <AANLkTik-=LqSHQ=7zDznx9oCJFViPpp406Yz7J5Z-quj@mail.gmail.com>
-Subject: Re: [PATCH] fuse: make fuse_permission() RCU aware
-From: Nick Piggin <npiggin@gmail.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
+	Tue, 11 Jan 2011 23:41:26 -0500
+X-Sasl-enc: vs5iKtR2a9Zi6e3vwInKtARNgyeBivLnGBdHlKWZ94MM 1294807285
+Subject: Re: [announce] vfs-scale git tree update
+From: Ian Kent <raven@themaw.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: aelder@sgi.com, Nick Piggin <npiggin@kernel.dk>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <AANLkTim8rQb3mDFHg7DmbTZa20FxRGk3wJCjOkz=JG9S@mail.gmail.com>
+References: <20110107075831.GA14915@amd> <1294763679.2435.72.camel@doink>
+	 <AANLkTin67OXYYKk6y+_MKfXEXBz-F_+qAH0cpiJ24yEQ@mail.gmail.com>
+	 <1294768668.2435.177.camel@doink> <1294804776.2821.4.camel@perseus>
+	 <AANLkTim8rQb3mDFHg7DmbTZa20FxRGk3wJCjOkz=JG9S@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 Jan 2011 12:41:19 +0800
+Message-ID: <1294807279.2821.9.camel@perseus>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 11:14 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> From: Miklos Szeredi <mszeredi@suse.cz>
->
-> Only bail out of fuse_permission() on IPERM_FLAG_RCU when it is
-> actually necessary.
+On Tue, 2011-01-11 at 20:06 -0800, Linus Torvalds wrote:
+> On Tue, Jan 11, 2011 at 7:59 PM, Ian Kent <raven@themaw.net> wrote:
+> >
+> > Isn't the parent i_mutex held during mkdir()?
+> 
+> Yes, but a lookup that hits in the dentry cache won't actually take
+> the parent mutex.
+> 
+> So as far as I can tell, doing the "d_add()" before setting d_op can
+> result in another CPU coming in and seeing the newly added dentry
+> before d_op has actually been initialized. Exactly because it will do
+> the dentry lookup without holding any mutex.
+> 
+> Of course, it's a very small window, so it probably doesn't matter in practice.
+> 
+> >> Looking at it quickly, I don't think that would matter for
+> >> the case at hand.  I.e., that might be safer but it doesn't
+> >> address the fact that these fields are getting initialized
+> >> multiple times.
+> >
+> > Yeah, a hangover from changes done over time.
+> > Not setting the dentry op in ->lookup() should fix this.
+> 
+> Alex, care to test just removing the d_set_d_op() call from autofs4_lookup()?
+> 
+> (That code is a bit scary, though - it explicitly makes it a negative
+> dentry with a d_instantiate(dentry, NULL), and then hides the inode
+> information away separately. Scary scary)
 
-Great, thanks for taking a look... How about d_revalidate?
+Yeah, but the expire to mount races with autofs are difficult to handle
+and this approach has worked well under heavy stress testing. It's true
+that this would almost certainly be bad for a file system that supported
+a full range of functionality but that's not so for autofs.
+
+> 
+>               Linus
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
