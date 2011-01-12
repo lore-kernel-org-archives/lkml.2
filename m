@@ -1,62 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754405Ab1ALS3i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 13:29:38 -0500
-Received: from www.tglx.de ([62.245.132.106]:45560 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750915Ab1ALS3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 13:29:36 -0500
-Date: Wed, 12 Jan 2011 19:29:29 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org, sodaville@linutronix.de, x86@kernel.org,
-        dirk.brandewie@gmail.com
-Subject: Re: [PATCH v2 13/15] x86/rtc: don't register rtc if we the DT blob
-Message-ID: <20110112182929.GC6907@www.tglx.de>
-References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de> <1292600033-12271-14-git-send-email-bigeasy@linutronix.de> <20101230085940.GG11721@angua.secretlab.ca> <20110104132846.GC21359@www.tglx.de> <20110112000224.GI2131@angua.secretlab.ca>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110112000224.GI2131@angua.secretlab.ca>
-User-Agent: Mutt/1.4.2.2i
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+	id S1753020Ab1ALSfe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 13:35:34 -0500
+Received: from vms173009pub.verizon.net ([206.46.173.9]:56437 "EHLO
+	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404Ab1ALSf3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 13:35:29 -0500
+Date: Wed, 12 Jan 2011 13:35:10 -0500 (EST)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-acpi@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        akpm <akpm@linux-foundation.org>, Zhang Rui <rui.zhang@intel.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Zimny Lech <napohybelskurwysynom2010@gmail.com>
+Subject: Re: on builds/randconfigs (was: [PATCH -next] thermal: depends on NET)
+In-reply-to: <4D2DE97C.2000205@oracle.com>
+Message-id: <alpine.LFD.2.02.1101121257580.18873@x980>
+References: <20101213163607.0b0a7c3a.sfr@canb.auug.org.au>
+ <20101213112033.d0060e6c.randy.dunlap@oracle.com>
+ <20110110090059.6f4d739d.randy.dunlap@oracle.com>
+ <alpine.LFD.2.02.1101120008590.19140@x980> <4D2DE97C.2000205@oracle.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Grant Likely | 2011-01-11 17:02:24 [-0700]:
+> > While I agree that randconfig build testing
+> > is theoretically useful, in recent memory
+> > its results do not seem particularly relevant
+> > to useful configs.
+> 
+> Who defines useful?
 
->> +static __init int have_DTB(void)
->> +{
->> +	if (initial_boot_params)
->> +		return 1;
->> +	return 0;
->> +}
+Simple.
 
->Not quite the right test.  For instance, OLPC has real openfirmware so
->initial_boot_params will be zero even though there is a fully
->populated device tree.  Should test the allnodes value instead.
-Oh really? They do have a device tree and their initial_boot_params is
-NULL? I assumed they boot via OF but I saw no evidence of the device
-tree as it. In fact I noticed that they have a static PCI bus living in
-arch/x86 and I assumed that is the place where their devices are comming
-from.
-However, this _could_ change the behavior of OLPC and they could lack an
-RTC now if it is not comming via isa_pnp thing or via the device tree
-(which had no bindings until recently).
+Configs that will be used are useful.
 
->Also, this test is useful to more than just rtc I'm sure.  It could
->easily live in linux/of.h.
-Okay.
+Phantom configs that will NEVER be used are NOT useful.
 
->Finally one minor nit.  This is more verbose than it needs to be.  It
->could instead be:  "return allnodes != NULL;", and the __init is
->unnecessary on a static inline.
+Phantom configs are HARMFUL, as they squander
+finite testing and maintainer resources
+that should be applied to code that is actually used.
 
-Okay. The static line has no __init just the non inline has __init :)
+Rather than celebrating our theoretical flexibility
+with every new config option, we should recoil at the
+fact that each one may up to double the number of
+configs that need to be tested and supported.
 
->g.
+When I'm answering your nagging e-mail about a build failure
+in a phantom config that nobody would even conceive of using,
+I'm not using that time to fix somebody's real problem
+on a real machine.
 
-Sebastian
+I'd rather see you spend your time making select work
+to delete an entire category of Kconfig failures,
+or simply adding dependencies making phantom configs impossible.
+
+eg. Look in drivers/acpi/Kconfig:
+
+menuconfig ACPI
+        bool "ACPI (Advanced Configuration and Power Interface) Support"
+        depends on !IA64_HP_SIM
+        depends on IA64 || X86
+        depends on PCI
+        depends on PM
+        select PNP
+
+Does all of ACPI technically depend on PCI?
+Does all of ACPI technically depend on PM support?
+Does all of ACPI technically depend on configuration and PNP?
+
+Theoretically, no.
+
+Do I care about the phantom configs that would be possible
+if these false dependencies were not in place.  No,
+not until somebody invents such a system,
+and may be not even then.
+
+Is there a user out there on LKML who can dream up
+a use for one of these phantom configs and claim that
+his life will end if he'd prevented from building it?
+Sure.  Does he suffer from a total lack of perspective?
+Yes.
+
+-Len Brown, Intel Open Source Technology Center
