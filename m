@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899Ab1ALKEk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 05:04:40 -0500
-Received: from mailgw12.technion.ac.il ([132.68.225.12]:37643 "EHLO
-	mailgw12.technion.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942Ab1ALKEh (ORCPT
+	id S1752010Ab1ALKPD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 05:15:03 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:33028 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751648Ab1ALKPB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 05:04:37 -0500
-X-Greylist: delayed 602 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Jan 2011 05:04:37 EST
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsQEAEMJLU2ERHMGgWdsb2JhbACkPhUBARYiJLxbAoVKBIsQ
-X-IronPort-AV: E=Sophos;i="4.60,312,1291586400"; 
-   d="scan'208";a="25313232"
-Date: Wed, 12 Jan 2011 11:54:28 +0200
-From: "Nadav Har'El" <nyh@math.technion.ac.il>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 2/3] KVM: send IPI to vcpu only when it's in guest mode
-Message-ID: <20110112095428.GA15835@fermat.math.technion.ac.il>
-References: <4D2D5AA6.9080804@cn.fujitsu.com> <4D2D5AEF.1070006@cn.fujitsu.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D2D5AEF.1070006@cn.fujitsu.com>
-User-Agent: Mutt/1.4.2.2i
-Hebrew-Date: 7 Shevat 5771
+	Wed, 12 Jan 2011 05:15:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=QT7/wq1MfIXVVpFJRSLNdJSNfwdhRsW6DckzyH9WG6jAGQTI29Ns5cI51RqBTKc/yz
+         lMm8NKHf+8cV09Ak8wdSR9WnTJICwGFjfei8nYYnMDwvMpQYO7AkKTP4z9nwfb1gFjOm
+         Xppz/oZzI8qf4YDQRYns5ns1EV7UeuKbx/5tM=
+MIME-Version: 1.0
+From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Date: Wed, 12 Jan 2011 12:14:40 +0200
+Message-ID: <AANLkTikQMrE4eiyEq8fNb2taM+VFN3_fqkrpfYADfcCg@mail.gmail.com>
+Subject: [PATCH] proc: proc_inode pid/fd and sysctl/sysctl_entry are never
+ used at the same time
+To: linux-kernel@vger.kernel.org
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Vlad Dogaru <ddvlad@rosedu.org>,
+        Octavian Purdila <opurdila@ixiacom.com>
+Content-Type: multipart/mixed; boundary=00163683204e4bf2a50499a37943
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011, Xiao Guangrong wrote about "[PATCH v3 2/3] KVM: send IPI to vcpu only when it's in guest mode":
-> We can interrupt the vcpu only when it's running in guest mode
-> to reduce IPI
+--00163683204e4bf2a50499a37943
+Content-Type: text/plain; charset=UTF-8
 
-Hi,
+Or at least I could not find a place where both are
+used at the same time.
 
-I am afraid there's a risk of confusion between the new
+Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+---
+ include/linux/proc_fs.h |   16 +++++++++++-----
+ 1 files changed, 11 insertions(+), 5 deletions(-)
 
-	vcpu->mode = IN_GUEST_MODE;
+--00163683204e4bf2a50499a37943
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-proc-proc_inode-pid-fd-and-sysctl-sysctl_entry-are-n.patch"
+Content-Disposition: attachment; 
+	filename="0001-proc-proc_inode-pid-fd-and-sysctl-sysctl_entry-are-n.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: 91ef98928cb85818_0.1
 
-and the existing
-
-	is_guest_mode()   (i.e., vcpu->arch.hflags & HF_GUEST_MASK)
-
-The latter says that the virtual cpu is in guest mode (i.e., the guest used
-VMLAUNCH and is runnning a nested guest), while the former says that the
-physical CPU that this vcpu is currently being run on, is in guest mode - or
-in other words, this vcpu is currently running.
-
-I'm not sure what is the best way to resolve this potential for confusion.
-Maybe on of them is better renamed (e.g., instead of vcpu->mode = IN_GUEST_MODE
-have something like vcpu->running = NOW_RUNNING). Or maybe some good comments
-need to to be written to explain the situation.
-
-Actually, I just noticed that there's already a vcpu->guest_mode which you
-are apparently replacing, so the potential for confusion is already in the
-current code... I.e., in the current code, is_guest_mode(vcpu) does NOT check
-vcpu->guest_mode...
-
-
--- 
-Nadav Har'El                        |    Wednesday, Jan 12 2011, 7 Shevat 5771
-nyh@math.technion.ac.il             |-----------------------------------------
-Phone +972-523-790466, ICQ 13349191 |Hi! I'm a signature virus! Copy me into
-http://nadav.harel.org.il           |your signature to help me spread!
+ZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgvcHJvY19mcy5oIGIvaW5jbHVkZS9saW51eC9wcm9j
+X2ZzLmgNCmluZGV4IDM3OWVhZWQuLjNjMjg3ZTMgMTAwNjQ0DQotLS0gYS9pbmNsdWRlL2xpbnV4
+L3Byb2NfZnMuaA0KKysrIGIvaW5jbHVkZS9saW51eC9wcm9jX2ZzLmgNCkBAIC0yNjIsMTIgKzI2
+MiwxOCBAQCBzdHJ1Y3QgY3RsX3RhYmxlX2hlYWRlcjsNCiBzdHJ1Y3QgY3RsX3RhYmxlOw0KIA0K
+IHN0cnVjdCBwcm9jX2lub2RlIHsNCi0Jc3RydWN0IHBpZCAqcGlkOw0KLQlpbnQgZmQ7DQotCXVu
+aW9uIHByb2Nfb3Agb3A7DQorCXVuaW9uIHsNCisJCXN0cnVjdCB7DQorCQkJaW50IGZkOw0KKwkJ
+CXN0cnVjdCBwaWQgKnBpZDsNCisJCX07DQorCQlzdHJ1Y3Qgew0KKwkJCXN0cnVjdCBjdGxfdGFi
+bGVfaGVhZGVyICpzeXNjdGw7DQorCQkJc3RydWN0IGN0bF90YWJsZSAqc3lzY3RsX2VudHJ5Ow0K
+KwkJfTsNCisJfTsNCiAJc3RydWN0IHByb2NfZGlyX2VudHJ5ICpwZGU7DQotCXN0cnVjdCBjdGxf
+dGFibGVfaGVhZGVyICpzeXNjdGw7DQotCXN0cnVjdCBjdGxfdGFibGUgKnN5c2N0bF9lbnRyeTsN
+CisJdW5pb24gcHJvY19vcCBvcDsNCiAJc3RydWN0IGlub2RlIHZmc19pbm9kZTsNCiB9Ow0KIA0K
+--00163683204e4bf2a50499a37943--
