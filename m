@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354Ab1ALRT6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 12:19:58 -0500
-Received: from mga09.intel.com ([134.134.136.24]:23291 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752673Ab1ALRTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 12:19:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,313,1291622400"; 
-   d="scan'208";a="696084743"
-Message-ID: <4D2DE2B9.2000607@linux.intel.com>
-Date: Wed, 12 Jan 2011 09:19:53 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-Organization: Intel Open Source Technology Center
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1752061Ab1ALRZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 12:25:59 -0500
+Received: from mail21.messagelabs.com ([85.158.143.35]:9487 "EHLO
+	mail21.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333Ab1ALRZ4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 12:25:56 -0500
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-2.tower-21.messagelabs.com!1294853101!24265161!45
+X-StarScan-Version: 6.2.9; banners=.,-,-
+X-Originating-IP: [216.166.12.97]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 12 Jan 2011 11:25:45 -0600
+Subject: [PATCH] kernel/time/jiffies.c: local symbols should be static
+Thread-Topic: [PATCH] kernel/time/jiffies.c: local symbols should be static
+Thread-Index: Acuyfb8ndROuYGzoTJy/WFMUkgUm9Q==
+Message-ID: <0D753D10438DA54287A00B027084269764CE258A50@AUSP01VMBX24.collaborationhost.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org, sodaville@linutronix.de,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [sodaville] [PATCH 10/15] x86/ioapic: Add OF bindings for	IO-APIC
-References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>	<1292600033-12271-11-git-send-email-bigeasy@linutronix.de>	<20110111235353.GG2131@angua.secretlab.ca> <20110112170707.GA6907@www.tglx.de>
-In-Reply-To: <20110112170707.GA6907@www.tglx.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p0CHQAt0026605
 
-On 01/12/2011 09:07 AM, Sebastian Andrzej Siewior wrote:
->>
->> I'm confused here.  Are there multiple ioapic's described by a single
->> device tree node?
-> 
-> Yes, the CE4100 has two IO-APICs. It looks like the first one is
-> responsible for the "legacy devices" (like RTC) and the second one is
-> used for the "extra devices" like SPI controller, USB, ... The UART
-> however is not on the first IO-APIC but on the second.
-> 
-> Those two IO-APICs are not cascaded. The device tree contains the line
-> number of device to the io apic. The kernel computes then interrupt
-> number based on gsi_base + line_number where gsi_base is incremented by
-> the number of entries[0]. This interrupt number (gsi_base + line) is then
-> sent via apic bus to lapic which reports it as the active interrupt
-> source.
-> 
+The symbol 'clocksource_jiffies' is not exported and should be static.
 
-That's normal multiple IOAPIC behavior (and multiple IOAPICs is a common
-thing), but why use the same device tree node for both?
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Acked-by: John Stultz <johnstul@us.ibm.com>
 
-	-hpa
+---
+
+This patch was originally submitted on Dec 28, 2009 and appears to have
+been lost.  John Stultz supplied the ack on Jan 4, 2010.
+
+diff --git a/kernel/time/jiffies.c b/kernel/time/jiffies.c
+index 5404a84..36d2d83 100644
+--- a/kernel/time/jiffies.c
++++ b/kernel/time/jiffies.c
+@@ -55,7 +55,7 @@ static cycle_t jiffies_read(struct clocksource *cs)
+ 	return (cycle_t) jiffies;
+ }
+ 
+-struct clocksource clocksource_jiffies = {
++static struct clocksource clocksource_jiffies = {
+ 	.name		= "jiffies",
+ 	.rating		= 1, /* lowest valid rating*/
+ 	.read		= jiffies_read,
+
+______________________________________________________________________
+This email has been scanned by the MessageLabs Email Security System.
+For more information please visit http://www.messagelabs.com/email 
+______________________________________________________________________
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
