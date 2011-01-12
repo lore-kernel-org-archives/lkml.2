@@ -1,74 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411Ab1ALWSO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 17:18:14 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:59496 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752131Ab1ALWSL (ORCPT
+	id S1755584Ab1ALWWM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 17:22:12 -0500
+Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:60716 "HELO
+	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750977Ab1ALWWK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 17:18:11 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Len Brown <lenb@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>, linux-acpi@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Zhang Rui <rui.zhang@intel.com>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Zimny Lech <napohybelskurwysynom2010@gmail.com>
-Subject: Re: on builds/randconfigs (was: [PATCH -next] thermal: depends on NET)
-In-Reply-To: Your message of "Wed, 12 Jan 2011 16:58:26 EST."
-             <alpine.LFD.2.02.1101121654000.19754@x980>
-From: Valdis.Kletnieks@vt.edu
-References: <20101213163607.0b0a7c3a.sfr@canb.auug.org.au> <alpine.LFD.2.02.1101121257580.18873@x980> <20110112131800.d64c1a86.akpm@linux-foundation.org> <201101122224.54330.rjw@sisk.pl>
-            <alpine.LFD.2.02.1101121654000.19754@x980>
+	Wed, 12 Jan 2011 17:22:10 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=dscpFKjHOJLpcM+jFdudNLlhuYPYKE+JtsCPf1udRvMMUQMWXjpj375OHOXW0WhrvhTlBKKmhx3uMZL6VUNCNiasnTJ1afVciDILNVb+zWCTrgUB/p1dROvw6PFtmbjh;
+Date: Wed, 12 Jan 2011 14:22:06 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
+        linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: Re: [git pull] drm intel only fixes
+Message-ID: <20110112142206.37a1b76d@jbarnes-desktop>
+In-Reply-To: <AANLkTimSKOa8XavLn_RsLZ2scZ=ujdYahcTkeJ2pxBFq@mail.gmail.com>
+References: <alpine.DEB.2.00.1101120601100.6210@skynet.skynet.ie>
+	<AANLkTimgs8UfGWk5PCZi4PM5SsvejJd5Y4bb3nHGyZy2@mail.gmail.com>
+	<20110112114649.5365d518@jbarnes-desktop>
+	<AANLkTinSygbLm=nmXy_Wf2ENV8WcQqCc0BKAAOsysvZd@mail.gmail.com>
+	<AANLkTimSKOa8XavLn_RsLZ2scZ=ujdYahcTkeJ2pxBFq@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1294870540_34736P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 12 Jan 2011 17:15:40 -0500
-Message-ID: <39920.1294870540@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020202.4D2E280F.0042,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1294870540_34736P
-Content-Type: text/plain; charset=us-ascii
+On Wed, 12 Jan 2011 13:28:53 -0800
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-On Wed, 12 Jan 2011 16:58:26 EST, Len Brown said:
+> On Wed, Jan 12, 2011 at 12:27 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > On Wed, Jan 12, 2011 at 11:46 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> >>
+> >> Since I doubt we're actually offloading to our video decode kernels for
+> >> Flash video on your machine
+> >
+> > It's the latest 64-bit beta flash player, so maybe it does use hw acceleration.
+> >
+> >
+> >>                       it could very well be a memory bw issue.
+> >> Can you try this small patch to see if one of the low power watermarks
+> >> is giving you trouble (note: cut & pasted)?
+> >
+> > No difference.
+> 
+> Oh, and I'm also seeing corruption on my sandybridge machine. No video
+> involved, the gdm login screen is already corrupted this way. Similar
+> odd shifted lines etc, so I'd assume it's related.
 
-> Kconfig select needs to be fixed so that it is not possible to
-> select something if that something's dependencies are not met.
+Ah, ok.  So it could be our internal FDI link is underrunning; it goes
+between the CPU and PCH and carries display bits.
 
-Amen to that. Got bit by that in the CONFIG_XT_MATCH_REALM thread, it was
-trying to do a select on NET_CLS_ROUTE, which depended on NET_SCHED which was
-unset...
+Are these both desktop type machines with DVI attached monitors?
 
+If it's an FDI or transcoder problem, something like the below may give
+us more info.
 
---==_Exmh_1294870540_34736P
-Content-Type: application/pgp-signature
+Can you take a picture of the corruption?  If I see it I can try to
+reproduce it here by messing with FDI, transcoder, and DP link settings
+to see if they're the problem.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+-- 
+Jesse Barnes, Intel Open Source Technology Center
 
-iD8DBQFNLigMcC3lWbTT17ARAt4+AJ4pH/LHguHhKwZ5ZJbNW6PgOaJSmQCeLPAe
-5C5/Hireq204xQYUlpQgoKc=
-=1Znu
------END PGP SIGNATURE-----
-
---==_Exmh_1294870540_34736P--
-
+diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
+index e418e8b..4c6c465 100644
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -428,6 +428,15 @@ static void pch_irq_handler(struct drm_device *dev)
+ 		fdia = I915_READ(FDI_RXA_IIR);
+ 		fdib = I915_READ(FDI_RXB_IIR);
+ 		DRM_DEBUG_DRIVER("PCH FDI RX interrupt; FDI RXA IIR: 0x%08x, FDI RXB IIR: 0x%08x\n", fdia, fdib);
++
++		if (fdia & FDI_RX_ERR_MASK) {
++			DRM_ERROR("FDI A RX error: 0x%08x\n", fdia);
++			I915_WRITE(FDI_RXA_IIR, FDI_RX_ERR_MASK);
++		}
++		if (fdib & FDI_RX_ERR_MASK) {
++			DRM_ERROR("FDI B RX error: 0x%08x\n", fdib);
++			I915_WRITE(FDI_RXB_IIR, FDI_RX_ERR_MASK);
++		}
+ 	}
+ 
+ 	if (pch_iir & (SDE_TRANSB_CRC_DONE | SDE_TRANSA_CRC_DONE))
+@@ -437,9 +446,9 @@ static void pch_irq_handler(struct drm_device *dev)
+ 		DRM_DEBUG_DRIVER("PCH transcoder CRC error interrupt\n");
+ 
+ 	if (pch_iir & SDE_TRANSB_FIFO_UNDER)
+-		DRM_DEBUG_DRIVER("PCH transcoder B underrun interrupt\n");
++		DRM_ERROR("PCH transcoder B underrun interrupt\n");
+ 	if (pch_iir & SDE_TRANSA_FIFO_UNDER)
+-		DRM_DEBUG_DRIVER("PCH transcoder A underrun interrupt\n");
++		DRM_ERROR("PCH transcoder A underrun interrupt\n");
+ }
+ 
+ static irqreturn_t ironlake_irq_handler(struct drm_device *dev)
+diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+index 40a407f..6e81d97 100644
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -3101,6 +3101,11 @@
+ #define FDI_RX_PIXEL_FIFO_OVERFLOW      (1<<2)
+ #define FDI_RX_CROSS_CLOCK_OVERFLOW     (1<<1)
+ #define FDI_RX_SYMBOL_QUEUE_OVERFLOW    (1<<0)
++#define FDI_RX_ERR_MASK (FDI_RX_FS_CODE_ERR | FDI_RX_FE_CODE_ERR |	\
++			 FDI_RX_SYMBOL_ERR_RATE_ABOVE |			\
++			 FDI_RX_PIXEL_FIFO_OVERFLOW |			\
++			 FDI_RX_CROSS_CLOCK_OVERFLOW |			\
++			 FDI_RX_SYMBOL_QUEUE_OVERFLOW)
+ 
+ #define FDI_RXA_IIR             0xf0014
+ #define FDI_RXA_IMR             0xf0018
