@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932682Ab1ALAqA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 19:46:00 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62749 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754210Ab1ALAp6 convert rfc822-to-8bit (ORCPT
+	id S932665Ab1ALAr2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 19:47:28 -0500
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:45213 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756359Ab1ALArY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 19:45:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=cJy3eie4KI8MLtB1JZTAm9qZznti7T7+skLsN7ySgJFiHW+3NRnE+8/MSXfZOruT43
-         D70Vh6XzaFVvOQGm/EaBQc1JH4gIR7hL7uqBRb8JMf2k09QQpLqlX13X/6yTDFBV2N2+
-         47MeIfsIBpz0JB2xR1ZpfCcNjmHrrrCHVvT7U=
-MIME-Version: 1.0
-In-Reply-To: <E18F441196CA634DB8E1F1C56A50A874319FA7E37B@IRVEXCHCCR01.corp.ad.broadcom.com>
-References: <4CFF58D2.4040006@kernel.org>
-	<E18F441196CA634DB8E1F1C56A50A874319FA38C43@IRVEXCHCCR01.corp.ad.broadcom.com>
-	<4CFFCD56.6050608@kernel.org>
-	<E18F441196CA634DB8E1F1C56A50A874319FA7E36E@IRVEXCHCCR01.corp.ad.broadcom.com>
-	<4CFFD3EB.10800@kernel.org>
-	<E18F441196CA634DB8E1F1C56A50A874319FA7E36F@IRVEXCHCCR01.corp.ad.broadcom.com>
-	<4CFFE29C.7080205@kernel.org>
-	<E18F441196CA634DB8E1F1C56A50A874319FA38CD3@IRVEXCHCCR01.corp.ad.broadcom.com>
-	<4D000C8B.5040904@kernel.org>
-	<E18F441196CA634DB8E1F1C56A50A874319FD72B23@IRVEXCHCCR01.corp.ad.broadcom.com>
-	<20110111182323.GG15933@htj.dyndns.org>
-	<E18F441196CA634DB8E1F1C56A50A874319FA7E37B@IRVEXCHCCR01.corp.ad.broadcom.com>
-Date: Tue, 11 Jan 2011 19:45:56 -0500
-Message-ID: <AANLkTinpWS4yzAoHE5nTPtQ3OAU1SvM1mN2tMjsur8BW@mail.gmail.com>
-Subject: Re: questions regarding possible violation of AHCI spec in AHCI driver
-From: Harik <harik.attar@gmail.com>
-To: Jian Peng <jipeng@broadcom.com>
-Cc: Tejun Heo <tj@kernel.org>, Robert Hancock <hancockrwd@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jgarzik@pobox.com" <jgarzik@pobox.com>,
-        ide <linux-ide@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 Jan 2011 19:47:24 -0500
+Date: Wed, 12 Jan 2011 09:38:14 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 1/2] memcg: remove unnecessary BUG_ON
+Message-Id: <20110112093814.7ddc9fe7.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <41390917af25769cd59eb001370b80ef6520a8bb.1294735182.git.minchan.kim@gmail.com>
+References: <41390917af25769cd59eb001370b80ef6520a8bb.1294735182.git.minchan.kim@gmail.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +           (tmp & 0x0f) != 0x03) {
-> +               printk(KERN_DEBUG "START bit was not set in %s\n", __func__);
-> +               return;
-> +       }
+On Tue, 11 Jan 2011 17:51:11 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-Are there defines for the mask and result that you could use instead of raw hex?
+> Now memcg in unmap_and_move checks BUG_ON of charge.
+> mem_cgroup_prepare_migration returns either 0 or -ENOMEM.
+> If it returns -ENOMEM, it jumps out unlock without the check.
+> If it returns 0, it can pass BUG_ON. So it's meaningless.
+> Let's remove it.
+> 
+> Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+
+Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
