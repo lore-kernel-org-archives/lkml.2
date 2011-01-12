@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932375Ab1ALMq1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 07:46:27 -0500
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:51063 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755363Ab1ALMqU (ORCPT
+	id S1756230Ab1ALMt0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 07:49:26 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59246 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755294Ab1ALMtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 07:46:20 -0500
-Date: Wed, 12 Jan 2011 23:44:31 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Lawrence Greenfield <leg@google.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Josef Bacik <josef@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        xfs@oss.sgi.com, joel.becker@oracle.com, cmm@us.ibm.com,
-        cluster-devel@redhat.com
-Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
-Message-ID: <20110112124431.GP28803@dastard>
-References: <1289248327-16308-1-git-send-email-josef@redhat.com>
- <20101109011222.GD2715@dastard>
- <20101109033038.GF3099@thunk.org>
- <20101109044242.GH2715@dastard>
- <20101109214147.GK3099@thunk.org>
- <20101109234049.GQ2715@dastard>
- <AANLkTimwmJ_ZoE9oAuA1WGhCgK585jDznqnc6k0=9Ntb@mail.gmail.com>
+	Wed, 12 Jan 2011 07:49:25 -0500
+Date: Wed, 12 Jan 2011 12:48:44 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Nick Piggin <npiggin@kernel.dk>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Soren Sandmann <ssp@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, kernel@pengutronix.de,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: BUG: spinlock recursion (sys_chdir, user_path_at,
+	do_path_lookup ...)
+Message-ID: <20110112124844.GA4415@n2100.arm.linux.org.uk>
+References: <20110111110539.GP24920@pengutronix.de> <20110112075229.GZ24920@pengutronix.de> <alpine.LFD.2.00.1101121153370.12146@localhost6.localdomain6> <20110112120349.GH24920@pengutronix.de> <20110112123508.GZ11039@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTimwmJ_ZoE9oAuA1WGhCgK585jDznqnc6k0=9Ntb@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110112123508.GZ11039@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 04:13:42PM -0500, Lawrence Greenfield wrote:
-> On Tue, Nov 9, 2010 at 6:40 PM, Dave Chinner <david@fromorbit.com> wrote:
-> > The historical reason for such behaviour existing in XFS was that in
-> > 1997 the CPU and IO latency cost of unwritten extent conversion was
-> > significant,
-
-.....
-
-> >> (Take for example a trusted cluster filesystem backend that checks the
-> >> object checksum before returning any data to the user; and if the
-> >> check fails the cluster file system will try to use some other replica
-> >> stored on some other server.)
-> >
-> > IOWs, all they want to do is avoid the unwritten extent conversion
-> > overhead. Time has shown that a bad security/performance tradeoff
-> > decision was made 13 years ago in XFS, so I see little reason to
-> > repeat it for ext4 today....
+On Wed, Jan 12, 2011 at 12:35:08PM +0000, Russell King - ARM Linux wrote:
+> ARM doesn't implement save_stack_trace_regs() nor save_stack_trace_bp()
+> so if the compiler referenced these, you'd have a kernel which doesn't
+> link.  The only places that this symbol appears is:
 > 
-> I'd make use of FALLOC_FL_EXPOSE_OLD_DATA. It's not the CPU overhead
-> of extent conversion. It's that extent conversion causes more metadata
-> operations than what you'd have otherwise,
+> arch/x86/kernel/stacktrace.c:void save_stack_trace_regs(struct stack_trace *trac
+> arch/x86/mm/kmemcheck/error.c:  save_stack_trace_regs(&e->trace, regs);
+> include/linux/stacktrace.h:extern void save_stack_trace_regs(struct stack_trace
+> 
+> So, if this is where your bisect decided was the problem, your bisect
+> was faulty.
 
-Yes, that's the "IO latency" part of the cost I mentioned above.
+BTW, a useful thing to do after a bisect is to return to the point in
+the history where you first noticed the regression (so Linus' tip,
+your tip, or whatever).  Then try reverting the commit which git bisect
+_thinks_ is the cause of your problem and re-test that.
 
-> which means systems that
-> want to use O_DIRECT and make sure the data doesn't go away either
-> have to write O_DIRECT|O_DSYNC or need to call fdatasync().
+If the problem is fixed, you have greater confidence that the commit is
+the problem.
 
-Seriously, we tell application writers _all the time_ that they
-*must* use fsync/fdatasync to guarantee their data is on stable
-storage and that they cannot rely on side-effects of filesystem or
-storage specific behaviours (like ext3 ordered mode) to do that job
-for them.
+If it made no difference, then you know that something else (maybe in
+combination) is causing the problem.
 
-You're suggesting that by introducing FALLOC_FL_EXPOSE_OLD_DATA,
-applications can rely on filesystem/storage specific behaviour to
-guarantee data is on stable storage without the use of
-fdatasync/fsync. Wht you describe is definitely storage specific,
-because volatile write caches still needs the fdatasync to issue a
-cache flush.
+If you couldn't revert it because of other dependencies then you have
+to rely on analysis (such as what I did) and maybe try again with a
+slightly different strategy - maybe the problem only _occasionally_
+occurs, making the 'git bisect good' points unreliable, so maybe you
+need to do more testing when the problem doesn't immediately appear?
 
-Do you see the same conflict here that I do?
+Lastly, it is worth bearing in mind that GCC is really finicky with its
+optimization.  It may be hard to believe, but unrelated function
+definitions in headers can (and do) affect the code generation in
+completely unrelated functions causing them to be optimized
+differently [*].  Maybe this applies to prototypes too?
 
-> cluster file system implementor
+So it _could_ be that the prototype change in include/linux/stacktrace.h
+is tickling a GCC code generation bug.
 
-Which one?
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+* - ISTR, this behaviour was raised as a bug with GCC folk, which I
+believe was closed down as wontfix as its a result of the way the
+optimizer works.
