@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754291Ab1ALOxT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 09:53:19 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:56493 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751248Ab1ALOxP (ORCPT
+	id S1754534Ab1ALOx0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 09:53:26 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:35278 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754311Ab1ALOxV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 09:53:15 -0500
-Date: Wed, 12 Jan 2011 14:50:09 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Feng Tang <feng.tang@intel.com>
-Cc: Alan Cox <alan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH] console: prevent registered consoles from dumping old
- kernel message over again
-Message-ID: <20110112145009.352c3517@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110112225114.37d3b984@feng-i7>
-References: <1294814926-1460-1-git-send-email-feng.tang@intel.com>
-	<20110112111401.4879d928@bob.linux.org.uk>
-	<20110112225114.37d3b984@feng-i7>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Wed, 12 Jan 2011 09:53:21 -0500
+Subject: Re: Q: perf log mode?
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Kirill Smelkov <kirr@mns.spb.ru>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+In-Reply-To: <20110112144240.GA1755@nowhere>
+References: <20110112140613.GA11698@tugrik.mns.mnsspb.ru>
+	 <1294841288.19601.49.camel@laptop>  <20110112144240.GA1755@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 12 Jan 2011 15:53:41 +0100
+Message-ID: <1294844021.19601.51.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Don't know if I understand correctly, but with this patch all the consoles
-> still will get the full version of kernel messages, it just save some
-> console from dumping some of the early messages several times.
+On Wed, 2011-01-12 at 15:42 +0100, Frederic Weisbecker wrote:
+> On Wed, Jan 12, 2011 at 03:08:08PM +0100, Peter Zijlstra wrote:
+> > On Wed, 2011-01-12 at 17:06 +0300, Kirill Smelkov wrote:
+> > > I'm trying to use perf together with e.g. kprobes as a tool to show what
+> > > is happening with my system in "live-log" mode. The problem is, for
+> > > seldom events, actual info output is largely delayed because perf reads
+> > > sample data in whole pages. Could something be done with it or am I'm
+> > > missing something? Here is detailed description: 
+> > 
+> > perf_event_attr = {
+> > 	.watermark = 0,
+> > 	.wakeup_events = 1,
+> > };
 > 
-> Still use the old example, assume log0 is the kernel messages from boot start to
-> the point where tty1 get registered, log1 is from tty1's registering to
-> ttyMFD2's, log2 is the rest kernel message. Before this patch, on the
-> boot console, we will see: log0 + log0 + log1 + log0 + log1 + log2.
+> 
+> Which is perhaps something we want as a default when perf record -c 1
+> and the output is the pipe mode.
 
-Sorry misunderstood the point of the patch - yes that makes sense !
+No, definitely not, esp for -c1 you want large buffers because the event
+can come at very high freq.
+
+Nor does pipe mode have anything to do with it, the whole script set-up
+plain stinks and should not be using pipe mode, pipe mode should only be
+used to pipe data over the network and other remote profiling like
+things. 
