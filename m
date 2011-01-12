@@ -1,87 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932272Ab1ALI3A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 03:29:00 -0500
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:48777 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932204Ab1ALI25 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 03:28:57 -0500
-From: Peppe CAVALLARO <peppe.cavallaro@st.com>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Date: Wed, 12 Jan 2011 09:00:35 +0100
-Subject: Re: [PATCH 10/16] drivers/net: stmmac: don't treat NULL clk as an
- error
-Thread-Topic: [PATCH 10/16] drivers/net: stmmac: don't treat NULL clk as an
- error
-Thread-Index: AcuyLsxBP8BMMT0TSfGptTMdQKyIlg==
-Message-ID: <4D2D5FA3.507@st.com>
-References: <1294749833-32019-1-git-send-email-jamie@jamieiles.com>
- <1294749833-32019-11-git-send-email-jamie@jamieiles.com>
-In-Reply-To: <1294749833-32019-11-git-send-email-jamie@jamieiles.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-enigmail-version: 1.1.1
-user-agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13)
- Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
-openpgp: url=wwwkeys.bri.st.com
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	id S1751755Ab1ALIe3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 03:34:29 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36167
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750775Ab1ALIe1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 03:34:27 -0500
+Date: Wed, 12 Jan 2011 00:34:58 -0800 (PST)
+Message-Id: <20110112.003458.09752771.davem@davemloft.net>
+To: kees.cook@canonical.com
+Cc: linux-kernel@vger.kernel.org, spender@grsecurity.net, segooon@gmail.com,
+        jreuter@yaina.de, ralf@linux-mips.org
+Subject: Re: [PATCH] net: ax25: fix information leak to userland harder
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110112054022.GR4979@outflux.net>
+References: <20110112054022.GR4979@outflux.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+From: Kees Cook <kees.cook@canonical.com>
+Date: Tue, 11 Jan 2011 21:40:22 -0800
 
-On 1/11/2011 1:43 PM, Jamie Iles wrote:
->
-> clk_get() returns a struct clk cookie to the driver and some platforms
-> may return NULL if they only support a single clock.  clk_get() has only
-> failed if it returns a ERR_PTR() encoded pointer.
->
-Thanks for the patch that actually useful.
-I'm going to rework this part of the driver.
-At any rate, all my new changes can be done on top of this patch.
+> Commit fe10ae53384e48c51996941b7720ee16995cbcb7 adds a memset() to clear
+> the structure being sent back to userspace, but accidentally used the
+> wrong size.
+> 
+> Reported-by: Brad Spengler <spender@grsecurity.net>
+> Signed-off-by: Kees Cook <kees.cook@canonical.com>
 
-Regards,
-Peppe
->
->
-> Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-> Cc: netdev@vger.kernel.org
-> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
-> ---
->  drivers/net/stmmac/stmmac_timer.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/net/stmmac/stmmac_timer.c
-> b/drivers/net/stmmac/stmmac_timer.c
-> index 2a0e1ab..ebb1b37 100644
-> --- a/drivers/net/stmmac/stmmac_timer.c
-> +++ b/drivers/net/stmmac/stmmac_timer.c
-> @@ -91,6 +91,7 @@ int stmmac_close_ext_timer(void)
->
->  #elif defined(CONFIG_STMMAC_TMU_TIMER)
->  #include <linux/clk.h>
-> +#include <linux/err.h>
->  #define TMU_CHANNEL "tmu2_clk"
->  static struct clk *timer_clock;
->
-> @@ -109,7 +110,7 @@ int stmmac_open_ext_timer(struct net_device *dev,
-> struct stmmac_timer *tm)
->  {
->         timer_clock = clk_get(NULL, TMU_CHANNEL);
->
-> -       if (timer_clock == NULL)
-> +       if (IS_ERR(timer_clock))
->                 return -1;
->
->         if (tmu2_register_user(stmmac_timer_handler, (void *)dev) < 0) {
-> --
-> 1.7.3.4
->
+Applied, thanks.
