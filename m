@@ -1,85 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756462Ab1ALC15 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 21:27:57 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:42178 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753457Ab1ALC1z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 21:27:55 -0500
-Date: Wed, 12 Jan 2011 11:25:47 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-sh@vger.kernel.org, Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Locking in the clk API
-Message-ID: <20110112022546.GA2350@linux-sh.org>
-References: <201101111016.42819.jeremy.kerr@canonical.com> <201101111744.59712.jeremy.kerr@canonical.com> <20110111101314.GA774@linux-sh.org> <201101111830.18597.jeremy.kerr@canonical.com> <20110111121816.GB774@linux-sh.org> <4D2D09E2.5030305@codeaurora.org>
+	id S932727Ab1ALCaa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 21:30:30 -0500
+Received: from mga02.intel.com ([134.134.136.20]:47407 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756410Ab1ALCa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 21:30:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,310,1291622400"; 
+   d="scan'208";a="592055342"
+Date: Wed, 12 Jan 2011 10:30:26 +0800
+From: Shaohua Li <shaohua.li@intel.com>
+To: Corrado Zoccolo <czoccolo@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Subject: Re: [PATCH 1/2]block cfq: make queue preempt work for queues from
+ different workload
+Message-ID: <20110112023026.GA26525@sli10-conroe.sh.intel.com>
+References: <1294735916.1949.637.camel@sli10-conroe>
+ <AANLkTim72yNM1svGbFTKW8pSnFP9W+YgvGs4moXq+pyo@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4D2D09E2.5030305@codeaurora.org>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTim72yNM1svGbFTKW8pSnFP9W+YgvGs4moXq+pyo@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 05:54:42PM -0800, Saravana Kannan wrote:
-> On 01/11/2011 04:18 AM, Paul Mundt wrote:
-> >Again, you are approaching it from the angle that an atomic clock is a
-> >special requirement rather than the default behaviour. Sleeping for
-> >lookup, addition, and deletion are all quite acceptable, but
-> >enable/disable pairs have always been intended to be usable from atomic
-> >context. Anyone that doesn't count on that fact is either dealing with
-> >special case clocks (PLLs, root clocks, etc.) or simply hasn't bothered
-> >implementing any sort of fine grained runtime power management for their
-> >platform.
-> 
-> Paul,
-> 
-> I see you repeating this point a couple of times and I'm a bit confused 
-> how you handle the clock tree/dependencies.
-> 
-> Does your clock driver NOT hide the details of what root clock/PLL a 
-> branch clock is sourced from? If you do hide the details of the root/PLL 
-> source, how do you get the branch clk_enable() to be done atomically if 
-> the root/PLL enables are not possible in atomic context?
-> 
-> Is it simply a matter of your hardware having PLLs and root clocks that 
-> can be turned on/off quickly?
-> 
-There are a few cases where PLL clocks would benefit from a clk_enable()
-that can sleep, but for us these are almost all in the device space. Most
-of the SoCs however have fairly straightforward clock topologies where
-the root clock in question is an external oscillator that can't be
-disabled, and anything chained below that sits behind a PLL divider or
-multiplier bank that can likewise be adjusted atomically. The vast
-majority of the clocks below that can likewise be trivially
-enabled/disabled from atomic context.
+Hi,
+On Wed, Jan 12, 2011 at 05:07:47AM +0800, Corrado Zoccolo wrote:
+> Hi Shaohua,
+> On Tue, Jan 11, 2011 at 9:51 AM, Shaohua Li <shaohua.li@intel.com> wrote:
+> > I got this:
+> >             fio-874   [007]  2157.724514:   8,32   m   N cfq874 preempt
+> >             fio-874   [007]  2157.724519:   8,32   m   N cfq830 slice expired t=1
+> >             fio-874   [007]  2157.724520:   8,32   m   N cfq830 sl_used=1 disp=0 charge=1 iops=0 sect=0
+> >             fio-874   [007]  2157.724521:   8,32   m   N cfq830 set_active wl_prio:0 wl_type:0
+> >             fio-874   [007]  2157.724522:   8,32   m   N cfq830 Not idling. st->count:1
+> > cfq830 is an async queue, and preempted by a sync queue cfq874. But since we
+> > have cfqg->saved_workload_slice mechanism, the preempt is a nop.
+> > Looks currently our preempt is totally broken if the two queues are not from
+> > the same workload type.
+> > Below patch fixes it. This will might make async queue starvation, but it's
+> > what our old code does before cgroup is added.
+> have you measured latency improvements by un-breaking preemption?
+> AFAIK, preemption behaviour changed since 2.6.33, before cgroups were
+> added, and the latency before the changes that weakened preemption in
+> 2.6.33 was far worse.
+Yes. I'm testing a SD card for MeeGo. The random write is very slow (~12k/s) but
+random read is relatively fast > 1M/s.
 
-In response to your query, no, we do not hide those details. Each on-chip
-clock generator is fed by a default oscillator via one input or a board
-specific one via another, with a frequency that can vary wildly depending
-on the implementation. In general we require the SoC code to register its
-clock topology, the board code to work out which source its fed from (and
-at what frequency), and then also providing an initial rate propagation
-kick down the tree to make sure that all of the core clocks are set up
-sensibly and to synchronize hardware/software state.
+Without patch:
+write: (groupid=0, jobs=1): err= 0: pid=3876
+  write: io=966656 B, bw=8054 B/s, iops=1 , runt=120008msec
+    clat (usec): min=5 , max=1716.3K, avg=88637.38, stdev=207100.44
+     lat (usec): min=5 , max=1716.3K, avg=88637.69, stdev=207100.41
+    bw (KB/s) : min=    0, max=   52, per=168.17%, avg=11.77, stdev= 8.85
+read: (groupid=0, jobs=1): err= 0: pid=3877
+  read : io=52516KB, bw=448084 B/s, iops=109 , runt=120014msec
+    slat (usec): min=7 , max=1918.5K, avg=519.78, stdev=25777.85
+    clat (msec): min=1 , max=2728 , avg=71.17, stdev=216.92
+     lat (msec): min=1 , max=2756 , avg=71.69, stdev=219.52
+    bw (KB/s) : min=    1, max= 1413, per=66.42%, avg=567.22, stdev=461.50
 
-Having said that, we _do_ have clocks where rate changes are non-trivial
-due to it being necessary to synchronize with internal timing circuitry,
-but at the moment we don't really deal with those (this is something we'd
-have to deal with for dynamically scaling the bus clock for example,
-which requires a special watchdog overflow to relock an internal PLL,
-which in general we leave fixed).
+With patch:
+write: (groupid=0, jobs=1): err= 0: pid=4884
+  write: io=81920 B, bw=677 B/s, iops=0 , runt=120983msec
+    clat (usec): min=13 , max=742976 , avg=155694.10, stdev=244610.02
+     lat (usec): min=13 , max=742976 , avg=155694.50, stdev=244609.89
+    bw (KB/s) : min=    0, max=   31, per=inf%, avg= 8.40, stdev=12.78
+read: (groupid=0, jobs=1): err= 0: pid=4885
+  read : io=133008KB, bw=1108.3KB/s, iops=277 , runt=120022msec
+    slat (usec): min=8 , max=1159.1K, avg=164.24, stdev=9116.65
+    clat (msec): min=1 , max=1988 , avg=28.34, stdev=55.81
+     lat (msec): min=1 , max=1989 , avg=28.51, stdev=57.51
+    bw (KB/s) : min=    2, max= 1808, per=51.10%, avg=1133.42, stdev=275.59
 
-In general I would be happy to have a sleepable variant of clk_enable(),
-it's just making clk_enable() sleepable by default or treating clocks
-usable from atomic context as the special case that I take issue with,
-particularly when the opposite is the demonstratable norm.
+Both read latency/throughput has big difference with the patch, but write
+gets starvation.
+
+Thanks,
+Shaohua
