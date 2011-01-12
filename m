@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab1ALQah (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 11:30:37 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:35952 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753484Ab1ALQag (ORCPT
+	id S932069Ab1ALQcd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 11:32:33 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58632 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754094Ab1ALQc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 11:30:36 -0500
-Date: Wed, 12 Jan 2011 14:30:22 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Kirill Smelkov <kirr@mns.spb.ru>, Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: Q: perf log mode?
-Message-ID: <20110112163022.GF11968@ghostprotocols.net>
-References: <20110112140613.GA11698@tugrik.mns.mnsspb.ru> <1294841288.19601.49.camel@laptop> <20110112144240.GA1755@nowhere> <20110112145936.GA13992@tugrik.mns.mnsspb.ru> <1294844553.19601.53.camel@laptop>
+	Wed, 12 Jan 2011 11:32:29 -0500
+Date: Wed, 12 Jan 2011 16:32:21 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Nicolas Pitre <nicolas.pitre@canonical.com>
+Subject: Re: [RFC] arm: Defer lookup of machine_type and vet of atags to
+	setup.c
+Message-ID: <20110112163221.GD11039@n2100.arm.linux.org.uk>
+References: <20110111015409.18291.87166.stgit@localhost6.localdomain6> <20110111104051.GA11039@n2100.arm.linux.org.uk> <20110111153630.GB2707@angua.secretlab.ca> <20110111154833.GF11039@n2100.arm.linux.org.uk> <AANLkTi=29LB66j123ufMHQk=46hGYdmR4nZZQFnN=Tku@mail.gmail.com> <20110112155215.GB11039@n2100.arm.linux.org.uk> <AANLkTinwGd9pa7YQ=5hXfarw=MB=YdpBuN7xJAd+Ps4f@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1294844553.19601.53.camel@laptop>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <AANLkTinwGd9pa7YQ=5hXfarw=MB=YdpBuN7xJAd+Ps4f@mail.gmail.com>
 User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Jan 12, 2011 at 04:02:33PM +0100, Peter Zijlstra escreveu:
-> On Wed, 2011-01-12 at 17:59 +0300, Kirill Smelkov wrote:
-> > 
-> > Anyway, maybe something like this could be useful?
-> > 
-> I guess that would be ok, but I'll leave that to Arnaldo.
+On Wed, Jan 12, 2011 at 09:24:34AM -0700, Grant Likely wrote:
+> Actually it looks like the real problem is that the mmu has been
+> turned on, but the virtual mappings for devices have not yet been
+> established, and so the debug macros aren't using a valid address.
 
-It is OK, I'll apply it to my perf/core, for the next merge window.
- 
-> Also note that Arnaldo is revamping the whole script interface to make
-> it possible to open and use the perf fds from the script language itself
-> (the only sane way), completely removing the dependency on perf-record.
+They should be, as they're valid for use from assembly prior to MMU
+turn-on, assembly after MMU turn-on and C code.
 
-Yep, I'm librarising the ad-hoc counter creation routines we have in
-stat, top and record, factoring the common parts, etc, and creating
-'perf test' regression test routines for these new library functions.
+If CONFIG_DEBUG_LL is enabled, create_page_tables() should be setting
+up the necessary initial mappings for printascii() to work.
 
-After I finish the mmap bits, which should be soon, I'll start work on
-having a python binding for these routines and experiment plugging it to
-some other projects I worked on.
+Maybe the efforts to unify that stuff ended up breaking the printascii
+debugging mechanism, and we now require a new debugging mechanism to
+debug the printascii debugging mechanism... :-P
 
-I'll also work on converting a few of the scripts we have to provide
-examples of use of this python binding.
+I've used it on Versatile Express during the last week and it did work
+right from before setup_arch() was called.
 
-Other bindings and a C library can come later, after we settle on an API
-using the python binding as the guinea pig.
+> It looks like I'd need to get past paging_init() in order to get
+> ll_debug working between turning on the mmu and paging_init(), but
+> paging_init() needs the mdesc pointer, and the whole point of the
+> error message is that the mdesc pointer is unknown!  I don't see any
+> code that sets up a debug mapping of the uart before paging_init time.
 
-Parts of this got into this merge window, for instance, perf stat uses
-the perf_evsel api to open and read counters, and perf test has new
-routines to stress them, new stuff I'm stashing at the perf/test branch
-in:
-
-http://git.kernel.org/?p=linux/kernel/git/acme/linux-2.6.git;a=shortlog;h=refs/heads/perf/test
-
-- Arnaldo
+See the #ifdef CONFIG_DEBUG_LL section in create_page_tables in head.S
