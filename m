@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756565Ab1ALW0N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 17:26:13 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:44620 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753686Ab1ALW0K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 17:26:10 -0500
-Date: Wed, 12 Jan 2011 23:26:23 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Rakesh Iyer <riyer@nvidia.com>
-Cc: "tsoni@codeaurora.org" <tsoni@codeaurora.org>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "shubhrajyoti@ti.com" <shubhrajyoti@ti.com>,
-        "ccross@android.com" <ccross@android.com>,
-        "konkers@android.com" <konkers@android.com>,
-        "olof@lixom.net" <olof@lixom.net>, Andrew Chew <AChew@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: Re: [PATCH 1/1] input: tegra-kbc - Add tegra keyboard driver
-Message-ID: <20110112222622.GB4214@elf.ucw.cz>
-References: <1294869179-15102-1-git-send-email-riyer@nvidia.com>
- <1FC56210173BB445BD77F608D6FB8D03165A00806D@HQMAIL03.nvidia.com>
- <20110112220254.GA4214@elf.ucw.cz>
- <1FC56210173BB445BD77F608D6FB8D03165A00806E@HQMAIL03.nvidia.com>
+	id S1756535Ab1ALWc3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 17:32:29 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53075 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754157Ab1ALWc1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 17:32:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1FC56210173BB445BD77F608D6FB8D03165A00806E@HQMAIL03.nvidia.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110112142206.37a1b76d@jbarnes-desktop>
+References: <alpine.DEB.2.00.1101120601100.6210@skynet.skynet.ie>
+ <AANLkTimgs8UfGWk5PCZi4PM5SsvejJd5Y4bb3nHGyZy2@mail.gmail.com>
+ <20110112114649.5365d518@jbarnes-desktop> <AANLkTinSygbLm=nmXy_Wf2ENV8WcQqCc0BKAAOsysvZd@mail.gmail.com>
+ <AANLkTimSKOa8XavLn_RsLZ2scZ=ujdYahcTkeJ2pxBFq@mail.gmail.com> <20110112142206.37a1b76d@jbarnes-desktop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 12 Jan 2011 14:31:33 -0800
+Message-ID: <AANLkTinbyTOirefH91=9feSAUZtgRO1xyHsZsewfz3DG@mail.gmail.com>
+Subject: Re: [git pull] drm intel only fixes
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
+        linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> Here are the list of changes. I was not sure of the protocol of adding this into the patch email.
+On Wed, Jan 12, 2011 at 2:22 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
 >
+> Ah, ok.  So it could be our internal FDI link is underrunning; it goes
+> between the CPU and PCH and carries display bits.
 
-Thanks for detailed list of changes. Usually, these go under "---".
+I'm not sure it's an underrun or anything like that: the corruption is
+long-term in the non-video case. So I take back the "looks like memory
+bandwidth problems", because it really looks more like a corrupted
+blit operation there.
 
-> b) Removed the Fn keymap and its references. This obviated the need for some helper functions.
-> 
+> Are these both desktop type machines with DVI attached monitors?
 
-Thanks! Now if you could wrap emails at column 80, and you'll have
-perfect patches :-).
+DVI on the Core i5, plain analog VGA on the sandybridge one (I can
+hear you asking "Why?". Because the silly intel motherboard doesn't
+_have_ DVI out, and I didn't have a hdmi cable)
 
-								Pavel
+> If it's an FDI or transcoder problem, something like the below may give
+> us more info.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+See above. It's long-term, it was just the video behavior that made me
+originally think it was temporary.
+
+> Can you take a picture of the corruption?
+
+Will do. I'll have to reboot to the broken kernel (my bisection ended
+in a non-broken case)
+
+                  Linus
