@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126Ab1ALPzb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 10:55:31 -0500
-Received: from mail-ww0-f66.google.com ([74.125.82.66]:36482 "EHLO
-	mail-ww0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755042Ab1ALPz3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 10:55:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Hu37hkxB2oqAIxj7H6NZPD1Dol++KBVyAgavcs8UVnYWzxdur0YGVyzNbm1W3B5urf
-         bG4rQQxx1DyZ6aHYWyoRE65cQAnyeeolbDV5YCSIXvlIh41qnP03rKo5tisMTOTbSnE1
-         Hq1VWuYGHB6pRQRqIQkhQeNgEb7si7HOsj8CU=
+	id S1755173Ab1ALP4i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 10:56:38 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37779 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751276Ab1ALP4g convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 10:56:36 -0500
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1101121538470.8212@casper.infradead.org>
+In-Reply-To: <alpine.LFD.2.00.1101121324550.8212@casper.infradead.org>
 References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie>
-	<4D2CE5C8.60601@de.ibm.com>
-	<AANLkTimr4WX3Ay8vC23MKOM+dOcpV+Ca5rg_gcei38nk@mail.gmail.com>
-	<4D2D8ED0.6080807@de.ibm.com>
-	<AANLkTik4h=4o8JEwfd+=CFVb4NgkwaEwxmM6n_+sDj3K@mail.gmail.com>
-	<alpine.LFD.2.00.1101121344070.8212@casper.infradead.org>
-	<AANLkTimdnYHWfBE1nB+2EDRouO7_FoRByVboMYw8WaHB@mail.gmail.com>
-	<AANLkTik=HYzW8--_W+qxi8S9QbAkf9ZZy=uLyaTeV+PC@mail.gmail.com>
-	<alpine.LFD.2.00.1101121538470.8212@casper.infradead.org>
-Date: Wed, 12 Jan 2011 17:55:27 +0200
-Message-ID: <AANLkTimtd9nGKrnMJJQyRbF3=n3S5yfKJs6MBwUYObD1@mail.gmail.com>
+ <4D2CE5C8.60601@de.ibm.com> <AANLkTimr4WX3Ay8vC23MKOM+dOcpV+Ca5rg_gcei38nk@mail.gmail.com>
+ <4D2D8ED0.6080807@de.ibm.com> <alpine.LFD.2.00.1101121235360.8212@casper.infradead.org>
+ <4D2DA6A7.4010609@de.ibm.com> <alpine.LFD.2.00.1101121324550.8212@casper.infradead.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 12 Jan 2011 07:55:42 -0800
+Message-ID: <AANLkTik32TC_eMbe0rZ+g11hFy9Z2_yY38avzY0GbgPv@mail.gmail.com>
 Subject: Re: [git pull] drm for rc1
-From: Anca Emanuel <anca.emanuel@gmail.com>
 To: James Simmons <jsimmons@infradead.org>
 Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
         Dave Airlie <airlied@linux.ie>,
         DRI mailing list <dri-devel@lists.freedesktop.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 5:40 PM, James Simmons <jsimmons@infradead.org> wrote:
+On Wed, Jan 12, 2011 at 5:32 AM, James Simmons <jsimmons@infradead.org> wrote:
 >
->> >>> I tested the revert: the boot screen did change the resolution
->> >>> (without it don't), but my PC still hangs. (using an nvidia 8800GT).
->> >>
->> >> Try my most recent patch. Where does it hang at? Any logs?
->> >>
->> >
->> > With your patch, I can boot the system. But nouveau is not loaded.
->> > dmesg attached.
->> >
->>
->> Forget to mention: the revert makes first steps of boot look the same
->> (change the resolution of the text)
->> but with your patch, I see a big ugly ununtu logo, (I think that is
->> because nouveau is not loaded)
->
-> Is nouveau a module? Does X run? From my understanding is the xorg driver
+> Okay. The nouveau driver also uses the pitch as well. It
+> really should be using the pitch field from drm_framebuffer instead of the
+> line_length from fb_fix_screeninfo. This patch is just to make sure this
+> is the issue. I will submit another patch later that uses
+> drm_fb_framebuffer's pitch field. As for the visual unfortunely their is
+> no real mapping between drm and fbdev.
 
-I didn't modified any option, from the standard Ubuntu 10.10
+Why do you want to remove the drm_fb_helper_fill_fix() call? Quite
+frankly, you're then replacing it with open-coding the function
+partially:
 
-> need KMS to run. I didn't see nouveau at all in your dmesg.
+> +       info->fix.visual = fb->depth == 8 ? FB_VISUAL_PSEUDOCOLOR :
+> +                FB_VISUAL_TRUECOLOR;
+> +       info->fix.line_length = fb->pitch;
+>        drm_fb_helper_fill_var(info, &nfbdev->helper, sizes->fb_width, sizes->fb_height);
 
-Exact. I mentioned this when I tested 'next' versions from last year.
-The answer is in dfe63bb0ad9810db13aab0058caba97866e0a681.
+Which seems to be just a regression. Why not just call
+"drm_fb_helper_fill_fix()" here like we used to?
+
+IOW, I'm inclined to just do the revert. The "fix" clearly breaks
+things, and now you're adding random parts of the function back rather
+than just calling the "fill_fix()" function like things used to. Why?
+
+The commit message in dfe63bb0ad98 doesn't support any of these hacks
+- it just seems to say that drm_fb_helper_fill_fix() should also have
+been called from setcolreg().
+
+So why don't we just revert the commit and instead add that
+drm_fb_helper_fill_fix() to setcolreg()?
+
+                            Linus
