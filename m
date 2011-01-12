@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756009Ab1ALJ00 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 04:26:26 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:4753 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755969Ab1ALJ0U convert rfc822-to-8bit (ORCPT
+	id S1755971Ab1ALJ0T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 04:26:19 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:37431 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754709Ab1ALJ0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 04:26:20 -0500
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-From: "Arend Van Spriel" <arend@broadcom.com>
-To: "Jon Masters" <jcm@redhat.com>, "Brett Rudley" <brudley@broadcom.com>
-cc: devel <devel@linuxdriverproject.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Date: Wed, 12 Jan 2011 01:26:16 -0800
-Subject: RE: PROBLEM: brcm80211 unable to survive suspend/resume cycle
-Thread-Topic: PROBLEM: brcm80211 unable to survive suspend/resume cycle
-Thread-Index: Acuh5JuSkYhK92W9RvqqDbblR9AS0AQVQ+Uw
-Message-ID: <400C43189542CE41BC0A5B252FC90136952FC34AE7@SJEXCHCCR02.corp.ad.broadcom.com>
-References: <1289272437.3916.440.camel@constitution.bos.jonmasters.org>
- <7A94256FD72B884D9E7C55586C3CBCEE13840C62AA@SJEXCHCCR01.corp.ad.broadcom.com>
- <1289880279.3916.889.camel@constitution.bos.jonmasters.org>
- <1293028287.6319.171.camel@constitution.bos.jonmasters.org>
-In-Reply-To: <1293028287.6319.171.camel@constitution.bos.jonmasters.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-X-WSS-ID: 6133AB8F3P055598566-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+	Wed, 12 Jan 2011 04:26:14 -0500
+Subject: Re: 2.6.37-git5 -- INFO: possible irq lock inversion dependency
+ detected
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Miles Lane <miles.lane@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <AANLkTin4n+OQMSTdbsMBrKxhe494Uq2Db-0Fg65ao2iL@mail.gmail.com>
+References: <AANLkTin4n+OQMSTdbsMBrKxhe494Uq2Db-0Fg65ao2iL@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 Jan 2011 10:26:53 +0100
+Message-ID: <1294824413.3639.17.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jon,
+On Tue, 2011-01-11 at 15:10 -0500, Miles Lane wrote:
+> [ INFO: possible irq lock inversion dependency detected ]
+> 2.6.37-git5 #1
+> ---------------------------------------------------------
+> dbus-daemon/1512 just changed the state of lock:
+>  (&(&list->lock)->rlock#7){+.-...}, at: [<ffffffffa01d4ecc>]
+> ieee80211_rx_handlers+0x36/0x1ae3 [mac80211]
+> but this lock was taken by another, HARDIRQ-safe lock in the past:
+>  (&(&priv->lock)->rlock){-.-...}
+> 
+> and interrupts could create inverse lock ordering between them.
 
-Brett delegated this problem to me and I have resolved it in the driver. I will post it to the staging-2.6 repository in coming days when stomach flu subsides. Keep your eyes on the devel archives.
+Thanks Miles. I'm not sure I fully understand this trace, but I think
+you can probably easily reproduce it. Would you be willing to test with
+the patch on this email? I think it's related:
 
-Gr. AvS
+http://thread.gmane.org/gmane.linux.kernel.wireless.general/62842/focus=62848
 
-|-----Original Message-----
-|From: devel-bounces@linuxdriverproject.org [mailto:devel-
-|bounces@linuxdriverproject.org] On Behalf Of Jon Masters
-|Sent: Wednesday, December 22, 2010 3:31 PM
-|To: Brett Rudley
-|Cc: devel; Linux Kernel Mailing List
-|Subject: RE: PROBLEM: brcm80211 unable to survive suspend/resume cycle
-|
-|On Mon, 2010-11-15 at 23:04 -0500, Jon Masters wrote:
-|> On Tue, 2010-11-09 at 10:02 -0800, Brett Rudley wrote:
-|> > Hey Jon, thanks for the heads up.  I can repro and am looking into
-|it.
-|>
-|> Did you get chance to poke much yet?
-|
-|Any word on this?
-|
-|Jon.
-|
-|
-|_______________________________________________
-|devel mailing list
-|devel@linuxdriverproject.org
-|http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
-
+johannes
 
