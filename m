@@ -1,114 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab1ALSqB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 13:46:01 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:51178 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752263Ab1ALSp7 (ORCPT
+	id S1754487Ab1ALSti (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 13:49:38 -0500
+Received: from mtagate7.uk.ibm.com ([194.196.100.167]:40880 "EHLO
+	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970Ab1ALStf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 13:45:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=CwBBT2GiC+wNDzTCI3rCX0TvIefe38vrqRtQG4P2PEtm6tcru7+ETqtyL2xvC8bkPG
-         MPCe42I9gB21MPTOvMhZ4or1VzxoP3289ZEcTLsHM/FMkIqt09c9gOGcn938qSpLJEuS
-         IREpMGN8uvOHHBOkPhwUM8p9xDtny5maIAG0M=
-Date: Wed, 12 Jan 2011 10:45:51 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Kevin McNeely <kev@cypress.com>
-Cc: David Brown <davidb@codeaurora.org>, Trilok Soni <tsoni@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Eric Miao <eric.y.miao@gmail.com>, Mike Frysinger <vapier@gentoo.org>,
-        Henrik Rydberg <rydberg@euromail.se>, Alan Cox <alan@linux.intel.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [v4 3/3] 3/3 spi: Cypress TTSP G3 SPI Device Driver
-Message-ID: <20110112184550.GB9168@core.coreip.homeip.net>
-References: <kev@cypress.com>
- <1294188847-24728-3-git-send-email-kev@cypress.com>
+	Wed, 12 Jan 2011 13:49:35 -0500
+Date: Wed, 12 Jan 2011 19:49:32 +0100 (CET)
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+X-X-Sender: sebott@localhost6.localdomain6
+To: "Ted Ts'o" <tytso@mit.edu>
+cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Oops while going into hibernate
+In-Reply-To: <20110112172646.GB13496@thunk.org>
+Message-ID: <alpine.LFD.2.02.1101121934060.2011@localhost6.localdomain6>
+References: <alpine.LFD.2.02.1101121443230.1900@localhost6.localdomain6> <20110112162655.GA13496@thunk.org> <alpine.LFD.2.02.1101121755400.2011@localhost6.localdomain6> <20110112172646.GB13496@thunk.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+Organization: "IBM Deutschland Research & Development GmbH Vorsitzender des Aufsichtsrats: Martin Jetter Geschaeftsfuehrung: Dirk Wittkopp Sitz der Gesellschaft: Boeblingen Registergericht: Amtsgericht Stuttgart, HRB 243294"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294188847-24728-3-git-send-email-kev@cypress.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
+Hi,
+On Wed, 12 Jan 2011, Ted Ts'o wrote:
+> Since I don't have a machine set up to test hibernation easily at
+> hand, I'd really appreciate it if you could try this patch to
+> determine which inode had the NULL jinode --- and then once you get
+> the device and inode number, to use debugfs's "ncheck" command to map
+> the inode number to a pathname.
+> 
+> If you could do that, it would be a huge help.
 
-On Tue, Jan 04, 2011 at 04:54:06PM -0800, Kevin McNeely wrote:
-> +
-> +static int spi_sync_tmo(struct cyttsp_spi *ts, struct spi_message *message)
-> +{
-> +	DECLARE_COMPLETION_ONSTACK(done);
-> +	int status;
-> +
-> +	message->complete = spi_complete;
-> +	message->context = &done;
-> +	status = spi_async(ts->spi_client, message);
-> +	if (status == 0) {
-> +		int ret = wait_for_completion_interruptible_timeout(&done, HZ);
-> +		if (!ret) {
-> +			dev_dbg(ts->ops.dev, "%s: timeout\n", __func__);
-> +			status = -EIO;
+I did about 5 re-tests with different loads, the result was always:
 
-I do not believe we can do this and simply abort outstanding SPI
-transfer. What if we unload the driver and destroy the device and then
-SPI master will come around? And it does not look like SPI subsystem
-allows to cancel outstanding requests...
+[  249.238697] EXT4-fs (dasda1): inode #1106 has NULL jinode
+[  249.238732] ------------[ cut here ]------------
+[  249.238738] kernel BUG at fs/ext4/ext4_jbd2.h:260!
+[  249.238747] illegal operation: 0001 [#1] PREEMPT SMP 
+[  249.238760] Modules linked in: binfmt_misc dm_multipath scsi_dh vmur [last unloaded: scsi_wait_scan]
+[  249.238786] CPU: 2 Not tainted 2.6.37-05668-g4162cf6-dirty #20
+[  249.238794] Process flush-94:0 (pid: 1244, task: 000000003f110040, ksp: 000000003dca3c70)
+[  249.238803] Krnl PSW : 0704000180000000 00000000001d1130 (mpage_da_map_and_submit+0x464/0x468)
+[  249.238824]            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:0 CC:0 PM:0 EA:3
+[  249.238835] Krnl GPRS: 000000000000c65f 0000000000000000 0000000000000043 0000000000000000
+[  249.238848]            00000000004735c0 0000000000000000 000000003ee45478 0000000000000001
+[  249.238863]            0000000035544aa8 000000003dca3a88 0000000000000004 000000003d29d680
+[  249.238868]            000000003dca3b80 000000000049ef98 00000000001d112c 000000003dca39d8
+[  249.238886] Krnl Code: 00000000001d1120: c040001e01c2        larl    %r4,5914a4
+[  249.238893]            00000000001d1126: c0e5000092ed        brasl   %r14,1e3700
+[  249.238899]            00000000001d112c: a7f40001            brc     15,1d112e
+[  249.238906]           >00000000001d1130: a7f40000            brc     15,1d1130
+[  249.238913]            00000000001d1134: e3e0f0080024        stg     %r14,8(%r15)
+[  249.238920]            00000000001d113a: c0f400000006        brcl    15,1d1146
+[  249.238942]            00000000001d1140: b9040000            lgr     %r0,%r0
+[  249.238963]            00000000001d1144: 0de1                basr    %r14,%r1
+[  249.238989] Call Trace:
+[  249.238998] ([<00000000001d112c>] mpage_da_map_and_submit+0x460/0x468)
+[  249.239012]  [<00000000001d19f2>] ext4_da_writepages+0x32e/0x744
+[  249.239028]  [<000000000016fe64>] writeback_single_inode+0xd4/0x25c
+[  249.239044]  [<0000000000170514>] writeback_sb_inodes+0xd0/0x160
+[  249.239050]  [<0000000000171278>] writeback_inodes_wb+0x90/0x16c
+[  249.239055]  [<00000000001715fa>] wb_writeback+0x2a6/0x480
+[  249.239060]  [<00000000001718b6>] wb_do_writeback+0xe2/0x294
+[  249.239066]  [<0000000000171b14>] bdi_writeback_thread+0xac/0x2fc
+[  249.239072]  [<000000000007d192>] kthread+0xbe/0xc8
+[  249.239087]  [<0000000000479182>] kernel_thread_starter+0x6/0xc
+[  249.239101]  [<000000000047917c>] kernel_thread_starter+0x0/0xc
+[  249.239112] INFO: lockdep is turned off.
+[  249.239119] Last Breaking-Event-Address:
+[  249.239126]  [<00000000001d112c>] mpage_da_map_and_submit+0x460/0x468
 
-Have you actually seen timeouts firing? Why isn't the same needed for
-I2C interface?
 
-> +
-> +static s32 ttsp_spi_read_block_data(void *handle, u8 addr,
-> +				    u8 length, void *data)
-> +{
-> +	struct cyttsp_spi *ts = container_of(handle, struct cyttsp_spi, ops);
-> +	int retval;
-> +
-> +	retval = cyttsp_spi_xfer(CY_SPI_RD_OP, ts, addr, data, length);
-> +	if (retval < 0)
-> +		dev_dbg(ts->ops.dev,  "%s: ttsp_spi_read_block_data failed\n",
-> +			__func__);
-> +
-> +	/*
-> +	 * Do not print the above error if the data sync bytes were not found.
-> +	 * This is a normal condition for the bootloader loader startup and need
-> +	 * to retry until data sync bytes are found.
-> +	 */
-> +	if (retval > 0)
-> +		retval = -1;	/* now signal fail; so retry can be done */
+# debugfs /dev/dasda1
+debugfs 1.41.10 (10-Feb-2009)
+debugfs:  ncheck 1106
+Inode   Pathname
+1106    /usr/bin/killall
+debugfs:  q
 
-I am a bit confused here. First of all we do retries in
-cyttsp_spi_xfer(). Then cyttsp_core does retry transfer as well (but i2c
-methods do not retry). Can we settle on retrying in one place only?
+there are also a few messages like:
+EXT4-fs error (device dasda1): ext4_lookup:1043: inode #130849: comm find: deleted inode referenced: 129148
+I guess they appeared after one of the crashes during bisecting (can't 
+run fsck right now, since its my /)
 
-> +
-> +static s32 ttsp_spi_tch_ext(void *handle, void *values)
-> +{
-> +	struct cyttsp_spi *ts = container_of(handle, struct cyttsp_spi, ops);
-> +	int retval = 0;
-> +
-> +	/*
-> +	 * TODO: Add custom touch extension handling code here
-> +	 * set: retval < 0 for any returned system errors,
-> +	 *	retval = 0 if normal touch handling is required,
-> +	 *	retval > 0 if normal touch handling is *not* required
-> +	 */
-> +
-> +	if (!ts || !values)
-> +		retval = -EINVAL;
-> +
-> +	return retval;
+Regards,
+Sebastian
 
-I question the utility of "per bus" extended touch handling. I can see
-it being supplied from platform data but niot by interface code.
-
-BTW, no need to resubmit patches not, it is just a discussion...
-
-Thanks.
-
--- 
-Dmitry
+> 
+> Thanks, regards,
+> 
+> 						- Ted
+> 
+> P.S.  Also, if you could try suspending once or twice, with different
+> programs running, to see if the inode number and pathname are constant
+> or vary, that would also be helpful.
+> 
+> diff --git a/fs/ext4/ext4_jbd2.h b/fs/ext4/ext4_jbd2.h
+> index d8b992e..7d6d7d7 100644
+> --- a/fs/ext4/ext4_jbd2.h
+> +++ b/fs/ext4/ext4_jbd2.h
+> @@ -252,8 +252,15 @@ static inline int ext4_journal_force_commit(journal_t *journal)
+> 
+>  static inline int ext4_jbd2_file_inode(handle_t *handle, struct inode *inode)
+>  {
+> -	if (ext4_handle_valid(handle))
+> +	if (ext4_handle_valid(handle)) {
+> +		if (unlikely(EXT4_I(inode)->jinode == NULL)) {
+> +			/* Should never happen */
+> +			ext4_msg(inode->i_sb, KERN_CRIT, 
+> +				 "inode #%lu has NULL jinode", inode->i_ino);
+> +			BUG();
+> +		}
+>  		return jbd2_journal_file_inode(handle, EXT4_I(inode)->jinode);
+> +	}
+>  	return 0;
+>  }
+> 
+> 
