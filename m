@@ -1,162 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932712Ab1AKX6Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 18:58:16 -0500
-Received: from xenotime.net ([72.52.115.56]:53787 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932681Ab1AKX6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 18:58:13 -0500
-Date: Tue, 11 Jan 2011 15:58:03 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>,
-        Alex Dubov <oakad@yahoo.com>
-Subject: Re: [PATCH 1/4] scatterlist: new helper functions
-Message-Id: <20110111155803.5638ec4e.rdunlap@xenotime.net>
-In-Reply-To: <20110111155511.bcb90254.akpm@linux-foundation.org>
-References: <1294788975-19584-1-git-send-email-maximlevitsky@gmail.com>
-	<1294788975-19584-2-git-send-email-maximlevitsky@gmail.com>
-	<20110111155124.ee61cd7f.rdunlap@xenotime.net>
-	<20110111155511.bcb90254.akpm@linux-foundation.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932717Ab1ALACa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 19:02:30 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:43530 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932681Ab1ALAC2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 19:02:28 -0500
+Date: Tue, 11 Jan 2011 17:02:24 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, sodaville@linutronix.de, x86@kernel.org,
+        dirk.brandewie@gmail.com
+Subject: Re: [PATCH v2 13/15] x86/rtc: don't register rtc if we the DT blob
+Message-ID: <20110112000224.GI2131@angua.secretlab.ca>
+References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>
+ <1292600033-12271-14-git-send-email-bigeasy@linutronix.de>
+ <20101230085940.GG11721@angua.secretlab.ca>
+ <20110104132846.GC21359@www.tglx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110104132846.GC21359@www.tglx.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Jan 2011 15:55:11 -0800 Andrew Morton wrote:
-
-> On Tue, 11 Jan 2011 15:51:24 -0800
-> Randy Dunlap <rdunlap@xenotime.net> wrote:
+On Tue, Jan 04, 2011 at 02:28:46PM +0100, Sebastian Andrzej Siewior wrote:
+> or we might end up with two device nodes for the same hardware.
 > 
-> > >  /**
-> > > + * sg_advance - advance scatterlist by 'consumed' bytes
-> > > + * @sg - the current sg entry
-> > > + * @consumed - how much bytes to advance
-> > 
-> > kernel-doc notation for parameters is like so:
-> 
-> I think I fixed most of this.  Probably missed some though.
-> 
-> Teach checkpatch to check kerneldoc ;)
-> 
-
-ugh, no thanks.
-
-> 
-> 
-> From: Andrew Morton <akpm@linux-foundation.org>
-> 
-> fix general disaster in code comments
-> 
-> Cc: Alex Dubov <oakad@yahoo.com>
-> Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Maxim Levitsky <maximlevitsky@gmail.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 > ---
+>  arch/x86/kernel/rtc.c |   18 ++++++++++++++++++
+>  1 files changed, 18 insertions(+), 0 deletions(-)
 > 
->  lib/scatterlist.c |   31 ++++++++++++++++++-------------
->  1 file changed, 18 insertions(+), 13 deletions(-)
+> diff --git a/arch/x86/kernel/rtc.c b/arch/x86/kernel/rtc.c
+> index 1cfbbfc..0cfa138 100644
+> --- a/arch/x86/kernel/rtc.c
+> +++ b/arch/x86/kernel/rtc.c
+> @@ -6,6 +6,7 @@
+>  #include <linux/acpi.h>
+>  #include <linux/bcd.h>
+>  #include <linux/pnp.h>
+> +#include <linux/of.h>
+>  
+>  #include <asm/vsyscall.h>
+>  #include <asm/x86_init.h>
+> @@ -218,6 +219,20 @@ static struct platform_device rtc_device = {
+>  	.num_resources	= ARRAY_SIZE(rtc_resources),
+>  };
+>  
+> +#ifdef CONFIG_OF
+> +static __init int have_DTB(void)
+> +{
+> +	if (initial_boot_params)
+> +		return 1;
+> +	return 0;
+> +}
+> +#else
+> +static inline int have_DTB(void)
+> +{
+> +	return 0;
+> +}
+> +#endif
+> +
+
+Not quite the right test.  For instance, OLPC has real openfirmware so
+initial_boot_params will be zero even though there is a fully
+populated device tree.  Should test the allnodes value instead.
+
+Also, this test is useful to more than just rtc I'm sure.  It could
+easily live in linux/of.h.
+
+Finally one minor nit.  This is more verbose than it needs to be.  It
+could instead be:  "return allnodes != NULL;", and the __init is
+unnecessary on a static inline.
+
+g.
+
+>  static __init int add_rtc_cmos(void)
+>  {
+>  #ifdef CONFIG_PNP
+> @@ -237,6 +252,9 @@ static __init int add_rtc_cmos(void)
+>  	}
+>  #endif
+>  
+> +	if (have_DTB())
+> +		return 0;
+> +
+>  	platform_device_register(&rtc_device);
+>  	dev_info(&rtc_device.dev,
+>  		 "registered platform RTC device (no PNP device found)\n");
+> -- 
+> 1.7.3.2
 > 
-> diff -puN lib/scatterlist.c~scatterlist-new-helper-functions-fix lib/scatterlist.c
-> --- a/lib/scatterlist.c~scatterlist-new-helper-functions-fix
-> +++ a/lib/scatterlist.c
-> @@ -41,7 +41,7 @@ EXPORT_SYMBOL(sg_next);
->  /**
->   * sg_advance - advance scatterlist by 'consumed' bytes
->   * @sg - the current sg entry
-> - * @consumed - how much bytes to advance
-> + * @consumed - how many bytes to advance
-
- * @consumed: how many bytes to advance
-
->   *
->   */
->  struct scatterlist *sg_advance(struct scatterlist *sg, int consumed)
-> @@ -76,8 +76,8 @@ EXPORT_SYMBOL(sg_advance);
->   * sg_nents - calculate number of sg entries in sg list
->   * @sg - the current sg entry
-
- * @sg:
-
->   *
-> - * Allows to calculate dynamicly the lenght of the sg table, based on
-> - * assumption that last entry is NULL
-> + * Allows to calculate aldynamicly the length of the sg table, based on an
-> + * assumption that the last entry is NULL
->   */
->  int sg_nents(struct scatterlist *sg)
->  {
-> @@ -92,11 +92,11 @@ int sg_nents(struct scatterlist *sg)
->  EXPORT_SYMBOL(sg_nents);
->  
->  /**
-> - * sg_total_len - calculate total lenght of scatterlist
-> + * sg_total_len - calculate total length of scatterlist
->   * @sg - the current sg entry
-
- * @sg:
-
->   *
-> - * Dynamicly calculate total number of bytes in a sg list
-> - * based on assumption that list ends with a NULL entry
-> + * Dynamically calculate total number of bytes in a sg list
-
-preferably:
-                                                  in an sg list
-
-> + * based on an assumption that the list ends with a NULL entry
->   */
->  int sg_total_len(struct scatterlist *sg)
->  {
-> @@ -182,8 +182,14 @@ void sg_init_one(struct scatterlist *sg,
->  EXPORT_SYMBOL(sg_init_one);
->  
->  /**
-> - * sg_copy - copies sg entries from sg_from to sg_to, such
-> - * as sg_to covers first 'len' bytes from sg_from.
-> + * sg_copy - copy sg entries
-> + * @sg_from: source
-> + * @sg_to: destination
-> + *
-> + * Copies from @sg_from to @sg_to.  @sg_to covers first 'len' bytes from
-> + * @sg_from.
-> + *
-> + * Returns zero on success, else a -ve errno.
->   */
->  int sg_copy(struct scatterlist *sg_from, struct scatterlist *sg_to, int len)
->  {
-> @@ -616,13 +622,12 @@ size_t sg_copy_to_buffer(struct scatterl
->  }
->  EXPORT_SYMBOL(sg_copy_to_buffer);
->  
-> -
->  /**
-> - * sg_compare_to_buffer - compare contents of the data pointeted by sg table
-> + * sg_compare_to_buffer - compare contents of the data covered by an sg table
->   * to a kernel ram buffer
-> - * @sg - the current sg entry
-> - * @buffer - linear buffer to compare with
-> - * @len - lenght of that buffer
-> + * @sg: the current sg entry
-> + * @buffer: linear buffer to compare with
-> + * @len: length of that buffer
-
-Returns what??
-
->   */
->  bool sg_compare_to_buffer(struct scatterlist *sg, u8 *buffer, size_t len)
->  {
-> _
-> 
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
