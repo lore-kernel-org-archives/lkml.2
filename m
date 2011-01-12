@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402Ab1ALFSu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 00:18:50 -0500
-Received: from vms173019pub.verizon.net ([206.46.173.19]:44681 "EHLO
-	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab1ALFSr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 00:18:47 -0500
-Date: Wed, 12 Jan 2011 00:18:39 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: linux-acpi@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        akpm <akpm@linux-foundation.org>, Zhang Rui <rui.zhang@intel.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Zimny Lech <napohybelskurwysynom2010@gmail.com>
-Subject: Re: [PATCH -next] thermal: depends on NET
-In-reply-to: <20110110090059.6f4d739d.randy.dunlap@oracle.com>
-Message-id: <alpine.LFD.2.02.1101120008590.19140@x980>
-References: <20101213163607.0b0a7c3a.sfr@canb.auug.org.au>
- <20101213112033.d0060e6c.randy.dunlap@oracle.com>
- <20110110090059.6f4d739d.randy.dunlap@oracle.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S1751332Ab1ALFXG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 00:23:06 -0500
+Received: from mail.atheros.com ([12.19.149.2]:43986 "EHLO mail.atheros.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750780Ab1ALFXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 00:23:04 -0500
+Date: Wed, 12 Jan 2011 10:52:28 +0530
+From: Vasanthakumar Thiagarajan <vasanth@atheros.com>
+To: Bernhard Walle <walle@corscience.de>
+CC: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+        Jouni Malinen <Jouni.Malinen@atheros.com>,
+        Vasanth Thiagarajan <Vasanth.Thiagarajan@atheros.com>,
+        Senthilkumar Balasubramanian 
+	<Senthilkumar.Balasubramanian@atheros.com>,
+        "linville@tuxdriver.com" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [RFC] ath9k: Fix reporting of RX STBC streams to
+	userspace
+Message-ID: <20110112052227.GE31650@vasanth-laptop>
+References: <1294765194-30542-1-git-send-email-walle@corscience.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1294765194-30542-1-git-send-email-walle@corscience.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > --- linux-next-20101213.orig/drivers/thermal/Kconfig
-> > +++ linux-next-20101213/drivers/thermal/Kconfig
-> > @@ -4,6 +4,7 @@
-> >  
-> >  menuconfig THERMAL
-> >  	tristate "Generic Thermal sysfs driver"
-> > +	depends on NET
+On Tue, Jan 11, 2011 at 10:29:54PM +0530, Bernhard Walle wrote:
+> While the driver reports
+> 
+>         ath: TX streams 2, RX streams: 2
+> 
+> in the kernel log (with ATH_DBG_CONFIG set in the debug module
+> parameter), "iw list" only reported
+> 
+> [...]
+>         Capabilities: 0x12ce
+>                 HT20/HT40
+>                 SM Power Save disabled
+>                 RX HT40 SGI
+>                 TX STBC
+>                 RX STBC 1-streams
+> [...]
+> 
+> The driver seems to set the value as flag while the iw tool interprets
+> it as number. This patch fixes that.
 
-I've added this line to the offending patch.
+Nope. hw supports STBC for one Spatial stream only.
 
-While I agree that randconfig build testing
-is theoretically useful, in recent memory
-its results do not seem particularly relevant
-to useful configs.
-
-Perhaps it would be a good idea to spend some time
-making non-useful configs impossible, and thus focus
-the testing where it will be of more benefit?
-
-thanks,
-Len Brown, Intel Open Source Technology Center
+Vasanth
