@@ -1,23 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab1ALMtu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 07:49:50 -0500
-Received: from casper.infradead.org ([85.118.1.10]:47541 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756210Ab1ALMts (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 07:49:48 -0500
-Date: Wed, 12 Jan 2011 12:49:39 +0000 (GMT)
-From: James Simmons <jsimmons@infradead.org>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Airlie <airlied@linux.ie>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [git pull] drm for rc1
-In-Reply-To: <4D2D8ED0.6080807@de.ibm.com>
-Message-ID: <alpine.LFD.2.00.1101121235360.8212@casper.infradead.org>
-References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie> <4D2CE5C8.60601@de.ibm.com> <AANLkTimr4WX3Ay8vC23MKOM+dOcpV+Ca5rg_gcei38nk@mail.gmail.com> <4D2D8ED0.6080807@de.ibm.com>
+	id S1756239Ab1ALM5D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 07:57:03 -0500
+Received: from www.tglx.de ([62.245.132.106]:41364 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756014Ab1ALM5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 07:57:02 -0500
+Date: Wed, 12 Jan 2011 13:56:24 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Soren Sandmann <ssp@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, kernel@pengutronix.de,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: BUG: spinlock recursion (sys_chdir, user_path_at, do_path_lookup
+ ...)
+In-Reply-To: <20110112124844.GA4415@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.00.1101121354570.12146@localhost6.localdomain6>
+References: <20110111110539.GP24920@pengutronix.de> <20110112075229.GZ24920@pengutronix.de> <alpine.LFD.2.00.1101121153370.12146@localhost6.localdomain6> <20110112120349.GH24920@pengutronix.de> <20110112123508.GZ11039@n2100.arm.linux.org.uk>
+ <20110112124844.GA4415@n2100.arm.linux.org.uk>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -25,46 +34,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> Am 12.01.2011 00:28, schrieb Linus Torvalds:
-> > On Tue, Jan 11, 2011 at 3:20 PM, Christian Borntraeger
-> > <borntraeger@de.ibm.com> wrote:
-> >>
-> >> Now nouveau framebuffer is completely broken on my T61p (01:00.0 VGA compatible controller: nVidia Corporation G84M [Quadro FX 570M] (rev a1))
-> >> During startup the framebuffer shows only stripes and a blank
-> >> screen after suspend/resume.
-> >> I also see lots of TRAP messages. (see below).
-> >> X11 seems to work fine though...
+On Wed, 12 Jan 2011, Russell King - ARM Linux wrote:
+> On Wed, Jan 12, 2011 at 12:35:08PM +0000, Russell King - ARM Linux wrote:
+> > ARM doesn't implement save_stack_trace_regs() nor save_stack_trace_bp()
+> > so if the compiler referenced these, you'd have a kernel which doesn't
+> > link.  The only places that this symbol appears is:
 > > 
-> > Can you try to bisect?
+> > arch/x86/kernel/stacktrace.c:void save_stack_trace_regs(struct stack_trace *trac
+> > arch/x86/mm/kmemcheck/error.c:  save_stack_trace_regs(&e->trace, regs);
+> > include/linux/stacktrace.h:extern void save_stack_trace_regs(struct stack_trace
+> > 
+> > So, if this is where your bisect decided was the problem, your bisect
+> > was faulty.
 > 
-> dfe63bb0ad9810db13aab0058caba97866e0a681 is the first bad commit
-> commit dfe63bb0ad9810db13aab0058caba97866e0a681
-> Author: James Simmons <jsimmons@infradead.org>
-> Date:   Thu Dec 23 16:40:37 2010 +0000
+> BTW, a useful thing to do after a bisect is to return to the point in
+> the history where you first noticed the regression (so Linus' tip,
+> your tip, or whatever).  Then try reverting the commit which git bisect
+> _thinks_ is the cause of your problem and re-test that.
 > 
->     drm: Update fbdev fb_fix_screeninfo
+> If the problem is fixed, you have greater confidence that the commit is
+> the problem.
 > 
+> If it made no difference, then you know that something else (maybe in
+> combination) is causing the problem.
 > 
-> Reverting this on top of todays git also fixes my problem.
+> If you couldn't revert it because of other dependencies then you have
+> to rely on analysis (such as what I did) and maybe try again with a
+> slightly different strategy - maybe the problem only _occasionally_
+> occurs, making the 'git bisect good' points unreliable, so maybe you
+> need to do more testing when the problem doesn't immediately appear?
+> 
+> Lastly, it is worth bearing in mind that GCC is really finicky with its
+> optimization.  It may be hard to believe, but unrelated function
+> definitions in headers can (and do) affect the code generation in
+> completely unrelated functions causing them to be optimized
+> differently [*].  Maybe this applies to prototypes too?
 
-I see the problem. Nouveau for some hardware does a accelerated 
-clearing of the screen before we register the framebuffer. The above patch 
-does fix a real issue so please don't revert it. Can you try this patch.
+Yes, it does. Also adding an inline or define can change the
+behaviour.
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_fbcon.c b/drivers/gpu/drm/nouveau/nouveau_fbcon.c
-index a26d047..4ef24d6 100644
---- a/drivers/gpu/drm/nouveau/nouveau_fbcon.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_fbcon.c
-@@ -359,6 +359,8 @@ nouveau_fbcon_create(struct nouveau_fbdev *nfbdev,
- 	info->screen_base = nvbo_kmap_obj_iovirtual(nouveau_fb->nvbo);
- 	info->screen_size = size;
- 
-+	info->fix.visual = fb->depth == 8 ? FB_VISUAL_PSEUDOCOLOR :
-+                FB_VISUAL_TRUECOLOR;
- 	drm_fb_helper_fill_var(info, &nfbdev->helper, sizes->fb_width, sizes->fb_height);
- 
- 	/* Set aperture base/size for vesafb takeover */
+> So it _could_ be that the prototype change in include/linux/stacktrace.h
+> is tickling a GCC code generation bug.
+> 
+> * - ISTR, this behaviour was raised as a bug with GCC folk, which I
+> believe was closed down as wontfix as its a result of the way the
+> optimizer works.
 
+Right, they just fixed the problem where this effect generated buggy
+code on x86 in some cases.
 
+Thanks,
+
+	tglx
 
