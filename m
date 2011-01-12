@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756558Ab1ALWC0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 17:02:26 -0500
-Received: from ozlabs.org ([203.10.76.45]:58769 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754420Ab1ALWCY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 17:02:24 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: [PATCH] module: fix build when DEBUGP is defined
-Date: Thu, 13 Jan 2011 08:32:15 +1030
-User-Agent: KMail/1.13.5 (Linux/2.6.35-24-generic; KDE/4.5.1; i686; ; )
-Cc: lkml <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org>
-References: <20110111172153.e43e03b8.randy.dunlap@oracle.com> <201101121918.21079.rusty@rustcorp.com.au> <4D2DD629.1080701@oracle.com>
-In-Reply-To: <4D2DD629.1080701@oracle.com>
+	id S1756579Ab1ALWCp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 17:02:45 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:41743 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756536Ab1ALWCn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 17:02:43 -0500
+Date: Wed, 12 Jan 2011 23:02:55 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Rakesh Iyer <riyer@nvidia.com>
+Cc: "tsoni@codeaurora.org" <tsoni@codeaurora.org>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "shubhrajyoti@ti.com" <shubhrajyoti@ti.com>,
+        "ccross@android.com" <ccross@android.com>,
+        "konkers@android.com" <konkers@android.com>,
+        "olof@lixom.net" <olof@lixom.net>, Andrew Chew <AChew@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
+Subject: Re: [PATCH 1/1] input: tegra-kbc - Add tegra keyboard driver
+Message-ID: <20110112220254.GA4214@elf.ucw.cz>
+References: <1294869179-15102-1-git-send-email-riyer@nvidia.com>
+ <1FC56210173BB445BD77F608D6FB8D03165A00806D@HQMAIL03.nvidia.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101130832.16210.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1FC56210173BB445BD77F608D6FB8D03165A00806D@HQMAIL03.nvidia.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jan 2011 02:56:17 am Randy Dunlap wrote:
-> On 01/12/11 00:48, Rusty Russell wrote:
-> > On Wed, 12 Jan 2011 11:51:53 am Randy Dunlap wrote:
-> >> From: Randy Dunlap <randy.dunlap@oracle.com>
-> >>
-> >> Fix module loader build when DEBUGP is defined.
-> >> Fixes build error & warning:
-> >>
-> >> kernel/module.c:1910: error: 'name' undeclared (first use in this function)
-> >> kernel/module.c:2567: warning: format '%lx' expects type 'long unsigned int', but argument 2 has type 'Elf64_Addr'
-> >>
-> >> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> >> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> >> ---
-> >>  kernel/module.c |    4 ++--
-> >>  1 file changed, 2 insertions(+), 2 deletions(-)
-> >>
-> >> --- linux-next-20110111.orig/kernel/module.c
-> >> +++ linux-next-20110111/kernel/module.c
-> >> @@ -1907,7 +1907,7 @@ static void layout_sections(struct modul
-> >>  			    || strstarts(sname, ".init"))
-> >>  				continue;
-> >>  			s->sh_entsize = get_offset(mod, &mod->core_size, s, i);
-> >> -			DEBUGP("\t%s\n", name);
-> >> +			DEBUGP("\t%s\n", sname);
-> >>  		}
-> >>  		switch (m) {
-> >>  		case 0: /* executable */
-> >> @@ -2563,7 +2563,7 @@ static int move_module(struct module *mo
-> >>  			memcpy(dest, (void *)shdr->sh_addr, shdr->sh_size);
-> >>  		/* Update sh_addr to point to copy in image. */
-> >>  		shdr->sh_addr = (unsigned long)dest;
-> >> -		DEBUGP("\t0x%lx %s\n",
-> >> +		DEBUGP("\t0x%llx %s\n",
-> >>  		       shdr->sh_addr, info->secstrings + shdr->sh_name);
-> > 
-> > This will break on 32-bit.  We really need a cast to long here :(
+On Wed 2011-01-12 13:59:45, Rakesh Iyer wrote:
+> Hi all.
 > 
-> Really?  I built it on i386 and x86_64 (successfully).
+> I apologize for not specifying the PATCH indicator as "PATCH v4".
+> 
+> Sorry for the inconvenience caused.
 
-shdr->sh_addr is 32 bit, not a long long.  You should get a warning.
+Well, that is not huge problem, but short note of changes from last
+version would be welcome.
 
-Rusty.
+AFAICT, FN handling was reworked...?
+
+> > +     KEY_F10, KEY_F9, KEY_BACKSPACE, KEY_3,
+> > +             KEY_2, KEY_UP, KEY_PRINT, KEY_PAUSE,
+
+But now I'm confused; does hardware have Fx keys (F10 above) or not?
+									Pavel
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
