@@ -1,106 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756483Ab1ALVIV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 16:08:21 -0500
-Received: from mail.us.es ([193.147.175.20]:32961 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756329Ab1ALVIS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 16:08:18 -0500
-Message-ID: <4D2E183C.4070908@netfilter.org>
-Date: Wed, 12 Jan 2011 22:08:12 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100619 Icedove/3.0.5
-MIME-Version: 1.0
-To: Jan Engelhardt <jengelh@medozas.de>
-CC: Valdis.Kletnieks@vt.edu, Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: XT_MATCH_REALM Kconfig whinge...
-References: <20519.1294859715@localhost> <4D2E057D.30707@netfilter.org> <alpine.LNX.2.01.1101122156310.27393@obet.zrqbmnf.qr>
-In-Reply-To: <alpine.LNX.2.01.1101122156310.27393@obet.zrqbmnf.qr>
-X-Enigmail-Version: 1.0.1
-Content-Type: multipart/mixed;
- boundary="------------010208050509060702040002"
+	id S1756496Ab1ALVJQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 16:09:16 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:13659 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756344Ab1ALVJO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 16:09:14 -0500
+Date: Wed, 12 Jan 2011 22:08:55 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        LM Sensors <lm-sensors@lm-sensors.org>
+Subject: [GIT PULL] hwmon updates for 2.6.38
+Message-ID: <20110112220855.0b98a80e@endymion.delvare>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010208050509060702040002
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Hi Linus,
 
-On 12/01/11 21:57, Jan Engelhardt wrote:
-> On Wednesday 2011-01-12 20:48, Pablo Neira Ayuso wrote:
-> 
->> On 12/01/11 20:15, Valdis.Kletnieks@vt.edu wrote:
->>> scripts/kconfig/conf --silentoldconfig Kconfig
->>> warning: (NETFILTER_XT_MATCH_REALM) selects NET_CLS_ROUTE which has unmet direct dependencies (NET && NET_SCHED)
->>> warning: (NETFILTER_XT_MATCH_REALM) selects NET_CLS_ROUTE which has unmet direct dependencies (NET && NET_SCHED)
->>
->> Does this fix your problem?
->>
-> 
-> diff --git a/net/netfilter/Kconfig b/net/netfilter/Kconfig
-> index 1534f2b..ae56764 100644
-> --- a/net/netfilter/Kconfig
-> +++ b/net/netfilter/Kconfig
-> @@ -886,7 +886,8 @@ config NETFILTER_XT_MATCH_RATEEST
->  config NETFILTER_XT_MATCH_REALM
->  	tristate  '"realm" match support'
->  	depends on NETFILTER_ADVANCED
-> -	select NET_CLS_ROUTE
-> +	depends on NET_SCHED
-> +	depends on NET_CLS_ROUTE
->  	help
->  	  This option adds a `realm' match, which allows you to use the realm
->  	  key from the routing subsystem inside iptables.
-> 
-> 
-> This patch is not right. The select should just be removed, because
-> xt_realm is useful even without SCHED and CLS_ROUTE.
+Please pull hwmon subsystem updates for Linux 2.6.38 from:
 
-I wonder why NET_CLS_ROUTE has been there as dependency.
+git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging.git hwmon-for-linus
 
-Then this patch should be fine.
+Small cleanups in various drivers, with support for one new device
+(SMSC EMC1423) and improved support for another (SMSC SCH5127), and
+standardization of the intrusion detection interface.
 
+ Documentation/feature-removal-schedule.txt |   10 ++
+ Documentation/hwmon/adm9240                |    2 +-
+ Documentation/hwmon/ads7828                |    2 +-
+ Documentation/hwmon/dme1737                |   12 +-
+ Documentation/hwmon/w83627hf               |   22 ++++
+ Documentation/hwmon/w83793                 |    2 +-
+ drivers/hwmon/Kconfig                      |    4 +-
+ drivers/hwmon/adm9240.c                    |   32 +++++-
+ drivers/hwmon/ads7828.c                    |    4 +-
+ drivers/hwmon/dme1737.c                    |  189 ++++++++++++++++++---------
+ drivers/hwmon/emc1403.c                    |   16 ++-
+ drivers/hwmon/fschmd.c                     |    5 +-
+ drivers/hwmon/it87.c                       |   30 ++---
+ drivers/hwmon/lm78.c                       |   14 +-
+ drivers/hwmon/pc87360.c                    |   53 ++++-----
+ drivers/hwmon/pc87427.c                    |   26 ++--
+ drivers/hwmon/via686a.c                    |   14 ++-
+ drivers/hwmon/w83781d.c                    |   29 ++---
+ drivers/hwmon/w83792d.c                    |   44 ++++++-
+ drivers/hwmon/w83793.c                     |   38 +++++-
+ drivers/hwmon/w83795.c                     |    4 +-
+ 21 files changed, 370 insertions(+), 182 deletions(-)
 
+---------------
 
---------------010208050509060702040002
-Content-Type: text/x-patch;
- name="realm.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="realm.patch"
+Jean Delvare (9):
+      hwmon: (w83795) Silent false warning from gcc
+      hwmon: (via686a) Initialize fan_div values
+      hwmon: (adm9240) Implement the standard intrusion detection interface
+      hwmon: (w83792d) Implement the standard intrusion detection interface
+      hwmon: (w83793) Implement the standard intrusion detection interface
+      hwmon: Schedule the removal of the old intrusion detection interfaces
+      hwmon: (fschmd) Drop useless mutex
+      hwmon: (w83793) Drop useless mutex
+      hwmon: (w83627hf) Document W83627THF voltage pin mapping
 
-netfilter: xt_realm: fix unmet direct dependencies
+Jekyll Lai (1):
+      hwmon: (emc1403) Add EMC1423 support
 
-From: Pablo Neira Ayuso <pablo@netfilter.org>
+Joe Perches (5):
+      hwmon: (it87) Use pr_fmt and pr_<level>
+      hwmon: (lm78) Use pr_fmt and pr_<level>
+      hwmon: (pc87360) Use pr_fmt and pr_<level>
+      hwmon: (pc87427) Use pr_fmt and pr_<level>
+      hwmon: (w83781d) Use pr_fmt and pr_<level>
 
-scripts/kconfig/conf --silentoldconfig Kconfig
-warning: (NETFILTER_XT_MATCH_REALM) selects NET_CLS_ROUTE which has unmet direct dependencies (NET && NET_SCHED)
-warning: (NETFILTER_XT_MATCH_REALM) selects NET_CLS_ROUTE which has unmet direct dependencies (NET && NET_SCHED)
+Juerg Haefliger (2):
+      hwmon: (dme1737) Add support for in7 for SCH5127
+      hwmon: (dme1737) Minor cleanups
 
-Jan Engelhardt spotted that NET_CLS_ROUTE is a superfluous dependency,
-for that reason, this patch remove it.
+Steven Hardy (1):
+      hwmon: (ads7828) Update email contact details
 
-Reported by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
----
- net/netfilter/Kconfig |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/net/netfilter/Kconfig b/net/netfilter/Kconfig
-index 1534f2b..8960260 100644
---- a/net/netfilter/Kconfig
-+++ b/net/netfilter/Kconfig
-@@ -886,7 +886,6 @@ config NETFILTER_XT_MATCH_RATEEST
- config NETFILTER_XT_MATCH_REALM
- 	tristate  '"realm" match support'
- 	depends on NETFILTER_ADVANCED
--	select NET_CLS_ROUTE
- 	help
- 	  This option adds a `realm' match, which allows you to use the realm
- 	  key from the routing subsystem inside iptables.
-
---------------010208050509060702040002--
+Thanks,
+-- 
+Jean Delvare
