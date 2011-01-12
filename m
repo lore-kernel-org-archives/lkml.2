@@ -1,209 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932848Ab1ALEHt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 23:07:49 -0500
-Received: from ozlabs.org ([203.10.76.45]:36257 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932791Ab1ALEHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 23:07:48 -0500
-Date: Wed, 12 Jan 2011 15:07:40 +1100
-From: Anton Blanchard <anton@samba.org>
-To: xiaoguangrong@cn.fujitsu.com, mingo@elte.hu, jaxboe@fusionio.com,
-        npiggin@gmail.com, peterz@infradead.org, rusty@rustcorp.com.au,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, miltonm@bga.com, benh@kernel.crashing.org
-Cc: linux-kernel@vger.kernel.org
-Subject: RE: [PATCH] smp_call_function_many SMP race
-Message-ID: <20110112150740.77dde58c@kryten>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+	id S932855Ab1ALEQF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 23:16:05 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:40241 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932791Ab1ALEQC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Jan 2011 23:16:02 -0500
+X-Sasl-enc: EshH4J3opvJ0uxJsUlym38Mb4ujZFGPixKmFz99HOlN3 1294805761
+Subject: Re: [announce] vfs-scale git tree update
+From: Ian Kent <raven@themaw.net>
+To: aelder@sgi.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1294804776.2821.4.camel@perseus>
+References: <20110107075831.GA14915@amd> <1294763679.2435.72.camel@doink>
+	 <AANLkTin67OXYYKk6y+_MKfXEXBz-F_+qAH0cpiJ24yEQ@mail.gmail.com>
+	 <1294768668.2435.177.camel@doink>  <1294804776.2821.4.camel@perseus>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 Jan 2011 12:15:55 +0800
+Message-ID: <1294805755.2821.6.camel@perseus>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-01-12 at 11:59 +0800, Ian Kent wrote:
+> On Tue, 2011-01-11 at 11:57 -0600, Alex Elder wrote:
+> > On Tue, 2011-01-11 at 08:51 -0800, Linus Torvalds wrote:
+> > > On Tue, Jan 11, 2011 at 8:34 AM, Alex Elder <aelder@sgi.com> wrote:
+> > > >
+> > > > FYI, when using this code, as merged by Linus, I hit the
+> > > > BUG_ON() at the beginning of d_set_d_op() when it's called
+> > > > by autofs4_dir_mkdir().  I managed to work around it by
+> > > > just commenting out those BUG_ON() calls but it's something
+> > > > that ought to get addressed properly.
+> > > 
+> > > Yeah, removing the BUG_ON() isn't the right thing to do - it means
+> > > that autofs4 is obviously setting the dentry ops twice for the same
+> > > dentry.
+> > > 
+> > > Possibly the thing could be relaxed to allow setting the _same_ d_op
+> > > pointer, ie do something like
+> > > 
+> > >    if (dentry->d_op == op)
+> > >       return;
+> > > 
+> > > at the top of that function. But looking at it, I don't think that
+> > > fixes the autofs4 issue.
+> > 
+> > That's easy enough, but it seems everybody else ensures
+> > this gets done just once per dentry, and it would be nice
+> > to preserve that "tightness" if possible.
+> > 
+> > > The fact that autofs4 does "d_add()" before it sets the d_ops (or
+> > > other dentry state, for that matter) looks a bit scary. To me that
+> > > smells like it might get a  dentry lookup hit before it's actually
+> > > fully done.
+> > 
+> > Agreed.
+> 
+> Isn't the parent i_mutex held during mkdir()?
+> Still the order can be changed, of course.
+> 
+> > 
+> > > Does it make any difference if you move the various d_add() calls down
+> > > to the end of the functions to when the "dentry" has really been
+> > > instantiated?
+> > 
+> > Looking at it quickly, I don't think that would matter for
+> > the case at hand.  I.e., that might be safer but it doesn't
+> > address the fact that these fields are getting initialized
+> > multiple times.
+> 
+> Yeah, a hangover from changes done over time.
+> Not setting the dentry op in ->lookup() should fix this.
 
-Hi,
+Could you try this patch please.
 
-I managed to forget all about this bug, probably because of how much it
-makes my brain hurt.
+autofs4 - dont set dentry op in ->lookup()
 
-The issue is not that we use RCU, but that we use RCU on a static data
-structure that gets reused without waiting for an RCU grace period.
-Another way to solve this bug would be to dynamically allocate the
-structure, assuming we are OK with the overhead.
+From: Ian Kent <raven@themaw.net>
 
-Anton
+With the introduction of the vfs-scale patch series setting dentry
+operations more than once (or changing them) triggers a BUG_ON().
 
-
-From: Anton Blanchard <anton@samba.org>
-
-I noticed a failure where we hit the following WARN_ON in
-generic_smp_call_function_interrupt:
-
-                if (!cpumask_test_and_clear_cpu(cpu, data->cpumask))
-                        continue;
-
-                data->csd.func(data->csd.info);
-
-                refs = atomic_dec_return(&data->refs);
-                WARN_ON(refs < 0);      <-------------------------
-
-We atomically tested and cleared our bit in the cpumask, and yet the
-number of cpus left (ie refs) was 0. How can this be?
-
-It turns out commit 54fdade1c3332391948ec43530c02c4794a38172
-(generic-ipi: make struct call_function_data lockless)
-is at fault. It removes locking from smp_call_function_many and in
-doing so creates a rather complicated race.
-
-The problem comes about because:
-
-- The smp_call_function_many interrupt handler walks call_function.queue
-  without any locking.
-- We reuse a percpu data structure in smp_call_function_many.
-- We do not wait for any RCU grace period before starting the next
-  smp_call_function_many.
-
-Imagine a scenario where CPU A does two smp_call_functions back to
-back, and CPU B does an smp_call_function in between. We concentrate on
-how CPU C handles the calls:
-
-
-CPU A                  CPU B                  CPU C
-
-smp_call_function
-                                              smp_call_function_interrupt
-                                                walks
-call_function.queue sees CPU A on list
-
-                         smp_call_function
-
-                                              smp_call_function_interrupt
-                                                walks
-                                              call_function.queue sees
-                                              (stale) CPU A on list
-                                              smp_call_function reuses
-                                              percpu *data set
-                                              data->cpumask sees and
-                                              clears bit in cpumask!
-                                              sees data->refs is 0!
-
-  set data->refs (too late!)
-
-
-The important thing to note is since the interrupt handler walks a
-potentially stale call_function.queue without any locking, then another
-cpu can view the percpu *data structure at any time, even when the
-owner is in the process of initialising it.
-
-The following test case hits the WARN_ON 100% of the time on my PowerPC
-box (having 128 threads does help :)
-
-
-#include <linux/module.h>
-#include <linux/init.h>
-
-#define ITERATIONS 100
-
-static void do_nothing_ipi(void *dummy)
-{
-}
-
-static void do_ipis(struct work_struct *dummy)
-{
-	int i;
-
-	for (i = 0; i < ITERATIONS; i++)
-		smp_call_function(do_nothing_ipi, NULL, 1);
-
-	printk(KERN_DEBUG "cpu %d finished\n", smp_processor_id());
-}
-
-static struct work_struct work[NR_CPUS];
-
-static int __init testcase_init(void)
-{
-	int cpu;
-
-	for_each_online_cpu(cpu) {
-		INIT_WORK(&work[cpu], do_ipis);
-		schedule_work_on(cpu, &work[cpu]);
-	}
-
-	return 0;
-}
-
-static void __exit testcase_exit(void)
-{
-}
-
-module_init(testcase_init)
-module_exit(testcase_exit)
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Anton Blanchard");
-
-
-I tried to fix it by ordering the read and the write of ->cpumask and
-->refs. In doing so I missed a critical case but Paul McKenney was able
-to spot my bug thankfully :) To ensure we arent viewing previous
-iterations the interrupt handler needs to read ->refs then ->cpumask
-then ->refs _again_.
-
-Thanks to Milton Miller and Paul McKenney for helping to debug this
-issue.
-
+Also, move the d_add() in ->symlink() and ->mkdir() to the end of
+the function.
 ---
 
-Index: linux-2.6/kernel/smp.c
-===================================================================
---- linux-2.6.orig/kernel/smp.c	2010-12-22 17:19:11.262835785 +1100
-+++ linux-2.6/kernel/smp.c	2011-01-12 15:03:08.793324402 +1100
-@@ -194,6 +194,31 @@ void generic_smp_call_function_interrupt
- 	list_for_each_entry_rcu(data, &call_function.queue, csd.list) {
- 		int refs;
+ fs/autofs4/root.c |   19 ++++---------------
+ 1 files changed, 4 insertions(+), 15 deletions(-)
+
+
+diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
+index 651e4ef..a9a41eb 100644
+--- a/fs/autofs4/root.c
++++ b/fs/autofs4/root.c
+@@ -568,19 +568,6 @@ static struct dentry *autofs4_lookup(struct inode *dir, struct dentry *dentry, s
+ 		ino = autofs4_dentry_ino(dentry);
+ 	} else {
+ 		/*
+-		 * Mark the dentry incomplete but don't hash it. We do this
+-		 * to serialize our inode creation operations (symlink and
+-		 * mkdir) which prevents deadlock during the callback to
+-		 * the daemon. Subsequent user space lookups for the same
+-		 * dentry are placed on the wait queue while the daemon
+-		 * itself is allowed passage unresticted so the create
+-		 * operation itself can then hash the dentry. Finally,
+-		 * we check for the hashed dentry and return the newly
+-		 * hashed dentry.
+-		 */
+-		d_set_d_op(dentry, &autofs4_root_dentry_operations);
+-
+-		/*
+ 		 * And we need to ensure that the same dentry is used for
+ 		 * all following lookup calls until it is hashed so that
+ 		 * the dentry flags are persistent throughout the request.
+@@ -714,7 +701,6 @@ static int autofs4_dir_symlink(struct inode *dir,
+ 			kfree(ino);
+ 		return -ENOMEM;
+ 	}
+-	d_add(dentry, inode);
  
-+		/*
-+		 * Since we walk the list without any locks, we might
-+		 * see an entry that was completed, removed from the
-+		 * list and is in the process of being reused.
-+		 *
-+		 * Just checking data->refs then data->cpumask is not good
-+		 * enough because we could see a non zero data->refs from a
-+		 * previous iteration. We need to check data->refs, then
-+		 * data->cpumask then data->refs again. Talk about
-+		 * complicated!
-+		 */
-+
-+		if (atomic_read(&data->refs) == 0)
-+			continue;
-+
-+		smp_rmb();
-+
-+		if (!cpumask_test_cpu(cpu, data->cpumask))
-+			continue;
-+
-+		smp_rmb();
-+
-+		if (atomic_read(&data->refs) == 0)
-+			continue;
-+
- 		if (!cpumask_test_and_clear_cpu(cpu, data->cpumask))
- 			continue;
+ 	if (dir == dir->i_sb->s_root->d_inode)
+ 		d_set_d_op(dentry, &autofs4_root_dentry_operations);
+@@ -732,6 +718,8 @@ static int autofs4_dir_symlink(struct inode *dir,
+ 	ino->u.symlink = cp;
+ 	dir->i_mtime = CURRENT_TIME;
  
-@@ -458,6 +483,14 @@ void smp_call_function_many(const struct
- 	data->csd.info = info;
- 	cpumask_and(data->cpumask, mask, cpu_online_mask);
- 	cpumask_clear_cpu(this_cpu, data->cpumask);
++	d_add(dentry, inode);
 +
-+	/*
-+	 * To ensure the interrupt handler gets an up to date view
-+	 * we order the cpumask and refs writes and order the
-+	 * read of them in the interrupt handler.
-+	 */
-+	smp_wmb();
-+
- 	atomic_set(&data->refs, cpumask_weight(data->cpumask));
+ 	return 0;
+ }
  
- 	raw_spin_lock_irqsave(&call_function.lock, flags);
+@@ -849,7 +837,6 @@ static int autofs4_dir_mkdir(struct inode *dir, struct dentry *dentry, int mode)
+ 			kfree(ino);
+ 		return -ENOMEM;
+ 	}
+-	d_add(dentry, inode);
+ 
+ 	if (dir == dir->i_sb->s_root->d_inode)
+ 		d_set_d_op(dentry, &autofs4_root_dentry_operations);
+@@ -866,6 +853,8 @@ static int autofs4_dir_mkdir(struct inode *dir, struct dentry *dentry, int mode)
+ 	inc_nlink(dir);
+ 	dir->i_mtime = CURRENT_TIME;
+ 
++	d_add(dentry, inode);
++
+ 	return 0;
+ }
+ 
+
+
