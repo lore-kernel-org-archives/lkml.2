@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932364Ab1ALB7l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 20:59:41 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:32296 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756319Ab1ALB7j (ORCPT
+	id S1756451Ab1ALCC7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 21:02:59 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:36024 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753457Ab1ALCC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 20:59:39 -0500
-From: "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>
-To: "'Greg KH'" <gregkh@suse.de>
-Cc: <linux-kernel@vger.kernel.org>, <alan@lxorguk.ukuu.org.uk>,
-        <qi.wang@intel.com>, <yong.y.wang@intel.com>, <joel.clark@intel.com>,
-        <kok.howg.ewe@intel.com>,
-        "Toshiharu Okada" <toshiharu-linux@dsn.okisemi.com>
-References: <1292992394-3264-1-git-send-email-tomoya-linux@dsn.okisemi.com> <20101222044424.GC19006@suse.de>
-Subject: RE: [PATCH] pch_phub: add new device ML7213
-Date: Wed, 12 Jan 2011 10:59:35 +0900
-Message-ID: <9E719661EAC44CEBAE5E5E0ABD51B4E0@hacdom.okisemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+	Tue, 11 Jan 2011 21:02:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=gYoNnytDDobycp99cPM2f6W7VMk+AcgF8RsrF3jBruSUjf6fY7qHl0EEcvW4C3/zUv
+         94k5SAhAztjuMfyCeZOQEU8HtnA6BekynSSaXZn/BOzlP3cawGh5MMYgCc7Q0+pIl1+s
+         y/Tc5vpbMetcs92DC6FE7RU2adnZq6Gzw1bOo=
+Subject: [PATCH] ASoC: Fix parameter for soc_unregister_ac97_dai_link
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mike Frysinger <vapier.adi@gmail.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, stable@kernel.org
+Content-Type: text/plain
+Date: Wed, 12 Jan 2011 10:02:55 +0800
+Message-Id: <1294797775.20409.4.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
-In-Reply-To: <20101222044424.GC19006@suse.de>
-Thread-Index: Acuhks76AE2RKSzETTmGEkXpK1MkVwQZussw
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+soc_unregister_ac97_dai_link takes a pointer to a codec.
 
-On Wednesday, December 22, 2010 1:44 PM, Greg KH wrote:
-> Put the device type here in the device table, so you don't 
-> have to check for it again in the probe function.  That way 
-> you can save some code and keep things simpler and more 
-> obvious in the future when adding new device ids, that you 
-> also have to pick the type for it.
+Reported-by: Mike Frysinger <vapier.adi@gmail.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Cc: stable@kernel.org  [2.6.37]
+---
+ sound/soc/soc-core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Have you reviewed our "v2 patch" which is modified for the above?
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index 85b7d54..e061ece 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -1623,7 +1623,7 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
+ 		if (ret < 0) {
+ 			printk(KERN_ERR "asoc: failed to register AC97 %s\n", card->name);
+ 			while (--i >= 0)
+-				soc_unregister_ac97_dai_link(&card->rtd[i]);
++				soc_unregister_ac97_dai_link(card->rtd[i].codec);
+ 			goto probe_dai_err;
+ 		}
+ 	}
+-- 
+1.7.2
 
-Thanks,
------------------------------------------
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
+
 
