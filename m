@@ -1,67 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220Ab1ALTHy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 14:07:54 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:51420 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722Ab1ALTHw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 14:07:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=dzBgVtJUURBl4OLefW7Pq8j25DyaeClRD3NK7gJ7bKYrkv5Ei2VspGHCPkMymIznlD
-         aOPck3tSUVfinysHnigU4xi+/sRks4MClzszdI/BcyR7p48lhKSN2p2UNLi5NkWux1z6
-         mPF7b6sxDggCnABUNp3n2dEFKlGUSZWukjENc=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: trentbuck@gmail.com
-Subject: Re: BUG: blank screen i915 (N10) LVDS in 2.6.37
-Date: Wed, 12 Jan 2011 20:07:46 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.4.5; i686; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <20110107085931.GA1400@dali>
-In-Reply-To: <20110107085931.GA1400@dali>
+	id S1755456Ab1ALTKt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 14:10:49 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:38846 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750722Ab1ALTKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 14:10:47 -0500
+Message-ID: <4D2DFCAF.9020204@linux.vnet.ibm.com>
+Date: Wed, 12 Jan 2011 11:10:39 -0800
+From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201101122007.46480.maciej.rutecki@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+CC: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu,
+        Robert Richter <robert.richter@amd.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [BUG] perf sched broken
+References: <AANLkTim=jawJyBj0iFd0r4-LCKzvjFW+NddzJMD5GUB9@mail.gmail.com> <20110112121113.GD11968@ghostprotocols.net>
+In-Reply-To: <20110112121113.GD11968@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=26602
-for your bug report, please add your address to the CC list in there, thanks!
+On 01/12/2011 04:11 AM, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Jan 12, 2011 at 10:29:05AM +0100, Stephane Eranian escreveu:
+>> Hi,
+>>
+>> I am trying to use perf sched from tip-x86 but it fails for all my attempts.
+>>
+>> First of, I think the event list is stale. This is not so much the
+>> events themselves
+>> but rather the flags.
+>>
+>> Looks to me like the :r modifier is not supported anymore, so a patch like the
+>> one below is needed. That helps collect a trace. But then, you can dump
+>> the trace.
+>
+> I got to this point as well, and reverting 4c635a4 did the trick for me,
+> Corey, this is another report for that problem, can you take a look at
+> it? Stephane, can you try doing a:
+>
+> git show 4c635a4 | patch -p1 -R
+>
+> To see if the problem is fixed?
+>
 
-On piątek, 7 stycznia 2011 o 09:59:37 trentbuck@gmail.com wrote:
-> When I boot 2.6.37, the onboard head remains blank.
-> It works in 2.6.36.  In both cases, the VGA head works fine.
-> 
-> I had problems with 2.6.37rc*; I can't remember if they were related,
-> but I know .36 works for me.  The screen blanks immediately after
-> extlinux loads the kernel; I have i915 compiled in.
-> 
-> I am using Debian Sid with xserver-xorg-video-intel 2:2.13.0-5.
-> 
-> video=LVDS1:e does not help, nor does video=LVDS-1:e.  With .32 (and
-> .36, I think), xrandr reports LVDS-1 with the hyphen, but in .37 it
-> reports it without the hyphen.  Likewise for VGA1 VGA-1.  I have not
-> tried nomodeset.
-> 
-> My default environment is fbcon.  I tried to start X on .37 by typing
-> blind into fbcon, and nothing came up.  From this, I presume that X
-> also can't address the LVDS head properly.  I didn't try it with a VGA
-> head attached.
-> 
-> The unit in question is an Asus Eee PC 1005P netbook.
-> 
-> IIRC I also changed from eeepc_laptop on .36 to eeepc_wmi .37 (with
-> the associated change to the boot parameter in .config); dunno if that
-> matters.
+I will have a look at this now.  Thanks for the report.
 
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+- Corey
+
+> - Arnaldo
+>
+>> $ perf sched rec dd if=/dev/zero of=/dev/null count=1000000
+>> 1000000+0 records in
+>> 1000000+0 records out
+>> 512000000 bytes (512 MB) copied, 0.589981 s, 868 MB/s
+>> [ perf record: Woken up 1 times to write data ]
+>> [ perf record: Captured and wrote 0.481 MB perf.data (~20997 samples) ]
+>>
+>> $ perf sched rep
+>> run measurement overhead: 2934 nsecs
+>> sleep measurement overhead: 90502 nsecs
+>> the run test took 999149 nsecs
+>> the sleep test took 1092248 nsecs
+>>    Fatal: no trace data in the file
+>>
+>> $ perf sched trace -D
+>>   usage: perf sched [<options>] {record|latency|map|replay|trace}
+>>
+>>      -i, --input<file>     input file name
+>>      -v, --verbose         be more verbose (show symbol address, etc)
+>>      -D, --dump-raw-trace  dump raw trace in ASCII
+>>
+>> Note that this is not specific to pref sched. If I use perf record directly,
+>> I run into the same issue:
+>> $ perf record -R -a -c 1 -e sched:sched_switch -- sleep 1
+>> [ perf record: Woken up 1 times to write data ]
+>> [ perf record: Captured and wrote 0.365 MB perf.data (~15962 samples) ]
+>> $./perf report -D
+>>    Fatal: no trace data in the file
+>>
+>> Now that perf trace is gone, how to I dump the trace?
+>
+> Good question, checking this s/trace/script/g fallout.
+>
+> - Arnaldo
+
