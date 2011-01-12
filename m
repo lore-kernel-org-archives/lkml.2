@@ -1,99 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006Ab1ALGfu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 01:35:50 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:36626 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112Ab1ALGfr (ORCPT
+	id S1754370Ab1ALGg2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 01:36:28 -0500
+Received: from vms173007pub.verizon.net ([206.46.173.7]:49212 "EHLO
+	vms173007pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab1ALGg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 01:35:47 -0500
-Date: Wed, 12 Jan 2011 12:05:43 +0530
-From: Bharata B Rao <bharata@linux.vnet.ibm.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: Re: [patch] Re: autogroup: sched_setscheduler() fails
-Message-ID: <20110112063543.GD2723@in.ibm.com>
-Reply-To: bharata@linux.vnet.ibm.com
-References: <20110110091622.GF2772@in.ibm.com>
- <1294655388.8197.22.camel@marge.simson.net>
- <1294657154.2016.459.camel@laptop>
- <1294677746.8345.4.camel@marge.simson.net>
- <20110111171046.GL4772@in.ibm.com>
- <1294771686.8006.15.camel@marge.simson.net>
- <20110112033709.GA2723@in.ibm.com>
- <AANLkTikFGqznUg7bzFckJy_x2mfBqE7PjaK2n83wLk6c@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikFGqznUg7bzFckJy_x2mfBqE7PjaK2n83wLk6c@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 12 Jan 2011 01:36:26 -0500
+Date: Wed, 12 Jan 2011 01:36:17 -0500 (EST)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Thomas Renninger <trenn@suse.de>
+Cc: linux-perf-users@vger.kernel.org, mingo@elte.hu, arjan@linux.intel.com,
+        j-pihet@ti.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/9] acpi: Use ACPI C-state type instead of enumeration
+ value to export cpuidle state name
+In-reply-to: <201101091330.12027.trenn@suse.de>
+Message-id: <alpine.LFD.2.02.1101120130110.19140@x980>
+References: <1294396190-23031-1-git-send-email-trenn@suse.de>
+ <1294396190-23031-2-git-send-email-trenn@suse.de>
+ <alpine.LFD.2.02.1101071529100.20609@x980> <201101091330.12027.trenn@suse.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 01:40:32PM +0800, Yong Zhang wrote:
-> On Wed, Jan 12, 2011 at 11:37 AM, Bharata B Rao
-> <bharata@linux.vnet.ibm.com> wrote:
-> >> Unless I fscked up, set_task_rq() is the group change.  As soon as the
-> >> task's class changes, it'll be moved to the root_task_group.
-> >
-> > Ok, this is what I understand, may be Peter Z can confirm...
-> >
-> > set_task_rq() just changes the task's cfs_rq and rt_rq as per its
-> > task_group(). The normal way to change a task's group is to first
-> > change its cgroup pointer (task->cgroups, see cgroup_attach_task())
-> > After this you change the runqueues by calling set_task_rq() which
-> > now refers to new group's runqueues.
-> >
-> > In your code, I don't see where you really change task's group. AFAICS,
-> > it continues to remain in the same autogroup.
-> 
-> IMHO, task->cgroups will not change when autogroup take effect.
+> > But some systems may have more than one state of each type...
 
-Yes and I believe this is cause for some of the weird semantics I see
-with autogroup and cgroups. I am not sure if this has already been
-discussed ealier, may be I need to go back and check the archives, but
-consider this:
+> Exported through ACPI tables?
 
-I have cpu cgroup mounted at /cgroup and see that all the tasks in the
-system are listed in /cgroup/tasks file.
+Yes.
 
-Now I start a task like this:
+It is quite common, for example in the Pentium M
+generations, for a BIOS to export C3 and C4 -
+both of which are ACPI  C3-type.
 
-# ./while1 &
-[1] 2761
+> > also, the state->name is somewhat arbitrary.
+> > 
+> > You'll notice that intel_idle uses the hardware C-state names
+> > such as NHM-C1, NHM-C3, NHM-C6 - to match the (arbitrary)
+> > names in the hardware documentation.  We could call those
+> > states Moe/Larry/Curley just as well.
 
-and see that this task belongs to root cgroup.
+> That works out with HW specific intel_idle.c driver, but not
+> with the generic acpi/processor one.
 
-# grep 2761 /cgroup/tasks
-2671
+Actually, C0..Cn work out fine for the acpi/processor driver.
+the names are unique, and they also correspond to max_cstate
+if somebody wants to use that.
 
-But we know that this task really belongs to an autogroup and is not
-sitting directly on root_task_group.
 
-# cat /proc/2761/autogroup 
-/autogroup-49 nice 0
+> I restore the ACPI type info as exported by ACPI tables
+> with this patch, should be the same as done with
+> /proc/acpi/processor/*/power
+> Do I miss something?
 
-So we have a task in an autogroup (which is a sub group of root_task_group)
-but is being shown as part of root_task_group. Is this by design ?
+/proc/acpi/processor/*/power had a type field.
+Per the example above, the type field didn't always
+match the C-state number.
 
-Now say I create a sub cgroup and move this task to it.
+> Do you want to export additional ACPI table C-state
+> info?
 
-# mkdir /cgroup/1
-# echo 2671 > /cgroup/1/tasks
+I have a 1 line patch someplace to print out the type
+for debug info when needed, that should be sufficient
+for debugging, which is the only time we care about type.
 
-So now the task moved to a real cgroup.
+> Something else, but related:
+> You recently said that it might be a good idea to get
+> C-/P- state ACPI tables which are often in a separate
+> SSDT loaded at runtime via "load" ACPI command, dumped
+> with the acpidump  tool. This would be a cool feature.
+> Does dynamically loaded SSDT dumping
+> via acpidump work already or is/has someone looked at this?
 
-# cat /cgroup/1/tasks 
-2761
+Yakui fixed this a while back.
+acpidump in the latest pmtools in
+http://userweb.kernel.org/~lenb/acpi/utils/
+picks up the dynamic tables from /sys/firmware/acpi/tables.
 
-But the /proc/2761/autogroup isn't updated. It still shows
-/autogroup-49 nice 0
+cheers,
+Len Brown, Intel Open Source Technology Center
 
-May be this was all discussed earlier as I noted in the beginning, but I find
-this semantics a bit unusual.
-
-Regards,
-Bharata.
