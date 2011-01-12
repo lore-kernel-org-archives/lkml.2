@@ -1,77 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756408Ab1ALAk7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 19:40:59 -0500
-Received: from mail127.messagelabs.com ([216.82.250.115]:49681 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754210Ab1ALAk6 (ORCPT
+	id S932659Ab1ALAoS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 19:44:18 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:36322 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754210Ab1ALAoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 19:40:58 -0500
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-8.tower-127.messagelabs.com!1294792856!6574772!1
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.99]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: David Woodhouse <dwmw2@infradead.org>
-Date: Tue, 11 Jan 2011 18:37:25 -0600
-Subject: [PATCH] mtdcore.c: local symbols should be static
-Thread-Topic: [PATCH] mtdcore.c: local symbols should be static
-Thread-Index: Acux8OHwRS3A5lgNRACaCmVqBKcrXA==
-Message-ID: <0D753D10438DA54287A00B027084269764CE0E54FC@AUSP01VMBX24.collaborationhost.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Tue, 11 Jan 2011 19:44:14 -0500
+Date: Wed, 12 Jan 2011 00:43:19 +0000
+From: James Hogan <james@albanarts.com>
+To: linux-fbdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Recursive lock in fbcon after unblank and modelist change
+Message-ID: <20110112004319.GA24367@gandalf>
+References: <AANLkTinpmkgRCk_NHBFTWcoMs5gPtqgxxBP0W3wQYBGE@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinpmkgRCk_NHBFTWcoMs5gPtqgxxBP0W3wQYBGE@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p0C0fKVA022944
 
-The three backing_dev_info symbols are only used in this file and
-should be static.
+CC'ing lkml in hopes that somebody might be able to answer my questions:
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-
----
-
-diff --git a/drivers/mtd/mtdcore.c b/drivers/mtd/mtdcore.c
-index 527cebf..da69bc8 100644
---- a/drivers/mtd/mtdcore.c
-+++ b/drivers/mtd/mtdcore.c
-@@ -43,7 +43,7 @@
-  * backing device capabilities for non-mappable devices (such as NAND flash)
-  * - permits private mappings, copies are taken of the data
-  */
--struct backing_dev_info mtd_bdi_unmappable = {
-+static struct backing_dev_info mtd_bdi_unmappable = {
- 	.capabilities	= BDI_CAP_MAP_COPY,
- };
- 
-@@ -52,7 +52,7 @@ struct backing_dev_info mtd_bdi_unmappable = {
-  * - permits private mappings, copies are taken of the data
-  * - permits non-writable shared mappings
-  */
--struct backing_dev_info mtd_bdi_ro_mappable = {
-+static struct backing_dev_info mtd_bdi_ro_mappable = {
- 	.capabilities	= (BDI_CAP_MAP_COPY | BDI_CAP_MAP_DIRECT |
- 			   BDI_CAP_EXEC_MAP | BDI_CAP_READ_MAP),
- };
-@@ -62,7 +62,7 @@ struct backing_dev_info mtd_bdi_ro_mappable = {
-  * - permits private mappings, copies are taken of the data
-  * - permits non-writable shared mappings
-  */
--struct backing_dev_info mtd_bdi_rw_mappable = {
-+static struct backing_dev_info mtd_bdi_rw_mappable = {
- 	.capabilities	= (BDI_CAP_MAP_COPY | BDI_CAP_MAP_DIRECT |
- 			   BDI_CAP_EXEC_MAP | BDI_CAP_READ_MAP |
- 			   BDI_CAP_WRITE_MAP),
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On Fri, Jan 07, 2011 at 12:55:09PM +0000, James Hogan wrote:
+> Hi,
+> 
+> I'm hitting the following recursive locking problem when unblanking
+> the framebuffer (echoing 3 then 0 to /sys/class/graphics/fb0/blank).
+> 
+> Basically this is what's happening:
+> * the fb_blank function sends the blank notification
+> * fbcon gets the blank notification, and calls fbcon_switch
+> * fbcon_switch calls fb_set_var
+> * fb_set_var actually makes a change, which triggers another
+> notification (mode change), which tries to lock fb_notifier_list.rwsem
+> again, which triggers the lockdep warning (and presumably potentially
+> a deadlock).
+> 
+> The reason fb_set_var makes a change is because the mode list has been
+> updated since the last mode change, so the current mode is effectively
+> out of date. E.g. this could be done by writing to
+> /sys/class/graphics/fb0/modes, or in my case an HDMI driver updates
+> the modelist on a monitor hotplug event after reading the EDID in the
+> same way as the sysfs interface.
+> 
+> So, a few questions:
+> (1) Is this situation a valid situation, where the modelist has been
+> overwritten but current mode left unchanged?
+> (2) If (1), any ideas how the recursive locking situation should be resolved?
+> (3) If not (1), should updating the modelist using sysfs (and
+> similarly on a monitor hotplug event), also update the current mode to
+> the nearest mode in the list (fb_new_modelist would seem an
+> appropriate place)?
+> 
+> Thanks
+> James
+> 
+> =============================================
+> [ INFO: possible recursive locking detected ]
+> 2.6.37-rc7+ #1435
+> ---------------------------------------------
+> sh/382 is trying to acquire lock:
+>  ((fb_notifier_list).rwsem){.+.+.+}, at: [<40040a60>]
+> ___blocking_notifier_call_chain+0x34/0x80
+> 
+> but task is already holding lock:
+>  ((fb_notifier_list).rwsem){.+.+.+}, at: [<40040a60>]
+> ___blocking_notifier_call_chain+0x34/0x80
+> 
+> other info that might help us debug this:
+> 3 locks held by sh/382:
+>  #0:  (&buffer->mutex){+.+.+.}, at: [<400e8ab0>] _sysfs_write_file+0x38/0x1a4
+>  #1:  (s_active#13){.+.+.+}, at: [<400e8ba0>] _sysfs_write_file+0x128/0x1a4
+>  #2:  ((fb_notifier_list).rwsem){.+.+.+}, at: [<40040a60>]
+> ___blocking_notifier_call_chain+0x34/0x80
+> 
+> stack backtrace:
+> 
+> Call trace:
+> [<40003b1c>] _show_stack+0x68/0x7c
+> [<40003b44>] _dump_stack+0x14/0x28
+> [<4004f360>] _validate_chain+0x1170/0x137c
+> [<4004f9dc>] ___lock_acquire+0x470/0xc44
+> [<4005020c>] _lock_acquire+0x5c/0x84
+> [<40238204>] _down_read+0x48/0x64
+> [<40040a5c>] ___blocking_notifier_call_chain+0x30/0x80
+> [<40040ac0>] _blocking_notifier_call_chain+0x14/0x28
+> [<401332ac>] _fb_notifier_call_chain+0x1c/0x30
+> [<40134894>] _fb_set_var+0x170/0x324
+> [<40141e98>] _fbcon_switch+0x1b8/0x5a4
+> [<401635d4>] _redraw_screen+0x100/0x268
+> [<401424bc>] _fbcon_blank+0x238/0x2e0
+> [<40163834>] _do_unblank_screen+0xf8/0x200
+> [<40140aa8>] _fbcon_event_notify+0xae0/0xae8
+> [<40040608>] _notifier_call_chain+0x48/0x94
+> [<40040a74>] ___blocking_notifier_call_chain+0x48/0x80
+> [<40040ac0>] _blocking_notifier_call_chain+0x14/0x28
+> [<401332ac>] _fb_notifier_call_chain+0x1c/0x30
+> [<40133938>] _fb_blank+0x7c/0xa8
+> [<40139964>] _store_blank+0x50/0x84
+> [<401739ec>] _dev_attr_store+0x20/0x48
+> [<400e8bc0>] _sysfs_write_file+0x148/0x1a4
+> [<4009180c>] _vfs_write+0xec/0x194
+> [<40092168>] _sys_write+0x40/0x90
+> [<4000460c>] _switch_handler+0x110/0x170
+> [<40001098>] ___TBIBoingVec+0xc/0x10
+> 
+> INFO: lockdep is turned off.
