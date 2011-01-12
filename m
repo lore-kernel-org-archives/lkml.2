@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756584Ab1ALWoJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 17:44:09 -0500
-Received: from smtp227-pc.aruba.it ([62.149.157.227]:51649 "HELO
-	smtp2-pc.aruba.it" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with SMTP id S1755111Ab1ALWoH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 17:44:07 -0500
-From: Michele Ballabio <barra_cuda@katamail.com>
-To: linux-kernel@vger.kernel.org
-Subject: Re: BUG in rt2x00lib_txdone() with 2.6.37-rc8
-Date: Wed, 12 Jan 2011 23:34:53 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-mike-1mike; KDE/4.5.5; i686; ; )
-Cc: bebarino@gmail.com, htd@fancy-poultry.org, linux-wireless@vger.kernel.org,
-        IvDoorn@gmail.com, users@rt2x00.serialmonkey.com
+	id S1756189Ab1ALWzX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 17:55:23 -0500
+Received: from mx0b-000f0801.pphosted.com ([67.231.152.113]:54480 "EHLO
+	mx0b-000f0801.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752749Ab1ALWzW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 17:55:22 -0500
+From: Rasesh Mody <rmody@brocade.com>
+To: Joe Perches <joe@perches.com>, Debashis Dutt <ddutt@brocade.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 12 Jan 2011 14:55:25 -0800
+Subject: RE: [PATCH 2/3] bna: Remove unnecessary memset(,0,)
+Thread-Topic: [PATCH 2/3] bna: Remove unnecessary memset(,0,)
+Thread-Index: Acuynql7PaK4CPBVR/Kz1JgImSutkwAC8pbw
+Message-ID: <E5313AF6F2BFD14293E5FD0F94750F86A5CFF6C4A8@HQ1-EXCH01.corp.brocade.com>
+References: <6f6d4a7a705949a3464471f364f77215f1e796f3.1294867098.git.joe@perches.com>
+ <0ed96bd1a053e61c827f2ac09e38cba59e32a21b.1294867098.git.joe@perches.com>
+In-Reply-To: <0ed96bd1a053e61c827f2ac09e38cba59e32a21b.1294867098.git.joe@perches.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101122334.55039.barra_cuda@katamail.com>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2011-01-12_05:2011-01-12,2011-01-12,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=1
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=6.0.2-1012030000 definitions=main-1101120147
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01.01.2011, Stephen Boyd wrote: 
->On 01/01/11 02:28, Heinz Diehl wrote:
->> On 31.12.2010, Stephen Boyd wrote: 
->> 
->>> [ 9085.714105] BUG: unable to handle kernel NULL pointer dereference at
->>> 00000000000000a4
->>> [ 9085.714816] IP: [<ffffffffa0025458>] rt2x00lib_txdone+0x36/0x249
->>> [rt2x00lib]
->>> [ 9085.715017] PGD 215fd067 PUD 292f4067 PMD 0
->>> [ 9085.715017] Oops: 0000 [#1] SMP
->>> [ 9085.715017] last sysfs file:
->>> /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
->>> [ 9085.715017] CPU 1
->>> [ 9085.715017] Modules linked in: usb_storage thermal snd_seq_oss
->>> snd_seq_midi snd_seq_dummy snd_pcm_oss snd_mixer_oss snd_hrtimer
->>> snd_emu10k1_synth snd_emux_synth snd_seq_virmidi snd_seq_midi_event
->>> snd_seq_midi_emul snd_seq scsi_wait_scan powernow_k8 mperf i2c_i801 fuse
->>> fan snd_emu10k1 snd_rawmidi snd_ac97_codec ac97_bus snd_pcm
->>> snd_seq_device snd_timer snd_page_alloc snd_util_mem rt73usb crc_itu_t
->>> rt2x00usb snd_hwdep snd processor r8169 via82cxxx rt2x00lib soundcore
->>> mii button k8temp
->>> [ 9085.715017]
->>> [ 9085.715017] Pid: 11513, comm: kworker/1:0 Not tainted 2.6.37-rc7+ #27
->>> MS-7094/MS-7094
->> [....]
->> 
->> I'm not quite shure on this, but it reminds me on this bug here:
->> https://bugzilla.kernel.org/show_bug.cgi?id=24892
->> 
+
+>From: Joe Perches [mailto:joe@perches.com]
+>Sent: Wednesday, January 12, 2011 1:21 PM
 >
->I believe I had the latest net tree merged into 2.6.37-rc7 in which case
->the patch mentioned in that bugzilla would already be applied.
+>kzalloc'd memory doesn't need a memset to 0.
+>
+>Signed-off-by: Joe Perches <joe@perches.com>
 
-I can confirm this bug is present in v2.6.37, and not in v2.6.36.
-It seems to trigger quite randomly, I think in less than 2-3 hours after
-the boot (sometimes in half an hour), and it leaves no trace in my log
-files.
+Acked-by: Rasesh Mody <rmody@brocade.com>
 
-As Stephen said, most of the times the screen shows later oopses triggered
-by this one, so it is not easy to identify it either.
+>---
+> drivers/net/bna/bnad_ethtool.c |    1 -
+> 1 files changed, 0 insertions(+), 1 deletions(-)
+>
+>diff --git a/drivers/net/bna/bnad_ethtool.c
+>b/drivers/net/bna/bnad_ethtool.c
+>index 99be5ae..142d604 100644
+>--- a/drivers/net/bna/bnad_ethtool.c
+>+++ b/drivers/net/bna/bnad_ethtool.c
+>@@ -275,7 +275,6 @@ bnad_get_drvinfo(struct net_device *netdev, struct
+>ethtool_drvinfo *drvinfo)
+>
+> 	ioc_attr = kzalloc(sizeof(*ioc_attr), GFP_KERNEL);
+> 	if (ioc_attr) {
+>-		memset(ioc_attr, 0, sizeof(*ioc_attr));
+> 		spin_lock_irqsave(&bnad->bna_lock, flags);
+> 		bfa_nw_ioc_get_attr(&bnad->bna.device.ioc, ioc_attr);
+> 		spin_unlock_irqrestore(&bnad->bna_lock, flags);
+>--
+>1.7.3.3.398.g0b0cd.dirty
+
+Joe,
+Patch looks ok to me.
+Thanks,
+Rasesh
