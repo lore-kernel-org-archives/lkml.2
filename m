@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932774Ab1ALC4M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 21:56:12 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:53962 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932648Ab1ALC4L (ORCPT
+	id S932783Ab1ALC7T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 21:59:19 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:27627 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756190Ab1ALC7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 21:56:11 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6223"; a="69914230"
-Message-ID: <4D2D184A.8020405@codeaurora.org>
-Date: Tue, 11 Jan 2011 18:56:10 -0800
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Locking in the clk API
-References: <201101111016.42819.jeremy.kerr@canonical.com> <20110111091607.GI12552@n2100.arm.linux.org.uk>
-In-Reply-To: <20110111091607.GI12552@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Jan 2011 21:59:13 -0500
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+To: linux-kernel@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH 2/2] pch_uart: revert Kconfig for non-DMA mode
+Date: Wed, 12 Jan 2011 11:58:50 +0900
+Message-Id: <1294801130-3912-2-git-send-email-tomoya-linux@dsn.okisemi.com>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1294801130-3912-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+References: <1294801130-3912-1-git-send-email-tomoya-linux@dsn.okisemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2011 01:16 AM, Russell King - ARM Linux wrote:
-> On Tue, Jan 11, 2011 at 10:16:42AM +0800, Jeremy Kerr wrote:
->> At present, we can satisfy these with:
->>
->> * clk_enable: may sleep
->
-> I object to this as one of the purposes behind the clk API is to allow
-> power savings to be made, and unless we can perform clk enable/disable
-> from atomic contexts, the best you can do is enable the clock when the
-> device is probed and disable it when it's released.
+PCH_DMA is not always enabled when a user uses PCH_UART.
+Since overhead of DMA is not small, in case of low frequent communication,
+without DMA is better.
+Thus, "select PCH_DMA" and DMADEVICES are unnecessary
 
-Since dev_pm_ops.suspend is not atomic anymore (am I wrong?), what is 
-the atomic context that you are having in mind that's related to power 
-savings? How often do we really need to call clk enable/disable in that 
-atomic context?
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+---
+ drivers/serial/Kconfig |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-If the system VDD needed to be increased when a clock/core in enabled 
-(in reality, when a core is enabled), how do we make sure that the 
-voltage is reduced when the clock/core is turned off? Do we simply punt 
-the voltage change problem to the driver and say "not our problem"?
-
-I'm not saying that the voltage change should or shouldn't be handled by 
-the clock driver. But it looks like the same methods used to handle the 
-voltage change problem could be applied to how we could handle the clk 
-enable/disable problem.
-
--Saravana
-
+diff --git a/drivers/serial/Kconfig b/drivers/serial/Kconfig
+index 3d836f0..58847e9 100644
+--- a/drivers/serial/Kconfig
++++ b/drivers/serial/Kconfig
+@@ -1587,10 +1587,9 @@ config SERIAL_IFX6X60
+ 	  Support for the IFX6x60 modem devices on Intel MID platforms.
+ 
+ config SERIAL_PCH_UART
+-	tristate "Intel EG20T PCH UART"
+-	depends on PCI && DMADEVICES
++	tristate "Intel EG20T PCH UART/OKI SEMICONDUCTOR ML7213 IOH"
++	depends on PCI
+ 	select SERIAL_CORE
+-	select PCH_DMA
+ 	help
+ 	  This driver is for PCH(Platform controller Hub) UART of Intel EG20T
+ 	  which is an IOH(Input/Output Hub) for x86 embedded processor.
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.6.2.5
+
