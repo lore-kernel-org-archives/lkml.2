@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932540Ab1ALNWO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 08:22:14 -0500
-Received: from mail.nusquama.org ([85.131.211.20]:50167 "EHLO
-	mail.nusquama.org" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932381Ab1ALNVw (ORCPT
+	id S932449Ab1ALNXz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 08:23:55 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47457 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756295Ab1ALNXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 08:21:52 -0500
-From: Max Vozeler <max@vozeler.com>
-To: gregkh@suse.de
-Cc: hirofuchi@users.sourceforge.net, rpjday@crashcourse.ca,
-        bgmerrell@novell.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, mwehby@luxotticaRetail.com,
-        marco@optikam.com, Max Vozeler <max@vozeler.com>
-Subject: [PATCH 7/7] staging: usbip: vhci: use urb->dev->portnum to find port
-Date: Wed, 12 Jan 2011 15:02:05 +0200
-Message-Id: <1294837325-26187-8-git-send-email-max@vozeler.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1294837325-26187-1-git-send-email-max@vozeler.com>
-References: <1294837325-26187-1-git-send-email-max@vozeler.com>
+	Wed, 12 Jan 2011 08:23:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=t8bEdOy/J0ZL0+0SAFF5MG+QV/QFZRq5AJ90CmA66RDJ6mD8UVJ8cmAK6qHo33/ZE7
+         RdqUsRv3e33XjlGv5ebIo+h5SZHDXH+OdrQmP60ayU3Sac17/I+DJAC8bgFP0bJ3G1g3
+         QVTN9Lm7Fg31eccYJeyxVIjgYGDfX5+bGtYmo=
+Date: Wed, 12 Jan 2011 14:23:46 +0100
+From: Tejun Heo <tj@kernel.org>
+To: oleg@redhat.com, roland@redhat.com, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCHSET RFC] ptrace,signal: clean transition between STOPPED
+ and TRACED
+Message-ID: <20110112132346.GC10920@mtj.dyndns.org>
+References: <1293199257-11255-1-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1293199257-11255-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The access to pending_port was racy when two devices
-were being attached at the same time.
+On Fri, Dec 24, 2010 at 03:00:50PM +0100, Tejun Heo wrote:
+> This patchset is spun off from "ptrace,signal: sane interaction
+> between ptrace and job control signals, take#2" patchset[1].  From the
+> series, four fix and cleanup patches were put into git branch
+> ptrace-reviewed[2].  This patchset is the subset which tries to fix
+> problems with the actual group stop mechanism and make the transition
+> between STOPPED and TRACED clean.
 
-Signed-off-by: Max Vozeler <max@vozeler.com>
-Tested-by: Mark Wehby <MWehby@luxotticaRetail.com>
----
- drivers/staging/usbip/vhci.h     |    3 ---
- drivers/staging/usbip/vhci_hcd.c |    4 +---
- 2 files changed, 1 insertions(+), 6 deletions(-)
+Roland, Jan, what do you guys think?
 
-diff --git a/drivers/staging/usbip/vhci.h b/drivers/staging/usbip/vhci.h
-index 2cfd00e..afc3b1a 100644
---- a/drivers/staging/usbip/vhci.h
-+++ b/drivers/staging/usbip/vhci.h
-@@ -100,9 +100,6 @@ struct vhci_hcd {
- 	 * But, the index of this array begins from 0.
- 	 */
- 	struct vhci_device vdev[VHCI_NPORTS];
--
--	/* vhci_device which has not been assiged its address yet */
--	int pending_port;
- };
- 
- 
-diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
-index 22b1ad9..a35fe61 100644
---- a/drivers/staging/usbip/vhci_hcd.c
-+++ b/drivers/staging/usbip/vhci_hcd.c
-@@ -138,8 +138,6 @@ void rh_port_connect(int rhport, enum usb_device_speed speed)
- 	 * the_controller->vdev[rhport].ud.status = VDEV_CONNECT;
- 	 * spin_unlock(&the_controller->vdev[rhport].ud.lock); */
- 
--	the_controller->pending_port = rhport;
--
- 	spin_unlock_irqrestore(&the_controller->lock, flags);
- 
- 	usb_hcd_poll_rh_status(vhci_to_hcd(the_controller));
-@@ -575,7 +573,7 @@ static int vhci_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
- 		return urb->status;
- 	}
- 
--	vdev = port_to_vdev(the_controller->pending_port);
-+	vdev = port_to_vdev(urb->dev->portnum-1);
- 
- 	/* refuse enqueue for dead connection */
- 	spin_lock(&vdev->ud.lock);
+Thank you.
+
 -- 
-1.7.2.3
-
+tejun
