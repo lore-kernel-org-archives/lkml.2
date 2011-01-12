@@ -1,89 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755483Ab1ALSFb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 13:05:31 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:34158 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755205Ab1ALSF3 (ORCPT
+	id S932141Ab1ALSFf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 13:05:35 -0500
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:21364 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755497Ab1ALSFc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 13:05:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=BvsZWu/B9G1O0JNsPHcAISdmpdMheZBox1TpQmy6V9XflcUlK5jdXt6W5keuf+IYAS
-         uQZ9sT1uXKq3tZuJKNBCdgDIMzEP041YMB050pk8k04MkcrNl1xSZDFyG+YKEWF8D8Xo
-         fQVQsxiord6WH5yEHDu+oWGWip3SDJR6F/jfo=
-Subject: Re: [PATCH v1 1/2] TCPCT API sysctl update to draft -03
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: William Allen Simpson <william.allen.simpson@gmail.com>
-Cc: Linux Kernel Developers <linux-kernel@vger.kernel.org>,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <4D2DEA73.4000708@gmail.com>
-References: <4D2DE824.10205@gmail.com>  <4D2DEA73.4000708@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 Jan 2011 19:05:25 +0100
-Message-ID: <1294855525.3981.119.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Wed, 12 Jan 2011 13:05:32 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: lq9sxKUVM1kTLKeVWaNMchUGb6EoXkytoA0WO1ysxyQqini
+ vyav.skzz8Urbjcyw.S5odStWgB6rcpCnbzK8HcYoAbPaNbEQPBW.l8pjVwl
+ RCEe.vVREb71ZI9fb1U07fjeF5.ewfE8euSyY68b9dLH0B1y21QmgGqibnTA
+ EKockpV5mXqFv7qICdjk0sgKtoWh3Y1xg.hqI.L2V9ZpLI5lS573luujvUNB
+ SvInMGQBGsB9ciJN5uSpnV6Rfx4U5ASdTeydKE8q0kvSF_YxKFCgwboBcI0.
+ a.kv9A0dopNtyh3OMa93xIEpSX4UmSsrinfyXbZOZ8PJKLgrPtzc-
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 12 Jan 2011 12:05:27 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric B Munson <emunson@mgebm.net>
+cc: akpm@linux-foundation.org, linux-mm@kvack.org, mel@csn.ul.ie,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Rename struct task variables from p to tsk
+In-Reply-To: <1294845571-11529-1-git-send-email-emunson@mgebm.net>
+Message-ID: <alpine.DEB.2.00.1101121205120.3053@router.home>
+References: <1294845571-11529-1-git-send-email-emunson@mgebm.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 12 janvier 2011 à 12:52 -0500, William Allen Simpson a
-écrit :
-> Use most recently specified symbols of RFC-to-be-6013.
-> 
-> Allows different global s_data limits for SYN and SYN_ACK.
-> 
-> CC: "Eric W. Biederman" <ebiederm@xmission.com>
-> CC: Stephen Hemminger <shemminger@vyatta.com>
-> CC: Andi Kleen <andi@firstfloor.org>
 
-
-> Signed-off-by: William.Allen.Simpson@gmail.com
-
-Should be :
-
-Signed-off-by: William Allen Simpson <William.Allen.Simpson@gmail.com>
-
-> ---
->   Documentation/networking/ip-sysctl.txt |   10 ++++++++++
->   include/net/tcp.h                      |    2 ++
->   net/ipv4/sysctl_net_ipv4.c             |   25 ++++++++++++++++++++++++-
->   net/ipv4/tcp_output.c                  |   19 +++++++++++++++++--
->   4 files changed, 53 insertions(+), 3 deletions(-)
-
-Hmm, patch is not inlined, so I have to copy/paste
-
-+static int tcp_cookie_max = TCP_COOKIE_MAX;
-
-...
- 
- /* Update system visible IP port range */
- static void set_local_port_range(int range[2])
-@@ -588,7 +591,27 @@ static struct ctl_table ipv4_table[] = {
-                .data           = &sysctl_tcp_cookie_size,
-                .maxlen         = sizeof(int),
-                .mode           = 0644,
--               .proc_handler   = proc_dointvec
-+               .proc_handler   = proc_dointvec_minmax,
-+               .extra1         = &zero,
-+               .extra2         = &tcp_cookie_max,
-+       },
-
-
-Now sysctl_tcp_cookie_size has a max limit of TCP_COOKIE_MAX, you can
-remove the now uneeded check in :
-
-static u8 tcp_cookie_size_check(u8 desired)
-...
-if (cookie_size >= TCP_COOKIE_MAX)
-	/* value too large, specify maximum */
-	return TCP_COOKIE_MAX;
-
+Use t instead of p? Its a local variable after all.
 
 
