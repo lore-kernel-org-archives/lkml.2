@@ -1,122 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232Ab1ALGDm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 01:03:42 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:40358 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754305Ab1ALGDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 01:03:40 -0500
-Date: Wed, 12 Jan 2011 06:03:16 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm intel only fixes
-Message-ID: <alpine.DEB.2.00.1101120601100.6210@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753799Ab1ALGKF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 01:10:05 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:61082 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832Ab1ALGKB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 01:10:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=WaKIVLEdRdEh4jwGdj0jkGtBQUWib+2y8S2fzALXL+SryOXkfncvWZbiT2oYDja+zw
+         EthxTw7ZE4EvAyLfCEOeE1NQ6xN6JwZRzMNrOzxfRDrZrDsm1nJx9kKY71kEtUuknEwb
+         N7+b1lWPOPD2/bBslRilV8obDJ5+LkDUKVdAY=
+Date: Tue, 11 Jan 2011 22:09:55 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 2.6.38-rc0 (round 2)
+Message-ID: <20110112060954.GE22944@core.coreip.homeip.net>
+References: <20110107065448.GC29038@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1118229598-1294812196=:6210"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110107065448.GC29038@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi Linus,
 
---29444707-1118229598-1294812196=:6210
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+Please pull from:
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+
+to receive 2nd round of updates for the input subsystem. One driver out,
+one driver in, and a bunch of minor fixes.
+
+Thanks!
+
+Changelog:
+---------
+
+Alexander Stein (1):
+      Input: fix force feedback capability query example
+
+Fabien Marteau (1):
+      Input: add Austria Microsystem AS5011 joystick driver
+
+Jamie Iles (1):
+      Input: remove aaed2000 keyboard driver
+
+Jekyll Lai (1):
+      Input: add SW_ROTATE_LOCK switch type
+
+Jiri Kosina (1):
+      Input: i8042 - introduce 'notimeout' blacklist for Dell Vostro V13
+
+Mark Brown (5):
+      Input: ad7879 - convert I2C to dev_pm_ops
+      Input: eeti_ts - convert to dev_pm_ops
+      Input: mcs5000_ts - convert to dev_pm_ops
+      Input: migor_ts - convert to dev_pm_ops
+      Input: cy8ctmg110_ts - Convert to dev_pm_ops
+
+Ping Cheng (1):
+      Input: wacom_w8001 - add single-touch support
 
 
-I'm stuck at home with just my i5 laptop due to the office being shut due 
-to the ongoing floods. But I've booted and ran this for a few hours and it
-seems to be better than the current tree. It contains a couple of patches 
-to fix DMAR interaction issues I see on this laptop on top of Chris's 
-pull.
+Diffstat:
+--------
 
-Dave.
+ Documentation/input/ff.txt                |    4 +-
+ Documentation/kernel-parameters.txt       |    1 +
+ drivers/input/joystick/Kconfig            |   10 +
+ drivers/input/joystick/Makefile           |    1 +
+ drivers/input/joystick/as5011.c           |  367 +++++++++++++++++++++++++++++
+ drivers/input/keyboard/Kconfig            |   12 -
+ drivers/input/keyboard/Makefile           |    1 -
+ drivers/input/keyboard/aaed2000_kbd.c     |  186 ---------------
+ drivers/input/serio/i8042-x86ia64io.h     |   21 ++
+ drivers/input/serio/i8042.c               |    6 +-
+ drivers/input/touchscreen/ad7879-i2c.c    |   17 +-
+ drivers/input/touchscreen/cy8ctmg110_ts.c |   15 +-
+ drivers/input/touchscreen/eeti_ts.c       |   16 +-
+ drivers/input/touchscreen/mcs5000_ts.c    |   17 +-
+ drivers/input/touchscreen/migor_ts.c      |   12 +-
+ drivers/input/touchscreen/wacom_w8001.c   |  182 ++++++++++++---
+ include/linux/input.h                     |    1 +
+ include/linux/input/as5011.h              |   20 ++
+ 18 files changed, 624 insertions(+), 265 deletions(-)
+ create mode 100644 drivers/input/joystick/as5011.c
+ delete mode 100644 drivers/input/keyboard/aaed2000_kbd.c
+ create mode 100644 include/linux/input/as5011.h
 
-The following changes since commit 4162cf64973df51fc885825bc9ca4d055891c49f:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6 (2011-01-11 16:32:41 -0800)
-
-are available in the git repository at:
-
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
-
-Chris Wilson (25):
-      drm/i915/sdvo: Defer detection of output capabilities until probing
-      drm/i915/panel: Only record the backlight level when it is enabled
-      drm/i915/lvds: Always use 0 to disable the pfit controller
-      drm/i915: Use the mappable sizes determined by GTT for consistency.
-      drm/i915: Workaround erratum on i830 for TAIL pointer within last 2 cachelines
-      agp/intel: Flush the chipset write buffers when changing GTT base
-      drm/i915: add 'reset' parameter
-      drm/i915: Remove impossible test
-      drm/i915: Enforce write ordering through the GTT
-      drm/i915: Handle ringbuffer stalls when flushing
-      drm/i915: Mask USER interrupts on gen6 (until required)
-      drm/i915/debugfs: Show the per-ring IMR
-      drm/i915/ringbuffer: Simplify the ring irq refcounting
-      drm/i915: Make the ring IMR handling private
-      drm/i915: Propagate error from flushing the ring
-      drm/i915: Include TLB miss overhead for computing WM
-      drm/i915: Record the error batchbuffer on each ring
-      drm/i915/gtt: Unmap the PCI pages after unbinding them from the GTT
-      drm/i915: Periodically flush the active lists and requests
-      drm/i915: Record AGP memory type upon error
-      drm/i915/debugfs: Show all objects in the gtt
-      drm/i915/execbuffer: Correctly clear the current object list upon EFAULT
-      drm/i915/evict: Ensure we completely cleanup on failure
-      drm/i915: If we hit OOM when allocating GTT pages, clear the aperture
-      drm/i915/execbuffer: Reorder binding of objects to favour restrictions
-
-Dave Airlie (3):
-      Merge branch 'drm-intel-fixes' of ssh://master.kernel.org/.../ickle/drm-intel
-      i915/gtt: fix ordering issues with status setup and DMAR
-      i915/gtt: fix ordering causing DMAR errors on object teardown.
-
-David Müller (1):
-      drm/i915/crt: Check for a analog monitor in case of DVI-I
-
-Jesse Barnes (9):
-      drm/i915: check eDP encoder correctly when setting modes
-      drm/i915: make DP training try a little harder
-      drm/i915: support overclocking on Sandy Bridge
-      drm/i915: support low power watermarks on Ironlake
-      drm/i915: avoid reading non-existent PLL reg on Ironlake+
-      drm/i915: re-enable rc6 support for Ironlake+
-      drm/i915: fix rc6 enabling around suspend/resume
-      drm/i915: cleanup rc6 code
-      drm/i915: detect & report PCH display error interrupts
-
-Yuanhan Liu (2):
-      drm/i915: fix calculation of eDP signal levels on Sandybridge
-      drm/i915: fix the wrong latency value while computing wm0
-
- drivers/char/agp/intel-agp.h               |    2 +
- drivers/char/agp/intel-gtt.c               |   17 +-
- drivers/gpu/drm/i915/i915_debugfs.c        |   87 +++++-
- drivers/gpu/drm/i915/i915_dma.c            |    8 -
- drivers/gpu/drm/i915/i915_drv.c            |    9 +
- drivers/gpu/drm/i915/i915_drv.h            |   24 +-
- drivers/gpu/drm/i915/i915_gem.c            |  156 +++++++---
- drivers/gpu/drm/i915/i915_gem_evict.c      |    9 +-
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |  119 +++++---
- drivers/gpu/drm/i915/i915_gem_gtt.c        |   10 +-
- drivers/gpu/drm/i915/i915_irq.c            |  269 +++++++-----------
- drivers/gpu/drm/i915/i915_reg.h            |   95 ++++++-
- drivers/gpu/drm/i915/i915_suspend.c        |    8 +-
- drivers/gpu/drm/i915/intel_crt.c           |   30 ++-
- drivers/gpu/drm/i915/intel_display.c       |  434 ++++++++++++++++------------
- drivers/gpu/drm/i915/intel_dp.c            |   50 +++-
- drivers/gpu/drm/i915/intel_drv.h           |    3 +
- drivers/gpu/drm/i915/intel_fb.c            |   20 +-
- drivers/gpu/drm/i915/intel_lvds.c          |   14 +-
- drivers/gpu/drm/i915/intel_panel.c         |   31 ++
- drivers/gpu/drm/i915/intel_ringbuffer.c    |  255 ++++++++++++-----
- drivers/gpu/drm/i915/intel_ringbuffer.h    |   36 ++-
- drivers/gpu/drm/i915/intel_sdvo.c          |   33 +--
- 23 files changed, 1082 insertions(+), 637 deletions(-)
---29444707-1118229598-1294812196=:6210--
+-- 
+Dmitry
