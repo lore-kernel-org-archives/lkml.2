@@ -1,92 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab1ALLhP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 06:37:15 -0500
-Received: from hera.kernel.org ([140.211.167.34]:41181 "EHLO hera.kernel.org"
+	id S1756042Ab1ALLi5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 06:38:57 -0500
+Received: from mga02.intel.com ([134.134.136.20]:45371 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752136Ab1ALLhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 06:37:13 -0500
-Date: Wed, 12 Jan 2011 11:36:49 GMT
-From: tip-bot for Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, torvalds@linux-foundation.org, tony.luck@intel.com,
-        bjorn.helgaas@hp.com, tglx@linutronix.de, fengguang.wu@intel.com,
-        mingo@elte.hu, len.brown@intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, torvalds@linux-foundation.org, tony.luck@intel.com,
-        bjorn.helgaas@hp.com, tglx@linutronix.de, fengguang.wu@intel.com,
-        len.brown@intel.com, mingo@elte.hu
-In-Reply-To: <4D2D6B5D.4080208@kernel.org>
-References: <4D2D6B5D.4080208@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, ia64, acpi: Clean up x86-ism in drivers/acpi/numa.c
-Message-ID: <tip-9378b63ccb32b9c071dab155c96357ad1e52a709@git.kernel.org>
-Git-Commit-ID: 9378b63ccb32b9c071dab155c96357ad1e52a709
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 12 Jan 2011 11:36:50 +0000 (UTC)
+	id S1753960Ab1ALLiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 06:38:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,312,1291622400"; 
+   d="scan'208";a="592171910"
+Date: Wed, 12 Jan 2011 11:14:01 +0000
+From: Alan Cox <alan@linux.intel.com>
+To: Feng Tang <feng.tang@intel.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@suse.de, akpm@linux-foundation.org
+Subject: Re: [PATCH] console: prevent registered consoles from dumping old
+ kernel message over again
+Message-ID: <20110112111401.4879d928@bob.linux.org.uk>
+In-Reply-To: <1294814926-1460-1-git-send-email-feng.tang@intel.com>
+References: <1294814926-1460-1-git-send-email-feng.tang@intel.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9378b63ccb32b9c071dab155c96357ad1e52a709
-Gitweb:     http://git.kernel.org/tip/9378b63ccb32b9c071dab155c96357ad1e52a709
-Author:     Tony Luck <tony.luck@intel.com>
-AuthorDate: Wed, 12 Jan 2011 00:50:37 -0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 12 Jan 2011 12:15:09 +0100
+On Wed, 12 Jan 2011 14:48:46 +0800
+Feng Tang <feng.tang@intel.com> wrote:
 
-x86, ia64, acpi: Clean up x86-ism in drivers/acpi/numa.c
+> For a platform with many consoles like:
+>  "console=tty1 console=ttyMFD2 console=ttyS0 earlyprintk=mrst"
+> 
+> Each time when the non "selected_console" (tty1 and ttyMFD2 here) get
+> registered, the existing kernel message will be printed out on
+> registered consoles again, the "mrst" early console will get some
+> same message for 3 times, and "tty1" will get some for twice.
+> 
+> So try to temporarily disable registered console's printing when dump
+> the existing kernel messages to the new console.
 
-As pointed out by Linus CONFIG_X86 in drivers/acpi/numa.c is
-ugly.
+I don't think the existing behaviour should be changed because other
+systems and users rely on it. Perhaps we need to be able to do
 
-Builds and boots on ia64 (both normally and with maxcpus=8 to limit
-the number of cpus).
+console=xxx addconsole=yyy
 
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Len Brown <len.brown@intel.com>
-LKML-Reference: <4D2D6B5D.4080208@kernel.org>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- drivers/acpi/numa.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
-index d9926af..5eb25eb 100644
---- a/drivers/acpi/numa.c
-+++ b/drivers/acpi/numa.c
-@@ -275,23 +275,19 @@ acpi_table_parse_srat(enum acpi_srat_type id,
- int __init acpi_numa_init(void)
- {
- 	int ret = 0;
--	int nr_cpu_entries = nr_cpu_ids;
- 
--#ifdef CONFIG_X86
- 	/*
- 	 * Should not limit number with cpu num that is from NR_CPUS or nr_cpus=
- 	 * SRAT cpu entries could have different order with that in MADT.
- 	 * So go over all cpu entries in SRAT to get apicid to node mapping.
- 	 */
--	nr_cpu_entries = MAX_LOCAL_APIC;
--#endif
- 
- 	/* SRAT: Static Resource Affinity Table */
- 	if (!acpi_table_parse(ACPI_SIG_SRAT, acpi_parse_srat)) {
- 		acpi_table_parse_srat(ACPI_SRAT_TYPE_X2APIC_CPU_AFFINITY,
--				     acpi_parse_x2apic_affinity, nr_cpu_entries);
-+				     acpi_parse_x2apic_affinity, 0);
- 		acpi_table_parse_srat(ACPI_SRAT_TYPE_CPU_AFFINITY,
--				     acpi_parse_processor_affinity, nr_cpu_entries);
-+				     acpi_parse_processor_affinity, 0);
- 		ret = acpi_table_parse_srat(ACPI_SRAT_TYPE_MEMORY_AFFINITY,
- 					    acpi_parse_memory_affinity,
- 					    NR_NODE_MEMBLKS);
+or some such instead so the user can indicate if the console should get
+all the messages so far or just be added as an extra console 
