@@ -1,139 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368Ab1ALGPS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 01:15:18 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:63623 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832Ab1ALGPP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 01:15:15 -0500
-Date: Wed, 12 Jan 2011 15:15:07 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [RESEND PATCH] serial: samsung: fix device name
-In-reply-to: <AANLkTinwwtE5t16zvpsU5eZvEtJedJr=0x_10DcB0U5z@mail.gmail.com>
-To: "'Darius Augulis'" <augulis.darius@gmail.com>,
-        "'Ben Dooks'" <ben-linux@fluff.org>
-Cc: "'Paulius Zaleckas'" <paulius.zaleckas@gmail.com>,
-        linux-serial@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+	id S1752674Ab1ALGR7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 01:17:59 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:53563 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751405Ab1ALGR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 01:17:57 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/ggitQGfrgatpNg8yDTXHCoH9xsB2ixaOkDKnB5h
+	JS+UgZbf0DrMNC
+Subject: Re: [patch] Re: autogroup: sched_setscheduler() fails
+From: Mike Galbraith <efault@gmx.de>
+To: bharata@linux.vnet.ibm.com
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         linux-kernel@vger.kernel.org
-Message-id: <018a01cbb220$13145bb0$393d1310$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-language: ko
-Content-transfer-encoding: 8BIT
-Thread-index: ActeHWAgFLmRweIwT7i3XRnBfTUZ9xUAe8TA
-References: <20100923190212.18863.25678.stgit@darius-desktop>
- <4C9BE577.4050504@fluff.org>
- <AANLkTi=S8v19iT1DC=6Nh9BEgRvKzyzKTKoJmS0Bw1Fb@mail.gmail.com>
- <4C9CD3E0.6060000@gmail.com> <4C9FE2C4.8070302@fluff.org>
- <AANLkTinwwtE5t16zvpsU5eZvEtJedJr=0x_10DcB0U5z@mail.gmail.com>
+In-Reply-To: <20110112033709.GA2723@in.ibm.com>
+References: <20110110091622.GF2772@in.ibm.com>
+	 <1294655388.8197.22.camel@marge.simson.net>
+	 <1294657154.2016.459.camel@laptop>
+	 <1294677746.8345.4.camel@marge.simson.net>
+	 <20110111171046.GL4772@in.ibm.com>
+	 <1294771686.8006.15.camel@marge.simson.net>
+	 <20110112033709.GA2723@in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 Jan 2011 07:17:52 +0100
+Message-ID: <1294813072.8370.24.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Darius Augulis wrote:
+On Wed, 2011-01-12 at 09:07 +0530, Bharata B Rao wrote:
+> On Tue, Jan 11, 2011 at 07:48:06PM +0100, Mike Galbraith wrote:
+> > On Tue, 2011-01-11 at 22:40 +0530, Bharata B Rao wrote:
+> > > On Mon, Jan 10, 2011 at 05:42:26PM +0100, Mike Galbraith wrote:
+> > > > Index: linux-2.6/kernel/sched_autogroup.c
+> > > > ===================================================================
+> > > > --- linux-2.6.orig/kernel/sched_autogroup.c
+> > > > +++ linux-2.6/kernel/sched_autogroup.c
+> > > > @@ -73,6 +73,15 @@ static inline struct autogroup *autogrou
+> > > >  	ag->id = atomic_inc_return(&autogroup_seq_nr);
+> > > >  	ag->tg = tg;
+> > > >  	tg->autogroup = ag;
+> > > > +#ifdef CONFIG_RT_GROUP_SCHED
+> > > > +	/*
+> > > > +	 * HACK: autogroup RT tasks run in the root task group.
+> > > > +	 * This fools __sched_setscheduler() into proceeding on
+> > > > +	 * so we can move the task to the appropriate runqueue
+> > > > +	 * upon scheduling policy change.
+> > > > +	 */
+> > > > +	tg->rt_bandwidth.rt_runtime = RUNTIME_INF;
+> > > > +#endif
+> > > > 
+> > > >  	return ag;
+> > > > 
+> > > > @@ -143,6 +152,15 @@ autogroup_move_group(struct task_struct
+> > > >  	autogroup_kref_put(prev);
+> > > >  }
+> > > > 
+> > > > +static inline void
+> > > > +autogroup_setscheduler(struct task_struct *p, int on_rq)
+> > > > +{
+> > > > +	if (p->sched_class->task_move_group)
+> > > > +		p->sched_class->task_move_group(p, on_rq);
+> > > > +	else
+> > > > +		set_task_rq(p, task_cpu(p));
+> > > > +}
+> > > > +
+> > > 
+> > > IIUC, with the above changes you are actually queing the task into
+> > > rt_rq of an autogroup. But the task's autogroup interface
+> > > (/proc/<pid>/autogroup) allows you to control the bandwidth of only
+> > > cfs_rq tasks, while the rt tasks in the group get RUNTIME_INF bandwidth.
+> > > 
+> > > I think what we need is a real group change here (which is difficult I
+> > > think) and not just sched_class change.
+> > 
+> > Unless I fscked up, set_task_rq() is the group change.  As soon as the
+> > task's class changes, it'll be moved to the root_task_group.
 > 
-> On Mon, Sep 27, 2010 at 3:18 AM, Ben Dooks <ben-linux@fluff.org> wrote:
-> > On 24/09/10 17:37, Paulius Zaleckas wrote:
-> >> On 09/24/2010 09:57 AM, Darius Augulis wrote:
-> >>> Hi,
-> >>>
-> >>> On Fri, Sep 24, 2010 at 2:40 AM, Ben Dooks<ben-linux@fluff.org>
- wrote:
-> >>>> On 23/09/10 20:15, Darius Augulis wrote:
-> >>>>> Swap device and driver names in serial/samsung.c
-> >>>>
-> >>>> This is far too short, please see the notes below on trying
-> >>>> to make this more informative.
-> >>>>
-> >>>>> Signed-off-by: Darius Augulis<augulis.darius@gmail.com>
-> >>>>> ---
-> >>>>>
-> >>>>> This patch was submitted about 3 months ago, but still not merged.
-> >>>>> There was another similar patch from Joonyoung Shim
-> >>>>> <jy0922.shim@samsung.com>  and was discussed here:
-> >>>>> http://marc.info/?l=linux-serial&m=127416101222281&w=2.
-> >>>>> Joonyoung Shim acked my patch and other people on ARM mailing list
-> >>>>> acked it. The maintainer, Ben Dooks, still not responding for
-> >>>>> a long time. Another maintainer, Kukjin Kim, refused to merge
-> >>>>> it without Ben's review.
-> >>>>> I would like to ask somebody pick up this bugfix.
-> >>>>
-> >>>> I belive last time this was brought up I asked about the affect
-> >>>> this has on the userspace. The following issues would be helpful
-> >>>> or essential to have noted in the header about the effect of this.
-> >>>>
-> >>>> - Does it change the /dev name of the device? if so I would thinl
-> >>>>   carefully about applying it, as it would be a change in the way
-> >>>>   that userspace sees the kernel.
-> >>>
-> >>> It does - now devices are named /dev/s3c2410_serial, and patch changes
-> >>> its name to /dev/ttySAC
-> >>>
-> >>>>
-> >>>> - Does it change the kernel output itself? A note on what diffeences
-> >>>>   can be seen in things like dmesg would be helpful.
-> >>>
-> >>> It does. Serial driver reports device names when probing, so there
-> >>> will appear ttySACx instead of
-> >>> s3c2410_serialx.
-> >>>
-> >>>>
-> >>>> - Are there any other side effects
-> >>>>
-> >>>> - Why is this a bug? Maybe the previous points will explain what is
-> >>>>   going on, but if not, then a reasonably concise description of
-> >>>>   what is going on here.
-> >>>
-> >>> This is bug, because of several points:
-> >>>
-> >>> 1. Because it contradicts kernel documentation. Please read
-> >>> Documentation/arm/Samsung-S3C24XX/Overview.txt line 196.
-> >>> This should be enough to apply this patch.
-> >>>
-> >>> 2. Because s3c2410_serial isn't correct name for serial device node.
-> >>> It's name of Samsung serial driver.
-> >>>
-> >>> 3. Because now almost all userspace systems workaround it by creating
-> >>> symlink
-> >>> /dev/ttySACx>  /dev/s3c2410_serialx and only then put some getty on
-> >>> created symlink, not on original device.
-> >>> Systems which don't create this symlink, fail to boot at all, because
-> >>> of wrong console name. Good example is Buildroot.
-> >>
-> >> I had similar issue with buildroot too, because in /etc/securetty it is
-> >> defained as ttySAC0
-> >>
-> >> 4. For console in kernel boot command line you must enter
-console=ttySACx.
-> >> Why it sould be different in userspace?
-> >>
-> >> For me it seems taht this bug was not noticed earlier, because most
-> >> embedded
-> >> systems were using static device nodes and ttySACx was used in these
-cases.
-> >
-> > As long as these are explained, then I'm reasonably happy for this to be
-> > applied, as long as there are no other complaints.
-> >
-> > However, this is a big change, and I think it should await the next
-> > merge window.
+> Ok, this is what I understand, may be Peter Z can confirm...
 > 
-> I agree that too.
-> 
+> set_task_rq() just changes the task's cfs_rq and rt_rq as per its
+> task_group().
 
-Hi Darius and all,
+Exactly.  When you call task_group() for an RT task, it returns
+&root_task_group, so a task making the transition to RT will be dequeued
+from it's autogroup cfs_rq, and enqueued in root_task_group's rt_rq.
 
-Maybe you remember this, I applied this in my for-next for 38 this merge
-window.
-If any opinions, please let me know.
+>  The normal way to change a task's group is to first
+> change its cgroup pointer (task->cgroups, see cgroup_attach_task())
+> After this you change the runqueues by calling set_task_rq() which
+> now refers to new group's runqueues.
 
-Thanks and Happy New year :)
+Autogroup doesn't need to do cgroup stuff.  If a task is in a cgroup,
+it's autogroup remains intact, but is ignored.  Move it back to root,
+and it's autogroup will be used again.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+	-Mike
 
