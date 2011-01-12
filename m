@@ -1,119 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303Ab1ALSuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 13:50:10 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:62128 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab1ALSuH (ORCPT
+	id S1754784Ab1ALSzb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 13:55:31 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:58385 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751973Ab1ALSz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 13:50:07 -0500
-Date: Wed, 12 Jan 2011 19:49:56 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCHv8 00/12] Contiguous Memory Allocator
-In-reply-to: <20101223134432.GJ3636@n2100.arm.linux.org.uk>
-To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
-Cc: "'Kyungmin Park'" <kmpark@infradead.org>,
-        "'Michal Nazarewicz'" <m.nazarewicz@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Johan MOSSBERG'" <johan.xx.mossberg@stericsson.com>,
-        "'Mel Gorman'" <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>, linux-mm@kvack.org,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-media@vger.kernel.org,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Message-id: <001c01cbb289$864391f0$92cab5d0$%szyprowski@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: pl
-Content-transfer-encoding: 7BIT
-Thread-index: Acuip5MEkWuLtk3PQ+anQbczwHd0kAO7Zd8w
-References: <cover.1292443200.git.m.nazarewicz@samsung.com>
- <AANLkTim8_=0+-zM5z4j0gBaw3PF3zgpXQNetEn-CfUGb@mail.gmail.com>
- <20101223100642.GD3636@n2100.arm.linux.org.uk>
- <00ea01cba290$4d67f500$e837df00$%szyprowski@samsung.com>
- <20101223121917.GG3636@n2100.arm.linux.org.uk>
- <00ec01cba2a2$af20b8b0$0d622a10$%szyprowski@samsung.com>
- <20101223134432.GJ3636@n2100.arm.linux.org.uk>
+	Wed, 12 Jan 2011 13:55:29 -0500
+Date: Wed, 12 Jan 2011 13:55:24 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+X-X-Sender: nico@xanadu.home
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Dave Martin <dave.martin@linaro.org>,
+        Alexander Holler <holler@ahsoftware.de>, Rabin Vincent <rabin@rab.in>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: ARM: relocation out of range (when loading a module)
+In-Reply-To: <20110112184258.GH11039@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.00.1101121350350.25498@xanadu.home>
+References: <4D2B4CE4.9080309@ahsoftware.de> <alpine.LFD.2.00.1101101722470.9794@xanadu.home> <4D2BFA08.5030104@ahsoftware.de> <AANLkTinR7ih2ZMRMbXmSvoh-rS3LVv+UCvd0rRH_ESzf@mail.gmail.com> <20110111155930.GH11039@n2100.arm.linux.org.uk> <4D2D1942.4050905@ahsoftware.de>
+ <AANLkTimAFp7ORrJLw2d8-i5pK0MZGTyAN5kmRR37ky1v@mail.gmail.com> <alpine.LFD.2.00.1101121314470.25498@xanadu.home> <20110112184258.GH11039@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 12 Jan 2011, Russell King - ARM Linux wrote:
 
-I'm sorry for the delay. Just got back from my holidays and getting thought
-the mails.
-
-On Thursday, December 23, 2010 2:45 PM Russell King - ARM Linux wrote:
-
-> On Thu, Dec 23, 2010 at 02:09:44PM +0100, Marek Szyprowski wrote:
-> > Hello,
-> >
-> > On Thursday, December 23, 2010 1:19 PM Russell King - ARM Linux wrote:
-> >
-> > > On Thu, Dec 23, 2010 at 11:58:08AM +0100, Marek Szyprowski wrote:
-> > > > Actually this contiguous memory allocator is a better replacement for
-> > > > alloc_pages() which is used by dma_alloc_coherent(). It is a generic
-> > > > framework that is not tied only to ARM architecture.
-> > >
-> > > ... which is open to abuse.  What I'm trying to find out is - if it
-> > > can't be used for DMA, what is it to be used for?
-> > >
-> > > Or are we inventing an everything-but-ARM framework?
-> >
-> > We are trying to get something that really works and SOLVES some of the
-> > problems with real devices that require contiguous memory for DMA.
+> Then came along the embedded initrd/initramfs idea which rather buggered
+> the scheme when large initramfs are embedded into the image.
 > 
-> So, here you've confirmed that it's for DMA.
+> As the overall feeling at the time was "don't use large initrds" it's
+> something I've never really cared about - and I'm still of the opinion
+> that 16MB of compressed initrd/initramfs is rather silly.
 
-Right, otherwise it wouldn't really make much sense. Note that our proposal
-already works for non-arm platforms. 
-
-> > > > > In other words, do we _actually_ have a use for this which doesn't
-> > > > > involve doing something like allocating 32MB of memory from it,
-> > > > > remapping it so that it's DMA coherent, and then performing DMA
-> > > > > on the resulting buffer?
-> > > >
-> > > > This is an arm specific problem, also related to dma_alloc_coherent()
-> > > > allocator. To be 100% conformant with ARM specification we would
-> > > > probably need to unmap all pages used by the dma_coherent allocator
-> > > > from the LOW MEM area. This is doable, but completely not related
-> > > > to the CMA and this patch series.
-> > >
-> > > You've already been told why we can't unmap pages from the kernel
-> > > direct mapping.
-> >
-> > It requires some amount of work but I see no reason why we shouldn't be
-> > able to unmap that pages to stay 100% conformant with ARM spec.
-> 
-> I have considered - and tried - to do that with the dma_alloc_coherent()
-> spec, but it is NOT POSSIBLE to do so - too many factors stand in the
-> way of making it work, such as the need bring the system to a complete
-> halt to modify all the L1 page tables and broadcast the TLB operations
-> to invalidate the old mappings.  None of that can be done from all the
-> contexts under which dma_alloc_coherent() is called from.
-
-I understand that this requires a lot of work, but I still think this might
-be possible to get it working with some additional constraints.
-
-I understand that modifying L1 page tables is definitely not a proper way of
-handling this. It simply costs too much. But what if we consider that the DMA
-memory can be only allocated from a specific range of the system memory?
-Assuming that this range of memory is known during the boot time, it CAN be
-mapped with two-level of tables in MMU. First level mapping will stay the
-same all the time for all processes, but it would be possible to unmap the
-pages required for DMA from the second level mapping what will be visible
-from all the processes at once.
-
-Is there any reason why such solution won't work?
-
-Best regards
---
-Marek Szyprowski
-Samsung Poland R&D Center
+It is... but we have more than 32MB of RAM total now, and people are 
+running standard distributions on ARM these days, such as Fedora or 
+Ubuntu, including their corresponding initrd that may contain lots of 
+modules, splashscreen data, etc.  So it might be a good idea to think 
+about fixing this limitation before it comes back again.
 
 
-
+Nicolas
