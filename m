@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab1ALOLK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 09:11:10 -0500
-Received: from 1.77.mail-out.ovh.net ([87.98.185.206]:37921 "HELO
-	77.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with SMTP id S1751286Ab1ALOLI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 09:11:08 -0500
-X-Greylist: delayed 96310 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Jan 2011 09:11:08 EST
-Message-ID: <4D2DB674.4030900@example.com>
-Date: Wed, 12 Jan 2011 15:11:00 +0100
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	id S1753627Ab1ALOOG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 09:14:06 -0500
+Received: from csmtp1.one.com ([195.47.247.21]:49716 "EHLO csmtp1.one.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751333Ab1ALOOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 09:14:05 -0500
+From: "Henrik Rydberg" <rydberg@bitmath.org>
+Date: Wed, 12 Jan 2011 15:13:41 +0100
+To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Cc: Stephane Chatty <chatty@enac.fr>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] hid-multitouch: changes from the review process
+Message-ID: <20110112141341.GA31794@polaris.bitmath.org>
+References: <1294760754-7885-1-git-send-email-benjamin.tissoires@enac.fr>
+ <20110111173511.GA3461@polaris.bitmath.org>
+ <AANLkTin86WMvEpNAm2T8wR=GgUBtYqoqGJxZm7hKnEoE@mail.gmail.com>
+ <20110112122741.GA29373@polaris.bitmath.org>
+ <AANLkTimnY3QC+7tsGhHi8awkMYQTDH8ugn4U--qkmup4@mail.gmail.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?QW3DqXJpY28gV2FuZw==?= <xiyou.wangcong@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Error in linux-2.6.37-git5 in btrfs in ctree.c
-References: <4D2C52E3.2020702@example.com> <20110111131423.GA17312@hack>
-In-Reply-To: <20110111131423.GA17312@hack>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 13147977639110996248
-X-Ovh-Remote: 79.185.218.39 (adtg39.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
-X-Ovh-Tracer-Id: 13411156740909723928
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimnY3QC+7tsGhHi8awkMYQTDH8ugn4U--qkmup4@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.01.2011 14:14, Américo Wang wrote:
-> On Tue, Jan 11, 2011 at 01:53:55PM +0100, Piotr Hosowicz wrote:
->> (I send again because my previous message wasn't delivered.)
->>
->> Hello,
->>
->> There is an error in here:
->>
->> In file included from fs/btrfs/ctree.c:21:
->> fs/btrfs/ctree.h:1003: error: field ‘super_kobj’ has incomplete type
->> fs/btrfs/ctree.h:1074: error: field ‘root_kobj’ has incomplete type
->>
->> Kernel fails to build. linux-2.6.37-git5
+> > Regarding the quanta patches you have pending, IFAICT the 0408:3001
+> > device is not properly supported currently, so perhaps that one could
+> > be added to the list, too.
+> >
+> 
+> Hi Henrik,
+> 
+> What do you mean by not properly supported?
 
-I see that it's the same in Linus GIT tree, I didn't fail to build, 
-because I corrected the same way first, it's building now. Should it be 
-like that?
+Buggy :-)
 
-Regards,
+> the device is in hid-quanta since 2.6.33: commit "HID: add support for
+> Pixart Imaging Optical Touch Screen"
 
-Piotr Hosowicz
+The bug report has been around a while, I just assumed it was part of
+your coming patches. No worries if it isn't.
 
--- 
-Grupa marzeń w eliminacjach MŚ :
-Zimbabwe, Alaska, Grenlandia, Antarktyda i Zair.
-NP: Peter Green Splinter Group - Turn Your Love Away
-NB: 2.6.37-git7-corr
+Thanks,
+Henrik
+
