@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755431Ab1ALTEW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 14:04:22 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:23678 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753654Ab1ALTEQ (ORCPT
+	id S1755533Ab1ALTEt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 14:04:49 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:45595 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753654Ab1ALTEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 14:04:16 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Wed, 12 Jan 2011 14:04:12 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
-        "'Kyungmin Park'" <kmpark@infradead.org>,
-        "'Michal Nazarewicz'" <m.nazarewicz@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Johan MOSSBERG'" <johan.xx.mossberg@stericsson.com>,
-        "'Mel Gorman'" <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>, linux-mm@kvack.org,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-media@vger.kernel.org,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: RE: [PATCHv8 00/12] Contiguous Memory Allocator
-In-reply-to: <001c01cbb289$864391f0$92cab5d0$%szyprowski@samsung.com>
-Message-id: <alpine.LFD.2.00.1101121357580.25498@xanadu.home>
-References: <cover.1292443200.git.m.nazarewicz@samsung.com>
- <AANLkTim8_=0+-zM5z4j0gBaw3PF3zgpXQNetEn-CfUGb@mail.gmail.com>
- <20101223100642.GD3636@n2100.arm.linux.org.uk>
- <00ea01cba290$4d67f500$e837df00$%szyprowski@samsung.com>
- <20101223121917.GG3636@n2100.arm.linux.org.uk>
- <00ec01cba2a2$af20b8b0$0d622a10$%szyprowski@samsung.com>
- <20101223134432.GJ3636@n2100.arm.linux.org.uk>
- <001c01cbb289$864391f0$92cab5d0$%szyprowski@samsung.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Wed, 12 Jan 2011 14:04:46 -0500
+Message-ID: <4D2DFB4B.5000204@kernel.org>
+Date: Wed, 12 Jan 2011 11:04:43 -0800
+From: "J.H." <warthog9@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.10
+MIME-Version: 1.0
+To: users@kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [kernel.org users] [KORG] Master /	hera	upgrade	&	downtime	announcement
+References: <4CCB3158.9010406@kernel.org>	<4CCF24F0.5050704@kernel.org>	<4CCF3AA1.8050804@kernel.org>	<4CCF4AB3.8070505@kernel.org> <4CD05610.2000108@kernel.org>
+In-Reply-To: <4CD05610.2000108@kernel.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.3 (shards.monkeyblade.net [198.137.202.13]); Wed, 12 Jan 2011 11:04:43 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Jan 2011, Marek Szyprowski wrote:
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-> I understand that modifying L1 page tables is definitely not a proper way of
-> handling this. It simply costs too much. But what if we consider that the DMA
-> memory can be only allocated from a specific range of the system memory?
-> Assuming that this range of memory is known during the boot time, it CAN be
-> mapped with two-level of tables in MMU. First level mapping will stay the
-> same all the time for all processes, but it would be possible to unmap the
-> pages required for DMA from the second level mapping what will be visible
-> from all the processes at once.
+>> I might just setup an NFS mount across the two machines and let people
+>> snag what they need on their own with respect to that.
+> 
+> I've gone ahead and created /home/restore - it has have a copy of the
+> home directory as it existed around 19:00 Nov 1 UTC.  I will garauntee
+> it being around until Nov 30th.  I will need to delete it sometime after
+> that, mainly because of the backup bloat it will cause.  If you made
+> changes to your home directory between Sept. 29th and Nov 1, you will
+> need to deal with the merging of the data manually.
+> 
+> With respect to those users who use IMAP against the machine I've copied
+> your INBOX mail spools to /home/restore/MAILSPOOL.  The easiest way to
+> deal with merging this in with your current inbox is toe copy your spool
+> to your ~/mail directory, load up thunderbird and copy all the mail from
+> the old inbox to your current inbox and then use something like "Remove
+> Duplicate Messages (alternate)" to eliminate the duplicates.
+> 
+> That should be everything.  I'm going to keep poking around trying to
+> find anything else that's off kilter, but I haven't seen any new reports
+> of anything else amiss yet and things seem to be working otherwise.  So
+> if you see something amiss, please let me know ASAP.
 
-How much memory are we talking about?  What is the typical figure?
+Just a quick heads up since we are now two+ months down the road from
+this.  I'm going to wipe out /home/restore on Friday of this week.  If,
+for whatever reason, you have not dealt with this yet please do so now
+as the data will be removed from the system.  This is mainly to help
+deal with a backup system that is happening and to eliminate the extra
+overhead that the data is taking up.
 
-> Is there any reason why such solution won't work?
+Thanks!
 
-It could work indeed.
+- - John 'Warthog9' Hawley
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
 
-One similar solution that is already in place is to use highmem for that 
-reclaimable DMA memory.  It is easy to ensure affected highmem pages are 
-not mapped in kernel space.  And you can decide at boot time how many 
-highmem pages you want even if the system has less that 1GB of RAM.
-
-
-Nicolas
+iEYEARECAAYFAk0t+0sACgkQ/E3kyWU9dieO4ACdGU31QR0UG4f52cqWq8FBBXlC
+eyIAnRXHQWf5Z5uPp9GPmFcTOD/6VJWL
+=Qhux
+-----END PGP SIGNATURE-----
