@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755168Ab1ALQjU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 11:39:20 -0500
-Received: from casper.infradead.org ([85.118.1.10]:44477 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640Ab1ALQjS (ORCPT
+	id S1755282Ab1ALQkG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 11:40:06 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48545 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754712Ab1ALQkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 11:39:18 -0500
-Date: Wed, 12 Jan 2011 16:39:07 +0000 (GMT)
-From: James Simmons <jsimmons@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Dave Airlie <airlied@linux.ie>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [git pull] drm for rc1
-In-Reply-To: <AANLkTik32TC_eMbe0rZ+g11hFy9Z2_yY38avzY0GbgPv@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1101121608560.8212@casper.infradead.org>
-References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie> <4D2CE5C8.60601@de.ibm.com> <AANLkTimr4WX3Ay8vC23MKOM+dOcpV+Ca5rg_gcei38nk@mail.gmail.com> <4D2D8ED0.6080807@de.ibm.com> <alpine.LFD.2.00.1101121235360.8212@casper.infradead.org>
- <4D2DA6A7.4010609@de.ibm.com> <alpine.LFD.2.00.1101121324550.8212@casper.infradead.org> <AANLkTik32TC_eMbe0rZ+g11hFy9Z2_yY38avzY0GbgPv@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Wed, 12 Jan 2011 11:40:02 -0500
+Date: Wed, 12 Jan 2011 16:38:54 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Matthieu CASTET <matthieu.castet@parrot.com>
+Cc: Rabin Vincent <rabin@rab.in>, Alexander Holler <holler@ahsoftware.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Nicolas Pitre <nico@fluxnic.net>
+Subject: Re: ARM: relocation out of range (when loading a module)
+Message-ID: <20110112163854.GE11039@n2100.arm.linux.org.uk>
+References: <4D2B4CE4.9080309@ahsoftware.de> <alpine.LFD.2.00.1101101722470.9794@xanadu.home> <4D2BFA08.5030104@ahsoftware.de> <AANLkTinR7ih2ZMRMbXmSvoh-rS3LVv+UCvd0rRH_ESzf@mail.gmail.com> <20110111155930.GH11039@n2100.arm.linux.org.uk> <4D2DD5F8.5000200@parrot.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4D2DD5F8.5000200@parrot.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 12, 2011 at 05:25:28PM +0100, Matthieu CASTET wrote:
+> Russell King - ARM Linux a écrit :
+>> On Tue, Jan 11, 2011 at 09:16:38PM +0530, Rabin Vincent wrote:
+>>> It's possible to hack around this by placing the initramfs at the end of
+>>> the kernel image rather than at the beginning with the rest of the init
+>>> data.  Something like the below should work, although you should also
+>>> probably take care of alignment and also have this section freed when
+>>> the rest of the init data is freed.
+>>
+>> You're then running into problems as _sdata.._edata is copied to RAM on
+>> XIP kernels, and you really don't want to waste time copying the
+>> initramfs to RAM.
+>>
+> But in this case initramfs is after edata and before bss.
 
-> IOW, I'm inclined to just do the revert. The "fix" clearly breaks
-> things, and now you're adding random parts of the function back rather
-> than just calling the "fill_fix()" function like things used to. Why?
+Right, so that isn't a concern.
 
-Its not the final patch. I'm trying to get feedback on what broke exactly.
+> So where is the problem ?
 
-> The commit message in dfe63bb0ad98 doesn't support any of these hacks
-> - it just seems to say that drm_fb_helper_fill_fix() should also have
-> been called from setcolreg().
->
-> So why don't we just revert the commit and instead add that
-> drm_fb_helper_fill_fix() to setcolreg()?
+There is a problem with it, as noted by Rabin.  The initramfs will
+never be freed.  Let's try to find a proper solution to this rather
+than everyone sticking their half-baked ideas at it.  Let's see if
+we can rearrange the _entire_ layout in a way that sorts this out
+once and for all without making things even more complicated than
+they already are today.
 
-Fine by me. The real problem is the nouveau driver is using the 
-framebuffer device (fb_fillrect) before set_par is ever called.
-Before calling set_par the framebuffer state is not defined.
+We've already got enough variables to think about here without having
+yet more freeable sections scattered in the middle of the existing
+layout.
