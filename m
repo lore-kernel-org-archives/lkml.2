@@ -1,57 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756535Ab1ALWc3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 17:32:29 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53075 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754157Ab1ALWc1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 17:32:27 -0500
+	id S1756573Ab1ALWfU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 17:35:20 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:40772 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754892Ab1ALWfR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 17:35:17 -0500
+Message-ID: <4D2E2C9E.2010805@linux.vnet.ibm.com>
+Date: Wed, 12 Jan 2011 14:35:10 -0800
+From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110112142206.37a1b76d@jbarnes-desktop>
-References: <alpine.DEB.2.00.1101120601100.6210@skynet.skynet.ie>
- <AANLkTimgs8UfGWk5PCZi4PM5SsvejJd5Y4bb3nHGyZy2@mail.gmail.com>
- <20110112114649.5365d518@jbarnes-desktop> <AANLkTinSygbLm=nmXy_Wf2ENV8WcQqCc0BKAAOsysvZd@mail.gmail.com>
- <AANLkTimSKOa8XavLn_RsLZ2scZ=ujdYahcTkeJ2pxBFq@mail.gmail.com> <20110112142206.37a1b76d@jbarnes-desktop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 12 Jan 2011 14:31:33 -0800
-Message-ID: <AANLkTinbyTOirefH91=9feSAUZtgRO1xyHsZsewfz3DG@mail.gmail.com>
-Subject: Re: [git pull] drm intel only fixes
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
-        linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Stephane Eranian <eranian@google.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmU=?= =?UTF-8?B?Y2tlcg==?= 
+	<fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [BUG] perf sched broken
+References: <AANLkTim=jawJyBj0iFd0r4-LCKzvjFW+NddzJMD5GUB9@mail.gmail.com>
+In-Reply-To: <AANLkTim=jawJyBj0iFd0r4-LCKzvjFW+NddzJMD5GUB9@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 2:22 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+On 01/12/2011 01:29 AM, Stephane Eranian wrote:
+> Hi,
 >
-> Ah, ok.  So it could be our internal FDI link is underrunning; it goes
-> between the CPU and PCH and carries display bits.
+> I am trying to use perf sched from tip-x86 but it fails for all my attempts.
+>
+> First of, I think the event list is stale. This is not so much the
+> events themselves
+> but rather the flags.
 
-I'm not sure it's an underrun or anything like that: the corruption is
-long-term in the non-video case. So I take back the "looks like memory
-bandwidth problems", because it really looks more like a corrupted
-blit operation there.
+I'm currently using the master branch of
+git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git
 
-> Are these both desktop type machines with DVI attached monitors?
+Without your :r patch, I do see the problem with the :r modifier, but 
+this sequence
 
-DVI on the Core i5, plain analog VGA on the sandybridge one (I can
-hear you asking "Why?". Because the silly intel motherboard doesn't
-_have_ DVI out, and I didn't have a hdmi cable)
+$ perf record -R -a -c 1 -e sched:sched_switch -- sleep 1
+ > [ perf record: Woken up 1 times to write data ]
+ > [ perf record: Captured and wrote 0.365 MB perf.data (~15962 samples) ]
+ > $./perf report -D
 
-> If it's an FDI or transcoder problem, something like the below may give
-> us more info.
+is working fine for me.  I even removed /usr/bin from my search path to 
+make sure /usr/bin/perf wasn't getting found during the run of ./perf.
 
-See above. It's long-term, it was just the video behavior that made me
-originally think it was temporary.
+I am running on a different environment than you, though.  I am using 
+Fedora 14 (2.6.35 kernel).
 
-> Can you take a picture of the corruption?
+For the record, this is what I see:
+[root@oc7708135540 perf]# ./perf report -D
+WARNING: No sample_id_all support, falling back to unordered processing
 
-Will do. I'll have to reboot to the broken kernel (my bisection ended
-in a non-broken case)
+0x100 [0x40]: event: 1
+.
+. ... raw event: size 64 bytes
+.  0000:  01 00 00 00 01 00 40 00 ff
+  ff ff ff 00 00 00 00  ...
+...@.........
+.  0010:  00 00 00 00 00 00 00 00 ff
+  ff ff 9f ff ff ff ff  ...
+.............
+.  0020:  00 00 00 81 ff ff ff ff 5b
+  6b 65 72 6e 65 6c 2e  ...
+.....[kernel.
+.  0030:  6b 61 6c 6c 73 79 6d 73 5d
+  5f 74 65 78 74 00 00  kal
+lsyms]_text..
+.
+-1 -1 0x100 [0x40]: PERF_RECORD_MMAP -1/0: [0(0xffffffff9fffffff) @ 
+0xffffffff81000000]: [kernel
+.kallsyms]_text
 
-                  Linus
+0x140 [0x38]: event: 1
+.
+. ... raw event: size 56 bytes
+.  0000:  01 00 00 00 01 00 38 00 ff
+  ff ff ff 00 00 00 00  ...
+...8.........
+.  0010:  00 00 00 a0 ff ff ff ff ff
+  2f 00 00 00 00 00 00  ...
+....../......
+.  0020:  00 00 00 00 00 00 00 00 5b
+  6f 75 74 70 75 74 5d  ...
+.....[output]
+.  0030:  00 00 00 00 00 00 00 00
+                         ...
+.....
+.
+-1 -1 0x140 [0x38]: PERF_RECORD_MMAP -1/0: [0xffffffffa0000000(0x2fff) @ 
+0]: [output]
+
+.. and so on ..
+
+
+I will look into the :r problem now.
+
+- Corey
