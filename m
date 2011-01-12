@@ -1,63 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756059Ab1ALXGp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 18:06:45 -0500
-Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:38381 "HELO
-	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750741Ab1ALXGm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 18:06:42 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=gH1hxCCljYm5hgSIRXjXdJKXYC2EqV8kg3zsXprnMRZMRREzcM+7WOeDWFr0K63tcPBe4iRJD4k8yKaqvXyVK2TDKafVkGkNypKDSYBSaFP983J5OKFLZnx22w5Uhjrr;
-Date: Wed, 12 Jan 2011 15:06:40 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
-        linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Subject: Re: [git pull] drm intel only fixes
-Message-ID: <20110112150640.2a41602c@jbarnes-desktop>
-In-Reply-To: <AANLkTinbyTOirefH91=9feSAUZtgRO1xyHsZsewfz3DG@mail.gmail.com>
-References: <alpine.DEB.2.00.1101120601100.6210@skynet.skynet.ie>
-	<AANLkTimgs8UfGWk5PCZi4PM5SsvejJd5Y4bb3nHGyZy2@mail.gmail.com>
-	<20110112114649.5365d518@jbarnes-desktop>
-	<AANLkTinSygbLm=nmXy_Wf2ENV8WcQqCc0BKAAOsysvZd@mail.gmail.com>
-	<AANLkTimSKOa8XavLn_RsLZ2scZ=ujdYahcTkeJ2pxBFq@mail.gmail.com>
-	<20110112142206.37a1b76d@jbarnes-desktop>
-	<AANLkTinbyTOirefH91=9feSAUZtgRO1xyHsZsewfz3DG@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+	id S1755671Ab1ALXMf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 18:12:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26017 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751648Ab1ALXMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 18:12:32 -0500
+Date: Wed, 12 Jan 2011 23:12:15 +0000
+From: Alasdair G Kergon <agk@redhat.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, dm-devel@redhat.com,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [dm-devel] linux-next: Tree for January 12 (dm-crypt)
+Message-ID: <20110112231215.GC9501@agk-dp.fab.redhat.com>
+Mail-Followup-To: Randy Dunlap <randy.dunlap@oracle.com>,
+	Stephen Rothwell <sfr@canb.auug.org.au>, dm-devel@redhat.com,
+	linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+References: <20110112141822.c29314c4.sfr@canb.auug.org.au> <20110112100121.ba610465.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110112100121.ba610465.randy.dunlap@oracle.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: Amberley Place, 107-111 Peascod
+	Street, Windsor, Berkshire, SL4 1TE.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Jan 2011 14:31:33 -0800
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Wed, Jan 12, 2011 at 2:22 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> >
-> > Ah, ok.  So it could be our internal FDI link is underrunning; it goes
-> > between the CPU and PCH and carries display bits.
+On Wed, Jan 12, 2011 at 10:01:21AM -0800, Randy Dunlap wrote:
+> When CONFIG_LBDAF is not enabled (build on i386):
+> (sector_t is 32 bits)
 > 
-> I'm not sure it's an underrun or anything like that: the corruption is
-> long-term in the non-video case. So I take back the "looks like memory
-> bandwidth problems", because it really looks more like a corrupted
-> blit operation there.
+> drivers/md/dm-crypt.c:568: warning:right shift count >= width of type
+ 
+Thanks - being fixed.
 
-Ah ok if it's long running then yeah it's more likely to be a rendering
-issue.  It could also be the FDI link getting its timings messed up
-though, and consistently delivering the wrong bits; that could show up
-in the same place on the screen each time, or it might move in a
-pattern across the screen (usually from top to bottom).
+Alasdair
 
-> Will do. I'll have to reboot to the broken kernel (my bisection ended
-> in a non-broken case)
-
-Great, thanks.
-
--- 
-Jesse Barnes, Intel Open Source Technology Center
