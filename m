@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489Ab1ALHam (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 02:30:42 -0500
-Received: from vms173001pub.verizon.net ([206.46.173.1]:47112 "EHLO
-	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab1ALHak (ORCPT
+	id S1755510Ab1ALHgh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 02:36:37 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:44556 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752534Ab1ALHgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 02:30:40 -0500
-Date: Wed, 12 Jan 2011 02:30:31 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Thomas Renninger <trenn@suse.de>
-Cc: linux-perf-users@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        arjan@linux.intel.com, j-pihet@ti.com, linux-acpi@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ACPI: processor_idle: delete use of NOP CPUIDLE_FLAGs
-In-reply-to: <alpine.LFD.2.02.1101120159400.19140@x980>
-Message-id: <alpine.LFD.2.02.1101120229060.19140@x980>
-References: <1294396190-23031-1-git-send-email-trenn@suse.de>
- <1294396190-23031-6-git-send-email-trenn@suse.de>
- <alpine.LFD.2.02.1101120159400.19140@x980>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 12 Jan 2011 02:36:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=fxJRX5d7Lfn5Z/8xEEKH7esCINK/ejgHeOSVJpyiAofZXSvjBRqZI4OFx8vzL9LSAL
+         a6VaiJ0hjYAP0SjDxjDmPzjG75gCeYXhNUy6uJBVV6cq8sZlbAeoywSESmU2Nsof5Tm3
+         CE96LsVsLrS0ON4a54prElTzg+c+dbJ1B5CWA=
+Subject: [PATCH] rtc: rtc-max6902 - set driver data in max6902_probe()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alessandro Zummo <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>, rtc-linux@googlegroups.com
+Content-Type: text/plain
+Date: Wed, 12 Jan 2011 15:36:34 +0800
+Message-Id: <1294817794.6904.3.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Len Brown <len.brown@intel.com>
+Current implementation does not set driver data in max6902_probe(),
+thus calling platform_get_drvdata(spi) in max6902_remove() returns NULL.
 
-CPUIDLE_FLAG_SHALLOW
-CPUIDLE_FLAG_BALANCED
-CPUIDLE_FLAG_DEEP
-CPUIDLE_FLAG_CHECK_BM
-
-were set by acpi_processor_setup_cpuidle(),
-but never used by cpuidle or by acpi_idle.
-So stop setting them.
-
-Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
 ---
- drivers/acpi/processor_idle.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+ drivers/rtc/rtc-max6902.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-index eefd4aa..70599d2 100644
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -1023,7 +1023,6 @@ static int acpi_processor_setup_cpuidle(struct acpi_processor *pr)
- 		state->flags = 0;
- 		switch (cx->type) {
- 			case ACPI_STATE_C1:
--			state->flags |= CPUIDLE_FLAG_SHALLOW;
- 			if (cx->entry_method == ACPI_CSTATE_FFH)
- 				state->flags |= CPUIDLE_FLAG_TIME_VALID;
+diff --git a/drivers/rtc/rtc-max6902.c b/drivers/rtc/rtc-max6902.c
+index 657403e..0ec3f58 100644
+--- a/drivers/rtc/rtc-max6902.c
++++ b/drivers/rtc/rtc-max6902.c
+@@ -139,12 +139,13 @@ static int __devinit max6902_probe(struct spi_device *spi)
+ 	if (IS_ERR(rtc))
+ 		return PTR_ERR(rtc);
  
-@@ -1032,16 +1031,13 @@ static int acpi_processor_setup_cpuidle(struct acpi_processor *pr)
- 			break;
++	dev_set_drvdata(&spi->dev, rtc);
+ 	return 0;
+ }
  
- 			case ACPI_STATE_C2:
--			state->flags |= CPUIDLE_FLAG_BALANCED;
- 			state->flags |= CPUIDLE_FLAG_TIME_VALID;
- 			state->enter = acpi_idle_enter_simple;
- 			dev->safe_state = state;
- 			break;
+ static int __devexit max6902_remove(struct spi_device *spi)
+ {
+-	struct rtc_device *rtc = platform_get_drvdata(spi);
++	struct rtc_device *rtc = dev_get_drvdata(&spi->dev);
  
- 			case ACPI_STATE_C3:
--			state->flags |= CPUIDLE_FLAG_DEEP;
- 			state->flags |= CPUIDLE_FLAG_TIME_VALID;
--			state->flags |= CPUIDLE_FLAG_CHECK_BM;
- 			state->enter = pr->flags.bm_check ?
- 					acpi_idle_enter_bm :
- 					acpi_idle_enter_simple;
+ 	rtc_device_unregister(rtc);
+ 	return 0;
 -- 
-1.7.4.rc1.7.g2cf08
+1.7.2
+
 
 
