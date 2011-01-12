@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755682Ab1ALHiE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 02:38:04 -0500
-Received: from vms173007pub.verizon.net ([206.46.173.7]:56236 "EHLO
-	vms173007pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752316Ab1ALHiA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 02:38:00 -0500
-Date: Wed, 12 Jan 2011 02:37:54 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Thomas Renninger <trenn@suse.de>
-Cc: linux-perf-users@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        arjan@linux.intel.com, j-pihet@ti.com, linux-acpi@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] cpuidle: delete NOP CPUIDLE_FLAG_POLL
-In-reply-to: <alpine.LFD.2.02.1101120229060.19140@x980>
-Message-id: <alpine.LFD.2.02.1101120235390.19140@x980>
-References: <1294396190-23031-1-git-send-email-trenn@suse.de>
- <1294396190-23031-6-git-send-email-trenn@suse.de>
- <alpine.LFD.2.02.1101120159400.19140@x980>
- <alpine.LFD.2.02.1101120229060.19140@x980>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S932096Ab1ALHjW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 02:39:22 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:63692 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755294Ab1ALHjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 02:39:19 -0500
+Message-ID: <4D2D5AA6.9080804@cn.fujitsu.com>
+Date: Wed, 12 Jan 2011 15:39:18 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH v3 1/3] KVM: fix rcu usage warning in kvm_arch_vcpu_ioctl_set_sregs()
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-01-12 15:38:51,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-01-12 15:38:52,
+	Serialize complete at 2011-01-12 15:38:52
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Len Brown <len.brown@intel.com>
+Fix:
 
-it serves no purpose
+[ 1001.499596] ===================================================
+[ 1001.499599] [ INFO: suspicious rcu_dereference_check() usage. ]
+[ 1001.499601] ---------------------------------------------------
+[ 1001.499604] include/linux/kvm_host.h:301 invoked rcu_dereference_check() without protection!
+	......
+[ 1001.499636] Pid: 6035, comm: qemu-system-x86 Not tainted 2.6.37-rc6+ #62
+[ 1001.499638] Call Trace:
+[ 1001.499644]  [] lockdep_rcu_dereference+0x9d/0xa5
+[ 1001.499653]  [] gfn_to_memslot+0x8d/0xc8 [kvm]
+[ 1001.499661]  [] gfn_to_hva+0x16/0x3f [kvm]
+[ 1001.499669]  [] kvm_read_guest_page+0x1e/0x5e [kvm]
+[ 1001.499681]  [] kvm_read_guest_page_mmu+0x53/0x5e [kvm]
+[ 1001.499699]  [] load_pdptrs+0x3f/0x9c [kvm]
+[ 1001.499705]  [] ? vmx_set_cr0+0x507/0x517 [kvm_intel]
+[ 1001.499717]  [] kvm_arch_vcpu_ioctl_set_sregs+0x1f3/0x3c0 [kvm]
+[ 1001.499727]  [] kvm_vcpu_ioctl+0x6a5/0xbc5 [kvm]
 
-Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- drivers/cpuidle/cpuidle.c |    2 +-
- include/linux/cpuidle.h   |    1 -
- 2 files changed, 1 insertions(+), 2 deletions(-)
+ arch/x86/kvm/x86.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index 37e4460..dd5f1ea 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -186,7 +186,7 @@ static void poll_idle_init(struct cpuidle_device *dev)
- 	state->exit_latency = 0;
- 	state->target_residency = 0;
- 	state->power_usage = -1;
--	state->flags = CPUIDLE_FLAG_POLL;
-+	state->flags = 0;
- 	state->enter = poll_idle;
- }
- #else
-diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-index 1be416b..dee3285 100644
---- a/include/linux/cpuidle.h
-+++ b/include/linux/cpuidle.h
-@@ -48,7 +48,6 @@ struct cpuidle_state {
- /* Idle State Flags */
- #define CPUIDLE_FLAG_TIME_VALID	(0x01) /* is residency time measurable? */
- #define CPUIDLE_FLAG_CHECK_BM	(0x02) /* BM activity will exit state */
--#define CPUIDLE_FLAG_POLL	(0x10) /* no latency, no savings */
- #define CPUIDLE_FLAG_SHALLOW	(0x20) /* low latency, minimal savings */
- #define CPUIDLE_FLAG_BALANCED	(0x40) /* medium latency, moderate savings */
- #define CPUIDLE_FLAG_DEEP	(0x80) /* high latency, large savings */
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index fa708c9..0b77e9c 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5571,7 +5571,7 @@ int kvm_arch_vcpu_ioctl_set_sregs(struct kvm_vcpu *vcpu,
+ 				  struct kvm_sregs *sregs)
+ {
+ 	int mmu_reset_needed = 0;
+-	int pending_vec, max_bits;
++	int pending_vec, max_bits, idx;
+ 	struct desc_ptr dt;
+ 
+ 	dt.size = sregs->idt.limit;
+@@ -5600,10 +5600,13 @@ int kvm_arch_vcpu_ioctl_set_sregs(struct kvm_vcpu *vcpu,
+ 	kvm_x86_ops->set_cr4(vcpu, sregs->cr4);
+ 	if (sregs->cr4 & X86_CR4_OSXSAVE)
+ 		update_cpuid(vcpu);
++
++	idx = srcu_read_lock(&vcpu->kvm->srcu);
+ 	if (!is_long_mode(vcpu) && is_pae(vcpu)) {
+ 		load_pdptrs(vcpu, vcpu->arch.walk_mmu, kvm_read_cr3(vcpu));
+ 		mmu_reset_needed = 1;
+ 	}
++	srcu_read_unlock(&vcpu->kvm->srcu, idx);
+ 
+ 	if (mmu_reset_needed)
+ 		kvm_mmu_reset_context(vcpu);
 -- 
-1.7.4.rc1.7.g2cf08
-
-
+1.7.3.4
