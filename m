@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932455Ab1ALNgs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 08:36:48 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:34418 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755363Ab1ALNgq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 08:36:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=KWKX2nV7r64MLAAjVMPOfHEKfy08cB+yu/8VEgZ8N0va61C61tEaHTUl+zAOoJ0kZ/
-         IlpVZzRB+r8WYBlqwcA+pdw1Y1hjDwVIRcauVWqHhDIELmPLz+1EWz1TlbBgptfAy+fV
-         p58zzDVfBD4v+Az+PCXVSEAn8Nuc4j4m67iIs=
+	id S932630Ab1ALNhH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 08:37:07 -0500
+Received: from mail.atmel.fr ([81.80.104.162]:36388 "EHLO atmel-es2.atmel.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932499Ab1ALNhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 08:37:03 -0500
+Message-ID: <4D2DAE40.80803@atmel.com>
+Date: Wed, 12 Jan 2011 14:36:00 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <4D2D8ED0.6080807@de.ibm.com>
-References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie>
-	<4D2CE5C8.60601@de.ibm.com>
-	<AANLkTimr4WX3Ay8vC23MKOM+dOcpV+Ca5rg_gcei38nk@mail.gmail.com>
-	<4D2D8ED0.6080807@de.ibm.com>
-Date: Wed, 12 Jan 2011 15:36:44 +0200
-Message-ID: <AANLkTik4h=4o8JEwfd+=CFVb4NgkwaEwxmM6n_+sDj3K@mail.gmail.com>
-Subject: Re: [git pull] drm for rc1
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Airlie <airlied@linux.ie>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org, James Simmons <jsimmons@infradead.org>
+To: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: linux-arm-kernel@lists.infradead.org, avictor.za@gmail.com,
+        plagnioj@jcrosoft.com
+Subject: Re: [PATCH] MAINTAINERS: Update Atmel AT91 entry
+References: <1294250698-13275-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <1294250698-13275-1-git-send-email-nicolas.ferre@atmel.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 1:21 PM, Christian Borntraeger
-<borntraeger@de.ibm.com> wrote:
-> Am 12.01.2011 00:28, schrieb Linus Torvalds:
->> On Tue, Jan 11, 2011 at 3:20 PM, Christian Borntraeger
->> <borntraeger@de.ibm.com> wrote:
->>>
->>> Now nouveau framebuffer is completely broken on my T61p (01:00.0 VGA compatible controller: nVidia Corporation G84M [Quadro FX 570M] (rev a1))
->>> During startup the framebuffer shows only stripes and a blank
->>> screen after suspend/resume.
->>> I also see lots of TRAP messages. (see below).
->>> X11 seems to work fine though...
->>
->> Can you try to bisect?
->
-> dfe63bb0ad9810db13aab0058caba97866e0a681 is the first bad commit
-> commit dfe63bb0ad9810db13aab0058caba97866e0a681
-> Author: James Simmons <jsimmons@infradead.org>
-> Date:   Thu Dec 23 16:40:37 2010 +0000
->
->    drm: Update fbdev fb_fix_screeninfo
->
->
-> Reverting this on top of todays git also fixes my problem.
->
-> Christian
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Le 05/01/2011 19:04, Nicolas Ferre :
+> Add two co-maintainers and update the entry with new information.
+> 
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Acked-by: Andrew Victor <linux@maxim.org.za>
+> Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-I tested the revert: the boot screen did change the resolution
-(without it don't), but my PC still hangs. (using an nvidia 8800GT).
+Hi Andrew (Morton),
+
+Maybe you can handle this "MAINTAINERS" patch?
+
+Thanks a lot, bye.
+
+> ---
+>  MAINTAINERS |    8 ++++++--
+>  1 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 7585e9d..cb58500 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -552,11 +552,15 @@ M:	Lennert Buytenhek <kernel@wantstofly.org>
+>  L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+>  S:	Maintained
+>  
+> -ARM/ATMEL AT91RM9200 ARM ARCHITECTURE
+> +ARM/ATMEL AT91RM9200 AND AT91SAM ARM ARCHITECTURES
+>  M:	Andrew Victor <linux@maxim.org.za>
+> +M:	Nicolas Ferre <nicolas.ferre@atmel.com>
+> +M:	Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+>  L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+>  W:	http://maxim.org.za/at91_26.html
+> -S:	Maintained
+> +W:	http://www.linux4sam.org
+> +S:	Supported
+> +F:	arch/arm/mach-at91/
+>  
+>  ARM/BCMRING ARM ARCHITECTURE
+>  M:	Jiandong Zheng <jdzheng@broadcom.com>
+
+
+-- 
+Nicolas Ferre
