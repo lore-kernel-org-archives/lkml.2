@@ -1,46 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab1ALMOO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 07:14:14 -0500
-Received: from mga09.intel.com ([134.134.136.24]:38322 "EHLO mga09.intel.com"
+	id S932291Ab1ALMOS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 07:14:18 -0500
+Received: from mx1.sophos.com ([195.166.81.52]:44476 "EHLO mx1.sophos.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756060Ab1ALMOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 07:14:11 -0500
-Message-Id: <0d30dc$kno619@orsmga001.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,312,1291622400"; 
-   d="scan'208";a="695998505"
-Date: Wed, 12 Jan 2011 12:14:07 +0000
-To: Indan Zupancic <indan@nul.nu>
-Subject: Re: Linux 2.6.37
-Cc: Michal Hocko <mhocko@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-In-Reply-To: <b9dded$hknqnh@orsmga002.jf.intel.com>
-References: <AANLkTikKA-nStyNjkdsVa8hd=PFQR3tYTJh3MnfpNkD8@mail.gmail.com> <20110106104816.GA4026@tiehlicka.suse.cz> <20110111171744.GA3854@tiehlicka.suse.cz> <1bdc18$j7rfh5@fmsmga002.fm.intel.com> <b34be07ef0c3e8fc82c29d4299f262e4.squirrel@webmail.greenhost.nl> <b9dded$hknqnh@orsmga002.jf.intel.com>
-From: Chris Wilson <chris@chris-wilson.co.uk>
+	id S1756105Ab1ALMOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 07:14:14 -0500
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Eric Paris <eparis@redhat.com>
+Subject: [PATCH] Avoid having to provide a fake/invalid fd and path when flushing marks
+Date: Wed, 12 Jan 2011 12:13:57 +0000
+User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.4.4; x86_64; ; )
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="Boundary-00=_GsZLNsfb1hI7fIt"
+Message-ID: <201101121213.58639.tvrtko.ursulin@sophos.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Jan 2011 12:07:23 +0000, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> diff --git a/drivers/gpu/drm/i915/intel_panel.c
-> b/drivers/gpu/drm/i915/intel_pan
-> index e00d200..27c79c7 100644
-> --- a/drivers/gpu/drm/i915/intel_panel.c
-> +++ b/drivers/gpu/drm/i915/intel_panel.c
-> @@ -278,6 +278,6 @@ void intel_panel_setup_backlight(struct drm_device
-> *dev)
->  {
->         struct drm_i915_private *dev_priv = dev->dev_private;
->  
-> -       dev_priv->backlight_level = intel_panel_get_max_backlight(dev);
-> +       dev_priv->backlight_level = intel_panel_max_backlight(dev);
->         dev_priv->backlight_enabled = dev_priv->backlight_level != 0;
+--Boundary-00=_GsZLNsfb1hI7fIt
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-          dev_priv->backlight_level = intel_panel_get_backlight(dev);
--ETIRED
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+(Patch also attached in case our outgoing mail servers decide
+to munge tabs again.)
+
+Currently for a group to flush marks it has set it needs to
+provide a fake or invalid (but resolvable) file descriptor
+and path when calling fanotify_mark. This patch pulls the
+flush handling a bit up so file descriptor and path are
+completely ignored when flushing.
+
+Signed-off-by: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+---
+ fanotify_user.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanoti=
+fy_user.c
+index 8b61220..09504b1 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -824,6 +824,15 @@ SYSCALL_DEFINE(fanotify_mark)(int fanotify_fd, unsigne=
+d int flags,
+            group->priority =3D=3D FS_PRIO_0)
+                goto fput_and_out;
+
++       if (flags & FAN_MARK_FLUSH) {
++               if (flags & FAN_MARK_MOUNT)
++                       fsnotify_clear_vfsmount_marks_by_group(group);
++               else
++                       fsnotify_clear_inode_marks_by_group(group);
++               ret =3D 0;
++               goto fput_and_out;
++       }
++
+        ret =3D fanotify_find_path(dfd, pathname, &path, flags);
+        if (ret)
+                goto fput_and_out;
+@@ -848,12 +857,6 @@ SYSCALL_DEFINE(fanotify_mark)(int fanotify_fd, unsigne=
+d int flags,
+                else
+                        ret =3D fanotify_remove_inode_mark(group, inode, ma=
+sk, flags);
+                break;
+-       case FAN_MARK_FLUSH:
+-               if (flags & FAN_MARK_MOUNT)
+-                       fsnotify_clear_vfsmount_marks_by_group(group);
+-               else
+-                       fsnotify_clear_inode_marks_by_group(group);
+-               break;
+        default:
+                ret =3D -EINVAL;
+        }
+
+Sophos Limited, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, Un=
+ited Kingdom.
+Company Reg No 2096520. VAT Reg No GB 991 2418 08.
+
+--Boundary-00=_GsZLNsfb1hI7fIt
+Content-Type: text/x-patch; charset="UTF-8";
+	name="fanotify-flush-marks.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="fanotify-flush-marks.patch"
+
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index 8b61220..09504b1 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -824,6 +824,15 @@ SYSCALL_DEFINE(fanotify_mark)(int fanotify_fd, unsigned int flags,
+ 	    group->priority == FS_PRIO_0)
+ 		goto fput_and_out;
+ 
++	if (flags & FAN_MARK_FLUSH) {
++		if (flags & FAN_MARK_MOUNT)
++			fsnotify_clear_vfsmount_marks_by_group(group);
++		else
++			fsnotify_clear_inode_marks_by_group(group);
++		ret = 0;
++		goto fput_and_out;
++	}
++
+ 	ret = fanotify_find_path(dfd, pathname, &path, flags);
+ 	if (ret)
+ 		goto fput_and_out;
+@@ -848,12 +857,6 @@ SYSCALL_DEFINE(fanotify_mark)(int fanotify_fd, unsigned int flags,
+ 		else
+ 			ret = fanotify_remove_inode_mark(group, inode, mask, flags);
+ 		break;
+-	case FAN_MARK_FLUSH:
+-		if (flags & FAN_MARK_MOUNT)
+-			fsnotify_clear_vfsmount_marks_by_group(group);
+-		else
+-			fsnotify_clear_inode_marks_by_group(group);
+-		break;
+ 	default:
+ 		ret = -EINVAL;
+ 	}
+
+--Boundary-00=_GsZLNsfb1hI7fIt--
