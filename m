@@ -1,46 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756404Ab1ALWYk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 17:24:40 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41543 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752153Ab1ALWYi (ORCPT
+	id S1756551Ab1ALWZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 17:25:28 -0500
+Received: from vms173009pub.verizon.net ([206.46.173.9]:38435 "EHLO
+	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753686Ab1ALWZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 17:24:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimSKOa8XavLn_RsLZ2scZ=ujdYahcTkeJ2pxBFq@mail.gmail.com>
-References: <alpine.DEB.2.00.1101120601100.6210@skynet.skynet.ie>
- <AANLkTimgs8UfGWk5PCZi4PM5SsvejJd5Y4bb3nHGyZy2@mail.gmail.com>
- <20110112114649.5365d518@jbarnes-desktop> <AANLkTinSygbLm=nmXy_Wf2ENV8WcQqCc0BKAAOsysvZd@mail.gmail.com>
- <AANLkTimSKOa8XavLn_RsLZ2scZ=ujdYahcTkeJ2pxBFq@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 12 Jan 2011 14:24:17 -0800
-Message-ID: <AANLkTi=80ccp1LtcXw1zO-7Rp58_+9yw-tebkJr67g9M@mail.gmail.com>
-Subject: Re: [git pull] drm intel only fixes
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
-        linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 12 Jan 2011 17:25:25 -0500
+Date: Wed, 12 Jan 2011 17:25:12 -0500 (EST)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Thomas Renninger <trenn@suse.de>
+Cc: linux-perf-users@vger.kernel.org, mingo@elte.hu, arjan@linux.intel.com,
+        j-pihet@ti.com, linux-acpi@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH 4/9] cpuidle: Introduce .abbr (abbrevation) for cpuidle
+ states
+In-reply-to: <201101121437.51122.trenn@suse.de>
+Message-id: <alpine.LFD.2.02.1101121705130.19754@x980>
+References: <1294396190-23031-1-git-send-email-trenn@suse.de>
+ <1294396190-23031-5-git-send-email-trenn@suse.de>
+ <alpine.LFD.2.02.1101120150570.19140@x980> <201101121437.51122.trenn@suse.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 1:28 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Oh, and I'm also seeing corruption on my sandybridge machine. No video
-> involved, the gdm login screen is already corrupted this way. Similar
-> odd shifted lines etc, so I'd assume it's related.
+> > If the display tools can only handle 3 characters,
+> > then why not have them simply use the 1st 3 characters
+> > of the existing name field?
 
-Hmm. I bisected it down to
+> You mean use:
+> C3 NHM
+> instead of
+> NHM-C3
+> for intel_idle?
 
-  commit 6fe4f14044f181e146cdc15485428f95fa541ce8
-  Author: Chris Wilson <chris@chris-wilson.co.uk>
-  Date:   Mon Jan 10 17:35:37 2011 +0000
+Yes.
+is there a reason that would be a problem?
 
-      drm/i915/execbuffer: Reorder binding of objects to favour restrictions
+If only 3 characters are useful,
+then I'd rather see you simly do this:
 
-on my sandybridge machine.  Chris?
+#define CPUIDLE_NAME_LEN 3
 
-                       Linus
+> Then userspace has to parse the two informations glued
+> together, get rid of the whitespace, etc.
+
+what "two informations"?
+why is kernel bloat the instrument of choice
+to avoid the expense of string truncation
+in user-space tools?
+
+> But by sysfs convention a separate file must be used
+> if two data are passed to userspace which is the case here.
+
+what two data?
+
+It is fine for a string to include space characters.
+
+> > If that is not unique,
+> > then re-arrange the strings so that it is unique...
+
+> See above, it would unnecessarily make life hard for
+> userspace.
+> Afaik sysfs entries do not consume resources as long as
+> they do not get accessed.
+
+they clutter the source code,
+they create  an additional name for something
+that arguably already has 3 names --
+the state #, the name, and the description.
+I'd rather delete a few of the fields than add a 4th...
+
+> >Of course the ACPI part of this patch will not apply,
+> > as it depends on patch 1 in this series, which was erroneous.
+> > For ACPI, the existing name field is already fine,
+> > as C%d fits into 3 characters.
+
+> For acpi_idle only it would work, but this is (nearly) the only
+> one.
+> For example for sh arch:
+> name: SuperH
+> "SH SuperH" contains two data and should get split up into:
+> name: SuperH
+> abbr: SH
+
+acpi/arch/sh/kernel/cpu/shmobile/cpuidle.c
+already uses state->name = "C0", "C1", "C2".
+
+Just use them and be done.
+
+> By convention the first characters of "description" could be
+> used, but you would again end up in userspace parsing and
+> double info in one sysfs file.
+> 
+> I hope that's enough for convincing, I'd really like to go
+> the .abbr way. Do you give me an acked-by for that one?
+
+No.
+
+We should not invent an additional abbreviation field.
+The tools should use the existing name field.
+If the existing name field is not sufficient, then
+the states should simply be enumerated and numbers
+be shown in the GUI.
+
+thanks,
+Len Brown, Intel Open Source Technology Center
+
+
+
