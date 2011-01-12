@@ -1,162 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932405Ab1ALNVy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 08:21:54 -0500
-Received: from mail.nusquama.org ([85.131.211.20]:35110 "EHLO
+	id S932440Ab1ALNWF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 08:22:05 -0500
+Received: from mail.nusquama.org ([85.131.211.20]:32907 "EHLO
 	mail.nusquama.org" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756116Ab1ALNVv (ORCPT
+	with ESMTP id S932388Ab1ALNVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 08:21:51 -0500
-X-Greylist: delayed 1144 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Jan 2011 08:21:51 EST
+	Wed, 12 Jan 2011 08:21:53 -0500
 From: Max Vozeler <max@vozeler.com>
 To: gregkh@suse.de
 Cc: hirofuchi@users.sourceforge.net, rpjday@crashcourse.ca,
         bgmerrell@novell.com, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, mwehby@luxotticaRetail.com,
         marco@optikam.com, Max Vozeler <max@vozeler.com>
-Subject: [PATCH 3/7] staging: usbip: vhci: give back URBs from in-flight unlink requests
-Date: Wed, 12 Jan 2011 15:02:01 +0200
-Message-Id: <1294837325-26187-4-git-send-email-max@vozeler.com>
+Subject: [PATCH 0/7] staging/usbip fixes
+Date: Wed, 12 Jan 2011 15:01:58 +0200
+Message-Id: <1294837325-26187-1-git-send-email-max@vozeler.com>
 X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1294837325-26187-1-git-send-email-max@vozeler.com>
-References: <1294837325-26187-1-git-send-email-max@vozeler.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we never received a RET_UNLINK because the TCP
-connection broke the pending URBs still need to be
-unlinked and given back.
+These are fixes for problems found testing usbip in a 
+larger setup with up to 13 devices attached at the same
+time (we changed VHCI_NPORTS for the tests).
 
-Previously processes would be stuck trying to kill
-the URB even after the device was detached.
+Review of the usb reference counting changes would be 
+much appreciated. 
 
-Signed-off-by: Max Vozeler <max@vozeler.com>
-Tested-by: Mark Wehby <MWehby@luxotticaRetail.com>
----
- drivers/staging/usbip/vhci.h     |    3 +++
- drivers/staging/usbip/vhci_hcd.c |   24 +++++++++++++++++++++++-
- drivers/staging/usbip/vhci_rx.c  |   15 +++++++++------
- 3 files changed, 35 insertions(+), 7 deletions(-)
+The change handling EAGAIN from connection timeouts set
+with SO_RCVTIMEO is admittedly not pretty, but the best we
+can do without breaking the protocol.
 
-diff --git a/drivers/staging/usbip/vhci.h b/drivers/staging/usbip/vhci.h
-index 41a1fe5..2cfd00e 100644
---- a/drivers/staging/usbip/vhci.h
-+++ b/drivers/staging/usbip/vhci.h
-@@ -119,6 +119,9 @@ void rh_port_disconnect(int rhport);
- void vhci_rx_loop(struct usbip_task *ut);
- void vhci_tx_loop(struct usbip_task *ut);
- 
-+struct urb *pickup_urb_and_free_priv(struct vhci_device *vdev,
-+					    __u32 seqnum);
-+
- #define hardware		(&the_controller->pdev.dev)
- 
- static inline struct vhci_device *port_to_vdev(__u32 port)
-diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
-index 5f1e2b0..3a22f65 100644
---- a/drivers/staging/usbip/vhci_hcd.c
-+++ b/drivers/staging/usbip/vhci_hcd.c
-@@ -808,7 +808,6 @@ static int vhci_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
- 	return 0;
- }
- 
--
- static void vhci_device_unlink_cleanup(struct vhci_device *vdev)
- {
- 	struct vhci_unlink *unlink, *tmp;
-@@ -816,11 +815,34 @@ static void vhci_device_unlink_cleanup(struct vhci_device *vdev)
- 	spin_lock(&vdev->priv_lock);
- 
- 	list_for_each_entry_safe(unlink, tmp, &vdev->unlink_tx, list) {
-+		usbip_uinfo("unlink cleanup tx %lu\n", unlink->unlink_seqnum);
- 		list_del(&unlink->list);
- 		kfree(unlink);
- 	}
- 
- 	list_for_each_entry_safe(unlink, tmp, &vdev->unlink_rx, list) {
-+		struct urb *urb;
-+
-+		/* give back URB of unanswered unlink request */
-+		usbip_uinfo("unlink cleanup rx %lu\n", unlink->unlink_seqnum);
-+
-+		urb = pickup_urb_and_free_priv(vdev, unlink->unlink_seqnum);
-+		if (!urb) {
-+			usbip_uinfo("the urb (seqnum %lu) was already given back\n",
-+							unlink->unlink_seqnum);
-+			list_del(&unlink->list);
-+			kfree(unlink);
-+			continue;
-+		}
-+
-+		urb->status = -ENODEV;
-+
-+		spin_lock(&the_controller->lock);
-+		usb_hcd_unlink_urb_from_ep(vhci_to_hcd(the_controller), urb);
-+		spin_unlock(&the_controller->lock);
-+
-+		usb_hcd_giveback_urb(vhci_to_hcd(the_controller), urb, urb->status);
-+
- 		list_del(&unlink->list);
- 		kfree(unlink);
- 	}
-diff --git a/drivers/staging/usbip/vhci_rx.c b/drivers/staging/usbip/vhci_rx.c
-index 8147d72..bdbedd2 100644
---- a/drivers/staging/usbip/vhci_rx.c
-+++ b/drivers/staging/usbip/vhci_rx.c
-@@ -23,16 +23,14 @@
- #include "vhci.h"
- 
- 
--/* get URB from transmitted urb queue */
--static struct urb *pickup_urb_and_free_priv(struct vhci_device *vdev,
-+/* get URB from transmitted urb queue. caller must hold vdev->priv_lock */
-+struct urb *pickup_urb_and_free_priv(struct vhci_device *vdev,
- 					    __u32 seqnum)
- {
- 	struct vhci_priv *priv, *tmp;
- 	struct urb *urb = NULL;
- 	int status;
- 
--	spin_lock(&vdev->priv_lock);
--
- 	list_for_each_entry_safe(priv, tmp, &vdev->priv_rx, list) {
- 		if (priv->seqnum == seqnum) {
- 			urb = priv->urb;
-@@ -63,8 +61,6 @@ static struct urb *pickup_urb_and_free_priv(struct vhci_device *vdev,
- 		}
- 	}
- 
--	spin_unlock(&vdev->priv_lock);
--
- 	return urb;
- }
- 
-@@ -74,9 +70,11 @@ static void vhci_recv_ret_submit(struct vhci_device *vdev,
- 	struct usbip_device *ud = &vdev->ud;
- 	struct urb *urb;
- 
-+	spin_lock(&vdev->priv_lock);
- 
- 	urb = pickup_urb_and_free_priv(vdev, pdu->base.seqnum);
- 
-+	spin_unlock(&vdev->priv_lock);
- 
- 	if (!urb) {
- 		usbip_uerr("cannot find a urb of seqnum %u\n",
-@@ -161,7 +159,12 @@ static void vhci_recv_ret_unlink(struct vhci_device *vdev,
- 		return;
- 	}
- 
-+	spin_lock(&vdev->priv_lock);
-+
- 	urb = pickup_urb_and_free_priv(vdev, unlink->unlink_seqnum);
-+
-+	spin_unlock(&vdev->priv_lock);
-+
- 	if (!urb) {
- 		/*
- 		 * I get the result of a unlink request. But, it seems that I
+Max Vozeler (7):
+  staging: usbip: stub: update refcounts for devices and interfaces
+  staging: usbip: vhci: update reference count for usb_device
+  staging: usbip: vhci: give back URBs from in-flight unlink requests
+  staging: usbip: vhci: refuse to enqueue for dead connections
+  staging: usbip: vhci: friendly log messages for connection errors
+  staging: usbip: vhci: handle EAGAIN from SO_RCVTIMEO
+  staging: usbip: vhci: use urb->dev->portnum to find port
+
+ drivers/staging/usbip/stub.h     |    1 +
+ drivers/staging/usbip/stub_dev.c |   18 ++++++++++---
+ drivers/staging/usbip/stub_rx.c  |    4 +-
+ drivers/staging/usbip/vhci.h     |    6 ++--
+ drivers/staging/usbip/vhci_hcd.c |   54 ++++++++++++++++++++++++++++++++-----
+ drivers/staging/usbip/vhci_rx.c  |   50 +++++++++++++++++++++++++++++-----
+ 6 files changed, 108 insertions(+), 25 deletions(-)
+
 -- 
 1.7.2.3
 
