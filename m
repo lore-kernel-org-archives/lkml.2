@@ -1,63 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755595Ab1ALTQY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 14:16:24 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:60036 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755052Ab1ALTQX (ORCPT
+	id S1755715Ab1ALTRd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 14:17:33 -0500
+Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:42670 "EHLO
+	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755549Ab1ALTRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 14:16:23 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: XT_MATCH_REALM Kconfig whinge...
-From: Valdis.Kletnieks@vt.edu
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1294859715_4778P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 12 Jan 2011 14:15:15 -0500
-Message-ID: <20519.1294859715@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020206.4D2DFDC5.008B,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Wed, 12 Jan 2011 14:17:30 -0500
+Date: Wed, 12 Jan 2011 14:17:27 -0500
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: Regression, bisected: NFS O_EXCL breakage in 2.6.37 client.
+Message-ID: <20110112191727.GA4349@elliptictech.com>
+References: <20110112161054.GA3431@elliptictech.com>
+ <1294856889.2971.43.camel@heimdal.trondhjem.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294856889.2971.43.camel@heimdal.trondhjem.org>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1294859715_4778P
-Content-Type: text/plain; charset=us-ascii
+On 2011-01-12 13:28 -0500, Trond Myklebust wrote:
+> Subject: [PATCH] NFS: Fix NFSv3 exclusive open semantics
 
-I think I posted about this a long ways back, still seeing it in yesterday's linux-next:
+Seems to have fixed the problem, thanks!
 
-scripts/kconfig/conf --silentoldconfig Kconfig
-warning: (NETFILTER_XT_MATCH_REALM) selects NET_CLS_ROUTE which has unmet direct dependencies (NET && NET_SCHED)
-warning: (NETFILTER_XT_MATCH_REALM) selects NET_CLS_ROUTE which has unmet direct dependencies (NET && NET_SCHED)
+Tested-by: Nick Bowler <nbowler@elliptictech.com>
 
-(NET is of course set, NET_SCHED isn't).
-
---==_Exmh_1294859715_4778P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFNLf3DcC3lWbTT17ARAkv7AJ9npRmZcvO5kl/lQNBNaDxcjCsKAQCcCxJR
-t2cc2/jjFQMsH4mJW0xcStw=
-=sfka
------END PGP SIGNATURE-----
-
---==_Exmh_1294859715_4778P--
-
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
