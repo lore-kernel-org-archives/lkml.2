@@ -1,67 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756416Ab1ALADC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 19:03:02 -0500
-Received: from mail127.messagelabs.com ([216.82.250.115]:52927 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754584Ab1ALADA (ORCPT
+	id S932649Ab1ALAEu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 19:04:50 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56657 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756388Ab1ALAEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 19:03:00 -0500
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-14.tower-127.messagelabs.com!1294790576!6579489!3
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.178]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Date: Tue, 11 Jan 2011 17:59:38 -0600
-Subject: [PATCH] timekeeping: local symbols should be static
-Thread-Topic: [PATCH] timekeeping: local symbols should be static
-Thread-Index: Acux65s4TMfZotP6QtWT84sUkXqwog==
-Message-ID: <0D753D10438DA54287A00B027084269764CE0E54B7@AUSP01VMBX24.collaborationhost.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Tue, 11 Jan 2011 19:04:48 -0500
+Date: Tue, 11 Jan 2011 17:04:42 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com, x86@kernel.org, sodaville@linutronix.de,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 14/15] rtc/cmos: add OF bindings
+Message-ID: <20110112000442.GJ2131@angua.secretlab.ca>
+References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>
+ <1292600033-12271-15-git-send-email-bigeasy@linutronix.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1292600033-12271-15-git-send-email-bigeasy@linutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p0C03Enr022789
 
-Local symbols should be static.
+On Fri, Dec 17, 2010 at 04:33:52PM +0100, Sebastian Andrzej Siewior wrote:
+> This allows to load the OF driver based informations from the device
+> tree. Systems without BIOS may need to perform some initialization.
+> PowerPC creates a PNP device from the OF information and performs this
+> kind of initialization in their private PCI quirk. This looks more
+> generic.
+> 
+> Cc: rtc-linux@googlegroups.com
+> Cc: Alessandro Zummo <a.zummo@towertech.it>
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+> ---
+>  Documentation/powerpc/dts-bindings/rtc-cmos.txt |   28 ++++++++++++++++
+>  drivers/rtc/rtc-cmos.c                          |   40 +++++++++++++++++++++++
+>  2 files changed, 68 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/powerpc/dts-bindings/rtc-cmos.txt
+> 
+> diff --git a/Documentation/powerpc/dts-bindings/rtc-cmos.txt b/Documentation/powerpc/dts-bindings/rtc-cmos.txt
+> new file mode 100644
+> index 0000000..7382989
+> --- /dev/null
+> +++ b/Documentation/powerpc/dts-bindings/rtc-cmos.txt
+> @@ -0,0 +1,28 @@
+> + Motorola mc146818 compatible RTC
+> +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> +
+> +Required properties:
+> +  - compatible : "motorola,mc146818"
+> +  - reg : should contain registers location and length.
+> +
+> +Optional properties:
+> +  - interrupts : should contain interrupt.
+> +  - interrupt-parent : interrupt source phandle.
+> +  - ctrl-reg : Contains the initial value of the control register also
+> +    called "Register B".
+> +  - freq-reg : Contains the initial value of the frequency register also
+> +    called "Regsiter A".
+> +
+> +"Register A" and "B" are usually initialized by the firmware (BIOS for
+> +instance). If this is not done, it can be performed by the driver.
+> +
+> +ISA Example:
+> +
+> +	rtc@70 {
+> +	         compatible = "motorola,mc146818";
+> +	         interrupts = <8 3>;
+> +	         interrupt-parent = <&ioapic1>;
+> +	         ctrl-reg = <2>;
+> +	         freq-reg = <0x26>;
+> +	         reg = <1 0x70 2>;
+> +	 };
+> diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
+> index 5856167..8cf0049 100644
+> --- a/drivers/rtc/rtc-cmos.c
+> +++ b/drivers/rtc/rtc-cmos.c
+> @@ -36,6 +36,8 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/mod_devicetable.h>
+>  #include <linux/log2.h>
+> +#include <linux/of.h>
+> +#include <linux/of_platform.h>
+>  
+>  /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
+>  #include <asm-generic/rtc.h>
+> @@ -1121,6 +1123,15 @@ static struct pnp_driver cmos_pnp_driver = {
+>  
+>  #endif	/* CONFIG_PNP */
+>  
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id of_cmos_match[] = {
+> +	{
+> +		.compatible = "motorola,mc146818",
+> +	},
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, of_cmos_match);
+> +#endif
+>  /*----------------------------------------------------------------*/
+>  
+>  /* Platform setup should have set up an RTC device, when PNP is
+> @@ -1129,6 +1140,32 @@ static struct pnp_driver cmos_pnp_driver = {
+>  
+>  static int __init cmos_platform_probe(struct platform_device *pdev)
+>  {
+> +#ifdef CONFIG_OF
+> +	if (pdev->dev.of_node) {
+> +		struct device_node *node = pdev->dev.of_node;
+> +		struct rtc_time time;
+> +		int ret;
+> +		const __be32 *val;
+> +
+> +		val = of_get_property(node, "ctrl-reg", NULL);
+> +		if (val)
+> +			CMOS_WRITE(be32_to_cpup(val), RTC_CONTROL);
+> +
+> +		val = of_get_property(node, "freq-reg", NULL);
+> +		if (val)
+> +			CMOS_WRITE(be32_to_cpup(val), RTC_FREQ_SELECT);
+> +
+> +		get_rtc_time(&time);
+> +		ret = rtc_valid_tm(&time);
+> +		if (ret) {
+> +			struct rtc_time def_time = {
+> +				.tm_year = 1,
+> +				.tm_mday = 1,
+> +			};
+> +			set_rtc_time(&def_time);
+> +		}
+> +	}
+> +#endif
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: John Stultz <johnstul@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+It's usually cleaner to break the of-specific probe stuff into a
+separate function that can be #ifdef'ed out as a whole instead of
+having #ifdef blocks inside the probe functions.  Aside from that this
+patch looks good to me.
 
----
-
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 5bb86da..eef7452 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -49,7 +49,7 @@ struct timekeeper {
- 	u32	mult;
- };
- 
--struct timekeeper timekeeper;
-+static struct timekeeper timekeeper;
- 
- /**
-  * timekeeper_setup_internals - Set up internals to use clocksource clock.
-@@ -164,7 +164,7 @@ static struct timespec total_sleep_time;
- /*
-  * The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock.
-  */
--struct timespec raw_time;
-+static struct timespec raw_time;
- 
- /* flag for if timekeeping is suspended */
- int __read_mostly timekeeping_suspended;
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>  	cmos_wake_setup(&pdev->dev);
+>  	return cmos_do_probe(&pdev->dev,
+>  			platform_get_resource(pdev, IORESOURCE_IO, 0),
+> @@ -1157,6 +1194,9 @@ static struct platform_driver cmos_platform_driver = {
+>  	.shutdown	= cmos_platform_shutdown,
+>  	.driver = {
+>  		.name		= (char *) driver_name,
+> +#if defined(CONFIG_OF)
+> +		.of_match_table = of_cmos_match,
+> +#endif
+>  		.suspend	= cmos_suspend,
+>  		.resume		= cmos_resume,
+>  	}
+> -- 
+> 1.7.3.2
+> 
+> _______________________________________________
+> devicetree-discuss mailing list
+> devicetree-discuss@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/devicetree-discuss
