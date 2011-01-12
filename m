@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab1ALPQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 10:16:59 -0500
-Received: from cantor.suse.de ([195.135.220.2]:53422 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752171Ab1ALPQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 10:16:57 -0500
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH 3/9] X86/perf: fix power:cpu_idle double end events and throw cpu_idle events from the cpuidle layer
-Date: Wed, 12 Jan 2011 16:16:54 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-18-desktop; KDE/4.5.3; x86_64; ; )
-Cc: linux-perf-users@vger.kernel.org, mingo@elte.hu, arjan@linux.intel.com,
-        j-pihet@ti.com, Robert Schoene <robert.schoene@tu-dresden.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-pm@lists.linux-foundation.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-References: <1294396190-23031-1-git-send-email-trenn@suse.de> <1294396190-23031-4-git-send-email-trenn@suse.de> <alpine.LFD.2.02.1101120141330.19140@x980>
-In-Reply-To: <alpine.LFD.2.02.1101120141330.19140@x980>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101121616.54613.trenn@suse.de>
+	id S1754743Ab1ALPTo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 10:19:44 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47234 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753784Ab1ALPTn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 10:19:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=LpqKPUuE6j/YowQmAnEUTel6A7nKu8kZCI/lhXUGno4206VO6y5FwAWtLwKwTjMcLh
+         ch6S9oB3Q9dskNe9OInkEjDkh5+b3IO6lMolbjVUZZdogmvsjW03JByeh81RUr5Cfi00
+         o+1R+PMg4rnFuKz20ZgvNvmMxnZ38HuqXHRKE=
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: linux-fbdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] video: move SH_MIPI_DSI/SH_LCD_MIPI_DSI to the top of menu
+Date: Wed, 12 Jan 2011 18:19:35 +0300
+Message-Id: <1294845575-4508-1-git-send-email-dbaryshkov@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 12 January 2011 07:42:59 Len Brown wrote:
-> I'm happy to see the trace point move up into cpuidle from intel_idle.
-> 
-> If somebody is picking this up in a perf tree,
-> Acked-by: Len Brown <len.brown@intel.com>
-> 
-> else I can put it in the idle tree, let me know.
-I didn't know you have an idle tree.
+Kconfig entries SH_MIPI_DSI and SH_LCD_MIPI_DSI while being invisible to
+the user, broke the FrameBuffer menu (at least in menuconfig), as they
+aren't depending on respective menuconfig item (FB). In result several
+items got moved to the main "Graphics support" menu. Move these two
+problematic items to the top of drivers/video/Kbuild to restore nice
+display of FB menu.
 
-If you can push this one through the idle tree that would be great.
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+---
+ drivers/video/Kconfig |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-I'll go through the rest of my patches and resubmit
-in some days as soon as some things are clarified.
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index 27c1fb4..055e1a7 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -11,6 +11,13 @@ config HAVE_FB_ATMEL
+ config HAVE_FB_IMX
+ 	bool
+ 
++config SH_MIPI_DSI
++	tristate
++	depends on (SUPERH || ARCH_SHMOBILE) && HAVE_CLK
++
++config SH_LCD_MIPI_DSI
++	bool
++
+ source "drivers/char/agp/Kconfig"
+ 
+ source "drivers/gpu/vga/Kconfig"
+@@ -1898,13 +1905,6 @@ config FB_W100
+ 
+ 	  If unsure, say N.
+ 
+-config SH_MIPI_DSI
+-	tristate
+-	depends on (SUPERH || ARCH_SHMOBILE) && HAVE_CLK
+-
+-config SH_LCD_MIPI_DSI
+-	bool
+-
+ config FB_SH_MOBILE_LCDC
+ 	tristate "SuperH Mobile LCDC framebuffer support"
+ 	depends on FB && (SUPERH || ARCH_SHMOBILE) && HAVE_CLK
+-- 
+1.7.2.3
 
-But I need this one to still be included in .38.
-Please tell me if this could be a problem.
-
-Thanks,
-
-  Thomas
