@@ -1,75 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223Ab1ALQY6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 11:24:58 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60794 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755036Ab1ALQYz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 11:24:55 -0500
+	id S1755074Ab1ALQ1B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 11:27:01 -0500
+Received: from thunk.org ([69.25.196.29]:48533 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751655Ab1ALQ06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 11:26:58 -0500
+Date: Wed, 12 Jan 2011 11:26:55 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Oops while going into hibernate
+Message-ID: <20110112162655.GA13496@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Sebastian Ott <sebott@linux.vnet.ibm.com>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <alpine.LFD.2.02.1101121443230.1900@localhost6.localdomain6>
 MIME-Version: 1.0
-In-Reply-To: <20110112155215.GB11039@n2100.arm.linux.org.uk>
-References: <20110111015409.18291.87166.stgit@localhost6.localdomain6>
- <20110111104051.GA11039@n2100.arm.linux.org.uk> <20110111153630.GB2707@angua.secretlab.ca>
- <20110111154833.GF11039@n2100.arm.linux.org.uk> <AANLkTi=29LB66j123ufMHQk=46hGYdmR4nZZQFnN=Tku@mail.gmail.com>
- <20110112155215.GB11039@n2100.arm.linux.org.uk>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 12 Jan 2011 09:24:34 -0700
-X-Google-Sender-Auth: NAAHCjWgjGjf44gsqg2aXEqKqKg
-Message-ID: <AANLkTinwGd9pa7YQ=5hXfarw=MB=YdpBuN7xJAd+Ps4f@mail.gmail.com>
-Subject: Re: [RFC] arm: Defer lookup of machine_type and vet of atags to setup.c
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Nicolas Pitre <nicolas.pitre@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1101121443230.1900@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 8:52 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Jan 12, 2011 at 08:46:44AM -0700, Grant Likely wrote:
->> Looks like I've hit a hiccup though.  When I remove the first call to
->> __lookup_machine_type, then it is only called after the MMU is turned
->> on and the kernel is no longer able to output the list of configured
->> machine ids when it doesn't recognize the value in r1 (tested with
->> qemu versatile emulation).  I'm still investigating, so I'll defer
->> reposting the patch until I've got this issue solved.
->
-> It only does this when DEBUG_LL is enabled - at which point you have
-> printascii, printhex8, etc available (although there's no prototype
-> for them.)
->
-> You could use snprintf() to format a message and then use printascii()
-> (conditional on CONFIG_DEBUG_LL as the existing code does) as well as
-> printk("%s", buffer).  That means if you have a debugger you can dump
-> the kernel ring buffer and see the message, or see it via the serial
-> port/debugging channel if DEBUG_LL is enabled.
+On Wed, Jan 12, 2011 at 02:48:58PM +0100, Sebastian Ott wrote:
+> Hi,
+> 
+> while goning into hibernation right after resuming with
+> 2.6.37-05668-g4162cf6 on S390 I get this one:
 
-Actually it looks like the real problem is that the mmu has been
-turned on, but the virtual mappings for devices have not yet been
-established, and so the debug macros aren't using a valid address.
-I'm using printk to get output into the ring buffer in my patch to
-rework lookup_machine_type() in C, and that does indeed output to the
-ring buffer, but the kernel cannot spit stuff out the serial port.
+Hmm... what are you hibernating to?  A swap device?  A file-backed
+swap device?
 
-It looks like I'd need to get past paging_init() in order to get
-ll_debug working between turning on the mmu and paging_init(), but
-paging_init() needs the mdesc pointer, and the whole point of the
-error message is that the mdesc pointer is unknown!  I don't see any
-code that sets up a debug mapping of the uart before paging_init time.
- I could try to implement something like that, but it is looking to be
-more complicated than it is worth when the current code works just
-fine.
+Thanks,
 
-Let me know if I've missed something, but I think I should drop the
-removal of __lookup_machine_type from head.S from my patch.
-
-g.
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+						- Ted
