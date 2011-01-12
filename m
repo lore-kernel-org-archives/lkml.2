@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056Ab1ALUQf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 15:16:35 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:39573 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754570Ab1ALUQc (ORCPT
+	id S1755908Ab1ALUUe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 15:20:34 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53895 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752263Ab1ALUUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 15:16:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=GM4psSPyFJUO5mkc57rb2GpWsL4Ac8kQM1by5QjSQGzZL99qdQBTqEkCb2NB/nN+JT
-         VJN2AKOr7JCTuaiI+TVg==
-Date: Wed, 12 Jan 2011 12:16:24 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Eric B Munson <emunson@mgebm.net>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Rename struct task variables from p to tsk
-In-Reply-To: <1294845571-11529-1-git-send-email-emunson@mgebm.net>
-Message-ID: <alpine.DEB.2.00.1101121215370.31521@chino.kir.corp.google.com>
-References: <1294845571-11529-1-git-send-email-emunson@mgebm.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Wed, 12 Jan 2011 15:20:33 -0500
+Date: Wed, 12 Jan 2011 12:20:14 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>, lenb@kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [PATCH -next] x86/e820: fix build when ACPI is disabled
+Message-Id: <20110112122014.2d8455d7.randy.dunlap@oracle.com>
+In-Reply-To: <20110112141822.c29314c4.sfr@canb.auug.org.au>
+References: <20110112141822.c29314c4.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Jan 2011, Eric B Munson wrote:
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-> p is not a meaningful identifier, this patch replaces all instances
-> in page_alloc.c of p when used as a struct task with the more useful
-> tsk.
-> 
+Fix build error when CONFIG_ACPI is not enabled:
 
-mm-page_allocc-dont-cache-current-in-a-local.patch removes all of the 
-stack allocations changed in this patch, so it's not needed.
+arch/x86/kernel/e820.c:734: error:implicit declaration of function 'suspend_nvs_register'
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ include/linux/acpi.h |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+--- linux-next-20110112.orig/include/linux/acpi.h
++++ linux-next-20110112/include/linux/acpi.h
+@@ -360,5 +360,10 @@ static inline int acpi_table_parse(char 
+ {
+ 	return -1;
+ }
++
++static inline int suspend_nvs_register(unsigned long a, unsigned long b)
++{
++	return 0;
++}
+ #endif	/* !CONFIG_ACPI */
+ #endif	/*_LINUX_ACPI_H*/
