@@ -1,112 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754954Ab1ALPzV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 10:55:21 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:56171 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276Ab1ALPzS (ORCPT
+	id S1755126Ab1ALPzb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 10:55:31 -0500
+Received: from mail-ww0-f66.google.com ([74.125.82.66]:36482 "EHLO
+	mail-ww0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755042Ab1ALPz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 10:55:18 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Octavian Purdila <opurdila@ixiacom.com>, WANG Cong <amwang@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Dave Young <hidave.darkstar@gmail.com>,
-        Don Zickus <dzickus@redhat.com>, Vlad Dogaru <ddvlad@rosedu.org>
-References: <AANLkTimRM6=g+4adii9die0F+AG6D2rrb0ntczqCUKPD@mail.gmail.com>
-Date: Wed, 12 Jan 2011 07:55:04 -0800
-In-Reply-To: <AANLkTimRM6=g+4adii9die0F+AG6D2rrb0ntczqCUKPD@mail.gmail.com>
-	(Lucian Adrian Grijincu's message of "Wed, 12 Jan 2011 12:17:07
-	+0200")
-Message-ID: <m1d3o2ce1z.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 12 Jan 2011 10:55:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Hu37hkxB2oqAIxj7H6NZPD1Dol++KBVyAgavcs8UVnYWzxdur0YGVyzNbm1W3B5urf
+         bG4rQQxx1DyZ6aHYWyoRE65cQAnyeeolbDV5YCSIXvlIh41qnP03rKo5tisMTOTbSnE1
+         Hq1VWuYGHB6pRQRqIQkhQeNgEb7si7HOsj8CU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18PIRR6VV67rmoy5PdjohdIkr12wM/mD74=
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] sysctl: ctl_table->parent is only used for sysctl checks
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+In-Reply-To: <alpine.LFD.2.00.1101121538470.8212@casper.infradead.org>
+References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie>
+	<4D2CE5C8.60601@de.ibm.com>
+	<AANLkTimr4WX3Ay8vC23MKOM+dOcpV+Ca5rg_gcei38nk@mail.gmail.com>
+	<4D2D8ED0.6080807@de.ibm.com>
+	<AANLkTik4h=4o8JEwfd+=CFVb4NgkwaEwxmM6n_+sDj3K@mail.gmail.com>
+	<alpine.LFD.2.00.1101121344070.8212@casper.infradead.org>
+	<AANLkTimdnYHWfBE1nB+2EDRouO7_FoRByVboMYw8WaHB@mail.gmail.com>
+	<AANLkTik=HYzW8--_W+qxi8S9QbAkf9ZZy=uLyaTeV+PC@mail.gmail.com>
+	<alpine.LFD.2.00.1101121538470.8212@casper.infradead.org>
+Date: Wed, 12 Jan 2011 17:55:27 +0200
+Message-ID: <AANLkTimtd9nGKrnMJJQyRbF3=n3S5yfKJs6MBwUYObD1@mail.gmail.com>
+Subject: Re: [git pull] drm for rc1
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: James Simmons <jsimmons@infradead.org>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Dave Airlie <airlied@linux.ie>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lucian Adrian Grijincu <lucian.grijincu@gmail.com> writes:
-
-See selinux_sysctl_get_sid.
-
-> Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-> ---
->  include/linux/sysctl.h |    2 ++
->  kernel/sysctl.c        |    7 +++++--
->  2 files changed, 7 insertions(+), 2 deletions(-)
+On Wed, Jan 12, 2011 at 5:40 PM, James Simmons <jsimmons@infradead.org> wrote:
 >
-> diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
-> index 7bb5cb6..026681f 100644
-> --- a/include/linux/sysctl.h
-> +++ b/include/linux/sysctl.h
-> @@ -1018,7 +1018,9 @@ struct ctl_table
->  	int maxlen;
->  	mode_t mode;
->  	struct ctl_table *child;
-> +#ifdef CONFIG_SYSCTL_SYSCALL_CHECK
->  	struct ctl_table *parent;	/* Automatically set */
-> +#endif
->  	proc_handler *proc_handler;	/* Callback for text formatting */
->  	void *extra1;
->  	void *extra2;
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index ae5cbb1..c5bade1 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -1706,6 +1706,7 @@ int sysctl_perm(struct ctl_table_root *root, struct ctl_table *table, int op)
->  	return test_perm(mode, op);
->  }
->  
-> +#ifdef CONFIG_SYSCTL_SYSCALL_CHECK
->  static void sysctl_set_parent(struct ctl_table *parent, struct ctl_table *table)
->  {
->  	for (; table->procname; table++) {
-> @@ -1714,11 +1715,13 @@ static void sysctl_set_parent(struct ctl_table *parent, struct ctl_table *table)
->  			sysctl_set_parent(table, table->child);
->  	}
->  }
-> +#endif
-> +
->  
->  static __init int sysctl_init(void)
->  {
-> -	sysctl_set_parent(NULL, root_table);
->  #ifdef CONFIG_SYSCTL_SYSCALL_CHECK
-> +	sysctl_set_parent(NULL, root_table);
->  	sysctl_check_table(current->nsproxy, root_table);
->  #endif
->  	return 0;
-> @@ -1875,9 +1878,9 @@ struct ctl_table_header *__register_sysctl_paths(
->  	header->used = 0;
->  	header->unregistering = NULL;
->  	header->root = root;
-> -	sysctl_set_parent(NULL, header->ctl_table);
->  	header->count = 1;
->  #ifdef CONFIG_SYSCTL_SYSCALL_CHECK
-> +	sysctl_set_parent(NULL, header->ctl_table);
->  	if (sysctl_check_table(namespaces, header->ctl_table)) {
->  		kfree(header);
->  		return NULL;
+>> >>> I tested the revert: the boot screen did change the resolution
+>> >>> (without it don't), but my PC still hangs. (using an nvidia 8800GT).
+>> >>
+>> >> Try my most recent patch. Where does it hang at? Any logs?
+>> >>
+>> >
+>> > With your patch, I can boot the system. But nouveau is not loaded.
+>> > dmesg attached.
+>> >
+>>
+>> Forget to mention: the revert makes first steps of boot look the same
+>> (change the resolution of the text)
+>> but with your patch, I see a big ugly ununtu logo, (I think that is
+>> because nouveau is not loaded)
+>
+> Is nouveau a module? Does X run? From my understanding is the xorg driver
+
+I didn't modified any option, from the standard Ubuntu 10.10
+
+> need KMS to run. I didn't see nouveau at all in your dmesg.
+
+Exact. I mentioned this when I tested 'next' versions from last year.
+The answer is in dfe63bb0ad9810db13aab0058caba97866e0a681.
