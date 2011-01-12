@@ -1,119 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756519Ab1ALVnK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 16:43:10 -0500
-Received: from cantor.suse.de ([195.135.220.2]:36860 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755844Ab1ALVnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 16:43:08 -0500
-Date: Wed, 12 Jan 2011 22:43:03 +0100
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        linux-mm <linux-mm@kvack.org>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/35] writeback: enabling gate limit for light dirtied
- bdi
-Message-ID: <20110112214303.GC14260@quack.suse.cz>
-References: <20101213144646.341970461@intel.com>
- <20101213150326.480108782@intel.com>
+	id S1756540Ab1ALVoK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 16:44:10 -0500
+Received: from host1.dyn.jankratochvil.net ([89.250.240.48]:58404 "EHLO
+	host1.dyn.jankratochvil.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756409Ab1ALVoJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 16:44:09 -0500
+Date: Wed, 12 Jan 2011 22:43:50 +0100
+From: Jan Kratochvil <jan.kratochvil@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: oleg@redhat.com, roland@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCHSET RFC] ptrace,signal: clean transition between STOPPED
+ and TRACED
+Message-ID: <20110112214350.GC13830@host1.dyn.jankratochvil.net>
+References: <1293199257-11255-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101213150326.480108782@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1293199257-11255-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi Fengguang,
-
-On Mon 13-12-10 22:46:47, Wu Fengguang wrote:
-> I noticed that my NFSROOT test system goes slow responding when there
-> is heavy dd to a local disk. Traces show that the NFSROOT's bdi limit
-> is near 0 and many tasks in the system are repeatedly stuck in
-> balance_dirty_pages().
+On Fri, 24 Dec 2010 15:00:50 +0100, Tejun Heo wrote:
+> 1. When attaching to a STOPPED task or a traced task stops for group
+>    stop, the tracee now enters TRACED instead of STOPPED.  This is
+>    visible via fs/proc but, more importantly, SIGCONT is ignored if a
+>    task is TRACED.
 > 
-> There are two generic problems:
+>    The behavior before the change was quite erratic.  The first ptrace
+>    operation after the tracee enters STOPPED would silently transit
+>    its state to TRACED behind its back bypassing arch_ptrace_stop().
+>    This means that SIGCONT is honored until the first following ptrace
+>    operation but ignored after that.
 > 
-> - light dirtiers at one device (more often than not the rootfs) get
->   heavily impacted by heavy dirtiers on another independent device
+>    This may, for example, affect the operation of strace but given how
+>    strace always need to issue further ptrace operations on trap to
+>    determine what's going on, I doubt it would actually be worse.
+
+FSF GDB for `T (stopped)' processes currently does:
+  PTRACE_ATTACH
+  check /proc/%d/status for `T (stopped)' (by GDB's pid_is_stopped)
+    if found then kill (PID, SIGSTOP) && ptrace (PTRACE_CONT, PID, 0, 0).
+  waitpid (pid, &status, 0) - so that this one does not get stuck if the stop
+                              event was already eaten out before.
+
+If the `T (stopped)' will now always FAIL then at leat the waitpid then should
+never get stuck.
+
+
+> 2. The transition between STOPPED and TRACED involves a short window
+>    of RUNNING inbetween.  On attach, the transition is hidden from the
+>    tracer using GROUP_STOP_TRAPPING but it still is visible to other
+>    threads in the tracer's group.  IOW, if another thread performs
+>    WNOHANG wait(2) on the tracee while attach is in progress, the
+>    wait(2) may fail even if the tracee is known to be in stopped state
+>    before.
 > 
-> - the light dirtied device does heavy throttling because bdi limit=0,
->   and the heavy throttling may in turn withhold its bdi limit in 0 as
->   it cannot dirty fast enough to grow up the bdi's proportional weight.
-> 
-> Fix it by introducing some "low pass" gate, which is a small (<=32MB)
-> value reserved by others and can be safely "stole" from the current
-> global dirty margin.  It does not need to be big to help the bdi gain
-> its initial weight.
-  I'm sorry for a late reply but I didn't get earlier to your patches...
+>    The same problem exists the other direction during detach.
+>    Currently, the code doesn't try to hide this transition even from
+>    the tracer.  IOW, if the tracer attaches to a stopped task,
+>    detaches, reattaches and then performs WNOHANG wait(2), the wait(2)
+>    may fail.  However, given the previous behavior where the tracee is
+>    always woken up by wake_up_process() on detach, this is highly
+>    unlikely to cause any problem.
 
-...
-> -unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
-> + *
-> + * There is a chicken and egg problem: when bdi A (eg. /pub) is heavy dirtied
-> + * and bdi B (eg. /) is light dirtied hence has 0 dirty limit, tasks writing to
-> + * B always get heavily throttled and bdi B's dirty limit might never be able
-> + * to grow up from 0. So we do tricks to reserve some global margin and honour
-> + * it to the bdi's that run low.
-> + */
-> +unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
-> +			      unsigned long dirty,
-> +			      unsigned long dirty_pages)
->  {
->  	u64 bdi_dirty;
->  	long numerator, denominator;
->  
->  	/*
-> +	 * Provide a global safety margin of ~1%, or up to 32MB for a 20GB box.
-> +	 */
-> +	dirty -= min(dirty / 128, 32768UL >> (PAGE_SHIFT-10));
-> +
-> +	/*
->  	 * Calculate this BDI's share of the dirty ratio.
->  	 */
->  	bdi_writeout_fraction(bdi, &numerator, &denominator);
-> @@ -459,6 +472,15 @@ unsigned long bdi_dirty_limit(struct bac
->  	do_div(bdi_dirty, denominator);
->  
->  	bdi_dirty += (dirty * bdi->min_ratio) / 100;
-> +
-> +	/*
-> +	 * If we can dirty N more pages globally, honour N/2 to the bdi that
-> +	 * runs low, so as to help it ramp up.
-> +	 */
-> +	if (unlikely(bdi_dirty < (dirty - dirty_pages) / 2 &&
-> +		     dirty > dirty_pages))
-> +		bdi_dirty = (dirty - dirty_pages) / 2;
-> +
-I wonder how well this works - have you tried that? Because from my naive
-understanding if we have say two drives - sda, sdb. Someone is banging sda
-really hard (several processes writing to the disk as fast as they can), then
-we are really close to dirty limit anyway and thus we won't give much space
-for sdb to ramp up it's writeout fraction...  Didn't you intend to use
-'dirty' without the safety margin subtracted in the above condition? That
-would then make more sense to me (i.e. those 32MB are then used as the
-ramp-up area).
+FSF gdbserver --multi does PTRACE_ATTACH followed by waitpid (WNOHANG) and it
+fails if it returns ECHILD on the first try.
 
-If I'm right in the above, maybe you could simplify the above condition to:
-if (bdi_dirty < margin)
-	bdi_dirty = margin;
+	ptrace(PTRACE_ATTACH, 22049, 0, 0)      = 0
+	wait4(-1, [{WIFSTOPPED(s) && WSTOPSIG(s) == SIGSTOP}], WNOHANG, NULL) = 22049
 
-Effectively it seems rather similar to me and it's immediately obvious how
-it behales. Global limit is enforced anyway so the logic just differs in
-the number of dirtiers on ramping-up bdi you need to suck out the margin.
+It may be also a gdbserver bug, though.
 
-								Honza
 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Thanks,
+Jan
