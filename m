@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784Ab1ALSzb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 13:55:31 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:58385 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751973Ab1ALSz3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 13:55:29 -0500
-Date: Wed, 12 Jan 2011 13:55:24 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-X-X-Sender: nico@xanadu.home
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Dave Martin <dave.martin@linaro.org>,
-        Alexander Holler <holler@ahsoftware.de>, Rabin Vincent <rabin@rab.in>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: ARM: relocation out of range (when loading a module)
-In-Reply-To: <20110112184258.GH11039@n2100.arm.linux.org.uk>
-Message-ID: <alpine.LFD.2.00.1101121350350.25498@xanadu.home>
-References: <4D2B4CE4.9080309@ahsoftware.de> <alpine.LFD.2.00.1101101722470.9794@xanadu.home> <4D2BFA08.5030104@ahsoftware.de> <AANLkTinR7ih2ZMRMbXmSvoh-rS3LVv+UCvd0rRH_ESzf@mail.gmail.com> <20110111155930.GH11039@n2100.arm.linux.org.uk> <4D2D1942.4050905@ahsoftware.de>
- <AANLkTimAFp7ORrJLw2d8-i5pK0MZGTyAN5kmRR37ky1v@mail.gmail.com> <alpine.LFD.2.00.1101121314470.25498@xanadu.home> <20110112184258.GH11039@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755475Ab1ALS4O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 13:56:14 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:46226 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755066Ab1ALS4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 13:56:12 -0500
+Date: Wed, 12 Jan 2011 10:56:08 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: William Allen Simpson <william.allen.simpson@gmail.com>
+Cc: Linux Kernel Developers <linux-kernel@vger.kernel.org>,
+        Linux Kernel Network Developers <netdev@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v1 2/2] TCPCT API sockopt update to draft -03
+Message-ID: <20110112105608.793787b2@s6510>
+In-Reply-To: <4D2DEC0A.70608@gmail.com>
+References: <4D2DE824.10205@gmail.com>
+	<4D2DEC0A.70608@gmail.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Jan 2011, Russell King - ARM Linux wrote:
+On Wed, 12 Jan 2011 12:59:38 -0500
+William Allen Simpson <william.allen.simpson@gmail.com> wrote:
 
-> Then came along the embedded initrd/initramfs idea which rather buggered
-> the scheme when large initramfs are embedded into the image.
-> 
-> As the overall feeling at the time was "don't use large initrds" it's
-> something I've never really cared about - and I'm still of the opinion
-> that 16MB of compressed initrd/initramfs is rather silly.
+> diff --git a/include/linux/tcp.h b/include/linux/tcp.h
+> index e64f4c6..c8f4017 100644
+> --- a/include/linux/tcp.h
+> +++ b/include/linux/tcp.h
+> @@ -185,22 +185,37 @@ struct tcp_md5sig {
+>  #define TCP_COOKIE_PAIR_SIZE	(2*TCP_COOKIE_MAX)
+>  
+>  /* Flags for both getsockopt and setsockopt */
+> -#define TCP_COOKIE_IN_ALWAYS	(1 << 0)	/* Discard SYN without cookie */
+> -#define TCP_COOKIE_OUT_NEVER	(1 << 1)	/* Prohibit outgoing cookies,
+> +#define TCPCT_IN_ALWAYS		(1 << 0)	/* Discard SYN without cookie */
+> +#define TCPCT_OUT_NEVER		(1 << 1)	/* Prohibit outgoing cookies,
 
-It is... but we have more than 32MB of RAM total now, and people are 
-running standard distributions on ARM these days, such as Fedora or 
-Ubuntu, including their corresponding initrd that may contain lots of 
-modules, splashscreen data, etc.  So it might be a good idea to think 
-about fixing this limitation before it comes back again.
-
-
-Nicolas
+You end up changing values in kernel userspace API in a way
+that is incompatible with older applications. This is not acceptable.
