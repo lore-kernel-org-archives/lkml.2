@@ -1,79 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756359Ab1ALUkF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 15:40:05 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:28233 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756315Ab1ALUkB (ORCPT
+	id S1756299Ab1ALUsV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 15:48:21 -0500
+Received: from host1.dyn.jankratochvil.net ([89.250.240.48]:56749 "EHLO
+	host1.dyn.jankratochvil.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755462Ab1ALUsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 15:40:01 -0500
-Date: Wed, 12 Jan 2011 21:39:59 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-mm@kvack.org
-cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Pavel Emelianov <xemul@openvz.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mm: Remove two memset calls in mm/memcontrol.c by using the
- zalloc variants of alloc functions
-Message-ID: <alpine.LNX.2.00.1101122135070.22297@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 12 Jan 2011 15:48:19 -0500
+X-Greylist: delayed 361 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Jan 2011 15:48:18 EST
+Date: Wed, 12 Jan 2011 21:41:36 +0100
+From: Jan Kratochvil <jan.kratochvil@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: oleg@redhat.com, roland@redhat.com, linux-kernel@vger.kernel.org,
+        rjw@sisk.pl
+Subject: Re: [PATCH 1/4] signal: fix SIGCONT notification code
+Message-ID: <20110112204136.GB13830@host1.dyn.jankratochvil.net>
+References: <1293016398-18001-1-git-send-email-tj@kernel.org>
+ <1293016398-18001-2-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1293016398-18001-2-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can avoid two calls to memset() in mm/memcontrol.c by using 
-kzalloc_node(), kzalloc & vzalloc().
+On Wed, 22 Dec 2010 12:13:15 +0100, Tejun Heo wrote:
+> If SIGCONT is received while the child process is stopped, the code should
+> be CLD_CONTINUED.  If SIGCONT is recieved while the child process is in the
+> process of being stopped, it should be CLD_STOPPED.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- memcontrol.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+If a process does
+	kill (PID, SIGSTOP);
+	<varying delay, possibly even from a different process>
+	kill (PID, SIGCONT);
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 00bb8a6..890df27 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4176,12 +4176,11 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
- 	 */
- 	if (!node_state(node, N_NORMAL_MEMORY))
- 		tmp = -1;
--	pn = kmalloc_node(sizeof(*pn), GFP_KERNEL, tmp);
-+	pn = kzalloc_node(sizeof(*pn), GFP_KERNEL, tmp);
- 	if (!pn)
- 		return 1;
- 
- 	mem->info.nodeinfo[node] = pn;
--	memset(pn, 0, sizeof(*pn));
- 
- 	for (zone = 0; zone < MAX_NR_ZONES; zone++) {
- 		mz = &pn->zoneinfo[zone];
-@@ -4206,14 +4205,13 @@ static struct mem_cgroup *mem_cgroup_alloc(void)
- 
- 	/* Can be very big if MAX_NUMNODES is very big */
- 	if (size < PAGE_SIZE)
--		mem = kmalloc(size, GFP_KERNEL);
-+		mem = kzalloc(size, GFP_KERNEL);
- 	else
--		mem = vmalloc(size);
-+		mem = vzalloc(size);
- 
- 	if (!mem)
- 		return NULL;
- 
--	memset(mem, 0, size);
- 	mem->stat = alloc_percpu(struct mem_cgroup_stat_cpu);
- 	if (!mem->stat)
- 		goto out_free;
+does it mean the PID's parent may get different waitid() results?
+Or even that PID will finally remain still `T (stopped)'?
+
+I do not see it has any userland impact, the
+PTRACE_ATTACH-to-T(stopped)-process is already racy for different reasons.
 
 
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Thanks,
+Jan
