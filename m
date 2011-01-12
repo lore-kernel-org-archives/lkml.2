@@ -1,69 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab1ALTwK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 14:52:10 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:26844 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755484Ab1ALTwI convert rfc822-to-8bit (ORCPT
+	id S1755694Ab1ALT4x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 14:56:53 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36279 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751845Ab1ALT4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 14:52:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=leds0W6Wt/FpYws1KCvr2LltKaD7S9LQK69IgbEJZmPtKXHAIecRzsFQyJEPqkIVb5
-         l9gaKBQJWs2M950tpP3A==
+	Wed, 12 Jan 2011 14:56:50 -0500
+Date: Wed, 12 Jan 2011 19:56:40 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Nicolas Pitre <nicolas.pitre@canonical.com>
+Subject: Re: [PATCH v2] arm: Defer vetting of atags to setup.c
+Message-ID: <20110112195640.GJ11039@n2100.arm.linux.org.uk>
+References: <20110112180257.6824.33147.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
-In-Reply-To: <4D2E0403.7080300@linux.vnet.ibm.com>
-References: <AANLkTim=jawJyBj0iFd0r4-LCKzvjFW+NddzJMD5GUB9@mail.gmail.com>
-	<4D2E0403.7080300@linux.vnet.ibm.com>
-Date: Wed, 12 Jan 2011 20:52:03 +0100
-Message-ID: <AANLkTimwyzFKanSCeki3HOS95-cwWqGCAssX31DNWD3p@mail.gmail.com>
-Subject: Re: [BUG] perf sched broken
-From: Stephane Eranian <eranian@google.com>
-To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu,
-        Robert Richter <robert.richter@amd.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110112180257.6824.33147.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 8:41 PM, Corey Ashford
-<cjashfor@linux.vnet.ibm.com> wrote:
-> On 01/12/2011 01:29 AM, Stephane Eranian wrote:
->>
->> Hi,
->>
->> I am trying to use perf sched from tip-x86 but it fails for all my
->> attempts.
->
-> So far I have been unsuccessful in reproducing this problem, but I suspect
-> that I have the wrong git tree or branch.  The git tree I've cloned is:
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git
->
-I was using this branch.
-I also tried running the tool on ubuntu lucid (2.6.32-based).
+The patch looks good to me, except for one small concerning point, which
+I should've thought about earlier - sorry.
 
-Didn't you have to at least fixup the sched event names to drop :r?
-Once you have the perf.data file, how do you dump it?
+One of the things that __vet_atags does is to make sure that the data
+pointed to by 'r2' is actually an atag list.
 
-I tried:
-- perf sched trace -> error
-- perf sched replay -> error
-- perf script sched-migration  -> hangs
-- perf report -D
+Historically, we haven't required boot loaders to set r2 to anything -
+it used not to be defined to mean anything at all.  So with older boot
+loaders, this could be pointing at anything - it all depends what the
+boot loader code last did, and how the compiler optimized that code.
 
-> I've tried the branches master, x86/urgent, and x86-urgent-for-linus. All of
-> those produce correct results, as far as I can tell.
->
-> Which tree / branch should I be using?
->
-> - Corey
->
+So, the __vet_atags asm tries dereferencing the values there after
+checking that it's word aligned.  We hope that we won't hit a read-
+sensitive device in doing so.  If we find a valid ATAG_CORE then we
+allow the pointer.  If we don't find those magic words, then we zero.
+
+For boot loaders which always pass valid r2 values, moving this code
+after the MMU makes no difference.  For older boot loaders, it may be
+that __phys_to_virt(r2) ends up pointing at unmapped memory, which will
+cause a MMU abort - and as the vectors haven't been setup, that could
+hang the kernel.
+
+So I think this has to stay in assembly code to make sure it works as
+required - to detect old boot loaders passing random values in r2 and
+allow the old method (atag address in machine_desc struct) to work.
+
+On Wed, Jan 12, 2011 at 11:03:07AM -0700, Grant Likely wrote:
+> Since the debug macros no longer depend on atag data, the vetting can
+> be deferred to setup_arch() in setup.c which simplifies the code
+> somewhat.
+> 
+> This patch removes __vet_atags() from head.S and moves it setup_arch().
+> I've tried to preserve the existing behaviour in this patch so the
+> extra atags vetting is only using when CONFIG_MMU is selected.
+> 
+> v2: Move removal of __machine_type_lookup to a separate patch.
+> 
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> ---
+>  arch/arm/kernel/head-common.S |   51 +++++++----------------------------------
+>  arch/arm/kernel/head.S        |    1 -
+>  arch/arm/kernel/setup.c       |   16 +++++++++++++
+>  3 files changed, 25 insertions(+), 43 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/head-common.S b/arch/arm/kernel/head-common.S
+> index c84b57d..8bb1829 100644
+> --- a/arch/arm/kernel/head-common.S
+> +++ b/arch/arm/kernel/head-common.S
+> @@ -11,50 +11,8 @@
+>   *
+>   */
+>  
+> -#define ATAG_CORE 0x54410001
+> -#define ATAG_CORE_SIZE ((2*4 + 3*4) >> 2)
+> -#define ATAG_CORE_SIZE_EMPTY ((2*4) >> 2)
+> -
+> -/*
+> - * Exception handling.  Something went wrong and we can't proceed.  We
+> - * ought to tell the user, but since we don't have any guarantee that
+> - * we're even running on the right architecture, we do virtually nothing.
+> - *
+> - * If CONFIG_DEBUG_LL is set we try to print out something about the error
+> - * and hope for the best (useful if bootloader fails to pass a proper
+> - * machine ID for example).
+> - */
+>  	__HEAD
+>  
+> -/* Determine validity of the r2 atags pointer.  The heuristic requires
+> - * that the pointer be aligned, in the first 16k of physical RAM and
+> - * that the ATAG_CORE marker is first and present.  Future revisions
+> - * of this function may be more lenient with the physical address and
+> - * may also be able to move the ATAGS block if necessary.
+> - *
+> - * Returns:
+> - *  r2 either valid atags pointer, or zero
+> - *  r5, r6 corrupted
+> - */
+> -__vet_atags:
+> -	tst	r2, #0x3			@ aligned?
+> -	bne	1f
+> -
+> -	ldr	r5, [r2, #0]			@ is first tag ATAG_CORE?
+> -	cmp	r5, #ATAG_CORE_SIZE
+> -	cmpne	r5, #ATAG_CORE_SIZE_EMPTY
+> -	bne	1f
+> -	ldr	r5, [r2, #4]
+> -	ldr	r6, =ATAG_CORE
+> -	cmp	r5, r6
+> -	bne	1f
+> -
+> -	mov	pc, lr				@ atag pointer is ok
+> -
+> -1:	mov	r2, #0
+> -	mov	pc, lr
+> -ENDPROC(__vet_atags)
+> -
+>  /*
+>   * The following fragment of code is executed with the MMU on in MMU mode,
+>   * and uses absolute addresses; this is not position independent.
+> @@ -158,6 +116,15 @@ __lookup_processor_type_data:
+>  	.long	__proc_info_end
+>  	.size	__lookup_processor_type_data, . - __lookup_processor_type_data
+>  
+> +/*
+> + * Exception handling.  Something went wrong and we can't proceed.  We
+> + * ought to tell the user, but since we don't have any guarantee that
+> + * we're even running on the right architecture, we do virtually nothing.
+> + *
+> + * If CONFIG_DEBUG_LL is set we try to print out something about the error
+> + * and hope for the best (useful if bootloader fails to pass a proper
+> + * machine ID for example).
+> + */
+>  __error_p:
+>  #ifdef CONFIG_DEBUG_LL
+>  	adr	r0, str_p1
+> diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
+> index 19f3909..4b0cf4a 100644
+> --- a/arch/arm/kernel/head.S
+> +++ b/arch/arm/kernel/head.S
+> @@ -92,7 +92,6 @@ ENTRY(stext)
+>  	 * r1 = machine no, r2 = atags,
+>  	 * r9 = cpuid, r10 = procinfo
+>  	 */
+> -	bl	__vet_atags
+>  #ifdef CONFIG_SMP_ON_UP
+>  	bl	__fixup_smp
+>  #endif
+> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+> index 77266a8..47cf110 100644
+> --- a/arch/arm/kernel/setup.c
+> +++ b/arch/arm/kernel/setup.c
+> @@ -851,6 +851,22 @@ void __init setup_arch(char **cmdline_p)
+>  	if (mdesc->soft_reboot)
+>  		reboot_setup("s");
+>  
+> +#if defined(CONFIG_MMU)
+> +	/*
+> +	 * Determine validity of the atags pointer.  The heuristic requires
+> +	 * that the pointer be aligned, and that the ATAG_CORE marker is
+> +	 * first and present.
+> +	 */
+> +	if (__atags_pointer & 0x3)
+> +		__atags_pointer = 0;
+> +	if (__atags_pointer) {
+> +		struct tag *t = phys_to_virt(__atags_pointer);
+> +		if ((t->hdr.size != tag_size(tag_core)) &&
+> +		    (t->hdr.size != sizeof(struct tag_header)) &&
+> +		    (t->hdr.tag != ATAG_CORE))
+> +			__atags_pointer = 0;
+> +	}
+> +#endif
+>  	if (__atags_pointer)
+>  		tags = phys_to_virt(__atags_pointer);
+>  	else if (mdesc->boot_params)
+> 
