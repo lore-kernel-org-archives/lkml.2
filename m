@@ -1,96 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932376Ab1ALWNR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 17:13:17 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:2078 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754157Ab1ALWNN convert rfc822-to-8bit (ORCPT
+	id S1754552Ab1ALWOx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 17:14:53 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:48785 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab1ALWOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 17:13:13 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp04.nvidia.com on Wed, 12 Jan 2011 14:13:04 -0800
-From: Rakesh Iyer <riyer@nvidia.com>
-To: "'Pavel Machek'" <pavel@ucw.cz>
-CC: "tsoni@codeaurora.org" <tsoni@codeaurora.org>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "shubhrajyoti@ti.com" <shubhrajyoti@ti.com>,
-        "ccross@android.com" <ccross@android.com>,
-        "konkers@android.com" <konkers@android.com>,
-        "olof@lixom.net" <olof@lixom.net>, Andrew Chew <AChew@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Date: Wed, 12 Jan 2011 14:13:00 -0800
-Subject: RE: [PATCH 1/1] input: tegra-kbc - Add tegra keyboard driver
-Thread-Topic: [PATCH 1/1] input: tegra-kbc - Add tegra keyboard driver
-Thread-Index: AcuypHGOurzH6DkcRQ69amIakLiUbgAACOBQ
-Message-ID: <1FC56210173BB445BD77F608D6FB8D03165A00806E@HQMAIL03.nvidia.com>
-References: <1294869179-15102-1-git-send-email-riyer@nvidia.com>
- <1FC56210173BB445BD77F608D6FB8D03165A00806D@HQMAIL03.nvidia.com>
- <20110112220254.GA4214@elf.ucw.cz>
-In-Reply-To: <20110112220254.GA4214@elf.ucw.cz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 12 Jan 2011 17:14:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=sjP1C2EsbmyxXFtrjIOOc2O9n8U5olLXCHQ5TNEn0J8rUzMkCuZXS6PgtSDkaS3Br4
+         K+HflUXRe4L+DChdG8aaOicy7Frhoz/sMUlEhEPohOTgE2EURRXAE9EQlS4xLXv5RCYK
+         N4PKgMkCPllEBHmElTzEw5hfAGdvl2BvOkiZY=
+Date: Thu, 13 Jan 2011 01:14:44 +0300
+From: Alexey Charkov <alchark@gmail.com>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com
+Subject: [PATCH] fbdev: Implement simple blanking in pseudocolor modes for
+ vt8500lcdfb
+Message-ID: <20110112221443.GA574@alchark-u3s>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are the list of changes. I was not sure of the protocol of adding this into the patch email.
+Implement simple blanking in pseudocolor modes for vt8500lcdfb
 
-a) Addressed all of Trilok Soni's comments excluding the tegra clk programming which is necessary.
-Use correct labels in tegra_kbc_probe error paths. 
-Identify and if necessary document all register accesses without using magic numbers.
-Modify suspend to check for valid users before proceeding to close.
+This follows the style of some other in-tree drivers by just setting
+the hardware palette colors to all black. True Color modes are not
+affected, but this at least allows to run xf86-video-fbdev without
+errors due to blanking being unimplemented.
+
+Signed-off-by: Alexey Charkov <alchark@gmail.com>
+
+diff --git a/drivers/video/vt8500lcdfb.c b/drivers/video/vt8500lcdfb.c
+index 7617f12..0e120d6 100644
+--- a/drivers/video/vt8500lcdfb.c
++++ b/drivers/video/vt8500lcdfb.c
+@@ -215,6 +215,33 @@ static int vt8500lcd_pan_display(struct fb_var_screeninfo *var,
+ 	return 0;
+ }
  
-b) Removed the Fn keymap and its references. This obviated the need for some helper functions.
-
-c) Setup the input device's keycodexx parameters.
-
-
-Pavel's query
-
-> But now I'm confused; does hardware have Fx keys (F10 above) or not?
-> 									Pavel
-
-The function key for this keyboard is separate from the F1 to F12 keys, where the latter are always available.
-
-The function key serves just like a SHIFT key to overload the use of certain keys e.g. Fn+PgUP-> "Home", Fn+PgDn -> "End"
-
-Regards
-Rakesh
-> -----Original Message-----
-> From: Pavel Machek [mailto:pavel@ucw.cz]
-> Sent: Wednesday, January 12, 2011 2:03 PM
-> To: Rakesh Iyer
-> Cc: tsoni@codeaurora.org; dmitry.torokhov@gmail.com; shubhrajyoti@ti.com;
-> ccross@android.com; konkers@android.com; olof@lixom.net; Andrew Chew; linux-
-> tegra@vger.kernel.org; linux-kernel@vger.kernel.org; linux-input@vger.kernel.org
-> Subject: Re: [PATCH 1/1] input: tegra-kbc - Add tegra keyboard driver
-> 
-> On Wed 2011-01-12 13:59:45, Rakesh Iyer wrote:
-> > Hi all.
-> >
-> > I apologize for not specifying the PATCH indicator as "PATCH v4".
-> >
-> > Sorry for the inconvenience caused.
-> 
-> Well, that is not huge problem, but short note of changes from last
-> version would be welcome.
-> 
-> AFAICT, FN handling was reworked...?
-> 
-> > > +     KEY_F10, KEY_F9, KEY_BACKSPACE, KEY_3,
-> > > +             KEY_2, KEY_UP, KEY_PRINT, KEY_PAUSE,
-> 
-> But now I'm confused; does hardware have Fx keys (F10 above) or not?
-> 									Pavel
-> 
-> --
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
++/*
++ * vt8500lcd_blank():
++ *	Blank the display by setting all palette values to zero.  Note,
++ * 	True Color modes do not really use the palette, so this will not
++ *      blank the display in all modes.
++ */
++static int vt8500lcd_blank(int blank, struct fb_info *info)
++{
++	int i;
++
++	switch (blank) {
++	case FB_BLANK_POWERDOWN:
++	case FB_BLANK_VSYNC_SUSPEND:
++	case FB_BLANK_HSYNC_SUSPEND:
++	case FB_BLANK_NORMAL:
++		if (info->fix.visual == FB_VISUAL_PSEUDOCOLOR ||
++		    info->fix.visual == FB_VISUAL_STATIC_PSEUDOCOLOR)
++			for (i = 0; i < 256; i++)
++				vt8500lcd_setcolreg(i, 0, 0, 0, 0, info);
++	case FB_BLANK_UNBLANK:
++		if (info->fix.visual == FB_VISUAL_PSEUDOCOLOR ||
++		    info->fix.visual == FB_VISUAL_STATIC_PSEUDOCOLOR)
++			fb_set_cmap(&info->cmap, info);
++	}
++	return 0;
++}
++
+ static struct fb_ops vt8500lcd_ops = {
+ 	.owner		= THIS_MODULE,
+ 	.fb_set_par	= vt8500lcd_set_par,
+@@ -225,6 +252,7 @@ static struct fb_ops vt8500lcd_ops = {
+ 	.fb_sync	= wmt_ge_sync,
+ 	.fb_ioctl	= vt8500lcd_ioctl,
+ 	.fb_pan_display	= vt8500lcd_pan_display,
++	.fb_blank	= vt8500lcd_blank,
+ };
+ 
+ static irqreturn_t vt8500lcd_handle_irq(int irq, void *dev_id)
