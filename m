@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233Ab1ALK61 (ORCPT <rfc822;w@1wt.eu>);
+	id S1754686Ab1ALK6a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 05:58:30 -0500
+Received: from www.tglx.de ([62.245.132.106]:57253 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753157Ab1ALK61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 12 Jan 2011 05:58:27 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:39816 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab1ALK60 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 05:58:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=i8Vk8E0SghiruScQH2+2YghEGyYat06g8HXG77RxLq4GKxtsOTzit5sfcr5sOpxYC0
-         pMttgihSIqdvA23NWYWAgicPncRh7318A+zIc2zaJ8cDNcPaGaBlOOmq5qTEVfoFLDJX
-         n9hE98U/CzZvuV0MZ6pyo5sQHAXo29QwPrnUc=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Davide Libenzi <davidel@xmailserver.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] epoll: remove unnecessary bit operation in epoll_create1 syscall
-Date: Wed, 12 Jan 2011 19:58:16 +0900
-Message-Id: <1294829896-3210-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.3.4.600.g982838b0
+Date: Wed, 12 Jan 2011 11:57:50 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@pengutronix.de, Nick Piggin <npiggin@kernel.dk>,
+        Soren Sandmann <ssp@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: BUG: spinlock recursion (sys_chdir, user_path_at, do_path_lookup
+ ...)
+In-Reply-To: <20110112075229.GZ24920@pengutronix.de>
+Message-ID: <alpine.LFD.2.00.1101121153370.12146@localhost6.localdomain6>
+References: <20110111110539.GP24920@pengutronix.de> <20110112075229.GZ24920@pengutronix.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-1577090938-1294829872=:12146"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-@flags can have O_CLOEXEC only so bitwise AND is not necessary.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- fs/eventpoll.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+---1463795968-1577090938-1294829872=:12146
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 8cf07242067d..2e21fb85b8b6 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -1209,7 +1209,7 @@ SYSCALL_DEFINE1(epoll_create1, int, flags)
- 	 * a file structure and a free file descriptor.
- 	 */
- 	error = anon_inode_getfd("[eventpoll]", &eventpoll_fops, ep,
--				 O_RDWR | (flags & O_CLOEXEC));
-+				 O_RDWR | flags);
- 	if (error < 0)
- 		ep_free(ep);
- 
--- 
-1.7.3.4.600.g982838b0
+On Wed, 12 Jan 2011, Uwe Kleine-König wrote:
+> > [   75.280000]  r5:be961ee4 r4:00063015
+> > 
+> > I started to bisect, but already the first test case showed a different
+> > error (my getty dying every few seconds).
+> I bisected this one now, the first bad commit is
+> 
+> 	9c0729d (x86: Eliminate bp argument from the stack tracing routines)
+> 
+> .  It made a x86 specific change to include/linux/stacktrace.h.
 
+As I said on IRC already, that's complete nonsense. The commit changes
+a function prototype which is only relevant for x86. So how should
+that affect ARM ?
+
+> According to tglx the lockup above "is related to nicks scalability
+> stuff".  I havn't researched yet the offending commit.  Is that
+> necessary?
+
+Only if you are interested that the problem gets fixed.
+
+Thanks,
+
+	tglx
+---1463795968-1577090938-1294829872=:12146--
