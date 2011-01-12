@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932767Ab1ALBhN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 20:37:13 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47948 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756476Ab1ALBhL (ORCPT
+	id S1756454Ab1ALBnQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 20:43:16 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:35153 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754421Ab1ALBnO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 20:37:11 -0500
+	Tue, 11 Jan 2011 20:43:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=uuMu8VSu/chsaUX+nKCJ0uWvxcM/gotQ1byCEkBC1f+4qSC6UkBsiUdirrSf/dB1x8
+         3mRrqGBEdtDnAsgnT+v5aEkROl/x1ThNiifw/1tuLAtolyjHrR35kJ2ZNqUhlNlAGZ6K
+         tupqPfCjTLHN5mP6CeXSrsKUWQqsY8PNu465k=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinpy-Qm3kHuGtdviVmw4oRO95AN3DmSGfoz+YHT@mail.gmail.com>
-References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie>
- <AANLkTinW8Yp1K1w+G+BgLa-fPaFANkGsRjqH_W8N+9VL@mail.gmail.com>
- <AANLkTim5oVZqMBtan5_TMOxaWbqkF=aDcBYFNYy55kt_@mail.gmail.com>
- <0aea052d-70ff-41ea-8776-c6d974c10337@email.android.com> <AANLkTim0rn7Vem6YJM5tVKM0PX4YdnNmaeqmpS=Vp7rc@mail.gmail.com>
- <AANLkTi=eRHbgerpdPYdoOo45LruNTk0rNsWvOO-kYxyQ@mail.gmail.com>
- <20110111111203.279eae50@jbarnes-desktop> <AANLkTikMMG1S6qp0-jKnQUcR5DgC+WWVfgOo2PExFA2w@mail.gmail.com>
- <AANLkTinLmrSQ9cYvdu-pfEHizOjNGL5df4HfcSigvYpX@mail.gmail.com> <AANLkTinpy-Qm3kHuGtdviVmw4oRO95AN3DmSGfoz+YHT@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 11 Jan 2011 17:36:19 -0800
-Message-ID: <AANLkTin1E6A8Mc9W3z9JpY4kZwNC6mJ1g1H-HMD5FRRh@mail.gmail.com>
-Subject: Re: [git pull] drm for rc1
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Dave Airlie <airlied@gmail.com>, Dave Airlie <airlied@linux.ie>,
-        Eric Anholt <eric@anholt.net>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <AANLkTimkb4ic3G7rT-WiFtFdC+Sy5gVAikoQVXguVH4J@mail.gmail.com>
+References: <1291726590.2760.3.camel@phoenix> <AANLkTimkb4ic3G7rT-WiFtFdC+Sy5gVAikoQVXguVH4J@mail.gmail.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Wed, 12 Jan 2011 09:42:52 +0800
+Message-ID: <AANLkTinxs8k2-gc03i6H_r0iONh1XtjrH-60dZ-0j+9g@mail.gmail.com>
+Subject: Re: [PATCH] ASoC: Fix resource leak if soc_register_ac97_dai_link failed
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 3:01 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+> this isnt entirely correct.  soc_unregister_ac97_dai_link takes a
+> pointer to a codec which card->rtd[i] is not.
+> sound/soc/soc-core.c: In function ‘snd_soc_instantiate_card’:
+> sound/soc/soc-core.c:1626: warning: passing argument 1 of
+> ‘soc_unregister_ac97_dai_link’ from incompatible pointer type
+> -mike
 >
->  ... I'll test that drm-intel-staging commit.
 
-Initial testing _seems_ to confirm that merging drm-intel-staging gets
-rid of the problem. But I haven't spent a whole lot of time in the
-screen saver. Will start driving kids around now, so more intense
-screen saver testing is coming up..
+Ooops. my bad.
+I will send a patch for 2.6.37 to fix it.
+Thanks for report this bug.
 
-                   Linus
+Regards,
+Axel
