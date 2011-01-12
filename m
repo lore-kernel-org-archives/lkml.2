@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932238Ab1ALMCa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 07:02:30 -0500
-Received: from relay03-haj2.antispameurope.com ([83.246.65.53]:36088 "EHLO
-	relay03-haj2.antispameurope.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755840Ab1ALMC3 (ORCPT
+	id S1756076Ab1ALMEA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 07:04:00 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57836 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755841Ab1ALMD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 07:02:29 -0500
-Message-ID: <4D2D9834.5000309@iis.fraunhofer.de>
-Date: Wed, 12 Jan 2011 13:01:56 +0100
-From: Manuel Stahl <manuel.stahl@iis.fraunhofer.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+	Wed, 12 Jan 2011 07:03:58 -0500
+Date: Wed, 12 Jan 2011 13:03:49 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@pengutronix.de, Nick Piggin <npiggin@kernel.dk>,
+        Soren Sandmann <ssp@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: BUG: spinlock recursion (sys_chdir, user_path_at,
+ do_path_lookup ...)
+Message-ID: <20110112120349.GH24920@pengutronix.de>
+References: <20110111110539.GP24920@pengutronix.de>
+ <20110112075229.GZ24920@pengutronix.de>
+ <alpine.LFD.2.00.1101121153370.12146@localhost6.localdomain6>
 MIME-Version: 1.0
-To: Thomas Weber <thomas.weber.linux@googlemail.com>
-CC: linux-serial@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Weber <weber@corscience.de>, Johannes Reif <reif@corscience.de>,
-        changgx <changgx@163.com>, miguelangel@nbee.es
-Subject: Re: [PATCH resend 2] Add sc16is7x2 driver
-References: <4D272DDA.6010007@iis.fraunhofer.de> <4D2D8B12.2@gmail.com>
-In-Reply-To: <4D2D8B12.2@gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------090209060809090206090005"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LFD.2.00.1101121153370.12146@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090209060809090206090005
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+On Wed, Jan 12, 2011 at 11:57:50AM +0100, Thomas Gleixner wrote:
+> On Wed, 12 Jan 2011, Uwe Kleine-König wrote:
+> > > [   75.280000]  r5:be961ee4 r4:00063015
+> > > 
+> > > I started to bisect, but already the first test case showed a different
+> > > error (my getty dying every few seconds).
+> > I bisected this one now, the first bad commit is
+> > 
+> > 	9c0729d (x86: Eliminate bp argument from the stack tracing routines)
+> > 
+> > .  It made a x86 specific change to include/linux/stacktrace.h.
+> 
+> As I said on IRC already, that's complete nonsense. The commit changes
+> a function prototype which is only relevant for x86. So how should
+> that affect ARM ?
+hmm, the conversion that you probably mean is:
 
-On 12.01.2011 12:05, Thomas Weber wrote:
-> Am 07.01.2011 16:14, schrieb Manuel Stahl:
->> IRQ is now implemented with work queue (like max3100).
->> The problem is, that the sc16is7x2 has a low active irq. But with active
->> low threaded_irqs, shared irqs are not allowed.
->>
->> Please try this one and report errors.
->>
->> Regards,
->> Manuel Stahl
->>
->> PS: sorry that the patch is not inline, not sure how to configure
->> thunderbird correctly
->
-> Hello Manuel,
->
-> There is a re-definition of PORT_SC16IS7X2 in serial_core.h
-> First time it is 20, second time it is 98.
+	22:26 < ukleinek> hmm, 9c0729dc8062bed96189bd14ac6d4920f3958743 is the first bad commit
+	22:26 < tglx> lol
+	22:26  * ukleinek goes to bed
+	22:27 < ukleinek> then it can only be about include/linux/stacktrace.h
+	22:27  * ukleinek goes to bed anyhow
+	22:28 < rostedt> ukleinek: btw, you could do the bisect automated with ktest.pl :-)
+	22:30 < tglx> ukleinek: right, a change to include/linux/stacktrace.h which is x86 specific
+	22:33 < tglx> makes arm explode
+	22:33 < tglx> rotfl
 
-A sorry, forgot to delete the line with 20.
+I admit I didn't look what was changed there and I understood your
+statement as "the change to include/linux/stacktrace.h was x86 specific
+and so broke ARM".
 
-Can someone already confirm that the this version works more reliably 
-than the last one?
+I will look into it again after lunch.
 
-Regards,
-Manuel Stahl
+> > According to tglx the lockup above "is related to nicks scalability
+> > stuff".  I havn't researched yet the offending commit.  Is that
+> > necessary?
+> 
+> Only if you are interested that the problem gets fixed.
+OK, will do.
 
---------------090209060809090206090005
-Content-Type: text/x-vcard; charset=utf-8;
- name="manuel_stahl.vcf"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="manuel_stahl.vcf"
+Best regards
+Uwe
 
-YmVnaW46dmNhcmQNCmZuOk1hbnVlbCBTdGFobA0KbjpTdGFobDtNYW51ZWwNCmVtYWlsO2lu
-dGVybmV0Om1hbnVlbC5zdGFobEBpaXMuZnJhdW5ob2Zlci5kZQ0KdGVsO3dvcms6KzQ5IDkx
-MSA1ODA2MS02NDE5DQp4LW1vemlsbGEtaHRtbDpGQUxTRQ0KdmVyc2lvbjoyLjENCmVuZDp2
-Y2FyZA0KDQo=
---------------090209060809090206090005--
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
