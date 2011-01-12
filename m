@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756299Ab1ALUsV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 15:48:21 -0500
-Received: from host1.dyn.jankratochvil.net ([89.250.240.48]:56749 "EHLO
-	host1.dyn.jankratochvil.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755462Ab1ALUsT (ORCPT
+	id S1756353Ab1ALUvV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 15:51:21 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33700 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756099Ab1ALUvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 15:48:19 -0500
-X-Greylist: delayed 361 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Jan 2011 15:48:18 EST
-Date: Wed, 12 Jan 2011 21:41:36 +0100
-From: Jan Kratochvil <jan.kratochvil@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: oleg@redhat.com, roland@redhat.com, linux-kernel@vger.kernel.org,
-        rjw@sisk.pl
-Subject: Re: [PATCH 1/4] signal: fix SIGCONT notification code
-Message-ID: <20110112204136.GB13830@host1.dyn.jankratochvil.net>
-References: <1293016398-18001-1-git-send-email-tj@kernel.org>
- <1293016398-18001-2-git-send-email-tj@kernel.org>
+	Wed, 12 Jan 2011 15:51:18 -0500
+Message-ID: <4D2E13C9.7030704@oracle.com>
+Date: Wed, 12 Jan 2011 12:49:13 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1293016398-18001-2-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Slaby <jslaby@suse.cz>,
+        lenb@kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH -next] x86/e820: fix build when ACPI is disabled
+References: <20110112141822.c29314c4.sfr@canb.auug.org.au> <20110112122014.2d8455d7.randy.dunlap@oracle.com> <201101122135.55567.rjw@sisk.pl>
+In-Reply-To: <201101122135.55567.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Dec 2010 12:13:15 +0100, Tejun Heo wrote:
-> If SIGCONT is received while the child process is stopped, the code should
-> be CLD_CONTINUED.  If SIGCONT is recieved while the child process is in the
-> process of being stopped, it should be CLD_STOPPED.
-
-If a process does
-	kill (PID, SIGSTOP);
-	<varying delay, possibly even from a different process>
-	kill (PID, SIGCONT);
-
-does it mean the PID's parent may get different waitid() results?
-Or even that PID will finally remain still `T (stopped)'?
-
-I do not see it has any userland impact, the
-PTRACE_ATTACH-to-T(stopped)-process is already racy for different reasons.
+On 01/12/11 12:35, Rafael J. Wysocki wrote:
+> On Wednesday, January 12, 2011, Randy Dunlap wrote:
+>> From: Randy Dunlap <randy.dunlap@oracle.com>
+>>
+>> Fix build error when CONFIG_ACPI is not enabled:
+>>
+>> arch/x86/kernel/e820.c:734: error:implicit declaration of function 'suspend_nvs_register'
 
 
-Thanks,
-Jan
+> I'd prefer the appended patch (it also should fix the problem indicated by Jiri).
+> 
+> Does it work for you?
+
+Yes, both build error and warning are fixed.  Thanks.
+
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
