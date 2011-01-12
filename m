@@ -1,157 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755335Ab1ALTCy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 14:02:54 -0500
-Received: from ns2.cypress.com ([157.95.67.5]:63102 "EHLO ns2.cypress.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751621Ab1ALTCv convert rfc822-to-8bit (ORCPT
+	id S1755431Ab1ALTEW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 14:04:22 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:23678 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753654Ab1ALTEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 14:02:51 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [v4 3/3] 3/3 spi: Cypress TTSP G3 SPI Device Driver
-Date: Wed, 12 Jan 2011 11:02:05 -0800
-Message-ID: <FB9C2CB29A07AB45B575A4E8D2AABC0901490D54@labamba.mis.cypress.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [v4 3/3] 3/3 spi: Cypress TTSP G3 SPI Device Driver
-Thread-Index: AcuyiPe7Tw1Ix3rWSQybHWYJw7LJngAAUVXA
-References: <kev@cypress.com> <1294188847-24728-3-git-send-email-kev@cypress.com> <20110112184550.GB9168@core.coreip.homeip.net>
-From: "Kevin McNeely" <Kevin.McNeely@cypress.com>
-To: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
-Cc: "David Brown" <davidb@codeaurora.org>,
-        "Trilok Soni" <tsoni@codeaurora.org>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        "Eric Miao" <eric.y.miao@gmail.com>,
-        "Mike Frysinger" <vapier@gentoo.org>,
-        "Henrik Rydberg" <rydberg@euromail.se>,
-        "Alan Cox" <alan@linux.intel.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 12 Jan 2011 19:02:09.0081 (UTC) FILETIME=[3643EA90:01CBB28B]
-X-Brightmail-Tracker: AAAAAA==
-X-MailScanner: 
+	Wed, 12 Jan 2011 14:04:16 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Wed, 12 Jan 2011 14:04:12 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        "'Kyungmin Park'" <kmpark@infradead.org>,
+        "'Michal Nazarewicz'" <m.nazarewicz@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Johan MOSSBERG'" <johan.xx.mossberg@stericsson.com>,
+        "'Mel Gorman'" <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>, linux-mm@kvack.org,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-media@vger.kernel.org,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: RE: [PATCHv8 00/12] Contiguous Memory Allocator
+In-reply-to: <001c01cbb289$864391f0$92cab5d0$%szyprowski@samsung.com>
+Message-id: <alpine.LFD.2.00.1101121357580.25498@xanadu.home>
+References: <cover.1292443200.git.m.nazarewicz@samsung.com>
+ <AANLkTim8_=0+-zM5z4j0gBaw3PF3zgpXQNetEn-CfUGb@mail.gmail.com>
+ <20101223100642.GD3636@n2100.arm.linux.org.uk>
+ <00ea01cba290$4d67f500$e837df00$%szyprowski@samsung.com>
+ <20101223121917.GG3636@n2100.arm.linux.org.uk>
+ <00ec01cba2a2$af20b8b0$0d622a10$%szyprowski@samsung.com>
+ <20101223134432.GJ3636@n2100.arm.linux.org.uk>
+ <001c01cbb289$864391f0$92cab5d0$%szyprowski@samsung.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On Wed, 12 Jan 2011, Marek Szyprowski wrote:
 
-Thank you for your review.
+> I understand that modifying L1 page tables is definitely not a proper way of
+> handling this. It simply costs too much. But what if we consider that the DMA
+> memory can be only allocated from a specific range of the system memory?
+> Assuming that this range of memory is known during the boot time, it CAN be
+> mapped with two-level of tables in MMU. First level mapping will stay the
+> same all the time for all processes, but it would be possible to unmap the
+> pages required for DMA from the second level mapping what will be visible
+> from all the processes at once.
 
-Will the existing patches get into the current merge?
+How much memory are we talking about?  What is the typical figure?
 
-Can I revisit this discussion as part of our plan to provide a Protocol
-B driver?
+> Is there any reason why such solution won't work?
 
-Thanks and best regards,
-Kevin
+It could work indeed.
+
+One similar solution that is already in place is to use highmem for that 
+reclaimable DMA memory.  It is easy to ensure affected highmem pages are 
+not mapped in kernel space.  And you can decide at boot time how many 
+highmem pages you want even if the system has less that 1GB of RAM.
 
 
-> -----Original Message-----
-> From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
-> Sent: Wednesday, January 12, 2011 10:46 AM
-> To: Kevin McNeely
-> Cc: David Brown; Trilok Soni; Samuel Ortiz; Eric Miao; Mike Frysinger;
-> Henrik Rydberg; Alan Cox; linux-input@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [v4 3/3] 3/3 spi: Cypress TTSP G3 SPI Device Driver
-> 
-> Hi Kevin,
-> 
-> On Tue, Jan 04, 2011 at 04:54:06PM -0800, Kevin McNeely wrote:
-> > +
-> > +static int spi_sync_tmo(struct cyttsp_spi *ts, struct spi_message
-> *message)
-> > +{
-> > +	DECLARE_COMPLETION_ONSTACK(done);
-> > +	int status;
-> > +
-> > +	message->complete = spi_complete;
-> > +	message->context = &done;
-> > +	status = spi_async(ts->spi_client, message);
-> > +	if (status == 0) {
-> > +		int ret =
-wait_for_completion_interruptible_timeout(&done,
-> HZ);
-> > +		if (!ret) {
-> > +			dev_dbg(ts->ops.dev, "%s: timeout\n", __func__);
-> > +			status = -EIO;
-> 
-> I do not believe we can do this and simply abort outstanding SPI
-> transfer. What if we unload the driver and destroy the device and then
-> SPI master will come around? And it does not look like SPI subsystem
-> allows to cancel outstanding requests...
-> 
-> Have you actually seen timeouts firing? Why isn't the same needed for
-> I2C interface?
-> 
-> > +
-> > +static s32 ttsp_spi_read_block_data(void *handle, u8 addr,
-> > +				    u8 length, void *data)
-> > +{
-> > +	struct cyttsp_spi *ts = container_of(handle, struct cyttsp_spi,
-> ops);
-> > +	int retval;
-> > +
-> > +	retval = cyttsp_spi_xfer(CY_SPI_RD_OP, ts, addr, data, length);
-> > +	if (retval < 0)
-> > +		dev_dbg(ts->ops.dev,  "%s: ttsp_spi_read_block_data
-> failed\n",
-> > +			__func__);
-> > +
-> > +	/*
-> > +	 * Do not print the above error if the data sync bytes were not
-> found.
-> > +	 * This is a normal condition for the bootloader loader startup
-> and need
-> > +	 * to retry until data sync bytes are found.
-> > +	 */
-> > +	if (retval > 0)
-> > +		retval = -1;	/* now signal fail; so retry can be done
-> */
-> 
-> I am a bit confused here. First of all we do retries in
-> cyttsp_spi_xfer(). Then cyttsp_core does retry transfer as well (but
-> i2c
-> methods do not retry). Can we settle on retrying in one place only?
-> 
-> > +
-> > +static s32 ttsp_spi_tch_ext(void *handle, void *values)
-> > +{
-> > +	struct cyttsp_spi *ts = container_of(handle, struct cyttsp_spi,
-> ops);
-> > +	int retval = 0;
-> > +
-> > +	/*
-> > +	 * TODO: Add custom touch extension handling code here
-> > +	 * set: retval < 0 for any returned system errors,
-> > +	 *	retval = 0 if normal touch handling is required,
-> > +	 *	retval > 0 if normal touch handling is *not* required
-> > +	 */
-> > +
-> > +	if (!ts || !values)
-> > +		retval = -EINVAL;
-> > +
-> > +	return retval;
-> 
-> I question the utility of "per bus" extended touch handling. I can see
-> it being supplied from platform data but niot by interface code.
-> 
-> BTW, no need to resubmit patches not, it is just a discussion...
-> 
-> Thanks.
-> 
-> --
-> Dmitry
-
----------------------------------------------------------------
-This message and any attachments may contain Cypress (or its
-subsidiaries) confidential information. If it has been received
-in error, please advise the sender and immediately delete this
-message.
----------------------------------------------------------------
-
+Nicolas
