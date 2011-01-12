@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab1ALJRd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 04:17:33 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63153 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023Ab1ALJRb (ORCPT
+	id S1756009Ab1ALJ00 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 04:26:26 -0500
+Received: from mms1.broadcom.com ([216.31.210.17]:4753 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755969Ab1ALJ0U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 04:17:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=J+lhFwiQtwmPxIAZPi9gJn/RzBK3EMOU27TKKwkNs2M8zrg/jzs5AamdkUarcuUtaF
-         d9ktOejd0kZWg7khepsXYnMMUdGODwjrE/dXAulnam6L09xBXUGilzuI81cEGcF1QMYl
-         GHA1qAtDtU2l8TTHc/GsWOEQsAdgAOoiCmd2U=
+	Wed, 12 Jan 2011 04:26:20 -0500
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+From: "Arend Van Spriel" <arend@broadcom.com>
+To: "Jon Masters" <jcm@redhat.com>, "Brett Rudley" <brudley@broadcom.com>
+cc: devel <devel@linuxdriverproject.org>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Date: Wed, 12 Jan 2011 01:26:16 -0800
+Subject: RE: PROBLEM: brcm80211 unable to survive suspend/resume cycle
+Thread-Topic: PROBLEM: brcm80211 unable to survive suspend/resume cycle
+Thread-Index: Acuh5JuSkYhK92W9RvqqDbblR9AS0AQVQ+Uw
+Message-ID: <400C43189542CE41BC0A5B252FC90136952FC34AE7@SJEXCHCCR02.corp.ad.broadcom.com>
+References: <1289272437.3916.440.camel@constitution.bos.jonmasters.org>
+ <7A94256FD72B884D9E7C55586C3CBCEE13840C62AA@SJEXCHCCR01.corp.ad.broadcom.com>
+ <1289880279.3916.889.camel@constitution.bos.jonmasters.org>
+ <1293028287.6319.171.camel@constitution.bos.jonmasters.org>
+In-Reply-To: <1293028287.6319.171.camel@constitution.bos.jonmasters.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-In-Reply-To: <20110112074930.GF2723@in.ibm.com>
-References: <20110111101040.GD4772@in.ibm.com>
-	<20110111101153.GE4772@in.ibm.com>
-	<20110111124658.GA4507@zhy>
-	<20110111134244.GJ4772@in.ibm.com>
-	<20110111140005.GA6069@zhy>
-	<20110112074930.GF2723@in.ibm.com>
-Date: Wed, 12 Jan 2011 17:17:28 +0800
-Message-ID: <AANLkTikCVPY=JFWyyQDv+4E2n3AWvQCFQu26m1CyUhDn@mail.gmail.com>
-Subject: Re: [PATCH -tip 1/2] [PATCH -tip 1/2] sched: Reinstate group names in /proc/sched_debug.
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: bharata@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
+X-WSS-ID: 6133AB8F3P055598566-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 3:49 PM, Bharata B Rao
-<bharata@linux.vnet.ibm.com> wrote:
->> BTW, I guess we can also remove rcu_read_lock/unlock() in print_rt_stats()
->> and print_cfs_stats() with sched_debug_lock hold.
->
-> We could, but I guess its not a recommended practice anymore to depend on
-> spinlocks to protect rcu readside.
+Hi Jon,
 
-OK. Then let's keep it.
+Brett delegated this problem to me and I have resolved it in the driver. I will post it to the staging-2.6 repository in coming days when stomach flu subsides. Keep your eyes on the devel archives.
 
-Thanks,
-Yong
+Gr. AvS
 
--- 
-Only stand for myself
+|-----Original Message-----
+|From: devel-bounces@linuxdriverproject.org [mailto:devel-
+|bounces@linuxdriverproject.org] On Behalf Of Jon Masters
+|Sent: Wednesday, December 22, 2010 3:31 PM
+|To: Brett Rudley
+|Cc: devel; Linux Kernel Mailing List
+|Subject: RE: PROBLEM: brcm80211 unable to survive suspend/resume cycle
+|
+|On Mon, 2010-11-15 at 23:04 -0500, Jon Masters wrote:
+|> On Tue, 2010-11-09 at 10:02 -0800, Brett Rudley wrote:
+|> > Hey Jon, thanks for the heads up.  I can repro and am looking into
+|it.
+|>
+|> Did you get chance to poke much yet?
+|
+|Any word on this?
+|
+|Jon.
+|
+|
+|_______________________________________________
+|devel mailing list
+|devel@linuxdriverproject.org
+|http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
+
+
