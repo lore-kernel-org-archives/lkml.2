@@ -1,81 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096Ab1ALHjW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 02:39:22 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:63692 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755294Ab1ALHjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 02:39:19 -0500
-Message-ID: <4D2D5AA6.9080804@cn.fujitsu.com>
-Date: Wed, 12 Jan 2011 15:39:18 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1755648Ab1ALHk2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 02:40:28 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48284 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752316Ab1ALHkZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 02:40:25 -0500
+Date: Wed, 12 Jan 2011 08:40:09 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>, Paul Mundt <lethal@linux-sh.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-sh@vger.kernel.org, Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Locking in the clk API
+Message-ID: <20110112074009.GX24920@pengutronix.de>
+References: <201101111016.42819.jeremy.kerr@canonical.com>
+ <201101111830.18597.jeremy.kerr@canonical.com>
+ <20110111121816.GB774@linux-sh.org>
+ <201101112235.43061.jeremy.kerr@canonical.com>
+ <4D2D1F0D.5040208@codeaurora.org>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH v3 1/3] KVM: fix rcu usage warning in kvm_arch_vcpu_ioctl_set_sregs()
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-12 15:38:51,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-12 15:38:52,
-	Serialize complete at 2011-01-12 15:38:52
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4D2D1F0D.5040208@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix:
+Hi Saravana,
 
-[ 1001.499596] ===================================================
-[ 1001.499599] [ INFO: suspicious rcu_dereference_check() usage. ]
-[ 1001.499601] ---------------------------------------------------
-[ 1001.499604] include/linux/kvm_host.h:301 invoked rcu_dereference_check() without protection!
-	......
-[ 1001.499636] Pid: 6035, comm: qemu-system-x86 Not tainted 2.6.37-rc6+ #62
-[ 1001.499638] Call Trace:
-[ 1001.499644]  [] lockdep_rcu_dereference+0x9d/0xa5
-[ 1001.499653]  [] gfn_to_memslot+0x8d/0xc8 [kvm]
-[ 1001.499661]  [] gfn_to_hva+0x16/0x3f [kvm]
-[ 1001.499669]  [] kvm_read_guest_page+0x1e/0x5e [kvm]
-[ 1001.499681]  [] kvm_read_guest_page_mmu+0x53/0x5e [kvm]
-[ 1001.499699]  [] load_pdptrs+0x3f/0x9c [kvm]
-[ 1001.499705]  [] ? vmx_set_cr0+0x507/0x517 [kvm_intel]
-[ 1001.499717]  [] kvm_arch_vcpu_ioctl_set_sregs+0x1f3/0x3c0 [kvm]
-[ 1001.499727]  [] kvm_vcpu_ioctl+0x6a5/0xbc5 [kvm]
+On Tue, Jan 11, 2011 at 07:25:01PM -0800, Saravana Kannan wrote:
+> On 01/11/2011 06:35 AM, Jeremy Kerr wrote:
+> >Hi Paul,
+> >
+> >>Again, you are approaching it from the angle that an atomic clock is a
+> >>special requirement rather than the default behaviour.
+> >
+> >I'm not considering it a special requirement, but it's still a requirement
+> >(that the called function does not sleep).
+> >
+> >The problem with the inverse logic (clk_enable/clk_enable_sleepable) is that
+> >now you've made the caller need to know what kind of clock it has, or might
+> >have one day.
+> 
+> I think it's just a matter of how you interpret the name of the API
+> in English. It doesn't make the decision making of the developer any
+> easier.
+> 
+> Just having a _atomic suffix doesn't mean the driver developer
+> doesn't need to know what type of clock it is. They are still making
+> the assumption that the enable/disable for that clock can be done
+> atomically -- namely an "atomic clock".
+But there is a difference to 'one function to rule both sleepable and
+atomic clocks'.  When calling _atomic on a sleepable clock you get
+-ESOMETHING back (and the clock stays off).  With a generic clk_enable
+you get an oops and so cannot handle the error.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/kvm/x86.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+> Similarly, when a driver developer calls the _sleepable APIs in
+> their code, for all practical purposes, they are making an
+> assumption that the enable/disable for that clock *needs to* (not
+> may) sleep.
+IMHO this is not right.  If the driver developer doesn't care if the
+clock sleeps or not (which is the norm I think) he calls the _sleepable
+function and if the clock happen to be an atomic one it doesn't hurt
+him.
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index fa708c9..0b77e9c 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -5571,7 +5571,7 @@ int kvm_arch_vcpu_ioctl_set_sregs(struct kvm_vcpu *vcpu,
- 				  struct kvm_sregs *sregs)
- {
- 	int mmu_reset_needed = 0;
--	int pending_vec, max_bits;
-+	int pending_vec, max_bits, idx;
- 	struct desc_ptr dt;
- 
- 	dt.size = sregs->idt.limit;
-@@ -5600,10 +5600,13 @@ int kvm_arch_vcpu_ioctl_set_sregs(struct kvm_vcpu *vcpu,
- 	kvm_x86_ops->set_cr4(vcpu, sregs->cr4);
- 	if (sregs->cr4 & X86_CR4_OSXSAVE)
- 		update_cpuid(vcpu);
-+
-+	idx = srcu_read_lock(&vcpu->kvm->srcu);
- 	if (!is_long_mode(vcpu) && is_pae(vcpu)) {
- 		load_pdptrs(vcpu, vcpu->arch.walk_mmu, kvm_read_cr3(vcpu));
- 		mmu_reset_needed = 1;
- 	}
-+	srcu_read_unlock(&vcpu->kvm->srcu, idx);
- 
- 	if (mmu_reset_needed)
- 		kvm_mmu_reset_context(vcpu);
+And looking at the usage of the sleeping functions in the gpio API, I'd
+bet that at least 50% of the calls to gpio_set_value can/should be
+gpio_set_value_cansleep.  That's because driver developers don't care or
+are not aware of the issue.  If it would be gpio_set_value
+vs.gpio_set_value_atomic most developers would use the sleeping variant
+and the few that should use the _atomic function would notice that when
+seeing the corresponding oops.
+
+Best regards
+Uwe
+
 -- 
-1.7.3.4
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
