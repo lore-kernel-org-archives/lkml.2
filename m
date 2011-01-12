@@ -1,70 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab1ALJ0e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 04:26:34 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:58661 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756011Ab1ALJ02 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 04:26:28 -0500
-Date: Wed, 12 Jan 2011 14:56:24 +0530
-From: Bharata B Rao <bharata@linux.vnet.ibm.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Yong Zhang <yong.zhang0@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] Re: autogroup: sched_setscheduler() fails
-Message-ID: <20110112092624.GH2723@in.ibm.com>
-Reply-To: bharata@linux.vnet.ibm.com
-References: <1294657154.2016.459.camel@laptop>
- <1294677746.8345.4.camel@marge.simson.net>
- <20110111171046.GL4772@in.ibm.com>
- <1294771686.8006.15.camel@marge.simson.net>
- <20110112033709.GA2723@in.ibm.com>
- <AANLkTikFGqznUg7bzFckJy_x2mfBqE7PjaK2n83wLk6c@mail.gmail.com>
- <20110112063543.GD2723@in.ibm.com>
- <1294817081.8370.60.camel@marge.simson.net>
- <20110112080620.GG2723@in.ibm.com>
- <1294822039.8370.97.camel@marge.simson.net>
+	id S1755890Ab1ALJ2h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 04:28:37 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:56820 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752503Ab1ALJ2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 04:28:35 -0500
+Date: Wed, 12 Jan 2011 09:28:12 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        hughd@google.com
+Subject: Re: +
+	mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclai
+	m-avoid-a-potential-deadlock-due-to-lock_page-during-direct-compacti
+	on-fix.patch added to -mm tree
+Message-ID: <20110112092812.GH11932@csn.ul.ie>
+References: <201101112046.p0BKk2Js005902@imap1.linux-foundation.org> <alpine.DEB.2.00.1101111341590.7551@chino.kir.corp.google.com> <20110111135547.ce6c273c.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1294822039.8370.97.camel@marge.simson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110111135547.ce6c273c.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 09:47:19AM +0100, Mike Galbraith wrote:
-> On Wed, 2011-01-12 at 13:36 +0530, Bharata B Rao wrote:
-> > On Wed, Jan 12, 2011 at 08:24:41AM +0100, Mike Galbraith wrote:
+On Tue, Jan 11, 2011 at 01:55:47PM -0800, Andrew Morton wrote:
+> On Tue, 11 Jan 2011 13:43:06 -0800 (PST)
+> David Rientjes <rientjes@google.com> wrote:
 > 
-> > > Yes, it's supposed to be transparent to cgroups.
+> > On Tue, 11 Jan 2011, akpm@linux-foundation.org wrote:
 > > 
-> > If cgroups doesn't want that task and if its transparent to cgroups,
-> > why is it shown as part of /cgroups/tasks ? The task really doesn't
-> > belong in there. Its not on the runqueue of root_task_group.
+> > > diff -puN mm/page_alloc.c~mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclaim-avoid-a-potential-deadlock-due-to-lock_page-during-direct-compaction-fix mm/page_alloc.c
+> > > --- a/mm/page_alloc.c~mm-vmscan-reclaim-order-0-and-use-compaction-instead-of-lumpy-reclaim-avoid-a-potential-deadlock-due-to-lock_page-during-direct-compaction-fix
+> > > +++ a/mm/page_alloc.c
+> > > @@ -1815,15 +1815,15 @@ __alloc_pages_direct_compact(gfp_t gfp_m
+> > >  	int migratetype, unsigned long *did_some_progress)
+> > >  {
+> > >  	struct page *page;
+> > > -	struct task_struct *p = current;
+> > > +	struct task_struct *tsk = current;
+> > >  
+> > >  	if (!order || compaction_deferred(preferred_zone))
+> > >  		return NULL;
+> > >  
+> > > -	p->flags |= PF_MEMALLOC;
+> > > +	tsk->flags |= PF_MEMALLOC;
+> > >  	*did_some_progress = try_to_compact_pages(zonelist, order, gfp_mask,
+> > >  								nodemask);
+> > > -	p->flags &= ~PF_MEMALLOC;
+> > > +	tsk->flags &= ~PF_MEMALLOC;
+> > >  	if (*did_some_progress != COMPACT_SKIPPED) {
+> > >  
+> > >  		/* Page migration frees to the PCP lists but we want merging */
 > > 
-> > So basically I feel that a task consumed by autogroup shouldn't ideally be
-> > shown in root cgroup's tasks file.
+> > This could be done for all of the page allocator functions in 
+> > mm/page_alloc.c, I think it would be inconsistent and slightly harder to 
+> > read if it were done in only one.
 > 
-> >From cgroups' viewpoint, root is where it's at.  The task isn't consumed
-> by autogroup either, it's only borrowed until cgroups claims it.
+> Using "p" for any identifier which has less-than-teeny scope is plain
+> dumb.  It's meaningless and useless.
 > 
-> Would you prefer that when you mount /cgroups, you see a nearly empty
-> root task list because box was booted with autogroup enabled?
+> Anyway...
+> 
+> 
+> Subject: mm/page_alloc.c: don't cache `current' in a local
+> From: Andrew Morton <akpm@linux-foundation.org>
+> 
+> It's old-fashioned and unneeded.
+> 
+> akpm:/usr/src/25> size mm/page_alloc.o
+>    text    data     bss     dec     hex filename
+>   39884 1241317   18808 1300009  13d629 mm/page_alloc.o (before)
+>   39838 1241317   18808 1299963  13d5fb mm/page_alloc.o (after)
+> 
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Cc: Hugh Dickins <hughd@google.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
-If I had my way, I would say yes :) I would even say make autogroups visible
-so that we know exactly what it is. Let 'auto' in autogroups mean only
-'automatic' and not necessarily 'hidden'.
+Looks spot on. The slight text saving is a bonus and I imagine there are
+small savings on stack usage as well.
 
-> Should
-> tasks appear and disappear on the fly while you're watching?
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 
-Why would they unless we explicitly move them ?
-
-Anyway I guess you would have gone through these questions already.
-Thanks for patiently answering :)
-
-Regards,
-Bharata.
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
