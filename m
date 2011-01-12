@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756084Ab1ALUWp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 15:22:45 -0500
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:33213 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752263Ab1ALUWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 15:22:43 -0500
-Message-ID: <4D2E0D89.6030302@linux.vnet.ibm.com>
-Date: Wed, 12 Jan 2011 12:22:33 -0800
-From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1756134Ab1ALUXd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 15:23:33 -0500
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:43070 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752263Ab1ALUX3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 15:23:29 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: y3nm_CoVM1mkVWh368Y11oLZnIz9keSxyk6mhPB_xIMZqPK
+ AG.sAPGsOm9M9zJsE8eNr5ZyecCDNmlcHbGYF61CBWekpY_wPJjX0e3vVZ3M
+ bjlbqpOXKT12wz4NbijV6tf5Jh3OuDCEB5QftguLVyK4VCgdXXGWhofpnErk
+ i.WZNm4d9Fg_fb2eASekObdS0rd3xEcO2o3c2Xb.a8Ghye.3YOjvyW.4h0dO
+ QthVSHSQfT0Q8zGspbBCb.jFbYcihQyEoGJto7R9l4pPaE.y5gMZoTHBgJn0
+ aoMJb3VTT4EgiQQ9rVQgbZFMxJv8CpBvcwr1qTPIDRHxsQR4-
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 12 Jan 2011 14:23:25 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric B Munson <emunson@mgebm.net>
+cc: akpm@linux-foundation.org, linux-mm@kvack.org, mel@csn.ul.ie,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Rename struct task variables from p to tsk
+In-Reply-To: <20110112201602.GA25957@mgebm.net>
+Message-ID: <alpine.DEB.2.00.1101121421490.9271@router.home>
+References: <1294845571-11529-1-git-send-email-emunson@mgebm.net> <alpine.DEB.2.00.1101121205120.3053@router.home> <20110112201602.GA25957@mgebm.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmU=?= =?UTF-8?B?Y2tlcg==?= 
-	<fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu,
-        Robert Richter <robert.richter@amd.com>
-Subject: Re: [BUG] perf sched broken
-References: <AANLkTim=jawJyBj0iFd0r4-LCKzvjFW+NddzJMD5GUB9@mail.gmail.com> <4D2E0403.7080300@linux.vnet.ibm.com> <AANLkTimwyzFKanSCeki3HOS95-cwWqGCAssX31DNWD3p@mail.gmail.com>
-In-Reply-To: <AANLkTimwyzFKanSCeki3HOS95-cwWqGCAssX31DNWD3p@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2011 11:52 AM, Stephane Eranian wrote:
-> On Wed, Jan 12, 2011 at 8:41 PM, Corey Ashford
-> <cjashfor@linux.vnet.ibm.com>  wrote:
->> On 01/12/2011 01:29 AM, Stephane Eranian wrote:
->>>
->>> Hi,
->>>
->>> I am trying to use perf sched from tip-x86 but it fails for all my
->>> attempts.
->>
->> So far I have been unsuccessful in reproducing this problem, but I suspect
->> that I have the wrong git tree or branch.  The git tree I've cloned is:
->>
->> git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git
->>
-> I was using this branch.
-> I also tried running the tool on ubuntu lucid (2.6.32-based).
+On Wed, 12 Jan 2011, Eric B Munson wrote:
+
+> On Wed, 12 Jan 2011, Christoph Lameter wrote:
+> > Use t instead of p? Its a local variable after all.
 >
-> Didn't you have to at least fixup the sched event names to drop :r?
-> Once you have the perf.data file, how do you dump it?
->
-> I tried:
-> - perf sched trace ->  error
-> - perf sched replay ->  error
-> - perf script sched-migration  ->  hangs
-> - perf report -D
->
->> I've tried the branches master, x86/urgent, and x86-urgent-for-linus. All of
->> those produce correct results, as far as I can tell.
->>
->> Which tree / branch should I be using?
->>
->> - Corey
->>
+> I don't find t any more informative than p.  As a newcomer to most of this code
+> informative variable names, even for local variables, is a huge help.
 
-I made a stupid mistake!  When I ran perf, it was picking up the 
-executable from /usr/bin instead of the kernel build tree.
+Local variables are short because they are defined close to the point of
+use.
 
-I am seeing the problem you are reporting now.
+tsk is not that informative and the notion of a "task" can refer to
+various. However, when I see
 
-Thanks for your patience,
+	struct task_struct *t;
 
-- Corey
+I know what it refers to.
+
