@@ -1,79 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932801Ab1ALDZJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 22:25:09 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:45963 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932675Ab1ALDZH (ORCPT
+	id S932807Ab1ALD14 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 22:27:56 -0500
+Received: from fed1rmmtai114.cox.net ([68.230.241.46]:43484 "EHLO
+	fed1rmmtai114.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932675Ab1ALD1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 22:25:07 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6223"; a="70134196"
-Message-ID: <4D2D1F0D.5040208@codeaurora.org>
-Date: Tue, 11 Jan 2011 19:25:01 -0800
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Tue, 11 Jan 2011 22:27:54 -0500
+X-Greylist: delayed 1227 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Jan 2011 22:27:54 EST
+X-VR-Score: 30.00
+X-Authority-Analysis: v=1.1 cv=3z1fhageN2+f9LVFv+eTkysbyEqTX/pUW0tQ4wyK9Sw=
+ c=1 sm=1 a=jJ86v2Oqct8A:10 a=KIQAD876q5EA:10 a=IkcTkHD0fZMA:10
+ a=+pt2w8FpKSWOboaQitCicw==:17 a=yXdhJuLYAAAA:8 a=4fPSl_YANdAXJaljN4wA:9
+ a=2ov_Ilwa0H8icnbzAgIA6mDDMj4A:4 a=QEXdDO2ut3YA:10 a=kaBRYbdxzk8A:10
+ a=ZjkpAfhr0Por_Y3t:21 a=FF52la6iluzh3Exz:21 a=+pt2w8FpKSWOboaQitCicw==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Message-ID: <20110111220726.9LT4I.770294.imail@fed1rmwml37>
+Date: Tue, 11 Jan 2011 19:07:26 -0800
+From: <fishadams1@cox.net>
+Reply-To: mrmorganoxfam@algish.com
+Subject: Award Prize
 MIME-Version: 1.0
-To: Jeremy Kerr <jeremy.kerr@canonical.com>
-CC: Paul Mundt <lethal@linux-sh.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-sh@vger.kernel.org, Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Locking in the clk API
-References: <201101111016.42819.jeremy.kerr@canonical.com>	<201101111830.18597.jeremy.kerr@canonical.com>	<20110111121816.GB774@linux-sh.org> <201101112235.43061.jeremy.kerr@canonical.com>
-In-Reply-To: <201101112235.43061.jeremy.kerr@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2011 06:35 AM, Jeremy Kerr wrote:
-> Hi Paul,
->
->> Again, you are approaching it from the angle that an atomic clock is a
->> special requirement rather than the default behaviour.
->
-> I'm not considering it a special requirement, but it's still a requirement
-> (that the called function does not sleep).
->
-> The problem with the inverse logic (clk_enable/clk_enable_sleepable) is that
-> now you've made the caller need to know what kind of clock it has, or might
-> have one day.
-
-I think it's just a matter of how you interpret the name of the API in 
-English. It doesn't make the decision making of the developer any easier.
-
-Just having a _atomic suffix doesn't mean the driver developer doesn't 
-need to know what type of clock it is. They are still making the 
-assumption that the enable/disable for that clock can be done atomically 
--- namely an "atomic clock".
-
-Similarly, when a driver developer calls the _sleepable APIs in their 
-code, for all practical purposes, they are making an assumption that the 
-enable/disable for that clock *needs to* (not may) sleep.
-
->   * For clk_enable/clk_enable_atomic, the decision is: is this call in an
->     atomic context?
->
->   * For clk_enable/clk_enable_sleepable, the decision is: might the clock code
->     have given us a sleeping clock?
-
-Having said the above, I'm slightly leaning towards 
-clk_enable/disable_atomic since it lines up with the 
-.suspend/.suspend_noirq functions in pm_ops.
-
-Also, since it's good to reduce the amount of work that needs to be done 
-atomically, I think it would be good to make a developer explicitly 
-state they need _atomic functions and make them think about if they 
-really need to do that.
-
--Saravana
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Uk  Oxfam awarded the sum of Eight Hundred
+and fifty thousand   to you in the January promo
+you are to,send us Your Names Tel Country.
+for claims.via mrmorganoxfam@algish.com
