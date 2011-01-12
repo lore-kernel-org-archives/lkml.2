@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078Ab1ALPf5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 10:35:57 -0500
-Received: from kroah.org ([198.145.64.141]:40117 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754838Ab1ALPfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 10:35:53 -0500
-Date: Tue, 11 Jan 2011 21:07:59 -0800
-From: Greg KH <greg@kroah.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC PATCH] x86: Add safe_udelay() and safe_msleep()
-Message-ID: <20110112050759.GA18279@kroah.com>
-References: <4D2BAA75.60001@kernel.org>
- <20110111010714.GB32585@kroah.com>
- <4D2BB048.2050509@kernel.org>
- <1294723290.17779.349.camel@pasglop>
- <4D2BF9F3.5080709@kernel.org>
- <1294731467.17779.352.camel@pasglop>
- <AANLkTika_bZxXO3PKek+BHoYqgYGPBPER-H9KJJXjJzn@mail.gmail.com>
- <20110111135655.GA6901@kroah.com>
- <4D2CFEAD.6070206@kernel.org>
- <1294799565.9586.13.camel@pasglop>
+	id S1754963Ab1ALPkV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 10:40:21 -0500
+Received: from casper.infradead.org ([85.118.1.10]:42152 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276Ab1ALPkT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 10:40:19 -0500
+Date: Wed, 12 Jan 2011 15:40:16 +0000 (GMT)
+From: James Simmons <jsimmons@infradead.org>
+To: Anca Emanuel <anca.emanuel@gmail.com>
+cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Dave Airlie <airlied@linux.ie>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [git pull] drm for rc1
+In-Reply-To: <AANLkTik=HYzW8--_W+qxi8S9QbAkf9ZZy=uLyaTeV+PC@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1101121538470.8212@casper.infradead.org>
+References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie> <4D2CE5C8.60601@de.ibm.com> <AANLkTimr4WX3Ay8vC23MKOM+dOcpV+Ca5rg_gcei38nk@mail.gmail.com> <4D2D8ED0.6080807@de.ibm.com> <AANLkTik4h=4o8JEwfd+=CFVb4NgkwaEwxmM6n_+sDj3K@mail.gmail.com>
+ <alpine.LFD.2.00.1101121344070.8212@casper.infradead.org> <AANLkTimdnYHWfBE1nB+2EDRouO7_FoRByVboMYw8WaHB@mail.gmail.com> <AANLkTik=HYzW8--_W+qxi8S9QbAkf9ZZy=uLyaTeV+PC@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294799565.9586.13.camel@pasglop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 01:32:45PM +1100, Benjamin Herrenschmidt wrote:
-> On Tue, 2011-01-11 at 17:06 -0800, Yinghai Lu wrote:
-> > We need to use those function in early-quirk stage with code that is shared with
-> > later stage.
-> > 
-> > for x86, normal udelay() will need to wait per_cpu(cpu_info) is allocated... that i
-> > after smp_prepare_cpus(), because it need to use percpu.loops_per_jiffy.
-> > 
-> > Also msleep() will need to wait schedular is ready.
-> > 
-> > Try to have one early version udelay that use loops_per_jiffy directly.
-> > and early msleep is just early delay.
-> > 
-> > This patch will set safe_udelay to early in x86 early arch code, and then init/main.c
-> > will set them back.
+
+> >>> I tested the revert: the boot screen did change the resolution
+> >>> (without it don't), but my PC still hangs. (using an nvidia 8800GT).
+> >>
+> >> Try my most recent patch. Where does it hang at? Any logs?
+> >>
+> >
+> > With your patch, I can boot the system. But nouveau is not loaded.
+> > dmesg attached.
+> >
 > 
-> I still think it's better to just make msleep() work with and without
-> scheduler and avoid having to bother with a new API
+> Forget to mention: the revert makes first steps of boot look the same
+> (change the resolution of the text)
+> but with your patch, I see a big ugly ununtu logo, (I think that is
+> because nouveau is not loaded)
 
-I agree, this patch just makes things really complicated for no reason.
+Is nouveau a module? Does X run? From my understanding is the xorg driver 
+need KMS to run. I didn't see nouveau at all in your dmesg.
 
-Again, I still fail to see why you are doing this patch series in the
-first place...
-
-thanks,
-
-greg k-h
