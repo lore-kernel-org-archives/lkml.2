@@ -1,106 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab1ALIlH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 03:41:07 -0500
-Received: from verro.fugedabout.it ([78.46.95.7]:32917 "EHLO
-	verro.fugedabout.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122Ab1ALIlE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 03:41:04 -0500
-From: "Fabio M. Di Nitto" <fabbione@fabbione.net>
-To: Randy Dunlap <rdunlap@xenotime.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
-        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung@gmail.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Daid Miller <davem@davemloft.net>,
-        "Fabio M. Di Nitto" <fdinitto@redhat.com>,
-        "Fabio M. Di Nitto" <fabbione@fabbione.net>
-Subject: [PATCH] console: allow to retain boot console via boot option keep_bootcon
-Date: Wed, 12 Jan 2011 09:40:24 +0100
-Message-Id: <1294821624-24544-1-git-send-email-fabbione@fabbione.net>
-X-Mailer: git-send-email 1.7.3.4
+	id S1755589Ab1ALIr0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 03:47:26 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:55363 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1754758Ab1ALIrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 03:47:24 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+bR9x+wZ6bn7uKNpWC52YxnT0oN2uq8PF94Wn2LV
+	4ZkiQyu/dser3f
+Subject: Re: [patch] Re: autogroup: sched_setscheduler() fails
+From: Mike Galbraith <efault@gmx.de>
+To: bharata@linux.vnet.ibm.com
+Cc: Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110112080620.GG2723@in.ibm.com>
+References: <20110110091622.GF2772@in.ibm.com>
+	 <1294655388.8197.22.camel@marge.simson.net>
+	 <1294657154.2016.459.camel@laptop>
+	 <1294677746.8345.4.camel@marge.simson.net>
+	 <20110111171046.GL4772@in.ibm.com>
+	 <1294771686.8006.15.camel@marge.simson.net>
+	 <20110112033709.GA2723@in.ibm.com>
+	 <AANLkTikFGqznUg7bzFckJy_x2mfBqE7PjaK2n83wLk6c@mail.gmail.com>
+	 <20110112063543.GD2723@in.ibm.com>
+	 <1294817081.8370.60.camel@marge.simson.net>
+	 <20110112080620.GG2723@in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 Jan 2011 09:47:19 +0100
+Message-ID: <1294822039.8370.97.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio M. Di Nitto <fdinitto@redhat.com>
+On Wed, 2011-01-12 at 13:36 +0530, Bharata B Rao wrote:
+> On Wed, Jan 12, 2011 at 08:24:41AM +0100, Mike Galbraith wrote:
 
-On some architectures, the boot process involves de-registering the boot
-console (early boot), initialize drivers and then re-register the console.
+> > Yes, it's supposed to be transparent to cgroups.
+> 
+> If cgroups doesn't want that task and if its transparent to cgroups,
+> why is it shown as part of /cgroups/tasks ? The task really doesn't
+> belong in there. Its not on the runqueue of root_task_group.
+> 
+> So basically I feel that a task consumed by autogroup shouldn't ideally be
+> shown in root cgroup's tasks file.
 
-This mechanism introduces a window in which no printk can happen on the console
-and messages are buffered and then printed once the new console is available.
+>From cgroups' viewpoint, root is where it's at.  The task isn't consumed
+by autogroup either, it's only borrowed until cgroups claims it.
 
-If a kernel crashes during this window, all it's left on the boot console
-is "console [foo] enabled, bootconsole disabled" making debug of the crash
-rather 'interesting'.
+Would you prefer that when you mount /cgroups, you see a nearly empty
+root task list because box was booted with autogroup enabled?  Should
+tasks appear and disappear on the fly while you're watching?
 
-By adding "keep_bootcon" option, do not unregister the boot console, that
-will allow to printk everything that is happening up to the crash.
+The goal is peaceful coexistence.  The user can turn either or both both
+on/off at his/her whim.
 
-The option is clearly meant only for debugging purposes as it introduces lots
-of duplicated info printed on console, but will make bug report from users
-easier as it doesn't require a kernel build just to figure out where we crash.
-
-Signed-off-by: Fabio M. Di Nitto <fabbione@fabbione.net>
-Acked-by: David S. Miller <davem@davemloft.net>
----
- Documentation/kernel-parameters.txt |    6 ++++++
- kernel/printk.c                     |   16 +++++++++++++++-
- 2 files changed, 21 insertions(+), 1 deletions(-)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index ed3708f..824642c 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -869,6 +869,12 @@ and is between 256 and 4096 characters. It is defined in the file
- 			       If specified, z/VM IUCV HVC accepts connections
- 			       from listed z/VM user IDs only.
- 
-+	keep_bootcon	[KNL]
-+			Do not unregister boot console at start. This is only
-+			useful for debugging when something happens in the window
-+			between unregistering the boot console and initializing
-+			the real console.
-+
- 	i2c_bus=	[HW] Override the default board specific I2C bus speed
- 			     or register an additional I2C bus that is not
- 			     registered from board initialization code.
-diff --git a/kernel/printk.c b/kernel/printk.c
-index f64b899..c952eb2 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -1221,6 +1221,18 @@ void console_start(struct console *console)
- }
- EXPORT_SYMBOL(console_start);
- 
-+static int __read_mostly keep_bootcon;
-+
-+static int __init keep_bootcon_setup(char *str)
-+{
-+	keep_bootcon = 1;
-+	printk(KERN_INFO "debug: skip boot console de-registration.\n");
-+
-+	return 0;
-+}
-+
-+early_param("keep_bootcon", keep_bootcon_setup);
-+
- /*
-  * The console driver calls this routine during kernel initialization
-  * to register the console printing procedure with printk() and to
-@@ -1368,7 +1380,9 @@ void register_console(struct console *newcon)
- 	 * users know there might be something in the kernel's log buffer that
- 	 * went to the bootconsole (that they do not see on the real console)
- 	 */
--	if (bcon && ((newcon->flags & (CON_CONSDEV | CON_BOOT)) == CON_CONSDEV)) {
-+	if (bcon &&
-+	    ((newcon->flags & (CON_CONSDEV | CON_BOOT)) == CON_CONSDEV) &&
-+	    !keep_bootcon) {
- 		/* we need to iterate through twice, to make sure we print
- 		 * everything out, before we unregister the console(s)
- 		 */
--- 
-1.7.3.4
+	-Mike
 
