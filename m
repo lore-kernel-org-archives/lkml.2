@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859Ab1ALIEK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 03:04:10 -0500
-Received: from vms173017pub.verizon.net ([206.46.173.17]:51972 "EHLO
-	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754898Ab1ALIEI (ORCPT
+	id S932195Ab1ALIGX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 03:06:23 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:50414 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755559Ab1ALIGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 03:04:08 -0500
-Date: Wed, 12 Jan 2011 03:04:03 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Thomas Renninger <trenn@suse.de>
-Cc: linux-perf-users@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        arjan@linux.intel.com, j-pihet@ti.com, linux-acpi@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] cpuidle: CPUIDLE_FLAG_CHECK_BM is omap3_idle specific
-In-reply-to: <alpine.LFD.2.02.1101120301530.19140@x980>
-Message-id: <alpine.LFD.2.02.1101120303160.19140@x980>
-References: <1294396190-23031-1-git-send-email-trenn@suse.de>
- <1294396190-23031-6-git-send-email-trenn@suse.de>
- <alpine.LFD.2.02.1101120159400.19140@x980>
- <alpine.LFD.2.02.1101120229060.19140@x980>
- <alpine.LFD.2.02.1101120235390.19140@x980>
- <alpine.LFD.2.02.1101120258550.19140@x980>
- <alpine.LFD.2.02.1101120301530.19140@x980>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 12 Jan 2011 03:06:21 -0500
+Date: Wed, 12 Jan 2011 13:36:20 +0530
+From: Bharata B Rao <bharata@linux.vnet.ibm.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] Re: autogroup: sched_setscheduler() fails
+Message-ID: <20110112080620.GG2723@in.ibm.com>
+Reply-To: bharata@linux.vnet.ibm.com
+References: <20110110091622.GF2772@in.ibm.com>
+ <1294655388.8197.22.camel@marge.simson.net>
+ <1294657154.2016.459.camel@laptop>
+ <1294677746.8345.4.camel@marge.simson.net>
+ <20110111171046.GL4772@in.ibm.com>
+ <1294771686.8006.15.camel@marge.simson.net>
+ <20110112033709.GA2723@in.ibm.com>
+ <AANLkTikFGqznUg7bzFckJy_x2mfBqE7PjaK2n83wLk6c@mail.gmail.com>
+ <20110112063543.GD2723@in.ibm.com>
+ <1294817081.8370.60.camel@marge.simson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294817081.8370.60.camel@marge.simson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Len Brown <len.brown@intel.com>
+On Wed, Jan 12, 2011 at 08:24:41AM +0100, Mike Galbraith wrote:
+> On Wed, 2011-01-12 at 12:05 +0530, Bharata B Rao wrote:
+> > On Wed, Jan 12, 2011 at 01:40:32PM +0800, Yong Zhang wrote:
+> 
+> > > IMHO, task->cgroups will not change when autogroup take effect.
+> > 
+> > Yes and I believe this is cause for some of the weird semantics I see
+> > with autogroup and cgroups. I am not sure if this has already been
+> > discussed ealier, may be I need to go back and check the archives, but
+> > consider this:
+> > 
+> > I have cpu cgroup mounted at /cgroup and see that all the tasks in the
+> > system are listed in /cgroup/tasks file.
+> > 
+> > Now I start a task like this:
+> > 
+> > # ./while1 &
+> > [1] 2761
+> > 
+> > and see that this task belongs to root cgroup.
+> 
+> Yes, cgroups sees cgroup associations, not autogroup associations.
+> 
+> > # grep 2761 /cgroup/tasks
+> > 2671
+> > 
+> > But we know that this task really belongs to an autogroup and is not
+> > sitting directly on root_task_group.
+> 
+> Yup, cgroups doesn't want it, so autogroup (if enabled) claims it.
+> 
+> > # cat /proc/2761/autogroup 
+> > /autogroup-49 nice 0
+> > 
+> > So we have a task in an autogroup (which is a sub group of root_task_group)
+> > but is being shown as part of root_task_group. Is this by design ?
+> 
+> Yes, it's supposed to be transparent to cgroups.
 
-Signed-off-by: Len Brown <len.brown@intel.com>
----
- arch/arm/mach-omap2/cpuidle34xx.c |    2 ++
- include/linux/cpuidle.h           |    1 -
- 2 files changed, 2 insertions(+), 1 deletions(-)
+If cgroups doesn't want that task and if its transparent to cgroups,
+why is it shown as part of /cgroups/tasks ? The task really doesn't
+belong in there. Its not on the runqueue of root_task_group.
 
-diff --git a/arch/arm/mach-omap2/cpuidle34xx.c b/arch/arm/mach-omap2/cpuidle34xx.c
-index 0d50b45..f9be4e3 100644
---- a/arch/arm/mach-omap2/cpuidle34xx.c
-+++ b/arch/arm/mach-omap2/cpuidle34xx.c
-@@ -47,6 +47,8 @@
- 
- #define OMAP3_STATE_MAX OMAP3_STATE_C7
- 
-+#define CPUIDLE_FLAG_CHECK_BM	0x10000	/* use omap3_enter_idle_bm() */
-+
- struct omap3_processor_cx {
- 	u8 valid;
- 	u8 type;
-diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-index 6be722c..36719ea 100644
---- a/include/linux/cpuidle.h
-+++ b/include/linux/cpuidle.h
-@@ -47,7 +47,6 @@ struct cpuidle_state {
- 
- /* Idle State Flags */
- #define CPUIDLE_FLAG_TIME_VALID	(0x01) /* is residency time measurable? */
--#define CPUIDLE_FLAG_CHECK_BM	(0x02) /* BM activity will exit state */
- #define CPUIDLE_FLAG_IGNORE	(0x100) /* ignore during this idle period */
- 
- #define CPUIDLE_DRIVER_FLAGS_MASK (0xFFFF0000)
--- 
-1.7.4.rc1.7.g2cf08
+So basically I feel that a task consumed by autogroup shouldn't ideally be
+shown in root cgroup's tasks file.
 
-
+Regards,
+Bharata.
