@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236Ab1ALUyK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 15:54:10 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53764 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756020Ab1ALUyI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 15:54:08 -0500
-MIME-Version: 1.0
-In-Reply-To: <4D2E1010.4080706@redhat.com>
-References: <4D2ACFA7.6000502@redhat.com> <AANLkTimOOUjXa7WCTirHRrrLfiev4T9iD7spb2VrB_ET@mail.gmail.com>
- <4D2C21FE.3000406@redhat.com> <4D2E1010.4080706@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 12 Jan 2011 12:53:14 -0800
-Message-ID: <AANLkTimLJnV9oJwnaN+jdvNus4cxuqvgUqHUwi7vpqBe@mail.gmail.com>
-Subject: Re: [GIT PULL] KVM updates for the 2.6.38 merge window
-To: Rik van Riel <riel@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=000325575c96fdc4e30499ac64d2
+	id S1756383Ab1ALUz3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 15:55:29 -0500
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:52357 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756070Ab1ALUz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 15:55:27 -0500
+Subject: Re: [PATCH V8 02/13] ntp: add ADJ_SETOFFSET mode bit
+From: john stultz <johnstul@us.ibm.com>
+To: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
+Cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <AANLkTikYuYwb4BLsU3BF_=d9fAdcfb0AC2itDBeyFsNq@mail.gmail.com>
+References: <cover.1293820862.git.richard.cochran@omicron.at>
+	 <fe2bec763bec155381d62721aa9da84aeca2785c.1293820862.git.richard.cochran@omicron.at>
+	 <AANLkTini2WdT-1v4k9V3JOZYDkA59P+SyscTe8-fK2Wk@mail.gmail.com>
+	 <20110108175028.GA22308@riccoc20.at.omicron.at>
+	 <AANLkTikigXGSACF6R6kfNHyKZ7GFWrUrCMxygvL3fUC6@mail.gmail.com>
+	 <1294678145.3068.6.camel@work-vm>
+	 <AANLkTikdg4Pb5c4wcCU3d3Eku=mpiW_TEkBz0A2VPdVp@mail.gmail.com>
+	 <1294693597.3068.12.camel@work-vm>
+	 <AANLkTik+2udoJ6JyZMhkd1yhr2W9hSWO_vD_zdm+BoOG@mail.gmail.com>
+	 <1294779309.3441.66.camel@work-vm>
+	 <AANLkTikYuYwb4BLsU3BF_=d9fAdcfb0AC2itDBeyFsNq@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 Jan 2011 12:55:17 -0800
+Message-ID: <1294865717.7696.17.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000325575c96fdc4e30499ac64d2
-Content-Type: text/plain; charset=ISO-8859-1
+On Thu, 2011-01-13 at 05:39 +0900, Kuwahara,T. wrote:
+> On Wed, Jan 12, 2011 at 5:55 AM, john stultz <johnstul@us.ibm.com> wrote:
+> > So the kernel handles leap second insertion via a timer. Thus at the end
+> > of 23:59:59, it will inject a leapsecond by setting the time back by one
+> > second (back to 23:59:59) and setting the TIME_OOP flag.
+> >
+> > This timer is an absolute timer, so if someone moves the clock forward
+> > across the 23:59:59 boundary, the adjustment will still be made.
+> >
+> > The patch is not broken, nor useless.
+> 
+> It takes into account only one upcoming leap second, but ignores all
+> the others.  That's not sufficient for arbitrary adjustments.
 
-On Wed, Jan 12, 2011 at 12:33 PM, Rik van Riel <riel@redhat.com> wrote:
->
-> Now that we have FAULT_FLAG_ALLOW_RETRY, the async
-> pagefault patches can be a little smaller.
+If an application wants to manage the full historical table of
+leapseconds and compensate appropriately, then that's fine. The
+interface proposed still functions in a reasonable manner.
 
-I suspect you do still want a new page flag, to say that
-FAULT_FLAG_ALLOW_RETRY shouldn't actually wait for the page that it
-allows retry for.
+Again, I agree that leapseconds are annoying to deal with. It would be
+great if time() was defined as TAI time instead of UTC. I'm actually
+hoping to provide a CLOCK_TAI clockid someday.
 
-But even then, that flag should not be named "MINOR", it should be
-about what the behaviour is actually all about ("NOWAIT_RETRY" or
-whatever - it presumably would also cause us to not drop the
-mmap_sem).
+thanks
+-john
 
-IOW, these days I suspect the patch _should_ look something like the attached.
 
-Anyway, with this, you should be able to use
-
-  FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_RETRY_NOWAIT
-
-to basically get a non-waiting page fault (and it will return the
-VM_FAULT_RETRY error code if it failed).
-
-NOTE! TOTALLY UNTESTED!
-
-                       Linus
-
---000325575c96fdc4e30499ac64d2
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_giupg9oa0
-
-IGluY2x1ZGUvbGludXgvbW0uaCB8ICAgIDEgKwogbW0vZmlsZW1hcC5jICAgICAgIHwgICAgNiAr
-KysrLS0KIDIgZmlsZXMgY2hhbmdlZCwgNSBpbnNlcnRpb25zKCspLCAyIGRlbGV0aW9ucygtKQoK
-ZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgvbW0uaCBiL2luY2x1ZGUvbGludXgvbW0uaAppbmRl
-eCA3MjFmNDUxLi5kYzgzNTY1IDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4L21tLmgKKysrIGIv
-aW5jbHVkZS9saW51eC9tbS5oCkBAIC0xNDUsNiArMTQ1LDcgQEAgZXh0ZXJuIHBncHJvdF90IHBy
-b3RlY3Rpb25fbWFwWzE2XTsKICNkZWZpbmUgRkFVTFRfRkxBR19OT05MSU5FQVIJMHgwMgkvKiBG
-YXVsdCB3YXMgdmlhIGEgbm9ubGluZWFyIG1hcHBpbmcgKi8KICNkZWZpbmUgRkFVTFRfRkxBR19N
-S1dSSVRFCTB4MDQJLyogRmF1bHQgd2FzIG1rd3JpdGUgb2YgZXhpc3RpbmcgcHRlICovCiAjZGVm
-aW5lIEZBVUxUX0ZMQUdfQUxMT1dfUkVUUlkJMHgwOAkvKiBSZXRyeSBmYXVsdCBpZiBibG9ja2lu
-ZyAqLworI2RlZmluZSBGQVVMVF9GTEFHX1JFVFJZX05PV0FJVAkweDEwCS8qIERvbid0IGRyb3Ag
-bW1hcF9zZW0gYW5kIHdhaXQgd2hlbiByZXRyeWluZyAqLwogCiAvKgogICogVGhpcyBpbnRlcmZh
-Y2UgaXMgdXNlZCBieSB4ODYgUEFUIGNvZGUgdG8gaWRlbnRpZnkgYSBwZm4gbWFwcGluZyB0aGF0
-IGlzCmRpZmYgLS1naXQgYS9tbS9maWxlbWFwLmMgYi9tbS9maWxlbWFwLmMKaW5kZXggY2EzODkz
-OS4uMTBlZWNmNyAxMDA2NDQKLS0tIGEvbW0vZmlsZW1hcC5jCisrKyBiL21tL2ZpbGVtYXAuYwpA
-QCAtNjIxLDggKzYyMSwxMCBAQCBpbnQgX19sb2NrX3BhZ2Vfb3JfcmV0cnkoc3RydWN0IHBhZ2Ug
-KnBhZ2UsIHN0cnVjdCBtbV9zdHJ1Y3QgKm1tLAogCQlfX2xvY2tfcGFnZShwYWdlKTsKIAkJcmV0
-dXJuIDE7CiAJfSBlbHNlIHsKLQkJdXBfcmVhZCgmbW0tPm1tYXBfc2VtKTsKLQkJd2FpdF9vbl9w
-YWdlX2xvY2tlZChwYWdlKTsKKwkJaWYgKCEoZmxhZ3MgJiBGQVVMVF9GTEFHX1JFVFJZX05PV0FJ
-VCkpIHsKKwkJCXVwX3JlYWQoJm1tLT5tbWFwX3NlbSk7CisJCQl3YWl0X29uX3BhZ2VfbG9ja2Vk
-KHBhZ2UpOworCQl9CiAJCXJldHVybiAwOwogCX0KIH0K
---000325575c96fdc4e30499ac64d2--
