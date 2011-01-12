@@ -1,54 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083Ab1ALRNA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 12:13:00 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37747 "EHLO
+	id S1754864Ab1ALRRH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 12:17:07 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49798 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343Ab1ALRM4 (ORCPT
+	with ESMTP id S1752673Ab1ALRRF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 12:12:56 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=u3MUJo11JNa0O+KGRHoTtn6lQhfUfqzN68b8tpnnjhuVsMwndfmHkzZQ8PlGsIYp2m
-         S1sZTOeM/dCDGqL30aFDq5YI6Jb41Pj+QvMEoxwLmJ7h9nZ/3rdeJZ7kaIlDKRYq2ibS
-         HUxMR1alpRtBnV2ZdRct0exoEBBmSVSgXaS1c=
+	Wed, 12 Jan 2011 12:17:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <20110111224809.GA20839@aftab>
-References: <43835.148.87.67.136.1294700112.squirrel@xenotime.net>
-	<1294700597-24239-1-git-send-email-mikew@google.com>
-	<20110111065540.GA16036@aftab>
-	<AANLkTimXfUH-PYpdRcLR4+QkG7uOzYzSC6VZ6HnkB9jE@mail.gmail.com>
-	<20110111204909.GE17619@aftab>
-	<AANLkTimQNnxnoFPWjh6cHp_x9ZayDdcXdV+qbee8XK_r@mail.gmail.com>
-	<20110111224809.GA20839@aftab>
-Date: Wed, 12 Jan 2011 09:12:56 -0800
-X-Google-Sender-Auth: ULfOWQ-_QPRQZwjum--atVrlsVU
-Message-ID: <AANLkTinSzLzTK+39hemOuPfWhCXmnY2jj_E8XDNo7ouH@mail.gmail.com>
-Subject: Re: [PATCH] x86: Add an option to disable decoding of MCE
-From: Tony Luck <tony.luck@intel.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Mike Waychison <mikew@google.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Duncan Laurie <dlaurie@google.com>
+In-Reply-To: <alpine.LFD.2.00.1101121145430.24532@xanadu.home>
+References: <20110111015409.18291.87166.stgit@localhost6.localdomain6>
+ <20110111104051.GA11039@n2100.arm.linux.org.uk> <20110111153630.GB2707@angua.secretlab.ca>
+ <20110111154833.GF11039@n2100.arm.linux.org.uk> <AANLkTi=29LB66j123ufMHQk=46hGYdmR4nZZQFnN=Tku@mail.gmail.com>
+ <20110112155215.GB11039@n2100.arm.linux.org.uk> <AANLkTinwGd9pa7YQ=5hXfarw=MB=YdpBuN7xJAd+Ps4f@mail.gmail.com>
+ <alpine.LFD.2.00.1101121145430.24532@xanadu.home>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 12 Jan 2011 10:16:44 -0700
+X-Google-Sender-Auth: DFtZma-i8QFRZ19Rm69nK_nYkac
+Message-ID: <AANLkTinPibTVUu2zoMbDYnSWXGvB6dVjCp54DoN9S1p3@mail.gmail.com>
+Subject: Re: [RFC] arm: Defer lookup of machine_type and vet of atags to setup.c
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 2:48 PM, Borislav Petkov <bp@amd64.org> wrote:
-> True, although not always reliable due to that context corruption. Tony
-> Luck is adding code for writing the error information to a persistent
-> storage _before_ you reset so on platforms with such a device you'll
-> be able to look at MC4 (or any of the MCE regs, for that matter) after
-> reset, which, I think, would make error analysis much more convenient.
-> See http://marc.info/?l=linux-arch&m=129356804427008&w=2.
+On Wed, Jan 12, 2011 at 9:53 AM, Nicolas Pitre <nico@fluxnic.net> wrote:
+> On Wed, 12 Jan 2011, Grant Likely wrote:
+>
+>> Actually it looks like the real problem is that the mmu has been
+>> turned on, but the virtual mappings for devices have not yet been
+>> established, and so the debug macros aren't using a valid address.
+>
+> A temporary virtual mapping should be there -- look for addruart in
+> head.S.
 
-This code is also in linux-next (any next-2011* tag).  I'd be very happy
-to get some testing reports, feedback on the code, etc.
+Hi Russell and Nicolas,
 
--Tony
+Oops, yes all the early debug stuff works fine.  Stupid human trick on
+my end, but I've sorted it out now.  Thanks for the help.  I'll have
+patches to post later today.
+
+g.
+
+>
+>> I'm using printk to get output into the ring buffer in my patch to
+>> rework lookup_machine_type() in C, and that does indeed output to the
+>> ring buffer, but the kernel cannot spit stuff out the serial port.
+>>
+>> It looks like I'd need to get past paging_init() in order to get
+>> ll_debug working between turning on the mmu and paging_init(), but
+>> paging_init() needs the mdesc pointer, and the whole point of the
+>> error message is that the mdesc pointer is unknown!  I don't see any
+>> code that sets up a debug mapping of the uart before paging_init time.
+>
+> See above.
+>
+>>  I could try to implement something like that, but it is looking to be
+>> more complicated than it is worth when the current code works just
+>> fine.
+>
+> My bet is that there is a bug with the current code that you are
+> exposing.
+>
+>> Let me know if I've missed something, but I think I should drop the
+>> removal of __lookup_machine_type from head.S from my patch.
+>
+> It's not the location of that code which is a problem.  Even if you
+> leave that code in place, you want to call it later and I bet that the
+> display would be broken even if __lookup_machine_type doesn't move.
+>
+>
+> Nicolas
+>
+
+
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
