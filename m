@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab1ALRHd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 12:07:33 -0500
-Received: from casper.infradead.org ([85.118.1.10]:59338 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755335Ab1ALRHa (ORCPT
+	id S1754083Ab1ALRNA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 12:13:00 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37747 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343Ab1ALRM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 12:07:30 -0500
-Date: Wed, 12 Jan 2011 15:07:17 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Kirill Smelkov <kirr@mns.spb.ru>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: Q: perf log mode?
-Message-ID: <20110112170716.GB24598@ghostprotocols.net>
-References: <20110112140613.GA11698@tugrik.mns.mnsspb.ru>
- <20110112152112.GE11968@ghostprotocols.net>
- <20110112163131.GA2924@tugrik.mns.mnsspb.ru>
+	Wed, 12 Jan 2011 12:12:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=u3MUJo11JNa0O+KGRHoTtn6lQhfUfqzN68b8tpnnjhuVsMwndfmHkzZQ8PlGsIYp2m
+         S1sZTOeM/dCDGqL30aFDq5YI6Jb41Pj+QvMEoxwLmJ7h9nZ/3rdeJZ7kaIlDKRYq2ibS
+         HUxMR1alpRtBnV2ZdRct0exoEBBmSVSgXaS1c=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110112163131.GA2924@tugrik.mns.mnsspb.ru>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20110111224809.GA20839@aftab>
+References: <43835.148.87.67.136.1294700112.squirrel@xenotime.net>
+	<1294700597-24239-1-git-send-email-mikew@google.com>
+	<20110111065540.GA16036@aftab>
+	<AANLkTimXfUH-PYpdRcLR4+QkG7uOzYzSC6VZ6HnkB9jE@mail.gmail.com>
+	<20110111204909.GE17619@aftab>
+	<AANLkTimQNnxnoFPWjh6cHp_x9ZayDdcXdV+qbee8XK_r@mail.gmail.com>
+	<20110111224809.GA20839@aftab>
+Date: Wed, 12 Jan 2011 09:12:56 -0800
+X-Google-Sender-Auth: ULfOWQ-_QPRQZwjum--atVrlsVU
+Message-ID: <AANLkTinSzLzTK+39hemOuPfWhCXmnY2jj_E8XDNo7ouH@mail.gmail.com>
+Subject: Re: [PATCH] x86: Add an option to disable decoding of MCE
+From: Tony Luck <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Mike Waychison <mikew@google.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Duncan Laurie <dlaurie@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Jan 12, 2011 at 07:31:32PM +0300, Kirill Smelkov escreveu:
-> As I wrote in my first mail, maybe a bit not explicitly (sorry then), the
-> latency is introduced in perf-record. I'm telling this because I've
+On Tue, Jan 11, 2011 at 2:48 PM, Borislav Petkov <bp@amd64.org> wrote:
+> True, although not always reliable due to that context corruption. Tony
+> Luck is adding code for writing the error information to a persistent
+> storage _before_ you reset so on platforms with such a device you'll
+> be able to look at MC4 (or any of the MCE regs, for that matter) after
+> reset, which, I think, would make error analysis much more convenient.
+> See http://marc.info/?l=linux-arch&m=129356804427008&w=2.
 
-Ok, all is well and we'll tune the kernel to do it as we need using your
-patch.
+This code is also in linux-next (any next-2011* tag).  I'd be very happy
+to get some testing reports, feedback on the code, etc.
 
-> visually monitored perf-record output to console (yes, binary output,
-> but it does not matter) to see whether there is output progress at all.
-> 
-> After initial startup there was no progress for long time and then bunch
-> of data after 30-40 seconds.
-> 
-> 
-> And with the patch posted inline within reply-to-Peter mail, the delay
-> goes away, so could you please consider applying it?
-
-I will.
+-Tony
