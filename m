@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932449Ab1ALNXz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 08:23:55 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47457 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756295Ab1ALNXx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 08:23:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=t8bEdOy/J0ZL0+0SAFF5MG+QV/QFZRq5AJ90CmA66RDJ6mD8UVJ8cmAK6qHo33/ZE7
-         RdqUsRv3e33XjlGv5ebIo+h5SZHDXH+OdrQmP60ayU3Sac17/I+DJAC8bgFP0bJ3G1g3
-         QVTN9Lm7Fg31eccYJeyxVIjgYGDfX5+bGtYmo=
-Date: Wed, 12 Jan 2011 14:23:46 +0100
-From: Tejun Heo <tj@kernel.org>
-To: oleg@redhat.com, roland@redhat.com, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCHSET RFC] ptrace,signal: clean transition between STOPPED
- and TRACED
-Message-ID: <20110112132346.GC10920@mtj.dyndns.org>
-References: <1293199257-11255-1-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1293199257-11255-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932520Ab1ALN3R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 08:29:17 -0500
+Received: from mail.atmel.fr ([81.80.104.162]:36332 "EHLO atmel-es2.atmel.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932400Ab1ALN3O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 08:29:14 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: dan.j.williams@intel.com, linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, hong.xu@atmel.com,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 5/6] dmaengine: at_hdmac: flags located in first descriptor
+Date: Wed, 12 Jan 2011 15:39:09 +0100
+Message-Id: <1294843150-6962-4-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.3
+In-Reply-To: <1292435416-16927-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1292435416-16927-1-git-send-email-nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 24, 2010 at 03:00:50PM +0100, Tejun Heo wrote:
-> This patchset is spun off from "ptrace,signal: sane interaction
-> between ptrace and job control signals, take#2" patchset[1].  From the
-> series, four fix and cleanup patches were put into git branch
-> ptrace-reviewed[2].  This patchset is the subset which tries to fix
-> problems with the actual group stop mechanism and make the transition
-> between STOPPED and TRACED clean.
+Place flags on first descriptor of chain instead of last.
+This is the one used by atc_chain_complete() function while unmapping.
 
-Roland, Jan, what do you guys think?
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/dma/at_hdmac.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Thank you.
-
+diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+index a1a0fc6..99942a5 100644
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -603,7 +603,7 @@ atc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
+ 	/* set end-of-link to the last link descriptor of list*/
+ 	set_desc_eol(desc);
+ 
+-	desc->txd.flags = flags; /* client is in control of this ack */
++	first->txd.flags = flags; /* client is in control of this ack */
+ 
+ 	return &first->txd;
+ 
+@@ -748,8 +748,8 @@ atc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 	first->txd.cookie = -EBUSY;
+ 	first->len = total_len;
+ 
+-	/* last link descriptor of list is responsible of flags */
+-	prev->txd.flags = flags; /* client is in control of this ack */
++	/* first link descriptor of list is responsible of flags */
++	first->txd.flags = flags; /* client is in control of this ack */
+ 
+ 	return &first->txd;
+ 
 -- 
-tejun
+1.7.3
+
