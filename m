@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756058Ab1ALWXv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 17:23:51 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44855 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750842Ab1ALWXt (ORCPT
+	id S1756404Ab1ALWYk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 17:24:40 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41543 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752153Ab1ALWYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 17:23:49 -0500
-Date: Wed, 12 Jan 2011 22:23:37 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: Bug: loops_per_jiffy based udelay() mostly shorter than
-	requested
-Message-ID: <20110112222337.GK11039@n2100.arm.linux.org.uk>
-References: <20110109170829.GA14252@flint.arm.linux.org.uk> <AANLkTik5BmZAOFdYVGAjuoHftQ3qh1oTCEr5MpkCiDVz@mail.gmail.com>
+	Wed, 12 Jan 2011 17:24:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTik5BmZAOFdYVGAjuoHftQ3qh1oTCEr5MpkCiDVz@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <AANLkTimSKOa8XavLn_RsLZ2scZ=ujdYahcTkeJ2pxBFq@mail.gmail.com>
+References: <alpine.DEB.2.00.1101120601100.6210@skynet.skynet.ie>
+ <AANLkTimgs8UfGWk5PCZi4PM5SsvejJd5Y4bb3nHGyZy2@mail.gmail.com>
+ <20110112114649.5365d518@jbarnes-desktop> <AANLkTinSygbLm=nmXy_Wf2ENV8WcQqCc0BKAAOsysvZd@mail.gmail.com>
+ <AANLkTimSKOa8XavLn_RsLZ2scZ=ujdYahcTkeJ2pxBFq@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 12 Jan 2011 14:24:17 -0800
+Message-ID: <AANLkTi=80ccp1LtcXw1zO-7Rp58_+9yw-tebkJr67g9M@mail.gmail.com>
+Subject: Re: [git pull] drm intel only fixes
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
+        linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 01:19:49PM -0800, Linus Torvalds wrote:
-> On Sun, Jan 9, 2011 at 9:08 AM, Russell King <rmk@arm.linux.org.uk> wrote:
-> >
-> > Any suggestions or thoughts, or should we not care too much if udelay()
-> > produces slightly shorter than desired delays?  Or am I doing something
-> > horribly wrong in the ARM code?
-> 
-> Judging by the numbers you quote, I would definitely put this in the
-> "don't care too much".
+On Wed, Jan 12, 2011 at 1:28 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Oh, and I'm also seeing corruption on my sandybridge machine. No video
+> involved, the gdm login screen is already corrupted this way. Similar
+> odd shifted lines etc, so I'd assume it's related.
 
-Thanks - that's my thoughts too.  I think I'm still going to push out
-the rounding patch for the sake of correctness even though it's down
-in the noise.
+Hmm. I bisected it down to
+
+  commit 6fe4f14044f181e146cdc15485428f95fa541ce8
+  Author: Chris Wilson <chris@chris-wilson.co.uk>
+  Date:   Mon Jan 10 17:35:37 2011 +0000
+
+      drm/i915/execbuffer: Reorder binding of objects to favour restrictions
+
+on my sandybridge machine.  Chris?
+
+                       Linus
