@@ -1,172 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932740Ab1ALCwh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Jan 2011 21:52:37 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:43115 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755341Ab1ALCwf (ORCPT
+	id S932774Ab1ALC4M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Jan 2011 21:56:12 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:53962 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932648Ab1ALC4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Jan 2011 21:52:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=alUewooqG3jPvrKAsB8THiAR6tZhqJGYHxxviEy93nE+78Xz+tg+2hz0MtV6TX/huv
-         L+D3QObAwkpuSXoEgn50YwGHfs2vlmAor2Nhc+vyXE26imMt7V+I6jS8nui6VMIUHnes
-         +pNPEyYijiZP9qAN2c13uWXEdQt1NyzxgprAU=
-Subject: Re: [PATCH 1/4] scatterlist: new helper functions
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>,
-        Alex Dubov <oakad@yahoo.com>
-In-Reply-To: <20110111155803.5638ec4e.rdunlap@xenotime.net>
-References: <1294788975-19584-1-git-send-email-maximlevitsky@gmail.com>
-	 <1294788975-19584-2-git-send-email-maximlevitsky@gmail.com>
-	 <20110111155124.ee61cd7f.rdunlap@xenotime.net>
-	 <20110111155511.bcb90254.akpm@linux-foundation.org>
-	 <20110111155803.5638ec4e.rdunlap@xenotime.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 Jan 2011 04:52:29 +0200
-Message-ID: <1294800749.29447.2.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 11 Jan 2011 21:56:11 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6223"; a="69914230"
+Message-ID: <4D2D184A.8020405@codeaurora.org>
+Date: Tue, 11 Jan 2011 18:56:10 -0800
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Locking in the clk API
+References: <201101111016.42819.jeremy.kerr@canonical.com> <20110111091607.GI12552@n2100.arm.linux.org.uk>
+In-Reply-To: <20110111091607.GI12552@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-11 at 15:58 -0800, Randy Dunlap wrote:
-> On Tue, 11 Jan 2011 15:55:11 -0800 Andrew Morton wrote:
-> 
-> > On Tue, 11 Jan 2011 15:51:24 -0800
-> > Randy Dunlap <rdunlap@xenotime.net> wrote:
-> > 
-> > > >  /**
-> > > > + * sg_advance - advance scatterlist by 'consumed' bytes
-> > > > + * @sg - the current sg entry
-> > > > + * @consumed - how much bytes to advance
-> > > 
-> > > kernel-doc notation for parameters is like so:
-> > 
-> > I think I fixed most of this.  Probably missed some though.
-> > 
-> > Teach checkpatch to check kerneldoc ;)
-> > 
-> 
-> ugh, no thanks.
-> 
-> > 
-> > 
-> > From: Andrew Morton <akpm@linux-foundation.org>
-> > 
-> > fix general disaster in code comments
-> > 
-> > Cc: Alex Dubov <oakad@yahoo.com>
-> > Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
-> > Cc: Jens Axboe <axboe@kernel.dk>
-> > Cc: Maxim Levitsky <maximlevitsky@gmail.com>
-> > Cc: Tejun Heo <tj@kernel.org>
-> > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> > ---
-> > 
-> >  lib/scatterlist.c |   31 ++++++++++++++++++-------------
-> >  1 file changed, 18 insertions(+), 13 deletions(-)
-> > 
-> > diff -puN lib/scatterlist.c~scatterlist-new-helper-functions-fix lib/scatterlist.c
-> > --- a/lib/scatterlist.c~scatterlist-new-helper-functions-fix
-> > +++ a/lib/scatterlist.c
-> > @@ -41,7 +41,7 @@ EXPORT_SYMBOL(sg_next);
-> >  /**
-> >   * sg_advance - advance scatterlist by 'consumed' bytes
-> >   * @sg - the current sg entry
-> > - * @consumed - how much bytes to advance
-> > + * @consumed - how many bytes to advance
-> 
->  * @consumed: how many bytes to advance
-> 
-> >   *
-> >   */
-> >  struct scatterlist *sg_advance(struct scatterlist *sg, int consumed)
-> > @@ -76,8 +76,8 @@ EXPORT_SYMBOL(sg_advance);
-> >   * sg_nents - calculate number of sg entries in sg list
-> >   * @sg - the current sg entry
-> 
->  * @sg:
-> 
-> >   *
-> > - * Allows to calculate dynamicly the lenght of the sg table, based on
-> > - * assumption that last entry is NULL
-> > + * Allows to calculate aldynamicly the length of the sg table, based on an
-> > + * assumption that the last entry is NULL
-> >   */
-> >  int sg_nents(struct scatterlist *sg)
-> >  {
-> > @@ -92,11 +92,11 @@ int sg_nents(struct scatterlist *sg)
-> >  EXPORT_SYMBOL(sg_nents);
-> >  
-> >  /**
-> > - * sg_total_len - calculate total lenght of scatterlist
-> > + * sg_total_len - calculate total length of scatterlist
-> >   * @sg - the current sg entry
-> 
->  * @sg:
-> 
-> >   *
-> > - * Dynamicly calculate total number of bytes in a sg list
-> > - * based on assumption that list ends with a NULL entry
-> > + * Dynamically calculate total number of bytes in a sg list
-> 
-> preferably:
->                                                   in an sg list
-> 
-> > + * based on an assumption that the list ends with a NULL entry
-> >   */
-> >  int sg_total_len(struct scatterlist *sg)
-> >  {
-> > @@ -182,8 +182,14 @@ void sg_init_one(struct scatterlist *sg,
-> >  EXPORT_SYMBOL(sg_init_one);
-> >  
-> >  /**
-> > - * sg_copy - copies sg entries from sg_from to sg_to, such
-> > - * as sg_to covers first 'len' bytes from sg_from.
-> > + * sg_copy - copy sg entries
-> > + * @sg_from: source
-> > + * @sg_to: destination
-> > + *
-> > + * Copies from @sg_from to @sg_to.  @sg_to covers first 'len' bytes from
-> > + * @sg_from.
-> > + *
-> > + * Returns zero on success, else a -ve errno.
-> >   */
-> >  int sg_copy(struct scatterlist *sg_from, struct scatterlist *sg_to, int len)
-> >  {
-> > @@ -616,13 +622,12 @@ size_t sg_copy_to_buffer(struct scatterl
-> >  }
-> >  EXPORT_SYMBOL(sg_copy_to_buffer);
-> >  
-> > -
-> >  /**
-> > - * sg_compare_to_buffer - compare contents of the data pointeted by sg table
-> > + * sg_compare_to_buffer - compare contents of the data covered by an sg table
-> >   * to a kernel ram buffer
-> > - * @sg - the current sg entry
-> > - * @buffer - linear buffer to compare with
-> > - * @len - lenght of that buffer
-> > + * @sg: the current sg entry
-> > + * @buffer: linear buffer to compare with
-> > + * @len: length of that buffer
-> 
-> Returns what??
-0 if equal and 1 otherwise.
-Was too lazy to implement full strcmp compliance.
-Is that needed?
+On 01/11/2011 01:16 AM, Russell King - ARM Linux wrote:
+> On Tue, Jan 11, 2011 at 10:16:42AM +0800, Jeremy Kerr wrote:
+>> At present, we can satisfy these with:
+>>
+>> * clk_enable: may sleep
+>
+> I object to this as one of the purposes behind the clk API is to allow
+> power savings to be made, and unless we can perform clk enable/disable
+> from atomic contexts, the best you can do is enable the clock when the
+> device is probed and disable it when it's released.
 
+Since dev_pm_ops.suspend is not atomic anymore (am I wrong?), what is 
+the atomic context that you are having in mind that's related to power 
+savings? How often do we really need to call clk enable/disable in that 
+atomic context?
 
-All very fair comments.
-Will check everything once again.
-Thanks for a review!
+If the system VDD needed to be increased when a clock/core in enabled 
+(in reality, when a core is enabled), how do we make sure that the 
+voltage is reduced when the clock/core is turned off? Do we simply punt 
+the voltage change problem to the driver and say "not our problem"?
 
-Best regards,
-	Maxim Levitsky
+I'm not saying that the voltage change should or shouldn't be handled by 
+the clock driver. But it looks like the same methods used to handle the 
+voltage change problem could be applied to how we could handle the clk 
+enable/disable problem.
 
+-Saravana
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
