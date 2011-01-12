@@ -1,90 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab1ALWWX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 17:22:23 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:38688 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756058Ab1ALWWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 17:22:22 -0500
-Date: Wed, 12 Jan 2011 14:22:19 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: Linux Kernel List <linux-kernel@vger.kernel.org>
-Subject: Re: INFO: task rcu_kthread:6 blocked for more than 120 seconds.
-Message-ID: <20110112222219.GA17328@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110112174300.GA6504@flint.arm.linux.org.uk>
+	id S1756058Ab1ALWXv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 17:23:51 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44855 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842Ab1ALWXt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 17:23:49 -0500
+Date: Wed, 12 Jan 2011 22:23:37 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: Bug: loops_per_jiffy based udelay() mostly shorter than
+	requested
+Message-ID: <20110112222337.GK11039@n2100.arm.linux.org.uk>
+References: <20110109170829.GA14252@flint.arm.linux.org.uk> <AANLkTik5BmZAOFdYVGAjuoHftQ3qh1oTCEr5MpkCiDVz@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110112174300.GA6504@flint.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTik5BmZAOFdYVGAjuoHftQ3qh1oTCEr5MpkCiDVz@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 05:43:00PM +0000, Russell King wrote:
-> I'm seeing rcu_kthread get stuck from time to time on ARM Versatile PB
-> (ARM926).  Kernel is based upon commit 9e9bc973 (immediately prior to
-> the merge of the OMAP tree.)
+On Wed, Jan 12, 2011 at 01:19:49PM -0800, Linus Torvalds wrote:
+> On Sun, Jan 9, 2011 at 9:08 AM, Russell King <rmk@arm.linux.org.uk> wrote:
+> >
+> > Any suggestions or thoughts, or should we not care too much if udelay()
+> > produces slightly shorter than desired delays?  Or am I doing something
+> > horribly wrong in the ARM code?
 > 
-> ~ # ps aux|grep rcu
-> root         6  0.0  0.0      0     0 ?        S    02:31   0:01 [rcu_kthread]
-> root       502  9.0  0.3   3740   472 ttyAMA0  S+   02:59   0:00 grep rcu
-> ~ # ps aux|grep rcu
-> root         6  0.0  0.0      0     0 ?        D    02:31   0:01 [rcu_kthread]
-> root       504  0.0  0.3   3740   472 ttyAMA0  S+   03:00   0:00 grep rcu
-> ~ # ps aux|grep rcu
-> root         6  0.0  0.0      0     0 ?        D    02:31   0:01 [rcu_kthread]
-> root       506  0.0  0.3   3740   472 ttyAMA0  S+   03:00   0:00 grep rcu
-> ~ # ps aux|grep rcu
-> root         6  0.0  0.0      0     0 ?        D    02:31   0:01 [rcu_kthread]
-> root       508  0.0  0.3   3740   472 ttyAMA0  S+   03:00   0:00 grep rcu
-> ~ # cat /proc/6/wchan
-> rcu_kthread
-> ~ # INFO: task rcu_kthread:6 blocked for more than 120 seconds.
-> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> rcu_kthread     D c02c6684     0     6      2 0x00000000
-> Backtrace:
-> [<c02c6388>] (schedule+0x0/0x354) from [<c00836a0>] (rcu_kthread+0x78/0xf4)
-> [<c0083628>] (rcu_kthread+0x0/0xf4) from [<c00633ac>] (kthread+0x88/0x90)
-> [<c0063324>] (kthread+0x0/0x90) from [<c004d12c>] (do_exit+0x0/0x5f8)
->  r7:00000013 r6:c004d12c r5:c0063324 r4:c181df28
-> no locks held by rcu_kthread/6.
+> Judging by the numbers you quote, I would definitely put this in the
+> "don't care too much".
 
-Does the following patch help?
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-commit 70ce43253a4465211a9c51e33d56a417c759a718
-Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Date:   Wed Jan 12 14:18:11 2011 -0800
-
-    rcu: avoid pointless blocked-task warnings
-    
-    If the RCU callback-processing kthread has nothing to do, it parks in
-    a wait_event().  If RCU remains idle for more than two minutes, the
-    kernel complains about this.  This commit changes from wait_event()
-    to wait_event_interruptible() to prevent the kernel from complaining
-    just because RCU is idle.
-    
-    Reported-by: Russell King <rmk@arm.linux.org.uk>
-    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index 0344937..0c343b9 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -189,7 +189,8 @@ static int rcu_kthread(void *arg)
- 	unsigned long flags;
- 
- 	for (;;) {
--		wait_event(rcu_kthread_wq, have_rcu_kthread_work != 0);
-+		wait_event_interruptible(rcu_kthread_wq,
-+					 have_rcu_kthread_work != 0);
- 		morework = rcu_boost();
- 		local_irq_save(flags);
- 		work = have_rcu_kthread_work;
+Thanks - that's my thoughts too.  I think I'm still going to push out
+the rounding patch for the sake of correctness even though it's down
+in the noise.
