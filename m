@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757376Ab1AMWCM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 17:02:12 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55778 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941Ab1AMWCD (ORCPT
+	id S1757384Ab1AMWFz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 17:05:55 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:26744 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751941Ab1AMWFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 17:02:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=DLywueamdetfkOtTsiXxEqhuWnEGuMG1Yke7qHWOXqiF9ZbDWxpU2IjdPFw5A4EHYm
-         I7+9ABIzrOVtk9cPVwfMHst4WypXN5gvfqhoEZgNea6FuKx+AFxxXIGY7hQuF1tCjWO0
-         bJNXNPzPPZLiJ3eqZX+06fKTkCWK/3yTvGTOQ=
-From: Andrea Gelmini <andrea.gelmini@gelma.net>
-To: linux-doc@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net> (maintainer:DOCUMENTATION),
-        Milan Broz <mbroz@redhat.com> (commit_signer:1/3=33%),
-        Andrea Gelmini <andrea.gelmini@gelma.net> (commit_signer:1/3=33%),
-        Thomas Weber <weber@corscience.de> (commit_signer:1/3=33%),
-        Mike Frysinger <vapier.adi@gmail.com> (commit_signer:1/3=33%),
-        Jiri Kosina <jkosina@suse.cz> (commit_signer:1/3=33%),
-        dm-devel@redhat.com (open list:DEVICE-MAPPER (LVM)),
-        linux-kernel@vger.kernel.org (open list)
-Cc: Andrea Gelmini <andrea.gelmini@gelma.net>
-Subject: [PATCH] Documentation: dm-crypt: update cryptsetup homepage
-Date: Thu, 13 Jan 2011 23:01:53 +0100
-Message-Id: <1294956113-6630-1-git-send-email-andrea.gelmini@gelma.net>
-X-Mailer: git-send-email 1.7.4.rc1.85.g84645
+	Thu, 13 Jan 2011 17:05:48 -0500
+Date: Thu, 13 Jan 2011 23:05:47 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-media@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, Jean-Francois Moine <moinejf@free.fr>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Lee Jones <lee.jones@canonical.com>
+Subject: [PATCH][rfc] media, video, stv06xx, pb0100: Don't potentially deref
+ NULL in pb0100_start().
+Message-ID: <alpine.LNX.2.00.1101132300490.11347@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
----
- Documentation/device-mapper/dm-crypt.txt |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+usb_altnum_to_altsetting() may return NULL. If it does we'll dereference a 
+NULL pointer in 
+drivers/media/video/gspca/stv06xx/stv06xx_pb0100.c::pb0100_start().
+As far as I can tell there's not really anything more sensible than 
+-ENODEV that we can return in that situation, but I'm not at all intimate 
+with this code so I'd like a bit of review/comments on this before it's 
+applied.
+Anyway, here's a proposed patch.
 
-diff --git a/Documentation/device-mapper/dm-crypt.txt b/Documentation/device-mapper/dm-crypt.txt
-index 59293ac..6b5c42d 100644
---- a/Documentation/device-mapper/dm-crypt.txt
-+++ b/Documentation/device-mapper/dm-crypt.txt
-@@ -41,7 +41,7 @@ Example scripts
- ===============
- LUKS (Linux Unified Key Setup) is now the preferred way to set up disk
- encryption with dm-crypt using the 'cryptsetup' utility, see
--http://clemens.endorphin.org/cryptography
-+http://code.google.com/p/cryptsetup/
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ stv06xx_pb0100.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+  compile tested only.
+
+diff --git a/drivers/media/video/gspca/stv06xx/stv06xx_pb0100.c b/drivers/media/video/gspca/stv06xx/stv06xx_pb0100.c
+index ac47b4c..75a5b9c 100644
+--- a/drivers/media/video/gspca/stv06xx/stv06xx_pb0100.c
++++ b/drivers/media/video/gspca/stv06xx/stv06xx_pb0100.c
+@@ -217,6 +217,8 @@ static int pb0100_start(struct sd *sd)
  
- [[
- #!/bin/sh
+ 	intf = usb_ifnum_to_if(sd->gspca_dev.dev, sd->gspca_dev.iface);
+ 	alt = usb_altnum_to_altsetting(intf, sd->gspca_dev.alt);
++	if (!alt)
++		return -ENODEV;
+ 	packet_size = le16_to_cpu(alt->endpoint[0].desc.wMaxPacketSize);
+ 
+ 	/* If we don't have enough bandwidth use a lower framerate */
+
+
+
 -- 
-1.7.4.rc1.85.g84645
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
 
