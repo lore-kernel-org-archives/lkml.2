@@ -1,89 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757223Ab1AMRH2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 12:07:28 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:12607 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756571Ab1AMRH1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 12:07:27 -0500
-Date: Thu, 13 Jan 2011 18:07:18 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Seth Heasley <seth.heasley@intel.com>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2.6.37] i2c-i801: SMBus patch for Intel DH89xxCC
- DeviceIDs
-Message-ID: <20110113180718.38614150@endymion.delvare>
-In-Reply-To: <201101101309.03439.seth.heasley@intel.com>
-References: <201101101309.03439.seth.heasley@intel.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757047Ab1AMRKb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 12:10:31 -0500
+Received: from www.tglx.de ([62.245.132.106]:48860 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756871Ab1AMRK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 12:10:29 -0500
+Date: Thu, 13 Jan 2011 18:10:01 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Matthew Garrett <mjg@redhat.com>
+cc: Manoj Iyer <manoj.iyer@canonical.com>, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] Quirk to fix suspend/resume on Lenovo Edge 11,13,14,15
+In-Reply-To: <20110113164616.GB21289@srcf.ucam.org>
+Message-ID: <alpine.LFD.2.00.1101131808450.2678@localhost6.localdomain6>
+References: <1294934542-2411-1-git-send-email-manoj.iyer@canonical.com> <1294934542-2411-2-git-send-email-manoj.iyer@canonical.com> <20110113164616.GB21289@srcf.ucam.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Seth,
+On Thu, 13 Jan 2011, Matthew Garrett wrote:
 
-On Mon, 10 Jan 2011 13:09:03 -0800, Seth Heasley wrote:
-> This patch adds the SMBus Controller DeviceIDs for the Intel DH89xxCC PCH.
+> On Thu, Jan 13, 2011 at 10:02:22AM -0600, Manoj Iyer wrote:
+> > Set acpi_skip_timer_override to force ignoring BIOS
+> > IRQ0 pin2 override. This fixes resume from suspend on
+> > AMD based ThinkPad Edge 11,13,14 and 15.
 > 
-> Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-> 
-> --- linux-2.6.37/drivers/i2c/busses/i2c-i801.c.orig	2011-01-04 16:50:19.000000000 -0800
-> +++ linux-2.6.37/drivers/i2c/busses/i2c-i801.c	2011-01-06 14:26:20.000000000 -0800
-> @@ -44,11 +44,12 @@
->    ICH10                 0x3a30     32     hard     yes     yes     yes
->    ICH10                 0x3a60     32     hard     yes     yes     yes
->    5/3400 Series (PCH)   0x3b30     32     hard     yes     yes     yes
-> -  Cougar Point (PCH)    0x1c22     32     hard     yes     yes     yes
-> +  6 Series (PCH)        0x1c22     32     hard     yes     yes     yes
->    Patsburg (PCH)        0x1d22     32     hard     yes     yes     yes
->    Patsburg (PCH) IDF    0x1d70     32     hard     yes     yes     yes
->    Patsburg (PCH) IDF    0x1d71     32     hard     yes     yes     yes
->    Patsburg (PCH) IDF    0x1d72     32     hard     yes     yes     yes
-> +  DH89xxCC (PCH)        0x2330     32     hard     yes     yes     yes
->  
->    Features supported by this driver:
->    Software PEC                     no
-> @@ -620,6 +621,7 @@
->  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF0) },
->  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF1) },
->  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF2) },
-> +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS) },
->  	{ 0, }
->  };
->  
-> --- linux-2.6.37/drivers/i2c/busses/Kconfig.orig	2011-01-04 16:50:19.000000000 -0800
-> +++ linux-2.6.37/drivers/i2c/busses/Kconfig	2011-01-06 14:25:56.000000000 -0800
-> @@ -98,8 +98,9 @@
->  	    EP80579 (Tolapai)
->  	    ICH10
->  	    5/3400 Series (PCH)
-> -	    Cougar Point (PCH)
-> +	    6 Series (PCH)
->  	    Patsburg (PCH)
-> +	    DH89xxCC (PCH)
->  
->  	  This driver can also be built as a module.  If so, the module
->  	  will be called i2c-i801.
-> --- linux-2.6.37/Documentation/i2c/busses/i2c-i801.orig	2011-01-04 16:50:19.000000000 -0800
-> +++ linux-2.6.37/Documentation/i2c/busses/i2c-i801	2011-01-06 14:27:03.000000000 -0800
-> @@ -16,8 +16,9 @@
->    * Intel EP80579 (Tolapai)
->    * Intel 82801JI (ICH10)
->    * Intel 5/3400 Series (PCH)
-> -  * Intel Cougar Point (PCH)
-> +  * Intel 6 Series (PCH)
->    * Intel Patsburg (PCH)
-> +  * Intel DH89xxCC (PCH)
->     Datasheets: Publicly available at the Intel website
->  
->  On Intel Patsburg and later chipsets, both the normal host SMBus controller
+> This was originally there because of a quirk in some ati chipsets, 
+> coupled with DSDT insanity on HP's part. The Thinkpad Edges seem to be 
+> Intel machines, so it's not the same underlying issue. Do we have any 
 
-Looks good, consider it applied, but obviously I can't push it until
-the pci_ids.h changes have been merged.
+The patch description above talks explictely about AMD based ThinkPad
+Edge. So it might be as well the same underlying problem.
 
--- 
-Jean Delvare
+Thanks,
+
+	tglx
