@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757240Ab1AMQOo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 11:14:44 -0500
-Received: from mail-yw0-f66.google.com ([209.85.213.66]:62672 "EHLO
-	mail-yw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756944Ab1AMQOm convert rfc822-to-8bit (ORCPT
+	id S933025Ab1AMQSY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 11:18:24 -0500
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:43555 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756944Ab1AMQSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 11:14:42 -0500
-MIME-Version: 1.0
-Reply-To: cliethlp451@gmail.com
-Date: Thu, 13 Jan 2011 23:14:26 +0700
-Message-ID: <AANLkTi=iEQ73HujCM4siNprZFXSOqFGK-a7+bguKXAP5@mail.gmail.com>
-Subject: RE; Notice!!! Your Account Expires in 24 Hours
-From: CLIENT HELP <pagalav@kean.edu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-To: unlisted-recipients:; (no To-header on input)
+	Thu, 13 Jan 2011 11:18:22 -0500
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: npiggin@gmail.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-reply-to: <E1PdOdT-00042k-RM@pomaz-ex.szeredi.hu> (message from Miklos
+	Szeredi on Thu, 13 Jan 2011 15:58:47 +0100)
+Subject: Re: Important for fs devs: rcu-walk merged upstream
+References: <AANLkTimBrR1LkVHOxZA=UUmKsnxfsFLr9z_AhXUHQ_7N@mail.gmail.com> <E1PdOdT-00042k-RM@pomaz-ex.szeredi.hu>
+Message-Id: <E1PdPsR-0004BY-Q3@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Thu, 13 Jan 2011 17:18:19 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear University Staff/Student
+On Thu, 13 Jan 2011, Miklos Szeredi wrote:
+> On Sat, 8 Jan 2011, Nick Piggin wrote:
+> > The vfs-scale branch is now upstream. If you haven't
+> > looked yet, your filesystem is likely to have been
+> > touched, so check it out.
+> > 
+> > Also look at Documentation/filesystems/porting and
+> > path-lookup.txt.
+> > 
+> > The dcache_lock stuff should have been all done for you
+> > (for in-tree filesystems, I can help out of tree fses with
+> > conversions there if you ping me offline).
+> > 
+> > The rcu-walk stuff can be more tricky for your filesystem
+> > to take advantage of.
+> > 
+> > If you supply a .d_revalidate, .permission, or .check_acl,
+> > then path walking is going to be slow and unscalable for
+> > you.
+> > 
+> > Out of tree filesystems: you _have_ to at least add a line
+> > of code to the above functions in order to specify that
+> > you don't want to participate in rcu-walk.
+> > 
+> > Otherwise, you don't have to care about rcu-walk if you
+> > have a legacy or special filesystem like configfs then I'd
+> > advise against anything fancy. But if you have a
+> > userbase and you expect them to actually do any path
+> > lookups into your filesystem, please take a look.
+> 
+> One other thing: I know ECHILD is safe since no sane filesystem will
+> return it in its permission or revalidate callbacks, and even if it
+> does that's just a loss of optimization.
 
-This message is from University Webamil upgrade Service department,
-messaging center to all subscribers/webmail users. We are currently
-upgrading our data base and e-mail center due to an unusual activities
-identified in our email system. We are deleting all unused Webmail
-Accounts.
+And it's not entirely safe either.  A fuse filesystem returning ECHILD
+would make nameidata_dentry_drop_rcu() to BUG.  So some sort of errno
+filter is necessary in the fuse kernel module.
 
-If you could please take 5-10 minutes out of your online
-experience and update your records you will not run into any future
-problems with the online service Failure to update your records will
-result in account suspension.You are required to verify your webmail
-account by confirming your Webmail identity.
-
-This will prevent your Webmailnaccount from been closed during this exercise.
-
-In order to confirm you Web-Mail identity, you are to provide aand
-reply to this E-mail the following data Or clike the link bellow
-
-First Name:
-Last Name:
-Username/ID:
-Password:
-Date of Birth:
-
-http://www.my3q.com/survey/355/zdfd/40056.phtml
-
-*Important*
-Please provide all these information completely and correctly
-otherwise due to security reasons we may have to close your account
-temporarily.
-
-We thank you for your prompt attention to this matter. Please
-understand that this is a security measure intended to help protect
-you and your Email Account. We apologise for any inconvenience.
-
-Thanks for your time
-Webmail Service Help desk®
-© Copyright All rights reserved
+Thanks,
+Miklos
