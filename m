@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310Ab1AMUoX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 15:44:23 -0500
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:60279 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757281Ab1AMUoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 15:44:12 -0500
-Date: Thu, 13 Jan 2011 12:44:05 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 2/2] rcu: avoid pointless blocked-task
- warnings
-Message-ID: <20110113204405.GL2500@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110113190414.GA10457@linux.vnet.ibm.com>
- <1294945477-10612-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <alpine.LFD.2.00.1101132029130.2678@localhost6.localdomain6>
+	id S1757289Ab1AMUqf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 15:46:35 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:60832 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757152Ab1AMUqa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 15:46:30 -0500
+Date: Thu, 13 Jan 2011 15:46:28 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] ECRYPT_FS
+Message-ID: <20110113204628.GA9576@infradead.org>
+References: <1294950181.3403.9.camel@edumazet-laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1101132029130.2678@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+In-Reply-To: <1294950181.3403.9.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 08:29:49PM +0100, Thomas Gleixner wrote:
-> On Thu, 13 Jan 2011, Paul E. McKenney wrote:
-> > Reported-by: Russell King <rmk@arm.linux.org.uk>
-> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On Thu, Jan 13, 2011 at 09:23:01PM +0100, Eric Dumazet wrote:
+> Hi Al
 > 
-> So finally someone managed to clone you ?
+> FYI, current linux-2.6 is broken for CONFIG_ECRYPT_FS
 
-Thankfully, they only managed to multiplex me.  ;-)
+The patch below fixes it:
 
-							Thanx, Paul
+Index: linux-2.6/fs/ecryptfs/main.c
+===================================================================
+--- linux-2.6.orig/fs/ecryptfs/main.c	2011-01-13 21:35:02.742004281 +0100
++++ linux-2.6/fs/ecryptfs/main.c	2011-01-13 21:42:05.032254595 +0100
+@@ -141,13 +141,12 @@ int ecryptfs_init_persistent_file(struct
+ 	return rc;
+ }
+ 
+-static inode *ecryptfs_get_inode(struct inode *lower_inode,
++static struct inode *ecryptfs_get_inode(struct inode *lower_inode,
+ 		       struct super_block *sb)
+ {
+ 	struct inode *inode;
+ 	int rc = 0;
+ 
+-	lower_inode = lower_dentry->d_inode;
+ 	if (lower_inode->i_sb != ecryptfs_superblock_to_lower(sb)) {
+ 		rc = -EXDEV;
+ 		goto out;
+@@ -202,7 +201,8 @@ int ecryptfs_interpose(struct dentry *lo
+ {
+ 	struct inode *lower_inode = lower_dentry->d_inode;
+ 	struct inode *inode = ecryptfs_get_inode(lower_inode, sb);
+-	if (IS_ERR(inode)
++
++	if (IS_ERR(inode))
+ 		return PTR_ERR(inode);
+ 	if (flags & ECRYPTFS_INTERPOSE_FLAG_D_ADD)
+ 		d_add(dentry, inode);
