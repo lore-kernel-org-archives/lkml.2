@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070Ab1ALXjE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 18:39:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55136 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751845Ab1ALXjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 18:39:03 -0500
-From: Thomas Renninger <trenn@suse.de>
-To: Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH 4/9] cpuidle: Introduce .abbr (abbrevation) for cpuidle states
-Date: Thu, 13 Jan 2011 00:39:18 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5-5.99.12.5343e5f-desktop; KDE/4.4.4; x86_64; ; )
-Cc: linux-perf-users@vger.kernel.org, mingo@elte.hu, arjan@linux.intel.com,
-        j-pihet@ti.com, linux-acpi@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-References: <1294396190-23031-1-git-send-email-trenn@suse.de> <201101121437.51122.trenn@suse.de> <alpine.LFD.2.02.1101121705130.19754@x980>
-In-Reply-To: <alpine.LFD.2.02.1101121705130.19754@x980>
+	id S1756406Ab1ALX7b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 18:59:31 -0500
+Received: from cobra.newdream.net ([66.33.216.30]:56615 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755501Ab1ALX73 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 18:59:29 -0500
+Date: Wed, 12 Jan 2011 16:05:48 -0800 (PST)
+From: Sage Weil <sage@newdream.net>
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
+Subject: [GIT PULL] Ceph changes for 2.6.38-rc1
+Message-ID: <Pine.LNX.4.64.1101121530360.6611@cobra.newdream.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101130039.19519.trenn@suse.de>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 12 January 2011 23:25:12 Len Brown wrote:
-> > > If the display tools can only handle 3 characters,
-> > > then why not have them simply use the 1st 3 characters
-> > > of the existing name field?
-> 
-> > You mean use:
-> > C3 NHM
-> > instead of
-> > NHM-C3
-> > for intel_idle?
-> 
-> Yes.
-> is there a reason that would be a problem?
-A much more elegant solution came to my mind:
-I'll rewrite the perf timechart patch to do:
-Title:   C-stateName1 [1] , C-stateName2 [2]
-and later I will refer to the states by 1, 2, ...
-Eventually a:
-Description:
-[1] C-stateDescription1
-[2] C-stateDescription2
-...
-can be put somewhere as well.
+Hi Linus,
 
-Please ignore this patch.
+Please pull the following Ceph updates for 2.6.38 from
 
-Stupid that I didn't think of that in the first place.
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
 
-Thanks,
+There are a few error path fixes (libceph and rbd), some ceph code 
+cleanup, improved support for (server-side) directory hashing, and some 
+patches from Tejun switching to the new workqueue API and removing 
+unnecessary hijinks that the workqueues can handle themselves.
 
-   Thomas
+Thanks!
+sage
+
+
+Jesper Juhl (1):
+      ceph: Always free allocated memory in osdmap_decode()
+
+Sage Weil (4):
+      ceph: add dir_layout to inode
+      ceph: implement DIRLAYOUTHASH feature to get dir layout from MDS
+      ceph: drop redundant r_mds field
+      ceph: associate requests with opening sessions
+
+Tejun Heo (2):
+      ceph: fsc->*_wq's aren't used in memory reclaim path
+      net/ceph: make ceph_msgr_wq non-reentrant
+
+Tracey Dent (1):
+      ceph: Makefile: Remove unnessary code
+
+Yehuda Sadeh (1):
+      rbd: fix cleanup when trying to mount inexistent image
+
+ drivers/block/rbd.c            |   19 ++++++++++---
+ fs/ceph/Makefile               |   23 +---------------
+ fs/ceph/debugfs.c              |    9 ++++--
+ fs/ceph/dir.c                  |   20 ++++++++++++++
+ fs/ceph/export.c               |    2 +-
+ fs/ceph/inode.c                |    4 +++
+ fs/ceph/mds_client.c           |   56 +++++++++++++++++++++++++--------------
+ fs/ceph/mds_client.h           |    2 +-
+ fs/ceph/super.c                |   13 ++++++---
+ fs/ceph/super.h                |    2 +
+ include/linux/ceph/ceph_fs.h   |   16 +++++++++--
+ include/linux/ceph/messenger.h |    5 ---
+ net/ceph/ceph_hash.c           |    3 ++
+ net/ceph/messenger.c           |   46 +-------------------------------
+ net/ceph/osdmap.c              |    4 ++-
+ 15 files changed, 116 insertions(+), 108 deletions(-)
