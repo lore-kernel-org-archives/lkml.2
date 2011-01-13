@@ -1,50 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757015Ab1AMPDa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 10:03:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57778 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756885Ab1AMPD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 10:03:29 -0500
-Message-ID: <4D2F1430.50906@redhat.com>
-Date: Thu, 13 Jan 2011 16:03:12 +0100
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
+	id S1757033Ab1AMPFS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 10:05:18 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61009 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756869Ab1AMPFP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 10:05:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ETmg5ZKLxuh2kSfy8WPOh/EfP55hxdyKkJeiNRYAwta8inNLRuvCIQZE4F9HyKBfob
+         /Sf1x4QnGNFwCuVpjOpawF9ukkH3Z6jdC2aLWq7VYhM1yD5CcrNghWbaYQCt3LzzPEVk
+         ggeCK9vN23cnJT7GQSMcjgwb+u/ujw0bib18I=
+Date: Thu, 13 Jan 2011 16:05:01 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Jan Kratochvil <jan.kratochvil@redhat.com>
+Cc: oleg@redhat.com, roland@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCHSET RFC] ptrace,signal: clean transition between STOPPED
+ and TRACED
+Message-ID: <20110113150501.GA12596@htj.dyndns.org>
+References: <1293199257-11255-1-git-send-email-tj@kernel.org>
+ <20110112214350.GC13830@host1.dyn.jankratochvil.net>
 MIME-Version: 1.0
-To: Kay Sievers <kay.sievers@vrfy.org>
-CC: Tejun Heo <tj@kernel.org>, Karel Zak <kzak@redhat.com>,
-        device-mapper development <dm-devel@redhat.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [dm-devel] linux-next - WARNING: at fs/block_dev.c:824 bd_link_disk_holder+0x92/0x1ac()
-References: <16069.1294853673@localhost> <4D2E4611.90002@redhat.com> <4D2E6129.8000700@ce.jp.nec.com> <20110113110640.GC30719@htj.dyndns.org> <4D2EE156.1050006@redhat.com> <20110113122701.GG16523@nb.net.home> <20110113131216.GF30719@htj.dyndns.org> <20110113132637.GH16523@nb.net.home> <20110113133722.GG30719@htj.dyndns.org> <4D2F04FF.1070309@redhat.com> <20110113141107.GI30719@htj.dyndns.org> <4D2F0B6A.6010201@redhat.com> <AANLkTinJ68D6Yc-U-Q=ZfS9mqozj5qtHPtySZHOgjcgP@mail.gmail.com> <AANLkTi=LKYzrNsU7jc1Nr4W4CaQ_dmBGeQAquSCp_yAX@mail.gmail.com>
-In-Reply-To: <AANLkTi=LKYzrNsU7jc1Nr4W4CaQ_dmBGeQAquSCp_yAX@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110112214350.GC13830@host1.dyn.jankratochvil.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2011 03:43 PM, Kay Sievers wrote:
+Hello, Jan.  (Please ignore the other reply.  I pressed the wrong keys
+and it went out prematurely.)
 
->> On Thu, Jan 13, 2011 at 3:25 PM, Milan Broz <mbroz@redhat.com> wrote:
->>> Maybe, but this was not invented in DM/MD camp:-)
->>> Probably Kay or Greg can answer why it was done this way?
+On Wed, Jan 12, 2011 at 10:43:50PM +0100, Jan Kratochvil wrote:
+> FSF GDB for `T (stopped)' processes currently does:
+>   PTRACE_ATTACH
+>   check /proc/%d/status for `T (stopped)' (by GDB's pid_is_stopped)
+>     if found then kill (PID, SIGSTOP) && ptrace (PTRACE_CONT, PID, 0, 0).
+>   waitpid (pid, &status, 0) - so that this one does not get stuck if the stop
+>                               event was already eaten out before.
 > 
-> It's not from Greg or Kay. It just appeared some day in the context of dm. :)
+> If the `T (stopped)' will now always FAIL then at leat the waitpid then should
+> never get stuck.
 
-ah, then sorry, I am just confused:-)
-But DM does not need it for operation at all so it must had some other reason.
-(We have dmsetup ls --tree using dm-ioctls for years.)
+Now the child will always stop inside ptrace_stop() which
+unconditionally sets ->exit_code (the state wait(2) consumes) so it
+won't get stuck unless someone else consumes it inbetween, of course.
 
-> And yes, symlinks *look* nice and simple for the outside, but they are
-> not, and have all sorts of problems like non-atomic updates, make it
-> impossible to ever rename a device (as long as they copy the device
-> name), and and and .... we should not add more of this.
+> > 2. The transition between STOPPED and TRACED involves a short window
+> >    of RUNNING inbetween.  On attach, the transition is hidden from the
+> >    tracer using GROUP_STOP_TRAPPING but it still is visible to other
+> >    threads in the tracer's group.  IOW, if another thread performs
+> >    WNOHANG wait(2) on the tracee while attach is in progress, the
+> >    wait(2) may fail even if the tracee is known to be in stopped state
+> >    before.
+> > 
+> >    The same problem exists the other direction during detach.
+> >    Currently, the code doesn't try to hide this transition even from
+> >    the tracer.  IOW, if the tracer attaches to a stopped task,
+> >    detaches, reattaches and then performs WNOHANG wait(2), the wait(2)
+> >    may fail.  However, given the previous behavior where the tracee is
+> >    always woken up by wake_up_process() on detach, this is highly
+> >    unlikely to cause any problem.
+> 
+> FSF gdbserver --multi does PTRACE_ATTACH followed by waitpid (WNOHANG) and it
+> fails if it returns ECHILD on the first try.
+> 
+> 	ptrace(PTRACE_ATTACH, 22049, 0, 0)      = 0
+> 	wait4(-1, [{WIFSTOPPED(s) && WSTOPSIG(s) == SIGSTOP}], WNOHANG, NULL) = 22049
+> 
+> It may be also a gdbserver bug, though.
 
-Yes, I agree, if there is better way, let's switch to that.
+How is that supposed to work even with the current code?  Does it
+check whether the target thread is stopped before doing that?  Reading
+gdbserver manpage....  Hmm... doesn't help much.  Can you please help
+me understanding what it expects there?
 
-Milan
+Thank you.
+
+-- 
+tejun
