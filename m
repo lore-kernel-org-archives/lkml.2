@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932287Ab1AMAsK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 19:48:10 -0500
-Received: from mga01.intel.com ([192.55.52.88]:59274 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756495Ab1AMAsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 19:48:07 -0500
-Message-Id: <b7da2f$q4ct63@fmsmga001.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,315,1291622400"; 
-   d="scan'208";a="877032643"
-Date: Thu, 13 Jan 2011 00:48:03 +0000
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] drm/i915/execbuffer: Reorder relocations to match new object order
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Dave Airlie <airlied@linux.ie>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTi=qHW3esgZYq55dgSz15ZDpukXn6zO17nJ1fWzS@mail.gmail.com>
-References: <1294877597-17843-1-git-send-email-chris@chris-wilson.co.uk> <AANLkTi=qHW3esgZYq55dgSz15ZDpukXn6zO17nJ1fWzS@mail.gmail.com>
-From: Chris Wilson <chris@chris-wilson.co.uk>
+	id S1756612Ab1AMA6g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 19:58:36 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56168 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756409Ab1AMA6e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 19:58:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=dPXXX+R1SPGv4XqYPvDtdp7kCuwhHzv7pMctV2pm1dndus65SBt7DcKvFKzUGNTq9N
+         wyJu0na6N0brmFpiSyApySyjrnTkrNM2J/LJd2mRn6H5FT3tv+9TY+hjkv/8woUUOJ7l
+         qfKBnqBCNt1WAZHL2ZqUpC052ba7QA5QkVBK4=
+MIME-Version: 1.0
+In-Reply-To: <1294808464.2821.15.camel@perseus>
+References: <20110107075831.GA14915@amd>
+	<1294763679.2435.72.camel@doink>
+	<AANLkTin67OXYYKk6y+_MKfXEXBz-F_+qAH0cpiJ24yEQ@mail.gmail.com>
+	<1294768668.2435.177.camel@doink>
+	<1294804776.2821.4.camel@perseus>
+	<87aaj6u3oi.fsf@linux.vnet.ibm.com>
+	<1294808464.2821.15.camel@perseus>
+Date: Thu, 13 Jan 2011 11:58:32 +1100
+Message-ID: <AANLkTikNa8dqkwA617QG6hkMRrVLXNWO+1jBRhoaQdio@mail.gmail.com>
+Subject: Re: [announce] vfs-scale git tree update
+From: Nick Piggin <npiggin@gmail.com>
+To: Ian Kent <raven@themaw.net>
+Cc: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>, aelder@sgi.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Jan 2011 16:27:46 -0800, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> On Wed, Jan 12, 2011 at 4:13 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> >
-> > This is what I'm running with at the moment. It only appears to affect the
-> > slow path which hopefully explains why it is relatively infrequent...
-> 
-> I think you're still missing some case.
-> 
-> This improves the video case a lot - I can't see any artifacts there -
-> but I still get occasional corruption when moving between the "share"
-> and "rate" buttons, and they end up drawing incorrectly.
+On Wed, Jan 12, 2011 at 4:01 PM, Ian Kent <raven@themaw.net> wrote:
+> On Wed, 2011-01-12 at 10:19 +0530, Aneesh Kumar K. V wrote:
+>> for 9p I did the other way round. lookup now set the dentry op for both
+>> negative and positive dentries and rest of the place we dropped
+>> d_set_d_op (b8b80cf37c7f0e32729262f805bc0fa81c3e9d12 have the details)
+>
+> Sadly I can't do that.
+>
+> For now I need to avoid calls to ->d_revalidate() as much as possible to
+> reduce a potential deadlock and have access to the flags of the negative
+> dentry (during create) for the purpose of blocking concurrent walks.
 
-Now we're probably drifting into other bug territory... ;-)
-
-I'll look again in the morning. Usually running the conformance test
-suites in parallel is enough to exercise the worst-case behaviour.
--Chris
- 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+What prevents your d_revalidate from just checking for negative dentry?
