@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757146Ab1AMPXQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 10:23:16 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:41123 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757096Ab1AMPXI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 10:23:08 -0500
-X-SpamScore: -2
-X-BigFish: VPS-2(zzbb2cKzz1202hzz8275bh8275dhz32i668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LEYW2B-01-NNN-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-CC: <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Joerg Roedel <joerg.roedel@amd.com>, <stable@kernel.org>
-Subject: [PATCH 1/2] KVM: SVM: Fix NMI path when NMI happens in guest mode
-Date: Thu, 13 Jan 2011 16:22:57 +0100
-Message-ID: <1294932178-26866-2-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1294932178-26866-1-git-send-email-joerg.roedel@amd.com>
-References: <1294932178-26866-1-git-send-email-joerg.roedel@amd.com>
+	id S1757129Ab1AMPXb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 10:23:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22921 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757105Ab1AMPXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 10:23:17 -0500
+Message-ID: <4D2F18D5.3060105@redhat.com>
+Date: Thu, 13 Jan 2011 17:23:01 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+To: Rik van Riel <riel@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
+Subject: Re: [RFC -v4 PATCH 3/3] kvm: use yield_to instead of sleep in kvm_vcpu_on_spin
+References: <20110113002108.3abdf953@annuminas.surriel.com> <20110113002745.51190252@annuminas.surriel.com> <4D2EFB44.2060906@redhat.com> <4D2F1510.3000809@redhat.com>
+In-Reply-To: <4D2F1510.3000809@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The vmexit path on SVM needs to restore the KERNEL_GS_BASE
-MSR in order to savely execute the NMI handler. Otherwise a
-pending NMI can occur after the STGI instruction and crash
-the machine.
-This makes it impossible to run perf and kvm in parallel on
-an AMD machine in a stable way.
+On 01/13/2011 05:06 PM, Rik van Riel wrote:
+>
+>> I think the first patch needs some reference counting... I'd move it to
+>> the outermost KVM_RUN loop to reduce the performance impact.
+>
+> I don't see how refcounting from that other thread could
+> possibly help, and I now see that the task_struct_cachep
+> does not have SLAB_DESTROY_BY_LRU, either :(
+>
+> What do you have in mind here that would both work and
+> be acceptable to you as KVM maintainer?
+>
 
-Cc: stable@kernel.org
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- arch/x86/kvm/svm.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+I think a 'struct pid' fits the bill here.
 
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index 25bd1bc..8b9bc72 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -3637,6 +3637,7 @@ static void svm_vcpu_run(struct kvm_vcpu *vcpu)
- 
- #ifdef CONFIG_X86_64
- 	wrmsrl(MSR_GS_BASE, svm->host.gs_base);
-+	wrmsrl(MSR_KERNEL_GS_BASE, current->thread.gs);
- #else
- 	loadsegment(fs, svm->host.fs);
- #endif
+
 -- 
-1.7.1
-
+error compiling committee.c: too many arguments to function
 
