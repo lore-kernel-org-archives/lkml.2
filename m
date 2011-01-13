@@ -1,50 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751487Ab1AMFJV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 00:09:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6508 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750912Ab1AMFJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 00:09:20 -0500
-Message-ID: <4D2E88EA.3050604@redhat.com>
-Date: Thu, 13 Jan 2011 00:08:58 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1751839Ab1AMFJh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 00:09:37 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:63747 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003Ab1AMFJ3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 00:09:29 -0500
 MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Chris Wright <chrisw@sous-sol.org>
-Subject: Re: [RFC -v3 PATCH 2/3] sched: add yield_to function
-References: <20110103162637.29f23c40@annuminas.surriel.com>	 <20110103162918.577a9620@annuminas.surriel.com>	 <1294164289.2016.186.camel@laptop>	 <1294246647.8369.52.camel@marge.simson.net>	 <1294247065.2016.267.camel@laptop>	 <1294378146.8823.27.camel@marge.simson.net>  <4D2E6B62.2000802@redhat.com> <1294889169.8089.10.camel@marge.simson.net>
-In-Reply-To: <1294889169.8089.10.camel@marge.simson.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201101081136.06682.rjw@sisk.pl>
+References: <1294280159-2513-1-git-send-email-john.stultz@linaro.org>
+	<AANLkTin8cntsFpaikpfzPbWL1YFb702rPync240X4axW@mail.gmail.com>
+	<1294367420.4518.171.camel@work-vm>
+	<201101081136.06682.rjw@sisk.pl>
+Date: Wed, 12 Jan 2011 21:03:45 -0800
+Message-ID: <AANLkTinnCQzG2rsfyy9yHJR8eSVGYdPHMb8HaBfAaOxQ@mail.gmail.com>
+Subject: Re: [PATCH 12/12] [RFC] Introduce Alarm (hybrid) timers
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        Brian Swetland <swetland@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2011 10:26 PM, Mike Galbraith wrote:
-> On Wed, 2011-01-12 at 22:02 -0500, Rik van Riel wrote:
+On Sat, Jan 8, 2011 at 2:36 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, January 07, 2011, John Stultz wrote:
+>> On Thu, 2011-01-06 at 16:58 -0800, Arve Hjønnevåg wrote:
+>> > 2011/1/6 John Stultz <john.stultz@linaro.org>:
+>> > > So otherwise, do you see any reason why android might not be able to
+>> > > adapt this code to replace the android alarm timers?
+>> > >
+>> >
+>> > The user-space interface does not look appealing, but I don't see any
+>> > reason why the in-kernel interface(s) cannot be shared. Our user-space
+>> > code has a single thread that waits for alarms to trigger, while the
+>> > alarms can be modified from any thread.
+>>
+>> So its something like nanosleep(), only other threads can extend or
+>> shorten the sleep time?
+>>
+>> Could you explain some of the rational for such an interface, so I can
+>> better understand the need?
+>>
+>> >  As far as I can tell, using
+>> > the posix interface would either require a thread per alarm (up to 5)
+>> > or using signals. Both make the user-space code more complicated, and
+>>
+>> Yea, it probably would need signals, but I'd have to grok the use case a
+>> little better. And its possible it would complicate the user-space code
+>> some, but on the other hand, it would be using a more standard kernel
+>> interface. The other option is extending the posix interface to try to
+>> better match the need.
+>>
+>> > it is not clear if either of them provide a clear hand-off between
+>> > where the kernel needs to block suspend because the alarm has not been
+>> > delivered to user-space and where user-space needs to block suspend
+>> > because it is handling the alarm.
+>>
+>> Indeed. I'm still looking into the pm_wake details to see the
+>> limitations there. Some method of inheriting a stay_awake seems to be
+>> needed, but sounds pretty ugly. Alternatively we may need some method or
+>> callback to the kernel to detect that a signal has been handled by
+>> userland (allowing the pm_relax to occur).
+>>
+>> Rafael: Any thoughts here?
 >
->> Cgroups only makes the matter worse - libvirt places
->> each KVM guest into its own cgroup, so a VCPU will
->> generally always be alone on its own per-cgroup, per-cpu
->> runqueue!  That can lead to pulling a VCPU onto our local
->> CPU because we think we are alone, when in reality we
->> share the CPU with others...
+> I think this problem is specific to Android where suspend is started
+> automatically from kernel space, so user space needs an interface to actively
+> prevent the kernel from starting suspend.
 >
-> How can that happen?  If the task you're trying to accelerate isn't in
-> your task group, the whole attempt should be a noop.
+> The mainline model is that suspend will always be started from user space,
+> so instead of telling the kernel not to suspend user space needs to avoid
+> starting suspend in the first place.  In this model the kernel code can simply
+> call pm_relax() as soon as _it_ doesn't need to prevent the system from
+> suspending any more (eg. it knows that user space has learnt of the alarm) and
+> it need not worry about the user space part (eg. whether or not user space
+> is still handling the alarm).
+>
 
-Nono, all the VCPUs from the same guest are in the same
-cgroup.  However, with 4 VCPUs and 4 physical CPUs,
-chances are that they're all alone on their own per-cpu,
-per-cgroup cfs_rq.
-
-However, each CPU might have other runnable processes in
-other cfs_rq sched entities.
+You still have to make sure a race free implementation is possible. If
+you are implementing alarms by calling nano-sleep, your model require
+the nano-sleeping thread to also respond to requests from the thread
+that initiates suspend when that thread checks if it is safe to
+suspend.
 
 -- 
-All rights reversed
+Arve Hjønnevåg
