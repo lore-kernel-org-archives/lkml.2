@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756861Ab1AMOWq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 09:22:46 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:56444 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756666Ab1AMOWo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 09:22:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Mq5JodAI/8BzAPWWab8sRcpBuQwVNi3WwW1jVMifh5MAbjOMYDde4pEoQasUiXj+tx
-         mgy8nHIoKrdcBYcBljGogUrU49SCxytIRbKTjw45VjJHQfel/H8tHOlO6n8Nj+ZF0IP7
-         G499HMiQgiPFtODRa/xOdwINC/kuyvl/9WvIU=
-Subject: Re: [PATCH] net: add Faraday FTMAC100 10/100 Ethernet driver
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Po-Yu Chuang <ratbert@faraday-tech.com>
-In-Reply-To: <1294919372-1904-1-git-send-email-ratbert.chuang@gmail.com>
-References: <1294919372-1904-1-git-send-email-ratbert.chuang@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 Jan 2011 15:22:39 +0100
-Message-ID: <1294928559.3570.130.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1756903Ab1AMO0F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 09:26:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29068 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756755Ab1AMO0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 09:26:00 -0500
+Message-ID: <4D2F0B6A.6010201@redhat.com>
+Date: Thu, 13 Jan 2011 15:25:46 +0100
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Karel Zak <kzak@redhat.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [dm-devel] linux-next - WARNING: at fs/block_dev.c:824 bd_link_disk_holder+0x92/0x1ac()
+References: <16069.1294853673@localhost> <4D2E4611.90002@redhat.com> <4D2E6129.8000700@ce.jp.nec.com> <20110113110640.GC30719@htj.dyndns.org> <4D2EE156.1050006@redhat.com> <20110113122701.GG16523@nb.net.home> <20110113131216.GF30719@htj.dyndns.org> <20110113132637.GH16523@nb.net.home> <20110113133722.GG30719@htj.dyndns.org> <4D2F04FF.1070309@redhat.com> <20110113141107.GI30719@htj.dyndns.org>
+In-Reply-To: <20110113141107.GI30719@htj.dyndns.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 13 janvier 2011 à 19:49 +0800, Po-Yu Chuang a écrit :
-> From: Po-Yu Chuang <ratbert@faraday-tech.com>
-> 
-> FTMAC100 Ethernet Media Access Controller supports 10/100 Mbps and
-> MII.  This driver has been working on some ARM/NDS32 SoC including
-> Faraday A320 and Andes AG101.
-> 
-> Signed-off-by: Po-Yu Chuang <ratbert@faraday-tech.com>
-> ---
->  drivers/net/Kconfig    |    9 +
->  drivers/net/Makefile   |    1 +
->  drivers/net/ftmac100.c | 1341 ++++++++++++++++++++++++++++++++++++++++++++++++
->  drivers/net/ftmac100.h |  180 +++++++
->  4 files changed, 1531 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/net/ftmac100.c
->  create mode 100644 drivers/net/ftmac100.h
+On 01/13/2011 03:11 PM, Tejun Heo wrote:
 
-Hi
+> So, as a general rule, when in doubt, just create an attribute.  Let's
+> refrain from custom symlinkery in sysfs, please.  In this case too, a
+> holder attribute containing strings like ext[3|4], md, dm or whatnot
+> would have been _much_ simpler and actually more useful.
 
-1) please use netdev_alloc_skb_ip_align() instead of dev_alloc_skb() +
-skb_reserve(skb, NET_IP_ALIGN);
+Maybe, but this was not invented in DM/MD camp:-)
+Probably Kay or Greg can answer why it was done this way?
 
-2) Dont include a "struct net_device_stats stats" in struct ftmac100,
-you can use the one included in struct net_device
-  (You can then remove ftmac100_get_stats())
+For DM it just added links to be proper user of it, see
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=f165921df46a977e3561f1bd9f13a348441486d1
 
-3) Dont "netdev->last_rx = jiffies;" : This is not driver job.
- Ditto for trans_start
+Anyway, it is /sys/block - so it represents block devices.
 
-4) You must comment why wmb() is needed in ftmac100_xmit()
+If btrfs internally creates some virtual _block_ device for its pool, it should
+present it here too with slaves/holders. If not, why it should create any links there?
 
-5) Why isnt NAPI used too for TX completions ?
-   BTW, I am not sure we want a define. All new drivers must use NAPI.
-
-6) Use is_valid_ether_addr() instead of is_zero_ether_addr() in
-ftmac100_probe()
-
-7) "static struct ethtool_ops ftmac100_ethtool_ops" should be const :
-	"static const struct ethtool_ops ftmac100_ethtool_ops"
-  Ditto for :
-	"static struct net_device_ops ftmac100_netdev_ops"
-
-
-8) Why an interrupt handler (ftmac100_interrupt()) needs to block
-interrupts with spin_lock_irqsave(&priv->hw_lock, flags); ?
-
-9) Instead of dev_info(&netdev->dev ...) , please consider netdev_info()
-
-
+Milan
