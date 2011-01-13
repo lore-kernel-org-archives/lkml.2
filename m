@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757267Ab1AMRgl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 12:36:41 -0500
-Received: from hapkido.dreamhost.com ([66.33.216.122]:40336 "EHLO
-	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756571Ab1AMRgj (ORCPT
+	id S1757277Ab1AMRj2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 12:39:28 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:57345 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756571Ab1AMRj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 12:36:39 -0500
-Subject: [PATCH] input: ct82710c: return proper error code for ct82c710_open
-From: Davidlohr Bueso <dave@gnu.org>
-To: Dmitry Torokhov <dtor@mail.ru>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 Jan 2011 14:35:50 -0300
-Message-ID: <1294940150.2200.4.camel@offworld>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Jan 2011 12:39:26 -0500
+Date: Thu, 13 Jan 2011 17:39:21 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Manoj Iyer <manoj.iyer@canonical.com>, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] Quirk to fix suspend/resume on Lenovo Edge 11,13,14,15
+Message-ID: <20110113173921.GA22823@srcf.ucam.org>
+References: <1294934542-2411-1-git-send-email-manoj.iyer@canonical.com> <1294934542-2411-2-git-send-email-manoj.iyer@canonical.com> <20110113164616.GB21289@srcf.ucam.org> <alpine.LFD.2.00.1101131808450.2678@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1101131808450.2678@localhost6.localdomain6>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davidlohr Bueso <dave@gnu.org>
+On Thu, Jan 13, 2011 at 06:10:01PM +0100, Thomas Gleixner wrote:
+> On Thu, 13 Jan 2011, Matthew Garrett wrote:
+> 
+> > On Thu, Jan 13, 2011 at 10:02:22AM -0600, Manoj Iyer wrote:
+> > > Set acpi_skip_timer_override to force ignoring BIOS
+> > > IRQ0 pin2 override. This fixes resume from suspend on
+> > > AMD based ThinkPad Edge 11,13,14 and 15.
+> > 
+> > This was originally there because of a quirk in some ati chipsets, 
+> > coupled with DSDT insanity on HP's part. The Thinkpad Edges seem to be 
+> > Intel machines, so it's not the same underlying issue. Do we have any 
+> 
+> The patch description above talks explictely about AMD based ThinkPad
+> Edge. So it might be as well the same underlying problem.
 
-If request_irq() fails we should return the proper error instead of -1.
+I'm sorry, I misread that completely. The reason for the extra quirk on 
+the HPs was down to their DSDT setting thermal trip points incorrectly 
+if the override weren't ignored - it would trigger at boot time, not 
+after suspend/resume. In theory I think that should be handled by the 
+chipset-specific quirk code already, with the DMI list as a backup. It 
+may be that we need to look at the chipset quirk code?
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
----
- drivers/input/serio/ct82c710.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/input/serio/ct82c710.c b/drivers/input/serio/ct82c710.c
-index 448c772..ee0edd0 100644
---- a/drivers/input/serio/ct82c710.c
-+++ b/drivers/input/serio/ct82c710.c
-@@ -111,9 +111,11 @@ static void ct82c710_close(struct serio *serio)
- static int ct82c710_open(struct serio *serio)
- {
- 	unsigned char status;
-+	int err = 0;
- 
--	if (request_irq(CT82C710_IRQ, ct82c710_interrupt, 0, "ct82c710", NULL))
--		return -1;
-+	err = request_irq(CT82C710_IRQ, ct82c710_interrupt, 0, "ct82c710", NULL);
-+	if (err)
-+		goto out;
- 
- 	status = inb_p(CT82C710_STATUS);
- 
-@@ -133,8 +135,8 @@ static int ct82c710_open(struct serio *serio)
- 		free_irq(CT82C710_IRQ, NULL);
- 		return -1;
- 	}
--
--	return 0;
-+out:
-+	return err;
- }
- 
- /*
 -- 
-1.7.1
-
-
-
+Matthew Garrett | mjg59@srcf.ucam.org
