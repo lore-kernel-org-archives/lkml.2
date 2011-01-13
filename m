@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933070Ab1AMQME (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 11:12:04 -0500
-Received: from mga11.intel.com ([192.55.52.93]:50883 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933019Ab1AMQMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 11:12:03 -0500
-Message-Id: <1bdc18$j8l825@fmsmga002.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,318,1291622400"; 
-   d="scan'208";a="646619205"
-Date: Thu, 13 Jan 2011 16:10:59 +0000
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] drm/i915/execbuffer: Clear domains before beginning reloc processing
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Dave Airlie <airlied@linux.ie>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTimypim707rEXaPBaKoGgGmz3Of4EmPNw7VokJL6@mail.gmail.com>
-References: <AANLkTinBnm+xkXPPM4-3PG_i2hJMuXhv8x42KN4o3kGg@mail.gmail.com> <1294916869-2417-1-git-send-email-chris@chris-wilson.co.uk> <AANLkTimypim707rEXaPBaKoGgGmz3Of4EmPNw7VokJL6@mail.gmail.com>
-From: Chris Wilson <chris@chris-wilson.co.uk>
+	id S933083Ab1AMQMv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 11:12:51 -0500
+Received: from mail-gy0-f194.google.com ([209.85.160.194]:38137 "EHLO
+	mail-gy0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933011Ab1AMQMu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 11:12:50 -0500
+MIME-Version: 1.0
+Reply-To: cliethlp451@gmail.com
+Date: Thu, 13 Jan 2011 23:12:35 +0700
+Message-ID: <AANLkTik6MyWDVCs4x1JnnCQ9XFw5T0GNbrUYAOFBSfsQ@mail.gmail.com>
+Subject: RE; Notice!!! Your Account Expires in 24 Hours
+From: CLIENT HELP <pagalav@kean.edu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jan 2011 07:54:59 -0800, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> On Thu, Jan 13, 2011 at 3:07 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> > After reordering the sequence of relocating objects, commit 6fe4f1404,
-> > we can no longer rely on seeing all reloc targets prior to performing
-> > the relocation. So we need to clear the relocation domains earlier.
-> 
-> Yup, this one (together with the previous fix) seems to get rid of all
-> the artifacts.
-> 
-> Should I just apply them as patches, or do you have a git branch to pull from?
+Dear University Staff/Student
 
-They will be in drm-intel-fixes. There have been a couple of other patches,
-for the compiler warning, the typo that Indan spotted and for modparam to
-workaround the U160, so I'll send the pull request it via Dave.
--Chris
+This message is from University Webamil upgrade Service department,
+messaging center to all subscribers/webmail users. We are currently
+upgrading our data base and e-mail center due to an unusual activities
+identified in our email system. We are deleting all unused Webmail
+Accounts.
 
-$ git shortlog linus..upstream/drm-intel-fixes
-Chris Wilson (5):
-      drm/i915/debugfs: Correct format after changing type of err object 'size'
-      drm/i915: Add a module option to override the use of SSC
-      drm/i915: Fix error handler to capture the first batch after the seqno
-      drm/i915/execbuffer: Reorder relocations to match new object order
-      drm/i915/execbuffer: Clear domains before beginning reloc processing
+If you could please take 5-10 minutes out of your online
+experience and update your records you will not run into any future
+problems with the online service Failure to update your records will
+result in account suspension.You are required to verify your webmail
+account by confirming your Webmail identity.
 
-Indan Zupancic (1):
-      drm/i915/panel: The backlight is enabled if the current value is non-zero
+This will prevent your Webmailnaccount from been closed during this exercise.
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+In order to confirm you Web-Mail identity, you are to provide aand
+reply to this E-mail the following data Or clike the link bellow
+
+First Name:
+Last Name:
+Username/ID:
+Password:
+Date of Birth:
+
+http://www.my3q.com/survey/355/zdfd/40056.phtml
+
+*Important*
+Please provide all these information completely and correctly
+otherwise due to security reasons we may have to close your account
+temporarily.
+
+We thank you for your prompt attention to this matter. Please
+understand that this is a security measure intended to help protect
+you and your Email Account. We apologise for any inconvenience.
+
+Thanks for your time
+Webmail Service Help desk®
+© Copyright All rights reserved
