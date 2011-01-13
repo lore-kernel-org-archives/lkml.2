@@ -1,126 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757333Ab1AMVbH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 16:31:07 -0500
-Received: from www.tglx.de ([62.245.132.106]:54584 "EHLO www.tglx.de"
+	id S1757299Ab1AMVcg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 16:32:36 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:48782 "EHLO smtp5-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756717Ab1AMVa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 16:30:59 -0500
-Date: Thu, 13 Jan 2011 22:30:43 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Borislav Petkov <bp@amd64.org>
-cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Manoj Iyer <manoj.iyer@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
-Subject: Re: [PATCH] Quirk to fix suspend/resume on Lenovo Edge 11,13,14,15
-In-Reply-To: <20110113210950.GA4081@aftab>
-Message-ID: <alpine.LFD.2.00.1101132210351.2678@localhost6.localdomain6>
-References: <AANLkTinw23rtSERxAy6G_cu5=rvQeEzxvf3snsUOZE+z@mail.gmail.com> <20110113175531.GD2006@aftab> <AANLkTikDoRMoQjtN03eMoeacwottEixrFqcF8nJZWgKy@mail.gmail.com> <20110113183025.GE2006@aftab> <alpine.LFD.2.00.1101131946560.2678@localhost6.localdomain6>
- <20110113185807.GA24720@srcf.ucam.org> <20110113190700.GB30866@kryptos.osrc.amd.com> <alpine.LFD.2.00.1101132012140.2678@localhost6.localdomain6> <20110113192825.GC30866@kryptos.osrc.amd.com> <alpine.LFD.2.00.1101132032350.2678@localhost6.localdomain6>
- <20110113210950.GA4081@aftab>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751830Ab1AMVc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 16:32:29 -0500
+Message-ID: <4D2F6F63.8090904@free.fr>
+Date: Thu, 13 Jan 2011 22:32:19 +0100
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+CC: Linux Containers <containers@lists.linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFD] reboot / shutdown of a container
+References: <4D2F299B.4000509@free.fr> <20110113210918.48f3e85e@neptune.home>
+In-Reply-To: <20110113210918.48f3e85e@neptune.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jan 2011, Borislav Petkov wrote:
-> On Thu, Jan 13, 2011 at 02:41:51PM -0500, Thomas Gleixner wrote:
-> > On Thu, 13 Jan 2011, Borislav Petkov wrote:
-> > 
-> > > On Thu, Jan 13, 2011 at 08:13:42PM +0100, Thomas Gleixner wrote:
-> > > > > Well, Andreas did boot with 'hpet=verbose' on an affected machine here
-> > > > > and did a suspend/resume and the hpet config registers looked ok before
-> > > > > suspend and after resume. It might be that the HPET is temporarily
-> > > > > "insane" while resume lasts but we don't have any hard facts confirming
-> > > > 
-> > > > And you have no explanation at all why applying the irq pin routing
-> > > > quirk makes HPETs temporal insanity go away magically :)
-> > > 
-> > > But after the HPET counter wraps around, the machine is alive again.
-> > > Which means that the IRQ0 pin2 override is only temporarily needed after
-> > > resume... Strange.
-> > 
-> > Thinking more about it:
-> > 
-> > Case 1:	IRQ0 pin2 override applied
-> > 
-> >      Resume hangs until HPET wraps around and issues another interrupt
-> > 
-> > Case 2: IRQ0 pin2 override ignored via quirk
-> > 
-> >      Resume just works
-> > 
-> > So the question is what is restored _AFTER_ the HPET is reprogrammed
-> > in the resume path ?
-> > 
-> > The HPET reprogramming happens via timekeeping_resume() which is in
-> > the sysdev part of resume. ioapic, apic, iommus etc. are also resumed
-> > via the sysdev_class. So what makes sure that the ordering of these is
-> > correct?
-> > 
-> > AFAICT nothing :)
-> 
-> I see. You're hinting at some wrong ordering between resuming apic and
-> hpet maybe... But why does this work on SB700 without timer override? So
-> it looks like SB800 does something differently which cannot stomach what
-> Linux does. Could it be that after resume, HPET uses "by default" pin0
-> for the IRQ when it expires and that's why it works?
-> 
-> > We need information about the resume order of sysdev_class and the
-> > difference of the pin routings in the quirk non/quirk case.
-> 
-> I'll try to get that tomorrow on the SB800 system we have.
-> 
-> >From Manoj's dmesg logs I can see the following (1st one is with the
-> timer override):
-> 
-> [    0.000000] ACPI: PM-Timer IO Port: 0x8008
-> [    0.000000] ACPI: Local APIC address 0xfee00000
-> [    0.000000] ACPI: LAPIC (acpi_id[0x00] lapic_id[0x00] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x01] lapic_id[0x01] enabled)
-> [    0.000000] ACPI: LAPIC_NMI (acpi_id[0x00] high edge lint[0x1])
-> [    0.000000] ACPI: LAPIC_NMI (acpi_id[0x01] high edge lint[0x1])
-> [    0.000000] ACPI: IOAPIC (id[0x02] address[0xfec00000] gsi_base[0])
-> [    0.000000] IOAPIC[0]: apic_id 2, version 33, address 0xfec00000, GSI 0-23
-> [    0.000000] ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 2 low level)
-> [    0.000000] ACPI: BIOS IRQ0 pin2 override ignored.
-> [    0.000000] ACPI: IRQ9 used by override.
+On 01/13/2011 09:09 PM, Bruno Prémont wrote:
+> On Thu, 13 January 2011 Daniel Lezcano<daniel.lezcano@free.fr>  wrote:
+>> in the container implementation, we are facing the problem of a process
+>> calling the sys_reboot syscall which of course makes the host to
+>> poweroff/reboot.
+>>
+>> If we drop the cap_sys_reboot capability, sys_reboot fails and the
+>> container reach a shutdown state but the init process stay there, hence
+>> the container becomes stuck waiting indefinitely the process '1' to exit.
+>>
+>> The current implementation to make the shutdown / reboot of the
+>> container to work is we watch, from a process outside of the container,
+>> the<rootfs>/var/run/utmp file and check the runlevel each time the file
+>> changes. When the 'reboot' or 'shutdown' level is detected, we wait for
+>> a single remaining in the container and then we kill it.
+>>
+>> That works but this is not efficient in case of a large number of
+>> containers as we will have to watch a lot of utmp files. In addition,
+>> the /var/run directory must *not* mounted as tmpfs in the distro.
+>> Unfortunately, it is the default setup on most of the distros and tends
+>> to generalize. That implies, the rootfs init's scripts must be modified
+>> for the container when we put in place its rootfs and as /var/run is
+>> supposed to be a tmpfs, most of the applications do not cleanup the
+>> directory, so we need to add extra services to wipeout the files.
+>>
+>> More problems arise when we do an upgrade of the distro inside the
+>> container, because all the setup we made at creation time will be lost.
+>> The upgrade overwrite the scripts, the fstab and so on.
+>>
+>> We did what was possible to solve the problem from userspace but we
+>> reach always a limit because there are different implementations of the
+>> 'init' process and the init's scripts differ from a distro to another
+>> and the same with the versions.
+>>
+>> We think this problem can only be solved from the kernel.
+>>
+>> The idea was to send a signal SIGPWR to the parent of the pid '1' of the
+>> pid namespace when the sys_reboot is called. Of course that won't occur
+>> for the init pid namespace.
+> Wouldn't sending SIGKILL to the pid '1' process of the originating PID
+> namespace be sufficient (that would trigger a SIGCHLD for the parent
+> process in the outer PID namespace.
 
-The more interesting info is there in Manoj's logs:
+This is already the case. The question is : when do we send this signal ?
+We have to wait for the container system shutdown before killing it.
 
-[    0.036455] ..TIMER: vector=0x30 apic1=0 pin1=0 apic2=-1 pin2=-1
-[    0.040000] ..MP-BIOS bug: 8254 timer not connected to IO-APIC
-[    0.040000] ...trying to set up timer (IRQ0) through the 8259A ...
-[    0.040000] ..... (found apic 0 pin 0) ...
-[    0.080021] ....... works.
+> (as far as I remember the PID namespace is killed when its 'init' exits,
+> if this is not the case all other processes in the given namespace would
+> have to be killed as well)
 
-versus
+Yes, absolutely but this is not the point, reaping the container is not 
+a problem.
 
-[    0.036460] ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+What we are trying to achieve is to shutdown properly the container from 
+inside (from outside will be possible too with the setns syscall).
 
-So the "working" state is using "apic 0 pin 0" while the non working
-state is using "vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1".
+Assuming the process '1234' creates a new process in a new namespace set 
+and wait for it.
 
-Something changes across suspend/resume which makes the BIOS
-advertised routing work with PIT but not with HPET. Further why does
-the apic 0/0 solution found by the kernel (when ignoring BIOS) works
-always (except that we don't know whether the "nohpet" case works as
-well, but I bet it does).
+The new process '1' will exec /sbin/init and the system will boot up. 
+But, when the system is shutdown or rebooted, after the down scripts are 
+executed the kill -15 -1 will be invoked, killing all the processes 
+expect the process '1' and the caller. This one will then call 
+'sys_reboot' and exit. Hence we still have the init process idle and its 
+parent '1234' waiting for it to die.
 
-So we are back to the question I raised above: What changes and even
-more interesting what changes after the HPET expires - which we know
-for sure that it must happen as otherwise we wont get a HPET interrupt
-after the 32bit wraparound.
+If we are able to receive the information in the process '1234' : "the 
+sys_reboot was called in the child pid namespace", we can take then kill 
+our child pid.  If this information is raised via a signal sent by the 
+kernel with the proper information in the siginfo_t (eg. si_code 
+contains "LINUX_REBOOT_CMD_RESTART", "LINUX_REBOOT_CMD_HALT", ... ), the 
+solution will be generic for all the shutdown/reboot of any kind of 
+container and init version.
 
-We need answers to these questions before applying any
-patch/workaround/quirk or whatever.
-
-Thanks,
-
-	tglx
+> Only issue is how to differentiate the various reboot() modes (restart,
+> power-off/halt) from outside, though that one also exists with the SIGPWR
+> signal.
 
 
+<javascript:void(0);>
