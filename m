@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933089Ab1AMQXV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 11:23:21 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:54694 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933020Ab1AMQXU (ORCPT
+	id S933102Ab1AMQXd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 11:23:33 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:37021 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933092Ab1AMQXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 11:23:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=VXHtOAB4JIay7miqTabD7EY0Xu7tgVxR1zetQsx4BtETgovNy0LSqylby9NoqPJSjI
-         p5li6YLTkuKCyPb8BY5Vb88lOZZo30qBenC4e2oe81G2xlo7dk9tl53U98vlHKERCxwW
-         310HroxcKaC9aFOwKIpiJIGK2Ur06cIwoKNig=
-Date: Thu, 13 Jan 2011 18:23:10 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: "Andrew G. Morgan" <morgan@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] libcap: introduce CAP_SYSLOG
-Message-ID: <20110113162310.GA4044@swordfish>
+	Thu, 13 Jan 2011 11:23:30 -0500
+Date: Thu, 13 Jan 2011 21:52:22 +0530
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Trinabh Gupta <trinabh@linux.vnet.ibm.com>, peterz@infradead.org,
+        lenb@kernel.org, suresh.b.siddha@intel.com, benh@kernel.crashing.org,
+        venki@google.com, ak@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC V2 3/3] cpuidle: default idle driver for x86
+Message-ID: <20110113162222.GA10792@dirshya.in.ibm.com>
+Reply-To: svaidy@linux.vnet.ibm.com
+References: <20110113125113.11174.78525.stgit@tringupt.in.ibm.com>
+ <20110113125223.11174.60425.stgit@tringupt.in.ibm.com>
+ <4D2F1E84.2000200@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4D2F1E84.2000200@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit 38ef4c2e437d11b5922723504b62824e96761459 syslog
-operations require CAP_SYSLOG capability (intoriduced by commit 
-ce6ada35bdf710d16582cc4869c26722547e6f11), not CAP_SYS_ADMIN.
+* Arjan van de Ven <arjan@linux.intel.com> [2011-01-13 07:47:16]:
 
-Patch introduces CAP_SYSLOG capability.
+> On 1/13/2011 4:52 AM, Trinabh Gupta wrote:
+> >This default cpuidle_driver parses idle= boot parameters, selects
+> >the optimal idle routine for x86 during bootup and registers with
+> >cpuidle. The code for idle routines and the selection of optimal
+> >routine is moved from arch/x86/kernel/process.c . At module_init this
+> >default driver is registered with cpuidle and for non ACPI platforms
+> >it continues to be used. For ACPI platforms, acpi_idle driver would
+> >replace this driver at a later point in time during bootup. Until
+> >this driver's registration, architecture supplied compile time
+> >default idle routine is called from within cpuidle_idle_call().
+> >
+> 
+> 
+> I like the general approach, but I'd think making idle drivers
+> modular is going one step too far....
+> that looks like waaay overkill to me (also since most of the actual
+> idle handlers are so small
+> that the overhead of the exported symbols alone is bigger than the
+> idle handlers)
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Agreed.  The idea of keeping them in a module is to keep the code
+around for legacy systems and not have to use that code at all on
+modern systems where ACPI driver can take over.
 
----
+The current RFC still has not managed to pull out all the code into
+the module, but suggest that it is possible.
 
- libcap/include/linux/capability.h |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+We can keep them in-kernel and move to the next iteration where we
+should ensure other architectures also can co-exist with pm_idle() and
+slowly move to this approach.
 
-diff --git a/libcap/include/linux/capability.h b/libcap/include/linux/capability.h
-index 39e5ff5..4924f2a 100644
---- a/libcap/include/linux/capability.h
-+++ b/libcap/include/linux/capability.h
-@@ -355,7 +355,12 @@ struct cpu_vfs_cap_data {
- 
- #define CAP_MAC_ADMIN        33
- 
--#define CAP_LAST_CAP         CAP_MAC_ADMIN
-+
-+/* Privileged syslog operations currently require CAP_SYSLOG.
-+   CAP_SYS_ADMIN is not acceptable anymore. */
-+#define CAP_SYSLOG           34
-+
-+#define CAP_LAST_CAP         CAP_SYSLOG
- 
- #define cap_valid(x) ((x) >= 0 && (x) <= CAP_LAST_CAP)
- 
+--Vaidy
+
