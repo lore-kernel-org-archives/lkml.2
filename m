@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757181Ab1AMPgQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 10:36:16 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:47122 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756869Ab1AMPgN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 10:36:13 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, autofs@linux.kernel.org,
-        npiggin@kernel.dk
-Subject: Re: WARNING: at fs/dcache.c:1359 d_set_d_op [was: mmotm 2011-01-06-15-41 uploaded]
-In-Reply-To: Your message of "Thu, 13 Jan 2011 10:52:22 +0100."
-             <4D2ECB56.4070802@gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <201101070014.p070Egpo023959@imap1.linux-foundation.org>
-            <4D2ECB56.4070802@gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1294932824_5688P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 13 Jan 2011 10:33:44 -0500
-Message-ID: <12521.1294932824@localhost>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020205.4D2F1B5A.008E,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	id S1757193Ab1AMPgz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 10:36:55 -0500
+Received: from nm18-vm1.bullet.mail.ird.yahoo.com ([77.238.189.217]:35154 "HELO
+	nm18-vm1.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756691Ab1AMPgy convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 10:36:54 -0500
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 467059.77535.bm@omp1015.mail.ird.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.it;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=sHnytJy+lfhughzrileh/guDwz3zcrnnRb9VdSH3VER6KXu8OegQtF9rbtec7iTagXMME+8ggIzVNlsaZifHB3xuRbQ4w/M/dZZhWp2FkYLVKTxCbYchh9iJGcxYA4r7FK6iPo1wFcLXvThLN+AEGbLAJxDOkWAivP4k4n1pfac=;
+Message-ID: <395199.61799.qm@web29510.mail.ird.yahoo.com>
+X-YMail-OSG: g9Juk2AVM1m2lMgkxFhTDAljwuXVwbsbmlmmDJ71Pa0thLy
+ A3vc63zTdf5YzKnp9U3MA4j_U0cFsM.SFuKGYFzojB3V2xCNzUq4IaP4vIIl
+ MQ0DPbdmuBQJPetwdU9EVYHD9gW6XA3jqmpAIp9GGHSPxsebWkhdAILuEqgV
+ K5tgzkHKfD7FHQv0H2U7RVXxc4sesBj8IqSTNs1z3AX1O7wud9dt8MVR_RUH
+ TOWkvXtJXdvkg54R_IFJSea8swirnEIeqwyZV3TjqGNBnUiLxEa1C9_Fed7U
+ aDU14uCuyNiJJz8GLUKc-
+X-Mailer: YahooMailRC/553 YahooMailWebService/0.8.107.285259
+Date: Thu, 13 Jan 2011 15:36:52 +0000 (GMT)
+From: Francesco Alfano <edacedpa@yahoo.it>
+Subject: Lose shared network resource
+To: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1294932824_5688P
-Content-Type: text/plain; charset=us-ascii
+Hello, 
+I have a problem with the (exported) sharing of network resources. 
+Initially i've used a sever with RedHat 7.3 kernel 2.4 now i've  installed 
+Scientific Linux 5.5 with kernel 2.6.18-194.32.1.el5PAE with  Samba version 
+3.0.33-3.29.el5_5.1. 
 
-On Thu, 13 Jan 2011 10:52:22 +0100, Jiri Slaby said:
-> On 01/07/2011 12:41 AM, akpm@linux-foundation.org wrote:
-> > The mm-of-the-moment snapshot 2011-01-06-15-41 has been uploaded to
-> 
-> Hi, after some uptime and several suspend/resume cycles, I got:
-> WARNING: at fs/dcache.c:1359 d_set_d_op+0x82/0xb0()
-> Hardware name: To Be Filled By O.E.M.
-> Modules linked in: dvb_usb_af9015 tda18271 af9013 dvb_usb dvb_core
-> Pid: 3474, comm: automount Tainted: G        W   2.6.37-mm1_64+ #1344
-> Call Trace:
->  [<ffffffff8106bd2a>] ? warn_slowpath_common+0x7a/0xb0
->  [<ffffffff8106bd75>] ? warn_slowpath_null+0x15/0x20
->  [<ffffffff81125a32>] ? d_set_d_op+0x82/0xb0
->  [<ffffffff8120d829>] ? autofs4_dir_mkdir+0x169/0x180
+The problem is that I lose the network connection periodically, about 10  
+minutes! 
 
-Wow. So it wasn't just configfs that trips over this one.  I'm now hoping that
-Al audited all the pseudo file systems for this...
 
---==_Exmh_1294932824_5688P
-Content-Type: application/pgp-signature
+I initially thought the problem was caused by a misconfiguration of  samba 
+version of sl, that I installed on a client machine with windows  2000 the 
+"Microsoft Windows Services for Unix" in order to use nfs connection  exported 
+from linux server, but the problema arise equally. 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
 
-iD8DBQFNLxtYcC3lWbTT17ARAhhEAJwIFEg1aaD7HDu19DcxtVZOrdOphACg1hoU
-G7AcaN42/xWnhCPoIUl0tPM=
-=jiEU
------END PGP SIGNATURE-----
+It's a serious problem for me because the disconnection of a mapped  drive on 
+w2k (connected via smb or nfs) is causing the crash of a basic  application that 
+tries to detect the presence every second of a new file  in shared resource. 
 
---==_Exmh_1294932824_5688P--
 
+This problem was not present with the older version of linux !!! 
+
+
+Thanks in advance for your help. 
+
+-- 
+-- 
+Best Regards 
+Francesco Alfano
+
+
+      
