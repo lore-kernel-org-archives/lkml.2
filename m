@@ -1,200 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933036Ab1AMV41 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 16:56:27 -0500
-Received: from tundra.namei.org ([65.99.196.166]:38567 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932498Ab1AMV4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 16:56:21 -0500
-Date: Fri, 14 Jan 2011 08:55:36 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: David Howells <dhowells@redhat.com>
-cc: viro@zeniv.linux.org.uk, Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        tomoyo-users-en@lists.sourceforge.jp,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@ftp.linux.org.uk>
-Subject: Re: [PATCH] CacheFiles: Add calls to path-based security hooks [ver
- #2]
-In-Reply-To: <20101224144834.22524.86008.stgit@warthog.procyon.org.uk>
-Message-ID: <alpine.LRH.2.00.1101140847200.27060@tundra.namei.org>
-References: <20101224144834.22524.86008.stgit@warthog.procyon.org.uk>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S933023Ab1AMV6q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 16:58:46 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37412 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755699Ab1AMV6m convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 16:58:42 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110113205056.GA29254@mcarlson.broadcom.com>
+References: <AANLkTi=9BYt=vkNkAiTBxnfnCjCX7AqCG=ML6coc4vdZ@mail.gmail.com>
+	<20101214191500.GD19951@mcarlson.broadcom.com>
+	<20101215012430.120fd47f@xenia.leun.net>
+	<20101215013431.GA21173@mcarlson.broadcom.com>
+	<20101215081606.18e12fc9@xenia.leun.net>
+	<AANLkTi=hGRW+DwoKQzxPAZao6-y_tvn6nNXS-tj_-Y6T@mail.gmail.com>
+	<20110107032459.GA17959@mcarlson.broadcom.com>
+	<AANLkTi=N6jFE7T1=W-WLo_eHYWeE=oB6n8C8zPGoBNQF@mail.gmail.com>
+	<20110113012157.GA28147@mcarlson.broadcom.com>
+	<AANLkTimz3Mw5itChtTgHTeGT4seJauy3+FVrpEJn1iez@mail.gmail.com>
+	<20110113205056.GA29254@mcarlson.broadcom.com>
+Date: Thu, 13 Jan 2011 16:58:40 -0500
+Message-ID: <AANLkTimQ1T0erugwK17o0zuSwxVh-Ro4yCsBpOqCykyr@mail.gmail.com>
+Subject: Re: [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when vid not used
+From: Jesse Gross <jesse@nicira.com>
+To: Matt Carlson <mcarlson@broadcom.com>
+Cc: Michael Leun <lkml20101129@newton.leun.net>,
+        Michael Chan <mchan@broadcom.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        David Miller <davem@davemloft.net>,
+        Ben Greear <greearb@candelatech.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Dec 2010, David Howells wrote:
+On Thu, Jan 13, 2011 at 3:50 PM, Matt Carlson <mcarlson@broadcom.com> wrote:
+> On Thu, Jan 13, 2011 at 07:06:22AM -0800, Jesse Gross wrote:
+>> On Wed, Jan 12, 2011 at 8:21 PM, Matt Carlson <mcarlson@broadcom.com> wrote:
+>> > On Thu, Jan 06, 2011 at 08:36:27PM -0800, Jesse Gross wrote:
+>> >> On Thu, Jan 6, 2011 at 10:24 PM, Matt Carlson <mcarlson@broadcom.com> wrote:
+>> >> > On Sat, Dec 18, 2010 at 07:38:00PM -0800, Jesse Gross wrote:
+>> >> >> On Tue, Dec 14, 2010 at 11:16 PM, Michael Leun
+>> >> >> <lkml20101129@newton.leun.net> wrote:
+>> >> >> > OK - all tests done on that DL320G5:
+>> >> >> >
+>> >> >> > For completeness, 2.6.37-rc5 unpatched:
+>> >> >> >
+>> >> >> > eth0, no vlan configured: totally broken - see double tagged vlans
+>> >> >> > without tag, single or untagged packets missing at all
+>> >> >>
+>> >> >> Random behavior? ?This one is somewhat hard to explain - maybe there
+>> >> >> are some other factors. ?eth0 has ASF on, so it always strips tags. ?I
+>> >> >> would expect it to behave like the vlan configured case.
+>> >> >>
+>> >> >> >
+>> >> >> > eth0, vlan configured: see packets without vlan tag (see double tagged
+>> >> >> > packets with one vlan tag)
+>> >> >>
+>> >> >> Both ASF and vlan group configured cause tag stripping to be enabled.
+>> >> >> Missing tag.
+>> >> >>
+>> >> >> >
+>> >> >> > eth1 same as originally reported:
+>> >> >> > without vlan configured see vlan tags (single and double tagged as
+>> >> >> > expected)
+>> >> >>
+>> >> >> No ASF and no vlan group means tag stripping is disabled. ?Have tag.
+>> >> >>
+>> >> >> > with vlan configured: see packets without vlan tag (see double tagged
+>> >> >> > packets with one vlan tag)
+>> >> >>
+>> >> >> Configuring vlan group causes stripping to be enabled. ?Missing tag.
+>> >> >>
+>> >> >> >
+>> >> >> >
+>> >> >> > 2.6.37-rc5, your tg3 use new vlan-code patch:
+>> >> >> >
+>> >> >> > eth0, no vlan configured: ?see packets without vlan tag (see double
+>> >> >> > tagged packets with one vlan tag)
+>> >> >>
+>> >> >> ASF enables tag stripping. ?Missing tag.
+>> >> >>
+>> >> >> > eth1, no vlan configured: see vlan tags (single and double tagged as
+>> >> >> > expected)
+>> >> >>
+>> >> >> No ASF, no vlan group means no stripping. ?Have tag.
+>> >> >>
+>> >> >> >
+>> >> >> >
+>> >> >> > eth0, vlan configured: as without vlan
+>> >> >>
+>> >> >> ASF enables stripping. ?Missing tag.
+>> >> >>
+>> >> >> > eth1, vlan configured: as without vlan
+>> >> >>
+>> >> >> With this patch vlan stripping is only enabled when ASF is on, so no
+>> >> >> stripping. ?Have tag.
+>> >> >>
+>> >> >> >
+>> >> >> > 2.6.37-rc5, your tg3 use new vlan-code patch with test patch ontop
+>> >> >> >
+>> >> >> > eth1 no vlan configured: see packets without vlan tag (see double tagged
+>> >> >> > packets with one vlan tag)
+>> >> >>
+>> >> >> With the second patch, vlan stripping is always enabled. ?Missing tag.
+>> >> >>
+>> >> >> > eth1 with vlan: the same
+>> >> >>
+>> >> >> Stripping still always enabled. ?Missing tag.
+>> >> >>
+>> >> >> The bottom line is whenever vlan stripping is enabled we're missing
+>> >> >> the outer tag. ?It might be worth adding some debugging in the area
+>> >> >> before napi_gro_receive/vlan_gro_receive (depending on version). ?My
+>> >> >> guess is that (desc->type_flags & RXD_FLAG_VLAN) is false even for
+>> >> >> vlan packets on this NIC.
+>> >> >>
+>> >> >> You said that everything works on the 5752? ?Matt, is it possible that
+>> >> >> the 5714 either has a problem with vlan stripping or a different way
+>> >> >> of reporting it?
+>> >> >
+>> >> > I don't think this is a 5714 specific issue. ?I think the problem is
+>> >> > rooted in the fact that the VLAN tag stripping is enabled.
+>> >>
+>> >> It's definitely related to vlan stripping being enabled. ?Other cards
+>> >> using tg3 seem to work fine with stripping though, which is why I
+>> >> thought it might be specific to the 5714.
+>> >
+>> > I just tested this on a 5714S, using a net-next-2.6 snapshot obtained
+>> > today. ?It does the right thing in both cases (2nd tg3 patch ommited /
+>> > applied). ?The tag is always visible in the packet stream as seen from
+>> > tcpdump.
+>> >
+>> >> > Your RXD_FLAG_VLAN idea sounds unlikely to me, but it's worth a check.
+>> >> >
+>> >> > The patch here is using __vlan_hwaccel_put_tag(), which informs the
+>> >> > stack a VLAN tag is present. ?If this is indeed a reporting problem, I'm
+>> >> > not sure what else the driver should be doing.
+>> >>
+>> >> The code to hand off the tag to the stack looks OK to me. ?Michael was
+>> >> seeing this on older versions of the kernel as well with this NIC,
+>> >> which predates both this patch and the larger vlan changes so it
+>> >> doesn't seem like a problem with passing the tag to the network stack.
+>> >> ?It's hard to know exactly what is going on though without seeing what
+>> >> the hardware is reporting.
+>> >
+>> > When RX_MODE_KEEP_VLAN_TAG is set, the RXD_FLAG_VLAN flag will not be set
+>> > when receiving a packet. ?The driver skips the __vlan_hwaccel_put_tag()
+>> > call.
+>> >
+>> > When RX_MODE_KEEP_VLAN_TAG is unset, the RXD_FLAG_VLAN flag is set, and
+>> > __vlan_hwaccel_put_tag() is called to reinject the packet.
+>>
+>> OK, thanks for testing it out.  I'm not sure that there's anything
+>> more we can do without hearing from Michael.
+>
+> In the meantime, I think what we have should go upstream.  Just to be
+> absolutely clear though, your position is that VLAN tags should always
+> be stripped?
 
-> Add calls to path-based security hooks into CacheFiles as, unlike inode-based
-> security, these aren't implicit in the vfs_mkdir() and similar calls.
+That's what the other converted drivers do by default (though most of
+them also provide an ethtool set_flags() method to change this).  It's
+generally the most efficient and is now safe to do in all cases.  It's
+also the consistent with what was happening before, since stripping
+was enabled when a vlan device was configured.  So, yes, normally I
+think stripping should be enabled.
 
-Adding fsdevel for further review - cachefiles is essentially part of the 
-vfs, right ?
-
-
-> 
-> Reported-by: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> ---
-> 
->  fs/cachefiles/namei.c |   52 +++++++++++++++++++++++++++++++++++++++++--------
->  security/security.c   |    3 +++
->  2 files changed, 47 insertions(+), 8 deletions(-)
-> 
-> diff --git a/fs/cachefiles/namei.c b/fs/cachefiles/namei.c
-> index 42c7faf..a0358c2 100644
-> --- a/fs/cachefiles/namei.c
-> +++ b/fs/cachefiles/namei.c
-> @@ -275,6 +275,7 @@ static int cachefiles_bury_object(struct cachefiles_cache *cache,
->  				  bool preemptive)
->  {
->  	struct dentry *grave, *trap;
-> +	struct path path, path_to_graveyard;
->  	char nbuffer[8 + 8 + 1];
->  	int ret;
->  
-> @@ -287,10 +288,18 @@ static int cachefiles_bury_object(struct cachefiles_cache *cache,
->  	/* non-directories can just be unlinked */
->  	if (!S_ISDIR(rep->d_inode->i_mode)) {
->  		_debug("unlink stale object");
-> -		ret = vfs_unlink(dir->d_inode, rep);
->  
-> -		if (preemptive)
-> -			cachefiles_mark_object_buried(cache, rep);
-> +		path.mnt = cache->mnt;
-> +		path.dentry = dir;
-> +		ret = security_path_unlink(&path, rep);
-> +		if (ret < 0) {
-> +			cachefiles_io_error(cache, "Unlink security error");
-> +		} else {
-> +			ret = vfs_unlink(dir->d_inode, rep);
-> +
-> +			if (preemptive)
-> +				cachefiles_mark_object_buried(cache, rep);
-> +		}
->  
->  		mutex_unlock(&dir->d_inode->i_mutex);
->  
-> @@ -379,12 +388,23 @@ try_again:
->  	}
->  
->  	/* attempt the rename */
-> -	ret = vfs_rename(dir->d_inode, rep, cache->graveyard->d_inode, grave);
-> -	if (ret != 0 && ret != -ENOMEM)
-> -		cachefiles_io_error(cache, "Rename failed with error %d", ret);
-> +	path.mnt = cache->mnt;
-> +	path.dentry = dir;
-> +	path_to_graveyard.mnt = cache->mnt;
-> +	path_to_graveyard.dentry = cache->graveyard;
-> +	ret = security_path_rename(&path, rep, &path_to_graveyard, grave);
-> +	if (ret < 0) {
-> +		cachefiles_io_error(cache, "Rename security error %d", ret);
-> +	} else {
-> +		ret = vfs_rename(dir->d_inode, rep,
-> +				 cache->graveyard->d_inode, grave);
-> +		if (ret != 0 && ret != -ENOMEM)
-> +			cachefiles_io_error(cache,
-> +					    "Rename failed with error %d", ret);
->  
-> -	if (preemptive)
-> -		cachefiles_mark_object_buried(cache, rep);
-> +		if (preemptive)
-> +			cachefiles_mark_object_buried(cache, rep);
-> +	}
->  
->  	unlock_rename(cache->graveyard, dir);
->  	dput(grave);
-> @@ -448,6 +468,7 @@ int cachefiles_walk_to_object(struct cachefiles_object *parent,
->  {
->  	struct cachefiles_cache *cache;
->  	struct dentry *dir, *next = NULL;
-> +	struct path path;
->  	unsigned long start;
->  	const char *name;
->  	int ret, nlen;
-> @@ -458,6 +479,7 @@ int cachefiles_walk_to_object(struct cachefiles_object *parent,
->  
->  	cache = container_of(parent->fscache.cache,
->  			     struct cachefiles_cache, cache);
-> +	path.mnt = cache->mnt;
->  
->  	ASSERT(parent->dentry);
->  	ASSERT(parent->dentry->d_inode);
-> @@ -511,6 +533,10 @@ lookup_again:
->  			if (ret < 0)
->  				goto create_error;
->  
-> +			path.dentry = dir;
-> +			ret = security_path_mkdir(&path, next, 0);
-> +			if (ret < 0)
-> +				goto create_error;
->  			start = jiffies;
->  			ret = vfs_mkdir(dir->d_inode, next, 0);
->  			cachefiles_hist(cachefiles_mkdir_histogram, start);
-> @@ -536,6 +562,10 @@ lookup_again:
->  			if (ret < 0)
->  				goto create_error;
->  
-> +			path.dentry = dir;
-> +			ret = security_path_mknod(&path, next, S_IFREG, 0);
-> +			if (ret < 0)
-> +				goto create_error;
->  			start = jiffies;
->  			ret = vfs_create(dir->d_inode, next, S_IFREG, NULL);
->  			cachefiles_hist(cachefiles_create_histogram, start);
-> @@ -692,6 +722,7 @@ struct dentry *cachefiles_get_directory(struct cachefiles_cache *cache,
->  {
->  	struct dentry *subdir;
->  	unsigned long start;
-> +	struct path path;
->  	int ret;
->  
->  	_enter(",,%s", dirname);
-> @@ -719,6 +750,11 @@ struct dentry *cachefiles_get_directory(struct cachefiles_cache *cache,
->  
->  		_debug("attempt mkdir");
->  
-> +		path.mnt = cache->mnt;
-> +		path.dentry = dir;
-> +		ret = security_path_mkdir(&path, subdir, 0700);
-> +		if (ret < 0)
-> +			goto mkdir_error;
->  		ret = vfs_mkdir(dir->d_inode, subdir, 0700);
->  		if (ret < 0)
->  			goto mkdir_error;
-> diff --git a/security/security.c b/security/security.c
-> index 1b798d3..568b98d 100644
-> --- a/security/security.c
-> +++ b/security/security.c
-> @@ -360,6 +360,7 @@ int security_path_mkdir(struct path *dir, struct dentry *dentry, int mode)
->  		return 0;
->  	return security_ops->path_mkdir(dir, dentry, mode);
->  }
-> +EXPORT_SYMBOL(security_path_mkdir);
->  
->  int security_path_rmdir(struct path *dir, struct dentry *dentry)
->  {
-> @@ -374,6 +375,7 @@ int security_path_unlink(struct path *dir, struct dentry *dentry)
->  		return 0;
->  	return security_ops->path_unlink(dir, dentry);
->  }
-> +EXPORT_SYMBOL(security_path_unlink);
->  
->  int security_path_symlink(struct path *dir, struct dentry *dentry,
->  			  const char *old_name)
-> @@ -400,6 +402,7 @@ int security_path_rename(struct path *old_dir, struct dentry *old_dentry,
->  	return security_ops->path_rename(old_dir, old_dentry, new_dir,
->  					 new_dentry);
->  }
-> +EXPORT_SYMBOL(security_path_rename);
->  
->  int security_path_truncate(struct path *path)
->  {
-> 
-
--- 
-James Morris
-<jmorris@namei.org>
+I assumed that disabling stripping in most situations was just an
+oversight.  Was there a reason why you feel it is better not to use
+it?
