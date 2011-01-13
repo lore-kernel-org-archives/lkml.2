@@ -1,61 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932713Ab1AMCeQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 21:34:16 -0500
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:51829 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932538Ab1AMCeM (ORCPT
+	id S932675Ab1AMCkU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 21:40:20 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:27285 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932538Ab1AMCkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 21:34:12 -0500
-Message-ID: <4D2E6129.8000700@ce.jp.nec.com>
-Date: Thu, 13 Jan 2011 11:19:21 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	Wed, 12 Jan 2011 21:40:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=vn9GT4K/o9sWIBJy0iNenb+UP9W4JHeWYRXV+UCqDBvMXH8Q1Hf7pm4rfRMgA1vbyw
+         qqw2OvanwMGuhMPE9+MA==
+Date: Wed, 12 Jan 2011 18:40:09 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Tejun Heo <tj@kernel.org>
+cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        eric.dumazet@gmail.com, yinghai@kernel.org, brgerst@gmail.com,
+        gorcunov@gmail.com, Pekka Enberg <penberg@kernel.org>,
+        shaohui.zheng@intel.com
+Subject: Re: [PATCH 05/16] x86: Always use x86_cpu_to_logical_apicid for cpu
+ -> logical apic id
+In-Reply-To: <1293731369-10851-6-git-send-email-tj@kernel.org>
+Message-ID: <alpine.DEB.2.00.1101121831001.8631@chino.kir.corp.google.com>
+References: <1293731369-10851-1-git-send-email-tj@kernel.org> <1293731369-10851-6-git-send-email-tj@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Milan Broz <mbroz@redhat.com>, Tejun Heo <tj@kernel.org>
-CC: Valdis.Kletnieks@vt.edu, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Neil Brown <neilb@suse.de>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-raid@vger.kernel.org,
-        device-mapper development <dm-devel@redhat.com>
-Subject: Re: linux-next - WARNING: at fs/block_dev.c:824 bd_link_disk_holder+0x92/0x1ac()
-References: <16069.1294853673@localhost> <4D2E4611.90002@redhat.com>
-In-Reply-To: <4D2E4611.90002@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/11 09:23, Milan Broz wrote:
-> On 01/12/2011 06:34 PM, Valdis.Kletnieks@vt.edu wrote:
->> Seen in a boot of yesterday's linux-next.   The 'W' flag was due to the
->> already-reported 'WARNING: at kernel/workqueue.c:1202 worker_enter_idle'.
->> Not sure if it's a block_dev or dm/LVM issue, so I'm cc:'ing both groups.  I wonder
->> if the fact I still have 'CONFIG_DEVTMPFS=n' is involved (it's apparently ticking off
->> dracut before and after the warning).
->>
->> [   16.840333] dracut: Found volume group "vg_blackice" using metadata type lvm2
->> [   16.892282] dracut: The link /dev/vg_blackice/opt should had been created by udev but it was not found.  Falling back to direct link creation.
->> [   16.912627] ------------[ cut here ]------------
->> [   16.912635] WARNING: at fs/block_dev.c:824 bd_link_disk_holder+0x92/0x1ac()
-> 
-> That seems to be
-> WARN_ON_ONCE(!bdev->bd_holder || bdev->bd_holder_disk);
-> added in patch
-> http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=e09b457bdb7e8d23fc54dcef0930ac697d8de895
-> "block: simplify holder symlink handling"
-> 
-> dm linear just claims device in table constructor, I don't think it is bug in DM code.
+On Thu, 30 Dec 2010, Tejun Heo wrote:
 
-The patch assumes only one holder disk for a claimed dev, which is not true.
-E.g. if there are multiple LVs on a PV.
+> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> index ba78b1e..8ad231c 100644
+> --- a/arch/x86/kernel/apic/apic.c
+> +++ b/arch/x86/kernel/apic/apic.c
+> @@ -1252,6 +1252,14 @@ void __cpuinit setup_local_APIC(void)
+>  	 */
+>  	apic->init_apic_ldr();
+>  
+> +#ifdef CONFIG_X86_32
+> +	/*
+> +	 * APIC LDR is initialized.  Fetch and store logical_apic_id.
+> +	 */
+> +	early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
+> +		logical_smp_processor_id();
+> +#endif
+> +
+>  	/*
+>  	 * Set Task Priority to 'accept all'. We never change this
+>  	 * later on.
 
-In addition to that, since claiming is done in table constructor,
-there can be 2 claim instances for a slave/holder pair at a time
-when you load a table while there's already an active one.
-E.g. if you do lvresize.
-We need consideration for this, too.
+You can remove the initialization of x86_cpu_to_logical_apicid in the 
+->init_apic_ldr() callback in x2apic_cluster.c now too?
 
-Thanks,
--- 
-Jun'ichi Nomura, NEC Corporation
+[snip]
+
+> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> index eb04f30..0768761 100644
+> --- a/arch/x86/kernel/smpboot.c
+> +++ b/arch/x86/kernel/smpboot.c
+> @@ -168,19 +168,18 @@ static void unmap_cpu_to_node(int cpu)
+>  static void map_cpu_to_logical_apicid(void)
+>  {
+>  	int cpu = smp_processor_id();
+> -	int apicid = logical_smp_processor_id();
+> -	int node = apic->apicid_to_node(apicid);
+> +	int logical_apicid = early_per_cpu(x86_cpu_to_logical_apicid, cpu);
+> +	int node;
+>  
+> +	node = apic->apicid_to_node(logical_apicid);
+>  	if (!node_online(node))
+>  		node = first_online_node;
+>  
+> -	early_per_cpu(x86_cpu_to_logical_apicid, cpu) = apicid;
+>  	map_cpu_to_node(cpu, node);
+>  }
+>  
+>  void numa_remove_cpu(int cpu)
+>  {
+> -	early_per_cpu(x86_cpu_to_logical_apicid, cpu) = BAD_APICID;
+>  	unmap_cpu_to_node(cpu);
+>  }
+>  #else
+
+I don't see where this is reset to BAD_APICID when numa_remove_cpu() is 
+called when disabling a cpu after the patch.
