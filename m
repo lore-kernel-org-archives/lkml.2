@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932479Ab1AMCJT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 21:09:19 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:36604 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754728Ab1AMCJR convert rfc822-to-8bit (ORCPT
+	id S932509Ab1AMCOS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 21:14:18 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:37256 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932312Ab1AMCOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 21:09:17 -0500
+	Wed, 12 Jan 2011 21:14:16 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=bhu7F6tP3iCgkoo8WwYYIwh5qL9E3bQvNfzfXQo+ZKZLOpxFcHa1WHAiz8/EBWoE+D
-         Qo4Jb+fr1q/0Q3iaQfhH2UDtgRlBNiaLbPSJmZtY2oUabTnvZ+TV3uCF3R/cFSA+ws9R
-         z7EDMxdKCOOeEVgqWIZi+816KR5uyeYSc3OvE=
+         :cc:content-type;
+        b=xasHv0n8MZFvqy1/b9OoAh0PSW23WGhsFs1jtz6K+0xMMDcnIOE5cJNJjHiH0SpT83
+         BneDHBEonOIdVH1jZfnG4UXivB3ugoZ43JIyhFYh2IBPSYwJGR4FTky/psNd1f5Tf6hz
+         ysBqAkbAlRGGYqG2N2KRnbhHRVESytOVyQvXE=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikUtGSJSaG=wsW8i0LzX66F3YwD_MroD-36jr1f@mail.gmail.com>
-References: <AANLkTikUtGSJSaG=wsW8i0LzX66F3YwD_MroD-36jr1f@mail.gmail.com>
-Date: Thu, 13 Jan 2011 13:09:16 +1100
-Message-ID: <AANLkTinyah4tBCLYh6FMsmc0mt4CLcXyFgBdrK2SZ15d@mail.gmail.com>
-Subject: Re: rcu: hlist_bl_set_first_rcu hangs
+In-Reply-To: <1294883313.2757.5.camel@perseus>
+References: <20110107075831.GA14915@amd>
+	<1294763679.2435.72.camel@doink>
+	<AANLkTin67OXYYKk6y+_MKfXEXBz-F_+qAH0cpiJ24yEQ@mail.gmail.com>
+	<1294768668.2435.177.camel@doink>
+	<1294804776.2821.4.camel@perseus>
+	<AANLkTim8rQb3mDFHg7DmbTZa20FxRGk3wJCjOkz=JG9S@mail.gmail.com>
+	<1294807279.2821.9.camel@perseus>
+	<1294809426.2821.20.camel@perseus>
+	<AANLkTikYErmu6bNz51iPgjzdOoa8uWNNdn01texihqM6@mail.gmail.com>
+	<1294883313.2757.5.camel@perseus>
+Date: Thu, 13 Jan 2011 13:14:14 +1100
+Message-ID: <AANLkTin9ac1r_Hur4w=cxkCg2Z-JVYRCwsR6KeZ+9b=R@mail.gmail.com>
+Subject: Re: [announce] vfs-scale git tree update
 From: Nick Piggin <npiggin@gmail.com>
-To: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Cc: Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ian Kent <raven@themaw.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, aelder@sgi.com,
+        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 6:17 PM, Po-Yu Chuang <ratbert.chuang@gmail.com> wrote:
-> Dear Nick,
+On Thu, Jan 13, 2011 at 12:48 PM, Ian Kent <raven@themaw.net> wrote:
+> On Thu, 2011-01-13 at 12:01 +1100, Nick Piggin wrote:
+>> Hm, what are the concurrencies that you need protection from?
 >
-> I am porting arm-based platform from 2.6.35 to current mainline.
-> The compiler is gcc-4.4.0.
->
-> While booting, the kernel (mainline) hangs after
-> "RPC: Registered tcp NFSv4.1 backchannel transport module "
-> with similar configurations to 2.6.35.
-> Then I found that there is an infinite loop in hlist_bl_set_first_rcu hangs().
->
-> The call sequence is:
->
-> _d_rehash @fs/dcache.c
-> __d_rehash @fs/dcache.c
-> hlist_bl_add_head_rcu @include/linux/rculist_bl.h
-> hlist_bl_set_first_rcu @include/linux/rculist_bl.h
->
-> Current implementation of hlist_bl_set_first_rcu:
->
-> static inline void hlist_bl_set_first_rcu(struct hlist_bl_head *h,
->                                        struct hlist_bl_node *n)
-> {
->        LIST_BL_BUG_ON((unsigned long)n & LIST_BL_LOCKMASK);
->        LIST_BL_BUG_ON(!((unsigned long)h->first & LIST_BL_LOCKMASK));
->        rcu_assign_pointer(h->first,
->                (struct hlist_bl_node *)((unsigned long)n | LIST_BL_LOCKMASK));
-> }
->
-> The infinite loop is caused by:
->        LIST_BL_BUG_ON(!((unsigned long)h->first & LIST_BL_LOCKMASK));
-> If I comment out this line, the kernel boots well.
->
-> The problem looks like that LIST_BL_LOCKMASK is 0 if CONFIG_SMP=n
-> and CONFIG_DEBUG_SPINLOCK=n.
->
-> #if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
-> #define LIST_BL_LOCKMASK        1UL
-> #else
-> #define LIST_BL_LOCKMASK        0UL
-> #endif
->
-> Therefore !((unsigned long)h->first & LIST_BL_LOCKMASK) is always true.
->
-> I also have CONFIG_DEBUG_LIST=y, so boom! Kernel dies.
+> Ha, I think I'm wrong about this, after looking more closely at this I'm
+> struggling to see why autofs4_lock is needed at all.
 
-Ah, that's a silly error! Thanks for the great debugging work, I'll patch it
-up.
+Well you did send me a series of patches to remove it, but
+unfortunately that was just as you made some larger changes
+to autofs4 upstream and I wasn't able to keep them up to date.
+
+It would be much appreciated if you had time to take another
+look at all the locking and streamline it.
 
 Thanks,
 Nick
