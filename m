@@ -1,118 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756554Ab1AMIm6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 03:42:58 -0500
-Received: from mga14.intel.com ([143.182.124.37]:36310 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756343Ab1AMImy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 03:42:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,317,1291622400"; 
-   d="scan'208";a="373946011"
-Subject: [PATCH 2/2] KVM, Replace is_hwpoison_address with
- get_user_pages_hwpoison
-From: Huang Ying <ying.huang@intel.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Dean Nelson <dnelson@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 Jan 2011 16:42:49 +0800
-Message-ID: <1294908169.4596.59.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S932558Ab1AMIq4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 03:46:56 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:58915 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753307Ab1AMIqx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 03:46:53 -0500
+Date: Thu, 13 Jan 2011 14:16:48 +0530
+From: Bharata B Rao <bharata@linux.vnet.ibm.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] Re: autogroup: sched_setscheduler() fails
+Message-ID: <20110113084648.GA2982@in.ibm.com>
+Reply-To: bharata@linux.vnet.ibm.com
+References: <20110110091622.GF2772@in.ibm.com>
+ <1294655388.8197.22.camel@marge.simson.net>
+ <1294657154.2016.459.camel@laptop>
+ <1294677746.8345.4.camel@marge.simson.net>
+ <20110111171046.GL4772@in.ibm.com>
+ <1294771686.8006.15.camel@marge.simson.net>
+ <1294810842.8370.7.camel@marge.simson.net>
+ <AANLkTimtwt+OGohMxGRC7L4Dm-h4wvCWYi-=13efqFtr@mail.gmail.com>
+ <1294890890.8089.39.camel@marge.simson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294890890.8089.39.camel@marge.simson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-is_hwpoison_address only checks whether the page table entry is
-hwpoisoned, regardless the memory page mapped.  While
-get_user_pages_hwpoison will check both.
+On Thu, Jan 13, 2011 at 04:54:50AM +0100, Mike Galbraith wrote:
+> (mailer switched me to work account again.  grrrr, switch yet again:)
+> 
+> On Wed, 2011-01-12 at 14:32 +0800, Yong Zhang wrote:
+> 
+> > Setting rt_runtime both in this patch and the previous one will make tune
+> > other's rt_runtime/rt_period trouble, I guess.
+> 
+> Yeah, as in making it impossible to allocate even 1 usec :)  We need
+> zero bandwidth though, so tell  __sched_setscheduler() that autogroups
+> having zero allocated is perfectly fine.
+> 
+> sched, autogroup: fix CONFIG_RT_GROUP_SCHED sched_setscheduler() failure.
+> 
+> If CONFIG_RT_GROUP_SCHED is set, __sched_setscheduler() fails due to autogroup
+> not allocating rt_runtime.  Free unused/unusable rt_se and rt_rq, redirect RT
+> tasks to the root task group, and tell __sched_setscheduler() that it's ok.
+> 
+> Signed-off-by: Mike Galbraith <efault@gmx.de>
+> Reported-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
+> 
+> ---
+>  kernel/sched.c           |    3 ++-
+>  kernel/sched_autogroup.c |   27 +++++++++++++++++++++++++++
+>  kernel/sched_autogroup.h |    4 ++++
+>  3 files changed, 33 insertions(+), 1 deletion(-)
+> 
 
-QEMU will clear the poisoned page table entry (via unmap/map) to make
-it possible to allocate a new memory page for the virtual address
-across guest rebooting.  But it is also possible that the underlying
-memory page is kept poisoned even after the corresponding page table
-entry is cleared, that is, a new memory page can not be allocated.
-get_user_pages_hwpoison can catch these situations.
+Works fine here.
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- include/linux/mm.h  |    8 --------
- mm/memory-failure.c |   32 --------------------------------
- virt/kvm/kvm_main.c |    4 +++-
- 3 files changed, 3 insertions(+), 41 deletions(-)
-
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1524,14 +1524,6 @@ extern int sysctl_memory_failure_recover
- extern void shake_page(struct page *p, int access);
- extern atomic_long_t mce_bad_pages;
- extern int soft_offline_page(struct page *page, int flags);
--#ifdef CONFIG_MEMORY_FAILURE
--int is_hwpoison_address(unsigned long addr);
--#else
--static inline int is_hwpoison_address(unsigned long addr)
--{
--	return 0;
--}
--#endif
- 
- extern void dump_page(struct page *page);
- 
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1433,35 +1433,3 @@ done:
- 	/* keep elevated page count for bad page */
- 	return ret;
- }
--
--/*
-- * The caller must hold current->mm->mmap_sem in read mode.
-- */
--int is_hwpoison_address(unsigned long addr)
--{
--	pgd_t *pgdp;
--	pud_t pud, *pudp;
--	pmd_t pmd, *pmdp;
--	pte_t pte, *ptep;
--	swp_entry_t entry;
--
--	pgdp = pgd_offset(current->mm, addr);
--	if (!pgd_present(*pgdp))
--		return 0;
--	pudp = pud_offset(pgdp, addr);
--	pud = *pudp;
--	if (!pud_present(pud) || pud_large(pud))
--		return 0;
--	pmdp = pmd_offset(pudp, addr);
--	pmd = *pmdp;
--	if (!pmd_present(pmd) || pmd_large(pmd))
--		return 0;
--	ptep = pte_offset_map(pmdp, addr);
--	pte = *ptep;
--	pte_unmap(ptep);
--	if (!is_swap_pte(pte))
--		return 0;
--	entry = pte_to_swp_entry(pte);
--	return is_hwpoison_entry(entry);
--}
--EXPORT_SYMBOL_GPL(is_hwpoison_address);
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -966,7 +966,9 @@ static pfn_t hva_to_pfn(struct kvm *kvm,
- 			goto return_fault_page;
- 
- 		down_read(&current->mm->mmap_sem);
--		if (is_hwpoison_address(addr)) {
-+		npages = get_user_pages_hwpoison(current, current->mm,
-+						 addr, 1, 1, 0, page, NULL);
-+		if (npages == -EHWPOISON) {
- 			up_read(&current->mm->mmap_sem);
- 			get_page(hwpoison_page);
- 			return page_to_pfn(hwpoison_page);
-
-
+Thanks,
+Bharata.
