@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933053Ab1AMS3U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 13:29:20 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:46954 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932961Ab1AMS3S (ORCPT
+	id S933091Ab1AMSdh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 13:33:37 -0500
+Received: from exprod7og105.obsmtp.com ([64.18.2.163]:52898 "HELO
+	exprod7og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932812Ab1AMSdf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 13:29:18 -0500
-Date: Thu, 13 Jan 2011 19:30:25 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Manoj Iyer <manoj.iyer@canonical.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Matthew Garrett <mjg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
-Subject: Re: [PATCH] Quirk to fix suspend/resume on Lenovo Edge 11,13,14,15
-Message-ID: <20110113183025.GE2006@aftab>
-References: <1294934542-2411-1-git-send-email-manoj.iyer@canonical.com>
- <1294934542-2411-2-git-send-email-manoj.iyer@canonical.com>
- <20110113164616.GB21289@srcf.ucam.org>
- <alpine.LFD.2.00.1101131808450.2678@localhost6.localdomain6>
- <20110113172205.GA30866@kryptos.osrc.amd.com>
- <AANLkTinw23rtSERxAy6G_cu5=rvQeEzxvf3snsUOZE+z@mail.gmail.com>
- <20110113175531.GD2006@aftab>
- <AANLkTikDoRMoQjtN03eMoeacwottEixrFqcF8nJZWgKy@mail.gmail.com>
-MIME-Version: 1.0
+	Thu, 13 Jan 2011 13:33:35 -0500
+X-Greylist: delayed 3191 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Jan 2011 13:33:35 EST
+From: Lawrence Manning <lawrence.manning@smoothwall.net>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikDoRMoQjtN03eMoeacwottEixrFqcF8nJZWgKy@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+Subject: Problem booting 2.6.32 built with gcc 3.3.5
+Date: Thu, 13 Jan 2011 17:29:45 +0000
+Message-Id: <C62021DB-A2F8-4A89-82B3-9FC38C19F329@smoothwall.net>
+To: linux-kernel@vger.kernel.org
+Mime-Version: 1.0 (Apple Message framework v1082)
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 01:11:48PM -0500, Manoj Iyer wrote:
-> Borislav,
-> 
-> Please see attached lspci output.
+Hi list,
 
-Thanks, that looks better. A stab in the dark:
+I am unable to boot a 2.6.32 vanilla kernel when it is built with a toolchain based off gcc 3.3.5.  When building this kernel on gcc 4.2.4 it boots happily.  The config file remains unchanged.  I can supply this config file if anyone thinks it would be useful.
 
-Can you boot your machine with "nohpet" and try a suspend/resume cycle
-to see whether that helps?
+The problem seems to be related to the decompress code in arch/x86/boot/compressed/misc.c.  When booting the kernel built with gcc 3.3.5 I see a message:
 
-If that works, can you then boot normally (i.e. no "nohpet" option on
-the command line) and wait ~5mins after resume to see whether your
-machine comes out of the hang after all (the idea here is to wait for
-the 32bit HPET counter to wrap around).
+Destination address too large -- System halted
 
-Thanks.
+I've tried this kernel on virtual box and on physical hardware with the same results.  The gcc 3.3.5 chain is able to properly build earlier kernels, 2.6.16.* specifically.
+
+Has anything changed with regard to recommended compilers on newer kernels?  I assume most people build there kernels with gcc 4, but is gcc 3 still tested?
+
+Any help gratefully appreciated.  I'm not on the list, so please keep me in the CC.
 
 -- 
-Regards/Gruss,
-Boris.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Lawrence Manning
+Lead Developer
+
+lawrence.manning@smoothwall.net
+
+Smoothwall Ltd
+1 John Charles Way, Leeds, LS12 6QA United Kingdom 
+Telephone:  USA: 1 800 959 3760  Europe: +44 (0) 8701 999500
+www.smoothwall.net
+
+Smoothwall Limited is registered in England, Company Number: 4298247.  This email and any attachments transmitted with it are confidential to the intended recipient(s) and may not be communicated to any other person or published by any means without the permission of Smoothwall Limited.  Any opinions stated in this message are solely those of the author.
+
