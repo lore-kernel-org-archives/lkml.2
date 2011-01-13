@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757022Ab1AMVVh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 16:21:37 -0500
-Received: from narfation.org ([79.140.41.39]:33424 "EHLO v3-1039.vlinux.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751830Ab1AMVVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 16:21:31 -0500
-X-Greylist: delayed 490 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Jan 2011 16:21:31 EST
-From: Sven Eckelmann <sven@narfation.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Subject: Re: [PATCH] Even Batman should not dereference NULL pointers
-Date: Thu, 13 Jan 2011 22:13:15 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-trunk-686; KDE/4.4.5; i686; ; )
-Cc: b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Marek Lindner <lindner_marek@yahoo.de>,
-        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-        "David S. Miller" <davem@davemloft.net>
-References: <alpine.LNX.2.00.1101132146400.11347@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1101132146400.11347@swampdragon.chaosbits.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart12825553.O9jQGzAFVI";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha512
+	id S1757163Ab1AMVXO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 16:23:14 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:25984 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751934Ab1AMVXJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 16:23:09 -0500
+Date: Thu, 13 Jan 2011 22:22:58 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux I2C <linux-i2c@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] i2c updates for 2.6.38
+Message-ID: <20110113222258.128d6a13@endymion.delvare>
+In-Reply-To: <20110111112458.GA13429@opensource.wolfsonmicro.com>
+References: <20110110222145.31c40d8e@endymion.delvare>
+	<20110111111758.GH6541@sirena.org.uk>
+	<20110111122500.203c4ce4@endymion.delvare>
+	<20110111112458.GA13429@opensource.wolfsonmicro.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101132213.18503.sven@narfation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart12825553.O9jQGzAFVI
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On Tue, 11 Jan 2011 11:24:59 +0000, Mark Brown wrote:
+> On Tue, Jan 11, 2011 at 12:25:00PM +0100, Jean Delvare wrote:
+> 
+> > Thanks for the reminder, I'll look into that as soon as possible and
+> > when the patches are ready, I'll send another pull request to Linus.
+> 
+> Excellent, thanks - I was worried it might've got lost since you were on
+> vacation during pretty much all of the discussion.
 
-On Thursday 13 January 2011 21:53:38 Jesper Juhl wrote:
-> There's a problem in net/batman-adv/unicast.c::frag_send_skb().
-> dev_alloc_skb() allocates memory and may fail, thus returning NULL. If
-> this happens we'll pass a NULL pointer on to skb_split() which in turn
-> hands it to skb_split_inside_header() from where it gets passed to
-> skb_put() that lets skb_tail_pointer() play with it and that function
-> dereferences it. And thus the bat dies.
->=20
-> While I was at it I also moved the call to dev_alloc_skb() above the
-> assignment to 'unicast_packet' since there's no reason to do that
-> assignment if the memory allocation fails.
+Correct, but I trust that you and Rafael got things right. I don't know
+much about power management anyway.
 
-Applied
+So I've applied two patches from you. Please check in:
+  ftp://ftp.kernel.org/pub/linux/kernel/people/jdelvare/linux-2.6/jdelvare-i2c/
+that I picked the correct versions and confirm that nothing is missing.
+If everything looks OK to you, I'll send a pull request to Linus
+tomorrow.
 
-Thanks,
-	Sven
-
---nextPart12825553.O9jQGzAFVI
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAABCgAGBQJNL2rsAAoJEF2HCgfBJntG0DIQAIbD6U+6ITHA4PD08pn2Vq6K
-3iioaSryDTDa+a9nEz6T3vox64dSLTQVC4fzXkFQW+FGUX3QzGVCh4cpNPjgSpoI
-gL9+DK5OahV4TZVSy2yjGDX230H7GjlwXRycTuALx0Xk3pS/ElAjoJc9W79rN9xC
-P7mBbFEskPO4L8rkcTSRWGPlWoSHo++q8nWHmDN+5HitmyfTMFBFiQN0IRxQh62+
-gM1usbAIPOLoqwer3udI/tw+J2nrkmVFDtmFGAzgznKMqv1++hqUrtib2603yzZs
-0NNOLOvWc0zyHtwoBK9jmEvD2hrqiB/pvjQWz37JZ5Pi7M6eXaCKPZgNPtrJj1xT
-kqFjDdNsUK72RNNJqrV2Kd+3LPIsofwH6EJ9XxvIBJzlJXhUJmTn6zpl94UtoEQc
-q/xsqPMTHm1E4kM8dcJELXSFDsPlFEzu3p33M2+/FNIxLFlb8nUKB6GDVxo2PGYM
-NG0zT341rzDNmbzUshcPolWR+h69+6De0HPQvsDBbzqtTLQV1IxGaTzvkNHPCaSY
-F/73q3QJsCIbpwy9kVo5j4G4m17IicGIIXUzIUqMacGYsspHE7/obzEl7MWmlC08
-slNxmCrNzfSMeyFF4kmPzeuY//tH9SfjL7iFJ5brU6/nCq5+Kf0tXdLsrTML7PnE
-ex3OQ/zyZp1EcKcjYjmJ
-=heoP
------END PGP SIGNATURE-----
-
---nextPart12825553.O9jQGzAFVI--
+-- 
+Jean Delvare
