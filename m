@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757378Ab1AMWQY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 17:16:24 -0500
-Received: from www.tglx.de ([62.245.132.106]:56372 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757292Ab1AMWQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 17:16:17 -0500
-Date: Thu, 13 Jan 2011 23:15:16 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-cc: john stultz <johnstul@us.ibm.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, andi@firstfloor.org,
-        williams@redhat.com, schwidefsky@de.ibm.com, mingo@elte.hu,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [PATCH] acpi/pm: If failed at validating ACPI PM timer, inhibit
- future reads.
-In-Reply-To: <20110113214022.GA12097@dumpdata.com>
-Message-ID: <alpine.LFD.2.00.1101132301300.2678@localhost6.localdomain6>
-References: <1289003985-29060-1-git-send-email-johnstul@us.ibm.com> <tip-08ec0c58fb8a05d3191d5cb6f5d6f81adb419798@git.kernel.org> <20110111081352.GA22867@shutemov.name> <alpine.LFD.2.00.1101110926040.12146@localhost6.localdomain6> <20110111083054.GB22867@shutemov.name>
- <alpine.LFD.2.00.1101110936291.12146@localhost6.localdomain6> <20110111095640.GC22867@shutemov.name> <20110113174909.GA28738@dumpdata.com> <1294941698.5617.12.camel@work-vm> <20110113214022.GA12097@dumpdata.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757389Ab1AMWQs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 17:16:48 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53237 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757373Ab1AMWQn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 17:16:43 -0500
+Date: Thu, 13 Jan 2011 22:16:42 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [BUG] ECRYPT_FS
+Message-ID: <20110113221642.GR19804@ZenIV.linux.org.uk>
+References: <1294950181.3403.9.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294950181.3403.9.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jan 2011, Konrad Rzeszutek Wilk wrote:
-
-> tgl, John,
+On Thu, Jan 13, 2011 at 09:23:01PM +0100, Eric Dumazet wrote:
+> Hi Al
 > 
-> Should I push this to Linus or are you guys going to push
-> this patch during this merge window?
+> FYI, current linux-2.6 is broken for CONFIG_ECRYPT_FS
+> 
+> commit 66cb76666d69502fe982990b2cff5b6d607fd3b1
+> Author: Al Viro <viro@zeniv.linux.org.uk>
+> Date:   Wed Jan 12 20:04:37 2011 -0500
 
-Wait a moment. This patch is fresh of the press and not that urgent,
-really.
+Ugh...  Unfolded compile fix lost in branch reordering.  My apologies ;-/
+
+From: Al Viro <viro@zeniv.linux.org.uk>
+Date: Wed, 12 Jan 2011 20:32:19 -0500
+Subject: foldme
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+ fs/ecryptfs/main.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
+index 9ed4769..d3b28ab 100644
+--- a/fs/ecryptfs/main.c
++++ b/fs/ecryptfs/main.c
+@@ -141,13 +141,12 @@ int ecryptfs_init_persistent_file(struct dentry *ecryptfs_dentry)
+ 	return rc;
+ }
  
->     I've traced it down to the fact that when we boot under Xen we do
->     not have the HPET enabled nor the ACPI PM timer setup. The
+-static inode *ecryptfs_get_inode(struct inode *lower_inode,
++static struct inode *ecryptfs_get_inode(struct inode *lower_inode,
+ 		       struct super_block *sb)
+ {
+ 	struct inode *inode;
+ 	int rc = 0;
+ 
+-	lower_inode = lower_dentry->d_inode;
+ 	if (lower_inode->i_sb != ecryptfs_superblock_to_lower(sb)) {
+ 		rc = -EXDEV;
+ 		goto out;
+@@ -202,7 +201,7 @@ int ecryptfs_interpose(struct dentry *lower_dentry, struct dentry *dentry,
+ {
+ 	struct inode *lower_inode = lower_dentry->d_inode;
+ 	struct inode *inode = ecryptfs_get_inode(lower_inode, sb);
+-	if (IS_ERR(inode)
++	if (IS_ERR(inode))
+ 		return PTR_ERR(inode);
+ 	if (flags & ECRYPTFS_INTERPOSE_FLAG_D_ADD)
+ 		d_add(dentry, inode);
 
-Crap. If Xen would not have setup the pm timer then it would not even
-reach the consistency check. It would simply bail out via
-
-        if (!pmtmr_ioport)
-                return -ENODEV;
-
-and the whole misery would not have happened at all. Though it's a
-Good Thing that Xen is so screwed as it points to a real flaw which
-might happen on real hardware as well. See below
-
->     hpet_enable() is never called (b/c xen_time_init is called), and
->     for calibration of tsc_khz (calibrate_tsc == xen_tsc_khz) we
->     get a valid value.
->     
->     So 'tsc_read_refs' tries to read the ACPI PM timer (acpi_pm_read_early),
->     however that is disabled under Xen:
->     
->     [    1.099272] calling  init_acpi_pm_clocksource+0x0/0xdc @ 1
->     [    1.140186] PM-Timer failed consistency check  (0x0xffffff) - aborting.
->     
->     So the tsc_calibrate_check gets called, it can't do HPET, and reading
->     from ACPI PM timer results in getting 0xffffff.. .. and
->     (0xffff..-0xffff..)/some other value results in div_zero.
-
-Nonsense. 0/(some other value) does not result in a divide by zero
-except "some other value" is zero.
-
->     There is a check in 'tsc_refine_calibration_work' for invalid
->     values:
->     
->        /* hpet or pmtimer available ? */
->              if (!hpet && !ref_start && !ref_stop)
->                       goto out;
->     
->     But since ref_start and ref_stop have 0xffffff it does not trigger.
->
->     This little fix makes the read to be 0 and the check triggers.
-
-First of all the patch disables the pm_timer completely, which happens
-to results in a 0 read as a side effect. But the main point of this
-fix is to disable pmtimer in case of failure in the init function
-completely.
-
-Further there are several error conditions in this init function and
-we really need to disable pmtimer for all of them not just for the
-case you encountered.
-
-Thanks,
-
-	tglx
