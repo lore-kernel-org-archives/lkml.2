@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136Ab1AMF7O (ORCPT <rfc822;w@1wt.eu>);
+	id S1752331Ab1AMF7Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 00:59:16 -0500
+Received: from thunk.org ([69.25.196.29]:60410 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751841Ab1AMF7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 13 Jan 2011 00:59:14 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:62713 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750912Ab1AMF7L convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 00:59:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=SSUZHFTaOmyagq9b7vgtY2z0ptgXxx5xDOgGm6cb+u9ScF1ULwjzrk2A4T6c/WEBmJ
-         BLFjYeQOTv5JKVG6h6RPjkcbYfSp7OcuZBk/Dft88L/VFS9zf3TAWpvDTmxF/568Y6Y/
-         pBQLe5rADCDLVM0yYrEY+DaLS6ygI9PwrsnQQ=
-MIME-Version: 1.0
-In-Reply-To: <1294890890.8089.39.camel@marge.simson.net>
-References: <20110110091622.GF2772@in.ibm.com>
-	<1294655388.8197.22.camel@marge.simson.net>
-	<1294657154.2016.459.camel@laptop>
-	<1294677746.8345.4.camel@marge.simson.net>
-	<20110111171046.GL4772@in.ibm.com>
-	<1294771686.8006.15.camel@marge.simson.net>
-	<1294810842.8370.7.camel@marge.simson.net>
-	<AANLkTimtwt+OGohMxGRC7L4Dm-h4wvCWYi-=13efqFtr@mail.gmail.com>
-	<1294890890.8089.39.camel@marge.simson.net>
-Date: Thu, 13 Jan 2011 13:59:10 +0800
-Message-ID: <AANLkTi=x-nO-Z7hG9b5t2FvuznHXaTSLPdS05wkXYMKA@mail.gmail.com>
-Subject: Re: [patch] Re: autogroup: sched_setscheduler() fails
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: bharata@linux.vnet.ibm.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Ext4 Developers List <linux-ext4@vger.kernel.org>
+Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        linux-pm@lists.linux-foundation.org
+Subject: [PATCH] PM / Hibernate: Don't mark pages dirty when reading pages while thawing
+Date: Thu, 13 Jan 2011 00:59:11 -0500
+Message-Id: <1294898351-26156-1-git-send-email-tytso@mit.edu>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <20110113055612.GF13496@thunk.org>
+References: <20110113055612.GF13496@thunk.org>
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 11:54 AM, Mike Galbraith <efault@gmx.de> wrote:
-> sched, autogroup: fix CONFIG_RT_GROUP_SCHED sched_setscheduler() failure.
->
-> If CONFIG_RT_GROUP_SCHED is set, __sched_setscheduler() fails due to autogroup
-> not allocating rt_runtime.  Free unused/unusable rt_se and rt_rq, redirect RT
-> tasks to the root task group, and tell __sched_setscheduler() that it's ok.
->
-> Signed-off-by: Mike Galbraith <efault@gmx.de>
-> Reported-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
+Everything was sync'ed before the hibernation, so no pages could be
+dirty.  So this causes a lot of wasted I/O activity right after
+resuming from hibernation.
 
-This looks more clear ;)
+Worse, it also causes pages from files that were opened read/only to
+be marked writeble which makes them subject to writeback.  This was
+discovered when ext4 was changed to so that the jinode pointer was not
+initialized unless the file was opened read/write, and this caused
+things to blow up.  But that just unmasked a problem, since the pages
+belonging to the file in question should have never been marked dirty
+in the first place.  It increases the chances the text blocks for
+executables like /usr/bin/killall will get corrupted when they are
+needlessly written, and of course it means extra write cycles to the
+SSD.
 
-And a little comment below
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Cc: linux-pm@lists.linux-foundation.org
+---
+ kernel/power/block_io.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
->
-> ---
->  kernel/sched.c           |    3 ++-
->  kernel/sched_autogroup.c |   27 +++++++++++++++++++++++++++
->  kernel/sched_autogroup.h |    4 ++++
->  3 files changed, 33 insertions(+), 1 deletion(-)
-> @@ -106,6 +128,11 @@ task_wants_autogroup(struct task_struct
->        return true;
->  }
->
-> +static inline bool task_group_is_autogroup(struct task_group *tg)
-> +{
-> +       return tg != &root_task_group && tg->autogroup;
-
-Isn't just checking tg->autogroup sufficient?
-
-if tg == &root_task_group
-
-> --- linux-2.6.orig/kernel/sched.c
-> +++ linux-2.6/kernel/sched.c
-> @@ -4874,7 +4874,8 @@ recheck:
->                 * assigned.
->                 */
->                if (rt_bandwidth_enabled() && rt_policy(policy) &&
-> -                               task_group(p)->rt_bandwidth.rt_runtime == 0) {
-> +                               task_group(p)->rt_bandwidth.rt_runtime == 0 &&
-
-this check will fail.
-
-Thanks,
-Yong
-
+diff --git a/kernel/power/block_io.c b/kernel/power/block_io.c
+index 83bbc7c..108a4f3 100644
+--- a/kernel/power/block_io.c
++++ b/kernel/power/block_io.c
+@@ -49,8 +49,6 @@ static int submit(int rw, struct block_device *bdev, sector_t sector,
+ 	if (bio_chain == NULL) {
+ 		submit_bio(bio_rw, bio);
+ 		wait_on_page_locked(page);
+-		if (rw == READ)
+-			bio_set_pages_dirty(bio);
+ 		bio_put(bio);
+ 	} else {
+ 		if (rw == READ)
 -- 
-Only stand for myself
+1.7.3.1
+
