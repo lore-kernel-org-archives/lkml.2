@@ -1,38 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757255Ab1AMQmP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 11:42:15 -0500
-Received: from www.tglx.de ([62.245.132.106]:60654 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757097Ab1AMQmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 11:42:13 -0500
-Date: Thu, 13 Jan 2011 17:41:58 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-cc: Nick Piggin <npiggin@kernel.dk>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, u.kleine-koenig@pengutronix.de,
-        "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-Subject: Re: [PATCH] fs: Work around NFS wreckage
-In-Reply-To: <8952.1294927845@jrobl>
-Message-ID: <alpine.LFD.2.00.1101131732500.2678@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1101131436070.2678@localhost6.localdomain6> <8952.1294927845@jrobl>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757176Ab1AMQq0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 11:46:26 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:60839 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756825Ab1AMQqV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 11:46:21 -0500
+Date: Thu, 13 Jan 2011 16:46:16 +0000
+From: Matthew Garrett <mjg@redhat.com>
+To: Manoj Iyer <manoj.iyer@canonical.com>
+Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] Quirk to fix suspend/resume on Lenovo Edge 11,13,14,15
+Message-ID: <20110113164616.GB21289@srcf.ucam.org>
+References: <1294934542-2411-1-git-send-email-manoj.iyer@canonical.com> <1294934542-2411-2-git-send-email-manoj.iyer@canonical.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294934542-2411-2-git-send-email-manoj.iyer@canonical.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jan 2011, J. R. Okajima wrote:
-> Thomas Gleixner:
-> > The dcache scalability work broke NFS root filesystems.
-> 	:::
-> > Check for parent equal dentry and skip the nested lock to avoid the
-> > deadlock. I'm sure this is the wrong fix, but at least it "works" :)
-> 
-> With this patch, can you unmount it cleanly?
-> It skips incrementing d_count for both dentries.
-> Do we need at least one?
+On Thu, Jan 13, 2011 at 10:02:22AM -0600, Manoj Iyer wrote:
+> Set acpi_skip_timer_override to force ignoring BIOS
+> IRQ0 pin2 override. This fixes resume from suspend on
+> AMD based ThinkPad Edge 11,13,14 and 15.
 
-Not sure, as we should not end up there at all I guess.
+This was originally there because of a quirk in some ati chipsets, 
+coupled with DSDT insanity on HP's part. The Thinkpad Edges seem to be 
+Intel machines, so it's not the same underlying issue. Do we have any 
+idea what the root cause of the failure is? Quirking is a massively less 
+than ideal solution.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
