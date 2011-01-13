@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752402Ab1AMMvq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 07:51:46 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:39132 "EHLO
+	id S1756736Ab1AMMvx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 07:51:53 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:39151 "EHLO
 	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756717Ab1AMMvl (ORCPT
+	with ESMTP id S1756725Ab1AMMvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 07:51:41 -0500
-X-AuditID: b753bd60-a0361ba000000f65-e1-4d2ef5590559
+	Thu, 13 Jan 2011 07:51:47 -0500
+X-AuditID: b753bd60-a1557ba00000044b-7c-4d2ef55f484c
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -perf/perf/core 3/6] perf probe: Add --funcs to show available
-	functions in symtab
+Subject: [PATCH -perf/perf/core 4/6] perf: Add strfilter for general purpose
+	string filter
 To: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>
 Cc: Steven Rostedt <rostedt@goodmis.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Franck Bui-Huu <fbuihuu@gmail.com>, linux-kernel@vger.kernel.org,
         2nddept-manager@sdl.hitachi.co.jp,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         linux-kernel@vger.kernel.org
-Date: Thu, 13 Jan 2011 21:46:11 +0900
-Message-ID: <20110113124611.22426.10835.stgit@ltc236.sdl.hitachi.co.jp>
+Date: Thu, 13 Jan 2011 21:46:17 +0900
+Message-ID: <20110113124617.22426.25293.stgit@ltc236.sdl.hitachi.co.jp>
 In-Reply-To: <20110113124548.22426.11201.stgit@ltc236.sdl.hitachi.co.jp>
 References: <20110113124548.22426.11201.stgit@ltc236.sdl.hitachi.co.jp>
 User-Agent: StGIT/0.14.3
@@ -36,47 +35,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add --funcs to show available functions in symtab.
-Originally this feature came from Srikar's uprobes patches
-( http://lkml.org/lkml/2010/8/27/244 )
+Add strfilter for general purpose string filter.
+Every filter rules are descrived by glob matching pattern
+and '!' prefix which means Logical NOT.
+A strfilter consists of those filter rules connected
+with '&' and '|'. A set of rules can be folded by using
+'(' and ')'. It also accepts spaces around rules and those
+operators.
+
+Format:
+<rule> ::= <glob-exp> | "!" <rule> | <rule> <op> <rule> | "(" <rule> ")"
+<op> ::= "&" | "|"
 
 e.g.
-# ./perf probe --funcs
-...
-__ablkcipher_walk_complete
-__absent_pages_in_range
-__account_scheduler_latency
-__add_pages
-__alloc_pages_nodemask
-__alloc_percpu
-__alloc_reserved_percpu
-__alloc_skb
-__alloc_workqueue_key
-__any_online_cpu
-__ata_ehi_push_desc
-...
+ "(add* | del*) & *timer" filter rules pass strings which
+ start with add or del and end with timer.
 
-This also supports symbols in module, e.g.
-
-# ./perf probe -m kvm --funcs
-...
-cleanup_module
-cpuid_maxphyaddr
-emulate_clts
-emulate_instruction
-emulate_int_real
-emulate_invlpg
-emulator_get_dr
-emulator_set_dr
-emulator_task_switch
-emulator_write_emulated
-emulator_write_phys
-fx_init
-...
+This will be used by perf probe --filter.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Original-patch-from: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -84,177 +61,264 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org
 ---
 
- tools/perf/builtin-probe.c    |   29 +++++++++++++++++-
- tools/perf/util/probe-event.c |   67 ++++++++++++++++++++++++++++++++++++++++-
- tools/perf/util/probe-event.h |    1 +
- 3 files changed, 94 insertions(+), 3 deletions(-)
+ tools/perf/Makefile         |    2 
+ tools/perf/util/strfilter.c |  185 +++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/strfilter.h |   36 ++++++++
+ 3 files changed, 223 insertions(+), 0 deletions(-)
+ create mode 100644 tools/perf/util/strfilter.c
+ create mode 100644 tools/perf/util/strfilter.h
 
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index add163c..6cf708a 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -52,6 +52,7 @@ static struct {
- 	bool show_lines;
- 	bool show_vars;
- 	bool show_ext_vars;
-+	bool show_funcs;
- 	bool mod_events;
- 	int nevents;
- 	struct perf_probe_event events[MAX_PROBES];
-@@ -221,6 +222,8 @@ static const struct option options[] = {
- 	OPT__DRY_RUN(&probe_event_dry_run),
- 	OPT_INTEGER('\0', "max-probes", &params.max_probe_points,
- 		 "Set how many probe points can be found for a probe."),
-+	OPT_BOOLEAN('F', "funcs", &params.show_funcs,
-+		    "Show potential probe-able functions."),
- 	OPT_END()
- };
- 
-@@ -246,7 +249,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 		params.max_probe_points = MAX_PROBES;
- 
- 	if ((!params.nevents && !params.dellist && !params.list_events &&
--	     !params.show_lines))
-+	     !params.show_lines && !params.show_funcs))
- 		usage_with_options(probe_usage, options);
- 
- 	/*
-@@ -267,12 +270,36 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 			pr_err(" Error: Don't use --list with --vars.\n");
- 			usage_with_options(probe_usage, options);
- 		}
-+		if (params.show_funcs) {
-+			pr_err("  Error: Don't use --list with --funcs.\n");
-+			usage_with_options(probe_usage, options);
-+		}
- 		ret = show_perf_probe_events();
- 		if (ret < 0)
- 			pr_err("  Error: Failed to show event list. (%d)\n",
- 			       ret);
- 		return ret;
- 	}
-+	if (params.show_funcs) {
-+		if (params.nevents != 0 || params.dellist) {
-+			pr_err("  Error: Don't use --funcs with"
-+			       " --add/--del.\n");
-+			usage_with_options(probe_usage, options);
-+		}
-+		if (params.show_lines) {
-+			pr_err("  Error: Don't use --funcs with --line.\n");
-+			usage_with_options(probe_usage, options);
-+		}
-+		if (params.show_vars) {
-+			pr_err("  Error: Don't use --funcs with --vars.\n");
-+			usage_with_options(probe_usage, options);
-+		}
-+		ret = show_available_funcs(params.target_module);
-+		if (ret < 0)
-+			pr_err("  Error: Failed to show functions."
-+			       " (%d)\n", ret);
-+		return ret;
-+	}
- 
- #ifdef DWARF_SUPPORT
- 	if (params.show_lines) {
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 128aaab..1a93756 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -111,7 +111,25 @@ static struct symbol *__find_kernel_function_by_name(const char *name,
- 						     NULL);
- }
- 
--const char *kernel_get_module_path(const char *module)
-+static struct map *kernel_get_module_map(const char *module)
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 2b5387d..50dcfb1 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -411,6 +411,7 @@ LIB_H += util/help.h
+ LIB_H += util/session.h
+ LIB_H += util/strbuf.h
+ LIB_H += util/strlist.h
++LIB_H += util/strfilter.h
+ LIB_H += util/svghelper.h
+ LIB_H += util/run-command.h
+ LIB_H += util/sigchain.h
+@@ -450,6 +451,7 @@ LIB_OBJS += $(OUTPUT)util/quote.o
+ LIB_OBJS += $(OUTPUT)util/strbuf.o
+ LIB_OBJS += $(OUTPUT)util/string.o
+ LIB_OBJS += $(OUTPUT)util/strlist.o
++LIB_OBJS += $(OUTPUT)util/strfilter.o
+ LIB_OBJS += $(OUTPUT)util/usage.o
+ LIB_OBJS += $(OUTPUT)util/wrapper.o
+ LIB_OBJS += $(OUTPUT)util/sigchain.o
+diff --git a/tools/perf/util/strfilter.c b/tools/perf/util/strfilter.c
+new file mode 100644
+index 0000000..877146b
+--- /dev/null
++++ b/tools/perf/util/strfilter.c
+@@ -0,0 +1,185 @@
++#include <ctype.h>
++#include "util.h"
++#include "string.h"
++#include "strfilter.h"
++
++/* Operators */
++static const char *OP_and	= "&";	/* Logical AND */
++static const char *OP_or	= "|";	/* Logical OR */
++static const char *OP_not	= "!";	/* Logical NOT */
++
++#define is_operator(c)	((c) == '|' || (c) == '&' || (c) == '!')
++#define is_separator(c)	(is_operator(c) || (c) == '(' || (c) == ')')
++
++void strfilter__delete(struct strfilter *self)
 +{
-+	struct rb_node *nd;
-+	struct map_groups *grp = &machine.kmaps;
++	if (self) {
++		if (self->p && !is_operator(*self->p))
++			free((char *)self->p);
++		strfilter__delete(self->l);
++		strfilter__delete(self->r);
++		free(self);
++	}
++}
 +
-+	if (!module)
-+		module = "kernel";
++static const char *get_token(const char *s, const char **e)
++{
++	const char *p;
 +
-+	for (nd = rb_first(&grp->maps[MAP__FUNCTION]); nd; nd = rb_next(nd)) {
-+		struct map *pos = rb_entry(nd, struct map, rb_node);
-+		if (strncmp(pos->dso->short_name + 1, module,
-+			    pos->dso->short_name_len - 2) == 0) {
-+			return pos;
++	while (isspace(*s))	/* Skip spaces */
++		s++;
++
++	if (*s == '\0') {
++		p = s;
++		goto end;
++	}
++
++	p = s + 1;
++	if (!is_separator(*s)) {
++		/* End search */
++retry:
++		while (*p && !is_separator(*p) && !isspace(*p))
++			p++;
++		/* Escape and special case: '!' is also used in glob pattern */
++		if (*(p - 1) == '\\' || (*p == '!' && *(p - 1) == '[')) {
++			p++;
++			goto retry;
 +		}
 +	}
++end:
++	*e = p;
++	return s;
++}
++
++static struct strfilter *strfilter__alloc(const char *op,
++					  struct strfilter *l,
++					  struct strfilter *r)
++{
++	struct strfilter *ret = zalloc(sizeof(struct strfilter));
++
++	if (ret) {
++		ret->p = op;
++		ret->l = l;
++		ret->r = r;
++	}
++
++	return ret;
++}
++
++static struct strfilter *__strfilter__new(const char *s, const char **ep)
++{
++	struct strfilter root, *cur, *last_op;
++	const char *e;
++
++	memset(&root, 0, sizeof(root));
++	last_op = cur = &root;
++
++	s = get_token(s, &e);
++	while (*s != '\0' && *s != ')') {
++		switch (*s) {
++		case '&':	/* Exchg last OP->r with AND */
++			if (!cur->r || !last_op->r)
++				goto error;
++			cur = strfilter__alloc(OP_and, last_op->r, NULL);
++			last_op->r = cur;
++			last_op = cur;
++			break;
++		case '|':	/* Exchg the root with OR */
++			if (!cur->r || !root.r)
++				goto error;
++			cur = strfilter__alloc(OP_or, root.r, NULL);
++			root.r = cur;
++			last_op = cur;
++			break;
++		case '!':	/* Add NOT as a leaf node */
++			if (cur->r)
++				goto error;
++			cur->r = strfilter__alloc(OP_not, NULL, NULL);
++			cur = cur->r;
++			break;
++		case '(':	/* Recursively parses inside the parenthesis */
++			if (cur->r)
++				goto error;
++			cur->r = __strfilter__new(s + 1, &s);
++			if (!s)
++				goto nomem;
++			if (!cur->r || *s != ')')
++				goto error;
++			e = s + 1;
++			break;
++		default:
++			if (cur->r)
++				goto error;
++			cur->r = strfilter__alloc(strndup(s, e - s),
++						  NULL, NULL);
++			if (!cur->r || !cur->r->p)
++				goto nomem;
++		}
++		if (!cur)
++			goto nomem;
++		s = get_token(e, &e);
++	}
++	if (!cur->r)
++		goto error;
++	*ep = s;
++	return root.r;
++nomem:
++	s = NULL;
++error:
++	*ep = s;
++	strfilter__delete(root.r);
 +	return NULL;
 +}
 +
-+static struct dso *kernel_get_module_dso(const char *module)
- {
- 	struct dso *dso;
- 	struct map *map;
-@@ -141,7 +159,13 @@ const char *kernel_get_module_path(const char *module)
- 		}
- 	}
- found:
--	return dso->long_name;
-+	return dso;
-+}
-+
-+const char *kernel_get_module_path(const char *module)
-+{
-+	struct dso *dso = kernel_get_module_dso(module);
-+	return (dso) ? dso->long_name : NULL;
- }
- 
- #ifdef DWARF_SUPPORT
-@@ -1913,3 +1937,42 @@ int del_perf_probe_events(struct strlist *dellist)
- 	return ret;
- }
- 
 +/*
-+ * If a symbol corresponds to a function with global binding return 0.
-+ * For all others return 1.
++ * Parse filter rule and return new strfilter.
++ * Return NULL if fail, and *ep == NULL if memory allocation failed.
 + */
-+static int filter_non_global_functions(struct map *map __unused,
-+					struct symbol *sym)
++struct strfilter *strfilter__new(const char *rules, const char **err)
 +{
-+	if (sym->binding != STB_GLOBAL)
-+		return 1;
++	struct strfilter *ret;
++	const char *ep;
 +
-+	return 0;
++	ret = __strfilter__new(rules, &ep);
++	if (!ret || *ep != '\0') {
++		if (err)
++			*err = ep;
++		strfilter__delete(ret);
++		ret = NULL;
++	}
++
++	return ret;
 +}
 +
-+int show_available_funcs(const char *module)
++struct strfilter *strfilter__new_and(struct strfilter *f1,
++				     struct strfilter *f2)
 +{
-+	struct map *map;
-+	int ret;
-+
-+	setup_pager();
-+
-+	ret = init_vmlinux();
-+	if (ret < 0)
-+		return ret;
-+
-+	map = kernel_get_module_map(module);
-+	if (!map) {
-+		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
-+		return -EINVAL;
-+	}
-+	if (map__load(map, filter_non_global_functions)) {
-+		pr_err("Failed to load map.\n");
-+		return -EINVAL;
-+	}
-+	if (!dso__sorted_by_name(map->dso, map->type))
-+		dso__sort_by_name(map->dso, map->type);
-+
-+	dso__fprintf_symbols_by_name(map->dso, map->type, stdout);
-+	return 0;
++	return strfilter__alloc(OP_and, f1, f2);
 +}
-diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
-index 5accbed..1fb4f18 100644
---- a/tools/perf/util/probe-event.h
-+++ b/tools/perf/util/probe-event.h
-@@ -127,6 +127,7 @@ extern int show_line_range(struct line_range *lr, const char *module);
- extern int show_available_vars(struct perf_probe_event *pevs, int npevs,
- 			       int max_probe_points, const char *module,
- 			       bool externs);
-+extern int show_available_funcs(const char *module);
- 
- 
- /* Maximum index number of event-name postfix */
++
++struct strfilter *strfilter__new_or(struct strfilter *f1,
++				    struct strfilter *f2)
++{
++	return strfilter__alloc(OP_or, f1, f2);
++}
++
++/* Return true if STR matches the filter */
++bool strfilter__match(struct strfilter *self, const char *str)
++{
++	if (!self || !self->p)
++		return false;
++
++	switch (*self->p) {
++	case '|':	/* OR */
++		return strfilter__match(self->l, str) ||
++			strfilter__match(self->r, str);
++	case '&':	/* AND */
++		return strfilter__match(self->l, str) &&
++			strfilter__match(self->r, str);
++	case '!':	/* NOT */
++		return !strfilter__match(self->r, str);
++	default:
++		return strglobmatch(str, self->p);
++	}
++}
++
+diff --git a/tools/perf/util/strfilter.h b/tools/perf/util/strfilter.h
+new file mode 100644
+index 0000000..52ca0bd
+--- /dev/null
++++ b/tools/perf/util/strfilter.h
+@@ -0,0 +1,36 @@
++#ifndef __PERF_STRFILTER_H
++#define __PERF_STRFILTER_H
++/* General purpose glob matching filter */
++
++#include <linux/list.h>
++#include <stdbool.h>
++
++/* String filter */
++struct strfilter {
++	struct strfilter *l;	/* Tree left branche (for &,|) */
++	struct strfilter *r;	/* Tree right branche (for !,&,|) */
++	const char *p;		/* Operator or rule */
++};
++
++/*
++ * Parse RULES and return new strfilter. If ERR is not NULL, *ERR will
++*  indicate where the parse error occured.
++ */
++struct strfilter *strfilter__new(const char *rules, const char **err);
++
++/* Make a new filter which F1 & F2 (and it holds F1 and F2) */
++struct strfilter *strfilter__new_and(struct strfilter *f1,
++				     struct strfilter *f2);
++
++/* Make a new filter which F1 | F2 (and it holds F1 and F2) */
++struct strfilter *strfilter__new_or(struct strfilter *f1,
++				    struct strfilter *f2);
++
++/* Match the STR and filter rule. Return true if the str match the rule */
++bool strfilter__match(struct strfilter *self, const char *str);
++
++/* Delete the filter */
++void strfilter__delete(struct strfilter *self);
++
++#endif
++
 
