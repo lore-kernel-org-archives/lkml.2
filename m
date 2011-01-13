@@ -1,60 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932942Ab1AMMIn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 07:08:43 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56558 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932498Ab1AMMIm (ORCPT
+	id S932952Ab1AMML5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 07:11:57 -0500
+Received: from beauty.rexursive.com ([150.101.121.179]:51977 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932856Ab1AMMLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 07:08:42 -0500
-Date: Thu, 13 Jan 2011 12:06:27 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Nick Piggin <npiggin@kernel.dk>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: NFS root lockups with -next 20110113
-Message-ID: <20110113120626.GB30351@opensource.wolfsonmicro.com>
+	Thu, 13 Jan 2011 07:11:53 -0500
+Subject: Re: [linux-pm] Oops while going into hibernate
+Date: Thu, 13 Jan 2011 23:11:45 +1100
+From: "Bojan Smojver" <bojan@rexursive.com>
+To: sebott@linux.vnet.ibm.com
+Cc: tytso@mit.edu, linux-pm@lists.linux-foundation.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Cookie: Excellent day to have a rotten day.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mailer: LCG ProfiMail
+Message-ID: <6009472527.979427505@rexursive.com>
+References: <alpine.LFD.2.02.1101121443230.1900@localhost6.localdomain6> <20110112162655.GA13496@thunk.org> <alpine.LFD.2.02.1101121755400.2011@localhost6.localdomain6> <20110112172646.GB13496@thunk.org> <alpine.LFD.2.02.1101121934060.2011@localhost6.localdomain6> <A01161D0-D08F-4522-A546-90057B2E1F2A@mit.edu> <alpine.LFD.2.02.1101131238480.1899@localhost6.localdomain6>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With -next 20110113 I'm experiencing lockups shortly after userspace
-starts when booting with my root filesystem on NFS, log below.  I can
-boot into /bin/sh but running real userspace triggers this very easily.
-This was introduced sometime this week.
+> Yes. I basically did a
+> echo reboot > /sys/power/disk
+> for i in {1..5} ;do echo disk > /sys/power/state ;done
+> and it crashed very early in the second suspend.
 
-I've not bisected or otherwise investigated much yet, but I do notice
-code added recently by Nick in "fs: rcu-walk for path lookup" showing up
-in the backtrace so including him in the CCs.
+Was compression on or off?
 
-Tail of the console log:
-
-INIT: version 2.86 booting
-[   15.250000] BUG: spinlock recursion on CPU#0, rc/1151
-[   15.250000]  lock: c74ad678, .magic: dead4ead, .owner: rc/1151, .owner_cpu: 0
-[   15.260000] [<c0035118>] (unwind_backtrace+0x0/0xe4) from [<c0190454>] (do_raw_spin_lock+0x48/0x148)
-[   15.260000] [<c0190454>] (do_raw_spin_lock+0x48/0x148) from [<c00c89f0>] (nameidata_dentry_drop_rcu+0x84/0x180)
-[   15.270000] [<c00c89f0>] (nameidata_dentry_drop_rcu+0x84/0x180) from [<c00c8b1c>] (d_revalidate+0x30/0x58)
-[   15.280000] [<c00c8b1c>] (d_revalidate+0x30/0x58) from [<c00cb82c>] (link_path_walk+0xad8/0xb00)
-[   15.290000] [<c00cb82c>] (link_path_walk+0xad8/0xb00) from [<c00cba4c>] (do_path_lookup+0x44/0xcc)
-[   15.300000] [<c00cba4c>] (do_path_lookup+0x44/0xcc) from [<c00cc3f4>] (user_path_at+0x58/0x90)
-[   15.310000] [<c00cc3f4>] (user_path_at+0x58/0x90) from [<c00c4210>] (vfs_fstatat+0x28/0x54)
-[   15.320000] [<c00c4210>] (vfs_fstatat+0x28/0x54) from [<c00c431c>] (sys_stat64+0x14/0x34)
-[   15.330000] [<c00c431c>] (sys_stat64+0x14/0x34) from [<c002f4e0>] (ret_fast_syscall+0x0/0x30)
-[   25.830000] BUG: spinlock lockup on CPU#0, rc/1151, c74ad678
-[   25.830000] [<c0035118>] (unwind_backtrace+0x0/0xe4) from [<c0190518>] (do_raw_spin_lock+0x10c/0x148)
-[   25.840000] [<c0190518>] (do_raw_spin_lock+0x10c/0x148) from [<c00c89f0>] (nameidata_dentry_drop_rcu+0x84/0x180)
-[   25.850000] [<c00c89f0>] (nameidata_dentry_drop_rcu+0x84/0x180) from [<c00c8b1c>] (d_revalidate+0x30/0x58)
-[   25.860000] [<c00c8b1c>] (d_revalidate+0x30/0x58) from [<c00cb82c>] (link_path_walk+0xad8/0xb00)
-[   25.870000] [<c00cb82c>] (link_path_walk+0xad8/0xb00) from [<c00cba4c>] (do_path_lookup+0x44/0xcc)
-[   25.870000] [<c00cba4c>] (do_path_lookup+0x44/0xcc) from [<c00cc3f4>] (user_path_at+0x58/0x90)
-[   25.880000] [<c00cc3f4>] (user_path_at+0x58/0x90) from [<c00c4210>] (vfs_fstatat+0x28/0x54)
-[   25.890000] [<c00c4210>] (vfs_fstatat+0x28/0x54) from [<c00c431c>] (sys_stat64+0x14/0x34)
-[   25.900000] [<c00c431c>] (sys_stat64+0x14/0x34) from [<c002f4e0>] (ret_fast_syscall+0x0/0x30)
-
+--
+Bojan 
