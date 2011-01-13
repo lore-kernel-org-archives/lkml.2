@@ -1,60 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756723Ab1AMNgS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 08:36:18 -0500
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:55563 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755886Ab1AMNgP (ORCPT
+	id S1756798Ab1AMNhi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 08:37:38 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56678 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755886Ab1AMNhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 08:36:15 -0500
-Date: Thu, 13 Jan 2011 14:36:12 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Cc: Theodore Tso <tytso@mit.edu>,
-        "linux-ext4@vger.kernel.org development" <linux-ext4@vger.kernel.org>,
-        LKML Kernel <linux-kernel@vger.kernel.org>,
-        pm list <linux-pm@lists.linux-foundation.org>
-Subject: Re: Oops while going into hibernate
-Message-ID: <20110113133612.GD2534@osiris.boeblingen.de.ibm.com>
-References: <alpine.LFD.2.02.1101121443230.1900@localhost6.localdomain6>
- <20110112162655.GA13496@thunk.org>
- <alpine.LFD.2.02.1101121755400.2011@localhost6.localdomain6>
- <20110112172646.GB13496@thunk.org>
- <alpine.LFD.2.02.1101121934060.2011@localhost6.localdomain6>
- <A01161D0-D08F-4522-A546-90057B2E1F2A@mit.edu>
- <alpine.LFD.2.02.1101131238480.1899@localhost6.localdomain6>
+	Thu, 13 Jan 2011 08:37:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=EIz1vRyu/H4aBCypped9sZmDWySuxkA+VKq/5Xkfc0He86lDWqG6yC3G9xEByIPoC4
+         TjaZk5XaQ8vTTihQWdgtDlBfchFI7n7TlqObpWwv8JvedMQpytxTsm1tUxn+XUz+7c14
+         BS5lHKUsSDNZruMhvuSqKDMJfziVqCtC66TBc=
+Date: Thu, 13 Jan 2011 14:37:22 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Karel Zak <kzak@redhat.com>
+Cc: Milan Broz <mbroz@redhat.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [dm-devel] linux-next - WARNING: at fs/block_dev.c:824
+ bd_link_disk_holder+0x92/0x1ac()
+Message-ID: <20110113133722.GG30719@htj.dyndns.org>
+References: <16069.1294853673@localhost>
+ <4D2E4611.90002@redhat.com>
+ <4D2E6129.8000700@ce.jp.nec.com>
+ <20110113110640.GC30719@htj.dyndns.org>
+ <4D2EE156.1050006@redhat.com>
+ <20110113122701.GG16523@nb.net.home>
+ <20110113131216.GF30719@htj.dyndns.org>
+ <20110113132637.GH16523@nb.net.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1101131238480.1899@localhost6.localdomain6>
+In-Reply-To: <20110113132637.GH16523@nb.net.home>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 12:48:40PM +0100, Sebastian Ott wrote:
-> On Wed, 12 Jan 2011, Theodore Tso wrote:
-> > It looks like somehow the pages were left marked as dirty, so the
-> > writeback daemons attempted writing back a page to an inode which was
-> > never opened read/write (and in fact as a text page for
-> > /usr/bin/killall, was mapped read/only).
-> > Given that ext4 initializes jinode only when the file is opened
-> > read/write, the fact that it is null, and the fact that it makes no
-> > sense that a program would be modifying /usr/bin/killall as part of a
-> > suspend/resume, it looks very much like we just unmasked a software
-> > suspend bug....
-> Ah, ok. Thanks for the explanation!
+Hello, Karel.
 
-Eeeek... this seems to be an architecture specific bug that is only present
-on s390.
-The dirty bit for user space pages on all architectures but s390 are stored
-into the PTE's. On s390 however they are stored into the storage key that
-exists per _physical_ page.
-So, what we should have done, when implementing suspend/resume on s390, is
-to save the storage key for each page and write that to the suspend device
-and upon resume restore the storage key contents for each physical page.
-The code that would do that is missing... Hence _all_ pages of the resumed
-image are dirty after they have been copied to their location.
-*ouch*
+On Thu, Jan 13, 2011 at 02:26:37PM +0100, Karel Zak wrote:
+> > Yeah, sure, it's not like I can afford to avoid fixing it at this
+> > point anyway, but I still want to point out it's at the wrong layer
+> > and shouldn't have been added like this, really.  If you want blkid to
+> > identify it, the proper thing to do would be querying blk device for
+> > the claimer and then use claimer-specific method to query them.  It's
+> 
+>  It seems that dependencies (holders/slaves) between devices is pretty
+>  generic thing. Why do you think that we need claimer-specific method?
+>  The /sys filesystem is better that ictls in many ways.
 
-Will fix.
+Because sysfs is already complex enough without representing
+dependency information without strictly defined strcture in it.  It's
+for exporting the device tree to users.  We have developed interesting
+ways to exploit it but it generally has proven to be a bad idea to add
+symlinks without clearly defined structure beneath it.  People end up
+using them differently and often they don't understand how the kobject
+sysfs things are wired and it ends up with a lot of cruft exporting
+something which is designed by small number of people without really
+considering what's going on in the rest of the hierarchy.
+
+> > not like the current method would make sense for btrfs or whatnot.
+> 
+>  Could you be more verbose, please?
+
+If the symlinkery was something which could properly replace
+configuration and query, sure, let's standardize it and share it among
+all possible claimers of block devices, but it's not.  md, dm, btrfs
+need to export and process way more information than can be represnted
+in these symlinks and it's there more as a pretty thing than anything
+which is actually necessary and useful.  And the original
+implementation directly played with kobjects (in an unnecessarily
+complicated way too) and allowed any kobject to be linked.  Things
+like that just never end up pretty.
+
+So, just don't do it.  Sysfs is for device hierarchy.  Don't try to
+shove pretty looking things there (unless it's something widely agreed
+on and necessary, of course).
+
+Thanks.
+
+-- 
+tejun
