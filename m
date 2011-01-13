@@ -1,72 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757100Ab1AMQeo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 11:34:44 -0500
-Received: from smtp5-g21.free.fr ([212.27.42.5]:38427 "EHLO smtp5-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756934Ab1AMQen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 11:34:43 -0500
-Message-ID: <4D2F299B.4000509@free.fr>
-Date: Thu, 13 Jan 2011 17:34:35 +0100
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1757227Ab1AMQjA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 11:39:00 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:40177 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757097Ab1AMQi6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 11:38:58 -0500
+Date: Thu, 13 Jan 2011 16:38:38 +0000
+From: Matthew Garrett <mjg@redhat.com>
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+Cc: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>, horms@verge.net.au,
+        nhorman@tuxdriver.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, mingo@redhat.com, ebiederm@xmission.com,
+        hpa@zytor.com, tglx@linutronix.de, vgoyal@redhat.com
+Subject: Re: [PATCH v2][EFI] Run EFI in physical mode
+Message-ID: <20110113163838.GA21289@srcf.ucam.org>
+References: <F7CB3D97D99F33indou.takao@jp.fujitsu.com> <4D06E7FE.5000600@jp.fujitsu.com> <9CB9BB8ED64BAindou.takao@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Linux Containers <containers@lists.linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [RFD] reboot / shutdown of a container
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9CB9BB8ED64BAindou.takao@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We're seeing issues with some Dell hardware when EFI is run in physical 
+mode - it seems that Windows uses virtual mode, so the physical path is 
+never exercised. I'm not sure that changing the default to physical is 
+going to be possible without compatibility issues.
 
-Hi all,
-
-in the container implementation, we are facing the problem of a process 
-calling the sys_reboot syscall which of course makes the host to 
-poweroff/reboot.
-
-If we drop the cap_sys_reboot capability, sys_reboot fails and the 
-container reach a shutdown state but the init process stay there, hence 
-the container becomes stuck waiting indefinitely the process '1' to exit.
-
-The current implementation to make the shutdown / reboot of the 
-container to work is we watch, from a process outside of the container, 
-the <rootfs>/var/run/utmp file and check the runlevel each time the file 
-changes. When the 'reboot' or 'shutdown' level is detected, we wait for 
-a single remaining in the container and then we kill it.
-
-That works but this is not efficient in case of a large number of 
-containers as we will have to watch a lot of utmp files. In addition, 
-the /var/run directory must *not* mounted as tmpfs in the distro. 
-Unfortunately, it is the default setup on most of the distros and tends 
-to generalize. That implies, the rootfs init's scripts must be modified 
-for the container when we put in place its rootfs and as /var/run is 
-supposed to be a tmpfs, most of the applications do not cleanup the 
-directory, so we need to add extra services to wipeout the files.
-
-More problems arise when we do an upgrade of the distro inside the 
-container, because all the setup we made at creation time will be lost. 
-The upgrade overwrite the scripts, the fstab and so on.
-
-We did what was possible to solve the problem from userspace but we 
-reach always a limit because there are different implementations of the 
-'init' process and the init's scripts differ from a distro to another 
-and the same with the versions.
-
-We think this problem can only be solved from the kernel.
-
-The idea was to send a signal SIGPWR to the parent of the pid '1' of the 
-pid namespace when the sys_reboot is called. Of course that won't occur 
-for the init pid namespace.
-
-Does it make sense ?
-
-Any idea is very welcome :)
-
-   -- Daniel
-
-
-
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
