@@ -1,133 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757308Ab1AMS7z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 13:59:55 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:60280 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757147Ab1AMS7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 13:59:51 -0500
-Date: Thu, 13 Jan 2011 10:59:46 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, "Theodore Ts'o" <tytso@mit.edu>,
-        Neil Brown <neilb@suse.de>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        Jan Kara <jack@suse.cz>, Mike Snitzer <snitzer@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <cmm@us.ibm.com>,
-        linux-ext4@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Josef Bacik <josef@redhat.com>
-Subject: Re: [PATCH v7.1] block: Coordinate flush requests
-Message-ID: <20110113185946.GD27381@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110113025646.GB27381@tux1.beaverton.ibm.com> <20110113104240.GA30719@htj.dyndns.org>
+	id S933215Ab1AMTBI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 14:01:08 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36030 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933155Ab1AMTBG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 14:01:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110113104240.GA30719@htj.dyndns.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-X-Content-Scanned: Fidelis XPS MAILER
+In-Reply-To: <4D2F03F2.4000707@fusionio.com>
+References: <4D2F03F2.4000707@fusionio.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 13 Jan 2011 11:00:43 -0800
+Message-ID: <AANLkTi=t9FQaUhnXCk51bjZO82F8OGDDd9H5HyMPRPQd@mail.gmail.com>
+Subject: Re: [GIT PULL] block driver updates for 2.6.38
+To: Jens Axboe <jaxboe@fusionio.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Tejun Heo <tj@kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 11:42:40AM +0100, Tejun Heo wrote:
-> Hello, Darrick.
-> 
-> On Wed, Jan 12, 2011 at 06:56:46PM -0800, Darrick J. Wong wrote:
-> > On certain types of storage hardware, flushing the write cache takes a
-> > considerable amount of time.  Typically, these are simple storage systems with
-> > write cache enabled and no battery to save that cache during a power failure.
-> > When we encounter a system with many I/O threads that try to flush the cache,
-> > performance is suboptimal because each of those threads issues its own flush
-> > command to the drive instead of trying to coordinate the flushes, thereby
-> > wasting execution time.
-> > 
-> > Instead of each thread initiating its own flush, we now try to detect the
-> > situation where multiple threads are issuing flush requests.  The first thread
-> > to enter blkdev_issue_flush becomes the owner of the flush, and all threads
-> > that enter blkdev_issue_flush before the flush finishes are queued up to wait
-> > for the next flush.  When that first flush finishes, one of those sleeping
-> > threads is woken up to perform the next flush and then wake up the other
-> > threads which are asleep waiting for the second flush to finish.
-> 
-> Nice work.  :-)
+On Thu, Jan 13, 2011 at 5:53 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+>
+> Pekka Enberg (1):
+>      floppy: replace NO_GEOM macro with a function
 
-Thank you!
+Hmm. When I see work on floppy.c, I end up wondering what happened to
+the work by Stephen to use a single threaded workqueue?
 
-> >  block/blk-flush.c     |  137 +++++++++++++++++++++++++++++++++++++++++--------
-> >  block/genhd.c         |   12 ++++
-> >  include/linux/genhd.h |   15 +++++
-> >  3 files changed, 143 insertions(+), 21 deletions(-)
-> > 
-> > diff --git a/block/blk-flush.c b/block/blk-flush.c
-> > index 2402a34..d6c9931 100644
-> > --- a/block/blk-flush.c
-> > +++ b/block/blk-flush.c
-> > @@ -201,6 +201,60 @@ static void bio_end_flush(struct bio *bio, int err)
-> >  	bio_put(bio);
-> >  }
-> >  
-> > +static int blkdev_issue_flush_now(struct block_device *bdev,
-> > +		gfp_t gfp_mask, sector_t *error_sector)
-> > +{
-> > +	DECLARE_COMPLETION_ONSTACK(wait);
-> > +	struct bio *bio;
-> > +	int ret = 0;
-> > +
-> > +	bio = bio_alloc(gfp_mask, 0);
-> > +	bio->bi_end_io = bio_end_flush;
-> > +	bio->bi_bdev = bdev;
-> > +	bio->bi_private = &wait;
-> > +
-> > +	bio_get(bio);
-> > +	submit_bio(WRITE_FLUSH, bio);
-> > +	wait_for_completion(&wait);
-> > +
-> > +	/*
-> > +	 * The driver must store the error location in ->bi_sector, if
-> > +	 * it supports it. For non-stacked drivers, this should be
-> > +	 * copied from blk_rq_pos(rq).
-> > +	 */
-> > +	if (error_sector)
-> > +		*error_sector = bio->bi_sector;
-> > +
-> > +	if (!bio_flagged(bio, BIO_UPTODATE))
-> > +		ret = -EIO;
-> > +
-> > +	bio_put(bio);
-> > +	return ret;
-> > +}
-> 
-> But wouldn't it be better to implement this directly in the flush
-> machinary instead of as blkdev_issue_flush() wrapper?  We have all the
-> information at the request queue level so we can easily detect whether
-> flushes can be merged or not and whether something is issued by
-> blkdev_issue_flush() or by directly submitting bio wouldn't matter at
-> all.  Am I missing something?
+That was reported to fix a KVM oops at some point to to avoiding the
+whole race between interrupts/workqueues, but it seems to have dropped
+off everybody's radar. I don't think anybody ever tested it on real
+hardware, but I'm still wondering..
 
-Could you clarify where exactly you meant by "in the flush machinery"?  I think
-what you're suggesting is that blk_flush_complete_seq could scan the pending
-flush list to find a run of consecutive pure flush requests, submit the last
-one, and set things up so that during the completion of the flush, all the
-requests in that run are returned with the real flush's return code.
+Anybody?
 
-If that's what you meant, then yes, it could be done that way.  However, I have
-a few reasons for choosing the blkdev_issue_flush approach.  First, as far as I
-could tell in the kernel, all the code paths that involve upper layers issuing
-pure flushes go through blkdev_issue_flush, so it seems like a convenient place
-to capture all the incoming pure flushes.  Other parts of the kernel issue
-writes with the flush flag set, but we want those to go through the regular
-queuing mechanisms anyway.  Second, with the proposed patch, any upper-layer
-code that has a requirement for a pure flush to be issued without coordination
-can do so by submitting the bio directly (or blkdev_issue_flush_now can be
-exported).  Third, baking the coordination into the flush machinery makes that
-machinery more complicated to understand and maintain.
-
-So in short, I went with the blkdev_issue_flush approach because the code is
-easier to understand, and it's not losing any pure flushes despite casting a
-narrower net.
-
-I was also wondering, how many others are testing these flush-pain-reduction
-patches?  It would be nice to know about wider testing than just my lab. :)
-
---D
+                    Linus
