@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932802Ab1AMMcz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 07:32:55 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:50852 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756629Ab1AMMcx convert rfc822-to-8bit (ORCPT
+	id S932977Ab1AMMgW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 07:36:22 -0500
+Received: from mtagate5.uk.ibm.com ([194.196.100.165]:56642 "EHLO
+	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932547Ab1AMMgS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 07:32:53 -0500
-Subject: Re: sparc boot failure due to perf init
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        sparclinux@vger.kernel.org
-In-Reply-To: <20110113122505.GA27522@merkur.ravnborg.org>
-References: <1294431832.2016.457.camel@laptop>
-	 <1294432055.2016.458.camel@laptop>
-	 <20110107203119.GA30408@merkur.ravnborg.org>
-	 <20110109.153745.35032992.davem@davemloft.net>
-	 <1294916129.19601.88.camel@laptop>
-	 <20110113122505.GA27522@merkur.ravnborg.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 13 Jan 2011 13:33:26 +0100
-Message-ID: <1294922006.19601.106.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 13 Jan 2011 07:36:18 -0500
+Date: Thu, 13 Jan 2011 13:36:15 +0100 (CET)
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+X-X-Sender: sebott@localhost6.localdomain6
+To: "Theodore Ts'o" <tytso@mit.edu>
+cc: Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        linux-pm@lists.linux-foundation.org
+Subject: Re: [PATCH] PM / Hibernate: Don't mark pages dirty when reading
+ pages while thawing
+In-Reply-To: <1294898351-26156-1-git-send-email-tytso@mit.edu>
+Message-ID: <alpine.LFD.2.02.1101131333071.1899@localhost6.localdomain6>
+References: <20110113055612.GF13496@thunk.org> <1294898351-26156-1-git-send-email-tytso@mit.edu>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+Organization: "IBM Deutschland Research & Development GmbH Vorsitzender des Aufsichtsrats: Martin Jetter Geschaeftsfuehrung: Dirk Wittkopp Sitz der Gesellschaft: Boeblingen Registergericht: Amtsgericht Stuttgart, HRB 243294"
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-13 at 13:25 +0100, Sam Ravnborg wrote:
-> > >  }
-> > >  
-> > > -arch_initcall(pcr_arch_init);
-> > > +early_initcall(pcr_arch_init);
-> > 
-> > 
-> > I just realized, doesn't this make bootability depend on link order?
-> Yes.
-> 
-> > Since both the pmu init and its dependencies are now early_initcall()
-> > how do we guarantee pcr_arch_init() and cpu_type_probe() are in fact
-> > called _before_ init_hw_perf_events()?
-> 
-> Today this is achieved by perf_event.o being located last
-> in the Makefile in arch/sparc/kernel/
-> 
-> It deserves a comment..
+Hi,
 
-Ah, right! and while make -j will compile concurrently, link order is
-still maintained, and I guess until the linker decides to process its
-input files in random order (or reverse order, or whatever) we're good.
+On Thu, 13 Jan 2011, Theodore Ts'o wrote:
+> Everything was sync'ed before the hibernation, so no pages could be
+> dirty.  So this causes a lot of wasted I/O activity right after
+> resuming from hibernation.
+> 
+> Worse, it also causes pages from files that were opened read/only to
+> be marked writeble which makes them subject to writeback.  This was
+> discovered when ext4 was changed to so that the jinode pointer was not
+> initialized unless the file was opened read/write, and this caused
+> things to blow up.  But that just unmasked a problem, since the pages
+> belonging to the file in question should have never been marked dirty
+> in the first place.  It increases the chances the text blocks for
+> executables like /usr/bin/killall will get corrupted when they are
+> needlessly written, and of course it means extra write cycles to the
+> SSD.
+> 
+> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+> Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>
+> Cc: linux-pm@lists.linux-foundation.org
+> ---
+>  kernel/power/block_io.c |    2 --
+>  1 files changed, 0 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/power/block_io.c b/kernel/power/block_io.c
+> index 83bbc7c..108a4f3 100644
+> --- a/kernel/power/block_io.c
+> +++ b/kernel/power/block_io.c
+> @@ -49,8 +49,6 @@ static int submit(int rw, struct block_device *bdev, sector_t sector,
+>  	if (bio_chain == NULL) {
+>  		submit_bio(bio_rw, bio);
+>  		wait_on_page_locked(page);
+> -		if (rw == READ)
+> -			bio_set_pages_dirty(bio);
+>  		bio_put(bio);
+>  	} else {
+>  		if (rw == READ)
+> -- 
+> 1.7.3.1
+> 
+> 
 
-Does something like GOLD which was supposed to be threaded or somesuch
-still work as expected here?
+I did some test with this patch applied, but sadly it didn't help.
+The testcase was reduced to one hibernation followed by a sync.
+
+Regards,
+Sebastian
