@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932857Ab1AMDYN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 22:24:13 -0500
-Received: from vms173013pub.verizon.net ([206.46.173.13]:44785 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932602Ab1AMDYL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 22:24:11 -0500
-Date: Wed, 12 Jan 2011 22:23:55 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Narendra_K@Dell.com, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, sfr@canb.auug.org.au, Matt_Domsch@Dell.com,
-        Charles_Rose@Dell.com, Surya_Prabhakar@Dell.com
-Subject: Re: CONFIG_NLS=m resulting in undefined reference to utf16s_to_utf8s
- causing build failure
-In-reply-to: <20110112160229.7b8d82c1@jbarnes-desktop>
-Message-id: <alpine.LFD.2.02.1101122217370.19754@x980>
-References: <20110112203414.GA5657@fedora14-r610.oslab.blr.amer.dell.com>
- <20110112160229.7b8d82c1@jbarnes-desktop>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S932868Ab1AMD0R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 22:26:17 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:43185 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S932641Ab1AMD0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 22:26:16 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+3S1JOeFq360Ve/IEKtHYjGN7STn0U4qAXM/fAvg
+	aTEBecAt16wM2H
+Subject: Re: [RFC -v3 PATCH 2/3] sched: add yield_to function
+From: Mike Galbraith <efault@gmx.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Chris Wright <chrisw@sous-sol.org>
+In-Reply-To: <4D2E6B62.2000802@redhat.com>
+References: <20110103162637.29f23c40@annuminas.surriel.com>
+	 <20110103162918.577a9620@annuminas.surriel.com>
+	 <1294164289.2016.186.camel@laptop>
+	 <1294246647.8369.52.camel@marge.simson.net>
+	 <1294247065.2016.267.camel@laptop>
+	 <1294378146.8823.27.camel@marge.simson.net>  <4D2E6B62.2000802@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Jan 2011 04:26:09 +0100
+Message-ID: <1294889169.8089.10.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-01-12 at 22:02 -0500, Rik van Riel wrote:
 
-> > drivers/built-in.o: In function `dsm_label_utf16s_to_utf8s':
-> > /usr/src/Linux-Next/linux-next/drivers/pci/pci-label.c:195: undefined reference to `utf16s_to_utf8s'
-> > make: *** [.tmp_vmlinux1] Error 1
-> > 
-> > The drivers/pci/pci-label.c is compiled as part of vmlinux as defined by
-> > the makefile drivers/pci/Makefile. 
-> > 
-> > #
-> > # ACPI Related PCI FW Functions
-> > # ACPI _DSM provided firmware instance and string name
-> > #
-> > obj-$(CONFIG_ACPI)    += pci-acpi.o pci-label.o
-> > 
-> > # SMBIOS provided firmware instance and labels
-> > obj-$(CONFIG_DMI)    += pci-label.o
-> > 
-> > This could be prevented by one of the following methods -
-> > 
-> > * forcing CONFIG_NLS=y if CONFIG_PCI=y 
-> > * move `utf16s_to_utf8s' out of nls_base.c to a new file to be always
-> > built into vmlinux
-> > 
-> > Please correct me if i missed something here and let me know what would be the right
-> > way to fix this build failure.
+> Cgroups only makes the matter worse - libvirt places
+> each KVM guest into its own cgroup, so a VCPU will
+> generally always be alone on its own per-cgroup, per-cpu
+> runqueue!  That can lead to pulling a VCPU onto our local
+> CPU because we think we are alone, when in reality we
+> share the CPU with others...
+
+How can that happen?  If the task you're trying to accelerate isn't in
+your task group, the whole attempt should be a noop.
+
+> Removing the pulling code allows me to use all 4
+> CPUs with a 4-VCPU KVM guest in an uncontended situation.
 > 
-> So there's no other ACPI code that depends on this function?  I'd hate
-> to make PCI depend on NLS, so assuming ACPI doesn't need it (in which
-> case the select or depend should be there), I guess it should be pulled
-> into a common file that will always be included.
+> > +	/* Tell the scheduler that we'd really like pse to run next. */
+> > +	p_cfs_rq->next = pse;
+> 
+> Using set_next_buddy propagates this up to the root,
+> allowing the scheduler to actually know who we want to
+> run next when cgroups is involved.
+> 
+> > +	/* We know whether we want to preempt or not, but are we allowed? */
+> > +	if (preempt&&  same_thread_group(p, task_of(p_cfs_rq->curr)))
+> > +		resched_task(task_of(p_cfs_rq->curr));
+> 
+> With this in place, we can get into the situation where
+> we will gladly give up CPU time, but not actually give
+> any to the other VCPUs in our guest.
+> 
+> I believe we can get rid of that test, because pick_next_entity
+> already makes sure it ignores ->next if picking ->next would
+> lead to unfairness.
 
-No, nothing in the ACPI code uses utf16s_to_utf8s.
+Preempting everybody who is in your way isn't playing nice neighbor, so
+I think at least the same_thread_group() test needs to stay.  But that's
+Peter's call.  Starting a zillion threads to play wakeup preempt and
+lets hog the cpu isn't nice either, but it's allowed.
 
-I don't know anything about NLS, but it appears to be
-something that file systems (befs, cifs, fat, hfs, isofs, jfs, etc)
-use to to support native languages.
+> Removing this test (and simplifying yield_to_task_fair) seems
+> to lead to more predictable test results.
 
-BTW. I don't understand why pci-label.o appears twice above.
-It used to be just the 2nd one, that depends on CONFIG_DMI.
+Less is more :)
 
-cheers,
-Len Brown, Intel Open Source Technology Center
-
+	-Mike
 
