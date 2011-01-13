@@ -1,115 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756772Ab1AMXFy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 18:05:54 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:47459 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751693Ab1AMXFr (ORCPT
+	id S1756915Ab1AMXGD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 18:06:03 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60949 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756671Ab1AMXFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 18:05:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=HYLRnlPUTFbPf4c3hSC+0Q8lh0La33dXVzFgsEeI4EDqakrhCdy0aGWJ/8Kipmk10d
-         3pjkNlTadjCJj3klXJbw==
-Date: Thu, 13 Jan 2011 15:05:40 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Jesper Juhl <jj@chaosbits.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [patch] x86, numa: Add error handling for bad cpu-to-node mappings
-In-Reply-To: <alpine.LNX.2.00.1101132318010.11347@swampdragon.chaosbits.net>
-Message-ID: <alpine.DEB.2.00.1101131450480.27760@chino.kir.corp.google.com>
-References: <alpine.LNX.2.00.1101132318010.11347@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 13 Jan 2011 18:05:53 -0500
+Message-ID: <4D2F84FC.7000804@kernel.org>
+Date: Thu, 13 Jan 2011 15:04:28 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Greg KH <greg@kroah.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC PATCH] x86: Add safe_udelay() and safe_msleep()
+References: <20110111010714.GB32585@kroah.com> <4D2BB048.2050509@kernel.org> <1294723290.17779.349.camel@pasglop> <4D2BF9F3.5080709@kernel.org> <1294731467.17779.352.camel@pasglop> <AANLkTika_bZxXO3PKek+BHoYqgYGPBPER-H9KJJXjJzn@mail.gmail.com> <20110111135655.GA6901@kroah.com> <4D2CFEAD.6070206@kernel.org> <1294799565.9586.13.camel@pasglop> <4D2F7AE9.2000809@kernel.org> <20110113224450.GA14918@kroah.com> <alpine.LFD.2.00.1101132349590.2678@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1101132349590.2678@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jan 2011, Jesper Juhl wrote:
-
-> In arch/x86/mm/numa_64.c::debug_cpumask_set_cpu() we call 
-> early_cpu_to_node() which may return NUMA_NO_NODE (which has the value 
-> -1). This value is subsequently used as an index into 
-> the 'node_to_cpumask_map' array and '-1' is not going to fly too wel as an 
-> array index here.
 > 
-> This code comes from commit d906f0eb2f0e6d1a24c479f69a9c39e7e45c5ae8
-> "x86, numa: Fix CONFIG_DEBUG_PER_CPU_MAPS without NUMA emulation".
-> 
-> I must admit I have no idea what the best way to deal with this is, so 
-> I'll just report it.
-> 
+> What the hell is the root problem ?
 
-Thanks for the report.
+for patch
 
-If generic code were actually passing cpu's to numa_add_cpu() under the 
-defconfig that did not have valid early_cpu_to_node() mappings, then we'd 
-see the problem already since we use early_cpu_to_node() as an index into 
-an array with no error checking.
+x86: usb handoff in early_quirk
 
-These mappings are all initialized to NUMA_NO_NODE before any mapping is 
-initialized, so there's nothing new in the CONFIG_DEBUG_PER_CPU_MAPS 
-variant of early_cpu_to_node() returning NUMA_NO_NODE when the cpu is not 
-possible (generic code doesn't call numa_add_cpu() for non-possible cpus).
+some systems keep getting
+  APIC calibration not consistent with PM-Timer: 139ms instead of 100ms
+  APIC delta adjusted to PM-Timer: 831249 (1163736)
 
-If you have a crash report for a CONFIG_DEBUG_PER_CPU_MAPS kernel, though, 
-we can find why early_cpu_to_node() isn't being properly initialized prior 
-to numa_add_cpu().
+USB legacy SMI handler is not disabled at that time.
 
-I agree that we should have some basic error handling in the debug case to 
-check for this, though.  Please take a look at the following.
+According to Thomas:
+| http://lkml.indiana.edu/hypermail/linux/kernel/0703.2/0420.html
+| 
+| The wrong calibration values are probably caused by SMM code trying to
+| emulate a PS/2 keyboard from a (maybe connected or not) USB keyboard.
+| This prohibits the accurate delivery of PIT interrupts, which are used
+| to calibrate the local APIC timer. Unfortunately we have no way to
+| disable this BIOS misfeature in the early boot process.
+
+Try to disable USB legacy support early with this patch.
+So later APIC Timer calibration don't get messed up by USB legacy support SMI handler.
+After this patch, that warning never show up for 100 reboot tests.
+
+reuse code from drivers/usb/host/pci-quirks.c
 
 
+but pci-quirks.c is using udelay and msleep ...
 
-x86, numa: Add error handling for bad cpu-to-node mappings
+And BenH does't want 
+1. if (early)...
+2. include .c
+3. new API new about safe_udelay/safe_msleep...
 
-CONFIG_DEBUG_PER_CPU_MAPS may return NUMA_NO_NODE when an
-early_cpu_to_node() mapping hasn't been initialized.  In such a case, it
-emits a warning and continues without an issue but callers may try to use
-the return value to index into an array.
+just want to keep the old udelay/mdelay.
 
-We can catch those errors and fail silently since a warning has already
-been emitted.  No current user of numa_add_cpu() requires this error
-checking to avoid a crash, but it's better to be proactive in case a
-future user happens to have a bug and a user tries to diagnose it with 
-CONFIG_DEBUG_PER_CPU_MAPS.
+Thanks
 
-Reported-by: Jesper Juhl <jj@chaosbits.net>
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- arch/x86/mm/numa_64.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -839,6 +839,10 @@ static struct cpumask __cpuinit *debug_cpumask_set_cpu(int cpu, int enable)
- 	struct cpumask *mask;
- 	char buf[64];
- 
-+	if (node == NUMA_NO_NODE) {
-+		/* early_cpu_to_node() already emits a warning and trace */
-+		return NULL;
-+	}
- 	mask = node_to_cpumask_map[node];
- 	if (!mask) {
- 		pr_err("node_to_cpumask_map[%i] NULL\n", node);
-@@ -877,6 +881,10 @@ static void __cpuinit numa_set_cpumask(int cpu, int enable)
- 	struct cpumask *mask;
- 	int i;
- 
-+	if (node == NUMA_NO_NODE) {
-+		/* early_cpu_to_node() already emits a warning and trace */
-+		return;
-+	}
- 	for_each_online_node(i) {
- 		unsigned long addr;
- 
+Yinghai
