@@ -1,34 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756821Ab1AMNmO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 08:42:14 -0500
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:40000 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756707Ab1AMNmM (ORCPT
+	id S1756813Ab1AMNqI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 08:46:08 -0500
+Received: from mtoichi12.ns.itscom.net ([219.110.2.182]:52708 "EHLO
+	mtoichi12.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756707Ab1AMNqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 08:42:12 -0500
-Message-ID: <4D2F012C.5060306@stericsson.com>
-Date: Thu, 13 Jan 2011 14:42:04 +0100
-From: Mattias Wallin <mattias.wallin@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Subject: Re: [PATCH] MFD: ab8500-core chip version cut 2.0 support
-References: <1291717247-10280-1-git-send-email-mattias.wallin@stericsson.com> <20101209170851.GZ8884@sortiz-mobl> <4D01E46C.90301@stericsson.com>
-In-Reply-To: <4D01E46C.90301@stericsson.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Thu, 13 Jan 2011 08:46:06 -0500
+From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Subject: Re: NFS root lockups with -next 20110113
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Nick Piggin <npiggin@kernel.dk>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+In-Reply-To: <676f5c24375e1cc2aa14fe6630ef1324@mail.gmail.com>
+References: <20110113120626.GB30351@opensource.wolfsonmicro.com> <8138.1294924927@jrobl> <676f5c24375e1cc2aa14fe6630ef1324@mail.gmail.com>
+Date: Thu, 13 Jan 2011 22:45:15 +0900
+Message-ID: <8482.1294926315@jrobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sam,
-I saw that this patch wasn't applied in your tree.
-Do you want me to answer any question or change something in the patch?
 
-Cheers,
-/Wallin
+Santosh Shilimkar:
+> It works. My board booted with NFS with below patch
 
-> On 12/09/2010 06:08 PM, Samuel Ortiz wrote:
+----------------------------------------
+
+Mark Brown;
+> Seems to do the trick:
+>
+> Tested-by: Mark Brown <broonie@opensource.wolsfonmicro.com>
+
+Thank you so quick tests.
+When I post the patch to be mainlined, I will add Tested-by for both of
+you. But Nick Piggin may take another approach.
+
+
+J. R. Okajima
+
