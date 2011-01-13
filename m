@@ -1,139 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933120Ab1AMRy1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 12:54:27 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:34345 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933091Ab1AMRyZ (ORCPT
+	id S933126Ab1AMRzV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 12:55:21 -0500
+Received: from casper.infradead.org ([85.118.1.10]:55295 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933081Ab1AMRzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 12:54:25 -0500
-Date: Thu, 13 Jan 2011 18:55:31 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Manoj Iyer <manoj.iyer@canonical.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Matthew Garrett <mjg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
-Subject: Re: [PATCH] Quirk to fix suspend/resume on Lenovo Edge 11,13,14,15
-Message-ID: <20110113175531.GD2006@aftab>
-References: <1294934542-2411-1-git-send-email-manoj.iyer@canonical.com>
- <1294934542-2411-2-git-send-email-manoj.iyer@canonical.com>
- <20110113164616.GB21289@srcf.ucam.org>
- <alpine.LFD.2.00.1101131808450.2678@localhost6.localdomain6>
- <20110113172205.GA30866@kryptos.osrc.amd.com>
- <AANLkTinw23rtSERxAy6G_cu5=rvQeEzxvf3snsUOZE+z@mail.gmail.com>
+	Thu, 13 Jan 2011 12:55:19 -0500
+Date: Thu, 13 Jan 2011 17:55:14 +0000 (GMT)
+From: James Simmons <jsimmons@infradead.org>
+To: Anca Emanuel <anca.emanuel@gmail.com>
+cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Dave Airlie <airlied@linux.ie>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [git pull] drm for rc1
+In-Reply-To: <alpine.LFD.2.00.1101121538470.8212@casper.infradead.org>
+Message-ID: <alpine.LFD.2.00.1101131752190.311@casper.infradead.org>
+References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie> <4D2CE5C8.60601@de.ibm.com> <AANLkTimr4WX3Ay8vC23MKOM+dOcpV+Ca5rg_gcei38nk@mail.gmail.com> <4D2D8ED0.6080807@de.ibm.com> <AANLkTik4h=4o8JEwfd+=CFVb4NgkwaEwxmM6n_+sDj3K@mail.gmail.com>
+ <alpine.LFD.2.00.1101121344070.8212@casper.infradead.org> <AANLkTimdnYHWfBE1nB+2EDRouO7_FoRByVboMYw8WaHB@mail.gmail.com> <AANLkTik=HYzW8--_W+qxi8S9QbAkf9ZZy=uLyaTeV+PC@mail.gmail.com> <alpine.LFD.2.00.1101121538470.8212@casper.infradead.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinw23rtSERxAy6G_cu5=rvQeEzxvf3snsUOZE+z@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 12:33:27PM -0500, Manoj Iyer wrote:
-> Borislav,
-> 
-> Please see below lspci and dmesg output from AMD based ThinkPad Edge 11.
-> 
-> lspci
-> =====
-> 00:00.0 Host bridge [0600]: Advanced Micro Devices [AMD] RS780 Host
-> Bridge Alternate [1022:9601]
->         Subsystem: Lenovo Device [17aa:21ca]
->         Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx-
->         Status: Cap+ 66MHz+ UDF- FastB2B- ParErr- DEVSEL=medium >TAbort-
-> <TAbort- <MAbort+ >SERR- <PERR- INTx-
->         Latency: 0
->         Capabilities: [c4] HyperTransport: Slave or Primary Interface
->                 Command: BaseUnitID=0 UnitCnt=12 MastHost- DefDir- DUL-
->                 Link Control 0: CFlE- CST- CFE- <LkFail- Init+ EOC- TXO- <CRCErr=0
-> IsocEn- LSEn+ ExtCTL- 64b-
->                 Link Config 0: MLWI=16bit DwFcIn- MLWO=16bit DwFcOut- LWI=16bit
-> DwFcInEn- LWO=16bit DwFcOutEn-
->                 Link Control 1: CFlE- CST- CFE- <LkFail+ Init- EOC+ TXO+ <CRCErr=0
-> IsocEn- LSEn- ExtCTL- 64b-
->                 Link Config 1: MLWI=8bit DwFcIn- MLWO=8bit DwFcOut- LWI=8bit
-> DwFcInEn- LWO=8bit DwFcOutEn-
->                 Revision ID: 3.00
->                 Link Frequency 0: 1.0GHz
->                 Link Error 0: <Prot- <Ovfl- <EOC- CTLTm-
->                 Link Frequency Capability 0: 200MHz+ 300MHz- 400MHz+ 500MHz- 600MHz+
-> 800MHz+ 1.0GHz+ 1.2GHz- 1.4GHz- 1.6GHz- Vend-
->                 Feature Capability: IsocFC- LDTSTOP+ CRCTM- ECTLT- 64bA- UIDRD-
->                 Link Frequency 1: 200MHz
->                 Link Error 1: <Prot- <Ovfl- <EOC- CTLTm-
->                 Link Frequency Capability 1: 200MHz- 300MHz- 400MHz- 500MHz- 600MHz-
-> 800MHz- 1.0GHz- 1.2GHz- 1.4GHz- 1.6GHz- Vend-
->                 Error Handling: PFlE- OFlE- PFE- OFE- EOCFE- RFE- CRCFE- SERRFE- CF-
-> RE- PNFE- ONFE- EOCNFE- RNFE- CRCNFE- SERRNFE-
->                 Prefetchable memory behind bridge Upper: 00-00
->                 Bus Number: 00
->         Capabilities: [54] HyperTransport: UnitID Clumping
->         Capabilities: [40] HyperTransport: Retry Mode
->         Capabilities: [9c] HyperTransport: #1a
->         Capabilities: [f8] HyperTransport: #1c
-> 
-> 00:01.0 PCI bridge [0604]: Advanced Micro Devices [AMD] RS780 PCI to
-> PCI bridge (int gfx) [1022:9602] (prog-if 00 [Normal decode])
->         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx-
->         Status: Cap+ 66MHz+ UDF- FastB2B- ParErr- DEVSEL=medium >TAbort-
-> <TAbort- <MAbort- >SERR- <PERR- INTx-
->         Latency: 64
->         Bus: primary=00, secondary=01, subordinate=01, sec-latency=64
->         I/O behind bridge: 00009000-00009fff
->         Memory behind bridge: d0400000-d05fffff
->         Prefetchable memory behind bridge: 00000000c0000000-00000000cfffffff
->         Secondary status: 66MHz+ FastB2B- ParErr- DEVSEL=medium >TAbort-
-> <TAbort- <MAbort+ <SERR- <PERR-
->         BridgeCtl: Parity- SERR- NoISA+ VGA+ MAbort- >Reset- FastB2B-
->                 PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
->         Capabilities: [44] HyperTransport: MSI Mapping Enable+ Fixed+
->         Capabilities: [b0] Subsystem: Advanced Micro Devices [AMD] RS780 PCI
-> to PCI bridge (int gfx) [1022:9602]
->         Kernel modules: shpchp
-> 
-> 00:04.0 PCI bridge [0604]: Advanced Micro Devices [AMD] RS780 PCI to
-> PCI bridge (PCIE port 0) [1022:9604] (prog-if 00 [Normal decode])
->         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx+
->         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
-> <TAbort- <MAbort- >SERR- <PERR- INTx-
->         Latency: 0, Cache Line Size: 32 bytes
->         Bus: primary=00, secondary=02, subordinate=07, sec-latency=0
->         I/O behind bridge: 0000a000-0000bfff
->         Memory behind bridge: 80000000-800fffff
->         Prefetchable memory behind bridge: 00000000d0000000-00000000d03fffff
->         Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort-
-> <TAbort- <MAbort- <SERR- <PERR-
->         BridgeCtl: Parity- SERR- NoISA+ VGA- MAbort- >Reset- FastB2B-
->                 PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
->         Capabilities: [50] Power Management version 3
->                 Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
->                 Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
->         Capabilities: [58] Express (v2) Root Port (Slot+), MSI 00
->                 DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <64ns, L1 <1us
->                         ExtTag+ RBE+ FLReset-
->                 DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
->                         RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
-> 
 
-This doesn't look complete since it shows only 3 PCI devices. Can you do
+> > > With your patch, I can boot the system. But nouveau is not loaded.
+> > > dmesg attached.
+> > >
+> > 
+> > Forget to mention: the revert makes first steps of boot look the same
+> > (change the resolution of the text)
+> > but with your patch, I see a big ugly ununtu logo, (I think that is
+> > because nouveau is not loaded)
 
-lspci -vv >> lspci.out
+Okay, can you do one more experiment for me. Since you already reverted 
+the patch to get it booting I like to ask you to add 
 
-and attach the file instead since the mail client wraps the lines anyway.
+drm_fb_helper_fill_fix(info, fb_helper->fb);
 
-Thanks.
+back into the drm_fb_helper_set_par function in drm_fb_helper.c. You have 
+something like this:
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+        mutex_lock(&dev->mode_config.mutex);
+        for (i = 0; i < fb_helper->crtc_count; i++) {
+                crtc = fb_helper->crtc_info[i].mode_set.crtc;
+                ret = crtc->funcs->set_config(&fb_helper->crtc_info[i].mode_set);
+                if (ret) {
+                        mutex_unlock(&dev->mode_config.mutex);
+                        return ret;
+                }
+                drm_fb_helper_fill_fix(info, fb_helper->fb);
+        }
+        mutex_unlock(&dev->mode_config.mutex);
+ 
+Tell me if your system is still usable after that. Thanks for testing for 
+me.
