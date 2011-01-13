@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757259Ab1AMRES (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 12:04:18 -0500
-Received: from www.tglx.de ([62.245.132.106]:43086 "EHLO www.tglx.de"
+	id S1757111Ab1AMRGf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 12:06:35 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:34860 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757030Ab1AMREO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 12:04:14 -0500
-Date: Thu, 13 Jan 2011 18:03:24 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Richard Cochran <richardcochran@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
-        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
-        Krzysztof Halasa <khc@pm.waw.pl>,
+	id S1756796Ab1AMRGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 12:06:33 -0500
+Date: Thu, 13 Jan 2011 18:06:17 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Kirill Smelkov <kirr@mns.spb.ru>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>
-Subject: Re: [PATCH V9 08/13] posix clocks: cleanup the CLOCK_DISPTACH
- macro
-In-Reply-To: <90b2beef441615d01c93fcad029c44af4e505c5f.1294917348.git.richard.cochran@omicron.at>
-Message-ID: <alpine.LFD.2.00.1101131745400.2678@localhost6.localdomain6>
-References: <cover.1294917347.git.richard.cochran@omicron.at> <90b2beef441615d01c93fcad029c44af4e505c5f.1294917348.git.richard.cochran@omicron.at>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+        Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [GIT PULL 0/2] perf/urgent fixes and an disabled by default
+ improvement
+Message-ID: <20110113170617.GA12595@elte.hu>
+References: <1294927876-23553-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294927876-23553-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jan 2011, Richard Cochran wrote:
->  int posix_cpu_clock_getres(const clockid_t which_clock, struct timespec *ts);
->  int posix_cpu_clock_get(const clockid_t which_clock, struct timespec *ts);
-> -int posix_cpu_clock_set(const clockid_t which_clock, const struct timespec *ts);
-> +int posix_cpu_clock_set(const clockid_t which_clock, struct timespec *ts);
 
-Shouldn't we change the clock_set function to have *ts const in all places ?
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
->  static int posix_ktime_get_ts(clockid_t which_clock, struct timespec *tp)
-> @@ -279,12 +230,29 @@ static __init int init_posix_timers(void)
->  {
->  	struct k_clock clock_realtime = {
->  		.clock_getres = hrtimer_get_res,
-> +		/* defaults: */
-> +		.clock_adj	= common_clock_adj,
-> +		.clock_get	= common_clock_get,
-> +		.clock_set	= common_clock_set,
-> +		.nsleep		= common_nsleep,
-> +		.nsleep_restart	= common_nsleep_restart,
-> +		.timer_create	= common_timer_create,
-> +		.timer_del	= common_timer_del,
-> +		.timer_get	= common_timer_get,
-> +		.timer_set	= common_timer_set,
->  	};
->  	struct k_clock clock_monotonic = {
->  		.clock_getres = hrtimer_get_res,
->  		.clock_get = posix_ktime_get_ts,
->  		.clock_set = do_posix_clock_nosettime,
->  		.clock_adj = do_posix_clock_noadjtime,
-> +		/* defaults: */
-> +		.nsleep		= common_nsleep,
-> +		.nsleep_restart	= common_nsleep_restart,
-> +		.timer_create	= common_timer_create,
-> +		.timer_del	= common_timer_del,
-> +		.timer_get	= common_timer_get,
-> +		.timer_set	= common_timer_set,
->  	};
->  	struct k_clock clock_monotonic_raw = {
->  		.clock_getres = hrtimer_get_res,
-> @@ -293,6 +261,11 @@ static __init int init_posix_timers(void)
->  		.clock_adj = do_posix_clock_noadjtime,
->  		.timer_create = no_timer_create,
->  		.nsleep = no_nsleep,
-> +		/* defaults: */
-> +		.nsleep_restart	= common_nsleep_restart,
-> +		.timer_del	= common_timer_del,
-> +		.timer_get	= common_timer_get,
-> +		.timer_set	= common_timer_set,
+> Hi Ingo,
+> 
+>         Please consider pulling from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/urgent
+> 
+> 	The 'nodelay' mode for perf record is disabled by default and allows
+> potentially many 'perf script' usecases that need to receive events as they
+> happen, with no latency.
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> Kirill Smelkov (1):
+>   perf record: Add "nodelay" mode, disabled by default
+> 
+> Stephane Eranian (1):
+>   perf sched: Fix list of events, dropping unsupported ':r' modifier
+> 
+>  tools/perf/Documentation/perf-record.txt |    3 +++
+>  tools/perf/builtin-record.c              |    8 ++++++++
+>  tools/perf/builtin-sched.c               |   18 +++++++++---------
+>  3 files changed, 20 insertions(+), 9 deletions(-)
 
-Hmm, we do not need to set functional entries for clocks which neither
-implement timer_create nor nsleep.
+Pulled, thanks a lot Arnaldo!
 
-Otherwise I really like the outcome. :)
-
-Thanks for your patience !
-
-       tglx
+	Ingo
