@@ -1,37 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909Ab1AMEMG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 23:12:06 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:38935 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178Ab1AMEMF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 23:12:05 -0500
-Date: Thu, 13 Jan 2011 13:09:53 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Alexey Charkov <alchark@gmail.com>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com
-Subject: Re: [PATCH] fbdev: Implement simple blanking in pseudocolor modes for vt8500lcdfb
-Message-ID: <20110113040953.GB12013@linux-sh.org>
-References: <20110112221443.GA574@alchark-u3s>
+	id S932353Ab1AMEOs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 23:14:48 -0500
+Received: from mga02.intel.com ([134.134.136.20]:4557 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752027Ab1AMEOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 23:14:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,316,1291622400"; 
+   d="scan'208";a="696297898"
+Date: Thu, 13 Jan 2011 12:14:40 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/35] writeback: safety margin for bdi stat error
+Message-ID: <20110113041440.GC7840@localhost>
+References: <20101213144646.341970461@intel.com>
+ <20101213150326.604451840@intel.com>
+ <20110112215949.GD14260@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110112221443.GA574@alchark-u3s>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <20110112215949.GD14260@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 01:14:44AM +0300, Alexey Charkov wrote:
-> Implement simple blanking in pseudocolor modes for vt8500lcdfb
-> 
-> This follows the style of some other in-tree drivers by just setting
-> the hardware palette colors to all black. True Color modes are not
-> affected, but this at least allows to run xf86-video-fbdev without
-> errors due to blanking being unimplemented.
-> 
-> Signed-off-by: Alexey Charkov <alchark@gmail.com>
-> 
-Applied, thanks.
+On Thu, Jan 13, 2011 at 05:59:49AM +0800, Jan Kara wrote:
+> On Mon 13-12-10 22:46:48, Wu Fengguang wrote:
+> > In a simple dd test on a 8p system with "mem=256M", I find all light
+> > dirtier tasks on the root fs are get heavily throttled. That happens
+> > because the global limit is exceeded. It's unbelievable at first sight,
+> > because the test fs doing the heavy dd is under its bdi limit.  After
+> > doing some tracing, it's discovered that
+> > 
+> >         bdi_dirty < bdi_dirty_limit() < global_dirty_limit() < nr_dirty
+>           ^^ bdi_dirty is the number of pages dirtied on BDI? I.e.
+> bdi_nr_reclaimable + bdi_nr_writeback?
+
+Yes.
+
+> > So the root cause is, the bdi_dirty is well under the global nr_dirty
+> > due to accounting errors. This can be fixed by using bdi_stat_sum(),
+>   So which statistic had the big error? I'd just like to understand
+> this (and how come your patch improves the situation)...
+
+bdi_stat_error() = nr_cpu_ids * BDI_STAT_BATCH
+                 = 8 * (8*(1+ilog2(8)))
+                 = 8 * 8 * 4
+                 = 256 pages
+                 = 1MB
+
+> > however that's costly on large NUMA machines. So do a less costly fix
+> > of lowering the bdi limit, so that the accounting errors won't lead to
+> > the absurd situation "global limit exceeded but bdi limit not exceeded".
+> > 
+> > This provides guarantee when there is only 1 heavily dirtied bdi, and
+> > works by opportunity for 2+ heavy dirtied bdi's (hopefully they won't
+> > reach big error _and_ exceed their bdi limit at the same time).
+> > 
+> ...
+> > @@ -458,6 +464,14 @@ unsigned long bdi_dirty_limit(struct bac
+> >  	long numerator, denominator;
+> >  
+> >  	/*
+> > +	 * try to prevent "global limit exceeded but bdi limit not exceeded"
+> > +	 */
+> > +	if (likely(dirty > bdi_stat_error(bdi)))
+> > +		dirty -= bdi_stat_error(bdi);
+> > +	else
+> > +		return 0;
+> > +
+>   Ugh, so if by any chance global_dirty_limit() <= bdi_stat_error(bdi), you
+> will limit number of unreclaimable pages for that bdi 0? Why?
+
+Good catch! Yeah it may lead to regressions and should be voided.
+
+Thanks,
+Fengguang
