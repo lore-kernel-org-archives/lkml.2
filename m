@@ -1,39 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756958Ab1AMWke (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 17:40:34 -0500
-Received: from www.tglx.de ([62.245.132.106]:57161 "EHLO www.tglx.de"
+	id S1756850Ab1AMWqS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 17:46:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60235 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752149Ab1AMWk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 17:40:28 -0500
-Date: Thu, 13 Jan 2011 23:40:09 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Manoj Iyer <manoj.iyer@canonical.com>
-cc: Borislav Petkov <bp@amd64.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
-Subject: Re: [PATCH] Quirk to fix suspend/resume on Lenovo Edge 11,13,14,15
-In-Reply-To: <AANLkTi=vyDWT2SBcS-Jh_5xqe4J5OYV8ZSNz=nZAURRu@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1101132339370.2678@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1101131808450.2678@localhost6.localdomain6> <20110113172205.GA30866@kryptos.osrc.amd.com> <AANLkTinw23rtSERxAy6G_cu5=rvQeEzxvf3snsUOZE+z@mail.gmail.com> <20110113175531.GD2006@aftab> <AANLkTikDoRMoQjtN03eMoeacwottEixrFqcF8nJZWgKy@mail.gmail.com>
- <20110113183025.GE2006@aftab> <alpine.LFD.2.00.1101131946560.2678@localhost6.localdomain6> <20110113185807.GA24720@srcf.ucam.org> <20110113190700.GB30866@kryptos.osrc.amd.com> <alpine.LFD.2.00.1101132012140.2678@localhost6.localdomain6>
- <20110113192825.GC30866@kryptos.osrc.amd.com> <alpine.LFD.2.00.1101132032350.2678@localhost6.localdomain6> <AANLkTi=iE5FTErH+KBf+NB13wThpODCjqfj7vZ=wPtir@mail.gmail.com> <AANLkTi=2+jpMYP4X+yLQ0cH4oqaUPvX-c8pd821fF1-v@mail.gmail.com>
- <alpine.LFD.2.00.1101132232310.2678@localhost6.localdomain6> <AANLkTi=vyDWT2SBcS-Jh_5xqe4J5OYV8ZSNz=nZAURRu@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751663Ab1AMWqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 17:46:14 -0500
+Date: Thu, 13 Jan 2011 14:41:43 -0800
+From: Greg KH <gregkh@suse.de>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kobject: Add missing format attribute specifications
+Message-ID: <20110113224143.GA14885@suse.de>
+References: <201101011351.52691.bvanassche@acm.org>
+ <201101132152.11721.bvanassche@acm.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201101132152.11721.bvanassche@acm.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jan 2011, Manoj Iyer wrote:
-
-> Thomas,
+On Thu, Jan 13, 2011 at 09:52:11PM +0100, Bart Van Assche wrote:
+> On Saturday 01 January 2011 13:51:52 Bart Van Assche wrote:
+> > Several functions in <linux/kobject.h> accept printf-style arguments.
+> > Some of these functions have been annotated with a format attribute
+> > declaration while others have not been annotated. Add a format attribute
+> > specification where it is missing.
+> > 
+> > Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+> > Cc: "Greg Kroah-Hartman" <gregkh@suse.de>
+> > 
+> > ---
+> >  include/linux/kobject.h |    7 +++++--
+> >  1 files changed, 5 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/include/linux/kobject.h b/include/linux/kobject.h
+> > index 8f6d121..15e82c1 100644
+> > --- a/include/linux/kobject.h
+> > +++ b/include/linux/kobject.h
+> > @@ -85,11 +85,13 @@ static inline const char *kobject_name(const struct kobject *kobj)
+> >  extern void kobject_init(struct kobject *kobj, struct kobj_type *ktype);
+> >  extern int __must_check kobject_add(struct kobject *kobj,
+> >  				    struct kobject *parent,
+> > -				    const char *fmt, ...);
+> > +				    const char *fmt, ...)
+> > +	__attribute__((format(printf, 3, 4)));
+> >  extern int __must_check kobject_init_and_add(struct kobject *kobj,
+> >  					     struct kobj_type *ktype,
+> >  					     struct kobject *parent,
+> > -					     const char *fmt, ...);
+> > +					     const char *fmt, ...)
+> > +	__attribute__((format(printf, 4, 5)));
+> >  
+> >  extern void kobject_del(struct kobject *kobj);
+> >  
+> > @@ -226,6 +228,7 @@ static inline int kobject_uevent_env(struct kobject *kobj,
+> >  
+> >  static inline int add_uevent_var(struct kobj_uevent_env *env,
+> >  				 const char *format, ...)
+> > +	__attribute__((format(printf, 2, 3)))
+> >  { return 0; }
+> >  
+> >  static inline int kobject_action_type(const char *buf, size_t count,
 > 
-> Attached are 2 dmesg outputs
+> Hello Greg,
 > 
-> 1. dmesg output after boot with the patch applied.
-> 2. dmesg output after suspend/resume with patch applied.
+> Have you already had the time to have a look at this patch and the two
+> patches that can be found here: http://lkml.org/lkml/2010/12/21/97 ?
 
-I don't see any of the pr_debug printks at all.
+It's in my "to-apply" queue that I will be getting to once .38-rc1 is
+out.  Sorry, but I was gone for a few weeks at the end of last year.
+
+thanks for your patience,
+
+greg k-h
