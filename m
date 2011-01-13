@@ -1,50 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab1AMEkx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 23:40:53 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56338 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752027Ab1AMEkv (ORCPT
+	id S1756099Ab1AMEuz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 23:50:55 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:63492 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752178Ab1AMEux convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 23:40:51 -0500
+	Wed, 12 Jan 2011 23:50:53 -0500
 MIME-Version: 1.0
-In-Reply-To: <b7da2f$q4ct63@fmsmga001.fm.intel.com>
-References: <1294877597-17843-1-git-send-email-chris@chris-wilson.co.uk>
- <AANLkTi=qHW3esgZYq55dgSz15ZDpukXn6zO17nJ1fWzS@mail.gmail.com> <b7da2f$q4ct63@fmsmga001.fm.intel.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 12 Jan 2011 20:39:54 -0800
-Message-ID: <AANLkTinBnm+xkXPPM4-3PG_i2hJMuXhv8x42KN4o3kGg@mail.gmail.com>
-Subject: Re: [PATCH] drm/i915/execbuffer: Reorder relocations to match new
- object order
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Dave Airlie <airlied@linux.ie>,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <1294772163.3441.42.camel@work-vm>
+References: <1294280159-2513-1-git-send-email-john.stultz@linaro.org>
+	<1294280159-2513-13-git-send-email-john.stultz@linaro.org>
+	<AANLkTi=i9bnAz9FoB_Q1u4pTOwpBCTHK4S21iukZWBpF@mail.gmail.com>
+	<1294772163.3441.42.camel@work-vm>
+Date: Wed, 12 Jan 2011 20:50:52 -0800
+Message-ID: <AANLkTikr8EeVcBB4eUiaBSiDTP+ti4aYFQgvz+4nUF16@mail.gmail.com>
+Subject: Re: [PATCH 12/12] [RFC] Introduce Alarm (hybrid) timers
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        Brian Swetland <swetland@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 4:48 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> On Wed, 12 Jan 2011 16:27:46 -0800, Linus Torvalds <torvalds@linux-foundation.org> wrote:
->>
->> I think you're still missing some case.
->>
->> This improves the video case a lot - I can't see any artifacts there -
->> but I still get occasional corruption when moving between the "share"
->> and "rate" buttons, and they end up drawing incorrectly.
+2011/1/11 John Stultz <john.stultz@linaro.org>:
+> On Wed, 2011-01-05 at 20:07 -0800, Arve Hjønnevåg wrote:
+>> I don't know how suited the posix interface is for this, but I think
+>> it is critical to prevent suspend while an alarm is pending. If an
+>> alarm is important enough to wake the system up from suspend, it is
+>> probably not safe to suspend right after it triggered. The android
+>> alarm driver holds a wakelock until user-space calls back in to wait
+>> for the next alarm, while in-kernel alarms are called from interrupt
+>> context. The apis provided in include/linux/pm_wakeup.h should provide
+>> the functionality you need to prevent suspend until the alarms have
+>> been fully processed, but I have not tried this api yet.
 >
-> Now we're probably drifting into other bug territory... ;-)
+> So again, I was really hoping to avoid wading into the wakelocks
+> discussion. However, I'm hesitant to push the posix alarm timers
+> interface into the kernel if it is insufficient to replace the android
+> alarm driver.  Wakelocks are not upstream, so they shouldn't block
+> upstream progress, but I don't want to create an interface that ends up
+> being short sighted if some wakelock-like solution were to later be
+> included upstream.
+
+It is my understanding that a wakelock-like solution is already
+upstream, but I have not tried it yet.
+
 >
-> I'll look again in the morning. Usually running the conformance test
-> suites in parallel is enough to exercise the worst-case behaviour.
+> So into the water i slowly wade.
+>
+> I've been thinking about Arve's example above. The part that concerns me
+> the most is the implicit suspend blocker that is acquired by the kernel
+> when the alarm fires in order to inhibit suspend during the user-space
+> processing until the process calls back into the alarm device.
+>
+> I was considering various ideas, like a special signal that tells
+> userland that it holds a wakelock and is responsible for dropping it. Or
+> some sort of callback when signal handling is complete by userland
+> allowing userland to grab its own lock and let the kernel drop its held
+> lock.
+>
+> But in my mind, it seems it would be cleaner if the userland application
+> did something to mark itself as inhibiting suspend. Then if it was to
+> block waiting on something like an alarm timer, the kernel would drop
+> the suspend blocker. Then when the alarm timer fires, the kernel would
+> re-aquire the suspend-blocker for the process when waking it up (the
+> kernel may do its own suspend inhibition internally as well - but there
+> wouldn't be any cross kernel/userland implicit lock passing). This is
+> sort of like SCHED_FIFO 99 style semantics, where a realtime process
+> won't be preempted unless it explicitly blocks.
+>
+> I realize this might be more complicated, as suspend inhibition might be
+> desirable while a process is blocked, such as waiting on the disk, or
+> blocking on non-alarm triggering timers (although that seems wasteful).
+> But it seems that any blocking on devices that trigger wakeups would be
+> fine time for us to drop suspend blocker, as we know we will be woken up
+> after that point.
+>
+> Arve: Would something like the above resolve the issue you brought up? I
+> realize Android might not be eager to convert to some new semantics,
+> (nor the upstream kernel be eager to start using optimistic suspend),
+> but should that day come, do you think such a solution would be
+> sufficient?
+>
 
-I'm pretty dang sure it's still the same bug.
+The android alarm driver does in practice block suspend whenever the
+user-space thread that waits for alarm is not blocked in the ioctl
+(which seems similar to what you describe above), but I the model we
+use to input events may be better for a generic alarm interface since
+it is more flexible. For input event we require user-space to use
+select() or poll() to  wait for events to become available and
+user-space must then acquire a wakelock before reading the event. The
+kernel then only needs to block suspend if the event has not been
+read.
 
-I went back to the revert, and tried very hard, but I cannot reproduce
-even a whiff of the corruption with the revert. No corruption
-what-so-ever.
-
-With your patch, the corruption is _less_, but it's absolutely there.
-So the re-ordering of the object list is doing something else too.
-
-                   Linus
+-- 
+Arve Hjønnevåg
