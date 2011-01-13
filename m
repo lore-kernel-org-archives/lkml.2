@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933025Ab1AMQSY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 11:18:24 -0500
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:43555 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756944Ab1AMQSW (ORCPT
+	id S933089Ab1AMQXV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 11:23:21 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:54694 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933020Ab1AMQXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 11:18:22 -0500
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: npiggin@gmail.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-reply-to: <E1PdOdT-00042k-RM@pomaz-ex.szeredi.hu> (message from Miklos
-	Szeredi on Thu, 13 Jan 2011 15:58:47 +0100)
-Subject: Re: Important for fs devs: rcu-walk merged upstream
-References: <AANLkTimBrR1LkVHOxZA=UUmKsnxfsFLr9z_AhXUHQ_7N@mail.gmail.com> <E1PdOdT-00042k-RM@pomaz-ex.szeredi.hu>
-Message-Id: <E1PdPsR-0004BY-Q3@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 13 Jan 2011 17:18:19 +0100
+	Thu, 13 Jan 2011 11:23:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=VXHtOAB4JIay7miqTabD7EY0Xu7tgVxR1zetQsx4BtETgovNy0LSqylby9NoqPJSjI
+         p5li6YLTkuKCyPb8BY5Vb88lOZZo30qBenC4e2oe81G2xlo7dk9tl53U98vlHKERCxwW
+         310HroxcKaC9aFOwKIpiJIGK2Ur06cIwoKNig=
+Date: Thu, 13 Jan 2011 18:23:10 +0200
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: "Andrew G. Morgan" <morgan@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] libcap: introduce CAP_SYSLOG
+Message-ID: <20110113162310.GA4044@swordfish>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jan 2011, Miklos Szeredi wrote:
-> On Sat, 8 Jan 2011, Nick Piggin wrote:
-> > The vfs-scale branch is now upstream. If you haven't
-> > looked yet, your filesystem is likely to have been
-> > touched, so check it out.
-> > 
-> > Also look at Documentation/filesystems/porting and
-> > path-lookup.txt.
-> > 
-> > The dcache_lock stuff should have been all done for you
-> > (for in-tree filesystems, I can help out of tree fses with
-> > conversions there if you ping me offline).
-> > 
-> > The rcu-walk stuff can be more tricky for your filesystem
-> > to take advantage of.
-> > 
-> > If you supply a .d_revalidate, .permission, or .check_acl,
-> > then path walking is going to be slow and unscalable for
-> > you.
-> > 
-> > Out of tree filesystems: you _have_ to at least add a line
-> > of code to the above functions in order to specify that
-> > you don't want to participate in rcu-walk.
-> > 
-> > Otherwise, you don't have to care about rcu-walk if you
-> > have a legacy or special filesystem like configfs then I'd
-> > advise against anything fancy. But if you have a
-> > userbase and you expect them to actually do any path
-> > lookups into your filesystem, please take a look.
-> 
-> One other thing: I know ECHILD is safe since no sane filesystem will
-> return it in its permission or revalidate callbacks, and even if it
-> does that's just a loss of optimization.
+Since commit 38ef4c2e437d11b5922723504b62824e96761459 syslog
+operations require CAP_SYSLOG capability (intoriduced by commit 
+ce6ada35bdf710d16582cc4869c26722547e6f11), not CAP_SYS_ADMIN.
 
-And it's not entirely safe either.  A fuse filesystem returning ECHILD
-would make nameidata_dentry_drop_rcu() to BUG.  So some sort of errno
-filter is necessary in the fuse kernel module.
+Patch introduces CAP_SYSLOG capability.
 
-Thanks,
-Miklos
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+
+---
+
+ libcap/include/linux/capability.h |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/libcap/include/linux/capability.h b/libcap/include/linux/capability.h
+index 39e5ff5..4924f2a 100644
+--- a/libcap/include/linux/capability.h
++++ b/libcap/include/linux/capability.h
+@@ -355,7 +355,12 @@ struct cpu_vfs_cap_data {
+ 
+ #define CAP_MAC_ADMIN        33
+ 
+-#define CAP_LAST_CAP         CAP_MAC_ADMIN
++
++/* Privileged syslog operations currently require CAP_SYSLOG.
++   CAP_SYS_ADMIN is not acceptable anymore. */
++#define CAP_SYSLOG           34
++
++#define CAP_LAST_CAP         CAP_SYSLOG
+ 
+ #define cap_valid(x) ((x) >= 0 && (x) <= CAP_LAST_CAP)
+ 
