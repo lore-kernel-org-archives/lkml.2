@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933142Ab1AMTN5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 14:13:57 -0500
-Received: from www.tglx.de ([62.245.132.106]:52075 "EHLO www.tglx.de"
+	id S933345Ab1AMTQO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 14:16:14 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:18189 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751835Ab1AMTNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 14:13:54 -0500
-Date: Thu, 13 Jan 2011 20:13:42 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Borislav Petkov <bp@amd64.org>
-cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Manoj Iyer <manoj.iyer@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
-Subject: Re: [PATCH] Quirk to fix suspend/resume on Lenovo Edge 11,13,14,15
-In-Reply-To: <20110113190700.GB30866@kryptos.osrc.amd.com>
-Message-ID: <alpine.LFD.2.00.1101132012140.2678@localhost6.localdomain6>
-References: <1294934542-2411-2-git-send-email-manoj.iyer@canonical.com> <20110113164616.GB21289@srcf.ucam.org> <alpine.LFD.2.00.1101131808450.2678@localhost6.localdomain6> <20110113172205.GA30866@kryptos.osrc.amd.com> <AANLkTinw23rtSERxAy6G_cu5=rvQeEzxvf3snsUOZE+z@mail.gmail.com>
- <20110113175531.GD2006@aftab> <AANLkTikDoRMoQjtN03eMoeacwottEixrFqcF8nJZWgKy@mail.gmail.com> <20110113183025.GE2006@aftab> <alpine.LFD.2.00.1101131946560.2678@localhost6.localdomain6> <20110113185807.GA24720@srcf.ucam.org>
- <20110113190700.GB30866@kryptos.osrc.amd.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932676Ab1AMTQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 14:16:12 -0500
+X-IronPort-AV: E=Sophos;i="4.60,318,1291622400"; 
+   d="scan'208";a="505147967"
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] NFS: Fix NFSv3 exclusive open semantics
+Date: Thu, 13 Jan 2011 14:15:50 -0500
+Message-Id: <1294946150-9248-1-git-send-email-Trond.Myklebust@netapp.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jan 2011, Borislav Petkov wrote:
+Commit c0204fd2b8fe047b18b67e07e1bf2a03691240cd (NFS: Clean up
+nfs4_proc_create()) broke NFSv3 exclusive open by removing the code
+that passes the O_EXCL flag down to nfs3_proc_create(). This patch
+reverts that offending hunk from the original commit.
 
-> On Thu, Jan 13, 2011 at 06:58:07PM +0000, Matthew Garrett wrote:
-> > On Thu, Jan 13, 2011 at 07:51:49PM +0100, Thomas Gleixner wrote:
-> > 
-> > > What's odd is that the machines actually boot. I would have expected
-> > > that they do not boot at all if the BIOS IRQ0 pin2 override is
-> > > ignored. But it seems that takes effect just when the machine does a
-> > > suspend/resume. Weird!
-> > 
-> > The only thing that springs to mind is some BIOS code making incorrect 
-> > assumptions about timer setup when we trap into it. Is reprogramming the 
-> > timer back to the boot state over suspend plausible? If so, that'd 
-> > probably be a more general fix.
-> 
-> Well, Andreas did boot with 'hpet=verbose' on an affected machine here
-> and did a suspend/resume and the hpet config registers looked ok before
-> suspend and after resume. It might be that the HPET is temporarily
-> "insane" while resume lasts but we don't have any hard facts confirming
+Reported-by: Nick Bowler <nbowler@elliptictech.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: stable@kernel.org    [2.6.37]
+Tested-by: Nick Bowler <nbowler@elliptictech.com>
+---
+ fs/nfs/dir.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-And you have no explanation at all why applying the irq pin routing
-quirk makes HPETs temporal insanity go away magically :)
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index abe4f0c..f9d6a37 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -1583,6 +1583,7 @@ static int nfs_create(struct inode *dir, struct dentry *dentry, int mode,
+ {
+ 	struct iattr attr;
+ 	int error;
++	int open_flags = 0;
+ 
+ 	dfprintk(VFS, "NFS: create(%s/%ld), %s\n",
+ 			dir->i_sb->s_id, dir->i_ino, dentry->d_name.name);
+@@ -1590,7 +1591,10 @@ static int nfs_create(struct inode *dir, struct dentry *dentry, int mode,
+ 	attr.ia_mode = mode;
+ 	attr.ia_valid = ATTR_MODE;
+ 
+-	error = NFS_PROTO(dir)->create(dir, dentry, &attr, 0, NULL);
++	if ((nd->flags & LOOKUP_CREATE) != 0)
++		open_flags = nd->intent.open.flags;
++
++	error = NFS_PROTO(dir)->create(dir, dentry, &attr, open_flags, NULL);
+ 	if (error != 0)
+ 		goto out_err;
+ 	return 0;
+-- 
+1.7.3.4
 
-Thanks,
-
-	tglx
