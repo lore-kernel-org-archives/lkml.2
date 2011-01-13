@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933043Ab1AMQKW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 11:10:22 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36013 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932517Ab1AMQKU convert rfc822-to-8bit (ORCPT
+	id S933064Ab1AMQLC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 11:11:02 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41230 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932517Ab1AMQLA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 11:10:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=vrfy.org; s=google;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=QCKJANMbLEbxPTlJ5Lf1J1p16pVndYZfdkh74jSTWL28R7AT/G+L6Yy7hEZg1woPfx
-         ODUFXYDaJAQdDp0d0b6+M7EXG5AnV+s71HVeOQHp2uy79R+LAgZYHY34OjRXzEKPhbw6
-         3s5fz75NICaynai7uYiJkouPxVOl9bi3ZHMzA=
+	Thu, 13 Jan 2011 11:11:00 -0500
 MIME-Version: 1.0
-In-Reply-To: <20110113155955.GI16523@nb.net.home>
-References: <4D2EE156.1050006@redhat.com> <20110113122701.GG16523@nb.net.home>
- <20110113131216.GF30719@htj.dyndns.org> <20110113132637.GH16523@nb.net.home>
- <20110113133722.GG30719@htj.dyndns.org> <4D2F04FF.1070309@redhat.com>
- <20110113141107.GI30719@htj.dyndns.org> <4D2F0B6A.6010201@redhat.com>
- <AANLkTinJ68D6Yc-U-Q=ZfS9mqozj5qtHPtySZHOgjcgP@mail.gmail.com>
- <AANLkTi=LKYzrNsU7jc1Nr4W4CaQ_dmBGeQAquSCp_yAX@mail.gmail.com> <20110113155955.GI16523@nb.net.home>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Thu, 13 Jan 2011 17:10:02 +0100
-Message-ID: <AANLkTimXkF-JNaU12wLecdszMLZkfTh405tNabzEF4L_@mail.gmail.com>
-Subject: Re: [dm-devel] linux-next - WARNING: at fs/block_dev.c:824 bd_link_disk_holder+0x92/0x1ac()
-To: Karel Zak <kzak@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Milan Broz <mbroz@redhat.com>,
-        device-mapper development <dm-devel@redhat.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Message-ID: <64afb13a-0ff8-4c98-9d52-06bef54bd4eb@default>
+Date: Thu, 13 Jan 2011 08:08:46 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Christoph Hellwig <hch@infradead.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: RE: clearcache (Was: Re: [git pull] vfs pile 1)
+References: <20110113053554.GQ19804@ZenIV.linux.org.uk>
+ <20110113172557.c016ec51.sfr@canb.auug.org.au>
+ <20110113085547.GA7414@infradead.org
+ 20110113214239.1b23b523.sfr@canb.auug.org.au>
+In-Reply-To: <20110113214239.1b23b523.sfr@canb.auug.org.au>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6539.5000]
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 16:59, Karel Zak <kzak@redhat.com> wrote:
-> On Thu, Jan 13, 2011 at 03:43:38PM +0100, Kay Sievers wrote:
->> On Thu, Jan 13, 2011 at 15:30, Tejun Heo <tj@kernel.org> wrote:
->> > On Thu, Jan 13, 2011 at 3:25 PM, Milan Broz <mbroz@redhat.com> wrote:
->> >> Maybe, but this was not invented in DM/MD camp:-)
->> >> Probably Kay or Greg can answer why it was done this way?
->>
->> It's not from Greg or Kay. It just appeared some day in the context of dm. :)
->>
->> And yes, symlinks *look* nice and simple for the outside, but they are
->> not, and have all sorts of problems like non-atomic updates, make it
->
->  Sounds like sysfs implementation problem, right?
+> On Thu, 13 Jan 2011 03:55:47 -0500 Christoph Hellwig
+> <hch@infradead.org> wrote:
+> >
+> > How did cleancache end up in linux-next again?
+> 
+> Um, I asked after the last merge window (on November 17, cc'ing you, Al
+> and Linus) and the only reply I got was from Dan saying that he was
+> hoping to work more on it with some chance of being ready for 2.6.38
+> ...
+> 
+> So, let me ask again:
+> 
+> "I didn't really follow the discussion at Kernel Summit, but there
+> seemed
+> to be some question as to whether the cleancache stuff will be merged
+> or
+> not.  It missed 2.6.37 (obviously), but my question now is do I keep in
+> in linux-next in the hope that it will be merged in 2.6.38?  Or is that
+> not going to happen?"
+> 
+> (The cleancache tree has not changed since October 9 last year.)
 
-It's a normal multi-file problem. It can by-definition not be atomic
-without doing really weird locking things.
+Hi Stephen --
 
->  If there is noway to fix sysfs then we can add a generic ioctl or
->  /sys/block/<device>/{slave,holder}_list files with list of
->  holders/slaves.
+Today or tomorrow, I will post a fully-functional in-kernel non-virtualization
+user for cleancache (and frontswap), called kztmem, which is proposed
+initially as a staging driver.  It will be up to Linus, Andrew, and
+GregKH to determine if this is acceptable and a sufficient second user
+of cleancache.  Assuming it is, because of the dependency (staging driver
+dependent on as-yet-unmerged core kernel functionality), I'm not clear
+yet if/how cleancache should go through linux-next.  (Linus's last
+email on the topic indicated he thought cleancache should go through Andrew.)
 
-Yeah, we've been there with the btrfs problem. For btrfs it woud
-probably need to be something statfs()-like.
+So please stay tuned for the next episode in this continuing drama. ;-)
 
->  But please, don't force userspace to use *claimer-specific*
->  methods to answer *generic questions* like slave/holder dependencies
->  between devices.
+Thanks,
+Dan
 
-The links exist only for dm and md so far, I think. It's the classical
-multiple-parents-in-a-tree problem. We have that for bonded network
-devices and some IO buses too. There is no nice representation for
-these reversed-trees-in-the-tree so far.
-
-Kay
