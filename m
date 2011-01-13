@@ -1,126 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757305Ab1AMVvh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 16:51:37 -0500
-Received: from legolas.restena.lu ([158.64.1.34]:42817 "EHLO
-	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756745Ab1AMVvd convert rfc822-to-8bit (ORCPT
+	id S1757356Ab1AMVwh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 16:52:37 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:51667 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756745Ab1AMVwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 16:51:33 -0500
-Date: Thu, 13 Jan 2011 22:50:59 +0100
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Daniel Lezcano <daniel.lezcano@free.fr>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFD] reboot / shutdown of a container
-Message-ID: <20110113225059.6f46cd44@neptune.home>
-In-Reply-To: <4D2F6F63.8090904@free.fr>
-References: <4D2F299B.4000509@free.fr>
-	<20110113210918.48f3e85e@neptune.home>
-	<4D2F6F63.8090904@free.fr>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
+	Thu, 13 Jan 2011 16:52:30 -0500
+Subject: Re: [PATCH V9 02/13] ntp: add ADJ_SETOFFSET mode bit
+From: john stultz <johnstul@us.ibm.com>
+To: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
+Cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <1294952228.5617.20.camel@work-vm>
+References: <cover.1294917347.git.richard.cochran@omicron.at>
+	 <60566a54842bcf5974d55ed39f387c32ff9cf5cb.1294917348.git.richard.cochran@omicron.at>
+	 <AANLkTimHP1OsWauj6O566WgnxVTjMbNg2PK644QcT9Lq@mail.gmail.com>
+	 <1294952228.5617.20.camel@work-vm>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Jan 2011 13:52:17 -0800
+Message-ID: <1294955537.5617.50.camel@work-vm>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 January 2011 Daniel Lezcano <daniel.lezcano@free.fr> wrote:
-
-> On 01/13/2011 09:09 PM, Bruno Prémont wrote:
-> > On Thu, 13 January 2011 Daniel Lezcano<daniel.lezcano@free.fr>  wrote:
-> >> in the container implementation, we are facing the problem of a process
-> >> calling the sys_reboot syscall which of course makes the host to
-> >> poweroff/reboot.
-> >>
-> >> If we drop the cap_sys_reboot capability, sys_reboot fails and the
-> >> container reach a shutdown state but the init process stay there, hence
-> >> the container becomes stuck waiting indefinitely the process '1' to exit.
-> >>
-> >> The current implementation to make the shutdown / reboot of the
-> >> container to work is we watch, from a process outside of the container,
-> >> the<rootfs>/var/run/utmp file and check the runlevel each time the file
-> >> changes. When the 'reboot' or 'shutdown' level is detected, we wait for
-> >> a single remaining in the container and then we kill it.
-> >>
-> >> That works but this is not efficient in case of a large number of
-> >> containers as we will have to watch a lot of utmp files. In addition,
-> >> the /var/run directory must *not* mounted as tmpfs in the distro.
-> >> Unfortunately, it is the default setup on most of the distros and tends
-> >> to generalize. That implies, the rootfs init's scripts must be modified
-> >> for the container when we put in place its rootfs and as /var/run is
-> >> supposed to be a tmpfs, most of the applications do not cleanup the
-> >> directory, so we need to add extra services to wipeout the files.
-> >>
-> >> More problems arise when we do an upgrade of the distro inside the
-> >> container, because all the setup we made at creation time will be lost.
-> >> The upgrade overwrite the scripts, the fstab and so on.
-> >>
-> >> We did what was possible to solve the problem from userspace but we
-> >> reach always a limit because there are different implementations of the
-> >> 'init' process and the init's scripts differ from a distro to another
-> >> and the same with the versions.
-> >>
-> >> We think this problem can only be solved from the kernel.
-> >>
-> >> The idea was to send a signal SIGPWR to the parent of the pid '1' of the
-> >> pid namespace when the sys_reboot is called. Of course that won't occur
-> >> for the init pid namespace.
-> > Wouldn't sending SIGKILL to the pid '1' process of the originating PID
-> > namespace be sufficient (that would trigger a SIGCHLD for the parent
-> > process in the outer PID namespace.
+On Thu, 2011-01-13 at 12:57 -0800, john stultz wrote:
+> On Fri, 2011-01-14 at 05:39 +0900, Kuwahara,T. wrote:
+> > My proposal: Limit the adjustable range of the offset so that leap
+> > seconds will never occur more than once. (2147.5 seconds would be the
+> > best choice. :-)
 > 
-> This is already the case. The question is : when do we send this signal ?
-> We have to wait for the container system shutdown before killing it.
-
-I meant that sys_reboot() would kill the namespace's init if it's not
-called from boot namespace.
-
-See below
-
-> > (as far as I remember the PID namespace is killed when its 'init' exits,
-> > if this is not the case all other processes in the given namespace would
-> > have to be killed as well)
+> 2147.5? That's ~36 minutes. 
 > 
-> Yes, absolutely but this is not the point, reaping the container is not 
-> a problem.
-> 
-> What we are trying to achieve is to shutdown properly the container from 
-> inside (from outside will be possible too with the setns syscall).
-> 
-> Assuming the process '1234' creates a new process in a new namespace set 
-> and wait for it.
-> 
-> The new process '1' will exec /sbin/init and the system will boot up. 
-> But, when the system is shutdown or rebooted, after the down scripts are 
-> executed the kill -15 -1 will be invoked, killing all the processes 
-> expect the process '1' and the caller. This one will then call 
-> 'sys_reboot' and exit. Hence we still have the init process idle and its 
-> parent '1234' waiting for it to die.
+> While I think a limit could be a sensible compromise here. Leap seconds
+> are limited to every six months. So surely a limit of 86400 (one day),
+> or 2592000 (30 days) would be more reasonable.
 
-This call to sys_reboot() would kill "new process '1'" instead of trying to
-operate on the HW box.
-This also has the advantage that a container would not require an informed
-parent "monitoring" it from outside (though it would not be restarted even if
-requested without such informed outside parent).
+Actually. Thinking about this some more (and having to try to
+rationalize it for Thomas), this doesn't really seem reasonable. If an
+application wants to adjust the time, we can leave the responsibility to
+userland to handle compensation for expected or historical leapseconds
+if they care.
 
-> If we are able to receive the information in the process '1234' : "the 
-> sys_reboot was called in the child pid namespace", we can take then kill 
-> our child pid.  If this information is raised via a signal sent by the 
-> kernel with the proper information in the siginfo_t (eg. si_code 
-> contains "LINUX_REBOOT_CMD_RESTART", "LINUX_REBOOT_CMD_HALT", ... ), the 
-> solution will be generic for all the shutdown/reboot of any kind of 
-> container and init version.
+Since if you're adjusting the time, especially by a large amount, you're
+not starting from the correct time value. So expecting the kernel to
+incorperate historical or planned future leapseconds (outside of the
+TIME_INS notification from NTP) is silly. 
 
-Could this be passed for a SIGCHLD? (when namespace is reaped, and received
-by 1234 from above example assuming sys_reboot() kills the "new process '1'")
+Really, in Linux leapseconds do not really exist except for the moment
+they occur. If a leapsecond occurs, then you set your time back to
+before the leapsecond, it won't happen a second time. 
 
-Looks like yes, but with the need to define new values for si_code (reusing
-LINUX_REBOOT_CMD_* would certainly clash, no matter which signal is choosen).
+So I don't think we need to enforce a limit. The interface suggested
+seems totally reasonable to me. I'm happy to hear arguments to the
+contrary, but they really must be more convincing.
 
-> > Only issue is how to differentiate the various reboot() modes (restart,
-> > power-off/halt) from outside, though that one also exists with the SIGPWR
-> > signal.
+thanks
+-john
 
-Bruno
+
+
