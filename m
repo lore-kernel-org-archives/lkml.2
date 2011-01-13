@@ -1,79 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784Ab1AMF4X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 00:56:23 -0500
-Received: from thunk.org ([69.25.196.29]:50318 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750912Ab1AMF4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 00:56:18 -0500
-Date: Thu, 13 Jan 2011 00:56:12 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Cc: "linux-ext4@vger.kernel.org development" <linux-ext4@vger.kernel.org>,
-        LKML Kernel <linux-kernel@vger.kernel.org>,
-        pm list <linux-pm@lists.linux-foundation.org>
-Subject: Re: Oops while going into hibernate
-Message-ID: <20110113055612.GF13496@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Sebastian Ott <sebott@linux.vnet.ibm.com>,
-	"linux-ext4@vger.kernel.org development" <linux-ext4@vger.kernel.org>,
-	LKML Kernel <linux-kernel@vger.kernel.org>,
-	pm list <linux-pm@lists.linux-foundation.org>
-References: <alpine.LFD.2.02.1101121443230.1900@localhost6.localdomain6>
- <20110112162655.GA13496@thunk.org>
- <alpine.LFD.2.02.1101121755400.2011@localhost6.localdomain6>
- <20110112172646.GB13496@thunk.org>
- <alpine.LFD.2.02.1101121934060.2011@localhost6.localdomain6>
- <A01161D0-D08F-4522-A546-90057B2E1F2A@mit.edu>
+	id S1752136Ab1AMF7O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 00:59:14 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:62713 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912Ab1AMF7L convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 00:59:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=SSUZHFTaOmyagq9b7vgtY2z0ptgXxx5xDOgGm6cb+u9ScF1ULwjzrk2A4T6c/WEBmJ
+         BLFjYeQOTv5JKVG6h6RPjkcbYfSp7OcuZBk/Dft88L/VFS9zf3TAWpvDTmxF/568Y6Y/
+         pBQLe5rADCDLVM0yYrEY+DaLS6ygI9PwrsnQQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <A01161D0-D08F-4522-A546-90057B2E1F2A@mit.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1294890890.8089.39.camel@marge.simson.net>
+References: <20110110091622.GF2772@in.ibm.com>
+	<1294655388.8197.22.camel@marge.simson.net>
+	<1294657154.2016.459.camel@laptop>
+	<1294677746.8345.4.camel@marge.simson.net>
+	<20110111171046.GL4772@in.ibm.com>
+	<1294771686.8006.15.camel@marge.simson.net>
+	<1294810842.8370.7.camel@marge.simson.net>
+	<AANLkTimtwt+OGohMxGRC7L4Dm-h4wvCWYi-=13efqFtr@mail.gmail.com>
+	<1294890890.8089.39.camel@marge.simson.net>
+Date: Thu, 13 Jan 2011 13:59:10 +0800
+Message-ID: <AANLkTi=x-nO-Z7hG9b5t2FvuznHXaTSLPdS05wkXYMKA@mail.gmail.com>
+Subject: Re: [patch] Re: autogroup: sched_setscheduler() fails
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: bharata@linux.vnet.ibm.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 07:44:17PM -0500, Theodore Tso wrote:
-> 
-> You said originally that the oops was happening "while going into
-> hibernation right after resuming with...".  So that means you did a
-> successful suspend/resume, and then the second suspend caused the
-> oops?  It looks like somehow the pages were left marked as dirty, so
-> the writeback daemons attempted writing back a page to an inode
-> which was never opened read/write (and in fact as a text page for
-> /usr/bin/killall, was mapped read/only).  Given that ext4
-> initializes jinode only when the file is opened read/write, the fact
-> that it is null, and the fact that it makes no sense that a program
-> would be modifying /usr/bin/killall as part of a suspend/resume, it
-> looks very much like we just unmasked a software suspend bug....
+On Thu, Jan 13, 2011 at 11:54 AM, Mike Galbraith <efault@gmx.de> wrote:
+> sched, autogroup: fix CONFIG_RT_GROUP_SCHED sched_setscheduler() failure.
+>
+> If CONFIG_RT_GROUP_SCHED is set, __sched_setscheduler() fails due to autogroup
+> not allocating rt_runtime.  Free unused/unusable rt_se and rt_rq, redirect RT
+> tasks to the root task group, and tell __sched_setscheduler() that it's ok.
+>
+> Signed-off-by: Mike Galbraith <efault@gmx.de>
+> Reported-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
 
-... and I think I've found the problem.  In kernel/power/block_io.c,
-in the function submit(), we see this:
+This looks more clear ;)
 
-	if (bio_chain == NULL) {
-		submit_bio(bio_rw, bio);
-		wait_on_page_locked(page);
-		if (rw == READ)
-			bio_set_pages_dirty(bio); <====
-		bio_put(bio);
+And a little comment below
 
-So when we read in pages from the software suspend device, we end up
-marking the pages as dirty(!).  I'm guessing this was caused by a copy
-and paste from the only other caller of bio_set_pages_dirty(), which
-is the direct I/O code, which needs this when we are writing from a
-file into a user-provided buffer.  But for restoring from a software
-suspend case, this is as far as I can tell wholely inappropriate.
+>
+> ---
+>  kernel/sched.c           |    3 ++-
+>  kernel/sched_autogroup.c |   27 +++++++++++++++++++++++++++
+>  kernel/sched_autogroup.h |    4 ++++
+>  3 files changed, 33 insertions(+), 1 deletion(-)
+> @@ -106,6 +128,11 @@ task_wants_autogroup(struct task_struct
+>        return true;
+>  }
+>
+> +static inline bool task_group_is_autogroup(struct task_group *tg)
+> +{
+> +       return tg != &root_task_group && tg->autogroup;
 
-This causes needless writes, which is bad even before ext4 unmasked
-the problem.  I will send a patch under separate cover; could you give
-it a try and see if it fixes your crash?
+Isn't just checking tg->autogroup sufficient?
 
-I will look into bulletproofing ext4 by adding checks for this case
-and printing warning messages, but neverthe less, I think the root
-cause is actually in the hibernation's bio code.
+if tg == &root_task_group
 
-					- Ted
+> --- linux-2.6.orig/kernel/sched.c
+> +++ linux-2.6/kernel/sched.c
+> @@ -4874,7 +4874,8 @@ recheck:
+>                 * assigned.
+>                 */
+>                if (rt_bandwidth_enabled() && rt_policy(policy) &&
+> -                               task_group(p)->rt_bandwidth.rt_runtime == 0) {
+> +                               task_group(p)->rt_bandwidth.rt_runtime == 0 &&
+
+this check will fail.
+
+Thanks,
+Yong
+
+-- 
+Only stand for myself
