@@ -1,87 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933667Ab1AMUJH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 15:09:07 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:56161 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933472Ab1AMUJF (ORCPT
+	id S933678Ab1AMUKF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 15:10:05 -0500
+Received: from legolas.restena.lu ([158.64.1.34]:37408 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933472Ab1AMUJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 15:09:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=s5ogyPurhZM6DAAZmW93ariAzV5e5ftaIWz4ZOO7YxlZJbrtJtXvREo18LalHpEpJI
-         N58zMWiZFwcHWxAlg/wxc5/6nP9K+UeYw/Ct3vsemGj4IVIE0tm4yp7dRSaMUFSteHgT
-         QLR/4x3XcyRuSLdI0rokrDxXhkdH7iV97ZBmg=
-From: Franck Bui-Huu <vagabon.xyz@gmail.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        lkml <linux-kernel@vger.kernel.org>, 2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH] perf-probe: make "perf-probe -L <function>" display the absolute path and absolute line number
-References: <m38vyp85qv.fsf@gmail.com> <4D2EDBE4.3060608@hitachi.com>
-Date: Thu, 13 Jan 2011 20:42:26 +0100
-In-Reply-To: <4D2EDBE4.3060608@hitachi.com> (Masami Hiramatsu's message of
-	"Thu, 13 Jan 2011 20:03:00 +0900")
-Message-ID: <m34o9c8ual.fsf@gmail.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 13 Jan 2011 15:09:57 -0500
+Date: Thu, 13 Jan 2011 21:09:18 +0100
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Daniel Lezcano <daniel.lezcano@free.fr>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFD] reboot / shutdown of a container
+Message-ID: <20110113210918.48f3e85e@neptune.home>
+In-Reply-To: <4D2F299B.4000509@free.fr>
+References: <4D2F299B.4000509@free.fr>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
+On Thu, 13 January 2011 Daniel Lezcano <daniel.lezcano@free.fr> wrote:
+> in the container implementation, we are facing the problem of a process 
+> calling the sys_reboot syscall which of course makes the host to 
+> poweroff/reboot.
+> 
+> If we drop the cap_sys_reboot capability, sys_reboot fails and the 
+> container reach a shutdown state but the init process stay there, hence 
+> the container becomes stuck waiting indefinitely the process '1' to exit.
+> 
+> The current implementation to make the shutdown / reboot of the 
+> container to work is we watch, from a process outside of the container, 
+> the <rootfs>/var/run/utmp file and check the runlevel each time the file 
+> changes. When the 'reboot' or 'shutdown' level is detected, we wait for 
+> a single remaining in the container and then we kill it.
+> 
+> That works but this is not efficient in case of a large number of 
+> containers as we will have to watch a lot of utmp files. In addition, 
+> the /var/run directory must *not* mounted as tmpfs in the distro. 
+> Unfortunately, it is the default setup on most of the distros and tends 
+> to generalize. That implies, the rootfs init's scripts must be modified 
+> for the container when we put in place its rootfs and as /var/run is 
+> supposed to be a tmpfs, most of the applications do not cleanup the 
+> directory, so we need to add extra services to wipeout the files.
+> 
+> More problems arise when we do an upgrade of the distro inside the 
+> container, because all the setup we made at creation time will be lost. 
+> The upgrade overwrite the scripts, the fstab and so on.
+> 
+> We did what was possible to solve the problem from userspace but we 
+> reach always a limit because there are different implementations of the 
+> 'init' process and the init's scripts differ from a distro to another 
+> and the same with the versions.
+> 
+> We think this problem can only be solved from the kernel.
+> 
+> The idea was to send a signal SIGPWR to the parent of the pid '1' of the 
+> pid namespace when the sys_reboot is called. Of course that won't occur 
+> for the init pid namespace.
 
-> (2011/01/13 19:20), Franck Bui-Huu wrote:
->> From: Franck Bui-Huu <fbuihuu@gmail.com>
->> 
->> It should be more usefull to get the full location of the function
->
->> (absolute line number + full path) instead of repeating the name of
->> the function and the start line number given by the command line.
->> 
->> So we had before:
->> 
->>    $ perf probe -L schedule | head -n3
->>    <schedule:0>
->>          0  asmlinkage void __sched schedule(void)
->>          1  {
->> 
->> and now we get:
->> 
->>    $ perf probe -L schedule | head -n3
->>    </usr/src/debug/kernel-2.6.35.fc14/linux-2.6.35.x86_64/kernel/sched.c:3813>
->>          0  asmlinkage void __sched schedule(void)
->>          1  {
->
-> Indeed, it could be useful for users to see where the function is...
->
-> However, I think that should be optional, because the output lines
-> have the relative line numbers from the function, and those numbers
-> are important for users who want to probe a specific line by using
-> function relative line numbers. e.g. "schedule:10"
->
-> And with that option, I'd suggest to show absolute line numbers on each line.
->
->   $ perf probe -L schedule:0-1 --by-source
->   </usr/src/debug/kernel-2.6.35.fc14/linux-2.6.35.x86_64/kernel/sched.c:3813>
->      3813  asmlinkage void __sched schedule(void)
->      3814  {
->
-> Or, just show source file as an additional information.
->
->   $ perf probe -L schedule:0-1
->   <schedule@/usr/src/debug/kernel-2.6.35.fc14/linux-2.6.35.x86_64/kernel/sched.c:0>
->         0  asmlinkage void __sched schedule(void)
->         1  {
->
-> I just would like to keep the consistency of the output/input format.
+Wouldn't sending SIGKILL to the pid '1' process of the originating PID
+namespace be sufficient (that would trigger a SIGCHLD for the parent
+process in the outer PID namespace.
+(as far as I remember the PID namespace is killed when its 'init' exits,
+if this is not the case all other processes in the given namespace would
+have to be killed as well)
 
-Well, for consistency, I thought that the additional information (given
-inside angle brackets) should always be the same: a full path and an
-absolute line number which clearly identify which source file perf-probe
-is listing.
+Only issue is how to differentiate the various reboot() modes (restart, 
+power-off/halt) from outside, though that one also exists with the SIGPWR
+signal.
 
--- 
-		Franck
+Bruno
+
+
+> Does it make sense ?
+> 
+> Any idea is very welcome :)
+> 
+>    -- Daniel
+
