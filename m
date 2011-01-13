@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817Ab1AMOip (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 09:38:45 -0500
-Received: from vostochny.stro.at ([78.47.22.85]:41783 "EHLO vostochny.stro.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754728Ab1AMOim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 09:38:42 -0500
-Date: Thu, 13 Jan 2011 14:38:41 +0000
-From: maximilian attems <max@stro.at>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel@vger.kernel.org,
-        Ralf =?iso-8859-1?Q?R=F6sch?= <ralf.roesch@rw-gmbh.de>,
-        debian-kernel@lists.debian.org, Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: [PATCH] kbuild: create linux-headers package in deb-pkg
-Message-ID: <20110113143840.GN20262@vostochny.stro.at>
-References: <1293201730-1583-1-git-send-email-tytso@mit.edu> <20101225112026.GF20262@vostochny.stro.at> <20110110174640.GA619@stro.at> <4D2F044E.7060607@suse.cz>
+	id S1756877Ab1AMOn5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 09:43:57 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:63184 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756090Ab1AMOny convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 09:43:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=vrfy.org; s=google;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=h6/E07McY3mTMnllMISWswUHuNg8Eqjt+/r3yBCTqkpkxlpMIRl66N8envimMkQj7i
+         RSw4/3HjzsZ+tgdh/eow5qkBDLaE/RnIrDnns2vHZCjtHzCzPghoQ/6vyKULCFOv3EnU
+         tLnekA/ywirL/rXiEEqslHE3c2SAhsVVEeT8c=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4D2F044E.7060607@suse.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTinJ68D6Yc-U-Q=ZfS9mqozj5qtHPtySZHOgjcgP@mail.gmail.com>
+References: <16069.1294853673@localhost> <4D2E4611.90002@redhat.com>
+ <4D2E6129.8000700@ce.jp.nec.com> <20110113110640.GC30719@htj.dyndns.org>
+ <4D2EE156.1050006@redhat.com> <20110113122701.GG16523@nb.net.home>
+ <20110113131216.GF30719@htj.dyndns.org> <20110113132637.GH16523@nb.net.home>
+ <20110113133722.GG30719@htj.dyndns.org> <4D2F04FF.1070309@redhat.com>
+ <20110113141107.GI30719@htj.dyndns.org> <4D2F0B6A.6010201@redhat.com> <AANLkTinJ68D6Yc-U-Q=ZfS9mqozj5qtHPtySZHOgjcgP@mail.gmail.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Thu, 13 Jan 2011 15:43:38 +0100
+Message-ID: <AANLkTi=LKYzrNsU7jc1Nr4W4CaQ_dmBGeQAquSCp_yAX@mail.gmail.com>
+Subject: Re: [dm-devel] linux-next - WARNING: at fs/block_dev.c:824 bd_link_disk_holder+0x92/0x1ac()
+To: Tejun Heo <tj@kernel.org>
+Cc: Milan Broz <mbroz@redhat.com>, Karel Zak <kzak@redhat.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 02:55:26PM +0100, Michal Marek wrote:
-> On 10.1.2011 18:46, maximilian attems wrote:
-> >>> +find . -name Makefile -o -name Kconfig\* -o -name \*.pl > /tmp/files$$
-> >>> +find arch/x86/include include scripts -type f >> /tmp/files$$
-> >> x86 centric?
-> > 
-> > this will break on any non x86 arch, what is the correct variable
-> > for $ARCH?
-> 
-> This should be changed to arch/$SRCARCH/include.
+On Thu, Jan 13, 2011 at 15:30, Tejun Heo <tj@kernel.org> wrote:
+> On Thu, Jan 13, 2011 at 3:25 PM, Milan Broz <mbroz@redhat.com> wrote:
+>> Maybe, but this was not invented in DM/MD camp:-)
+>> Probably Kay or Greg can answer why it was done this way?
 
-thanks for the pointer, sent patch, that was the easy part.
- 
- 
-> >>> +tar -c -f - -T /tmp/files$$ | (cd $destdir; tar -xf -)
-> >>> +(cd $objtree; tar -c -f - -T /tmp/objfiles$$) | (cd $destdir; tar -xf -)
-> >>> +rm -f /tmp/files$$ /tmp/objfiles$$
-> >>> +arch=$(dpkg --print-architecture)
-> >>> +
-> >>> +cat <<EOF >> debian/control
-> >>> +
-> >>> +Package: $hdrpackagename
-> >>> +Provides: linux-headers, linux-headers-2.6
-> >>> +Architecture: $arch
-> >> not sure if that will interfere with the new crosscompile feature
-> >> of deb-pkg in linux-next.
-> > 
-> > aboves arch call seems redundant with what we already have.
-> 
-> Yes, please remove it. 
+It's not from Greg or Kay. It just appeared some day in the context of dm. :)
 
-will look at it again in a calmer moment.
+And yes, symlinks *look* nice and simple for the outside, but they are
+not, and have all sorts of problems like non-atomic updates, make it
+impossible to ever rename a device (as long as they copy the device
+name), and and and .... we should not add more of this.
 
-> BTW, here is a bugreport I got privately about
-> the very same issue:
-> On 12.1.2011 10:02, Ralf Rösch wrote:
-> | [...]
-> | Attached you will find a patch to complete the build successfully for my
-> | mipsel target.
-> | The dpkg --print-architecture shows i386 which results in error:
-> | dpkg-gencontrol: Fehler: aktuelle Host-Architektur »mipsel« erscheint
-> | nicht in der Architekturliste (i386) des Pakets
-> | (current host architecture 'mipsel' does not appear in package's list
-> i386)
-> | so I changed "arch" temporary to "any".
-> |
-> | It would be nice if it would be possible to make the kernel-headers
-> | installable on any host.
-> | They are needed very frequently for cross-compiling. (I already possible
-> | with dpkg force).
+>> If btrfs internally creates some virtual _block_ device for its pool, it should
+>> present it here too with slaves/holders. If not, why it should create any links there?
+>
+> Yeah, that's the most bothering part for me. Â The biggest customers of
+> bd_claim are filesystems and all these custom symlinkeries don't do
+> nothing for them. Â It just doesn't make a whole lot of sense to me.
 
-Added Ben Hutchings and d-kernel on Cc. I do not use OOT modules, so
-I don't have a strong word on that, but from what I see in Debian
-they are arch specific.
+Btrfs does not use any blockdev as the master for good reason, and it
+can never map its slaves inside of /sys/block. Simple meta-blockdevs
+like md/dm just don't fit into modern requirements of a filesystem
+(directory snapshots, directory subvolumes, complex raids, hassle-free
+resizing, ...)  -- hence btrfs is much more like a network-filesystem
+mount than a stream of blocks like a disk, and does not fit at all
+into this model.
 
--- 
-maks
+Kay
