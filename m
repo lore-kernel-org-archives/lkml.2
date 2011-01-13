@@ -1,105 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756994Ab1AMPBN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 10:01:13 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:41367 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756599Ab1AMPBM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 10:01:12 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Thu, 13 Jan 2011 16:00:21 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
-Subject: [git pull] FireWire build fix
-Message-ID: <20110113160021.07a8ce85@stein>
-In-Reply-To: <20110107175539.2b882d3d@stein>
-References: <20110107175539.2b882d3d@stein>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757015Ab1AMPDa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 10:03:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57778 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756885Ab1AMPD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 10:03:29 -0500
+Message-ID: <4D2F1430.50906@redhat.com>
+Date: Thu, 13 Jan 2011 16:03:12 +0100
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Kay Sievers <kay.sievers@vrfy.org>
+CC: Tejun Heo <tj@kernel.org>, Karel Zak <kzak@redhat.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [dm-devel] linux-next - WARNING: at fs/block_dev.c:824 bd_link_disk_holder+0x92/0x1ac()
+References: <16069.1294853673@localhost> <4D2E4611.90002@redhat.com> <4D2E6129.8000700@ce.jp.nec.com> <20110113110640.GC30719@htj.dyndns.org> <4D2EE156.1050006@redhat.com> <20110113122701.GG16523@nb.net.home> <20110113131216.GF30719@htj.dyndns.org> <20110113132637.GH16523@nb.net.home> <20110113133722.GG30719@htj.dyndns.org> <4D2F04FF.1070309@redhat.com> <20110113141107.GI30719@htj.dyndns.org> <4D2F0B6A.6010201@redhat.com> <AANLkTinJ68D6Yc-U-Q=ZfS9mqozj5qtHPtySZHOgjcgP@mail.gmail.com> <AANLkTi=LKYzrNsU7jc1Nr4W4CaQ_dmBGeQAquSCp_yAX@mail.gmail.com>
+In-Reply-To: <AANLkTi=LKYzrNsU7jc1Nr4W4CaQ_dmBGeQAquSCp_yAX@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull from the for-linus branch at
+On 01/13/2011 03:43 PM, Kay Sievers wrote:
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git for-linus
+>> On Thu, Jan 13, 2011 at 3:25 PM, Milan Broz <mbroz@redhat.com> wrote:
+>>> Maybe, but this was not invented in DM/MD camp:-)
+>>> Probably Kay or Greg can answer why it was done this way?
+> 
+> It's not from Greg or Kay. It just appeared some day in the context of dm. :)
 
-to receive the following update for the IEEE 1394 (FireWire) subsystem.
-It's straightforward and runtime tested.
+ah, then sorry, I am just confused:-)
+But DM does not need it for operation at all so it must had some other reason.
+(We have dmsetup ls --tree using dm-ioctls for years.)
 
-Clemens Ladisch (1):
-      firewire: ohci: fix compilation on arches without PAGE_KERNEL_RO
+> And yes, symlinks *look* nice and simple for the outside, but they are
+> not, and have all sorts of problems like non-atomic updates, make it
+> impossible to ever rename a device (as long as they copy the device
+> name), and and and .... we should not add more of this.
 
- drivers/firewire/ohci.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Yes, I agree, if there is better way, let's switch to that.
 
-Thanks.
-
-
-commit 1427130425c1239d977e8891c3a8923f53a6e352
-Author: Clemens Ladisch <clemens@ladisch.de>
-Date:   Thu Jan 13 10:12:17 2011 +0100
-
-    firewire: ohci: fix compilation on arches without PAGE_KERNEL_RO
-    
-    PAGE_KERNEL_RO is not available on all architectures, so its use
-    in the new AR code broke compilation on sparc64.
-    
-    Because the read-only mapping was just a debugging aid, just use
-    PAGE_KERNEL instead.
-    
-    Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-    
-    James Bottomley wrote:
-    > On Thu, 2011-01-13 at 08:27 +0100, Clemens Ladisch wrote:
-    >> firewire: ohci: fix compilation on arches without PAGE_KERNEL_RO, e.g. sparc
-    >>
-    >> PAGE_KERNEL_RO is not available on all architectures, so its use in the
-    >> new AR code broke compilation on sparc64.
-    >>
-    >> Because the R/O mapping is only used to catch drivers that try to write
-    >> to the reception buffer and not actually required for correct operation,
-    >> we can just use a normal PAGE_KERNEL mapping where _RO is not available.
-    [...]
-    >> +/*
-    >> + * For archs where PAGE_KERNEL_RO is not supported;
-    >> + * mapping the AR buffers readonly for the CPU is just a debugging aid.
-    >> + */
-    >> +#ifndef PAGE_KERNEL_RO
-    >> +#define PAGE_KERNEL_RO PAGE_KERNEL
-    >> +#endif
-    >
-    > This might cause interesting issues on sparc64 if it ever acquired a
-    > PAGE_KERNEL_RO.  Sparc64 has extern pgprot_t for it's PAGE_KERNEL types
-    > rather than #defines, so the #ifdef check wouldn't see this.
-    >
-    > I think either PAGE_PROT_RO becomes part of our arch API (so all
-    > architectures are forced to add it), or, if it's not part of the API,
-    > ohci isn't entitled to use it.  The latter seems simplest since you have
-    > no real use for write protection anyway.
-    
-    Reported-by: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-
-diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
-index d77d120..bd3c61b 100644
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -961,7 +961,7 @@ static int ar_context_init(struct ar_context *ctx, struct fw_ohci *ohci,
- 	for (i = 0; i < AR_WRAPAROUND_PAGES; i++)
- 		pages[AR_BUFFERS + i] = ctx->pages[i];
- 	ctx->buffer = vm_map_ram(pages, AR_BUFFERS + AR_WRAPAROUND_PAGES,
--				 -1, PAGE_KERNEL_RO);
-+				 -1, PAGE_KERNEL);
- 	if (!ctx->buffer)
- 		goto out_of_memory;
- 
--- 
-Stefan Richter
--=====-==-== ---= -==-=
-http://arcgraph.de/sr/
+Milan
