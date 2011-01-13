@@ -1,62 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab1AMOuG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 09:50:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62058 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751951Ab1AMOuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 09:50:04 -0500
-Message-ID: <4D2F110E.3010401@redhat.com>
-Date: Thu, 13 Jan 2011 15:49:50 +0100
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Karel Zak <kzak@redhat.com>,
-        device-mapper development <dm-devel@redhat.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [dm-devel] linux-next - WARNING: at fs/block_dev.c:824 bd_link_disk_holder+0x92/0x1ac()
-References: <16069.1294853673@localhost>	<4D2E4611.90002@redhat.com>	<4D2E6129.8000700@ce.jp.nec.com>	<20110113110640.GC30719@htj.dyndns.org>	<4D2EE156.1050006@redhat.com>	<20110113122701.GG16523@nb.net.home>	<20110113131216.GF30719@htj.dyndns.org>	<20110113132637.GH16523@nb.net.home>	<20110113133722.GG30719@htj.dyndns.org>	<4D2F04FF.1070309@redhat.com>	<20110113141107.GI30719@htj.dyndns.org>	<4D2F0B6A.6010201@redhat.com> <AANLkTinJ68D6Yc-U-Q=ZfS9mqozj5qtHPtySZHOgjcgP@mail.gmail.com>
-In-Reply-To: <AANLkTinJ68D6Yc-U-Q=ZfS9mqozj5qtHPtySZHOgjcgP@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756947Ab1AMOvJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 09:51:09 -0500
+Received: from misc-148-66-126-238.pool.starband.net ([148.66.126.238]:57707
+	"EHLO archaeopteryx.synaptics.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751951Ab1AMOvH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 09:51:07 -0500
+X-Greylist: delayed 28172 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Jan 2011 09:50:57 EST
+From: Christopher Heiny <cheiny@synaptics.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Christopher Heiny <cheiny@synaptics.com>,
+        Allie Xiong <axiong@synaptics.com>,
+        William Manson <wmanson@synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
+        Abraham Arce <x0066660@ti.com>
+Subject: [PATCH 0/1] input synaptics-rmi4: Synaptics Touchscreen Driver
+Date: Wed, 12 Jan 2011 18:40:52 -0800
+Message-Id: <1294886453-7972-1-git-send-email-cheiny@synaptics.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2011 03:30 PM, Tejun Heo wrote:
+This patch implements a driver supporting Synaptics ClearPad and other
+touchscreens that use the RMI4 protocol, as defined here:
 
-Hi,
+http://www.synaptics.com/sites/default/files/511-000136-01_revA.pdf
 
->> Anyway, it is /sys/block - so it represents block devices.
->>
->> If btrfs internally creates some virtual _block_ device for its pool, it should
->> present it here too with slaves/holders. If not, why it should create any links there?
-> 
-> Yeah, that's the most bothering part for me.  The biggest customers of
-> bd_claim are filesystems and all these custom symlinkeries don't do
-> nothing for them.  It just doesn't make a whole lot of sense to me.
+This patch is against the synaptics-rmi4 branch of Dmitry's Torokhov's input
+git repository.  Base point is the origin of the branch, commit
+a6268cc5f94c89c9e661150fe136b24e69d6cc01.
 
-Well, then it is not optimal for fs and should it be separated?
-There is also /sys/fs now...
+I2C functionality was previously ACK'ed by Jean Delvare on 2010/05/29.
 
-I think represent dependences of block devices in some generic (and exactly defined)
-way is useful. So if there is something missing, lets define it properly.
+This patch builds and runs in our development environment, but I cannot
+guarantee that it will build for you.  We're working on making sure it
+builds generically, and feedback relating to that will be greatly
+appreciated (special thanks to Joerie de Gram for his previous feedback on
+this).
 
-The whole idea behind lsblk was practical: we responded many questions why
-"device is busy" and what keeps it open in stacked subsystem.
-Just try fdisk, mdadm, dmsetup table, losetup -a, kpartx, cryptsetup, etc ...
 
-So listing block device tree using ONE interface (sysfs) to check and display
-device tree for ALL subsystems seems to be good idea for me.
-In this exactly defined case.
+This version of the driver implements the following:
+    - basic device control support
+    - support basic multifinger touchscreen behavior
+    - support for device reflash
+It represents a significant rearchitecture and reimplementation since
+our patch of 2010/07/27, based on feedback from that patch and subsequent
+discussions with kernel maintainers.
 
-I am not saying that symlinks are perfect, just that generic interface here
-is not superfluous.
+This patch supports a system having one or more RMI sensors attached to it.
+Most devices have just a single touch sensor, but some have more than one.
+An example is the Fuse concept phone, which has 4 RMI sensors in it).
+Each sensor implements a number of RMI4 functions, which are best represented
+as devices on the bus.
 
-Thanks,
-Milan
+Included in this patch are the following components:
+
+    - a low level layer providing access to the physical bus (rmi_i2c
+      and rmi_spi).
+
+    - an rmi_bus module, implementing /sys/bus/rmi.  This module presents
+      the individual devices on the bus, handles interdevice communications
+      (mostly just IRQ notifications from F01 to other functions), and
+      proxies register read/write requests to the appropriate physical layer
+      for a given sensor.
+
+    - individual sensors are presented on the bus as /sys/bus/rmi/sensor0/,
+      /sys/bus/rmi/sensor01/, and so on.
+      
+    - functions for each sensor are presented as devices below that sensor, for
+      example /sys/bus/rmi/sensor0/f01, /sys/bus/rmi/sensor0/f11, and so on.
+
+    - per-function drivers are matched to these devices by the kernel bus
+      functionality
+
+We chose this approach because almost all RMI4 functions are independent
+of one another.  The sole exception is F01, and its primary interaction
+with other functions is to notify them of the need to read or write data
+from or to the sensor.
+
+This structure eliminates the ad hoc device matching that was present in our
+previous driver submissions.  It also enables easy addition of support for 
+additional RMI4 functions, either by Synaptics or by third parties.
+
+
+Comments and other feedback on this driver are welcomed.
+
+Bill Manson
+Allie Xiong
+Christopher Heiny
+
+Cc: Jean Delvare <khali@linux-fr.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+Cc: Abraham Arce <x0066660@ti.com>
+
+
+---
