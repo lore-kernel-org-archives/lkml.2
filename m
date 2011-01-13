@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618Ab1AMBBX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 20:01:23 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58446 "EHLO
+	id S932356Ab1AMBGt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 20:06:49 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39129 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756468Ab1AMBBT (ORCPT
+	with ESMTP id S1756468Ab1AMBGq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 20:01:19 -0500
+	Wed, 12 Jan 2011 20:06:46 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=b5dWMRGAMXNLssJR4TcGe0saRds/RkPxSP+CtuwYnbisYPlOaZlPMh9Xsd5suaYwky
-         ZB537TO3Ram6j/vdug9IDW7KD4XvzBJdzNEvv44GUcyuH9Jfgtye+x4iOukzc2JHNha3
-         rozRCWBXY137dl64kSWrCD9TLIFX/eT0C5/Ro=
+         :cc:content-type:content-transfer-encoding;
+        b=hrVcfj8aiYrqU5sqouEZVLQfWyukAxh6oFW5ScC3VviHALw3qfFHdZX5V/PJi7lKjX
+         vxVH0BwK3ZgZHUIudXX3mdlxcavUwhhu1c7ZDVciqUNjNmEAImJTfkwWE49/fKjSq6sx
+         TtNS1b2C76SZK9XbMcyIy7OBE9KdGYKJ2JzEA=
 MIME-Version: 1.0
-In-Reply-To: <1294809426.2821.20.camel@perseus>
-References: <20110107075831.GA14915@amd>
-	<1294763679.2435.72.camel@doink>
-	<AANLkTin67OXYYKk6y+_MKfXEXBz-F_+qAH0cpiJ24yEQ@mail.gmail.com>
-	<1294768668.2435.177.camel@doink>
-	<1294804776.2821.4.camel@perseus>
-	<AANLkTim8rQb3mDFHg7DmbTZa20FxRGk3wJCjOkz=JG9S@mail.gmail.com>
-	<1294807279.2821.9.camel@perseus>
-	<1294809426.2821.20.camel@perseus>
-Date: Thu, 13 Jan 2011 12:01:18 +1100
-Message-ID: <AANLkTikYErmu6bNz51iPgjzdOoa8uWNNdn01texihqM6@mail.gmail.com>
-Subject: Re: [announce] vfs-scale git tree update
+In-Reply-To: <29345.1294861630@jrobl>
+References: <29345.1294861630@jrobl>
+Date: Thu, 13 Jan 2011 12:06:44 +1100
+Message-ID: <AANLkTinLDN3LGahTqRrLvNShAyMSs_Q_Gjhw=oCGAsby@mail.gmail.com>
+Subject: Re: vfs-scale, chroot
 From: Nick Piggin <npiggin@gmail.com>
-To: Ian Kent <raven@themaw.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, aelder@sgi.com,
-        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 4:17 PM, Ian Kent <raven@themaw.net> wrote:
-> On Wed, 2011-01-12 at 12:41 +0800, Ian Kent wrote:
->> On Tue, 2011-01-11 at 20:06 -0800, Linus Torvalds wrote:
->> > On Tue, Jan 11, 2011 at 7:59 PM, Ian Kent <raven@themaw.net> wrote:
-
->> > > Yeah, a hangover from changes done over time.
->> > > Not setting the dentry op in ->lookup() should fix this.
->> >
->> > Alex, care to test just removing the d_set_d_op() call from autofs4_lookup()?
->> >
->> > (That code is a bit scary, though - it explicitly makes it a negative
->> > dentry with a d_instantiate(dentry, NULL), and then hides the inode
->> > information away separately. Scary scary)
->>
->> Yeah, but the expire to mount races with autofs are difficult to handle
->> and this approach has worked well under heavy stress testing. It's true
->> that this would almost certainly be bad for a file system that supported
->> a full range of functionality but that's not so for autofs.
+On Thu, Jan 13, 2011 at 6:47 AM, J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
 >
-> I think I have to partly take this back.
-> With Nick's recent vfs-scale patches this may not be OK any more since
-> the dcache_lock has gone away and, at first glance, it looks like the
-> added autofs4_lock spin lock doesn't provide the needed protection.
+> Hello Nick,
+>
+> I've got a crash around d_lock.
+>
+> # mount -t nfs host:/dir /nfs
+> # chroot /nfs
+>
+> BUG: spinlock recursion on CPU#1, chroot/2524
+>  lock: ffff88001d106880, .magic: dead4ead, .owner: chroot/2524, .owner_cpu: 1
+> Call Trace:
+>  [<ffffffff8128ca52>] ? spin_bug+0xa2/0xf0
+>  [<ffffffff8128cd53>] ? do_raw_spin_lock+0x193/0x1b0
+>  [<ffffffff814eaa5e>] ? _raw_spin_lock_nested+0x4e/0x60
+>  [<ffffffff81137aef>] ? nameidata_dentry_drop_rcu+0xcf/0x1b0
+>  [<ffffffff814eaab3>] ? _raw_spin_lock+0x43/0x50
+>  [<ffffffff81137aef>] ? nameidata_dentry_drop_rcu+0xcf/0x1b0
+>  [<ffffffff81137c1b>] ? d_revalidate+0x4b/0x70
+>  [<ffffffff81139a75>] ? link_path_walk+0x655/0x1210
+>  [<ffffffff81138702>] ? path_init_rcu+0x1c2/0x370
+>  [<ffffffff811387e5>] ? path_init_rcu+0x2a5/0x370
+>  [<ffffffff81138702>] ? path_init_rcu+0x1c2/0x370
+>  [<ffffffff811059b3>] ? might_fault+0x53/0xb0
+>  [<ffffffff8113a9fe>] ? do_path_lookup+0x8e/0x1d0
+>  [<ffffffff8113b936>] ? user_path_at+0xa6/0xe0
+>  [<ffffffff8114c167>] ? vfsmount_lock_local_unlock+0x77/0x90
+>  [<ffffffff814ebab9>] ? retint_swapgs+0x13/0x1b
+>  [<ffffffff81090b15>] ? trace_hardirqs_on_caller+0x145/0x190
+>  [<ffffffff8112841e>] ? sys_chdir+0x2e/0x90
+>  [<ffffffff8100bfd2>] ? system_call_fastpath+0x16/0x1b
+>
+> It looks like nameidata_dentry_drop_rcu() is trying spin_lock() twice
+> for the same dentry when parent == dentry.
+>
+> - NFS ->d_revalidate() returns -ECHILD for LOOKUP_RCU
+> - VFS d_revalidate() will try ->d_revalidate() again after dropping
+>  LOOKUP_RCU by nameidata_dentry_drop_rcu().
+> - nameidata_dentry_drop_rcu() calls
+>        spin_lock(&parent->d_lock);
+>        spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
+> - it may happen on all fs which specifies FS_REVAL_DOT
+>
+> If we have a function like below, it may be useful.
+> But are there so many cases like this problem?
+> If it is not so many, then the fix will be adding several
+> "if (!IS_ROOT(dentry)" into nameidata_dentry_drop_rcu(), I think.
 
-Hm, what are the concurrencies that you need protection from?
+Hey, thanks for the report and the excellent debugging work! I agree
+with your analysis. I'll prepare a patch for it shortly.
+
+Thanks,
+Nick
