@@ -1,113 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932827Ab1AMKHc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 05:07:32 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44117 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749Ab1AMKHa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 05:07:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=FQOdhPbapZmagBjjEWj4zGYyhxKEP4ziOjyjoFkDI1ld3vsAejp6jZR1PlVW8nJ0m+
-         XynxjH2P732KUq9OSi0POu1smx8k8rmTj14io9lGHgeGjhKjYEUT0+OdyUTHQBHwD0xy
-         o41ixDIatBPhB4O5rYSy8ueAQUt3mVanp4WuI=
-Message-ID: <4D2ECEDC.4040804@gmail.com>
-Date: Thu, 13 Jan 2011 11:07:24 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+	id S932909Ab1AMKHo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 05:07:44 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:47686 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932880Ab1AMKHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 05:07:38 -0500
+Date: Thu, 13 Jan 2011 10:07:15 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>, gerald.schaefer@de.ibm.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-ext4@vger.kernel.org,
+        "Ted Ts'o" <tytso@mit.edu>, Arun Bhanu <ab@arunbhanu.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [PATCH] mm: migration: Use rcu_dereference_protected when
+	dereferencing the radix tree slot during file page migration
+Message-ID: <20110113100714.GA9671@csn.ul.ie>
+References: <20101220152335.GR13914@csn.ul.ie> <20101220170146.GS13914@csn.ul.ie> <20110112232113.GI17328@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: Jiri Slaby <jslaby@suse.cz>, jbarnes@virtuousgeek.org,
-        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH 1/1] PCI: tune up ICH4 quirk for broken BIOSes
-References: <1294327066-23518-1-git-send-email-jslaby@suse.cz> <201101071716.38220.bjorn.helgaas@hp.com> <4D283529.2090909@gmail.com> <201101101140.45501.bjorn.helgaas@hp.com>
-In-Reply-To: <201101101140.45501.bjorn.helgaas@hp.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110112232113.GI17328@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2011 07:40 PM, Bjorn Helgaas wrote:
-> On Saturday, January 08, 2011 02:58:01 am Jiri Slaby wrote:
->> On 01/08/2011 01:16 AM, Bjorn Helgaas wrote:
->>> On Friday, January 07, 2011 04:29:00 pm Jiri Slaby wrote:
->>>> On 01/08/2011 12:03 AM, Bjorn Helgaas wrote:
->>>>> On Friday, January 07, 2011 01:44:35 pm Jiri Slaby wrote:
->>>>>> On 01/06/2011 08:24 PM, Bjorn Helgaas wrote:
->>>>>>> Theoretically, ACPI tells us about the GPIO/TCO/etc. regions in a
->>>>>>> generic way via namespace devices or something in the static tables.
->>>>>>> Is that generic information missing, or is it there and Linux is
->>>>>>> ignoring it?  If we're ignoring it, I'd rather fix that.
->>>>>>
->>>>>> It works for most boxes I would say. Try to google for "claimed by ICH4
->>>>>> ACPI/GPIO/TCO", it reports sane ranges like 0400-047f or 4000-407f.
->>>>>
->>>>> My point is that BIOS should be telling the OS about GPIO/TCO/etc.
->>>>> regions via an ACPI mechanism, and, ideally, we would use that rather
->>>>> than reading the address out of chipset-dependent registers.
->>>>>
->>>>> Even though PMBASE says the ACPI registers occupy 128 bytes from
->>>>> 0x100-0x17f, it's likely there's no actual conflict between the
->>>>> last 16 bytes and the IDE device.
->>>>
->>>> I wouldn't say so. According to the datasheet 0x60-0x7f of the space
->>>> (i.e. 0x160-0x17f here) is for TCO registers. There:
->>>> 0x10 -- Software IRQ Generation Register (i.e. 0x170)
->>>> 0x11-0x1f -- reserved (0x171-0x17f)
->>>>
->>>> So at least 0x170 should be conflicting. Unless TCO is unused/disabled
->>>> and not mapped there at all. May be that the case?
->>>
->>> Maybe.  All your patch does is avoid reserving this 0x100-0x1f7
->>> region; it doesn't actually *move* anything.  And the IDE device
->>> apparently works at the 0x170 compatibility address.  So the
->>> ICH ACPI stuff is still at 0x100-0x17f, so apparently they don't
->>> conflict or maybe the ICH ACPI stuff is disabled.  If the box
->>> doesn't even have ACPI, I suppose there would be no reason to
->>> have the ACPI registers enabled.  Is there something in ICH
->>> that tells us whether they're enabled?
->>
->> Hmm, there is:
->> bit 4: ACPI Enable (ACPI_EN) — R/W.
->>   0 = Disable.
->>   1 = Decode of the I/O range pointed to by the ACPI Base register is
->> enabled, and the ACPI power management function is enabled. Note that
->> the APM power management ranges (B2/B3h) are always enabled and are not
->> affected by this bit.
->>
->> at 0x44 in the bridge conf space. So we should definitely check the value.
->>
->> I don't have the actual value in that register when ACPI is disabled in
->> BIOS. From the run where acpi=off was passed to the kernel, there is
->> 0x10 (i.e. ACPI_EN=1). However I don't know whether ACPI was disabled in
->> BIOS at that time.
+On Wed, Jan 12, 2011 at 03:21:13PM -0800, Paul E. McKenney wrote:
+> On Mon, Dec 20, 2010 at 05:01:46PM +0000, Mel Gorman wrote:
+> > On Mon, Dec 20, 2010 at 03:23:36PM +0000, Mel Gorman wrote:
+> > > migrate_pages() -> unmap_and_move() only calls rcu_read_lock() for anonymous
+> > > pages, as introduced by git commit 989f89c57e6361e7d16fbd9572b5da7d313b073d.
+> > > The point of the RCU protection there is part of getting a stable reference
+> > > to anon_vma and is only held for anon pages as file pages are locked
+> > > which is sufficient protection against freeing.
+> > > 
+> > > However, while a file page's mapping is being migrated, the radix
+> > > tree is double checked to ensure it is the expected page. This uses
+> > > radix_tree_deref_slot() -> rcu_dereference() without the RCU lock held
+> > > triggering the following warning under CONFIG_PROVE_RCU.
+> > > 
+> > > [  173.674290] ===================================================
+> > > [  173.676016] [ INFO: suspicious rcu_dereference_check() usage. ]
+> > > [  173.676016] ---------------------------------------------------
+> > > [  173.676016] include/linux/radix-tree.h:145 invoked rcu_dereference_check() without protection!
+> > > [  173.676016]
+> > > [  173.676016] other info that might help us debug this:
+> > > [  173.676016]
+> > > [  173.676016]
+> > > [  173.676016] rcu_scheduler_active = 1, debug_locks = 0
+> > > [  173.676016] 1 lock held by hugeadm/2899:
+> > > [  173.676016]  #0:  (&(&inode->i_data.tree_lock)->rlock){..-.-.}, at: [<c10e3d2b>] migrate_page_move_mapping+0x40/0x1ab
+> > > [  173.676016]
+> > > [  173.676016] stack backtrace:
+> > > [  173.676016] Pid: 2899, comm: hugeadm Not tainted 2.6.37-rc5-autobuild
+> > > [  173.676016] Call Trace:
+> > > [  173.676016]  [<c128cc01>] ? printk+0x14/0x1b
+> > > [  173.676016]  [<c1063502>] lockdep_rcu_dereference+0x7d/0x86
+> > > [  173.676016]  [<c10e3db5>] migrate_page_move_mapping+0xca/0x1ab
+> > > [  173.676016]  [<c10e41ad>] migrate_page+0x23/0x39
+> > > [  173.676016]  [<c10e491b>] buffer_migrate_page+0x22/0x107
+> > > [  173.676016]  [<c10e48f9>] ? buffer_migrate_page+0x0/0x107
+> > > [  173.676016]  [<c10e425d>] move_to_new_page+0x9a/0x1ae
+> > > [  173.676016]  [<c10e47e6>] migrate_pages+0x1e7/0x2fa
+> > > 
+> > > This patch introduces radix_tree_deref_slot_protected() which calls
+> > > rcu_dereference_protected(). Users of it must pass in the mapping->tree_lock
+> > > that is protecting this dereference. Holding the tree lock protects against
+> > > parallel updaters of the radix tree meaning that rcu_dereference_protected
+> > > is allowable.
+> > > 
+> > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > > ---
+> > >  include/linux/radix-tree.h |   17 +++++++++++++++++
+> > >  mm/migrate.c               |    4 ++--
+> > >  2 files changed, 19 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
+> > > index ab2baa5..a1f1672 100644
+> > > --- a/include/linux/radix-tree.h
+> > > +++ b/include/linux/radix-tree.h
+> > > @@ -146,6 +146,23 @@ static inline void *radix_tree_deref_slot(void **pslot)
+> > >  }
+> > >  
+> > >  /**
+> > > + * radix_tree_deref_slot_protected	- dereference a slot without RCU lock but with tree lock held
+> > > + * @pslot:	pointer to slot, returned by radix_tree_lookup_slot
+> > > + * Returns:	item that was stored in that slot with any direct pointer flag
+> > > + *		removed.
+> > > + *
+> > > + * Similar to radix_tree_deref_slot but only used during migration when a pages
+> > > + * mapping is being moved. The caller does not hold the RCU read lock but it
+> > > + * must hold the tree lock to prevent parallel updates.
+> > > + */
+> > > +static inline void *radix_tree_deref_slot_protected(void **pslot,
+> > > +							spinlock_t *treelock)
+> > > +{
+> > > +	BUG_ON(rcu_read_lock_held());
+> > 
+> > This was a bad idea. After some extended testing, it was obvious that
+> > this function can be called for swapcache pages with the RCU lock held.
+> > Paul, is it still permissible to use rcu_dereference_protected() or must
+> > the RCU read lock not be held?
 > 
-> Checking ACPI_EN before doing anything in the quirk looks like
-> the simplest thing (if the BIOS actually sets ACPI_EN=0 when
-> it disables ACPI).
+> Apologies for the late reply!
+> 
+> It is OK to call rcu_dereference_protected() with rcu_read_lock() held,
+> but -only- if updates are somehow blocked -- for example, the treelock
+> being held as below.
+> 
+> It is OK to have extra protection, at least in this case.  ;-)
+> 
 
-Unfortunately, they double checked and the BIOS leaves ACPI_EN=1 even
-when ACPI is disabled.
->From hexdump -Cv /sys/bus/pci/devices/0000\:00\:1f.0/config:
-00000040  01 01 00 00 10 00 00 00  00 00 00 00 00 00 01 00
-          ^base addr^|^-- 4th bit ~ ACPI_EN
+Thanks for the clarification Paul.
 
-But I think we still should add the check in any case, the same for GPIO
-(there is GPIO_EN) and maybe for newer ICHs. What do you think?
 
-The problem is we can't add a quirk based on DMI for this one, since
-there is no DMI table.
-
-I'm out of ideas now.
-
-thanks,
 -- 
-js
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
