@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933096Ab1AMQ2k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 11:28:40 -0500
-Received: from www.tglx.de ([62.245.132.106]:60816 "EHLO www.tglx.de"
+	id S933099Ab1AMQaK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 11:30:10 -0500
+Received: from lo.gmane.org ([80.91.229.12]:48867 "EHLO lo.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752866Ab1AMQ2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 11:28:39 -0500
-Date: Thu, 13 Jan 2011 17:28:27 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sven Neumann <s.neumann@raumfeld.com>
-cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Daniel Mack <daniel@caiaq.de>
-Subject: Re: resume regression in 2.6.37
-In-Reply-To: <1294933492.2535.23.camel@sven>
-Message-ID: <alpine.LFD.2.00.1101131720350.2678@localhost6.localdomain6>
-References: <1294933492.2535.23.camel@sven>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756934Ab1AMQaI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 11:30:08 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Andres Salomon <dilinger@queued.net>
+Subject: Re: [PATCH] net: add Faraday FTMAC100 10/100 Ethernet driver
+Date: Thu, 13 Jan 2011 08:29:50 -0800
+Message-ID: <20110113082950.6747ebb8@queued.net>
+References: <1294919372-1904-1-git-send-email-ratbert.chuang@gmail.com>
+	<1294928559.3570.130.camel@edumazet-laptop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: c-71-231-141-121.hsd1.wa.comcast.net
+In-Reply-To: <1294928559.3570.130.camel@edumazet-laptop>
+X-Newsreader: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Cc: netdev@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jan 2011, Sven Neumann wrote:
-> Now I've tried to update the kernel to 2.6.37. After fixing the already
-> reported NULL pointer dereference on bootup in pxa3xx_nand_probe(), the
-> device seems to work fine until I suspend it and then try to wake it up
-> from suspend. Suspend seems to work fine, no warnings whatsoever.
-> However there is absolutely no sign of resume.
-> 
-> I've used git bisect to track this down to the following commit:
-> 
-> 
-> commit 2f7e99bb9be6a2d8d7b808dc86037710cc8b7bf1
-> Author: Thomas Gleixner <tglx@linutronix.de>
-> Date:   Mon Sep 27 12:45:50 2010 +0000
-> 
->     genirq: Provide compat handling for chip->set_wake()
->     
->     Wrap the old chip function set_wake() until the migration is
->     complete and the old chip functions are removed.
->     
->     Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
->     Cc: Peter Zijlstra <peterz@infradead.org>
->     LKML-Reference: <20100927121842.927527393@linutronix.de>
->     Reviewed-by: H. Peter Anvin <hpa@zytor.com>
->     Reviewed-by: Ingo Molnar <mingo@elte.hu>
-> 
-> 
-> Any idea on how to proceed from here? I don't think I can just revert
-> this commit and expect things to work, right?
+On Thu, 13 Jan 2011 15:22:39 +0100
+Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
-Well, I somehow doubt, that this is the real culprit. The patch does
-not change anything of the set_wake() functionality. It's a functional
-equivivalent wrapper, nothing else.
+> Le jeudi 13 janvier 2011 à 19:49 +0800, Po-Yu Chuang a écrit :
+> > From: Po-Yu Chuang <ratbert@faraday-tech.com>
+> > 
+> > FTMAC100 Ethernet Media Access Controller supports 10/100 Mbps and
+> > MII.  This driver has been working on some ARM/NDS32 SoC including
+> > Faraday A320 and Andes AG101.
+> > 
+> > Signed-off-by: Po-Yu Chuang <ratbert@faraday-tech.com>
+> > ---
+> >  drivers/net/Kconfig    |    9 +
+> >  drivers/net/Makefile   |    1 +
+> >  drivers/net/ftmac100.c | 1341
+> > ++++++++++++++++++++++++++++++++++++++++++++++++
+> > drivers/net/ftmac100.h |  180 +++++++ 4 files changed, 1531
+> > insertions(+), 0 deletions(-) create mode 100644
+> > drivers/net/ftmac100.c create mode 100644 drivers/net/ftmac100.h
+> 
+> Hi
+> 
+[...]
+> 
+> 9) Instead of dev_info(&netdev->dev ...) , please consider
+> netdev_info()
+> 
+> 
 
-Can you revert it on top of 2.6.37 and verify that it helps ?
+No one else mentioned it, so I'll add:
 
-Thanks,
+Don't explicitly inline functions unless they're in a header, or you
+have a really good reason (and that reason should probably be described
+in a comment).  Otherwise, just leave off the 'inline' keyword; the
+compiler is smart enough to decide whether a function should be inlined
+or not.
 
-	tglx
+
