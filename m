@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab1AMF2T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 00:28:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57918 "EHLO mx1.redhat.com"
+	id S1752345Ab1AMF2L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 00:28:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61023 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750771Ab1AMF2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 00:28:16 -0500
-Date: Thu, 13 Jan 2011 00:26:50 -0500
+	id S1751784Ab1AMF2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 00:28:05 -0500
+Date: Thu, 13 Jan 2011 00:22:21 -0500
 From: Rik van Riel <riel@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
-Subject: [RFC -v4 PATCH 2/3] sched: Add yield_to(task, preempt)
- functionality.
-Message-ID: <20110113002650.0a1432d0@annuminas.surriel.com>
+Subject: [RFC -v4 PATCH 1/3] kvm: keep track of which task is running a KVM
+ vcpu
+Message-ID: <20110113002221.27fcdaee@annuminas.surriel.com>
 In-Reply-To: <20110113002108.3abdf953@annuminas.surriel.com>
 References: <20110113002108.3abdf953@annuminas.surriel.com>
 Organization: Red Hat, Inc.
@@ -26,144 +26,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Galbraith <efault@gmx.de>
+Keep track of which task is running a KVM vcpu.  This helps us
+figure out later what task to wake up if we want to boost a
+vcpu that got preempted.
 
-Currently only implemented for fair class tasks.
-
-Add a yield_to_task method() to the fair scheduling class. allowing the
-caller of yield_to() to accelerate another thread in it's thread group,
-task group.
-
-Implemented via a scheduler hint, using cfs_rq->next to encourage the
-target being selected.  We can rely on pick_next_entity to keep things
-fair, so noone can accelerate a thread that has already used its fair
-share of CPU time.
+Unfortunately there are no guarantees that the same task
+always keeps the same vcpu, so we can only track the task
+across a single "run" of the vcpu.
 
 Signed-off-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Mike Galbraith <efault@gmx.de>
+---
+- move vcpu->task manipulation as suggested by Chris Wright
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 2c79e92..4492d84 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1047,6 +1047,7 @@ struct sched_class {
- 	void (*enqueue_task) (struct rq *rq, struct task_struct *p, int flags);
- 	void (*dequeue_task) (struct rq *rq, struct task_struct *p, int flags);
- 	void (*yield_task) (struct rq *rq);
-+	bool (*yield_to_task) (struct rq *rq, struct task_struct *p, bool preempt);
- 
- 	void (*check_preempt_curr) (struct rq *rq, struct task_struct *p, int flags);
- 
-@@ -1943,6 +1944,7 @@ static inline int rt_mutex_getprio(struct task_struct *p)
- # define rt_mutex_adjust_pi(p)		do { } while (0)
+ include/linux/kvm_host.h |    1 +
+ virt/kvm/kvm_main.c      |    2 ++
+ 2 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index a055742..180085b 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -81,6 +81,7 @@ struct kvm_vcpu {
  #endif
+ 	int vcpu_id;
+ 	struct mutex mutex;
++	struct task_struct *task;
+ 	int   cpu;
+ 	atomic_t guest_mode;
+ 	struct kvm_run *run;
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 5225052..c95bad1 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -2248,6 +2248,7 @@ static void kvm_sched_in(struct preempt_notifier *pn, int cpu)
+ {
+ 	struct kvm_vcpu *vcpu = preempt_notifier_to_vcpu(pn);
  
-+extern void yield_to(struct task_struct *p, bool preempt);
- extern void set_user_nice(struct task_struct *p, long nice);
- extern int task_prio(const struct task_struct *p);
- extern int task_nice(const struct task_struct *p);
-diff --git a/kernel/sched.c b/kernel/sched.c
-index dc91a4d..f154a2e 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -5270,6 +5270,62 @@ void __sched yield(void)
- }
- EXPORT_SYMBOL(yield);
- 
-+/**
-+ * yield_to - yield the current processor to another thread in
-+ * your thread group, or accelerate that thread toward the
-+ * processor it's on.
-+ *
-+ * It's the caller's job to ensure that the target task struct
-+ * can't go away on us before we can do any checks.
-+ */
-+void __sched yield_to(struct task_struct *p, bool preempt)
-+{
-+	struct task_struct *curr = current;
-+	struct rq *rq, *p_rq;
-+	unsigned long flags;
-+	bool yield = 0;
-+
-+	local_irq_save(flags);
-+	rq = this_rq();
-+
-+again:
-+	p_rq = task_rq(p);
-+	double_rq_lock(rq, p_rq);
-+	while (task_rq(p) != p_rq) {
-+		double_rq_unlock(rq, p_rq);
-+		goto again;
-+	}
-+
-+	if (!curr->sched_class->yield_to_task)
-+		goto out;
-+
-+	if (curr->sched_class != p->sched_class)
-+		goto out;
-+
-+	if (task_running(p_rq, p) || p->state)
-+		goto out;
-+
-+	if (!same_thread_group(p, curr))
-+		goto out;
-+
-+#ifdef CONFIG_FAIR_GROUP_SCHED
-+	if (task_group(p) != task_group(curr))
-+		goto out;
-+#endif
-+
-+	yield = curr->sched_class->yield_to_task(rq, p, preempt);
-+
-+out:
-+	double_rq_unlock(rq, p_rq);
-+	local_irq_restore(flags);
-+
-+	if (yield) {
-+		set_current_state(TASK_RUNNING);
-+		schedule();
-+	}
-+}
-+EXPORT_SYMBOL_GPL(yield_to);
-+
- /*
-  * This task is about to go to sleep on IO. Increment rq->nr_iowait so
-  * that process accounting knows that this is a task in IO wait state.
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 00ebd76..5006f35 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1742,6 +1742,23 @@ static void put_prev_task_fair(struct rq *rq, struct task_struct *prev)
- 	}
++	vcpu->task = NULL;
+ 	kvm_arch_vcpu_load(vcpu, cpu);
  }
  
-+static bool yield_to_task_fair(struct rq *rq, struct task_struct *p, bool preempt)
-+{
-+	struct sched_entity *se = &p->se;
-+
-+	if (!se->on_rq)
-+		return false;
-+
-+	/* Tell the scheduler that we'd really like pse to run next. */
-+	set_next_buddy(se);
-+
-+	/* Make p's CPU reschedule; pick_next_entry takes care of fairness. */
-+	if (preempt)
-+		resched_task(rq->curr);
-+
-+	return true;
-+}
-+
- #ifdef CONFIG_SMP
- /**************************************************
-  * Fair scheduling class load-balancing methods:
-@@ -3935,6 +3952,7 @@ static const struct sched_class fair_sched_class = {
- 	.enqueue_task		= enqueue_task_fair,
- 	.dequeue_task		= dequeue_task_fair,
- 	.yield_task		= yield_task_fair,
-+	.yield_to_task		= yield_to_task_fair,
+@@ -2256,6 +2257,7 @@ static void kvm_sched_out(struct preempt_notifier *pn,
+ {
+ 	struct kvm_vcpu *vcpu = preempt_notifier_to_vcpu(pn);
  
- 	.check_preempt_curr	= check_preempt_wakeup,
++	vcpu->task = current;
+ 	kvm_arch_vcpu_put(vcpu);
+ }
  
 
