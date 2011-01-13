@@ -1,107 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756753Ab1AMT1K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 14:27:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64471 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751835Ab1AMT1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 14:27:08 -0500
-Message-ID: <4D2F5204.7020100@redhat.com>
-Date: Thu, 13 Jan 2011 21:27:00 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+	id S1756814Ab1AMT2i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 14:28:38 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44049 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751835Ab1AMT2f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 14:28:35 -0500
+Date: Thu, 13 Jan 2011 20:28:25 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Manoj Iyer <manoj.iyer@canonical.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>
-Subject: Re: [PATCH 1/2] KVM: SVM: Fix NMI path when NMI happens in guest
- mode
-References: <1294932178-26866-1-git-send-email-joerg.roedel@amd.com> <1294932178-26866-2-git-send-email-joerg.roedel@amd.com> <4D2F1D49.8070807@redhat.com> <20110113155129.GA23914@amd.com>
-In-Reply-To: <20110113155129.GA23914@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
+Subject: Re: [PATCH] Quirk to fix suspend/resume on Lenovo Edge 11,13,14,15
+Message-ID: <20110113192825.GC30866@kryptos.osrc.amd.com>
+References: <alpine.LFD.2.00.1101131808450.2678@localhost6.localdomain6>
+ <20110113172205.GA30866@kryptos.osrc.amd.com>
+ <AANLkTinw23rtSERxAy6G_cu5=rvQeEzxvf3snsUOZE+z@mail.gmail.com>
+ <20110113175531.GD2006@aftab>
+ <AANLkTikDoRMoQjtN03eMoeacwottEixrFqcF8nJZWgKy@mail.gmail.com>
+ <20110113183025.GE2006@aftab>
+ <alpine.LFD.2.00.1101131946560.2678@localhost6.localdomain6>
+ <20110113185807.GA24720@srcf.ucam.org>
+ <20110113190700.GB30866@kryptos.osrc.amd.com>
+ <alpine.LFD.2.00.1101132012140.2678@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1101132012140.2678@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2011 05:51 PM, Roedel, Joerg wrote:
-> On Thu, Jan 13, 2011 at 10:42:01AM -0500, Avi Kivity wrote:
-> >  On 01/13/2011 05:22 PM, Joerg Roedel wrote:
-> >  >  The vmexit path on SVM needs to restore the KERNEL_GS_BASE
-> >  >  MSR in order to savely execute the NMI handler. Otherwise a
-> >  >  pending NMI can occur after the STGI instruction and crash
-> >  >  the machine.
-> >  >  This makes it impossible to run perf and kvm in parallel on
-> >  >  an AMD machine in a stable way.
-> >  >
-> >  >  Cc: stable@kernel.org
-> >  >  Signed-off-by: Joerg Roedel<joerg.roedel@amd.com>
-> >  >  ---
-> >  >    arch/x86/kvm/svm.c |    1 +
-> >  >    1 files changed, 1 insertions(+), 0 deletions(-)
-> >  >
-> >  >  diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-> >  >  index 25bd1bc..8b9bc72 100644
-> >  >  --- a/arch/x86/kvm/svm.c
-> >  >  +++ b/arch/x86/kvm/svm.c
-> >  >  @@ -3637,6 +3637,7 @@ static void svm_vcpu_run(struct kvm_vcpu *vcpu)
-> >  >
-> >  >    #ifdef CONFIG_X86_64
-> >  >    	wrmsrl(MSR_GS_BASE, svm->host.gs_base);
-> >  >  +	wrmsrl(MSR_KERNEL_GS_BASE, current->thread.gs);
-> >  >    #else
-> >  >    	loadsegment(fs, svm->host.fs);
-> >  >    #endif
-> >
-> >  Why would an NMI crash if MSR_KERNEL_GS_BASE is bad?
-> >
-> >  I see save_paranoid depends on MSR_GS_BASE (specifically its sign, which
-> >  is bad for the new instructions that allow userspace to write gsbase),
-> >  but not on MSR_KERNEL_GS_BASE.
->
-> Thats a good question. I have not idea. I spent some time trying to
-> figure this out (after I found out that wrong KERNEL_GS_BASE was the
-> cause of the crashes) but had no luck.
->
-> This also doesn't happen every time an NMI is delivered in svm_vcpu_run.
-> Sometimes it runs perfectly in parallel for a few minutues before the
-> machine triple-faults.
->
-> I also had a look at entry_64.S. The save_paranoid could not be the
-> cause because MSR_GS_BASE is already negative at this point. But the
-> re-schedule condition check at the end of the NMI handler code could
-> also not be the cause because the NMI happens while preemption (and
-> interrupts) are disabled (a re-schedule should also trigger
-> preempt-notifiers and restore KERNEL_GS_BASE).
->
+On Thu, Jan 13, 2011 at 08:13:42PM +0100, Thomas Gleixner wrote:
+> > Well, Andreas did boot with 'hpet=verbose' on an affected machine here
+> > and did a suspend/resume and the hpet config registers looked ok before
+> > suspend and after resume. It might be that the HPET is temporarily
+> > "insane" while resume lasts but we don't have any hard facts confirming
+> 
+> And you have no explanation at all why applying the irq pin routing
+> quirk makes HPETs temporal insanity go away magically :)
 
-I have it:
-
-ENTRY(native_load_gs_index)
-     CFI_STARTPROC
-     pushfq_cfi
-     DISABLE_INTERRUPTS(CLBR_ANY & ~CLBR_RDI)
-     SWAPGS
-gs_change:
-     movl %edi,%gs
-2:    mfence        /* workaround */
-     SWAPGS
-     popfq_cfi
-     ret
-
-If an nmi hits between the two SWAPGSs, it sees the guest's 
-MSR_KERNEL_GS_BASE as the host's MSR_GS_BASE.
-
-An alternative to your fix would be to disable GIF around 
-load_gs_index() in kvm.  I imagine it would be slower than your fix (not 
-a trivial tradeoff - wrmsr every lightweight exit, vs. clgi/stgi every 
-heavyweight exit).
-
-Please update the changelog, and add a comment.
+But after the HPET counter wraps around, the machine is alive again.
+Which means that the IRQ0 pin2 override is only temporarily needed after
+resume... Strange.
 
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
