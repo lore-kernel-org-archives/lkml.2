@@ -1,35 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab1AMTbc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 14:31:32 -0500
-Received: from www.tglx.de ([62.245.132.106]:36828 "EHLO www.tglx.de"
+	id S932928Ab1AMTb4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 14:31:56 -0500
+Received: from mx2.fusionio.com ([64.244.102.31]:40667 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756716Ab1AMTba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 14:31:30 -0500
-Date: Thu, 13 Jan 2011 20:29:49 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 2/2] rcu: avoid pointless blocked-task
- warnings
-In-Reply-To: <1294945477-10612-2-git-send-email-paulmck@linux.vnet.ibm.com>
-Message-ID: <alpine.LFD.2.00.1101132029130.2678@localhost6.localdomain6>
-References: <20110113190414.GA10457@linux.vnet.ibm.com> <1294945477-10612-2-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755832Ab1AMTbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 14:31:53 -0500
+X-ASG-Debug-ID: 1294947112-71f7b71b0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D2F5324.7070305@fusionio.com>
+Date: Thu, 13 Jan 2011 20:31:48 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Alasdair G Kergon <agk@redhat.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] core block bits for 2.6.38
+References: <4D2F03A7.2030809@fusionio.com> <20110113192152.GA18217@agk-dp.fab.redhat.com>
+X-ASG-Orig-Subj: Re: [GIT PULL] core block bits for 2.6.38
+In-Reply-To: <20110113192152.GA18217@agk-dp.fab.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1294947112
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.52285
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jan 2011, Paul E. McKenney wrote:
-> Reported-by: Russell King <rmk@arm.linux.org.uk>
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On 2011-01-13 20:21, Alasdair G Kergon wrote:
+> On Thu, Jan 13, 2011 at 02:52:39PM +0100, Jens Axboe wrote:
+>> Below are the core block bits for 2.6.38.
+>  
+>> Tejun Heo (17):
+>>       block: simplify holder symlink handling
+> 
+> This one was found to be causing problems in linux-next yesterday: 
+>   http://permalink.gmane.org/gmane.linux.file-systems/50132
+> 
+> Perhaps you could drop it for now until a solution's found?
 
-So finally someone managed to clone you ?
+Oh, nobody told me about that. I have an addon, give me a few minutes to
+push it out.
+
+-- 
+Jens Axboe
+
