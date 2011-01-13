@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903Ab1AMO0F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 09:26:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29068 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756755Ab1AMO0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 09:26:00 -0500
-Message-ID: <4D2F0B6A.6010201@redhat.com>
-Date: Thu, 13 Jan 2011 15:25:46 +0100
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
+	id S1756678Ab1AMOaW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 09:30:22 -0500
+Received: from 27.mail-out.ovh.net ([91.121.30.210]:41219 "HELO
+	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751194Ab1AMOaV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 09:30:21 -0500
+Message-ID: <4D2F0C64.3010403@example.com>
+Date: Thu, 13 Jan 2011 15:29:56 +0100
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Karel Zak <kzak@redhat.com>,
-        device-mapper development <dm-devel@redhat.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [dm-devel] linux-next - WARNING: at fs/block_dev.c:824 bd_link_disk_holder+0x92/0x1ac()
-References: <16069.1294853673@localhost> <4D2E4611.90002@redhat.com> <4D2E6129.8000700@ce.jp.nec.com> <20110113110640.GC30719@htj.dyndns.org> <4D2EE156.1050006@redhat.com> <20110113122701.GG16523@nb.net.home> <20110113131216.GF30719@htj.dyndns.org> <20110113132637.GH16523@nb.net.home> <20110113133722.GG30719@htj.dyndns.org> <4D2F04FF.1070309@redhat.com> <20110113141107.GI30719@htj.dyndns.org>
-In-Reply-To: <20110113141107.GI30719@htj.dyndns.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: piotr@hosowicz.com
+CC: =?UTF-8?B?QW3DqXJpY28gV2FuZw==?= <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Error in linux-2.6.37-git5 in btrfs in ctree.c
+References: <4D2C52E3.2020702@example.com> <20110111131423.GA17312@hack> <4D2DB674.4030900@example.com>
+In-Reply-To: <4D2DB674.4030900@example.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 893401577159618930
+X-Ovh-Remote: 83.24.79.110 (dmx110.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2011 03:11 PM, Tejun Heo wrote:
+On 12.01.2011 15:11, Piotr Hosowicz wrote:
+> On 11.01.2011 14:14, Américo Wang wrote:
+>> On Tue, Jan 11, 2011 at 01:53:55PM +0100, Piotr Hosowicz wrote:
+>>> (I send again because my previous message wasn't delivered.)
+>>>
+>>> Hello,
+>>>
+>>> There is an error in here:
+>>>
+>>> In file included from fs/btrfs/ctree.c:21:
+>>> fs/btrfs/ctree.h:1003: error: field ‘super_kobj’ has incomplete type
+>>> fs/btrfs/ctree.h:1074: error: field ‘root_kobj’ has incomplete type
+>>>
+>>> Kernel fails to build. linux-2.6.37-git5
+>
+> I see that it's the same in Linus GIT tree, I didn't fail to build,
+> because I corrected the same way first, it's building now. Should it be
+> like that?
+>
 
-> So, as a general rule, when in doubt, just create an attribute.  Let's
-> refrain from custom symlinkery in sysfs, please.  In this case too, a
-> holder attribute containing strings like ext[3|4], md, dm or whatnot
-> would have been _much_ simpler and actually more useful.
+The situation is exactly the same today. What to do? I don't need btrfs, 
+but must do some correction s I do not understand exactly. I don't like it.
 
-Maybe, but this was not invented in DM/MD camp:-)
-Probably Kay or Greg can answer why it was done this way?
+Regards,
 
-For DM it just added links to be proper user of it, see
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=f165921df46a977e3561f1bd9f13a348441486d1
+Piotr Hosowicz
 
-Anyway, it is /sys/block - so it represents block devices.
 
-If btrfs internally creates some virtual _block_ device for its pool, it should
-present it here too with slaves/holders. If not, why it should create any links there?
 
-Milan
+-- 
+Janusz Korwin-Mikke:
+"Dyktatury dzielą się na dobre i złe. Demokracja jest zawsze głupia."
+NP:  -
+NB: 2.6.37-20110113-1411-pztidm+
