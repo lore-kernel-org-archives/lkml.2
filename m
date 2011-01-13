@@ -1,65 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756669Ab1AML2B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 06:28:01 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38314 "EHLO
+	id S1756674Ab1AMLbO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 06:31:14 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48207 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756626Ab1AML2A (ORCPT
+	with ESMTP id S1756576Ab1AMLbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 06:28:00 -0500
+	Thu, 13 Jan 2011 06:31:12 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=PFQB1mAVpQpHl9he9hhnW6d7TUVwIoj7VkpJF8q8Sp8LHcYi9qEJiurzOlRiG7ouL6
-         aMgoehfgIxBJvMYmU/HOn+gEU1WmLMNdZR7ts2GoEgCfDwmd10R77WNVoJFzl7pXRvuc
-         rtlzw561AXfZCDnzCCLb6V8xJNiWHag7/oma8=
-Date: Thu, 13 Jan 2011 12:27:47 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Jan Kratochvil <jan.kratochvil@redhat.com>
-Cc: oleg@redhat.com, roland@redhat.com, linux-kernel@vger.kernel.org,
-        rjw@sisk.pl
-Subject: Re: [PATCH 1/4] signal: fix SIGCONT notification code
-Message-ID: <20110113112747.GE30719@htj.dyndns.org>
-References: <1293016398-18001-1-git-send-email-tj@kernel.org>
- <1293016398-18001-2-git-send-email-tj@kernel.org>
- <20110112204136.GB13830@host1.dyn.jankratochvil.net>
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=uKL1x+0aaodYaQKEH+fRn+hGwodHobREj3C7MuEEpy2K3EgeA+fSAFPN56db/FE6Z4
+         UnarlfJlaAc6hSnOFkpIvQTn0v0mccufCOcaQcSwMvvbTFxpyLU3JWRC6m6MjhdCAZIs
+         5PL1H6e3FjVZPDCDWA9xLESDZ34nz6aoBfqEw=
+Date: Thu, 13 Jan 2011 12:31:06 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        John Stultz <johnstul@us.ibm.com>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH V9 00/13] ptp: IEEE 1588 hardware clock support
+Message-ID: <cover.1294917347.git.richard.cochran@omicron.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110112204136.GB13830@host1.dyn.jankratochvil.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Jan.
+* Introduction
 
-On Wed, Jan 12, 2011 at 09:41:36PM +0100, Jan Kratochvil wrote:
-> On Wed, 22 Dec 2010 12:13:15 +0100, Tejun Heo wrote:
-> > If SIGCONT is received while the child process is stopped, the code should
-> > be CLD_CONTINUED.  If SIGCONT is recieved while the child process is in the
-> > process of being stopped, it should be CLD_STOPPED.
-> 
-> If a process does
-> 	kill (PID, SIGSTOP);
-> 	<varying delay, possibly even from a different process>
-> 	kill (PID, SIGCONT);
-> 
-> does it mean the PID's parent may get different waitid() results?
-> Or even that PID will finally remain still `T (stopped)'?
+  The aim of this patch set is to add support for PTP Hardware Clocks
+  (PHCs) into the Linux kernel.
 
-Yeah, the @why part could be different with the fix.  Before the fix
-the result was indeterministic.
+  The first nine patches provide infrastructure supporting dynamic
+  POSIX clock devices. This new code will be useful for other kinds of
+  new clocks, not just PHCs.
 
-> I do not see it has any userland impact, the
-> PTRACE_ATTACH-to-T(stopped)-process is already racy for different reasons.
+  The last four patches implement the PHC code.
 
-I agree that it wouldn't have any userland impact especially given
-that the previous behavior was rather indeterministic.  It just fixes
-an obvious bug which tested the wrong flag.
+  Support for obtaining timestamps from a PHC already exists via the
+  SO_TIMESTAMPING socket option, integrated in kernel version 2.6.30.
+  This patch set completes the picture by allow user space programs to
+  adjust the PHC and to control its ancillary features.
 
-Thanks.
+* Patch ChangeLog
 
--- 
-tejun
+** v9
+*** dynamic posix clocks
+    - changed the kernel interface to be less idiosyncratic
+*** ptp hardware clocks
+    - changed the kernel interface to be less idiosyncratic
+*** posix clock/ntp syscalls
+    - completely removed the CLOCK_DISPATCH macro
+    - pick a bit for ADJ_SETOFFSET that is unused by BSD
+*** ixp driver
+    - resolved todo regarding npe to channel mapping
+    - removed weird CamelCase from register definitions
+    - removed wrapper functions for reading/writing registers
+
+* Previous Discussions
+
+  This patch set previously appeared on the netdev list. Since V5 of
+  the character device patch set, the discussion has moved to the
+  lkml.
+
+  - IEEE 1588 hardware clock support [V5]
+    http://lkml.org/lkml/2010/8/16/90
+
+  - POSIX clock tuning syscall with static clock ids
+    http://lkml.org/lkml/2010/8/23/49
+
+  - POSIX clock tuning syscall with dynamic clock ids
+    http://lkml.org/lkml/2010/9/3/119
+
+  - IEEE 1588 hardware clock support [V6]
+    http://lkml.org/lkml/2010/9/23/310
+
+  - Dynamic clock devices [RFC]
+    http://lkml.org/lkml/2010/11/4/290
+
+  - IEEE 1588 hardware clock support [V7]
+    http://lkml.org/lkml/2010/12/16/195
+
+  - IEEE 1588 hardware clock support [V8]
+    http://lkml.org/lkml/2010/12/31/128
+
+Thanks for your comments.
+
+Enjoy,
+Richard
+
+
+John Stultz (1):
+  time: Introduce timekeeping_inject_offset
+
+Richard Cochran (12):
+  ntp: add ADJ_SETOFFSET mode bit
+  posix clocks: introduce a syscall for clock tuning.
+  posix_clocks: add clock_adjtime for arm
+  posix_clocks: add clock_adjtime for blackfin
+  posix_clocks: add clock_adjtime for powerpc
+  posix_clocks: add clock_adjtime for x86
+  posix clocks: cleanup the CLOCK_DISPTACH macro
+  posix clocks: introduce dynamic clocks
+  ptp: Added a brand new class driver for ptp clocks.
+  ptp: Added a clock that uses the eTSEC found on the MPC85xx.
+  ptp: Added a clock driver for the IXP46x.
+  ptp: Added a clock driver for the National Semiconductor PHYTER.
+
+ Documentation/ABI/testing/sysfs-ptp             |   97 +++
+ Documentation/powerpc/dts-bindings/fsl/tsec.txt |   57 ++
+ Documentation/ptp/ptp.txt                       |   93 +++
+ Documentation/ptp/testptp.c                     |  352 +++++++++
+ Documentation/ptp/testptp.mk                    |   33 +
+ arch/arm/include/asm/unistd.h                   |    1 +
+ arch/arm/kernel/calls.S                         |    1 +
+ arch/arm/mach-ixp4xx/include/mach/ixp46x_ts.h   |   78 ++
+ arch/blackfin/include/asm/unistd.h              |    3 +-
+ arch/blackfin/mach-common/entry.S               |    1 +
+ arch/powerpc/boot/dts/mpc8313erdb.dts           |   14 +
+ arch/powerpc/boot/dts/mpc8572ds.dts             |   14 +
+ arch/powerpc/boot/dts/p2020ds.dts               |   14 +
+ arch/powerpc/boot/dts/p2020rdb.dts              |   14 +
+ arch/powerpc/include/asm/systbl.h               |    1 +
+ arch/powerpc/include/asm/unistd.h               |    3 +-
+ arch/x86/ia32/ia32entry.S                       |    1 +
+ arch/x86/include/asm/unistd_32.h                |    3 +-
+ arch/x86/include/asm/unistd_64.h                |    2 +
+ arch/x86/kernel/syscall_table_32.S              |    1 +
+ drivers/Kconfig                                 |    2 +
+ drivers/Makefile                                |    1 +
+ drivers/char/mmtimer.c                          |    1 +
+ drivers/net/Makefile                            |    1 +
+ drivers/net/arm/ixp4xx_eth.c                    |  192 +++++-
+ drivers/net/gianfar_ptp.c                       |  448 +++++++++++
+ drivers/net/gianfar_ptp_reg.h                   |  113 +++
+ drivers/net/phy/Kconfig                         |   29 +
+ drivers/net/phy/Makefile                        |    1 +
+ drivers/net/phy/dp83640.c                       |  896 +++++++++++++++++++++++
+ drivers/net/phy/dp83640_reg.h                   |  261 +++++++
+ drivers/ptp/Kconfig                             |   53 ++
+ drivers/ptp/Makefile                            |    7 +
+ drivers/ptp/ptp_chardev.c                       |  144 ++++
+ drivers/ptp/ptp_clock.c                         |  319 ++++++++
+ drivers/ptp/ptp_ixp46x.c                        |  332 +++++++++
+ drivers/ptp/ptp_private.h                       |   85 +++
+ drivers/ptp/ptp_sysfs.c                         |  226 ++++++
+ include/linux/Kbuild                            |    1 +
+ include/linux/posix-clock.h                     |  150 ++++
+ include/linux/posix-timers.h                    |   25 +-
+ include/linux/ptp_clock.h                       |   79 ++
+ include/linux/ptp_clock_kernel.h                |  141 ++++
+ include/linux/syscalls.h                        |    2 +
+ include/linux/time.h                            |    3 +
+ include/linux/timex.h                           |    3 +-
+ kernel/compat.c                                 |  136 +++--
+ kernel/posix-cpu-timers.c                       |    8 +-
+ kernel/posix-timers.c                           |  257 +++++---
+ kernel/time/Makefile                            |    3 +-
+ kernel/time/ntp.c                               |   11 +
+ kernel/time/posix-clock-syscalls.h              |   39 +
+ kernel/time/posix-clock.c                       |  432 +++++++++++
+ kernel/time/timekeeping.c                       |   36 +
+ 54 files changed, 5068 insertions(+), 152 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-ptp
+ create mode 100644 Documentation/ptp/ptp.txt
+ create mode 100644 Documentation/ptp/testptp.c
+ create mode 100644 Documentation/ptp/testptp.mk
+ create mode 100644 arch/arm/mach-ixp4xx/include/mach/ixp46x_ts.h
+ create mode 100644 drivers/net/gianfar_ptp.c
+ create mode 100644 drivers/net/gianfar_ptp_reg.h
+ create mode 100644 drivers/net/phy/dp83640.c
+ create mode 100644 drivers/net/phy/dp83640_reg.h
+ create mode 100644 drivers/ptp/Kconfig
+ create mode 100644 drivers/ptp/Makefile
+ create mode 100644 drivers/ptp/ptp_chardev.c
+ create mode 100644 drivers/ptp/ptp_clock.c
+ create mode 100644 drivers/ptp/ptp_ixp46x.c
+ create mode 100644 drivers/ptp/ptp_private.h
+ create mode 100644 drivers/ptp/ptp_sysfs.c
+ create mode 100644 include/linux/posix-clock.h
+ create mode 100644 include/linux/ptp_clock.h
+ create mode 100644 include/linux/ptp_clock_kernel.h
+ create mode 100644 kernel/time/posix-clock-syscalls.h
+ create mode 100644 kernel/time/posix-clock.c
+
