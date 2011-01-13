@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932835Ab1AMVPv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 16:15:51 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:42581 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756691Ab1AMVPp convert rfc822-to-8bit (ORCPT
+	id S1757282Ab1AMVSe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 16:18:34 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:48981 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755699Ab1AMVS3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 16:15:45 -0500
+	Thu, 13 Jan 2011 16:18:29 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:content-transfer-encoding:user-agent;
-        b=UmUCYr8yNOnR4Ujw4GjE1xH/kAb1yPlRDnEeu4zjQSdeVBqsn9JBmTOAvYSK/8oUYA
-         3PBJYazeq4LMvoYmS30fwPKd4+8PGrWyFLmej1DRRhoozmoGzWWdXYBwva55t5rnhSbB
-         GkDgZpLtA2T4xoKGnnzuulZYvVu41Go02xAC8=
-Date: Thu, 13 Jan 2011 23:15:35 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-Cc: Dustin Kirkland <kirkland@canonical.com>,
-        ecryptfs-devel@lists.launchpad.net, linux-kernel@vger.kernel.org
-Subject: ecryptfs build failure
-Message-ID: <20110113211535.GB4044@swordfish>
+        h=from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=mkweErOBCweCOBXhAGx46F/EDq52SL4WZCAnW8yJV8cyEOqOJ/CogKdmYtR0fL0dGB
+         Z0WVkfjyTZm9I3IEfuWtkegOLAGbfMnc7uMV6IPhJVwBLSsQgMYxronYP5S+ykIESZNo
+         qZbBUlB5ISpfNL2M/a9JleoIzyLfzzcLlrnPE=
+From: Franck Bui-Huu <vagabon.xyz@gmail.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Chase Douglas <chase.douglas@canonical.com>
+Subject: Re: [PATCH -perf/perf/core  5/6] perf probe: Add variable filter support
+References: <20110113124548.22426.11201.stgit@ltc236.sdl.hitachi.co.jp>
+	<20110113124624.22426.72527.stgit@ltc236.sdl.hitachi.co.jp>
+Date: Thu, 13 Jan 2011 22:18:24 +0100
+In-Reply-To: <20110113124624.22426.72527.stgit@ltc236.sdl.hitachi.co.jp>
+	(Masami Hiramatsu's message of "Thu, 13 Jan 2011 21:46:24 +0900")
+Message-ID: <m3wrm87ba7.fsf@gmail.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
 
-Recent kernel failed to build due to ecryptfs/main.
-2 of 3 errors could be fixed with the following patch. The third is:
-we make an assignment `lower_inode = lower_dentry->d_inode;' in
-ecryptfs_get_inode, yet ecryptfs_get_inode knows nothing about lower_dentry.
+> Add filters support for available variable list.
+> Default filter is "!__k???tab_*&!__crc_*" for
+> filtering out automatically generated symbols.
+>
+> The format of filter rule is "[!]GLOBPATTERN", so
+> you can use wild cards. If the filter rule starts with
+> '!', matched variables are filter out.
+>
+> e.g.)
+>  # perf probe -V schedule --externs --filter=cpu*
 
----
+I'm wondering if the different syntax below could be simpler:
 
- fs/ecryptfs/main.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+   $ perf probe add <probe>
+   $ perf probe del <probe>
+   $ perf probe show       
 
-diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
-index 9ed4769..5694d65 100644
---- a/fs/ecryptfs/main.c
-+++ b/fs/ecryptfs/main.c
-@@ -141,7 +141,7 @@ int ecryptfs_init_persistent_file(struct dentry *ecryptfs_dentry)
- 	return rc;
- }
- 
--static inode *ecryptfs_get_inode(struct inode *lower_inode,
-+static struct inode *ecryptfs_get_inode(struct inode *lower_inode,
- 		       struct super_block *sb)
- {
- 	struct inode *inode;
-@@ -202,7 +202,7 @@ int ecryptfs_interpose(struct dentry *lower_dentry, struct dentry *dentry,
- {
- 	struct inode *lower_inode = lower_dentry->d_inode;
- 	struct inode *inode = ecryptfs_get_inode(lower_inode, sb);
--	if (IS_ERR(inode)
-+	if (IS_ERR(inode))
- 		return PTR_ERR(inode);
- 	if (flags & ECRYPTFS_INTERPOSE_FLAG_D_ADD)
- 		d_add(dentry, inode);
+   $ perf probe list <line>
+           ...       --vars[=<pattern>] [--externs] <probe>
+           ...       --funcs[=<pattern>]
 
+instead of respectively:
+
+   $ perf probe --add=<probe>
+   $ perf probe --del=<probe>
+   $ perf probe [--list|-l]       
+
+   $ perf probe [--line|-L] <line>
+   $ perf probe -V <probe> [--externs] [--filter=<pattern>]
+   $ perf probe --funcs
+
+-- 
+		Franck
