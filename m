@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757237Ab1AMQAs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 11:00:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59596 "EHLO mx1.redhat.com"
+	id S933002Ab1AMQBm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 11:01:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60674 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757063Ab1AMQAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 11:00:46 -0500
-Date: Thu, 13 Jan 2011 16:51:20 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Jan Kratochvil <jan.kratochvil@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, roland@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [PATCHSET RFC] ptrace,signal: clean transition between STOPPED
-	and TRACED
-Message-ID: <20110113155120.GA31691@redhat.com>
-References: <1293199257-11255-1-git-send-email-tj@kernel.org> <20110112214350.GC13830@host1.dyn.jankratochvil.net>
+	id S1757156Ab1AMQBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 11:01:41 -0500
+Date: Thu, 13 Jan 2011 16:59:55 +0100
+From: Karel Zak <kzak@redhat.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Tejun Heo <tj@kernel.org>, Milan Broz <mbroz@redhat.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [dm-devel] linux-next - WARNING: at fs/block_dev.c:824
+	bd_link_disk_holder+0x92/0x1ac()
+Message-ID: <20110113155955.GI16523@nb.net.home>
+References: <4D2EE156.1050006@redhat.com> <20110113122701.GG16523@nb.net.home> <20110113131216.GF30719@htj.dyndns.org> <20110113132637.GH16523@nb.net.home> <20110113133722.GG30719@htj.dyndns.org> <4D2F04FF.1070309@redhat.com> <20110113141107.GI30719@htj.dyndns.org> <4D2F0B6A.6010201@redhat.com> <AANLkTinJ68D6Yc-U-Q=ZfS9mqozj5qtHPtySZHOgjcgP@mail.gmail.com> <AANLkTi=LKYzrNsU7jc1Nr4W4CaQ_dmBGeQAquSCp_yAX@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110112214350.GC13830@host1.dyn.jankratochvil.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=LKYzrNsU7jc1Nr4W4CaQ_dmBGeQAquSCp_yAX@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12, Jan Kratochvil wrote:
->
-> FSF GDB for `T (stopped)' processes currently does:
->   PTRACE_ATTACH
->   check /proc/%d/status for `T (stopped)' (by GDB's pid_is_stopped)
->     if found then kill (PID, SIGSTOP) && ptrace (PTRACE_CONT, PID, 0, 0).
->   waitpid (pid, &status, 0) - so that this one does not get stuck if the stop
->                               event was already eaten out before.
->
-> If the `T (stopped)' will now always FAIL then at leat the waitpid then should
-> never get stuck.
+On Thu, Jan 13, 2011 at 03:43:38PM +0100, Kay Sievers wrote:
+> On Thu, Jan 13, 2011 at 15:30, Tejun Heo <tj@kernel.org> wrote:
+> > On Thu, Jan 13, 2011 at 3:25 PM, Milan Broz <mbroz@redhat.com> wrote:
+> >> Maybe, but this was not invented in DM/MD camp:-)
+> >> Probably Kay or Greg can answer why it was done this way?
+> 
+> It's not from Greg or Kay. It just appeared some day in the context of dm. :)
+> 
+> And yes, symlinks *look* nice and simple for the outside, but they are
+> not, and have all sorts of problems like non-atomic updates, make it
 
-I think it won't stuck. With this change the tracee always goes from
-TASK_STOPPED to TASK_TRACED with the correct (and nonzero) stop code.
+ Sounds like sysfs implementation problem, right?
 
-Btw, this should fix the case when ->exit_code was already consumed
-by the previous debugger.
+ If there is noway to fix sysfs then we can add a generic ioctl or
+ /sys/block/<device>/{slave,holder}_list files with list of
+ holders/slaves.
+ 
+ But please, don't force userspace to use *claimer-specific*
+ methods to answer *generic questions* like slave/holder dependencies
+ between devices.
+ 
+> impossible to ever rename a device (as long as they copy the device
+> name), and and and .... we should not add more of this.
+> 
+> >> If btrfs internally creates some virtual _block_ device for its pool, it should
+> >> present it here too with slaves/holders. If not, why it should create any links there?
+> >
+> > Yeah, that's the most bothering part for me.  The biggest customers of
+> > bd_claim are filesystems and all these custom symlinkeries don't do
+> > nothing for them.  It just doesn't make a whole lot of sense to me.
+> 
+> Btrfs does not use any blockdev as the master for good reason, and it
+> can never map its slaves inside of /sys/block. 
 
+ Yep, expected and correct response :-)
 
-> FSF gdbserver --multi does PTRACE_ATTACH followed by waitpid (WNOHANG) and it
-> fails if it returns ECHILD on the first try.
+    Karel
 
-Not sure I understand... With or without this change waitpid()
-shouldn't return ECHILD. But (again, with or without this change)
-it can return 0 due to WNOHANG.
-
-> 	ptrace(PTRACE_ATTACH, 22049, 0, 0)      = 0
-> 	wait4(-1, [{WIFSTOPPED(s) && WSTOPSIG(s) == SIGSTOP}], WNOHANG, NULL) = 22049
->
-> It may be also a gdbserver bug, though.
-
-I do not know if this matters or not, but just in case...
-
-gdb shouldn't assume the tracee will report SIGSTOP after attach.
-Yes, PTRACE_ATTACH sends this signal implicitly, but the tracee can
-dequeue and report another pending signal before SIGSTOP.
-
-Oleg.
-
+-- 
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
