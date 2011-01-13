@@ -1,116 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637Ab1AMBt6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 20:49:58 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:36507 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755114Ab1AMBty convert rfc822-to-8bit (ORCPT
+	id S1756624Ab1AMByI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 20:54:08 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:55687 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932718Ab1AMByA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 20:49:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=FqHqzsSg6Hpt+Wl1DU0rOWjTaBCR0n/roBdLleMOin4HdeC7mbn6pOOU848nV+Psct
-         GPz/5RbkVymmm60iok1FRtsYo9wms1y7/s2e/xTGuswFtKXlOvqsaJCMtfh8Nw/HBA3A
-         4OOnl8tgsjxPo+OM0aWt0lanyOdtjFT3Ad6cQ=
+	Wed, 12 Jan 2011 20:54:00 -0500
+Message-ID: <4D2E5B33.2080305@linux.vnet.ibm.com>
+Date: Wed, 12 Jan 2011 17:53:55 -0800
+From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <E1Pd1eC-0001hR-LW@pomaz-ex.szeredi.hu>
-References: <E1Pcd7R-0007XC-VO@pomaz-ex.szeredi.hu>
-	<AANLkTik-=LqSHQ=7zDznx9oCJFViPpp406Yz7J5Z-quj@mail.gmail.com>
-	<E1Pd1eC-0001hR-LW@pomaz-ex.szeredi.hu>
-Date: Thu, 13 Jan 2011 12:49:53 +1100
-Message-ID: <AANLkTikEStNgB58Q-797rQST3QW=maz9LiGFSC=A8kkc@mail.gmail.com>
-Subject: Re: [PATCH] fuse: make fuse_permission() RCU aware
-From: Nick Piggin <npiggin@gmail.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Stephane Eranian <eranian@google.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmU=?= =?UTF-8?B?Y2tlcg==?= 
+	<fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [BUG] perf sched broken
+References: <AANLkTim=jawJyBj0iFd0r4-LCKzvjFW+NddzJMD5GUB9@mail.gmail.com>
+In-Reply-To: <AANLkTim=jawJyBj0iFd0r4-LCKzvjFW+NddzJMD5GUB9@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 1:26 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Wed, 12 Jan 2011, Nick Piggin wrote:
->> On Tue, Jan 11, 2011 at 11:14 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->> > From: Miklos Szeredi <mszeredi@suse.cz>
->> >
->> > Only bail out of fuse_permission() on IPERM_FLAG_RCU when it is
->> > actually necessary.
->>
->> Great, thanks for taking a look... How about d_revalidate?
+On 01/12/2011 01:29 AM, Stephane Eranian wrote:
+> Hi,
 >
-> Yeah, here's the patch
+> I am trying to use perf sched from tip-x86 but it fails for all my attempts.
 >
-> Do you want to collect these patches from fs maintainers, or should I
-> submit to Linus directly?
+> First of, I think the event list is stale. This is not so much the
+> events themselves
+> but rather the flags.
+>
+> Looks to me like the :r modifier is not supported anymore, so a patch like the
+> one below is needed. That helps collect a trace. But then, you can dump
+> the trace.
 
-I would like to have a look over them and ack them before they go to Linus,
-but I think the most logical and merge friendly approach is just going via
-filesystems trees.
+After looking at this in more detail, I agree with Stephane: the 'r' 
+option appears to only be supported for hardware breakpoint events.  My 
+patch just causes the 'r' to be properly processed and rejected as a 
+legal option.
 
+As I stated elsewhere in this thread, I don't have a problem running the 
+perf commands below on a Fedora 14, 2.6.35 kernel, using the perf from 
+2.6-tip master or x86/urgent.
 
-> From: Miklos Szeredi <mszeredi@suse.cz>
-> Subject: fuse: make fuse_dentry_revalidate() RCU aware
+I don't have a 2.6.37-tip kernel installed at the moment, but if you 
+still think this could be a perf tool bug that occurs only when using it 
+with a 2.6.37-tip kernel, let me know and I will devote some time to 
+trying it out.
+
+- Corey
+
 >
-> Only bail out of fuse_dentry_revalidate() on LOOKUP_RCU when blocking
-> is actually necessary.
+> $ perf sched rec dd if=/dev/zero of=/dev/null count=1000000
+> 1000000+0 records in
+> 1000000+0 records out
+> 512000000 bytes (512 MB) copied, 0.589981 s, 868 MB/s
+> [ perf record: Woken up 1 times to write data ]
+> [ perf record: Captured and wrote 0.481 MB perf.data (~20997 samples) ]
 >
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> $ perf sched rep
+> run measurement overhead: 2934 nsecs
+> sleep measurement overhead: 90502 nsecs
+> the run test took 999149 nsecs
+> the sleep test took 1092248 nsecs
+>    Fatal: no trace data in the file
+>
+> $ perf sched trace -D
+>   usage: perf sched [<options>] {record|latency|map|replay|trace}
+>
+>      -i, --input<file>     input file name
+>      -v, --verbose         be more verbose (show symbol address, etc)
+>      -D, --dump-raw-trace  dump raw trace in ASCII
+>
+> Note that this is not specific to pref sched. If I use perf record directly,
+> I run into the same issue:
+> $ perf record -R -a -c 1 -e sched:sched_switch -- sleep 1
+> [ perf record: Woken up 1 times to write data ]
+> [ perf record: Captured and wrote 0.365 MB perf.data (~15962 samples) ]
+> $./perf report -D
+>    Fatal: no trace data in the file
+>
+> Now that perf trace is gone, how to I dump the trace?
+>
+>
+> Drop :r modifier for tracepoints
+>
+> Signed-off-by: Stephane Eranian<eranian@google.com>
 > ---
->  fs/fuse/dir.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
 >
-> Index: linux-2.6/fs/fuse/dir.c
-> ===================================================================
-> --- linux-2.6.orig/fs/fuse/dir.c        2011-01-12 13:06:04.000000000 +0100
-> +++ linux-2.6/fs/fuse/dir.c     2011-01-12 13:07:30.000000000 +0100
-> @@ -158,9 +158,6 @@ static int fuse_dentry_revalidate(struct
->  {
->        struct inode *inode;
->
-> -       if (nd->flags & LOOKUP_RCU)
-> -               return -ECHILD;
-> -
->        inode = entry->d_inode;
->        if (inode && is_bad_inode(inode))
->                return 0;
+> diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+> index abd4b84..29e7ffd 100644
+> --- a/tools/perf/builtin-sched.c
+> +++ b/tools/perf/builtin-sched.c
+> @@ -1843,15 +1843,15 @@ static const char *record_args[] = {
+>          "-f",
+>          "-m", "1024",
+>          "-c", "1",
+> -       "-e", "sched:sched_switch:r",
+> -       "-e", "sched:sched_stat_wait:r",
+> -       "-e", "sched:sched_stat_sleep:r",
+> -       "-e", "sched:sched_stat_iowait:r",
+> -       "-e", "sched:sched_stat_runtime:r",
+> -       "-e", "sched:sched_process_exit:r",
+> -       "-e", "sched:sched_process_fork:r",
+> -       "-e", "sched:sched_wakeup:r",
+> -       "-e", "sched:sched_migrate_task:r",
+> +       "-e", "sched:sched_switch",
+> +       "-e", "sched:sched_stat_wait",
+> +       "-e", "sched:sched_stat_sleep",
+> +       "-e", "sched:sched_stat_iowait",
+> +       "-e", "sched:sched_stat_runtime",
+> +       "-e", "sched:sched_process_exit",
+> +       "-e", "sched:sched_process_fork",
+> +       "-e", "sched:sched_wakeup",
+> +       "-e", "sched:sched_migrate_task",
+>   };
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Now it can be the case that entry->d_inode is not stable -- it can
-go away or even flip between inodes in the case of concurrent
-unlink/creat activity. And you may be using a different inode than
-the namei path walk is using!
-
-This isn't as scary as it sounds actually, because any such changes
-do get detected and the path walk restarted in that case.
-
-You might be OK becuse you do test for NULL (although it really
-wants an ACCESS_ONCE() so it doesn't load a NULL or different
-inodes, but that's quite theoretical).
-
-But this is a little unfriendly for filesystems, and I do want to impress
-the rule to not touch ->d_parent or ->d_inode in rcu walk mode
-(just to avoid any surprises).
-
-So what I have done in such cases is to update the API to provide
-what the callers want. In this case, we could consider adding an
-inode parameter to .d_revalidate, which callers can be sure matches
-the inode used by vfs, and will not change.
-
-Aside from that detail, the changes seem good. Thanks for looking
-at it.
-
-
-> @@ -177,6 +174,9 @@ static int fuse_dentry_revalidate(struct
->                if (!inode)
->                        return 0;
->
-> +               if (nd->flags & LOOKUP_RCU)
-> +                       return -ECHILD;
-> +
->                fc = get_fuse_conn(inode);
->                req = fuse_get_req(fc);
->                if (IS_ERR(req))
->
