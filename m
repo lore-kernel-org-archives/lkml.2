@@ -1,114 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932797Ab1AMKmz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 05:42:55 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56415 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756190Ab1AMKmu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 05:42:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=WICWMR55Ij1yh9R4/lQVNJ7UoS5t/JH+vnqH8JZKlHASDHtUf4ooHF5OhrG2FN410T
-         KFSe1ALi6dStd46gtU+5ZwBViAKXoVhojEOrbg8eJTsGYDfbZ0YRFYxWzCOUvEPCvK63
-         zF8jBW4Ae/1YEaPaGeojbyaADHEat2oZ8TI70=
-Date: Thu, 13 Jan 2011 11:42:40 +0100
-From: Tejun Heo <tj@kernel.org>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Jens Axboe <axboe@kernel.dk>, "Theodore Ts'o" <tytso@mit.edu>,
-        Neil Brown <neilb@suse.de>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        Jan Kara <jack@suse.cz>, Mike Snitzer <snitzer@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <cmm@us.ibm.com>,
-        linux-ext4@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Josef Bacik <josef@redhat.com>
-Subject: Re: [PATCH v7.1] block: Coordinate flush requests
-Message-ID: <20110113104240.GA30719@htj.dyndns.org>
-References: <20110113025646.GB27381@tux1.beaverton.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110113025646.GB27381@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932916Ab1AMKm7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 05:42:59 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:42468 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756220Ab1AMKm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 05:42:56 -0500
+Date: Thu, 13 Jan 2011 21:42:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: clearcache (Was: Re: [git pull] vfs pile 1)
+Message-Id: <20110113214239.1b23b523.sfr@canb.auug.org.au>
+In-Reply-To: <20110113085547.GA7414@infradead.org>
+References: <20110113053554.GQ19804@ZenIV.linux.org.uk>
+	<20110113172557.c016ec51.sfr@canb.auug.org.au>
+	<20110113085547.GA7414@infradead.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__13_Jan_2011_21_42_39_+1100_zm0reTM_EycFAd8I"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Darrick.
+--Signature=_Thu__13_Jan_2011_21_42_39_+1100_zm0reTM_EycFAd8I
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Jan 12, 2011 at 06:56:46PM -0800, Darrick J. Wong wrote:
-> On certain types of storage hardware, flushing the write cache takes a
-> considerable amount of time.  Typically, these are simple storage systems with
-> write cache enabled and no battery to save that cache during a power failure.
-> When we encounter a system with many I/O threads that try to flush the cache,
-> performance is suboptimal because each of those threads issues its own flush
-> command to the drive instead of trying to coordinate the flushes, thereby
-> wasting execution time.
-> 
-> Instead of each thread initiating its own flush, we now try to detect the
-> situation where multiple threads are issuing flush requests.  The first thread
-> to enter blkdev_issue_flush becomes the owner of the flush, and all threads
-> that enter blkdev_issue_flush before the flush finishes are queued up to wait
-> for the next flush.  When that first flush finishes, one of those sleeping
-> threads is woken up to perform the next flush and then wake up the other
-> threads which are asleep waiting for the second flush to finish.
+Hi Christoph,
 
-Nice work.  :-)
+On Thu, 13 Jan 2011 03:55:47 -0500 Christoph Hellwig <hch@infradead.org> wr=
+ote:
+>
+> How did cleancache end up in linux-next again?
 
->  block/blk-flush.c     |  137 +++++++++++++++++++++++++++++++++++++++++--------
->  block/genhd.c         |   12 ++++
->  include/linux/genhd.h |   15 +++++
->  3 files changed, 143 insertions(+), 21 deletions(-)
-> 
-> diff --git a/block/blk-flush.c b/block/blk-flush.c
-> index 2402a34..d6c9931 100644
-> --- a/block/blk-flush.c
-> +++ b/block/blk-flush.c
-> @@ -201,6 +201,60 @@ static void bio_end_flush(struct bio *bio, int err)
->  	bio_put(bio);
->  }
->  
-> +static int blkdev_issue_flush_now(struct block_device *bdev,
-> +		gfp_t gfp_mask, sector_t *error_sector)
-> +{
-> +	DECLARE_COMPLETION_ONSTACK(wait);
-> +	struct bio *bio;
-> +	int ret = 0;
-> +
-> +	bio = bio_alloc(gfp_mask, 0);
-> +	bio->bi_end_io = bio_end_flush;
-> +	bio->bi_bdev = bdev;
-> +	bio->bi_private = &wait;
-> +
-> +	bio_get(bio);
-> +	submit_bio(WRITE_FLUSH, bio);
-> +	wait_for_completion(&wait);
-> +
-> +	/*
-> +	 * The driver must store the error location in ->bi_sector, if
-> +	 * it supports it. For non-stacked drivers, this should be
-> +	 * copied from blk_rq_pos(rq).
-> +	 */
-> +	if (error_sector)
-> +		*error_sector = bio->bi_sector;
-> +
-> +	if (!bio_flagged(bio, BIO_UPTODATE))
-> +		ret = -EIO;
-> +
-> +	bio_put(bio);
-> +	return ret;
-> +}
+Um, I asked after the last merge window (on November 17, cc'ing you, Al
+and Linus) and the only reply I got was from Dan saying that he was
+hoping to work more on it with some chance of being ready for 2.6.38 ...
 
-But wouldn't it be better to implement this directly in the flush
-machinary instead of as blkdev_issue_flush() wrapper?  We have all the
-information at the request queue level so we can easily detect whether
-flushes can be merged or not and whether something is issued by
-blkdev_issue_flush() or by directly submitting bio wouldn't matter at
-all.  Am I missing something?
+So, let me ask again:
 
-Thanks.
+"I didn't really follow the discussion at Kernel Summit, but there seemed
+to be some question as to whether the cleancache stuff will be merged or
+not.  It missed 2.6.37 (obviously), but my question now is do I keep in
+in linux-next in the hope that it will be merged in 2.6.38?  Or is that
+not going to happen?"
 
--- 
-tejun
+(The cleancache tree has not changed since October 9 last year.)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__13_Jan_2011_21_42_39_+1100_zm0reTM_EycFAd8I
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNLtcfAAoJEDMEi1NhKgbsCvYH/3vnF5d5PVq125QOEfcmeRuB
+fYBc+fvDw4TcQKtfLg8qjnixhlESJHiMhEjFrebkkmdKOlAD9dzj8S/CXLmhEhJ2
+YGv1i6twQcFZkB3yxb2WEN+NW2KDJRM5cZE1IrAHr8ONjHV0lQW2U0Oa6zSH8tdW
+yJL3Ex/RGFmVmMI1oEQ8tcN6S15PpRoysJOrefHxJgNUM6ZWOZos+H9nTz08YoUX
+y3CCOgn+oVuV8yDD8hcboH2u97/P1gDUv226j4OrDz+KG1t/9qWHwo4iFxcGUoH4
+PPLUtWIrGvT2CbkQbyZebRI0bJq9ponEpSjqF8bbVH7Xb46hp0QC05sSAlg2FaM=
+=xzaW
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__13_Jan_2011_21_42_39_+1100_zm0reTM_EycFAd8I--
