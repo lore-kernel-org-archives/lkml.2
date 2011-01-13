@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933653Ab1AMUiV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 15:38:21 -0500
-Received: from thunk.org ([69.25.196.29]:52601 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752092Ab1AMUiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 15:38:14 -0500
-Date: Thu, 13 Jan 2011 15:38:09 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: "Luis R. Rodriguez" <mcgrof@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Power plug off / on - EXT4-fs (sda1): re-mounted. Opts:
- errors=remount-ro,commit=600
-Message-ID: <20110113203809.GB31800@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Jason Wessel <jason.wessel@windriver.com>,
-	"Luis R. Rodriguez" <mcgrof@gmail.com>,
-	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <AANLkTinC=i24FaOtB3srbCUROza1V2TQ0zxNMq+QH+mj@mail.gmail.com>
- <B48664E0-16B7-49A5-AE50-1C3DA751DC2C@mit.edu>
- <4D2F5EFE.6060407@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D2F5EFE.6060407@windriver.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1757205Ab1AMUit (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 15:38:49 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:17948 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756950Ab1AMUio (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 15:38:44 -0500
+Subject: [GIT PULL] AVR32 update for 2.6.38
+From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: AVR32 Linux Kernel <kernel@avr32linux.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Atmel Corporation
+Date: Thu, 13 Jan 2011 21:02:26 +0100
+Message-ID: <1294948946.26709.8.camel@hcegtvedt>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 Jan 2011 20:02:27.0825 (UTC) FILETIME=[CD9E2E10:01CBB35C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 02:22:22PM -0600, Jason Wessel wrote:
-> 
-> That is interesting indeed.  While I am running a substantially
-> older kernel ( 2.6.35-24-generic #42-Ubuntu 10.10 ).  I was seeing a
-> consistent problem where if you pulled the power cord while the
-> system was under heavy I/O load, you could no longer run sync.  The
-> jbd2 process just kept on running forever continuously.  Shutdown
-> was impossible to because vfs unmount blocked (hold power key for 4+
-> seconds...).
+Hi Linus,
 
-Yeah, there were two separate bugs that have been addressed recently;
-both were in the generic VFS and writeback code.  One was a fix to do
-more efficient forced writeouts at umount time.
+Please pull
 
-The other was a fix so that if new dirty pages are continuously being
-created (by having processes always writing more pages, those dastards :-),
-to make sync stop by only having it write the pages that were dirty
-at the time when the sync was initiated.
+  git://git.kernel.org/pub/scm/linux/kernel/git/egtvedt/avr32-2.6.git for-linus
 
-					- Ted
+to receive the following updates for 2.6.38.
+
+Hans-Christian Egtvedt (4):
+      avr32: disable kprobes for all default configurations
+      avr32: use syscall prototypes from asm-generic instead of arch
+      avr32: make architecture sys_clone prototype match asm-generic prototype
+      avr32: update default configuration files for Atmel boards
+
+John Stultz (1):
+      avr32: Convert to clocksource_register_hz
+
+Vasiliy Kulikov (1):
+      avr32: boards: setup: use IS_ERR() instead of NULL check
+
+ arch/avr32/boards/atngw100/setup.c                 |    2 +-
+ arch/avr32/boards/atstk1000/atstk1002.c            |    2 +-
+ arch/avr32/boards/favr-32/setup.c                  |    2 +-
+ arch/avr32/boards/hammerhead/setup.c               |    2 +-
+ arch/avr32/boards/merisc/setup.c                   |    2 +-
+ arch/avr32/boards/mimc200/setup.c                  |    2 +-
+ arch/avr32/configs/atngw100_defconfig              |   23 ++---
+ arch/avr32/configs/atngw100_evklcd100_defconfig    |   17 ++--
+ arch/avr32/configs/atngw100_evklcd101_defconfig    |   17 ++--
+ arch/avr32/configs/atngw100mkii_defconfig          |   22 ++--
+ .../avr32/configs/atngw100mkii_evklcd100_defconfig |   17 ++--
+ .../avr32/configs/atngw100mkii_evklcd101_defconfig |   17 ++--
+ arch/avr32/configs/atstk1002_defconfig             |   25 ++---
+ arch/avr32/configs/atstk1003_defconfig             |   41 ++++----
+ arch/avr32/configs/atstk1004_defconfig             |  109 +++++++++++++++++---
+ arch/avr32/configs/atstk1006_defconfig             |   23 ++---
+ arch/avr32/configs/favr-32_defconfig               |    2 +-
+ arch/avr32/configs/hammerhead_defconfig            |    2 +-
+ arch/avr32/include/asm/syscalls.h                  |   14 ---
+ arch/avr32/kernel/process.c                        |    9 +-
+ arch/avr32/kernel/time.c                           |    5 +-
+ 21 files changed, 206 insertions(+), 149 deletions(-)
+
+-- 
+Best regards,
+Hans-Christian Egtvedt
+
