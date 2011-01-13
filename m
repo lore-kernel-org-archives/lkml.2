@@ -1,61 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756686Ab1AMM1d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 07:27:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18373 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756629Ab1AMM1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 07:27:31 -0500
-Date: Thu, 13 Jan 2011 13:27:01 +0100
-From: Karel Zak <kzak@redhat.com>
-To: Milan Broz <mbroz@redhat.com>
-Cc: device-mapper development <dm-devel@redhat.com>, Tejun Heo <tj@kernel.org>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [dm-devel] linux-next - WARNING: at fs/block_dev.c:824
-	bd_link_disk_holder+0x92/0x1ac()
-Message-ID: <20110113122701.GG16523@nb.net.home>
-References: <16069.1294853673@localhost> <4D2E4611.90002@redhat.com> <4D2E6129.8000700@ce.jp.nec.com> <20110113110640.GC30719@htj.dyndns.org> <4D2EE156.1050006@redhat.com>
+	id S1756700Ab1AMMbJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 07:31:09 -0500
+Received: from mtagate5.uk.ibm.com ([194.196.100.165]:55365 "EHLO
+	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756627Ab1AMMbH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 07:31:07 -0500
+Date: Thu, 13 Jan 2011 13:31:02 +0100 (CET)
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+X-X-Sender: sebott@localhost6.localdomain6
+To: Bojan Smojver <bojan@rexursive.com>
+cc: tytso@mit.edu, linux-pm@lists.linux-foundation.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [linux-pm] Oops while going into hibernate
+In-Reply-To: <6009472527.979427505@rexursive.com>
+Message-ID: <alpine.LFD.2.02.1101131329070.1899@localhost6.localdomain6>
+References: <alpine.LFD.2.02.1101121443230.1900@localhost6.localdomain6> <20110112162655.GA13496@thunk.org> <alpine.LFD.2.02.1101121755400.2011@localhost6.localdomain6> <20110112172646.GB13496@thunk.org> <alpine.LFD.2.02.1101121934060.2011@localhost6.localdomain6>
+ <A01161D0-D08F-4522-A546-90057B2E1F2A@mit.edu> <alpine.LFD.2.02.1101131238480.1899@localhost6.localdomain6> <6009472527.979427505@rexursive.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+Organization: "IBM Deutschland Research & Development GmbH Vorsitzender des Aufsichtsrats: Martin Jetter Geschaeftsfuehrung: Dirk Wittkopp Sitz der Gesellschaft: Boeblingen Registergericht: Amtsgericht Stuttgart, HRB 243294"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D2EE156.1050006@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 12:26:14PM +0100, Milan Broz wrote:
-> On 01/13/2011 12:06 PM, Tejun Heo wrote:
-> > Urgh... gees, so there actually was a user using all that cruft.
-> > Sorry about the breakage, I'll see how multiple symlinks can be
-> > restored.  I'm curious why this was added at all tho.  What was the
-> > rationalization?  It's not like two subsystems can share the same
-> > block device so marking the currently owning subsystem should have
-> > been enough at the block layer.  There is no reason for block devices
-> > to present information which is of no use to itself.  All that's
-> > necessary is "this is taken by dm or md for more information, query
-> > those".  dm and md need their own conf/representation layer anyway.
+
+On Thu, 13 Jan 2011, Bojan Smojver wrote:
+> > Yes. I basically did a
+> > echo reboot > /sys/power/disk
+> > for i in {1..5} ;do echo disk > /sys/power/state ;done
+> > and it crashed very early in the second suspend.
 > 
-> I am not sure if I understand it correctly, but multiple holders/slaves
-> links are very useful in userspace to present device dependences.
-> 
-> We just implemented lsblk command in util-linux which simple prints
-> tree according to these links, so dependendes of DM/MD/whatever devices
-> can be printed without using any system specific callbacks, just using
-> sysfs. See http://karelzak.blogspot.com/2010/12/lsblk8.html
+> Was compression on or off?
+compression was on. I did a re-test with hibernate=nocompress
+..but with the same result
 
- We also use holders/slaves links in libblkid to evaluate dependencies
- between devices (since 2008).
-
-> Whatever changes are needed, please keep this functionality, it can be useful.
-
- Definitely.
-
-    Karel
-
--- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+Regards,
+Sebastian
