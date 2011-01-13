@@ -1,50 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140Ab1AMFuT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 00:50:19 -0500
-Received: from h1047321.serverkompetenz.net ([85.214.67.163]:49763 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334Ab1AMFuR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 00:50:17 -0500
-Message-ID: <4D2E928D.9030208@ahsoftware.de>
-Date: Thu, 13 Jan 2011 06:50:05 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1751784Ab1AMF4X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 00:56:23 -0500
+Received: from thunk.org ([69.25.196.29]:50318 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750912Ab1AMF4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 00:56:18 -0500
+Date: Thu, 13 Jan 2011 00:56:12 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Cc: "linux-ext4@vger.kernel.org development" <linux-ext4@vger.kernel.org>,
+        LKML Kernel <linux-kernel@vger.kernel.org>,
+        pm list <linux-pm@lists.linux-foundation.org>
+Subject: Re: Oops while going into hibernate
+Message-ID: <20110113055612.GF13496@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Sebastian Ott <sebott@linux.vnet.ibm.com>,
+	"linux-ext4@vger.kernel.org development" <linux-ext4@vger.kernel.org>,
+	LKML Kernel <linux-kernel@vger.kernel.org>,
+	pm list <linux-pm@lists.linux-foundation.org>
+References: <alpine.LFD.2.02.1101121443230.1900@localhost6.localdomain6>
+ <20110112162655.GA13496@thunk.org>
+ <alpine.LFD.2.02.1101121755400.2011@localhost6.localdomain6>
+ <20110112172646.GB13496@thunk.org>
+ <alpine.LFD.2.02.1101121934060.2011@localhost6.localdomain6>
+ <A01161D0-D08F-4522-A546-90057B2E1F2A@mit.edu>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Nicolas Pitre <nico@fluxnic.net>, Dave Martin <dave.martin@linaro.org>,
-        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: ARM: relocation out of range (when loading a module)
-References: <4D2B4CE4.9080309@ahsoftware.de> <alpine.LFD.2.00.1101101722470.9794@xanadu.home> <4D2BFA08.5030104@ahsoftware.de> <AANLkTinR7ih2ZMRMbXmSvoh-rS3LVv+UCvd0rRH_ESzf@mail.gmail.com> <20110111155930.GH11039@n2100.arm.linux.org.uk> <4D2D1942.4050905@ahsoftware.de> <AANLkTimAFp7ORrJLw2d8-i5pK0MZGTyAN5kmRR37ky1v@mail.gmail.com> <alpine.LFD.2.00.1101121314470.25498@xanadu.home> <20110112184258.GH11039@n2100.arm.linux.org.uk>
-In-Reply-To: <20110112184258.GH11039@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A01161D0-D08F-4522-A546-90057B2E1F2A@mit.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Jan 12, 2011 at 07:44:17PM -0500, Theodore Tso wrote:
+> 
+> You said originally that the oops was happening "while going into
+> hibernation right after resuming with...".  So that means you did a
+> successful suspend/resume, and then the second suspend caused the
+> oops?  It looks like somehow the pages were left marked as dirty, so
+> the writeback daemons attempted writing back a page to an inode
+> which was never opened read/write (and in fact as a text page for
+> /usr/bin/killall, was mapped read/only).  Given that ext4
+> initializes jinode only when the file is opened read/write, the fact
+> that it is null, and the fact that it makes no sense that a program
+> would be modifying /usr/bin/killall as part of a suspend/resume, it
+> looks very much like we just unmasked a software suspend bug....
 
-Am 12.01.2011 19:42, schrieb Russell King - ARM Linux:
+... and I think I've found the problem.  In kernel/power/block_io.c,
+in the function submit(), we see this:
 
-> As the overall feeling at the time was "don't use large initrds" it's
-> something I've never really cared about - and I'm still of the opinion
-> that 16MB of compressed initrd/initramfs is rather silly.
+	if (bio_chain == NULL) {
+		submit_bio(bio_rw, bio);
+		wait_on_page_locked(page);
+		if (rw == READ)
+			bio_set_pages_dirty(bio); <====
+		bio_put(bio);
 
-Hmm, sorry, I have to disagree. ;)
-E.g. 12MB out of the 16MB in the initramfs I've used are modules.
-I've also created some larger initramfs wich included  X11 and such, and 
-I find it very convenient to use the initramfs to include a rootfs in 
-the the kernel and so only have to handle one file for all. E.g. just 
-load the kernel with the included rootfs via tftp and you are done.
+So when we read in pages from the software suspend device, we end up
+marking the pages as dirty(!).  I'm guessing this was caused by a copy
+and paste from the only other caller of bio_set_pages_dirty(), which
+is the direct I/O code, which needs this when we are writing from a
+file into a user-provided buffer.  But for restoring from a software
+suspend case, this is as far as I can tell wholely inappropriate.
 
-Sure this can all be done using an external initrd, but that is much 
-less comfortable to use.
+This causes needless writes, which is bad even before ext4 unmasked
+the problem.  I will send a patch under separate cover; could you give
+it a try and see if it fixes your crash?
 
-At least I like that feature since it is available and won't miss it now. ;)
+I will look into bulletproofing ext4 by adding checks for this case
+and printing warning messages, but neverthe less, I think the root
+cause is actually in the hibernation's bio code.
 
-Regards,
-
-Alexander
+					- Ted
