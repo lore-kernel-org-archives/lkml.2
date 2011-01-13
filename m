@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757111Ab1AMRGf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 12:06:35 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:34860 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756796Ab1AMRGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 12:06:33 -0500
-Date: Thu, 13 Jan 2011 18:06:17 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Kirill Smelkov <kirr@mns.spb.ru>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [GIT PULL 0/2] perf/urgent fixes and an disabled by default
- improvement
-Message-ID: <20110113170617.GA12595@elte.hu>
-References: <1294927876-23553-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294927876-23553-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1757223Ab1AMRH2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 12:07:28 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:12607 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756571Ab1AMRH1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 12:07:27 -0500
+Date: Thu, 13 Jan 2011 18:07:18 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Seth Heasley <seth.heasley@intel.com>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2.6.37] i2c-i801: SMBus patch for Intel DH89xxCC
+ DeviceIDs
+Message-ID: <20110113180718.38614150@endymion.delvare>
+In-Reply-To: <201101101309.03439.seth.heasley@intel.com>
+References: <201101101309.03439.seth.heasley@intel.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+hi Seth,
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+On Mon, 10 Jan 2011 13:09:03 -0800, Seth Heasley wrote:
+> This patch adds the SMBus Controller DeviceIDs for the Intel DH89xxCC PCH.
+> 
+> Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+> 
+> --- linux-2.6.37/drivers/i2c/busses/i2c-i801.c.orig	2011-01-04 16:50:19.000000000 -0800
+> +++ linux-2.6.37/drivers/i2c/busses/i2c-i801.c	2011-01-06 14:26:20.000000000 -0800
+> @@ -44,11 +44,12 @@
+>    ICH10                 0x3a30     32     hard     yes     yes     yes
+>    ICH10                 0x3a60     32     hard     yes     yes     yes
+>    5/3400 Series (PCH)   0x3b30     32     hard     yes     yes     yes
+> -  Cougar Point (PCH)    0x1c22     32     hard     yes     yes     yes
+> +  6 Series (PCH)        0x1c22     32     hard     yes     yes     yes
+>    Patsburg (PCH)        0x1d22     32     hard     yes     yes     yes
+>    Patsburg (PCH) IDF    0x1d70     32     hard     yes     yes     yes
+>    Patsburg (PCH) IDF    0x1d71     32     hard     yes     yes     yes
+>    Patsburg (PCH) IDF    0x1d72     32     hard     yes     yes     yes
+> +  DH89xxCC (PCH)        0x2330     32     hard     yes     yes     yes
+>  
+>    Features supported by this driver:
+>    Software PEC                     no
+> @@ -620,6 +621,7 @@
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF0) },
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF1) },
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF2) },
+> +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS) },
+>  	{ 0, }
+>  };
+>  
+> --- linux-2.6.37/drivers/i2c/busses/Kconfig.orig	2011-01-04 16:50:19.000000000 -0800
+> +++ linux-2.6.37/drivers/i2c/busses/Kconfig	2011-01-06 14:25:56.000000000 -0800
+> @@ -98,8 +98,9 @@
+>  	    EP80579 (Tolapai)
+>  	    ICH10
+>  	    5/3400 Series (PCH)
+> -	    Cougar Point (PCH)
+> +	    6 Series (PCH)
+>  	    Patsburg (PCH)
+> +	    DH89xxCC (PCH)
+>  
+>  	  This driver can also be built as a module.  If so, the module
+>  	  will be called i2c-i801.
+> --- linux-2.6.37/Documentation/i2c/busses/i2c-i801.orig	2011-01-04 16:50:19.000000000 -0800
+> +++ linux-2.6.37/Documentation/i2c/busses/i2c-i801	2011-01-06 14:27:03.000000000 -0800
+> @@ -16,8 +16,9 @@
+>    * Intel EP80579 (Tolapai)
+>    * Intel 82801JI (ICH10)
+>    * Intel 5/3400 Series (PCH)
+> -  * Intel Cougar Point (PCH)
+> +  * Intel 6 Series (PCH)
+>    * Intel Patsburg (PCH)
+> +  * Intel DH89xxCC (PCH)
+>     Datasheets: Publicly available at the Intel website
+>  
+>  On Intel Patsburg and later chipsets, both the normal host SMBus controller
 
-> Hi Ingo,
-> 
->         Please consider pulling from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/urgent
-> 
-> 	The 'nodelay' mode for perf record is disabled by default and allows
-> potentially many 'perf script' usecases that need to receive events as they
-> happen, with no latency.
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Kirill Smelkov (1):
->   perf record: Add "nodelay" mode, disabled by default
-> 
-> Stephane Eranian (1):
->   perf sched: Fix list of events, dropping unsupported ':r' modifier
-> 
->  tools/perf/Documentation/perf-record.txt |    3 +++
->  tools/perf/builtin-record.c              |    8 ++++++++
->  tools/perf/builtin-sched.c               |   18 +++++++++---------
->  3 files changed, 20 insertions(+), 9 deletions(-)
+Looks good, consider it applied, but obviously I can't push it until
+the pci_ids.h changes have been merged.
 
-Pulled, thanks a lot Arnaldo!
-
-	Ingo
+-- 
+Jean Delvare
