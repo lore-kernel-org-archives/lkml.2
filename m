@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932956Ab1AMPrW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 10:47:22 -0500
-Received: from mga11.intel.com ([192.55.52.93]:30997 "EHLO mga11.intel.com"
+	id S1757214Ab1AMPtW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 10:49:22 -0500
+Received: from thoth.sbs.de ([192.35.17.2]:18161 "EHLO thoth.sbs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757170Ab1AMPrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 10:47:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,317,1291622400"; 
-   d="scan'208";a="877210311"
-Message-ID: <4D2F1E84.2000200@linux.intel.com>
-Date: Thu, 13 Jan 2011 07:47:16 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S1756751Ab1AMPtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 10:49:18 -0500
+Message-ID: <4D2F1ED1.1020001@siemens.com>
+Date: Thu, 13 Jan 2011 16:48:33 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-To: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
-CC: peterz@infradead.org, lenb@kernel.org, suresh.b.siddha@intel.com,
-        benh@kernel.crashing.org, venki@google.com, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC V2 3/3] cpuidle: default idle driver for x86
-References: <20110113125113.11174.78525.stgit@tringupt.in.ibm.com> <20110113125223.11174.60425.stgit@tringupt.in.ibm.com>
-In-Reply-To: <20110113125223.11174.60425.stgit@tringupt.in.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Joerg Roedel <joerg.roedel@amd.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH 1/2] KVM: SVM: Fix NMI path when NMI happens in guest
+ mode
+References: <1294932178-26866-1-git-send-email-joerg.roedel@amd.com> <1294932178-26866-2-git-send-email-joerg.roedel@amd.com>
+In-Reply-To: <1294932178-26866-2-git-send-email-joerg.roedel@amd.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/13/2011 4:52 AM, Trinabh Gupta wrote:
-> This default cpuidle_driver parses idle= boot parameters, selects
-> the optimal idle routine for x86 during bootup and registers with
-> cpuidle. The code for idle routines and the selection of optimal
-> routine is moved from arch/x86/kernel/process.c . At module_init this
-> default driver is registered with cpuidle and for non ACPI platforms
-> it continues to be used. For ACPI platforms, acpi_idle driver would
-> replace this driver at a later point in time during bootup. Until
-> this driver's registration, architecture supplied compile time
-> default idle routine is called from within cpuidle_idle_call().
->
+Am 13.01.2011 16:22, Joerg Roedel wrote:
+> The vmexit path on SVM needs to restore the KERNEL_GS_BASE
+> MSR in order to savely execute the NMI handler. Otherwise a
+> pending NMI can occur after the STGI instruction and crash
+> the machine.
+> This makes it impossible to run perf and kvm in parallel on
+> an AMD machine in a stable way.
+> 
+> Cc: stable@kernel.org
+> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> ---
+>  arch/x86/kvm/svm.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+> index 25bd1bc..8b9bc72 100644
+> --- a/arch/x86/kvm/svm.c
+> +++ b/arch/x86/kvm/svm.c
+> @@ -3637,6 +3637,7 @@ static void svm_vcpu_run(struct kvm_vcpu *vcpu)
+>  
+>  #ifdef CONFIG_X86_64
+>  	wrmsrl(MSR_GS_BASE, svm->host.gs_base);
+> +	wrmsrl(MSR_KERNEL_GS_BASE, current->thread.gs);
+>  #else
+>  	loadsegment(fs, svm->host.fs);
+>  #endif
 
+Doesn't this also obsolete the wrmsrl(MSR_KERNEL_GS_BASE) in svm_vcpu_put?
 
-I like the general approach, but I'd think making idle drivers modular 
-is going one step too far....
-that looks like waaay overkill to me (also since most of the actual idle 
-handlers are so small
-that the overhead of the exported symbols alone is bigger than the idle 
-handlers)
+Jan
 
+-- 
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
