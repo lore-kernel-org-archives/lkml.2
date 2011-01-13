@@ -1,96 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933109Ab1AMRxU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 12:53:20 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45601 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933073Ab1AMRxS convert rfc822-to-8bit (ORCPT
+	id S933120Ab1AMRy1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 12:54:27 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:34345 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933091Ab1AMRyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 12:53:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Vveg1C9oh2n/Uzg3hCnnjp7dqZjS31AvWbX1/jiTvPFvnVmrxNLAkP5nNfWxcl2pBB
-         Vw9YJITuUEW+xTaCUhduV6ScmeYnkPH3hqhDxsQHhHF0cpOlecguAdaBfT8o2jUrIPGS
-         sPdzqXxnzXYiqaqlNjAIxi8LeKWhxZd+Dldqc=
+	Thu, 13 Jan 2011 12:54:25 -0500
+Date: Thu, 13 Jan 2011 18:55:31 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Manoj Iyer <manoj.iyer@canonical.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Matthew Garrett <mjg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
+Subject: Re: [PATCH] Quirk to fix suspend/resume on Lenovo Edge 11,13,14,15
+Message-ID: <20110113175531.GD2006@aftab>
+References: <1294934542-2411-1-git-send-email-manoj.iyer@canonical.com>
+ <1294934542-2411-2-git-send-email-manoj.iyer@canonical.com>
+ <20110113164616.GB21289@srcf.ucam.org>
+ <alpine.LFD.2.00.1101131808450.2678@localhost6.localdomain6>
+ <20110113172205.GA30866@kryptos.osrc.amd.com>
+ <AANLkTinw23rtSERxAy6G_cu5=rvQeEzxvf3snsUOZE+z@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4D2F3723.9040405@gmail.com>
-References: <4D2DE824.10205@gmail.com>
-	<4D2DEC0A.70608@gmail.com>
-	<20110112105608.793787b2@s6510>
-	<4D2F3723.9040405@gmail.com>
-Date: Thu, 13 Jan 2011 12:53:17 -0500
-Message-ID: <AANLkTinhnaF3-scKnTOC5rF68+5otVW2NG3v1y80L0k6@mail.gmail.com>
-Subject: Re: [PATCH v1 2/2] TCPCT API sockopt update to draft -03
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: William Allen Simpson <william.allen.simpson@gmail.com>
-Cc: Stephen Hemminger <shemminger@vyatta.com>,
-        Linux Kernel Developers <linux-kernel@vger.kernel.org>,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinw23rtSERxAy6G_cu5=rvQeEzxvf3snsUOZE+z@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jan 13, 2011 at 12:33:27PM -0500, Manoj Iyer wrote:
+> Borislav,
+> 
+> Please see below lspci and dmesg output from AMD based ThinkPad Edge 11.
+> 
+> lspci
+> =====
+> 00:00.0 Host bridge [0600]: Advanced Micro Devices [AMD] RS780 Host
+> Bridge Alternate [1022:9601]
+>         Subsystem: Lenovo Device [17aa:21ca]
+>         Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
+> Stepping- SERR- FastB2B- DisINTx-
+>         Status: Cap+ 66MHz+ UDF- FastB2B- ParErr- DEVSEL=medium >TAbort-
+> <TAbort- <MAbort+ >SERR- <PERR- INTx-
+>         Latency: 0
+>         Capabilities: [c4] HyperTransport: Slave or Primary Interface
+>                 Command: BaseUnitID=0 UnitCnt=12 MastHost- DefDir- DUL-
+>                 Link Control 0: CFlE- CST- CFE- <LkFail- Init+ EOC- TXO- <CRCErr=0
+> IsocEn- LSEn+ ExtCTL- 64b-
+>                 Link Config 0: MLWI=16bit DwFcIn- MLWO=16bit DwFcOut- LWI=16bit
+> DwFcInEn- LWO=16bit DwFcOutEn-
+>                 Link Control 1: CFlE- CST- CFE- <LkFail+ Init- EOC+ TXO+ <CRCErr=0
+> IsocEn- LSEn- ExtCTL- 64b-
+>                 Link Config 1: MLWI=8bit DwFcIn- MLWO=8bit DwFcOut- LWI=8bit
+> DwFcInEn- LWO=8bit DwFcOutEn-
+>                 Revision ID: 3.00
+>                 Link Frequency 0: 1.0GHz
+>                 Link Error 0: <Prot- <Ovfl- <EOC- CTLTm-
+>                 Link Frequency Capability 0: 200MHz+ 300MHz- 400MHz+ 500MHz- 600MHz+
+> 800MHz+ 1.0GHz+ 1.2GHz- 1.4GHz- 1.6GHz- Vend-
+>                 Feature Capability: IsocFC- LDTSTOP+ CRCTM- ECTLT- 64bA- UIDRD-
+>                 Link Frequency 1: 200MHz
+>                 Link Error 1: <Prot- <Ovfl- <EOC- CTLTm-
+>                 Link Frequency Capability 1: 200MHz- 300MHz- 400MHz- 500MHz- 600MHz-
+> 800MHz- 1.0GHz- 1.2GHz- 1.4GHz- 1.6GHz- Vend-
+>                 Error Handling: PFlE- OFlE- PFE- OFE- EOCFE- RFE- CRCFE- SERRFE- CF-
+> RE- PNFE- ONFE- EOCNFE- RNFE- CRCNFE- SERRNFE-
+>                 Prefetchable memory behind bridge Upper: 00-00
+>                 Bus Number: 00
+>         Capabilities: [54] HyperTransport: UnitID Clumping
+>         Capabilities: [40] HyperTransport: Retry Mode
+>         Capabilities: [9c] HyperTransport: #1a
+>         Capabilities: [f8] HyperTransport: #1c
+> 
+> 00:01.0 PCI bridge [0604]: Advanced Micro Devices [AMD] RS780 PCI to
+> PCI bridge (int gfx) [1022:9602] (prog-if 00 [Normal decode])
+>         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
+> Stepping- SERR- FastB2B- DisINTx-
+>         Status: Cap+ 66MHz+ UDF- FastB2B- ParErr- DEVSEL=medium >TAbort-
+> <TAbort- <MAbort- >SERR- <PERR- INTx-
+>         Latency: 64
+>         Bus: primary=00, secondary=01, subordinate=01, sec-latency=64
+>         I/O behind bridge: 00009000-00009fff
+>         Memory behind bridge: d0400000-d05fffff
+>         Prefetchable memory behind bridge: 00000000c0000000-00000000cfffffff
+>         Secondary status: 66MHz+ FastB2B- ParErr- DEVSEL=medium >TAbort-
+> <TAbort- <MAbort+ <SERR- <PERR-
+>         BridgeCtl: Parity- SERR- NoISA+ VGA+ MAbort- >Reset- FastB2B-
+>                 PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+>         Capabilities: [44] HyperTransport: MSI Mapping Enable+ Fixed+
+>         Capabilities: [b0] Subsystem: Advanced Micro Devices [AMD] RS780 PCI
+> to PCI bridge (int gfx) [1022:9602]
+>         Kernel modules: shpchp
+> 
+> 00:04.0 PCI bridge [0604]: Advanced Micro Devices [AMD] RS780 PCI to
+> PCI bridge (PCIE port 0) [1022:9604] (prog-if 00 [Normal decode])
+>         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
+> Stepping- SERR- FastB2B- DisINTx+
+>         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+> <TAbort- <MAbort- >SERR- <PERR- INTx-
+>         Latency: 0, Cache Line Size: 32 bytes
+>         Bus: primary=00, secondary=02, subordinate=07, sec-latency=0
+>         I/O behind bridge: 0000a000-0000bfff
+>         Memory behind bridge: 80000000-800fffff
+>         Prefetchable memory behind bridge: 00000000d0000000-00000000d03fffff
+>         Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort-
+> <TAbort- <MAbort- <SERR- <PERR-
+>         BridgeCtl: Parity- SERR- NoISA+ VGA- MAbort- >Reset- FastB2B-
+>                 PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+>         Capabilities: [50] Power Management version 3
+>                 Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+>                 Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+>         Capabilities: [58] Express (v2) Root Port (Slot+), MSI 00
+>                 DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <64ns, L1 <1us
+>                         ExtTag+ RBE+ FLReset-
+>                 DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+>                         RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+> 
 
-On Thu, Jan 13, 2011 at 12:32 PM, William Allen Simpson
-<william.allen.simpson@gmail.com> wrote:
-> On 1/12/11 1:56 PM, Stephen Hemminger wrote:
->>
->> On Wed, 12 Jan 2011 12:59:38 -0500
->> William Allen Simpson<william.allen.simpson@gmail.com>  wrote:
->>
->>> diff --git a/include/linux/tcp.h b/include/linux/tcp.h
->>> index e64f4c6..c8f4017 100644
->>> --- a/include/linux/tcp.h
->>> +++ b/include/linux/tcp.h
->>> @@ -185,22 +185,37 @@ struct tcp_md5sig {
->>>  #define TCP_COOKIE_PAIR_SIZE  (2*TCP_COOKIE_MAX)
->>>
->>>  /* Flags for both getsockopt and setsockopt */
->>> -#define TCP_COOKIE_IN_ALWAYS   (1<<  0)        /* Discard SYN without
->>> cookie */
->>> -#define TCP_COOKIE_OUT_NEVER   (1<<  1)        /* Prohibit outgoing
->>> cookies,
->>> +#define TCPCT_IN_ALWAYS                (1<<  0)        /* Discard SYN
->>> without cookie */
->>> +#define TCPCT_OUT_NEVER                (1<<  1)        /* Prohibit
->>> outgoing cookies,
->>
->> You end up changing values in kernel userspace API in a way
->> that is incompatible with older applications. This is not acceptable.
->>
-> While I agree in principle and argued strongly against it, other
-> members of the research group (particularly the original project
-> sponsor) have over-ridden my concerns.  I'm sorry to inform you that
-> many/most participants don't care much about Linux.
->
-> Note that the *bits* are the same, and previously compiled programs
-> (that don't access more advanced features) should continue to run as
-> they have in the past.
->
-> Even though I'm not paid to work on Linux, I'm doing my best to give you
-> folks a quick heads up and provide code to rectify the very recent changes
-> that can be propagated back through the stable tree (to 2.6.33).
->
-> As always, what you actually do with my code is up to you....
->
-FWIW, what is the basis of this hunk ? The RFC text[0] seems to use
-the TCP_COOKIE_* naming, not TCPCT_.
+This doesn't look complete since it shows only 3 PCI devices. Can you do
 
-Thanks,
- - Arnaud
+lspci -vv >> lspci.out
 
-[0]: http://www.rfc-editor.org/authors/rfc6013.txt
+and attach the file instead since the mail client wraps the lines anyway.
 
---
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
