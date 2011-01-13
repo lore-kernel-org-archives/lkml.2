@@ -1,125 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932909Ab1AMKHo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 05:07:44 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:47686 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932880Ab1AMKHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 05:07:38 -0500
-Date: Thu, 13 Jan 2011 10:07:15 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, gerald.schaefer@de.ibm.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-ext4@vger.kernel.org,
-        "Ted Ts'o" <tytso@mit.edu>, Arun Bhanu <ab@arunbhanu.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [PATCH] mm: migration: Use rcu_dereference_protected when
-	dereferencing the radix tree slot during file page migration
-Message-ID: <20110113100714.GA9671@csn.ul.ie>
-References: <20101220152335.GR13914@csn.ul.ie> <20101220170146.GS13914@csn.ul.ie> <20110112232113.GI17328@linux.vnet.ibm.com>
+	id S1756402Ab1AMKSi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 05:18:38 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56826 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752749Ab1AMKSg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 05:18:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:user-agent:mime-version
+         :content-type;
+        b=aTXpEzGGUBjrc2Cqh4YoRnTi3JMr0bRUgru95X4xhV/ZNLdcXBIfRREBZ5+i7xaLcN
+         T9gcZgNXAikIXivRHcA0vd9crPzamNgHZEtpo4HatjkDHi+R/tX2IOm8wFSja91NTYDL
+         MKCJ4Qmuw2b6/H0yce0ePtOda0TwskNizHI3k=
+From: Franck Bui-Huu <vagabon.xyz@gmail.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [PATCH] perf-probe: rewrite find_lazy_match_lines() by using getline(3)
+Date: Thu, 13 Jan 2011 11:18:30 +0100
+Message-ID: <m3d3o185u1.fsf@gmail.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110112232113.GI17328@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 03:21:13PM -0800, Paul E. McKenney wrote:
-> On Mon, Dec 20, 2010 at 05:01:46PM +0000, Mel Gorman wrote:
-> > On Mon, Dec 20, 2010 at 03:23:36PM +0000, Mel Gorman wrote:
-> > > migrate_pages() -> unmap_and_move() only calls rcu_read_lock() for anonymous
-> > > pages, as introduced by git commit 989f89c57e6361e7d16fbd9572b5da7d313b073d.
-> > > The point of the RCU protection there is part of getting a stable reference
-> > > to anon_vma and is only held for anon pages as file pages are locked
-> > > which is sufficient protection against freeing.
-> > > 
-> > > However, while a file page's mapping is being migrated, the radix
-> > > tree is double checked to ensure it is the expected page. This uses
-> > > radix_tree_deref_slot() -> rcu_dereference() without the RCU lock held
-> > > triggering the following warning under CONFIG_PROVE_RCU.
-> > > 
-> > > [  173.674290] ===================================================
-> > > [  173.676016] [ INFO: suspicious rcu_dereference_check() usage. ]
-> > > [  173.676016] ---------------------------------------------------
-> > > [  173.676016] include/linux/radix-tree.h:145 invoked rcu_dereference_check() without protection!
-> > > [  173.676016]
-> > > [  173.676016] other info that might help us debug this:
-> > > [  173.676016]
-> > > [  173.676016]
-> > > [  173.676016] rcu_scheduler_active = 1, debug_locks = 0
-> > > [  173.676016] 1 lock held by hugeadm/2899:
-> > > [  173.676016]  #0:  (&(&inode->i_data.tree_lock)->rlock){..-.-.}, at: [<c10e3d2b>] migrate_page_move_mapping+0x40/0x1ab
-> > > [  173.676016]
-> > > [  173.676016] stack backtrace:
-> > > [  173.676016] Pid: 2899, comm: hugeadm Not tainted 2.6.37-rc5-autobuild
-> > > [  173.676016] Call Trace:
-> > > [  173.676016]  [<c128cc01>] ? printk+0x14/0x1b
-> > > [  173.676016]  [<c1063502>] lockdep_rcu_dereference+0x7d/0x86
-> > > [  173.676016]  [<c10e3db5>] migrate_page_move_mapping+0xca/0x1ab
-> > > [  173.676016]  [<c10e41ad>] migrate_page+0x23/0x39
-> > > [  173.676016]  [<c10e491b>] buffer_migrate_page+0x22/0x107
-> > > [  173.676016]  [<c10e48f9>] ? buffer_migrate_page+0x0/0x107
-> > > [  173.676016]  [<c10e425d>] move_to_new_page+0x9a/0x1ae
-> > > [  173.676016]  [<c10e47e6>] migrate_pages+0x1e7/0x2fa
-> > > 
-> > > This patch introduces radix_tree_deref_slot_protected() which calls
-> > > rcu_dereference_protected(). Users of it must pass in the mapping->tree_lock
-> > > that is protecting this dereference. Holding the tree lock protects against
-> > > parallel updaters of the radix tree meaning that rcu_dereference_protected
-> > > is allowable.
-> > > 
-> > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> > > ---
-> > >  include/linux/radix-tree.h |   17 +++++++++++++++++
-> > >  mm/migrate.c               |    4 ++--
-> > >  2 files changed, 19 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
-> > > index ab2baa5..a1f1672 100644
-> > > --- a/include/linux/radix-tree.h
-> > > +++ b/include/linux/radix-tree.h
-> > > @@ -146,6 +146,23 @@ static inline void *radix_tree_deref_slot(void **pslot)
-> > >  }
-> > >  
-> > >  /**
-> > > + * radix_tree_deref_slot_protected	- dereference a slot without RCU lock but with tree lock held
-> > > + * @pslot:	pointer to slot, returned by radix_tree_lookup_slot
-> > > + * Returns:	item that was stored in that slot with any direct pointer flag
-> > > + *		removed.
-> > > + *
-> > > + * Similar to radix_tree_deref_slot but only used during migration when a pages
-> > > + * mapping is being moved. The caller does not hold the RCU read lock but it
-> > > + * must hold the tree lock to prevent parallel updates.
-> > > + */
-> > > +static inline void *radix_tree_deref_slot_protected(void **pslot,
-> > > +							spinlock_t *treelock)
-> > > +{
-> > > +	BUG_ON(rcu_read_lock_held());
-> > 
-> > This was a bad idea. After some extended testing, it was obvious that
-> > this function can be called for swapcache pages with the RCU lock held.
-> > Paul, is it still permissible to use rcu_dereference_protected() or must
-> > the RCU read lock not be held?
-> 
-> Apologies for the late reply!
-> 
-> It is OK to call rcu_dereference_protected() with rcu_read_lock() held,
-> but -only- if updates are somehow blocked -- for example, the treelock
-> being held as below.
-> 
-> It is OK to have extra protection, at least in this case.  ;-)
-> 
+From: Franck Bui-Huu <fbuihuu@gmail.com>
 
-Thanks for the clarification Paul.
+Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
+---
+ tools/perf/util/probe-finder.c |   70 +++++++++++++++------------------------
+ 1 files changed, 27 insertions(+), 43 deletions(-)
 
-
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index ddf4d45..4221738 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -1092,51 +1092,38 @@ static int find_probe_point_by_line(struct probe_finder *pf)
+ static int find_lazy_match_lines(struct list_head *head,
+ 				 const char *fname, const char *pat)
+ {
+-	char *fbuf, *p1, *p2;
+-	int fd, line, nlines = -1;
+-	struct stat st;
+-
+-	fd = open(fname, O_RDONLY);
+-	if (fd < 0) {
+-		pr_warning("Failed to open %s: %s\n", fname, strerror(-fd));
++	FILE *fp;
++	char *line = NULL;
++	size_t line_len;
++	ssize_t len;
++	int count = 0, linenum = 1;
++
++	fp = fopen(fname, "r");
++	if (!fp) {
++		pr_warning("Failed to open %s: %s\n", fname, strerror(errno));
+ 		return -errno;
+ 	}
+ 
+-	if (fstat(fd, &st) < 0) {
+-		pr_warning("Failed to get the size of %s: %s\n",
+-			   fname, strerror(errno));
+-		nlines = -errno;
+-		goto out_close;
+-	}
+-
+-	nlines = -ENOMEM;
+-	fbuf = malloc(st.st_size + 2);
+-	if (fbuf == NULL)
+-		goto out_close;
+-	if (read(fd, fbuf, st.st_size) < 0) {
+-		pr_warning("Failed to read %s: %s\n", fname, strerror(errno));
+-		nlines = -errno;
+-		goto out_free_fbuf;
+-	}
+-	fbuf[st.st_size] = '\n';	/* Dummy line */
+-	fbuf[st.st_size + 1] = '\0';
+-	p1 = fbuf;
+-	line = 1;
+-	nlines = 0;
+-	while ((p2 = strchr(p1, '\n')) != NULL) {
+-		*p2 = '\0';
+-		if (strlazymatch(p1, pat)) {
+-			line_list__add_line(head, line);
+-			nlines++;
++	while ((len = getline(&line, &line_len, fp)) > 0) {
++
++		if (line[len - 1] == '\n')
++			line[len - 1] = '\0';
++
++		if (strlazymatch(line, pat)) {
++			line_list__add_line(head, linenum);
++			count++;
+ 		}
+-		line++;
+-		p1 = p2 + 1;
+-	}
+-out_free_fbuf:
+-	free(fbuf);
+-out_close:
+-	close(fd);
+-	return nlines;
++		linenum++;
++	}
++
++	if (ferror(fp))
++		count = -errno;
++	free(line);
++	fclose(fp);
++
++	if (count == 0)
++		pr_debug("No matched lines found in %s.\n", fname);
++	return count;
+ }
+ 
+ /* Find probe points from lazy pattern  */
+@@ -1154,10 +1141,7 @@ static int find_probe_point_lazy(Dwarf_Die *sp_die, struct probe_finder *pf)
+ 		/* Matching lazy line pattern */
+ 		ret = find_lazy_match_lines(&pf->lcache, pf->fname,
+ 					    pf->pev->point.lazy_line);
+-		if (ret == 0) {
+-			pr_debug("No matched lines found in %s.\n", pf->fname);
+-			return 0;
+-		} else if (ret < 0)
++		if (ret <= 0)
+ 			return ret;
+ 	}
+ 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+1.7.3.2
