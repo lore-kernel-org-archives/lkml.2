@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756711Ab1AMMqD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 07:46:03 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:43562 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756629Ab1AMMqA (ORCPT
+	id S1755442Ab1AMMvY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 07:51:24 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:39099 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158Ab1AMMvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 07:46:00 -0500
-From: Simon Xu <xu.simon@oracle.com>
-To: tytso@mit.edu, adilger.kernel@dilger.ca
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Simon Xu <xu.simon@oracle.com>
-Subject: [PATCH] ext4: reduce redundant check of '*options'
-Date: Thu, 13 Jan 2011 20:45:32 +0800
-Message-Id: <1294922732-2385-1-git-send-email-xu.simon@oracle.com>
-X-Mailer: git-send-email 1.7.3.5
+	Thu, 13 Jan 2011 07:51:23 -0500
+X-AuditID: b753bd60-9d951ba00000044b-27-4d2ef546625e
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [PATCH -perf/perf/core 0/6] Perf probe update (support inline
+	call-site/--funcs/--filter)
+To: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Franck Bui-Huu <fbuihuu@gmail.com>, linux-kernel@vger.kernel.org,
+        2nddept-manager@sdl.hitachi.co.jp
+Date: Thu, 13 Jan 2011 21:45:48 +0900
+Message-ID: <20110113124548.22426.11201.stgit@ltc236.sdl.hitachi.co.jp>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need to check whether '*options' equals to ',' twice.
+Hi,
 
-Signed-off-by: Simon Xu <xu.simon@oracle.com>
+This series enhances line-finder to find inline-function
+call site, and adds two features; showing available
+functions (Originally came from Srikar's uprobe series)
+and function/variable filtering support.
+
+Thank you,
+
 ---
- fs/ext4/super.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 29c80f6..5d8c173 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -1350,13 +1350,13 @@ static ext4_fsblk_t get_sb_block(void **data)
- 	options += 3;
- 	/* TODO: use simple_strtoll with >32bit ext4 */
- 	sb_block = simple_strtoul(options, &options, 0);
--	if (*options && *options != ',') {
-+	if (*options == ',') {
-+		options++;
-+	else if (*options) {
- 		printk(KERN_ERR "EXT4-fs: Invalid sb specification: %s\n",
- 		       (char *) *data);
- 		return 1;
- 	}
--	if (*options == ',')
--		options++;
- 	*data = (void *) options;
- 
- 	return sb_block;
+Masami Hiramatsu (6):
+      perf probe: Add filters support for available functions
+      perf probe: Add variable filter support
+      perf: Add strfilter for general purpose string filter
+      perf probe: Add --funcs to show available functions in symtab
+      perf probe: Enable to put probe inline function call site
+      perf probe: Introduce lines walker interface
+
+
+ tools/perf/Documentation/perf-probe.txt |   15 +
+ tools/perf/Makefile                     |    2 
+ tools/perf/builtin-probe.c              |   70 ++++++
+ tools/perf/util/probe-event.c           |  137 +++++++++---
+ tools/perf/util/probe-event.h           |    4 
+ tools/perf/util/probe-finder.c          |  361 ++++++++++++++++++-------------
+ tools/perf/util/strfilter.c             |  185 ++++++++++++++++
+ tools/perf/util/strfilter.h             |   36 +++
+ 8 files changed, 626 insertions(+), 184 deletions(-)
+ create mode 100644 tools/perf/util/strfilter.c
+ create mode 100644 tools/perf/util/strfilter.h
+
 -- 
-1.7.3.5
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
