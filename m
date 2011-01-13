@@ -1,60 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933126Ab1AMRzV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 12:55:21 -0500
-Received: from casper.infradead.org ([85.118.1.10]:55295 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933081Ab1AMRzT (ORCPT
+	id S933133Ab1AMR40 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 12:56:26 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:43528 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933081Ab1AMR4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 12:55:19 -0500
-Date: Thu, 13 Jan 2011 17:55:14 +0000 (GMT)
-From: James Simmons <jsimmons@infradead.org>
-To: Anca Emanuel <anca.emanuel@gmail.com>
-cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Dave Airlie <airlied@linux.ie>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [git pull] drm for rc1
-In-Reply-To: <alpine.LFD.2.00.1101121538470.8212@casper.infradead.org>
-Message-ID: <alpine.LFD.2.00.1101131752190.311@casper.infradead.org>
-References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie> <4D2CE5C8.60601@de.ibm.com> <AANLkTimr4WX3Ay8vC23MKOM+dOcpV+Ca5rg_gcei38nk@mail.gmail.com> <4D2D8ED0.6080807@de.ibm.com> <AANLkTik4h=4o8JEwfd+=CFVb4NgkwaEwxmM6n_+sDj3K@mail.gmail.com>
- <alpine.LFD.2.00.1101121344070.8212@casper.infradead.org> <AANLkTimdnYHWfBE1nB+2EDRouO7_FoRByVboMYw8WaHB@mail.gmail.com> <AANLkTik=HYzW8--_W+qxi8S9QbAkf9ZZy=uLyaTeV+PC@mail.gmail.com> <alpine.LFD.2.00.1101121538470.8212@casper.infradead.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Thu, 13 Jan 2011 12:56:24 -0500
+Date: Thu, 13 Jan 2011 17:56:18 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Manoj Iyer <manoj.iyer@canonical.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Quirk to fix suspend/resume on Lenovo Edge 11,13,14,15
+Message-ID: <20110113175618.GA23497@srcf.ucam.org>
+References: <1294934542-2411-1-git-send-email-manoj.iyer@canonical.com> <1294934542-2411-2-git-send-email-manoj.iyer@canonical.com> <20110113164616.GB21289@srcf.ucam.org> <alpine.LFD.2.00.1101131808450.2678@localhost6.localdomain6> <20110113173921.GA22823@srcf.ucam.org> <AANLkTimk_Y4Q_cxg1SJxZiTT2gT9ywr5UGmsqPqwmeCy@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimk_Y4Q_cxg1SJxZiTT2gT9ywr5UGmsqPqwmeCy@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 13, 2011 at 11:53:46AM -0600, Manoj Iyer wrote:
+>    early-quirks.c ignores all rev ids greater than 14. I thought the fix
+>    should be more dmi based rather than rev I'd based.
 
-> > > With your patch, I can boot the system. But nouveau is not loaded.
-> > > dmesg attached.
-> > >
-> > 
-> > Forget to mention: the revert makes first steps of boot look the same
-> > (change the resolution of the text)
-> > but with your patch, I see a big ugly ununtu logo, (I think that is
-> > because nouveau is not loaded)
+If we're seeing the same problem with later revisions then it's either a 
+bug in the quirk or it's something different that has similar behaviour. 
+What's the actual failure mode?
 
-Okay, can you do one more experiment for me. Since you already reverted 
-the patch to get it booting I like to ask you to add 
-
-drm_fb_helper_fill_fix(info, fb_helper->fb);
-
-back into the drm_fb_helper_set_par function in drm_fb_helper.c. You have 
-something like this:
-
-        mutex_lock(&dev->mode_config.mutex);
-        for (i = 0; i < fb_helper->crtc_count; i++) {
-                crtc = fb_helper->crtc_info[i].mode_set.crtc;
-                ret = crtc->funcs->set_config(&fb_helper->crtc_info[i].mode_set);
-                if (ret) {
-                        mutex_unlock(&dev->mode_config.mutex);
-                        return ret;
-                }
-                drm_fb_helper_fill_fix(info, fb_helper->fb);
-        }
-        mutex_unlock(&dev->mode_config.mutex);
- 
-Tell me if your system is still usable after that. Thanks for testing for 
-me.
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
