@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498Ab1AMAOo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 19:14:44 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53633 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756354Ab1AMAOl (ORCPT
+	id S1756555Ab1AMAOx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 19:14:53 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:59748 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756294Ab1AMAOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 19:14:41 -0500
-Date: Wed, 12 Jan 2011 16:12:17 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: lkml <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH v2] module: fix build when DEBUGP is defined
-Message-Id: <20110112161217.0da1d290.randy.dunlap@oracle.com>
-In-Reply-To: <201101130832.16210.rusty@rustcorp.com.au>
-References: <20110111172153.e43e03b8.randy.dunlap@oracle.com>
-	<201101121918.21079.rusty@rustcorp.com.au>
-	<4D2DD629.1080701@oracle.com>
-	<201101130832.16210.rusty@rustcorp.com.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Wed, 12 Jan 2011 19:14:46 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 13 Jan 2011 09:08:30 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-mm@kvack.org, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Pavel Emelianov <xemul@openvz.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: Remove two memset calls in mm/memcontrol.c by using
+ the zalloc variants of alloc functions
+Message-Id: <20110113090830.3bca41ee.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <alpine.LNX.2.00.1101122135070.22297@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1101122135070.22297@swampdragon.chaosbits.net>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -27,41 +30,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Wed, 12 Jan 2011 21:39:59 +0100 (CET)
+Jesper Juhl <jj@chaosbits.net> wrote:
 
-Fix module loader build when DEBUGP is defined.
-Fixes build error & warning:
+> We can avoid two calls to memset() in mm/memcontrol.c by using 
+> kzalloc_node(), kzalloc & vzalloc().
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-(on x86_64:)
-kernel/module.c:1910: error: 'name' undeclared (first use in this function)
-kernel/module.c:2567: warning: format '%lx' expects type 'long unsigned int', but argument 2 has type 'Elf64_Addr'
-(or on i386:)
-kernel/module.c:2567: warning: format '%lx' expects type 'long unsigned int', but argument 2 has type 'Elf32_Addr'
+Thank you.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
----
- kernel/module.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
---- linux-next-20110111.orig/kernel/module.c
-+++ linux-next-20110111/kernel/module.c
-@@ -1907,7 +1907,7 @@ static void layout_sections(struct modul
- 			    || strstarts(sname, ".init"))
- 				continue;
- 			s->sh_entsize = get_offset(mod, &mod->core_size, s, i);
--			DEBUGP("\t%s\n", name);
-+			DEBUGP("\t%s\n", sname);
- 		}
- 		switch (m) {
- 		case 0: /* executable */
-@@ -2564,7 +2564,8 @@ static int move_module(struct module *mo
- 		/* Update sh_addr to point to copy in image. */
- 		shdr->sh_addr = (unsigned long)dest;
- 		DEBUGP("\t0x%lx %s\n",
--		       shdr->sh_addr, info->secstrings + shdr->sh_name);
-+		       (unsigned long)shdr->sh_addr,
-+		       info->secstrings + shdr->sh_name);
- 	}
- 
- 	return 0;
