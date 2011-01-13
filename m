@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757204Ab1AMPkA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 10:40:00 -0500
-Received: from mail.perches.com ([173.55.12.10]:3131 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757154Ab1AMPj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 10:39:58 -0500
-Subject: Re: [PATCH] net: add Faraday FTMAC100 10/100 Ethernet driver
-From: Joe Perches <joe@perches.com>
-To: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Po-Yu Chuang <ratbert@faraday-tech.com>
-In-Reply-To: <1294919372-1904-1-git-send-email-ratbert.chuang@gmail.com>
-References: <1294919372-1904-1-git-send-email-ratbert.chuang@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 Jan 2011 07:39:57 -0800
-Message-ID: <1294933197.4114.85.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S932880Ab1AMPlf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 10:41:35 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41323 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757061Ab1AMPld (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 10:41:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=ljzLUBMNve1vwXq3Ymj7Qq5aNz7kAsxrWDR2E8mg+8zk0NOXxjHuHw29G6QWDwCz9R
+         /6nHe//MdpPdJSQO48Vf3wro/pRIYQLr2jraqypqvdQZdYRCd1XIzI61FIq+hhqQUvJ6
+         9/+SIGvWDqfOzKD0W13nHSFS2sYZntS1r6Ceg=
+Message-ID: <4D2F1CD7.5090100@gmail.com>
+Date: Thu, 13 Jan 2011 16:40:07 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Valdis.Kletnieks@vt.edu
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, autofs@linux.kernel.org,
+        npiggin@kernel.dk, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: WARNING: at fs/dcache.c:1359 d_set_d_op [was: mmotm 2011-01-06-15-41
+ uploaded]
+References: <201101070014.p070Egpo023959@imap1.linux-foundation.org>            <4D2ECB56.4070802@gmail.com> <12521.1294932824@localhost>
+In-Reply-To: <12521.1294932824@localhost>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-13 at 19:49 +0800, Po-Yu Chuang wrote:
-> From: Po-Yu Chuang <ratbert@faraday-tech.com>
+On 01/13/2011 04:33 PM, Valdis.Kletnieks@vt.edu wrote:
+> On Thu, 13 Jan 2011 10:52:22 +0100, Jiri Slaby said:
+>> On 01/07/2011 12:41 AM, akpm@linux-foundation.org wrote:
+>>> The mm-of-the-moment snapshot 2011-01-06-15-41 has been uploaded to
+>>
+>> Hi, after some uptime and several suspend/resume cycles, I got:
+>> WARNING: at fs/dcache.c:1359 d_set_d_op+0x82/0xb0()
+>> Hardware name: To Be Filled By O.E.M.
+>> Modules linked in: dvb_usb_af9015 tda18271 af9013 dvb_usb dvb_core
+>> Pid: 3474, comm: automount Tainted: G        W   2.6.37-mm1_64+ #1344
+>> Call Trace:
+>>  [<ffffffff8106bd2a>] ? warn_slowpath_common+0x7a/0xb0
+>>  [<ffffffff8106bd75>] ? warn_slowpath_null+0x15/0x20
+>>  [<ffffffff81125a32>] ? d_set_d_op+0x82/0xb0
+>>  [<ffffffff8120d829>] ? autofs4_dir_mkdir+0x169/0x180
 > 
-> FTMAC100 Ethernet Media Access Controller supports 10/100 Mbps and
-> MII.  This driver has been working on some ARM/NDS32 SoC including
-> Faraday A320 and Andes AG101.
+> Wow. So it wasn't just configfs that trips over this one.  I'm now hoping that
+> Al audited all the pseudo file systems for this...
 
-A couple of trivial comments not already mentioned by others.
+Well, CCing Al.
 
-> diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-[]
-> @@ -2014,6 +2014,15 @@ config BCM63XX_ENET
->  	  This driver supports the ethernet MACs in the Broadcom 63xx
->  	  MIPS chipset family (BCM63XX).
->  
-> +config FTMAC100
-> +	tristate "Faraday FTMAC100 10/100 Ethernet support"
-> +	depends on ARM
-> +	select MII
-> +	help
-> +	  This driver supports the FTMAC100 Ethernet controller from
-> +	  Faraday. It is used on Faraday A320, Andes AG101, AG101P
-> +	  and some other ARM/NDS32 SoC's.
-> +
+I don't see any recent change in fs/autofs4 in:
+http://git.kernel.org/?p=linux/kernel/git/viro/vfs-2.6.git;a=history;f=fs/autofs4;hb=refs/heads/for-next
 
-ARM specific net drivers are for now in drivers/net/arm/
-Perhaps it's better to locate these files there?
+So maybe not all?
 
-> diff --git a/drivers/net/ftmac100.c b/drivers/net/ftmac100.c
-[]
-> +static int ftmac100_rx_packet_error(struct ftmac100 *priv,
-> +		struct ftmac100_rxdes *rxdes)
-> +{
-> +	struct device *dev = &priv->netdev->dev;
-> +	int error = 0;
-> +
-> +	if (unlikely(ftmac100_rxdes_rx_error(rxdes))) {
-> +		if (printk_ratelimit())
-> +			dev_info(dev, "rx err\n");
-
-There are many printk_ratelimit() tests.
-
-It's better to use net_ratelimit() or a local ratelimit_state
-so there's less possible suppression of other subsystem
-messages.
-
-
+regards,
+-- 
+js
