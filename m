@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756920Ab1AMTmK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 14:42:10 -0500
-Received: from www.tglx.de ([62.245.132.106]:43208 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756629Ab1AMTmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 14:42:08 -0500
-Date: Thu, 13 Jan 2011 20:41:51 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Borislav Petkov <bp@amd64.org>
-cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Manoj Iyer <manoj.iyer@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
-Subject: Re: [PATCH] Quirk to fix suspend/resume on Lenovo Edge 11,13,14,15
-In-Reply-To: <20110113192825.GC30866@kryptos.osrc.amd.com>
-Message-ID: <alpine.LFD.2.00.1101132032350.2678@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1101131808450.2678@localhost6.localdomain6> <20110113172205.GA30866@kryptos.osrc.amd.com> <AANLkTinw23rtSERxAy6G_cu5=rvQeEzxvf3snsUOZE+z@mail.gmail.com> <20110113175531.GD2006@aftab> <AANLkTikDoRMoQjtN03eMoeacwottEixrFqcF8nJZWgKy@mail.gmail.com>
- <20110113183025.GE2006@aftab> <alpine.LFD.2.00.1101131946560.2678@localhost6.localdomain6> <20110113185807.GA24720@srcf.ucam.org> <20110113190700.GB30866@kryptos.osrc.amd.com> <alpine.LFD.2.00.1101132012140.2678@localhost6.localdomain6>
- <20110113192825.GC30866@kryptos.osrc.amd.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757058Ab1AMTrK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 14:47:10 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49128 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757005Ab1AMTrI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 14:47:08 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4D2F51B5.6060105@fusionio.com>
+References: <4D2F03F2.4000707@fusionio.com> <AANLkTi=t9FQaUhnXCk51bjZO82F8OGDDd9H5HyMPRPQd@mail.gmail.com>
+ <4D2F51B5.6060105@fusionio.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 13 Jan 2011 11:40:09 -0800
+Message-ID: <AANLkTi=PDEyJNN3aKhHWzCKrTfzib-VCdvgD7auoWuzD@mail.gmail.com>
+Subject: Re: [GIT PULL] block driver updates for 2.6.38
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jan 2011, Borislav Petkov wrote:
+On Thu, Jan 13, 2011 at 11:25 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+> On 2011-01-13 20:00, Linus Torvalds wrote:
+>> On Thu, Jan 13, 2011 at 5:53 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+>>>
+>>> Pekka Enberg (1):
+>>>      floppy: replace NO_GEOM macro with a function
+>>
+>> Hmm. When I see work on floppy.c, I end up wondering what happened to
+>> the work by Stephen to use a single threaded workqueue?
+>>
+>> That was reported to fix a KVM oops at some point to to avoiding the
+>> whole race between interrupts/workqueues, but it seems to have dropped
+>> off everybody's radar. I don't think anybody ever tested it on real
+>> hardware, but I'm still wondering..
+>
+> Not sure, I don't recall seeing it.
 
-> On Thu, Jan 13, 2011 at 08:13:42PM +0100, Thomas Gleixner wrote:
-> > > Well, Andreas did boot with 'hpet=verbose' on an affected machine here
-> > > and did a suspend/resume and the hpet config registers looked ok before
-> > > suspend and after resume. It might be that the HPET is temporarily
-> > > "insane" while resume lasts but we don't have any hard facts confirming
-> > 
-> > And you have no explanation at all why applying the irq pin routing
-> > quirk makes HPETs temporal insanity go away magically :)
-> 
-> But after the HPET counter wraps around, the machine is alive again.
-> Which means that the IRQ0 pin2 override is only temporarily needed after
-> resume... Strange.
+It was on lkml a few months ago. google finds it with "floppy: use
+single threaded workqueue" if you don't have your own archives.
 
-Thinking more about it:
+Eg:
 
-Case 1:	IRQ0 pin2 override applied
+   http://kerneltrap.org/mailarchive/linux-kernel/2010/6/11/4582074
 
-     Resume hangs until HPET wraps around and issues another interrupt
+and similar.
 
-Case 2: IRQ0 pin2 override ignored via quirk
-
-     Resume just works
-
-So the question is what is restored _AFTER_ the HPET is reprogrammed
-in the resume path ?
-
-The HPET reprogramming happens via timekeeping_resume() which is in
-the sysdev part of resume. ioapic, apic, iommus etc. are also resumed
-via the sysdev_class. So what makes sure that the ordering of these is
-correct?
-
-AFAICT nothing :)
-
-We need information about the resume order of sysdev_class and the
-difference of the pin routings in the quirk non/quirk case.
-
-Thanks,
-
-	tglx
+                        Linus
