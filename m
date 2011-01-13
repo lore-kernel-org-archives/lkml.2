@@ -1,66 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932878Ab1AMKmB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 05:42:01 -0500
-Received: from mga02.intel.com ([134.134.136.20]:13147 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932421Ab1AMKl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 05:41:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,317,1291622400"; 
-   d="scan'208";a="592542878"
-Date: Thu, 13 Jan 2011 18:41:54 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/35] writeback: safety margin for bdi stat error
-Message-ID: <20110113104154.GA5309@localhost>
-References: <20101213144646.341970461@intel.com>
- <20101213150326.604451840@intel.com>
- <20110112215949.GD14260@quack.suse.cz>
- <20110113041440.GC7840@localhost>
- <20110113103834.GA5008@quack.suse.cz>
+	id S932797Ab1AMKmz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 05:42:55 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56415 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756190Ab1AMKmu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 05:42:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=WICWMR55Ij1yh9R4/lQVNJ7UoS5t/JH+vnqH8JZKlHASDHtUf4ooHF5OhrG2FN410T
+         KFSe1ALi6dStd46gtU+5ZwBViAKXoVhojEOrbg8eJTsGYDfbZ0YRFYxWzCOUvEPCvK63
+         zF8jBW4Ae/1YEaPaGeojbyaADHEat2oZ8TI70=
+Date: Thu, 13 Jan 2011 11:42:40 +0100
+From: Tejun Heo <tj@kernel.org>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Jens Axboe <axboe@kernel.dk>, "Theodore Ts'o" <tytso@mit.edu>,
+        Neil Brown <neilb@suse.de>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        Jan Kara <jack@suse.cz>, Mike Snitzer <snitzer@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <cmm@us.ibm.com>,
+        linux-ext4@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Josef Bacik <josef@redhat.com>
+Subject: Re: [PATCH v7.1] block: Coordinate flush requests
+Message-ID: <20110113104240.GA30719@htj.dyndns.org>
+References: <20110113025646.GB27381@tux1.beaverton.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110113103834.GA5008@quack.suse.cz>
+In-Reply-To: <20110113025646.GB27381@tux1.beaverton.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 06:38:34PM +0800, Jan Kara wrote:
-> On Thu 13-01-11 12:14:40, Wu Fengguang wrote:
-> > On Thu, Jan 13, 2011 at 05:59:49AM +0800, Jan Kara wrote:
-> > > > So the root cause is, the bdi_dirty is well under the global nr_dirty
-> > > > due to accounting errors. This can be fixed by using bdi_stat_sum(),
-> > >   So which statistic had the big error? I'd just like to understand
-> > > this (and how come your patch improves the situation)...
-> > 
-> > bdi_stat_error() = nr_cpu_ids * BDI_STAT_BATCH
-> >                  = 8 * (8*(1+ilog2(8)))
-> >                  = 8 * 8 * 4
-> >                  = 256 pages
-> >                  = 1MB
->   Yes, my question was more aiming at on which statistics the error happens
-> so that it causes problems for you. Thinking about it now I suppose you
-> observe that bdi_nr_writeback + bdi_nr_reclaimable < bdi_thresh but in fact
-> the number of pages is higher than bdi_thresh because of accounting errors.
-> And thus we are able to reach global dirty limit and the tasks get
-> throttled heavily. Am I right?
+Hello, Darrick.
 
-Yes, exactly.
+On Wed, Jan 12, 2011 at 06:56:46PM -0800, Darrick J. Wong wrote:
+> On certain types of storage hardware, flushing the write cache takes a
+> considerable amount of time.  Typically, these are simple storage systems with
+> write cache enabled and no battery to save that cache during a power failure.
+> When we encounter a system with many I/O threads that try to flush the cache,
+> performance is suboptimal because each of those threads issues its own flush
+> command to the drive instead of trying to coordinate the flushes, thereby
+> wasting execution time.
+> 
+> Instead of each thread initiating its own flush, we now try to detect the
+> situation where multiple threads are issuing flush requests.  The first thread
+> to enter blkdev_issue_flush becomes the owner of the flush, and all threads
+> that enter blkdev_issue_flush before the flush finishes are queued up to wait
+> for the next flush.  When that first flush finishes, one of those sleeping
+> threads is woken up to perform the next flush and then wake up the other
+> threads which are asleep waiting for the second flush to finish.
 
-Thanks,
-Fengguang
+Nice work.  :-)
+
+>  block/blk-flush.c     |  137 +++++++++++++++++++++++++++++++++++++++++--------
+>  block/genhd.c         |   12 ++++
+>  include/linux/genhd.h |   15 +++++
+>  3 files changed, 143 insertions(+), 21 deletions(-)
+> 
+> diff --git a/block/blk-flush.c b/block/blk-flush.c
+> index 2402a34..d6c9931 100644
+> --- a/block/blk-flush.c
+> +++ b/block/blk-flush.c
+> @@ -201,6 +201,60 @@ static void bio_end_flush(struct bio *bio, int err)
+>  	bio_put(bio);
+>  }
+>  
+> +static int blkdev_issue_flush_now(struct block_device *bdev,
+> +		gfp_t gfp_mask, sector_t *error_sector)
+> +{
+> +	DECLARE_COMPLETION_ONSTACK(wait);
+> +	struct bio *bio;
+> +	int ret = 0;
+> +
+> +	bio = bio_alloc(gfp_mask, 0);
+> +	bio->bi_end_io = bio_end_flush;
+> +	bio->bi_bdev = bdev;
+> +	bio->bi_private = &wait;
+> +
+> +	bio_get(bio);
+> +	submit_bio(WRITE_FLUSH, bio);
+> +	wait_for_completion(&wait);
+> +
+> +	/*
+> +	 * The driver must store the error location in ->bi_sector, if
+> +	 * it supports it. For non-stacked drivers, this should be
+> +	 * copied from blk_rq_pos(rq).
+> +	 */
+> +	if (error_sector)
+> +		*error_sector = bio->bi_sector;
+> +
+> +	if (!bio_flagged(bio, BIO_UPTODATE))
+> +		ret = -EIO;
+> +
+> +	bio_put(bio);
+> +	return ret;
+> +}
+
+But wouldn't it be better to implement this directly in the flush
+machinary instead of as blkdev_issue_flush() wrapper?  We have all the
+information at the request queue level so we can easily detect whether
+flushes can be merged or not and whether something is issued by
+blkdev_issue_flush() or by directly submitting bio wouldn't matter at
+all.  Am I missing something?
+
+Thanks.
+
+-- 
+tejun
