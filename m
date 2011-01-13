@@ -1,212 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755658Ab1AMEAZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 23:00:25 -0500
-Received: from vms173019pub.verizon.net ([206.46.173.19]:34423 "EHLO
-	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845Ab1AMEAX (ORCPT
+	id S1755645Ab1AMEE7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 23:04:59 -0500
+Received: from mta2.srv.hcvlny.cv.net ([167.206.4.197]:58326 "EHLO
+	mta2.srv.hcvlny.cv.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab1AMEE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 23:00:23 -0500
-From: Len Brown <lenb@kernel.org>
-To: linux-pm@lists.linux-foundation.org
-Cc: Thomas Renninger <trenn@suse.de>,
-        Robert Schoene <robert.schoene@tu-dresden.de>,
-        Jean Pihet <j-pihet@ti.com>, Arjan van de Ven <arjan@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-perf-users@vger.kernel.org, linux-omap@vger.kernel.org,
-        Len Brown <len.brown@intel.com>
-Subject: [PATCH 12/12] cpuidle/x86/perf: fix power:cpu_idle double end events
- and throw cpu_idle events from the cpuidle layer
-Date: Wed, 12 Jan 2011 22:40:02 -0500
-Message-id: <f77cfe4ea21760268c0277fa3e4b02dfd2a2c2f4.1294889887.git.len.brown@intel.com>
-X-Mailer: git-send-email 1.7.4.rc1.14.g7fad99
-In-reply-to: <1294890002-6274-1-git-send-email-lenb@kernel.org>
-References: <1294890002-6274-1-git-send-email-lenb@kernel.org>
-In-reply-to: <ddbd550d503c9cdefcd6674a0ef168d57d3f0917.1294889887.git.len.brown@intel.com>
-References: <ddbd550d503c9cdefcd6674a0ef168d57d3f0917.1294889887.git.len.brown@intel.com>
-X-Patchwork-Hint: ignore
+	Wed, 12 Jan 2011 23:04:56 -0500
+X-Greylist: delayed 1800 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Jan 2011 23:04:56 EST
+Date: Wed, 12 Jan 2011 22:34:53 -0500
+From: Vadim Tsozik <vtsozik@optimum.net>
+Subject: Re: [PATCH 1/1] mct_u232: added _ioctl,
+ _msr_to_icount and _get_icount functions
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Pete Zaitcev <zaitcev@redhat.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Vadim Tsozik <tsozik@yahoo.com>
+Message-id: <201101130334.p0D3Yrw8003929@localhost6.localdomain6>
+Content-transfer-encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Renninger <trenn@suse.de>
+Greg,
+I apologize for the delay. Finally I managed to configure sendmail to relay messages via my ISP SMTP (Too bad, my ISP blocks port 25).
+Below you can find patch generated off your 2.6.37-rc7 usb branch. Please let me know if you have any problem to apply this.
+Thank you in advance,
+ Vadim.
 
-Currently intel_idle and acpi_idle driver show double cpu_idle "exit idle"
-events -> this patch fixes it and makes cpu_idle events throwing less complex.
+Added mct_u232_ioctl (implements TIOCMIWAIT command), mct_u232_get_icount (implements TIOCGICOUNT command) and mct_u232_msr_to_icount functions. MCT U232 P9 is one of a few usb to serail adapters which converts USB +/-5v voltage levels to COM +/-15 voltages. So it can also power COM interfaced devices. This makes it very usable for legacy COM interfaced data-acquisition hardware. I tested new implementation with AWARE Electronics RM-60 radiation meter, which sends pulse via RNG COM line whenever new particle is registered.
 
-It also introduces cpu_idle events for all architectures which use
-the cpuidle subsystem, namely:
-  - arch/arm/mach-at91/cpuidle.c
-  - arch/arm/mach-davinci/cpuidle.c
-  - arch/arm/mach-kirkwood/cpuidle.c
-  - arch/arm/mach-omap2/cpuidle34xx.c
-  - arch/drivers/acpi/processor_idle.c (for all cases, not only mwait)
-  - arch/x86/kernel/process.c (did throw events before, but was a mess)
-  - drivers/idle/intel_idle.c (did throw events before)
+Signed-off-by: Vadim Tsozik <tsozik@yahoo.com>
 
-Convention should be:
-Fire cpu_idle events inside the current pm_idle function (not somewhere
-down the the callee tree) to keep things easy.
-
-Current possible pm_idle functions in X86:
-c1e_idle, poll_idle, cpuidle_idle_call, mwait_idle, default_idle
--> this is really easy is now.
-
-This affects userspace:
-The type field of the cpu_idle power event can now direclty get
-mapped to:
-/sys/devices/system/cpu/cpuX/cpuidle/stateX/{name,desc,usage,time,...}
-instead of throwing very CPU/mwait specific values.
-This change is not visible for the intel_idle driver.
-For the acpi_idle driver it should only be visible if the vendor
-misses out C-states in his BIOS.
-Another (perf timechart) patch reads out cpuidle info of cpu_idle
-events from:
-/sys/.../cpuidle/stateX/*, then the cpuidle events are mapped
-to the correct C-/cpuidle state again, even if e.g. vendors miss
-out C-states in their BIOS and for example only export C1 and C3.
--> everything is fine.
-
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-CC: Robert Schoene <robert.schoene@tu-dresden.de>
-CC: Jean Pihet <j-pihet@ti.com>
-CC: Arjan van de Ven <arjan@linux.intel.com>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: linux-pm@lists.linux-foundation.org
-CC: linux-acpi@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-CC: linux-perf-users@vger.kernel.org
-CC: linux-omap@vger.kernel.org
-Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- arch/x86/kernel/process.c    |    6 ++++--
- arch/x86/kernel/process_32.c |    4 ----
- arch/x86/kernel/process_64.c |    6 ------
- drivers/cpuidle/cpuidle.c    |   10 ++++++++--
- drivers/idle/intel_idle.c    |    2 --
- 5 files changed, 12 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 09c08a1..67e96e6 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -386,6 +386,8 @@ void default_idle(void)
- 		else
- 			local_irq_enable();
- 		current_thread_info()->status |= TS_POLLING;
-+		trace_power_end(smp_processor_id());
-+		trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
- 	} else {
- 		local_irq_enable();
- 		/* loop is done by the caller */
-@@ -443,8 +445,6 @@ EXPORT_SYMBOL_GPL(cpu_idle_wait);
-  */
- void mwait_idle_with_hints(unsigned long ax, unsigned long cx)
- {
--	trace_power_start(POWER_CSTATE, (ax>>4)+1, smp_processor_id());
--	trace_cpu_idle((ax>>4)+1, smp_processor_id());
- 	if (!need_resched()) {
- 		if (cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_CLFLUSH_MONITOR))
- 			clflush((void *)&current_thread_info()->flags);
-@@ -471,6 +471,8 @@ static void mwait_idle(void)
- 			__sti_mwait(0, 0);
- 		else
- 			local_irq_enable();
-+		trace_power_end(smp_processor_id());
-+		trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
- 	} else
- 		local_irq_enable();
- }
-diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
-index 4b9befa..8d12878 100644
---- a/arch/x86/kernel/process_32.c
-+++ b/arch/x86/kernel/process_32.c
-@@ -57,8 +57,6 @@
- #include <asm/syscalls.h>
- #include <asm/debugreg.h>
- 
--#include <trace/events/power.h>
--
- asmlinkage void ret_from_fork(void) __asm__("ret_from_fork");
+Patch below is based on linux-2.6.37-rc7
+
+--- usb/serial/mct_u232.c.orig	2010-12-26 16:54:16.660294924 -0500
++++ usb/serial/mct_u232.c	2010-12-27 15:29:30.895141755 -0500
+@@ -78,6 +78,8 @@
+ #include <asm/unaligned.h>
+ #include <linux/usb.h>
+ #include <linux/usb/serial.h>
++#include <linux/serial.h>
++#include <linux/ioctl.h>
+ #include "mct_u232.h"
  
  /*
-@@ -113,8 +111,6 @@ void cpu_idle(void)
- 			stop_critical_timings();
- 			pm_idle();
- 			start_critical_timings();
--			trace_power_end(smp_processor_id());
--			trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
- 		}
- 		tick_nohz_restart_sched_tick();
- 		preempt_enable_no_resched();
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 4c818a7..bd387e8 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -51,8 +51,6 @@
- #include <asm/syscalls.h>
- #include <asm/debugreg.h>
+@@ -104,6 +106,10 @@ static void mct_u232_break_ctl(struct tt
+ static int  mct_u232_tiocmget(struct tty_struct *tty, struct file *file);
+ static int  mct_u232_tiocmset(struct tty_struct *tty, struct file *file,
+ 			unsigned int set, unsigned int clear);
++static int  mct_u232_ioctl(struct tty_struct *tty, struct file *file,
++			unsigned int cmd, unsigned long arg);
++static int  mct_u232_get_icount(struct tty_struct *tty,
++			struct serial_icounter_struct *icount);
+ static void mct_u232_throttle(struct tty_struct *tty);
+ static void mct_u232_unthrottle(struct tty_struct *tty);
  
--#include <trace/events/power.h>
+@@ -150,9 +156,10 @@ static struct usb_serial_driver mct_u232
+ 	.tiocmset =	     mct_u232_tiocmset,
+ 	.attach =	     mct_u232_startup,
+ 	.release =	     mct_u232_release,
++	.ioctl =             mct_u232_ioctl,
++	.get_icount =        mct_u232_get_icount,
+ };
+ 
 -
- asmlinkage extern void ret_from_fork(void);
+ struct mct_u232_private {
+ 	spinlock_t lock;
+ 	unsigned int	     control_state; /* Modem Line Setting (TIOCM) */
+@@ -160,6 +167,9 @@ struct mct_u232_private {
+ 	unsigned char	     last_lsr;      /* Line Status Register */
+ 	unsigned char	     last_msr;      /* Modem Status Register */
+ 	unsigned int	     rx_flags;      /* Throttling flags */
++	struct async_icount  icount;
++	wait_queue_head_t    msr_wait;	/* for handling sleeping while waiting
++						for msr change to happen */
+ };
  
- DEFINE_PER_CPU(unsigned long, old_rsp);
-@@ -141,10 +139,6 @@ void cpu_idle(void)
- 			pm_idle();
- 			start_critical_timings();
+ #define THROTTLED		0x01
+@@ -386,6 +396,20 @@ static int mct_u232_get_modem_stat(struc
+ 	return rc;
+ } /* mct_u232_get_modem_stat */
  
--			trace_power_end(smp_processor_id());
--			trace_cpu_idle(PWR_EVENT_EXIT,
--				       smp_processor_id());
--
- 			/* In many cases the interrupt that ended idle
- 			   has already called exit_idle. But some idle
- 			   loops can be woken up without interrupt. */
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index 386888f..e4855c3 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -96,7 +96,15 @@ static void cpuidle_idle_call(void)
++static void mct_u232_msr_to_icount(struct async_icount *icount,
++						unsigned char msr)
++{
++	/* Translate Control Line states */
++	if (msr & MCT_U232_MSR_DDSR)
++		icount->dsr++;
++	if (msr & MCT_U232_MSR_DCTS)
++		icount->cts++;
++	if (msr & MCT_U232_MSR_DRI)
++		icount->rng++;
++	if (msr & MCT_U232_MSR_DCD)
++		icount->dcd++;
++} /* mct_u232_msr_to_icount */
++
+ static void mct_u232_msr_to_state(unsigned int *control_state,
+ 						unsigned char msr)
+ {
+@@ -422,6 +446,7 @@ static int mct_u232_startup(struct usb_s
+ 	if (!priv)
+ 		return -ENOMEM;
+ 	spin_lock_init(&priv->lock);
++	init_waitqueue_head(&priv->msr_wait);
+ 	usb_set_serial_port_data(serial->port[0], priv);
  
- 	/* enter the state and update stats */
- 	dev->last_state = target_state;
-+
-+	trace_power_start(POWER_CSTATE, next_state, dev->cpu);
-+	trace_cpu_idle(next_state, dev->cpu);
-+
- 	dev->last_residency = target_state->enter(dev, target_state);
-+
-+	trace_power_end(dev->cpu);
-+	trace_cpu_idle(PWR_EVENT_EXIT, dev->cpu);
-+
- 	if (dev->last_state)
- 		target_state = dev->last_state;
+ 	init_waitqueue_head(&serial->port[0]->write_wait);
+@@ -621,6 +646,8 @@ static void mct_u232_read_int_callback(s
+ 	/* Record Control Line states */
+ 	mct_u232_msr_to_state(&priv->control_state, priv->last_msr);
  
-@@ -106,8 +114,6 @@ static void cpuidle_idle_call(void)
- 	/* give the governor an opportunity to reflect on the outcome */
- 	if (cpuidle_curr_governor->reflect)
- 		cpuidle_curr_governor->reflect(dev);
--	trace_power_end(smp_processor_id());
--	trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
++	mct_u232_msr_to_icount(&priv->icount, priv->last_msr);
++
+ #if 0
+ 	/* Not yet handled. See belkin_sa.c for further information */
+ 	/* Now to report any errors */
+@@ -647,6 +674,7 @@ static void mct_u232_read_int_callback(s
+ 		tty_kref_put(tty);
+ 	}
+ #endif
++	wake_up_interruptible(&priv->msr_wait);
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ exit:
+ 	retval = usb_submit_urb(urb, GFP_ATOMIC);
+@@ -826,7 +854,6 @@ static void mct_u232_throttle(struct tty
+ 	}
  }
  
- /**
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index 56ac09d..60fa6ec 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -220,8 +220,6 @@ static int intel_idle(struct cpuidle_device *dev, struct cpuidle_state *state)
- 	kt_before = ktime_get_real();
+-
+ static void mct_u232_unthrottle(struct tty_struct *tty)
+ {
+ 	struct usb_serial_port *port = tty->driver_data;
+@@ -847,6 +874,82 @@ static void mct_u232_unthrottle(struct t
+ 	}
+ }
  
- 	stop_critical_timings();
--	trace_power_start(POWER_CSTATE, (eax >> 4) + 1, cpu);
--	trace_cpu_idle((eax >> 4) + 1, cpu);
- 	if (!need_resched()) {
- 
- 		__monitor((void *)&current_thread_info()->flags, 0, 0);
--- 
-1.7.4.rc1.14.g7fad99
-
++static int  mct_u232_ioctl(struct tty_struct *tty, struct file *file,
++			unsigned int cmd, unsigned long arg)
++{
++	DEFINE_WAIT(wait);
++	struct usb_serial_port *port = tty->driver_data;
++	struct mct_u232_private *mct_u232_port = usb_get_serial_port_data(port);
++	struct async_icount cnow, cprev;
++	unsigned long flags;
++
++	dbg("%s - port %d, cmd = 0x%x", __func__, port->number, cmd);
++
++	switch (cmd) {
++
++	case TIOCMIWAIT:
++
++		dbg("%s (%d) TIOCMIWAIT", __func__,  port->number);
++
++		spin_lock_irqsave(&mct_u232_port->lock, flags);
++		cprev = mct_u232_port->icount;
++		spin_unlock_irqrestore(&mct_u232_port->lock, flags);
++		for ( ; ; ) {
++			prepare_to_wait(&mct_u232_port->msr_wait,
++					&wait, TASK_INTERRUPTIBLE);
++			schedule();
++			finish_wait(&mct_u232_port->msr_wait, &wait);
++			/* see if a signal did it */
++			if (signal_pending(current))
++				return -ERESTARTSYS;
++			spin_lock_irqsave(&mct_u232_port->lock, flags);
++			cnow = mct_u232_port->icount;
++			spin_unlock_irqrestore(&mct_u232_port->lock, flags);
++			if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
++			    cnow.dcd == cprev.dcd && cnow.cts == cprev.cts)
++				return -EIO; /* no change => error */
++			if (((arg & TIOCM_RNG) && (cnow.rng != cprev.rng)) ||
++			    ((arg & TIOCM_DSR) && (cnow.dsr != cprev.dsr)) ||
++			    ((arg & TIOCM_CD)  && (cnow.dcd != cprev.dcd)) ||
++			    ((arg & TIOCM_CTS) && (cnow.cts != cprev.cts))) {
++				return 0;
++			}
++			cprev = cnow;
++		}
++
++	}
++	return -ENOIOCTLCMD;
++}
++
++static int  mct_u232_get_icount(struct tty_struct *tty,
++			struct serial_icounter_struct *icount)
++{
++	struct usb_serial_port *port = tty->driver_data;
++	struct mct_u232_private *mct_u232_port = usb_get_serial_port_data(port);
++	struct async_icount *ic = &mct_u232_port->icount;
++	unsigned long flags;
++
++	spin_lock_irqsave(&mct_u232_port->lock, flags);
++
++	icount->cts = ic->cts;
++	icount->dsr = ic->dsr;
++	icount->rng = ic->rng;
++	icount->dcd = ic->dcd;
++	icount->rx = ic->rx;
++	icount->tx = ic->tx;
++	icount->frame = ic->frame;
++	icount->overrun = ic->overrun;
++	icount->parity = ic->parity;
++	icount->brk = ic->brk;
++	icount->buf_overrun = ic->buf_overrun;
++
++	spin_unlock_irqrestore(&mct_u232_port->lock, flags);
++
++	dbg("%s (%d) TIOCGICOUNT RX=%d, TX=%d",
++		__func__,  port->number, icount->rx, icount->tx);
++	return 0;
++}
++
+ static int __init mct_u232_init(void)
+ {
+ 	int retval;
