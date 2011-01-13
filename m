@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933017Ab1AMPwc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 10:52:32 -0500
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:52607 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932979Ab1AMPwb (ORCPT
+	id S1757233Ab1AMP4H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 10:56:07 -0500
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:52262 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757208Ab1AMP4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 10:52:31 -0500
-X-SpamScore: -24
-X-BigFish: VPS-24(zzbb2cK1432N98dNzz1202hzz15d4Rz32i637h668h)
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LEYXFA-02-BTA-02
-X-M-MSG: 
-Date: Thu, 13 Jan 2011 16:52:24 +0100
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>
-Subject: Re: [PATCH 1/2] KVM: SVM: Fix NMI path when NMI happens in guest
- mode
-Message-ID: <20110113155224.GB23914@amd.com>
-References: <1294932178-26866-1-git-send-email-joerg.roedel@amd.com>
- <1294932178-26866-2-git-send-email-joerg.roedel@amd.com>
- <4D2F1ED1.1020001@siemens.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4D2F1ED1.1020001@siemens.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+	Thu, 13 Jan 2011 10:56:03 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=bD7kavq0XA59Y0Adtl7Q1Yw5S4lofrbvncpp+JM6LM6DWK2Prkv110akSTi0RTF2umVGsSlwrWsEia/eZ2FSoHn6dSaJ899gGaLdQfydzRdj0tnbzLXPuXmpp3Ek0rpn;
+Date: Thu, 13 Jan 2011 07:55:56 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Len Brown <lenb@kernel.org>
+Cc: Narendra_K@Dell.com, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, sfr@canb.auug.org.au, Matt_Domsch@Dell.com,
+        Charles_Rose@Dell.com, Surya_Prabhakar@Dell.com
+Subject: Re: CONFIG_NLS=m resulting in undefined reference to
+ utf16s_to_utf8s causing build failure
+Message-ID: <20110113075556.789ac3c3@jbarnes-vaio.home>
+In-Reply-To: <alpine.LFD.2.02.1101122217370.19754@x980>
+References: <20110112203414.GA5657@fedora14-r610.oslab.blr.amer.dell.com>
+	<20110112160229.7b8d82c1@jbarnes-desktop>
+	<alpine.LFD.2.02.1101122217370.19754@x980>
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.208.206.255 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 10:48:33AM -0500, Jan Kiszka wrote:
-> Am 13.01.2011 16:22, Joerg Roedel wrote:
-> >  #ifdef CONFIG_X86_64
-> >  	wrmsrl(MSR_GS_BASE, svm->host.gs_base);
-> > +	wrmsrl(MSR_KERNEL_GS_BASE, current->thread.gs);
-> >  #else
-> >  	loadsegment(fs, svm->host.fs);
-> >  #endif
+On Wed, 12 Jan 2011 22:23:55 -0500 (EST)
+Len Brown <lenb@kernel.org> wrote:
+> > So there's no other ACPI code that depends on this function?  I'd hate
+> > to make PCI depend on NLS, so assuming ACPI doesn't need it (in which
+> > case the select or depend should be there), I guess it should be pulled
+> > into a common file that will always be included.
 > 
-> Doesn't this also obsolete the wrmsrl(MSR_KERNEL_GS_BASE) in svm_vcpu_put?
+> No, nothing in the ACPI code uses utf16s_to_utf8s.
+> 
+> I don't know anything about NLS, but it appears to be
+> something that file systems (befs, cifs, fat, hfs, isofs, jfs, etc)
+> use to to support native languages.
+> 
+> BTW. I don't understand why pci-label.o appears twice above.
+> It used to be just the 2nd one, that depends on CONFIG_DMI.
 
-Yes it does. Thanks.
+Ok, I'll drop this patch for now then since I haven't seen a fix yet
+and need to get Linus the rest of the changes.
 
-Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Thanks,
+Jesse
