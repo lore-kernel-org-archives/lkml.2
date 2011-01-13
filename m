@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932947Ab1AMORt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 09:17:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44327 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755832Ab1AMORs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 09:17:48 -0500
-Subject: Re: [PATCH] Update atime from future.
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: yangsheng <sickamd@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, adilger.kernel@dilger.ca,
-        linux-ext4@vger.kernel.org
-In-Reply-To: <20110111133314.GA10705@atrey.karlin.mff.cuni.cz>
-References: <1293631121-12667-1-git-send-email-sickamd@gmail.com>
-	 <1294050468.2429.2.camel@dolmen>
-	 <20110111133314.GA10705@atrey.karlin.mff.cuni.cz>
+	id S1756861Ab1AMOWq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 09:22:46 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:56444 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756666Ab1AMOWo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 09:22:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Mq5JodAI/8BzAPWWab8sRcpBuQwVNi3WwW1jVMifh5MAbjOMYDde4pEoQasUiXj+tx
+         mgy8nHIoKrdcBYcBljGogUrU49SCxytIRbKTjw45VjJHQfel/H8tHOlO6n8Nj+ZF0IP7
+         G499HMiQgiPFtODRa/xOdwINC/kuyvl/9WvIU=
+Subject: Re: [PATCH] net: add Faraday FTMAC100 10/100 Ethernet driver
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Po-Yu Chuang <ratbert@faraday-tech.com>
+In-Reply-To: <1294919372-1904-1-git-send-email-ratbert.chuang@gmail.com>
+References: <1294919372-1904-1-git-send-email-ratbert.chuang@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Thu, 13 Jan 2011 14:18:57 +0000
-Message-ID: <1294928337.2401.28.camel@dolmen>
+Date: Thu, 13 Jan 2011 15:22:39 +0100
+Message-ID: <1294928559.3570.130.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, 2011-01-11 at 14:33 +0100, Pavel Machek wrote:
-> 	return 1;
-> > > +	/*
-> > > +	 * Is the previous atime value old than a day? If yes,
-> > >  	 * update atime:
-> > >  	 */
-> > >  	if ((long)(now.tv_sec - inode->i_atime.tv_sec) >= 24*60*60)
-> > 
-> > I don't think this is a good plan for cluster filesystems, since if the
-> > times on the nodes are not exactly synchronised (we do highly recommend
-> > people run ntp or similar) then this might lead to excessive atime
-> > updating. The current behaviour is to ignore atimes which are in the
-> > future for exactly this reason,
+Le jeudi 13 janvier 2011 à 19:49 +0800, Po-Yu Chuang a écrit :
+> From: Po-Yu Chuang <ratbert@faraday-tech.com>
 > 
-> Well, would these "update storms" really be a problem?
+> FTMAC100 Ethernet Media Access Controller supports 10/100 Mbps and
+> MII.  This driver has been working on some ARM/NDS32 SoC including
+> Faraday A320 and Andes AG101.
 > 
-> AFAICT they should be fairly non-frequent, and worst thing that can
-> happen is that you'll do as many updates as different time settings,
-> settling for the lowest value...?
-> 									Pavel
+> Signed-off-by: Po-Yu Chuang <ratbert@faraday-tech.com>
+> ---
+>  drivers/net/Kconfig    |    9 +
+>  drivers/net/Makefile   |    1 +
+>  drivers/net/ftmac100.c | 1341 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/net/ftmac100.h |  180 +++++++
+>  4 files changed, 1531 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/net/ftmac100.c
+>  create mode 100644 drivers/net/ftmac100.h
 
-Sorry for the delay in replying. It has been a problem in the past,
-certainly. I think it is best to be cautious in this case, since that
-way we can be sure it won't be a problem. The chosen solution looks ok
-to me,
+Hi
 
-Steve.
+1) please use netdev_alloc_skb_ip_align() instead of dev_alloc_skb() +
+skb_reserve(skb, NET_IP_ALIGN);
+
+2) Dont include a "struct net_device_stats stats" in struct ftmac100,
+you can use the one included in struct net_device
+  (You can then remove ftmac100_get_stats())
+
+3) Dont "netdev->last_rx = jiffies;" : This is not driver job.
+ Ditto for trans_start
+
+4) You must comment why wmb() is needed in ftmac100_xmit()
+
+5) Why isnt NAPI used too for TX completions ?
+   BTW, I am not sure we want a define. All new drivers must use NAPI.
+
+6) Use is_valid_ether_addr() instead of is_zero_ether_addr() in
+ftmac100_probe()
+
+7) "static struct ethtool_ops ftmac100_ethtool_ops" should be const :
+	"static const struct ethtool_ops ftmac100_ethtool_ops"
+  Ditto for :
+	"static struct net_device_ops ftmac100_netdev_ops"
+
+
+8) Why an interrupt handler (ftmac100_interrupt()) needs to block
+interrupts with spin_lock_irqsave(&priv->hw_lock, flags); ?
+
+9) Instead of dev_info(&netdev->dev ...) , please consider netdev_info()
 
 
