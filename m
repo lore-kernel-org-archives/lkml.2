@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756555Ab1AMAOx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 19:14:53 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:59748 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756294Ab1AMAOq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 19:14:46 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 13 Jan 2011 09:08:30 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-mm@kvack.org, Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Pavel Emelianov <xemul@openvz.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: Remove two memset calls in mm/memcontrol.c by using
- the zalloc variants of alloc functions
-Message-Id: <20110113090830.3bca41ee.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <alpine.LNX.2.00.1101122135070.22297@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1101122135070.22297@swampdragon.chaosbits.net>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756354Ab1AMAPX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 19:15:23 -0500
+Received: from DMZ-MAILSEC-SCANNER-1.MIT.EDU ([18.9.25.12]:62295 "EHLO
+	dmz-mailsec-scanner-1.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756460Ab1AMAPV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 19:15:21 -0500
+X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Jan 2011 19:15:20 EST
+X-AuditID: 1209190c-b7ba9ae0000009f8-a1-4d2e42eb8e89
+Subject: Re: Power plug off / on - EXT4-fs (sda1): re-mounted. Opts: errors=remount-ro,commit=600
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Theodore Tso <tytso@MIT.EDU>
+In-Reply-To: <AANLkTinC=i24FaOtB3srbCUROza1V2TQ0zxNMq+QH+mj@mail.gmail.com>
+Date: Wed, 12 Jan 2011 19:09:51 -0500
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <B48664E0-16B7-49A5-AE50-1C3DA751DC2C@mit.edu>
+References: <AANLkTinC=i24FaOtB3srbCUROza1V2TQ0zxNMq+QH+mj@mail.gmail.com>
+To: "Luis R. Rodriguez" <mcgrof@gmail.com>
+X-Mailer: Apple Mail (2.1082)
+X-Brightmail-Tracker: AAAAARcg5EE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Jan 2011 21:39:59 +0100 (CET)
-Jesper Juhl <jj@chaosbits.net> wrote:
 
-> We can avoid two calls to memset() in mm/memcontrol.c by using 
-> kzalloc_node(), kzalloc & vzalloc().
+On Jan 12, 2011, at 4:35 PM, Luis R. Rodriguez wrote:
+
+> When I yank my power chord off of my Thinkpad T61 running 2.6.37 I get
+> the following:
 > 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> [   79.523778] Monitor-Mwait will be used to enter C-3 state
+> [   81.195402] EXT4-fs (sda1): re-mounted. Opts: errors=remount-ro,commit=600
+> 
+> mcgrof@tux ~ $ mount| grep sda1
+> /dev/sda1 on / type ext4 (rw,errors=remount-ro,commit=600)
 
-Thank you.
+Sounds like you have some userspace script which is being triggered on the transition running on batteries, and it's doing a remount -o commit=600 to save power.   Are you using laptop_mode by any chance?
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+-- Ted
 
