@@ -1,107 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932875Ab1AMDDQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 22:03:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51990 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932750Ab1AMDDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 22:03:13 -0500
-Message-ID: <4D2E6B62.2000802@redhat.com>
-Date: Wed, 12 Jan 2011 22:02:58 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Chris Wright <chrisw@sous-sol.org>
-Subject: Re: [RFC -v3 PATCH 2/3] sched: add yield_to function
-References: <20110103162637.29f23c40@annuminas.surriel.com>	 <20110103162918.577a9620@annuminas.surriel.com>	 <1294164289.2016.186.camel@laptop>	 <1294246647.8369.52.camel@marge.simson.net>	 <1294247065.2016.267.camel@laptop> <1294378146.8823.27.camel@marge.simson.net>
-In-Reply-To: <1294378146.8823.27.camel@marge.simson.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S932890Ab1AMDD4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 22:03:56 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:49691 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932750Ab1AMDDx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 22:03:53 -0500
+X-Sasl-enc: h4p2KiJkrfZf/c5SA4eddcW8FYv/xZ0moHubCwd7M8+q 1294887832
+Subject: Re: [announce] vfs-scale git tree update
+From: Ian Kent <raven@themaw.net>
+To: aelder@sgi.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1294885421.2757.12.camel@perseus>
+References: <20110107075831.GA14915@amd> <1294763679.2435.72.camel@doink>
+	 <AANLkTin67OXYYKk6y+_MKfXEXBz-F_+qAH0cpiJ24yEQ@mail.gmail.com>
+	 <1294768668.2435.177.camel@doink>  <1294804776.2821.4.camel@perseus>
+	 <1294805755.2821.6.camel@perseus>  <1294863083.2551.13.camel@doink>
+	 <1294885421.2757.12.camel@perseus>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Jan 2011 11:03:46 +0800
+Message-ID: <1294887826.2757.17.camel@perseus>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2011 12:29 AM, Mike Galbraith wrote:
+On Thu, 2011-01-13 at 10:23 +0800, Ian Kent wrote:
+> On Wed, 2011-01-12 at 14:11 -0600, Alex Elder wrote:
+> > On Wed, 2011-01-12 at 12:15 +0800, Ian Kent wrote:
+> > > On Wed, 2011-01-12 at 11:59 +0800, Ian Kent wrote:
+> > > > On Tue, 2011-01-11 at 11:57 -0600, Alex Elder wrote:
+> > > > > On Tue, 2011-01-11 at 08:51 -0800, Linus Torvalds wrote:
+> > > > > > On Tue, Jan 11, 2011 at 8:34 AM, Alex Elder <aelder@sgi.com> wrote:
+> > > > > > >
+> > > > > > > FYI, when using this code, as merged by Linus, I hit the
+> > > > > > > BUG_ON() at the beginning of d_set_d_op() when it's called
+> > > > > > > by autofs4_dir_mkdir().  I managed to work around it by
+> > > > > > > just commenting out those BUG_ON() calls but it's something
+> > > > > > > that ought to get addressed properly.
+> > > > > > 
+> > > > > > Yeah, removing the BUG_ON() isn't the right thing to do - it means
+> > > > > > that autofs4 is obviously setting the dentry ops twice for the same
+> > > > > > dentry.
+> > > > > > 
+> > > > > > Possibly the thing could be relaxed to allow setting the _same_ d_op
+> > > > > > pointer, ie do something like
+> > > > > > 
+> > > > > >    if (dentry->d_op == op)
+> > > > > >       return;
+> > > > > > 
+> > > > > > at the top of that function. But looking at it, I don't think that
+> > > > > > fixes the autofs4 issue.
+> > > > > 
+> > > > > That's easy enough, but it seems everybody else ensures
+> > > > > this gets done just once per dentry, and it would be nice
+> > > > > to preserve that "tightness" if possible.
+> > > > > 
+> > > > > > The fact that autofs4 does "d_add()" before it sets the d_ops (or
+> > > > > > other dentry state, for that matter) looks a bit scary. To me that
+> > > > > > smells like it might get a  dentry lookup hit before it's actually
+> > > > > > fully done.
+> > > > > 
+> > > > > Agreed.
+> > > > 
+> > > > Isn't the parent i_mutex held during mkdir()?
+> > > > Still the order can be changed, of course.
+> > > > 
+> > > > > 
+> > > > > > Does it make any difference if you move the various d_add() calls down
+> > > > > > to the end of the functions to when the "dentry" has really been
+> > > > > > instantiated?
+> > > > > 
+> > > > > Looking at it quickly, I don't think that would matter for
+> > > > > the case at hand.  I.e., that might be safer but it doesn't
+> > > > > address the fact that these fields are getting initialized
+> > > > > multiple times.
+> > > > 
+> > > > Yeah, a hangover from changes done over time.
+> > > > Not setting the dentry op in ->lookup() should fix this.
+> > > 
+> > > Could you try this patch please.
+> > 
+> > OK, sorry for the delay.  I tried the patch.  I applied
+> > it against 4162cf64973df51fc885825bc9ca4d055891c49f,
+> > which is the linus/master branch I had on hand.  This
+> > time I got a different failure due to a null pointer
+> > dereference.  Console capture below.  I can log
+> > in still but the boot sequence never got to the
+> > login prompt on the console as it normally does.
+> 
+> 
+> Sorry, that is rather an obvious mistake on my part.
+> There's a call to d_op->d_revalidate() just below where the dentry
+> operations are set. I'm tempted to just call the revalidate function
+> directly since it is always called anyway. But let me check we've done
+> in the our current of tree autofs patch series first.
 
-> +#ifdef CONFIG_SMP
-> +	/*
-> +	 * If this yield is important enough to want to preempt instead
-> +	 * of only dropping a ->next hint, we're alone, and the target
-> +	 * is not alone, pull the target to this cpu.
-> +	 *
-> +	 * NOTE: the target may be alone in it's cfs_rq if another class
-> +	 * task or another task group is currently executing on it's cpu.
-> +	 * In this case, we still pull, to accelerate it toward the cpu.
-> +	 */
-> +	if (cfs_rq != p_cfs_rq&&  preempt&&  cfs_rq->nr_running == 1&&
-> +			cpumask_test_cpu(this_cpu,&p->cpus_allowed)) {
-> +		pull_task(task_rq(p), p, this_rq(), this_cpu);
-> +		p_cfs_rq = cfs_rq_of(pse);
-> +	}
-> +#endif
+Ha, there is no revalidate in the current not yet merged autofs.
+So I think we just need to work around it.
 
-This causes some fun issues in a simple test case on
-my system.  The test consists of 2 4-VCPU KVM guests,
-bound to the same 4 CPUs on the host.
+Try this and see if it resolves the issue.
 
-One guest is running the AMQP performance test, the
-other guest is totally idle.  This means that besides
-the 4 very busy VCPUs, there is only a few percent
-CPU use in background tasks from the idle guest and
-qemu-kvm userspace bits.
+autofs4 - set dentry op in ->lookup() only
 
-However, the busy guest is restricted to using just
-3 out of the 4 CPUs, leaving one idle!
+From: Ian Kent <raven@themaw.net>
 
-A simple explanation for this is that the above
-pulling code will pull another VCPU onto the local
-CPU whenever we run into contention inside the guest
-and some random background task runs on the CPU where
-that other VCPU was.
+With the introduction of the vfs-scale patch series setting dentry
+operations more than once (or changing them) triggers a BUG_ON().
+Since the two dentry operations used are the same, just set the
+operations in ->lookup() and remove the set in ->symlink() and
+->mkdir().
 
- From that point on, the 4 VCPUs will stay on 3
-CPUs, leaving one idle.  Any time we have contention
-inside the guest (pretty frequent), we move whoever
-is not currently running to another CPU.
+Also, move the d_add() in ->symlink() and ->mkdir() to the end of
+the function.
+---
 
-Cgroups only makes the matter worse - libvirt places
-each KVM guest into its own cgroup, so a VCPU will
-generally always be alone on its own per-cgroup, per-cpu
-runqueue!  That can lead to pulling a VCPU onto our local
-CPU because we think we are alone, when in reality we
-share the CPU with others...
+ fs/autofs4/root.c |   40 +++++++---------------------------------
+ 1 files changed, 7 insertions(+), 33 deletions(-)
 
-Removing the pulling code allows me to use all 4
-CPUs with a 4-VCPU KVM guest in an uncontended situation.
 
-> +	/* Tell the scheduler that we'd really like pse to run next. */
-> +	p_cfs_rq->next = pse;
+diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
+index 651e4ef..0897706 100644
+--- a/fs/autofs4/root.c
++++ b/fs/autofs4/root.c
+@@ -419,12 +419,6 @@ void autofs4_dentry_release(struct dentry *de)
+ 	}
+ }
+ 
+-/* For dentries of directories in the root dir */
+-static const struct dentry_operations autofs4_root_dentry_operations = {
+-	.d_revalidate	= autofs4_revalidate,
+-	.d_release	= autofs4_dentry_release,
+-};
+-
+ /* For other dentries */
+ static const struct dentry_operations autofs4_dentry_operations = {
+ 	.d_revalidate	= autofs4_revalidate,
+@@ -568,19 +562,6 @@ static struct dentry *autofs4_lookup(struct inode *dir, struct dentry *dentry, s
+ 		ino = autofs4_dentry_ino(dentry);
+ 	} else {
+ 		/*
+-		 * Mark the dentry incomplete but don't hash it. We do this
+-		 * to serialize our inode creation operations (symlink and
+-		 * mkdir) which prevents deadlock during the callback to
+-		 * the daemon. Subsequent user space lookups for the same
+-		 * dentry are placed on the wait queue while the daemon
+-		 * itself is allowed passage unresticted so the create
+-		 * operation itself can then hash the dentry. Finally,
+-		 * we check for the hashed dentry and return the newly
+-		 * hashed dentry.
+-		 */
+-		d_set_d_op(dentry, &autofs4_root_dentry_operations);
+-
+-		/*
+ 		 * And we need to ensure that the same dentry is used for
+ 		 * all following lookup calls until it is hashed so that
+ 		 * the dentry flags are persistent throughout the request.
+@@ -589,6 +570,8 @@ static struct dentry *autofs4_lookup(struct inode *dir, struct dentry *dentry, s
+ 		if (!ino)
+ 			return ERR_PTR(-ENOMEM);
+ 
++		d_set_d_op(dentry, &autofs4_dentry_operations);
++
+ 		dentry->d_fsdata = ino;
+ 		ino->dentry = dentry;
+ 
+@@ -714,12 +697,6 @@ static int autofs4_dir_symlink(struct inode *dir,
+ 			kfree(ino);
+ 		return -ENOMEM;
+ 	}
+-	d_add(dentry, inode);
+-
+-	if (dir == dir->i_sb->s_root->d_inode)
+-		d_set_d_op(dentry, &autofs4_root_dentry_operations);
+-	else
+-		d_set_d_op(dentry, &autofs4_dentry_operations);
+ 
+ 	dentry->d_fsdata = ino;
+ 	ino->dentry = dget(dentry);
+@@ -732,6 +709,8 @@ static int autofs4_dir_symlink(struct inode *dir,
+ 	ino->u.symlink = cp;
+ 	dir->i_mtime = CURRENT_TIME;
+ 
++	d_add(dentry, inode);
++
+ 	return 0;
+ }
+ 
+@@ -849,12 +828,6 @@ static int autofs4_dir_mkdir(struct inode *dir, struct dentry *dentry, int mode)
+ 			kfree(ino);
+ 		return -ENOMEM;
+ 	}
+-	d_add(dentry, inode);
+-
+-	if (dir == dir->i_sb->s_root->d_inode)
+-		d_set_d_op(dentry, &autofs4_root_dentry_operations);
+-	else
+-		d_set_d_op(dentry, &autofs4_dentry_operations);
+ 
+ 	dentry->d_fsdata = ino;
+ 	ino->dentry = dget(dentry);
+@@ -866,6 +839,8 @@ static int autofs4_dir_mkdir(struct inode *dir, struct dentry *dentry, int mode)
+ 	inc_nlink(dir);
+ 	dir->i_mtime = CURRENT_TIME;
+ 
++	d_add(dentry, inode);
++
+ 	return 0;
+ }
+ 
+@@ -944,8 +919,7 @@ static inline int autofs4_ask_umount(struct vfsmount *mnt, int __user *p)
+ int is_autofs4_dentry(struct dentry *dentry)
+ {
+ 	return dentry && dentry->d_inode &&
+-		(dentry->d_op == &autofs4_root_dentry_operations ||
+-		 dentry->d_op == &autofs4_dentry_operations) &&
++		(dentry->d_op == &autofs4_dentry_operations) &&
+ 		dentry->d_fsdata != NULL;
+ }
+ 
 
-Using set_next_buddy propagates this up to the root,
-allowing the scheduler to actually know who we want to
-run next when cgroups is involved.
 
-> +	/* We know whether we want to preempt or not, but are we allowed? */
-> +	if (preempt&&  same_thread_group(p, task_of(p_cfs_rq->curr)))
-> +		resched_task(task_of(p_cfs_rq->curr));
-
-With this in place, we can get into the situation where
-we will gladly give up CPU time, but not actually give
-any to the other VCPUs in our guest.
-
-I believe we can get rid of that test, because pick_next_entity
-already makes sure it ignores ->next if picking ->next would
-lead to unfairness.
-
-Removing this test (and simplifying yield_to_task_fair) seems
-to lead to more predictable test results.
-
-I'll send the updated patch in another email, since this one is
-already way too long for a changelog :)
-
--- 
-All rights reversed
