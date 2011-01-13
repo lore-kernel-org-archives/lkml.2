@@ -1,94 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726Ab1AMNWd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 08:22:33 -0500
-Received: from mtoichi11.ns.itscom.net ([219.110.2.181]:33365 "EHLO
-	mtoichi11.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab1AMNWb (ORCPT
+	id S1756766Ab1AMNXK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 08:23:10 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:6154 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751498Ab1AMNXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 08:22:31 -0500
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: NFS root lockups with -next 20110113
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Nick Piggin <npiggin@kernel.dk>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-In-Reply-To: <20110113120626.GB30351@opensource.wolfsonmicro.com>
-References: <20110113120626.GB30351@opensource.wolfsonmicro.com>
-Date: Thu, 13 Jan 2011 22:22:07 +0900
-Message-ID: <8138.1294924927@jrobl>
+	Thu, 13 Jan 2011 08:23:08 -0500
+X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Jan 2011 08:23:08 EST
+X-IronPort-AV: E=Sophos;i="4.60,317,1291590000"; 
+   d="scan'208";a="95194741"
+Date: Thu, 13 Jan 2011 14:13:23 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Arnaud Patard <arnaud.patard@rtp-net.org>
+Cc: rpurdie@rpsys.net, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/1] leds: add keyboard num/caps lock trigger
+Message-ID: <20110113131323.GJ5995@const.bordeaux.inria.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Arnaud Patard <arnaud.patard@rtp-net.org>, rpurdie@rpsys.net,
+	akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+References: <20110113125921.818344418@rtp-net.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110113125921.818344418@rtp-net.org>
+User-Agent: Mutt/1.5.12-2006-07-14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Mark Brown:
-> With -next 20110113 I'm experiencing lockups shortly after userspace
-> starts when booting with my root filesystem on NFS, log below.  I can
-> boot into /bin/sh but running real userspace triggers this very easily.
-> This was introduced sometime this week.
->
-> I've not bisected or otherwise investigated much yet, but I do notice
-> code added recently by Nick in "fs: rcu-walk for path lookup" showing up
-> in the backtrace so including him in the CCs.
-
-This and a report from Santosh Shilimkar look like the same problem
-which I reported, and I am testing this patch. If you can, please try it
-too.
-Note: Of course this is not offcial fix.
+Hello,
 
 
-J. R. Okajima
+Arnaud Patard, le Thu 13 Jan 2011 13:59:13 +0100, a écrit :
+> Implement a led trigger which enable/disable a led according
+> to keyboard leds events.
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 5bb7588..51d052f 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -480,6 +480,7 @@ static int nameidata_dentry_drop_rcu(struct nameidata *nd, struct dentry *dentry
- {
- 	struct fs_struct *fs = current->fs;
- 	struct dentry *parent = nd->path.dentry;
-+	int isroot;
- 
- 	BUG_ON(!(nd->flags & LOOKUP_RCU));
- 	if (nd->root.mnt) {
-@@ -489,18 +490,22 @@ static int nameidata_dentry_drop_rcu(struct nameidata *nd, struct dentry *dentry
- 			goto err_root;
- 	}
- 	spin_lock(&parent->d_lock);
--	spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
--	if (!__d_rcu_to_refcount(dentry, nd->seq))
--		goto err;
-+	isroot = IS_ROOT(dentry);
-+	if (!isroot) {
-+		spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
-+		if (!__d_rcu_to_refcount(dentry, nd->seq))
-+			goto err;
-+	}
- 	/*
- 	 * If the sequence check on the child dentry passed, then the child has
- 	 * not been removed from its parent. This means the parent dentry must
- 	 * be valid and able to take a reference at this point.
- 	 */
--	BUG_ON(!IS_ROOT(dentry) && dentry->d_parent != parent);
-+	BUG_ON(!isroot && dentry->d_parent != parent);
- 	BUG_ON(!parent->d_count);
- 	parent->d_count++;
--	spin_unlock(&dentry->d_lock);
-+	if (!isroot)
-+		spin_unlock(&dentry->d_lock);
- 	spin_unlock(&parent->d_lock);
- 	if (nd->root.mnt) {
- 		path_get(&nd->root);
-@@ -513,7 +518,8 @@ static int nameidata_dentry_drop_rcu(struct nameidata *nd, struct dentry *dentry
- 	nd->flags &= ~LOOKUP_RCU;
- 	return 0;
- err:
--	spin_unlock(&dentry->d_lock);
-+	if (!isroot)
-+		spin_unlock(&dentry->d_lock);
- 	spin_unlock(&parent->d_lock);
- err_root:
- 	if (nd->root.mnt)
+This is already being implemented in a more generic and useful way,
+also permitting to use the keyboard leds for other triggers, see the
+leds-route-kbd-leds-through-the-generic-leds-layer.patch in the mm tree,
+and the “route kbd LEDs through the generic LEDs layer” thread here.
 
+Samuel
