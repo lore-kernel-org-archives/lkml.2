@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932926Ab1AMKy6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 05:54:58 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:60362 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932424Ab1AMKy5 convert rfc822-to-8bit (ORCPT
+	id S1756609Ab1AMK53 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 05:57:29 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51620 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756310Ab1AMK52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 05:54:57 -0500
-Subject: Re: sparc boot failure due to perf init
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Miller <davem@davemloft.net>
-Cc: sam@ravnborg.org, linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
-In-Reply-To: <20110109.153745.35032992.davem@davemloft.net>
-References: <1294431832.2016.457.camel@laptop>
-	 <1294432055.2016.458.camel@laptop>
-	 <20110107203119.GA30408@merkur.ravnborg.org>
-	 <20110109.153745.35032992.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 13 Jan 2011 11:55:28 +0100
-Message-ID: <1294916129.19601.88.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 13 Jan 2011 05:57:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Hc2B5eYNHHrBxEQjdfNFaRbr700137zKdlyZThyDw6huy4D7YlAE+3kv7ceyzq6+LT
+         6WwoXTO0JX/kmqPaeqsoqklaHG2+sOS4KZgoo+/PGBF+WCFq1ujc2RR4R/Q9ElQS9k00
+         gYpeEhHbGqltPhYU9uWIz8LWAMH5kT9Eakh/4=
+Date: Thu, 13 Jan 2011 11:57:17 +0100
+From: Tejun Heo <tj@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        tglx@linutronix.de, "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        eric.dumazet@gmail.com, yinghai@kernel.org, brgerst@gmail.com,
+        gorcunov@gmail.com, Pekka Enberg <penberg@kernel.org>,
+        shaohui.zheng@intel.com
+Subject: Re: [PATCH 05/16] x86: Always use x86_cpu_to_logical_apicid for
+ cpu -> logical apic id
+Message-ID: <20110113105717.GB30719@htj.dyndns.org>
+References: <1293731369-10851-1-git-send-email-tj@kernel.org>
+ <1293731369-10851-6-git-send-email-tj@kernel.org>
+ <alpine.DEB.2.00.1101121831001.8631@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1101121831001.8631@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-01-09 at 15:37 -0800, David Miller wrote:
-> sparc64: Fix bootup regression due to perf init ordering.
+On Wed, Jan 12, 2011 at 06:40:09PM -0800, David Rientjes wrote:
+> On Thu, 30 Dec 2010, Tejun Heo wrote:
 > 
-> Commit 004417a6d468e24399e383645c068b498eed84ad
-> ("perf, arch: Cleanup perf-pmu init vs lockup-detector")
-> move the perf events init to be an early_initcall.
+> > diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> > index ba78b1e..8ad231c 100644
+> > --- a/arch/x86/kernel/apic/apic.c
+> > +++ b/arch/x86/kernel/apic/apic.c
+> > @@ -1252,6 +1252,14 @@ void __cpuinit setup_local_APIC(void)
+> >  	 */
+> >  	apic->init_apic_ldr();
+> >  
+> > +#ifdef CONFIG_X86_32
+> > +	/*
+> > +	 * APIC LDR is initialized.  Fetch and store logical_apic_id.
+> > +	 */
+> > +	early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
+> > +		logical_smp_processor_id();
+> > +#endif
+> > +
+> >  	/*
+> >  	 * Set Task Priority to 'accept all'. We never change this
+> >  	 * later on.
 > 
-> But this won't work properly unless the dependencies for
-> this code initialize beforehand.
-> 
-> Fix it by making cpu_type_probe and pcr_arch_init be
-> an early_initcall as well.
-> 
-> Reported-by: Sam Ravnborg <sam@ravnborg.org>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> ---
->  arch/sparc/kernel/cpu.c |    2 +-
->  arch/sparc/kernel/pcr.c |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/sparc/kernel/cpu.c b/arch/sparc/kernel/cpu.c
-> index e447938..0dc714f 100644
-> --- a/arch/sparc/kernel/cpu.c
-> +++ b/arch/sparc/kernel/cpu.c
-> @@ -375,5 +375,5 @@ static int __init cpu_type_probe(void)
->         return 0;
->  }
->  
-> -arch_initcall(cpu_type_probe);
-> +early_initcall(cpu_type_probe);
->  #endif
-> diff --git a/arch/sparc/kernel/pcr.c b/arch/sparc/kernel/pcr.c
-> index b87873c..ae96cf5 100644
-> --- a/arch/sparc/kernel/pcr.c
-> +++ b/arch/sparc/kernel/pcr.c
-> @@ -168,4 +168,4 @@ out_unregister:
->         return err;
->  }
->  
-> -arch_initcall(pcr_arch_init);
-> +early_initcall(pcr_arch_init);
+> You can remove the initialization of x86_cpu_to_logical_apicid in the 
+> ->init_apic_ldr() callback in x2apic_cluster.c now too?
 
+Believe it or not, that's a different variable.  And yeah we probably
+should clean that up too.
 
-I just realized, doesn't this make bootability depend on link order?
-Since both the pmu init and its dependencies are now early_initcall()
-how do we guarantee pcr_arch_init() and cpu_type_probe() are in fact
-called _before_ init_hw_perf_events()?
+Thanks.
+
+-- 
+tejun
