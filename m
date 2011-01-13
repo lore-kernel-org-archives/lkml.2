@@ -1,182 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631Ab1AMBoY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 20:44:24 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:44303 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756604Ab1AMBoW (ORCPT
+	id S932398Ab1AMBqJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 20:46:09 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:42512 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756604Ab1AMBqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 20:44:22 -0500
-Date: Thu, 13 Jan 2011 12:44:15 +1100
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: Crypto Update for 2.6.38
-Message-ID: <20110113014414.GA12888@gondor.apana.org.au>
-References: <20081225001724.GA2813@gondor.apana.org.au> <20081225002020.GA2912@gondor.apana.org.au> <20090324044932.GA18245@gondor.apana.org.au> <20091204135530.GA29371@gondor.apana.org.au> <20100226004914.GA20812@gondor.apana.org.au> <20100519020603.GA19654@gondor.apana.org.au> <20100521104404.GA29530@gondor.apana.org.au> <20100804140448.GA4042@gondor.apana.org.au> <20101024061625.GA23715@gondor.apana.org.au> <20110106000157.GA16089@gondor.apana.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110106000157.GA16089@gondor.apana.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 12 Jan 2011 20:46:07 -0500
+X-Sasl-enc: bAiR6o5ghbugcm2iWM6cmX1KdwgmQUpTTAlvVi2MczOi 1294883165
+Subject: Re: [announce] vfs-scale git tree update
+From: Ian Kent <raven@themaw.net>
+To: Nick Piggin <npiggin@gmail.com>
+Cc: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>, aelder@sgi.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTikNa8dqkwA617QG6hkMRrVLXNWO+1jBRhoaQdio@mail.gmail.com>
+References: <20110107075831.GA14915@amd> <1294763679.2435.72.camel@doink>
+	 <AANLkTin67OXYYKk6y+_MKfXEXBz-F_+qAH0cpiJ24yEQ@mail.gmail.com>
+	 <1294768668.2435.177.camel@doink> <1294804776.2821.4.camel@perseus>
+	 <87aaj6u3oi.fsf@linux.vnet.ibm.com> <1294808464.2821.15.camel@perseus>
+	 <AANLkTikNa8dqkwA617QG6hkMRrVLXNWO+1jBRhoaQdio@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Jan 2011 09:46:00 +0800
+Message-ID: <1294883160.2757.2.camel@perseus>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+On Thu, 2011-01-13 at 11:58 +1100, Nick Piggin wrote:
+> On Wed, Jan 12, 2011 at 4:01 PM, Ian Kent <raven@themaw.net> wrote:
+> > On Wed, 2011-01-12 at 10:19 +0530, Aneesh Kumar K. V wrote:
+> >> for 9p I did the other way round. lookup now set the dentry op for both
+> >> negative and positive dentries and rest of the place we dropped
+> >> d_set_d_op (b8b80cf37c7f0e32729262f805bc0fa81c3e9d12 have the details)
+> >
+> > Sadly I can't do that.
+> >
+> > For now I need to avoid calls to ->d_revalidate() as much as possible to
+> > reduce a potential deadlock and have access to the flags of the negative
+> > dentry (during create) for the purpose of blocking concurrent walks.
+> 
+> What prevents your d_revalidate from just checking for negative dentry?
 
-Here is an updated to the crypto pull request for 2.6.38:
-
-* Crypto API interface for user-space (hash + skcipher)
-
-	This interface is intended to provide access of kernel
-	hardware crypto drivers to user-space applications.  It
-	presents the kernel crypto API via a socket interface.
-
-	It is only meant to be used for bulk crypto operations,
-	i.e., if you're doing less than a page's worth of data,
-	then this is not for you.
-
-	For bulk data processing the performance is similar to
-	that in the kernel when zero-copy is used in both
-	directions.
-
-* Memory corruption fix for via_rng.
-* Fixes for new OMAP driver.
-* 32-bit support in aesni-intel.
-* GCM support in aesni-intel.
-* Misc fixes.
+Whether the dentry is negative or not doesn't change the need to block
+walks which introduces the possibility of blocking while holding the
+parent i_mutex, since it can't be released in revalidate.
 
 
-Please pull from
-
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-or
-
-master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-
-Adrian Hoban (1):
-      crypto: rfc4106 - Extending the RC4106 AES-GCM test vectors
-
-Adrian-Ken Rueegsegger (1):
-      crypto: ripemd - Set module author and update email address
-
-Dennis Gilmore (1):
-      crypto: n2 - use __devexit not __exit in n2_unregister_algs
-
-Dmitry Kasatkin (15):
-      crypto: omap-sham - uses digest buffer in request context
-      crypto: omap-sham - DMA initialization fixes for off mode
-      crypto: omap-sham - error handling improved
-      crypto: omap-sham - removed redundunt locking
-      crypto: omap-sham - crypto_ahash_final() now not need to be called.
-      crypto: omap-sham - hash-in-progress is stored in hw format
-      crypto: omap-sham - FLAGS_FIRST is redundant and removed
-      crypto: omap-sham - zero-copy scatterlist handling
-      crypto: omap-aes - DMA initialization fixes for OMAP off mode
-      crypto: omap-aes - redundant locking is removed
-      crypto: omap-aes - error handling implementation improved
-      crypto: omap-aes - unnecessary code removed
-      crypto: omap-aes - initialize aes module once per request
-      crypto: omap-aes - checkpatch --file warning fixes
-      crypto: omap-sham - backlog handling fix
-
-Herbert Xu (13):
-      crypto: hash - Fix async import on shash algorithm
-      net - Add AF_ALG macros
-      crypto: af_alg - User-space interface for Crypto API
-      crypto: algif_hash - User-space interface for hash operations
-      crypto: algif_skcipher - User-space interface for skcipher operations
-      crypto: algif_skcipher - Pass on error from af_alg_make_sg
-      crypto: af_alg - Add dependency on NET
-      crypto: algif_skcipher - Fixed overflow when sndbuf is page aligned
-      crypto: algif_skcipher - Handle unaligned receive buffer
-      crypto: gf128mul - Remove experimental tag
-      hwrng: via_rng - Fix asm constraints
-      crypto: padlock - Move padlock.h into include/crypto
-      hwrng: via_rng - Fix memory scribbling on some CPUs
-
-Joe Perches (1):
-      crypto: Use vzalloc
-
-Mathias Krause (2):
-      crypto: aesni-intel - Ported implementation to x86-32
-      crypto: aesni-intel - Fixed build error on x86-32
-
-Miloslav Trmač (3):
-      include: Install linux/if_alg.h for user-space crypto API
-      net: Add missing lockdep class names for af_alg
-      crypto: af_alg - Make sure sk_security is initialized on accept()ed sockets
-
-Nicolas Kaiser (1):
-      crypto: cast5 - simplify if-statements
-
-Randy Dunlap (1):
-      crypto: af_alg - fix af_alg memory_allocated data type
-
-Roel Kluin (1):
-      crypto: mv_cesa - dont return PTR_ERR() of wrong pointer
-
-Steffen Klassert (2):
-      crypto: scatterwalk - Add scatterwalk_crypto_chain helper
-      crypto: Use scatterwalk_crypto_chain
-
-Tadeusz Struk (2):
-      crypto: aesni-intel - RFC4106 AES-GCM Driver Using Intel New Instructions
-      crypto: aesni-intel - Fixed build with binutils 2.16
-
-Tejun Heo (1):
-      crypto: mark crypto workqueues CPU_INTENSIVE
-
-Tracey Dent (1):
-      crypto: Makefile clean up
-
- arch/x86/crypto/aesni-intel_asm.S     | 1832 ++++++++++++++++++++++++++++++++-
- arch/x86/crypto/aesni-intel_glue.c    |  540 ++++++++++-
- crypto/Kconfig                        |   34 +-
- crypto/Makefile                       |   17 +-
- crypto/af_alg.c                       |  483 +++++++++
- crypto/algif_hash.c                   |  319 ++++++
- crypto/algif_skcipher.c               |  632 ++++++++++++
- crypto/authenc.c                      |   22 +-
- crypto/cast5.c                        |   74 +-
- crypto/crypto_wq.c                    |    3 +-
- crypto/deflate.c                      |    3 +-
- crypto/eseqiv.c                       |   18 +-
- crypto/gcm.c                          |   19 +-
- crypto/pcrypt.c                       |    3 +-
- crypto/rmd128.c                       |    3 +-
- crypto/rmd160.c                       |    3 +-
- crypto/rmd256.c                       |    3 +-
- crypto/rmd320.c                       |    3 +-
- crypto/shash.c                        |    8 +-
- crypto/tcrypt.c                       |   11 +
- crypto/testmgr.c                      |   24 +
- crypto/testmgr.h                      |  361 +++++++
- crypto/zlib.c                         |    3 +-
- drivers/char/hw_random/via-rng.c      |   10 +-
- drivers/crypto/mv_cesa.c              |    2 +-
- drivers/crypto/n2_core.c              |    2 +-
- drivers/crypto/omap-aes.c             |  260 +++---
- drivers/crypto/omap-sham.c            |  374 ++++---
- drivers/crypto/padlock-aes.c          |    2 +-
- drivers/crypto/padlock-sha.c          |    8 +-
- include/crypto/if_alg.h               |   92 ++
- {drivers => include}/crypto/padlock.h |    8 +-
- include/crypto/scatterwalk.h          |   15 +
- include/linux/Kbuild                  |    1 +
- include/linux/if_alg.h                |   40 +
- include/linux/socket.h                |    5 +-
- net/core/sock.c                       |    6 +-
- 37 files changed, 4779 insertions(+), 464 deletions(-)
-
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
