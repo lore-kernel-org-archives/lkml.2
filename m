@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332Ab1AMRfe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 12:35:34 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:38965 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756839Ab1AMRfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 12:35:33 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>
-Subject: [PATCH] Cleanup removed UIE emulation declaration
-Date: Thu, 13 Jan 2011 09:30:49 -0800
-Message-Id: <1294939849-20608-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1757267Ab1AMRgl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 12:36:41 -0500
+Received: from hapkido.dreamhost.com ([66.33.216.122]:40336 "EHLO
+	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756571Ab1AMRgj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 12:36:39 -0500
+Subject: [PATCH] input: ct82710c: return proper error code for ct82c710_open
+From: Davidlohr Bueso <dave@gnu.org>
+To: Dmitry Torokhov <dtor@mail.ru>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Jan 2011 14:35:50 -0300
+Message-ID: <1294940150.2200.4.camel@offworld>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rtc_dev_update_irq_enable_emul was removed in commit
-042620a018afcfba1d678062b62e463b9e43a68d (UIE emulation is
-now handled via hrtimer), but the declaration was missed.
-This patch cleans it up.
+From: Davidlohr Bueso <dave@gnu.org>
 
-Cc:Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+If request_irq() fails we should return the proper error instead of -1.
+
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 ---
- include/linux/rtc.h |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ drivers/input/serio/ct82c710.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/rtc.h b/include/linux/rtc.h
-index 3c995b4..ea76069 100644
---- a/include/linux/rtc.h
-+++ b/include/linux/rtc.h
-@@ -235,8 +235,6 @@ extern int rtc_irq_set_freq(struct rtc_device *rtc,
- 				struct rtc_task *task, int freq);
- extern int rtc_update_irq_enable(struct rtc_device *rtc, unsigned int enabled);
- extern int rtc_alarm_irq_enable(struct rtc_device *rtc, unsigned int enabled);
--extern int rtc_dev_update_irq_enable_emul(struct rtc_device *rtc,
--						unsigned int enabled);
+diff --git a/drivers/input/serio/ct82c710.c b/drivers/input/serio/ct82c710.c
+index 448c772..ee0edd0 100644
+--- a/drivers/input/serio/ct82c710.c
++++ b/drivers/input/serio/ct82c710.c
+@@ -111,9 +111,11 @@ static void ct82c710_close(struct serio *serio)
+ static int ct82c710_open(struct serio *serio)
+ {
+ 	unsigned char status;
++	int err = 0;
  
- void rtc_aie_update_irq(void *private);
- void rtc_uie_update_irq(void *private);
+-	if (request_irq(CT82C710_IRQ, ct82c710_interrupt, 0, "ct82c710", NULL))
+-		return -1;
++	err = request_irq(CT82C710_IRQ, ct82c710_interrupt, 0, "ct82c710", NULL);
++	if (err)
++		goto out;
+ 
+ 	status = inb_p(CT82C710_STATUS);
+ 
+@@ -133,8 +135,8 @@ static int ct82c710_open(struct serio *serio)
+ 		free_irq(CT82C710_IRQ, NULL);
+ 		return -1;
+ 	}
+-
+-	return 0;
++out:
++	return err;
+ }
+ 
+ /*
 -- 
-1.7.3.2.146.gca209
+1.7.1
+
+
 
