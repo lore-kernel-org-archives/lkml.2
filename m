@@ -1,133 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933111Ab1AMTAB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 14:00:01 -0500
-Received: from d1.icnet.pl ([212.160.220.21]:53004 "EHLO d1.icnet.pl"
+	id S1757308Ab1AMS7z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 13:59:55 -0500
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:60280 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757016Ab1AMS74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 13:59:56 -0500
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Organization: Tele-Info-System, Poznan, PL
-To: akpm@linux-foundation.org
-Subject: Re: + leds-add-output-inversion-option-to-backlight-trigger-fix.patch added to -mm tree
-Date: Thu, 13 Jan 2011 19:58:31 +0100
-User-Agent: KMail/1.9.10
-Cc: lethal@linux-sh.org, richard.purdie@linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-References: <201101062104.p06L4rgv015392@imap1.linux-foundation.org>
-In-Reply-To: <201101062104.p06L4rgv015392@imap1.linux-foundation.org>
+	id S1757147Ab1AMS7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 13:59:51 -0500
+Date: Thu, 13 Jan 2011 10:59:46 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, "Theodore Ts'o" <tytso@mit.edu>,
+        Neil Brown <neilb@suse.de>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        Jan Kara <jack@suse.cz>, Mike Snitzer <snitzer@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <cmm@us.ibm.com>,
+        linux-ext4@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Josef Bacik <josef@redhat.com>
+Subject: Re: [PATCH v7.1] block: Coordinate flush requests
+Message-ID: <20110113185946.GD27381@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110113025646.GB27381@tux1.beaverton.ibm.com> <20110113104240.GA30719@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201101131958.32984.jkrzyszt@tis.icnet.pl>
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+In-Reply-To: <20110113104240.GA30719@htj.dyndns.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thursday 06 January 2011 22:04:53 akpm@linux-foundation.org wrote:
-> The patch titled
->      leds-add-output-inversion-option-to-backlight-trigger-fix
-> has been added to the -mm tree.  Its filename is
->      leds-add-output-inversion-option-to-backlight-trigger-fix.patch
-...
-> ------------------------------------------------------
-> Subject: leds-add-output-inversion-option-to-backlight-trigger-fix
-> From: Andrew Morton <akpm@linux-foundation.org>
->
-> make output match input, tighten input checking
+On Thu, Jan 13, 2011 at 11:42:40AM +0100, Tejun Heo wrote:
+> Hello, Darrick.
 > 
-> Cc: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> 
-> Cc: Paul Mundt <lethal@linux-sh.org>
-> Cc: Richard Purdie <richard.purdie@linuxfoundation.org>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> On Wed, Jan 12, 2011 at 06:56:46PM -0800, Darrick J. Wong wrote:
+> > On certain types of storage hardware, flushing the write cache takes a
+> > considerable amount of time.  Typically, these are simple storage systems with
+> > write cache enabled and no battery to save that cache during a power failure.
+> > When we encounter a system with many I/O threads that try to flush the cache,
+> > performance is suboptimal because each of those threads issues its own flush
+> > command to the drive instead of trying to coordinate the flushes, thereby
+> > wasting execution time.
+> > 
+> > Instead of each thread initiating its own flush, we now try to detect the
+> > situation where multiple threads are issuing flush requests.  The first thread
+> > to enter blkdev_issue_flush becomes the owner of the flush, and all threads
+> > that enter blkdev_issue_flush before the flush finishes are queued up to wait
+> > for the next flush.  When that first flush finishes, one of those sleeping
+> > threads is woken up to perform the next flush and then wake up the other
+> > threads which are asleep waiting for the second flush to finish.
+> 
+> Nice work.  :-)
 
-Hi Andrew,
+Thank you!
 
-FWIW, here are your fixes ported to the ledtrig-gpio driver, which 
-suffers from the same sysfs API issues. Compile tested.
+> >  block/blk-flush.c     |  137 +++++++++++++++++++++++++++++++++++++++++--------
+> >  block/genhd.c         |   12 ++++
+> >  include/linux/genhd.h |   15 +++++
+> >  3 files changed, 143 insertions(+), 21 deletions(-)
+> > 
+> > diff --git a/block/blk-flush.c b/block/blk-flush.c
+> > index 2402a34..d6c9931 100644
+> > --- a/block/blk-flush.c
+> > +++ b/block/blk-flush.c
+> > @@ -201,6 +201,60 @@ static void bio_end_flush(struct bio *bio, int err)
+> >  	bio_put(bio);
+> >  }
+> >  
+> > +static int blkdev_issue_flush_now(struct block_device *bdev,
+> > +		gfp_t gfp_mask, sector_t *error_sector)
+> > +{
+> > +	DECLARE_COMPLETION_ONSTACK(wait);
+> > +	struct bio *bio;
+> > +	int ret = 0;
+> > +
+> > +	bio = bio_alloc(gfp_mask, 0);
+> > +	bio->bi_end_io = bio_end_flush;
+> > +	bio->bi_bdev = bdev;
+> > +	bio->bi_private = &wait;
+> > +
+> > +	bio_get(bio);
+> > +	submit_bio(WRITE_FLUSH, bio);
+> > +	wait_for_completion(&wait);
+> > +
+> > +	/*
+> > +	 * The driver must store the error location in ->bi_sector, if
+> > +	 * it supports it. For non-stacked drivers, this should be
+> > +	 * copied from blk_rq_pos(rq).
+> > +	 */
+> > +	if (error_sector)
+> > +		*error_sector = bio->bi_sector;
+> > +
+> > +	if (!bio_flagged(bio, BIO_UPTODATE))
+> > +		ret = -EIO;
+> > +
+> > +	bio_put(bio);
+> > +	return ret;
+> > +}
+> 
+> But wouldn't it be better to implement this directly in the flush
+> machinary instead of as blkdev_issue_flush() wrapper?  We have all the
+> information at the request queue level so we can easily detect whether
+> flushes can be merged or not and whether something is issued by
+> blkdev_issue_flush() or by directly submitting bio wouldn't matter at
+> all.  Am I missing something?
 
-Thanks,
-Janusz
+Could you clarify where exactly you meant by "in the flush machinery"?  I think
+what you're suggesting is that blk_flush_complete_seq could scan the pending
+flush list to find a run of consecutive pure flush requests, submit the last
+one, and set things up so that during the completion of the flush, all the
+requests in that run are returned with the real flush's return code.
 
----
---- linux-2.6.37/drivers/leds/ledtrig-gpio.c.orig	2011-01-10 02:43:10.000000000 +0100
-+++ linux-2.6.37/drivers/leds/ledtrig-gpio.c	2011-01-13 18:24:40.000000000 +0100
-@@ -99,7 +99,7 @@ static ssize_t gpio_trig_inverted_show(s
- 	struct led_classdev *led = dev_get_drvdata(dev);
- 	struct gpio_trig_data *gpio_data = led->trigger_data;
- 
--	return sprintf(buf, "%s\n", gpio_data->inverted ? "yes" : "no");
-+	return sprintf(buf, "%u\n", gpio_data->inverted);
- }
- 
- static ssize_t gpio_trig_inverted_store(struct device *dev,
-@@ -107,16 +107,17 @@ static ssize_t gpio_trig_inverted_store(
- {
- 	struct led_classdev *led = dev_get_drvdata(dev);
- 	struct gpio_trig_data *gpio_data = led->trigger_data;
--	unsigned inverted;
-+	unsigned long inverted;
- 	int ret;
- 
--	ret = sscanf(buf, "%u", &inverted);
--	if (ret < 1) {
--		dev_err(dev, "invalid value\n");
-+	ret = strict_strtoul(buf, 10, &inverted);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (inverted > 1)
- 		return -EINVAL;
--	}
- 
--	gpio_data->inverted = !!inverted;
-+	gpio_data->inverted = inverted;
- 
- 	/* After inverting, we need to update the LED. */
- 	schedule_work(&gpio_data->work);
-_
-> ---
->
->  drivers/leds/ledtrig-backlight.c |   15 ++++++++-------
->  1 file changed, 8 insertions(+), 7 deletions(-)
->
-> diff -puN rivers/leds/ledtrig-backlight.c~leds-add-output-inversion-option-to->backlight-trigger-fix drivers/leds/ledtrig-backlight.c
-> --- a/drivers/leds/ledtrig-backlight.c~leds-add-output-inversion-option-to-backlight-trigger-fix
-> +++ a/drivers/leds/ledtrig-backlight.c 
-> @@ -65,7 +65,7 @@ static ssize_t bl_trig_invert_show(struc
->  	struct led_classdev *led = dev_get_drvdata(dev);
->  	struct bl_trig_notifier *n = led->trigger_data;
->
-> -	return sprintf(buf, "%s\n", n->invert ? "yes" : "no");
-> +	return sprintf(buf, "%u\n", n->invert);
->  }
->
->  static ssize_t bl_trig_invert_store(struct device *dev,
-> @@ -73,16 +73,17 @@ static ssize_t bl_trig_invert_store(stru
->  {
->  	struct led_classdev *led = dev_get_drvdata(dev);
->  	struct bl_trig_notifier *n = led->trigger_data;
-> -	unsigned invert;
-> +	unsigned long invert;
->  	int ret;
->
-> -	ret = sscanf(buf, "%u", &invert);
-> -	if (ret < 1) {
-> -		dev_err(dev, "invalid value\n");
-> +	ret = strict_strtoul(buf, 10, &invert);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	if (invert > 1)
->  		return -EINVAL;
-> -	}
->
-> -	n->invert = !!invert;
-> +	n->invert = invert;
->
->  	/* After inverting, we need to update the LED. */
->  	if ((n->old_status == BLANK) ^ n->invert)
-> _
+If that's what you meant, then yes, it could be done that way.  However, I have
+a few reasons for choosing the blkdev_issue_flush approach.  First, as far as I
+could tell in the kernel, all the code paths that involve upper layers issuing
+pure flushes go through blkdev_issue_flush, so it seems like a convenient place
+to capture all the incoming pure flushes.  Other parts of the kernel issue
+writes with the flush flag set, but we want those to go through the regular
+queuing mechanisms anyway.  Second, with the proposed patch, any upper-layer
+code that has a requirement for a pure flush to be issued without coordination
+can do so by submitting the bio directly (or blkdev_issue_flush_now can be
+exported).  Third, baking the coordination into the flush machinery makes that
+machinery more complicated to understand and maintain.
+
+So in short, I went with the blkdev_issue_flush approach because the code is
+easier to understand, and it's not losing any pure flushes despite casting a
+narrower net.
+
+I was also wondering, how many others are testing these flush-pain-reduction
+patches?  It would be nice to know about wider testing than just my lab. :)
+
+--D
