@@ -1,120 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933086Ab1AMRt4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 12:49:56 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:32767 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933022Ab1AMRty (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Thu, 13 Jan 2011 12:49:54 -0500
-Date: Thu, 13 Jan 2011 12:49:09 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, andi@firstfloor.org, johnstul@us.ibm.com,
-        williams@redhat.com, schwidefsky@de.ibm.com, mingo@elte.hu,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/tsc] x86: Improve TSC calibration using a delayed
- workqueue
-Message-ID: <20110113174909.GA28738@dumpdata.com>
-References: <1289003985-29060-1-git-send-email-johnstul@us.ibm.com>
- <tip-08ec0c58fb8a05d3191d5cb6f5d6f81adb419798@git.kernel.org>
- <20110111081352.GA22867@shutemov.name>
- <alpine.LFD.2.00.1101110926040.12146@localhost6.localdomain6>
- <20110111083054.GB22867@shutemov.name>
- <alpine.LFD.2.00.1101110936291.12146@localhost6.localdomain6>
- <20110111095640.GC22867@shutemov.name>
+	id S933109Ab1AMRxU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 12:53:20 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45601 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933073Ab1AMRxS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 12:53:18 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Vveg1C9oh2n/Uzg3hCnnjp7dqZjS31AvWbX1/jiTvPFvnVmrxNLAkP5nNfWxcl2pBB
+         Vw9YJITuUEW+xTaCUhduV6ScmeYnkPH3hqhDxsQHhHF0cpOlecguAdaBfT8o2jUrIPGS
+         sPdzqXxnzXYiqaqlNjAIxi8LeKWhxZd+Dldqc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110111095640.GC22867@shutemov.name>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4D2F3723.9040405@gmail.com>
+References: <4D2DE824.10205@gmail.com>
+	<4D2DEC0A.70608@gmail.com>
+	<20110112105608.793787b2@s6510>
+	<4D2F3723.9040405@gmail.com>
+Date: Thu, 13 Jan 2011 12:53:17 -0500
+Message-ID: <AANLkTinhnaF3-scKnTOC5rF68+5otVW2NG3v1y80L0k6@mail.gmail.com>
+Subject: Re: [PATCH v1 2/2] TCPCT API sockopt update to draft -03
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: William Allen Simpson <william.allen.simpson@gmail.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>,
+        Linux Kernel Developers <linux-kernel@vger.kernel.org>,
+        Linux Kernel Network Developers <netdev@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 11:56:40AM +0200, Kirill A. Shutemov wrote:
-> On Tue, Jan 11, 2011 at 09:37:15AM +0100, Thomas Gleixner wrote:
-> > On Tue, 11 Jan 2011, Kirill A. Shutemov wrote:
-> > 
-> > > On Tue, Jan 11, 2011 at 09:26:48AM +0100, Thomas Gleixner wrote:
-> > > > On Tue, 11 Jan 2011, Kirill A. Shutemov wrote:
-> > > > 
-> > > > > On Sun, Dec 05, 2010 at 11:18:53AM +0000, tip-bot for John Stultz wrote:
-> > > > > > Commit-ID:  08ec0c58fb8a05d3191d5cb6f5d6f81adb419798
-> > > > > > Gitweb:     http://git.kernel.org/tip/08ec0c58fb8a05d3191d5cb6f5d6f81adb419798
-> > > > > > Author:     John Stultz <johnstul@us.ibm.com>
-> > > > > > AuthorDate: Tue, 27 Jul 2010 17:00:00 -0700
-> > > > > > Committer:  John Stultz <john.stultz@linaro.org>
-> > > > > > CommitDate: Thu, 2 Dec 2010 16:48:37 -0800
-> > > > > > 
-> > > > > > x86: Improve TSC calibration using a delayed workqueue
-> > > > > 
-> > > > > This commit breaks booting the kernel in qemu with enabled KVM on my machine.
-> > > > > .config attached.
-> > > > > 
-> > > > > [    0.424013] divide error: 0000 [#1] 
-> > > > 
-> > > > Got fixed by a8760ec (x86: Check tsc available/disabled in the delayed
-> > > > init function)
-> > > 
-> > > No, it didn't. :(
-> > > 
-> > > I am able to reproduce it on current Linus' tree (v2.6.37-4700-g8adbf8d).
-> > 
-> > Does the patch below fix it ? We can end up with tsc_khz=0 there :(
-> 
-> Yes, it does.
+Hi,
 
-Interestingly enough, when you run Linux under Xen (as Domain 0) you
-get the same stack-trace. With both patches (a8760ec, and the patch
-posted earlier) I still get the failure.
+On Thu, Jan 13, 2011 at 12:32 PM, William Allen Simpson
+<william.allen.simpson@gmail.com> wrote:
+> On 1/12/11 1:56 PM, Stephen Hemminger wrote:
+>>
+>> On Wed, 12 Jan 2011 12:59:38 -0500
+>> William Allen Simpson<william.allen.simpson@gmail.com>  wrote:
+>>
+>>> diff --git a/include/linux/tcp.h b/include/linux/tcp.h
+>>> index e64f4c6..c8f4017 100644
+>>> --- a/include/linux/tcp.h
+>>> +++ b/include/linux/tcp.h
+>>> @@ -185,22 +185,37 @@ struct tcp_md5sig {
+>>>  #define TCP_COOKIE_PAIR_SIZE  (2*TCP_COOKIE_MAX)
+>>>
+>>>  /* Flags for both getsockopt and setsockopt */
+>>> -#define TCP_COOKIE_IN_ALWAYS   (1<<  0)        /* Discard SYN without
+>>> cookie */
+>>> -#define TCP_COOKIE_OUT_NEVER   (1<<  1)        /* Prohibit outgoing
+>>> cookies,
+>>> +#define TCPCT_IN_ALWAYS                (1<<  0)        /* Discard SYN
+>>> without cookie */
+>>> +#define TCPCT_OUT_NEVER                (1<<  1)        /* Prohibit
+>>> outgoing cookies,
+>>
+>> You end up changing values in kernel userspace API in a way
+>> that is incompatible with older applications. This is not acceptable.
+>>
+> While I agree in principle and argued strongly against it, other
+> members of the research group (particularly the original project
+> sponsor) have over-ridden my concerns.  I'm sorry to inform you that
+> many/most participants don't care much about Linux.
+>
+> Note that the *bits* are the same, and previously compiled programs
+> (that don't access more advanced features) should continue to run as
+> they have in the past.
+>
+> Even though I'm not paid to work on Linux, I'm doing my best to give you
+> folks a quick heads up and provide code to rectify the very recent changes
+> that can be propagated back through the stable tree (to 2.6.33).
+>
+> As always, what you actually do with my code is up to you....
+>
+FWIW, what is the basis of this hunk ? The RFC text[0] seems to use
+the TCP_COOKIE_* naming, not TCPCT_.
 
-I've traced it down to the fact that when we boot under Xen we do
-not have the HPET enabled nor the ACPI PM timer setup. The 
-hpet_enable() is never called (b/c xen_time_init is called), and
-for calibration of tsc_khz (calibrate_tsc == xen_tsc_khz) we
-get a valid value.
+Thanks,
+ - Arnaud
 
-So 'tsc_read_refs' tries to read the ACPI PM timer (acpi_pm_read_early),
-however that is disabled under Xen:
+[0]: http://www.rfc-editor.org/authors/rfc6013.txt
 
-[    1.099272] calling  init_acpi_pm_clocksource+0x0/0xdc @ 1
-[    1.140186] PM-Timer failed consistency check  (0x0xffffff) - aborting.
-
-So the tsc_calibrate_check gets called, it can't do HPET, and reading
-from ACPI PM timer results in getting 0xffffff.. .. and
-(0xffff..-0xffff..)/some other value results in div_zero.
-
-There is a check in 'tsc_refine_calibration_work' for invalid
-values:
-
-   /* hpet or pmtimer available ? */
-         if (!hpet && !ref_start && !ref_stop)
-                  goto out;
-
-But since ref_start and ref_stop have 0xffffff it does not trigger.
-
-This little fix does it however. Thought it will of course not
-recalibrate the tsc - is that a horrible thing? Should we look
-at making tsc_read_refs also use the pv-ops in case both hpet and
-acpi pm timer are disabled?
-
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
-diff --git a/drivers/clocksource/acpi_pm.c b/drivers/clocksource/acpi_pm.c
-index cfb0f52..84ff897 100644
---- a/drivers/clocksource/acpi_pm.c
-+++ b/drivers/clocksource/acpi_pm.c
-@@ -207,6 +208,7 @@ static int __init init_acpi_pm_clocksource(void)
- 		if (i == ACPI_PM_READ_CHECKS) {
- 			printk(KERN_INFO "PM-Timer failed consistency check "
- 			       " (0x%#llx) - aborting.\n", value1);
-+			pmtmr_ioport = 0;
- 			return -ENODEV;
- 		}
- 	}
+--
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
