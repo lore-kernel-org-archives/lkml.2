@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757051Ab1AMPHK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 10:07:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63238 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757019Ab1AMPHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 10:07:08 -0500
-Message-ID: <4D2F1510.3000809@redhat.com>
-Date: Thu, 13 Jan 2011 10:06:56 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1757075Ab1AMPJk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 10:09:40 -0500
+Received: from mx3.schottelius.org ([77.109.138.221]:53541 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756986Ab1AMPJh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 10:09:37 -0500
+Date: Thu, 13 Jan 2011 16:09:32 +0100
+From: Nico Schottelius <nico-linux-2010122@schottelius.org>
+To: Nico Schottelius <nico-linux-20101229@schottelius.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.37-rc7: screen black after several suspends
+Message-ID: <20110113150932.GD15182@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-linux-2010122@schottelius.org>,
+	Nico Schottelius <nico-linux-20101229@schottelius.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20110102101721.GA2277@schottelius.org>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
-Subject: Re: [RFC -v4 PATCH 3/3] kvm: use yield_to instead of sleep in kvm_vcpu_on_spin
-References: <20110113002108.3abdf953@annuminas.surriel.com> <20110113002745.51190252@annuminas.surriel.com> <4D2EFB44.2060906@redhat.com>
-In-Reply-To: <4D2EFB44.2060906@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SO98HVl1bnMOfKZd"
+Content-Disposition: inline
+In-Reply-To: <20110102101721.GA2277@schottelius.org>
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: kr (Linux 2.6.37-rc8-00033-gb518a64 x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2011 08:16 AM, Avi Kivity wrote:
 
->> + for (pass = 0; pass< 2&& !yielded; pass++) {
->> + kvm_for_each_vcpu(i, vcpu, kvm) {
->> + struct task_struct *task = vcpu->task;
->> + if (!pass&& i< last_boosted_vcpu) {
->> + i = last_boosted_vcpu;
->> + continue;
->> + } else if (pass&& i> last_boosted_vcpu)
->> + break;
->> + if (vcpu == me)
->> + continue;
->> + if (!task)
->> + continue;
->> + if (waitqueue_active(&vcpu->wq))
->> + continue;
->
-> Suppose the vcpu exits at this point, and its task terminates.
+--SO98HVl1bnMOfKZd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Arghh, good point.
+Hey devs,
 
-> I think the first patch needs some reference counting... I'd move it to
-> the outermost KVM_RUN loop to reduce the performance impact.
+Just for the record:
 
-I don't see how refcounting from that other thread could
-possibly help, and I now see that the task_struct_cachep
-does not have SLAB_DESTROY_BY_LRU, either :(
+Some tens of SUCCESSFUL suspends & wakeups on 2.6.37-rc8-00033-gb518a64.
 
-What do you have in mind here that would both work and
-be acceptable to you as KVM maintainer?
+Xorg crashed once (black screen, not recoverable with tty switching),
+restarted it, still works. Even with some lazy umounted nfs mounts,
+even with LUKS devices / usb being used during suspend and removing
+on wakeup.
 
--- 
-All rights reversed
+This is probably the most stable kernel version I've seen in a long time!
+
+Cheers,
+
+Nico
+
+--=20
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+
+--SO98HVl1bnMOfKZd
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk0vFawACgkQ19zI5DGHffC0VACgvKAuyLUTquConh2SGa41gLtF
+sUwAn3CHIlZ7JIPwUskqca4xoiAlBnuH
+=nCe0
+-----END PGP SIGNATURE-----
+
+--SO98HVl1bnMOfKZd--
