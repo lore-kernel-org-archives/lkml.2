@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979Ab1AMWwv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 17:52:51 -0500
-Received: from www.tglx.de ([62.245.132.106]:47699 "EHLO www.tglx.de"
+	id S1757019Ab1AMW4T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 17:56:19 -0500
+Received: from www.tglx.de ([62.245.132.106]:38387 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752034Ab1AMWwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 17:52:44 -0500
-Date: Thu, 13 Jan 2011 23:52:17 +0100 (CET)
+	id S1752260Ab1AMW4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 17:56:14 -0500
+Date: Thu, 13 Jan 2011 23:55:58 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Greg KH <greg@kroah.com>
-cc: Yinghai Lu <yinghai@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
+To: Borislav Petkov <bp@amd64.org>
+cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Manoj Iyer <manoj.iyer@canonical.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC PATCH] x86: Add safe_udelay() and safe_msleep()
-In-Reply-To: <20110113224450.GA14918@kroah.com>
-Message-ID: <alpine.LFD.2.00.1101132349590.2678@localhost6.localdomain6>
-References: <20110111010714.GB32585@kroah.com> <4D2BB048.2050509@kernel.org> <1294723290.17779.349.camel@pasglop> <4D2BF9F3.5080709@kernel.org> <1294731467.17779.352.camel@pasglop> <AANLkTika_bZxXO3PKek+BHoYqgYGPBPER-H9KJJXjJzn@mail.gmail.com>
- <20110111135655.GA6901@kroah.com> <4D2CFEAD.6070206@kernel.org> <1294799565.9586.13.camel@pasglop> <4D2F7AE9.2000809@kernel.org> <20110113224450.GA14918@kroah.com>
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
+Subject: Re: [PATCH] Quirk to fix suspend/resume on Lenovo Edge 11,13,14,15
+In-Reply-To: <20110113214841.GC4081@aftab>
+Message-ID: <alpine.LFD.2.00.1101132353210.2678@localhost6.localdomain6>
+References: <AANLkTikDoRMoQjtN03eMoeacwottEixrFqcF8nJZWgKy@mail.gmail.com> <20110113183025.GE2006@aftab> <alpine.LFD.2.00.1101131946560.2678@localhost6.localdomain6> <20110113185807.GA24720@srcf.ucam.org> <20110113190700.GB30866@kryptos.osrc.amd.com>
+ <alpine.LFD.2.00.1101132012140.2678@localhost6.localdomain6> <20110113192825.GC30866@kryptos.osrc.amd.com> <alpine.LFD.2.00.1101132032350.2678@localhost6.localdomain6> <20110113210950.GA4081@aftab> <alpine.LFD.2.00.1101132210351.2678@localhost6.localdomain6>
+ <20110113214841.GC4081@aftab>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -28,32 +27,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jan 2011, Greg KH wrote:
-> On Thu, Jan 13, 2011 at 02:21:29PM -0800, Yinghai Lu wrote:
-> > +extern void use_normal_delay(void);
-> > +extern void use_normal_sleep(void);
-> >  #endif /* defined(_LINUX_DELAY_H) */
-> > Index: linux-2.6/init/main.c
-> > ===================================================================
-> > --- linux-2.6.orig/init/main.c
-> > +++ linux-2.6/init/main.c
-> > @@ -879,6 +879,9 @@ static int __init kernel_init(void * unu
-> >  	cad_pid = task_pid(current);
-> >  
-> >  	smp_prepare_cpus(setup_max_cpus);
-> > +	/* set them back, x86 use it for early delay*/
-> > +	use_normal_delay();
-> > +	use_normal_sleep();
+On Thu, 13 Jan 2011, Borislav Petkov wrote:
+> On Thu, Jan 13, 2011 at 04:30:43PM -0500, Thomas Gleixner wrote:
+> > The more interesting info is there in Manoj's logs:
+> > 
+> > [    0.036455] ..TIMER: vector=0x30 apic1=0 pin1=0 apic2=-1 pin2=-1
+> > [    0.040000] ..MP-BIOS bug: 8254 timer not connected to IO-APIC
+> > [    0.040000] ...trying to set up timer (IRQ0) through the 8259A ...
+> > [    0.040000] ..... (found apic 0 pin 0) ...
+> > [    0.080021] ....... works.
+> > 
+> > versus
+> > 
+> > [    0.036460] ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+> > 
+> > So the "working" state is using "apic 0 pin 0" while the non working
+> > state is using "vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1".
+> > 
+> > Something changes across suspend/resume which makes the BIOS
+> > advertised routing work with PIT but not with HPET. Further why does
+> > the apic 0/0 solution found by the kernel (when ignoring BIOS) works
+> > always (except that we don't know whether the "nohpet" case works as
+> > well, but I bet it does).
 > 
-> Ick, I really don't like this.
-> 
-> And, most importantly, I'm still not sure it's needed at all, as I don't
-> agree with your previous patches that you say this one is needed for.
-> 
-> So, how about we work on the original root problem here before worrying
-> about changing the main usleep logic for the whole kernel?
+> Yes, it does. With "nohpet" we use PIT and PIT obviously works.
 
-What the hell is the root problem ?
+No. We have no prove that acpi_skip_timer_override and nohpet work
+together :)
+
+> > So we are back to the question I raised above: What changes and even
+> > more interesting what changes after the HPET expires - which we know
+> > for sure that it must happen as otherwise we wont get a HPET interrupt
+> > after the 32bit wraparound.
+> > 
+> > We need answers to these questions before applying any
+> > patch/workaround/quirk or whatever.
+> 
+> Well, this is easily answered in the theoretical sense, without the
+> actual details :):
+> 
+> 1. HPET gets reinitialized first
+> 2. Something programs it
+> 3. Timer expires but timer IRQ routing is still wrong and "Something"
+>    doesn't get its IRQ.
+> 4. Timer IRQ routing gets "fixed" as part of the resume path.
+> 
+> ... we end up waiting for the counter to wraparound and get an IRQ which
+> gets delivered this time.
+> 
+> Does that make sense at all?
+
+Yes, that's what I figured, but we need some explanation WHY this is
+"working" magically. Once we have that we can fix the issue at hand
+w/o applying random quirks.
 
 Thanks,
 
