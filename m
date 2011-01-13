@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853Ab1AMNyr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 08:54:47 -0500
-Received: from www.tglx.de ([62.245.132.106]:46566 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756785Ab1AMNyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 08:54:45 -0500
-Date: Thu, 13 Jan 2011 14:54:30 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Nick Piggin <npiggin@kernel.dk>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, u.kleine-koenig@pengutronix.de,
-        "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-Subject: [PATCH] fs: Work around NFS wreckage
-Message-ID: <alpine.LFD.2.00.1101131436070.2678@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756824Ab1AMNzP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 08:55:15 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35462 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756816Ab1AMNzK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 08:55:10 -0500
+Date: Thu, 13 Jan 2011 13:55:25 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: alsa-devel@alsa-project.org, uclinux-dist-devel@blackfin.uclinux.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC: Blackfin TDM: fix missed snd_soc_dai_get_drvdata
+ update
+Message-ID: <20110113135525.GD11840@opensource.wolfsonmicro.com>
+References: <1294805299-5265-1-git-send-email-vapier@gentoo.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294805299-5265-1-git-send-email-vapier@gentoo.org>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dcache scalability work broke NFS root filesystems.
+On Tue, Jan 11, 2011 at 11:08:19PM -0500, Mike Frysinger wrote:
+> One spot was missed in this driver when converting from
+> snd_soc_dai.private_data to snd_soc_dai_get_drvdata.
+> 
+> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
 
-"cd /" results in the following problem:
+Ccing in Liam - Mike, please remember to CC maintainers on patches - and
+dropping the stable lists for now.
 
-    link_path_walk("/",...);
-	jumps to return_reval
-	need_reval_dot() returns true for NFS
-	d_revalidate()
-		dentry->d_op->d_revalidate(dentry, nd);
-		 	returns -ECHILD due to nd->flags & LOOKUP_RCU
-		nameidata_dentry_drop_rcu()
-			spin_lock(&parent->d_lock);
-			spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
 
-			This deadlocks because dentry == parent
-
-This problem exists for any filesystem which implements d_revalidate.
-
-Uwe bisected is down to commit 34286d6(fs: rcu-walk aware d_revalidate
-method), but reverting that patch causes different wreckage to show up.
-
-Check for parent equal dentry and skip the nested lock to avoid the
-deadlock. I'm sure this is the wrong fix, but at least it "works" :)
-
-Reported-by: Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
-Reported-by: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-Not-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- fs/namei.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-Index: linux-2.6/fs/namei.c
-===================================================================
---- linux-2.6.orig/fs/namei.c
-+++ linux-2.6/fs/namei.c
-@@ -487,6 +487,8 @@ static int nameidata_dentry_drop_rcu(str
- 			goto err_root;
- 	}
- 	spin_lock(&parent->d_lock);
-+	if (parent == dentry)
-+		goto same;
- 	spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
- 	if (!__d_rcu_to_refcount(dentry, nd->seq))
- 		goto err;
-@@ -499,6 +501,8 @@ static int nameidata_dentry_drop_rcu(str
- 	BUG_ON(!parent->d_count);
- 	parent->d_count++;
- 	spin_unlock(&dentry->d_lock);
-+
-+same:
- 	spin_unlock(&parent->d_lock);
- 	if (nd->root.mnt) {
- 		path_get(&nd->root);
+> ---
+>  sound/soc/blackfin/bf5xx-tdm.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/sound/soc/blackfin/bf5xx-tdm.c b/sound/soc/blackfin/bf5xx-tdm.c
+> index 1251239..b2cf239 100644
+> --- a/sound/soc/blackfin/bf5xx-tdm.c
+> +++ b/sound/soc/blackfin/bf5xx-tdm.c
+> @@ -210,7 +210,7 @@ static int bf5xx_tdm_set_channel_map(struct snd_soc_dai *dai,
+>  #ifdef CONFIG_PM
+>  static int bf5xx_tdm_suspend(struct snd_soc_dai *dai)
+>  {
+> -	struct sport_device *sport = dai->private_data;
+> +	struct sport_device *sport = snd_soc_dai_get_drvdata(dai);
+>  
+>  	if (!dai->active)
+>  		return 0;
+> -- 
+> 1.7.4.rc1
+> 
