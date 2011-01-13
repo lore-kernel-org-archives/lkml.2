@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757205Ab1AMUit (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 15:38:49 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:17948 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756950Ab1AMUio (ORCPT
+	id S1757230Ab1AMUkR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 15:40:17 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59253 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756942Ab1AMUkM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 15:38:44 -0500
-Subject: [GIT PULL] AVR32 update for 2.6.38
-From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: AVR32 Linux Kernel <kernel@avr32linux.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Atmel Corporation
-Date: Thu, 13 Jan 2011 21:02:26 +0100
-Message-ID: <1294948946.26709.8.camel@hcegtvedt>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Jan 2011 20:02:27.0825 (UTC) FILETIME=[CD9E2E10:01CBB35C]
+	Thu, 13 Jan 2011 15:40:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=TBWIYSRbS4CeXRkFtAt2cBk5fLzoaF8uMq6E0WVJF5SzLSB2lhDB2oqllp1i2SmPXc
+         qarWplH33ea9d76YKerI6Zhbz7Yp4VhzuUkp2KyyU8JVGy8w1yAZBP46ZFKq3WYApj2k
+         kCTkNL2FV7y/BUyT/mcZOo7E9fD+vlgUyqG/s=
+MIME-Version: 1.0
+In-Reply-To: <60566a54842bcf5974d55ed39f387c32ff9cf5cb.1294917348.git.richard.cochran@omicron.at>
+References: <cover.1294917347.git.richard.cochran@omicron.at> <60566a54842bcf5974d55ed39f387c32ff9cf5cb.1294917348.git.richard.cochran@omicron.at>
+From: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
+Date: Fri, 14 Jan 2011 05:39:31 +0900
+Message-ID: <AANLkTimHP1OsWauj6O566WgnxVTjMbNg2PK644QcT9Lq@mail.gmail.com>
+Subject: Re: [PATCH V9 02/13] ntp: add ADJ_SETOFFSET mode bit
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
+        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Jan 13, 2011 at 8:32 PM, Richard Cochran
+<richardcochran@gmail.com> wrote:
+> This patch adds a new mode bit into the timex structure. When set, the bit
+> instructs the kernel to add the given time value to the current time.
 
-Please pull
+The unix time is a nonlinear timescale and there's no way to predict
+how many leap seconds will be inserted/deleted during the given time
+interval.  So it is impossible to convert relative time to absolute
+time and thus your patch is broken. (More specifically, the
+timekeeping_inject_offset function is broken.)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/egtvedt/avr32-2.6.git for-linus
-
-to receive the following updates for 2.6.38.
-
-Hans-Christian Egtvedt (4):
-      avr32: disable kprobes for all default configurations
-      avr32: use syscall prototypes from asm-generic instead of arch
-      avr32: make architecture sys_clone prototype match asm-generic prototype
-      avr32: update default configuration files for Atmel boards
-
-John Stultz (1):
-      avr32: Convert to clocksource_register_hz
-
-Vasiliy Kulikov (1):
-      avr32: boards: setup: use IS_ERR() instead of NULL check
-
- arch/avr32/boards/atngw100/setup.c                 |    2 +-
- arch/avr32/boards/atstk1000/atstk1002.c            |    2 +-
- arch/avr32/boards/favr-32/setup.c                  |    2 +-
- arch/avr32/boards/hammerhead/setup.c               |    2 +-
- arch/avr32/boards/merisc/setup.c                   |    2 +-
- arch/avr32/boards/mimc200/setup.c                  |    2 +-
- arch/avr32/configs/atngw100_defconfig              |   23 ++---
- arch/avr32/configs/atngw100_evklcd100_defconfig    |   17 ++--
- arch/avr32/configs/atngw100_evklcd101_defconfig    |   17 ++--
- arch/avr32/configs/atngw100mkii_defconfig          |   22 ++--
- .../avr32/configs/atngw100mkii_evklcd100_defconfig |   17 ++--
- .../avr32/configs/atngw100mkii_evklcd101_defconfig |   17 ++--
- arch/avr32/configs/atstk1002_defconfig             |   25 ++---
- arch/avr32/configs/atstk1003_defconfig             |   41 ++++----
- arch/avr32/configs/atstk1004_defconfig             |  109 +++++++++++++++++---
- arch/avr32/configs/atstk1006_defconfig             |   23 ++---
- arch/avr32/configs/favr-32_defconfig               |    2 +-
- arch/avr32/configs/hammerhead_defconfig            |    2 +-
- arch/avr32/include/asm/syscalls.h                  |   14 ---
- arch/avr32/kernel/process.c                        |    9 +-
- arch/avr32/kernel/time.c                           |    5 +-
- 21 files changed, 206 insertions(+), 149 deletions(-)
-
--- 
-Best regards,
-Hans-Christian Egtvedt
-
+My proposal: Limit the adjustable range of the offset so that leap
+seconds will never occur more than once. (2147.5 seconds would be the
+best choice. :-)
