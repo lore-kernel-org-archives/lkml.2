@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933655Ab1AMUID (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 15:08:03 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:25586 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933642Ab1AMUH4 (ORCPT
+	id S933667Ab1AMUJH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 15:09:07 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:56161 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933472Ab1AMUJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 15:07:56 -0500
-Date: Thu, 13 Jan 2011 21:07:55 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: David Howells <dhowells@redhat.com>
-cc: David Safford <safford@us.ibm.com>, James Morris <jmorris@namei.org>,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Trusted and Encrypted Keys: fix up TSS_rawhmac() so we always
- kfree() and remember to call va_end()
-Message-ID: <alpine.LNX.2.00.1101132100190.11347@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Thu, 13 Jan 2011 15:09:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=s5ogyPurhZM6DAAZmW93ariAzV5e5ftaIWz4ZOO7YxlZJbrtJtXvREo18LalHpEpJI
+         N58zMWiZFwcHWxAlg/wxc5/6nP9K+UeYw/Ct3vsemGj4IVIE0tm4yp7dRSaMUFSteHgT
+         QLR/4x3XcyRuSLdI0rokrDxXhkdH7iV97ZBmg=
+From: Franck Bui-Huu <vagabon.xyz@gmail.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        lkml <linux-kernel@vger.kernel.org>, 2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH] perf-probe: make "perf-probe -L <function>" display the absolute path and absolute line number
+References: <m38vyp85qv.fsf@gmail.com> <4D2EDBE4.3060608@hitachi.com>
+Date: Thu, 13 Jan 2011 20:42:26 +0100
+In-Reply-To: <4D2EDBE4.3060608@hitachi.com> (Masami Hiramatsu's message of
+	"Thu, 13 Jan 2011 20:03:00 +0900")
+Message-ID: <m34o9c8ual.fsf@gmail.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In security/keys/trusted_defined.c::TSS_rawhmac() we may leak the storage 
-allocated to 'sdesc' if
-  data = va_arg(argp, unsigned char *);
-results in a NULL 'data' and we then leave the function by returning 
--EINVAL. We also neglect calling va_end(argp) in that case and furthermore 
-we neglect va_end(argp) if
-  ret = crypto_shash_update(&sdesc->shash, data, dlen);
-results in ret being negative and we then jump to the 'out' label.
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
 
-I believe this patch takes care of these issues. Please review and 
-consider for inclusion.
+> (2011/01/13 19:20), Franck Bui-Huu wrote:
+>> From: Franck Bui-Huu <fbuihuu@gmail.com>
+>> 
+>> It should be more usefull to get the full location of the function
+>
+>> (absolute line number + full path) instead of repeating the name of
+>> the function and the start line number given by the command line.
+>> 
+>> So we had before:
+>> 
+>>    $ perf probe -L schedule | head -n3
+>>    <schedule:0>
+>>          0  asmlinkage void __sched schedule(void)
+>>          1  {
+>> 
+>> and now we get:
+>> 
+>>    $ perf probe -L schedule | head -n3
+>>    </usr/src/debug/kernel-2.6.35.fc14/linux-2.6.35.x86_64/kernel/sched.c:3813>
+>>          0  asmlinkage void __sched schedule(void)
+>>          1  {
+>
+> Indeed, it could be useful for users to see where the function is...
+>
+> However, I think that should be optional, because the output lines
+> have the relative line numbers from the function, and those numbers
+> are important for users who want to probe a specific line by using
+> function relative line numbers. e.g. "schedule:10"
+>
+> And with that option, I'd suggest to show absolute line numbers on each line.
+>
+>   $ perf probe -L schedule:0-1 --by-source
+>   </usr/src/debug/kernel-2.6.35.fc14/linux-2.6.35.x86_64/kernel/sched.c:3813>
+>      3813  asmlinkage void __sched schedule(void)
+>      3814  {
+>
+> Or, just show source file as an additional information.
+>
+>   $ perf probe -L schedule:0-1
+>   <schedule@/usr/src/debug/kernel-2.6.35.fc14/linux-2.6.35.x86_64/kernel/sched.c:0>
+>         0  asmlinkage void __sched schedule(void)
+>         1  {
+>
+> I just would like to keep the consistency of the output/input format.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- trusted_defined.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
-
-  compile tested only.
-
-diff --git a/security/keys/trusted_defined.c b/security/keys/trusted_defined.c
-index 975e9f2..0ec7ab8 100644
---- a/security/keys/trusted_defined.c
-+++ b/security/keys/trusted_defined.c
-@@ -101,16 +101,18 @@ static int TSS_rawhmac(unsigned char *digest, const unsigned char *key,
- 		if (dlen == 0)
- 			break;
- 		data = va_arg(argp, unsigned char *);
--		if (data == NULL)
--			return -EINVAL;
-+		if (data == NULL) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
- 		ret = crypto_shash_update(&sdesc->shash, data, dlen);
- 		if (ret < 0)
- 			goto out;
- 	}
--	va_end(argp);
- 	if (!ret)
- 		ret = crypto_shash_final(&sdesc->shash, digest);
- out:
-+	va_end(argp);
- 	kfree(sdesc);
- 	return ret;
- }
-
-
+Well, for consistency, I thought that the additional information (given
+inside angle brackets) should always be the same: a full path and an
+absolute line number which clearly identify which source file perf-probe
+is listing.
 
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+		Franck
