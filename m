@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757351Ab1AMVnM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 16:43:12 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:39674 "EHLO mail.vyatta.com"
+	id S1757364Ab1AMVnw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 16:43:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18852 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752115Ab1AMVnF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 16:43:05 -0500
-Date: Thu, 13 Jan 2011 13:43:01 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Pekka Enberg <penberg@kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Tejun Heo <tj@kernel.org>,
+	id S1757173Ab1AMVnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 16:43:45 -0500
+Date: Thu, 13 Jan 2011 21:43:08 +0000
+From: Alasdair G Kergon <agk@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alasdair G Kergon <agk@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] block driver updates for 2.6.38
-Message-ID: <20110113134301.3cefa5bd@nehalam>
-In-Reply-To: <AANLkTi=PDEyJNN3aKhHWzCKrTfzib-VCdvgD7auoWuzD@mail.gmail.com>
-References: <4D2F03F2.4000707@fusionio.com>
-	<AANLkTi=t9FQaUhnXCk51bjZO82F8OGDDd9H5HyMPRPQd@mail.gmail.com>
-	<4D2F51B5.6060105@fusionio.com>
-	<AANLkTi=PDEyJNN3aKhHWzCKrTfzib-VCdvgD7auoWuzD@mail.gmail.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [GIT PULL] core block bits for 2.6.38
+Message-ID: <20110113214308.GA18104@agk-dp.fab.redhat.com>
+Mail-Followup-To: Alasdair G Kergon <agk@redhat.com>,
+	Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <4D2F03A7.2030809@fusionio.com> <20110113192152.GA18217@agk-dp.fab.redhat.com> <AANLkTin8icx0cir8czy9snZ0wg=QovJ4HSZru4jYUoea@mail.gmail.com> <4D2F5353.3000400@fusionio.com> <AANLkTi=VaaJr1b37yabEj-XTe1pRzcEg6OHLb1HbEES0@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=VaaJr1b37yabEj-XTe1pRzcEg6OHLb1HbEES0@mail.gmail.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: Amberley Place, 107-111 Peascod
+	Street, Windsor, Berkshire, SL4 1TE.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jan 2011 11:40:09 -0800
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Thu, Jan 13, 2011 at 09:05:40PM +0100, Tejun Heo wrote:
+> On Thu, Jan 13, 2011 at 8:32 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
+> > I see Tejun already posted a fix, but Milan says it does not work.
+> > Tejun, any  updates?
+> 
+> Hmmm... seems like I missed something.  Unfortunately, it's already a
+> bit too late here.  I'll get back to it tomorrow afternoon.  The issue
+> is mostly cosmetic so if it can wait a day or two I don't think
+> reverting is necessary.
+ 
+It's only cosmetic if your system is not relying upon userspace programs
+that rely upon it:)   My vote would be for reverting the patch for now
+so we can be sure the existing userspace functionality continues to work
+in -rc1.
 
-> On Thu, Jan 13, 2011 at 11:25 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
-> > On 2011-01-13 20:00, Linus Torvalds wrote:
-> >> On Thu, Jan 13, 2011 at 5:53 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
-> >>>
-> >>> Pekka Enberg (1):
-> >>>      floppy: replace NO_GEOM macro with a function
-> >>
-> >> Hmm. When I see work on floppy.c, I end up wondering what happened to
-> >> the work by Stephen to use a single threaded workqueue?
-> >>
-> >> That was reported to fix a KVM oops at some point to to avoiding the
-> >> whole race between interrupts/workqueues, but it seems to have dropped
-> >> off everybody's radar. I don't think anybody ever tested it on real
-> >> hardware, but I'm still wondering..
-> >
-> > Not sure, I don't recall seeing it.
-> 
-> It was on lkml a few months ago. google finds it with "floppy: use
-> single threaded workqueue" if you don't have your own archives.
-> 
-> Eg:
-> 
->    http://kerneltrap.org/mailarchive/linux-kernel/2010/6/11/4582074
-> 
-> and similar.
-> 
->                         Linus
+Alasdair
 
-Good news: I have updated version, but bad news is that it
-fails formatting a floppy and haven't had time to debug.
-
--- 
