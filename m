@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193Ab1AMPgz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 10:36:55 -0500
-Received: from nm18-vm1.bullet.mail.ird.yahoo.com ([77.238.189.217]:35154 "HELO
-	nm18-vm1.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756691Ab1AMPgy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 10:36:54 -0500
-X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 467059.77535.bm@omp1015.mail.ird.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.it;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=sHnytJy+lfhughzrileh/guDwz3zcrnnRb9VdSH3VER6KXu8OegQtF9rbtec7iTagXMME+8ggIzVNlsaZifHB3xuRbQ4w/M/dZZhWp2FkYLVKTxCbYchh9iJGcxYA4r7FK6iPo1wFcLXvThLN+AEGbLAJxDOkWAivP4k4n1pfac=;
-Message-ID: <395199.61799.qm@web29510.mail.ird.yahoo.com>
-X-YMail-OSG: g9Juk2AVM1m2lMgkxFhTDAljwuXVwbsbmlmmDJ71Pa0thLy
- A3vc63zTdf5YzKnp9U3MA4j_U0cFsM.SFuKGYFzojB3V2xCNzUq4IaP4vIIl
- MQ0DPbdmuBQJPetwdU9EVYHD9gW6XA3jqmpAIp9GGHSPxsebWkhdAILuEqgV
- K5tgzkHKfD7FHQv0H2U7RVXxc4sesBj8IqSTNs1z3AX1O7wud9dt8MVR_RUH
- TOWkvXtJXdvkg54R_IFJSea8swirnEIeqwyZV3TjqGNBnUiLxEa1C9_Fed7U
- aDU14uCuyNiJJz8GLUKc-
-X-Mailer: YahooMailRC/553 YahooMailWebService/0.8.107.285259
-Date: Thu, 13 Jan 2011 15:36:52 +0000 (GMT)
-From: Francesco Alfano <edacedpa@yahoo.it>
-Subject: Lose shared network resource
-To: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1757204Ab1AMPkA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 10:40:00 -0500
+Received: from mail.perches.com ([173.55.12.10]:3131 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757154Ab1AMPj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 10:39:58 -0500
+Subject: Re: [PATCH] net: add Faraday FTMAC100 10/100 Ethernet driver
+From: Joe Perches <joe@perches.com>
+To: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Po-Yu Chuang <ratbert@faraday-tech.com>
+In-Reply-To: <1294919372-1904-1-git-send-email-ratbert.chuang@gmail.com>
+References: <1294919372-1904-1-git-send-email-ratbert.chuang@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Jan 2011 07:39:57 -0800
+Message-ID: <1294933197.4114.85.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, 
-I have a problem with the (exported) sharing of network resources. 
-Initially i've used a sever with RedHat 7.3 kernel 2.4 now i've  installed 
-Scientific Linux 5.5 with kernel 2.6.18-194.32.1.el5PAE with  Samba version 
-3.0.33-3.29.el5_5.1. 
+On Thu, 2011-01-13 at 19:49 +0800, Po-Yu Chuang wrote:
+> From: Po-Yu Chuang <ratbert@faraday-tech.com>
+> 
+> FTMAC100 Ethernet Media Access Controller supports 10/100 Mbps and
+> MII.  This driver has been working on some ARM/NDS32 SoC including
+> Faraday A320 and Andes AG101.
 
-The problem is that I lose the network connection periodically, about 10  
-minutes! 
+A couple of trivial comments not already mentioned by others.
+
+> diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
+[]
+> @@ -2014,6 +2014,15 @@ config BCM63XX_ENET
+>  	  This driver supports the ethernet MACs in the Broadcom 63xx
+>  	  MIPS chipset family (BCM63XX).
+>  
+> +config FTMAC100
+> +	tristate "Faraday FTMAC100 10/100 Ethernet support"
+> +	depends on ARM
+> +	select MII
+> +	help
+> +	  This driver supports the FTMAC100 Ethernet controller from
+> +	  Faraday. It is used on Faraday A320, Andes AG101, AG101P
+> +	  and some other ARM/NDS32 SoC's.
+> +
+
+ARM specific net drivers are for now in drivers/net/arm/
+Perhaps it's better to locate these files there?
+
+> diff --git a/drivers/net/ftmac100.c b/drivers/net/ftmac100.c
+[]
+> +static int ftmac100_rx_packet_error(struct ftmac100 *priv,
+> +		struct ftmac100_rxdes *rxdes)
+> +{
+> +	struct device *dev = &priv->netdev->dev;
+> +	int error = 0;
+> +
+> +	if (unlikely(ftmac100_rxdes_rx_error(rxdes))) {
+> +		if (printk_ratelimit())
+> +			dev_info(dev, "rx err\n");
+
+There are many printk_ratelimit() tests.
+
+It's better to use net_ratelimit() or a local ratelimit_state
+so there's less possible suppression of other subsystem
+messages.
 
 
-I initially thought the problem was caused by a misconfiguration of  samba 
-version of sl, that I installed on a client machine with windows  2000 the 
-"Microsoft Windows Services for Unix" in order to use nfs connection  exported 
-from linux server, but the problema arise equally. 
-
-
-It's a serious problem for me because the disconnection of a mapped  drive on 
-w2k (connected via smb or nfs) is causing the crash of a basic  application that 
-tries to detect the presence every second of a new file  in shared resource. 
-
-
-This problem was not present with the older version of linux !!! 
-
-
-Thanks in advance for your help. 
-
--- 
--- 
-Best Regards 
-Francesco Alfano
-
-
-      
