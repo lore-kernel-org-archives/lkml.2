@@ -1,55 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757392Ab1AMWKs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 17:10:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64277 "EHLO mx1.redhat.com"
+	id S1757378Ab1AMWQY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 17:16:24 -0500
+Received: from www.tglx.de ([62.245.132.106]:56372 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757123Ab1AMWKl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 17:10:41 -0500
-Message-ID: <4D2F784E.9080103@redhat.com>
-Date: Thu, 13 Jan 2011 23:10:22 +0100
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
+	id S1757292Ab1AMWQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 17:16:17 -0500
+Date: Thu, 13 Jan 2011 23:15:16 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+cc: john stultz <johnstul@us.ibm.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        williams@redhat.com, schwidefsky@de.ibm.com, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [PATCH] acpi/pm: If failed at validating ACPI PM timer, inhibit
+ future reads.
+In-Reply-To: <20110113214022.GA12097@dumpdata.com>
+Message-ID: <alpine.LFD.2.00.1101132301300.2678@localhost6.localdomain6>
+References: <1289003985-29060-1-git-send-email-johnstul@us.ibm.com> <tip-08ec0c58fb8a05d3191d5cb6f5d6f81adb419798@git.kernel.org> <20110111081352.GA22867@shutemov.name> <alpine.LFD.2.00.1101110926040.12146@localhost6.localdomain6> <20110111083054.GB22867@shutemov.name>
+ <alpine.LFD.2.00.1101110936291.12146@localhost6.localdomain6> <20110111095640.GC22867@shutemov.name> <20110113174909.GA28738@dumpdata.com> <1294941698.5617.12.camel@work-vm> <20110113214022.GA12097@dumpdata.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Andrea Gelmini <andrea.gelmini@gelma.net>
-CC: linux-doc@vger.kernel.org,
-        "Randy Dunlap (maintainer:DOCUMENTATION)" <rdunlap@xenotime.net>,
-        "Thomas Weber (commit_signer:1/3=33%)" <weber@corscience.de>,
-        "Mike Frysinger (commit_signer:1/3=33%)" <vapier.adi@gmail.com>,
-        "Jiri Kosina (commit_signer:1/3=33%)" <jkosina@suse.cz>,
-        "open list:DEVICE-MAPPER (LVM)" <dm-devel@redhat.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: Re: [PATCH] Documentation: dm-crypt: update cryptsetup homepage
-References: <1294956113-6630-1-git-send-email-andrea.gelmini@gelma.net>
-In-Reply-To: <1294956113-6630-1-git-send-email-andrea.gelmini@gelma.net>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2011 11:01 PM, Andrea Gelmini wrote:
-> Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
-> ---
->  Documentation/device-mapper/dm-crypt.txt |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+On Thu, 13 Jan 2011, Konrad Rzeszutek Wilk wrote:
+
+> tgl, John,
 > 
-> diff --git a/Documentation/device-mapper/dm-crypt.txt b/Documentation/device-mapper/dm-crypt.txt
-> index 59293ac..6b5c42d 100644
-> --- a/Documentation/device-mapper/dm-crypt.txt
-> +++ b/Documentation/device-mapper/dm-crypt.txt
-> @@ -41,7 +41,7 @@ Example scripts
->  ===============
->  LUKS (Linux Unified Key Setup) is now the preferred way to set up disk
->  encryption with dm-crypt using the 'cryptsetup' utility, see
-> -http://clemens.endorphin.org/cryptography
-> +http://code.google.com/p/cryptsetup/
+> Should I push this to Linus or are you guys going to push
+> this patch during this merge window?
 
-yes, that's the upstream page for cryptsetup/LUKS now, I will probably add some
-page describing dm-crypt kernel target there too.
+Wait a moment. This patch is fresh of the press and not that urgent,
+really.
+ 
+>     I've traced it down to the fact that when we boot under Xen we do
+>     not have the HPET enabled nor the ACPI PM timer setup. The
 
-Acked-by: Milan Broz <mbroz@redhat.com>
+Crap. If Xen would not have setup the pm timer then it would not even
+reach the consistency check. It would simply bail out via
 
-Milan
+        if (!pmtmr_ioport)
+                return -ENODEV;
+
+and the whole misery would not have happened at all. Though it's a
+Good Thing that Xen is so screwed as it points to a real flaw which
+might happen on real hardware as well. See below
+
+>     hpet_enable() is never called (b/c xen_time_init is called), and
+>     for calibration of tsc_khz (calibrate_tsc == xen_tsc_khz) we
+>     get a valid value.
+>     
+>     So 'tsc_read_refs' tries to read the ACPI PM timer (acpi_pm_read_early),
+>     however that is disabled under Xen:
+>     
+>     [    1.099272] calling  init_acpi_pm_clocksource+0x0/0xdc @ 1
+>     [    1.140186] PM-Timer failed consistency check  (0x0xffffff) - aborting.
+>     
+>     So the tsc_calibrate_check gets called, it can't do HPET, and reading
+>     from ACPI PM timer results in getting 0xffffff.. .. and
+>     (0xffff..-0xffff..)/some other value results in div_zero.
+
+Nonsense. 0/(some other value) does not result in a divide by zero
+except "some other value" is zero.
+
+>     There is a check in 'tsc_refine_calibration_work' for invalid
+>     values:
+>     
+>        /* hpet or pmtimer available ? */
+>              if (!hpet && !ref_start && !ref_stop)
+>                       goto out;
+>     
+>     But since ref_start and ref_stop have 0xffffff it does not trigger.
+>
+>     This little fix makes the read to be 0 and the check triggers.
+
+First of all the patch disables the pm_timer completely, which happens
+to results in a 0 read as a side effect. But the main point of this
+fix is to disable pmtimer in case of failure in the init function
+completely.
+
+Further there are several error conditions in this init function and
+we really need to disable pmtimer for all of them not just for the
+case you encountered.
+
+Thanks,
+
+	tglx
