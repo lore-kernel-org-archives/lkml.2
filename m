@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932749Ab1AMKim (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 05:38:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40102 "EHLO mx2.suse.de"
+	id S932893Ab1AMKjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 05:39:08 -0500
+Received: from www.tglx.de ([62.245.132.106]:46518 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756109Ab1AMKij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 05:38:39 -0500
-Date: Thu, 13 Jan 2011 11:38:34 +0100
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/35] writeback: safety margin for bdi stat error
-Message-ID: <20110113103834.GA5008@quack.suse.cz>
-References: <20101213144646.341970461@intel.com>
- <20101213150326.604451840@intel.com>
- <20110112215949.GD14260@quack.suse.cz>
- <20110113041440.GC7840@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932428Ab1AMKjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 05:39:06 -0500
+Date: Thu, 13 Jan 2011 11:38:48 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org, sodaville@linutronix.de,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [sodaville] [PATCH 10/15] x86/ioapic: Add OF bindings for	IO-APIC
+Message-ID: <20110113103848.GA23275@www.tglx.de>
+References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de> <1292600033-12271-11-git-send-email-bigeasy@linutronix.de> <20110111235353.GG2131@angua.secretlab.ca> <20110112170707.GA6907@www.tglx.de> <4D2DE2B9.2000607@linux.intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20110113041440.GC7840@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4D2DE2B9.2000607@linux.intel.com>
+User-Agent: Mutt/1.4.2.2i
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 13-01-11 12:14:40, Wu Fengguang wrote:
-> On Thu, Jan 13, 2011 at 05:59:49AM +0800, Jan Kara wrote:
-> > > So the root cause is, the bdi_dirty is well under the global nr_dirty
-> > > due to accounting errors. This can be fixed by using bdi_stat_sum(),
-> >   So which statistic had the big error? I'd just like to understand
-> > this (and how come your patch improves the situation)...
-> 
-> bdi_stat_error() = nr_cpu_ids * BDI_STAT_BATCH
->                  = 8 * (8*(1+ilog2(8)))
->                  = 8 * 8 * 4
->                  = 256 pages
->                  = 1MB
-  Yes, my question was more aiming at on which statistics the error happens
-so that it causes problems for you. Thinking about it now I suppose you
-observe that bdi_nr_writeback + bdi_nr_reclaimable < bdi_thresh but in fact
-the number of pages is higher than bdi_thresh because of accounting errors.
-And thus we are able to reach global dirty limit and the tasks get
-throttled heavily. Am I right?
+* H. Peter Anvin | 2011-01-12 09:19:53 [-0800]:
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+>On 01/12/2011 09:07 AM, Sebastian Andrzej Siewior wrote:
+>>>
+>>> I'm confused here.  Are there multiple ioapic's described by a single
+>>> device tree node?
+>
+>That's normal multiple IOAPIC behavior (and multiple IOAPICs is a common
+>thing), but why use the same device tree node for both?
+
+I'm sorry, I miss understood Grant's question. The two io apics in the
+system are described by two nodes. ioapic_add_ofnode() is called for one
+node:
+
+> +     for (i = 0; i < nr_ioapics; i++) {
+> +             if (r.start == mp_ioapics[i].apicaddr) {
+> +                     struct irq_domain *id;
+> +
+> +                     mp_of_ioapic[i].node = np;
+> +                     id = kzalloc(sizeof(*id), GFP_KERNEL);
+> +                     BUG_ON(!id);
+> +                     id->controller = np;
+> +                     id->xlate = ioapic_xlate;
+> +                     id->priv = (void *)i;
+> +                     add_interrupt_host(id);
+> +                     return;
+> +             }
+
+and once it matches the previously registered io apic it calls
+add_interrupt_host() on it and returns. x86_add_irq_domains() calls it
+for every io apic node so it calls add_interrupt_host() twice.
+
+>	-hpa
+
+Sebastian
