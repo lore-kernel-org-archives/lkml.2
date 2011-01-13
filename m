@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841Ab1AMNxv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 08:53:51 -0500
-Received: from mx1.fusionio.com ([64.244.102.30]:49288 "EHLO mx1.fusionio.com"
+	id S1756853Ab1AMNyr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 08:54:47 -0500
+Received: from www.tglx.de ([62.245.132.106]:46566 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756785Ab1AMNxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 08:53:50 -0500
-X-ASG-Debug-ID: 1294926829-17892b610001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D2F03F2.4000707@fusionio.com>
-Date: Thu, 13 Jan 2011 14:53:54 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1756785Ab1AMNyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 08:54:45 -0500
+Date: Thu, 13 Jan 2011 14:54:30 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Nick Piggin <npiggin@kernel.dk>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, u.kleine-koenig@pengutronix.de,
+        "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+Subject: [PATCH] fs: Work around NFS wreckage
+Message-ID: <alpine.LFD.2.00.1101131436070.2678@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] block driver updates for 2.6.38
-Content-Type: text/plain; charset="ISO-8859-1"
-X-ASG-Orig-Subj: [GIT PULL] block driver updates for 2.6.38
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1294926829
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.3823 1.0000 -0.0481
-X-Barracuda-Spam-Score: -0.05
-X-Barracuda-Spam-Status: No, SCORE=-0.05 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.52262
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+The dcache scalability work broke NFS root filesystems.
 
-Block driver updates for 2.6.38. Not a lot.
+"cd /" results in the following problem:
 
-Please pull.
+    link_path_walk("/",...);
+	jumps to return_reval
+	need_reval_dot() returns true for NFS
+	d_revalidate()
+		dentry->d_op->d_revalidate(dentry, nd);
+		 	returns -ECHILD due to nd->flags & LOOKUP_RCU
+		nameidata_dentry_drop_rcu()
+			spin_lock(&parent->d_lock);
+			spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
 
-  git://git.kernel.dk/linux-2.6-block.git for-2.6.38/drivers
+			This deadlocks because dentry == parent
 
-Jens Axboe (1):
-      cciss: reinstate proper FIFO order of command queue list
+This problem exists for any filesystem which implements d_revalidate.
 
-Pekka Enberg (1):
-      floppy: replace NO_GEOM macro with a function
+Uwe bisected is down to commit 34286d6(fs: rcu-walk aware d_revalidate
+method), but reverting that patch causes different wreckage to show up.
 
- drivers/block/cciss.c     |   23 +++++++++++------------
- drivers/block/cciss.h     |    4 ++--
- drivers/block/cciss_cmd.h |    2 +-
- drivers/block/floppy.c    |   15 ++++++++++-----
- 4 files changed, 24 insertions(+), 20 deletions(-)
+Check for parent equal dentry and skip the nested lock to avoid the
+deadlock. I'm sure this is the wrong fix, but at least it "works" :)
 
--- 
-Jens Axboe
+Reported-by: Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
+Reported-by: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+Not-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ fs/namei.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
+Index: linux-2.6/fs/namei.c
+===================================================================
+--- linux-2.6.orig/fs/namei.c
++++ linux-2.6/fs/namei.c
+@@ -487,6 +487,8 @@ static int nameidata_dentry_drop_rcu(str
+ 			goto err_root;
+ 	}
+ 	spin_lock(&parent->d_lock);
++	if (parent == dentry)
++		goto same;
+ 	spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
+ 	if (!__d_rcu_to_refcount(dentry, nd->seq))
+ 		goto err;
+@@ -499,6 +501,8 @@ static int nameidata_dentry_drop_rcu(str
+ 	BUG_ON(!parent->d_count);
+ 	parent->d_count++;
+ 	spin_unlock(&dentry->d_lock);
++
++same:
+ 	spin_unlock(&parent->d_lock);
+ 	if (nd->root.mnt) {
+ 		path_get(&nd->root);
