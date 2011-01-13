@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757290Ab1AMVYh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 16:24:37 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:60676 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756717Ab1AMVYc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 16:24:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=dl2PL+VVD7XS+r1x9R2vHQdh1iEawqzokINclTL6Pwz5gMfiPrCnzVIIidCvQFNtFy
-         FJ3WUlVXK57bcd5Ef3JiXjdZxuHK9XiHbi2CPF7cg7NCBYG9Iss8p//MjCPRpzf7CQ5K
-         8/38rd9tB61HgAT9QJrkaOuLGAXpNAXaC6n+8=
-From: Franck Bui-Huu <vagabon.xyz@gmail.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH -perf/perf/core 3/6] perf probe: Add --funcs to show available functions in symtab
-References: <20110113124548.22426.11201.stgit@ltc236.sdl.hitachi.co.jp>
-	<20110113124611.22426.10835.stgit@ltc236.sdl.hitachi.co.jp>
-Date: Thu, 13 Jan 2011 22:24:27 +0100
-In-Reply-To: <20110113124611.22426.10835.stgit@ltc236.sdl.hitachi.co.jp>
-	(Masami Hiramatsu's message of "Thu, 13 Jan 2011 21:46:11 +0900")
-Message-ID: <m3sjww7b04.fsf@gmail.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.2 (gnu/linux)
+	id S1757238Ab1AMV3c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 16:29:32 -0500
+Received: from tundra.namei.org ([65.99.196.166]:48865 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752085Ab1AMV3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 16:29:25 -0500
+Date: Fri, 14 Jan 2011 08:29:22 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Security subsystem changes for 2.6.38
+In-Reply-To: <AANLkTik1kxC_GBKYSvhAK6_O0Bt-ALbEP3T=+AmMQRLP@mail.gmail.com>
+Message-ID: <alpine.LRH.2.00.1101140826340.27060@tundra.namei.org>
+References: <alpine.LRH.2.00.1101101136001.21289@tundra.namei.org> <AANLkTinU2mNyTEc55=ypDPXWah_ozaV1BHWBqCenxp1Z@mail.gmail.com> <alpine.LRH.2.00.1101110855330.28785@tundra.namei.org> <AANLkTik1kxC_GBKYSvhAK6_O0Bt-ALbEP3T=+AmMQRLP@mail.gmail.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
+On Mon, 10 Jan 2011, Linus Torvalds wrote:
 
-[...]
+> On Mon, Jan 10, 2011 at 1:56 PM, James Morris <jmorris@namei.org> wrote:
+> >
+> > In these cases it's my local 'master', which is tracking your tree.  I'll
+> > look at renaming that or creating a new branch called linus-master.
+> 
+> That doesn't much help. It now says the source, but still gives no
+> indication _why_ you pulled.
+> 
+> If you want to sync up, use a tag or something. Then it actually makes
+> sense, and a merge message like "Merge tag 'v2.6.36-rc7'" actually
+> makes sense.
+> 
+> But "Merge branch 'linus-master'" just makes me (and anybody else) go
+> "why did the security tree merge some random daily thing"?
 
->  tools/perf/builtin-probe.c    |   29 +++++++++++++++++-
->  tools/perf/util/probe-event.c |   67 ++++++++++++++++++++++++++++++++++++++++-
->  tools/perf/util/probe-event.h |    1 +
->  3 files changed, 94 insertions(+), 3 deletions(-)
+The most common cases are to resolve a conflict, or to apply a patch which 
+depends on something in your tree, neither of which are really directly 
+associated with tags.
 
-"tools/perf/Documentation/perf-probe.txt" is missing ;)
 
+- James
 -- 
-		Franck
+James Morris
+<jmorris@namei.org>
