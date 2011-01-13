@@ -1,328 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab1AMMv7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 07:51:59 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:39173 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756738Ab1AMMvy (ORCPT
+	id S1756715Ab1AMMvk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 07:51:40 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:35293 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755886Ab1AMMvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 07:51:54 -0500
-X-AuditID: b753bd60-a1557ba00000044b-94-4d2ef5671edf
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -perf/perf/core  5/6] perf probe: Add variable filter support
-To: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Franck Bui-Huu <fbuihuu@gmail.com>, linux-kernel@vger.kernel.org,
-        2nddept-manager@sdl.hitachi.co.jp,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 13 Jan 2011 21:46:24 +0900
-Message-ID: <20110113124624.22426.72527.stgit@ltc236.sdl.hitachi.co.jp>
-In-Reply-To: <20110113124548.22426.11201.stgit@ltc236.sdl.hitachi.co.jp>
-References: <20110113124548.22426.11201.stgit@ltc236.sdl.hitachi.co.jp>
+	Thu, 13 Jan 2011 07:51:37 -0500
+From: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+Subject: [RFC V2 0/3] cpuidle: Cleanup pm_idle and include driver/cpuidle.c
+	in-kernel 
+To: arjan@linux.intel.com, peterz@infradead.org, lenb@kernel.org,
+        suresh.b.siddha@intel.com, benh@kernel.crashing.org, venki@google.com,
+        ak@linux.intel.com
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 13 Jan 2011 18:21:30 +0530
+Message-ID: <20110113125113.11174.78525.stgit@tringupt.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add filters support for available variable list.
-Default filter is "!__k???tab_*&!__crc_*" for
-filtering out automatically generated symbols.
+The core of the kernel's idle routine on x86 presently depends
+on an exported pm_idle function pointer that is unmanaged.
+The first problem is that this exported pointer can be modified
+by any subsystem. There is no tracking or notification mechanism.
+Secondly and more importantly, various subsystems save the value of
+this pointer, flip it and later restore to the saved value. There is
+no guarantee that the saved value is still valid. The problem has
+been discussed at http://lkml.org/lkml/2009/8/28/43 and
+http://lkml.org/lkml/2009/8/28/50.
 
-The format of filter rule is "[!]GLOBPATTERN", so
-you can use wild cards. If the filter rule starts with
-'!', matched variables are filter out.
+This patch series tries to achieve the goal of having cpuidle manage
+all idle routine management by doing the following changes:
 
-e.g.)
- # perf probe -V schedule --externs --filter=cpu*
-Available variables at schedule
-        @<schedule+0>
-                cpumask_var_t   cpu_callout_mask
-                cpumask_var_t   cpu_core_map
-                cpumask_var_t   cpu_isolated_map
-                cpumask_var_t   cpu_sibling_map
-                int     cpu_number
-                long unsigned int*      cpu_bit_bitmap
-		...
+* Remove pm_idle pointer from process_xx.c and implicitly call
+  cpuidle.c:cpuidle_idle_call().
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Chase Douglas <chase.douglas@canonical.com>
-Cc: linux-kernel@vger.kernel.org
+* Change select_idle_routine() in x86 bootup code to create
+  a cpuidle_driver structure and register the routines with the
+  cpuidle subsystem using a default_idle driver in 
+  drivers/idle/default_driver.c
+
+* The 'best' (current) cpuidle_driver is selected based
+  on the priority that is supplied at the time of registration/
+  unregistration.
+
+* Arch supplied default idle (hlt or poll) is used during transitions.  
+
+* List of cpuidle_drivers and their (per-cpu) cpuidle_devices are
+  maintained in a doubly linked list to enable selection and unregistering 
+  when not used. Previously cpuidle subsystem had only one set of
+  cpuidle_driver and corresponding cpuidle_devices.
+
+* Ideally we could have a single list of idle routines supplied by
+  different modules and use a priority+governor to select the best.
+  We could incrementally do this since we have a dependency: Only
+  idle routines from a set (ACPI) should be used on all cpus and not
+  a combination of say C1e on some cpus and ACPI routines on some
+  other cpus.
+
+This patch series applies on 2.6.37, and was tested on x86 system with
+multiple sleep states. 
+
+Request your comment on the general approach based on the discussion
+in v1 (https://lkml.org/lkml/2010/10/19/449).
+
+Changes from v1: cpuidle: add idle routine registration and cleanup 
+pm_idle pointer
+
+* v1 has registration mechanisms for single idle routines and expects
+  cpuidle.c:cpuidle_idle_call() to take over for systems with multiple
+  idle routines.
+
+  While this series uses cpuidle.c:cpuidle_idle_call() as a means to
+  invoke single idle routines as well as multiple idle routines. The 
+  registration mechanism proposed in V1 is completely replaced by 
+  cpuidle.c with added fields like 'priority'.
+
 ---
 
- tools/perf/Documentation/perf-probe.txt |   14 ++++++
- tools/perf/builtin-probe.c              |   34 ++++++++++++++++
- tools/perf/util/probe-event.c           |   67 +++++++++++++++++++------------
- tools/perf/util/probe-event.h           |    3 +
- 4 files changed, 91 insertions(+), 27 deletions(-)
+Trinabh Gupta (3):
+      cpuidle: Default Idle Driver for x86
+      cpuidle data structure changes, list based cpuidle driver registration
+      cpuidle: Remove pm_idle pointer for x86
 
-diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
-index 86b797a..7542e8a 100644
---- a/tools/perf/Documentation/perf-probe.txt
-+++ b/tools/perf/Documentation/perf-probe.txt
-@@ -73,6 +73,12 @@ OPTIONS
- 	(Only for --vars) Show external defined variables in addition to local
- 	variables.
- 
-+--filter=FILTER::
-+	(Only for --vars) Set filter for variables. FILTER is a combination of
-+	glob pattern, see FILTER PATTERN for detail.
-+	Default FILTER is "!__k???tab_* & !__crc_*".
-+	If several filters are specified, only the last filter is valid.
-+
- -f::
- --force::
- 	Forcibly add events with existing name.
-@@ -135,6 +141,14 @@ e.g.
- 
- This provides some sort of flexibility and robustness to probe point definitions against minor code changes. For example, actual 10th line of schedule() can be moved easily by modifying schedule(), but the same line matching 'rq=cpu_rq*' may still exist in the function.)
- 
-+FILTER PATTERN
-+--------------
-+ The filter pattern is glob matching pattern(s) to filter variables.
-+ In addition, you can use "!" for specifying filter-out rule. You also can give several rules combined with "&" or "|", and fold those rules as one rule by using "(" ")".
-+
-+e.g.
-+ With --filter "foo* | bar*", perf probe -V shows variables which start with "foo" or "bar".
-+ With --filter "!foo* & *bar", perf probe -V shows variables which don't start with "foo" and end with "bar", like "fizzbar". But "foobar" is filtered out.
- 
- EXAMPLES
- --------
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 6cf708a..abb423e 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -36,6 +36,7 @@
- #include "builtin.h"
- #include "util/util.h"
- #include "util/strlist.h"
-+#include "util/strfilter.h"
- #include "util/symbol.h"
- #include "util/debug.h"
- #include "util/debugfs.h"
-@@ -43,6 +44,7 @@
- #include "util/probe-finder.h"
- #include "util/probe-event.h"
- 
-+#define DEFAULT_VAR_FILTER "!__k???tab_* & !__crc_*"
- #define MAX_PATH_LEN 256
- 
- /* Session management structure */
-@@ -60,6 +62,7 @@ static struct {
- 	struct line_range line_range;
- 	const char *target_module;
- 	int max_probe_points;
-+	struct strfilter *filter;
- } params;
- 
- /* Parse an event definition. Note that any error must die. */
-@@ -156,6 +159,27 @@ static int opt_show_vars(const struct option *opt __used,
- 
- 	return ret;
- }
-+
-+static int opt_set_filter(const struct option *opt __used,
-+			  const char *str, int unset __used)
-+{
-+	const char *err;
-+
-+	if (str) {
-+		pr_debug2("Set filter: %s\n", str);
-+		if (params.filter)
-+			strfilter__delete(params.filter);
-+		params.filter = strfilter__new(str, &err);
-+		if (!params.filter) {
-+			pr_err("Filter parse error at %ld.\n", err - str + 1);
-+			pr_err("Source: \"%s\"\n", str);
-+			pr_err("         %*c\n", (int)(err - str + 1), '^');
-+			return -EINVAL;
-+		}
-+	}
-+
-+	return 0;
-+}
- #endif
- 
- static const char * const probe_usage[] = {
-@@ -212,6 +236,10 @@ static const struct option options[] = {
- 		     "Show accessible variables on PROBEDEF", opt_show_vars),
- 	OPT_BOOLEAN('\0', "externs", &params.show_ext_vars,
- 		    "Show external variables too (with --vars only)"),
-+	OPT_CALLBACK('\0', "filter", NULL,
-+		     "[!]FILTER", "Set a variable filter (with --vars only)\n"
-+		     "\t\t\t(default: \"" DEFAULT_VAR_FILTER "\")",
-+		     opt_set_filter),
- 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
- 		   "file", "vmlinux pathname"),
- 	OPT_STRING('s', "source", &symbol_conf.source_prefix,
-@@ -324,10 +352,16 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 			       " --add/--del.\n");
- 			usage_with_options(probe_usage, options);
- 		}
-+		if (!params.filter)
-+			params.filter = strfilter__new(DEFAULT_VAR_FILTER,
-+						       NULL);
-+
- 		ret = show_available_vars(params.events, params.nevents,
- 					  params.max_probe_points,
- 					  params.target_module,
-+					  params.filter,
- 					  params.show_ext_vars);
-+		strfilter__delete(params.filter);
- 		if (ret < 0)
- 			pr_err("  Error: Failed to show vars. (%d)\n", ret);
- 		return ret;
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 1a93756..b231a20 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -31,6 +31,7 @@
- #include <string.h>
- #include <stdarg.h>
- #include <limits.h>
-+#include <elf.h>		/* For STB_GLOBAL */
- 
- #undef _GNU_SOURCE
- #include "util.h"
-@@ -450,12 +451,14 @@ end:
- }
- 
- static int show_available_vars_at(int fd, struct perf_probe_event *pev,
--				  int max_vls, bool externs)
-+				  int max_vls, struct strfilter *_filter,
-+				  bool externs)
- {
- 	char *buf;
--	int ret, i;
-+	int ret, i, nvars;
- 	struct str_node *node;
- 	struct variable_list *vls = NULL, *vl;
-+	const char *var;
- 
- 	buf = synthesize_perf_probe_point(&pev->point);
- 	if (!buf)
-@@ -463,36 +466,45 @@ static int show_available_vars_at(int fd, struct perf_probe_event *pev,
- 	pr_debug("Searching variables at %s\n", buf);
- 
- 	ret = find_available_vars_at(fd, pev, &vls, max_vls, externs);
--	if (ret > 0) {
--		/* Some variables were found */
--		fprintf(stdout, "Available variables at %s\n", buf);
--		for (i = 0; i < ret; i++) {
--			vl = &vls[i];
--			/*
--			 * A probe point might be converted to
--			 * several trace points.
--			 */
--			fprintf(stdout, "\t@<%s+%lu>\n", vl->point.symbol,
--				vl->point.offset);
--			free(vl->point.symbol);
--			if (vl->vars) {
--				strlist__for_each(node, vl->vars)
-+	if (ret <= 0) {
-+		pr_err("Failed to find variables at %s (%d)\n", buf, ret);
-+		goto end;
-+	}
-+	/* Some variables are found */
-+	fprintf(stdout, "Available variables at %s\n", buf);
-+	for (i = 0; i < ret; i++) {
-+		vl = &vls[i];
-+		/*
-+		 * A probe point might be converted to
-+		 * several trace points.
-+		 */
-+		fprintf(stdout, "\t@<%s+%lu>\n", vl->point.symbol,
-+			vl->point.offset);
-+		free(vl->point.symbol);
-+		nvars = 0;
-+		if (vl->vars) {
-+			strlist__for_each(node, vl->vars) {
-+				var = strchr(node->s, '\t') + 1;
-+				if (strfilter__match(_filter, var)) {
- 					fprintf(stdout, "\t\t%s\n", node->s);
--				strlist__delete(vl->vars);
--			} else
--				fprintf(stdout, "(No variables)\n");
-+					nvars++;
-+				}
-+			}
-+			strlist__delete(vl->vars);
- 		}
--		free(vls);
--	} else
--		pr_err("Failed to find variables at %s (%d)\n", buf, ret);
--
-+		if (nvars == 0)
-+			fprintf(stdout, "\t\t(No matched variables)\n");
-+	}
-+	free(vls);
-+end:
- 	free(buf);
- 	return ret;
- }
- 
- /* Show available variables on given probe point */
- int show_available_vars(struct perf_probe_event *pevs, int npevs,
--			int max_vls, const char *module, bool externs)
-+			int max_vls, const char *module,
-+			struct strfilter *_filter, bool externs)
- {
- 	int i, fd, ret = 0;
- 
-@@ -509,7 +521,8 @@ int show_available_vars(struct perf_probe_event *pevs, int npevs,
- 	setup_pager();
- 
- 	for (i = 0; i < npevs && ret >= 0; i++)
--		ret = show_available_vars_at(fd, &pevs[i], max_vls, externs);
-+		ret = show_available_vars_at(fd, &pevs[i], max_vls, _filter,
-+					     externs);
- 
- 	close(fd);
- 	return ret;
-@@ -555,7 +568,9 @@ int show_line_range(struct line_range *lr __unused, const char *module __unused)
- 
- int show_available_vars(struct perf_probe_event *pevs __unused,
- 			int npevs __unused, int max_vls __unused,
--			const char *module __unused, bool externs __unused)
-+			const char *module __unused,
-+			struct strfilter *filter __unused,
-+			bool externs __unused)
- {
- 	pr_warning("Debuginfo-analysis is not supported.\n");
- 	return -ENOSYS;
-diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
-index 1fb4f18..4e80b2b 100644
---- a/tools/perf/util/probe-event.h
-+++ b/tools/perf/util/probe-event.h
-@@ -3,6 +3,7 @@
- 
- #include <stdbool.h>
- #include "strlist.h"
-+#include "strfilter.h"
- 
- extern bool probe_event_dry_run;
- 
-@@ -126,7 +127,7 @@ extern int show_perf_probe_events(void);
- extern int show_line_range(struct line_range *lr, const char *module);
- extern int show_available_vars(struct perf_probe_event *pevs, int npevs,
- 			       int max_probe_points, const char *module,
--			       bool externs);
-+			       struct strfilter *filter, bool externs);
- extern int show_available_funcs(const char *module);
- 
- 
 
+ arch/x86/kernel/process.c     |  340 -------------------------------
+ arch/x86/kernel/process_32.c  |    4 
+ arch/x86/kernel/process_64.c  |    4 
+ arch/x86/xen/setup.c          |    1 
+ drivers/acpi/processor_idle.c |    2 
+ drivers/cpuidle/Kconfig       |    2 
+ drivers/cpuidle/cpuidle.c     |   42 +---
+ drivers/cpuidle/driver.c      |   68 +++++-
+ drivers/cpuidle/governor.c    |   13 +
+ drivers/idle/Makefile         |    2 
+ drivers/idle/default_driver.c |  451 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/cpuidle.h       |    4 
+ 12 files changed, 543 insertions(+), 390 deletions(-)
+ create mode 100644 drivers/idle/default_driver.c
+
+-- 
+-Trinabh
