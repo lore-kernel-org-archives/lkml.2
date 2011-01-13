@@ -1,104 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab1AMGDr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 01:03:47 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46130 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750912Ab1AMGDp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 01:03:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=vllpCrkZshE0jWy+JcF3ZWajztKHEvpYtD69ayU354XiDlGBU9UT6jxj45l/FkwvBc
-         h5G4j5sLIDS2mVV7q81k1BOvytpHwX5X3DQ+917lDGQ6gGLF6psu7NMfgUvUIFUnBlQi
-         rGDwSP5jGa8kjwIRsk8rZ5qnw6pmyP+MGv4zc=
-MIME-Version: 1.0
-In-Reply-To: <20110112221443.GA574@alchark-u3s>
-References: <20110112221443.GA574@alchark-u3s>
-Date: Thu, 13 Jan 2011 07:03:43 +0100
-X-Google-Sender-Auth: U2Qv6yoELKjBYSQ9nOvW13bbxxQ
-Message-ID: <AANLkTimRVSB13X67vz_qg_CpTg1J2fNz5A0Oweq3MZp1@mail.gmail.com>
-Subject: Re: [PATCH] fbdev: Implement simple blanking in pseudocolor modes for vt8500lcdfb
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Alexey Charkov <alchark@gmail.com>
-Cc: Paul Mundt <lethal@linux-sh.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1751561Ab1AMGNP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 01:13:15 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:58475 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1750912Ab1AMGNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 01:13:13 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+sO3RWzUCso+7oCC1z5wPMjeblAk2D/5ao25WT7y
+	fNFESTKIfQSRgo
+Subject: Re: [patch] Re: autogroup: sched_setscheduler() fails
+From: Mike Galbraith <efault@gmx.de>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: bharata@linux.vnet.ibm.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTi=x-nO-Z7hG9b5t2FvuznHXaTSLPdS05wkXYMKA@mail.gmail.com>
+References: <20110110091622.GF2772@in.ibm.com>
+	 <1294655388.8197.22.camel@marge.simson.net>
+	 <1294657154.2016.459.camel@laptop>
+	 <1294677746.8345.4.camel@marge.simson.net>
+	 <20110111171046.GL4772@in.ibm.com>
+	 <1294771686.8006.15.camel@marge.simson.net>
+	 <1294810842.8370.7.camel@marge.simson.net>
+	 <AANLkTimtwt+OGohMxGRC7L4Dm-h4wvCWYi-=13efqFtr@mail.gmail.com>
+	 <1294890890.8089.39.camel@marge.simson.net>
+	 <AANLkTi=x-nO-Z7hG9b5t2FvuznHXaTSLPdS05wkXYMKA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Jan 2011 07:13:08 +0100
+Message-ID: <1294899188.8089.44.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 23:14, Alexey Charkov <alchark@gmail.com> wrote:
-> Implement simple blanking in pseudocolor modes for vt8500lcdfb
->
-> This follows the style of some other in-tree drivers by just setting
-> the hardware palette colors to all black. True Color modes are not
-> affected, but this at least allows to run xf86-video-fbdev without
-> errors due to blanking being unimplemented.
+On Thu, 2011-01-13 at 13:59 +0800, Yong Zhang wrote:
+> On Thu, Jan 13, 2011 at 11:54 AM, Mike Galbraith <efault@gmx.de> wrote:
+> > sched, autogroup: fix CONFIG_RT_GROUP_SCHED sched_setscheduler() failure.
+> >
+> > If CONFIG_RT_GROUP_SCHED is set, __sched_setscheduler() fails due to autogroup
+> > not allocating rt_runtime.  Free unused/unusable rt_se and rt_rq, redirect RT
+> > tasks to the root task group, and tell __sched_setscheduler() that it's ok.
+> >
+> > Signed-off-by: Mike Galbraith <efault@gmx.de>
+> > Reported-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
+> 
+> This looks more clear ;)
+> 
+> And a little comment below
+> 
+> >
+> > ---
+> >  kernel/sched.c           |    3 ++-
+> >  kernel/sched_autogroup.c |   27 +++++++++++++++++++++++++++
+> >  kernel/sched_autogroup.h |    4 ++++
+> >  3 files changed, 33 insertions(+), 1 deletion(-)
+> > @@ -106,6 +128,11 @@ task_wants_autogroup(struct task_struct
+> >        return true;
+> >  }
+> >
+> > +static inline bool task_group_is_autogroup(struct task_group *tg)
+> > +{
+> > +       return tg != &root_task_group && tg->autogroup;
+> 
+> Isn't just checking tg->autogroup sufficient?
+> 
+> if tg == &root_task_group
+> 
+> > --- linux-2.6.orig/kernel/sched.c
+> > +++ linux-2.6/kernel/sched.c
+> > @@ -4874,7 +4874,8 @@ recheck:
+> >                 * assigned.
+> >                 */
+> >                if (rt_bandwidth_enabled() && rt_policy(policy) &&
+> > -                               task_group(p)->rt_bandwidth.rt_runtime == 0) {
+> > +                               task_group(p)->rt_bandwidth.rt_runtime == 0 &&
+> 
+> this check will fail.
 
-Hmm, I seemed to remember this was handled at the generic level if no .fb_blank
-implementation was present? That's why e.g. vesafb and macfb don't
-have an fb_blank
-implementation, while people run/ran X on them for sure.
+Yes, it's intended to fail.  I intend to make it explicit throughout
+autogroup that root_task_group is not an autogroup, and will drop the
+test for root_task_group then.
 
-[ looking in the code and its history ]
+	-Mike
 
-According to full-history-linux, it was removed by:
-
-ommit ca2efeeb715e9fc0f12e57b54ba43ee1e1e50524
-Author: Antonino Daplas <adaplas@hotpop.com>
-Date:   Sun Nov 7 04:05:04 2004 -0800
-
-    [PATCH] fbcon: "Do not touch hardware if vc_mode != KD_TEXT: fix
-
-    Sigh, this patch uncovered a can of worms.  I tested different combinations,
-    those with/without xxxfb_blank implementation, framebuffers in directcolor
-    or truecolor, etc. I find that there is a problem unblanking if the hardware
-    has no xxxfb_blank() implementation, and also that the generic fb_blank() in
-    fbmem.c is problematic with drivers in directcolor or pseudocolor mode when
-    called by an fb application such as X.
-
-    Display blanking is implemented in three ways:
-
-        1. using the drivers blanking implementation - info->fbops->fb_blank()
-        2. clearing the screen with the console erase character - fbcon_blank()
-        3. setting the color map to all black - fb_blank()
-
-    The third method is problematic for these reasons:
-
-        - Setting the colormap to all black will not work in truecolor mode
-        - In directcolor or pseudocolor, it will overwrite the fb application's
-          color map, producing wrong colors.
-
-    So, remove the generic implementation in fb_blank() and just return -EINVAL
-    if there is no hardware implementation.  This will be only used by apps doin
-    an FBIO_BLANK ioctl, and is a more robust approach.
-
-    Other changes:
-
-    - Consolidated all tests and created an inlined helper function to check if
-      the framebuffer console is inactive or not.
-    - fix unblanking if driver has no xxxfb_blank() hook.
-
-    I'm probably missing a few more things, but this patch should be generally
-    correct. Please apply after the entire patch series to avoid rejects.
-
-    Signed-off-by: Antonino Daplas <adaplas@pol.net>
-    Signed-off-by: Andrew Morton <akpm@osdl.org>
-    Signed-off-by: Linus Torvalds <torvalds@osdl.org>
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
