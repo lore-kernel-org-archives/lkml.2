@@ -1,152 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116Ab1AMDy5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 22:54:57 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:50444 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1750978Ab1AMDyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 22:54:54 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18FtNl3230FuHxtUmpYEuGFbyBy0Vx+AMypE57B2b
-	fnUsB0+438Gup3
-Subject: Re: [patch] Re: autogroup: sched_setscheduler() fails
-From: Mike Galbraith <efault@gmx.de>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: bharata@linux.vnet.ibm.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTimtwt+OGohMxGRC7L4Dm-h4wvCWYi-=13efqFtr@mail.gmail.com>
-References: <20110110091622.GF2772@in.ibm.com>
-	 <1294655388.8197.22.camel@marge.simson.net>
-	 <1294657154.2016.459.camel@laptop>
-	 <1294677746.8345.4.camel@marge.simson.net>
-	 <20110111171046.GL4772@in.ibm.com>
-	 <1294771686.8006.15.camel@marge.simson.net>
-	 <1294810842.8370.7.camel@marge.simson.net>
-	 <AANLkTimtwt+OGohMxGRC7L4Dm-h4wvCWYi-=13efqFtr@mail.gmail.com>
+	id S1755580Ab1AMDz3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 22:55:29 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:29262 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750978Ab1AMDz1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Jan 2011 22:55:27 -0500
+X-IronPort-AV: E=Sophos;i="4.60,316,1291622400"; 
+   d="scan'208";a="504837226"
+Subject: Re: vfs-scale, chroot
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Nick Piggin <npiggin@gmail.com>
+Cc: "J. R. Okajima" <hooanon05@yahoo.co.jp>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTik-AdWpPqmR5TSCuijGwe3XLXm=HYVdUOhK3dDT@mail.gmail.com>
+References: <29345.1294861630@jrobl>
+	 <1294862680.2971.51.camel@heimdal.trondhjem.org>
+	 <AANLkTik-AdWpPqmR5TSCuijGwe3XLXm=HYVdUOhK3dDT@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 Jan 2011 04:54:50 +0100
-Message-ID: <1294890890.8089.39.camel@marge.simson.net>
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Wed, 12 Jan 2011 22:55:10 -0500
+Message-ID: <1294890910.15025.75.camel@heimdal.trondhjem.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 13 Jan 2011 03:55:11.0877 (UTC) FILETIME=[AD7F4B50:01CBB2D5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(mailer switched me to work account again.  grrrr, switch yet again:)
+On Thu, 2011-01-13 at 12:25 +1100, Nick Piggin wrote: 
+> On Thu, Jan 13, 2011 at 7:04 AM, Trond Myklebust
+> <Trond.Myklebust@netapp.com> wrote:
+> 
+> > BTW, Nick: Given that some filesystems such as NFS are _always_ going to
+> > reject LOOKUP_RCU,
+> 
+> That's not very optimistic of you... why is that a given, my I ask?
+> Or do you just mean as-in the current code?
 
-On Wed, 2011-01-12 at 14:32 +0800, Yong Zhang wrote:
+In the current code, the ECHILD is unconditional, so adding the
+unlikely() is clearly pre-empting the reality on the ground.
 
-> Setting rt_runtime both in this patch and the previous one will make tune
-> other's rt_runtime/rt_period trouble, I guess.
+In the longer run, we can convert the NFS d_revalidate() to accept
+LOOKUP_RCU in the case where we believe we can trust the cache without
+having to issue an RPC call. That will mainly be in the case where we
+hold an NFSv4 delegation, or where we believe the parent directory mtime
+has not changed. However that is not something I'm going to have the
+cycles to do in this merge window. I assume there will be other
+filesystems whose maintainers have similar constraints.
 
-Yeah, as in making it impossible to allocate even 1 usec :)  We need
-zero bandwidth though, so tell  __sched_setscheduler() that autogroups
-having zero allocated is perfectly fine.
+However, even if we were to make these changes, then we're not going to
+be accepting LOOKUP_RCU in the 99.999% case that is usually a
+requirement for unlikely() to be an acceptable optimisation. For a
+number of common workload, directories change all the time, and in NFS,
+that inevitably means we need to revalidate their contents with an RPC
+call (unless we happen to hold an NFSv4 delegation).
 
-sched, autogroup: fix CONFIG_RT_GROUP_SCHED sched_setscheduler() failure.
+> > it would appear to be completely out of place to use
+> > the 'unlikely()' keyword when testing the results of path_walk_rcu() and
+> > friends. In particular when the kernel is running with nfsroot, we're
+> > saying that 100% of all cases are 'unlikely'...
+> 
+> Well that _is_ an accepted use of branch annotations. For example it
+> is used when scheduling realtime tasks, because even if some systems
+> will do 99.9% of their scheduling on realtime tasks, it is not the common
+> case.
+> 
+> I'm not saying that applies here, but: if path walk performance is
+> important, then we should use local caching and rcu-walk. If not, then
+> why do we care about slightly slower branch?
+> 
+> The annotations really help to reduce icache penalty of added
+> complexity which is why I like them, but I'm happy to remove them
+> where they don't make sense of course.
 
-If CONFIG_RT_GROUP_SCHED is set, __sched_setscheduler() fails due to autogroup
-not allocating rt_runtime.  Free unused/unusable rt_se and rt_rq, redirect RT
-tasks to the root task group, and tell __sched_setscheduler() that it's ok.
+You are adding overhead to existing common paths by doubling the calls
+to d_revalidate() in ways which afaics will break branch prediction
+(first setting, then clearing LOOKUP_RCU). You can at least try not to
+maximise that impact by adding further branch prediction impediments.
 
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Reported-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
+Trond
 
----
- kernel/sched.c           |    3 ++-
- kernel/sched_autogroup.c |   27 +++++++++++++++++++++++++++
- kernel/sched_autogroup.h |    4 ++++
- 3 files changed, 33 insertions(+), 1 deletion(-)
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-Index: linux-2.6/kernel/sched_autogroup.c
-===================================================================
---- linux-2.6.orig/kernel/sched_autogroup.c
-+++ linux-2.6/kernel/sched_autogroup.c
-@@ -27,6 +27,11 @@ static inline void autogroup_destroy(str
- {
- 	struct autogroup *ag = container_of(kref, struct autogroup, kref);
- 
-+#ifdef CONFIG_RT_GROUP_SCHED
-+	/* We've redirected RT tasks to the root task group... */
-+	ag->tg->rt_se = NULL;
-+	ag->tg->rt_rq = NULL;
-+#endif
- 	sched_destroy_group(ag->tg);
- }
- 
-@@ -55,6 +60,10 @@ static inline struct autogroup *autogrou
- 	return ag;
- }
- 
-+#ifdef CONFIG_RT_GROUP_SCHED
-+static void free_rt_sched_group(struct task_group *tg);
-+#endif
-+
- static inline struct autogroup *autogroup_create(void)
- {
- 	struct autogroup *ag = kzalloc(sizeof(*ag), GFP_KERNEL);
-@@ -72,6 +81,19 @@ static inline struct autogroup *autogrou
- 	init_rwsem(&ag->lock);
- 	ag->id = atomic_inc_return(&autogroup_seq_nr);
- 	ag->tg = tg;
-+#ifdef CONFIG_RT_GROUP_SCHED
-+	/*
-+	 * Autogroup RT tasks are redirected to the root task group
-+	 * so we don't have to move tasks around upon policy change,
-+	 * or flail around trying to allocate bandwidth on the fly.
-+	 * A bandwidth exception in __sched_setscheduler() allows
-+	 * the policy change to proceed.  Thereafter, task_group()
-+	 * returns &root_task_group, so zero bandwidth is required.
-+	 */
-+	free_rt_sched_group(tg);
-+	tg->rt_se = root_task_group.rt_se;
-+	tg->rt_rq = root_task_group.rt_rq;
-+#endif
- 	tg->autogroup = ag;
- 
- 	return ag;
-@@ -106,6 +128,11 @@ task_wants_autogroup(struct task_struct
- 	return true;
- }
- 
-+static inline bool task_group_is_autogroup(struct task_group *tg)
-+{
-+	return tg != &root_task_group && tg->autogroup;
-+}
-+
- static inline struct task_group *
- autogroup_task_group(struct task_struct *p, struct task_group *tg)
- {
-Index: linux-2.6/kernel/sched_autogroup.h
-===================================================================
---- linux-2.6.orig/kernel/sched_autogroup.h
-+++ linux-2.6/kernel/sched_autogroup.h
-@@ -15,6 +15,10 @@ autogroup_task_group(struct task_struct
- 
- static inline void autogroup_init(struct task_struct *init_task) {  }
- static inline void autogroup_free(struct task_group *tg) { }
-+static inline bool task_group_is_autogroup(struct task_group *tg)
-+{
-+	return 0;
-+}
- 
- static inline struct task_group *
- autogroup_task_group(struct task_struct *p, struct task_group *tg)
-Index: linux-2.6/kernel/sched.c
-===================================================================
---- linux-2.6.orig/kernel/sched.c
-+++ linux-2.6/kernel/sched.c
-@@ -4874,7 +4874,8 @@ recheck:
- 		 * assigned.
- 		 */
- 		if (rt_bandwidth_enabled() && rt_policy(policy) &&
--				task_group(p)->rt_bandwidth.rt_runtime == 0) {
-+				task_group(p)->rt_bandwidth.rt_runtime == 0 &&
-+				!task_group_is_autogroup(task_group(p))) {
- 			__task_rq_unlock(rq);
- 			raw_spin_unlock_irqrestore(&p->pi_lock, flags);
- 			return -EPERM;
-
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
