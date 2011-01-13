@@ -1,130 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932906Ab1AMDVi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Jan 2011 22:21:38 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:2627 "EHLO
-	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932797Ab1AMDVd (ORCPT
+	id S932911Ab1AMDWf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Jan 2011 22:22:35 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:64548 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932602Ab1AMDWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Jan 2011 22:21:33 -0500
-X-SpamScore: -3
-X-BigFish: VS-3(zz1432Nzz1202h1082kzz8275chz2dh2a8h637h668h)
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw02.freescale.net;RD:de01egw02.freescale.net;EFVD:NLI
-Message-ID: <4D2E7018.3090209@freescale.com>
-Date: Thu, 13 Jan 2011 11:23:04 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
+	Wed, 12 Jan 2011 22:22:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=q8MqueIYMuVeWpLwQseZfIB2+MOIMz/4W9uN2Cwj2TY5rjZOmI8Hc1fTQ6rLGsbrjM
+         mvNB9B6/BAvzctItI6aI7BQBb27QkGLYZAPq2VZ+0sk0daYTwK7GgNBgLfsA0coXlldQ
+         98zrlsikzX7vrHPIMVb23oA5nGbrws15Mhd6w=
 MIME-Version: 1.0
-To: Eric B Munson <emunson@mgebm.net.freescale.net>
-CC: <akpm@linux-foundation.org>, <linux-mm@kvack.org>, <mel@csn.ul.ie>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Rename struct task variables from p to tsk
-References: <1294845571-11529-1-git-send-email-emunson@mgebm.net>
-In-Reply-To: <1294845571-11529-1-git-send-email-emunson@mgebm.net>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+In-Reply-To: <1294888828.2757.30.camel@perseus>
+References: <20110107075831.GA14915@amd>
+	<1294763679.2435.72.camel@doink>
+	<AANLkTin67OXYYKk6y+_MKfXEXBz-F_+qAH0cpiJ24yEQ@mail.gmail.com>
+	<1294768668.2435.177.camel@doink>
+	<1294804776.2821.4.camel@perseus>
+	<AANLkTim8rQb3mDFHg7DmbTZa20FxRGk3wJCjOkz=JG9S@mail.gmail.com>
+	<1294807279.2821.9.camel@perseus>
+	<1294809426.2821.20.camel@perseus>
+	<AANLkTikYErmu6bNz51iPgjzdOoa8uWNNdn01texihqM6@mail.gmail.com>
+	<1294883313.2757.5.camel@perseus>
+	<AANLkTin9ac1r_Hur4w=cxkCg2Z-JVYRCwsR6KeZ+9b=R@mail.gmail.com>
+	<1294888828.2757.30.camel@perseus>
+Date: Thu, 13 Jan 2011 14:22:30 +1100
+Message-ID: <AANLkTimgWNkQhZPSysAC+HkdEk7YH4GHj+TH1SO_Diiy@mail.gmail.com>
+Subject: Re: [announce] vfs-scale git tree update
+From: Nick Piggin <npiggin@gmail.com>
+To: Ian Kent <raven@themaw.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, aelder@sgi.com,
+        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> p is not a meaningful identifier, this patch replaces all instances
-> in page_alloc.c of p when used as a struct task with the more useful
-> tsk.
+On Thu, Jan 13, 2011 at 2:20 PM, Ian Kent <raven@themaw.net> wrote:
+> On Thu, 2011-01-13 at 13:14 +1100, Nick Piggin wrote:
+>> On Thu, Jan 13, 2011 at 12:48 PM, Ian Kent <raven@themaw.net> wrote:
+>> > On Thu, 2011-01-13 at 12:01 +1100, Nick Piggin wrote:
+>> >> Hm, what are the concurrencies that you need protection from?
+>> >
+>> > Ha, I think I'm wrong about this, after looking more closely at this I'm
+>> > struggling to see why autofs4_lock is needed at all.
+>>
+>> Well you did send me a series of patches to remove it, but
+>> unfortunately that was just as you made some larger changes
+>> to autofs4 upstream and I wasn't able to keep them up to date.
+>>
+>> It would be much appreciated if you had time to take another
+>> look at all the locking and streamline it.
 >
-I also think `p` is good enough. The `tsk` feels cold.
-
-
-
-> Signed-off-by: Eric B Munson <emunson@mgebm.net>
-> ---
->  mm/page_alloc.c |   22 +++++++++++-----------
->  1 files changed, 11 insertions(+), 11 deletions(-)
+> I have started looking at it but just the autofs4_lock.
 >
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index ff7e158..acfbb20 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1852,23 +1852,23 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
->  {
->  	struct page *page = NULL;
->  	struct reclaim_state reclaim_state;
-> -	struct task_struct *p = current;
-> +	struct task_struct *tsk = current;
->  	bool drained = false;
->  
->  	cond_resched();
->  
->  	/* We now go into synchronous reclaim */
->  	cpuset_memory_pressure_bump();
-> -	p->flags |= PF_MEMALLOC;
-> +	tsk->flags |= PF_MEMALLOC;
->  	lockdep_set_current_reclaim_state(gfp_mask);
->  	reclaim_state.reclaimed_slab = 0;
-> -	p->reclaim_state = &reclaim_state;
-> +	tsk->reclaim_state = &reclaim_state;
->  
->  	*did_some_progress = try_to_free_pages(zonelist, order, gfp_mask, nodemask);
->  
-> -	p->reclaim_state = NULL;
-> +	tsk->reclaim_state = NULL;
->  	lockdep_clear_current_reclaim_state();
-> -	p->flags &= ~PF_MEMALLOC;
-> +	tsk->flags &= ~PF_MEMALLOC;
->  
->  	cond_resched();
->  
-> @@ -1932,7 +1932,7 @@ void wake_all_kswapd(unsigned int order, struct zonelist *zonelist,
->  static inline int
->  gfp_to_alloc_flags(gfp_t gfp_mask)
->  {
-> -	struct task_struct *p = current;
-> +	struct task_struct *tsk = current;
->  	int alloc_flags = ALLOC_WMARK_MIN | ALLOC_CPUSET;
->  	const gfp_t wait = gfp_mask & __GFP_WAIT;
->  
-> @@ -1954,12 +1954,12 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
->  		 * See also cpuset_zone_allowed() comment in kernel/cpuset.c.
->  		 */
->  		alloc_flags &= ~ALLOC_CPUSET;
-> -	} else if (unlikely(rt_task(p)) && !in_interrupt())
-> +	} else if (unlikely(rt_task(tsk)) && !in_interrupt())
->  		alloc_flags |= ALLOC_HARDER;
->  
->  	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
->  		if (!in_interrupt() &&
-> -		    ((p->flags & PF_MEMALLOC) ||
-> +		    ((tsk->flags & PF_MEMALLOC) ||
->  		     unlikely(test_thread_flag(TIF_MEMDIE))))
->  			alloc_flags |= ALLOC_NO_WATERMARKS;
->  	}
-> @@ -1978,7 +1978,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
->  	int alloc_flags;
->  	unsigned long pages_reclaimed = 0;
->  	unsigned long did_some_progress;
-> -	struct task_struct *p = current;
-> +	struct task_struct *tsk = current;
->  
->  	/*
->  	 * In the slowpath, we sanity check order to avoid ever trying to
-> @@ -2034,7 +2034,7 @@ rebalance:
->  		goto nopage;
->  
->  	/* Avoid recursion of direct reclaim */
-> -	if (p->flags & PF_MEMALLOC)
-> +	if (tsk->flags & PF_MEMALLOC)
->  		goto nopage;
->  
->  	/* Avoid allocations with no watermarks from looping endlessly */
-> @@ -2108,7 +2108,7 @@ nopage:
->  	if (!(gfp_mask & __GFP_NOWARN) && printk_ratelimit()) {
->  		printk(KERN_WARNING "%s: page allocation failure."
->  			" order:%d, mode:0x%x\n",
-> -			p->comm, order, gfp_mask);
-> +			tsk->comm, order, gfp_mask);
->  		dump_stack();
->  		show_mem();
->  	}
+> As you know, we have some significant autofs changes in progress, so I
+> don't want to spend a huge amount of time testing (and the testing does
+> take a long time) against source that will be very different. So far I
+> can't see that the autofs4_lock will introduce any problem so I want to
+> leave it for now and (probably) eliminate it in the new code since that
+> will need changes as well and will need to be re-tested.
+
+Fair enough.
 
 
+> I'd appreciate it if you could find time to reply to David's questions
+> about the changes to our d_automount patch series. Although, based on
+> our previous discussion, I think he has it about right, but a word or
+> two from you would be really helpful.
+
+Yes I am meaning to take a look, I'm a bit busy for the next week,
+however.
