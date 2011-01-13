@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757324Ab1AMUxq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 15:53:46 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:26077 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752083Ab1AMUxj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 15:53:39 -0500
-Date: Thu, 13 Jan 2011 21:53:38 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: b.a.t.m.a.n@lists.open-mesh.org
-cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marek Lindner <lindner_marek@yahoo.de>,
-        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-        Sven Eckelmann <sven@narfation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH] Even Batman should not dereference NULL pointers
-Message-ID: <alpine.LNX.2.00.1101132146400.11347@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757209Ab1AMU5S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 15:57:18 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:52552 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756689Ab1AMU5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 15:57:13 -0500
+Subject: Re: [PATCH V9 02/13] ntp: add ADJ_SETOFFSET mode bit
+From: john stultz <johnstul@us.ibm.com>
+To: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
+Cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <AANLkTimHP1OsWauj6O566WgnxVTjMbNg2PK644QcT9Lq@mail.gmail.com>
+References: <cover.1294917347.git.richard.cochran@omicron.at>
+	 <60566a54842bcf5974d55ed39f387c32ff9cf5cb.1294917348.git.richard.cochran@omicron.at>
+	 <AANLkTimHP1OsWauj6O566WgnxVTjMbNg2PK644QcT9Lq@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Jan 2011 12:57:08 -0800
+Message-ID: <1294952228.5617.20.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's a problem in net/batman-adv/unicast.c::frag_send_skb().
-dev_alloc_skb() allocates memory and may fail, thus returning NULL. If 
-this happens we'll pass a NULL pointer on to skb_split() which in turn 
-hands it to skb_split_inside_header() from where it gets passed to 
-skb_put() that lets skb_tail_pointer() play with it and that function 
-dereferences it. And thus the bat dies.
+On Fri, 2011-01-14 at 05:39 +0900, Kuwahara,T. wrote:
+> My proposal: Limit the adjustable range of the offset so that leap
+> seconds will never occur more than once. (2147.5 seconds would be the
+> best choice. :-)
 
-While I was at it I also moved the call to dev_alloc_skb() above the 
-assignment to 'unicast_packet' since there's no reason to do that 
-assignment if the memory allocation fails.
+2147.5? That's ~36 minutes. 
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- unicast.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+While I think a limit could be a sensible compromise here. Leap seconds
+are limited to every six months. So surely a limit of 86400 (one day),
+or 2592000 (30 days) would be more reasonable.
 
-diff --git a/net/batman-adv/unicast.c b/net/batman-adv/unicast.c
-index dc2e28b..ee41fef 100644
---- a/net/batman-adv/unicast.c
-+++ b/net/batman-adv/unicast.c
-@@ -229,10 +229,12 @@ int frag_send_skb(struct sk_buff *skb, struct bat_priv *bat_priv,
- 	if (!bat_priv->primary_if)
- 		goto dropped;
- 
--	unicast_packet = (struct unicast_packet *) skb->data;
-+	frag_skb = dev_alloc_skb(data_len - (data_len / 2) + ucf_hdr_len);
-+	if (!frag_skb)
-+		goto dropped;
- 
-+	unicast_packet = (struct unicast_packet *) skb->data;
- 	memcpy(&tmp_uc, unicast_packet, uc_hdr_len);
--	frag_skb = dev_alloc_skb(data_len - (data_len / 2) + ucf_hdr_len);
- 	skb_split(skb, frag_skb, data_len / 2);
- 
- 	if (my_skb_head_push(skb, ucf_hdr_len - uc_hdr_len) < 0 ||
+thanks
+-john
 
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
 
