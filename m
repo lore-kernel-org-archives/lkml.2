@@ -1,52 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757364Ab1AMVnw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 16:43:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18852 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757173Ab1AMVnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 16:43:45 -0500
-Date: Thu, 13 Jan 2011 21:43:08 +0000
-From: Alasdair G Kergon <agk@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alasdair G Kergon <agk@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] core block bits for 2.6.38
-Message-ID: <20110113214308.GA18104@agk-dp.fab.redhat.com>
-Mail-Followup-To: Alasdair G Kergon <agk@redhat.com>,
-	Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <4D2F03A7.2030809@fusionio.com> <20110113192152.GA18217@agk-dp.fab.redhat.com> <AANLkTin8icx0cir8czy9snZ0wg=QovJ4HSZru4jYUoea@mail.gmail.com> <4D2F5353.3000400@fusionio.com> <AANLkTi=VaaJr1b37yabEj-XTe1pRzcEg6OHLb1HbEES0@mail.gmail.com>
+	id S1757348Ab1AMVri (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 16:47:38 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:41396 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115Ab1AMVrd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 16:47:33 -0500
+Date: Thu, 13 Jan 2011 22:48:41 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Manoj Iyer <manoj.iyer@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
+Subject: Re: [PATCH] Quirk to fix suspend/resume on Lenovo Edge 11,13,14,15
+Message-ID: <20110113214841.GC4081@aftab>
+References: <AANLkTikDoRMoQjtN03eMoeacwottEixrFqcF8nJZWgKy@mail.gmail.com>
+ <20110113183025.GE2006@aftab>
+ <alpine.LFD.2.00.1101131946560.2678@localhost6.localdomain6>
+ <20110113185807.GA24720@srcf.ucam.org>
+ <20110113190700.GB30866@kryptos.osrc.amd.com>
+ <alpine.LFD.2.00.1101132012140.2678@localhost6.localdomain6>
+ <20110113192825.GC30866@kryptos.osrc.amd.com>
+ <alpine.LFD.2.00.1101132032350.2678@localhost6.localdomain6>
+ <20110113210950.GA4081@aftab>
+ <alpine.LFD.2.00.1101132210351.2678@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=VaaJr1b37yabEj-XTe1pRzcEg6OHLb1HbEES0@mail.gmail.com>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: Amberley Place, 107-111 Peascod
-	Street, Windsor, Berkshire, SL4 1TE.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.LFD.2.00.1101132210351.2678@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 09:05:40PM +0100, Tejun Heo wrote:
-> On Thu, Jan 13, 2011 at 8:32 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
-> > I see Tejun already posted a fix, but Milan says it does not work.
-> > Tejun, any  updates?
+On Thu, Jan 13, 2011 at 04:30:43PM -0500, Thomas Gleixner wrote:
+> The more interesting info is there in Manoj's logs:
 > 
-> Hmmm... seems like I missed something.  Unfortunately, it's already a
-> bit too late here.  I'll get back to it tomorrow afternoon.  The issue
-> is mostly cosmetic so if it can wait a day or two I don't think
-> reverting is necessary.
- 
-It's only cosmetic if your system is not relying upon userspace programs
-that rely upon it:)   My vote would be for reverting the patch for now
-so we can be sure the existing userspace functionality continues to work
-in -rc1.
+> [    0.036455] ..TIMER: vector=0x30 apic1=0 pin1=0 apic2=-1 pin2=-1
+> [    0.040000] ..MP-BIOS bug: 8254 timer not connected to IO-APIC
+> [    0.040000] ...trying to set up timer (IRQ0) through the 8259A ...
+> [    0.040000] ..... (found apic 0 pin 0) ...
+> [    0.080021] ....... works.
+> 
+> versus
+> 
+> [    0.036460] ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+> 
+> So the "working" state is using "apic 0 pin 0" while the non working
+> state is using "vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1".
+> 
+> Something changes across suspend/resume which makes the BIOS
+> advertised routing work with PIT but not with HPET. Further why does
+> the apic 0/0 solution found by the kernel (when ignoring BIOS) works
+> always (except that we don't know whether the "nohpet" case works as
+> well, but I bet it does).
 
-Alasdair
+Yes, it does. With "nohpet" we use PIT and PIT obviously works.
 
+> So we are back to the question I raised above: What changes and even
+> more interesting what changes after the HPET expires - which we know
+> for sure that it must happen as otherwise we wont get a HPET interrupt
+> after the 32bit wraparound.
+> 
+> We need answers to these questions before applying any
+> patch/workaround/quirk or whatever.
+
+Well, this is easily answered in the theoretical sense, without the
+actual details :):
+
+1. HPET gets reinitialized first
+2. Something programs it
+3. Timer expires but timer IRQ routing is still wrong and "Something"
+   doesn't get its IRQ.
+4. Timer IRQ routing gets "fixed" as part of the resume path.
+
+... we end up waiting for the counter to wraparound and get an IRQ which
+gets delivered this time.
+
+Does that make sense at all?
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
