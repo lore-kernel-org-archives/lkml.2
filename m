@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757129Ab1AMPXb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 10:23:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22921 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757105Ab1AMPXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 10:23:17 -0500
-Message-ID: <4D2F18D5.3060105@redhat.com>
-Date: Thu, 13 Jan 2011 17:23:01 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1757162Ab1AMPXT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 10:23:19 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:58156 "EHLO
+	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757104Ab1AMPXI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 10:23:08 -0500
+X-SpamScore: -2
+X-BigFish: VPS-2(zzbb2cKzz1202hzz8275bhz32i668h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LEYW2B-02-9KW-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+CC: <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 2/2] KVM: SVM: Add support for perf-kvm
+Date: Thu, 13 Jan 2011 16:22:58 +0100
+Message-ID: <1294932178-26866-3-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1294932178-26866-1-git-send-email-joerg.roedel@amd.com>
+References: <1294932178-26866-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
-Subject: Re: [RFC -v4 PATCH 3/3] kvm: use yield_to instead of sleep in kvm_vcpu_on_spin
-References: <20110113002108.3abdf953@annuminas.surriel.com> <20110113002745.51190252@annuminas.surriel.com> <4D2EFB44.2060906@redhat.com> <4D2F1510.3000809@redhat.com>
-In-Reply-To: <4D2F1510.3000809@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2011 05:06 PM, Rik van Riel wrote:
->
->> I think the first patch needs some reference counting... I'd move it to
->> the outermost KVM_RUN loop to reduce the performance impact.
->
-> I don't see how refcounting from that other thread could
-> possibly help, and I now see that the task_struct_cachep
-> does not have SLAB_DESTROY_BY_LRU, either :(
->
-> What do you have in mind here that would both work and
-> be acceptable to you as KVM maintainer?
->
+This patch adds the necessary code to run perf-kvm on AMD
+machines.
 
-I think a 'struct pid' fits the bill here.
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ arch/x86/kvm/svm.c |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
 
-
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 8b9bc72..2415129 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -3646,13 +3646,21 @@ static void svm_vcpu_run(struct kvm_vcpu *vcpu)
+ 
+ 	local_irq_disable();
+ 
+-	stgi();
+-
+ 	vcpu->arch.cr2 = svm->vmcb->save.cr2;
+ 	vcpu->arch.regs[VCPU_REGS_RAX] = svm->vmcb->save.rax;
+ 	vcpu->arch.regs[VCPU_REGS_RSP] = svm->vmcb->save.rsp;
+ 	vcpu->arch.regs[VCPU_REGS_RIP] = svm->vmcb->save.rip;
+ 
++	if (unlikely(svm->vmcb->control.exit_code == SVM_EXIT_NMI))
++		kvm_before_handle_nmi(&svm->vcpu);
++
++	stgi();
++
++	/* Any pending NMI will happen here */
++
++	if (unlikely(svm->vmcb->control.exit_code == SVM_EXIT_NMI))
++		kvm_after_handle_nmi(&svm->vcpu);
++
+ 	sync_cr8_to_lapic(vcpu);
+ 
+ 	svm->next_rip = 0;
 -- 
-error compiling committee.c: too many arguments to function
+1.7.1
+
 
