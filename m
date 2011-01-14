@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab1ANJcG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 04:32:06 -0500
-Received: from www.tglx.de ([62.245.132.106]:45481 "EHLO www.tglx.de"
+	id S1753132Ab1ANJcw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 04:32:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6446 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751152Ab1ANJb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 04:31:58 -0500
-Date: Fri, 14 Jan 2011 10:31:19 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Richard Cochran <richardcochran@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
-        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
-        Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>
-Subject: Re: [PATCH V9 08/13] posix clocks: cleanup the CLOCK_DISPTACH
- macro
-In-Reply-To: <20110114074837.GA8077@riccoc20.at.omicron.at>
-Message-ID: <alpine.LFD.2.00.1101141030400.2678@localhost6.localdomain6>
-References: <cover.1294917347.git.richard.cochran@omicron.at> <90b2beef441615d01c93fcad029c44af4e505c5f.1294917348.git.richard.cochran@omicron.at> <alpine.LFD.2.00.1101131745400.2678@localhost6.localdomain6> <20110114074837.GA8077@riccoc20.at.omicron.at>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751152Ab1ANJcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 04:32:46 -0500
+Message-ID: <4D301A18.1050107@redhat.com>
+Date: Fri, 14 Jan 2011 10:40:40 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jesper Juhl <jj@chaosbits.net>
+CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jean-Francois Moine <moinejf@free.fr>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Lee Jones <lee.jones@canonical.com>
+Subject: Re: [PATCH][rfc] media, video, stv06xx, pb0100: Don't potentially
+ deref NULL in pb0100_start().
+References: <alpine.LNX.2.00.1101132300490.11347@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1101132300490.11347@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Jan 2011, Richard Cochran wrote:
-> On Thu, Jan 13, 2011 at 06:03:24PM +0100, Thomas Gleixner wrote:
-> > On Thu, 13 Jan 2011, Richard Cochran wrote:
-> > >  int posix_cpu_clock_getres(const clockid_t which_clock, struct timespec *ts);
-> > >  int posix_cpu_clock_get(const clockid_t which_clock, struct timespec *ts);
-> > > -int posix_cpu_clock_set(const clockid_t which_clock, const struct timespec *ts);
-> > > +int posix_cpu_clock_set(const clockid_t which_clock, struct timespec *ts);
-> > 
-> > Shouldn't we change the clock_set function to have *ts const in all places ?
-> 
-> Yes, your are right.
-> 
-> > > @@ -293,6 +261,11 @@ static __init int init_posix_timers(void)
-> > >  		.clock_adj = do_posix_clock_noadjtime,
-> > >  		.timer_create = no_timer_create,
-> > >  		.nsleep = no_nsleep,
-> > > +		/* defaults: */
-> > > +		.nsleep_restart	= common_nsleep_restart,
-> > > +		.timer_del	= common_timer_del,
-> > > +		.timer_get	= common_timer_get,
-> > > +		.timer_set	= common_timer_set,
-> > 
-> > Hmm, we do not need to set functional entries for clocks which neither
-> > implement timer_create nor nsleep.
-> 
-> I know, but I wanted to be really pendantic about what the previous
-> code was, and what the new code does.
-> 
-> Before: By leaving the k_clock function pointer NULL, the clock
->         selects common_xyz. This common function may or may make
->         sense for that clock.
-> 
-> After:  By leaving the k_clock function pointer NULL, the clock will
->         return EINVAL for that syscall.
-> 
-> Maybe it would be better to leave the cleaning up of the common crud
-> as a follow up patch. What do you think?
+Hi,
 
-Fair enough.
+On 01/13/2011 11:05 PM, Jesper Juhl wrote:
+> usb_altnum_to_altsetting() may return NULL. If it does we'll dereference a
+> NULL pointer in
+> drivers/media/video/gspca/stv06xx/stv06xx_pb0100.c::pb0100_start().
+> As far as I can tell there's not really anything more sensible than
+> -ENODEV that we can return in that situation, but I'm not at all intimate
+> with this code so I'd like a bit of review/comments on this before it's
+> applied.
+> Anyway, here's a proposed patch.
+>
+
+Hi,
+
+On 01/13/2011 11:05 PM, Jesper Juhl wrote:
+ > usb_altnum_to_altsetting() may return NULL. If it does we'll dereference a
+ > NULL pointer in
+ > drivers/media/video/gspca/stv06xx/stv06xx_pb0100.c::pb0100_start().
+ > As far as I can tell there's not really anything more sensible than
+ > -ENODEV that we can return in that situation, but I'm not at all intimate
+ > with this code so I'd like a bit of review/comments on this before it's
+ > applied.
+ > Anyway, here's a proposed patch.
+ >
+
+pb0100_start gets called from stv06xx_start, which also does a
+usb_altnum_to_altsetting(intf, sd->gspca_dev.alt); and does contain the
+NULL check before calling pb0100_start. So I left out the check on purpose,
+to keep the code compact in IMHO better readable.
+
+Still I agree this is a bit tricky. So not NACK but not ACK either. What
+do others think?
+
+Regards,
+
+Hans
+
+
+> Signed-off-by: Jesper Juhl<jj@chaosbits.net>
+> ---
+>   stv06xx_pb0100.c |    2 ++
+>   1 file changed, 2 insertions(+)
+>
+>    compile tested only.
+>
+> diff --git a/drivers/media/video/gspca/stv06xx/stv06xx_pb0100.c b/drivers/media/video/gspca/stv06xx/stv06xx_pb0100.c
+> index ac47b4c..75a5b9c 100644
+> --- a/drivers/media/video/gspca/stv06xx/stv06xx_pb0100.c
+> +++ b/drivers/media/video/gspca/stv06xx/stv06xx_pb0100.c
+> @@ -217,6 +217,8 @@ static int pb0100_start(struct sd *sd)
+>
+>   	intf = usb_ifnum_to_if(sd->gspca_dev.dev, sd->gspca_dev.iface);
+>   	alt = usb_altnum_to_altsetting(intf, sd->gspca_dev.alt);
+> +	if (!alt)
+> +		return -ENODEV;
+>   	packet_size = le16_to_cpu(alt->endpoint[0].desc.wMaxPacketSize);
+>
+>   	/* If we don't have enough bandwidth use a lower framerate */
+>
+>
+>
