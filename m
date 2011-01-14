@@ -1,47 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757423Ab1ANIpr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 03:45:47 -0500
-Received: from fw.wantstofly.org ([80.101.37.227]:56866 "EHLO
-	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751478Ab1ANIpj (ORCPT
+	id S1757447Ab1ANIp5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 03:45:57 -0500
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:57621 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757421Ab1ANIpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 03:45:39 -0500
-Date: Fri, 14 Jan 2011 09:45:38 +0100
-From: Lennert Buytenhek <buytenh@secretlab.ca>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Richard =?iso-8859-1?Q?R=F6jfors?= 
-	<richard.rojfors@mocean-labs.com>
-Subject: Re: linux-next: build warning in Linus' tree
-Message-ID: <20110114084538.GW15575@mail.wantstofly.org>
-References: <20110114105123.b05b4dcc.sfr@canb.auug.org.au>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110114105123.b05b4dcc.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.4.2.2i
+	Fri, 14 Jan 2011 03:45:47 -0500
+To: Nick Piggin <npiggin@gmail.com>
+CC: miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-reply-to: <AANLkTi=4mCaZzGXja0Z_VBS+fst8k8_=t1A-eZwfvKiA@mail.gmail.com>
+	(message from Nick Piggin on Fri, 14 Jan 2011 12:21:45 +1100)
+Subject: Re: Important for fs devs: rcu-walk merged upstream
+References: <AANLkTimBrR1LkVHOxZA=UUmKsnxfsFLr9z_AhXUHQ_7N@mail.gmail.com>
+	<E1PdOdT-00042k-RM@pomaz-ex.szeredi.hu>
+	<E1PdPsR-0004BY-Q3@pomaz-ex.szeredi.hu> <AANLkTi=4mCaZzGXja0Z_VBS+fst8k8_=t1A-eZwfvKiA@mail.gmail.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Message-Id: <E1PdfI0-0005U7-LU@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Fri, 14 Jan 2011 09:45:44 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 10:51:23AM +1100, Stephen Rothwell wrote:
-
-> While building Linus' tree, today's linux-next build (x86_64
-> allmodconfig) produced these warnings:
+On Fri, 14 Jan 2011, Nick Piggin wrote:
+> On Fri, Jan 14, 2011 at 3:18 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> > On Thu, 13 Jan 2011, Miklos Szeredi wrote:
+> >> On Sat, 8 Jan 2011, Nick Piggin wrote:
+> >> > The vfs-scale branch is now upstream. If you haven't
+> >> > looked yet, your filesystem is likely to have been
+> >> > touched, so check it out.
+> >> >
+> >> > Also look at Documentation/filesystems/porting and
+> >> > path-lookup.txt.
+> >> >
+> >> > The dcache_lock stuff should have been all done for you
+> >> > (for in-tree filesystems, I can help out of tree fses with
+> >> > conversions there if you ping me offline).
+> >> >
+> >> > The rcu-walk stuff can be more tricky for your filesystem
+> >> > to take advantage of.
+> >> >
+> >> > If you supply a .d_revalidate, .permission, or .check_acl,
+> >> > then path walking is going to be slow and unscalable for
+> >> > you.
+> >> >
+> >> > Out of tree filesystems: you _have_ to at least add a line
+> >> > of code to the above functions in order to specify that
+> >> > you don't want to participate in rcu-walk.
+> >> >
+> >> > Otherwise, you don't have to care about rcu-walk if you
+> >> > have a legacy or special filesystem like configfs then I'd
+> >> > advise against anything fancy. But if you have a
+> >> > userbase and you expect them to actually do any path
+> >> > lookups into your filesystem, please take a look.
+> >>
+> >> One other thing: I know ECHILD is safe since no sane filesystem will
+> >> return it in its permission or revalidate callbacks, and even if it
+> >> does that's just a loss of optimization.
+> >
+> > And it's not entirely safe either.  A fuse filesystem returning ECHILD
+> > would make nameidata_dentry_drop_rcu() to BUG.  So some sort of errno
+> > filter is necessary in the fuse kernel module.
 > 
-> drivers/gpio/timbgpio.c: In function 'timbgpio_irq':
-> drivers/gpio/timbgpio.c:202: warning: passing argument 1 of 'irq_get_irq_data' makes integer from pointer without a cast
-> include/linux/irq.h:345: note: expected 'unsigned int' but argument is of type 'struct irq_data *'
-> drivers/gpio/timbgpio.c:202: warning: passing argument 1 of 'desc-><U be0>.irq_data.chip->ack' makes integer from pointer without a cast
-> drivers/gpio/timbgpio.c:202: note: expected 'unsigned int' but argument is of type 'struct irq_data *'
-> drivers/gpio/timbgpio.c: In function 'timbgpio_probe':
-> drivers/gpio/timbgpio.c:303: warning: passing argument 2 of 'set_irq_chained_handler' from incompatible pointer type
-> include/linux/irq.h:294: note: expected 'irq_flow_handler_t' but argument is of type 'void (*)(struct irq_data *, struct irq_desc *)'
-> 
-> Introduced by commit a1f5f22adc3206c47e70652c12671666c65b579f ("gpio:
-> timbgpio: irq_data conversion").
+> Surely you'd need some filtering anyway? I don't think any function
+> involving path lookup could sanely return -ECHILD.
 
-My bad.  Sorry about that.  Have just sent a fixup patch.
+No, but not filtering doesn't normally hurt.  And it's not quite
+trivial deciding what should be allowed and what shoudln't, and the
+filter would have to be updated for each addition of a new errno.  So
+I'm not sure I want to go there.
+
+> That said, it probably is a good idea to have a new errno.
+
+Yeah, that makes the fitering much easier.
+
+Thanks,
+Miklos
