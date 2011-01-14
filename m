@@ -1,38 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757876Ab1ANPsG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 10:48:06 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55169 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752076Ab1ANPr7 (ORCPT
+	id S1757883Ab1ANPtl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 10:49:41 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34039 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757687Ab1ANPtf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 10:47:59 -0500
+	Fri, 14 Jan 2011 10:49:35 -0500
+Date: Fri, 14 Jan 2011 15:49:19 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Colin Cross <ccross@android.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: vfp: Fix up exception location in Thumb mode
+Message-ID: <20110114154919.GE15996@n2100.arm.linux.org.uk>
+References: <1294990949-2729-1-git-send-email-ccross@android.com> <AANLkTimqiqABxCejdeOQWZZ62DVUZW2v-yMpdu1aNDQT@mail.gmail.com> <20110114120229.GA15996@n2100.arm.linux.org.uk> <1295014231.7901.41.camel@e102109-lin.cambridge.arm.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1101141028350.2678@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1101131436070.2678@localhost6.localdomain6>
- <8952.1294927845@jrobl> <alpine.LFD.2.00.1101131732500.2678@localhost6.localdomain6>
- <AANLkTikjTqcTzBVNouMdb2-QDmEKvH0p_uZ-SE9aNW6f@mail.gmail.com> <alpine.LFD.2.00.1101141028350.2678@localhost6.localdomain6>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 14 Jan 2011 07:47:09 -0800
-Message-ID: <AANLkTinAseKuc3=JxB2qZGz2D4KUyjj=dbnoKfSyVLqh@mail.gmail.com>
-Subject: Re: [PATCH] fs: Work around NFS wreckage
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Nick Piggin <npiggin@gmail.com>, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        Nick Piggin <npiggin@kernel.dk>, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, u.kleine-koenig@pengutronix.de,
-        "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295014231.7901.41.camel@e102109-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 1:29 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
->
-> Can you point us to the patches, so we can run our own set of
-> tests in paralell?
+On Fri, Jan 14, 2011 at 02:10:31PM +0000, Catalin Marinas wrote:
+> On Fri, 2011-01-14 at 12:02 +0000, Russell King - ARM Linux wrote:
+> > I don't think this is correct.  On entry to the undefined instruction
+> > handler, we get the uncorrected PC value, so PC points to the
+> > instruction after the faulting instruction.
+> > 
+> > If it was an ARM instruction, that is located at PC-4.  If it was a
+> > Thumb instruction, it is located at PC-2.  This PC value is passed
+> > unmodified to the VFP entry code, and the passed r2 reflect the
+> > value in regs->ARM_pc.
+> 
+> The entry-armv.S code adds 2 to the r2 register in case of a 32-bit
+> Thumb instruction, so it is no longer the same as the ARM_pc.
 
-They should be in current -git as of yesterday evening.
+That's something that should be fixed - the entry conditions should be
+the same irrespective of thumb or arm encoding.
 
-In particular, I think this one is commit 90dbb77ba48d.
+> Since the VFP instructions in Thumb mode are always 32-bit, Colin's
+> patch made sense to me.
 
-                      Linus
+I looked up the VADD instruction in the ARM ARM.  It has both a 16-bit
+and 32-bit encoding.
+
+> > I think that the undefined instruction handling needs reworking for
+> > Thumb entirely as we could be dealing with a 16-bit or 32-bit thumb
+> > instruction, and we have no way of knowing without repeatedly
+> > decoding that instruction.
+> 
+> We already handle the r2 for in __und_usr. We don't deal with ARM_pc but
+> we could either do it in __und_usr or let the code handling the undef
+> fix it up.
+
+At the moment its just confusing as things stand, as some things are
+changed in one place and not the other.  Let's kill the pointless
+addition of 2 in the undefined instruction handler so that in every
+case we enter handlers with r2 == regs->ARM_pc, and regs->ARM_pc
+as per the ARM ARM undefined exception entry LR.
+
+Undefined instruction exception handlers can then rely on the meaning
+of both of these.
