@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757387Ab1ANB4e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 20:56:34 -0500
-Received: from [69.28.251.93] ([69.28.251.93]:45004 "EHLO b32.net"
+	id S1757458Ab1ANB4p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 20:56:45 -0500
+Received: from [69.28.251.93] ([69.28.251.93]:44990 "EHLO b32.net"
 	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756694Ab1ANB4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 20:56:22 -0500
+	id S1752304Ab1ANB4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 20:56:18 -0500
 From: Kevin Cernekee <cernekee@gmail.com>
 To: Ralf Baechle <ralf@linux-mips.org>
-Cc: <anemo@mba.ocn.ne.jp>, <linux-mips@linux-mips.org>,
+Cc: <ddaney@caviumnetworks.com>, <linux-mips@linux-mips.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 RESEND 3/6] MIPS: Move FIXADDR_TOP into spaces.h
-Date: Thu, 13 Jan 2011 17:52:14 -0800
-Message-Id: <57b81e075a9f318b77ac9d74d952a5e0@localhost>
+Subject: [PATCH v2 2/6] MIPS: pfn_valid() is broken on low memory HIGHMEM systems
+Date: Thu, 13 Jan 2011 17:52:13 -0800
+Message-Id: <3b5632228986cbd69eae8787dd0aad5b@localhost>
 In-Reply-To: <491015d51e5d3d36c517da09e038ecaf@localhost>
 References: <491015d51e5d3d36c517da09e038ecaf@localhost>
 User-Agent: vim 7.2
@@ -23,133 +23,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory maps and addressing quirks are normally defined in <spaces.h>.
-There are already three targets that need to override FIXADDR_TOP, and
-others exist.  This will be a cleaner approach than adding lots of
-ifdefs in fixmap.h .
+pfn_valid() compares the PFN to max_mapnr:
+
+        __pfn >= min_low_pfn && __pfn < max_mapnr;
+
+On HIGHMEM kernels, highend_pfn is used to set the value of max_mapnr.
+Unfortunately, highend_pfn is left at zero if the system does not
+actually have enough RAM to reach into the HIGHMEM range.  This causes
+pfn_valid() to always return false, and when debug checks are enabled
+the kernel will fail catastrophically:
+
+Memory: 22432k/32768k available (2249k kernel code, 10336k reserved, 653k data, 1352k init, 0k highmem)
+NR_IRQS:128
+kfree_debugcheck: out of range ptr 81c02900h.
+Kernel bug detected[#1]:
+Cpu 0
+$ 0   : 00000000 10008400 00000034 00000000
+$ 4   : 8003e160 802a0000 8003e160 00000000
+$ 8   : 00000000 0000003e 00000747 00000747
+...
+
+On such a configuration, max_low_pfn should be used to set max_mapnr.
 
 Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- arch/mips/include/asm/fixmap.h              |   10 +---------
- arch/mips/include/asm/mach-bcm63xx/spaces.h |   17 +++++++++++++++++
- arch/mips/include/asm/mach-generic/spaces.h |    4 ++++
- arch/mips/include/asm/mach-tx39xx/spaces.h  |   17 +++++++++++++++++
- arch/mips/include/asm/mach-tx49xx/spaces.h  |   17 +++++++++++++++++
- 5 files changed, 56 insertions(+), 9 deletions(-)
- create mode 100644 arch/mips/include/asm/mach-bcm63xx/spaces.h
- create mode 100644 arch/mips/include/asm/mach-tx39xx/spaces.h
- create mode 100644 arch/mips/include/asm/mach-tx49xx/spaces.h
+ arch/mips/mm/init.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/mips/include/asm/fixmap.h b/arch/mips/include/asm/fixmap.h
-index 0b89b83..98bcc98 100644
---- a/arch/mips/include/asm/fixmap.h
-+++ b/arch/mips/include/asm/fixmap.h
-@@ -14,6 +14,7 @@
- #define _ASM_FIXMAP_H
- 
- #include <asm/page.h>
-+#include <spaces.h>
- #ifdef CONFIG_HIGHMEM
- #include <linux/threads.h>
- #include <asm/kmap_types.h>
-@@ -67,15 +68,6 @@ enum fixed_addresses {
-  * the start of the fixmap, and leave one page empty
-  * at the top of mem..
-  */
--#ifdef CONFIG_BCM63XX
--#define FIXADDR_TOP     ((unsigned long)(long)(int)0xff000000)
--#else
--#if defined(CONFIG_CPU_TX39XX) || defined(CONFIG_CPU_TX49XX)
--#define FIXADDR_TOP	((unsigned long)(long)(int)(0xff000000 - 0x20000))
--#else
--#define FIXADDR_TOP	((unsigned long)(long)(int)0xfffe0000)
--#endif
--#endif
- #define FIXADDR_SIZE	(__end_of_fixed_addresses << PAGE_SHIFT)
- #define FIXADDR_START	(FIXADDR_TOP - FIXADDR_SIZE)
- 
-diff --git a/arch/mips/include/asm/mach-bcm63xx/spaces.h b/arch/mips/include/asm/mach-bcm63xx/spaces.h
-new file mode 100644
-index 0000000..61e750f
---- /dev/null
-+++ b/arch/mips/include/asm/mach-bcm63xx/spaces.h
-@@ -0,0 +1,17 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
-+ * Copyright (C) 2000, 2002  Maciej W. Rozycki
-+ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
-+ */
-+#ifndef _ASM_BCM63XX_SPACES_H
-+#define _ASM_BCM63XX_SPACES_H
-+
-+#define FIXADDR_TOP		((unsigned long)(long)(int)0xff000000)
-+
-+#include <asm/mach-generic/spaces.h>
-+
-+#endif /* __ASM_BCM63XX_SPACES_H */
-diff --git a/arch/mips/include/asm/mach-generic/spaces.h b/arch/mips/include/asm/mach-generic/spaces.h
-index c9fa4b1..d7a9efd 100644
---- a/arch/mips/include/asm/mach-generic/spaces.h
-+++ b/arch/mips/include/asm/mach-generic/spaces.h
-@@ -82,4 +82,8 @@
- #define PAGE_OFFSET		(CAC_BASE + PHYS_OFFSET)
+diff --git a/arch/mips/mm/init.c b/arch/mips/mm/init.c
+index 2efcbd2..45447cd 100644
+--- a/arch/mips/mm/init.c
++++ b/arch/mips/mm/init.c
+@@ -370,7 +370,7 @@ void __init mem_init(void)
+ #ifdef CONFIG_DISCONTIGMEM
+ #error "CONFIG_HIGHMEM and CONFIG_DISCONTIGMEM dont work together yet"
  #endif
- 
-+#ifndef FIXADDR_TOP
-+#define FIXADDR_TOP		((unsigned long)(long)(int)0xfffe0000)
-+#endif
-+
- #endif /* __ASM_MACH_GENERIC_SPACES_H */
-diff --git a/arch/mips/include/asm/mach-tx39xx/spaces.h b/arch/mips/include/asm/mach-tx39xx/spaces.h
-new file mode 100644
-index 0000000..151fe7a
---- /dev/null
-+++ b/arch/mips/include/asm/mach-tx39xx/spaces.h
-@@ -0,0 +1,17 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
-+ * Copyright (C) 2000, 2002  Maciej W. Rozycki
-+ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
-+ */
-+#ifndef _ASM_TX39XX_SPACES_H
-+#define _ASM_TX39XX_SPACES_H
-+
-+#define FIXADDR_TOP		((unsigned long)(long)(int)0xfefe0000)
-+
-+#include <asm/mach-generic/spaces.h>
-+
-+#endif /* __ASM_TX39XX_SPACES_H */
-diff --git a/arch/mips/include/asm/mach-tx49xx/spaces.h b/arch/mips/include/asm/mach-tx49xx/spaces.h
-new file mode 100644
-index 0000000..0cb10a6
---- /dev/null
-+++ b/arch/mips/include/asm/mach-tx49xx/spaces.h
-@@ -0,0 +1,17 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
-+ * Copyright (C) 2000, 2002  Maciej W. Rozycki
-+ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
-+ */
-+#ifndef _ASM_TX49XX_SPACES_H
-+#define _ASM_TX49XX_SPACES_H
-+
-+#define FIXADDR_TOP		((unsigned long)(long)(int)0xfefe0000)
-+
-+#include <asm/mach-generic/spaces.h>
-+
-+#endif /* __ASM_TX49XX_SPACES_H */
+-	max_mapnr = highend_pfn;
++	max_mapnr = highend_pfn ? highend_pfn : max_low_pfn;
+ #else
+ 	max_mapnr = max_low_pfn;
+ #endif
 -- 
 1.7.0.4
 
