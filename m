@@ -1,51 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757510Ab1ANBj2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 20:39:28 -0500
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:33079 "EHLO
+	id S1757507Ab1ANBkz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 20:40:55 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:34947 "EHLO
 	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757292Ab1ANBjU (ORCPT
+	by vger.kernel.org with ESMTP id S1756924Ab1ANBkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 20:39:20 -0500
+	Thu, 13 Jan 2011 20:40:52 -0500
 MIME-Version: 1.0
-In-Reply-To: <1294262733-9585-1-git-send-email-fernando.lugo@ti.com>
-References: <1294262733-9585-1-git-send-email-fernando.lugo@ti.com>
-Date: Thu, 13 Jan 2011 19:39:19 -0600
-Message-ID: <AANLkTi=xedun+g=5295CFZXPn=2nPuVUhC4TPVsPR4Ya@mail.gmail.com>
-Subject: Re: [PATCHv2] staging: tidspbridge: configure full L1 MMU range
+In-Reply-To: <1294268128-8220-1-git-send-email-omar.ramirez@ti.com>
+References: <1294268128-8220-1-git-send-email-omar.ramirez@ti.com>
+Date: Thu, 13 Jan 2011 19:40:51 -0600
+Message-ID: <AANLkTi=nYTXOvPZoLM1W9-K7Nj_W_uwMFnEdn6fLv_qW@mail.gmail.com>
+Subject: Re: [PATCH] staging: tidspbridge: replace mbox callback with notifier_call
 From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-To: Fernando Guzman Lugo <fernando.lugo@ti.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-omap@vger.kernel.org,
-        Felipe Contreras <felipe.contreras@nokia.com>
+To: Omar Ramirez Luna <omar.ramirez@ti.com>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>,
+        Fernando Guzman Lugo <x0095840@ti.com>,
+        Rene Sapiens <rene.sapiens@ti.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Hari Kanigeri <h-kanigeri2@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jan 5, 2011 at 4:55 PM, Omar Ramirez Luna <omar.ramirez@ti.com> wrote:
+> Lately, mailbox callbacks have been replaced by notifier block
+> call chains, this needs to be changed in the users of mailbox,
+> otherwise compilation will break due to missing parameters.
+>
+> Reported-by: Hari Kanigeri <h-kanigeri2@ti.com>
+> Signed-off-by: Omar Ramirez Luna <omar.ramirez@ti.com>
 
-On Wed, Jan 5, 2011 at 3:25 PM, Fernando Guzman Lugo
-<fernando.lugo@ti.com> wrote:
-> From: Guzman Lugo, Fernando <fernando.lugo@ti.com>
->
-> IVA MMU can manage up to 4GB of address space through its page tables,
-> given that it's L1 is divided into 1MB sections it requires at least
-> 16KB for its table which represents 4096 entries of 32 bits each.
->
-> Previously, only 1GB was being handled by setting the page table size
-> to 4KB, any virtual address beyond of the L1 size used, would fall
-> into memory that does not belong to L1 translation tables, leading to
-> unpredictable results.
->
-> So, set the L1 table size to cover the entire MMU range (4GB) whether
-> is meant to be used or not.
->
-> Reported-by: Felipe Contreras <felipe.contreras@nokia.com>
-> Signed-off-by: Fernando Guzman Lugo <fernando.lugo@ti.com>
-> Signed-off-by: Felipe Contreras <felipe.contreras@nokia.com>
-
-Nice fix, pushed to for-gkh-2.6.38 branch.
+Pushed to for-gkh-2.6.38 branch.
 
 Regards,
 
