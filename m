@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757683Ab1ANNub (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 08:50:31 -0500
-Received: from shutemov.name ([188.40.19.243]:53310 "EHLO shutemov.name"
+	id S1757622Ab1ANNwD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 08:52:03 -0500
+Received: from shutemov.name ([188.40.19.243]:53321 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757567Ab1ANNtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 08:49:41 -0500
+	id S1757546Ab1ANNtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 08:49:39 -0500
 From: "Kirill A. Shutemov" <kas@openvz.org>
 To: Trond Myklebust <Trond.Myklebust@netapp.com>,
         "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>
@@ -15,9 +15,9 @@ Cc: Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
         Al Viro <viro@ZenIV.linux.org.uk>,
         containers@lists.linux-foundation.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kas@openvz.org>
-Subject: [PATCH v3 15/16] sunrpc: remove global init_rpc_pipefs
-Date: Fri, 14 Jan 2011 15:49:13 +0200
-Message-Id: <1295012954-7769-16-git-send-email-kas@openvz.org>
+Subject: [PATCH v3 09/16] sunrpc: introduce rpc_pipefs_add_destroy_cb()
+Date: Fri, 14 Jan 2011 15:49:07 +0200
+Message-Id: <1295012954-7769-10-git-send-email-kas@openvz.org>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1295012954-7769-1-git-send-email-kas@openvz.org>
 References: <1295012954-7769-1-git-send-email-kas@openvz.org>
@@ -25,117 +25,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace remaining init_rpc_pipefs references with get_rpc_pipefs(NULL)
-and make init_rpc_pipefs static.
+Add facility to do some action on destroying of rpc_pipefs superblock.
 
 Signed-off-by: Kirill A. Shutemov <kas@openvz.org>
 ---
- fs/nfsd/nfs4callback.c             |    5 ++++-
- fs/nfsd/nfssvc.c                   |   16 ++++++++++++++--
- include/linux/sunrpc/rpc_pipe_fs.h |    2 --
- net/sunrpc/rpc_pipe.c              |    1 -
- 4 files changed, 18 insertions(+), 6 deletions(-)
+ include/linux/sunrpc/rpc_pipe_fs.h |    3 ++
+ net/sunrpc/rpc_pipe.c              |   51 ++++++++++++++++++++++++++++++++++-
+ 2 files changed, 52 insertions(+), 2 deletions(-)
 
-diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
-index 9bec643..61210b6 100644
---- a/fs/nfsd/nfs4callback.c
-+++ b/fs/nfsd/nfs4callback.c
-@@ -647,7 +647,6 @@ int setup_callback_client(struct nfs4_client *clp, struct nfs4_cb_conn *conn)
- 		.version	= 0,
- 		.authflavor	= clp->cl_flavor,
- 		.flags		= (RPC_CLNT_CREATE_NOPING | RPC_CLNT_CREATE_QUIET),
--		.rpcmount	= init_rpc_pipefs,
- 	};
- 	struct rpc_clnt *client;
- 
-@@ -663,8 +662,12 @@ int setup_callback_client(struct nfs4_client *clp, struct nfs4_cb_conn *conn)
- 		args.prognumber = clp->cl_cb_session->se_cb_prog;
- 		args.protocol = XPRT_TRANSPORT_BC_TCP;
- 	}
-+	args.rpcmount = get_rpc_pipefs(NULL);
-+	if (IS_ERR(args.rpcmount))
-+		return PTR_ERR(args.rpcmount);
- 	/* Create RPC client */
- 	client = rpc_create(&args);
-+	mntput(args.rpcmount);
- 	if (IS_ERR(client)) {
- 		dprintk("NFSD: couldn't create callback client: %ld\n",
- 			PTR_ERR(client));
-diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index 17d78d3..7353420 100644
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -206,6 +206,7 @@ static bool nfsd_up = false;
- static int nfsd_startup(unsigned short port, int nrservs)
- {
- 	int ret;
-+	struct vfsmount *rpcmount;
- 
- 	if (nfsd_up)
- 		return 0;
-@@ -220,7 +221,13 @@ static int nfsd_startup(unsigned short port, int nrservs)
- 	ret = nfsd_init_socks(port);
- 	if (ret)
- 		goto out_racache;
--	ret = lockd_up(init_rpc_pipefs);
-+	rpcmount = get_rpc_pipefs(NULL);
-+	if (IS_ERR(rpcmount)) {
-+		ret = PTR_ERR(rpcmount);
-+		goto out_racache;
-+	}
-+	ret = lockd_up(rpcmount);
-+	mntput(rpcmount);
- 	if (ret)
- 		goto out_racache;
- 	ret = nfs4_state_start();
-@@ -308,6 +315,7 @@ static void set_max_drc(void)
- int nfsd_create_serv(void)
- {
- 	int err = 0;
-+	struct vfsmount *rpcmount;
- 
- 	WARN_ON(!mutex_is_locked(&nfsd_mutex));
- 	if (nfsd_serv) {
-@@ -332,9 +340,13 @@ int nfsd_create_serv(void)
- 	}
- 	nfsd_reset_versions();
- 
--	nfsd_serv = svc_create_pooled(&nfsd_program, init_rpc_pipefs,
-+	rpcmount = get_rpc_pipefs(NULL);
-+	if (IS_ERR(rpcmount))
-+		return PTR_ERR(rpcmount);
-+	nfsd_serv = svc_create_pooled(&nfsd_program, rpcmount,
- 				      nfsd_max_blksize, nfsd_last_thread, nfsd,
- 				      THIS_MODULE);
-+	mntput(rpcmount);
- 	if (nfsd_serv == NULL)
- 		return -ENOMEM;
- 
 diff --git a/include/linux/sunrpc/rpc_pipe_fs.h b/include/linux/sunrpc/rpc_pipe_fs.h
-index 4a8830a..a0b9c46 100644
+index b09bfa5..f5216f1 100644
 --- a/include/linux/sunrpc/rpc_pipe_fs.h
 +++ b/include/linux/sunrpc/rpc_pipe_fs.h
-@@ -44,8 +44,6 @@ RPC_I(struct inode *inode)
- 	return container_of(inode, struct rpc_inode, vfs_inode);
- }
+@@ -46,6 +46,9 @@ RPC_I(struct inode *inode)
  
--extern struct vfsmount *init_rpc_pipefs;
--
- extern struct vfsmount *get_rpc_pipefs(const char *path);
- extern int rpc_pipefs_add_destroy_cb(struct super_block *sb,
- 		void (*destroy_cb)(void *data), void *data);
+ extern struct vfsmount *init_rpc_pipefs;
+ 
++extern int rpc_pipefs_add_destroy_cb(struct super_block *sb,
++		void (*destroy_cb)(void *data), void *data);
++
+ extern int rpc_queue_upcall(struct inode *, struct rpc_pipe_msg *);
+ 
+ struct rpc_clnt;
 diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index 02416f1..96973c0 100644
+index 484c9a3..39511e3 100644
 --- a/net/sunrpc/rpc_pipe.c
 +++ b/net/sunrpc/rpc_pipe.c
-@@ -33,7 +33,6 @@
- #include <linux/sunrpc/cache.h>
+@@ -939,6 +939,31 @@ static const struct super_operations s_ops = {
  
- struct vfsmount *init_rpc_pipefs __read_mostly;
--EXPORT_SYMBOL_GPL(init_rpc_pipefs);
+ #define RPCAUTH_GSSMAGIC 0x67596969
  
- static struct file_system_type rpc_pipe_fs_type;
++struct destroy_cb {
++	struct list_head list;
++	void (*callback)(void *data);
++	void *data;
++};
++
++int rpc_pipefs_add_destroy_cb(struct super_block *sb,
++		void (*destroy_cb)(void *data), void *data)
++{
++	struct destroy_cb *dcb;
++	struct list_head *destroy_cb_list = sb->s_fs_info;
++
++	dcb = kmalloc(sizeof(*dcb), GFP_KERNEL);
++	if (!dcb)
++		return -ENOMEM;
++
++	dcb->callback = destroy_cb;
++	dcb->data = data;
++	INIT_LIST_HEAD(&dcb->list);
++	list_add(&dcb->list, destroy_cb_list);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(rpc_pipefs_add_destroy_cb);
++
+ /*
+  * We have a single directory with 1 node in it.
+  */
+@@ -1004,8 +1029,16 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
+ 		iput(inode);
+ 		return -ENOMEM;
+ 	}
+-	if (rpc_populate(root, files, RPCAUTH_lockd, RPCAUTH_RootEOF, NULL))
++	/* List of destroy callbacks */
++	sb->s_fs_info = kmalloc(sizeof(struct list_head), GFP_KERNEL);
++	if (!sb->s_fs_info)
++		return -ENOMEM;
++	INIT_LIST_HEAD((struct list_head*) &sb->s_fs_info);
++	if (rpc_populate(root, files, RPCAUTH_lockd, RPCAUTH_RootEOF, NULL)) {
++		kfree(sb->s_fs_info);
+ 		return -ENOMEM;
++	}
++
+ 	return 0;
+ }
  
+@@ -1016,11 +1049,25 @@ rpc_mount(struct file_system_type *fs_type,
+ 	return mount_single(fs_type, flags, data, rpc_fill_super);
+ }
+ 
++static void rpc_kill_sb(struct super_block *sb)
++{
++	struct list_head *destroy_cb_list = sb->s_fs_info;
++	struct destroy_cb *dcb, *tmp;
++
++	list_for_each_entry_safe(dcb, tmp, destroy_cb_list, list) {
++		dcb->callback(dcb->data);
++		list_del(&dcb->list);
++		kfree(dcb);
++	}
++	kfree(destroy_cb_list);
++	kill_litter_super(sb);
++}
++
+ static struct file_system_type rpc_pipe_fs_type = {
+ 	.owner		= THIS_MODULE,
+ 	.name		= "rpc_pipefs",
+ 	.mount		= rpc_mount,
+-	.kill_sb	= kill_litter_super,
++	.kill_sb	= rpc_kill_sb,
+ };
+ 
+ static void
 -- 
 1.7.3.4
 
