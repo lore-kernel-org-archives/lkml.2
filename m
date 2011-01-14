@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757243Ab1ANI3t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 03:29:49 -0500
-Received: from mga11.intel.com ([192.55.52.93]:30367 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751046Ab1ANI3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 03:29:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,322,1291622400"; 
-   d="scan'208";a="877430790"
-Date: Fri, 14 Jan 2011 16:23:24 +0800
-From: Chuanxiao Dong <chuanxiao.dong@intel.com>
-To: linux-mmc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, cjb@laptop.org, ohad@wizery.com
-Subject: [PATCH v1 3/3]mmc: not clock gate host when host is in runtime
-	suspended state
-Message-ID: <20110114082324.GD27523@intel.com>
-Reply-To: Chuanxiao Dong <chuanxiao.dong@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1756981Ab1ANIeF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 03:34:05 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53361 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253Ab1ANId4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 03:33:56 -0500
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Wolfram Sang <w.sang@pengutronix.de>, Greg KH <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] include/gpio.h: remove remaining __must_check-annotiations
+Date: Fri, 14 Jan 2011 09:34:29 +0100
+Message-Id: <1294994069-11409-1-git-send-email-w.sang@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <20110114010607.GA27486@kroah.com>
+References: <20110114010607.GA27486@kroah.com>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since mmc clock gating is done in a work queue which is not synchronized with
-host runtime power management, when driver is doing clock gating, host may
-has already been power gated.
+Commit 5f829e405ec4e96f711165a4a7b55c271d4363e2 (gpiolib: add missing functions
+to generic fallback) also introduced two.
 
-So before driver clock gate host, check whether host is already suspended.
-
-Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Greg KH <gregkh@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 ---
- drivers/mmc/core/core.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index e296c5a..d2121fa 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -670,6 +670,17 @@ void mmc_gate_clock(struct mmc_host *host)
- 	host->ios.clock = 0;
- 	host->clk_gated = true;
- 	spin_unlock_irqrestore(&host->clk_lock, flags);
-+#ifdef CONFIG_PM_RUNTIME
-+	/*
-+	 * mmc clock gating is done in a work queue which
-+	 * does not synchronized with host controller runtime
-+	 * power management. So when mmc gate clock, host may
-+	 * have already in runtime suspend state. In that case,
-+	 * driver cannot touch host controller registers
-+	 */
-+	if (host->class_dev.power.runtime_status != RPM_ACTIVE)
-+		return;
-+#endif
- 	mmc_set_ios(host);
+Yes, that was an accident. We agreed to not include these patches. This fixup
+makes the __must_check revert complete, but keeps the missing functions.
+
+ include/linux/gpio.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/gpio.h b/include/linux/gpio.h
+index 4b47ed9..32720ba 100644
+--- a/include/linux/gpio.h
++++ b/include/linux/gpio.h
+@@ -35,13 +35,13 @@ static inline int gpio_request(unsigned gpio, const char *label)
+ 	return -ENOSYS;
  }
  
+-static inline int __must_check gpio_request_one(unsigned gpio,
++static inline int gpio_request_one(unsigned gpio,
+ 					unsigned long flags, const char *label)
+ {
+ 	return -ENOSYS;
+ }
+ 
+-static inline int __must_check gpio_request_array(struct gpio *array, size_t num)
++static inline int gpio_request_array(struct gpio *array, size_t num)
+ {
+ 	return -ENOSYS;
+ }
 -- 
-1.6.6.1
+1.7.2.3
 
