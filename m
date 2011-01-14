@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757244Ab1AMXvg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 18:51:36 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:57631 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752291Ab1AMXva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 18:51:30 -0500
-Date: Fri, 14 Jan 2011 10:51:23 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lennert Buytenhek <buytenh@secretlab.ca>
-Subject: linux-next: build warning in Linus' tree
-Message-Id: <20110114105123.b05b4dcc.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__14_Jan_2011_10_51_23_+1100_BG2A.hIDlRtb9i/G"
+	id S1757136Ab1ANADS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 19:03:18 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55389 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751984Ab1ANADN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 19:03:13 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110113141957.1eaf4940@nehalam>
+References: <4D2F03F2.4000707@fusionio.com> <AANLkTi=t9FQaUhnXCk51bjZO82F8OGDDd9H5HyMPRPQd@mail.gmail.com>
+ <4D2F51B5.6060105@fusionio.com> <AANLkTi=PDEyJNN3aKhHWzCKrTfzib-VCdvgD7auoWuzD@mail.gmail.com>
+ <20110113141957.1eaf4940@nehalam>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 13 Jan 2011 16:02:12 -0800
+Message-ID: <AANLkTikdULkbB83Us_zXivv8Y5FGdHrixUXRiitacaSh@mail.gmail.com>
+Subject: Re: [GIT PULL] block driver updates for 2.6.38
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Pekka Enberg <penberg@kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__14_Jan_2011_10_51_23_+1100_BG2A.hIDlRtb9i/G
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jan 13, 2011 at 2:19 PM, Stephen Hemminger
+<shemminger@vyatta.com> wrote:
+>
+> It looks my floppy format problem wasn't my patch but the HPET-MSI
+> problem. https://patchwork.kernel.org/patch/69588/
+>
+> Why hasn't that been fixed in mainline kernel?
 
-Hi all,
+Because the proper fix was _supposed_ to be the one that disabled MSI
+for just the affected AMD boards. See
 
-While building Linus' tree, today's linux-next build (x86_64
-allmodconfig) produced these warnings:
+  commit 73472a46b5b28116b145fb5fc05242c1aa8e1461
+  Author: Pallipadi, Venkatesh <venkatesh.pallipadi@intel.com>
+  Date:   Thu Jan 21 11:09:52 2010 -0800
 
-drivers/gpio/timbgpio.c: In function 'timbgpio_irq':
-drivers/gpio/timbgpio.c:202: warning: passing argument 1 of 'irq_get_irq_da=
-ta' makes integer from pointer without a cast
-include/linux/irq.h:345: note: expected 'unsigned int' but argument is of t=
-ype 'struct irq_data *'
-drivers/gpio/timbgpio.c:202: warning: passing argument 1 of 'desc-><U be0>.=
-irq_data.chip->ack' makes integer from pointer without a cast
-drivers/gpio/timbgpio.c:202: note: expected 'unsigned int' but argument is =
-of type 'struct irq_data *'
-drivers/gpio/timbgpio.c: In function 'timbgpio_probe':
-drivers/gpio/timbgpio.c:303: warning: passing argument 2 of 'set_irq_chaine=
-d_handler' from incompatible pointer type
-include/linux/irq.h:294: note: expected 'irq_flow_handler_t' but argument i=
-s of type 'void (*)(struct irq_data *, struct irq_desc *)'
+    x86: Disable HPET MSI on ATI SB700/SB800
 
-Introduced by commit a1f5f22adc3206c47e70652c12671666c65b579f ("gpio:
-timbgpio: irq_data conversion").
+    HPET MSI on platforms with ATI SB700/SB800 as they seem to have some
+    side-effects on floppy DMA. Do not use HPET MSI on such platforms.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+    Original problem report from Mark Hounschell
+    http://lkml.indiana.edu/hypermail/linux/kernel/0912.2/01118.html
 
---Signature=_Fri__14_Jan_2011_10_51_23_+1100_BG2A.hIDlRtb9i/G
-Content-Type: application/pgp-signature
+    [ This patch needs to go to stable as well. But, there are some
+      conflicts that prevents the patch from going as is. I can
+      rebase/resubmit to stable once the patch goes upstream.
+      hpa: still Cc:'ing stable@ as an FYI. ]
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+    Tested-by: Mark Hounschell <markh@compro.net>
+    Signed-off-by: Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>
+    Cc: <stable@kernel.org>
+    LKML-Reference: <20100121190952.GA32523@linux-os.sc.intel.com>
+    Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 
-iQEcBAEBAgAGBQJNL4/7AAoJEDMEi1NhKgbsXvUIAIVlc3rvsEUG8P1O1sPMsCdo
-S+mafWtUSIB9OtAIKmzjy2wHjSm5HSfV5lYTDrnCj0T29/s0u5ea7qr0fLRJWdKZ
-3rh4yBUhQu2VzT7ILecT0QWmvaocrHFwVyIbagJbnjtovOPAaRZCePhuiX0OcIwL
-KKWATQ0b5Fb2zmmE++U8z9w+xPtvLO4Wl3tUGHEB35mXQc+wLuPx36QSIK2C+lSu
-XEgT8cKNo4goSf+0O6wb8n6W58cXTvnZQ9QNRLIxWSj4WZxn1p2GYi3E8DWNiMj7
-SXhdVhotyH+UrkxKBIulB1mxqrPwxa23RgVERWDlmZdNKs7/kb+ueDGeCM3lETA=
-=fb1s
------END PGP SIGNATURE-----
+and if you have the same problem (MSI + floppy doesn't work), can you
+give more information about your system?
 
---Signature=_Fri__14_Jan_2011_10_51_23_+1100_BG2A.hIDlRtb9i/G--
+In particular, is it an AMD southbridge that we don't have listed?
+Right now we only trigger it for machines that match this:
+
+  PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS
+
+(which is PCI device 1002:4385) and it may be that we have incomplete coverage.
+
+And so few people use floppies (and expect them to work), that we
+probably have very bad test coverage too.
+
+                   Linus
