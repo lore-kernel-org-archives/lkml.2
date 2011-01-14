@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757041Ab1ANElK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 23:41:10 -0500
-Received: from mtoichi14.ns.itscom.net ([219.110.2.184]:48103 "EHLO
-	mtoichi14.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984Ab1ANElH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 23:41:07 -0500
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: vfs-scale, nd->inode after __do_follow_link()
-To: Nick Piggin <npiggin@gmail.com>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	id S1756887Ab1ANEld (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 23:41:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39686 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756691Ab1ANEl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 23:41:26 -0500
+Date: Thu, 13 Jan 2011 20:36:19 -0800
+From: Greg KH <gregkh@suse.de>
+To: Omar Ramirez Luna <omar.ramirez@ti.com>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTinXPOSxHPtffqe3m5MWppDfr6kFVMsd6k7-dkic@mail.gmail.com>
-References: <7352.1294971049@jrobl> <AANLkTinXPOSxHPtffqe3m5MWppDfr6kFVMsd6k7-dkic@mail.gmail.com>
-Date: Fri, 14 Jan 2011 13:41:03 +0900
-Message-ID: <9551.1294980063@jrobl>
+Subject: Re: your mail
+Message-ID: <20110114043619.GA5770@suse.de>
+References: <1294967693-1938-1-git-send-email-omar.ramirez@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294967693-1938-1-git-send-email-omar.ramirez@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 13, 2011 at 07:14:53PM -0600, Omar Ramirez Luna wrote:
+> Please pull these changes for 2.6.38:
+> 
+> The following changes since commit 3c0eee3fe6a3a1c745379547c7e7c904aa64f6d5:
+> 
+>   Linux 2.6.37 (2011-01-04 16:50:19 -0800)
+> 
+> are available in the git repository at:
+>   git://dev.omapzoom.org/pub/scm/tidspbridge/kernel-dspbridge.git for-gkh-2.6.38
+> 
+> Guzman Lugo, Fernando (1):
+>       staging: tidspbridge: configure full L1 MMU range
+> 
+> Omar Ramirez Luna (1):
+>       staging: tidspbridge: replace mbox callback with notifier_call
+> 
+>  drivers/staging/tidspbridge/core/tiomap3430.c |   15 +++++++--------
+>  1 files changed, 7 insertions(+), 8 deletions(-)
 
-Nick Piggin:
-> > Isn't it path.dentry->d_inode instead of nd.inode?
-	:::
-> It should be the inode we followed, rather than the inode of the
-> new path, I think.
+You forgot a Subject: line.
 
-In __do_follow_link(), path.dentry is what we followed, isn't it?
+Also, as these are just 2 patches, care to just email them so we can
+review them?
 
-__do_follow_link()
-{
-	struct dentry *dentry = path->dentry;
-	;;;
-	*p = dentry->d_inode->i_op->follow_link(dentry, nd);
-	;;;
+thanks,
 
-
-J. R. Okajima
+greg k-h
