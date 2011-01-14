@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230Ab1ANHNJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 02:13:09 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:49713 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479Ab1ANHNC (ORCPT
+	id S1754263Ab1ANHOT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 02:14:19 -0500
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:54108 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751250Ab1ANHOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 02:13:02 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=JRCFCpF/rwTzZ5VKD0EONAiMkjBNMkuWB4qGYQe23/pTOPjMd17an2Iy67e/nklgvX
-         HM2UYVWW9CtnaX8DsBYdWpRxmyVKaQU4kc7WhIqtDRbU6goUW/7c+oIxCWG2vSMJS4PL
-         +M4yKZwDfOffwfPW79GW1S9PnMUFzAVvfFxik=
+	Fri, 14 Jan 2011 02:14:14 -0500
+From: Viresh Kumar <viresh.kumar@st.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: Viresh Kumar <viresh.kumar@st.com>
+Subject: [PATCH] kernel/async.c: fixing compilation warnings
+Date: Fri, 14 Jan 2011 12:44:06 +0530
+Message-ID: <1294989246-1621-1-git-send-email-viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.2.2
 MIME-Version: 1.0
-Date: Fri, 14 Jan 2011 15:13:01 +0800
-Message-ID: <AANLkTimsPj4seDW9ffDQ+uydZcRk_T6BsP7x0dr0Qi++@mail.gmail.com>
-Subject: [PATCH] kbuild: add global tags generation.
-From: Jianbin Kang <kjbmail@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
-Content-Type: multipart/mixed; boundary=001517592ca622c6230499c92ac7
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001517592ca622c6230499c92ac7
-Content-Type: text/plain; charset=ISO-8859-1
+This patch fixes following compilation warnings:
+270:10: warning: ‘starttime.tv64’ may be used uninitialized in this function
+122:10: warning: ‘calltime.tv64’ may be used uninitialized in this function
 
-gnu global (http://www.gnu.org/software/global/) is a source code tagging system
-It is really cheap to support it in kbuild system.
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+---
+ kernel/async.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/kernel/async.c b/kernel/async.c
+index cd9dbb9..9c06931 100644
+--- a/kernel/async.c
++++ b/kernel/async.c
+@@ -119,7 +119,7 @@ static void async_run_entry_fn(struct work_struct *work)
+ 	struct async_entry *entry =
+ 		container_of(work, struct async_entry, work);
+ 	unsigned long flags;
+-	ktime_t calltime, delta, rettime;
++	ktime_t calltime = {0}, delta, rettime;
+ 
+ 	/* 1) move self to the running queue */
+ 	spin_lock_irqsave(&async_lock, flags);
+@@ -267,7 +267,7 @@ EXPORT_SYMBOL_GPL(async_synchronize_full_domain);
+ void async_synchronize_cookie_domain(async_cookie_t cookie,
+ 				     struct list_head *running)
+ {
+-	ktime_t starttime, delta, endtime;
++	ktime_t starttime = {0}, delta, endtime;
+ 
+ 	if (initcall_debug && system_state == SYSTEM_BOOTING) {
+ 		printk("async_waiting @ %i\n", task_pid_nr(current));
+-- 
+1.7.2.2
 
-
-
-
-              Jianbin Kang
-
---001517592ca622c6230499c92ac7
-Content-Type: text/x-patch; charset=US-ASCII; name="gtags.diff"
-Content-Disposition: attachment; filename="gtags.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_giwr57bg0
-
-ZGlmZiAtLWdpdCBhL01ha2VmaWxlIGIvTWFrZWZpbGUKaW5kZXggNzRiMjU1NS4uMTI3YTM3MSAx
-MDA2NDQKLS0tIGEvTWFrZWZpbGUKKysrIGIvTWFrZWZpbGUKQEAgLTQyMCw3ICs0MjAsNyBAQCBl
-bmRpZgogIyBvZiBtYWtlIHNvIC5jb25maWcgaXMgbm90IGluY2x1ZGVkIGluIHRoaXMgY2FzZSBl
-aXRoZXIgKGZvciAqY29uZmlnKS4KIAogbm8tZG90LWNvbmZpZy10YXJnZXRzIDo9IGNsZWFuIG1y
-cHJvcGVyIGRpc3RjbGVhbiBcCi0JCQkgY3Njb3BlIFRBR1MgdGFncyBoZWxwICVkb2NzIGNoZWNr
-JSBjb2NjaWNoZWNrIFwKKwkJCSBjc2NvcGUgZ3RhZ3MgVEFHUyB0YWdzIGhlbHAgJWRvY3MgY2hl
-Y2slIGNvY2NpY2hlY2sgXAogCQkJIGluY2x1ZGUvbGludXgvdmVyc2lvbi5oIGhlYWRlcnNfJSBc
-CiAJCQkga2VybmVsdmVyc2lvbiAlc3JjLXBrZwogCkBAIC0xMTM0LDcgKzExMzQsNyBAQCBDTEVB
-Tl9GSUxFUyArPQl2bWxpbnV4IFN5c3RlbS5tYXAgXAogTVJQUk9QRVJfRElSUyAgKz0gaW5jbHVk
-ZS9jb25maWcgdXNyL2luY2x1ZGUgaW5jbHVkZS9nZW5lcmF0ZWQKIE1SUFJPUEVSX0ZJTEVTICs9
-IC5jb25maWcgLmNvbmZpZy5vbGQgLnZlcnNpb24gLm9sZF92ZXJzaW9uICAgICAgICAgICAgIFwK
-ICAgICAgICAgICAgICAgICAgIGluY2x1ZGUvbGludXgvdmVyc2lvbi5oICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgIFwKLQkJICBNb2R1bGUuc3ltdmVycyB0YWdzIFRBR1MgY3Njb3BlKgor
-CQkgIE1vZHVsZS5zeW12ZXJzIHRhZ3MgVEFHUyBjc2NvcGUqIEdQQVRIIEdUQUdTIEdSVEFHUyBH
-U1lNUwogCiAjIGNsZWFuIC0gRGVsZXRlIG1vc3QsIGJ1dCBsZWF2ZSBlbm91Z2ggdG8gYnVpbGQg
-ZXh0ZXJuYWwgbW9kdWxlcwogIwpAQCAtMTIyMSw2ICsxMjIxLDcgQEAgaGVscDoKIAlAZWNobyAg
-JyAgbW9kdWxlc19wcmVwYXJlIC0gU2V0IHVwIGZvciBidWlsZGluZyBleHRlcm5hbCBtb2R1bGVz
-JwogCUBlY2hvICAnICB0YWdzL1RBR1MJICAtIEdlbmVyYXRlIHRhZ3MgZmlsZSBmb3IgZWRpdG9y
-cycKIAlAZWNobyAgJyAgY3Njb3BlCSAgLSBHZW5lcmF0ZSBjc2NvcGUgaW5kZXgnCisJQGVjaG8g
-ICcgIGd0YWdzICAgICAgICAgICAtIEdlbmVyYXRlIGdsb2JhbCBpbmRleCcKIAlAZWNobyAgJyAg
-a2VybmVscmVsZWFzZQkgIC0gT3V0cHV0IHRoZSByZWxlYXNlIHZlcnNpb24gc3RyaW5nJwogCUBl
-Y2hvICAnICBrZXJuZWx2ZXJzaW9uCSAgLSBPdXRwdXQgdGhlIHZlcnNpb24gc3RvcmVkIGluIE1h
-a2VmaWxlJwogCUBlY2hvICAnICBoZWFkZXJzX2luc3RhbGwgLSBJbnN0YWxsIHNhbml0aXNlZCBr
-ZXJuZWwgaGVhZGVycyB0byBJTlNUQUxMX0hEUl9QQVRIJzsgXApAQCAtMTM3OSw3ICsxMzgwLDcg
-QEAgY2xlYW46ICQoY2xlYW4tZGlycykKIHF1aWV0X2NtZF90YWdzID0gR0VOICAgICAkQAogICAg
-ICAgY21kX3RhZ3MgPSAkKENPTkZJR19TSEVMTCkgJChzcmN0cmVlKS9zY3JpcHRzL3RhZ3Muc2gg
-JEAKIAotdGFncyBUQUdTIGNzY29wZTogRk9SQ0UKK3RhZ3MgVEFHUyBjc2NvcGUgZ3RhZ3M6IEZP
-UkNFCiAJJChjYWxsIGNtZCx0YWdzKQogCiAjIFNjcmlwdHMgdG8gY2hlY2sgdmFyaW91cyB0aGlu
-Z3MgZm9yIGNvbnNpc3RlbmN5CmRpZmYgLS1naXQgYS9zY3JpcHRzL3RhZ3Muc2ggYi9zY3JpcHRz
-L3RhZ3Muc2gKaW5kZXggYmJiZTU4NC4uNWNiMTFmNSAxMDA3NTUKLS0tIGEvc2NyaXB0cy90YWdz
-LnNoCisrKyBiL3NjcmlwdHMvdGFncy5zaApAQCAtMTE0LDYgKzExNCwxMSBAQCBkb2NzY29wZSgp
-CiAJY3Njb3BlIC1iIC1mIGNzY29wZS5vdXQKIH0KIAorZG9ndGFncygpCit7CisJYWxsX3NvdXJj
-ZXMgfCBndGFncyAtZiAtCit9CisKIGV4dWJlcmFudCgpCiB7CiAJYWxsX3NvdXJjZXMgfCB4YXJn
-cyAkMSAtYSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcCkBAIC0xODYsNyArMTkxLDkg
-QEAgY2FzZSAiJDEiIGluCiAJImNzY29wZSIpCiAJCWRvY3Njb3BlCiAJCTs7Ci0KKwkiZ3RhZ3Mi
-KQorCQlkb2d0YWdzCisJCTs7CiAJInRhZ3MiKQogCQlybSAtZiB0YWdzCiAJCXh0YWdzIGN0YWdz
-Cg==
---001517592ca622c6230499c92ac7--
