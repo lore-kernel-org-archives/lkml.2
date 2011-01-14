@@ -1,75 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184Ab1ANH6A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 02:58:00 -0500
-Received: from mail.windriver.com ([147.11.1.11]:37088 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218Ab1ANH5z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 02:57:55 -0500
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH] sched: replace rq->bkl_count with rq->rq_sched_info.bkl_count
-Date: Fri, 14 Jan 2011 15:57:39 +0800
-Message-Id: <1294991859-13246-1-git-send-email-yong.zhang0@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 14 Jan 2011 07:57:41.0311 (UTC) FILETIME=[B80C7CF0:01CBB3C0]
+	id S1757313Ab1ANIGU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 03:06:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43850 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756671Ab1ANIGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 03:06:14 -0500
+Date: Fri, 14 Jan 2011 03:03:57 -0500
+From: Rik van Riel <riel@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>,
+        ttracy@redhat.com, dshaks@redhat.com
+Subject: [RFC -v5 PATCH 2/4] sched: Add yield_to(task, preempt)
+ functionality.
+Message-ID: <20110114030357.03c3060a@annuminas.surriel.com>
+In-Reply-To: <20110114030209.53765a0a@annuminas.surriel.com>
+References: <20110114030209.53765a0a@annuminas.surriel.com>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now rq->rq_sched_info.bkl_count is not used for rq, scroll
-rq->bkl_count into it. Thus we can save some space for rq.
+From: Mike Galbraith <efault@gmx.de>
 
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
----
- kernel/sched.c       |    5 +----
- kernel/sched_debug.c |    4 +++-
- 2 files changed, 4 insertions(+), 5 deletions(-)
+Currently only implemented for fair class tasks.
 
+Add a yield_to_task method() to the fair scheduling class. allowing the
+caller of yield_to() to accelerate another thread in it's thread group,
+task group.
+
+Implemented via a scheduler hint, using cfs_rq->next to encourage the
+target being selected.  We can rely on pick_next_entity to keep things
+fair, so noone can accelerate a thread that has already used its fair
+share of CPU time.
+
+This also means callers should only call yield_to when they really
+mean it.  Calling it too often can result in the scheduler just
+ignoring the hint.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 2c79e92..6c43fc4 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1047,6 +1047,7 @@ struct sched_class {
+ 	void (*enqueue_task) (struct rq *rq, struct task_struct *p, int flags);
+ 	void (*dequeue_task) (struct rq *rq, struct task_struct *p, int flags);
+ 	void (*yield_task) (struct rq *rq);
++	bool (*yield_to_task) (struct rq *rq, struct task_struct *p, bool preempt);
+ 
+ 	void (*check_preempt_curr) (struct rq *rq, struct task_struct *p, int flags);
+ 
+@@ -1943,6 +1944,7 @@ static inline int rt_mutex_getprio(struct task_struct *p)
+ # define rt_mutex_adjust_pi(p)		do { } while (0)
+ #endif
+ 
++extern bool yield_to(struct task_struct *p, bool preempt);
+ extern void set_user_nice(struct task_struct *p, long nice);
+ extern int task_prio(const struct task_struct *p);
+ extern int task_nice(const struct task_struct *p);
 diff --git a/kernel/sched.c b/kernel/sched.c
-index ea3e5ef..3d6df21 100644
+index dc91a4d..d47b282 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -553,9 +553,6 @@ struct rq {
- 	/* try_to_wake_up() stats */
- 	unsigned int ttwu_count;
- 	unsigned int ttwu_local;
--
--	/* BKL stats */
--	unsigned int bkl_count;
- #endif
- };
+@@ -5270,6 +5270,66 @@ void __sched yield(void)
+ }
+ EXPORT_SYMBOL(yield);
  
-@@ -3887,7 +3884,7 @@ static inline void schedule_debug(struct task_struct *prev)
- 	schedstat_inc(this_rq(), sched_count);
- #ifdef CONFIG_SCHEDSTATS
- 	if (unlikely(prev->lock_depth >= 0)) {
--		schedstat_inc(this_rq(), bkl_count);
-+		schedstat_inc(this_rq(), rq_sched_info.bkl_count);
- 		schedstat_inc(prev, sched_info.bkl_count);
++/**
++ * yield_to - yield the current processor to another thread in
++ * your thread group, or accelerate that thread toward the
++ * processor it's on.
++ *
++ * It's the caller's job to ensure that the target task struct
++ * can't go away on us before we can do any checks.
++ *
++ * Returns true if we indeed boosted the target task.
++ */
++bool __sched yield_to(struct task_struct *p, bool preempt)
++{
++	struct task_struct *curr = current;
++	struct rq *rq, *p_rq;
++	unsigned long flags;
++	bool yield = 0;
++
++	local_irq_save(flags);
++	rq = this_rq();
++
++again:
++	p_rq = task_rq(p);
++	double_rq_lock(rq, p_rq);
++	while (task_rq(p) != p_rq) {
++		double_rq_unlock(rq, p_rq);
++		goto again;
++	}
++
++	if (!curr->sched_class->yield_to_task)
++		goto out;
++
++	if (curr->sched_class != p->sched_class)
++		goto out;
++
++	if (task_running(p_rq, p) || p->state)
++		goto out;
++
++	if (!same_thread_group(p, curr))
++		goto out;
++
++#ifdef CONFIG_FAIR_GROUP_SCHED
++	if (task_group(p) != task_group(curr))
++		goto out;
++#endif
++
++	yield = curr->sched_class->yield_to_task(rq, p, preempt);
++
++out:
++	double_rq_unlock(rq, p_rq);
++	local_irq_restore(flags);
++
++	if (yield) {
++		set_current_state(TASK_RUNNING);
++		schedule();
++	}
++
++	return yield;
++}
++EXPORT_SYMBOL_GPL(yield_to);
++
+ /*
+  * This task is about to go to sleep on IO. Increment rq->nr_iowait so
+  * that process accounting knows that this is a task in IO wait state.
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 00ebd76..5006f35 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1742,6 +1742,23 @@ static void put_prev_task_fair(struct rq *rq, struct task_struct *prev)
  	}
- #endif
-diff --git a/kernel/sched_debug.c b/kernel/sched_debug.c
-index 1dfae3d..8ee0aa7 100644
---- a/kernel/sched_debug.c
-+++ b/kernel/sched_debug.c
-@@ -262,9 +262,11 @@ static void print_cpu(struct seq_file *m, int cpu)
- 	P(ttwu_count);
- 	P(ttwu_local);
+ }
  
--	P(bkl_count);
-+	SEQ_printf(m, "  .%-30s: %d\n", "bkl_count",
-+				rq->rq_sched_info.bkl_count);
++static bool yield_to_task_fair(struct rq *rq, struct task_struct *p, bool preempt)
++{
++	struct sched_entity *se = &p->se;
++
++	if (!se->on_rq)
++		return false;
++
++	/* Tell the scheduler that we'd really like pse to run next. */
++	set_next_buddy(se);
++
++	/* Make p's CPU reschedule; pick_next_entry takes care of fairness. */
++	if (preempt)
++		resched_task(rq->curr);
++
++	return true;
++}
++
+ #ifdef CONFIG_SMP
+ /**************************************************
+  * Fair scheduling class load-balancing methods:
+@@ -3935,6 +3952,7 @@ static const struct sched_class fair_sched_class = {
+ 	.enqueue_task		= enqueue_task_fair,
+ 	.dequeue_task		= dequeue_task_fair,
+ 	.yield_task		= yield_task_fair,
++	.yield_to_task		= yield_to_task_fair,
  
- #undef P
-+#undef P64
- #endif
- 	print_cfs_stats(m, cpu);
- 	print_rt_stats(m, cpu);
--- 
-1.7.0.4
-
+ 	.check_preempt_curr	= check_preempt_wakeup,
+ 
