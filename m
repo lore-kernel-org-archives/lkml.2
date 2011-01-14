@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757391Ab1ANJRp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 04:17:45 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:57631 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753614Ab1ANJR2 convert rfc822-to-8bit (ORCPT
+	id S1757084Ab1ANJTL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 04:19:11 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:54038 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751046Ab1ANJTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 04:17:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=o2Ggp+K9e6J4nUULM/yRAw2TpuGxv1CpHh2omgh/NkkiAjQRGPw9yPo4hmxiR0cdlw
-         tZtmIq2X1y/R5w/B4TV6FIvu7n88iSSzy+fAzaER9aj7hhOyUNMVZMBDNWRAZaGt71Ts
-         hSb2Fqa8biNy/xBRQegB7JvjTCLrcWF2os/OA=
+	Fri, 14 Jan 2011 04:19:06 -0500
+X-Sasl-enc: IJVb4vmpmcdQsXqqO/H177LxGFKumJiJSaT+hZgQEiIi 1294996745
+X-User-Agent: K-9 Mail for Android
+References: <1294989246-1621-1-git-send-email-viresh.kumar@st.com>
+In-Reply-To: <1294989246-1621-1-git-send-email-viresh.kumar@st.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <AANLkTi=pzFGHyFDYM_qvabODdKn8gDvRjjo_nbPfcT=q@mail.gmail.com>
-References: <7352.1294971049@jrobl>
-	<AANLkTinXPOSxHPtffqe3m5MWppDfr6kFVMsd6k7-dkic@mail.gmail.com>
-	<20110114052813.GZ19804@ZenIV.linux.org.uk>
-	<AANLkTi=pzFGHyFDYM_qvabODdKn8gDvRjjo_nbPfcT=q@mail.gmail.com>
-Date: Fri, 14 Jan 2011 10:17:25 +0100
-Message-ID: <AANLkTik=7x9o3s_TeVAACjNachLE7zyrbqyOeBBiE-v5@mail.gmail.com>
-Subject: Re: vfs-scale, nd->inode after __do_follow_link()
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Nick Piggin <npiggin@gmail.com>, patchwork@lists.ozlabs.org
-Cc: Al Viro <viro@zeniv.linux.org.uk>, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, webmaster@kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] kernel/async.c: fixing compilation warnings
+From: Jack Stone <jwjstone@fastmail.fm>
+Date: Fri, 14 Jan 2011 09:18:56 +0000
+To: Viresh Kumar <viresh.kumar@st.com>, linux-kernel@vger.kernel.org
+Message-ID: <7f454c6e-eeb9-4de0-acfe-6ced96ecdad0@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 9:40 AM, Nick Piggin <npiggin@gmail.com> wrote:
-> On Fri, Jan 14, 2011 at 4:28 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->> On Fri, Jan 14, 2011 at 03:09:10PM +1100, Nick Piggin wrote:
->>
->>> > + ? ? ? ? ? ? ? ? ? ? ? struct dentry *i = path.dentry->d_inode;
->>> > + ? ? ? ? ? ? ? ? ? ? ? if (!IS_ERR(cookie) && i->i_op->put_link)
->>> > + ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? i->i_op->put_link(path.dentry, &nd, cookie);
->>> > ? ? ? ? ? ? ? ? ? ? ? ?/* nd.path had been dropped */
->>> > ? ? ? ? ? ? ? ? ? ? ? ?nd.path = path;
->>> > ? ? ? ? ? ? ? ? ? ? ? ?goto out_path;
->>>
->>> It should be the inode we followed, rather than the inode of the
->>> new path, I think.
->>
->> And that's what the first argument of __do_follow_link() is.  I'm actually
->> tempted to rename it from path to symlink and make it const to clarify
->> the things a bit.
+"Viresh Kumar" <viresh.kumar@st.com> wrote:
+
+>This patch fixes following compilation warnings:
+>270:10: warning: ‘starttime.tv64’ may be used uninitialized in this
+>function
+>122:10: warning: ‘calltime.tv64’ may be used uninitialized in this
+>function
 >
-> Yes I was completely wrong there, thanks again for another good
-> catch. I'll merge this in the vfs-scale branch, and ask to merge if
-> there are no objections.
+>Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+>---
+> kernel/async.c |    4 ++--
+> 1 files changed, 2 insertions(+), 2 deletions(-)
 >
+>diff --git a/kernel/async.c b/kernel/async.c
+>index cd9dbb9..9c06931 100644
+>--- a/kernel/async.c
+>+++ b/kernel/async.c
+>@@ -119,7 +119,7 @@ static void async_run_entry_fn(struct work_struct
+>*work)
+> 	struct async_entry *entry =
+> 		container_of(work, struct async_entry, work);
+> 	unsigned long flags;
+>-	ktime_t calltime, delta, rettime;
+>+	ktime_t calltime = {0}, delta, rettime;
 
-[ CCing patchwork ML ]
+I think this is a false positive so we can use uninitalized_var().
 
-Can you send your patch separately, please?
-Within a (long) thread it is eaten up.
+> 	/* 1) move self to the running queue */
+> 	spin_lock_irqsave(&async_lock, flags);
+>@@ -267,7 +267,7 @@ EXPORT_SYMBOL_GPL(async_synchronize_full_domain);
+> void async_synchronize_cookie_domain(async_cookie_t cookie,
+> 				     struct list_head *running)
+> {
+>-	ktime_t starttime, delta, endtime;
+>+	ktime_t starttime = {0}, delta, endtime;
+> 
 
-As *.patch are somehow not presented as diff (see [1]), someone can't
-catch them from <patchwork.k.o>.
+Same for this one.
 
-Furthermore, it would be very cool to see linux-fsdevel (patches from
-its ML) in <patchwork.d.o>.
-I don't know whom to contact from the linux-fsdevel ML, sorry for this.
+> 	if (initcall_debug && system_state == SYSTEM_BOOTING) {
+> 		printk("async_waiting @ %i\n", task_pid_nr(current));
 
-- Sedat -
+Thanks,
 
-[1] http://lkml.org/lkml/2011/1/14/55
+Jack
+
+
+-- 
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
