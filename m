@@ -1,154 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833Ab1ANK6Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 05:58:25 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49530 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570Ab1ANK6T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 05:58:19 -0500
-Date: Fri, 14 Jan 2011 10:58:08 +0000
-From: Russell King <rmk@arm.linux.org.uk>
-To: linux-kernel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: BUG: __d_rehash explodes on boot
-Message-ID: <20110114105808.GA619@flint.arm.linux.org.uk>
+	id S1756897Ab1ANLBM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 06:01:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33785 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752375Ab1ANLBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 06:01:08 -0500
+From: Juan Quintela <quintela@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Zachary Amsden <zamsden@redhat.com>, kvm@vger.kernel.org,
+        Avi Kivity <avi@redhat.com>, Glauber Costa <glommer@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [KVM TSC trapping / migration 2/2] Add TSC KHZ MSR
+In-Reply-To: <20110110135053.GA12991@amt.cnet> (Marcelo Tosatti's message of
+	"Mon, 10 Jan 2011 11:50:53 -0200")
+References: <1294308645-31113-1-git-send-email-zamsden@redhat.com>
+	<1294308645-31113-3-git-send-email-zamsden@redhat.com>
+	<20110107104859.GA12056@amt.cnet> <4D277B24.5000409@redhat.com>
+	<20110110135053.GA12991@amt.cnet>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+Reply-To: quintela@redhat.com
+Date: Fri, 14 Jan 2011 12:00:02 +0100
+Message-ID: <m3bp3jwy19.fsf@trasno.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__d_rehash is dereferencing an almost-NULL pointer on my ARM926.
-CONFIG_SMP=n and CONFIG_DEBUG_SPINLOCK=y.
+Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> On Fri, Jan 07, 2011 at 10:44:20AM -1000, Zachary Amsden wrote:
+>> On 01/07/2011 12:48 AM, Marcelo Tosatti wrote:
+>> >On Thu, Jan 06, 2011 at 12:10:45AM -1000, Zachary Amsden wrote:
+>> >>Use an MSR to allow "soft" migration to hosts which do not support
+>> >>TSC trapping.  Rather than make this a required element of any
+>> >>migration protocol, we allow the TSC rate to be exported as a data
+>> >>field (useful in its own right), but we also allow a one time write
+>> >>of the MSR during VM creation.  The result is that for the common
+>> >>use case, no protocol change is required to communicate TSC rate
+>> >>to the receiving host.
+>> >Migration to hosts which do not support the feature can be achieved by
+>> >saving/restoring the TSC rate + flags in a subsection. A subsection
+>> >seems more appropriate than an MSR for this.
+>> 
+>> Yes, I looked at that, but it looked to me like a subsection was
+>> intended for an optional feature which MUST be present on the
+>> destination if the source is using the feature.  This way, newer
+>> hosts without the feature enabled can migrate to older hosts which
+>> do not support the feature.
+>
+> Right. But you can use a subsection to achieve the same effect. Just
+> consider that the source is not using the feature if you want to migrate
+> to an older host without support for it. Juan, is there a problem to
+> use subsections in this fashion?
+>
+> With the MSR scheme, there is no way for management to enforce support
+> of the feature on the destination (at least not that i can see). And 
+> you create an MSR that does not exist on real hardware.
+>
+>> 
+>> The TSC rate migration is slightly different; we may wish to migrate
+>> from a host with the TSC rate feature enabled to a host which does
+>> not support the TSC rate feature.  This is exactly the current
+>> behavior, the TSC rate will change on that migration, and I wanted
+>> to preserve that behavior.  I don't advise that mode of usage, but
+>> there may be use cases for it and it should be decided by policy,
+>> not dictated by our feature set.
+>> 
+>> That said, I'm happy to remove the MSR if we truly don't want to
+>> support that mode of usage.
 
-The faulting instruction is:	strne   r3, [r2, #4]
-and as can be seen from the register dump below, r2 is 0x00000001, hence
-the faulting 0x00000005 address.
+Ok, I chime it late.
 
-__d_rehash is essentially:
+We are adding a new MSR to the comunication with userspace.  So far so
+good, but this new field, need to be transmited to the "other end" of
+the migration.  This means a new field for migration (notice that this
+is independtly if this is an MSR or not).
 
-        spin_lock_bucket(b);
-        entry->d_flags &= ~DCACHE_UNHASHED;
-        hlist_bl_add_head_rcu(&entry->d_hash, &b->head);
-        spin_unlock_bucket(b);
+        VMSTATE_UINT64_V(system_time_msr, CPUState, 11),
+        VMSTATE_UINT64_V(wall_clock_msr, CPUState, 11),
 
-which is:
+This are the values that we are sending now.
+We are getting now, a new value, the problem is how to migrate it.
 
-	bit_spin_lock(0, (unsigned long *)&b->head.first);
-        entry->d_flags &= ~DCACHE_UNHASHED;
-        hlist_bl_add_head_rcu(&entry->d_hash, &b->head);
-	__bit_spin_unlock(0, (unsigned long *)&b->head.first);
+Solutions:
+- create a new field in a new field in CPUState, and up the version.
+  That would make backward migration impossible.
+- create a new field, and sent it only it is has been used with a
+  subsection.  This makes migration backwards if this was not used.
 
-bit_spin_lock(0, ptr) sets bit 0 of *ptr, in this case b->head.first if
-CONFIG_SMP or CONFIG_DEBUG_SPINLOCK is set:
+- but, it appears that there if this features is not "known" on
+  destination, we can use the old way to migrate information.
 
-#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
-        while (unlikely(test_and_set_bit_lock(bitnum, addr))) {
-                while (test_bit(bitnum, addr)) {
-                        preempt_enable();
-                        cpu_relax();
-                        preempt_disable();
-                }
-        }
-#endif
+  BIG WARNING HERE: I don't claim to understand how clocks work at all
 
-So, b->head.first starts off NULL, and becomes a non-NULL (address 1).
-hlist_bl_add_head_rcu() does this:
+  There is not a way to convince old qemu/kernels to ignore new fields
+  for good reason.  So the only solution here is to encode this new
+  vcpu->kvm->arch.virtual_tsc_khz in the two previous fields, in a way
+  that is understable for old qemu/new qemu.  old qemu will use old
+  method, new qemu will use a new method.
 
-static inline void hlist_bl_add_head_rcu(struct hlist_bl_node *n,
-                                        struct hlist_bl_head *h)
-{
-        first = hlist_bl_first(h);
-        n->next = first;
-        if (first)
-                first->pprev = &n->next;
+  If there is not a common encoding that will work for both old/new
+  method, I can't really think of a way to make things work here :(
 
-It is the store to first->pprev which is faulting.
+And as per the warning, I can't think of a way to encode
+"virtual_tsc_khz" into "system_time_msr" and "wall_clock_msr" off-hand.
 
-hlist_bl_first():
+To make things clearer about optional features, after "lots" of
+discussions, it was decided that target of migration will never ignore
+anything sent, that means that the only one that can decide not to sent
+a feature/value is the "source" of the migration.  There is no way to
+express:
 
-static inline struct hlist_bl_node *hlist_bl_first(struct hlist_bl_head *h)
-{
-        return (struct hlist_bl_node *)
-                ((unsigned long)h->first & ~LIST_BL_LOCKMASK);
-}
+- try this method, if you don't know
+- try this other second best, ...
 
-but:
-#if defined(CONFIG_SMP)
-#define LIST_BL_LOCKMASK        1UL
-#else
-#define LIST_BL_LOCKMASK        0UL
-#endif
-
-So, we have one piece of code which sets bit 0 of addresses, and another
-bit of code which doesn't clear it before dereferencing the pointer if
-!CONFIG_SMP && CONFIG_DEBUG_SPINLOCK.  With the patch below, I can again
-sucessfully boot the kernel on my Versatile PB/926 platform.
-
-Kernel messages:
-...
-Calibrating delay loop... 104.24 BogoMIPS (lpj=521216)
-pid_max: default: 32768 minimum: 301
-Mount-cache hash table entries: 512
-CPU: Testing write buffer coherency: ok
-Unhandled fault: alignment exception (0x801) at 0x00000005
-Internal error: : 801 [#1]
-last sysfs file: 
-Modules linked in:
-CPU: 0    Not tainted  (2.6.37+ #533)
-PC is at __d_rehash+0x74/0xb8
-LR is at _d_rehash+0x4c/0x60
-pc : [<c00c2bc8>]    lr : [<c00c2c58>]    psr: 20000013
-sp : c183fd18  ip : c09cb8c0  fp : c183fd24
-r10: c183fdd8  r9 : c183fdec  r8 : c183fde4
-r7 : c1401940  r6 : c183fe7c  r5 : c1401710  r4 : c14016c0
-r3 : c14016c8  r2 : 00000001  r1 : 20000013  r0 : c14016c0
-Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: 0005317f  Table: 00004000  DAC: 00000017
-Process kworker/u:0 (pid: 9, stack limit = 0xc183e270)
-Stack: (0xc183fd18 to 0xc1840000)
-<trimmed>
-Backtrace: 
-[<c00c2b54>] (__d_rehash+0x0/0xb8) from [<c00c2c58>] (_d_rehash+0x4c/0x60)
-[<c00c2c0c>] (_d_rehash+0x0/0x60) from [<c00c38a0>] (d_rehash+0x24/0x30)
-[<c00c387c>] (d_rehash+0x0/0x30) from [<c00d059c>] (simple_lookup+0x44/0x50)
-[<c00d0558>] (simple_lookup+0x0/0x50) from [<c00bb03c>] (d_alloc_and_lookup+0x50/0x6c)
-[<c00bafec>] (d_alloc_and_lookup+0x0/0x6c) from [<c00bb424>] (do_lookup+0x1b8/0x278)
-[<c00bb26c>] (do_lookup+0x0/0x278) from [<c00bcd68>] (link_path_walk+0x210/0xbec)
-[<c00bcb58>] (link_path_walk+0x0/0xbec) from [<c00bd958>] (do_path_lookup+0x44/0xd0)
-[<c00bd914>] (do_path_lookup+0x0/0xd0) from [<c00be624>] (do_filp_open+0xe4/0x5f8)
-[<c00be540>] (do_filp_open+0x0/0x5f8) from [<c00b7b10>] (open_exec+0x2c/0x90)
-[<c00b7ae4>] (open_exec+0x0/0x90) from [<c00b8408>] (do_execve+0x88/0x264)
-[<c00b8380>] (do_execve+0x0/0x264) from [<c0039254>] (kernel_execve+0x40/0x88)
-[<c0039214>] (kernel_execve+0x0/0x88) from [<c005c000>] (____call_usermodehelper+0x88/0x98)
-[<c005bf78>] (____call_usermodehelper+0x0/0x98) from [<c004cc90>] (do_exit+0x0/0x5f8)
-Code: e59c2000 e3520000 12803008 e5802008 (15823004) 
----[ end trace 1b75b31a2719ed1c ]---
-
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
----
- include/linux/list_bl.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/list_bl.h b/include/linux/list_bl.h
-index b2adbb4..5bad17d 100644
---- a/include/linux/list_bl.h
-+++ b/include/linux/list_bl.h
-@@ -16,7 +16,7 @@
-  * some fast and compact auxiliary data.
-  */
- 
--#if defined(CONFIG_SMP)
-+#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
- #define LIST_BL_LOCKMASK	1UL
- #else
- #define LIST_BL_LOCKMASK	0UL
+and so on.
 
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+Later, Juan.
+
+
+
+
+
