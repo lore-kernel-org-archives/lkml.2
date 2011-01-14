@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757504Ab1ANB0J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 20:26:09 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:52699 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752034Ab1ANB0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 20:26:03 -0500
-From: Omar Ramirez Luna <omar.ramirez@ti.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: 
-Date: Thu, 13 Jan 2011 19:14:53 -0600
-Message-Id: <1294967693-1938-1-git-send-email-omar.ramirez@ti.com>
-X-Mailer: git-send-email 1.7.1
+	id S1757478Ab1ANBcB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 20:32:01 -0500
+Received: from mtoichi14.ns.itscom.net ([219.110.2.184]:58676 "EHLO
+	mtoichi14.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752034Ab1ANBbz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 20:31:55 -0500
+From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Subject: Re: [PATCH] fs: Work around NFS wreckage
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Nick Piggin <npiggin@kernel.dk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org,
+        "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+In-Reply-To: <20110113151736.GW24920@pengutronix.de>
+References: <alpine.LFD.2.00.1101131436070.2678@localhost6.localdomain6> <8952.1294927845@jrobl> <20110113151736.GW24920@pengutronix.de>
+Date: Fri, 14 Jan 2011 10:30:44 +0900
+Message-ID: <6610.1294968644@jrobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull these changes for 2.6.38:
 
-The following changes since commit 3c0eee3fe6a3a1c745379547c7e7c904aa64f6d5:
+Uwe Kleine-Knig:
+> > With this patch, can you unmount it cleanly?
+> > It skips incrementing d_count for both dentries.
+> > Do we need at least one?
+> If you tell me how to test that, I volunteer to try.
+> Something involving pivot_root?
 
-  Linux 2.6.37 (2011-01-04 16:50:19 -0800)
+For example,
+# mount host:/dir /nfs
+# chroot /nfs
+# umount /nfs
 
-are available in the git repository at:
-  git://dev.omapzoom.org/pub/scm/tidspbridge/kernel-dspbridge.git for-gkh-2.6.38
+It is ok if /nfs is empty.
 
-Guzman Lugo, Fernando (1):
-      staging: tidspbridge: configure full L1 MMU range
 
-Omar Ramirez Luna (1):
-      staging: tidspbridge: replace mbox callback with notifier_call
-
- drivers/staging/tidspbridge/core/tiomap3430.c |   15 +++++++--------
- 1 files changed, 7 insertions(+), 8 deletions(-)
-
-Regards,
-
-Omar
+J. R. Okajima
