@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892Ab1ANJpG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 04:45:06 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:50245 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756751Ab1ANJov (ORCPT
+	id S1755801Ab1ANJrH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 04:47:07 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:38203 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417Ab1ANJrB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 04:44:51 -0500
+	Fri, 14 Jan 2011 04:47:01 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=tJO3bpfcgijfnipcNqNd43gwQRvIYTJBJIHmsSXPsgQOFuo3Ly4z8VKVw2DOf9OA4M
-         hNl0cdPjPoA7NFb1772WK/0PxJCWfDRmUjlVGTOUdT50sn72E3q6GX2QUAPlokVTMu0d
-         vK0nhoQKiMp07WQY4RrSr14AJi7m3AVV/qQvc=
-Date: Fri, 14 Jan 2011 17:44:42 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Dave Anderson <anderson@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] /proc/kcore: fix seeking
-Message-ID: <20110114094442.GB10219@cr0.nay.redhat.com>
-References: <4D2B1AD5.9000707@redhat.com>
- <20110111160437.GF17312@hack>
- <20110111162317.GA1703@nowhere>
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=ZLNUP5Ez5cxCLiMMJ3/nC8ZEsGKde/ZGj442upDSBcyGKHe4X3G2kwnhfEBQSBCB1b
+         UsWkfVhONC328vey3ZQ4Ebq3gjhhZqFGq4P2phRx8B+wtSkp9pLcajw7x+s+95aqL5OY
+         TEKNg0VEyqb8mhzubcnDVipFHhpHhCJ9nkyuc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110111162317.GA1703@nowhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <alpine.LFD.2.00.1101141028350.2678@localhost6.localdomain6>
+References: <alpine.LFD.2.00.1101131436070.2678@localhost6.localdomain6>
+	<8952.1294927845@jrobl>
+	<alpine.LFD.2.00.1101131732500.2678@localhost6.localdomain6>
+	<AANLkTikjTqcTzBVNouMdb2-QDmEKvH0p_uZ-SE9aNW6f@mail.gmail.com>
+	<alpine.LFD.2.00.1101141028350.2678@localhost6.localdomain6>
+Date: Fri, 14 Jan 2011 10:47:00 +0100
+Message-ID: <AANLkTinYTitBfY-HFrND5pJH_YcYAtMfLJ-eL1y542WM@mail.gmail.com>
+Subject: Re: [PATCH] fs: Work around NFS wreckage
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Nick Piggin <npiggin@gmail.com>, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
+        Nick Piggin <npiggin@kernel.dk>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, u.kleine-koenig@pengutronix.de,
+        "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 11, 2011 at 05:23:23PM +0100, Frederic Weisbecker wrote:
->On Wed, Jan 12, 2011 at 12:04:37AM +0800, Américo Wang wrote:
->> On Mon, Jan 10, 2011 at 09:42:29AM -0500, Dave Anderson wrote:
->> >From: Dave Anderson <anderson@redhat.com>
->> >
->> >Commit 34aacb2920667d405a8df15968b7f71ba46c8f18
->> >("procfs: Use generic_file_llseek in /proc/kcore")
->> >broke seeking on /proc/kcore.  This changes it back
->> >to use default_llseek in order to restore the original
->> >behavior.
->> >
->> >The problem with generic_file_llseek is that it only
->> >allows seeks up to inode->i_sb->s_maxbytes, which is
->> >2GB-1 on procfs, where the memory file offset values in
->> >the /proc/kcore PT_LOAD segments may exceed or start
->> >beyond that offset value.
->> >
->> 
->> Is the race solved? Using default_llseek() still races
->> with read_kcore() on fpos, AFAIK.
+On Fri, Jan 14, 2011 at 10:29 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Fri, 14 Jan 2011, Nick Piggin wrote:
 >
->Hmm, how does it race there?
+>> On Fri, Jan 14, 2011 at 3:41 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> > On Thu, 13 Jan 2011, J. R. Okajima wrote:
+>> >> Thomas Gleixner:
+>> >> > The dcache scalability work broke NFS root filesystems.
+>> >>       :::
+>> >> > Check for parent equal dentry and skip the nested lock to avoid the
+>> >> > deadlock. I'm sure this is the wrong fix, but at least it "works" :)
+>> >>
+>> >> With this patch, can you unmount it cleanly?
+>> >> It skips incrementing d_count for both dentries.
+>> >> Do we need at least one?
+>> >
+>>
+>> Yeah thanks everyone for reporting this.
+>>
+>> I have a fix for it in a slightly different way, and a couple of other reported
+>> bugs, which are going through stress testing now.
 >
->read_kcore() manipulates fpos, which can't be changed behind
->us inside the read callback as it's a snapshot. Also read_kcore()
->can change the value of fpos, which is writed back to file->fpos
->from sys_read().
+> Can you point us to the patches, so we can run our own set of
+> tests in paralell?
 >
->So the last resulting race here the natural one between
->seeking and reading, which is up to the user to take care
->of.
+> Thanks,
+>
+>        tglx
 
-Hmm, I just read the changelog of commit
-34aacb2920667d405a8df15968b7f71ba46c8f18, which claims to fix
-the race. So anything changed in vfs layer after that?
+I guess several mentionned patches are now in [1] and I am testing
+them against linux-next (next-20110114).
 
-Thanks.
+- Sedat -
 
-
+[1] http://git.kernel.org/?p=linux/kernel/git/npiggin/linux-npiggin.git;a=shortlog;h=refs/heads/vfs-scale-working
