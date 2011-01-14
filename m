@@ -1,75 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756717Ab1ANCqv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 21:46:51 -0500
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:26189
-	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751576Ab1ANCqp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 21:46:45 -0500
-X-SpamScore: -13
-X-BigFish: VPS-13(z426fnzbb2cK1432N98dN148cMzz1202hzz8275bhz32i637h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LEZQXR-02-830-02
-X-M-MSG: 
-Date: Fri, 14 Jan 2011 03:29:50 +0100
-From: Robert Richter <robert.richter@amd.com>
-To: Andi Kleen <andi@firstfloor.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>
-Subject: Re: [PATCH] oprofile: Add support for missing Intel core i7 models
-Message-ID: <20110114022950.GC4739@erda.amd.com>
-References: <1294958291-5626-1-git-send-email-sbohrer@rgmadvisors.com>
- <20110113235503.GY4739@erda.amd.com>
- <20110114002435.GR25713@one.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110114002435.GR25713@one.firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+	id S1757441Ab1ANCsN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 21:48:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35963 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751576Ab1ANCsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 21:48:03 -0500
+Subject: Re: linux-next: lockdep whinge in cgroup_rmdir
+From: Eric Paris <eparis@redhat.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
+        Eric Paris <eparis@parisplace.org>, Paul Menage <menage@google.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        containers@lists.linux-foundation.org
+In-Reply-To: <12545.1294932849@localhost>
+References: <12545.1294932849@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 Jan 2011 21:47:20 -0500
+Message-ID: <1294973240.18912.1.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.01.11 19:24:35, Andi Kleen wrote:
-> On Fri, Jan 14, 2011 at 12:55:03AM +0100, Robert Richter wrote:
-> > On 13.01.11 17:38:11, Shawn Bohrer wrote:
-> > > Added missing core i7 models found in "Intel 64 and IA-32 Architectures
-> > > Software Developer's Manual Volume 3B: System Programming Guide",
-> > > Table B-1.  Tested with oprofile 0.9.6 on a:
-> > > 
-> > > model      : 44
-> > > model name : Intel(R) Xeon(R) CPU           X5680  @ 3.33GHz
-> > > 
-> > > Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
-> > 
-> > Andi,
-> > 
-> > please ACK.
+On Thu, 2011-01-13 at 10:34 -0500, Valdis.Kletnieks@vt.edu wrote:
+> Seen booting yesterday's linux-next, was not present in 2.6.37-rc7-mmotm1202.
 > 
-> NACK -- first it's wrong because that's a westmere and westmere
-> has a different event list. And the new way is to fall back to arch-perfmon
-> and handle the CPUID in user space. This has been already implemented.
-> So the fix is to upgrade user space.
+> Not sure if it's an selinux or cgroup issue, so I'm throwing it at every
+> address I can find for either.  This is easily replicatable and happens at
+> every boot, so I can test patches if needed.  Am willing to bisect it down if
+> nobody knows right off the bat what the problem is.
 
-Andi,
+Not an SELinux issue.  selinux_inode_rmdir() on the stack trace is just
+left over junk.  The vfs doesn't call into the filesystem rmdir code
+(cgroup_rmdir()) until after the selinux code has already returned.  So
+cgroup people, you might as well pretend that wasn't on the stack trace
+at all.
 
-thanks for looking at this.
+-Eric
+> 
+> The 'W' taint is from the already-reported kernel/workqueue.c worker_enter_idle issue.
+> 
+> [   85.100795] systemd[1]: readahead-replay.service: main process exited, code=exited, status=1
+> [   85.101530] 
+> [   85.101531] =============================================
+> [   85.101796] [ INFO: possible recursive locking detected ]
+> [   85.102002] 2.6.37-next-20110111 #1
+> [   85.102009] ---------------------------------------------
+> [   85.102009] systemd/1 is trying to acquire lock:
+> [   85.102009]  (&(&dentry->d_lock)->rlock){+.+...}, at: [<ffffffff8107ca5c>] cgroup_rmdir+0x339/0x479
+> [   85.102009] 
+> [   85.102009] but task is already holding lock:
+> [   85.102009]  (&(&dentry->d_lock)->rlock){+.+...}, at: [<ffffffff8107ca54>] cgroup_rmdir+0x331/0x479
+> [   85.102009] 
+> [   85.102009] other info that might help us debug this:
+> [   85.102009] 4 locks held by systemd/1:
+> [   85.102009]  #0:  (&sb->s_type->i_mutex_key#14/1){+.+.+.}, at: [<ffffffff810fea4d>] do_rmdir+0x7d/0x121
+> [   85.102009]  #1:  (&sb->s_type->i_mutex_key#14){+.+.+.}, at: [<ffffffff810fd4bc>] vfs_rmdir+0x4a/0xbe
+> [   85.102009]  #2:  (cgroup_mutex){+.+.+.}, at: [<ffffffff8107cb84>] cgroup_rmdir+0x461/0x479
+> [   85.102009]  #3:  (&(&dentry->d_lock)->rlock){+.+...}, at: [<ffffffff8107ca54>] cgroup_rmdir+0x331/0x479
+> [   85.102009] 
+> [   85.102009] stack backtrace:
+> [   85.102009] Pid: 1, comm: systemd Tainted: G        W   2.6.37-next-20110111 #1
+> [   85.102009] Call Trace:
+> [   85.102009]  [<ffffffff81069f22>] ? __lock_acquire+0x929/0xd4e
+> [   85.102009]  [<ffffffff8107c6f1>] ? cgroup_clear_directory+0xff/0x131
+> [   85.102009]  [<ffffffff8107c6f1>] ? cgroup_clear_directory+0xff/0x131
+> [   85.102009]  [<ffffffff8107ca5c>] ? cgroup_rmdir+0x339/0x479
+> [   85.102009]  [<ffffffff8106a859>] ? lock_acquire+0x100/0x126
+> [   85.102009]  [<ffffffff8107ca5c>] ? cgroup_rmdir+0x339/0x479
+> [   85.102009]  [<ffffffff815521ef>] ? sub_preempt_count+0x35/0x48
+> [   85.102009]  [<ffffffff8154e401>] ? _raw_spin_lock+0x36/0x45
+> [   85.102009]  [<ffffffff8107ca5c>] ? cgroup_rmdir+0x339/0x479
+> [   85.102009]  [<ffffffff8107ca5c>] ? cgroup_rmdir+0x339/0x479
+> [   85.102009]  [<ffffffff810579cd>] ? autoremove_wake_function+0x0/0x34
+> [   85.102009]  [<ffffffff811e1839>] ? selinux_inode_rmdir+0x15/0x17
+> [   85.102009]  [<ffffffff810fd4eb>] ? vfs_rmdir+0x79/0xbe
+> [   85.102009]  [<ffffffff810feaa0>] ? do_rmdir+0xd0/0x121
+> [   85.102009]  [<ffffffff8100256c>] ? sysret_check+0x27/0x62
+> [   85.102009]  [<ffffffff8106ac79>] ? trace_hardirqs_on_caller+0x117/0x13b
+> [   85.102009]  [<ffffffff8154e201>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> [   85.102009]  [<ffffffff8110040b>] ? sys_rmdir+0x11/0x13
+> [   85.102009]  [<ffffffff8100253b>] ? system_call_fastpath+0x16/0x1b
+> [   85.268272] systemd[1]: readahead-collect.service: main process exited, code=exited, status=1
+> 
+> Any ideas?
+> 
 
-Will it be the general way in the future not to add model detection
-for new Intel cpus to kernel code and instead use arch_perfmon? Are
-the user land patches for cpu detection already in the oprofile
-repository? I assume oprofile 0.9.6 is not up-to-date and needs to be
-patched.
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
 
