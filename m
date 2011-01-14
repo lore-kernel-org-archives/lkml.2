@@ -1,155 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756908Ab1ANKMr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 05:12:47 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51653 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751566Ab1ANKMl (ORCPT
+	id S1757072Ab1ANKNM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 05:13:12 -0500
+Received: from 26.mail-out.ovh.net ([91.121.27.225]:47143 "HELO
+	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751566Ab1ANKNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 05:12:41 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 14 Jan 2011 19:06:44 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        Greg Thelen <gthelen@google.com>, hannes@cmpxchg.org,
-        aarcange@redhat.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: [PATCH 1/4] [BUGFIX] enhance charge_statistics function for
- fixising issues
-Message-Id: <20110114190644.a222f60d.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110114190412.73362cd7.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110114190412.73362cd7.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 14 Jan 2011 05:13:08 -0500
+Message-ID: <4D3021AE.5020607@example.com>
+Date: Fri, 14 Jan 2011 11:13:02 +0100
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+MIME-Version: 1.0
+To: balbi@ti.com
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: error in 2.6.37-git10
+References: <4D301CA5.503@example.com> <20110114095745.GD2476@legolas.emea.dhcp.ti.com> <4D302067.2000203@example.com> <20110114100831.GE2476@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20110114100831.GE2476@legolas.emea.dhcp.ti.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 2427440199228092869
+X-Ovh-Remote: 83.24.79.226 (dmx226.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mem_cgroup_charge_staistics() was designed for charging a page but
-now, we have transparent hugepage. To fix problems (in following patch)
-it's required to change the function to get the number of pages
-as its arguments.
+On 14.01.2011 11:08, Felipe Balbi wrote:
+> On Fri, Jan 14, 2011 at 11:07:35AM +0100, Piotr Hosowicz wrote:
+>> On 14.01.2011 10:57, Felipe Balbi wrote:
+>>> On Fri, Jan 14, 2011 at 10:51:33AM +0100, Piotr Hosowicz wrote:
+>>>> Hello,
+>>>>
+>>>> Build failed here:
+>>>>
+>>>>    CC [M]  fs/ecryptfs/main.o
+>>>> fs/ecryptfs/main.c:144: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or
+>>>> ‘__attribute__’ before ‘*’ token
+>>>> fs/ecryptfs/main.c: In function ‘ecryptfs_interpose’:
+>>>> fs/ecryptfs/main.c:204: error: implicit declaration of function
+>>>> ‘ecryptfs_get_inode’
+>>>> fs/ecryptfs/main.c:204: warning: initialization makes pointer from
+>>>> integer without a cast
+>>>> fs/ecryptfs/main.c:206: error: expected ‘)’ before ‘return’
+>>>> fs/ecryptfs/main.c:212: error: expected expression before ‘}’ token
+>>>> fs/ecryptfs/main.c: In function ‘ecryptfs_mount’:
+>>>> fs/ecryptfs/main.c:569: warning: assignment makes pointer from
+>>>> integer without a cast
+>>>
+>>> Could you check whether this is enough?
+>>
+>> I am building now with this option disabled, maybe I'll have time to
+>> test again.
+>
+> I just did. Compiled only that module with that header added. Built
+> cleanly.
 
-The new function gets following as argument.
-  - type of page rather than 'pc'
-  - size of page which is accounted.
+I corrected and am building again. Hope this helps.
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |   32 +++++++++++++++++++-------------
- 1 file changed, 19 insertions(+), 13 deletions(-)
+Regards,
 
-Index: mmotm-0107/mm/memcontrol.c
-===================================================================
---- mmotm-0107.orig/mm/memcontrol.c
-+++ mmotm-0107/mm/memcontrol.c
-@@ -600,23 +600,23 @@ static void mem_cgroup_swap_statistics(s
- }
- 
- static void mem_cgroup_charge_statistics(struct mem_cgroup *mem,
--					 struct page_cgroup *pc,
--					 bool charge)
-+					 bool file,
-+					 int pages)
- {
--	int val = (charge) ? 1 : -1;
--
- 	preempt_disable();
- 
--	if (PageCgroupCache(pc))
--		__this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_CACHE], val);
-+	if (file)
-+		__this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_CACHE], pages);
- 	else
--		__this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_RSS], val);
-+		__this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_RSS], pages);
- 
--	if (charge)
-+	/* pagein of a big page is an event. So, ignore page size */
-+	if (pages > 0)
- 		__this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_PGPGIN_COUNT]);
- 	else
- 		__this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_PGPGOUT_COUNT]);
--	__this_cpu_inc(mem->stat->count[MEM_CGROUP_EVENTS]);
-+
-+	__this_cpu_add(mem->stat->count[MEM_CGROUP_EVENTS], pages);
- 
- 	preempt_enable();
- }
-@@ -2092,6 +2092,7 @@ static void ____mem_cgroup_commit_charge
- 					 struct page_cgroup *pc,
- 					 enum charge_type ctype)
- {
-+	bool file = false;
- 	pc->mem_cgroup = mem;
- 	/*
- 	 * We access a page_cgroup asynchronously without lock_page_cgroup().
-@@ -2106,6 +2107,7 @@ static void ____mem_cgroup_commit_charge
- 	case MEM_CGROUP_CHARGE_TYPE_SHMEM:
- 		SetPageCgroupCache(pc);
- 		SetPageCgroupUsed(pc);
-+		file = true;
- 		break;
- 	case MEM_CGROUP_CHARGE_TYPE_MAPPED:
- 		ClearPageCgroupCache(pc);
-@@ -2115,7 +2117,7 @@ static void ____mem_cgroup_commit_charge
- 		break;
- 	}
- 
--	mem_cgroup_charge_statistics(mem, pc, true);
-+	mem_cgroup_charge_statistics(mem, file, 1);
- }
- 
- static void __mem_cgroup_commit_charge(struct mem_cgroup *mem,
-@@ -2186,14 +2188,14 @@ static void __mem_cgroup_move_account(st
- 		__this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
- 		preempt_enable();
- 	}
--	mem_cgroup_charge_statistics(from, pc, false);
-+	mem_cgroup_charge_statistics(from, PageCgroupCache(pc), -1);
- 	if (uncharge)
- 		/* This is not "cancel", but cancel_charge does all we need. */
- 		mem_cgroup_cancel_charge(from, PAGE_SIZE);
- 
- 	/* caller should have done css_get */
- 	pc->mem_cgroup = to;
--	mem_cgroup_charge_statistics(to, pc, true);
-+	mem_cgroup_charge_statistics(to, PageCgroupCache(pc), 1);
- 	/*
- 	 * We charges against "to" which may not have any tasks. Then, "to"
- 	 * can be under rmdir(). But in current implementation, caller of
-@@ -2551,6 +2553,7 @@ __mem_cgroup_uncharge_common(struct page
- 	struct page_cgroup *pc;
- 	struct mem_cgroup *mem = NULL;
- 	int page_size = PAGE_SIZE;
-+	bool file = false;
- 
- 	if (mem_cgroup_disabled())
- 		return NULL;
-@@ -2578,6 +2581,9 @@ __mem_cgroup_uncharge_common(struct page
- 	if (!PageCgroupUsed(pc))
- 		goto unlock_out;
- 
-+	if (PageCgroupCache(pc))
-+		file = true;
-+
- 	switch (ctype) {
- 	case MEM_CGROUP_CHARGE_TYPE_MAPPED:
- 	case MEM_CGROUP_CHARGE_TYPE_DROP:
-@@ -2597,7 +2603,7 @@ __mem_cgroup_uncharge_common(struct page
- 	}
- 
- 	for (i = 0; i < count; i++)
--		mem_cgroup_charge_statistics(mem, pc + i, false);
-+		mem_cgroup_charge_statistics(mem, file, -1);
- 
- 	ClearPageCgroupUsed(pc);
- 	/*
+Piotr Hosowicz
 
+-- 
+W korytarzach kremlowskich Breżniew spotyka Susłowa. Susłow pyta:
+- Leonid, wiesz, że jeden but masz żółty, a drugi czarny?
+- Wiem, Misza, chciałem nawet zmienić, ale w domu mam to samo,
+   jeden żółty i jeden czarny.
+NP: Patrick O'Hearn - An Evening Sky
+NB: 2.6.37-20110113-1411-pztidm+
