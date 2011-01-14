@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512Ab1ANF2Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 00:28:24 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44890 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705Ab1ANF2R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 00:28:17 -0500
-Date: Fri, 14 Jan 2011 05:28:13 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Nick Piggin <npiggin@gmail.com>
-Cc: "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: vfs-scale, nd->inode after __do_follow_link()
-Message-ID: <20110114052813.GZ19804@ZenIV.linux.org.uk>
-References: <7352.1294971049@jrobl>
- <AANLkTinXPOSxHPtffqe3m5MWppDfr6kFVMsd6k7-dkic@mail.gmail.com>
+	id S1753003Ab1ANF25 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 00:28:57 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:54085 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752531Ab1ANF2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 00:28:54 -0500
+Message-ID: <4D2FDF3E.5030309@cn.fujitsu.com>
+Date: Fri, 14 Jan 2011 13:29:34 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinXPOSxHPtffqe3m5MWppDfr6kFVMsd6k7-dkic@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Nick Piggin <npiggin@gmail.com>, Paul Menage <menage@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        containers@lists.linux-foundation.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: kernel BUG at fs/dcache.c:1363 (from cgroup)
+References: <4D2FD771.9040301@cn.fujitsu.com> <20110114051453.GY19804@ZenIV.linux.org.uk>
+In-Reply-To: <20110114051453.GY19804@ZenIV.linux.org.uk>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-01-14 13:28:25,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-01-14 13:28:25,
+	Serialize complete at 2011-01-14 13:28:25
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 03:09:10PM +1100, Nick Piggin wrote:
-
-> > + ? ? ? ? ? ? ? ? ? ? ? struct dentry *i = path.dentry->d_inode;
-> > + ? ? ? ? ? ? ? ? ? ? ? if (!IS_ERR(cookie) && i->i_op->put_link)
-> > + ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? i->i_op->put_link(path.dentry, &nd, cookie);
-> > ? ? ? ? ? ? ? ? ? ? ? ?/* nd.path had been dropped */
-> > ? ? ? ? ? ? ? ? ? ? ? ?nd.path = path;
-> > ? ? ? ? ? ? ? ? ? ? ? ?goto out_path;
+Al Viro wrote:
+> On Fri, Jan 14, 2011 at 12:56:17PM +0800, Li Zefan wrote:
+>> Just mount the cgroupfs:
+>>
+>> # mount -t cgroup -o cpuset xxx /mnt
+>> (oops!!)
+>>
+>> The bug is caused by:
+>>
+>> =========
+>> commit 0df6a63f8735a7c8a877878bc215d4312e41ef81
+>> Author: Al Viro <viro@zeniv.linux.org.uk>
+>> Date:   Tue Dec 21 13:29:29 2010 -0500
+>>
+>>     switch cgroup
+>>     
+>>     switching it to s_d_op allows to kill the cgroup_lookup() kludge.
+>>     
+>>     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+>> =========
+>>
+>> This line:
+>>
+>> +       sb->s_d_op = &cgroup_dops;
 > 
-> It should be the inode we followed, rather than the inode of the
-> new path, I think.
+> Oh, crap...  Right, it's using simple_lookup().  Let me check if anything
+> else might be stepping on that.
+> 
+> Umm...  There's a very strange codepath in btrfs that also might.
+> Interesting.  Fix for cgroup, AFAICS, should be this:
+> 
 
-And that's what the first argument of __do_follow_link() is.  I'm actually
-tempted to rename it from path to symlink and make it const to clarify
-the things a bit.
-
-BTW, "i" as a name for local struct inode * is -><- that close to being a
-shootable offense.  Please, rename to e.g. struct inode *link (and it's
-struct inode, not struct dentry).
+patch tested. thanks!
