@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757941Ab1ANQY7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 11:24:59 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:49338 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757692Ab1ANQYz convert rfc822-to-8bit (ORCPT
+	id S1757946Ab1ANQ0h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 11:26:37 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54692 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757650Ab1ANQ03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 11:24:55 -0500
+	Fri, 14 Jan 2011 11:26:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=lLOilhDTXDE5Jbgs12jX7gYaM1Rft9zmLclSeekFs1PPSYZ4nYzVlV+X8lzYCcAmie
+         5A1VaV9DpBXwPfcA1zFPyKH2URKbUYBMmBNpitfLZHuF+vdo4MvoZbCn54ykT6D3L7m3
+         zz8sfuoCt4nfZDOqhJDDYHF7wKiYzyNbBpoIQ=
+Date: Fri, 14 Jan 2011 17:20:22 +0100
+From: Tejun Heo <tj@kernel.org>
+To: "Ted Ts'o" <tytso@mit.edu>, NeilBrown <neilb@suse.de>,
+        Milan Broz <mbroz@redhat.com>, Karel Zak <kzak@redhat.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [dm-devel] linux-next - WARNING: at fs/block_dev.c:824
+ bd_link_disk_holder+0x92/0x1ac()
+Message-ID: <20110114162022.GC978@htj.dyndns.org>
+References: <20110113131216.GF30719@htj.dyndns.org>
+ <20110113132637.GH16523@nb.net.home>
+ <20110113133722.GG30719@htj.dyndns.org>
+ <4D2F04FF.1070309@redhat.com>
+ <20110113141107.GI30719@htj.dyndns.org>
+ <4D2F0B6A.6010201@redhat.com>
+ <AANLkTinJ68D6Yc-U-Q=ZfS9mqozj5qtHPtySZHOgjcgP@mail.gmail.com>
+ <656A2F9B-4E1C-44AA-80CB-9E3428E26CDE@mit.edu>
+ <20110114071858.7eee145c@notabene.brown>
+ <20110113204145.GC31800@thunk.org>
 MIME-Version: 1.0
-In-Reply-To: <1295014231.7901.41.camel@e102109-lin.cambridge.arm.com>
-References: <1294990949-2729-1-git-send-email-ccross@android.com>
-	<AANLkTimqiqABxCejdeOQWZZ62DVUZW2v-yMpdu1aNDQT@mail.gmail.com>
-	<20110114120229.GA15996@n2100.arm.linux.org.uk>
-	<1295014231.7901.41.camel@e102109-lin.cambridge.arm.com>
-Date: Fri, 14 Jan 2011 10:24:52 -0600
-Message-ID: <AANLkTi=4=c0B3Qo+boguUw-DvEihBej5Zz_d2QWmoucm@mail.gmail.com>
-Subject: Re: [PATCH] ARM: vfp: Fix up exception location in Thumb mode
-From: Dave Martin <dave.martin@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Colin Cross <ccross@android.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110113204145.GC31800@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello, Ted, Neil.
 
-On Fri, Jan 14, 2011 at 8:10 AM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> On Fri, 2011-01-14 at 12:02 +0000, Russell King - ARM Linux wrote:
->> On Fri, Jan 14, 2011 at 11:43:04AM +0000, Catalin Marinas wrote:
->> > >        pr_debug("VFP: bounce: trigger %08x fpexc %08x\n", trigger, fpexc);
->> > >
->> > >        /*
->> > > +        * If the exception occured in thumb mode, pc is exception location + 2,
->> > > +        * the middle of the 32-bit VFP instruction.  Add 2 to get exception
->> > > +        * location + 4, the same we get in ARM mode.
->> > > +        */
->> > > +#ifdef CONFIG_ARM_THUMB
->> > > +       if (regs->ARM_cpsr & PSR_T_BIT)
->> > > +               regs->ARM_pc += 2;
->> > > +#endif
->> >
->> > You can use "if (thumb_mode(regs))" and avoid the #ifdef entirely.
->>
->> I don't think this is correct.  On entry to the undefined instruction
->> handler, we get the uncorrected PC value, so PC points to the
->> instruction after the faulting instruction.
->>
->> If it was an ARM instruction, that is located at PC-4.  If it was a
->> Thumb instruction, it is located at PC-2.  This PC value is passed
->> unmodified to the VFP entry code, and the passed r2 reflect the
->> value in regs->ARM_pc.
->
-> The entry-armv.S code adds 2 to the r2 register in case of a 32-bit
-> Thumb instruction, so it is no longer the same as the ARM_pc.
->
-> Since the VFP instructions in Thumb mode are always 32-bit, Colin's
-> patch made sense to me.
+On Thu, Jan 13, 2011 at 03:41:45PM -0500, Ted Ts'o wrote:
+> On Fri, Jan 14, 2011 at 07:18:58AM +1100, NeilBrown wrote:
+> > 
+> > open(O_EXCL) will fail on a block device if it is being used by anything else
+> > - a filesystem or a dm target or an md array or ....
+> > 
+> > So if the *only* thing you want is "is this currently an active part of
+> > something else", then O_EXCL works since 2.6.0 (I think).
+> 
+> Unfortunately, that won't distinguish between a currently active file
+> system, and a device which is being used by a dm target, which is what
+> we want to do.
 
-Is the comment preceding __und_usr_unknown causing some confusion here?
+Hmmm... that's already possible with the existing holders symlinks,
+right?  As Kay said in another message, I don't think we can do
+anything about the symlinks at this point.  It already has userland
+users, so we'll have to maintain them and there's no reason to create
+something else for the same functionality.
 
-/*
- * The FP module is called with these registers set:
- *  r0  = instruction
- *  r2  = PC+4
- ...
+It's silly that there's no way to tell whether the device is mounted
+from a given block device but then again we've been working around it
+by reverse mapping it till now so unless there's a new requirement
+maybe it's okay as it is now.
 
-That reflects the ARM case only: for Thumb, r2 is always PC+2 (?)
+Ideally, it would have been nice and more fitting with the whole bd
+claim API if we just exported single attribute which identifies the
+current holder supplied at the time of claiming (just the kernel
+identifier in string), so that we can forward-map the exclusive opener
+in general instead of having to reverse-map it for everything other
+than md/dm.
 
-The comment at the start of do_undefinstr() (which receives these
-registers) is correct though:
+Thank you.
 
-	/*
-	 * According to the ARM ARM, PC is 2 or 4 bytes ahead,
-	 * depending whether we're in Thumb mode or not.
-	 * Correct this offset.
-
-Cheers
----Dave
+-- 
+tejun
