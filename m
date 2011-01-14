@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757548Ab1AND64 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 22:58:56 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49072 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752067Ab1AND6x convert rfc822-to-8bit (ORCPT
+	id S1757572Ab1ANEAA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 23:00:00 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:42641 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752067Ab1AND7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 22:58:53 -0500
+	Thu, 13 Jan 2011 22:59:54 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=jhgphn/35/kBarCsjzNUWA7skXnUuiS0GoLoC1H0uKz37Qj7IdTGB5jrDaPfIwwi4B
-         C596dHxUzeEIQimKjBFS1M6vjaj4MOYc2YHRk48mRRIrYACm+he/Pr0rwloS6mxwtD30
-         PeI0WJbZ22S8C1XqrFcr6PBoDf7PcwxXIp9sw=
+         :cc:content-type;
+        b=eNudIhnBeLnIJ8+eGyXYJn8cZyNnndAhE4QMLzEnWhxL/bL+kVFz42n/iN+22I0BtZ
+         lUzkWlJHe6ZVHeATvsWS2q09hFo01zXvDqO0I1QY8FE0dyo0NxwXqPK0ZuJEbs8iJvVW
+         otQ45z3gTMRoNS/lZz35XOURqpvxazTbk2cao=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimjRYref7+7LS7Su=THo6JFBRV0uEyaWwGqeAXT@mail.gmail.com>
-References: <AANLkTi=3UmR6=L-bKSJ2SbioPjaHodgzTj4my9dbNP1L@mail.gmail.com>
-	<AANLkTimjRYref7+7LS7Su=THo6JFBRV0uEyaWwGqeAXT@mail.gmail.com>
-Date: Fri, 14 Jan 2011 14:58:52 +1100
-Message-ID: <AANLkTimrZnsN+dasGk1R4vmRR=VJ0pDcHvY-eary8hGx@mail.gmail.com>
-Subject: Re: Please pull vfs-scale-working tree
+In-Reply-To: <8482.1294926315@jrobl>
+References: <20110113120626.GB30351@opensource.wolfsonmicro.com>
+	<8138.1294924927@jrobl>
+	<676f5c24375e1cc2aa14fe6630ef1324@mail.gmail.com>
+	<8482.1294926315@jrobl>
+Date: Fri, 14 Jan 2011 14:59:53 +1100
+Message-ID: <AANLkTim=VY7+fo6d_nUXVxs+iZ_f79qWu_eYMUjvhVJO@mail.gmail.com>
+Subject: Re: NFS root lockups with -next 20110113
 From: Nick Piggin <npiggin@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, "J. R. Okajima" <hooanon05@yahoo.co.jp>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Nick Piggin <npiggin@kernel.dk>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 2:41 PM, Nick Piggin <npiggin@gmail.com> wrote:
-> On Fri, Jan 14, 2011 at 2:24 PM, Nick Piggin <npiggin@gmail.com> wrote:
->> Git tree is here:
+On Fri, Jan 14, 2011 at 12:45 AM, J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
+>
+> Santosh Shilimkar:
+>> It works. My board booted with NFS with below patch
+>
+> ----------------------------------------
+>
+> Mark Brown;
+>> Seems to do the trick:
 >>
->>  git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git
->>
->> Branch is:
->>
->>    vfs-scale-working
->>
->> Head:
->> 657e94b673a805b427903c5628e95348235fad06
->>
->> Diffstat:
->>  Documentation/filesystems/porting |    8 ++++----
->>  Documentation/filesystems/vfs.txt |    4 ++--
->>  fs/namei.c                        |   18 ++++++++++++++++++
->>  fs/nfs/dir.c                      |    6 +++++-
->>  include/linux/list_bl.h           |    5 +++--
->>  include/linux/rculist_bl.h        |    3 ++-
->>  6 files changed, 34 insertions(+), 10 deletions(-)
+>> Tested-by: Mark Brown <broonie@opensource.wolsfonmicro.com>
+>
+> Thank you so quick tests.
+> When I post the patch to be mainlined, I will add Tested-by for both of
+> you. But Nick Piggin may take another approach.
 
-Sorry, one more, I missed one of J. R. Okajima's review patches
+Thanks for your help, can you see how I've fixed it in my vfs-scale
+tree? What do you think?
 
-Head is:
-f20877d94a74557b7c28b4ed8920d834c31e0ea5
+Thanks,
+Nick
