@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758066Ab1ANR6q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 12:58:46 -0500
-Received: from smtp205.alice.it ([82.57.200.101]:55065 "EHLO smtp205.alice.it"
+	id S1757902Ab1ANSAS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 13:00:18 -0500
+Received: from THUNK.ORG ([69.25.196.29]:55827 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752335Ab1ANR6l convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 12:58:41 -0500
-From: Alberto Mattea <alberto@mattea.info>
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Size difference in Kernel Modules
-Date: Fri, 14 Jan 2011 18:58:35 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-020637-generic; KDE/4.5.5; x86_64; ; )
-References: <AANLkTi=DU3MpNd4-7a3-n2E3voPk25AtwdL93SxGcvn8@mail.gmail.com>
-In-Reply-To: <AANLkTi=DU3MpNd4-7a3-n2E3voPk25AtwdL93SxGcvn8@mail.gmail.com>
+	id S1752312Ab1ANSAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 13:00:11 -0500
+Date: Fri, 14 Jan 2011 12:59:42 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Tejun Heo <tj@kernel.org>
+Cc: NeilBrown <neilb@suse.de>, Milan Broz <mbroz@redhat.com>,
+        Karel Zak <kzak@redhat.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [dm-devel] linux-next - WARNING: at fs/block_dev.c:824
+ bd_link_disk_holder+0x92/0x1ac()
+Message-ID: <20110114175942.GK31800@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Tejun Heo <tj@kernel.org>,
+	NeilBrown <neilb@suse.de>, Milan Broz <mbroz@redhat.com>,
+	Karel Zak <kzak@redhat.com>,
+	device-mapper development <dm-devel@redhat.com>,
+	Jun'ichi Nomura <j-nomura@ce.jp.nec.com>, Valdis.Kletnieks@vt.edu,
+	linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+	Alexander Viro <viro@zeniv.linux.org.uk>,
+	linux-fsdevel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
+References: <20110113132637.GH16523@nb.net.home>
+ <20110113133722.GG30719@htj.dyndns.org>
+ <4D2F04FF.1070309@redhat.com>
+ <20110113141107.GI30719@htj.dyndns.org>
+ <4D2F0B6A.6010201@redhat.com>
+ <AANLkTinJ68D6Yc-U-Q=ZfS9mqozj5qtHPtySZHOgjcgP@mail.gmail.com>
+ <656A2F9B-4E1C-44AA-80CB-9E3428E26CDE@mit.edu>
+ <20110114071858.7eee145c@notabene.brown>
+ <20110113204145.GC31800@thunk.org>
+ <20110114162022.GC978@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201101141858.36264@alby>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110114162022.GC978@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In data venerdì 14 gennaio 2011 18:47:41, anil joshi ha scritto:
-> I have compiled kernel 2.6.35 but there is huge difference in size
-> between 2.6.35.6-45.fc14.i686 (fedora core 14 ) and  compiled one
-> I am using same configuration file as fc14 uses
+On Fri, Jan 14, 2011 at 05:20:22PM +0100, Tejun Heo wrote:
 > 
-> following details show difference in size
-> 
-> 
-> [Anil@localhost linux-2.6.35]$ du -h
-> /lib/modules/2.6.35.6-45.fc14.i686/kernel/drivers/video/backlight/lcd.ko
-> 8.0K
-> /lib/modules/2.6.35.6-45.fc14.i686/kernel/drivers/video/backlight/lcd.ko
-> [Anil@localhost linux-2.6.35]$ du -h
-> /lib/modules/2.6.35/kernel/drivers/video/backlight/lcd.ko
-> 160K /lib/modules/2.6.35/kernel/drivers/video/backlight/lcd.ko
-> [Anil@localhost linux-2.6.35]$
-> 
-> 
-> 62M /lib/modules/2.6.35.6-45.fc14.i686/
-> 
-> 587M /lib/modules/2.6.35/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Hmmm... that's already possible with the existing holders symlinks,
+> right?  As Kay said in another message, I don't think we can do
+> anything about the symlinks at this point.  It already has userland
+> users, so we'll have to maintain them and there's no reason to create
+> something else for the same functionality.
 
-Usually when this happens to me it is because debugging symbols are included 
-in the build. Are you sure the configuration file has them disabled? On Ubuntu, 
-for instance, the configuration file which is described as the same used by 
-kernel packagers actually has debugging enabled.
+Yes, agreed.  My point was that if we have a better system, we could
+migrate blkid and other users to new interface, and maybe in a few
+years, we can deprecate that interface.  So we do have to maintain
+them for at least the medium term, but that shouldn't stop us from
+divising a better interface, and then gradually migrating systems to
+use that newer and better interface.
 
-Alberto
+						- Ted
