@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757480Ab1ANBMR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 20:12:17 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:35322 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752343Ab1ANBML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 20:12:11 -0500
-Date: Fri, 14 Jan 2011 12:12:07 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: linux-next: manual merge of the cleancache tree with Linus' tree
-Message-Id: <20110114121207.8d9d33ad.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757485Ab1ANBOh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 20:14:37 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:63251 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752343Ab1ANBOc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 20:14:32 -0500
+Message-ID: <4D2FA305.2030808@kernel.org>
+Date: Thu, 13 Jan 2011 17:12:37 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: Jason Wessel <jason.wessel@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC PATCH] x86: Add safe_udelay() and safe_msleep()
+References: <AANLkTika_bZxXO3PKek+BHoYqgYGPBPER-H9KJJXjJzn@mail.gmail.com> <20110111135655.GA6901@kroah.com> <4D2CFEAD.6070206@kernel.org> <1294799565.9586.13.camel@pasglop> <4D2F7AE9.2000809@kernel.org> <20110113224450.GA14918@kroah.com> <alpine.LFD.2.00.1101132349590.2678@localhost6.localdomain6> <4D2F84FC.7000804@kernel.org> <20110113234852.GB17904@kroah.com> <4D2F9948.8000804@kernel.org> <20110114004428.GA26847@kroah.com>
+In-Reply-To: <20110114004428.GA26847@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+On 01/13/2011 04:44 PM, Greg KH wrote:
+> On Thu, Jan 13, 2011 at 04:31:04PM -0800, Yinghai Lu wrote:
+>> there are some udelay() in drivers/usb/early/ehci-dbgp.c
+>>
+>> that is for early USB debug port console support.
+>>
+>> We should replace them with early version udelay()
+> 
+> Again, I fail to see why.  They work fine today, right?
 
-Today's linux-next merge of the cleancache tree got a conflict in
-include/linux/fs.h between commit
-c8aebb0c9f8c7471643d5f8ba68328de8013005f ("per-superblock default
-->d_op") from Linus' tree and commit
-8b53f238859d3fca74c4c52ee1af8d6b5daafcc5 ("fs: add field to superblock to
-support cleancache") from the cleancache tree.
+did not test that for a while.
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+from code review, we should not use udelay() that early.
 
-diff --cc include/linux/fs.h
-index ed6ee47,c52bab0..0000000
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@@ -1422,8 -1384,12 +1422,13 @@@ struct super_block 
-  	 * Saved mount options for lazy filesystems using
-  	 * generic_show_options()
-  	 */
- -	char *s_options;
- +	char __rcu *s_options;
- +	const struct dentry_operations *s_d_op; /* default d_op for dentries */
-+ 
-+ 	/*
-+ 	 * Saved pool identifier for cleancache (-1 means none)
-+ 	 */
-+ 	int cleancache_poolid;
-  };
-  
-  extern struct timespec current_fs_time(struct super_block *sb);
+in arch/x86/lib/delay.c we have
+inline void __const_udelay(unsigned long xloops)
+{
+        int d0;
+
+        xloops *= 4;
+        asm("mull %%edx"
+                :"=d" (xloops), "=&a" (d0)
+                :"1" (xloops), "0"
+                (this_cpu_read(cpu_info.loops_per_jiffy) * (HZ/4)));
+
+        __delay(++xloops);
+}
+EXPORT_SYMBOL(__const_udelay);
+
+that percpu cpu_info.loops_per_jiffy only have value after smp_prepare_cpus() is called.
+
+> 
+> You _really_ need to prove what you are trying to do here, with lots of
+> details and descriptions of what the problem is, as it's getting a bit
+> annoying...
+
+sorry for that.
+
+Yinghai
