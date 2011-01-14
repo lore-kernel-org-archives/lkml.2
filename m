@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891Ab1ANVpU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 16:45:20 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50752 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752091Ab1ANVpQ (ORCPT
+	id S1752863Ab1ANVsM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 16:48:12 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:48579 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752145Ab1ANVsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 16:45:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=d7IWe2CulchvEMF2t6B95V5sXaQy3lRrtj+rA32E/75u3V/GJ8XUp97G7WiBYxp5QB
-         BlZJsjWpQNjYBTXHugiCbQ5i0kxiqywiRNw2REk9MBha7zCJxoL5k62gL+MKkVQr/4O2
-         sp+Oxx4KBnEAZfrPHzH313zWBgIUyvBCdnGqU=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1101141740120.2678@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1101131436070.2678@localhost6.localdomain6>
-	<8952.1294927845@jrobl>
-	<alpine.LFD.2.00.1101131732500.2678@localhost6.localdomain6>
-	<AANLkTikjTqcTzBVNouMdb2-QDmEKvH0p_uZ-SE9aNW6f@mail.gmail.com>
-	<alpine.LFD.2.00.1101141028350.2678@localhost6.localdomain6>
-	<AANLkTinAseKuc3=JxB2qZGz2D4KUyjj=dbnoKfSyVLqh@mail.gmail.com>
-	<alpine.LFD.2.00.1101141740120.2678@localhost6.localdomain6>
-Date: Sat, 15 Jan 2011 08:44:54 +1100
-Message-ID: <AANLkTi=JS0B-G_QvwDLjTNYg4CLmitM_MN3A8g2UL0Uf@mail.gmail.com>
-Subject: Re: [PATCH] fs: Work around NFS wreckage
-From: Nick Piggin <npiggin@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        Nick Piggin <npiggin@kernel.dk>, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, u.kleine-koenig@pengutronix.de,
-        "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 14 Jan 2011 16:48:11 -0500
+Date: Fri, 14 Jan 2011 22:47:51 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux I2C <linux-i2c@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] i2c updates for 2.6.38, second round
+Message-ID: <20110114224751.2fa55138@endymion.delvare>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 15, 2011 at 3:40 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Fri, 14 Jan 2011, Linus Torvalds wrote:
->
->> On Fri, Jan 14, 2011 at 1:29 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
->> >
->> > Can you point us to the patches, so we can run our own set of
->> > tests in paralell?
->>
->> They should be in current -git as of yesterday evening.
->>
->> In particular, I think this one is commit 90dbb77ba48d.
->
-> Yep, that works - though it needs the pending fixes from Nick latest
-> pull request as well
+Hi Linus,
 
-Thanks for reporting and testing.
+Please pull a second round of i2c subsystem updates for Linux 2.6.38
+from:
 
-Nick
+git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging.git i2c-for-linus
+
+ drivers/i2c/i2c-core.c |   90 ++++++++++++++++++++++--------------------------
+ 1 files changed, 41 insertions(+), 49 deletions(-)
+
+---------------
+
+Jean Delvare (1):
+      i2c: Unregister dummy devices last on adapter removal
+
+Mark Brown (2):
+      i2c: Factor out runtime suspend checks from PM operations
+      i2c: Encourage move to dev_pm_ops by warning on use of legacy methods
+
+Thanks,
+-- 
+Jean Delvare
