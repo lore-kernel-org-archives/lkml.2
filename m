@@ -1,84 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757509Ab1ANCmR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 21:42:17 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:35652 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752291Ab1ANCmN (ORCPT
+	id S1756717Ab1ANCqv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 21:46:51 -0500
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:26189
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751576Ab1ANCqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 21:42:13 -0500
-X-AuditID: b753bd60-9e55eba000000f65-85-4d2fb8027156
-Message-ID: <4D2FB7FD.3020004@hitachi.com>
-Date: Fri, 14 Jan 2011 11:42:05 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Thu, 13 Jan 2011 21:46:45 -0500
+X-SpamScore: -13
+X-BigFish: VPS-13(z426fnzbb2cK1432N98dN148cMzz1202hzz8275bhz32i637h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LEZQXR-02-830-02
+X-M-MSG: 
+Date: Fri, 14 Jan 2011 03:29:50 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Andi Kleen <andi@firstfloor.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Shawn Bohrer <sbohrer@rgmadvisors.com>
+Subject: Re: [PATCH] oprofile: Add support for missing Intel core i7 models
+Message-ID: <20110114022950.GC4739@erda.amd.com>
+References: <1294958291-5626-1-git-send-email-sbohrer@rgmadvisors.com>
+ <20110113235503.GY4739@erda.amd.com>
+ <20110114002435.GR25713@one.firstfloor.org>
 MIME-Version: 1.0
-To: Franck Bui-Huu <vagabon.xyz@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Chase Douglas <chase.douglas@canonical.com>
-Subject: Re: [PATCH -perf/perf/core  5/6] perf probe: Add variable filter
- support
-References: <20110113124548.22426.11201.stgit@ltc236.sdl.hitachi.co.jp>	<20110113124624.22426.72527.stgit@ltc236.sdl.hitachi.co.jp> <m3wrm87ba7.fsf@gmail.com>
-In-Reply-To: <m3wrm87ba7.fsf@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEB
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110114002435.GR25713@one.firstfloor.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/01/14 6:18), Franck Bui-Huu wrote:
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
+On 13.01.11 19:24:35, Andi Kleen wrote:
+> On Fri, Jan 14, 2011 at 12:55:03AM +0100, Robert Richter wrote:
+> > On 13.01.11 17:38:11, Shawn Bohrer wrote:
+> > > Added missing core i7 models found in "Intel 64 and IA-32 Architectures
+> > > Software Developer's Manual Volume 3B: System Programming Guide",
+> > > Table B-1.  Tested with oprofile 0.9.6 on a:
+> > > 
+> > > model      : 44
+> > > model name : Intel(R) Xeon(R) CPU           X5680  @ 3.33GHz
+> > > 
+> > > Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+> > 
+> > Andi,
+> > 
+> > please ACK.
 > 
->> Add filters support for available variable list.
->> Default filter is "!__k???tab_*&!__crc_*" for
->> filtering out automatically generated symbols.
->>
->> The format of filter rule is "[!]GLOBPATTERN", so
->> you can use wild cards. If the filter rule starts with
->> '!', matched variables are filter out.
->>
->> e.g.)
->>  # perf probe -V schedule --externs --filter=cpu*
-> 
-> I'm wondering if the different syntax below could be simpler:
-> 
->    $ perf probe add <probe>
->    $ perf probe del <probe>
->    $ perf probe show       
-> 
->    $ perf probe list <line>
->            ...       --vars[=<pattern>] [--externs] <probe>
->            ...       --funcs[=<pattern>]
+> NACK -- first it's wrong because that's a westmere and westmere
+> has a different event list. And the new way is to fall back to arch-perfmon
+> and handle the CPUID in user space. This has been already implemented.
+> So the fix is to upgrade user space.
 
-Hm, well, if no one complains about changing the syntax
-of perf probe, it may make things simple (maybe we'll also
-have to drop "perf probe <PROBE>" syntax). Nowadays
-we already have perf-kvm, perf-sched, etc. which use sub-sub
-commands.
+Andi,
 
-IMHO, for avoiding confusion old options and "perf-list", below
-sub-sub commands are more suitable.
+thanks for looking at this.
 
-   $ perf probe add <probe>
-   $ perf probe del <probe>
-   $ perf probe list
-   $ perf probe lines <line>
-   $ perf probe vars [--filter=<pattern>|-F <pattern>] [--extern] <probe>
-   $ perf probe funcs [--filter=<pattern>|-F <pattern>]
+Will it be the general way in the future not to add model detection
+for new Intel cpus to kernel code and instead use arch_perfmon? Are
+the user land patches for cpu detection already in the oprofile
+repository? I assume oprofile 0.9.6 is not up-to-date and needs to be
+patched.
 
-Thank you,
+-Robert
 
 -- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
