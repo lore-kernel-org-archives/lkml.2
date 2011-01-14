@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758019Ab1ANTR5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 14:17:57 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:47263 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362Ab1ANTRz (ORCPT
+	id S1758108Ab1ANTUS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 14:20:18 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:46679 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937Ab1ANTUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 14:17:55 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=OYZe1zUvjq1F2O8T1y9aYJRJ8juX+uRC59I0gSH9xr8yrvYmO1L/9kAIQ36r29+ai/
-         osUAoz/4zS5ndYlBU1HQ==
+	Fri, 14 Jan 2011 14:20:16 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 24.130.172.179
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX187J1XNfhRv7ga9Emk7/rv7
+Date: Fri, 14 Jan 2011 11:19:57 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Daniel Walker <dwalker@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nico@fluxnic.net>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] drivers: char: hvc: add arm JTAG DCC console support
+Message-ID: <20110114191956.GK4957@atomide.com>
+References: <1291145141-18301-1-git-send-email-dwalker@codeaurora.org>
+ <4CF5DD63.40803@codeaurora.org>
+ <1291229696.14404.39.camel@c-dwalke-linux.qualcomm.com>
+ <4CF6AE04.6030201@codeaurora.org>
+ <4CFE86AC.9010801@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <8yalj2nfj11.fsf@huya.qualcomm.com>
-References: <1294680810.12298.2.camel@c-dwalke-linux.qualcomm.com>
-	<1294686030-9817-1-git-send-email-dima@android.com>
-	<8yalj2nfj11.fsf@huya.qualcomm.com>
-Date: Fri, 14 Jan 2011 11:17:51 -0800
-X-Google-Sender-Auth: 4sqXpejTBgXlEGTFQXnA_x7-umE
-Message-ID: <AANLkTi=YxOMwF44AJcARunZAEo+iU-1z4fpD35iqUnvR@mail.gmail.com>
-Subject: Re: [PATCH] ARM: msm: 7x30: don't force a gpiomux table for the whole arch
-From: Dima Zavin <dima@android.com>
-To: David Brown <davidb@codeaurora.org>
-Cc: Daniel Walker <dwalker@codeaurora.org>,
-        Gregory Bean <gbean@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CFE86AC.9010801@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks!
+* Stephen Boyd <sboyd@codeaurora.org> [101207 11:00]:
+> On 12/01/2010 12:20 PM, Stephen Boyd wrote:
+> > Definitely for TX since it seems like a redundant loop, but I agree RX
+> > code has changed. Instead of
+> >
+> > If RX buffer full
+> > Poll for RX buffer full
+> > Read character from RX buffer
+> >
+> > we would have
+> >
+> > If RX buffer full
+> > Read character from RX buffer
+> >
+> > which doesn't seem all that different assuming the RX buffer doesn't go
+> > from full to empty between the If and Poll steps. Hopefully Tony knows more.
+> >
+> 
+> Tony, any thoughts?
 
---Dima
+Sorry for the delay, looks like I'm only 1 month behind with email..
+Sounds like it should work to me. I can try it out if you point me
+to a patch.
 
-On Fri, Jan 14, 2011 at 10:16 AM, David Brown <davidb@codeaurora.org> wrote:
-> On Mon, Jan 10 2011, Dima Zavin wrote:
->
->> This is completely board specific and therefore must be provided
->> on a per-board basis.
->>
->> Change-Id: I96f922ad9bb9cbce7874c5ae6ac0d7479b7a2124
->> Signed-off-by: Dima Zavin <dima@android.com>
->
-> I'll pull this into msm-next once rc8-rc1 comes out.
->
-> I'll take out the Change-Id line, though.
->
-> David
->
+Regards,
+
+Tony
