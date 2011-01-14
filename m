@@ -1,39 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757507Ab1ANBkz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 20:40:55 -0500
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:34947 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756924Ab1ANBkw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 20:40:52 -0500
+	id S1752451Ab1ANB4U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 20:56:20 -0500
+Received: from [69.28.251.93] ([69.28.251.93]:44978 "EHLO b32.net"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751693Ab1ANB4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 20:56:16 -0500
+From: Kevin Cernekee <cernekee@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: <macro@linux-mips.org>, <skuribay@pobox.com>, <raiko@niisi.msk.ru>,
+        <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 1/6] MIPS: Sync after cacheflush on BMIPS processors
+Date: Thu, 13 Jan 2011 17:52:12 -0800
+Message-Id: <491015d51e5d3d36c517da09e038ecaf@localhost>
+User-Agent: vim 7.2
 MIME-Version: 1.0
-In-Reply-To: <1294268128-8220-1-git-send-email-omar.ramirez@ti.com>
-References: <1294268128-8220-1-git-send-email-omar.ramirez@ti.com>
-Date: Thu, 13 Jan 2011 19:40:51 -0600
-Message-ID: <AANLkTi=nYTXOvPZoLM1W9-K7Nj_W_uwMFnEdn6fLv_qW@mail.gmail.com>
-Subject: Re: [PATCH] staging: tidspbridge: replace mbox callback with notifier_call
-From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-To: Omar Ramirez Luna <omar.ramirez@ti.com>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>,
-        Fernando Guzman Lugo <x0095840@ti.com>,
-        Rene Sapiens <rene.sapiens@ti.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Hari Kanigeri <h-kanigeri2@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 5, 2011 at 4:55 PM, Omar Ramirez Luna <omar.ramirez@ti.com> wrote:
-> Lately, mailbox callbacks have been replaced by notifier block
-> call chains, this needs to be changed in the users of mailbox,
-> otherwise compilation will break due to missing parameters.
->
-> Reported-by: Hari Kanigeri <h-kanigeri2@ti.com>
-> Signed-off-by: Omar Ramirez Luna <omar.ramirez@ti.com>
+On BMIPS processors, cache writeback operations may complete before the
+data has actually been written out to memory.  Subsequent uncached reads
+(or I/O operations) may see stale data unless a sync instruction is
+executed after the writeback loop.
 
-Pushed to for-gkh-2.6.38 branch.
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+---
+ arch/mips/include/asm/hazards.h |   21 +++++++++++++++++++++
+ arch/mips/mm/c-r4k.c            |    5 +++++
+ 2 files changed, 26 insertions(+), 0 deletions(-)
 
-Regards,
+diff --git a/arch/mips/include/asm/hazards.h b/arch/mips/include/asm/hazards.h
+index 4e33216..655da05 100644
+--- a/arch/mips/include/asm/hazards.h
++++ b/arch/mips/include/asm/hazards.h
+@@ -270,4 +270,25 @@ ASMMACRO(disable_fpu_hazard,
+ )
+ #endif
+ 
++/*
++ * Some processors will "pipeline" cache writeback operations, and need an
++ * extra sync instruction to ensure that they are actually flushed out to
++ * memory.  Performing an uncached read (or an I/O operation) without the
++ * flush may cause stale data to be fetched.
++ */
++
++#if defined(CONFIG_CPU_BMIPS3300) || defined(CONFIG_CPU_BMIPS4350) || \
++    defined(CONFIG_CPU_BMIPS4380) || defined(CONFIG_CPU_BMIPS5000)
++
++#define cacheflush_hazard()						\
++do {									\
++	__sync();							\
++} while (0)
++
++#else
++
++#define cacheflush_hazard() do { } while (0)
++
++#endif
++
+ #endif /* _ASM_HAZARDS_H */
+diff --git a/arch/mips/mm/c-r4k.c b/arch/mips/mm/c-r4k.c
+index b4923a7..6c113cd 100644
+--- a/arch/mips/mm/c-r4k.c
++++ b/arch/mips/mm/c-r4k.c
+@@ -33,6 +33,7 @@
+ #include <asm/mmu_context.h>
+ #include <asm/war.h>
+ #include <asm/cacheflush.h> /* for run_uncached() */
++#include <asm/hazards.h>
+ 
+ 
+ /*
+@@ -604,6 +605,7 @@ static void r4k_dma_cache_wback_inv(unsigned long addr, unsigned long size)
+ 			r4k_blast_scache();
+ 		else
+ 			blast_scache_range(addr, addr + size);
++		cacheflush_hazard();
+ 		return;
+ 	}
+ 
+@@ -620,6 +622,7 @@ static void r4k_dma_cache_wback_inv(unsigned long addr, unsigned long size)
+ 	}
+ 
+ 	bc_wback_inv(addr, size);
++	cacheflush_hazard();
+ }
+ 
+ static void r4k_dma_cache_inv(unsigned long addr, unsigned long size)
+@@ -647,6 +650,7 @@ static void r4k_dma_cache_inv(unsigned long addr, unsigned long size)
+ 				 (addr + size - 1) & almask);
+ 			blast_inv_scache_range(addr, addr + size);
+ 		}
++		cacheflush_hazard();
+ 		return;
+ 	}
+ 
+@@ -663,6 +667,7 @@ static void r4k_dma_cache_inv(unsigned long addr, unsigned long size)
+ 	}
+ 
+ 	bc_inv(addr, size);
++	cacheflush_hazard();
+ }
+ #endif /* CONFIG_DMA_NONCOHERENT */
+ 
+-- 
+1.7.0.4
 
-Omar
