@@ -1,101 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757752Ab1ANN74 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 08:59:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39490 "EHLO mx1.redhat.com"
+	id S1757815Ab1ANOAF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 09:00:05 -0500
+Received: from cantor.suse.de ([195.135.220.2]:39087 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757147Ab1ANN7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 08:59:49 -0500
-Date: Fri, 14 Jan 2011 08:59:17 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Hannes Reinecke <hare@suse.de>
-Cc: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>, michaelc@cs.wisc.edu,
-        tytso@mit.edu, linux-scsi@vger.kernel.org, jaxboe@fusionio.com,
-        vst@vlnb.net, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, linux-raid@vger.kernel.org,
-        linux-ide@vger.kernel.org,
-        device-mapper development <dm-devel@redhat.com>,
-        James.Bottomley@suse.de, Sergei Shtylyov <sshtylyov@mvista.com>,
-        konishi.ryusuke@lab.ntt.co.jp, linux-fsdevel@vger.kernel.org,
-        jack@suse.cz, rwheeler@redhat.com, swhiteho@redhat.com,
-        chris.mason@oracle.com, Tejun Heo <tj@kernel.org>
-Subject: Re: training mpath to discern between SCSI errors
-Message-ID: <20110114135917.GA25506@redhat.com>
-References: <4C7BA670.2060303@suse.de>
- <4C7BC5B4.3010707@suse.de>
- <4CBC00B3.7090603@ce.jp.nec.com>
- <4CBC35AE.9050002@suse.de>
- <20101119031149.GA28455@us.ibm.com>
- <20101130225956.GA8882@redhat.com>
- <4D0B31B5.101@suse.de>
- <20101217140605.GA740@redhat.com>
- <20110114010948.GA21818@redhat.com>
- <4D2FFF00.8020702@suse.de>
+	id S1757717Ab1ANN7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 08:59:53 -0500
+From: David Sterba <dsterba@suse.cz>
+To: akpm@linux-foundation.org
+Cc: marcel@holtmann.org, linux-bluetooth@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Sterba <dsterba@suse.cz>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        =?UTF-8?q?Jo=C3=A3o=20Paulo=20Rechi=20Vita?= 
+	<jprvita@profusion.mobi>
+Subject: [PATCH resend] Bluetooth: l2cap: fix misuse of logical operation in place of bitop
+Date: Fri, 14 Jan 2011 14:59:44 +0100
+Message-Id: <1295013584-15592-1-git-send-email-dsterba@suse.cz>
+X-Mailer: git-send-email 1.7.4.rc2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D2FFF00.8020702@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14 2011 at  2:45am -0500,
-Hannes Reinecke <hare@suse.de> wrote:
+CC: Marcel Holtmann <marcel@holtmann.org>
+CC: "Gustavo F. Padovan" <padovan@profusion.mobi>
+CC: João Paulo Rechi Vita <jprvita@profusion.mobi>
+Signed-off-by: David Sterba <dsterba@suse.cz>
+---
 
-> On 01/14/2011 02:09 AM, Mike Snitzer wrote:
-> > On Fri, Dec 17 2010 at  9:06am -0500,
-> > Mike Snitzer <snitzer@redhat.com> wrote:
-> > 
-> >> On Fri, Dec 17 2010 at  4:47am -0500,
-> >> Hannes Reinecke <hare@suse.de> wrote:
-> >>
-> >>> On 11/30/2010 11:59 PM, Mike Snitzer wrote:
-> >>>> Hannes,
-> >>>>
-> >>>> Any chance you've had time to fold your proposed logging changes in and
-> >>>> rebase this patch?  Could you post that updated patch?
-> >>>>
-> >>> yes, will be following shortly.
-> >>>
-> >>>> I'd like to help see this patch through to inclussion when 2.6.38 merge
-> >>>> window opens.  I can help with further review, testing and development.
-> >>>>
-> >>> Ok, thanks.
-> >>
-> >> I took some steps at furthering your work.  Here is the cover letter to
-> >> the patches I resently sent to dm-devel:
-> >> https://www.redhat.com/archives/dm-devel/2010-December/msg00090.html
-> >>
-> >> And here are the patches:
-> >> https://patchwork.kernel.org/patch/384612/
-> >> https://patchwork.kernel.org/patch/384602/
-> >> https://patchwork.kernel.org/patch/390882/
-> >>
-> >> Please feel free to change these how ever you see fit but your feedback
-> >> is really appreciated.
-> > 
-> > Hannes,
-> > 
-> > Any update?  I'd really like to see this work get upstream ASAP.  I'm
-> > doubtful that is possible for 2.6.38 given the merge window is likely to
-> > close shortly.
-> > 
-> Sorry for the late answer; the above patches somehow got lost in my
-> various mail folders :-(
-> 
-> But yes, the patchset looks okay.
-> Feel free to add my Acked-by: to last two.
+Andrew, this has not been picked up by maintainers since 27.12., please consider it for -mm.
 
-OK.
+ net/bluetooth/l2cap.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> > Regardless, if we could get consensus on this work now and then stage it
-> > with James that would be great.
-> > 
-> Indeed. Will you resend it to linux-scsi or shall I do it?
+diff --git a/net/bluetooth/l2cap.c b/net/bluetooth/l2cap.c
+index cd8f6ea..bdfdfdc 100644
+--- a/net/bluetooth/l2cap.c
++++ b/net/bluetooth/l2cap.c
+@@ -1893,8 +1893,8 @@ static int l2cap_sock_sendmsg(struct kiocb *iocb, struct socket *sock, struct ms
+ 		if (pi->mode == L2CAP_MODE_STREAMING) {
+ 			l2cap_streaming_send(sk);
+ 		} else {
+-			if (pi->conn_state & L2CAP_CONN_REMOTE_BUSY &&
+-					pi->conn_state && L2CAP_CONN_WAIT_F) {
++			if ((pi->conn_state & L2CAP_CONN_REMOTE_BUSY) &&
++					(pi->conn_state & L2CAP_CONN_WAIT_F)) {
+ 				err = len;
+ 				break;
+ 			}
+-- 
+1.7.3.4.626.g73e7b
 
-I can resend, will do so shortly.
-
-Thanks!
-Mike
