@@ -1,69 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757874Ab1ANQCv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 11:02:51 -0500
-Received: from www.tglx.de ([62.245.132.106]:41927 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757784Ab1ANQCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 11:02:42 -0500
-Date: Fri, 14 Jan 2011 17:02:14 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: john stultz <johnstul@us.ibm.com>
-cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, andi@firstfloor.org,
-        williams@redhat.com, schwidefsky@de.ibm.com, mingo@elte.hu,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [PATCH] acpi/pm: If failed at validating ACPI PM timer, inhibit
- future reads.
-In-Reply-To: <1295020487.2655.17.camel@work-vm>
-Message-ID: <alpine.LFD.2.00.1101141701360.2678@localhost6.localdomain6>
-References: <tip-08ec0c58fb8a05d3191d5cb6f5d6f81adb419798@git.kernel.org>  <20110111081352.GA22867@shutemov.name>  <alpine.LFD.2.00.1101110926040.12146@localhost6.localdomain6>  <20110111083054.GB22867@shutemov.name>  <alpine.LFD.2.00.1101110936291.12146@localhost6.localdomain6>
-  <20110111095640.GC22867@shutemov.name>  <20110113174909.GA28738@dumpdata.com> <1294941698.5617.12.camel@work-vm>  <20110113214022.GA12097@dumpdata.com>  <alpine.LFD.2.00.1101132301300.2678@localhost6.localdomain6>  <20110114140941.GA3062@dumpdata.com> 
- <1295019849.2655.8.camel@work-vm> <1295020487.2655.17.camel@work-vm>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757914Ab1ANQHO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 11:07:14 -0500
+Received: from ausxippc101.us.dell.com ([143.166.85.207]:1943 "EHLO
+	ausxippc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752042Ab1ANQHK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 11:07:10 -0500
+X-Loopcount0: from 10.175.216.250
+From: <Narendra_K@Dell.com>
+To: <sedat.dilek@gmail.com>
+CC: <jbarnes@virtuousgeek.org>, <lenb@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-next@vger.kernel.org>,
+        <sfr@canb.auug.org.au>, <Matt_Domsch@Dell.com>,
+        <Charles_Rose@Dell.com>, <Surya_Prabhakar@Dell.com>
+Date: Fri, 14 Jan 2011 21:36:06 +0530
+Subject: RE: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
+ allmodconfig
+Thread-Topic: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
+ allmodconfig
+Thread-Index: Acuz/98RjuOH8I1DTZqGNSLdkkO/vwAA5EdQ
+Message-ID: <E31FB011129F30488D5861F3839049151D10FD013E@BLRX7MCDC201.AMER.DELL.COM>
+References: <20110112203414.GA5657@fedora14-r610.oslab.blr.amer.dell.com>
+	<20110112160229.7b8d82c1@jbarnes-desktop>
+	<alpine.LFD.2.02.1101122217370.19754@x980>
+	<20110113075556.789ac3c3@jbarnes-vaio.home>
+	<20110113162755.GA5872@fedora14-r610.oslab.blr.amer.dell.com>
+	<20110114154458.GA18289@fedora14-r610.oslab.blr.amer.dell.com>
+ <AANLkTimba7FFowzVV6KxwvXGis4d0FmxcxZA6NL0saNM@mail.gmail.com>
+In-Reply-To: <AANLkTimba7FFowzVV6KxwvXGis4d0FmxcxZA6NL0saNM@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p0EG7NpQ005779
 
-On Fri, 14 Jan 2011, john stultz wrote:
+> Subject: Re: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
+> allmodconfig
+> 
+> On Fri, Jan 14, 2011 at 4:22 PM,  <Narendra_K@dell.com> wrote:
+> > On Thu, Jan 13, 2011 at 09:33:56PM +0530, K, Narendra wrote:
+> >> On Thu, Jan 13, 2011 at 09:25:56PM +0530, Jesse Barnes wrote:
+> >> > On Wed, 12 Jan 2011 22:23:55 -0500 (EST)
+> >> > Len Brown <lenb@kernel.org> wrote:
+> >> > > > So there's no other ACPI code that depends on this function?
+> Â I'd hate
+> >> > > > to make PCI depend on NLS, so assuming ACPI doesn't need it
+> (in which
+> >> > > > case the select or depend should be there), I guess it should
+> be pulled
+> >> > > > into a common file that will always be included.
+> >> > >
+> >> > > No, nothing in the ACPI code uses utf16s_to_utf8s.
+> >> > >
+> >> > > I don't know anything about NLS, but it appears to be
+> >> > > something that file systems (befs, cifs, fat, hfs, isofs, jfs,
+> etc)
+> >> > > use to to support native languages.
+> >> > >
+> >> > > BTW. I don't understand why pci-label.o appears twice above.
+> >> > > It used to be just the 2nd one, that depends on CONFIG_DMI.
+> >> >
+> >> > Ok, I'll drop this patch for now then since I haven't seen a fix
+> yet
+> >> > and need to get Linus the rest of the changes.
+> >>
+> >> Jesse,
+> >>
+> >> I just compile tested a fix on the following lines without any
+> failure.
+> >> If it is acceptable, i will send a patch in half an hour. It builds
+> >>
+> >
+> > Hello,
+> >
+> > This patch addresses the build failure described in this thread by
+> > compiling fs/nls/nls_base.c always into vmlinux, thus making the base
+> > nls functions available always.
+> >
+> > Please consider this patch for inclusion if there are no concerns
+> with
+> > this approach.
+> >
+> 
+> So NLS is built always?
+> You thought of embedded devices like router platforms which want to
+> reduce their kernel (size) by not building NLS?
 
-> On Fri, 2011-01-14 at 07:44 -0800, john stultz wrote:
-> > I'm actually looking at a different fix, as I'm worried by Thomas'
-> > comment about hitting the same issue on real hardware if we catch the
-> > same pmtrm value both times.
-> 
-> Konrad: Mind trying the following?
-> 
-> 
-> The conditional (!hpet && !ref_start && !ref_stop) doesn't really make
-> sense. If the refs are null, but hpet is on, we still want to break out.
-> 
-> So checking if both the ref values are the same should handle if we
-> don't have hardware (both null) or if they are the same value (either by
-> invalid hardware, or by chance), which can cause a divzero issue.
-> 
-> NOT FOR INCLUSION, I haven't had my coffee yet.
-> Signed-off-by: John Stultz <johnstul@us.ibm.com>
-> 
-> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-> index 823f79a..fa2cb5e 100644
-> --- a/arch/x86/kernel/tsc.c
-> +++ b/arch/x86/kernel/tsc.c
-> @@ -935,7 +935,7 @@ static void tsc_refine_calibration_work(struct work_struct *work)
->  	tsc_stop = tsc_read_refs(&ref_stop, hpet);
->  
->  	/* hpet or pmtimer available ? */
-> -	if (!hpet && !ref_start && !ref_stop)
-> +	if (ref_start == ref_stop)
->  		goto out;
->  
->  	/* Check, whether the sampling was disturbed by an SMI */
+Only nls_base.c is built always and not the other files under fs/nls/ dir. I considered moving 'utf16s_to_utf8s' to a new file nls_common.c, but 'utf16s_to_utf8s' requires 'utf32_to_utf8' also. I suppose nls_base.c has only the minimum required functions and moving out two functions out of it might not be the right approach. Sorry if I am missing something here.
 
-That makes sense, though we really should kill pmtimer when we detect
-that it's crappy.
+Please let me know if this can be addressed in an alternative way.
+
+With regards,
+Narendra K
+
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
