@@ -1,81 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757901Ab1ANPzg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 10:55:36 -0500
-Received: from nm28.bullet.mail.sp2.yahoo.com ([98.139.91.98]:35156 "HELO
-	nm28.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757872Ab1ANPz1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 10:55:27 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 374367.77365.bm@omp1051.mail.sp2.yahoo.com
-Message-ID: <940009.55868.qm@web113320.mail.gq1.yahoo.com>
-X-YMail-OSG: zsCMP3IVM1nqmnr1vi8mBZkdnpR4Ka2MiG8q.NR_zjYjAFV
- a8vlx9ehqclIPOTI3pWrB7ARdI3YsUudl_ejAVbeY6My53ZOkEfwPN3tm5ud
- 3PX73TPbmEVUqLxtgVClxaGKJxsMgLLtvRBwEeQhGWc.wov3aKwOYAKHichT
- 6bhBSZyrHYnhEiTZO5fR1zUvJ7X.unPJKDANGUNDufAoMal24me791wGgCic
- PD8.ZEiPXA33TZ7F_QSaeWCAxQpkxiQwqDOLwAR6XdMQVpX39Pv5X8UNEZox
- u4SZpdFmSQu9hde.MW3XhO8atK1OfBl.mWK59tNQ4I6X.U_ls0B77yN4Idqh
- im.LOXhRoTmxeqKD.nlK7kMJaifd14kEOM21.RCgx99iCJee6hYWZYfwlZqn
- DY9msgn8-
-X-RocketYMMF: knobi.rm
-X-Mailer: YahooMailRC/555 YahooMailWebService/0.8.107.285259
-References: <4D2F03F2.4000707@fusionio.com> <AANLkTi=t9FQaUhnXCk51bjZO82F8OGDDd9H5HyMPRPQd@mail.gmail.com> <4D2F51B5.6060105@fusionio.com> <AANLkTi=PDEyJNN3aKhHWzCKrTfzib-VCdvgD7auoWuzD@mail.gmail.com> <20110113141957.1eaf4940@nehalam> <AANLkTikdULkbB83Us_zXivv8Y5FG <20110113224228.3f7ae374@s6510>
-Date: Fri, 14 Jan 2011 07:55:25 -0800 (PST)
-From: Martin Knoblauch <spamtrap@knobisoft.de>
-Subject: Re: [GIT PULL] block driver updates for 2.6.38
-To: Stephen Hemminger <shemminger@vyatta.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Pekka Enberg <penberg@kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110113224228.3f7ae374@s6510>
-MIME-Version: 1.0
+	id S1757892Ab1ANQBv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 11:01:51 -0500
+Received: from verein.lst.de ([213.95.11.210]:46827 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757773Ab1ANQBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 11:01:46 -0500
+Date: Fri, 14 Jan 2011 17:01:37 +0100
+From: Christoph Hellwig <hch@lst.de>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] virtio_blk: allow re-reading config space at runtime
+Message-ID: <20110114160137.GA18721@lst.de>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message ----
+Wire up the virtio_driver config_changed method to get notified about
+config changes raised by the host.  For now we just re-read the device
+size to support online resizing of devices, but once we add more
+attributes that might be changeable they could be added as well.
 
-> From: Stephen Hemminger <shemminger@vyatta.com>
-> To: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Jens Axboe <jaxboe@fusionio.com>; Pekka Enberg <penberg@kernel.org>; 
->Marcelo Tosatti <mtosatti@redhat.com>; Tejun Heo <tj@kernel.org>; 
->"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-> Sent: Fri, January 14, 2011 7:42:28 AM
-> Subject: Re: [GIT PULL] block driver updates for 2.6.38
-> 
-> On Thu, 13 Jan 2011 17:03:21 -0800
-> Linus Torvalds <torvalds@linux-foundation.org>  wrote:
-> 
-> > On Thu, Jan 13, 2011 at 4:11 PM, Stephen Hemminger
-> >  <shemminger@vyatta.com> wrote:
-> >  >
-> > > It appears to be a different problem (not HPET MSI). Not sure  what
-> > > is causing it, but even 2.6.35 can't format a floppy without  error.
-> > 
-> > Do you actually know that the hardware is good (ie does  _any_ version
-> > of Linux work)?
-> > 
-> > Floppy disks and drives  have not been known for their robustness, and
-> > most of them tend to be  pretty old by now.
-> > 
-> > Dang, I think I should just try to go to  Fry's and see if I can find a
-> > floppy drive somewhere. Not that I even  know if my motherboards
-> > necessarily even have the _pins_ to connect it  any more.
-> > 
-> >                           Linus
-> 
-> Some people can't even  remember what a floppy is...
->http://www.geek.com/articles/geek-pick/what-are-the-windows-a-and-b-drives-used-for-20110112/
->/
+Note that the config_changed method is called from irq context, so
+we'll have to use the workqueue infrastructure to provide us a proper
+user context for our changes.
 
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 
- you just made my day. Besides that I learned my computing on punched cards and 
-tape (which may reveal something about my age) I really like the 5-core 
-processing :-)
-
-Happy weekend
-Martin
-
+Index: xfs/drivers/block/virtio_blk.c
+===================================================================
+--- xfs.orig/drivers/block/virtio_blk.c	2011-01-13 18:17:23.730254665 +0100
++++ xfs/drivers/block/virtio_blk.c	2011-01-14 16:57:50.572032906 +0100
+@@ -6,10 +6,12 @@
+ #include <linux/virtio.h>
+ #include <linux/virtio_blk.h>
+ #include <linux/scatterlist.h>
++#include <linux/string_helpers.h>
+ 
+ #define PART_BITS 4
+ 
+ static int major, index;
++struct workqueue_struct *virtblk_wq;
+ 
+ struct virtio_blk
+ {
+@@ -42,6 +44,11 @@ struct virtblk_req
+ 	u8 status;
+ };
+ 
++struct virtblk_config_change {
++	struct virtio_device *vdev;
++	struct work_struct work;
++};
++
+ static void blk_done(struct virtqueue *vq)
+ {
+ 	struct virtio_blk *vblk = vq->vdev->priv;
+@@ -291,6 +298,57 @@ static ssize_t virtblk_serial_show(struc
+ }
+ DEVICE_ATTR(serial, S_IRUGO, virtblk_serial_show, NULL);
+ 
++static void virtblk_config_changed_work(struct work_struct *work)
++{
++	struct virtblk_config_change *cfg =
++		container_of(work, struct virtblk_config_change, work);
++	struct virtio_device *vdev = cfg->vdev;
++	struct virtio_blk *vblk = vdev->priv;
++	struct request_queue *q = vblk->disk->queue;
++	char cap_str_2[10], cap_str_10[10];
++	u64 capacity, size;
++
++	/* Host must always specify the capacity. */
++	vdev->config->get(vdev, offsetof(struct virtio_blk_config, capacity),
++			  &capacity, sizeof(capacity));
++
++	/* If capacity is too big, truncate with warning. */
++	if ((sector_t)capacity != capacity) {
++		dev_warn(&vdev->dev, "Capacity %llu too large: truncating\n",
++			 (unsigned long long)capacity);
++		capacity = (sector_t)-1;
++	}
++
++	size = capacity * queue_logical_block_size(q);
++	string_get_size(size, STRING_UNITS_2, cap_str_2, sizeof(cap_str_2));
++	string_get_size(size, STRING_UNITS_10, cap_str_10, sizeof(cap_str_10));
++
++	dev_notice(&vdev->dev,
++		  "new size: %llu %d-byte logical blocks (%s/%s)\n",
++		  (unsigned long long)capacity,
++		  queue_logical_block_size(q),
++		  cap_str_10, cap_str_2);
++
++	set_capacity(vblk->disk, capacity);
++
++}
++
++static void virtblk_config_changed(struct virtio_device *vdev)
++{
++	struct virtblk_config_change *cfg;
++
++	cfg = kmalloc(sizeof(*cfg), GFP_ATOMIC);
++	if (!cfg) {
++		dev_info(&vdev->dev, "skipping config change\n");
++		return;
++	}
++
++	cfg->vdev = vdev;
++	INIT_WORK(&cfg->work, virtblk_config_changed_work);
++	queue_work(virtblk_wq, &cfg->work);
++}
++
++
+ static int __devinit virtblk_probe(struct virtio_device *vdev)
+ {
+ 	struct virtio_blk *vblk;
+@@ -508,27 +566,47 @@ static unsigned int features[] = {
+  * Use __refdata to avoid this warning.
+  */
+ static struct virtio_driver __refdata virtio_blk = {
+-	.feature_table = features,
+-	.feature_table_size = ARRAY_SIZE(features),
+-	.driver.name =	KBUILD_MODNAME,
+-	.driver.owner =	THIS_MODULE,
+-	.id_table =	id_table,
+-	.probe =	virtblk_probe,
+-	.remove =	__devexit_p(virtblk_remove),
++	.feature_table		= features,
++	.feature_table_size	= ARRAY_SIZE(features),
++	.driver.name		= KBUILD_MODNAME,
++	.driver.owner		= THIS_MODULE,
++	.id_table		= id_table,
++	.probe			= virtblk_probe,
++	.remove			= __devexit_p(virtblk_remove),
++	.config_changed		= virtblk_config_changed,
+ };
+ 
+ static int __init init(void)
+ {
++	int error;
++
++	virtblk_wq = alloc_workqueue("md_misc", 0, 0);
++	if (!virtblk_wq)
++		return -ENOMEM;
++
+ 	major = register_blkdev(0, "virtblk");
+-	if (major < 0)
+-		return major;
+-	return register_virtio_driver(&virtio_blk);
++	if (major < 0) {
++		error = major;
++		goto out_destroy_workqueue;
++	}
++
++	error = register_virtio_driver(&virtio_blk);
++	if (error)
++		goto out_unregister_blkdev;
++	return 0;
++
++out_unregister_blkdev:
++	unregister_blkdev(major, "virtblk");
++out_destroy_workqueue:
++	destroy_workqueue(virtblk_wq);
++	return error;
+ }
+ 
+ static void __exit fini(void)
+ {
+ 	unregister_blkdev(major, "virtblk");
+ 	unregister_virtio_driver(&virtio_blk);
++	destroy_workqueue(virtblk_wq);
+ }
+ module_init(init);
+ module_exit(fini);
