@@ -1,62 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689Ab1ANK51 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 05:57:27 -0500
-Received: from www.tglx.de ([62.245.132.106]:43467 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751570Ab1ANK5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 05:57:20 -0500
-Date: Fri, 14 Jan 2011 11:57:09 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org, sodaville@linutronix.de, x86@kernel.org,
-        dirk.brandewie@gmail.com, Andres Salomon <dilinger@queued.net>
-Subject: Re: [PATCH v2 01/15] x86/e820: remove conditional early mapping in parse_e820_ext
-Message-ID: <20110114105709.GA7562@www.tglx.de>
-References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de> <1292600033-12271-2-git-send-email-bigeasy@linutronix.de> <20101230083745.GC11721@angua.secretlab.ca> <20110104130839.GA21359@www.tglx.de> <20110114081446.GC21832@angua.secretlab.ca>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+	id S1756833Ab1ANK6Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 05:58:25 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49530 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570Ab1ANK6T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 05:58:19 -0500
+Date: Fri, 14 Jan 2011 10:58:08 +0000
+From: Russell King <rmk@arm.linux.org.uk>
+To: linux-kernel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: BUG: __d_rehash explodes on boot
+Message-ID: <20110114105808.GA619@flint.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110114081446.GC21832@angua.secretlab.ca>
-User-Agent: Mutt/1.4.2.2i
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Grant Likely | 2011-01-14 01:14:46 [-0700]:
+__d_rehash is dereferencing an almost-NULL pointer on my ARM926.
+CONFIG_SMP=n and CONFIG_DEBUG_SPINLOCK=y.
 
->Hey Sebastian,
-Hi Grant,
+The faulting instruction is:	strne   r3, [r2, #4]
+and as can be seen from the register dump below, r2 is 0x00000001, hence
+the faulting 0x00000005 address.
 
-thanks for doing this.
+__d_rehash is essentially:
 
->Can you please repost this series after the merge window closes?  Some
->of the patches have been reworked and reposted, but I've kind of lost
->track of which ones need my attention.  Also, some of the patches have
-Yes, this was my secret plan :) I also had to rework patches because of
-other patches either because they no longer applied or because the code
-had to change in order to work again.
+        spin_lock_bucket(b);
+        entry->d_flags &= ~DCACHE_UNHASHED;
+        hlist_bl_add_head_rcu(&entry->d_hash, &b->head);
+        spin_unlock_bucket(b);
 
-In case "[v2,13/15] x86/rtc: don't register rtc if we the DT blob" [0]
-goes into the category "lost track" and not "had no time to reply" could
-please take a look? The important part is where it could change behavior
-for OLPC and it migh end up without a RTC. I Cc Andres Salomon as might
-know where the RTC on OLPC is comming from.
+which is:
 
->gone in via the tip tree, so it would be useful to regroup and figure
->out which ones are no longer needed.
-I try to regroup and a add TIP or OF prefix.
+	bit_spin_lock(0, (unsigned long *)&b->head.first);
+        entry->d_flags &= ~DCACHE_UNHASHED;
+        hlist_bl_add_head_rcu(&entry->d_hash, &b->head);
+	__bit_spin_unlock(0, (unsigned long *)&b->head.first);
 
->I'll be able to take a fresh look and pick up the ones that are ready
->after the merge window closes.
-Okay.
+bit_spin_lock(0, ptr) sets bit 0 of *ptr, in this case b->head.first if
+CONFIG_SMP or CONFIG_DEBUG_SPINLOCK is set:
 
->Thanks,
->g.
+#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
+        while (unlikely(test_and_set_bit_lock(bitnum, addr))) {
+                while (test_bit(bitnum, addr)) {
+                        preempt_enable();
+                        cpu_relax();
+                        preempt_disable();
+                }
+        }
+#endif
 
-[0] https://patchwork.kernel.org/patch/450681/
+So, b->head.first starts off NULL, and becomes a non-NULL (address 1).
+hlist_bl_add_head_rcu() does this:
 
-Sebastian
+static inline void hlist_bl_add_head_rcu(struct hlist_bl_node *n,
+                                        struct hlist_bl_head *h)
+{
+        first = hlist_bl_first(h);
+        n->next = first;
+        if (first)
+                first->pprev = &n->next;
+
+It is the store to first->pprev which is faulting.
+
+hlist_bl_first():
+
+static inline struct hlist_bl_node *hlist_bl_first(struct hlist_bl_head *h)
+{
+        return (struct hlist_bl_node *)
+                ((unsigned long)h->first & ~LIST_BL_LOCKMASK);
+}
+
+but:
+#if defined(CONFIG_SMP)
+#define LIST_BL_LOCKMASK        1UL
+#else
+#define LIST_BL_LOCKMASK        0UL
+#endif
+
+So, we have one piece of code which sets bit 0 of addresses, and another
+bit of code which doesn't clear it before dereferencing the pointer if
+!CONFIG_SMP && CONFIG_DEBUG_SPINLOCK.  With the patch below, I can again
+sucessfully boot the kernel on my Versatile PB/926 platform.
+
+Kernel messages:
+...
+Calibrating delay loop... 104.24 BogoMIPS (lpj=521216)
+pid_max: default: 32768 minimum: 301
+Mount-cache hash table entries: 512
+CPU: Testing write buffer coherency: ok
+Unhandled fault: alignment exception (0x801) at 0x00000005
+Internal error: : 801 [#1]
+last sysfs file: 
+Modules linked in:
+CPU: 0    Not tainted  (2.6.37+ #533)
+PC is at __d_rehash+0x74/0xb8
+LR is at _d_rehash+0x4c/0x60
+pc : [<c00c2bc8>]    lr : [<c00c2c58>]    psr: 20000013
+sp : c183fd18  ip : c09cb8c0  fp : c183fd24
+r10: c183fdd8  r9 : c183fdec  r8 : c183fde4
+r7 : c1401940  r6 : c183fe7c  r5 : c1401710  r4 : c14016c0
+r3 : c14016c8  r2 : 00000001  r1 : 20000013  r0 : c14016c0
+Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+Control: 0005317f  Table: 00004000  DAC: 00000017
+Process kworker/u:0 (pid: 9, stack limit = 0xc183e270)
+Stack: (0xc183fd18 to 0xc1840000)
+<trimmed>
+Backtrace: 
+[<c00c2b54>] (__d_rehash+0x0/0xb8) from [<c00c2c58>] (_d_rehash+0x4c/0x60)
+[<c00c2c0c>] (_d_rehash+0x0/0x60) from [<c00c38a0>] (d_rehash+0x24/0x30)
+[<c00c387c>] (d_rehash+0x0/0x30) from [<c00d059c>] (simple_lookup+0x44/0x50)
+[<c00d0558>] (simple_lookup+0x0/0x50) from [<c00bb03c>] (d_alloc_and_lookup+0x50/0x6c)
+[<c00bafec>] (d_alloc_and_lookup+0x0/0x6c) from [<c00bb424>] (do_lookup+0x1b8/0x278)
+[<c00bb26c>] (do_lookup+0x0/0x278) from [<c00bcd68>] (link_path_walk+0x210/0xbec)
+[<c00bcb58>] (link_path_walk+0x0/0xbec) from [<c00bd958>] (do_path_lookup+0x44/0xd0)
+[<c00bd914>] (do_path_lookup+0x0/0xd0) from [<c00be624>] (do_filp_open+0xe4/0x5f8)
+[<c00be540>] (do_filp_open+0x0/0x5f8) from [<c00b7b10>] (open_exec+0x2c/0x90)
+[<c00b7ae4>] (open_exec+0x0/0x90) from [<c00b8408>] (do_execve+0x88/0x264)
+[<c00b8380>] (do_execve+0x0/0x264) from [<c0039254>] (kernel_execve+0x40/0x88)
+[<c0039214>] (kernel_execve+0x0/0x88) from [<c005c000>] (____call_usermodehelper+0x88/0x98)
+[<c005bf78>] (____call_usermodehelper+0x0/0x98) from [<c004cc90>] (do_exit+0x0/0x5f8)
+Code: e59c2000 e3520000 12803008 e5802008 (15823004) 
+---[ end trace 1b75b31a2719ed1c ]---
+
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+---
+ include/linux/list_bl.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/list_bl.h b/include/linux/list_bl.h
+index b2adbb4..5bad17d 100644
+--- a/include/linux/list_bl.h
++++ b/include/linux/list_bl.h
+@@ -16,7 +16,7 @@
+  * some fast and compact auxiliary data.
+  */
+ 
+-#if defined(CONFIG_SMP)
++#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
+ #define LIST_BL_LOCKMASK	1UL
+ #else
+ #define LIST_BL_LOCKMASK	0UL
+
+
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
