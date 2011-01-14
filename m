@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932689Ab1ANNur (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 08:50:47 -0500
-Received: from shutemov.name ([188.40.19.243]:53369 "EHLO shutemov.name"
+	id S1757641Ab1ANNu7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 08:50:59 -0500
+Received: from shutemov.name ([188.40.19.243]:53349 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757565Ab1ANNtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 08:49:41 -0500
+	id S1757554Ab1ANNtk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 08:49:40 -0500
 From: "Kirill A. Shutemov" <kas@openvz.org>
 To: Trond Myklebust <Trond.Myklebust@netapp.com>,
         "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>
@@ -15,9 +15,9 @@ Cc: Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
         Al Viro <viro@ZenIV.linux.org.uk>,
         containers@lists.linux-foundation.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kas@openvz.org>
-Subject: [PATCH v3 14/16] sunrpc: make rpc_pipefs be mountable multiple times
-Date: Fri, 14 Jan 2011 15:49:12 +0200
-Message-Id: <1295012954-7769-15-git-send-email-kas@openvz.org>
+Subject: [PATCH v3 12/16] sunrpc: introduce get_rpc_pipefs()
+Date: Fri, 14 Jan 2011 15:49:10 +0200
+Message-Id: <1295012954-7769-13-git-send-email-kas@openvz.org>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1295012954-7769-1-git-send-email-kas@openvz.org>
 References: <1295012954-7769-1-git-send-email-kas@openvz.org>
@@ -25,124 +25,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To support containers, allow multiple independent instances of
-rpc_pipefs. Use '-o newinstance' to create new of the filesystem.
-The same semantics as with devpts.
+Get rpc_pipefs mount point by path. If path is NULL, we use first
+rpc_pipefs from mount table visible from current root directory.
 
 Signed-off-by: Kirill A. Shutemov <kas@openvz.org>
+Acked-by: Rob Landley <rlandley@parallels.com>
 ---
- net/sunrpc/rpc_pipe.c |   80 ++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 79 insertions(+), 1 deletions(-)
+ include/linux/sunrpc/rpc_pipe_fs.h |    1 +
+ net/sunrpc/rpc_pipe.c              |   51 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 52 insertions(+), 0 deletions(-)
 
+diff --git a/include/linux/sunrpc/rpc_pipe_fs.h b/include/linux/sunrpc/rpc_pipe_fs.h
+index f5216f1..4a8830a 100644
+--- a/include/linux/sunrpc/rpc_pipe_fs.h
++++ b/include/linux/sunrpc/rpc_pipe_fs.h
+@@ -46,6 +46,7 @@ RPC_I(struct inode *inode)
+ 
+ extern struct vfsmount *init_rpc_pipefs;
+ 
++extern struct vfsmount *get_rpc_pipefs(const char *path);
+ extern int rpc_pipefs_add_destroy_cb(struct super_block *sb,
+ 		void (*destroy_cb)(void *data), void *data);
+ 
 diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index b72cb01..02416f1 100644
+index 39511e3..b72cb01 100644
 --- a/net/sunrpc/rpc_pipe.c
 +++ b/net/sunrpc/rpc_pipe.c
-@@ -19,6 +19,7 @@
- #include <linux/nsproxy.h>
- #include <linux/mnt_namespace.h>
- #include <linux/fs_struct.h>
-+#include <linux/parser.h>
+@@ -16,6 +16,9 @@
+ #include <linux/namei.h>
+ #include <linux/fsnotify.h>
+ #include <linux/kernel.h>
++#include <linux/nsproxy.h>
++#include <linux/mnt_namespace.h>
++#include <linux/fs_struct.h>
  
  #include <asm/ioctls.h>
  #include <linux/fs.h>
-@@ -41,6 +42,49 @@ static struct kmem_cache *rpc_inode_cachep __read_mostly;
+@@ -939,6 +942,54 @@ static const struct super_operations s_ops = {
  
- #define RPC_UPCALL_TIMEOUT (30*HZ)
+ #define RPCAUTH_GSSMAGIC 0x67596969
  
-+struct rpc_mount_opts {
-+	int newinstance;
-+};
-+
-+enum {
-+	Opt_newinstance,
-+
-+	Opt_err
-+};
-+
-+static const match_table_t tokens = {
-+	{Opt_newinstance, "newinstance"},
-+
-+	{Opt_err, NULL}
-+};
-+
-+static int
-+parse_mount_options(char *data, struct rpc_mount_opts *opts)
++static int check_rpc_pipefs(struct vfsmount *mnt, void *arg)
 +{
-+	char *p;
++	struct vfsmount **rpcmount = arg;
++	struct path path = {
++		.mnt = mnt,
++		.dentry = mnt->mnt_root,
++	};
 +
-+	opts->newinstance = 0;
++	if (!mnt->mnt_sb)
++		return 0;
++	if (mnt->mnt_sb->s_magic != RPCAUTH_GSSMAGIC)
++		return 0;
 +
-+	while ((p = strsep(&data, ",")) != NULL) {
-+		substring_t args[MAX_OPT_ARGS];
-+		int token;
++	if (!path_is_under(&path, &current->fs->root))
++		return 0;
 +
-+		if (!*p)
-+			continue;
++	*rpcmount = mntget(mnt);
++	return 1;
++}
 +
-+		token = match_token(p, tokens, args);
-+		switch (token) {
-+		case Opt_newinstance:
-+			opts->newinstance = 1;
-+			break;
-+		default:
-+			return -EINVAL;
-+		}
++struct vfsmount *get_rpc_pipefs(const char *p)
++{
++	int error;
++	struct vfsmount *rpcmount = ERR_PTR(-EINVAL);
++	struct path path;
++
++	if (!p) {
++		iterate_mounts(check_rpc_pipefs, &rpcmount,
++				current->nsproxy->mnt_ns->root);
++
++		if (IS_ERR(rpcmount) && (current->nsproxy->mnt_ns ==
++					init_task.nsproxy->mnt_ns))
++			return mntget(init_rpc_pipefs);
++
++		return rpcmount;
 +	}
 +
-+	return 0;
-+}
-+
- static void rpc_purge_list(struct rpc_inode *rpci, struct list_head *head,
- 		void (*destroy_msg)(struct rpc_pipe_msg *), int err)
- {
-@@ -1093,11 +1137,45 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
- 	return 0;
- }
- 
-+static int
-+compare_rpc_mnt_sb(struct super_block *s, void *p)
-+{
-+	if (init_rpc_pipefs)
-+		return init_rpc_pipefs->mnt_sb == s;
-+	return 0;
-+}
-+
- static struct dentry *
- rpc_mount(struct file_system_type *fs_type,
- 		int flags, const char *dev_name, void *data)
- {
--	return mount_single(fs_type, flags, data, rpc_fill_super);
-+	int error;
-+	struct rpc_mount_opts opts;
-+	struct super_block *s;
-+
-+	error = parse_mount_options(data, &opts);
++	error = kern_path(p, LOOKUP_FOLLOW | LOOKUP_DIRECTORY, &path);
 +	if (error)
 +		return ERR_PTR(error);
 +
-+	if (opts.newinstance)
-+		s = sget(fs_type, NULL, set_anon_super, NULL);
-+	else
-+		s = sget(fs_type, compare_rpc_mnt_sb, set_anon_super, NULL);
++	check_rpc_pipefs(path.mnt, &rpcmount);
++	path_put(&path);
 +
-+	if (IS_ERR(s))
-+		return ERR_CAST(s);
++	return rpcmount;
++}
++EXPORT_SYMBOL_GPL(get_rpc_pipefs);
 +
-+	if (!s->s_root) {
-+		s->s_flags = flags;
-+		error = rpc_fill_super(s, data, flags & MS_SILENT ? 1 : 0);
-+		if (error) {
-+			deactivate_locked_super(s);
-+			return ERR_PTR(error);
-+		}
-+		s->s_flags |= MS_ACTIVE;
-+	}
-+
-+	return dget(s->s_root);
- }
- 
- static void rpc_kill_sb(struct super_block *sb)
+ struct destroy_cb {
+ 	struct list_head list;
+ 	void (*callback)(void *data);
 -- 
 1.7.3.4
 
