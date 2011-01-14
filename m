@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758004Ab1ANSHA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 13:07:00 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:37257 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757626Ab1ANSGx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 13:06:53 -0500
-Date: Fri, 14 Jan 2011 10:05:20 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, akpm <akpm@linux-foundation.org>,
-        gregkh <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -next] tty/serial: fix apbuart build
-Message-Id: <20110114100520.0a30e076.randy.dunlap@oracle.com>
-In-Reply-To: <20110114152637.e03eac52.sfr@canb.auug.org.au>
-References: <20110114152637.e03eac52.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757957Ab1ANSJK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 13:09:10 -0500
+Received: from mga14.intel.com ([143.182.124.37]:18510 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752468Ab1ANSJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 13:09:04 -0500
+Message-Id: <849307$b5cdqe@azsmga001.ch.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,323,1291622400"; 
+   d="scan'208";a="374749006"
+Date: Fri, 14 Jan 2011 18:08:59 +0000
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] drm/i915/execbuffer: Clear domains before beginning reloc processing
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Dave Airlie <airlied@linux.ie>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTinq9MOjvHVFb1eJ_Dt+vkgpixuUrU-xcDYGZ5Lj@mail.gmail.com>
+References: <AANLkTinBnm+xkXPPM4-3PG_i2hJMuXhv8x42KN4o3kGg@mail.gmail.com> <1294916869-2417-1-git-send-email-chris@chris-wilson.co.uk> <AANLkTimypim707rEXaPBaKoGgGmz3Of4EmPNw7VokJL6@mail.gmail.com> <1bdc18$j8l825@fmsmga002.fm.intel.com> <AANLkTinq9MOjvHVFb1eJ_Dt+vkgpixuUrU-xcDYGZ5Lj@mail.gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+[Let's try this again. There are times when I merely dislike my VPN.]
 
-Fix build errors by selecting SERIAL_CORE:
+On Fri, 14 Jan 2011 09:37:20 -0800, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Thu, Jan 13, 2011 at 8:10 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> >
+> > They will be in drm-intel-fixes. There have been a couple of other patches,
+> > for the compiler warning, the typo that Indan spotted and for modparam to
+> > workaround the U160, so I'll send the pull request it via Dave.
+> 
+> My tree has been in a known-broken state for too damn long now. Please
+> send the pull request to me directly. Dave may be flooded out in
+> Brisbane or something.
 
-ERROR: "uart_register_driver" [drivers/tty/serial/apbuart.ko] undefined!
-ERROR: "uart_write_wakeup" [drivers/tty/serial/apbuart.ko] undefined!
-ERROR: "uart_update_timeout" [drivers/tty/serial/apbuart.ko] undefined!
-ERROR: "uart_get_divisor" [drivers/tty/serial/apbuart.ko] undefined!
-ERROR: "uart_get_baud_rate" [drivers/tty/serial/apbuart.ko] undefined!
-ERROR: "uart_add_one_port" [drivers/tty/serial/apbuart.ko] undefined!
-ERROR: "uart_unregister_driver" [drivers/tty/serial/apbuart.ko] undefined!
-ERROR: "uart_remove_one_port" [drivers/tty/serial/apbuart.ko] undefined!
+This is what I have waiting in drm-intel-fixes. Besides the regression
+noted above, there is also a critical stability fix for SNB mobile, a
+few patches for older regressions (LVDS on U160, no LVDS on AOpen,
+preserve the backlight value from boot and correct a couple of device
+strings) and one to keep the compiler quiet.
+-Chris
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Daniel Hellstrom <daniel@gaisler.com>
----
- drivers/tty/serial/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+The following changes since commit f878133bf022717b880d0e0995b8f91436fd605c:
 
---- linux-next-20110114.orig/drivers/tty/serial/Kconfig
-+++ linux-next-20110114/drivers/tty/serial/Kconfig
-@@ -1518,6 +1518,7 @@ config SERIAL_BCM63XX_CONSOLE
- config SERIAL_GRLIB_GAISLER_APBUART
- 	tristate "GRLIB APBUART serial support"
- 	depends on OF
-+	select SERIAL_CORE
- 	---help---
- 	Add support for the GRLIB APBUART serial port.
- 
+  Merge branch 'drm-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6 (2011-01-12 08:40:25 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/ickle/drm-intel.git drm-intel-fixes
+
+Chris Wilson (6):
+      drm/i915/debugfs: Correct format after changing type of err object 'size'
+      drm/i915: Add a module option to override the use of SSC
+      drm/i915: Fix error handler to capture the first batch after the seqno
+      drm/i915/execbuffer: Reorder relocations to match new object order
+      drm/i915/execbuffer: Clear domains before beginning reloc processing
+      drm/i915: Disable GPU semaphores on SandyBridge mobile
+
+Indan Zupancic (1):
+      drm/i915/panel: The backlight is enabled if the current value is non-zero
+
+Knut Petersen (1):
+      drm/i915/lvds: Add AOpen i915GMm-HFS to the list of false-positive LVDS
+
+Oswald Buddenhagen (1):
+      agp/intel: Fix device names of i845 and 845G
+
+ drivers/char/agp/intel-agp.c               |    4 ++--
+ drivers/char/agp/intel-gtt.c               |    2 +-
+ drivers/gpu/drm/i915/i915_debugfs.c        |    2 +-
+ drivers/gpu/drm/i915/i915_drv.c            |    3 +++
+ drivers/gpu/drm/i915/i915_drv.h            |    1 +
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |   25 ++++++++++++++-----------
+ drivers/gpu/drm/i915/i915_irq.c            |    2 +-
+ drivers/gpu/drm/i915/intel_bios.c          |   17 ++++++-----------
+ drivers/gpu/drm/i915/intel_display.c       |   17 +++++++++++------
+ drivers/gpu/drm/i915/intel_lvds.c          |    8 ++++++++
+ drivers/gpu/drm/i915/intel_panel.c         |    2 +-
+ 11 files changed, 49 insertions(+), 34 deletions(-)
+
+-- 
+Chris Wilson, Intel Open Source Technology Centre
