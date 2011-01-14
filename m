@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757572Ab1ANEAA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 23:00:00 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42641 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752067Ab1AND7y (ORCPT
+	id S1757560Ab1ANEBn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 23:01:43 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57005 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862Ab1ANEBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 22:59:54 -0500
+	Thu, 13 Jan 2011 23:01:39 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type;
-        b=eNudIhnBeLnIJ8+eGyXYJn8cZyNnndAhE4QMLzEnWhxL/bL+kVFz42n/iN+22I0BtZ
-         lUzkWlJHe6ZVHeATvsWS2q09hFo01zXvDqO0I1QY8FE0dyo0NxwXqPK0ZuJEbs8iJvVW
-         otQ45z3gTMRoNS/lZz35XOURqpvxazTbk2cao=
+        b=NrUcsQFv4w2y/ZN+CM9DbT462MNG8QidWTYvg4ICNTumhEt1jLWM7ZP4YB0X/VwMTu
+         UBOjc/Xl9tI75QmCIS/TP2KTUVe1osfXcwd8EOQgFX4jazcE/c4creRHA51we2WTMc1T
+         1eCsKJjgmOWspEXOgQYP2rpBzqteehQy8tbEo=
 MIME-Version: 1.0
-In-Reply-To: <8482.1294926315@jrobl>
-References: <20110113120626.GB30351@opensource.wolfsonmicro.com>
-	<8138.1294924927@jrobl>
-	<676f5c24375e1cc2aa14fe6630ef1324@mail.gmail.com>
-	<8482.1294926315@jrobl>
-Date: Fri, 14 Jan 2011 14:59:53 +1100
-Message-ID: <AANLkTim=VY7+fo6d_nUXVxs+iZ_f79qWu_eYMUjvhVJO@mail.gmail.com>
-Subject: Re: NFS root lockups with -next 20110113
+In-Reply-To: <8406.1294976295@jrobl>
+References: <8406.1294976295@jrobl>
+Date: Fri, 14 Jan 2011 15:01:37 +1100
+Message-ID: <AANLkTi=jozto+CNwfSKu2_dGWXaRi5p=3dqQngMz7g24@mail.gmail.com>
+Subject: Re: vfs-scale, keep the errno
 From: Nick Piggin <npiggin@gmail.com>
 To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Nick Piggin <npiggin@kernel.dk>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 12:45 AM, J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
+On Fri, Jan 14, 2011 at 2:38 PM, J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
 >
-> Santosh Shilimkar:
->> It works. My board booted with NFS with below patch
->
-> ----------------------------------------
->
-> Mark Brown;
->> Seems to do the trick:
->>
->> Tested-by: Mark Brown <broonie@opensource.wolsfonmicro.com>
->
-> Thank you so quick tests.
-> When I post the patch to be mainlined, I will add Tested-by for both of
-> you. But Nick Piggin may take another approach.
+> When open(2) without O_DIRECTORY opens an existing dir, it should return
+> EISDIR. In do_last(), the variable 'error' is initialized EISDIR, but it
+> is changed by d_revalidate() which returns any positive to represent
+> 'the target dir is valid.'
+> Should we keep and return the initialized 'error' in this case.
 
-Thanks for your help, can you see how I've fixed it in my vfs-scale
-tree? What do you think?
+Great, thank you very much. I just changed a few variable names but
+applied it. Would you please add you Signed-off-by: on patches from
+now on?
+
+Good reviewing work. Are you finding these by review or testing? I
+think ltptests on an nfs mount should find this kind of bug... which I
+should do.
 
 Thanks,
 Nick
