@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757883Ab1ANPtl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 10:49:41 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34039 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757687Ab1ANPtf (ORCPT
+	id S1757873Ab1ANPz1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 10:55:27 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:45508 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757354Ab1ANPzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 10:49:35 -0500
-Date: Fri, 14 Jan 2011 15:49:19 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Colin Cross <ccross@android.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: vfp: Fix up exception location in Thumb mode
-Message-ID: <20110114154919.GE15996@n2100.arm.linux.org.uk>
-References: <1294990949-2729-1-git-send-email-ccross@android.com> <AANLkTimqiqABxCejdeOQWZZ62DVUZW2v-yMpdu1aNDQT@mail.gmail.com> <20110114120229.GA15996@n2100.arm.linux.org.uk> <1295014231.7901.41.camel@e102109-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295014231.7901.41.camel@e102109-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 14 Jan 2011 10:55:22 -0500
+Subject: Re: [PATCH] acpi/pm: If failed at validating ACPI PM timer,
+ inhibit future reads.
+From: john stultz <johnstul@us.ibm.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        williams@redhat.com, schwidefsky@de.ibm.com, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+In-Reply-To: <1295019849.2655.8.camel@work-vm>
+References: <tip-08ec0c58fb8a05d3191d5cb6f5d6f81adb419798@git.kernel.org>
+	 <20110111081352.GA22867@shutemov.name>
+	 <alpine.LFD.2.00.1101110926040.12146@localhost6.localdomain6>
+	 <20110111083054.GB22867@shutemov.name>
+	 <alpine.LFD.2.00.1101110936291.12146@localhost6.localdomain6>
+	 <20110111095640.GC22867@shutemov.name>
+	 <20110113174909.GA28738@dumpdata.com> <1294941698.5617.12.camel@work-vm>
+	 <20110113214022.GA12097@dumpdata.com>
+	 <alpine.LFD.2.00.1101132301300.2678@localhost6.localdomain6>
+	 <20110114140941.GA3062@dumpdata.com>  <1295019849.2655.8.camel@work-vm>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 Jan 2011 07:54:47 -0800
+Message-ID: <1295020487.2655.17.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 02:10:31PM +0000, Catalin Marinas wrote:
-> On Fri, 2011-01-14 at 12:02 +0000, Russell King - ARM Linux wrote:
-> > I don't think this is correct.  On entry to the undefined instruction
-> > handler, we get the uncorrected PC value, so PC points to the
-> > instruction after the faulting instruction.
-> > 
-> > If it was an ARM instruction, that is located at PC-4.  If it was a
-> > Thumb instruction, it is located at PC-2.  This PC value is passed
-> > unmodified to the VFP entry code, and the passed r2 reflect the
-> > value in regs->ARM_pc.
-> 
-> The entry-armv.S code adds 2 to the r2 register in case of a 32-bit
-> Thumb instruction, so it is no longer the same as the ARM_pc.
+On Fri, 2011-01-14 at 07:44 -0800, john stultz wrote:
+> I'm actually looking at a different fix, as I'm worried by Thomas'
+> comment about hitting the same issue on real hardware if we catch the
+> same pmtrm value both times.
 
-That's something that should be fixed - the entry conditions should be
-the same irrespective of thumb or arm encoding.
+Konrad: Mind trying the following?
 
-> Since the VFP instructions in Thumb mode are always 32-bit, Colin's
-> patch made sense to me.
 
-I looked up the VADD instruction in the ARM ARM.  It has both a 16-bit
-and 32-bit encoding.
+The conditional (!hpet && !ref_start && !ref_stop) doesn't really make
+sense. If the refs are null, but hpet is on, we still want to break out.
 
-> > I think that the undefined instruction handling needs reworking for
-> > Thumb entirely as we could be dealing with a 16-bit or 32-bit thumb
-> > instruction, and we have no way of knowing without repeatedly
-> > decoding that instruction.
-> 
-> We already handle the r2 for in __und_usr. We don't deal with ARM_pc but
-> we could either do it in __und_usr or let the code handling the undef
-> fix it up.
+So checking if both the ref values are the same should handle if we
+don't have hardware (both null) or if they are the same value (either by
+invalid hardware, or by chance), which can cause a divzero issue.
 
-At the moment its just confusing as things stand, as some things are
-changed in one place and not the other.  Let's kill the pointless
-addition of 2 in the undefined instruction handler so that in every
-case we enter handlers with r2 == regs->ARM_pc, and regs->ARM_pc
-as per the ARM ARM undefined exception entry LR.
+NOT FOR INCLUSION, I haven't had my coffee yet.
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
 
-Undefined instruction exception handlers can then rely on the meaning
-of both of these.
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index 823f79a..fa2cb5e 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -935,7 +935,7 @@ static void tsc_refine_calibration_work(struct work_struct *work)
+ 	tsc_stop = tsc_read_refs(&ref_stop, hpet);
+ 
+ 	/* hpet or pmtimer available ? */
+-	if (!hpet && !ref_start && !ref_stop)
++	if (ref_start == ref_stop)
+ 		goto out;
+ 
+ 	/* Check, whether the sampling was disturbed by an SMI */
+
+
+
+
