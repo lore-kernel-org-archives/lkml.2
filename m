@@ -1,46 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757539Ab1ANNqb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 08:46:31 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:38132 "EHLO e5.ny.us.ibm.com"
+	id S1757583Ab1ANNtn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 08:49:43 -0500
+Received: from shutemov.name ([188.40.19.243]:53260 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751928Ab1ANNqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 08:46:25 -0500
-Date: Fri, 14 Jan 2011 05:46:20 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        rmk+kernel@arm.linux.org.uk, weber@corscience.de
-Subject: [GIT PULL rcu/next] 2.6.38 fixes for RCU regressions
-Message-ID: <20110114134620.GA12672@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1751928Ab1ANNth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 08:49:37 -0500
+From: "Kirill A. Shutemov" <kas@openvz.org>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>
+Cc: Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Rob Landley <rlandley@parallels.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        containers@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kas@openvz.org>
+Subject: [PATCH v3 01/16] sunrpc: mount rpc_pipefs on initialization
+Date: Fri, 14 Jan 2011 15:48:59 +0200
+Message-Id: <1295012954-7769-2-git-send-email-kas@openvz.org>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1295012954-7769-1-git-send-email-kas@openvz.org>
+References: <1295012954-7769-1-git-send-email-kas@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo,
+Mount rpc_pipefs on register_rpc_pipefs() and replace
+rpc_get_mount()/rpc_put_mount() implementation with mntget()/mntput().
 
-This pull request fixes a pair of RCU regressions introduced into 2.6.38.
+This commit introduces temprorary regression: there is no way to
+remove the module. It will be fixed at the end of the patchset.
 
-These changes are available in the git repository at:
+Signed-off-by: Kirill A. Shutemov <kas@openvz.org>
+---
+ net/sunrpc/rpc_pipe.c |   26 +++++++++++++++-----------
+ 1 files changed, 15 insertions(+), 11 deletions(-)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/next
+diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
+index 72bc536..9ab9355 100644
+--- a/net/sunrpc/rpc_pipe.c
++++ b/net/sunrpc/rpc_pipe.c
+@@ -29,7 +29,6 @@
+ #include <linux/sunrpc/cache.h>
+ 
+ static struct vfsmount *rpc_mnt __read_mostly;
+-static int rpc_mount_count;
+ 
+ static struct file_system_type rpc_pipe_fs_type;
+ 
+@@ -423,18 +422,13 @@ struct rpc_filelist {
+ 
+ struct vfsmount *rpc_get_mount(void)
+ {
+-	int err;
+-
+-	err = simple_pin_fs(&rpc_pipe_fs_type, &rpc_mnt, &rpc_mount_count);
+-	if (err != 0)
+-		return ERR_PTR(err);
+-	return rpc_mnt;
++	return mntget(rpc_mnt);
+ }
+ EXPORT_SYMBOL_GPL(rpc_get_mount);
+ 
+ void rpc_put_mount(void)
+ {
+-	simple_release_fs(&rpc_mnt, &rpc_mount_count);
++	mntput(rpc_mnt);
+ }
+ EXPORT_SYMBOL_GPL(rpc_put_mount);
+ 
+@@ -1071,12 +1065,22 @@ int register_rpc_pipefs(void)
+ 	if (!rpc_inode_cachep)
+ 		return -ENOMEM;
+ 	err = register_filesystem(&rpc_pipe_fs_type);
+-	if (err) {
+-		kmem_cache_destroy(rpc_inode_cachep);
+-		return err;
++	if (err)
++		goto destroy_cache;
++
++	rpc_mnt = kern_mount(&rpc_pipe_fs_type);
++	if (IS_ERR(rpc_mnt)) {
++		err = PTR_ERR(rpc_mnt);
++		goto unregister_fs;
+ 	}
+ 
+ 	return 0;
++
++unregister_fs:
++	unregister_filesystem(&rpc_pipe_fs_type);
++destroy_cache:
++	kmem_cache_destroy(rpc_inode_cachep);
++	return err;
+ }
+ 
+ void unregister_rpc_pipefs(void)
+-- 
+1.7.3.4
 
-These are against the current tip/core/rcu branch.
-
-							Thanx, Paul
-
------------------->
-Paul E. McKenney (2):
-      rcu: demote SRCU_SYNCHRONIZE_DELAY from kernel-parameter status
-      rcu: avoid pointless blocked-task warnings
-
- init/Kconfig     |   15 ---------------
- kernel/rcutiny.c |    3 ++-
- kernel/srcu.c    |   15 +++++++++++++--
- 3 files changed, 15 insertions(+), 18 deletions(-)
