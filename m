@@ -1,77 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab1ANNR1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 08:17:27 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:51281 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757456Ab1ANNRU (ORCPT
+	id S1753577Ab1ANN2w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 08:28:52 -0500
+Received: from igw2.watson.ibm.com ([129.34.20.6]:45887 "EHLO
+	igw2.watson.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757302Ab1ANN2o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 08:17:20 -0500
-From: "Hans-Peter Jansen" <hpj@urpla.net>
-To: Nick Piggin <npiggin@gmail.com>
-Subject: Re: vfs-scale, keep the errno
-Date: Fri, 14 Jan 2011 14:17:11 +0100
-User-Agent: KMail/1.9.10
-Cc: "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        "linux-fsdevel" <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-References: <8406.1294976295@jrobl> <AANLkTi=jozto+CNwfSKu2_dGWXaRi5p=3dqQngMz7g24@mail.gmail.com>
-In-Reply-To: <AANLkTi=jozto+CNwfSKu2_dGWXaRi5p=3dqQngMz7g24@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201101141417.11817.hpj@urpla.net>
-X-Provags-ID: V02:K0:9g4cWfLtifc68E8AiL73Zp5ocIUD+kBEl5HuE2wmT3h
- h+fyqvPBetoBrTyNoDFAPNBAOaZVUZv26ufTVXfuuYEOi9k32q
- 3qAqigfL0nrXCfBYpFrP2AUlh8VQqzRRw3PsqZoo9XXUNE9dNb
- sEW6+oOtJy1CsrCLtBumH5ha4taswYS3BbYzQGuayMGic4GFCA
- IFHATbRgCtyEEGHlkv/mUrD1wlJ3tLFSjO2DnB1/s8=
+	Fri, 14 Jan 2011 08:28:44 -0500
+Subject: Re: [PATCH] Trusted and Encrypted Keys: fix up TSS_rawhmac() so we
+ always kfree() and remember to call va_end()
+From: David Safford <safford@watson.ibm.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: David Howells <dhowells@redhat.com>, David Safford <safford@us.ibm.com>,
+        James Morris <jmorris@namei.org>, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.LNX.2.00.1101132100190.11347@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1101132100190.11347@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 14 Jan 2011 08:28:02 -0500
+Message-ID: <1295011682.7804.2.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 14 January 2011, 05:01:37 Nick Piggin wrote:
-> On Fri, Jan 14, 2011 at 2:38 PM, J. R. Okajima <hooanon05@yahoo.co.jp> 
-wrote:
-> > When open(2) without O_DIRECTORY opens an existing dir, it should
-> > return EISDIR. In do_last(), the variable 'error' is initialized
-> > EISDIR, but it is changed by d_revalidate() which returns any
-> > positive to represent 'the target dir is valid.'
-> > Should we keep and return the initialized 'error' in this case.
->
-> Great, thank you very much. I just changed a few variable names but
-> applied it. Would you please add you Signed-off-by: on patches from
-> now on?
->
-> Good reviewing work. Are you finding these by review or testing? I
-> think ltptests on an nfs mount should find this kind of bug... which
-> I should do.
+On Thu, 2011-01-13 at 21:07 +0100, Jesper Juhl wrote:
+> In security/keys/trusted_defined.c::TSS_rawhmac() we may leak the storage 
+> allocated to 'sdesc' if
+>   data = va_arg(argp, unsigned char *);
+> results in a NULL 'data' and we then leave the function by returning 
+> -EINVAL. We also neglect calling va_end(argp) in that case and furthermore 
+> we neglect va_end(argp) if
+>   ret = crypto_shash_update(&sdesc->shash, data, dlen);
+> results in ret being negative and we then jump to the 'out' label.
+> 
+> I believe this patch takes care of these issues. Please review and 
+> consider for inclusion.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-Nick, Junjiro is well known as a very smart (and|but) humble guy in the 
-kernel niche of layered filesystems. Be assured, that almost every live 
-distribution (one, that is runnable from RO media directly) _relies_ on 
-his work: aufs (http://aufs.sourceforge.net/) to get the job done. Also 
-many diskless setups (as do mine) relies on aufs.
+thanks for catching this.
 
-It's a real pity, that all other approaches to layered filesystems (or 
-filesystem unification, overlay filesystems), that are done by others, 
-are either
- - technically inferior
- - restricted in usage scenarios
- - simply unfinished
+Acked-by: David Safford <safford@watson.ibm.com>
 
-but get more attention in the kernel guild. All, that Junjiro's approach 
-takes is exporting a handful of symbols in order to be able to build it 
-as a module also (and the number decreases as other lately merged 
-subsystems do need them as well, i.e. apparmor). That's all. 
+> ---
+>  trusted_defined.c |    8 +++++---
+>  1 file changed, 5 insertions(+), 3 deletions(-)
+> 
+>   compile tested only.
+> 
+> diff --git a/security/keys/trusted_defined.c b/security/keys/trusted_defined.c
+> index 975e9f2..0ec7ab8 100644
+> --- a/security/keys/trusted_defined.c
+> +++ b/security/keys/trusted_defined.c
+> @@ -101,16 +101,18 @@ static int TSS_rawhmac(unsigned char *digest, const unsigned char *key,
+>  		if (dlen == 0)
+>  			break;
+>  		data = va_arg(argp, unsigned char *);
+> -		if (data == NULL)
+> -			return -EINVAL;
+> +		if (data == NULL) {
+> +			ret = -EINVAL;
+> +			goto out;
+> +		}
+>  		ret = crypto_shash_update(&sdesc->shash, data, dlen);
+>  		if (ret < 0)
+>  			goto out;
+>  	}
+> -	va_end(argp);
+>  	if (!ret)
+>  		ret = crypto_shash_final(&sdesc->shash, digest);
+>  out:
+> +	va_end(argp);
+>  	kfree(sdesc);
+>  	return ret;
+>  }
+> 
+> 
+> 
 
-Layered filesystems are a killer feature, that could have been in the 
-kernel for years, but is still missing for hard to follow (e.g. 
-political, emotional) reasons. There are many interesting things, that 
-can be done with layered filesystems, hard to archive up to impossible 
-to be done otherwise). 
-
-Sadly,
-Pete
