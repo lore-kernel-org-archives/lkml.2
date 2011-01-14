@@ -1,81 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756751Ab1ANJww (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 04:52:52 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:65351 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751462Ab1ANJwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 04:52:45 -0500
-Message-ID: <4D3018FF.1010105@cn.fujitsu.com>
-Date: Fri, 14 Jan 2011 17:35:59 +0800
-From: Shan Wei <shanwei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13pre) Gecko/20101113 Shredder/3.1.7pre
+	id S1756864Ab1ANJxN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 04:53:13 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:45624 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753725Ab1ANJxG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 04:53:06 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=vyoG1sYKdwVGY8amwDC+vuxJmk5qwzJrw8KMBYClo69t3c0M4LqJGCXFpACZCVfQN5
+         BheZM17ri1v2JbOnERDRkf1zoZZqZf6h5aR+zCi7+/yUyTq2zP/nleWkto5u5QQGr4DK
+         mfNlpe4niglE+jS8hdq1Lu4+5pVZnuTHsc9Gk=
 MIME-Version: 1.0
-To: bfields@fieldses.org, neilb@suse.de, linux-nfs@vger.kernel.org,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] nfsd: kill unused macro definition
-References: <4D300BA8.80000@cn.fujitsu.com>
-In-Reply-To: <4D300BA8.80000@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-14 17:38:11,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-14 17:51:52,
-	Serialize complete at 2011-01-14 17:51:52
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+From: Billy Rafferty <billy.rafferty@gmail.com>
+Date: Fri, 14 Jan 2011 09:52:45 +0000
+Message-ID: <AANLkTi=bDV52-Fc22amAEsxofL7gRC=oaU+AXgUnuRt7@mail.gmail.com>
+Subject: uio_pci_generic has no mapping?
+To: linux-kernel@vger.kernel.org
+Cc: mst@redhat.com, hjk@hansjkoch.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These macros had never been used for several years.
-So, remove them.
+Hi there,
 
-Signed-off-by: Shan Wei <shanwei@cn.fujitsu.com>
----
-V2: add two other unused macros, EXPORT_HASHMASK and FILE_HASH_MASK.
- 
----
- fs/nfsd/export.c    |    1 -
- fs/nfsd/nfs4idmap.c |    1 -
- fs/nfsd/nfs4state.c |    2 +-
- 3 files changed, 1 insertions(+), 3 deletions(-)
+I was hoping that someone might be be able to help me out using the
+uio_pci_generic driver.
 
-diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
-index c0fcb7a..98a964a 100644
---- a/fs/nfsd/export.c
-+++ b/fs/nfsd/export.c
-@@ -300,7 +300,6 @@ svc_expkey_update(struct svc_expkey *new, struct svc_expkey *old)
- 
- #define	EXPORT_HASHBITS		8
- #define	EXPORT_HASHMAX		(1<< EXPORT_HASHBITS)
--#define	EXPORT_HASHMASK		(EXPORT_HASHMAX -1)
- 
- static struct cache_head *export_table[EXPORT_HASHMAX];
- 
-diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
-index f0695e8..ce0f6b9 100644
---- a/fs/nfsd/nfs4idmap.c
-+++ b/fs/nfsd/nfs4idmap.c
-@@ -62,7 +62,6 @@ struct ent {
- 
- #define ENT_HASHBITS          8
- #define ENT_HASHMAX           (1 << ENT_HASHBITS)
--#define ENT_HASHMASK          (ENT_HASHMAX - 1)
- 
- static void
- ent_init(struct cache_head *cnew, struct cache_head *citm)
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index fbd18c3..547fbc6 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -148,7 +148,7 @@ static struct list_head	ownerstr_hashtbl[OWNER_HASH_SIZE];
- /* hash table for nfs4_file */
- #define FILE_HASH_BITS                   8
- #define FILE_HASH_SIZE                  (1 << FILE_HASH_BITS)
--#define FILE_HASH_MASK                  (FILE_HASH_SIZE - 1)
-+
- /* hash table for (open)nfs4_stateid */
- #define STATEID_HASH_BITS              10
- #define STATEID_HASH_SIZE              (1 << STATEID_HASH_BITS)
--- 
-1.6.3.3
+To gain access to the memory in the card I try to do an mmap but it
+returns an error.
+
+I was wondering if the mapping of the PCI memory regions is automatic?
+ I am not seeing /sys/class/uio/uio0/maps
+
+Do I have to do something to get these to appear?
+
+I would appreciate any help or pointers that you can give.
+
+Regards,
+
+Billy
