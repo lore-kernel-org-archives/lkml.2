@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968Ab1ANXkK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 18:40:10 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:41560 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752536Ab1ANXkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 18:40:08 -0500
-Date: Sat, 15 Jan 2011 10:40:04 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus <torvalds@linux-foundation.org>
-Subject: linux-next: build failure in Linus' tree
-Message-Id: <20110115104004.64335bc5.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1753977Ab1ANXnd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 18:43:33 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:42816 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752362Ab1ANXnc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 18:43:32 -0500
+Date: Sat, 15 Jan 2011 00:43:27 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Shawn Bohrer <sbohrer@rgmadvisors.com>
+Subject: Re: [PATCH] oprofile: Add support for missing Intel core i7 models
+Message-ID: <20110114234327.GS25713@one.firstfloor.org>
+References: <1294958291-5626-1-git-send-email-sbohrer@rgmadvisors.com> <20110113235503.GY4739@erda.amd.com> <20110114002435.GR25713@one.firstfloor.org> <20110114022950.GC4739@erda.amd.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110114022950.GC4739@erda.amd.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+> Will it be the general way in the future not to add model detection
+> for new Intel cpus to kernel code and instead use arch_perfmon? Are
 
-While building Linus' tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Yes, at least for features that do not need specific new kernel support.
+And it looks like most (all?) of the these features will be perf only.
 
-ERROR: "arbitrary_virt_to_machine" [drivers/xen/xen-gntdev.ko] undefined!
+The advantage of the scheme is that it avoids the major problems
+we had with updates in the past where userland and kernel had to be
+updated in lock-step.
 
-Caused by commit ba5d1012292403c8037adf4a54c4ec50dfe846c4 ("xen/gntdev:
-stop using "token" argument").
+> the user land patches for cpu detection already in the oprofile
+> repository? I assume oprofile 0.9.6 is not up-to-date and needs to be
+> patched.
 
-I have applied this patch for today:
+It's in CVS.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Sat, 15 Jan 2011 10:36:26 +1100
-Subject: [PATCH] xen: export arbitrary_virt_to_machine
-
-fixes build error:
-
-ERROR: "arbitrary_virt_to_machine" [drivers/xen/xen-gntdev.ko] undefined!
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/x86/xen/mmu.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 7575e55..5e92b61 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -201,6 +201,7 @@ xmaddr_t arbitrary_virt_to_machine(void *vaddr)
- 	offset = address & ~PAGE_MASK;
- 	return XMADDR(((phys_addr_t)pte_mfn(*pte) << PAGE_SHIFT) + offset);
- }
-+EXPORT_SYMBOL_GPL(arbitrary_virt_to_machine);
- 
- void make_lowmem_page_readonly(void *vaddr)
- {
--- 
-1.7.2.3
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+-Andi
