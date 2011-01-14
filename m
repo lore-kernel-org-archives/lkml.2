@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102Ab1ANJn4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 04:43:56 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:61833 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751152Ab1ANJnw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 04:43:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=LncB2Rda+VEcVPMWNGQiveJhyplqervg1N0Q2v/9rS6guiINpEVcPWEFhDfNte1HAW
-         vwxEZmjAXN5CEbYHKFQett5lQXRo//Nb19E2xVoW2JkWpXIg8wK7vAwmNErxnnVUHvMK
-         ayLLzSlhZs3tK9fl/u+EWD1wHzzXwQtajuD1I=
-MIME-Version: 1.0
-In-Reply-To: <20110114093319.GA10219@cr0.nay.redhat.com>
-References: <AANLkTimsPj4seDW9ffDQ+uydZcRk_T6BsP7x0dr0Qi++@mail.gmail.com>
-	<20110114093319.GA10219@cr0.nay.redhat.com>
-Date: Fri, 14 Jan 2011 17:43:51 +0800
-Message-ID: <AANLkTinp4x7i+771CQdCJQmEJthBjow3ZR305ie-iYHb@mail.gmail.com>
-Subject: Re: [PATCH] kbuild: add global tags generation.
-From: Jianbin Kang <kjbmail@gmail.com>
-To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751729Ab1ANJoa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 04:44:30 -0500
+Received: from dsl78-143-211-26.in-addr.fast.co.uk ([78.143.211.26]:46889 "EHLO
+	ben-laptop" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751530Ab1ANJoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 04:44:24 -0500
+From: Ben Dooks <ben-linux@fluff.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux@simtec.co.uk, Ben Dooks <ben-linux@fluff.org>,
+        Simtec Support <support@simtec.co.uk>
+Subject: [PATCH 2/3] MAINTAINERS: Fixup file entries for "SIMTEC EB2410ITX (BAST)"
+Date: Fri, 14 Jan 2011 09:44:14 +0000
+Message-Id: <e9390dadfd1d6ba97a0ba7b19e16e5798b60dcba.1294998254.git.ben-linux@fluff.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <0bd9310fc4d79ee83f9f657640be251d84dbf86f.1294998254.git.ben-linux@fluff.org>
+References: <0bd9310fc4d79ee83f9f657640be251d84dbf86f.1294998254.git.ben-linux@fluff.org>
+In-Reply-To: <0bd9310fc4d79ee83f9f657640be251d84dbf86f.1294998254.git.ben-linux@fluff.org>
+References: <0bd9310fc4d79ee83f9f657640be251d84dbf86f.1294998254.git.ben-linux@fluff.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/1/14 Américo Wang <xiyou.wangcong@gmail.com>:
-> On Fri, Jan 14, 2011 at 03:13:01PM +0800, Jianbin Kang wrote:
->>gnu global (http://www.gnu.org/software/global/) is a source code tagging system
->>It is really cheap to support it in kbuild system.
->>
->
-> Looks pretty good,
->
-> Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
->
-> But... 1) you missed your Signed-off-by; 2) you should Cc linux-kbuild
-> rather than trivial.
-er, where should signed-off-by be put? At the bottom of the mail or
-the bottom of the patch?
+Add the correct files for the Simtec BAST machine, ensuring the IDE and IRQ
+routing are added, and move to the machine specific file instead of trying
+to catch all of arch/arm/mach-s3c2410
+
+Signed-off-by: Ben Dooks <ben-linux@fluff.org>
+Cc: Simtec Linux Team <linux@simtec.co.uk>
+Cc: Simtec Support <support@simtec.co.uk>
+---
+ MAINTAINERS |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 464f0ec..4a99ddf 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5566,7 +5566,9 @@ P:	Ben Dooks
+ M:	Vincent Sanders <support@simtec.co.uk>
+ W:	http://www.simtec.co.uk/products/EB2410ITX/
+ S:	Supported
+-F:	arch/arm/mach-s3c2410/
++F:	arch/arm/mach-s3c2410/mach-bast.c
++F:	arch/arm/mach-s3c2410/bast-ide.c
++F:	arch/arm/mach-s3c2410/bast-irq.c
+ 
+ TI DAVINCI MACHINE SUPPORT
+ M:	Kevin Hilman <khilman@deeprootsystems.com>
+-- 
+1.7.1
+
