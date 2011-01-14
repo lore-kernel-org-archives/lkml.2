@@ -1,294 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757207Ab1ANNaa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 08:30:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53979 "EHLO mx2.suse.de"
+	id S1757467Ab1ANNcJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 08:32:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65260 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756731Ab1ANNaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 08:30:23 -0500
-Date: Fri, 14 Jan 2011 14:30:21 +0100
-From: Libor Pechacek <lpechacek@suse.cz>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Peter Berger <pberger@brimson.com>,
-        Al Borchers <alborchers@steinerpoint.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2.6.37 take 2] USB: serial: handle Data Carrier Detect
-	changes
-Message-ID: <20110114133021.GA6575@fm.suse.cz>
-References: <20101217153422.GE20400@fm.suse.cz> <20110104135313.7bdd6deb@lxorguk.ukuu.org.uk> <20110114115305.GB19887@fm.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110114115305.GB19887@fm.suse.cz>
-User-Agent: Mutt/1.5.18-muttng (2008-05-17-r1399)
+	id S1753211Ab1ANNcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 08:32:05 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <alpine.LNX.2.00.1101132100190.11347@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1101132100190.11347@swampdragon.chaosbits.net>
+To: Jesper Juhl <jj@chaosbits.net>, Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: dhowells@redhat.com, David Safford <safford@us.ibm.com>,
+        James Morris <jmorris@namei.org>, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Trusted and Encrypted Keys: fix up TSS_rawhmac() so we always kfree() and remember to call va_end()
+Date: Fri, 14 Jan 2011 13:31:55 +0000
+Message-ID: <3820.1295011915@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan's commit 335f8514f200e63d689113d29cb7253a5c282967 introduced
-.carrier_raised function in several drivers.  That also means
-tty_port_block_til_ready can now suspend the process trying to open the serial
-port when Carrier Detect is low and put it into tty_port.open_wait queue.  We
-need to wake up the process when Carrier Detect goes high and trigger TTY
-hangup when CD goes low.
+Jesper Juhl <jj@chaosbits.net> wrote:
 
-Some of the devices do not report modem status line changes, or at least we
-don't understand the status message, so for those we remove .carrier_raised
-again.
+> In security/keys/trusted_defined.c::TSS_rawhmac() we may leak the storage 
+> allocated to 'sdesc' if
+>   data = va_arg(argp, unsigned char *);
+> results in a NULL 'data' and we then leave the function by returning 
+> -EINVAL. We also neglect calling va_end(argp) in that case and furthermore 
+> we neglect va_end(argp) if
+>   ret = crypto_shash_update(&sdesc->shash, data, dlen);
+> results in ret being negative and we then jump to the 'out' label.
+> 
+> I believe this patch takes care of these issues. Please review and 
+> consider for inclusion.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-Signed-off-by: Libor Pechacek <lpechacek@suse.cz>
----
- drivers/usb/serial/ch341.c           |   10 ++++++++++
- drivers/usb/serial/cp210x.c          |   13 +------------
- drivers/usb/serial/digi_acceleport.c |   10 ----------
- drivers/usb/serial/generic.c         |   20 ++++++++++++++++++++
- drivers/usb/serial/keyspan_pda.c     |   17 -----------------
- drivers/usb/serial/pl2303.c          |   11 +++++++++++
- drivers/usb/serial/spcp8x5.c         |    6 +++++-
- include/linux/usb/serial.h           |    3 +++
- 8 files changed, 50 insertions(+), 40 deletions(-)
-
-diff --git a/drivers/usb/serial/ch341.c b/drivers/usb/serial/ch341.c
-index 63f7cc4..7b8815d 100644
---- a/drivers/usb/serial/ch341.c
-+++ b/drivers/usb/serial/ch341.c
-@@ -486,12 +486,22 @@ static void ch341_read_int_callback(struct urb *urb)
- 	if (actual_length >= 4) {
- 		struct ch341_private *priv = usb_get_serial_port_data(port);
- 		unsigned long flags;
-+		u8 prev_line_status = priv->line_status;
- 
- 		spin_lock_irqsave(&priv->lock, flags);
- 		priv->line_status = (~(data[2])) & CH341_BITS_MODEM_STAT;
- 		if ((data[1] & CH341_MULT_STAT))
- 			priv->multi_status_change = 1;
- 		spin_unlock_irqrestore(&priv->lock, flags);
-+
-+		if ((priv->line_status ^ prev_line_status) & CH341_BIT_DCD) {
-+			struct tty_struct *tty = tty_port_tty_get(&port->port);
-+			if (tty)
-+				usb_serial_handle_dcd_change(port, tty,
-+					    priv->line_status & CH341_BIT_DCD);
-+			tty_kref_put(tty);
-+		}
-+
- 		wake_up_interruptible(&priv->delta_msr_wait);
- 	}
- 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index 8d7731d..d82cd7a 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -49,7 +49,6 @@ static int cp210x_tiocmset_port(struct usb_serial_port *port, struct file *,
- static void cp210x_break_ctl(struct tty_struct *, int);
- static int cp210x_startup(struct usb_serial *);
- static void cp210x_dtr_rts(struct usb_serial_port *p, int on);
--static int cp210x_carrier_raised(struct usb_serial_port *p);
- 
- static int debug;
- 
-@@ -165,8 +164,7 @@ static struct usb_serial_driver cp210x_device = {
- 	.tiocmget 		= cp210x_tiocmget,
- 	.tiocmset		= cp210x_tiocmset,
- 	.attach			= cp210x_startup,
--	.dtr_rts		= cp210x_dtr_rts,
--	.carrier_raised		= cp210x_carrier_raised
-+	.dtr_rts		= cp210x_dtr_rts
- };
- 
- /* Config request types */
-@@ -765,15 +763,6 @@ static int cp210x_tiocmget (struct tty_struct *tty, struct file *file)
- 	return result;
- }
- 
--static int cp210x_carrier_raised(struct usb_serial_port *p)
--{
--	unsigned int control;
--	cp210x_get_config(p, CP210X_GET_MDMSTS, &control, 1);
--	if (control & CONTROL_DCD)
--		return 1;
--	return 0;
--}
--
- static void cp210x_break_ctl (struct tty_struct *tty, int break_state)
- {
- 	struct usb_serial_port *port = tty->driver_data;
-diff --git a/drivers/usb/serial/digi_acceleport.c b/drivers/usb/serial/digi_acceleport.c
-index b92070c..666e5a6 100644
---- a/drivers/usb/serial/digi_acceleport.c
-+++ b/drivers/usb/serial/digi_acceleport.c
-@@ -455,7 +455,6 @@ static int digi_write_room(struct tty_struct *tty);
- static int digi_chars_in_buffer(struct tty_struct *tty);
- static int digi_open(struct tty_struct *tty, struct usb_serial_port *port);
- static void digi_close(struct usb_serial_port *port);
--static int digi_carrier_raised(struct usb_serial_port *port);
- static void digi_dtr_rts(struct usb_serial_port *port, int on);
- static int digi_startup_device(struct usb_serial *serial);
- static int digi_startup(struct usb_serial *serial);
-@@ -511,7 +510,6 @@ static struct usb_serial_driver digi_acceleport_2_device = {
- 	.open =				digi_open,
- 	.close =			digi_close,
- 	.dtr_rts =			digi_dtr_rts,
--	.carrier_raised =		digi_carrier_raised,
- 	.write =			digi_write,
- 	.write_room =			digi_write_room,
- 	.write_bulk_callback = 		digi_write_bulk_callback,
-@@ -1339,14 +1337,6 @@ static void digi_dtr_rts(struct usb_serial_port *port, int on)
- 	digi_set_modem_signals(port, on * (TIOCM_DTR|TIOCM_RTS), 1);
- }
- 
--static int digi_carrier_raised(struct usb_serial_port *port)
--{
--	struct digi_port *priv = usb_get_serial_port_data(port);
--	if (priv->dp_modem_signals & TIOCM_CD)
--		return 1;
--	return 0;
--}
--
- static int digi_open(struct tty_struct *tty, struct usb_serial_port *port)
- {
- 	int ret;
-diff --git a/drivers/usb/serial/generic.c b/drivers/usb/serial/generic.c
-index e6833e2..e4db5ad 100644
---- a/drivers/usb/serial/generic.c
-+++ b/drivers/usb/serial/generic.c
-@@ -479,6 +479,26 @@ int usb_serial_handle_break(struct usb_serial_port *port)
- }
- EXPORT_SYMBOL_GPL(usb_serial_handle_break);
- 
-+/**
-+ *	usb_serial_handle_dcd_change - handle a change of carrier detect state
-+ *	@port: usb_serial_port structure for the open port
-+ *	@tty: tty_struct structure for the port
-+ *	@status: new carrier detect status, nonzero if active
-+ */
-+void usb_serial_handle_dcd_change(struct usb_serial_port *usb_port,
-+				struct tty_struct *tty, unsigned int status)
-+{
-+	struct tty_port *port = &usb_port->port;
-+
-+	dbg("%s - port %d, status %d", __func__, usb_port->number, status);
-+
-+	if (status)
-+		wake_up_interruptible(&port->open_wait);
-+	else if (tty && !C_CLOCAL(tty))
-+		tty_hangup(tty);
-+}
-+EXPORT_SYMBOL_GPL(usb_serial_handle_dcd_change);
-+
- int usb_serial_generic_resume(struct usb_serial *serial)
- {
- 	struct usb_serial_port *port;
-diff --git a/drivers/usb/serial/keyspan_pda.c b/drivers/usb/serial/keyspan_pda.c
-index a10dd56..554a869 100644
---- a/drivers/usb/serial/keyspan_pda.c
-+++ b/drivers/usb/serial/keyspan_pda.c
-@@ -679,22 +679,6 @@ static void keyspan_pda_dtr_rts(struct usb_serial_port *port, int on)
- 	}
- }
- 
--static int keyspan_pda_carrier_raised(struct usb_serial_port *port)
--{
--	struct usb_serial *serial = port->serial;
--	unsigned char modembits;
--
--	/* If we can read the modem status and the DCD is low then
--	   carrier is not raised yet */
--	if (keyspan_pda_get_modem_info(serial, &modembits) >= 0) {
--		if (!(modembits & (1>>6)))
--			return 0;
--	}
--	/* Carrier raised, or we failed (eg disconnected) so
--	   progress accordingly */
--	return 1;
--}
--
- 
- static int keyspan_pda_open(struct tty_struct *tty,
- 					struct usb_serial_port *port)
-@@ -881,7 +865,6 @@ static struct usb_serial_driver keyspan_pda_device = {
- 	.id_table =		id_table_std,
- 	.num_ports =		1,
- 	.dtr_rts =		keyspan_pda_dtr_rts,
--	.carrier_raised	=	keyspan_pda_carrier_raised,
- 	.open =			keyspan_pda_open,
- 	.close =		keyspan_pda_close,
- 	.write =		keyspan_pda_write,
-diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
-index 8ae4c6c..e3a9e2e 100644
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -677,9 +677,11 @@ static void pl2303_update_line_status(struct usb_serial_port *port,
- {
- 
- 	struct pl2303_private *priv = usb_get_serial_port_data(port);
-+	struct tty_struct *tty;
- 	unsigned long flags;
- 	u8 status_idx = UART_STATE;
- 	u8 length = UART_STATE + 1;
-+	u8 prev_line_status;
- 	u16 idv, idp;
- 
- 	idv = le16_to_cpu(port->serial->dev->descriptor.idVendor);
-@@ -701,11 +703,20 @@ static void pl2303_update_line_status(struct usb_serial_port *port,
- 
- 	/* Save off the uart status for others to look at */
- 	spin_lock_irqsave(&priv->lock, flags);
-+	prev_line_status = priv->line_status;
- 	priv->line_status = data[status_idx];
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 	if (priv->line_status & UART_BREAK_ERROR)
- 		usb_serial_handle_break(port);
- 	wake_up_interruptible(&priv->delta_msr_wait);
-+
-+	tty = tty_port_tty_get(&port->port);
-+	if (!tty)
-+		return;
-+	if ((priv->line_status ^ prev_line_status) & UART_DCD)
-+		usb_serial_handle_dcd_change(port, tty,
-+				priv->line_status & UART_DCD);
-+	tty_kref_put(tty);
- }
- 
- static void pl2303_read_int_callback(struct urb *urb)
-diff --git a/drivers/usb/serial/spcp8x5.c b/drivers/usb/serial/spcp8x5.c
-index 765aa98..e212eb6 100644
---- a/drivers/usb/serial/spcp8x5.c
-+++ b/drivers/usb/serial/spcp8x5.c
-@@ -133,7 +133,7 @@ struct spcp8x5_usb_ctrl_arg {
- 
- /* how come ??? */
- #define UART_STATE			0x08
--#define UART_STATE_TRANSIENT_MASK	0x74
-+#define UART_STATE_TRANSIENT_MASK	0x75
- #define UART_DCD			0x01
- #define UART_DSR			0x02
- #define UART_BREAK_ERROR		0x04
-@@ -525,6 +525,10 @@ static void spcp8x5_process_read_urb(struct urb *urb)
- 		/* overrun is special, not associated with a char */
- 		if (status & UART_OVERRUN_ERROR)
- 			tty_insert_flip_char(tty, 0, TTY_OVERRUN);
-+
-+		if (status & UART_DCD)
-+			usb_serial_handle_dcd_change(port, tty,
-+				   priv->line_status & MSR_STATUS_LINE_DCD);
- 	}
- 
- 	tty_insert_flip_string_fixed_flag(tty, data, tty_flag,
-diff --git a/include/linux/usb/serial.h b/include/linux/usb/serial.h
-index 16d682f..c904913 100644
---- a/include/linux/usb/serial.h
-+++ b/include/linux/usb/serial.h
-@@ -347,6 +347,9 @@ extern int usb_serial_generic_prepare_write_buffer(struct usb_serial_port *port,
- extern int usb_serial_handle_sysrq_char(struct usb_serial_port *port,
- 					unsigned int ch);
- extern int usb_serial_handle_break(struct usb_serial_port *port);
-+extern void usb_serial_handle_dcd_change(struct usb_serial_port *usb_port,
-+					 struct tty_struct *tty,
-+					 unsigned int status);
- 
- 
- extern int usb_serial_bus_register(struct usb_serial_driver *device);
--- 
-1.6.0.2
-
+Acked-by: David Howells <dhowells@redhat.com>
