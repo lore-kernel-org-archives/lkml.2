@@ -1,126 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756897Ab1ANLBM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 06:01:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33785 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752375Ab1ANLBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 06:01:08 -0500
-From: Juan Quintela <quintela@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Zachary Amsden <zamsden@redhat.com>, kvm@vger.kernel.org,
-        Avi Kivity <avi@redhat.com>, Glauber Costa <glommer@redhat.com>,
+	id S1756595Ab1ANLCv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 06:02:51 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:39713 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752408Ab1ANLCq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 06:02:46 -0500
+X-Greylist: delayed 5268 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Jan 2011 06:02:46 EST
+From: Hong Xu <hong.xu@atmel.com>
+To: linux-mtd@lists.infradead.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [KVM TSC trapping / migration 2/2] Add TSC KHZ MSR
-In-Reply-To: <20110110135053.GA12991@amt.cnet> (Marcelo Tosatti's message of
-	"Mon, 10 Jan 2011 11:50:53 -0200")
-References: <1294308645-31113-1-git-send-email-zamsden@redhat.com>
-	<1294308645-31113-3-git-send-email-zamsden@redhat.com>
-	<20110107104859.GA12056@amt.cnet> <4D277B24.5000409@redhat.com>
-	<20110110135053.GA12991@amt.cnet>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-Reply-To: quintela@redhat.com
-Date: Fri, 14 Jan 2011 12:00:02 +0100
-Message-ID: <m3bp3jwy19.fsf@trasno.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Cc: nicolas.ferre@atmel.com, hong.xu@atmel.com
+Subject: [PATCH] MTD: atmel_nand: Add DMA support to access Nandflash
+Date: Fri, 14 Jan 2011 17:34:47 +0800
+Message-Id: <1294997687-12515-1-git-send-email-hong.xu@atmel.com>
+X-Mailer: git-send-email 1.7.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marcelo Tosatti <mtosatti@redhat.com> wrote:
-> On Fri, Jan 07, 2011 at 10:44:20AM -1000, Zachary Amsden wrote:
->> On 01/07/2011 12:48 AM, Marcelo Tosatti wrote:
->> >On Thu, Jan 06, 2011 at 12:10:45AM -1000, Zachary Amsden wrote:
->> >>Use an MSR to allow "soft" migration to hosts which do not support
->> >>TSC trapping.  Rather than make this a required element of any
->> >>migration protocol, we allow the TSC rate to be exported as a data
->> >>field (useful in its own right), but we also allow a one time write
->> >>of the MSR during VM creation.  The result is that for the common
->> >>use case, no protocol change is required to communicate TSC rate
->> >>to the receiving host.
->> >Migration to hosts which do not support the feature can be achieved by
->> >saving/restoring the TSC rate + flags in a subsection. A subsection
->> >seems more appropriate than an MSR for this.
->> 
->> Yes, I looked at that, but it looked to me like a subsection was
->> intended for an optional feature which MUST be present on the
->> destination if the source is using the feature.  This way, newer
->> hosts without the feature enabled can migrate to older hosts which
->> do not support the feature.
->
-> Right. But you can use a subsection to achieve the same effect. Just
-> consider that the source is not using the feature if you want to migrate
-> to an older host without support for it. Juan, is there a problem to
-> use subsections in this fashion?
->
-> With the MSR scheme, there is no way for management to enforce support
-> of the feature on the destination (at least not that i can see). And 
-> you create an MSR that does not exist on real hardware.
->
->> 
->> The TSC rate migration is slightly different; we may wish to migrate
->> from a host with the TSC rate feature enabled to a host which does
->> not support the TSC rate feature.  This is exactly the current
->> behavior, the TSC rate will change on that migration, and I wanted
->> to preserve that behavior.  I don't advise that mode of usage, but
->> there may be use cases for it and it should be decided by policy,
->> not dictated by our feature set.
->> 
->> That said, I'm happy to remove the MSR if we truly don't want to
->> support that mode of usage.
+Some SAM9 chips have the ability to perform DMA between CPU and SMC controller.
+This patch adds DMA support for SAM9RL, SAM9G45, SSAM9G46,AM9M10, SAM9M11.
 
-Ok, I chime it late.
+Signed-off-by: Hong Xu <hong.xu@atmel.com>
+---
+ drivers/mtd/nand/atmel_nand.c |  140 ++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 138 insertions(+), 2 deletions(-)
 
-We are adding a new MSR to the comunication with userspace.  So far so
-good, but this new field, need to be transmited to the "other end" of
-the migration.  This means a new field for migration (notice that this
-is independtly if this is an MSR or not).
-
-        VMSTATE_UINT64_V(system_time_msr, CPUState, 11),
-        VMSTATE_UINT64_V(wall_clock_msr, CPUState, 11),
-
-This are the values that we are sending now.
-We are getting now, a new value, the problem is how to migrate it.
-
-Solutions:
-- create a new field in a new field in CPUState, and up the version.
-  That would make backward migration impossible.
-- create a new field, and sent it only it is has been used with a
-  subsection.  This makes migration backwards if this was not used.
-
-- but, it appears that there if this features is not "known" on
-  destination, we can use the old way to migrate information.
-
-  BIG WARNING HERE: I don't claim to understand how clocks work at all
-
-  There is not a way to convince old qemu/kernels to ignore new fields
-  for good reason.  So the only solution here is to encode this new
-  vcpu->kvm->arch.virtual_tsc_khz in the two previous fields, in a way
-  that is understable for old qemu/new qemu.  old qemu will use old
-  method, new qemu will use a new method.
-
-  If there is not a common encoding that will work for both old/new
-  method, I can't really think of a way to make things work here :(
-
-And as per the warning, I can't think of a way to encode
-"virtual_tsc_khz" into "system_time_msr" and "wall_clock_msr" off-hand.
-
-To make things clearer about optional features, after "lots" of
-discussions, it was decided that target of migration will never ignore
-anything sent, that means that the only one that can decide not to sent
-a feature/value is the "source" of the migration.  There is no way to
-express:
-
-- try this method, if you don't know
-- try this other second best, ...
-
-and so on.
-
-
-Later, Juan.
-
-
-
-
+diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
+index ccce0f0..c2fbffe 100644
+--- a/drivers/mtd/nand/atmel_nand.c
++++ b/drivers/mtd/nand/atmel_nand.c
+@@ -48,6 +48,12 @@
+ #define no_ecc		0
+ #endif
+ 
++/* DMA for large buffers only */
++#define DMA_MIN_BYTES	512
++
++static int use_dma = 1;
++module_param(use_dma, int, 0);
++
+ static int on_flash_bbt = 0;
+ module_param(on_flash_bbt, int, 0);
+ 
+@@ -89,11 +95,20 @@ struct atmel_nand_host {
+ 	struct nand_chip	nand_chip;
+ 	struct mtd_info		mtd;
+ 	void __iomem		*io_base;
++	void __iomem		*io_phys;
+ 	struct atmel_nand_data	*board;
+ 	struct device		*dev;
+ 	void __iomem		*ecc;
++
++	struct completion comp;
++	struct dma_chan *dma_chan;
+ };
+ 
++static int cpu_has_dma(void)
++{
++	return cpu_is_at91sam9rl() || cpu_is_at91sam9g45();
++}
++
+ /*
+  * Enable NAND.
+  */
+@@ -150,7 +165,7 @@ static int atmel_nand_device_ready(struct mtd_info *mtd)
+ /*
+  * Minimal-overhead PIO for data access.
+  */
+-static void atmel_read_buf(struct mtd_info *mtd, u8 *buf, int len)
++static void atmel_read_buf8(struct mtd_info *mtd, u8 *buf, int len)
+ {
+ 	struct nand_chip	*nand_chip = mtd->priv;
+ 
+@@ -164,7 +179,7 @@ static void atmel_read_buf16(struct mtd_info *mtd, u8 *buf, int len)
+ 	__raw_readsw(nand_chip->IO_ADDR_R, buf, len / 2);
+ }
+ 
+-static void atmel_write_buf(struct mtd_info *mtd, const u8 *buf, int len)
++static void atmel_write_buf8(struct mtd_info *mtd, const u8 *buf, int len)
+ {
+ 	struct nand_chip	*nand_chip = mtd->priv;
+ 
+@@ -178,6 +193,102 @@ static void atmel_write_buf16(struct mtd_info *mtd, const u8 *buf, int len)
+ 	__raw_writesw(nand_chip->IO_ADDR_W, buf, len / 2);
+ }
+ 
++static void dma_complete_func(void *completion)
++{
++	complete(completion);
++}
++
++static void atmel_nand_dma_op(struct mtd_info *mtd, void *buf, int len,
++			       int is_read)
++{
++	struct dma_device *dma_dev;
++	enum dma_ctrl_flags flags;
++	dma_addr_t dma_src_addr, dma_dst_addr, phys_addr;
++	struct dma_async_tx_descriptor *tx = NULL;
++	dma_cookie_t cookie;
++	struct nand_chip *chip = mtd->priv;
++	struct atmel_nand_host *host = chip->priv;
++
++	dma_dev = host->dma_chan->device;
++
++	flags = DMA_CTRL_ACK | DMA_COMPL_SKIP_DEST_UNMAP | DMA_PREP_INTERRUPT |
++			DMA_COMPL_SKIP_SRC_UNMAP;
++
++	if (is_read)
++		phys_addr = dma_map_single(dma_dev->dev, buf, len,
++					   DMA_FROM_DEVICE);
++	else
++		phys_addr = dma_map_single(dma_dev->dev, buf, len,
++					   DMA_TO_DEVICE);
++	if (!phys_addr) {
++		dev_err(host->dev, "Failed to dma_map_single\n");
++		goto err_dma_map;
++	}
++
++	if (is_read) {
++		dma_src_addr = (dma_addr_t)host->io_phys;
++		dma_dst_addr = phys_addr;
++	} else {
++		dma_src_addr = phys_addr;
++		dma_dst_addr = (dma_addr_t)host->io_phys;
++	}
++
++	tx = dma_dev->device_prep_dma_memcpy(host->dma_chan, dma_dst_addr,
++					     dma_src_addr, len, flags);
++	if (!tx) {
++		dev_err(host->dev, "Failed to prepare DMA memcpy\n");
++		goto err;
++	}
++
++	init_completion(&host->comp);
++	tx->callback = dma_complete_func;
++	tx->callback_param = &host->comp;
++
++	cookie = tx->tx_submit(tx);
++	if (dma_submit_error(cookie)) {
++		dev_err(host->dev, "Failed to do DMA tx_submit\n");
++		goto err;
++	}
++
++	dma_async_issue_pending(host->dma_chan);
++
++	wait_for_completion(&host->comp);
++
++err:
++	if (is_read)
++		dma_unmap_single(dma_dev->dev, phys_addr, len, DMA_FROM_DEVICE);
++	else
++		dma_unmap_single(dma_dev->dev, phys_addr, len, DMA_TO_DEVICE);
++err_dma_map:
++	return;
++}
++
++static void atmel_read_buf(struct mtd_info *mtd, u8 *buf, int len)
++{
++	struct nand_chip *chip = mtd->priv;
++	struct atmel_nand_host *host = chip->priv;
++
++	if (use_dma && len >= DMA_MIN_BYTES)
++		atmel_nand_dma_op(mtd, buf, len, 1);
++	else if (host->board->bus_width_16)
++		atmel_read_buf16(mtd, buf, len);
++	else
++		atmel_read_buf8(mtd, buf, len);
++}
++
++static void atmel_write_buf(struct mtd_info *mtd, const u8 *buf, int len)
++{
++	struct nand_chip *chip = mtd->priv;
++	struct atmel_nand_host *host = chip->priv;
++
++	if (use_dma && len >= DMA_MIN_BYTES)
++		atmel_nand_dma_op(mtd, (u8 *)buf, len, 0);
++	else if (host->board->bus_width_16)
++		atmel_write_buf16(mtd, buf, len);
++	else
++		atmel_write_buf8(mtd, buf, len);
++}
++
+ /*
+  * Calculate HW ECC
+  *
+@@ -398,6 +509,8 @@ static int __init atmel_nand_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
++	host->io_phys = (void __iomem *)mem->start;
++
+ 	host->io_base = ioremap(mem->start, mem->end - mem->start + 1);
+ 	if (host->io_base == NULL) {
+ 		printk(KERN_ERR "atmel_nand: ioremap failed\n");
+@@ -516,6 +629,23 @@ static int __init atmel_nand_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
++	if (cpu_has_dma() && use_dma) {
++		dma_cap_mask_t mask;
++
++		dma_cap_zero(mask);
++		dma_cap_set(DMA_MEMCPY, mask);
++		host->dma_chan = dma_request_channel(mask, 0, NULL);
++
++		if (!host->dma_chan) {
++			dev_err(host->dev, "Failed to request DMA channel\n");
++			use_dma = 0;
++		}
++	}
++	if (use_dma)
++		dev_info(host->dev, "Using DMA for NAND access.\n");
++	else
++		dev_info(host->dev, "No DMA support for NAND access.\n");
++
+ 	/* second phase scan */
+ 	if (nand_scan_tail(mtd)) {
+ 		res = -ENXIO;
+@@ -555,6 +685,8 @@ err_scan_ident:
+ err_no_card:
+ 	atmel_nand_disable(host);
+ 	platform_set_drvdata(pdev, NULL);
++	if (host->dma_chan)
++		dma_release_channel(host->dma_chan);
+ 	if (host->ecc)
+ 		iounmap(host->ecc);
+ err_ecc_ioremap:
+@@ -578,6 +710,10 @@ static int __exit atmel_nand_remove(struct platform_device *pdev)
+ 
+ 	if (host->ecc)
+ 		iounmap(host->ecc);
++
++	if (host->dma_chan)
++		dma_release_channel(host->dma_chan);
++
+ 	iounmap(host->io_base);
+ 	kfree(host);
+ 
+-- 
+1.7.3.3
 
