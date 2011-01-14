@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757046Ab1ANKdo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 05:33:44 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:42277 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751427Ab1ANKdg (ORCPT
+	id S1752921Ab1ANKsj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 05:48:39 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:40722 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530Ab1ANKsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 05:33:36 -0500
-X-AuditID: b753bd60-9f960ba000000f65-3c-4d30267ee8c6
-Message-ID: <4D30267B.9080406@hitachi.com>
-Date: Fri, 14 Jan 2011 19:33:31 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Franck Bui-Huu <vagabon.xyz@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        lkml <linux-kernel@vger.kernel.org>, 2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH] perf-probe: make "perf-probe -L <function>" display the
- absolute path and absolute line number
-References: <m38vyp85qv.fsf@gmail.com> <4D2EDBE4.3060608@hitachi.com>	<m34o9c8ual.fsf@gmail.com> <4D2FC17D.5010203@hitachi.com> <m3tyhb6eme.fsf@gmail.com>
-In-Reply-To: <m3tyhb6eme.fsf@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+	Fri, 14 Jan 2011 05:48:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=references:in-reply-to:mime-version:content-transfer-encoding
+         :content-type:message-id:cc:x-mailer:from:subject:date:to;
+        b=QDma5cVqESvEn3XXke+0Qzp3blnejxjY4YHdADfci70tg2RilNDWrQKULrDszFXW1c
+         WHjlNJB52hq5Z4j+cVeyQQH6pvUIChqPya0NQEm97QYJIL9P5yUp/dfkTpwJHgnNmX/q
+         v+i5/JW6hY4uBuLc5j93wQ85dH7OT8b1Ev0Yc=
+References: <AANLkTi=bDV52-Fc22amAEsxofL7gRC=oaU+AXgUnuRt7@mail.gmail.com> <20110114101246.GA1158@redhat.com>
+In-Reply-To: <20110114101246.GA1158@redhat.com>
+Mime-Version: 1.0 (iPhone Mail 8C148)
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <5721A0C7-2BC4-46E7-8A55-232A827828D4@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hjk@hansjkoch.de" <hjk@hansjkoch.de>
+X-Mailer: iPhone Mail (8C148)
+From: Billy Rafferty <billy.rafferty@gmail.com>
+Subject: Re: uio_pci_generic has no mapping?
+Date: Fri, 14 Jan 2011 10:51:23 +0000
+To: "Michael S. Tsirkin" <mst@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Franck,
+Hi Michael,
 
-(2011/01/14 18:03), Franck Bui-Huu wrote:
-> But if you think it should be used to hint for a probe point syntax,
-> (you'll probably use copy & paste since it uses absolute path name),
+Thanks for the help and the driver.
 
-Not only for copy&paste, but also for avoiding confusion.
-Please imagine that user see this output.
+Cheers,
 
-   </usr/src/debug/kernel-2.6.35.fc14/linux-2.6.35.x86_64/kernel/sched.c:3823>
-        10         rq = cpu_rq(cpu);
-        11         rcu_note_context_switch(cpu);
+Billy
 
-"Why the definition line number and starting line number are different?"
-"How I can put a probe?  sched.c:3823 ... + 10??"
-"Or, it's just buggy! report it!"
+On 14 Jan 2011, at 10:12, "Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-I don't want this.
-
-> then this patch is wrong.
-
-Yeah, but just a _bit_. Basically, I agree with your idea of showing
-actual path of the function, because, indeed, perf-probe just shows
-the first one even if there are many same-name functions.
-
-So, here, I had suggested an enhancement idea;
-
-  $ perf probe -L schedule:0-1
-  <schedule@/usr/src/debug/kernel-2.6.35.fc14/linux-2.6.35.x86_64/kernel/sched.c:0>
-        0  asmlinkage void __sched schedule(void)
-        1  {
-
-This is acceptable, because it shows which function you see and
-it also gives you how you can specify a probe point on a function
-line.
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+> On Fri, Jan 14, 2011 at 09:52:45AM +0000, Billy Rafferty wrote:
+>> Hi there,
+>> 
+>> I was hoping that someone might be be able to help me out using the
+>> uio_pci_generic driver.
+>> 
+>> To gain access to the memory in the card I try to do an mmap but it
+>> returns an error.
+>> 
+>> I was wondering if the mapping of the PCI memory regions is automatic?
+>> I am not seeing /sys/class/uio/uio0/maps
+>> 
+>> Do I have to do something to get these to appear?
+>> 
+>> I would appreciate any help or pointers that you can give.
+>> 
+>> Regards,
+>> 
+>> Billy
+> 
+> mmap the pci resource through
+> /sys/class/uio/uio0/device/resourceX
+> 
+> The list of resources is in
+> /sys/class/uio/uio0/device/resource
+> 
+> -- 
+> MST
