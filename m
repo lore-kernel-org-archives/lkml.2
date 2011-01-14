@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758000Ab1ANRrl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 12:47:41 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:33560 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757443Ab1ANRrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 12:47:37 -0500
-From: John Stultz <johnstul@us.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>
-Subject: [PATCH] acpi_pm: Clear pmtmr_ioport if acpi_pm initialization fails
-Date: Fri, 14 Jan 2011 09:47:26 -0800
-Message-Id: <1295027246-11110-1-git-send-email-johnstul@us.ibm.com>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1758045Ab1ANRrw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 12:47:52 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:61240 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757443Ab1ANRrn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 12:47:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=M2UCZvSVtw+6Aa2VMphaoEX5+0rCUeLUh6z106+P7scHClMiBI9M2ZPj96igum36aG
+         MabYyN23hDKy/BOJoR3ldb7vZhI74G7RzA7EMTNuO0ucf4hdUwTA2yqVdz5EhmXunM/N
+         cQQIgp+Eg4oRA+YqQYAVGx7Dj9BjWYGiz7gd4=
+MIME-Version: 1.0
+Date: Fri, 14 Jan 2011 23:17:41 +0530
+Message-ID: <AANLkTi=DU3MpNd4-7a3-n2E3voPk25AtwdL93SxGcvn8@mail.gmail.com>
+Subject: Size difference in Kernel Modules
+From: anil joshi <anilsjoshi123@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, anil joshi <anilsjoshi123@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+I have compiled kernel 2.6.35 but there is huge difference in size
+between 2.6.35.6-45.fc14.i686 (fedora core 14 ) and  compiled one
+I am using same configuration file as fc14 uses
 
-If the acpi pm timer throws invalid data, clear pmtmr_ioport
-so the pm timer won't accidentally be used.
+following details show difference in size
 
-This was found when using Xen where there is a acpi pm reported,
-but gives bogus values, and other code was continuing to try
-to use the pm timer after the initialization failed.
 
-[jstultz: Catch additional failure and reword changelog message. ]
+[Anil@localhost linux-2.6.35]$ du -h
+/lib/modules/2.6.35.6-45.fc14.i686/kernel/drivers/video/backlight/lcd.ko
+8.0K /lib/modules/2.6.35.6-45.fc14.i686/kernel/drivers/video/backlight/lcd.ko
+[Anil@localhost linux-2.6.35]$ du -h
+/lib/modules/2.6.35/kernel/drivers/video/backlight/lcd.ko
+160K /lib/modules/2.6.35/kernel/drivers/video/backlight/lcd.ko
+[Anil@localhost linux-2.6.35]$
 
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
----
- drivers/clocksource/acpi_pm.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/clocksource/acpi_pm.c b/drivers/clocksource/acpi_pm.c
-index cfb0f52..effe797 100644
---- a/drivers/clocksource/acpi_pm.c
-+++ b/drivers/clocksource/acpi_pm.c
-@@ -202,17 +202,21 @@ static int __init init_acpi_pm_clocksource(void)
- 			printk(KERN_INFO "PM-Timer had inconsistent results:"
- 			       " 0x%#llx, 0x%#llx - aborting.\n",
- 			       value1, value2);
-+			pmtmr_ioport = 0;
- 			return -EINVAL;
- 		}
- 		if (i == ACPI_PM_READ_CHECKS) {
- 			printk(KERN_INFO "PM-Timer failed consistency check "
- 			       " (0x%#llx) - aborting.\n", value1);
-+			pmtmr_ioport = 0;
- 			return -ENODEV;
- 		}
- 	}
- 
--	if (verify_pmtmr_rate() != 0)
-+	if (verify_pmtmr_rate() != 0){
-+		pmtmr_ioport = 0;
- 		return -ENODEV;
-+	}
- 
- 	return clocksource_register_hz(&clocksource_acpi_pm,
- 						PMTMR_TICKS_PER_SEC);
--- 
-1.7.3.2.146.gca209
+62M /lib/modules/2.6.35.6-45.fc14.i686/
 
+587M /lib/modules/2.6.35/
