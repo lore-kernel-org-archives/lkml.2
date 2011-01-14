@@ -1,85 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220Ab1ANLZm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 06:25:42 -0500
-Received: from mail09.linbit.com ([212.69.161.110]:54962 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613Ab1ANLZg (ORCPT
+	id S1753959Ab1ANLeu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 06:34:50 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:49505 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152Ab1ANLep (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 06:25:36 -0500
-X-Greylist: delayed 482 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Jan 2011 06:25:36 EST
-Date: Fri, 14 Jan 2011 12:17:30 +0100
-From: Lars Ellenberg <lars.ellenberg@linbit.com>
-To: Jens Axboe <axboe@kernel.dk>, Neil Brown <neilb@suse.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: bio_add_page of higher order pages?
-Message-ID: <20110114111730.GN25975@barkeeper1-xen.linbit>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+	Fri, 14 Jan 2011 06:34:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Td98VDv9fdSWdZWMg736e0oLzJLuLVENqbG1zj+gMjXj5vENg8LKeFqEjuUOhFtzUf
+         2+SppJZOv6NYWaPEEpsV6thh1VqaJ3XPdCkNR2Qn4LavLxo/hLtXHiCab6Mo25bQAow0
+         YPN6D6oiHRIBjG1PDRu/yJuY/dsk6HaJ3EQkE=
+Subject: Re: error in 2.6.37-git10
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: balbi@ti.com
+Cc: Piotr Hosowicz <piotr@hosowicz.com>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110114105639.GL2476@legolas.emea.dhcp.ti.com>
+References: <4D301CA5.503@example.com>
+	 <20110114095745.GD2476@legolas.emea.dhcp.ti.com>
+	 <4D302067.2000203@example.com>
+	 <20110114100831.GE2476@legolas.emea.dhcp.ti.com>
+	 <4D3021AE.5020607@example.com> <4D302B0E.1080306@example.com>
+	 <20110114105639.GL2476@legolas.emea.dhcp.ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 Jan 2011 12:34:41 +0100
+Message-ID: <1295004881.3937.9.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le vendredi 14 janvier 2011 Ã  12:56 +0200, Felipe Balbi a Ã©crit :
+> Hi,
+> 
+> On Fri, Jan 14, 2011 at 11:53:02AM +0100, Piotr Hosowicz wrote:
+> > >I corrected and am building again. Hope this helps.
+> > 
+> > I don't know why but it failed again. I disabled and am building again.
+> 
+> for me it builds ok:
+> 
+>   CC [M]  fs/ecryptfs/dentry.o
+>   CC [M]  fs/ecryptfs/file.o
+>   CC [M]  fs/ecryptfs/inode.o
+>   CC [M]  fs/ecryptfs/main.o
+>   CC [M]  fs/ecryptfs/super.o
+>   CC [M]  fs/ecryptfs/mmap.o
+>   CC [M]  fs/ecryptfs/read_write.o
+>   CC [M]  fs/ecryptfs/crypto.o
+>   CC [M]  fs/ecryptfs/keystore.o
+>   CC [M]  fs/ecryptfs/messaging.o
+>   CC [M]  fs/ecryptfs/miscdev.o
+>   CC [M]  fs/ecryptfs/kthread.o
+>   CC [M]  fs/ecryptfs/debug.o
+>   LD [M]  fs/ecryptfs/ecryptfs.o
+> 
+> weird.
+> 
 
-Someone wants to be able to add higher order pages to a bio_vec.
-This is not my idea, but I was asked to comment on it,
-but I'm not sure if this was allowed or even expected.
-Somehow this question came up recently, and I have not been able to find
-explicit documentation stating either way.
+This is because it was fixed meanwhile
 
-There is
+commit 6254b32b5791e47ba1c679d023f26985fa34755a
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Thu Jan 13 17:19:38 2011 -0800
 
-/*
- * was unsigned short, but we might as well be ready for > 64kB I/O pages
- */
-struct bio_vec {
-	struct page	*bv_page;
-	unsigned int	bv_len;
-	unsigned int	bv_offset;
-};
-
-
-and
-
-/**
- *	bio_add_page	-	attempt to add page to bio
- *	@bio: destination bio
- *	@page: page to add
- *	@len: vec entry length
- *	@offset: vec entry offset
- *
- *	Attempt to add a page to the bio_vec maplist. This can fail for a
- *	number of reasons, such as the bio being full or target block
- *	device limitations. The target block device must allow bio's
- *      smaller than PAGE_SIZE, so it is always possible to add a single
- *      page to an empty bio.
- */
-int bio_add_page(struct bio *bio, struct page *page, unsigned int len,
-		 unsigned int offset)
+    ecryptfs: fix broken build
+    
+    Stephen Rothwell reports that the vfs merge broke the build of ecryptfs.
+    The breakage comes from commit 66cb76666d69 ("sanitize ecryptfs
+    ->mount()") which was obviously not even build tested. Tssk, tssk, Al.
+    
+    This is the minimal build fixup for the situation, although I don't have
+    a filesystem to actually test it with.
+    
+    Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+    Cc: Al Viro <viro@zeniv.linux.org.uk>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
 
-
-Is it legal, or even expected, to be able to
-	page = alloc_pages(3);
-	bio_add_page(bio, page, 4*PAGE_SIZE+1536, 2*PAGE_SIZE + 512);
-
-That is, can bv_len and bv_offset be >= PAGE_SIZE?
-
-If so, that should be stated somewhere,
-and I think various pieces would need fixing.
-__blk_queue_bounce, the md raid5 stripe cache,
-drbd (where is uses tcp_sendpage for each bio_vec),
-probably more.
-
-If not, (bv_offset + bv_len) <= PAGE_SIZE
-should be clearly documented and enforced.
-
--- 
-: Lars Ellenberg
-: LINBIT | Your Way to High Availability
-: DRBD/HA support and consulting http://www.linbit.com
-
-DRBD® and LINBIT® are registered trademarks of LINBIT, Austria.
