@@ -1,178 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757060Ab1ANMHV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 07:07:21 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:60630 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752909Ab1ANMHJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 07:07:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=KSKFMzO26yvlIaCLDK6M9CK1DvCZXw2I69VuQL/felMKh9i8bZzppbOLLbBdXtxgkt
-         RERYcwUnY25Wf8LDWbJZ4zYgzBmbnpfMSZqOMnLj3+w58HeHgL61kJ4zerG70yWRxyiq
-         pfotcFmnk+bYiuGuQNHIsT+7P3unjSObYF4Mw=
-MIME-Version: 1.0
-In-Reply-To: <20110114115121.GO23189@cmpxchg.org>
-References: <20110114190412.73362cd7.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110114190644.a222f60d.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110114115121.GO23189@cmpxchg.org>
-Date: Fri, 14 Jan 2011 21:07:08 +0900
-Message-ID: <AANLkTinKFDn5oQE=xqjXC4XXO_sA3Xb_NOEXz_pU7FKn@mail.gmail.com>
-Subject: Re: [PATCH 1/4] [BUGFIX] enhance charge_statistics function for
- fixising issues
-From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+	id S1757016Ab1ANMJp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 07:09:45 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:39788 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753884Ab1ANMJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 07:09:40 -0500
+Date: Fri, 14 Jan 2011 13:09:31 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
         "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
         Greg Thelen <gthelen@google.com>, aarcange@redhat.com,
         "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH 2/4] [BUGFIX] dont set USED bit on tail pages
+Message-ID: <20110114120931.GP23189@cmpxchg.org>
+References: <20110114190412.73362cd7.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110114190909.d396cdf4.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110114190909.d396cdf4.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/1/14 Johannes Weiner <hannes@cmpxchg.org>:
-> On Fri, Jan 14, 2011 at 07:06:44PM +0900, KAMEZAWA Hiroyuki wrote:
->> mem_cgroup_charge_staistics() was designed for charging a page but
->> now, we have transparent hugepage. To fix problems (in following patch)
->> it's required to change the function to get the number of pages
->> as its arguments.
->>
->> The new function gets following as argument.
->>   - type of page rather than 'pc'
->>   - size of page which is accounted.
->>
->> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->
-> I agree with the patch in general, below are only a few nitpicks.
->
-Thanks, I think details should be updated, too.
+On Fri, Jan 14, 2011 at 07:09:09PM +0900, KAMEZAWA Hiroyuki wrote:
+> --- mmotm-0107.orig/mm/memcontrol.c
+> +++ mmotm-0107/mm/memcontrol.c
 
+> @@ -2154,6 +2139,23 @@ static void __mem_cgroup_commit_charge(s
+>  	 */
+>  	memcg_check_events(mem, pc->page);
+>  }
+> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> +/*
+> + * Because tail pages are not mared as "used", set it. We're under
 
->> --- mmotm-0107.orig/mm/memcontrol.c
->> +++ mmotm-0107/mm/memcontrol.c
->> @@ -600,23 +600,23 @@ static void mem_cgroup_swap_statistics(s
->>  }
->>
->>  static void mem_cgroup_charge_statistics(struct mem_cgroup *mem,
->> -                                      struct page_cgroup *pc,
->> -                                      bool charge)
->> +                                      bool file,
->> +                                      int pages)
->
-> I think 'nr_pages' would be a better name.  This makes me think of a
-> 'struct page *[]'.
->
-ok.
+marked
 
->>  {
->> -     int val = (charge) ? 1 : -1;
->> -
->>       preempt_disable();
->>
->> -     if (PageCgroupCache(pc))
->> -             __this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_CACHE], val);
->> +     if (file)
->> +             __this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_CACHE], pages);
->>       else
->> -             __this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_RSS], val);
->> +             __this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_RSS], pages);
->>
->> -     if (charge)
->> +     /* pagein of a big page is an event. So, ignore page size */
->> +     if (pages > 0)
->>               __this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_PGPGIN_COUNT]);
->>       else
->>               __this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_PGPGOUT_COUNT]);
->> -     __this_cpu_inc(mem->stat->count[MEM_CGROUP_EVENTS]);
->> +
->> +     __this_cpu_add(mem->stat->count[MEM_CGROUP_EVENTS], pages);
->>
->>       preempt_enable();
->>  }
->> @@ -2092,6 +2092,7 @@ static void ____mem_cgroup_commit_charge
->>                                        struct page_cgroup *pc,
->>                                        enum charge_type ctype)
->>  {
->> +     bool file = false;
->>       pc->mem_cgroup = mem;
->>       /*
->>        * We access a page_cgroup asynchronously without lock_page_cgroup().
->> @@ -2106,6 +2107,7 @@ static void ____mem_cgroup_commit_charge
->>       case MEM_CGROUP_CHARGE_TYPE_SHMEM:
->>               SetPageCgroupCache(pc);
->>               SetPageCgroupUsed(pc);
->> +             file = true;
->>               break;
->>       case MEM_CGROUP_CHARGE_TYPE_MAPPED:
->>               ClearPageCgroupCache(pc);
->> @@ -2115,7 +2117,7 @@ static void ____mem_cgroup_commit_charge
->>               break;
->>       }
->>
->> -     mem_cgroup_charge_statistics(mem, pc, true);
->> +     mem_cgroup_charge_statistics(mem, file, 1);
->
-> The extra local variable is a bit awkward, since there are already
-> several sources of this information (ctype and pc->flags).
->
-> Could you keep it like the other sites, just pass PageCgroupCache()
-> here as well?
->
-Ok.
+> + * compund_lock and don't need to take care of races.
+> + * Statistics are updated properly at charging. We just mark Used bits.
+> + */
+> +void mem_cgroup_split_huge_fixup(struct page *head, struct page *tail)
+> +{
+> +	struct page_cgroup *hpc = lookup_page_cgroup(head);
+> +	struct page_cgroup *tpc = lookup_page_cgroup(tail);
 
->> @@ -2186,14 +2188,14 @@ static void __mem_cgroup_move_account(st
->>               __this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
->>               preempt_enable();
->>       }
->> -     mem_cgroup_charge_statistics(from, pc, false);
->> +     mem_cgroup_charge_statistics(from, PageCgroupCache(pc), -1);
->>       if (uncharge)
->>               /* This is not "cancel", but cancel_charge does all we need. */
->>               mem_cgroup_cancel_charge(from, PAGE_SIZE);
->>
->>       /* caller should have done css_get */
->>       pc->mem_cgroup = to;
->> -     mem_cgroup_charge_statistics(to, pc, true);
->> +     mem_cgroup_charge_statistics(to, PageCgroupCache(pc), 1);
->>       /*
->>        * We charges against "to" which may not have any tasks. Then, "to"
->>        * can be under rmdir(). But in current implementation, caller of
->> @@ -2551,6 +2553,7 @@ __mem_cgroup_uncharge_common(struct page
->>       struct page_cgroup *pc;
->>       struct mem_cgroup *mem = NULL;
->>       int page_size = PAGE_SIZE;
->> +     bool file = false;
->>
->>       if (mem_cgroup_disabled())
->>               return NULL;
->> @@ -2578,6 +2581,9 @@ __mem_cgroup_uncharge_common(struct page
->>       if (!PageCgroupUsed(pc))
->>               goto unlock_out;
->>
->> +     if (PageCgroupCache(pc))
->> +             file = true;
->> +
->>       switch (ctype) {
->>       case MEM_CGROUP_CHARGE_TYPE_MAPPED:
->>       case MEM_CGROUP_CHARGE_TYPE_DROP:
->> @@ -2597,7 +2603,7 @@ __mem_cgroup_uncharge_common(struct page
->>       }
->>
->>       for (i = 0; i < count; i++)
->> -             mem_cgroup_charge_statistics(mem, pc + i, false);
->> +             mem_cgroup_charge_statistics(mem, file, -1);
->
-> I see you get rid of this loop in the next patch, anyway.  Can you
-> just use PageCgroupCache() instead of the extra variable?
+I have trouble reading the code fluently with those names as they are
+just very similar random letter sequences.  Could you rename them so
+that they're better to discriminate?  headpc and tailpc perhaps?
 
-will do.
-Thanks,
--Kame
+> +	tpc->mem_cgroup = hpc->mem_cgroup;
+> +	smp_wmb(); /* see __commit_charge() */
+> +	SetPageCgroupUsed(tpc);
+> +	VM_BUG_ON(PageCgroupCache(hpc));
+
+Right now, this would be a bug due to other circumstances, but this
+function does not require the page to be anon to function correctly,
+does it?  I don't think we should encode a made up dependency here.
+
+> @@ -2602,8 +2603,7 @@ __mem_cgroup_uncharge_common(struct page
+>  		break;
+>  	}
+>  
+> -	for (i = 0; i < count; i++)
+> -		mem_cgroup_charge_statistics(mem, file, -1);
+> +	mem_cgroup_charge_statistics(mem, file, -count);
+
+Pass PageCgroupCache(pc) instead, ditch the `file' variable?
+
+>  	ClearPageCgroupUsed(pc);
+>  	/*
+> Index: mmotm-0107/include/linux/memcontrol.h
+> ===================================================================
+> --- mmotm-0107.orig/include/linux/memcontrol.h
+> +++ mmotm-0107/include/linux/memcontrol.h
+> @@ -146,6 +146,10 @@ unsigned long mem_cgroup_soft_limit_recl
+>  						gfp_t gfp_mask);
+>  u64 mem_cgroup_get_limit(struct mem_cgroup *mem);
+>  
+> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> +void mem_cgroup_split_huge_fixup(struct page *head, struct page *tail);
+> +#endif
+> +
+>  #else /* CONFIG_CGROUP_MEM_RES_CTLR */
+>  struct mem_cgroup;
+>  
+> Index: mmotm-0107/mm/huge_memory.c
+> ===================================================================
+> --- mmotm-0107.orig/mm/huge_memory.c
+> +++ mmotm-0107/mm/huge_memory.c
+> @@ -1203,6 +1203,8 @@ static void __split_huge_page_refcount(s
+>  		BUG_ON(!PageDirty(page_tail));
+>  		BUG_ON(!PageSwapBacked(page_tail));
+>  
+> +		mem_cgroup_split_huge_fixup(page, page_tail);
+
+You need to provide a dummy for non-memcg configurations.
