@@ -1,492 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757961Ab1ANDJx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 22:09:53 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:47952 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757520Ab1ANDHR (ORCPT
+	id S1757542Ab1ANDMp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 22:12:45 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60561 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752303Ab1ANDMh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 22:07:17 -0500
+	Thu, 13 Jan 2011 22:12:37 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=N+MKLUgCf9QRlNGHEHL6TowiZKiK2PvV62P6++4ih5Z5ik6lO1cDCnhY0wKz5wAgbh
-         wCOg6sGiTJdXY71T7dWn/ZCmmFhyC/lnYQ0Uxj5BYDUc+IDy2WYZfnaOJxupJrlSPv0J
-         GDIQ50CMqGAREIA+IhDeuKjSKdE9Sa0ZNe0Ts=
-From: Charles Manning <cdhmanning@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        akpm@linux-foundation.org
-Cc: Charles Manning <cdhmanning@gmail.com>
-Subject: [PATCH 03/10] Add yaffs2 file system: Checkpoint handing code
-Date: Fri, 14 Jan 2011 16:06:02 +1300
-Message-Id: <1294974369-31647-4-git-send-email-cdhmanning@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1294974369-31647-1-git-send-email-cdhmanning@gmail.com>
-References: <1294974369-31647-1-git-send-email-cdhmanning@gmail.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=DdkkksD1iyI3Gj+Ye1dz5z/3Jcoo1m/6xEnnr6pOgn8eYPGFI7kWZqVXVelA1Xxju2
+         rTzMdyAspGkn2mfIRerHlXe2bsreuy7JGuVW3af2U906NN43e2hn4A1ty66Z4btPQBTq
+         NS+lfOHfIWAmCJ3NsjPIEnMVyDCiOsh4ywe9E=
+MIME-Version: 1.0
+In-Reply-To: <20110114030325.GU19804@ZenIV.linux.org.uk>
+References: <8855.1294927436@jrobl>
+	<AANLkTik1bj=Z9xFv8JfYrxqefFL1owmH=Rctj=XnH4Mp@mail.gmail.com>
+	<20110114030325.GU19804@ZenIV.linux.org.uk>
+Date: Fri, 14 Jan 2011 14:12:35 +1100
+Message-ID: <AANLkTi=H7Zhe4VMsh_tdrd7Atb9FX8j4AdiMNepXGsj9@mail.gmail.com>
+Subject: Re: vfs-scale, d_revalidate from nfsd
+From: Nick Piggin <npiggin@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: "J. R. Okajima" <hooanon05@yahoo.co.jp>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Charles Manning <cdhmanning@gmail.com>
----
- fs/yaffs2/yaffs_checkptrw.c |  407 +++++++++++++++++++++++++++++++++++++++++++
- fs/yaffs2/yaffs_checkptrw.h |   33 ++++
- 2 files changed, 440 insertions(+), 0 deletions(-)
- create mode 100644 fs/yaffs2/yaffs_checkptrw.c
- create mode 100644 fs/yaffs2/yaffs_checkptrw.h
+On Fri, Jan 14, 2011 at 2:03 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Fri, Jan 14, 2011 at 01:57:55PM +1100, Nick Piggin wrote:
+>> On Fri, Jan 14, 2011 at 1:03 AM, J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
+>> >
+>> > NFSD calls filesystem's ->d_revalidate() with the parameter nd == NULL.
+>> > So every
+>> > ? ? ? ?if (nd->flags & LOOKUP_RCU)
+>> > ? ? ? ? ? ? ? ?return -ECHILD;
+>> > code which was added to ->d_revalidate() of FS which supports NFS
+>> > exporting will crash.
+>> >
+>> > If we rewrite it as
+>> > ? ? ? ?if (nd && (nd->flags & LOOKUP_RCU))
+>> > ? ? ? ? ? ? ? ?return -ECHILD;
+>> > the problem may not occur.
+>> > But I am not sure whether lookup_one_len() call in NFSD support rcu-walk.
+>>
+>> Ah, good catch.
+>>
+>> I'm going to change the d_revalidate API so it takes and inode and rcu-walk
+>> flag parameter to make it easier for filesystems to implement rcu-walk.
+>>
+>> That will take care of this NULL nd case.
+>
+> Oh, for fuck sake...  Would you at least mind posting your API change
+> description to fsdevel before going for it?
 
-diff --git a/fs/yaffs2/yaffs_checkptrw.c b/fs/yaffs2/yaffs_checkptrw.c
-new file mode 100644
-index 0000000..711df13
---- /dev/null
-+++ b/fs/yaffs2/yaffs_checkptrw.c
-@@ -0,0 +1,407 @@
-+/*
-+ * YAFFS: Yet Another Flash File System. A NAND-flash specific file system.
-+ *
-+ * Copyright (C) 2002-2010 Aleph One Ltd.
-+ *   for Toby Churchill Ltd and Brightstar Engineering
-+ *
-+ * Created by Charles Manning <charles@aleph1.co.uk>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include "yaffs_checkptrw.h"
-+#include "yaffs_getblockinfo.h"
-+
-+static int yaffs2_checkpt_space_ok(struct yaffs_dev *dev)
-+{
-+	int blocks_avail = dev->n_erased_blocks - dev->param.n_reserved_blocks;
-+
-+	yaffs_trace(YAFFS_TRACE_CHECKPOINT,
-+		"checkpt blocks_avail = %d", blocks_avail);
-+
-+	return (blocks_avail <= 0) ? 0 : 1;
-+}
-+
-+static int yaffs_checkpt_erase(struct yaffs_dev *dev)
-+{
-+	int i;
-+
-+	if (!dev->param.erase_fn)
-+		return 0;
-+	yaffs_trace(YAFFS_TRACE_CHECKPOINT,
-+		"checking blocks %d to %d",
-+		dev->internal_start_block, dev->internal_end_block);
-+
-+	for (i = dev->internal_start_block; i <= dev->internal_end_block; i++) {
-+		struct yaffs_block_info *bi = yaffs_get_block_info(dev, i);
-+		if (bi->block_state == YAFFS_BLOCK_STATE_CHECKPOINT) {
-+			yaffs_trace(YAFFS_TRACE_CHECKPOINT,
-+			"erasing checkpt block %d", i);
-+
-+			dev->n_erasures++;
-+
-+			if (dev->param.
-+			    erase_fn(dev,
-+				     i - dev->block_offset /* realign */)) {
-+				bi->block_state = YAFFS_BLOCK_STATE_EMPTY;
-+				dev->n_erased_blocks++;
-+				dev->n_free_chunks +=
-+				    dev->param.chunks_per_block;
-+			} else {
-+				dev->param.bad_block_fn(dev, i);
-+				bi->block_state = YAFFS_BLOCK_STATE_DEAD;
-+			}
-+		}
-+	}
-+
-+	dev->blocks_in_checkpt = 0;
-+
-+	return 1;
-+}
-+
-+static void yaffs2_checkpt_find_erased_block(struct yaffs_dev *dev)
-+{
-+	int i;
-+	int blocks_avail = dev->n_erased_blocks - dev->param.n_reserved_blocks;
-+
-+	yaffs_trace(YAFFS_TRACE_CHECKPOINT,
-+		"allocating checkpt block: erased %d reserved %d avail %d next %d ",
-+		dev->n_erased_blocks, dev->param.n_reserved_blocks,
-+		blocks_avail, dev->checkpt_next_block);
-+
-+	if (dev->checkpt_next_block >= 0 &&
-+	    dev->checkpt_next_block <= dev->internal_end_block &&
-+	    blocks_avail > 0) {
-+
-+		for (i = dev->checkpt_next_block; i <= dev->internal_end_block;
-+		     i++) {
-+			struct yaffs_block_info *bi =
-+			    yaffs_get_block_info(dev, i);
-+			if (bi->block_state == YAFFS_BLOCK_STATE_EMPTY) {
-+				dev->checkpt_next_block = i + 1;
-+				dev->checkpt_cur_block = i;
-+				yaffs_trace(YAFFS_TRACE_CHECKPOINT,
-+					"allocating checkpt block %d", i);
-+				return;
-+			}
-+		}
-+	}
-+	yaffs_trace(YAFFS_TRACE_CHECKPOINT, "out of checkpt blocks");
-+
-+	dev->checkpt_next_block = -1;
-+	dev->checkpt_cur_block = -1;
-+}
-+
-+static void yaffs2_checkpt_find_block(struct yaffs_dev *dev)
-+{
-+	int i;
-+	struct yaffs_ext_tags tags;
-+
-+	yaffs_trace(YAFFS_TRACE_CHECKPOINT,
-+		"find next checkpt block: start:  blocks %d next %d",
-+		dev->blocks_in_checkpt, dev->checkpt_next_block);
-+
-+	if (dev->blocks_in_checkpt < dev->checkpt_max_blocks)
-+		for (i = dev->checkpt_next_block; i <= dev->internal_end_block;
-+		     i++) {
-+			int chunk = i * dev->param.chunks_per_block;
-+			int realigned_chunk = chunk - dev->chunk_offset;
-+
-+			dev->param.read_chunk_tags_fn(dev, realigned_chunk,
-+						      NULL, &tags);
-+			yaffs_trace(YAFFS_TRACE_CHECKPOINT,
-+				"find next checkpt block: search: block %d oid %d seq %d eccr %d",
-+				i, tags.obj_id, tags.seq_number,
-+				tags.ecc_result);
-+
-+			if (tags.seq_number == YAFFS_SEQUENCE_CHECKPOINT_DATA) {
-+				/* Right kind of block */
-+				dev->checkpt_next_block = tags.obj_id;
-+				dev->checkpt_cur_block = i;
-+				dev->checkpt_block_list[dev->
-+							blocks_in_checkpt] = i;
-+				dev->blocks_in_checkpt++;
-+				yaffs_trace(YAFFS_TRACE_CHECKPOINT,
-+					"found checkpt block %d", i);
-+				return;
-+			}
-+		}
-+
-+	yaffs_trace(YAFFS_TRACE_CHECKPOINT, "found no more checkpt blocks");
-+
-+	dev->checkpt_next_block = -1;
-+	dev->checkpt_cur_block = -1;
-+}
-+
-+int yaffs2_checkpt_open(struct yaffs_dev *dev, int writing)
-+{
-+	dev->checkpt_open_write = writing;
-+
-+	/* Got the functions we need? */
-+	if (!dev->param.write_chunk_tags_fn ||
-+	    !dev->param.read_chunk_tags_fn ||
-+	    !dev->param.erase_fn || !dev->param.bad_block_fn)
-+		return 0;
-+
-+	if (writing && !yaffs2_checkpt_space_ok(dev))
-+		return 0;
-+
-+	if (!dev->checkpt_buffer)
-+		dev->checkpt_buffer =
-+		    kmalloc(dev->param.total_bytes_per_chunk, GFP_NOFS);
-+	if (!dev->checkpt_buffer)
-+		return 0;
-+
-+	dev->checkpt_page_seq = 0;
-+	dev->checkpt_byte_count = 0;
-+	dev->checkpt_sum = 0;
-+	dev->checkpt_xor = 0;
-+	dev->checkpt_cur_block = -1;
-+	dev->checkpt_cur_chunk = -1;
-+	dev->checkpt_next_block = dev->internal_start_block;
-+
-+	/* Erase all the blocks in the checkpoint area */
-+	if (writing) {
-+		memset(dev->checkpt_buffer, 0, dev->data_bytes_per_chunk);
-+		dev->checkpt_byte_offs = 0;
-+		return yaffs_checkpt_erase(dev);
-+	} else {
-+		int i;
-+		/* Set to a value that will kick off a read */
-+		dev->checkpt_byte_offs = dev->data_bytes_per_chunk;
-+		/* A checkpoint block list of 1 checkpoint block per 16 block is
-+		 * (hopefully) going to be way more than we need */
-+		dev->blocks_in_checkpt = 0;
-+		dev->checkpt_max_blocks =
-+		    (dev->internal_end_block - dev->internal_start_block) / 16 +
-+		    2;
-+		dev->checkpt_block_list =
-+		    kmalloc(sizeof(int) * dev->checkpt_max_blocks, GFP_NOFS);
-+		if (!dev->checkpt_block_list)
-+			return 0;
-+
-+		for (i = 0; i < dev->checkpt_max_blocks; i++)
-+			dev->checkpt_block_list[i] = -1;
-+	}
-+
-+	return 1;
-+}
-+
-+int yaffs2_get_checkpt_sum(struct yaffs_dev *dev, u32 * sum)
-+{
-+	u32 composite_sum;
-+
-+	composite_sum = (dev->checkpt_sum << 8) | (dev->checkpt_xor & 0xFF);
-+	*sum = composite_sum;
-+	return 1;
-+}
-+
-+static int yaffs2_checkpt_flush_buffer(struct yaffs_dev *dev)
-+{
-+	int chunk;
-+	int realigned_chunk;
-+	struct yaffs_ext_tags tags;
-+
-+	if (dev->checkpt_cur_block < 0) {
-+		yaffs2_checkpt_find_erased_block(dev);
-+		dev->checkpt_cur_chunk = 0;
-+	}
-+
-+	if (dev->checkpt_cur_block < 0)
-+		return 0;
-+
-+	tags.is_deleted = 0;
-+	tags.obj_id = dev->checkpt_next_block;	/* Hint to next place to look */
-+	tags.chunk_id = dev->checkpt_page_seq + 1;
-+	tags.seq_number = YAFFS_SEQUENCE_CHECKPOINT_DATA;
-+	tags.n_bytes = dev->data_bytes_per_chunk;
-+	if (dev->checkpt_cur_chunk == 0) {
-+		/* First chunk we write for the block? Set block state to
-+		   checkpoint */
-+		struct yaffs_block_info *bi =
-+		    yaffs_get_block_info(dev, dev->checkpt_cur_block);
-+		bi->block_state = YAFFS_BLOCK_STATE_CHECKPOINT;
-+		dev->blocks_in_checkpt++;
-+	}
-+
-+	chunk =
-+	    dev->checkpt_cur_block * dev->param.chunks_per_block +
-+	    dev->checkpt_cur_chunk;
-+
-+	yaffs_trace(YAFFS_TRACE_CHECKPOINT,
-+		"checkpoint wite buffer nand %d(%d:%d) objid %d chId %d",
-+		chunk, dev->checkpt_cur_block, dev->checkpt_cur_chunk,
-+		tags.obj_id, tags.chunk_id);
-+
-+	realigned_chunk = chunk - dev->chunk_offset;
-+
-+	dev->n_page_writes++;
-+
-+	dev->param.write_chunk_tags_fn(dev, realigned_chunk,
-+				       dev->checkpt_buffer, &tags);
-+	dev->checkpt_byte_offs = 0;
-+	dev->checkpt_page_seq++;
-+	dev->checkpt_cur_chunk++;
-+	if (dev->checkpt_cur_chunk >= dev->param.chunks_per_block) {
-+		dev->checkpt_cur_chunk = 0;
-+		dev->checkpt_cur_block = -1;
-+	}
-+	memset(dev->checkpt_buffer, 0, dev->data_bytes_per_chunk);
-+
-+	return 1;
-+}
-+
-+int yaffs2_checkpt_wr(struct yaffs_dev *dev, const void *data, int n_bytes)
-+{
-+	int i = 0;
-+	int ok = 1;
-+	u8 *data_bytes = (u8 *) data;
-+
-+	if (!dev->checkpt_buffer)
-+		return 0;
-+
-+	if (!dev->checkpt_open_write)
-+		return -1;
-+
-+	while (i < n_bytes && ok) {
-+		dev->checkpt_buffer[dev->checkpt_byte_offs] = *data_bytes;
-+		dev->checkpt_sum += *data_bytes;
-+		dev->checkpt_xor ^= *data_bytes;
-+
-+		dev->checkpt_byte_offs++;
-+		i++;
-+		data_bytes++;
-+		dev->checkpt_byte_count++;
-+
-+		if (dev->checkpt_byte_offs < 0 ||
-+		    dev->checkpt_byte_offs >= dev->data_bytes_per_chunk)
-+			ok = yaffs2_checkpt_flush_buffer(dev);
-+	}
-+
-+	return i;
-+}
-+
-+int yaffs2_checkpt_rd(struct yaffs_dev *dev, void *data, int n_bytes)
-+{
-+	int i = 0;
-+	int ok = 1;
-+	struct yaffs_ext_tags tags;
-+	int chunk;
-+	int realigned_chunk;
-+	u8 *data_bytes = (u8 *) data;
-+
-+	if (!dev->checkpt_buffer)
-+		return 0;
-+
-+	if (dev->checkpt_open_write)
-+		return -1;
-+
-+	while (i < n_bytes && ok) {
-+
-+		if (dev->checkpt_byte_offs < 0 ||
-+		    dev->checkpt_byte_offs >= dev->data_bytes_per_chunk) {
-+
-+			if (dev->checkpt_cur_block < 0) {
-+				yaffs2_checkpt_find_block(dev);
-+				dev->checkpt_cur_chunk = 0;
-+			}
-+
-+			if (dev->checkpt_cur_block < 0)
-+				ok = 0;
-+			else {
-+				chunk = dev->checkpt_cur_block *
-+				    dev->param.chunks_per_block +
-+				    dev->checkpt_cur_chunk;
-+
-+				realigned_chunk = chunk - dev->chunk_offset;
-+
-+				dev->n_page_reads++;
-+
-+				/* read in the next chunk */
-+				dev->param.read_chunk_tags_fn(dev,
-+							realigned_chunk,
-+							dev->checkpt_buffer,
-+							&tags);
-+
-+				if (tags.chunk_id != (dev->checkpt_page_seq + 1)
-+				    || tags.ecc_result > YAFFS_ECC_RESULT_FIXED
-+				    || tags.seq_number !=
-+				    YAFFS_SEQUENCE_CHECKPOINT_DATA)
-+					ok = 0;
-+
-+				dev->checkpt_byte_offs = 0;
-+				dev->checkpt_page_seq++;
-+				dev->checkpt_cur_chunk++;
-+
-+				if (dev->checkpt_cur_chunk >=
-+				    dev->param.chunks_per_block)
-+					dev->checkpt_cur_block = -1;
-+			}
-+		}
-+
-+		if (ok) {
-+			*data_bytes =
-+			    dev->checkpt_buffer[dev->checkpt_byte_offs];
-+			dev->checkpt_sum += *data_bytes;
-+			dev->checkpt_xor ^= *data_bytes;
-+			dev->checkpt_byte_offs++;
-+			i++;
-+			data_bytes++;
-+			dev->checkpt_byte_count++;
-+		}
-+	}
-+
-+	return i;
-+}
-+
-+int yaffs_checkpt_close(struct yaffs_dev *dev)
-+{
-+	if (dev->checkpt_open_write) {
-+		if (dev->checkpt_byte_offs != 0)
-+			yaffs2_checkpt_flush_buffer(dev);
-+	} else if (dev->checkpt_block_list) {
-+		int i;
-+		for (i = 0;
-+		     i < dev->blocks_in_checkpt
-+		     && dev->checkpt_block_list[i] >= 0; i++) {
-+			int blk = dev->checkpt_block_list[i];
-+			struct yaffs_block_info *bi = NULL;
-+			if (dev->internal_start_block <= blk
-+			    && blk <= dev->internal_end_block)
-+				bi = yaffs_get_block_info(dev, blk);
-+			if (bi && bi->block_state == YAFFS_BLOCK_STATE_EMPTY)
-+				bi->block_state = YAFFS_BLOCK_STATE_CHECKPOINT;
-+		}
-+		kfree(dev->checkpt_block_list);
-+		dev->checkpt_block_list = NULL;
-+	}
-+
-+	dev->n_free_chunks -=
-+	    dev->blocks_in_checkpt * dev->param.chunks_per_block;
-+	dev->n_erased_blocks -= dev->blocks_in_checkpt;
-+
-+	yaffs_trace(YAFFS_TRACE_CHECKPOINT, "checkpoint byte count %d",
-+		dev->checkpt_byte_count);
-+
-+	if (dev->checkpt_buffer) {
-+		/* free the buffer */
-+		kfree(dev->checkpt_buffer);
-+		dev->checkpt_buffer = NULL;
-+		return 1;
-+	} else {
-+		return 0;
-+	}
-+}
-+
-+int yaffs2_checkpt_invalidate_stream(struct yaffs_dev *dev)
-+{
-+	/* Erase the checkpoint data */
-+
-+	yaffs_trace(YAFFS_TRACE_CHECKPOINT,
-+		"checkpoint invalidate of %d blocks",
-+		dev->blocks_in_checkpt);
-+
-+	return yaffs_checkpt_erase(dev);
-+}
-diff --git a/fs/yaffs2/yaffs_checkptrw.h b/fs/yaffs2/yaffs_checkptrw.h
-new file mode 100644
-index 0000000..361c606
---- /dev/null
-+++ b/fs/yaffs2/yaffs_checkptrw.h
-@@ -0,0 +1,33 @@
-+/*
-+ * YAFFS: Yet another Flash File System . A NAND-flash specific file system.
-+ *
-+ * Copyright (C) 2002-2010 Aleph One Ltd.
-+ *   for Toby Churchill Ltd and Brightstar Engineering
-+ *
-+ * Created by Charles Manning <charles@aleph1.co.uk>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU Lesser General Public License version 2.1 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
-+ */
-+
-+#ifndef __YAFFS_CHECKPTRW_H__
-+#define __YAFFS_CHECKPTRW_H__
-+
-+#include "yaffs_guts.h"
-+
-+int yaffs2_checkpt_open(struct yaffs_dev *dev, int writing);
-+
-+int yaffs2_checkpt_wr(struct yaffs_dev *dev, const void *data, int n_bytes);
-+
-+int yaffs2_checkpt_rd(struct yaffs_dev *dev, void *data, int n_bytes);
-+
-+int yaffs2_get_checkpt_sum(struct yaffs_dev *dev, u32 * sum);
-+
-+int yaffs_checkpt_close(struct yaffs_dev *dev);
-+
-+int yaffs2_checkpt_invalidate_stream(struct yaffs_dev *dev);
-+
-+#endif
--- 
-1.7.1
+Of course. I was discussing it with Miklos yesterday too, but haven't
+finished getting a proposal together.
 
+The main idea here would be to just pass in a flags parameter rather
+thank poking in nd to get the rcu-walk status. That would solve this
+problem and also avoid nd for most filesystems that don't care about
+it.
+
+
+> ->d_revalidate() is one sick puppy and it's intimately involved in atomic
+> open rewrite.  Please, *please* don't make that shit even messier...
+
+Right, I did agree with Miklos that using nd for passing rcu-walk
+status was going in the wrong direction with that API. Do you
+agree?
