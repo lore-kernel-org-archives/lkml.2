@@ -1,63 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757704Ab1ANPHx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 10:07:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29564 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751611Ab1ANPHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 10:07:47 -0500
-Date: Fri, 14 Jan 2011 16:07:36 +0100
-From: Karel Zak <kzak@redhat.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Tejun Heo <tj@kernel.org>, Milan Broz <mbroz@redhat.com>,
-        device-mapper development <dm-devel@redhat.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [dm-devel] linux-next - WARNING: at fs/block_dev.c:824
-	bd_link_disk_holder+0x92/0x1ac()
-Message-ID: <20110114150736.GJ16523@nb.net.home>
-References: <20110113131216.GF30719@htj.dyndns.org> <20110113132637.GH16523@nb.net.home> <20110113133722.GG30719@htj.dyndns.org> <4D2F04FF.1070309@redhat.com> <20110113141107.GI30719@htj.dyndns.org> <4D2F0B6A.6010201@redhat.com> <AANLkTinJ68D6Yc-U-Q=ZfS9mqozj5qtHPtySZHOgjcgP@mail.gmail.com> <AANLkTi=LKYzrNsU7jc1Nr4W4CaQ_dmBGeQAquSCp_yAX@mail.gmail.com> <20110113155955.GI16523@nb.net.home> <AANLkTimXkF-JNaU12wLecdszMLZkfTh405tNabzEF4L_@mail.gmail.com>
+	id S1757722Ab1ANPPT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 10:15:19 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47698 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757490Ab1ANPPN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 10:15:13 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=N6+MbH0k4MQgk/DxRoZGlctyoODgf8l6YZPxuik4Rr9HkGrY7vR7ga2KwO7XD56vLU
+         QzQVC6RsuIJ/lPMkd6ehynLl/XXi1i4Bl+qChI6G809+cfSVP7SnjN1NAN/Y+6EAv0aC
+         Csex0h0wS5S08Qq1xUjp3HBXoiewPo7Pzi64g=
+Date: Fri, 14 Jan 2011 18:15:07 +0300
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Grazvydas Ignotas <notasas@gmail.com>, kyungmin.park@samsung.com,
+        myungjoo.ham@gmail.com
+Subject: Re: [PATCH] Add MAX17042 Fuel Gauge Driver - Initial Release
+Message-ID: <20110114151507.GA30831@oksana.dev.rtsoft.ru>
+References: <1294983971-17140-1-git-send-email-myungjoo.ham@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimXkF-JNaU12wLecdszMLZkfTh405tNabzEF4L_@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1294983971-17140-1-git-send-email-myungjoo.ham@samsung.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 05:10:02PM +0100, Kay Sievers wrote:
-> On Thu, Jan 13, 2011 at 16:59, Karel Zak <kzak@redhat.com> wrote:
-> > On Thu, Jan 13, 2011 at 03:43:38PM +0100, Kay Sievers wrote:
-> >> On Thu, Jan 13, 2011 at 15:30, Tejun Heo <tj@kernel.org> wrote:
-> >> > On Thu, Jan 13, 2011 at 3:25 PM, Milan Broz <mbroz@redhat.com> wrote:
-> >> >> Maybe, but this was not invented in DM/MD camp:-)
-> >> >> Probably Kay or Greg can answer why it was done this way?
-> >>
-> >> It's not from Greg or Kay. It just appeared some day in the context of dm. :)
-> >>
-> >> And yes, symlinks *look* nice and simple for the outside, but they are
-> >> not, and have all sorts of problems like non-atomic updates, make it
-> >
-> >  Sounds like sysfs implementation problem, right?
+On Fri, Jan 14, 2011 at 02:46:11PM +0900, MyungJoo Ham wrote:
+> The MAX17042 is a fuel gauge with an I2C interface for lithium-ion
+> betteries. Unlike its predecessor MAX17040, MAX17042 uses 16bit
+> registers. Besides, MAX17042 has much more features than MAX17040; e.g.,
+> a thermistor, current and current accumulation measurement, battery
+> internal resistance estimate, average values of measurement, and others.
 > 
-> It's a normal multi-file problem. It can by-definition not be atomic
-> without doing really weird locking things.
+> This patch implements a driver for MAX17042.
+> In this initial release, we have implemented the most basic features of
+> a fuel gauge: measure the battery capacity and voltage.
+> 
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
- BTW, lsblk(8) and libblkid don't depend on the fact that slaves/holders 
- files are symlinks.
+Thanks for the patch!
+
+Applied to battery-2.6.git, with some changes.
+
+[...]
+> +static const struct i2c_device_id max17042_id[] = {
+> +	{ "max17042", 0 },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(i2c, max17040_id);
+
+Should be max17042_id, otherwise build breaks when enabled as a module:
+
+drivers/power/max17042_battery.c:214: error: ‘__mod_i2c_device_table’ aliased to undefined symbol ‘max17040_id’
+
+Also a few small cosmetic changes were made. Here is the whole
+diff:
+
+diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
+index 6e6eeab..c5c8805 100644
+--- a/drivers/power/max17042_battery.c
++++ b/drivers/power/max17042_battery.c
+@@ -1,5 +1,5 @@
+ /*
+- * max17042_battery.c - Fuel gauge driver for Maxim 17042 / 8966 / 8997
++ * Fuel gauge driver for Maxim 17042 / 8966 / 8997
+  *  Note that Maxim 8966 and 8997 are mfd and this is its subdevice.
+  *
+  * Copyright (C) 2011 Samsung Electronics
+@@ -22,8 +22,10 @@
+  * This driver is based on max17040_battery.c
+  */
  
- The important thing is the filename (/sys/block/.../slaves/<name>) 
- only. We don't follow the symlinks and we don't use readlink() there.
++#include <linux/init.h>
+ #include <linux/slab.h>
+ #include <linux/i2c.h>
++#include <linux/mod_devicetable.h>
+ #include <linux/power_supply.h>
+ #include <linux/power/max17042_battery.h>
  
- It means that you can replace the symlinks with regular files where
- in the file contents is for example maj:min, etc.
-
-    Karel
-
--- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+@@ -209,8 +211,7 @@ static const struct i2c_device_id max17042_id[] = {
+ 	{ "max17042", 0 },
+ 	{ }
+ };
+-MODULE_DEVICE_TABLE(i2c, max17040_id);
+-
++MODULE_DEVICE_TABLE(i2c, max17042_id);
+ 
+ static struct i2c_driver max17042_i2c_driver = {
+ 	.driver	= {
+diff --git a/include/linux/power/max17042_battery.h b/include/linux/power/max17042_battery.h
+index 4cc533f..7995deb 100644
+--- a/include/linux/power/max17042_battery.h
++++ b/include/linux/power/max17042_battery.h
+@@ -1,5 +1,5 @@
+ /*
+- * max17042_battery.h - Fuel gauge driver for Maxim 17042 / 8966 / 8997
++ * Fuel gauge driver for Maxim 17042 / 8966 / 8997
+  *  Note that Maxim 8966 and 8997 are mfd and this is its subdevice.
+  *
+  * Copyright (C) 2011 Samsung Electronics
