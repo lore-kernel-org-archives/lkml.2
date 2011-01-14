@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757445Ab1ANBFJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 20:05:09 -0500
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:54603 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752343Ab1ANBFF (ORCPT
+	id S1757457Ab1ANBGH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 20:06:07 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43952 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752343Ab1ANBGC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 20:05:05 -0500
-Date: Fri, 14 Jan 2011 10:00:37 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+	Thu, 13 Jan 2011 20:06:02 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 14 Jan 2011 10:00:07 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, minchan.kim@gmail.com,
-        akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: minchan.kim@gmail.com, akpm@linux-foundation.org,
+        nishimura@mxp.nes.nec.co.jp, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH v3] mm: add replace_page_cache_page() function
-Message-Id: <20110114100037.7c91cd09.nishimura@mxp.nes.nec.co.jp>
+Message-Id: <20110114100007.27c9fbce.kamezawa.hiroyu@jp.fujitsu.com>
 In-Reply-To: <E1PdNKX-0003t5-Rm@pomaz-ex.szeredi.hu>
 References: <E1Pcet8-0007kg-3R@pomaz-ex.szeredi.hu>
 	<20110111142528.GF2113@barrios-desktop>
@@ -23,7 +23,7 @@ References: <E1Pcet8-0007kg-3R@pomaz-ex.szeredi.hu>
 	<E1Pd1iF-0001jM-CV@pomaz-ex.szeredi.hu>
 	<20110113112702.f87d7e29.kamezawa.hiroyu@jp.fujitsu.com>
 	<E1PdNKX-0003t5-Rm@pomaz-ex.szeredi.hu>
-Organization: NEC Soft, Ltd.
+Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -35,6 +35,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Thu, 13 Jan 2011 14:35:09 +0100
 Miklos Szeredi <miklos@szeredi.hu> wrote:
 
+> On Thu, 13 Jan 2011, KAMEZAWA Hiroyuki wrote:
+> > On Wed, 12 Jan 2011 15:30:11 +0100
+> > Miklos Szeredi <miklos@szeredi.hu> wrote:
+> > 
+> > > On Wed, 12 Jan 2011, KAMEZAWA Hiroyuki wrote:
+> > > > On Tue, 11 Jan 2011 23:25:28 +0900
+> > > > Minchan Kim <minchan.kim@gmail.com> wrote:
+> > > > 
+> > > > > On Tue, Jan 11, 2011 at 03:07:54PM +0100, Miklos Szeredi wrote:
+> > > > > > (resent with fixed CC list, sorry for the duplicate)
+> > > > > > 
+> > > > > > Thanks for the review.
+> > > > > > 
+> > > > > > Here's an updated patch.  Modifications since the last post:
+> > > > > > 
+> > > > > >  - don't pass gfp_mask (since it's only able to deal with GFP_KERNEL
+> > > > > >    anyway)
+> > > > > > 
+> > > > > 
+> > > > > I am not sure it's a good idea.
+> > > > > Now if we need just GFP_KERNEL, we can't make sure it in future.
+> > > > > Sometime we might need GFP_ATOMIC and friendd functions
+> > > > > (ex, add_to_page_cache_lru,add_to_page_cache_locked) already have gfp_mask.
+> > > > > It's a exported function so it's hard to modify it in future.
+> > > > > 
+> > > > > I want to keep it.
+> > > > > Instead of removing it, we can change mem_cgroup_prepare_migration as
+> > > > > getting gfp_mask.
+> > > > > 
+> > > > you're right.
+> > > 
+> > > Okay, makes sense.
+> > > 
+> > > Here's an updated patch.
+> > > 
+> > 
 > > Seems nicer. But you didn't fixed the caller of prepare_migraton()
 > > in mm/migrate.c (I think this is the only caller..)
 > > 
@@ -64,6 +100,20 @@ Miklos Szeredi <miklos@szeredi.hu> wrote:
 > This is used by fuse to move pages into the page cache.
 > 
 > Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+
+Thank you.
+
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+But my last concern is that GFP_KERNEL is ok or not for compaction...
+(It was implicitly used.)
+
+Maybe migrate_page() should have gfp_mask but it should be in another work.
+
+Thanks,
+-Kame
+
+
 > ---
 >  fs/fuse/dev.c              |   10 ++----
 >  include/linux/memcontrol.h |    4 +-
@@ -241,9 +291,10 @@ Miklos Szeredi <miklos@szeredi.hu> wrote:
 >  	if (charge == -ENOMEM) {
 >  		rc = -ENOMEM;
 >  		goto unlock;
-This patch looks good and I want to ack, but this patch can conflict with patches
-in https://lkml.org/lkml/2011/1/11/10 and https://lkml.org/lkml/2011/1/11/65.
-So I think you'd better coordinate with Minchan.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Thanks,
-Daisuke Nishimura.
