@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758060Ab1ANRtk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 12:49:40 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63409 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758030Ab1ANRtf (ORCPT
+	id S1758070Ab1ANRuB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 12:50:01 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:42225 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758054Ab1ANRt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 12:49:35 -0500
+	Fri, 14 Jan 2011 12:49:56 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=wMBIDDkqRDx84ovJH63DyluyzQX7zWraFSHAeMGjqWwVp8s3yq0lnCcKWSrJ7eBEN0
-         +8zHslBZOGKF7/MkdZz9vwRkC3cNFPhAX7K3Pb+gICHt1GSnA7o2y/oQ2A49ecxwOrQN
-         hso4Vmr6ViiQ/7dp7r2h5wSLsvFm/KLv69ajI=
-Date: Fri, 14 Jan 2011 18:49:30 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tracing: remove syscall_exit_fields
-Message-ID: <20110114174928.GA1926@nowhere>
-References: <4D301C0E.8090408@cn.fujitsu.com>
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=mI1Mdrvb2+s/1kmcxMsGom2+UfxJS+Ofs7JoKZjDcwFGWj7dWM31m2ozkvCwbuka4C
+         TtpHEZY6LcQ+8VTmRzQyLfI3eEIozdynaZNJzTtkuKGbuVZW1vBThppF1Bm3WRjVkJBB
+         253pePvTvuLfiGRYa0Kny3A2ky7YCrcaR16fc=
+Date: Fri, 14 Jan 2011 18:49:40 +0100
+From: "Sylvain 'ythier' Hitier" <sylvain.hitier@gmail.com>
+To: dri-devel@lists.freedesktop.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [radeon] radeon_kick_out_firmware_fb() can deref NULL
+Message-ID: <20110114174940.GA9168@begonia>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D301C0E.8090408@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 05:49:02PM +0800, Lai Jiangshan wrote:
-> 
-> Use event_class_syscall_exit.fields instead.
-> Remove syscall_exit_fields.
-> Remove  syscall_get_enter_fields()
+Hello,
 
-I assume you meant syscall_get_exit_fields()
+In commit a56f7428d7534f162fbb089c5c79012bf38a7c29 [1], the result of
+alloc_apertures() function call is used without checking for a possible NULL
+result, which may happen, as seen in [2].
 
-> Add event_class_syscall_exit.fields initialization.
-> 
-> Indentation has to be changed also, otherwise the line
-> ".fields		= LIST_HEAD_INIT(event_class_syscall_exit.fields),"
-> I added will exceed 80 characters.
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+The latest commit [3] in the drm-fixes branch of the
+linux/kernel/git/airlied/drm-2.6.git repo still has the issue.
 
-Nice!
+[1] http://git.kernel.org/?p=linux/kernel/git/airlied/drm-2.6.git;a=commitdiff;h=a56f7428d7534f162fbb089c5c79012bf38a7c29
+[2] http://git.kernel.org/?p=linux/kernel/git/airlied/drm-2.6.git;hb=refs/heads/drm-fixes;a=blob;f=include/linux/fb.h#l890
+[3] http://git.kernel.org/?p=linux/kernel/git/airlied/drm-2.6.git;a=commit;h=d15eda5c6edff4987af6f4423af0bab0c3251e74
 
-Steve, if you don't mind I'll handle that one as I have another
-patch for syscalls tracing. 
+Regards,
+Sylvain "ythier" Hitier
 
-Thanks.
+-- 
+Free hugs for Free Software Fellows!
+Living in a Debian package => http://en.wikipedia.org/wiki/Apt,_Vaucluse
