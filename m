@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757496Ab1ANBhW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 20:37:22 -0500
-Received: from mga11.intel.com ([192.55.52.93]:39915 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752034Ab1ANBhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 20:37:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,320,1291622400"; 
-   d="scan'208";a="877363155"
-Subject: Re: [PATCH 1/2] mm, Make __get_user_pages return -EHWPOISON for
- HWPOISON page optionally
-From: Huang Ying <ying.huang@intel.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        Dean Nelson <dnelson@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <4D2ED737.6050802@redhat.com>
-References: <1294908168.4596.58.camel@yhuang-dev>
-	 <4D2ED737.6050802@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 Jan 2011 09:37:16 +0800
-Message-ID: <1294969036.4596.67.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1757510Ab1ANBj2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 20:39:28 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:33079 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757292Ab1ANBjU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 20:39:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <1294262733-9585-1-git-send-email-fernando.lugo@ti.com>
+References: <1294262733-9585-1-git-send-email-fernando.lugo@ti.com>
+Date: Thu, 13 Jan 2011 19:39:19 -0600
+Message-ID: <AANLkTi=xedun+g=5295CFZXPn=2nPuVUhC4TPVsPR4Ya@mail.gmail.com>
+Subject: Re: [PATCHv2] staging: tidspbridge: configure full L1 MMU range
+From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+To: Fernando Guzman Lugo <fernando.lugo@ti.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-omap@vger.kernel.org,
+        Felipe Contreras <felipe.contreras@nokia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-13 at 18:43 +0800, Avi Kivity wrote:
-> On 01/13/2011 10:42 AM, Huang Ying wrote:
-> > Make __get_user_pages return -EHWPOISON for HWPOISON page only if
-> > FOLL_HWPOISON is specified.  With this patch, the interested callers
-> > can distinguish HWPOISON page from general FAULT page, while other
-> > callers will still get -EFAULT for pages, so the user space interface
-> > need not to be changed.
-> >
-> > get_user_pages_hwpoison is added as a variant of get_user_pages that
-> > can return -EHWPOISON for HWPOISON page.
-> >
-> > This feature is needed by KVM, where UCR MCE should be relayed to
-> > guest for HWPOISON page, while instruction emulation and MMIO will be
-> > tried for general FAULT page.
-> >
-> > The idea comes from Andrew Morton.
-> >
-> > Signed-off-by: Huang Ying<ying.huang@intel.com>
-> > Cc: Andrew Morton<akpm@linux-foundation.org>
-> >
-> > +#ifdef CONFIG_MEMORY_FAILURE
-> > +int get_user_pages_hwpoison(struct task_struct *tsk, struct mm_struct *mm,
-> > +			    unsigned long start, int nr_pages, int write,
-> > +			    int force, struct page **pages,
-> > +			    struct vm_area_struct **vmas);
-> > +#else
-> 
-> Since we'd also like to add get_user_pages_noio(), perhaps adding a 
-> flags field to get_user_pages() is better.
+Hi,
 
-Or export __get_user_pages()?
+On Wed, Jan 5, 2011 at 3:25 PM, Fernando Guzman Lugo
+<fernando.lugo@ti.com> wrote:
+> From: Guzman Lugo, Fernando <fernando.lugo@ti.com>
+>
+> IVA MMU can manage up to 4GB of address space through its page tables,
+> given that it's L1 is divided into 1MB sections it requires at least
+> 16KB for its table which represents 4096 entries of 32 bits each.
+>
+> Previously, only 1GB was being handled by setting the page table size
+> to 4KB, any virtual address beyond of the L1 size used, would fall
+> into memory that does not belong to L1 translation tables, leading to
+> unpredictable results.
+>
+> So, set the L1 table size to cover the entire MMU range (4GB) whether
+> is meant to be used or not.
+>
+> Reported-by: Felipe Contreras <felipe.contreras@nokia.com>
+> Signed-off-by: Fernando Guzman Lugo <fernando.lugo@ti.com>
+> Signed-off-by: Felipe Contreras <felipe.contreras@nokia.com>
 
-Best Regards,
-Huang Ying
+Nice fix, pushed to for-gkh-2.6.38 branch.
 
+Regards,
 
+Omar
