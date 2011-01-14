@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757777Ab1ANOTX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 09:19:23 -0500
-Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:50197 "EHLO
-	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757456Ab1ANOTL (ORCPT
+	id S1757834Ab1ANOTb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 09:19:31 -0500
+Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:40996
+	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757550Ab1ANOTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 09:19:11 -0500
-X-Greylist: delayed 347 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Jan 2011 09:19:03 EST
+	Fri, 14 Jan 2011 09:19:16 -0500
 From: matt mooney <mfm@muteddisk.com>
 To: Michal Marek <mmarek@suse.cz>
 Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [RESEND PATCH 08/27] mips: change to new flag variable
-Date: Fri, 14 Jan 2011 06:12:31 -0800
-Message-Id: <e04dfe29d5c5c6900a4f5200528c1fb4f6abd07d.1295006565.git.mfm@muteddisk.com>
+Subject: [RESEND PATCH 05/27] ia64: change to new flag variables
+Date: Fri, 14 Jan 2011 06:12:28 -0800
+Message-Id: <cca32cb7e92a586376ec99254ef0a342b97a1353.1295006565.git.mfm@muteddisk.com>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <cover.1295006561.git.mfm@muteddisk.com>
 References: <cover.1295006561.git.mfm@muteddisk.com>
@@ -21,119 +20,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace EXTRA_CFLAGS with ccflags-y.
+Replace EXTRA_CFLAGS with ccflags-y and EXTRA_AFLAGS with asflags-y.
 
 Signed-off-by: matt mooney <mfm@muteddisk.com>
 Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
 ---
- arch/mips/Makefile                     |    4 ++--
- arch/mips/bcm63xx/boards/Makefile      |    2 +-
- arch/mips/fw/arc/Makefile              |    2 +-
- arch/mips/jz4740/Makefile              |    2 +-
- arch/mips/oprofile/Makefile            |    2 +-
- arch/mips/pmc-sierra/yosemite/Makefile |    2 +-
- arch/mips/powertv/Makefile             |    2 +-
- arch/mips/powertv/asic/Makefile        |    2 +-
- arch/mips/powertv/pci/Makefile         |    2 +-
- 9 files changed, 10 insertions(+), 10 deletions(-)
+ arch/ia64/kvm/Makefile           |    4 ++--
+ arch/ia64/sn/kernel/Makefile     |    2 +-
+ arch/ia64/sn/kernel/sn2/Makefile |    2 +-
+ arch/ia64/sn/pci/Makefile        |    2 +-
+ arch/ia64/sn/pci/pcibr/Makefile  |    2 +-
+ arch/ia64/uv/kernel/Makefile     |    2 +-
+ 6 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/arch/mips/Makefile b/arch/mips/Makefile
-index 7c1102e..ac1d5b6 100644
---- a/arch/mips/Makefile
-+++ b/arch/mips/Makefile
-@@ -286,11 +286,11 @@ CLEAN_FILES += vmlinux.32 vmlinux.64
- archprepare:
- ifdef CONFIG_MIPS32_N32
- 	@echo '  Checking missing-syscalls for N32'
--	$(Q)$(MAKE) $(build)=. missing-syscalls EXTRA_CFLAGS="-mabi=n32"
-+	$(Q)$(MAKE) $(build)=. missing-syscalls ccflags-y="-mabi=n32"
- endif
- ifdef CONFIG_MIPS32_O32
- 	@echo '  Checking missing-syscalls for O32'
--	$(Q)$(MAKE) $(build)=. missing-syscalls EXTRA_CFLAGS="-mabi=32"
-+	$(Q)$(MAKE) $(build)=. missing-syscalls ccflags-y="-mabi=32"
- endif
+diff --git a/arch/ia64/kvm/Makefile b/arch/ia64/kvm/Makefile
+index 1089b3e..db3d7c5 100644
+--- a/arch/ia64/kvm/Makefile
++++ b/arch/ia64/kvm/Makefile
+@@ -45,8 +45,8 @@ FORCE : $(obj)/$(offsets-file)
+ # Makefile for Kernel-based Virtual Machine module
+ #
  
- install:
-diff --git a/arch/mips/bcm63xx/boards/Makefile b/arch/mips/bcm63xx/boards/Makefile
-index e5cc86d..9f64fb4 100644
---- a/arch/mips/bcm63xx/boards/Makefile
-+++ b/arch/mips/bcm63xx/boards/Makefile
-@@ -1,3 +1,3 @@
- obj-$(CONFIG_BOARD_BCM963XX)		+= board_bcm963xx.o
+-EXTRA_CFLAGS += -Ivirt/kvm -Iarch/ia64/kvm/
+-EXTRA_AFLAGS += -Ivirt/kvm -Iarch/ia64/kvm/
++ccflags-y := -Ivirt/kvm -Iarch/ia64/kvm/
++asflags-y := -Ivirt/kvm -Iarch/ia64/kvm/
  
--EXTRA_CFLAGS += -Werror
-+ccflags-y := -Werror
-diff --git a/arch/mips/fw/arc/Makefile b/arch/mips/fw/arc/Makefile
-index e0aaad4..5314b37 100644
---- a/arch/mips/fw/arc/Makefile
-+++ b/arch/mips/fw/arc/Makefile
-@@ -9,4 +9,4 @@ lib-$(CONFIG_ARC_MEMORY)	+= memory.o
- lib-$(CONFIG_ARC_CONSOLE)	+= arc_con.o
- lib-$(CONFIG_ARC_PROMLIB)	+= promlib.o
+ common-objs = $(addprefix ../../../virt/kvm/, kvm_main.o ioapic.o \
+ 		coalesced_mmio.o irq_comm.o assigned-dev.o)
+diff --git a/arch/ia64/sn/kernel/Makefile b/arch/ia64/sn/kernel/Makefile
+index 0591038..d27df1d 100644
+--- a/arch/ia64/sn/kernel/Makefile
++++ b/arch/ia64/sn/kernel/Makefile
+@@ -7,7 +7,7 @@
+ # Copyright (C) 1999,2001-2006,2008 Silicon Graphics, Inc.  All Rights Reserved.
+ #
  
--EXTRA_CFLAGS			+= -Werror
-+ccflags-y			:= -Werror
-diff --git a/arch/mips/jz4740/Makefile b/arch/mips/jz4740/Makefile
-index a604eae..a9dff33 100644
---- a/arch/mips/jz4740/Makefile
-+++ b/arch/mips/jz4740/Makefile
-@@ -17,4 +17,4 @@ obj-$(CONFIG_JZ4740_QI_LB60)	+= board-qi_lb60.o
+-EXTRA_CFLAGS += -Iarch/ia64/sn/include
++ccflags-y := -Iarch/ia64/sn/include
  
- obj-$(CONFIG_PM) += pm.o
+ obj-y				+= setup.o bte.o bte_error.o irq.o mca.o idle.o \
+ 				   huberror.o io_acpi_init.o io_common.o \
+diff --git a/arch/ia64/sn/kernel/sn2/Makefile b/arch/ia64/sn/kernel/sn2/Makefile
+index 08e6565..3d09108 100644
+--- a/arch/ia64/sn/kernel/sn2/Makefile
++++ b/arch/ia64/sn/kernel/sn2/Makefile
+@@ -9,7 +9,7 @@
+ # sn2 specific kernel files
+ #
  
--EXTRA_CFLAGS += -Werror -Wall
-+ccflags-y := -Werror -Wall
-diff --git a/arch/mips/oprofile/Makefile b/arch/mips/oprofile/Makefile
-index 02cc65e..4b9d704 100644
---- a/arch/mips/oprofile/Makefile
-+++ b/arch/mips/oprofile/Makefile
-@@ -1,4 +1,4 @@
--EXTRA_CFLAGS := -Werror
-+ccflags-y := -Werror
+-EXTRA_CFLAGS += -Iarch/ia64/sn/include
++ccflags-y := -Iarch/ia64/sn/include
  
- obj-$(CONFIG_OPROFILE) += oprofile.o
+ obj-y += cache.o io.o ptc_deadlock.o sn2_smp.o sn_proc_fs.o \
+ 	 prominfo_proc.o timer.o timer_interrupt.o sn_hwperf.o
+diff --git a/arch/ia64/sn/pci/Makefile b/arch/ia64/sn/pci/Makefile
+index ad4ef34..df2a901 100644
+--- a/arch/ia64/sn/pci/Makefile
++++ b/arch/ia64/sn/pci/Makefile
+@@ -7,6 +7,6 @@
+ #
+ # Makefile for the sn pci general routines.
  
-diff --git a/arch/mips/pmc-sierra/yosemite/Makefile b/arch/mips/pmc-sierra/yosemite/Makefile
-index b16f95c..02f5fb9 100644
---- a/arch/mips/pmc-sierra/yosemite/Makefile
-+++ b/arch/mips/pmc-sierra/yosemite/Makefile
-@@ -6,4 +6,4 @@ obj-y    += irq.o prom.o py-console.o setup.o
+-EXTRA_CFLAGS += -Iarch/ia64/sn/include
++ccflags-y := -Iarch/ia64/sn/include
  
- obj-$(CONFIG_SMP)		+= smp.o
+ obj-y := pci_dma.o tioca_provider.o tioce_provider.o pcibr/
+diff --git a/arch/ia64/sn/pci/pcibr/Makefile b/arch/ia64/sn/pci/pcibr/Makefile
+index 01192d3..396bcae 100644
+--- a/arch/ia64/sn/pci/pcibr/Makefile
++++ b/arch/ia64/sn/pci/pcibr/Makefile
+@@ -7,7 +7,7 @@
+ #
+ # Makefile for the sn2 io routines.
  
--EXTRA_CFLAGS += -Werror
-+ccflags-y := -Werror
-diff --git a/arch/mips/powertv/Makefile b/arch/mips/powertv/Makefile
-index baf6e90..348d2e8 100644
---- a/arch/mips/powertv/Makefile
-+++ b/arch/mips/powertv/Makefile
-@@ -28,4 +28,4 @@ obj-y += init.o ioremap.o memory.o powertv_setup.o reset.o time.o \
+-EXTRA_CFLAGS += -Iarch/ia64/sn/include
++ccflags-y := -Iarch/ia64/sn/include
  
- obj-$(CONFIG_USB) += powertv-usb.o
+ obj-y				+=  pcibr_dma.o pcibr_reg.o \
+ 				    pcibr_ate.o pcibr_provider.o
+diff --git a/arch/ia64/uv/kernel/Makefile b/arch/ia64/uv/kernel/Makefile
+index 8d92b46..124e441 100644
+--- a/arch/ia64/uv/kernel/Makefile
++++ b/arch/ia64/uv/kernel/Makefile
+@@ -7,7 +7,7 @@
+ # Copyright (C) 2008 Silicon Graphics, Inc.  All Rights Reserved.
+ #
  
--EXTRA_CFLAGS += -Wall
-+ccflags-y := -Wall
-diff --git a/arch/mips/powertv/asic/Makefile b/arch/mips/powertv/asic/Makefile
-index f0e95dc..d810a33 100644
---- a/arch/mips/powertv/asic/Makefile
-+++ b/arch/mips/powertv/asic/Makefile
-@@ -20,4 +20,4 @@ obj-y += asic-calliope.o asic-cronus.o asic-gaia.o asic-zeus.o \
- 	asic_devices.o asic_int.o irq_asic.o prealloc-calliope.o \
- 	prealloc-cronus.o prealloc-cronuslite.o prealloc-gaia.o prealloc-zeus.o
+-EXTRA_CFLAGS += -Iarch/ia64/sn/include
++ccflags-y := -Iarch/ia64/sn/include
  
--EXTRA_CFLAGS += -Wall -Werror
-+ccflags-y := -Wall -Werror
-diff --git a/arch/mips/powertv/pci/Makefile b/arch/mips/powertv/pci/Makefile
-index f5c6246..5783201 100644
---- a/arch/mips/powertv/pci/Makefile
-+++ b/arch/mips/powertv/pci/Makefile
-@@ -18,4 +18,4 @@
- 
- obj-$(CONFIG_PCI)	+= fixup-powertv.o
- 
--EXTRA_CFLAGS += -Wall -Werror
-+ccflags-y := -Wall -Werror
+ obj-y				+= setup.o
+ obj-$(CONFIG_IA64_GENERIC)      += machvec.o
 -- 
 1.7.3.4
 
