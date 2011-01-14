@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757491Ab1ANNkC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 08:40:02 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:57114 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756652Ab1ANNkA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 08:40:00 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=ONQcYT/Sl+at/NVkS/029tjyYhmxoSSDbI+hCWM7ljM7fnyOBbZdQ3RcQYSN9c0dks
-         +eUnNYD/JLEjZB9+01G6Lbc8BF1Zk1Iq3h81KbLzKfRKVYlYY4PwbbyXYs112t6PPJ8B
-         qY/Q3gOXs1yRc0DXMZt8X85/tqIw1hJ595U98=
-Date: Fri, 14 Jan 2011 15:39:55 +0200
-From: "Ahmed S. Darwish" <darwish.07@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Saving early panic() messages, to disk, using the BIOS
-Message-ID: <20110114133955.GA31019@laptop>
-MIME-Version: 1.0
+	id S1757528Ab1ANNp0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 08:45:26 -0500
+Received: from wine.ocn.ne.jp ([122.1.235.145]:55989 "EHLO smtp.wine.ocn.ne.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751928Ab1ANNpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 08:45:19 -0500
+To: safford@watson.ibm.com
+Cc: dhowells@redhat.com, safford@us.ibm.com, jmorris@namei.org,
+        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Trusted and Encrypted Keys: fix up TSS_rawhmac() so wealways kfree() and remember to call va_end()
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <alpine.LNX.2.00.1101132100190.11347@swampdragon.chaosbits.net>
+	<1295011682.7804.2.camel@localhost.localdomain>
+In-Reply-To: <1295011682.7804.2.camel@localhost.localdomain>
+Message-Id: <201101142245.GGI86457.OQFFFMOtVOHJLS@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Fri, 14 Jan 2011 22:45:12 +0900
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+David Safford wrote:
+> On Thu, 2011-01-13 at 21:07 +0100, Jesper Juhl wrote:
+> > In security/keys/trusted_defined.c::TSS_rawhmac() we may leak the storage 
+> > allocated to 'sdesc' if
+> >   data = va_arg(argp, unsigned char *);
+> > results in a NULL 'data' and we then leave the function by returning 
+> > -EINVAL. We also neglect calling va_end(argp) in that case and furthermore 
+> > we neglect va_end(argp) if
+> >   ret = crypto_shash_update(&sdesc->shash, data, dlen);
+> > results in ret being negative and we then jump to the 'out' label.
+> > 
+> > I believe this patch takes care of these issues. Please review and 
+> > consider for inclusion.
+> > 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> 
+> thanks for catching this.
+> 
+> Acked-by: David Safford <safford@watson.ibm.com>
 
-I'm facing some very early panics in latest -rc kernels. Vesafb is not
-even working, so only the very bottom of the stack trace is available.
-
->From an overall-design perspective, would a patch that saves such early
-panic messages to the hard-disk using real-mode BIOS calls be acceptable?
-
-That seems to be the only path to _fully_ capture such panic; this is a
-regular x86(-64) laptop with no serial ports or floppy disks. I'm in the
-lmode->pmode->rmode part now, but I thought it might be wise to quickly
-ask about such design mergeability before investing further effort.
-
-(There is an old set of patches in Randy's homepage that does something
-similar using floppy disks,[1] so it seems the basic idea is not that
-strange. I also do something similar in a hobby kernel of mine.[2])
-
-thanks,
-
-[1] http://www.xenotime.net/linux/kmsgdump/
-[1] http://gitorious.org/cute-os/cute/
-
--- 
-Darwish
+Please wait. That patch is incorrect. I'm making patch now.
