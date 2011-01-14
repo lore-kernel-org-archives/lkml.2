@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757497Ab1ANBVx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 20:21:53 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:60776 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752375Ab1ANBVr convert rfc822-to-8bit (ORCPT
+	id S1757494Ab1ANBZS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 20:25:18 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35037 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752034Ab1ANBZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 20:21:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=JBHahuvjTllDWP9sqsbEJmijuLtVOZ9L+ZNLO4mqbzXBpW1F4/xRkw9Xvwk+zTZDyp
-         C+Z6L04Q+xoU2FcXK/n39xjxV1oC/d7EZAFwqxDDaRAFvPJErY3TztUw1iV8frXiQXlg
-         zIpHW80+jK0yIlnCNIWE3rxfo0+QYuBkNH54g=
+	Thu, 13 Jan 2011 20:25:13 -0500
 MIME-Version: 1.0
-In-Reply-To: <E1PdPsR-0004BY-Q3@pomaz-ex.szeredi.hu>
-References: <AANLkTimBrR1LkVHOxZA=UUmKsnxfsFLr9z_AhXUHQ_7N@mail.gmail.com>
-	<E1PdOdT-00042k-RM@pomaz-ex.szeredi.hu>
-	<E1PdPsR-0004BY-Q3@pomaz-ex.szeredi.hu>
-Date: Fri, 14 Jan 2011 12:21:45 +1100
-Message-ID: <AANLkTi=4mCaZzGXja0Z_VBS+fst8k8_=t1A-eZwfvKiA@mail.gmail.com>
-Subject: Re: Important for fs devs: rcu-walk merged upstream
-From: Nick Piggin <npiggin@gmail.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20110114104310.d975c69c.sfr@canb.auug.org.au>
+References: <20110114104310.d975c69c.sfr@canb.auug.org.au>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 13 Jan 2011 17:24:17 -0800
+Message-ID: <AANLkTi=auk_ejRxzSj-bbFJz4gTCfK79qRe8JeFH2T8z@mail.gmail.com>
+Subject: Re: linux-next: build failure in Linus' tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=00221532c77826ea0d0499c44cf5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 3:18 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Thu, 13 Jan 2011, Miklos Szeredi wrote:
->> On Sat, 8 Jan 2011, Nick Piggin wrote:
->> > The vfs-scale branch is now upstream. If you haven't
->> > looked yet, your filesystem is likely to have been
->> > touched, so check it out.
->> >
->> > Also look at Documentation/filesystems/porting and
->> > path-lookup.txt.
->> >
->> > The dcache_lock stuff should have been all done for you
->> > (for in-tree filesystems, I can help out of tree fses with
->> > conversions there if you ping me offline).
->> >
->> > The rcu-walk stuff can be more tricky for your filesystem
->> > to take advantage of.
->> >
->> > If you supply a .d_revalidate, .permission, or .check_acl,
->> > then path walking is going to be slow and unscalable for
->> > you.
->> >
->> > Out of tree filesystems: you _have_ to at least add a line
->> > of code to the above functions in order to specify that
->> > you don't want to participate in rcu-walk.
->> >
->> > Otherwise, you don't have to care about rcu-walk if you
->> > have a legacy or special filesystem like configfs then I'd
->> > advise against anything fancy. But if you have a
->> > userbase and you expect them to actually do any path
->> > lookups into your filesystem, please take a look.
->>
->> One other thing: I know ECHILD is safe since no sane filesystem will
->> return it in its permission or revalidate callbacks, and even if it
->> does that's just a loss of optimization.
+--00221532c77826ea0d0499c44cf5
+Content-Type: text/plain; charset=ISO-8859-1
+
+On Thu, Jan 13, 2011 at 3:43 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 >
-> And it's not entirely safe either.  A fuse filesystem returning ECHILD
-> would make nameidata_dentry_drop_rcu() to BUG.  So some sort of errno
-> filter is necessary in the fuse kernel module.
+> While building Linus' tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
 
-Surely you'd need some filtering anyway? I don't think any function
-involving path lookup could sanely return -ECHILD.
+Ok, I applied the attached, which makes it all build. I don't actually
+have a ecryptfs filesystem to test with, though.
 
-That said, it probably is a good idea to have a new errno.
+Bad Al. Bad, bad Al.
+
+                        Linus
+
+--00221532c77826ea0d0499c44cf5
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_giwenkvy1
+
+Y29tbWl0IDYyNTRiMzJiNTc5MWU0N2JhMWM2NzlkMDIzZjI2OTg1ZmEzNDc1NWEKQXV0aG9yOiBM
+aW51cyBUb3J2YWxkcyA8dG9ydmFsZHNAbGludXgtZm91bmRhdGlvbi5vcmc+CkRhdGU6ICAgVGh1
+IEphbiAxMyAxNzoxOTozOCAyMDExIC0wODAwCgogICAgZWNyeXB0ZnM6IGZpeCBicm9rZW4gYnVp
+bGQKICAgIAogICAgU3RlcGhlbiBSb3Rod2VsbCByZXBvcnRzIHRoYXQgdGhlIHZmcyBtZXJnZSBi
+cm9rZSB0aGUgYnVpbGQgb2YgZWNyeXB0ZnMuCiAgICBUaGUgYnJlYWthZ2UgY29tZXMgZnJvbSBj
+b21taXQgNjZjYjc2NjY2ZDY5ICgic2FuaXRpemUgZWNyeXB0ZnMKICAgIC0+bW91bnQoKSIpIHdo
+aWNoIHdhcyBvYnZpb3VzbHkgbm90IGV2ZW4gYnVpbGQgdGVzdGVkLiBUc3NrLCB0c3NrLCBBbC4K
+ICAgIAogICAgVGhpcyBpcyB0aGUgbWluaW1hbCBidWlsZCBmaXh1cCBmb3IgdGhlIHNpdHVhdGlv
+biwgYWx0aG91Z2ggSSBkb24ndCBoYXZlCiAgICBhIGZpbGVzeXN0ZW0gdG8gYWN0dWFsbHkgdGVz
+dCBpdCB3aXRoLgogICAgCiAgICBSZXBvcnRlZC1ieTogU3RlcGhlbiBSb3Rod2VsbCA8c2ZyQGNh
+bmIuYXV1Zy5vcmcuYXU+CiAgICBDYzogQWwgVmlybyA8dmlyb0B6ZW5pdi5saW51eC5vcmcudWs+
+CiAgICBTaWduZWQtb2ZmLWJ5OiBMaW51cyBUb3J2YWxkcyA8dG9ydmFsZHNAbGludXgtZm91bmRh
+dGlvbi5vcmc+Ci0tLQogZnMvZWNyeXB0ZnMvbWFpbi5jIHwgICAgNSArKy0tLQogMSBmaWxlcyBj
+aGFuZ2VkLCAyIGluc2VydGlvbnMoKyksIDMgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZnMv
+ZWNyeXB0ZnMvbWFpbi5jIGIvZnMvZWNyeXB0ZnMvbWFpbi5jCmluZGV4IDllZDQ3NjkuLmQzYjI4
+YWIgMTAwNjQ0Ci0tLSBhL2ZzL2VjcnlwdGZzL21haW4uYworKysgYi9mcy9lY3J5cHRmcy9tYWlu
+LmMKQEAgLTE0MSwxMyArMTQxLDEyIEBAIGludCBlY3J5cHRmc19pbml0X3BlcnNpc3RlbnRfZmls
+ZShzdHJ1Y3QgZGVudHJ5ICplY3J5cHRmc19kZW50cnkpCiAJcmV0dXJuIHJjOwogfQogCi1zdGF0
+aWMgaW5vZGUgKmVjcnlwdGZzX2dldF9pbm9kZShzdHJ1Y3QgaW5vZGUgKmxvd2VyX2lub2RlLAor
+c3RhdGljIHN0cnVjdCBpbm9kZSAqZWNyeXB0ZnNfZ2V0X2lub2RlKHN0cnVjdCBpbm9kZSAqbG93
+ZXJfaW5vZGUsCiAJCSAgICAgICBzdHJ1Y3Qgc3VwZXJfYmxvY2sgKnNiKQogewogCXN0cnVjdCBp
+bm9kZSAqaW5vZGU7CiAJaW50IHJjID0gMDsKIAotCWxvd2VyX2lub2RlID0gbG93ZXJfZGVudHJ5
+LT5kX2lub2RlOwogCWlmIChsb3dlcl9pbm9kZS0+aV9zYiAhPSBlY3J5cHRmc19zdXBlcmJsb2Nr
+X3RvX2xvd2VyKHNiKSkgewogCQlyYyA9IC1FWERFVjsKIAkJZ290byBvdXQ7CkBAIC0yMDIsNyAr
+MjAxLDcgQEAgaW50IGVjcnlwdGZzX2ludGVycG9zZShzdHJ1Y3QgZGVudHJ5ICpsb3dlcl9kZW50
+cnksIHN0cnVjdCBkZW50cnkgKmRlbnRyeSwKIHsKIAlzdHJ1Y3QgaW5vZGUgKmxvd2VyX2lub2Rl
+ID0gbG93ZXJfZGVudHJ5LT5kX2lub2RlOwogCXN0cnVjdCBpbm9kZSAqaW5vZGUgPSBlY3J5cHRm
+c19nZXRfaW5vZGUobG93ZXJfaW5vZGUsIHNiKTsKLQlpZiAoSVNfRVJSKGlub2RlKQorCWlmIChJ
+U19FUlIoaW5vZGUpKQogCQlyZXR1cm4gUFRSX0VSUihpbm9kZSk7CiAJaWYgKGZsYWdzICYgRUNS
+WVBURlNfSU5URVJQT1NFX0ZMQUdfRF9BREQpCiAJCWRfYWRkKGRlbnRyeSwgaW5vZGUpOwo=
+--00221532c77826ea0d0499c44cf5--
