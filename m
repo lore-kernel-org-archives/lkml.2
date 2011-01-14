@@ -1,214 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107Ab1AOJtn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 04:49:43 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:49202 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab1AOJtl (ORCPT
+	id S1752143Ab1AOKWn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 05:22:43 -0500
+Received: from thanatos.eon.net.au ([203.55.198.1]:38195 "EHLO
+	thanatos.eon.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760Ab1AOKWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 04:49:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:date:in-reply-to:references
-         :content-type:x-mailer:content-transfer-encoding:message-id
-         :mime-version;
-        b=gwzV7m+cBwfj/gyKS9bkqruGtnR7DPbbnknlqO7Gcj+b6gGnETemtreLjTKlE3/meh
-         2GdSOnTN/C8h8AI0LUR8AAVOmL7tMM5pjZ/5mcsqmryxVqNsm7/BMADhgkifplT1qQKL
-         IQ5yXbOSEmGRt5HZHcCY1W5G9YRYZNJgW/v5c=
-Subject: Re: [PATCH 4/5] nouveau: Change the backlight parent device to the
- connector, not the PCI dev
-From: Ben Skeggs <skeggsb@gmail.com>
-Reply-To: skeggsb@gmail.com
-To: Matthew Garrett <mjg@redhat.com>
-Cc: akpm@linux-foundation.org, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-acpi@vger.kernel.org, rpurdie@rpsys.net
-Date: Sat, 15 Jan 2011 19:49:07 +1000
-In-Reply-To: <1295033065-13450-4-git-send-email-mjg@redhat.com>
-References: <1295033065-13450-1-git-send-email-mjg@redhat.com>
-	 <1295033065-13450-4-git-send-email-mjg@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 2.91.5 (2.91.5-1.fc15) 
+	Sat, 15 Jan 2011 05:22:42 -0500
+X-Greylist: delayed 7029 seconds by postgrey-1.27 at vger.kernel.org; Sat, 15 Jan 2011 05:22:42 EST
+Message-ID: <20110115003406.7bnak6qaokgo8okg@webmail.eon.net.au>
+Date: Sat, 15 Jan 2011 00:34:06 +0800
+From: Donard Jackson <inforcompany001@gmail.com>
+Reply-to: donardjrcksonloanfirm@gmail.com
+To: undisclosed-recipients:;
+Subject: 
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset=ISO-8859-15;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
-Message-ID: <1295084953.2013.0.camel@nisroch>
-Mime-Version: 1.0
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
+X-EONTECHT-MailScanner-Information: Please contact the eon@eon.net.au for more information
+X-EONTECHT-MailScanner: Found to be clean
+X-EONTECHT-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-2.637, required 3, ALL_TRUSTED -1.80, BAYES_00 -2.60,
+	MISSING_SUBJECT 1.76)
+X-MailScanner-From: inforcompany001@gmail.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-14 at 14:24 -0500, Matthew Garrett wrote:
-> We may eventually end up with per-connector backlights, especially with
-> ddcci devices. Make sure that the parent node for the backlight device is
-> the connector rather than the PCI device.
-> 
-> Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Acked-by: Ben Skeggs <bskeggs@redhat.com>
 
-> ---
->  drivers/gpu/drm/nouveau/nouveau_backlight.c |   24 ++++++++++++++----------
->  drivers/gpu/drm/nouveau/nouveau_connector.c |    9 +++++++++
->  drivers/gpu/drm/nouveau/nouveau_drv.h       |    8 ++++----
->  drivers/gpu/drm/nouveau/nouveau_state.c     |    6 ------
->  4 files changed, 27 insertions(+), 20 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/nouveau/nouveau_backlight.c b/drivers/gpu/drm/nouveau/nouveau_backlight.c
-> index 18d7bcc..00a55df 100644
-> --- a/drivers/gpu/drm/nouveau/nouveau_backlight.c
-> +++ b/drivers/gpu/drm/nouveau/nouveau_backlight.c
-> @@ -88,10 +88,11 @@ static const struct backlight_ops nv50_bl_ops = {
->  	.update_status = nv50_set_intensity,
->  };
->  
-> -static int nouveau_nv40_backlight_init(struct drm_device *dev)
-> +static int nouveau_nv40_backlight_init(struct drm_connector *connector)
->  {
-> -	struct backlight_properties props;
-> +	struct drm_device *dev = connector->dev;
->  	struct drm_nouveau_private *dev_priv = dev->dev_private;
-> +	struct backlight_properties props;
->  	struct backlight_device *bd;
->  
->  	if (!(nv_rd32(dev, NV40_PMC_BACKLIGHT) & NV40_PMC_BACKLIGHT_MASK))
-> @@ -100,7 +101,7 @@ static int nouveau_nv40_backlight_init(struct drm_device *dev)
->  	memset(&props, 0, sizeof(struct backlight_properties));
->  	props.type = BACKLIGHT_RAW;
->  	props.max_brightness = 31;
-> -	bd = backlight_device_register("nv_backlight", &dev->pdev->dev, dev,
-> +	bd = backlight_device_register("nv_backlight", &connector->kdev, dev,
->  				       &nv40_bl_ops, &props);
->  	if (IS_ERR(bd))
->  		return PTR_ERR(bd);
-> @@ -112,10 +113,11 @@ static int nouveau_nv40_backlight_init(struct drm_device *dev)
->  	return 0;
->  }
->  
-> -static int nouveau_nv50_backlight_init(struct drm_device *dev)
-> +static int nouveau_nv50_backlight_init(struct drm_connector *connector)
->  {
-> -	struct backlight_properties props;
-> +	struct drm_device *dev = connector->dev;
->  	struct drm_nouveau_private *dev_priv = dev->dev_private;
-> +	struct backlight_properties props;
->  	struct backlight_device *bd;
->  
->  	if (!nv_rd32(dev, NV50_PDISPLAY_SOR_BACKLIGHT))
-> @@ -124,7 +126,7 @@ static int nouveau_nv50_backlight_init(struct drm_device *dev)
->  	memset(&props, 0, sizeof(struct backlight_properties));
->  	props.type = BACKLIGHT_RAW;
->  	props.max_brightness = 1025;
-> -	bd = backlight_device_register("nv_backlight", &dev->pdev->dev, dev,
-> +	bd = backlight_device_register("nv_backlight", &connector->kdev, dev,
->  				       &nv50_bl_ops, &props);
->  	if (IS_ERR(bd))
->  		return PTR_ERR(bd);
-> @@ -135,8 +137,9 @@ static int nouveau_nv50_backlight_init(struct drm_device *dev)
->  	return 0;
->  }
->  
-> -int nouveau_backlight_init(struct drm_device *dev)
-> +int nouveau_backlight_init(struct drm_connector *connector)
->  {
-> +	struct drm_device *dev = connector->dev;
->  	struct drm_nouveau_private *dev_priv = dev->dev_private;
->  
->  #ifdef CONFIG_ACPI
-> @@ -149,9 +152,9 @@ int nouveau_backlight_init(struct drm_device *dev)
->  
->  	switch (dev_priv->card_type) {
->  	case NV_40:
-> -		return nouveau_nv40_backlight_init(dev);
-> +		return nouveau_nv40_backlight_init(connector);
->  	case NV_50:
-> -		return nouveau_nv50_backlight_init(dev);
-> +		return nouveau_nv50_backlight_init(connector);
->  	default:
->  		break;
->  	}
-> @@ -159,8 +162,9 @@ int nouveau_backlight_init(struct drm_device *dev)
->  	return 0;
->  }
->  
-> -void nouveau_backlight_exit(struct drm_device *dev)
-> +void nouveau_backlight_exit(struct drm_connector *connector)
->  {
-> +	struct drm_device *dev = connector->dev;
->  	struct drm_nouveau_private *dev_priv = dev->dev_private;
->  
->  	if (dev_priv->backlight) {
-> diff --git a/drivers/gpu/drm/nouveau/nouveau_connector.c b/drivers/gpu/drm/nouveau/nouveau_connector.c
-> index a21e000..3a1ecc7 100644
-> --- a/drivers/gpu/drm/nouveau/nouveau_connector.c
-> +++ b/drivers/gpu/drm/nouveau/nouveau_connector.c
-> @@ -116,6 +116,10 @@ nouveau_connector_destroy(struct drm_connector *connector)
->  				      nouveau_connector_hotplug, connector);
->  	}
->  
-> +	if (connector->connector_type == DRM_MODE_CONNECTOR_LVDS ||
-> +	    connector->connector_type == DRM_MODE_CONNECTOR_eDP)
-> +		nouveau_backlight_exit(connector);
-> +
->  	kfree(nv_connector->edid);
->  	drm_sysfs_connector_remove(connector);
->  	drm_connector_cleanup(connector);
-> @@ -893,6 +897,11 @@ nouveau_connector_create(struct drm_device *dev, int index)
->  	}
->  
->  	drm_sysfs_connector_add(connector);
-> +
-> +	if (connector->connector_type == DRM_MODE_CONNECTOR_LVDS ||
-> +	    connector->connector_type == DRM_MODE_CONNECTOR_eDP)
-> +		nouveau_backlight_init(connector);
-> +
->  	dcb->drm = connector;
->  	return dcb->drm;
->  
-> diff --git a/drivers/gpu/drm/nouveau/nouveau_drv.h b/drivers/gpu/drm/nouveau/nouveau_drv.h
-> index 46e3257..1918ed1 100644
-> --- a/drivers/gpu/drm/nouveau/nouveau_drv.h
-> +++ b/drivers/gpu/drm/nouveau/nouveau_drv.h
-> @@ -999,15 +999,15 @@ static inline int nouveau_acpi_edid(struct drm_device *dev, struct drm_connector
->  
->  /* nouveau_backlight.c */
->  #ifdef CONFIG_DRM_NOUVEAU_BACKLIGHT
-> -extern int nouveau_backlight_init(struct drm_device *);
-> -extern void nouveau_backlight_exit(struct drm_device *);
-> +extern int nouveau_backlight_init(struct drm_connector *);
-> +extern void nouveau_backlight_exit(struct drm_connector *);
->  #else
-> -static inline int nouveau_backlight_init(struct drm_device *dev)
-> +static inline int nouveau_backlight_init(struct drm_connector *dev)
->  {
->  	return 0;
->  }
->  
-> -static inline void nouveau_backlight_exit(struct drm_device *dev) { }
-> +static inline void nouveau_backlight_exit(struct drm_connector *dev) { }
->  #endif
->  
->  /* nouveau_bios.c */
-> diff --git a/drivers/gpu/drm/nouveau/nouveau_state.c b/drivers/gpu/drm/nouveau/nouveau_state.c
-> index a54fc43..f688f04 100644
-> --- a/drivers/gpu/drm/nouveau/nouveau_state.c
-> +++ b/drivers/gpu/drm/nouveau/nouveau_state.c
-> @@ -738,10 +738,6 @@ nouveau_card_init(struct drm_device *dev)
->  			goto out_fence;
->  	}
->  
-> -	ret = nouveau_backlight_init(dev);
-> -	if (ret)
-> -		NV_ERROR(dev, "Error %d registering backlight\n", ret);
-> -
->  	nouveau_fbcon_init(dev);
->  	drm_kms_helper_poll_init(dev);
->  	return 0;
-> @@ -793,8 +789,6 @@ static void nouveau_card_takedown(struct drm_device *dev)
->  	struct drm_nouveau_private *dev_priv = dev->dev_private;
->  	struct nouveau_engine *engine = &dev_priv->engine;
->  
-> -	nouveau_backlight_exit(dev);
-> -
->  	if (!engine->graph.accel_blocked) {
->  		nouveau_fence_fini(dev);
->  		nouveau_channel_put_unlocked(&dev_priv->channel);
+-- 
+Do you need a loan to pay off some Bills and start up a new Business? if yes
+contact email: donardjrcksonloanfirm@gmail.com
 
+Your Name:
+Address:
+Country:
+STATE:
+SEX:
+Loan Amount:
+Loan Duration:
+Valid Cell Phone Number:
+
+Contact for more info: donardjrcksonloanfirm@gmail.com
+
+Thanks.Mr Donard Jackson
+
+
+
+
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
 
