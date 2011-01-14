@@ -1,106 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757952Ab1ANQpz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 11:45:55 -0500
-Received: from casper.infradead.org ([85.118.1.10]:38710 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757726Ab1ANQps (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 11:45:48 -0500
-Date: Fri, 14 Jan 2011 16:38:46 +0000 (GMT)
-From: James Simmons <jsimmons@infradead.org>
-To: Anca Emanuel <anca.emanuel@gmail.com>
-cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Dave Airlie <airlied@linux.ie>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [git pull] drm for rc1
-In-Reply-To: <AANLkTimdPFGJxjWHPZ2kojxJoj76zDw2=fiwDiMrinjy@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1101141633200.5594@casper.infradead.org>
-References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie> <4D2CE5C8.60601@de.ibm.com> <AANLkTimr4WX3Ay8vC23MKOM+dOcpV+Ca5rg_gcei38nk@mail.gmail.com> <4D2D8ED0.6080807@de.ibm.com> <AANLkTik4h=4o8JEwfd+=CFVb4NgkwaEwxmM6n_+sDj3K@mail.gmail.com>
- <alpine.LFD.2.00.1101121344070.8212@casper.infradead.org> <AANLkTimdnYHWfBE1nB+2EDRouO7_FoRByVboMYw8WaHB@mail.gmail.com> <AANLkTik=HYzW8--_W+qxi8S9QbAkf9ZZy=uLyaTeV+PC@mail.gmail.com> <alpine.LFD.2.00.1101121538470.8212@casper.infradead.org>
- <alpine.LFD.2.00.1101131752190.311@casper.infradead.org> <AANLkTimdPFGJxjWHPZ2kojxJoj76zDw2=fiwDiMrinjy@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757967Ab1ANQto (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 11:49:44 -0500
+Received: from cantor.suse.de ([195.135.220.2]:46964 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757650Ab1ANQtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 11:49:39 -0500
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: perf timechart broken
+Date: Fri, 14 Jan 2011 17:49:36 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36-18-desktop; KDE/4.5.3; x86_64; ; )
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-perf-users@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+References: <201101071104.37576.trenn@suse.de> <20110111114951.GA8564@ghostprotocols.net> <20110111145134.GA11968@ghostprotocols.net>
+In-Reply-To: <20110111145134.GA11968@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1985284609-50622417-1295023126=:5594"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101141749.36716.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---1985284609-50622417-1295023126=:5594
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-
-
-On Thu, 13 Jan 2011, Anca Emanuel wrote:
-
-> On Thu, Jan 13, 2011 at 7:55 PM, James Simmons <jsimmons@infradead.org> wrote:
-> >
-> >> > > With your patch, I can boot the system. But nouveau is not loaded.
-> >> > > dmesg attached.
-> >> > >
-> >> >
-> >> > Forget to mention: the revert makes first steps of boot look the same
-> >> > (change the resolution of the text)
-> >> > but with your patch, I see a big ugly ununtu logo, (I think that is
-> >> > because nouveau is not loaded)
-> >
-> > Okay, can you do one more experiment for me. Since you already reverted
-> > the patch to get it booting I like to ask you to add
-> >
-> > drm_fb_helper_fill_fix(info, fb_helper->fb);
-> >
-> > back into the drm_fb_helper_set_par function in drm_fb_helper.c. You have
-> > something like this:
-> >
-> >        mutex_lock(&dev->mode_config.mutex);
-> >        for (i = 0; i < fb_helper->crtc_count; i++) {
-> >                crtc = fb_helper->crtc_info[i].mode_set.crtc;
-> >                ret = crtc->funcs->set_config(&fb_helper->crtc_info[i].mode_set);
-> >                if (ret) {
-> >                        mutex_unlock(&dev->mode_config.mutex);
-> >                        return ret;
-> >                }
-> >                drm_fb_helper_fill_fix(info, fb_helper->fb);
-> >        }
-> >        mutex_unlock(&dev->mode_config.mutex);
-> >
-> > Tell me if your system is still usable after that. Thanks for testing for
-> > me.
-> >
+On Tuesday 11 January 2011 15:51:34 Arnaldo Carvalho de Melo wrote:
+> Em Tue, Jan 11, 2011 at 09:49:51AM -0200, Arnaldo Carvalho de Melo escreveu:
+> > Em Tue, Jan 11, 2011 at 09:55:36AM +0100, Thomas Renninger escreveu:
+> > > On Tuesday 11 January 2011 02:36:28 Frederic Weisbecker wrote:
+> > > > It's too late for .37, but it's fine, we just need to add
+> > > > a "Cc: stable@kernel.org" tag in the patch for it to be
+> > > > backported.
+> > > I'll submit it to stable@ (it wasn't taken because
+> > > the patch which included the fix wasn't mainline yet and I
+> > > forgot to submit it for 2.6.37-rcX). 
+> >  
+> > > I can take care of that, but it would be great if someone could look
+> > > at the issue that perf timechart shows: "no trace data in the file" in
+> > > x86/tip which seems introduced by one of Arnaldo's latest commits.
+> > > Reverting some of his latest patches, solved it for me.
+> > 
+> > Looking at it now.
 > 
-> after
-> 
-> git revert dfe63bb0ad9810db13aab0058caba97866e0a681
-> 
-> and
-> 
-> 
-> diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
-> index 5c4f9b9..2aad663 100644
-> --- a/drivers/gpu/drm/drm_fb_helper.c
-> +++ b/drivers/gpu/drm/drm_fb_helper.c
-> @@ -816,6 +816,7 @@ int drm_fb_helper_set_par(struct fb_info *info)
->                         mutex_unlock(&dev->mode_config.mutex);
->                         return ret;
->                 }
-> +               drm_fb_helper_fill_fix(info, fb_helper->fb->pitch, fb_helper->fb
->         }
->         mutex_unlock(&dev->mode_config.mutex);
-> 
-> I get an working system. ( the boot screen is not ok )
-> Tested suspend/resume. Dmesg attached.
+> Can you try with this patch applied? We need a better way of specifying
+> ordering of __exit and __init routines :-\
+I tested on x86/tip and it is fixed.
+I explicitly reverted your fix and run into it again.
 
-Just as I thought. Even this breaks the nouveau driver.
+Thanks!
 
-Could you now add also in the drm_fb_helper_fill_fix function
-
-DRM_INFO("pitch %d, depth %d\n", fb_helper->fb->pitch, 
-          fb_helper->fb->depth);
- 
-I have a feeling the values are not right. Thanks.
-
---1985284609-50622417-1295023126=:5594--
+   Thomas
