@@ -1,75 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757296Ab1ANOKp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 09:10:45 -0500
-Received: from service87.mimecast.com ([94.185.240.25]:40905 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751923Ab1ANOKj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 09:10:39 -0500
-Subject: Re: [PATCH] ARM: vfp: Fix up exception location in Thumb mode
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Colin Cross <ccross@android.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110114120229.GA15996@n2100.arm.linux.org.uk>
-References: <1294990949-2729-1-git-send-email-ccross@android.com>
-	 <AANLkTimqiqABxCejdeOQWZZ62DVUZW2v-yMpdu1aNDQT@mail.gmail.com>
-	 <20110114120229.GA15996@n2100.arm.linux.org.uk>
-Organization: ARM Limited
-Date: Fri, 14 Jan 2011 14:10:31 +0000
-Message-ID: <1295014231.7901.41.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1
-X-OriginalArrivalTime: 14 Jan 2011 14:10:32.0463 (UTC) FILETIME=[CE4B61F0:01CBB3F4]
-X-MC-Unique: 111011414103505201
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1756525Ab1ANOLu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 09:11:50 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:39806 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751923Ab1ANOLn (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Fri, 14 Jan 2011 09:11:43 -0500
+Date: Fri, 14 Jan 2011 09:09:41 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: john stultz <johnstul@us.ibm.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        williams@redhat.com, schwidefsky@de.ibm.com, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [PATCH] acpi/pm: If failed at validating ACPI PM timer,
+ inhibit future reads.
+Message-ID: <20110114140941.GA3062@dumpdata.com>
+References: <tip-08ec0c58fb8a05d3191d5cb6f5d6f81adb419798@git.kernel.org>
+ <20110111081352.GA22867@shutemov.name>
+ <alpine.LFD.2.00.1101110926040.12146@localhost6.localdomain6>
+ <20110111083054.GB22867@shutemov.name>
+ <alpine.LFD.2.00.1101110936291.12146@localhost6.localdomain6>
+ <20110111095640.GC22867@shutemov.name>
+ <20110113174909.GA28738@dumpdata.com>
+ <1294941698.5617.12.camel@work-vm>
+ <20110113214022.GA12097@dumpdata.com>
+ <alpine.LFD.2.00.1101132301300.2678@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1101132301300.2678@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-14 at 12:02 +0000, Russell King - ARM Linux wrote:
-> On Fri, Jan 14, 2011 at 11:43:04AM +0000, Catalin Marinas wrote:
-> > >        pr_debug("VFP: bounce: trigger %08x fpexc %08x\n", trigger, fpexc);
-> > >
-> > >        /*
-> > > +        * If the exception occured in thumb mode, pc is exception location + 2,
-> > > +        * the middle of the 32-bit VFP instruction.  Add 2 to get exception
-> > > +        * location + 4, the same we get in ARM mode.
-> > > +        */
-> > > +#ifdef CONFIG_ARM_THUMB
-> > > +       if (regs->ARM_cpsr & PSR_T_BIT)
-> > > +               regs->ARM_pc += 2;
-> > > +#endif
+On Thu, Jan 13, 2011 at 11:15:16PM +0100, Thomas Gleixner wrote:
+> On Thu, 13 Jan 2011, Konrad Rzeszutek Wilk wrote:
+> 
+> > tgl, John,
+> > 
+> > Should I push this to Linus or are you guys going to push
+> > this patch during this merge window?
+> 
+> Wait a moment. This patch is fresh of the press and not that urgent,
+> really.
+
+It is a regression compared to 2.6.37 kernel. I don't know the
+urgency requirements for regressions but I figured the earlier the
+better.
+
+>  
+> >     I've traced it down to the fact that when we boot under Xen we do
+> >     not have the HPET enabled nor the ACPI PM timer setup. The
+> 
+> Crap. If Xen would not have setup the pm timer then it would not even
+> reach the consistency check. It would simply bail out via
+
+Keep in mind that Linux (under Xen) does see the ACPI PM-Timer at bootup
+(it parses the ACPI tables), and when it tries to actually read the 
+values, so past this point:
+
+> 
+>         if (!pmtmr_ioport)
+>                 return -ENODEV;
+> 
+
+.. it fails at:
+   if (i == ACPI_PM_READ_CHECKS) {
+
+and returns -ENODEV. So pmtmr_ioport was still valid at that time.
+
+> and the whole misery would not have happened at all. Though it's a
+> Good Thing that Xen is so screwed as it points to a real flaw which
+> might happen on real hardware as well. See below
+> 
+> >     hpet_enable() is never called (b/c xen_time_init is called), and
+> >     for calibration of tsc_khz (calibrate_tsc == xen_tsc_khz) we
+> >     get a valid value.
+> >     
+> >     So 'tsc_read_refs' tries to read the ACPI PM timer (acpi_pm_read_early),
+> >     however that is disabled under Xen:
+> >     
+> >     [    1.099272] calling  init_acpi_pm_clocksource+0x0/0xdc @ 1
+> >     [    1.140186] PM-Timer failed consistency check  (0x0xffffff) - aborting.
+> >     
+> >     So the tsc_calibrate_check gets called, it can't do HPET, and reading
+> >     from ACPI PM timer results in getting 0xffffff.. .. and
+> >     (0xffff..-0xffff..)/some other value results in div_zero.
+> 
+> Nonsense. 0/(some other value) does not result in a divide by zero
+> except "some other value" is zero.
+
+<scratches his head> You are right. 
+> 
+> >     There is a check in 'tsc_refine_calibration_work' for invalid
+> >     values:
+> >     
+> >        /* hpet or pmtimer available ? */
+> >              if (!hpet && !ref_start && !ref_stop)
+> >                       goto out;
+> >     
+> >     But since ref_start and ref_stop have 0xffffff it does not trigger.
 > >
-> > You can use "if (thumb_mode(regs))" and avoid the #ifdef entirely.
+> >     This little fix makes the read to be 0 and the check triggers.
 > 
-> I don't think this is correct.  On entry to the undefined instruction
-> handler, we get the uncorrected PC value, so PC points to the
-> instruction after the faulting instruction.
+> First of all the patch disables the pm_timer completely, which happens
+> to results in a 0 read as a side effect. But the main point of this
+
+I does not look like a side-effect. Specifically:
+
+static inline u32 acpi_pm_read_early(void)
+{
+        if (!pmtmr_ioport)
+                return 0;
+
+	 return acpi_pm_read_verified() & ACPI_PM_MASK;
+}
+
+.. ends up taking the !pmtmr_ioport path which is what
+tsc_refine_calibration_work has a check for.
+
+> fix is to disable pmtimer in case of failure in the init function
+> completely.
 > 
-> If it was an ARM instruction, that is located at PC-4.  If it was a
-> Thumb instruction, it is located at PC-2.  This PC value is passed
-> unmodified to the VFP entry code, and the passed r2 reflect the
-> value in regs->ARM_pc.
+> Further there are several error conditions in this init function and
+> we really need to disable pmtimer for all of them not just for the
+> case you encountered.
 
-The entry-armv.S code adds 2 to the r2 register in case of a 32-bit
-Thumb instruction, so it is no longer the same as the ARM_pc.
+Good point. What about this patch? John, is it OK if I carry
+your Ack-by on this modified patch?
 
-Since the VFP instructions in Thumb mode are always 32-bit, Colin's
-patch made sense to me.
+commit 7b530022a59683b3164404ee8ee2d5750748b58b
+Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date:   Thu Jan 13 12:56:51 2011 -0500
 
-> I think that the undefined instruction handling needs reworking for
-> Thumb entirely as we could be dealing with a 16-bit or 32-bit thumb
-> instruction, and we have no way of knowing without repeatedly
-> decoding that instruction.
+    acpi/pm: If failed at validating ACPI PM timer, inhibit future reads.
+    
+    Without this patch we get:
+    [    4.628136] divide error: 0000 [#1] SMP
+    .. snip..
+    Pid: 441, comm: kworker/1:1 Not tainted 2.6.37test-05765-gda43a99-dirty #14 N61PB-M2S/N61PB-M2S
+    [    4.628150] RIP: e030:[<ffffffff8101109b>]  [<ffffffff8101109b>] tsc_refine_calibration_work+0x149/0x1bb
+    [    4.628157] RSP: e02b:ffff88008f0d1df0  EFLAGS: 00010246
+    .. when running Linux under Xen.
+    
+    I've traced it down to the fact that when we boot under Xen we do
+    not have the HPET enabled nor the ACPI PM timer setup properly
+    (it is however detected earlier, so pmtmr_ioport is correct).
+    The hpet_enable() is never called (b/c xen_time_init is called), and
+    for calibration of tsc_khz (calibrate_tsc == xen_tsc_khz) we
+    get a valid value.
+    
+    So 'tsc_read_refs' tries to read the ACPI PM timer (acpi_pm_read_early),
+    however that is disabled under Xen:
+    
+    [    1.099272] calling  init_acpi_pm_clocksource+0x0/0xdc @ 1
+    [    1.140186] PM-Timer failed consistency check  (0x0xffffff) - aborting.
+    
+    So the tsc_calibrate_check gets called, it can't do HPET, and reading
+    from ACPI PM timer results in getting 0xffffff.. which is invalid.
+    
+    There is a check in 'tsc_refine_calibration_work' for invalid
+    values:
+    
+       /* hpet or pmtimer available ? */
+             if (!hpet && !ref_start && !ref_stop)
+                      goto out;
+    
+    But since ref_start and ref_stop have 0xffffff it does not trigger.
+    
+    This little fix does it however.
+    
+    Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+    Acked-by: John Stultz <johnstul@us.ibm.com>
 
-We already handle the r2 for in __und_usr. We don't deal with ARM_pc but
-we could either do it in __und_usr or let the code handling the undef
-fix it up.
-
--- 
-Catalin
-
-
+diff --git a/drivers/clocksource/acpi_pm.c b/drivers/clocksource/acpi_pm.c
+index cfb0f52..02e0f28 100644
+--- a/drivers/clocksource/acpi_pm.c
++++ b/drivers/clocksource/acpi_pm.c
+@@ -207,12 +207,15 @@ static int __init init_acpi_pm_clocksource(void)
+ 		if (i == ACPI_PM_READ_CHECKS) {
+ 			printk(KERN_INFO "PM-Timer failed consistency check "
+ 			       " (0x%#llx) - aborting.\n", value1);
++			pmtmr_ioport = 0;
+ 			return -ENODEV;
+ 		}
+ 	}
+ 
+-	if (verify_pmtmr_rate() != 0)
++	if (verify_pmtmr_rate() != 0) {
++		pmtmr_ioport = 0;
+ 		return -ENODEV;
++	}
+ 
+ 	return clocksource_register_hz(&clocksource_acpi_pm,
+ 						PMTMR_TICKS_PER_SEC);
