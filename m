@@ -1,60 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757469Ab1ANCeI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 21:34:08 -0500
-Received: from mtoichi11.ns.itscom.net ([219.110.2.181]:63081 "EHLO
-	mtoichi11.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752242Ab1ANCd7 (ORCPT
+	id S1757463Ab1ANCkr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 21:40:47 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:13852 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752291Ab1ANCkk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 21:33:59 -0500
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: vfs-scale, nd->inode after __do_follow_link()
-To: Nick Piggin <npiggin@gmail.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <7352.1294971049@jrobl>
-References: <7352.1294971049@jrobl>
-Date: Fri, 14 Jan 2011 11:33:56 +0900
-Message-ID: <7830.1294972436@jrobl>
+	Thu, 13 Jan 2011 21:40:40 -0500
+X-IronPort-AV: E=Sophos;i="4.60,321,1291622400"; 
+   d="scan'208";a="505297211"
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Andy Isaacson <adi@hexapodia.org>
+Cc: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-nfs@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>
+In-Reply-To: <20110114022554.GA17397@hexapodia.org>
+References: <20101230171453.GA5787@pengutronix.de>
+	 <1293731992.4919.5.camel@heimdal.trondhjem.org>
+	 <20101230191846.GB14221@pengutronix.de>
+	 <20110103213850.GC25121@pengutronix.de>
+	 <1294100558.25100.8.camel@heimdal.trondhjem.org>
+	 <20110105084014.GN25121@pengutronix.de>
+	 <20110105110517.GQ25121@pengutronix.de>
+	 <20110105112701.GA8638@n2100.arm.linux.org.uk>
+	 <20110105134045.GS25121@pengutronix.de>
+	 <1294239193.3014.9.camel@heimdal.trondhjem.org>
+	 <20110114022554.GA17397@hexapodia.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Thu, 13 Jan 2011 21:40:23 -0500
+Message-ID: <1294972823.2841.2.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 14 Jan 2011 02:40:24.0574 (UTC) FILETIME=[6544F1E0:01CBB394]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2011-01-13 at 18:25 -0800, Andy Isaacson wrote: 
+> On Wed, Jan 05, 2011 at 09:53:13AM -0500, Trond Myklebust wrote:
+> > > There was a bug in at least -rc5[1] that was considered already fixed in
+> > > -rc4[2]. The later announcements didn't mention it anymore. 
+> > > 
+> > > > I don't know why it's stopped producing the errors, although once it
+> > > > went I never investigated it any further (was far too busy trying to
+> > > > get AMBA DMA support working.)
+> > > It seems it was fixed for most users though. Trond?
+> > 
+> > As I said, I can't reproduce it.
+> > 
+> > I'm seeing a lot of mention of ARM above. Is anyone seeing this bug on
+> > x86, or does it appear to be architecture-specific?
+> 
+> I'm seeing processes stuck in D with "fileid changed" in dmesg, on
+> x86_64 (both server and client).  The repro testcase is to run an
+> executable off of NFS, recompile it on the server, and then try to tab
+> complete the executable name.  The client prints
+> 
+>     NFS: server <hostname> error: fileid changed
+>     fsid 0:18: expected fileid 0x107aa4a, got 0x107ad3e
+> 
+> and /bin/zsh hangs in D.
+> 
+> My server is running 2.6.36.1, filesystem is ext3 on sda3 on AHCI,
+> client is currently running 2.6.37-rc1.  I'm assuming that 37a09f will
+> fix it.
 
-"J. R. Okajima":
-> Isn't it path.dentry->d_inode instead of nd.inode?
+Why are you sticking to 2.6.37-rc1 when the final 2.6.37 is out? There
+have been several readdir bugfixes merged in the months since -rc1 came
+out.
 
-There is another one just after.
+Trond
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-J. R. Okajima
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 5bb7588..03e45ae 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2356,8 +2374,9 @@ reval:
- 			goto exit_dput;
- 		error = __do_follow_link(&path, &nd, &cookie);
- 		if (unlikely(error)) {
--			if (!IS_ERR(cookie) && nd.inode->i_op->put_link)
--				nd.inode->i_op->put_link(path.dentry, &nd, cookie);
-+			struct inode *i = path.dentry->d_inode;
-+			if (!IS_ERR(cookie) && i->i_op->put_link)
-+				i->i_op->put_link(path.dentry, &nd, cookie);
- 			/* nd.path had been dropped */
- 			nd.path = path;
- 			goto out_path;
-@@ -2365,8 +2384,11 @@ reval:
- 		holder = path;
- 		nd.flags &= ~LOOKUP_PARENT;
- 		filp = do_last(&nd, &path, open_flag, acc_mode, mode, pathname);
--		if (nd.inode->i_op->put_link)
--			nd.inode->i_op->put_link(holder.dentry, &nd, cookie);
-+		{
-+			struct inode *i = holder.dentry->d_inode;
-+			if (i->i_op->put_link)
-+				i->i_op->put_link(holder.dentry, &nd, cookie);
-+		}
- 		path_put(&holder);
- 	}
- out:
