@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757555Ab1ANDi6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 22:38:58 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38252 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752375Ab1ANDiv (ORCPT
+	id S1757564Ab1ANDla (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 22:41:30 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:36262 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751576Ab1ANDlY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 22:38:51 -0500
-Date: Fri, 14 Jan 2011 03:38:46 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Nick Piggin <npiggin@gmail.com>
-Cc: "J. R. Okajima" <hooanon05@yahoo.co.jp>,
+	Thu, 13 Jan 2011 22:41:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=ZDRQspLyaYCfy5tcfZcI045WmU5i/edI5pcPH3QVbC/xkIjE5r/iJTIuEwkRD6RkI8
+         VmsIdS2WaL4VU3F/g3D7O0gSKy5JnAsiKGpmIrK4wQHBCpeW2CzW0bfFhd4vdKZFfnsZ
+         GOLUe+Bh6HX6xT7o59h112EaFJXZ2FlDRw+vY=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTi=3UmR6=L-bKSJ2SbioPjaHodgzTj4my9dbNP1L@mail.gmail.com>
+References: <AANLkTi=3UmR6=L-bKSJ2SbioPjaHodgzTj4my9dbNP1L@mail.gmail.com>
+Date: Fri, 14 Jan 2011 14:41:23 +1100
+Message-ID: <AANLkTimjRYref7+7LS7Su=THo6JFBRV0uEyaWwGqeAXT@mail.gmail.com>
+Subject: Re: Please pull vfs-scale-working tree
+From: Nick Piggin <npiggin@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: vfs-scale, d_revalidate from nfsd
-Message-ID: <20110114033846.GX19804@ZenIV.linux.org.uk>
-References: <8855.1294927436@jrobl>
- <AANLkTik1bj=Z9xFv8JfYrxqefFL1owmH=Rctj=XnH4Mp@mail.gmail.com>
- <20110114030325.GU19804@ZenIV.linux.org.uk>
- <AANLkTi=H7Zhe4VMsh_tdrd7Atb9FX8j4AdiMNepXGsj9@mail.gmail.com>
- <20110114032052.GV19804@ZenIV.linux.org.uk>
- <AANLkTi=NJE-rXgFZ44BU4U2KrDg0657ucpupT+RGC4sj@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=NJE-rXgFZ44BU4U2KrDg0657ucpupT+RGC4sj@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 02:29:11PM +1100, Nick Piggin wrote:
-> > ? ? ? ?if (nd->flags & LOOKUP_RCU)
-> > ? ? ? ? ? ? ? ?return -ECHILD;
-> > ? ? ? ?return -EPERM;
-> > }
-> > when the sole intent of that sucker is to have dentry of /.xattr (pinned
-> > in dcache and hashed all along) rejected on lookups from root? ?IOW, WTF
-> > bother with -ECHILD here at all?
-> 
-> That's true. I guess I always have a weakness for doing "just one
-> little easy optimisation/simplification" folded into patch that is supposed
-> to be more mechanical changes :) I did have exactly that in the patch
-> initially, but I decided it's better just to do everything with -ECHILD first.
-> 
-> That also gives the -ECHILD paths a bit more workout before
-> fs conversions are done, too.
+On Fri, Jan 14, 2011 at 2:24 PM, Nick Piggin <npiggin@gmail.com> wrote:
+> Git tree is here:
+>
+>  git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git
+>
+> Branch is:
+>
+>    vfs-scale-working
+>
+> Head:
+> 657e94b673a805b427903c5628e95348235fad06
+>
+> Diffstat:
+>  Documentation/filesystems/porting |    8 ++++----
+>  Documentation/filesystems/vfs.txt |    4 ++--
+>  fs/namei.c                        |   18 ++++++++++++++++++
+>  fs/nfs/dir.c                      |    6 +++++-
+>  include/linux/list_bl.h           |    5 +++--
+>  include/linux/rculist_bl.h        |    3 ++-
+>  6 files changed, 34 insertions(+), 10 deletions(-)
+>
+> Just bug fixes, importantly nfs chroot one that several people are hitting.
+>
+> d_set_d_op bugs *should* be a thing of the past after the dust settles
+> from Al's work, so I'm leaving that area alone.
+>
+> Remaining known bug is an nfsd oops when exporting filesystems that
+> supply a .d_revalidate(), which is not going to be a common configuration
+> and I'd like to do a d_revalidate API change to fix it, so don't want to
+> rush that through.
 
-Not unless your test loads include trying to access pathnames like
-/.xattr/whatever on reiserfs and watching those attempts fail...
+IOW, I think it would be OK to do an -rc1 with this known issue.
+There were no reports of that bug triggering, it was just by review
+from J. R. Okajima.
+
+.d_revalidate filesystems tend to be network and cluster and such,
+so it won't even affect a large proportion of nfsd servers.
+
+It definitely *will* oops if somebody exports a .d_revalidate filesystem,
+but it will be a clean NULL deref, at least.
