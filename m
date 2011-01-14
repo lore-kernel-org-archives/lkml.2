@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757149Ab1ANLNW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 06:13:22 -0500
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:57041 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751152Ab1ANLNR (ORCPT
+	id S1757190Ab1ANLTF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 06:19:05 -0500
+Received: from hull.simtec.co.uk ([78.105.113.97]:60256 "EHLO
+	preston.local.simtec.co.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752429Ab1ANLS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 06:13:17 -0500
-Message-ID: <4D302FC3.7060008@st.com>
-Date: Fri, 14 Jan 2011 16:43:07 +0530
-From: viresh kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Fri, 14 Jan 2011 06:18:59 -0500
+X-Greylist: delayed 2545 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Jan 2011 06:18:59 EST
+Message-ID: <4D302727.6070006@simtec.co.uk>
+Date: Fri, 14 Jan 2011 10:36:23 +0000
+From: Ben Dooks <ben@simtec.co.uk>
+Organization: Simtec Electronics, UK
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
 To: Jack Stone <jwjstone@fastmail.fm>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/async.c: fixing compilation warnings
-References: <1294989246-1621-1-git-send-email-viresh.kumar@st.com> <7f454c6e-eeb9-4de0-acfe-6ced96ecdad0@email.android.com>
-In-Reply-To: <7f454c6e-eeb9-4de0-acfe-6ced96ecdad0@email.android.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+CC: Ben Dooks <ben-linux@fluff.org>, Vincent Sanders <vince@simtec.co.uk>,
+        Simtec Support <support@simtec.co.uk>, linux-kernel@vger.kernel.org,
+        linux@simtec.co.uk
+Subject: Re: [PATCH 3/3] MAINTAINERS: Fixup Simtec support email entries
+References: <0bd9310fc4d79ee83f9f657640be251d84dbf86f.1294998254.git.ben-linux@fluff.org>	<fd0227dd223f5c88e559b2902d5124107ffb7c6a.1294998254.git.ben-linux@fluff.org> <4D302081.3020102@fastmail.fm>
+In-Reply-To: <4D302081.3020102@fastmail.fm>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2011 02:48 PM, Jack Stone wrote:
-> "Viresh Kumar" <viresh.kumar@st.com> wrote:
-> 
->> This patch fixes following compilation warnings:
->> 270:10: warning: ‘starttime.tv64’ may be used uninitialized in this
->> function
->> 122:10: warning: ‘calltime.tv64’ may be used uninitialized in this
->> function
+On 14/01/11 10:08, Jack Stone wrote:
+> On 14/01/2011 09:44, Ben Dooks wrote:
+>> The support@simtec.co.uk address is for direct customer support only, the
+>> EB2410ITX and EB110ATX entries should direct to the Simtec Linux Team
+>> address of linux@simtec.co.uk
 >>
->> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+>> Also add correct email address for Vincent Sanders
+>>
+>> Signed-off-by: Ben Dooks <ben-linux@fluff.org>
+>> Cc: Vincent Sanders <vince@simtec.co.uk>
+>> Cc: Simtec Support <support@simtec.co.uk>
+>> Cc: Simtec Linux Team <linux@simtec.co.uk>
 >> ---
->> kernel/async.c |    4 ++--
->> 1 files changed, 2 insertions(+), 2 deletions(-)
+>>  MAINTAINERS |    6 ++++--
+>>  1 files changed, 4 insertions(+), 2 deletions(-)
 >>
->> diff --git a/kernel/async.c b/kernel/async.c
->> index cd9dbb9..9c06931 100644
->> --- a/kernel/async.c
->> +++ b/kernel/async.c
->> @@ -119,7 +119,7 @@ static void async_run_entry_fn(struct work_struct
->> *work)
->> 	struct async_entry *entry =
->> 		container_of(work, struct async_entry, work);
->> 	unsigned long flags;
->> -	ktime_t calltime, delta, rettime;
->> +	ktime_t calltime = {0}, delta, rettime;
+>> diff --git a/MAINTAINERS b/MAINTAINERS
+>> index 4a99ddf..3f5dc25 100644
+>> --- a/MAINTAINERS
+>> +++ b/MAINTAINERS
+>> @@ -5557,13 +5557,15 @@ F:	include/linux/sfi*.h
+>>  
+>>  SIMTEC EB110ATX (Chalice CATS)
+>>  P:	Ben Dooks
+>> -M:	Vincent Sanders <support@simtec.co.uk>
+>> +P:	Vincent Sanders <support@simtec.co.uk>
 > 
-> I think this is a false positive so we can use uninitalized_var().
-> 
->> 	/* 1) move self to the running queue */
->> 	spin_lock_irqsave(&async_lock, flags);
->> @@ -267,7 +267,7 @@ EXPORT_SYMBOL_GPL(async_synchronize_full_domain);
->> void async_synchronize_cookie_domain(async_cookie_t cookie,
->> 				     struct list_head *running)
->> {
->> -	ktime_t starttime, delta, endtime;
->> +	ktime_t starttime = {0}, delta, endtime;
->>
-> 
-> Same for this one.
-> 
+> Did you mean to update this email as well?
 
-I will resend it with suggested changes.
+Thankyou, will correct this.
 
---
-viresh
+-- 
+Ben
+
