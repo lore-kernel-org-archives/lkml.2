@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756810Ab1ANKcn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 05:32:43 -0500
-Received: from mail.pripojeni.net ([217.66.174.14]:42217 "EHLO
+	id S1756944Ab1ANKcy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 05:32:54 -0500
+Received: from mail.pripojeni.net ([217.66.174.14]:42216 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559Ab1ANKcg (ORCPT
+	with ESMTP id S1751152Ab1ANKcg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 14 Jan 2011 05:32:36 -0500
 From: Jiri Slaby <jslaby@suse.cz>
@@ -15,9 +15,9 @@ Cc: linux-pci@vger.kernel.org, linux-ide@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>,
         Thomas Renninger <trenn@suse.de>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH option A 2/2] PCI: do not create quirk I/O regions below PCIBIOS_MIN_IO
-Date: Fri, 14 Jan 2011 11:32:26 +0100
-Message-Id: <1295001146-14910-3-git-send-email-jslaby@suse.cz>
+Subject: [PATCH option B 2/2] PCI: do not create quirk I/O regions below PCIBIOS_MIN_IO for ICH
+Date: Fri, 14 Jan 2011 11:32:25 +0100
+Message-Id: <1295001146-14910-2-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <4D3025F4.6020001@gmail.com>
 References: <4D3025F4.6020001@gmail.com>
@@ -54,28 +54,71 @@ Cc: "David S. Miller" <davem@davemloft.net>
 Cc: Thomas Renninger <trenn@suse.de>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 ---
- drivers/pci/quirks.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+ drivers/pci/quirks.c |   32 ++++++++++++++++++++++++--------
+ 1 files changed, 24 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 8db2426..cfedf2b 100644
+index 8db2426..b3ab2f7 100644
 --- a/drivers/pci/quirks.c
 +++ b/drivers/pci/quirks.c
-@@ -388,7 +388,14 @@ static void __devinit quirk_io_region(struct pci_dev *dev, unsigned region,
- 	unsigned size, int nr, const char *name)
- {
- 	region &= ~(size-1);
--	if (region) {
+@@ -554,18 +554,30 @@ static void __devinit quirk_ich4_lpc_acpi(struct pci_dev *dev)
+ 	u32 region;
+ 	u8 enable;
+ 
 +	/*
 +	 * The check for PCIBIOS_MIN_IO is to ensure we won't create a conflict
 +	 * with low legacy (and fixed) ports. We don't know the decoding
 +	 * priority and can't tell whether the legacy device or the one created
-+	 * here is really at that address. This happens on boards with broken
-+	 * BIOSes. At least one known is with ICH4.
-+	 */
-+	if (region && region >= PCIBIOS_MIN_IO) {
- 		struct pci_bus_region bus_region;
- 		struct resource *res = dev->resource + nr;
++	 * here is really at that address.  This happens on boards with broken
++	 * BIOSes.
++	*/
++
+ 	pci_read_config_byte(dev, ICH_ACPI_CNTL, &enable);
+ 	if (enable & ICH4_ACPI_EN) {
+ 		pci_read_config_dword(dev, ICH_PMBASE, &region);
+-		quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
+-				"ICH4 ACPI/GPIO/TCO");
++		region &= PCI_BASE_ADDRESS_IO_MASK;
++		if (region >= PCIBIOS_MIN_IO)
++			quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
++					"ICH4 ACPI/GPIO/TCO");
+ 	}
+ 
+ 	pci_read_config_byte(dev, ICH4_GPIO_CNTL, &enable);
+ 	if (enable & ICH4_GPIO_EN) {
+ 		pci_read_config_dword(dev, ICH4_GPIOBASE, &region);
+-		quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES + 1,
+-				"ICH4 GPIO");
++		region &= PCI_BASE_ADDRESS_IO_MASK;
++		if (region >= PCIBIOS_MIN_IO)
++			quirk_io_region(dev, region, 64,
++					PCI_BRIDGE_RESOURCES + 1, "ICH4 GPIO");
+ 	}
+ }
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_82801AA_0,		quirk_ich4_lpc_acpi);
+@@ -587,15 +599,19 @@ static void __devinit ich6_lpc_acpi_gpio(struct pci_dev *dev)
+ 	pci_read_config_byte(dev, ICH_ACPI_CNTL, &enable);
+ 	if (enable & ICH6_ACPI_EN) {
+ 		pci_read_config_dword(dev, ICH_PMBASE, &region);
+-		quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
+-				"ICH6 ACPI/GPIO/TCO");
++		region &= PCI_BASE_ADDRESS_IO_MASK;
++		if (region >= PCIBIOS_MIN_IO)
++			quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
++					"ICH6 ACPI/GPIO/TCO");
+ 	}
+ 
+ 	pci_read_config_byte(dev, ICH6_GPIO_CNTL, &enable);
+ 	if (enable & ICH4_GPIO_EN) {
+ 		pci_read_config_dword(dev, ICH6_GPIOBASE, &region);
+-		quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES + 1,
+-				"ICH6 GPIO");
++		region &= PCI_BASE_ADDRESS_IO_MASK;
++		if (region >= PCIBIOS_MIN_IO)
++			quirk_io_region(dev, region, 64,
++					PCI_BRIDGE_RESOURCES + 1, "ICH6 GPIO");
+ 	}
+ }
  
 -- 
 1.7.3.4
