@@ -1,175 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721Ab1ANUCF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 15:02:05 -0500
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:65157 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213Ab1ANUCD (ORCPT
+	id S1751777Ab1ANUGm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 15:06:42 -0500
+Received: from exchange.solarflare.com ([216.237.3.220]:27436 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276Ab1ANUGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 15:02:03 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 24.130.172.179
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19qebUvY2oxRz+ZTfev2VsI
-Date: Fri, 14 Jan 2011 12:01:55 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Sutharsan Ramamoorthy <sutharsan.ramamoorthy@yahoo.com>
-Cc: greg@kroah.com, linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, david.cross@cypress.com, srmt@cypress.com
-Subject: Re: [PATCH] adding gpmc configuration functions, west bridge
- related
-Message-ID: <20110114200155.GN4957@atomide.com>
-References: <524702.86777.qm@web121609.mail.ne1.yahoo.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <524702.86777.qm@web121609.mail.ne1.yahoo.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 14 Jan 2011 15:06:41 -0500
+Subject: Re: [PATCH 1/2] genirq: Add IRQ affinity notifiers
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: David Miller <davem@davemloft.net>, Tom Herbert <therbert@google.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-net-drivers@solarflare.com
+In-Reply-To: <alpine.LFD.2.00.1101141928210.2678@localhost6.localdomain6>
+References: <1294169842.3636.31.camel@bwh-desktop>
+	 <1294169919.3636.33.camel@bwh-desktop>
+	 <alpine.LFD.2.00.1101141928210.2678@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Fri, 14 Jan 2011 20:06:37 +0000
+Message-ID: <1295035597.5386.8.camel@bwh-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 14 Jan 2011 20:06:40.0567 (UTC) FILETIME=[8EAD4C70:01CBB426]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17892.005
+X-TM-AS-Result: No--30.658600-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sutharsan Ramamoorthy <sutharsan.ramamoorthy@yahoo.com> [110113 15:22]:
-> --- linux-2.6.37_vanilla/arch/arm/mach-omap2/usb-cywb-pnand.c	1969-12-31 16:00:00.000000000 -0800
-> +++ linux-2.6.37-gpmc/arch/arm/mach-omap2/usb-cywb-pnand.c	2011-01-12 12:37:23.154716913 -0800
-...
+On Fri, 2011-01-14 at 20:47 +0100, Thomas Gleixner wrote:
+> On Tue, 4 Jan 2011, Ben Hutchings wrote:
+> > +/**
+> > + * struct irq_affinity_notify - context for notification of IRQ affinity changes
+> > + * @irq:		Interrupt to which notification applies
+> > + * @kref:		Reference count, for internal use
+> > + * @work:		Work item, for internal use
+> > + * @notify:		Function to be called on change.  This will be
+> > + *			called in process context.
+> > + * @release:		Function to be called on release.  This will be
+> > + *			called in process context.  Once registered, the
+> > + *			structure must only be freed when this function is
+> > + *			called or later.
+> > + */
+> > +struct irq_affinity_notify {
+> > +        unsigned int irq;
+> > +        struct kref kref;
+> > +#if defined(CONFIG_SMP) && defined(CONFIG_GENERIC_HARDIRQS)
+> 
+> The whole affinity thing is SMP and GENERIC_HARDIRQS only anyway, so
+> what's the point of this ifdeffery ?
 
-> +/*
-> + * switch GPMC DATA bus mode
-> + */
-> +void cywb_gpmc_enable_16bit_bus(bool dbus16_enabled)
-> +{
-> +	u32 tmp32;
-> +
-> +	/*
-> +	 * disable gpmc CS4 operation 1st
-> +	 */
-> +	tmp32 = gpmc_cs_read_reg(AST_GPMC_CS,
-> +				GPMC_CS_CONFIG7) & ~GPMC_CONFIG7_CSVALID;
-> +	gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7, tmp32);
-> +
-> +	/*
-> +	 * GPMC NAND data bus can be 8 or 16 bit wide
-> +	 */
-> +	if (dbus16_enabled) {
-> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
-> +				(GPMC_CONFIG1_DEVICETYPE(2) |
-> +				GPMC_CONFIG1_WAIT_PIN_SEL(2) |
-> +				GPMC_CONFIG1_DEVICESIZE_16));
-> +	} else {
-> +		gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
-> +				(GPMC_CONFIG1_DEVICETYPE(2) |
-> +				GPMC_CONFIG1_WAIT_PIN_SEL(2)));
-> +	}
-> +
-> +	/*
-> +	 * re-enable astoria CS operation on GPMC
-> +	 */
-> +	 gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7,
-> +			(tmp32 | GPMC_CONFIG7_CSVALID));
-> +}
+The intent is that code using this can be compiled even if those config
+options are not set.  The work_struct is not needed in that case.  I
+think this is probably pointless though.
 
-This should be static, right?
+> > +        struct work_struct work;
+> > +#endif
+> > +        void (*notify)(struct irq_affinity_notify *, const cpumask_t *mask);
+> > +        void (*release)(struct kref *ref);
+> > +};
+> > +
+> 
+> > +/**
+> > + *	irq_set_affinity_notifier - control notification of IRQ affinity changes
+> > + *	@irq:		Interrupt for which to enable/disable notification
+> > + *	@notify:	Context for notification, or %NULL to disable
+> > + *			notification.  Function pointers must be initialised;
+> > + *			the other fields will be initialised by this function.
+> > + *
+> > + *	Must be called in process context.  Notification may only be enabled
+> > + *	after the IRQ is allocated but before it is bound with request_irq()
+> 
+> Why? And if there is that restriction, then it needs to be
+> checked. But I don't see why this is necessary.
 
+Which restriction?
 
-> +int cywb_pnand_platform_retime()
-> +{
-> +	u32 tmp32;
-> +	struct gpmc_timings timings;
-> +	int retval = 0;
-> +
-> +
-> +	gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
-> +					(GPMC_CONFIG1_DEVICETYPE(2) |
-> +					GPMC_CONFIG1_WAIT_PIN_SEL(2)));
-> +
-> +	memset(&timings, 0, sizeof(timings));
-> +
-> +	/* cs timing */
-> +	timings.cs_on = WB_GPMC_CS_T_O_N;
-> +	timings.cs_wr_off = WB_GPMC_BUSCYC_T;
-> +	timings.cs_rd_off = WB_GPMC_BUSCYC_T;
-> +
-> +	/* adv timing */
-> +	timings.adv_on = WB_GPMC_ADV_T_O_N;
-> +	timings.adv_rd_off = WB_GPMC_BUSCYC_T;
-> +	timings.adv_wr_off = WB_GPMC_BUSCYC_T;
-> +
-> +	/* oe timing */
-> +	timings.oe_on = WB_GPMC_OE_T_O_N;
-> +	timings.oe_off = WB_GPMC_OE_T_O_F_F;
-> +	timings.access = WB_GPMC_RD_T_A_C_C;
-> +	timings.rd_cycle = WB_GPMC_BUSCYC_T;
-> +
-> +	/* we timing */
-> +	timings.we_on = WB_GPMC_WE_T_O_N;
-> +	timings.we_off = WB_GPMC_WE_T_O_F_F;
-> +	timings.wr_access = WB_GPMC_WR_T_A_C_C;
-> +	timings.wr_cycle = WB_GPMC_BUSCYC_T;
-> +
-> +	timings.page_burst_access = WB_GPMC_BUSCYC_T;
-> +	timings.wr_data_mux_bus = WB_GPMC_BUSCYC_T;
-> +	gpmc_cs_set_timings(AST_GPMC_CS, &timings);
-> +
-> +	/*
-> +	 * DISABLE cs4, NOTE GPMC REG7 is already configured
-> +	 * at this point by gpmc_cs_request
-> +	 */
-> +	tmp32 = gpmc_cs_read_reg(AST_GPMC_CS, GPMC_CS_CONFIG7) &
-> +					~GPMC_CONFIG7_CSVALID;
-> +	gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7, tmp32);
-> +
-> +	/*
-> +	 * PROGRAM chip select Region, (see OMAP3430 TRM PAGE 1088)
-> +	 */
-> +	gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7,
-> +				(AS_CS_MASK | AS_CS_BADDR));
-> +
-> +	/*
-> +	 * by default configure GPMC into 8 bit mode
-> +	 * (to match astoria default mode)
-> +	 */
-> +	gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG1,
-> +				(GPMC_CONFIG1_DEVICETYPE(2) |
-> +				GPMC_CONFIG1_WAIT_PIN_SEL(2)));
-> +
-> +	/*
-> +	 * ENABLE astoria cs operation on GPMC
-> +	 */
-> +	gpmc_cs_write_reg(AST_GPMC_CS, GPMC_CS_CONFIG7,
-> +					(tmp32 | GPMC_CONFIG7_CSVALID));
-> +
-> +	return retval;
-> +
-> +}
-> +
-> +static struct cywb_platform_data cywb_plat = {
-> +	.retime			= cywb_pnand_platform_retime,
-> +	.config_bus_width	= cywb_gpmc_enable_16bit_bus,
-> +};
-> +
-> +static struct platform_device cywb_device = {
-> +	.name		= "west_bridge_dev",
-> +	.id		= -1,
-> +	.dev = {
-> +		.platform_data		= &cywb_plat,
-> +	}
-> +};
-> +
-> +#ifdef CONFIG_WESTBRIDGE_ASTORIA
-> +void __init usb_cywb_init()
-> +{
-> +	if (platform_device_register(&cywb_device) < 0)
-> +		dev_err(&cywb_device.dev, "Unable to register cywb-astoria device\n");
-> +}
-> +#else
-> +void __init usb_cywb_init()
-> +{
-> +}
-> +#endif /* CONFIG_WESTBRIDGE_ASTORIA */
+> > + *	and must be disabled before the IRQ is freed using free_irq().
+> > + */
+> 
+> > +#ifdef CONFIG_SMP
+> > +	BUG_ON(desc->affinity_notify);
+> 
+> We should be nice here and just WARN and fixup the wreckage by
+> uninstalling it.
 
-Can you also move gpmc_cs_request to this file too?
+OK.
 
-Regards,
+Ben.
 
-Tony
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
