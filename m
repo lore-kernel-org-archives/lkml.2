@@ -1,31 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756360Ab1ANMAO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 07:00:14 -0500
-Received: from cantor.suse.de ([195.135.220.2]:34339 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752160Ab1ANMAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 07:00:09 -0500
-Message-ID: <4D303AC8.9070100@suse.cz>
-Date: Fri, 14 Jan 2011 13:00:08 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+	id S1756648Ab1ANMCv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 07:02:51 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46119 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752447Ab1ANMCq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 07:02:46 -0500
+Date: Fri, 14 Jan 2011 12:02:29 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Colin Cross <ccross@android.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: vfp: Fix up exception location in Thumb mode
+Message-ID: <20110114120229.GA15996@n2100.arm.linux.org.uk>
+References: <1294990949-2729-1-git-send-email-ccross@android.com> <AANLkTimqiqABxCejdeOQWZZ62DVUZW2v-yMpdu1aNDQT@mail.gmail.com>
 MIME-Version: 1.0
-To: Jianbin Kang <kjbmail@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] kbuild: add global tags generation (fixed signed-off-by)
-References: <AANLkTi=BPra1SJ3BHN0L1e6L9MKj3EJ0agjaA+m7CkGj@mail.gmail.com> <4D302EB4.7000005@suse.cz>
-In-Reply-To: <4D302EB4.7000005@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimqiqABxCejdeOQWZZ62DVUZW2v-yMpdu1aNDQT@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.1.2011 12:08, Michal Marek wrote:
-> "global index" is not clear to someone who does not know about GNU
-> global, could you change it to "Generate to GNU global index"?
+On Fri, Jan 14, 2011 at 11:43:04AM +0000, Catalin Marinas wrote:
+> >        pr_debug("VFP: bounce: trigger %08x fpexc %08x\n", trigger, fpexc);
+> >
+> >        /*
+> > +        * If the exception occured in thumb mode, pc is exception location + 2,
+> > +        * the middle of the 32-bit VFP instruction.  Add 2 to get exception
+> > +        * location + 4, the same we get in ARM mode.
+> > +        */
+> > +#ifdef CONFIG_ARM_THUMB
+> > +       if (regs->ARM_cpsr & PSR_T_BIT)
+> > +               regs->ARM_pc += 2;
+> > +#endif
+> 
+> You can use "if (thumb_mode(regs))" and avoid the #ifdef entirely.
 
-I meant "Generate GNU global index" of course.
+I don't think this is correct.  On entry to the undefined instruction
+handler, we get the uncorrected PC value, so PC points to the
+instruction after the faulting instruction.
 
-Michal
+If it was an ARM instruction, that is located at PC-4.  If it was a
+Thumb instruction, it is located at PC-2.  This PC value is passed
+unmodified to the VFP entry code, and the passed r2 reflect the
+value in regs->ARM_pc.
+
+The VFP entry assembly doesn't touch the PC value, except when it
+wants to retry an instruction:
+
+        sub     r2, r2, #4
+        str     r2, [sp, #S_PC]         @ retry the instruction
+
+So I think that 2 to the PC when in thumb mode is incorrect, as that'll
+cause us to skip the instruction following the faulted one.
+
+I think that the undefined instruction handling needs reworking for
+Thumb entirely as we could be dealing with a 16-bit or 32-bit thumb
+instruction, and we have no way of knowing without repeatedly
+decoding that instruction.
