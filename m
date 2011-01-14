@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757463Ab1ANCkr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 21:40:47 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:13852 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752291Ab1ANCkk convert rfc822-to-8bit (ORCPT
+	id S1757509Ab1ANCmR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 21:42:17 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:35652 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752291Ab1ANCmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 21:40:40 -0500
-X-IronPort-AV: E=Sophos;i="4.60,321,1291622400"; 
-   d="scan'208";a="505297211"
-Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Andy Isaacson <adi@hexapodia.org>
-Cc: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-nfs@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>
-In-Reply-To: <20110114022554.GA17397@hexapodia.org>
-References: <20101230171453.GA5787@pengutronix.de>
-	 <1293731992.4919.5.camel@heimdal.trondhjem.org>
-	 <20101230191846.GB14221@pengutronix.de>
-	 <20110103213850.GC25121@pengutronix.de>
-	 <1294100558.25100.8.camel@heimdal.trondhjem.org>
-	 <20110105084014.GN25121@pengutronix.de>
-	 <20110105110517.GQ25121@pengutronix.de>
-	 <20110105112701.GA8638@n2100.arm.linux.org.uk>
-	 <20110105134045.GS25121@pengutronix.de>
-	 <1294239193.3014.9.camel@heimdal.trondhjem.org>
-	 <20110114022554.GA17397@hexapodia.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Thu, 13 Jan 2011 21:40:23 -0500
-Message-ID: <1294972823.2841.2.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 14 Jan 2011 02:40:24.0574 (UTC) FILETIME=[6544F1E0:01CBB394]
+	Thu, 13 Jan 2011 21:42:13 -0500
+X-AuditID: b753bd60-9e55eba000000f65-85-4d2fb8027156
+Message-ID: <4D2FB7FD.3020004@hitachi.com>
+Date: Fri, 14 Jan 2011 11:42:05 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Franck Bui-Huu <vagabon.xyz@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Chase Douglas <chase.douglas@canonical.com>
+Subject: Re: [PATCH -perf/perf/core  5/6] perf probe: Add variable filter
+ support
+References: <20110113124548.22426.11201.stgit@ltc236.sdl.hitachi.co.jp>	<20110113124624.22426.72527.stgit@ltc236.sdl.hitachi.co.jp> <m3wrm87ba7.fsf@gmail.com>
+In-Reply-To: <m3wrm87ba7.fsf@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-13 at 18:25 -0800, Andy Isaacson wrote: 
-> On Wed, Jan 05, 2011 at 09:53:13AM -0500, Trond Myklebust wrote:
-> > > There was a bug in at least -rc5[1] that was considered already fixed in
-> > > -rc4[2]. The later announcements didn't mention it anymore. 
-> > > 
-> > > > I don't know why it's stopped producing the errors, although once it
-> > > > went I never investigated it any further (was far too busy trying to
-> > > > get AMBA DMA support working.)
-> > > It seems it was fixed for most users though. Trond?
-> > 
-> > As I said, I can't reproduce it.
-> > 
-> > I'm seeing a lot of mention of ARM above. Is anyone seeing this bug on
-> > x86, or does it appear to be architecture-specific?
+(2011/01/14 6:18), Franck Bui-Huu wrote:
+> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
 > 
-> I'm seeing processes stuck in D with "fileid changed" in dmesg, on
-> x86_64 (both server and client).  The repro testcase is to run an
-> executable off of NFS, recompile it on the server, and then try to tab
-> complete the executable name.  The client prints
+>> Add filters support for available variable list.
+>> Default filter is "!__k???tab_*&!__crc_*" for
+>> filtering out automatically generated symbols.
+>>
+>> The format of filter rule is "[!]GLOBPATTERN", so
+>> you can use wild cards. If the filter rule starts with
+>> '!', matched variables are filter out.
+>>
+>> e.g.)
+>>  # perf probe -V schedule --externs --filter=cpu*
 > 
->     NFS: server <hostname> error: fileid changed
->     fsid 0:18: expected fileid 0x107aa4a, got 0x107ad3e
+> I'm wondering if the different syntax below could be simpler:
 > 
-> and /bin/zsh hangs in D.
+>    $ perf probe add <probe>
+>    $ perf probe del <probe>
+>    $ perf probe show       
 > 
-> My server is running 2.6.36.1, filesystem is ext3 on sda3 on AHCI,
-> client is currently running 2.6.37-rc1.  I'm assuming that 37a09f will
-> fix it.
+>    $ perf probe list <line>
+>            ...       --vars[=<pattern>] [--externs] <probe>
+>            ...       --funcs[=<pattern>]
 
-Why are you sticking to 2.6.37-rc1 when the final 2.6.37 is out? There
-have been several readdir bugfixes merged in the months since -rc1 came
-out.
+Hm, well, if no one complains about changing the syntax
+of perf probe, it may make things simple (maybe we'll also
+have to drop "perf probe <PROBE>" syntax). Nowadays
+we already have perf-kvm, perf-sched, etc. which use sub-sub
+commands.
 
-Trond
+IMHO, for avoiding confusion old options and "perf-list", below
+sub-sub commands are more suitable.
+
+   $ perf probe add <probe>
+   $ perf probe del <probe>
+   $ perf probe list
+   $ perf probe lines <line>
+   $ perf probe vars [--filter=<pattern>|-F <pattern>] [--extern] <probe>
+   $ perf probe funcs [--filter=<pattern>|-F <pattern>]
+
+Thank you,
+
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
