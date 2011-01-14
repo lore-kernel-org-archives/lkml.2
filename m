@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757419Ab1ANBCD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 20:02:03 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:32861 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752343Ab1ANBCA convert rfc822-to-8bit (ORCPT
+	id S1757409Ab1ANBDv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 20:03:51 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60412 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752343Ab1ANBDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 20:02:00 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=sRt0r3sJYWgiIkUob/d9OqeNwm4g/BemM0aQGE/tUNkEJnO8bzR11Nb7J2UeHRZJby
-         6Kv1pBe+K75fdi23/lmQHiSyJDMa9Q0YVjAoVKiI6N5qNz/S6f2ZEceRqiQGRWq+O/2b
-         E8a1tPrzlUlQDLr92yuiV5F9xsiThYzAtwT5Q=
+	Thu, 13 Jan 2011 20:03:43 -0500
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1101131732500.2678@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1101131436070.2678@localhost6.localdomain6>
-	<8952.1294927845@jrobl>
-	<alpine.LFD.2.00.1101131732500.2678@localhost6.localdomain6>
-Date: Fri, 14 Jan 2011 12:01:58 +1100
-Message-ID: <AANLkTikjTqcTzBVNouMdb2-QDmEKvH0p_uZ-SE9aNW6f@mail.gmail.com>
-Subject: Re: [PATCH] fs: Work around NFS wreckage
-From: Nick Piggin <npiggin@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "J. R. Okajima" <hooanon05@yahoo.co.jp>, Nick Piggin <npiggin@kernel.dk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, u.kleine-koenig@pengutronix.de,
-        "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+In-Reply-To: <20110113161115.1d564448@nehalam>
+References: <4D2F03F2.4000707@fusionio.com> <AANLkTi=t9FQaUhnXCk51bjZO82F8OGDDd9H5HyMPRPQd@mail.gmail.com>
+ <4D2F51B5.6060105@fusionio.com> <AANLkTi=PDEyJNN3aKhHWzCKrTfzib-VCdvgD7auoWuzD@mail.gmail.com>
+ <20110113141957.1eaf4940@nehalam> <AANLkTikdULkbB83Us_zXivv8Y5FGdHrixUXRiitacaSh@mail.gmail.com>
+ <20110113161115.1d564448@nehalam>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 13 Jan 2011 17:03:21 -0800
+Message-ID: <AANLkTimZWMJQfc6E-ke+SbpaTeG9UKA--g=qFQa+11aW@mail.gmail.com>
+Subject: Re: [GIT PULL] block driver updates for 2.6.38
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Pekka Enberg <penberg@kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 3:41 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Thu, 13 Jan 2011, J. R. Okajima wrote:
->> Thomas Gleixner:
->> > The dcache scalability work broke NFS root filesystems.
->>       :::
->> > Check for parent equal dentry and skip the nested lock to avoid the
->> > deadlock. I'm sure this is the wrong fix, but at least it "works" :)
->>
->> With this patch, can you unmount it cleanly?
->> It skips incrementing d_count for both dentries.
->> Do we need at least one?
+On Thu, Jan 13, 2011 at 4:11 PM, Stephen Hemminger
+<shemminger@vyatta.com> wrote:
 >
+> It appears to be a different problem (not HPET MSI). Not sure what
+> is causing it, but even 2.6.35 can't format a floppy without error.
 
-Yeah thanks everyone for reporting this.
+Do you actually know that the hardware is good (ie does _any_ version
+of Linux work)?
 
-I have a fix for it in a slightly different way, and a couple of other reported
-bugs, which are going through stress testing now.
+Floppy disks and drives have not been known for their robustness, and
+most of them tend to be pretty old by now.
 
-Thanks,
-Nick
+Dang, I think I should just try to go to Fry's and see if I can find a
+floppy drive somewhere. Not that I even know if my motherboards
+necessarily even have the _pins_ to connect it any more.
+
+                         Linus
