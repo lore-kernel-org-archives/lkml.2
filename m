@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756670Ab1ANJvn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 04:51:43 -0500
-Received: from 26.mail-out.ovh.net ([91.121.27.225]:58255 "HELO
-	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751462Ab1ANJvi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 04:51:38 -0500
-Message-ID: <4D301CA5.503@example.com>
-Date: Fri, 14 Jan 2011 10:51:33 +0100
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	id S1756751Ab1ANJww (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 04:52:52 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:65351 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751462Ab1ANJwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 04:52:45 -0500
+Message-ID: <4D3018FF.1010105@cn.fujitsu.com>
+Date: Fri, 14 Jan 2011 17:35:59 +0800
+From: Shan Wei <shanwei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13pre) Gecko/20101113 Shredder/3.1.7pre
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: error in 2.6.37-git10
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 2064618954578227480
-X-Ovh-Remote: 83.24.79.226 (dmx226.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+To: bfields@fieldses.org, neilb@suse.de, linux-nfs@vger.kernel.org,
+        Kernel-Maillist <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] nfsd: kill unused macro definition
+References: <4D300BA8.80000@cn.fujitsu.com>
+In-Reply-To: <4D300BA8.80000@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-01-14 17:38:11,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-01-14 17:51:52,
+	Serialize complete at 2011-01-14 17:51:52
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+These macros had never been used for several years.
+So, remove them.
 
-Build failed here:
+Signed-off-by: Shan Wei <shanwei@cn.fujitsu.com>
+---
+V2: add two other unused macros, EXPORT_HASHMASK and FILE_HASH_MASK.
+ 
+---
+ fs/nfsd/export.c    |    1 -
+ fs/nfsd/nfs4idmap.c |    1 -
+ fs/nfsd/nfs4state.c |    2 +-
+ 3 files changed, 1 insertions(+), 3 deletions(-)
 
-   CC [M]  fs/ecryptfs/main.o
-fs/ecryptfs/main.c:144: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or 
-‘__attribute__’ before ‘*’ token
-fs/ecryptfs/main.c: In function ‘ecryptfs_interpose’:
-fs/ecryptfs/main.c:204: error: implicit declaration of function 
-‘ecryptfs_get_inode’
-fs/ecryptfs/main.c:204: warning: initialization makes pointer from 
-integer without a cast
-fs/ecryptfs/main.c:206: error: expected ‘)’ before ‘return’
-fs/ecryptfs/main.c:212: error: expected expression before ‘}’ token
-fs/ecryptfs/main.c: In function ‘ecryptfs_mount’:
-fs/ecryptfs/main.c:569: warning: assignment makes pointer from integer 
-without a cast
-
-Regards,
-
-Piotr Hosowicz
-
+diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
+index c0fcb7a..98a964a 100644
+--- a/fs/nfsd/export.c
++++ b/fs/nfsd/export.c
+@@ -300,7 +300,6 @@ svc_expkey_update(struct svc_expkey *new, struct svc_expkey *old)
+ 
+ #define	EXPORT_HASHBITS		8
+ #define	EXPORT_HASHMAX		(1<< EXPORT_HASHBITS)
+-#define	EXPORT_HASHMASK		(EXPORT_HASHMAX -1)
+ 
+ static struct cache_head *export_table[EXPORT_HASHMAX];
+ 
+diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
+index f0695e8..ce0f6b9 100644
+--- a/fs/nfsd/nfs4idmap.c
++++ b/fs/nfsd/nfs4idmap.c
+@@ -62,7 +62,6 @@ struct ent {
+ 
+ #define ENT_HASHBITS          8
+ #define ENT_HASHMAX           (1 << ENT_HASHBITS)
+-#define ENT_HASHMASK          (ENT_HASHMAX - 1)
+ 
+ static void
+ ent_init(struct cache_head *cnew, struct cache_head *citm)
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index fbd18c3..547fbc6 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -148,7 +148,7 @@ static struct list_head	ownerstr_hashtbl[OWNER_HASH_SIZE];
+ /* hash table for nfs4_file */
+ #define FILE_HASH_BITS                   8
+ #define FILE_HASH_SIZE                  (1 << FILE_HASH_BITS)
+-#define FILE_HASH_MASK                  (FILE_HASH_SIZE - 1)
++
+ /* hash table for (open)nfs4_stateid */
+ #define STATEID_HASH_BITS              10
+ #define STATEID_HASH_SIZE              (1 << STATEID_HASH_BITS)
 -- 
-Z cyklu "Uroki demokracji", czyli pytania i odpowiedzi w teledurniejach:
-- Gdzie odbywały się lądowania Aliantów (D-Day)?
-- Pearl Harbour?
-NP: Patrick O'Hearn - Beautiful World
-NB: 2.6.37-20110113-1411-pztidm+
+1.6.3.3
