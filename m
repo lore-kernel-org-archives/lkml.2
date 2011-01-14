@@ -1,185 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757489Ab1ANBSL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 20:18:11 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:1289 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752343Ab1ANBSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 20:18:06 -0500
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-Date: Thu, 13 Jan 2011 17:15:33 -0800
-From: "Matt Carlson" <mcarlson@broadcom.com>
-To: "Jesse Gross" <jesse@nicira.com>
-cc: "Matthew Carlson" <mcarlson@broadcom.com>,
-        "Michael Leun" <lkml20101129@newton.leun.net>,
-        "Michael Chan" <mchan@broadcom.com>,
-        "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "David Miller" <davem@davemloft.net>,
-        "Ben Greear" <greearb@candelatech.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when vid
- not used
-Message-ID: <20110114011533.GA29723@mcarlson.broadcom.com>
-References: <20101215012430.120fd47f@xenia.leun.net>
- <20101215013431.GA21173@mcarlson.broadcom.com>
- <20101215081606.18e12fc9@xenia.leun.net>
- <AANLkTi=hGRW+DwoKQzxPAZao6-y_tvn6nNXS-tj_-Y6T@mail.gmail.com>
- <20110107032459.GA17959@mcarlson.broadcom.com>
- <AANLkTi=N6jFE7T1=W-WLo_eHYWeE=oB6n8C8zPGoBNQF@mail.gmail.com>
- <20110113012157.GA28147@mcarlson.broadcom.com>
- <AANLkTimz3Mw5itChtTgHTeGT4seJauy3+FVrpEJn1iez@mail.gmail.com>
- <20110113205056.GA29254@mcarlson.broadcom.com>
- <AANLkTimQ1T0erugwK17o0zuSwxVh-Ro4yCsBpOqCykyr@mail.gmail.com>
+	id S1757497Ab1ANBVx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 20:21:53 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60776 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752375Ab1ANBVr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 20:21:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=JBHahuvjTllDWP9sqsbEJmijuLtVOZ9L+ZNLO4mqbzXBpW1F4/xRkw9Xvwk+zTZDyp
+         C+Z6L04Q+xoU2FcXK/n39xjxV1oC/d7EZAFwqxDDaRAFvPJErY3TztUw1iV8frXiQXlg
+         zIpHW80+jK0yIlnCNIWE3rxfo0+QYuBkNH54g=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimQ1T0erugwK17o0zuSwxVh-Ro4yCsBpOqCykyr@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-WSS-ID: 61317B8E3P056709588-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <E1PdPsR-0004BY-Q3@pomaz-ex.szeredi.hu>
+References: <AANLkTimBrR1LkVHOxZA=UUmKsnxfsFLr9z_AhXUHQ_7N@mail.gmail.com>
+	<E1PdOdT-00042k-RM@pomaz-ex.szeredi.hu>
+	<E1PdPsR-0004BY-Q3@pomaz-ex.szeredi.hu>
+Date: Fri, 14 Jan 2011 12:21:45 +1100
+Message-ID: <AANLkTi=4mCaZzGXja0Z_VBS+fst8k8_=t1A-eZwfvKiA@mail.gmail.com>
+Subject: Re: Important for fs devs: rcu-walk merged upstream
+From: Nick Piggin <npiggin@gmail.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 01:58:40PM -0800, Jesse Gross wrote:
-> On Thu, Jan 13, 2011 at 3:50 PM, Matt Carlson <mcarlson@broadcom.com> wrote:
-> > On Thu, Jan 13, 2011 at 07:06:22AM -0800, Jesse Gross wrote:
-> >> On Wed, Jan 12, 2011 at 8:21 PM, Matt Carlson <mcarlson@broadcom.com> wrote:
-> >> > On Thu, Jan 06, 2011 at 08:36:27PM -0800, Jesse Gross wrote:
-> >> >> On Thu, Jan 6, 2011 at 10:24 PM, Matt Carlson <mcarlson@broadcom.com> wrote:
-> >> >> > On Sat, Dec 18, 2010 at 07:38:00PM -0800, Jesse Gross wrote:
-> >> >> >> On Tue, Dec 14, 2010 at 11:16 PM, Michael Leun
-> >> >> >> <lkml20101129@newton.leun.net> wrote:
-> >> >> >> > OK - all tests done on that DL320G5:
-> >> >> >> >
-> >> >> >> > For completeness, 2.6.37-rc5 unpatched:
-> >> >> >> >
-> >> >> >> > eth0, no vlan configured: totally broken - see double tagged vlans
-> >> >> >> > without tag, single or untagged packets missing at all
-> >> >> >>
-> >> >> >> Random behavior? ?This one is somewhat hard to explain - maybe there
-> >> >> >> are some other factors. ?eth0 has ASF on, so it always strips tags. ?I
-> >> >> >> would expect it to behave like the vlan configured case.
-> >> >> >>
-> >> >> >> >
-> >> >> >> > eth0, vlan configured: see packets without vlan tag (see double tagged
-> >> >> >> > packets with one vlan tag)
-> >> >> >>
-> >> >> >> Both ASF and vlan group configured cause tag stripping to be enabled.
-> >> >> >> Missing tag.
-> >> >> >>
-> >> >> >> >
-> >> >> >> > eth1 same as originally reported:
-> >> >> >> > without vlan configured see vlan tags (single and double tagged as
-> >> >> >> > expected)
-> >> >> >>
-> >> >> >> No ASF and no vlan group means tag stripping is disabled. ?Have tag.
-> >> >> >>
-> >> >> >> > with vlan configured: see packets without vlan tag (see double tagged
-> >> >> >> > packets with one vlan tag)
-> >> >> >>
-> >> >> >> Configuring vlan group causes stripping to be enabled. ?Missing tag.
-> >> >> >>
-> >> >> >> >
-> >> >> >> >
-> >> >> >> > 2.6.37-rc5, your tg3 use new vlan-code patch:
-> >> >> >> >
-> >> >> >> > eth0, no vlan configured: ?see packets without vlan tag (see double
-> >> >> >> > tagged packets with one vlan tag)
-> >> >> >>
-> >> >> >> ASF enables tag stripping. ?Missing tag.
-> >> >> >>
-> >> >> >> > eth1, no vlan configured: see vlan tags (single and double tagged as
-> >> >> >> > expected)
-> >> >> >>
-> >> >> >> No ASF, no vlan group means no stripping. ?Have tag.
-> >> >> >>
-> >> >> >> >
-> >> >> >> >
-> >> >> >> > eth0, vlan configured: as without vlan
-> >> >> >>
-> >> >> >> ASF enables stripping. ?Missing tag.
-> >> >> >>
-> >> >> >> > eth1, vlan configured: as without vlan
-> >> >> >>
-> >> >> >> With this patch vlan stripping is only enabled when ASF is on, so no
-> >> >> >> stripping. ?Have tag.
-> >> >> >>
-> >> >> >> >
-> >> >> >> > 2.6.37-rc5, your tg3 use new vlan-code patch with test patch ontop
-> >> >> >> >
-> >> >> >> > eth1 no vlan configured: see packets without vlan tag (see double tagged
-> >> >> >> > packets with one vlan tag)
-> >> >> >>
-> >> >> >> With the second patch, vlan stripping is always enabled. ?Missing tag.
-> >> >> >>
-> >> >> >> > eth1 with vlan: the same
-> >> >> >>
-> >> >> >> Stripping still always enabled. ?Missing tag.
-> >> >> >>
-> >> >> >> The bottom line is whenever vlan stripping is enabled we're missing
-> >> >> >> the outer tag. ?It might be worth adding some debugging in the area
-> >> >> >> before napi_gro_receive/vlan_gro_receive (depending on version). ?My
-> >> >> >> guess is that (desc->type_flags & RXD_FLAG_VLAN) is false even for
-> >> >> >> vlan packets on this NIC.
-> >> >> >>
-> >> >> >> You said that everything works on the 5752? ?Matt, is it possible that
-> >> >> >> the 5714 either has a problem with vlan stripping or a different way
-> >> >> >> of reporting it?
-> >> >> >
-> >> >> > I don't think this is a 5714 specific issue. ?I think the problem is
-> >> >> > rooted in the fact that the VLAN tag stripping is enabled.
-> >> >>
-> >> >> It's definitely related to vlan stripping being enabled. ?Other cards
-> >> >> using tg3 seem to work fine with stripping though, which is why I
-> >> >> thought it might be specific to the 5714.
-> >> >
-> >> > I just tested this on a 5714S, using a net-next-2.6 snapshot obtained
-> >> > today. ?It does the right thing in both cases (2nd tg3 patch ommited /
-> >> > applied). ?The tag is always visible in the packet stream as seen from
-> >> > tcpdump.
-> >> >
-> >> >> > Your RXD_FLAG_VLAN idea sounds unlikely to me, but it's worth a check.
-> >> >> >
-> >> >> > The patch here is using __vlan_hwaccel_put_tag(), which informs the
-> >> >> > stack a VLAN tag is present. ?If this is indeed a reporting problem, I'm
-> >> >> > not sure what else the driver should be doing.
-> >> >>
-> >> >> The code to hand off the tag to the stack looks OK to me. ?Michael was
-> >> >> seeing this on older versions of the kernel as well with this NIC,
-> >> >> which predates both this patch and the larger vlan changes so it
-> >> >> doesn't seem like a problem with passing the tag to the network stack.
-> >> >> ?It's hard to know exactly what is going on though without seeing what
-> >> >> the hardware is reporting.
-> >> >
-> >> > When RX_MODE_KEEP_VLAN_TAG is set, the RXD_FLAG_VLAN flag will not be set
-> >> > when receiving a packet. ?The driver skips the __vlan_hwaccel_put_tag()
-> >> > call.
-> >> >
-> >> > When RX_MODE_KEEP_VLAN_TAG is unset, the RXD_FLAG_VLAN flag is set, and
-> >> > __vlan_hwaccel_put_tag() is called to reinject the packet.
-> >>
-> >> OK, thanks for testing it out. ?I'm not sure that there's anything
-> >> more we can do without hearing from Michael.
-> >
-> > In the meantime, I think what we have should go upstream. ?Just to be
-> > absolutely clear though, your position is that VLAN tags should always
-> > be stripped?
-> 
-> That's what the other converted drivers do by default (though most of
-> them also provide an ethtool set_flags() method to change this).  It's
-> generally the most efficient and is now safe to do in all cases.  It's
-> also the consistent with what was happening before, since stripping
-> was enabled when a vlan device was configured.  So, yes, normally I
-> think stripping should be enabled.
-> 
-> I assumed that disabling stripping in most situations was just an
-> oversight.  Was there a reason why you feel it is better not to use
-> it?
+On Fri, Jan 14, 2011 at 3:18 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> On Thu, 13 Jan 2011, Miklos Szeredi wrote:
+>> On Sat, 8 Jan 2011, Nick Piggin wrote:
+>> > The vfs-scale branch is now upstream. If you haven't
+>> > looked yet, your filesystem is likely to have been
+>> > touched, so check it out.
+>> >
+>> > Also look at Documentation/filesystems/porting and
+>> > path-lookup.txt.
+>> >
+>> > The dcache_lock stuff should have been all done for you
+>> > (for in-tree filesystems, I can help out of tree fses with
+>> > conversions there if you ping me offline).
+>> >
+>> > The rcu-walk stuff can be more tricky for your filesystem
+>> > to take advantage of.
+>> >
+>> > If you supply a .d_revalidate, .permission, or .check_acl,
+>> > then path walking is going to be slow and unscalable for
+>> > you.
+>> >
+>> > Out of tree filesystems: you _have_ to at least add a line
+>> > of code to the above functions in order to specify that
+>> > you don't want to participate in rcu-walk.
+>> >
+>> > Otherwise, you don't have to care about rcu-walk if you
+>> > have a legacy or special filesystem like configfs then I'd
+>> > advise against anything fancy. But if you have a
+>> > userbase and you expect them to actually do any path
+>> > lookups into your filesystem, please take a look.
+>>
+>> One other thing: I know ECHILD is safe since no sane filesystem will
+>> return it in its permission or revalidate callbacks, and even if it
+>> does that's just a loss of optimization.
+>
+> And it's not entirely safe either.  A fuse filesystem returning ECHILD
+> would make nameidata_dentry_drop_rcu() to BUG.  So some sort of errno
+> filter is necessary in the fuse kernel module.
 
-Actually, the tg3 driver was trying to disable VLAN tag stripping
-when possible.  I believe this was primarily to support the raw packet
-interface.
+Surely you'd need some filtering anyway? I don't think any function
+involving path lookup could sanely return -ECHILD.
 
+That said, it probably is a good idea to have a new errno.
