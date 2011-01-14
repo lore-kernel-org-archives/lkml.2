@@ -1,91 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933257Ab1ANTZo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 14:25:44 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:49264 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933181Ab1ANTZk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 14:25:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=ovq9REAN980ZxNVCx8Vd7xgYPFJhAQdMrxPj8uOm/gVUNULcAVlecHHMSzu8ZTgSJF
-         rw/C29HRIYkhlHHS6tT9yupv0KhL7kvxEfS7EZmNTHwCGFNdk1XyiLrWQOqFbz/3FcQg
-         +6QKrofw5vxC8qCZE1ZGa0N/IUjfppUOWwxSE=
-Date: Fri, 14 Jan 2011 21:25:32 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Philipp Reisner <philipp.reisner@linbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lars Ellenberg <lars.ellenberg@linbit.com>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] loop: queue_lock NULL pointer derefence in blk_throtl_exit
-Message-ID: <20110114192532.GA4274@swordfish>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933235Ab1ANT0K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 14:26:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30238 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933167Ab1ANTZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 14:25:15 -0500
+From: Matthew Garrett <mjg@redhat.com>
+To: akpm@linux-foundation.org
+Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rpurdie@rpsys.net, Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH 2/5] i915: Add native backlight control
+Date: Fri, 14 Jan 2011 14:24:22 -0500
+Message-Id: <1295033065-13450-2-git-send-email-mjg@redhat.com>
+In-Reply-To: <1295033065-13450-1-git-send-email-mjg@redhat.com>
+References: <1295033065-13450-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 209.6.41.104
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Performing 
-$ sudo mount -o loop -o umask=0 /dev/sdb1 /mnt/
-mount: wrong fs type, bad option, bad superblock on /dev/loop0,
-       missing codepage or helper program, or other error
-       In some cases useful info is found in syslog - try
-       dmesg | tail  or so
+Not all systems expose a firmware or platform mechanism for changing the
+backlight intensity on i915, so add native driver support.
 
-$ sudo modprobe -r loop
-
-results in oops:
-
- BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
- IP: [<ffffffff812479d4>] do_raw_spin_lock+0x14/0x122
- Process modprobe (pid: 6189, threadinfo ffff88009a898000, task ffff880154a88000)
- Call Trace:
-  [<ffffffff81486788>] _raw_spin_lock_irq+0x4a/0x51
-  [<ffffffff8123404b>] ? blk_throtl_exit+0x3b/0xa0
-  [<ffffffff8105b120>] ? cancel_delayed_work_sync+0xd/0xf
-  [<ffffffff8123404b>] blk_throtl_exit+0x3b/0xa0
-  [<ffffffff81229bc8>] blk_release_queue+0x21/0x65
-  [<ffffffff8123bb06>] kobject_release+0x51/0x66
-  [<ffffffff8123bab5>] ? kobject_release+0x0/0x66
-  [<ffffffff8123ce1e>] kref_put+0x43/0x4d
-  [<ffffffff8123ba27>] kobject_put+0x47/0x4b
-  [<ffffffff8122717c>] blk_cleanup_queue+0x56/0x5b
-  [<ffffffffa01c3824>] loop_exit+0x68/0x844 [loop]
-  [<ffffffff8107cccc>] sys_delete_module+0x1e8/0x25b
-  [<ffffffff814864c9>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-  [<ffffffff81002112>] system_call_fastpath+0x16/0x1b
-
-
-because of an attempt to acquire NULL queue_lock.
-I added the same lines as in blk_queue_make_request - 
-`fall back to embedded per-queue lock'.
-
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Cc: intel-gfx <intel-gfx@lists.freedesktop.org>
 ---
+ drivers/gpu/drm/i915/i915_drv.h       |    4 ++
+ drivers/gpu/drm/i915/intel_dp.c       |    7 +++
+ drivers/gpu/drm/i915/intel_drv.h      |    3 +-
+ drivers/gpu/drm/i915/intel_lvds.c     |    5 ++
+ drivers/gpu/drm/i915/intel_opregion.c |    1 -
+ drivers/gpu/drm/i915/intel_panel.c    |   72 ++++++++++++++++++++++++++++++++-
+ 6 files changed, 89 insertions(+), 3 deletions(-)
 
- drivers/block/loop.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index 44e18c0..49e6a54 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -1641,6 +1641,9 @@ out:
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index 5969f46..2d6ef13 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -36,6 +36,7 @@
+ #include <linux/io-mapping.h>
+ #include <linux/i2c.h>
+ #include <drm/intel-gtt.h>
++#include <linux/backlight.h>
  
- static void loop_free(struct loop_device *lo)
- {
-+	if (!lo->lo_queue->queue_lock)
-+		lo->lo_queue->queue_lock = &lo->lo_queue->__queue_lock;
+ /* General customization:
+  */
+@@ -667,6 +668,7 @@ typedef struct drm_i915_private {
+ 	int child_dev_num;
+ 	struct child_device_config *child_dev;
+ 	struct drm_connector *int_lvds_connector;
++	struct drm_connector *int_edp_connector;
+ 
+ 	bool mchbar_need_disable;
+ 
+@@ -695,6 +697,8 @@ typedef struct drm_i915_private {
+ 
+ 	/* list of fbdev register on this device */
+ 	struct intel_fbdev *fbdev;
 +
- 	blk_cleanup_queue(lo->lo_queue);
- 	put_disk(lo->lo_disk);
- 	list_del(&lo->lo_list);
++	struct backlight_device *backlight;
+ } drm_i915_private_t;
+ 
+ struct drm_i915_gem_object {
+diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+index 1f4242b..54e89e9 100644
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -1682,6 +1682,11 @@ done:
+ static void
+ intel_dp_destroy (struct drm_connector *connector)
+ {
++	struct drm_device *dev = connector->dev;
++
++	if (intel_dpd_is_edp(dev))
++		intel_panel_destroy_backlight(dev);
++
+ 	drm_sysfs_connector_remove(connector);
+ 	drm_connector_cleanup(connector);
+ 	kfree(connector);
+@@ -1911,6 +1916,8 @@ intel_dp_init(struct drm_device *dev, int output_reg)
+ 					DRM_MODE_TYPE_PREFERRED;
+ 			}
+ 		}
++		dev_priv->int_edp_connector = connector;
++		intel_panel_setup_backlight(dev);
+ 	}
+ 
+ 	intel_dp_add_properties(intel_dp, connector);
+diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+index 74db255..074d41a 100644
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -257,9 +257,10 @@ extern void intel_pch_panel_fitting(struct drm_device *dev,
+ extern u32 intel_panel_get_max_backlight(struct drm_device *dev);
+ extern u32 intel_panel_get_backlight(struct drm_device *dev);
+ extern void intel_panel_set_backlight(struct drm_device *dev, u32 level);
+-extern void intel_panel_setup_backlight(struct drm_device *dev);
++extern int intel_panel_setup_backlight(struct drm_device *dev);
+ extern void intel_panel_enable_backlight(struct drm_device *dev);
+ extern void intel_panel_disable_backlight(struct drm_device *dev);
++extern void intel_panel_destroy_backlight(struct drm_device *dev);
+ 
+ extern void intel_crtc_load_lut(struct drm_crtc *crtc);
+ extern void intel_encoder_prepare (struct drm_encoder *encoder);
+diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
+index ace8d5d..75f38c0 100644
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -580,6 +580,8 @@ static void intel_lvds_destroy(struct drm_connector *connector)
+ 	struct drm_device *dev = connector->dev;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 
++	intel_panel_destroy_backlight(dev);
++
+ 	if (dev_priv->lid_notifier.notifier_call)
+ 		acpi_lid_notifier_unregister(&dev_priv->lid_notifier);
+ 	drm_sysfs_connector_remove(connector);
+@@ -1055,6 +1057,9 @@ out:
+ 	/* keep the LVDS connector */
+ 	dev_priv->int_lvds_connector = connector;
+ 	drm_sysfs_connector_add(connector);
++
++	intel_panel_setup_backlight(dev);
++
+ 	return true;
+ 
+ failed:
+diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
+index f295a7a..5df3d38 100644
+--- a/drivers/gpu/drm/i915/intel_opregion.c
++++ b/drivers/gpu/drm/i915/intel_opregion.c
+@@ -224,7 +224,6 @@ void intel_opregion_asle_intr(struct drm_device *dev)
+ 	asle->aslc = asle_stat;
+ }
+ 
+-/* Only present on Ironlake+ */
+ void intel_opregion_gse_intr(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
+index c65992d..4ab4239 100644
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -274,10 +274,80 @@ void intel_panel_enable_backlight(struct drm_device *dev)
+ 	dev_priv->backlight_enabled = true;
+ }
+ 
+-void intel_panel_setup_backlight(struct drm_device *dev)
++void intel_panel_init_backlight(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 
+ 	dev_priv->backlight_level = intel_panel_get_backlight(dev);
+ 	dev_priv->backlight_enabled = dev_priv->backlight_level != 0;
+ }
++
++#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
++static int intel_panel_update_status(struct backlight_device *bd)
++{
++	struct drm_device *dev = bl_get_data(bd);
++	intel_panel_set_backlight(dev, bd->props.brightness);
++	return 0;
++}
++
++static int intel_panel_get_brightness(struct backlight_device *bd)
++{
++	struct drm_device *dev = bl_get_data(bd);
++	return intel_panel_get_backlight(dev);
++}
++
++static const struct backlight_ops intel_panel_bl_ops = {
++	.update_status = intel_panel_update_status,
++	.get_brightness = intel_panel_get_brightness,
++};
++
++int intel_panel_setup_backlight(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	struct backlight_properties props;
++	struct drm_connector *connector;
++
++	intel_panel_init_backlight(dev);
++
++	if (dev_priv->int_lvds_connector)
++		connector = dev_priv->int_lvds_connector;
++	else if (dev_priv->int_edp_connector)
++		connector = dev_priv->int_edp_connector;
++	else
++		return -ENODEV;
++
++	props.type = BACKLIGHT_RAW;
++	props.max_brightness = intel_panel_get_max_backlight(dev);
++	dev_priv->backlight =
++		backlight_device_register("intel_backlight",
++					  &connector->kdev, dev,
++					  &intel_panel_bl_ops, &props);
++
++	if (IS_ERR(dev_priv->backlight)) {
++		DRM_ERROR("Failed to register backlight: %ld\n",
++			  PTR_ERR(dev_priv->backlight));
++		dev_priv->backlight = NULL;
++		return -ENODEV;
++	}
++	dev_priv->backlight->props.brightness = intel_panel_get_backlight(dev);
++	return 0;
++}
++
++void intel_panel_destroy_backlight(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	if (dev_priv->backlight)
++		backlight_device_unregister(dev_priv->backlight);
++}
++#else
++int intel_panel_setup_backlight(struct drm_device *dev)
++{
++	intel_panel_init_backlight(dev);
++	return 0;
++}
++
++void intel_panel_destroy_backlight(struct drm_device *dev)
++{
++	return;
++}
++#endif
+-- 
+1.7.3.4
 
