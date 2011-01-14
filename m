@@ -1,46 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728Ab1ANV2N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 16:28:13 -0500
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:42227 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752378Ab1ANV2K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 16:28:10 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: gbGpsn8VM1mx60L5cVZzhVIwzk2UpCR3yTSFYMCTG7IY8aj
- H2KYVcQjbqqrVJTCNM3OlTbho2HFyIcezZCdjUneVWzxCVS7N7yXijO_nVXN
- _jw6hoxlfMyjoJ__S6vQVVkwl5OeWsOAyHcbFv0QUFhGB8MyTKxUK2e.f35b
- p6FMfpg_6aDJJ77SE6mIDus4klFQFVPyG31FENMd1hvCzUSBnVzQlFSAHf5g
- i0t01t2dNsUEKW8ob1YWoJwPR5De3GFjWPHFQhPKAUar46t3vWnD_uyHr4Bw
- vIrcc0aomGmH7PddW_vommj2DaL1_uVF6h33w7O_AdK49WwhTyZ8-
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 14 Jan 2011 15:28:04 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Yinghai Lu <yinghai@kernel.org>
-cc: Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Greg KH <greg@kroah.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] x86: set percpu cpu0 lpj to default
-In-Reply-To: <4D30BE98.7060809@kernel.org>
-Message-ID: <alpine.DEB.2.00.1101141527400.10415@router.home>
-References: <AANLkTika_bZxXO3PKek+BHoYqgYGPBPER-H9KJJXjJzn@mail.gmail.com> <20110111135655.GA6901@kroah.com> <4D2CFEAD.6070206@kernel.org> <1294799565.9586.13.camel@pasglop> <4D2F7AE9.2000809@kernel.org> <20110113224450.GA14918@kroah.com>
- <alpine.LFD.2.00.1101132349590.2678@localhost6.localdomain6> <4D2F84FC.7000804@kernel.org> <20110113234852.GB17904@kroah.com> <4D2F9948.8000804@kernel.org> <20110114004428.GA26847@kroah.com> <4D2FA305.2030808@kernel.org> <alpine.DEB.2.00.1101140846560.2423@router.home>
- <4D30BE98.7060809@kernel.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752803Ab1ANV33 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 16:29:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43795 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752378Ab1ANV31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 16:29:27 -0500
+Message-ID: <4D30C027.40100@redhat.com>
+Date: Fri, 14 Jan 2011 16:29:11 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: kvm@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>,
+        ttracy@redhat.com, dshaks@redhat.com
+Subject: Re: [RFC -v5 PATCH 0/4] directed yield for Pause Loop Exiting
+References: <20110114030209.53765a0a@annuminas.surriel.com>
+In-Reply-To: <20110114030209.53765a0a@annuminas.surriel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/14/2011 03:02 AM, Rik van Riel wrote:
 
-I think Tejun needs to look at this. There may be a better spot for this.
+> Benchmark "results":
+>
+> Two 4-CPU KVM guests are pinned to the same 4 physical CPUs.
 
+Unfortunately, it turned out I was running my benchmark on
+only two CPU cores, using two HT threads of each core.
 
+I have re-run the benchmark with the guests bound to 4
+different CPU cores, one HT on each core.
+
+> One guest runs the AMQP performance test, the other guest runs
+> 0, 2 or 4 infinite loops, for CPU overcommit factors of 0, 1.5
+> and 4.
+>
+> The AMQP perftest is run 30 times, with 8 and 16 threads.
+
+8thr	no overcommit	1.5x overcommit		2x overcommit
+
+no PLE	224934		139311			94216.6
+PLE	226413		142830			87836.4
+
+16thr	no overcommit	1.5x overcommit		2x overcommit
+
+no PLE	224266		134819			92123.1
+PLE	224985		137280			100832
+
+The other conclusions hold - it looks like this test is
+doing more to expose issues with the scheduler, than
+testing the PLE code.
+
+I have some ideas on how to improve yield(), so it can
+do the right thing even in the presence of cgroups.
+
+> Note: there seems to be something wrong with CPU balancing,
+> possibly related to cgroups.  The AMQP guest only got about
+> 80% CPU time (of 400% total) when running with 2x overcommit,
+> as opposed to the expected 200%.  Without PLE, the guest
+> seems to get closer to 100% CPU time, which is still far
+> below the expected.
+
+> Unfortunately, it looks like this test ended up more as a
+> demonstration of other scheduler issues, than as a performance
+> test of the PLE code.
+
+-- 
+All rights reversed
