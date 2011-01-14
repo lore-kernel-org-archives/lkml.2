@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757276Ab1ANIU5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 03:20:57 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:56185 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751530Ab1ANIUw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 03:20:52 -0500
-X-Sasl-enc: TgMIfBDMh3bo0KPuBMnbklnGsLYag5ly99t3n1NnUrEF 1294993251
-Subject: Re: [autofs] WARNING: at fs/dcache.c:1359 d_set_d_op [was: mmotm
- 2011-01-06-15-41 uploaded]
-From: Ian Kent <raven@themaw.net>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Valdis.Kletnieks@vt.edu, autofs@linux.kernel.org,
-        mm-commits@vger.kernel.org, npiggin@kernel.dk,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-fsdevel@vger.kernel.org,
-        akpm@linux-foundation.org
-In-Reply-To: <4D2F1CD7.5090100@gmail.com>
-References: <201101070014.p070Egpo023959@imap1.linux-foundation.org>
-	 <4D2ECB56.4070802@gmail.com> <12521.1294932824@localhost>
-	 <4D2F1CD7.5090100@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 Jan 2011 16:20:43 +0800
-Message-ID: <1294993243.2794.4.camel@perseus>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1757095Ab1ANIWY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 03:22:24 -0500
+Received: from mga09.intel.com ([134.134.136.24]:18773 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752865Ab1ANIWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 03:22:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,322,1291622400"; 
+   d="scan'208";a="592927205"
+Date: Fri, 14 Jan 2011 15:55:19 +0800
+From: Yong Wang <yong.y.wang@linux.intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Feng Tang <feng.tang@intel.com>, Jacob Pan <jacob.jun.pan@intel.com>,
+        Alan Cox <alan@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] x86, apbt: Set affinity properly for apb timers in all
+	cases
+Message-ID: <20110114075519.GA20428@ywang-moblin2.bj.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-13 at 16:40 +0100, Jiri Slaby wrote:
-> On 01/13/2011 04:33 PM, Valdis.Kletnieks@vt.edu wrote:
-> > On Thu, 13 Jan 2011 10:52:22 +0100, Jiri Slaby said:
-> >> On 01/07/2011 12:41 AM, akpm@linux-foundation.org wrote:
-> >>> The mm-of-the-moment snapshot 2011-01-06-15-41 has been uploaded to
-> >>
-> >> Hi, after some uptime and several suspend/resume cycles, I got:
-> >> WARNING: at fs/dcache.c:1359 d_set_d_op+0x82/0xb0()
-> >> Hardware name: To Be Filled By O.E.M.
-> >> Modules linked in: dvb_usb_af9015 tda18271 af9013 dvb_usb dvb_core
-> >> Pid: 3474, comm: automount Tainted: G        W   2.6.37-mm1_64+ #1344
-> >> Call Trace:
-> >>  [<ffffffff8106bd2a>] ? warn_slowpath_common+0x7a/0xb0
-> >>  [<ffffffff8106bd75>] ? warn_slowpath_null+0x15/0x20
-> >>  [<ffffffff81125a32>] ? d_set_d_op+0x82/0xb0
-> >>  [<ffffffff8120d829>] ? autofs4_dir_mkdir+0x169/0x180
-> > 
-> > Wow. So it wasn't just configfs that trips over this one.  I'm now hoping that
-> > Al audited all the pseudo file systems for this...
-> 
-> Well, CCing Al.
-> 
-> I don't see any recent change in fs/autofs4 in:
-> http://git.kernel.org/?p=linux/kernel/git/viro/vfs-2.6.git;a=history;f=fs/autofs4;hb=refs/heads/for-next
-> 
-> So maybe not all?
+Commit e4d2ebca only sets timer affinity when system boots. We also
+need to set affinity properly in other cases like when onlining CPU
+because apb timer acts as per-cpu tick device. Otherwise, we are
+observing system hang on onling CPU which is offlined previously.
 
-Did you see:
-https://lkml.org/lkml/2011/1/12/394
+Signed-off-by: Yong Wang <yong.y.wang@intel.com>
+---
+ arch/x86/kernel/apb_timer.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Haven't had any feedback on this yet, odd or maybe no news is good news?
-
-Ian
-
+diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
+index 7c9ab59..449b111 100644
+--- a/arch/x86/kernel/apb_timer.c
++++ b/arch/x86/kernel/apb_timer.c
+@@ -313,9 +313,10 @@ static void apbt_setup_irq(struct apbt_dev *adev)
+ 	if (adev->irq == 0)
+ 		return;
+ 
++	irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
++
+ 	if (system_state == SYSTEM_BOOTING) {
+ 		irq_modify_status(adev->irq, 0, IRQ_MOVE_PCNTXT);
+-		irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
+ 		/* APB timer irqs are set up as mp_irqs, timer is edge type */
+ 		__set_irq_handler(adev->irq, handle_edge_irq, 0, "edge");
+ 		if (request_irq(adev->irq, apbt_interrupt_handler,
+-- 
+1.5.5.1
 
