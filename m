@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757707Ab1ANSFR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 13:05:17 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36214 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756939Ab1ANSFM (ORCPT
+	id S1758004Ab1ANSHA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 13:07:00 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:37257 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757626Ab1ANSGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 13:05:12 -0500
-Date: Fri, 14 Jan 2011 18:04:55 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Igor Plyatov <plyatov@gmail.com>, Andrew Victor <linux@maxim.org.za>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Sergio Tanzilli <tanzilli@acmesystems.it>
-Subject: Re: [GIT PULL] AT91: patches for v2.6.38-rc1
-Message-ID: <20110114180455.GL15996@n2100.arm.linux.org.uk>
-References: <4D308F30.6070503@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D308F30.6070503@atmel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 14 Jan 2011 13:06:53 -0500
+Date: Fri, 14 Jan 2011 10:05:20 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, akpm <akpm@linux-foundation.org>,
+        gregkh <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH -next] tty/serial: fix apbuart build
+Message-Id: <20110114100520.0a30e076.randy.dunlap@oracle.com>
+In-Reply-To: <20110114152637.e03eac52.sfr@canb.auug.org.au>
+References: <20110114152637.e03eac52.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 07:00:16PM +0100, Nicolas Ferre wrote:
-> Hi Russell,
-> 
-> Can you please pull those little changes for AT91? They add two 
-> new boards already discussed on the mailing list and a little 
-> cleanup patch:
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Has this already been in linux-next?
+Fix build errors by selecting SERIAL_CORE:
 
-We should only be merging new code during a merge window which has
-already had visibility in linux-next, with the exception of bug fixes
-and regression fixes.
+ERROR: "uart_register_driver" [drivers/tty/serial/apbuart.ko] undefined!
+ERROR: "uart_write_wakeup" [drivers/tty/serial/apbuart.ko] undefined!
+ERROR: "uart_update_timeout" [drivers/tty/serial/apbuart.ko] undefined!
+ERROR: "uart_get_divisor" [drivers/tty/serial/apbuart.ko] undefined!
+ERROR: "uart_get_baud_rate" [drivers/tty/serial/apbuart.ko] undefined!
+ERROR: "uart_add_one_port" [drivers/tty/serial/apbuart.ko] undefined!
+ERROR: "uart_unregister_driver" [drivers/tty/serial/apbuart.ko] undefined!
+ERROR: "uart_remove_one_port" [drivers/tty/serial/apbuart.ko] undefined!
 
-Regression fixes can be merged at any time provided they're obvious.
-Any regression fix should be acceptable during the merge window.
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Daniel Hellstrom <daniel@gaisler.com>
+---
+ drivers/tty/serial/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-Bug fixes any time up until (I'd say) the last week of the -rc series.
+--- linux-next-20110114.orig/drivers/tty/serial/Kconfig
++++ linux-next-20110114/drivers/tty/serial/Kconfig
+@@ -1518,6 +1518,7 @@ config SERIAL_BCM63XX_CONSOLE
+ config SERIAL_GRLIB_GAISLER_APBUART
+ 	tristate "GRLIB APBUART serial support"
+ 	depends on OF
++	select SERIAL_CORE
+ 	---help---
+ 	Add support for the GRLIB APBUART serial port.
+ 
