@@ -1,96 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531Ab1ANG5Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 01:57:25 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58118 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479Ab1ANG5R convert rfc822-to-8bit (ORCPT
+	id S1754230Ab1ANHNJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 02:13:09 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:49713 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479Ab1ANHNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 01:57:17 -0500
+	Fri, 14 Jan 2011 02:13:02 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=hWtZOywJ62FS06f9vK5Rg+VNZkUsr7S0Op2lXplIDvrJHO4D3mce+JdaSTnkyUGRan
-         ruRRWHpW0jsvKO3S+O19z85zzb+W2rn8Jl7oad9glhHNlkyeQne5sDZXM43Tj7WgIIzJ
-         o6sky64Kbn/zuPkJs9bqh+joykSVde+VCP2+8=
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=JRCFCpF/rwTzZ5VKD0EONAiMkjBNMkuWB4qGYQe23/pTOPjMd17an2Iy67e/nklgvX
+         HM2UYVWW9CtnaX8DsBYdWpRxmyVKaQU4kc7WhIqtDRbU6goUW/7c+oIxCWG2vSMJS4PL
+         +M4yKZwDfOffwfPW79GW1S9PnMUFzAVvfFxik=
 MIME-Version: 1.0
-In-Reply-To: <1294928559.3570.130.camel@edumazet-laptop>
-References: <1294919372-1904-1-git-send-email-ratbert.chuang@gmail.com> <1294928559.3570.130.camel@edumazet-laptop>
-From: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Date: Fri, 14 Jan 2011 14:56:55 +0800
-Message-ID: <AANLkTinv4cYoExgYqCeSg61W1Rod_gywKuvyvbt42HMu@mail.gmail.com>
-Subject: Re: [PATCH] net: add Faraday FTMAC100 10/100 Ethernet driver
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Po-Yu Chuang <ratbert@faraday-tech.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Date: Fri, 14 Jan 2011 15:13:01 +0800
+Message-ID: <AANLkTimsPj4seDW9ffDQ+uydZcRk_T6BsP7x0dr0Qi++@mail.gmail.com>
+Subject: [PATCH] kbuild: add global tags generation.
+From: Jianbin Kang <kjbmail@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
+Content-Type: multipart/mixed; boundary=001517592ca622c6230499c92ac7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Eric,
+--001517592ca622c6230499c92ac7
+Content-Type: text/plain; charset=ISO-8859-1
 
-On Thu, Jan 13, 2011 at 10:22 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le jeudi 13 janvier 2011 à 19:49 +0800, Po-Yu Chuang a écrit :
->> From: Po-Yu Chuang <ratbert@faraday-tech.com>
->>
->> FTMAC100 Ethernet Media Access Controller supports 10/100 Mbps and
->> MII.  This driver has been working on some ARM/NDS32 SoC including
->> Faraday A320 and Andes AG101.
->>
->> Signed-off-by: Po-Yu Chuang <ratbert@faraday-tech.com>
-> Hi
->
-> 1) please use netdev_alloc_skb_ip_align() instead of dev_alloc_skb() +
-> skb_reserve(skb, NET_IP_ALIGN);
-
-OK, fixed.
-
-> 2) Dont include a "struct net_device_stats stats" in struct ftmac100,
-> you can use the one included in struct net_device
->  (You can then remove ftmac100_get_stats())
-
-OK, fixed.
-
-> 3) Dont "netdev->last_rx = jiffies;" : This is not driver job.
->  Ditto for trans_start
-
-OK, fixed.
-
-> 4) You must comment why wmb() is needed in ftmac100_xmit()
-
-OK, comment added.
-
-> 5) Why isnt NAPI used too for TX completions ?
->   BTW, I am not sure we want a define. All new drivers must use NAPI.
-
-I'll study how to do that
-
-> 6) Use is_valid_ether_addr() instead of is_zero_ether_addr() in
-> ftmac100_probe()
-
-OK, fixed.
-
-> 7) "static struct ethtool_ops ftmac100_ethtool_ops" should be const :
->        "static const struct ethtool_ops ftmac100_ethtool_ops"
->  Ditto for :
->        "static struct net_device_ops ftmac100_netdev_ops"
-
-OK, both fixed.
-
-> 8) Why an interrupt handler (ftmac100_interrupt()) needs to block
-> interrupts with spin_lock_irqsave(&priv->hw_lock, flags); ?
-
-Fixed. Not a problem anymore since hw_lock is removed now.
-
-> 9) Instead of dev_info(&netdev->dev ...) , please consider netdev_info()
-
-OK, fixed.
+gnu global (http://www.gnu.org/software/global/) is a source code tagging system
+It is really cheap to support it in kbuild system.
 
 
-Thanks a lot for your detailed review. I'll submit a new version ASAP.
 
-Thanks,
-Po-Yu Chuang
+
+
+              Jianbin Kang
+
+--001517592ca622c6230499c92ac7
+Content-Type: text/x-patch; charset=US-ASCII; name="gtags.diff"
+Content-Disposition: attachment; filename="gtags.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_giwr57bg0
+
+ZGlmZiAtLWdpdCBhL01ha2VmaWxlIGIvTWFrZWZpbGUKaW5kZXggNzRiMjU1NS4uMTI3YTM3MSAx
+MDA2NDQKLS0tIGEvTWFrZWZpbGUKKysrIGIvTWFrZWZpbGUKQEAgLTQyMCw3ICs0MjAsNyBAQCBl
+bmRpZgogIyBvZiBtYWtlIHNvIC5jb25maWcgaXMgbm90IGluY2x1ZGVkIGluIHRoaXMgY2FzZSBl
+aXRoZXIgKGZvciAqY29uZmlnKS4KIAogbm8tZG90LWNvbmZpZy10YXJnZXRzIDo9IGNsZWFuIG1y
+cHJvcGVyIGRpc3RjbGVhbiBcCi0JCQkgY3Njb3BlIFRBR1MgdGFncyBoZWxwICVkb2NzIGNoZWNr
+JSBjb2NjaWNoZWNrIFwKKwkJCSBjc2NvcGUgZ3RhZ3MgVEFHUyB0YWdzIGhlbHAgJWRvY3MgY2hl
+Y2slIGNvY2NpY2hlY2sgXAogCQkJIGluY2x1ZGUvbGludXgvdmVyc2lvbi5oIGhlYWRlcnNfJSBc
+CiAJCQkga2VybmVsdmVyc2lvbiAlc3JjLXBrZwogCkBAIC0xMTM0LDcgKzExMzQsNyBAQCBDTEVB
+Tl9GSUxFUyArPQl2bWxpbnV4IFN5c3RlbS5tYXAgXAogTVJQUk9QRVJfRElSUyAgKz0gaW5jbHVk
+ZS9jb25maWcgdXNyL2luY2x1ZGUgaW5jbHVkZS9nZW5lcmF0ZWQKIE1SUFJPUEVSX0ZJTEVTICs9
+IC5jb25maWcgLmNvbmZpZy5vbGQgLnZlcnNpb24gLm9sZF92ZXJzaW9uICAgICAgICAgICAgIFwK
+ICAgICAgICAgICAgICAgICAgIGluY2x1ZGUvbGludXgvdmVyc2lvbi5oICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgIFwKLQkJICBNb2R1bGUuc3ltdmVycyB0YWdzIFRBR1MgY3Njb3BlKgor
+CQkgIE1vZHVsZS5zeW12ZXJzIHRhZ3MgVEFHUyBjc2NvcGUqIEdQQVRIIEdUQUdTIEdSVEFHUyBH
+U1lNUwogCiAjIGNsZWFuIC0gRGVsZXRlIG1vc3QsIGJ1dCBsZWF2ZSBlbm91Z2ggdG8gYnVpbGQg
+ZXh0ZXJuYWwgbW9kdWxlcwogIwpAQCAtMTIyMSw2ICsxMjIxLDcgQEAgaGVscDoKIAlAZWNobyAg
+JyAgbW9kdWxlc19wcmVwYXJlIC0gU2V0IHVwIGZvciBidWlsZGluZyBleHRlcm5hbCBtb2R1bGVz
+JwogCUBlY2hvICAnICB0YWdzL1RBR1MJICAtIEdlbmVyYXRlIHRhZ3MgZmlsZSBmb3IgZWRpdG9y
+cycKIAlAZWNobyAgJyAgY3Njb3BlCSAgLSBHZW5lcmF0ZSBjc2NvcGUgaW5kZXgnCisJQGVjaG8g
+ICcgIGd0YWdzICAgICAgICAgICAtIEdlbmVyYXRlIGdsb2JhbCBpbmRleCcKIAlAZWNobyAgJyAg
+a2VybmVscmVsZWFzZQkgIC0gT3V0cHV0IHRoZSByZWxlYXNlIHZlcnNpb24gc3RyaW5nJwogCUBl
+Y2hvICAnICBrZXJuZWx2ZXJzaW9uCSAgLSBPdXRwdXQgdGhlIHZlcnNpb24gc3RvcmVkIGluIE1h
+a2VmaWxlJwogCUBlY2hvICAnICBoZWFkZXJzX2luc3RhbGwgLSBJbnN0YWxsIHNhbml0aXNlZCBr
+ZXJuZWwgaGVhZGVycyB0byBJTlNUQUxMX0hEUl9QQVRIJzsgXApAQCAtMTM3OSw3ICsxMzgwLDcg
+QEAgY2xlYW46ICQoY2xlYW4tZGlycykKIHF1aWV0X2NtZF90YWdzID0gR0VOICAgICAkQAogICAg
+ICAgY21kX3RhZ3MgPSAkKENPTkZJR19TSEVMTCkgJChzcmN0cmVlKS9zY3JpcHRzL3RhZ3Muc2gg
+JEAKIAotdGFncyBUQUdTIGNzY29wZTogRk9SQ0UKK3RhZ3MgVEFHUyBjc2NvcGUgZ3RhZ3M6IEZP
+UkNFCiAJJChjYWxsIGNtZCx0YWdzKQogCiAjIFNjcmlwdHMgdG8gY2hlY2sgdmFyaW91cyB0aGlu
+Z3MgZm9yIGNvbnNpc3RlbmN5CmRpZmYgLS1naXQgYS9zY3JpcHRzL3RhZ3Muc2ggYi9zY3JpcHRz
+L3RhZ3Muc2gKaW5kZXggYmJiZTU4NC4uNWNiMTFmNSAxMDA3NTUKLS0tIGEvc2NyaXB0cy90YWdz
+LnNoCisrKyBiL3NjcmlwdHMvdGFncy5zaApAQCAtMTE0LDYgKzExNCwxMSBAQCBkb2NzY29wZSgp
+CiAJY3Njb3BlIC1iIC1mIGNzY29wZS5vdXQKIH0KIAorZG9ndGFncygpCit7CisJYWxsX3NvdXJj
+ZXMgfCBndGFncyAtZiAtCit9CisKIGV4dWJlcmFudCgpCiB7CiAJYWxsX3NvdXJjZXMgfCB4YXJn
+cyAkMSAtYSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcCkBAIC0xODYsNyArMTkxLDkg
+QEAgY2FzZSAiJDEiIGluCiAJImNzY29wZSIpCiAJCWRvY3Njb3BlCiAJCTs7Ci0KKwkiZ3RhZ3Mi
+KQorCQlkb2d0YWdzCisJCTs7CiAJInRhZ3MiKQogCQlybSAtZiB0YWdzCiAJCXh0YWdzIGN0YWdz
+Cg==
+--001517592ca622c6230499c92ac7--
