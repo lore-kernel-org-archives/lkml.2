@@ -1,114 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764Ab1ANKIW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 05:08:22 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:49492 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751688Ab1ANKIR (ORCPT
+	id S1753188Ab1ANKIm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 05:08:42 -0500
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:33064 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751427Ab1ANKIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 05:08:17 -0500
-X-AuditID: b753bd60-a1763ba000000f65-65-4d30208ebbf2
-Message-ID: <4D30208B.7040902@hitachi.com>
-Date: Fri, 14 Jan 2011 19:08:11 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Fri, 14 Jan 2011 05:08:35 -0500
+Date: Fri, 14 Jan 2011 12:08:31 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Piotr Hosowicz <piotr@hosowicz.com>
+Cc: balbi@ti.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: error in 2.6.37-git10
+Message-ID: <20110114100831.GE2476@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <4D301CA5.503@example.com>
+ <20110114095745.GD2476@legolas.emea.dhcp.ti.com>
+ <4D302067.2000203@example.com>
 MIME-Version: 1.0
-To: Franck Bui-Huu <vagabon.xyz@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        lkml <linux-kernel@vger.kernel.org>, 2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH] perf-probe: make "perf-probe -L <function>" display the
- absolute path and absolute line number
-References: <m38vyp85qv.fsf@gmail.com> <4D2EDBE4.3060608@hitachi.com>	<m34o9c8ual.fsf@gmail.com> <4D2FC17D.5010203@hitachi.com> <m3tyhb6eme.fsf@gmail.com>
-In-Reply-To: <m3tyhb6eme.fsf@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4D302067.2000203@example.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/01/14 18:03), Franck Bui-Huu wrote:
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
+On Fri, Jan 14, 2011 at 11:07:35AM +0100, Piotr Hosowicz wrote:
+> On 14.01.2011 10:57, Felipe Balbi wrote:
+> >On Fri, Jan 14, 2011 at 10:51:33AM +0100, Piotr Hosowicz wrote:
+> >>Hello,
+> >>
+> >>Build failed here:
+> >>
+> >>   CC [M]  fs/ecryptfs/main.o
+> >>fs/ecryptfs/main.c:144: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or
+> >>‘__attribute__’ before ‘*’ token
+> >>fs/ecryptfs/main.c: In function ‘ecryptfs_interpose’:
+> >>fs/ecryptfs/main.c:204: error: implicit declaration of function
+> >>‘ecryptfs_get_inode’
+> >>fs/ecryptfs/main.c:204: warning: initialization makes pointer from
+> >>integer without a cast
+> >>fs/ecryptfs/main.c:206: error: expected ‘)’ before ‘return’
+> >>fs/ecryptfs/main.c:212: error: expected expression before ‘}’ token
+> >>fs/ecryptfs/main.c: In function ‘ecryptfs_mount’:
+> >>fs/ecryptfs/main.c:569: warning: assignment makes pointer from
+> >>integer without a cast
+> >
+> >Could you check whether this is enough?
 > 
->> (2011/01/14 4:42), Franck Bui-Huu wrote:
-> 
-> [...]
-> 
->>> Well, for consistency, I thought that the additional information
->>> (given inside angle brackets) should always be the same: a full path
->>> and an absolute line number which clearly identify which source file
->>> perf-probe is listing.
->>
->> No, that is NOT an additional information. That indicates from where
->> those lines are started
-> 
-> But this indication is currently not enough, it's too ambiguous to be
-> usefull:
-> 
->         <schedule:10>
-> 
-> there might be several 'schedule()' functions inside the kernel, also we
-> don't know which kernel tree is used.
+> I am building now with this option disabled, maybe I'll have time to
+> test again.
 
-Right, so I didn't decline your idea itself.
-I've just commented on the output format of the path information.
+I just did. Compiled only that module with that header added. Built
+cleanly.
 
-
-> BTW, if there're several 'do_something' functions defined inside the
-> kernel, what is the behaviour of:
-> 
->   $ perf probe do_something
-> 
-> Does it set a probe to all 'do_something' functions ? I don't think it's
-> documented.
-
-If do_something is an inline function, it tries to find all
-functions. If it (the first one) is a normal function, it
-just stopped after finding the first one.
-
-If someone wants to put a probe on the specific function,
-he can add some additional path information, like
-
- $ perf probe do_something@path/to/source.c
-
-
->> , and also gives you a hint how you can specify the actual probe
->> point. For example,
->>
->> $ perf probe -L schedule:10
->> <schedule:10>
->>      10         rq = cpu_rq(cpu);
->>      11         rcu_note_context_switch(cpu);
->>      12         prev = rq->curr;
->>
->> this indicates the lines started from 10th line of schedule(), and
-> 
-> but I'm not sure it's really usefull since you've asked for it when
-> invoking perf-probe so it seems to be redundant.
-
-If you list the lines of enough long function, the output will be
-passed to pager and it flushes out the command line.
-
-In that case, user will see only below output.
-
-   </usr/src/debug/kernel-2.6.35.fc14/linux-2.6.35.x86_64/kernel/sched.c:3823>
-        10         rq = cpu_rq(cpu);
-        11         rcu_note_context_switch(cpu);
-        12         prev = rq->curr;
-        13         switch_count = &prev->nivcsw;
-
-        15         release_kernel_lock(prev);
-
-Hmm, how can he find the probe point from this? :)
-Yeah, I know user must know what he has given. However, I'd like to
-show users what actually he has given.
-
-Thanks,
+Sent a patch and Cced you too.
 
 -- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+balbi
