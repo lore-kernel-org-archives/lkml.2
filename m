@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab1ANV6j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 16:58:39 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:53943 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753013Ab1ANV6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 16:58:37 -0500
-Date: Fri, 14 Jan 2011 15:58:26 -0600
-From: Alex Elder <aelder@americas.sgi.com>
-Message-Id: <201101142158.p0ELwQG3010869@alcatraz.americas.sgi.com>
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update 2 for 2.6.38-rc1
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+	id S1753674Ab1ANWBr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 17:01:47 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:37631 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752091Ab1ANWBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 17:01:44 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Subject: Re: [git pull] PCI changes (link error)
+Date: Fri, 14 Jan 2011 23:01:09 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37+; KDE/4.4.4; x86_64; ; )
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20110114090150.0a212030@jbarnes-desktop> <20110114193731.GA2381@gentoo.trippels.de>
+In-Reply-To: <20110114193731.GA2381@gentoo.trippels.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101142301.09624.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull the following additional changes to XFS for
-2.6.38-rc1.  Thanks.
+On Friday, January 14, 2011, Markus Trippelsdorf wrote:
+> On 2011.01.14 at 09:01 -0800, Jesse Barnes wrote:
+> > ...
+> > 
+> > Rafael J. Wysocki (5):
+> >       PCI hotplug: Fix unexpected driver unregister in pciehp_acpi.c
+> >       PCI/PCIe: Clear Root PME Status bits early during system resume
+> >       PCI/ACPI: Request _OSC control once for each root bridge (v3)
+> 
+> This breaks the build if CONFIG_PCIEPORTBUS is not set:
+> 
+> ld: drivers/built-in.o: in function acpi_pci_root_add:pci_root.c(.devinit.text+0x2633): error: undefined reference to 'pcie_ports_disabled'
 
-					-Alex
+Does the appended patch help?
 
-The following changes since commit 52cfd503ad7176d23a5dd7af3981744feb60622f:
+Rafael
 
-  Merge branch 'release' of git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6 (2011-01-13 20:15:35 -0800)
+---
+ include/linux/pci.h |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-are available in the git repository at:
-
-  git://oss.sgi.com/xfs/xfs for-linus
-
-Anton Blanchard (1):
-      xfs: Add log level to assertion printk
-
-Christoph Hellwig (2):
-      xfs: add FITRIM support
-      xfs: fix error handling for synchronous writes
-
-Dave Chinner (10):
-      xfs: ensure sync write errors are returned
-      xfs: factor common post-write isize handling code
-      xfs: factor post-write newsize updates
-      xfs: introduce xfs_rw_lock() helpers for locking the inode
-      xfs: split direct IO write path from xfs_file_aio_write
-      xfs: split buffered IO write path from xfs_file_aio_write
-      xfs: factor common write setup code
-      xfs: serialise unaligned direct IOs
-      xfs: ensure log covering transactions are synchronous
-      xfs: prevent NMI timeouts in cmn_err
-
-Jesper Juhl (1):
-      xfs: fix an assignment within an ASSERT()
-
- fs/xfs/Makefile                |    1 +
- fs/xfs/linux-2.6/xfs_buf.c     |    7 +-
- fs/xfs/linux-2.6/xfs_buf.h     |    7 +-
- fs/xfs/linux-2.6/xfs_discard.c |  191 ++++++++++++++
- fs/xfs/linux-2.6/xfs_discard.h |    8 +
- fs/xfs/linux-2.6/xfs_file.c    |  535 +++++++++++++++++++++++-----------------
- fs/xfs/linux-2.6/xfs_ioctl.c   |    3 +
- fs/xfs/linux-2.6/xfs_super.c   |    2 +-
- fs/xfs/linux-2.6/xfs_sync.c    |   11 +-
- fs/xfs/linux-2.6/xfs_sysctl.c  |   23 ++-
- fs/xfs/linux-2.6/xfs_trace.h   |   33 +++
- fs/xfs/support/debug.c         |  112 ++++-----
- fs/xfs/support/debug.h         |   25 ++-
- fs/xfs/xfs_alloc.c             |   10 +-
- fs/xfs/xfs_alloc.h             |   25 ++-
- fs/xfs/xfs_buf_item.c          |  151 ++++--------
- fs/xfs/xfs_error.c             |   31 ---
- fs/xfs/xfs_error.h             |   18 +-
- fs/xfs/xfs_fsops.c             |   10 +-
- fs/xfs/xfs_fsops.h             |    2 +-
- fs/xfs/xfs_log.c               |    2 +-
- fs/xfs/xfs_log_recover.c       |    2 +-
- fs/xfs/xfs_trans.c             |    2 +-
- 23 files changed, 729 insertions(+), 482 deletions(-)
- create mode 100644 fs/xfs/linux-2.6/xfs_discard.c
- create mode 100644 fs/xfs/linux-2.6/xfs_discard.h
+Index: linux-2.6/include/linux/pci.h
+===================================================================
+--- linux-2.6.orig/include/linux/pci.h
++++ linux-2.6/include/linux/pci.h
+@@ -993,8 +993,13 @@ extern void pci_restore_msi_state(struct
+ extern int pci_msi_enabled(void);
+ #endif
+ 
++#ifdef CONFIG_PCIEPORTBUS
+ extern bool pcie_ports_disabled;
+ extern bool pcie_ports_auto;
++#else
++#define pcie_ports_disabled	true
++#define bool pcie_ports_auto	false
++#endif
+ 
+ #ifndef CONFIG_PCIEASPM
+ static inline int pcie_aspm_enabled(void)
