@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757858Ab1ANDDd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 22:03:33 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41678 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757490Ab1ANDD0 (ORCPT
+	id S1751612Ab1ANDHL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 22:07:11 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:36959 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752284Ab1ANDHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 22:03:26 -0500
-Date: Fri, 14 Jan 2011 03:03:25 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Nick Piggin <npiggin@gmail.com>
-Cc: "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: vfs-scale, d_revalidate from nfsd
-Message-ID: <20110114030325.GU19804@ZenIV.linux.org.uk>
-References: <8855.1294927436@jrobl>
- <AANLkTik1bj=Z9xFv8JfYrxqefFL1owmH=Rctj=XnH4Mp@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTik1bj=Z9xFv8JfYrxqefFL1owmH=Rctj=XnH4Mp@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Thu, 13 Jan 2011 22:07:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=vIicF+NRFyRret5O/WTXco/Gj/qYbL0dpbRZxTtI9kdRv6M1hxh7anuCKJPWE62G2b
+         XE5t7uC1F7lSl14pLMpM2wt+kjTo5bYrveo/iTAAf4F5zu4LTCnQ5cmR0WdxFC9aN5ov
+         m0Z9EU3UlkPm0hDpBpmleba9q+JhRGG+6RAlY=
+From: Charles Manning <cdhmanning@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        akpm@linux-foundation.org
+Cc: Charles Manning <cdhmanning@gmail.com>
+Subject: [PATCH 0/10] Add yaffs2 file system:  Fourth patchset
+Date: Fri, 14 Jan 2011 16:05:59 +1300
+Message-Id: <1294974369-31647-1-git-send-email-cdhmanning@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 01:57:55PM +1100, Nick Piggin wrote:
-> On Fri, Jan 14, 2011 at 1:03 AM, J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
-> >
-> > NFSD calls filesystem's ->d_revalidate() with the parameter nd == NULL.
-> > So every
-> > ? ? ? ?if (nd->flags & LOOKUP_RCU)
-> > ? ? ? ? ? ? ? ?return -ECHILD;
-> > code which was added to ->d_revalidate() of FS which supports NFS
-> > exporting will crash.
-> >
-> > If we rewrite it as
-> > ? ? ? ?if (nd && (nd->flags & LOOKUP_RCU))
-> > ? ? ? ? ? ? ? ?return -ECHILD;
-> > the problem may not occur.
-> > But I am not sure whether lookup_one_len() call in NFSD support rcu-walk.
-> 
-> Ah, good catch.
-> 
-> I'm going to change the d_revalidate API so it takes and inode and rcu-walk
-> flag parameter to make it easier for filesystems to implement rcu-walk.
-> 
-> That will take care of this NULL nd case.
+This is the fourth submission of a yaffs2 patchset.
 
-Oh, for fuck sake...  Would you at least mind posting your API change
-description to fsdevel before going for it?
+I would like to thank everyone that has given comments so far. They
+have been most helpful.
 
-->d_revalidate() is one sick puppy and it's intimately involved in atomic
-open rewrite.  Please, *please* don't make that shit even messier...
+I would like to thank CELF (now part of Linux Foundation) and Google
+for sponsoring the effort to get yaffs2 mainlined.
+
+This code is patched from 371b2eaad7d9c4947ec1e5c5f0576b7e118df617
+at git://www.aleph1.co.uk/yaffs2.
+
+This patch set takes onboard almost all the comments provided since the
+last set of patches. Most noteably :
+* Removal of almost all the wrapper macros. Pretty much all that remains
+is some wrapping (YCHAR --> char) to allow Unicode compilation.
+* Huge amount of reformating. Code passes checkpatch.pl except for what
+* appears to be a checkpatch.pl bug (reported).
+* Fixes since last submission.
+
+This code ran various tests for the whole night with no problems seen.
+
+Comments/feedback welcome, but I'm hopefully getting pretty close to
+acceptance :-).
+
+-- Charles
