@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933172Ab1ANTNd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 14:13:33 -0500
-Received: from mga02.intel.com ([134.134.136.20]:47555 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752362Ab1ANTNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 14:13:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,323,1291622400"; 
-   d="scan'208";a="593099519"
-Message-ID: <4D30A05B.9050602@linux.intel.com>
-Date: Fri, 14 Jan 2011 11:13:31 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S1758019Ab1ANTR5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 14:17:57 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:47263 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752362Ab1ANTRz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 14:17:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=OYZe1zUvjq1F2O8T1y9aYJRJ8juX+uRC59I0gSH9xr8yrvYmO1L/9kAIQ36r29+ai/
+         osUAoz/4zS5ndYlBU1HQ==
 MIME-Version: 1.0
-To: Jack Stone <jwjstone@fastmail.fm>
-CC: Viresh Kumar <viresh.kumar@st.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH resend] kernel/async.c: fixing compilation warnings
-References: <1295005980-12297-1-git-send-email-viresh.kumar@st.com> <4D304BE6.9070200@fastmail.fm> <4D306B4D.2080909@linux.intel.com> <4D309851.4020503@fastmail.fm>
-In-Reply-To: <4D309851.4020503@fastmail.fm>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <8yalj2nfj11.fsf@huya.qualcomm.com>
+References: <1294680810.12298.2.camel@c-dwalke-linux.qualcomm.com>
+	<1294686030-9817-1-git-send-email-dima@android.com>
+	<8yalj2nfj11.fsf@huya.qualcomm.com>
+Date: Fri, 14 Jan 2011 11:17:51 -0800
+X-Google-Sender-Auth: 4sqXpejTBgXlEGTFQXnA_x7-umE
+Message-ID: <AANLkTi=YxOMwF44AJcARunZAEo+iU-1z4fpD35iqUnvR@mail.gmail.com>
+Subject: Re: [PATCH] ARM: msm: 7x30: don't force a gpiomux table for the whole arch
+From: Dima Zavin <dima@android.com>
+To: David Brown <davidb@codeaurora.org>
+Cc: Daniel Walker <dwalker@codeaurora.org>,
+        Gregory Bean <gbean@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/14/2011 10:39 AM, Jack Stone wrote:
-> On 14/01/2011 15:27, Arjan van de Ven wrote:
->> On 1/14/2011 5:13 AM, Jack Stone wrote:
->>> rning: ‘calltime.tv64’ may be used uninitialized in this function
->> which is clearly a.. gcc funny to be honest. it's a false positive by
->> any stretch.
+Thanks!
+
+--Dima
+
+On Fri, Jan 14, 2011 at 10:16 AM, David Brown <davidb@codeaurora.org> wrote:
+> On Mon, Jan 10 2011, Dima Zavin wrote:
+>
+>> This is completely board specific and therefore must be provided
+>> on a per-board basis.
 >>
-> Agreed. Who should merge this?
-
-should it be?
-traditionally we have shied away for workarounds for false positives 
-from gcc.....
-
+>> Change-Id: I96f922ad9bb9cbce7874c5ae6ac0d7479b7a2124
+>> Signed-off-by: Dima Zavin <dima@android.com>
+>
+> I'll pull this into msm-next once rc8-rc1 comes out.
+>
+> I'll take out the Change-Id line, though.
+>
+> David
+>
