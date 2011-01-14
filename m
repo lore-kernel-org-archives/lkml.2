@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072Ab1ANSdJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 13:33:09 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10344 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757705Ab1ANSdH (ORCPT
+	id S1758084Ab1ANSdb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 13:33:31 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:1275 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752028Ab1ANSd2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 13:33:07 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp03.nvidia.com on Fri, 14 Jan 2011 10:33:05 -0800
-Subject: Re: [PATCH 1/1] power: bq20z75: add support for charge properties
-From: rklein <rklein@nvidia.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: "olof@lixom.net" <olof@lixom.net>,
+	Fri, 14 Jan 2011 13:33:28 -0500
+From: "Berahalli, Sreenivasa Reddy" <sreenivasa-reddy.berahalli@hp.com>
+To: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110114152348.GB30831@oksana.dev.rtsoft.ru>
-References: <1294944613-11006-1-git-send-email-rklein@nvidia.com>
-	 <20110114152348.GB30831@oksana.dev.rtsoft.ru>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 Jan 2011 10:32:49 -0800
-Message-ID: <1295029969.30634.0.camel@rklein-linux2>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Date: Fri, 14 Jan 2011 18:33:13 +0000
+Subject: FW: ACPI Warning: Invalid length for Pm1aControlBlock: 32, using
+ default 16 (20090903/tbfadt-607)
+Thread-Topic: ACPI Warning: Invalid length for Pm1aControlBlock: 32, using
+ default 16 (20090903/tbfadt-607)
+Thread-Index: Acu0GNTutFeYuPoUSRGdyd7gIwvJ5QAAGMvw
+Message-ID: <88E058D95F1C6047975B85AB9C600B1F6DB20525AF@GVW1342EXA.americas.hpqcorp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-14 at 07:23 -0800, Anton Vorontsov wrote:
-> On Thu, Jan 13, 2011 at 10:50:13AM -0800, rklein@nvidia.com wrote:
-> [...]
-> > +#define PROP_NEEDS_AMPS(PSP) \
-> > +	((PSP == POWER_SUPPLY_PROP_CHARGE_NOW) || \
-> > +	 (PSP == POWER_SUPPLY_PROP_CHARGE_FULL) || \
-> > +	 (PSP == POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN))
-> > +
-> > +#define PROP_NEEDS_WATTS(PSP) \
-> > +	((PSP == POWER_SUPPLY_PROP_ENERGY_NOW) || \
-> > +	 (PSP == POWER_SUPPLY_PROP_ENERGY_FULL) || \
-> > +	 (PSP == POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN))
-> 
-> Ugh. Please, implement it as a function.
-> 
-> And maybe place it somewhere into linux/power_supply.h?
-> 
-> Something like this maybe?
-> 
-> static inline bool power_supply_is_amp_prop(enum power_supply_property psp)
-> {
-> 	switch (psp) {
-> 	case POWER_SUPPLY_PROP_CHARGE_NOW:
-> 	case POWER_SUPPLY_PROP_CHARGE_FULL:
-> 	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
-> 	<...>
-> 		return 1;
-> 	}
-> 	return 0;
-> }
-> 
-> Thanks!
-> 
-Will do, that seems a much smarter idea as this could be reused.
+Resending because delivery failure in first attempt.
 
--rhyland
+Sreenivas
+
+_____________________________________________
+From: Berahalli, Sreenivasa Reddy
+Sent: Friday, January 14, 2011 11:28 AM
+To: 'lenb@kernel.org'; 'ming.m.lin@intel.com'; 'robert.moore@intel.com'; 'linux-acpi@vger.kernel.org'; 'linux-kernel@vger.kernel.org'
+Cc: K, Narmadha
+Subject: ACPI Warning: Invalid length for Pm1aControlBlock: 32, using default 16 (20090903/tbfadt-607)
+
+
+Hi,
+
+>From kernel version 2.6.31.13, the "acpi_tb_setup_fadt_registers" function is added to check for any incorrect length.
+In ACPI tables, this function checks if the length of register and the default value are the same, and will replace if the values are different.
+ acpi_tb_setup_fadt_registers() function in /drivers/acpi/acpica/tbfadt.c verifies the length of Pm1aControlBlock.
+
+"ACPI Warning: Invalid length for Pm1aControlBlock: 32, using default 16 (20090903/tbfadt-607)"
+
+This warning message means the length of register in the ACPI tables and the default values are different.
+We see it as  over-aggressive check in Linux, with no issue.
+
+Warning messages in dmesg are alarm to the end users.
+This issue can be addressed by moving these messages to debug level instead of throwing it by default to dmesg.
+
+Thanks
+Sreenivas
+
 
