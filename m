@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575Ab1ANEKo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 23:10:44 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58111 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757479Ab1ANEKc convert rfc822-to-8bit (ORCPT
+	id S1756789Ab1ANEWX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 23:22:23 -0500
+Received: from straum.hexapodia.org ([207.7.131.186]:52375 "EHLO
+	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751934Ab1ANEWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 23:10:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=sDAHKNGIt+x04ec65MbWFigTsChXJx3JFflOV7sVeOHKDAiLsVTjaurUtNeCEEjstg
-         EuVVrq4K0gOz0PXlLz5+kT1y1NyeFso5eaq3vdnbGtEflqOQgluZJsdASSZqdhRQHySJ
-         2jTFlTsDiLlM8tM6uz9dbrii1vQ4i7U73UV3A=
+	Thu, 13 Jan 2011 23:22:19 -0500
+Date: Thu, 13 Jan 2011 20:22:19 -0800
+From: Andy Isaacson <adi@hexapodia.org>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-nfs@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Marc Kleine-Budde <m.kleine-budde@pengutronix.de>
+Subject: Re: still nfs problems [Was: Linux 2.6.37-rc8]
+Message-ID: <20110114042219.GA17302@hexapodia.org>
+References: <20101230191846.GB14221@pengutronix.de> <20110103213850.GC25121@pengutronix.de> <1294100558.25100.8.camel@heimdal.trondhjem.org> <20110105084014.GN25121@pengutronix.de> <20110105110517.GQ25121@pengutronix.de> <20110105112701.GA8638@n2100.arm.linux.org.uk> <20110105134045.GS25121@pengutronix.de> <1294239193.3014.9.camel@heimdal.trondhjem.org> <20110114022554.GA17397@hexapodia.org> <1294972823.2841.2.camel@heimdal.trondhjem.org>
 MIME-Version: 1.0
-In-Reply-To: <4D2FCBDC.5040107@cn.fujitsu.com>
-References: <12545.1294932849@localhost>
-	<AANLkTikEYgsOjVhmuVCM8rzGRrQxRM0FO475=CEBEtxD@mail.gmail.com>
-	<4D2FCBDC.5040107@cn.fujitsu.com>
-Date: Fri, 14 Jan 2011 15:10:31 +1100
-Message-ID: <AANLkTikHdKf5_gtTTPY9z+ymyPP6enc3S_-d_zdzmLDJ@mail.gmail.com>
-Subject: Re: linux-next: lockdep whinge in cgroup_rmdir
-From: Nick Piggin <npiggin@gmail.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Valdis.Kletnieks@vt.edu, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Eric Paris <eparis@parisplace.org>, Paul Menage <menage@google.com>,
-        Stephen Smalley <sds@tycho.nsa.gov>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294972823.2841.2.camel@heimdal.trondhjem.org>
+X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
+X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
+X-Domestic-Surveillance: money launder bomb tax evasion
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 3:06 PM, Li Zefan <lizf@cn.fujitsu.com> wrote:
-> Nick Piggin wrote:
->> It looks like it is just a missing parent->child lock order annotation, but
->> mainline cgroupfs code looks to be OK there. What does
->> cgroup_clear_directory() look like in mmotm?
->
-> It's not from cgroup_clear_directory()..
->
-> This should fix it:
+On Thu, Jan 13, 2011 at 09:40:23PM -0500, Trond Myklebust wrote:
+> > My server is running 2.6.36.1, filesystem is ext3 on sda3 on AHCI,
+> > client is currently running 2.6.37-rc1.  I'm assuming that 37a09f will
+> > fix it.
+> 
+> Why are you sticking to 2.6.37-rc1 when the final 2.6.37 is out? There
+> have been several readdir bugfixes merged in the months since -rc1 came
+> out.
 
-Yep, thanks!
+No good reason, just hadn't run into any reasons to update; switching
+kernels is nonzero cost since the machine in question runs some out of
+tree modules ergo updating is slightly more involved than "make && make
+install".  Above and beyond the costs of rebooting and losing state.
 
-> =========================
->
-> From: Li Zefan <lizf@cn.fujitsu.com>
-> Date: Fri, 14 Jan 2011 11:34:34 +0800
-> Subject: [PATCH] cgroups: Fix a lockdep warning at cgroup removal
->
-> Commit 2fd6b7f5 ("fs: dcache scale subdirs") forgot to annotate a dentry
-> lock, which caused a lockdep warning.
->
-> Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-> ---
->  kernel/cgroup.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index 5c5f4cc..db983e2 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -910,7 +910,7 @@ static void cgroup_d_remove_dir(struct dentry *dentry)
->
->        parent = dentry->d_parent;
->        spin_lock(&parent->d_lock);
-> -       spin_lock(&dentry->d_lock);
-> +       spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
->        list_del_init(&dentry->d_u.d_child);
->        spin_unlock(&dentry->d_lock);
->        spin_unlock(&parent->d_lock);
-> --
-> 1.7.3.1
->
->
+Actual bug is obviously a good reason to update though.
+
+-andy
