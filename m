@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757957Ab1ANSJK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 13:09:10 -0500
-Received: from mga14.intel.com ([143.182.124.37]:18510 "EHLO mga14.intel.com"
+	id S1757753Ab1ANSOe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 13:14:34 -0500
+Received: from mail.atmel.fr ([81.80.104.162]:50810 "EHLO atmel-es2.atmel.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752468Ab1ANSJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 13:09:04 -0500
-Message-Id: <849307$b5cdqe@azsmga001.ch.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,323,1291622400"; 
-   d="scan'208";a="374749006"
-Date: Fri, 14 Jan 2011 18:08:59 +0000
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] drm/i915/execbuffer: Clear domains before beginning reloc processing
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Dave Airlie <airlied@linux.ie>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTinq9MOjvHVFb1eJ_Dt+vkgpixuUrU-xcDYGZ5Lj@mail.gmail.com>
-References: <AANLkTinBnm+xkXPPM4-3PG_i2hJMuXhv8x42KN4o3kGg@mail.gmail.com> <1294916869-2417-1-git-send-email-chris@chris-wilson.co.uk> <AANLkTimypim707rEXaPBaKoGgGmz3Of4EmPNw7VokJL6@mail.gmail.com> <1bdc18$j8l825@fmsmga002.fm.intel.com> <AANLkTinq9MOjvHVFb1eJ_Dt+vkgpixuUrU-xcDYGZ5Lj@mail.gmail.com>
-From: Chris Wilson <chris@chris-wilson.co.uk>
+	id S1757071Ab1ANSO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 13:14:28 -0500
+Message-ID: <4D309278.5010603@atmel.com>
+Date: Fri, 14 Jan 2011 19:14:16 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Igor Plyatov <plyatov@gmail.com>, Andrew Victor <linux@maxim.org.za>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Sergio Tanzilli <tanzilli@acmesystems.it>
+Subject: Re: [GIT PULL] AT91: patches for v2.6.38-rc1
+References: <4D308F30.6070503@atmel.com> <20110114180455.GL15996@n2100.arm.linux.org.uk>
+In-Reply-To: <20110114180455.GL15996@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Let's try this again. There are times when I merely dislike my VPN.]
-
-On Fri, 14 Jan 2011 09:37:20 -0800, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> On Thu, Jan 13, 2011 at 8:10 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> >
-> > They will be in drm-intel-fixes. There have been a couple of other patches,
-> > for the compiler warning, the typo that Indan spotted and for modparam to
-> > workaround the U160, so I'll send the pull request it via Dave.
+Le 14/01/2011 19:04, Russell King - ARM Linux :
+> On Fri, Jan 14, 2011 at 07:00:16PM +0100, Nicolas Ferre wrote:
+>> Hi Russell,
+>>
+>> Can you please pull those little changes for AT91? They add two 
+>> new boards already discussed on the mailing list and a little 
+>> cleanup patch:
 > 
-> My tree has been in a known-broken state for too damn long now. Please
-> send the pull request to me directly. Dave may be flooded out in
-> Brisbane or something.
+> Has this already been in linux-next?
 
-This is what I have waiting in drm-intel-fixes. Besides the regression
-noted above, there is also a critical stability fix for SNB mobile, a
-few patches for older regressions (LVDS on U160, no LVDS on AOpen,
-preserve the backlight value from boot and correct a couple of device
-strings) and one to keep the compiler quiet.
--Chris
+I must admit that... no.
 
-The following changes since commit f878133bf022717b880d0e0995b8f91436fd605c:
+> We should only be merging new code during a merge window which has
+> already had visibility in linux-next, with the exception of bug fixes
+> and regression fixes.
 
-  Merge branch 'drm-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6 (2011-01-12 08:40:25 -0800)
+I understand your point but those are only *board* files that are lying
+around for one or two months.
+I was really wishing to see them included in mainline during merge
+window as they are not core ARM nor AT91 files...
 
-are available in the git repository at:
+BTW the git tree is based on the tree you specify to Eric: "9e9bc973".
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ickle/drm-intel.git drm-intel-fixes
+> Regression fixes can be merged at any time provided they're obvious.
+> Any regression fix should be acceptable during the merge window.
+> 
+> Bug fixes any time up until (I'd say) the last week of the -rc series.
 
-Chris Wilson (6):
-      drm/i915/debugfs: Correct format after changing type of err object 'size'
-      drm/i915: Add a module option to override the use of SSC
-      drm/i915: Fix error handler to capture the first batch after the seqno
-      drm/i915/execbuffer: Reorder relocations to match new object order
-      drm/i915/execbuffer: Clear domains before beginning reloc processing
-      drm/i915: Disable GPU semaphores on SandyBridge mobile
-
-Indan Zupancic (1):
-      drm/i915/panel: The backlight is enabled if the current value is non-zero
-
-Knut Petersen (1):
-      drm/i915/lvds: Add AOpen i915GMm-HFS to the list of false-positive LVDS
-
-Oswald Buddenhagen (1):
-      agp/intel: Fix device names of i845 and 845G
-
- drivers/char/agp/intel-agp.c               |    4 ++--
- drivers/char/agp/intel-gtt.c               |    2 +-
- drivers/gpu/drm/i915/i915_debugfs.c        |    2 +-
- drivers/gpu/drm/i915/i915_drv.c            |    3 +++
- drivers/gpu/drm/i915/i915_drv.h            |    1 +
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |   25 ++++++++++++++-----------
- drivers/gpu/drm/i915/i915_irq.c            |    2 +-
- drivers/gpu/drm/i915/intel_bios.c          |   17 ++++++-----------
- drivers/gpu/drm/i915/intel_display.c       |   17 +++++++++++------
- drivers/gpu/drm/i915/intel_lvds.c          |    8 ++++++++
- drivers/gpu/drm/i915/intel_panel.c         |    2 +-
- 11 files changed, 49 insertions(+), 34 deletions(-)
-
+Best regards,
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+Nicolas Ferre
