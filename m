@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab1ANWFU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 17:05:20 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40823 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752811Ab1ANWFR (ORCPT
+	id S1752642Ab1ANWNG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 17:13:06 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:54450 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751519Ab1ANWND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 17:05:17 -0500
-Date: Fri, 14 Jan 2011 21:48:24 +0000
-From: Jamie Iles <jamie@jamieiles.com>
-To: Alexander Clouter <alex@digriz.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv2] hwrng: add support for picoxcell TRNG
-Message-ID: <20110114214824.GO2822@pulham.picochip.com>
-References: <20110114181609.GN2822@pulham.picochip.com>
- <1295030661-16364-1-git-send-email-jamie@jamieiles.com>
- <v7p608-mqv.ln1@chipmunk.wormnet.eu>
+	Fri, 14 Jan 2011 17:13:03 -0500
+Date: Fri, 14 Jan 2011 23:13:00 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [git pull] PCI changes (link error)
+Message-ID: <20110114221300.GA2366@gentoo.trippels.de>
+References: <20110114090150.0a212030@jbarnes-desktop>
+ <20110114193731.GA2381@gentoo.trippels.de>
+ <201101142301.09624.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <v7p608-mqv.ln1@chipmunk.wormnet.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201101142301.09624.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 08:45:19PM +0000, Alexander Clouter wrote:
-> In gmane.linux.ports.arm.kernel Jamie Iles <jamie@jamieiles.com> wrote:
-> >
-> > This driver adds support for the True Random Number Generator in
-> > the Picochip PC3X3 and later devices.
+On 2011.01.14 at 23:01 +0100, Rafael J. Wysocki wrote:
+> On Friday, January 14, 2011, Markus Trippelsdorf wrote:
+> > On 2011.01.14 at 09:01 -0800, Jesse Barnes wrote:
+> > > ...
+> > > 
+> > > Rafael J. Wysocki (5):
+> > >       PCI hotplug: Fix unexpected driver unregister in pciehp_acpi.c
+> > >       PCI/PCIe: Clear Root PME Status bits early during system resume
+> > >       PCI/ACPI: Request _OSC control once for each root bridge (v3)
 > > 
-> > [snipped]
-> >
-> > +/*
-> > + * Take the random number generator out of reset and make sure the interrupts
-> > + * are masked. We shouldn't need to get large amounts of random bytes so just
-> > + * poll the status register. The hardware generates 32 bits every 320ns so we
-> > + * shouldn't have to wait long enough to warrant waiting for an IRQ.
-> > + */
-> >
-> timeriomem-rng?  Example of usage in 
-> arch/arm/mach-orion5x/ts78xx-setup.c.
+> > This breaks the build if CONFIG_PCIEPORTBUS is not set:
+> > 
+> > ld: drivers/built-in.o: in function acpi_pci_root_add:pci_root.c(.devinit.text+0x2633): error: undefined reference to 'pcie_ports_disabled'
+> 
+> Does the appended patch help?
 
-No, that's not quite suitable for our hardware.  Although the hardware 
-generates the data every 320ns, it also performs self test of the data 
-in hardware to make sure it satisfies certain random qualities.  If the 
-data doesn't pass the tests then it's rejected and not placed into the 
-FIFO so we'd have the possibility of an underflow with the 
-timeriomem-rng driver.
+> +#ifdef CONFIG_PCIEPORTBUS
+>  extern bool pcie_ports_disabled;
+>  extern bool pcie_ports_auto;
+> +#else
+> +#define pcie_ports_disabled	true
+> +#define bool pcie_ports_auto	false
+> +#endif
 
-Jamie
+No, but this one does ;-):
+
+
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 9e67dcd..0f4ca55 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -993,8 +993,13 @@ extern void pci_restore_msi_state(struct pci_dev *dev);
+ extern int pci_msi_enabled(void);
+ #endif
+ 
++#ifdef CONFIG_PCIEPORTBUS
+ extern bool pcie_ports_disabled;
+ extern bool pcie_ports_auto;
++#else
++#define pcie_ports_disabled true
++#define pcie_ports_auto false
++#endif
+ 
+ #ifndef CONFIG_PCIEASPM
+ static inline int pcie_aspm_enabled(void)
+
+-- 
+Markus
