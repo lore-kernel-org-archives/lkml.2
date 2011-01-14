@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757072Ab1ANKNM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 05:13:12 -0500
-Received: from 26.mail-out.ovh.net ([91.121.27.225]:47143 "HELO
-	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751566Ab1ANKNI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 05:13:08 -0500
-Message-ID: <4D3021AE.5020607@example.com>
-Date: Fri, 14 Jan 2011 11:13:02 +0100
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	id S1757262Ab1ANKN2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 05:13:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33579 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756684Ab1ANKNK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 05:13:10 -0500
+Date: Fri, 14 Jan 2011 12:12:46 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Billy Rafferty <billy.rafferty@gmail.com>
+Cc: linux-kernel@vger.kernel.org, hjk@hansjkoch.de
+Subject: Re: uio_pci_generic has no mapping?
+Message-ID: <20110114101246.GA1158@redhat.com>
+References: <AANLkTi=bDV52-Fc22amAEsxofL7gRC=oaU+AXgUnuRt7@mail.gmail.com>
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: error in 2.6.37-git10
-References: <4D301CA5.503@example.com> <20110114095745.GD2476@legolas.emea.dhcp.ti.com> <4D302067.2000203@example.com> <20110114100831.GE2476@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20110114100831.GE2476@legolas.emea.dhcp.ti.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 2427440199228092869
-X-Ovh-Remote: 83.24.79.226 (dmx226.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=bDV52-Fc22amAEsxofL7gRC=oaU+AXgUnuRt7@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.01.2011 11:08, Felipe Balbi wrote:
-> On Fri, Jan 14, 2011 at 11:07:35AM +0100, Piotr Hosowicz wrote:
->> On 14.01.2011 10:57, Felipe Balbi wrote:
->>> On Fri, Jan 14, 2011 at 10:51:33AM +0100, Piotr Hosowicz wrote:
->>>> Hello,
->>>>
->>>> Build failed here:
->>>>
->>>>    CC [M]  fs/ecryptfs/main.o
->>>> fs/ecryptfs/main.c:144: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or
->>>> ‘__attribute__’ before ‘*’ token
->>>> fs/ecryptfs/main.c: In function ‘ecryptfs_interpose’:
->>>> fs/ecryptfs/main.c:204: error: implicit declaration of function
->>>> ‘ecryptfs_get_inode’
->>>> fs/ecryptfs/main.c:204: warning: initialization makes pointer from
->>>> integer without a cast
->>>> fs/ecryptfs/main.c:206: error: expected ‘)’ before ‘return’
->>>> fs/ecryptfs/main.c:212: error: expected expression before ‘}’ token
->>>> fs/ecryptfs/main.c: In function ‘ecryptfs_mount’:
->>>> fs/ecryptfs/main.c:569: warning: assignment makes pointer from
->>>> integer without a cast
->>>
->>> Could you check whether this is enough?
->>
->> I am building now with this option disabled, maybe I'll have time to
->> test again.
->
-> I just did. Compiled only that module with that header added. Built
-> cleanly.
+On Fri, Jan 14, 2011 at 09:52:45AM +0000, Billy Rafferty wrote:
+> Hi there,
+> 
+> I was hoping that someone might be be able to help me out using the
+> uio_pci_generic driver.
+> 
+> To gain access to the memory in the card I try to do an mmap but it
+> returns an error.
+> 
+> I was wondering if the mapping of the PCI memory regions is automatic?
+>  I am not seeing /sys/class/uio/uio0/maps
+> 
+> Do I have to do something to get these to appear?
+> 
+> I would appreciate any help or pointers that you can give.
+> 
+> Regards,
+> 
+> Billy
 
-I corrected and am building again. Hope this helps.
+mmap the pci resource through
+/sys/class/uio/uio0/device/resourceX
 
-Regards,
-
-Piotr Hosowicz
+The list of resources is in
+/sys/class/uio/uio0/device/resource
 
 -- 
-W korytarzach kremlowskich Breżniew spotyka Susłowa. Susłow pyta:
-- Leonid, wiesz, że jeden but masz żółty, a drugi czarny?
-- Wiem, Misza, chciałem nawet zmienić, ale w domu mam to samo,
-   jeden żółty i jeden czarny.
-NP: Patrick O'Hearn - An Evening Sky
-NB: 2.6.37-20110113-1411-pztidm+
+MST
