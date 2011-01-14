@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757556Ab1ANOon (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 09:44:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39922 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751928Ab1ANOoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 09:44:37 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: David Dillow <dillowda@ornl.gov>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: fs/direct-io.c: don't try to allocate more than BIO_MAX_PAGES in a bio
-References: <1294977946.21790.20.camel@obelisk.thedillows.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 14 Jan 2011 09:44:33 -0500
-In-Reply-To: <1294977946.21790.20.camel@obelisk.thedillows.org> (David
-	Dillow's message of "Thu, 13 Jan 2011 23:05:46 -0500")
-Message-ID: <x498vynbl4e.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1757522Ab1ANOqU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 09:46:20 -0500
+Received: from wavehammer.waldi.eu.org ([82.139.201.20]:33586 "EHLO
+	wavehammer.waldi.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751928Ab1ANOqN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 09:46:13 -0500
+Date: Fri, 14 Jan 2011 15:46:09 +0100
+From: Bastian Blank <bastian@waldi.eu.org>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <kees.cook@canonical.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH 05/08] Allow ptrace from non-init user namespaces
+Message-ID: <20110114144608.GA20945@wavehammer.waldi.eu.org>
+Mail-Followup-To: Bastian Blank <bastian@waldi.eu.org>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	containers@lists.linux-foundation.org,
+	kernel list <linux-kernel@vger.kernel.org>,
+	LSM <linux-security-module@vger.kernel.org>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Kees Cook <kees.cook@canonical.com>,
+	Alexey Dobriyan <adobriyan@gmail.com>,
+	Michael Kerrisk <mtk.manpages@gmail.com>
+References: <20110111064342.GA27515@mail.hallyn.com>
+ <20110111064439.GF27515@mail.hallyn.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110111064439.GF27515@mail.hallyn.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Dillow <dillowda@ornl.gov> writes:
+This mail did not show up in my inbox, even if I'm listed as receipient.
+I only got a copy via the mailinglist.
 
-> When using devices that support max_segments > BIO_MAX_PAGES (256),
-> direct IO tries to allocate a bio with more pages than allowed, which
-> leads to an oops in dio_bio_alloc(). Clamp that request to the supported
-> maximum.
->
-> Signed-off-by: David Dillow <dillowda@ornl.gov>
-> --
-> dio_bio_alloc() doesn't check the result of bio_alloc(), so it
-> dereferences a NULL pointer. bio_alloc(GFP_KERNEL, ...) doesn't fail
-> unless it gets called for an invalid number of pages, so it seems a bit
-> like overkill to check for failure in dio_bio_alloc(), though it would
-> have saved me some time tracking this down.
+On Tue, Jan 11, 2011 at 06:44:39AM +0000, Serge E. Hallyn wrote:
+> diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+> index 99bbaa3..ec7605d 100644
+> --- a/kernel/ptrace.c
+> +++ b/kernel/ptrace.c
+> @@ -134,21 +134,24 @@ int __ptrace_may_access(struct task_struct *task, unsigned int mode)
+>  		return 0;
+>  	rcu_read_lock();
+>  	tcred = __task_cred(task);
+> -	if ((cred->uid != tcred->euid ||
+> -	     cred->uid != tcred->suid ||
+> -	     cred->uid != tcred->uid  ||
+> -	     cred->gid != tcred->egid ||
+> -	     cred->gid != tcred->sgid ||
+> -	     cred->gid != tcred->gid) &&
+> -	    !capable(CAP_SYS_PTRACE)) {
+> -		rcu_read_unlock();
+> -		return -EPERM;
+> -	}
+> +	if (cred->user->user_ns == tcred->user->user_ns &&
+> +	    (cred->uid == tcred->euid &&
+> +	     cred->uid == tcred->suid &&
+> +	     cred->uid == tcred->uid  &&
+> +	     cred->gid == tcred->egid &&
+> +	     cred->gid == tcred->sgid &&
+> +	     cred->gid == tcred->gid))
+> +		goto ok;
+> +	if (ns_capable(tcred->user->user_ns, CAP_SYS_PTRACE))
+> +		goto ok;
+> +	rcu_read_unlock();
+> +	return -EPERM;
+> +ok:
 
-We should always be checking return values.  Mind respinning the patch
-to include that?
+This is wrong. Please move that out into functions if you are unable to
+get the conditions right.
 
-> diff --git a/fs/direct-io.c b/fs/direct-io.c
-> index 85882f6..9eb0553 100644
-> --- a/fs/direct-io.c
-> +++ b/fs/direct-io.c
-> @@ -583,6 +583,7 @@ static int dio_new_bio(struct dio *dio, sector_t start_sector)
->  		goto out;
->  	sector = start_sector << (dio->blkbits - 9);
->  	nr_pages = min(dio->pages_in_io, bio_get_nr_vecs(dio->map_bh.b_bdev));
-> +	nr_pages = min(nr_pages, BIO_MAX_PAGES);
+Bastian
 
-This looks fine.  Thanks for tracking it down!
-
-Cheers,
-Jeff
+-- 
+If a man had a child who'd gone anti-social, killed perhaps, he'd still
+tend to protect that child.
+		-- McCoy, "The Ultimate Computer", stardate 4731.3
