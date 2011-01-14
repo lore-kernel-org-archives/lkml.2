@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691Ab1ANIGP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 03:06:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3808 "EHLO mx1.redhat.com"
+	id S1757401Ab1ANIGi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 03:06:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55880 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750951Ab1ANIGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 03:06:09 -0500
-Date: Fri, 14 Jan 2011 03:05:41 -0500
+	id S1757345Ab1ANIGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 03:06:22 -0500
+Date: Fri, 14 Jan 2011 03:04:50 -0500
 From: Rik van Riel <riel@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
+To: Rik van Riel <riel@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Avi Kiviti <avi@redhat.com>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>,
         ttracy@redhat.com, dshaks@redhat.com
-Subject: [RFC -v5 PATCH 4/4] kvm: use yield_to instead of sleep in
- kvm_vcpu_on_spin
-Message-ID: <20110114030541.49acfe80@annuminas.surriel.com>
+Subject: [RFC -v5 PATCH 3/4] export pid symbols needed for kvm_vcpu_on_spin
+Message-ID: <20110114030450.07b28e2f@annuminas.surriel.com>
 In-Reply-To: <20110114030209.53765a0a@annuminas.surriel.com>
 References: <20110114030209.53765a0a@annuminas.surriel.com>
 Organization: Red Hat, Inc.
@@ -27,89 +27,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of sleeping in kvm_vcpu_on_spin, which can cause gigantic
-slowdowns of certain workloads, we instead use yield_to to hand
-the rest of our timeslice to another vcpu in the same KVM guest.
+Export the symbols required for a race-free kvm_vcpu_on_spin.
 
 Signed-off-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 9d56ed5..fab2250 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -187,6 +187,7 @@ struct kvm {
- #endif
- 	struct kvm_vcpu *vcpus[KVM_MAX_VCPUS];
- 	atomic_t online_vcpus;
-+	int last_boosted_vcpu;
- 	struct list_head vm_list;
- 	struct mutex lock;
- 	struct kvm_io_bus *buses[KVM_NR_BUSES];
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 65e997a..a7c45c8 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1292,18 +1292,52 @@ void kvm_resched(struct kvm_vcpu *vcpu)
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 3b159c5..adc8f47 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -191,6 +191,7 @@ void __put_task_struct(struct task_struct *tsk)
+ 	if (!profile_handoff_task(tsk))
+ 		free_task(tsk);
  }
- EXPORT_SYMBOL_GPL(kvm_resched);
++EXPORT_SYMBOL_GPL(__put_task_struct);
  
--void kvm_vcpu_on_spin(struct kvm_vcpu *vcpu)
-+void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+ /*
+  * macro override instead of weak attribute alias, to workaround
+diff --git a/kernel/pid.c b/kernel/pid.c
+index 39b65b6..02f2212 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -435,6 +435,7 @@ struct pid *get_task_pid(struct task_struct *task, enum pid_type type)
+ 	rcu_read_unlock();
+ 	return pid;
+ }
++EXPORT_SYMBOL_GPL(get_task_pid);
+ 
+ struct task_struct *get_pid_task(struct pid *pid, enum pid_type type)
  {
--	ktime_t expires;
--	DEFINE_WAIT(wait);
--
--	prepare_to_wait(&vcpu->wq, &wait, TASK_INTERRUPTIBLE);
--
--	/* Sleep for 100 us, and hope lock-holder got scheduled */
--	expires = ktime_add_ns(ktime_get(), 100000UL);
--	schedule_hrtimeout(&expires, HRTIMER_MODE_ABS);
-+	struct kvm *kvm = me->kvm;
-+	struct kvm_vcpu *vcpu;
-+	int last_boosted_vcpu = me->kvm->last_boosted_vcpu;
-+	int yielded = 0;
-+	int pass;
-+	int i;
- 
--	finish_wait(&vcpu->wq, &wait);
-+	/*
-+	 * We boost the priority of a VCPU that is runnable but not
-+	 * currently running, because it got preempted by something
-+	 * else and called schedule in __vcpu_run.  Hopefully that
-+	 * VCPU is holding the lock that we need and will release it.
-+	 * We approximate round-robin by starting at the last boosted VCPU.
-+	 */
-+	for (pass = 0; pass < 2 && !yielded; pass++) {
-+		kvm_for_each_vcpu(i, vcpu, kvm) {
-+			struct task_struct *task;
-+			if (!pass && i < last_boosted_vcpu) {
-+				i = last_boosted_vcpu;
-+				continue;
-+			} else if (pass && i > last_boosted_vcpu)
-+				break;
-+			if (vcpu == me)
-+				continue;
-+			if (!vcpu->pid)
-+				continue;
-+			if (waitqueue_active(&vcpu->wq))
-+				continue;
-+			task = get_pid_task(vcpu->pid, PIDTYPE_PID);
-+			if (!task)
-+				continue;
-+			if (task->flags & PF_VCPU) {
-+				put_task_struct(task);
-+				continue;
-+			}
-+			if (yield_to(task, 1)) {
-+				put_task_struct(task);
-+				kvm->last_boosted_vcpu = i;
-+				yielded = 1;
-+				break;
-+			}
-+			put_task_struct(task);
-+		}
-+	}
+@@ -446,6 +447,7 @@ struct task_struct *get_pid_task(struct pid *pid, enum pid_type type)
+ 	rcu_read_unlock();
+ 	return result;
  }
- EXPORT_SYMBOL_GPL(kvm_vcpu_on_spin);
++EXPORT_SYMBOL_GPL(get_pid_task);
  
+ struct pid *find_get_pid(pid_t nr)
+ {
+
