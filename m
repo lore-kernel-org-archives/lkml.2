@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921Ab1ANKsj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 05:48:39 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40722 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab1ANKsf (ORCPT
+	id S1753397Ab1ANKxN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 05:53:13 -0500
+Received: from 26.mail-out.ovh.net ([91.121.27.225]:48296 "HELO
+	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751152Ab1ANKxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 05:48:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=references:in-reply-to:mime-version:content-transfer-encoding
-         :content-type:message-id:cc:x-mailer:from:subject:date:to;
-        b=QDma5cVqESvEn3XXke+0Qzp3blnejxjY4YHdADfci70tg2RilNDWrQKULrDszFXW1c
-         WHjlNJB52hq5Z4j+cVeyQQH6pvUIChqPya0NQEm97QYJIL9P5yUp/dfkTpwJHgnNmX/q
-         v+i5/JW6hY4uBuLc5j93wQ85dH7OT8b1Ev0Yc=
-References: <AANLkTi=bDV52-Fc22amAEsxofL7gRC=oaU+AXgUnuRt7@mail.gmail.com> <20110114101246.GA1158@redhat.com>
-In-Reply-To: <20110114101246.GA1158@redhat.com>
-Mime-Version: 1.0 (iPhone Mail 8C148)
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <5721A0C7-2BC4-46E7-8A55-232A827828D4@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hjk@hansjkoch.de" <hjk@hansjkoch.de>
-X-Mailer: iPhone Mail (8C148)
-From: Billy Rafferty <billy.rafferty@gmail.com>
-Subject: Re: uio_pci_generic has no mapping?
-Date: Fri, 14 Jan 2011 10:51:23 +0000
-To: "Michael S. Tsirkin" <mst@redhat.com>
+	Fri, 14 Jan 2011 05:53:06 -0500
+Message-ID: <4D302B0E.1080306@example.com>
+Date: Fri, 14 Jan 2011 11:53:02 +0100
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+MIME-Version: 1.0
+To: piotr@hosowicz.com
+CC: balbi@ti.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: error in 2.6.37-git10
+References: <4D301CA5.503@example.com> <20110114095745.GD2476@legolas.emea.dhcp.ti.com> <4D302067.2000203@example.com> <20110114100831.GE2476@legolas.emea.dhcp.ti.com> <4D3021AE.5020607@example.com>
+In-Reply-To: <4D3021AE.5020607@example.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 3102698669477753202
+X-Ovh-Remote: 83.24.79.226 (dmx226.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+On 14.01.2011 11:13, Piotr Hosowicz wrote:
+> On 14.01.2011 11:08, Felipe Balbi wrote:
+>> On Fri, Jan 14, 2011 at 11:07:35AM +0100, Piotr Hosowicz wrote:
+>>> On 14.01.2011 10:57, Felipe Balbi wrote:
+>>>> On Fri, Jan 14, 2011 at 10:51:33AM +0100, Piotr Hosowicz wrote:
+>>>>> Hello,
+>>>>>
+>>>>> Build failed here:
+>>>>>
+>>>>> CC [M] fs/ecryptfs/main.o
+>>>>> fs/ecryptfs/main.c:144: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or
+>>>>> ‘__attribute__’ before ‘*’ token
+>>>>> fs/ecryptfs/main.c: In function ‘ecryptfs_interpose’:
+>>>>> fs/ecryptfs/main.c:204: error: implicit declaration of function
+>>>>> ‘ecryptfs_get_inode’
+>>>>> fs/ecryptfs/main.c:204: warning: initialization makes pointer from
+>>>>> integer without a cast
+>>>>> fs/ecryptfs/main.c:206: error: expected ‘)’ before ‘return’
+>>>>> fs/ecryptfs/main.c:212: error: expected expression before ‘}’ token
+>>>>> fs/ecryptfs/main.c: In function ‘ecryptfs_mount’:
+>>>>> fs/ecryptfs/main.c:569: warning: assignment makes pointer from
+>>>>> integer without a cast
+>>>>
+>>>> Could you check whether this is enough?
+>>>
+>>> I am building now with this option disabled, maybe I'll have time to
+>>> test again.
+>>
+>> I just did. Compiled only that module with that header added. Built
+>> cleanly.
+>
+> I corrected and am building again. Hope this helps.
 
-Thanks for the help and the driver.
+I don't know why but it failed again. I disabled and am building again.
 
-Cheers,
+Regards,
 
-Billy
+Piotr Hosowicz
 
-On 14 Jan 2011, at 10:12, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-
-> On Fri, Jan 14, 2011 at 09:52:45AM +0000, Billy Rafferty wrote:
->> Hi there,
->> 
->> I was hoping that someone might be be able to help me out using the
->> uio_pci_generic driver.
->> 
->> To gain access to the memory in the card I try to do an mmap but it
->> returns an error.
->> 
->> I was wondering if the mapping of the PCI memory regions is automatic?
->> I am not seeing /sys/class/uio/uio0/maps
->> 
->> Do I have to do something to get these to appear?
->> 
->> I would appreciate any help or pointers that you can give.
->> 
->> Regards,
->> 
->> Billy
-> 
-> mmap the pci resource through
-> /sys/class/uio/uio0/device/resourceX
-> 
-> The list of resources is in
-> /sys/class/uio/uio0/device/resource
-> 
-> -- 
-> MST
+-- 
+Janusz Korwin-Mikke:
+"ZUS z pewnością jest instytucją przestępczą,
+ale nie można nazwać jej zorganizowaną."
+NP: Patrick O'Hearn - Approaching Summit
+NB: 2.6.37-20110113-1411-pztidm+
