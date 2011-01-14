@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757993Ab1ANRAZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 12:00:25 -0500
-Received: from emroute3.ornl.gov ([160.91.4.110]:58892 "EHLO emroute3.ornl.gov"
+	id S1758008Ab1ANRAf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 12:00:35 -0500
+Received: from cantor.suse.de ([195.135.220.2]:47834 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757553Ab1ANRAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 12:00:13 -0500
-X-Greylist: delayed 833 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Jan 2011 12:00:12 EST
-Date: Fri, 14 Jan 2011 11:46:24 -0500
-From: David Dillow <dillowda@ornl.gov>
-Subject: [PATCH v2 alt 2]  fs/direct-io.c: don't try to allocate more than
- BIO_MAX_PAGES in a bio
-In-reply-to: <x498vynbl4e.fsf@segfault.boston.devel.redhat.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Message-id: <1295023584.24487.16.camel@lap75545.ornl.gov>
-Organization: Oak Ridge National Laboratory
-MIME-version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14)
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-References: <1294977946.21790.20.camel@obelisk.thedillows.org>
- <x498vynbl4e.fsf@segfault.boston.devel.redhat.com>
+	id S1757177Ab1ANRAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 12:00:21 -0500
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: David Ahern <daahern@cisco.com>
+Subject: Re: perf timechart broken
+Date: Fri, 14 Jan 2011 18:00:18 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36-18-desktop; KDE/4.5.3; x86_64; ; )
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-perf-users@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+References: <201101071104.37576.trenn@suse.de> <201101110955.37560.trenn@suse.de> <4D2CA7D6.2070203@cisco.com>
+In-Reply-To: <4D2CA7D6.2070203@cisco.com>
+MIME-Version: 1.0
+X-Length: 2732
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101141800.18913.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using devices that support max_segments > BIO_MAX_PAGES (256),
-direct IO tries to allocate a bio with more pages than allowed, which
-leads to an oops in dio_bio_alloc(). Clamp the request to the supported
-maximum, and change dio_bio_alloc() to reflect that bio_alloc() will
-always return a bio when called with __GFP_WAIT and a valid number of
-vectors.
-    
-Signed-off-by: David Dillow <dillowda@ornl.gov>
---
-Second alternate, my preferred that reflects that bio_alloc() cannot
-fail when properly called. I can take or leave the comment.
+On Tuesday 11 January 2011 19:56:22 David Ahern wrote:
+> 
+> On 01/11/11 01:55, Thomas Renninger wrote:
+> > On Tuesday 11 January 2011 02:36:28 Frederic Weisbecker wrote:
+> >> On Fri, Jan 07, 2011 at 11:04:37AM +0100, Thomas Renninger wrote:
+> >>> Hi,
+> >>>
+> >>> Latest x86 tip has another perf timechart issue introduce
+> >>> by latest commits.
+> >>>
+> >>> ./perf timechart
+> >>> gives me:
+> >>> "no trace data in the file"
+> >>>
+> >>> I reverted  the latest changes and things seem to break
+> >>> between d854861c4292a4e675a5d3bfd862c5f7421c81e8
+> >>> and
+> >>> 69aad6f1ee69546dea8535ab8f3da9f445d57328
+> >>> (linux-2.6-x86 tree ids)
+> >>>
+> >>> Be aware that ./perf timechart is currently broken
+> >>> and segfaults on idle events (in 2.6.36 and 2.6.37).
+> >>
+> >> You mean .36 perf tools faults on .37 kernel? or the opposite?
+> >> Is it because power_idle events weren't present on old tools?
+> >> Do you have a pointer to those patches?
+> > perf timechart
+> > will segfault if perf.data has power_{start,end} events included
+> > on 2.6.36 and 2.6.37 kernels.
+> 
+> Is this the same segfault you are seeing?
+> 
+> http://www.mail-archive.com/linux-perf-
+users@vger.kernel.org/msg00057.html
+Looks slightly different, the segfault should happen in:
+process_sample_event
+But looks very much related, possibly it has not been made/make with 
+DEBUG=1
+and -O6 was added and the backtrace is not 100% correct?
 
+I still did not have time to send it out, will do so on Mo.
 
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index 85882f6..96a01d8 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -325,13 +325,17 @@ void dio_end_io(struct bio *bio, int error)
- }
- EXPORT_SYMBOL_GPL(dio_end_io);
- 
--static int
-+static void
- dio_bio_alloc(struct dio *dio, struct block_device *bdev,
- 		sector_t first_sector, int nr_vecs)
- {
- 	struct bio *bio;
- 
-+	/* bio_alloc() is guaranteed to return a bio when called with
-+	 * __GFP_WAIT and we request a valid number of vectors.
-+	 */
- 	bio = bio_alloc(GFP_KERNEL, nr_vecs);
-+	BUG_ON(!bio);
- 
- 	bio->bi_bdev = bdev;
- 	bio->bi_sector = first_sector;
-@@ -342,7 +346,6 @@ dio_bio_alloc(struct dio *dio, struct block_device *bdev,
- 
- 	dio->bio = bio;
- 	dio->logical_offset_in_bio = dio->cur_page_fs_offset;
--	return 0;
- }
- 
- /*
-@@ -583,8 +586,9 @@ static int dio_new_bio(struct dio *dio, sector_t start_sector)
- 		goto out;
- 	sector = start_sector << (dio->blkbits - 9);
- 	nr_pages = min(dio->pages_in_io, bio_get_nr_vecs(dio->map_bh.b_bdev));
-+	nr_pages = min(nr_pages, BIO_MAX_PAGES);
- 	BUG_ON(nr_pages <= 0);
--	ret = dio_bio_alloc(dio, dio->map_bh.b_bdev, sector, nr_pages);
-+	dio_bio_alloc(dio, dio->map_bh.b_bdev, sector, nr_pages);
- 	dio->boundary = 0;
- out:
- 	return ret;
-
-
+    Thomas
