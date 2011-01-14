@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757433Ab1ANAKd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 19:10:33 -0500
-Received: from mga02.intel.com ([134.134.136.20]:24658 "EHLO mga02.intel.com"
+	id S1756880Ab1ANALA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 19:11:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15231 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752187Ab1ANAK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 19:10:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,320,1291622400"; 
-   d="scan'208";a="592807854"
-From: jacob.jun.pan@linux.intel.com
-To: "H. Peter Anvin" <hpa@zytor.com>, Alan Cox <alan@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
-Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH] mrst/apbt: set correct irq affinity for secondary cpu
-Date: Thu, 13 Jan 2011 16:06:44 -0800
-Message-Id: <1294963604-18111-1-git-send-email-jacob.jun.pan@linux.intel.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1752187Ab1ANAKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 19:10:54 -0500
+Message-ID: <4D2F946C.9040204@redhat.com>
+Date: Thu, 13 Jan 2011 19:10:20 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>
+Subject: Re: [RFC -v4 PATCH 3/3] kvm: use yield_to instead of sleep in kvm_vcpu_on_spin
+References: <20110113002108.3abdf953@annuminas.surriel.com> <20110113002745.51190252@annuminas.surriel.com> <4D2EFB44.2060906@redhat.com> <4D2F1510.3000809@redhat.com> <4D2F18D5.3060105@redhat.com>
+In-Reply-To: <4D2F18D5.3060105@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+On 01/13/2011 10:23 AM, Avi Kivity wrote:
+> On 01/13/2011 05:06 PM, Rik van Riel wrote:
+>>
+>>> I think the first patch needs some reference counting... I'd move it to
+>>> the outermost KVM_RUN loop to reduce the performance impact.
+>>
+>> I don't see how refcounting from that other thread could
+>> possibly help, and I now see that the task_struct_cachep
+>> does not have SLAB_DESTROY_BY_LRU, either :(
+>>
+>> What do you have in mind here that would both work and
+>> be acceptable to you as KVM maintainer?
+>>
+>
+> I think a 'struct pid' fits the bill here.
 
-Offlining the secondary CPU causes timer irq affinity to be set
-to CPU0 in 37 kernel. When the secondary CPU is back online again,
-the wrong irq affinity will be used.
+Indeed it does.   New patches on the way later, after I have
+tested them some more.
 
-This patch ensures secondary per CPU timer always has the correct
-IRQ affinity when enabled.
-
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
----
- arch/x86/kernel/apb_timer.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
-
-diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
-index 7c9ab59..51ef31a 100644
---- a/arch/x86/kernel/apb_timer.c
-+++ b/arch/x86/kernel/apb_timer.c
-@@ -313,14 +313,16 @@ static void apbt_setup_irq(struct apbt_dev *adev)
- 	if (adev->irq == 0)
- 		return;
- 
-+	irq_modify_status(adev->irq, 0, IRQ_MOVE_PCNTXT);
-+	irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
-+	/* APB timer irqs are set up as mp_irqs, timer is edge type */
-+	__set_irq_handler(adev->irq, handle_edge_irq, 0, "edge");
-+
- 	if (system_state == SYSTEM_BOOTING) {
--		irq_modify_status(adev->irq, 0, IRQ_MOVE_PCNTXT);
--		irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
--		/* APB timer irqs are set up as mp_irqs, timer is edge type */
--		__set_irq_handler(adev->irq, handle_edge_irq, 0, "edge");
- 		if (request_irq(adev->irq, apbt_interrupt_handler,
--				IRQF_TIMER | IRQF_DISABLED | IRQF_NOBALANCING,
--				adev->name, adev)) {
-+					IRQF_TIMER | IRQF_DISABLED |
-+					IRQF_NOBALANCING,
-+					adev->name, adev)) {
- 			printk(KERN_ERR "Failed request IRQ for APBT%d\n",
- 			       adev->num);
- 		}
 -- 
-1.7.0.4
-
+All rights reversed
