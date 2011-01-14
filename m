@@ -1,40 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758097Ab1ANSjR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 13:39:17 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:40217 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757763Ab1ANSjQ (ORCPT
+	id S1758106Ab1ANSlF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 13:41:05 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:55880 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752518Ab1ANSlA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 13:39:16 -0500
-X-Sasl-enc: uWZ3PlFteRtbbR7S5+d5cD1eiyrIGuQf4tCYAMGuM0s9 1295030355
-Message-ID: <4D309851.4020503@fastmail.fm>
-Date: Fri, 14 Jan 2011 18:39:13 +0000
-From: Jack Stone <jwjstone@fastmail.fm>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-GB; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+	Fri, 14 Jan 2011 13:41:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=CzKQFfbDBvN2gnpdCd0BT0uu7qNs7N1zE2OSiejkIOPTBytRGK2S2mM548uri74zCh
+         ZgjkxLKkmuELk0trNc66ft0EfimFw87fflQwwfkHzNOVkyotgwwoMFQJuVndFItKuzrY
+         cbGX7uaV/uUVJ/h7Gz8B4O1KXLtP0ZEQ6QmK0=
 MIME-Version: 1.0
-To: Arjan van de Ven <arjan@linux.intel.com>
-CC: Viresh Kumar <viresh.kumar@st.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH resend] kernel/async.c: fixing compilation warnings
-References: <1295005980-12297-1-git-send-email-viresh.kumar@st.com> <4D304BE6.9070200@fastmail.fm> <4D306B4D.2080909@linux.intel.com>
-In-Reply-To: <4D306B4D.2080909@linux.intel.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LFD.2.00.1101141824580.5594@casper.infradead.org>
+References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie>
+	<4D2CE5C8.60601@de.ibm.com>
+	<AANLkTimr4WX3Ay8vC23MKOM+dOcpV+Ca5rg_gcei38nk@mail.gmail.com>
+	<4D2D8ED0.6080807@de.ibm.com>
+	<AANLkTik4h=4o8JEwfd+=CFVb4NgkwaEwxmM6n_+sDj3K@mail.gmail.com>
+	<alpine.LFD.2.00.1101121344070.8212@casper.infradead.org>
+	<AANLkTimdnYHWfBE1nB+2EDRouO7_FoRByVboMYw8WaHB@mail.gmail.com>
+	<AANLkTik=HYzW8--_W+qxi8S9QbAkf9ZZy=uLyaTeV+PC@mail.gmail.com>
+	<alpine.LFD.2.00.1101121538470.8212@casper.infradead.org>
+	<alpine.LFD.2.00.1101131752190.311@casper.infradead.org>
+	<AANLkTimdPFGJxjWHPZ2kojxJoj76zDw2=fiwDiMrinjy@mail.gmail.com>
+	<alpine.LFD.2.00.1101141633200.5594@casper.infradead.org>
+	<AANLkTimkP48aPmUwi86EPA+KPODUv=4P1BAuMqb=Hx9Q@mail.gmail.com>
+	<alpine.LFD.2.00.1101141824580.5594@casper.infradead.org>
+Date: Fri, 14 Jan 2011 20:40:46 +0200
+Message-ID: <AANLkTin9R1CHKy_zSsx+7N0V-WWce=xcWkdxg70rxYhn@mail.gmail.com>
+Subject: Re: [git pull] drm for rc1
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: James Simmons <jsimmons@infradead.org>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Dave Airlie <airlied@linux.ie>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/01/2011 15:27, Arjan van de Ven wrote:
-> On 1/14/2011 5:13 AM, Jack Stone wrote:
->> rning: â€˜calltime.tv64â€™ may be used uninitialized in this function
-> 
-> which is clearly a.. gcc funny to be honest. it's a false positive by
-> any stretch.
-> 
+On Fri, Jan 14, 2011 at 8:26 PM, James Simmons <jsimmons@infradead.org> wrote:
+>
+>> > Just as I thought. Even this breaks the nouveau driver.
+>> >
+>> > Could you now add also in the drm_fb_helper_fill_fix function
+>> >
+>> > DRM_INFO("pitch %d, depth %d\n", fb_helper->fb->pitch,
+>> >          fb_helper->fb->depth);
+>> >
+>> > I have a feeling the values are not right. Thanks.
+>> >
+>>
+>> Please make an patch to test.
+>
+> Done. I had to test the patch myself. No need to do a revert. Just apply
+> this patch to linus tree. Then send the dmesg to me. Thanks.
+>
+> diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
+> index 0307d60..beded14 100644
+> --- a/drivers/gpu/drm/drm_fb_helper.c
+> +++ b/drivers/gpu/drm/drm_fb_helper.c
+> @@ -609,6 +609,7 @@ EXPORT_SYMBOL(drm_fb_helper_fini);
+>
+>  void drm_fb_helper_fill_fix(struct fb_info *info, struct drm_framebuffer *fb)
+>  {
+> +       DRM_INFO("pitch %d, depth %d\n", fb->pitch, fb->depth);
+>        info->fix.type = FB_TYPE_PACKED_PIXELS;
+>        info->fix.visual = fb->depth == 8 ? FB_VISUAL_PSEUDOCOLOR :
+>                FB_VISUAL_TRUECOLOR;
+> @@ -973,7 +974,6 @@ int drm_fb_helper_single_fb_probe(struct drm_fb_helper *fb_helper,
+>
+>        if (new_fb) {
+>                info->var.pixclock = 0;
+> -               drm_fb_helper_fill_fix(info, fb_helper->fb);
+>                if (register_framebuffer(info) < 0) {
+>                        return -EINVAL;
+>                }
+> diff --git a/drivers/gpu/drm/nouveau/nouveau_fbcon.c b/drivers/gpu/drm/nouveau/nouveau_fbcon.c
+> index a26d047..fe87319 100644
+> --- a/drivers/gpu/drm/nouveau/nouveau_fbcon.c
+> +++ b/drivers/gpu/drm/nouveau/nouveau_fbcon.c
+> @@ -359,6 +359,7 @@ nouveau_fbcon_create(struct nouveau_fbdev *nfbdev,
+>        info->screen_base = nvbo_kmap_obj_iovirtual(nouveau_fb->nvbo);
+>        info->screen_size = size;
+>
+> +       drm_fb_helper_fill_fix(info, fb);
+>        drm_fb_helper_fill_var(info, &nfbdev->helper, sizes->fb_width, sizes->fb_height);
+>
+>        /* Set aperture base/size for vesafb takeover */
 
-Agreed. Who should merge this?
-
-Thanks,
-
-Jack
+I will test it, but first, I will need to disable the cassini driver,
+because it can not compile.
