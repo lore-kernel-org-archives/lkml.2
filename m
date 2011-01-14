@@ -1,103 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880Ab1ANU0n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 15:26:43 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:37571 "EHLO mx2.netapp.com"
+	id S1751798Ab1ANUfc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 15:35:32 -0500
+Received: from fieldses.org ([174.143.236.118]:50937 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751586Ab1ANU0m convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 15:26:42 -0500
-X-IronPort-AV: E=Sophos;i="4.60,324,1291622400"; 
-   d="scan'208";a="505657283"
-Subject: [CFP] Linux Storage and Filesystems Workshop (April 4-5)
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Fri, 14 Jan 2011 15:26:25 -0500
-Message-ID: <1295036785.3576.17.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 14 Jan 2011 20:26:26.0654 (UTC) FILETIME=[51A3CFE0:01CBB429]
+	id S1750774Ab1ANUfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 15:35:31 -0500
+Date: Fri, 14 Jan 2011 15:35:29 -0500
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: nfsd for 2.6.38
+Message-ID: <20110114203529.GB16942@fieldses.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The annual Linux Storage, Filesystem and Memory Management Workshop for
-2011 will be held on the 2 days preceding the Linux Foundation
-Collaboration Summit at Hotel Kabuki in the Japantown area of San
-Francisco:
+Please pull nfsd development for 2.6.38 from:
 
-   http://events.linuxfoundation.org/events/collaboration-summit
+  git://linux-nfs.org/~bfields/linux.git for-2.6.38
 
-Given the success of last year's 3 track experiment, we are once again
-planning to hold some joint sessions and the rest split into separate
-Storage, Filesystem and Memory Management breakout sessions. We'd
-therefore like to issue a call for agenda proposals that are suitable
-for cross-track discussion as well as more technical subjects for
-discussion in the breakout sessions.
+This includes a first implementation of session trunking support and
+secinfo_no_name support, both mandatory features for NFSv4.1.  My list
+of issues that I believe we need fixed before server-side 4.1 can be
+considered minimally correct is at
 
-Suggestions for agenda topics should be sent before February 6th to
+  http://wiki.linux-nfs.org/wiki/index.php/Server_4.0_and_4.1_issues
 
-lsf-pc@lists.linuxfoundation.org
+I want to see that list done before we start merging optional 4.1
+features such as pNFS.  At my current rate I'm not sure when we'll get
+there--not soon.
 
-and optionally cc the Linux list which would be most interested in it:
+Also included is a stopgap measure to fix a longstanding failure to
+revoke delegations in all the cases we should.  It still leaves some
+races (and doesn't deal with local or Samba conflicts), so I hope to
+have a more complete solution ready for 2.6.39.
 
-SCSI: linux-scsi@vger.kernel.org
-FS: linux-fsdevel@vger.kernel.org
-MM: linux-mm@kvack.org
+And some other miscellaneous cleanup and bugfixing.  Thanks especially
+to Mi Jinlong at Fujitsu, who has been writing tests and catching bugs
+in the new 4.1 code.
 
-Please remember to tag your subject with [LSF/VM TOPIC] to make it
-easier to track. Agenda topics and attendees will be selected by the
-programme committee, but the final agenda will be by formed by consensus
-of the attendees on the day.
-
-We'll try to cap attendance at around 25-30 per track to facilitate
-discussions although the final numbers will depend on the room sizes at
-the venue.
-
-Requests to attend should be sent to:
-
-lsf-pc@lists.linuxfoundation.org
-
-please summarize what expertise you will bring to the meeting, and what
-you'd like to discuss.  please also tag your email with [ATTEND] so
-there's less chance of it getting lost in the large mail pile.
-
-Presentations are allowed to guide discussion, but are strongly
-discouraged.  There will be no recording or audio bridge, however
-written minutes will be published as in previous years:
-
-2010:
-http://lwn.net/Articles/399148/
-http://lwn.net/Articles/399313/
-http://lwn.net/Articles/400589/
-
-2009:
-http://lwn.net/Articles/327601/
-http://lwn.net/Articles/327740/
-http://lwn.net/Articles/328347/
-
-Prior years:
-http://www.usenix.org/events/lsf08/tech/lsf08sums.pdf
-http://www.usenix.org/publications/login/2007-06/openpdfs/lsf07sums.pdf
-
-If you have feedback on last year's meeting that we can use to improve
-this year's, please also send that to:
-
-lsf-pc@lists.linuxfoundation.org
-
-On behalf of the Program Committee, Thanks,
-
-.........
+--b.
 
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+Dan Carpenter (1):
+      nfsd: fix NULL dereference in setattr()
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+J. Bruce Fields (52):
+      svcrpc: don't set then immediately clear XPT_DEFERRED
+      nfsd4: centralize more calls to svc_xprt_received
+      svcrpc: simplify svc_close_all
+      svcrpc: svc_close_xprt comment
+      svcrpc: fix wspace-checking race
+      nfsd4: return serverfault on request for ssv
+      Merge commit 'v2.6.37-rc6' into for-2.6.38
+      nfsd4: replace unintuitive match_clientid_establishment
+      nfsd4: fix mixed 4.0/4.1 handling, 4.1 reboot
+      nfsd: fix offset printk's in nfsd3 read/write
+      nfsd4: 4.1 SECINFO should consume filehandle
+      nfsd4: move guts of nfsd4_lookupp into helper
+      nfsd4: implement secinfo_no_name
+      svcrpc: modifying valid sunrpc cache entries is racy
+      SUNRPC: Remove more code when NFSD_DEPRECATED is not configured
+      nfsd: don't drop requests on -ENOMEM
+      svcrpc: avoid double reply caused by deferral race
+      svcrpc: simpler request dropping
+      nfsd: stop translating EAGAIN to nfserr_dropit
+      nfsd: remove some unnecessary dropit handling
+      svcrpc: take lock on turning entry NEGATIVE in cache_check
+      svcrpc: ensure cache_check caller sees updated entry
+      nfsd4: eliminate lease delete callback
+      nfsd4: use a single struct file for delegations
+      locks: eliminate fl_mylease callback
+      locks: minor setlease cleanup
+      nfsd4: name->id mapping should fail with BADOWNER not BADNAME
+      nfsd4: move idmap and acl header files into fs/nfsd
+      nfsd4: remove outdated pathname-comments
+      nfsd4: return nfs errno from name_to_id functions
+      Documentation: don't remove lock manager fl_release_private
+      Merge commit 'v2.6.37' into for-2.6.38-incoming
+      Documentation: fl_mylease no longer exists
+      nfsd4: modify session list under cl_lock
+      nfsd4: support BIND_CONN_TO_SESSION
+      nfsd4: allow backchannel recovery
+      rpc: move sk_bc_xprt to svc_xprt
+      rpc: keep backchannel xprt as long as server connection
+      rpc: allow xprt_class->setup to return a preexisting xprt
+      nfsd4: keep finer-grained callback status
+      nfsd4: set sequence flag when backchannel is down
+      nfsd4: re-probe callback on connection loss
+      nfsd4: make sure sequence flags are set after destroy_session
+      nfsd4: add helper function to run callbacks
+      nfsd4: give out delegations more quickly in 4.1 case
+      nfsd4: simplify nfsd4_cb_prepare
+      nfsd4: allow restarting callbacks
+      nfsd4: initialize cb_per_client
+      nfsd: don't support msnfs export option
+      nfsd4: break lease on nfsd setattr
+      nfsd: break lease on unlink, link, and rename
+      nfsd4: fix callback restarting
 
+Joe Perches (1):
+      net/sunrpc/auth_gss/gss_krb5_crypto.c: Use normal negative error value return
+
+Kirill A. Shutemov (1):
+      nfsd: declare several functions of nfs4callback as static
+
+Mi Jinlong (4):
+      NFSv4.1: Make sure nfsd can decode SP4_SSV correctly at exchange_id
+      NFS4.1: server gets drc mem fail should reply error at create_session
+      NFS4.1: Fix bug server don't reply the right fore_channel to client at create_session
+      nfsd4: fix oops on secinfo_no_name result encoding
+
+NeilBrown (2):
+      sunrpc: remove xpt_pool
+      sunrpc: svc_sock_names should hold ref to socket being closed.
+
+Shan Wei (1):
+      net: sunrpc: kill unused macros
+
+Takuma Umeya (1):
+      nfs4: set source address when callback is generated
+
+bookjovi@gmail.com (1):
+      nfs: add missed CONFIG_NFSD_DEPRECATED
+
+ Documentation/filesystems/Locking             |    2 -
+ fs/locks.c                                    |    8 +-
+ include/linux/nfs4_acl.h => fs/nfsd/acl.h     |    2 -
+ fs/nfsd/export.c                              |    4 -
+ include/linux/nfsd_idmap.h => fs/nfsd/idmap.h |    6 +-
+ fs/nfsd/nfs3proc.c                            |    8 +-
+ fs/nfsd/nfs4acl.c                             |    2 +-
+ fs/nfsd/nfs4callback.c                        |  151 ++++++++++------
+ fs/nfsd/nfs4idmap.c                           |   15 +-
+ fs/nfsd/nfs4proc.c                            |   59 +++++--
+ fs/nfsd/nfs4recover.c                         |    1 -
+ fs/nfsd/nfs4state.c                           |  243 +++++++++++++++----------
+ fs/nfsd/nfs4xdr.c                             |  115 +++++++++---
+ fs/nfsd/nfsctl.c                              |    4 +-
+ fs/nfsd/nfsd.h                                |    1 +
+ fs/nfsd/nfsproc.c                             |    6 +-
+ fs/nfsd/nfssvc.c                              |    2 +-
+ fs/nfsd/state.h                               |   16 ++-
+ fs/nfsd/vfs.c                                 |   86 +++------
+ fs/nfsd/xdr4.h                                |    9 +-
+ include/linux/fs.h                            |    1 -
+ include/linux/nfs4.h                          |    6 +
+ include/linux/nfsd/export.h                   |    2 +-
+ include/linux/sunrpc/cache.h                  |    3 +
+ include/linux/sunrpc/svc.h                    |    1 +
+ include/linux/sunrpc/svc_xprt.h               |    2 +-
+ include/linux/sunrpc/svcsock.h                |    1 -
+ include/linux/sunrpc/xprt.h                   |    1 +
+ net/sunrpc/auth_gss/gss_krb5_crypto.c         |    2 +-
+ net/sunrpc/auth_gss/svcauth_gss.c             |    2 -
+ net/sunrpc/cache.c                            |   54 ++++--
+ net/sunrpc/svc.c                              |    3 +-
+ net/sunrpc/svc_xprt.c                         |   97 +++++-----
+ net/sunrpc/svcauth.c                          |    1 -
+ net/sunrpc/svcauth_unix.c                     |   17 ++-
+ net/sunrpc/svcsock.c                          |   20 ++-
+ net/sunrpc/xprt.c                             |    5 +-
+ net/sunrpc/xprtsock.c                         |   34 +++-
+ 38 files changed, 608 insertions(+), 384 deletions(-)
+ rename include/linux/nfs4_acl.h => fs/nfsd/acl.h (98%)
+ rename include/linux/nfsd_idmap.h => fs/nfsd/idmap.h (92%)
