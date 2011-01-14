@@ -1,73 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758008Ab1ANRAf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 12:00:35 -0500
-Received: from cantor.suse.de ([195.135.220.2]:47834 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757177Ab1ANRAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 12:00:21 -0500
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: David Ahern <daahern@cisco.com>
-Subject: Re: perf timechart broken
-Date: Fri, 14 Jan 2011 18:00:18 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-18-desktop; KDE/4.5.3; x86_64; ; )
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-perf-users@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-References: <201101071104.37576.trenn@suse.de> <201101110955.37560.trenn@suse.de> <4D2CA7D6.2070203@cisco.com>
-In-Reply-To: <4D2CA7D6.2070203@cisco.com>
-MIME-Version: 1.0
-X-Length: 2732
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1757985Ab1ANRCC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 12:02:02 -0500
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:47039 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757553Ab1ANRBz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 12:01:55 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Subject:Message-ID:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=uP4IxovS2aPiRUaD7suNApdmGJZmlmGTcv9LXG8oA6V2CgY1CBYR9clkQELUPcon4ZY+pgJmHaHr8KIwIZQ15Ot9gRCqWSh988UXgdWAxiawTQi1FUYBf+k+7nkUM3Kd;
+Date: Fri, 14 Jan 2011 09:01:50 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] PCI changes
+Message-ID: <20110114090150.0a212030@jbarnes-desktop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101141800.18913.trenn@suse.de>
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 January 2011 19:56:22 David Ahern wrote:
-> 
-> On 01/11/11 01:55, Thomas Renninger wrote:
-> > On Tuesday 11 January 2011 02:36:28 Frederic Weisbecker wrote:
-> >> On Fri, Jan 07, 2011 at 11:04:37AM +0100, Thomas Renninger wrote:
-> >>> Hi,
-> >>>
-> >>> Latest x86 tip has another perf timechart issue introduce
-> >>> by latest commits.
-> >>>
-> >>> ./perf timechart
-> >>> gives me:
-> >>> "no trace data in the file"
-> >>>
-> >>> I reverted  the latest changes and things seem to break
-> >>> between d854861c4292a4e675a5d3bfd862c5f7421c81e8
-> >>> and
-> >>> 69aad6f1ee69546dea8535ab8f3da9f445d57328
-> >>> (linux-2.6-x86 tree ids)
-> >>>
-> >>> Be aware that ./perf timechart is currently broken
-> >>> and segfaults on idle events (in 2.6.36 and 2.6.37).
-> >>
-> >> You mean .36 perf tools faults on .37 kernel? or the opposite?
-> >> Is it because power_idle events weren't present on old tools?
-> >> Do you have a pointer to those patches?
-> > perf timechart
-> > will segfault if perf.data has power_{start,end} events included
-> > on 2.6.36 and 2.6.37 kernels.
-> 
-> Is this the same segfault you are seeing?
-> 
-> http://www.mail-archive.com/linux-perf-
-users@vger.kernel.org/msg00057.html
-Looks slightly different, the segfault should happen in:
-process_sample_event
-But looks very much related, possibly it has not been made/make with 
-DEBUG=1
-and -O6 was added and the backtrace is not 100% correct?
+The following changes since commit
+e819eb8687767cefca7b6abf5ac6d5efcf581eeb:
 
-I still did not have time to send it out, will do so on Mo.
+  Merge branch 'drm-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6 (2010-12-22 19:47:37 -0800)
 
-    Thomas
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6 linux-next
+
+NOTE!  You may notice this has been recently rebased; that's because I
+had to drop a patch that didn't get a fix in time.  It was an
+independent change to our sysfs label code though, so I don't think
+dropping it invalidates any testing already done or time in linux-next.
+
+There's nothing in here as exciting as last time (i.e. no real resource
+changes), mostly just a collection of fixes and relatively small
+changes.
+
+Alex Williamson (1):
+      PCI: sysfs: Update ROM to include default owner write access
+
+Bjorn Helgaas (2):
+      x86/PCI: don't use native Broadcom CNB20LE driver when ACPI is available
+      x86/PCI: make Broadcom CNB20LE driver EMBEDDED and EXPERIMENTAL
+
+Jon Mason (1):
+      PCI: make pci_restore_state return void
+
+Matthew Garrett (1):
+      PCI: Disable ASPM if BIOS asks us to
+
+Narendra_K@Dell.com (1):
+      PCI: enable pci=bfsort by default on future Dell systems
+
+Rafael J. Wysocki (5):
+      PCI hotplug: Fix unexpected driver unregister in pciehp_acpi.c
+      PCI/PCIe: Clear Root PME Status bits early during system resume
+      PCI/ACPI: Request _OSC control once for each root bridge (v3)
+      PCI/PM: Use pm_wakeup_event() directly for reporting wakeup events
+      PCI/PM: Report wakeup events before resuming devices
+
+Randy Dunlap (1):
+      PCI: fix __pci_device_probe kernel-doc warning
+
+Seth Heasley (1):
+      x86/PCI: irq and pci_ids patch for Intel Patsburg
+
+Sheng Yang (2):
+      PCI: MSI: Move MSI-X entry definition to pci_regs.h
+      PCI: Add mask bit definition for MSI-X table
+
+Tejun Heo (1):
+      PCI: pci-stub: ignore zero-length id parameters
+
+Yinghai Lu (1):
+      PCI: Skip id checking if no id is passed
+
+ arch/x86/Kconfig                        |   10 ++++++-
+ arch/x86/pci/broadcom_bus.c             |   11 +++++---
+ arch/x86/pci/common.c                   |   41 +++++++++++++++++++++++++++++++
+ arch/x86/pci/irq.c                      |    3 +-
+ drivers/acpi/apei/hest.c                |   22 +++++++----------
+ drivers/acpi/pci_root.c                 |   35 ++++++++++++++++++++++++++
+ drivers/media/video/cafe_ccic.c         |    4 +--
+ drivers/net/myri10ge/myri10ge.c         |    4 +--
+ drivers/net/sfc/falcon.c                |   25 ++++---------------
+ drivers/net/skge.c                      |    4 +--
+ drivers/net/sky2.c                      |    5 +---
+ drivers/net/wireless/rt2x00/rt2x00pci.c |    4 +-
+ drivers/pci/hotplug/pciehp_acpi.c       |    3 +-
+ drivers/pci/msi.c                       |    5 ++-
+ drivers/pci/msi.h                       |    6 ----
+ drivers/pci/pci-acpi.c                  |    3 +-
+ drivers/pci/pci-driver.c                |    5 ++-
+ drivers/pci/pci-stub.c                  |    7 +++++
+ drivers/pci/pci-sysfs.c                 |    2 +-
+ drivers/pci/pci.c                       |   25 ++----------------
+ drivers/pci/pci.h                       |   14 ++++------
+ drivers/pci/pcie/aer/aerdrv.c           |    1 +
+ drivers/pci/pcie/aer/aerdrv.h           |    3 --
+ drivers/pci/pcie/aspm.c                 |   21 +++++++++++++---
+ drivers/pci/pcie/pme.c                  |   31 ++++-------------------
+ drivers/pci/pcie/portdrv.h              |    5 +--
+ drivers/pci/pcie/portdrv_acpi.c         |   23 +++--------------
+ drivers/pci/pcie/portdrv_core.c         |   25 ++++++++++--------
+ drivers/pci/pcie/portdrv_pci.c          |   37 +++++++++++++++++++++++++---
+ drivers/scsi/ipr.c                      |    8 +-----
+ drivers/scsi/pmcraid.c                  |    7 +----
+ drivers/staging/sm7xx/smtcfb.c          |    2 +-
+ include/acpi/apei.h                     |    6 ++++
+ include/linux/pci-acpi.h                |    6 ++++
+ include/linux/pci-aspm.h                |    5 +++-
+ include/linux/pci.h                     |   20 ++++++++++----
+ include/linux/pci_ids.h                 |    3 +-
+ include/linux/pci_regs.h                |   10 +++++++
+ sound/pci/cs5535audio/cs5535audio_pm.c  |    7 +----
+ 39 files changed, 263 insertions(+), 195 deletions(-)
+
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
