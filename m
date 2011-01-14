@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756048Ab1ANLwt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 06:52:49 -0500
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:52649 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751431Ab1ANLwo (ORCPT
+	id S1757011Ab1ANLxP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 06:53:15 -0500
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:54176 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756628Ab1ANLxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 06:52:44 -0500
+	Fri, 14 Jan 2011 06:53:11 -0500
 From: Viresh Kumar <viresh.kumar@st.com>
-To: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        <jwjstone@fastmail.fm>
+To: <linux-kernel@vger.kernel.org>, <jwjstone@fastmail.fm>
 Cc: Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH resend] fs/eventpoll.c: fix compilation warning
-Date: Fri, 14 Jan 2011 17:22:33 +0530
-Message-ID: <1295005953-12173-1-git-send-email-viresh.kumar@st.com>
+Subject: [PATCH resend] kernel/async.c: fixing compilation warnings
+Date: Fri, 14 Jan 2011 17:23:00 +0530
+Message-ID: <1295005980-12297-1-git-send-email-viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.2.2
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes following compilation warning
-fs/eventpoll.c:1119: warning: 'slack' may be used uninitialized in this function
+This patch fixes following compilation warnings:
+270:10: warning: ‘starttime.tv64’ may be used uninitialized in this function
+122:10: warning: ‘calltime.tv64’ may be used uninitialized in this function
 
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 ---
- fs/eventpoll.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/async.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 8cf0724..89b5e98 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -1116,7 +1116,7 @@ static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
- {
- 	int res, eavail, timed_out = 0;
+diff --git a/kernel/async.c b/kernel/async.c
+index cd9dbb9..3ff777b 100644
+--- a/kernel/async.c
++++ b/kernel/async.c
+@@ -119,7 +119,7 @@ static void async_run_entry_fn(struct work_struct *work)
+ 	struct async_entry *entry =
+ 		container_of(work, struct async_entry, work);
  	unsigned long flags;
--	long slack;
-+	long uninitialized_var(slack);
- 	wait_queue_t wait;
- 	struct timespec end_time;
- 	ktime_t expires, *to = NULL;
+-	ktime_t calltime, delta, rettime;
++	ktime_t uninitialized_var(calltime), delta, rettime;
+ 
+ 	/* 1) move self to the running queue */
+ 	spin_lock_irqsave(&async_lock, flags);
+@@ -267,7 +267,7 @@ EXPORT_SYMBOL_GPL(async_synchronize_full_domain);
+ void async_synchronize_cookie_domain(async_cookie_t cookie,
+ 				     struct list_head *running)
+ {
+-	ktime_t starttime, delta, endtime;
++	ktime_t uninitialized_var(starttime), delta, endtime;
+ 
+ 	if (initcall_debug && system_state == SYSTEM_BOOTING) {
+ 		printk("async_waiting @ %i\n", task_pid_nr(current));
 -- 
 1.7.2.2
 
