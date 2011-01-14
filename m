@@ -1,105 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751691Ab1ANMUU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 07:20:20 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:65464 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752160Ab1ANMUO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 07:20:14 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=emYioeEj6ztxcj0xYQwlrM3y1e1Hbj9VtvdX/m15pV/01rfbG95oSbi5f+/YY8SQJ0
-         GdlvwEwVMciVi9IwVFLZajGBwzX0cEeCWycsYK1423wEON2TXqKdjm/Bak/cgBcwyfXI
-         v55sHnMAzMfssnkvK+BnWolPIrUJI3YykAyQ8=
+	id S1757346Ab1ANMVq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 07:21:46 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:35535 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757007Ab1ANMVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 07:21:39 -0500
+Date: Fri, 14 Jan 2011 13:21:31 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        Greg Thelen <gthelen@google.com>, aarcange@redhat.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH 4/4] [BUGFIX] fix account leak at force_empty, rmdir with
+ THP
+Message-ID: <20110114122131.GR23189@cmpxchg.org>
+References: <20110114190412.73362cd7.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110114191535.309b634c.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1295007399-7279-1-git-send-email-kas@openvz.org>
-References: <1295007399-7279-1-git-send-email-kas@openvz.org>
-Date: Fri, 14 Jan 2011 23:20:12 +1100
-Message-ID: <AANLkTikeREMGKRKCifrdu37FfwBNkcKGb_2heC5YDEFM@mail.gmail.com>
-Subject: Re: [PATCH] list_bl: fix oops on UP with DEBUG_SPINLOCK
-From: Nick Piggin <npiggin@gmail.com>
-To: "Kirill A. Shutemov" <kas@openvz.org>
-Cc: Nick Piggin <npiggin@kernel.dk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110114191535.309b634c.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 11:16 PM, Kirill A. Shutemov <kas@openvz.org> wrote:
-> This patch partly reverts 2c6755988a.
->
-> spin_[un]lock_bucket() uses bit_spin_[un]lock() to set/clear first
-> bit of ->head.first. bit_spin_[un]lock() touches the bit on UP if
-> DEBUG_SPINLOCK enabled.
->
-> So we have to define LIST_BL_LOCKMASK to 1, if DEBUG_SPINLOCK enabled.
-> Other way is reimplementation of spin_[un]lock_bucket().
->
-> [    0.140008] BUG: unable to handle kernel NULL pointer dereference at 00000005
-> [    0.140008] IP: [<c10a7cdf>] __d_rehash+0x6f/0xc0
-> [    0.140008] *pde = 00000000
-> [    0.140008] Oops: 0002 [#1]
-> [    0.140008] last sysfs file:
-> [    0.140008] Modules linked in:
-> [    0.140008]
-> [    0.140008] Pid: 1, comm: swapper Not tainted 2.6.37+ #150 /Bochs
-> [    0.140008] EIP: 0060:[<c10a7cdf>] EFLAGS: 00010202 CPU: 0
-> [    0.140008] EIP is at __d_rehash+0x6f/0xc0
-> [    0.140008] EAX: 00000022 EBX: c7402460 ECX: 00000000 EDX: c7402468
-> [    0.140008] ESI: c7ee157c EDI: 00000001 EBP: c782bedc ESP: c782bec4
-> [    0.140008]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
-> [    0.140008] Process swapper (pid: 1, ti=c782a000 task=c7830000 task.ti=c782a000)
-> [    0.140008] Stack:
-> [    0.140008]  c13b698f 00000001 c7402468 02eef038 c7402460 c7402460 c782bee8 c10a7d69
-> [    0.140008]  c74024b0 c782bef8 c10a7d90 c7402460 c7400430 c782bf04 c10b32f4 c1304380
-> [    0.140008]  c782bf1c c109dcd2 00000000 00000000 c74023c0 c7400430 c782bf3c c109df85
-> [    0.140008] Call Trace:
-> [    0.140008]  [<c10a7d69>] _d_rehash+0x39/0x40
-> [    0.140008]  [<c10a7d90>] d_rehash+0x20/0x40
-> [    0.140008]  [<c10b32f4>] simple_lookup+0x34/0x40
-> [    0.140008]  [<c109dcd2>] d_alloc_and_lookup+0x32/0x60
-> [    0.140008]  [<c109df85>] __lookup_hash+0xc5/0x160
-> [    0.140008]  [<c109f2ae>] lookup_one_len+0x8e/0xe0
-> [    0.140008]  [<c111e997>] debugfs_create_file+0x77/0x200
-> [    0.140008]  [<c11bc7c9>] ? __class_create+0x29/0x80
-> [    0.140008]  [<c143f6ec>] ? kernel_init+0x0/0x120
-> [    0.140008]  [<c111ebb1>] debugfs_create_dir+0x21/0x30
-> [    0.140008]  [<c144c256>] bdi_class_init+0x33/0x3c
-> [    0.140008]  [<c1001100>] do_one_initcall+0x30/0x160
-> [    0.140008]  [<c144c223>] ? bdi_class_init+0x0/0x3c
-> [    0.140008]  [<c143f6ec>] ? kernel_init+0x0/0x120
-> [    0.140008]  [<c143f778>] kernel_init+0x8c/0x120
-> [    0.140008]  [<c1003096>] kernel_thread_helper+0x6/0x10
-> [    0.140008] Code: 9e d0 3d c1 e8 19 14 25 00 8b 3e 8d 53 08 89 55 f0 89 7c 24 04 c7 04 24 8f 69 3b c1 e8 01 14 25 00 85 ff 8b 55 f0 89 7b 08 74 03 <89> 57 04 89 73 0c 89 16 c7 04 24 6c dc 3d c1 e8 e3 13 25 00 8b
-> [    0.140008] EIP: [<c10a7cdf>] __d_rehash+0x6f/0xc0 SS:ESP 0068:c782bec4
-> [    0.140008] CR2: 0000000000000005
-> [    0.144008] ---[ end trace 4eaa2a86a8e2da22 ]---
->
-> Signed-off-by: Kirill A. Shutemov <kas@openvz.org>
+On Fri, Jan 14, 2011 at 07:15:35PM +0900, KAMEZAWA Hiroyuki wrote:
+> 
+> Now, when THP is enabled, memcg's rmdir() function is broken
+> because move_account() for THP page is not supported.
+> 
+> This will cause account leak or -EBUSY issue at rmdir().
+> This patch fixes the issue by supporting move_account() THP pages.
+> 
+> And account information will be moved to its parent at rmdir().
+> 
+> How to test:
+>    79  mount -t cgroup none /cgroup/memory/ -o memory
+>    80  mkdir /cgroup/A/
+>    81  mkdir /cgroup/memory/A
+>    82  mkdir /cgroup/memory/A/B
+>    83  cgexec -g memory:A/B ./malloc 128 &
+>    84  grep anon /cgroup/memory/A/B/memory.stat
+>    85  grep rss /cgroup/memory/A/B/memory.stat
+>    86  echo 1728 > /cgroup/memory/A/tasks
+>    87  grep rss /cgroup/memory/A/memory.stat
+>    88  rmdir /cgroup/memory/A/B/
+>    89  grep rss /cgroup/memory/A/memory.stat
+> 
+> - Create 2 level directory and exec a task calls malloc(big chunk).
+> - Move a task somewhere (its parent cgroup in above)
+> - rmdir /A/B
+> - check memory.stat in /A/B is moved to /A after rmdir. and confirm
+>   RSS/LRU information includes usages it was charged against /A/B.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > ---
->  include/linux/list_bl.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/include/linux/list_bl.h b/include/linux/list_bl.h
-> index b2adbb4..5bad17d 100644
-> --- a/include/linux/list_bl.h
-> +++ b/include/linux/list_bl.h
-> @@ -16,7 +16,7 @@
->  * some fast and compact auxiliary data.
->  */
->
-> -#if defined(CONFIG_SMP)
-> +#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
->  #define LIST_BL_LOCKMASK       1UL
->  #else
->  #define LIST_BL_LOCKMASK       0UL
+>  mm/memcontrol.c |   32 ++++++++++++++++++++++----------
+>  1 file changed, 22 insertions(+), 10 deletions(-)
+> 
+> Index: mmotm-0107/mm/memcontrol.c
+> ===================================================================
+> --- mmotm-0107.orig/mm/memcontrol.c
+> +++ mmotm-0107/mm/memcontrol.c
+> @@ -2154,6 +2154,10 @@ void mem_cgroup_split_huge_fixup(struct 
+>  	smp_wmb(); /* see __commit_charge() */
+>  	SetPageCgroupUsed(tpc);
+>  	VM_BUG_ON(PageCgroupCache(hpc));
+> +	/*
+> + 	 * Note: if dirty ratio etc..are supported,
+> +         * other flags may need to be copied.
+> +         */
 
-Thank you. Russell reported this too.
-I need a brown paper bag...
+That's a good comment, but it should be in the patch that introduces
+this function and is a bit unrelated in this one.
+
+>  }
+>  #endif
+>  
+> @@ -2175,8 +2179,11 @@ void mem_cgroup_split_huge_fixup(struct 
+>   */
+>  
+>  static void __mem_cgroup_move_account(struct page_cgroup *pc,
+> -	struct mem_cgroup *from, struct mem_cgroup *to, bool uncharge)
+> +	struct mem_cgroup *from, struct mem_cgroup *to, bool uncharge,
+> +	int charge_size)
+>  {
+> +	int pagenum = charge_size >> PAGE_SHIFT;
+
+nr_pages?
+
+> +
+>  	VM_BUG_ON(from == to);
+>  	VM_BUG_ON(PageLRU(pc->page));
+>  	VM_BUG_ON(!page_is_cgroup_locked(pc));
+> @@ -2190,14 +2197,14 @@ static void __mem_cgroup_move_account(st
+>  		__this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+>  		preempt_enable();
+>  	}
+> -	mem_cgroup_charge_statistics(from, PageCgroupCache(pc), -1);
+> +	mem_cgroup_charge_statistics(from, PageCgroupCache(pc), -pagenum);
+>  	if (uncharge)
+>  		/* This is not "cancel", but cancel_charge does all we need. */
+> -		mem_cgroup_cancel_charge(from, PAGE_SIZE);
+> +		mem_cgroup_cancel_charge(from, charge_size);
+>  
+>  	/* caller should have done css_get */
+>  	pc->mem_cgroup = to;
+> -	mem_cgroup_charge_statistics(to, PageCgroupCache(pc), 1);
+> +	mem_cgroup_charge_statistics(to, PageCgroupCache(pc), pagenum);
+>  	/*
+>  	 * We charges against "to" which may not have any tasks. Then, "to"
+>  	 * can be under rmdir(). But in current implementation, caller of
+> @@ -2212,7 +2219,8 @@ static void __mem_cgroup_move_account(st
+>   * __mem_cgroup_move_account()
+>   */
+>  static int mem_cgroup_move_account(struct page_cgroup *pc,
+> -		struct mem_cgroup *from, struct mem_cgroup *to, bool uncharge)
+> +		struct mem_cgroup *from, struct mem_cgroup *to,
+> +		bool uncharge, int charge_size)
+>  {
+>  	int ret = -EINVAL;
+>  	unsigned long flags;
+> @@ -2220,7 +2228,7 @@ static int mem_cgroup_move_account(struc
+>  	lock_page_cgroup(pc);
+>  	if (PageCgroupUsed(pc) && pc->mem_cgroup == from) {
+>  		move_lock_page_cgroup(pc, &flags);
+> -		__mem_cgroup_move_account(pc, from, to, uncharge);
+> +		__mem_cgroup_move_account(pc, from, to, uncharge, charge_size);
+>  		move_unlock_page_cgroup(pc, &flags);
+>  		ret = 0;
+>  	}
+> @@ -2245,6 +2253,7 @@ static int mem_cgroup_move_parent(struct
+>  	struct cgroup *cg = child->css.cgroup;
+>  	struct cgroup *pcg = cg->parent;
+>  	struct mem_cgroup *parent;
+> +	int charge_size = PAGE_SIZE;
+>  	int ret;
+>  
+>  	/* Is ROOT ? */
+> @@ -2256,16 +2265,19 @@ static int mem_cgroup_move_parent(struct
+>  		goto out;
+>  	if (isolate_lru_page(page))
+>  		goto put;
+> +	/* The page is isolated from LRU and we have no race with splitting */
+> +	if (PageTransHuge(page))
+> +		charge_size = PAGE_SIZE << compound_order(page);
+
+The same as in the previous patch, compound_order() implicitely
+handles order-0 pages and should do the right thing without an extra
+check.
+
+The comment is valuable, though!
+
+Nitpicks aside:
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
