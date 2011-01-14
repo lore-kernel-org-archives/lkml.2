@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab1ANXtc (ORCPT <rfc822;w@1wt.eu>);
+	id S1754099Ab1ANXtf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 18:49:35 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:11990 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754045Ab1ANXtc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 14 Jan 2011 18:49:32 -0500
-Received: from hera.kernel.org ([140.211.167.34]:34924 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752407Ab1ANXta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 18:49:30 -0500
-Date: Fri, 14 Jan 2011 23:49:14 GMT
-From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca, hpa@zytor.com,
-        mingo@redhat.com, dsd@laptop.org, dilinger@queued.net,
-        tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, dsd@laptop.org, dilinger@queued.net,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20100923162846.D8D409D401B@zog.reactivated.net>
-References: <20100923162846.D8D409D401B@zog.reactivated.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, olpc: Add missing Kconfig dependencies
-Message-ID: <tip-76d1f7bfcd5872056902c5a88b5fcd5d4d00a7a9@git.kernel.org>
-Git-Commit-ID: 76d1f7bfcd5872056902c5a88b5fcd5d4d00a7a9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+X-IronPort-AV: E=McAfee;i="5400,1158,6226"; a="70312617"
+Message-ID: <4D30E109.3050500@codeaurora.org>
+Date: Fri, 14 Jan 2011 15:49:29 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 14 Jan 2011 23:49:14 +0000 (UTC)
+To: Tony Lindgren <tony@atomide.com>
+CC: Daniel Walker <dwalker@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nico@fluxnic.net>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] drivers: char: hvc: add arm JTAG DCC console support
+References: <1291145141-18301-1-git-send-email-dwalker@codeaurora.org> <4CF5DD63.40803@codeaurora.org> <1291229696.14404.39.camel@c-dwalke-linux.qualcomm.com> <4CF6AE04.6030201@codeaurora.org> <4CFE86AC.9010801@codeaurora.org> <20110114191956.GK4957@atomide.com>
+In-Reply-To: <20110114191956.GK4957@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  76d1f7bfcd5872056902c5a88b5fcd5d4d00a7a9
-Gitweb:     http://git.kernel.org/tip/76d1f7bfcd5872056902c5a88b5fcd5d4d00a7a9
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Fri, 14 Jan 2011 11:57:06 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 14 Jan 2011 11:57:06 -0800
+On 01/14/2011 11:19 AM, Tony Lindgren wrote:
+> * Stephen Boyd <sboyd@codeaurora.org> [101207 11:00]:
+>> On 12/01/2010 12:20 PM, Stephen Boyd wrote:
+>>> Definitely for TX since it seems like a redundant loop, but I agree RX
+>>> code has changed. Instead of
+>>>
+>>> If RX buffer full
+>>> Poll for RX buffer full
+>>> Read character from RX buffer
+>>>
+>>> we would have
+>>>
+>>> If RX buffer full
+>>> Read character from RX buffer
+>>>
+>>> which doesn't seem all that different assuming the RX buffer doesn't go
+>>> from full to empty between the If and Poll steps. Hopefully Tony knows more.
+>>>
+>>
+>> Tony, any thoughts?
+>
+> Sorry for the delay, looks like I'm only 1 month behind with email..
+> Sounds like it should work to me. I can try it out if you point me
+> to a patch.
 
-x86, olpc: Add missing Kconfig dependencies
+I think you acked the patches to make this change. You can test them out
+by applying the "hvc_dcc cleanups and fixes" patches (Message-Id:
+<1292875718-7980-1-git-send-email-sboyd@codeaurora.org>) on top of this
+patch. They were sent as a reply to this thread.
 
-OLPC uses select for OLPC_OPENFIRMWARE, which means OLPC has to
-enforce the dependencies for OLPC_OPENFIRMWARE.  Make sure it does so.
+Stephen
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Daniel Drake <dsd@laptop.org>
-Cc: Andres Salomon <dilinger@queued.net>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-LKML-Reference: <20100923162846.D8D409D401B@zog.reactivated.net>
-Cc: <stable@kernel.org> 2.6.37
----
- arch/x86/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index b6fccb0..184bc88 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2064,6 +2064,7 @@ config OLPC
- 	bool "One Laptop Per Child support"
- 	select GPIOLIB
- 	select OLPC_OPENFIRMWARE
-+	depends on !X86_64 && !X86_PAE
- 	---help---
- 	  Add support for detecting the unique features of the OLPC
- 	  XO hardware.
