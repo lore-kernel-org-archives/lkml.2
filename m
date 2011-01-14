@@ -1,413 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757503Ab1ANBQc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 20:16:32 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:65411 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479Ab1ANBQN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 20:16:13 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=o6GJP/p/UwsqwJVv/dwZZUt2PPDmO/XxHAZrnPEare8N0k1DJ0eTpjz5EFBCCSeqOc
-         7XpEgZjoSnz8iuBwP+i5eUwUsKIpQW7PvQ7Fb40zs3CqklVmq/JmzgdrV4o+TaueTgus
-         GbpTxeIUa/DG53yFLLcWbDPzTy7bcLXHU8MJ0=
-From: ahern.michael.t@gmail.com
-To: gregkh@suse.de, u.kleine-koenig@pengutronix.de, julia@diku.dk,
-        nikai@nikai.net, morgan.gatti@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Michael Ahern <ahern.michael.t@gmail.com>
-Subject: [PATCH] Coding style in serial2002
-Date: Fri, 14 Jan 2011 12:14:54 +1100
-Message-Id: <1294967694-4840-1-git-send-email-ahern.michael.t@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1757489Ab1ANBSL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 20:18:11 -0500
+Received: from mms1.broadcom.com ([216.31.210.17]:1289 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752343Ab1ANBSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 20:18:06 -0500
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+Date: Thu, 13 Jan 2011 17:15:33 -0800
+From: "Matt Carlson" <mcarlson@broadcom.com>
+To: "Jesse Gross" <jesse@nicira.com>
+cc: "Matthew Carlson" <mcarlson@broadcom.com>,
+        "Michael Leun" <lkml20101129@newton.leun.net>,
+        "Michael Chan" <mchan@broadcom.com>,
+        "Eric Dumazet" <eric.dumazet@gmail.com>,
+        "David Miller" <davem@davemloft.net>,
+        "Ben Greear" <greearb@candelatech.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when vid
+ not used
+Message-ID: <20110114011533.GA29723@mcarlson.broadcom.com>
+References: <20101215012430.120fd47f@xenia.leun.net>
+ <20101215013431.GA21173@mcarlson.broadcom.com>
+ <20101215081606.18e12fc9@xenia.leun.net>
+ <AANLkTi=hGRW+DwoKQzxPAZao6-y_tvn6nNXS-tj_-Y6T@mail.gmail.com>
+ <20110107032459.GA17959@mcarlson.broadcom.com>
+ <AANLkTi=N6jFE7T1=W-WLo_eHYWeE=oB6n8C8zPGoBNQF@mail.gmail.com>
+ <20110113012157.GA28147@mcarlson.broadcom.com>
+ <AANLkTimz3Mw5itChtTgHTeGT4seJauy3+FVrpEJn1iez@mail.gmail.com>
+ <20110113205056.GA29254@mcarlson.broadcom.com>
+ <AANLkTimQ1T0erugwK17o0zuSwxVh-Ro4yCsBpOqCykyr@mail.gmail.com>
+MIME-Version: 1.0
+In-Reply-To: <AANLkTimQ1T0erugwK17o0zuSwxVh-Ro4yCsBpOqCykyr@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-WSS-ID: 61317B8E3P056709588-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Ahern <ahern.michael.t@gmail.com>
+On Thu, Jan 13, 2011 at 01:58:40PM -0800, Jesse Gross wrote:
+> On Thu, Jan 13, 2011 at 3:50 PM, Matt Carlson <mcarlson@broadcom.com> wrote:
+> > On Thu, Jan 13, 2011 at 07:06:22AM -0800, Jesse Gross wrote:
+> >> On Wed, Jan 12, 2011 at 8:21 PM, Matt Carlson <mcarlson@broadcom.com> wrote:
+> >> > On Thu, Jan 06, 2011 at 08:36:27PM -0800, Jesse Gross wrote:
+> >> >> On Thu, Jan 6, 2011 at 10:24 PM, Matt Carlson <mcarlson@broadcom.com> wrote:
+> >> >> > On Sat, Dec 18, 2010 at 07:38:00PM -0800, Jesse Gross wrote:
+> >> >> >> On Tue, Dec 14, 2010 at 11:16 PM, Michael Leun
+> >> >> >> <lkml20101129@newton.leun.net> wrote:
+> >> >> >> > OK - all tests done on that DL320G5:
+> >> >> >> >
+> >> >> >> > For completeness, 2.6.37-rc5 unpatched:
+> >> >> >> >
+> >> >> >> > eth0, no vlan configured: totally broken - see double tagged vlans
+> >> >> >> > without tag, single or untagged packets missing at all
+> >> >> >>
+> >> >> >> Random behavior? ?This one is somewhat hard to explain - maybe there
+> >> >> >> are some other factors. ?eth0 has ASF on, so it always strips tags. ?I
+> >> >> >> would expect it to behave like the vlan configured case.
+> >> >> >>
+> >> >> >> >
+> >> >> >> > eth0, vlan configured: see packets without vlan tag (see double tagged
+> >> >> >> > packets with one vlan tag)
+> >> >> >>
+> >> >> >> Both ASF and vlan group configured cause tag stripping to be enabled.
+> >> >> >> Missing tag.
+> >> >> >>
+> >> >> >> >
+> >> >> >> > eth1 same as originally reported:
+> >> >> >> > without vlan configured see vlan tags (single and double tagged as
+> >> >> >> > expected)
+> >> >> >>
+> >> >> >> No ASF and no vlan group means tag stripping is disabled. ?Have tag.
+> >> >> >>
+> >> >> >> > with vlan configured: see packets without vlan tag (see double tagged
+> >> >> >> > packets with one vlan tag)
+> >> >> >>
+> >> >> >> Configuring vlan group causes stripping to be enabled. ?Missing tag.
+> >> >> >>
+> >> >> >> >
+> >> >> >> >
+> >> >> >> > 2.6.37-rc5, your tg3 use new vlan-code patch:
+> >> >> >> >
+> >> >> >> > eth0, no vlan configured: ?see packets without vlan tag (see double
+> >> >> >> > tagged packets with one vlan tag)
+> >> >> >>
+> >> >> >> ASF enables tag stripping. ?Missing tag.
+> >> >> >>
+> >> >> >> > eth1, no vlan configured: see vlan tags (single and double tagged as
+> >> >> >> > expected)
+> >> >> >>
+> >> >> >> No ASF, no vlan group means no stripping. ?Have tag.
+> >> >> >>
+> >> >> >> >
+> >> >> >> >
+> >> >> >> > eth0, vlan configured: as without vlan
+> >> >> >>
+> >> >> >> ASF enables stripping. ?Missing tag.
+> >> >> >>
+> >> >> >> > eth1, vlan configured: as without vlan
+> >> >> >>
+> >> >> >> With this patch vlan stripping is only enabled when ASF is on, so no
+> >> >> >> stripping. ?Have tag.
+> >> >> >>
+> >> >> >> >
+> >> >> >> > 2.6.37-rc5, your tg3 use new vlan-code patch with test patch ontop
+> >> >> >> >
+> >> >> >> > eth1 no vlan configured: see packets without vlan tag (see double tagged
+> >> >> >> > packets with one vlan tag)
+> >> >> >>
+> >> >> >> With the second patch, vlan stripping is always enabled. ?Missing tag.
+> >> >> >>
+> >> >> >> > eth1 with vlan: the same
+> >> >> >>
+> >> >> >> Stripping still always enabled. ?Missing tag.
+> >> >> >>
+> >> >> >> The bottom line is whenever vlan stripping is enabled we're missing
+> >> >> >> the outer tag. ?It might be worth adding some debugging in the area
+> >> >> >> before napi_gro_receive/vlan_gro_receive (depending on version). ?My
+> >> >> >> guess is that (desc->type_flags & RXD_FLAG_VLAN) is false even for
+> >> >> >> vlan packets on this NIC.
+> >> >> >>
+> >> >> >> You said that everything works on the 5752? ?Matt, is it possible that
+> >> >> >> the 5714 either has a problem with vlan stripping or a different way
+> >> >> >> of reporting it?
+> >> >> >
+> >> >> > I don't think this is a 5714 specific issue. ?I think the problem is
+> >> >> > rooted in the fact that the VLAN tag stripping is enabled.
+> >> >>
+> >> >> It's definitely related to vlan stripping being enabled. ?Other cards
+> >> >> using tg3 seem to work fine with stripping though, which is why I
+> >> >> thought it might be specific to the 5714.
+> >> >
+> >> > I just tested this on a 5714S, using a net-next-2.6 snapshot obtained
+> >> > today. ?It does the right thing in both cases (2nd tg3 patch ommited /
+> >> > applied). ?The tag is always visible in the packet stream as seen from
+> >> > tcpdump.
+> >> >
+> >> >> > Your RXD_FLAG_VLAN idea sounds unlikely to me, but it's worth a check.
+> >> >> >
+> >> >> > The patch here is using __vlan_hwaccel_put_tag(), which informs the
+> >> >> > stack a VLAN tag is present. ?If this is indeed a reporting problem, I'm
+> >> >> > not sure what else the driver should be doing.
+> >> >>
+> >> >> The code to hand off the tag to the stack looks OK to me. ?Michael was
+> >> >> seeing this on older versions of the kernel as well with this NIC,
+> >> >> which predates both this patch and the larger vlan changes so it
+> >> >> doesn't seem like a problem with passing the tag to the network stack.
+> >> >> ?It's hard to know exactly what is going on though without seeing what
+> >> >> the hardware is reporting.
+> >> >
+> >> > When RX_MODE_KEEP_VLAN_TAG is set, the RXD_FLAG_VLAN flag will not be set
+> >> > when receiving a packet. ?The driver skips the __vlan_hwaccel_put_tag()
+> >> > call.
+> >> >
+> >> > When RX_MODE_KEEP_VLAN_TAG is unset, the RXD_FLAG_VLAN flag is set, and
+> >> > __vlan_hwaccel_put_tag() is called to reinject the packet.
+> >>
+> >> OK, thanks for testing it out. ?I'm not sure that there's anything
+> >> more we can do without hearing from Michael.
+> >
+> > In the meantime, I think what we have should go upstream. ?Just to be
+> > absolutely clear though, your position is that VLAN tags should always
+> > be stripped?
+> 
+> That's what the other converted drivers do by default (though most of
+> them also provide an ethtool set_flags() method to change this).  It's
+> generally the most efficient and is now safe to do in all cases.  It's
+> also the consistent with what was happening before, since stripping
+> was enabled when a vlan device was configured.  So, yes, normally I
+> think stripping should be enabled.
+> 
+> I assumed that disabling stripping in most situations was just an
+> oversight.  Was there a reason why you feel it is better not to use
+> it?
 
- Patch that resolves braces and KERN_ warnings by checkpatch.pl
- Warnings: printk() should include KERN_ facility level, braces not needed, lines over 80 characters.
-
- Signed-off-by: Michael Ahern
-
----
- drivers/staging/comedi/drivers/serial2002.c |  206 ++++++++++++---------------
- 1 files changed, 93 insertions(+), 113 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers/serial2002.c b/drivers/staging/comedi/drivers/serial2002.c
-index c9be9e0..6949086 100644
---- a/drivers/staging/comedi/drivers/serial2002.c
-+++ b/drivers/staging/comedi/drivers/serial2002.c
-@@ -192,9 +192,10 @@ static int tty_read(struct file *f, int timeout)
- 				elapsed =
- 				    (1000000 * (now.tv_sec - start.tv_sec) +
- 				     now.tv_usec - start.tv_usec);
--				if (elapsed > timeout) {
-+
-+				if (elapsed > timeout)
- 					break;
--				}
-+
- 				set_current_state(TASK_INTERRUPTIBLE);
- 				schedule_timeout(((timeout -
- 						   elapsed) * HZ) / 10000);
-@@ -204,9 +205,10 @@ static int tty_read(struct file *f, int timeout)
- 				unsigned char ch;
- 
- 				f->f_pos = 0;
--				if (f->f_op->read(f, &ch, 1, &f->f_pos) == 1) {
-+
-+				if (f->f_op->read(f, &ch, 1, &f->f_pos) == 1)
- 					result = ch;
--				}
-+
- 			}
- 		} else {
- 			/* Device does not support poll, busy wait */
-@@ -215,9 +217,10 @@ static int tty_read(struct file *f, int timeout)
- 				unsigned char ch;
- 
- 				retries++;
--				if (retries >= timeout) {
-+
-+				if (retries >= timeout)
- 					break;
--				}
-+
- 
- 				f->f_pos = 0;
- 				if (f->f_op->read(f, &ch, 1, &f->f_pos) == 1) {
-@@ -329,7 +332,7 @@ static struct serial_data serial_read(struct file *f, int timeout)
- 
- 		length++;
- 		if (data < 0) {
--			printk("serial2002 error\n");
-+			printk(KERN_ERR "serial2002 error\n");
- 			break;
- 		} else if (data & 0x80) {
- 			result.value = (result.value << 7) | (data & 0x7f);
-@@ -402,7 +405,7 @@ static int serial_2002_open(struct comedi_device *dev)
- 	devpriv->tty = filp_open(port, O_RDWR, 0);
- 	if (IS_ERR(devpriv->tty)) {
- 		result = (int)PTR_ERR(devpriv->tty);
--		printk("serial_2002: file open error = %d\n", result);
-+		printk(KERN_ERR "serial_2002: file open error = %d\n", result);
- 	} else {
- 		struct config_t {
- 
-@@ -434,7 +437,7 @@ static int serial_2002_open(struct comedi_device *dev)
- 		}
- 
- 		tty_setspeed(devpriv->tty, devpriv->speed);
--		poll_channel(devpriv->tty, 31);	/*  Start reading configuration */
-+		poll_channel(devpriv->tty, 31);	/* Start reading config */
- 		while (1) {
- 			struct serial_data data;
- 
-@@ -451,23 +454,23 @@ static int serial_2002_open(struct comedi_device *dev)
- 				command = (data.value >> 8) & 0x3;
- 				switch (kind) {
- 				case 1:{
--						cur_config = dig_in_config;
-+					cur_config = dig_in_config;
- 					}
- 					break;
- 				case 2:{
--						cur_config = dig_out_config;
-+					cur_config = dig_out_config;
- 					}
- 					break;
- 				case 3:{
--						cur_config = chan_in_config;
-+					cur_config = chan_in_config;
- 					}
- 					break;
- 				case 4:{
--						cur_config = chan_out_config;
-+					cur_config = chan_out_config;
- 					}
- 					break;
- 				case 5:{
--						cur_config = chan_in_config;
-+					cur_config = chan_in_config;
- 					}
- 					break;
- 				}
-@@ -476,92 +479,69 @@ static int serial_2002_open(struct comedi_device *dev)
- 					cur_config[channel].kind = kind;
- 					switch (command) {
- 					case 0:{
--							cur_config[channel].bits
--							    =
--							    (data.value >> 10) &
--							    0x3f;
-+						cur_config[channel].bits
-+							= (data.value >> 10) &
-+							0x3f;
- 						}
- 						break;
- 					case 1:{
--							int unit, sign, min;
--							unit =
--							    (data.value >> 10) &
--							    0x7;
--							sign =
--							    (data.value >> 13) &
--							    0x1;
--							min =
--							    (data.value >> 14) &
--							    0xfffff;
--
--							switch (unit) {
--							case 0:{
--									min =
--									    min
--									    *
--									    1000000;
--								}
--								break;
--							case 1:{
--									min =
--									    min
--									    *
--									    1000;
--								}
--								break;
--							case 2:{
--									min =
--									    min
--									    * 1;
--								}
--								break;
-+						int unit, sign, min;
-+						unit = (data.value >> 10) &
-+							0x7;
-+						sign = (data.value >> 13) &
-+							0x1;
-+						min = (data.value >> 14) &
-+							0xfffff;
-+
-+						switch (unit) {
-+						case 0:{
-+							min = min * 1000000;
- 							}
--							if (sign) {
--								min = -min;
-+							break;
-+						case 1:{
-+							min = min * 1000;
- 							}
--							cur_config[channel].min
--							    = min;
-+							break;
-+						case 2:{
-+							min = min * 1;
-+							}
-+							break;
-+						}
-+
-+						if (sign)
-+							min = -min;
-+
-+						cur_config[channel].min = min;
- 						}
- 						break;
- 					case 2:{
--							int unit, sign, max;
--							unit =
--							    (data.value >> 10) &
--							    0x7;
--							sign =
--							    (data.value >> 13) &
--							    0x1;
--							max =
--							    (data.value >> 14) &
--							    0xfffff;
--
--							switch (unit) {
--							case 0:{
--									max =
--									    max
--									    *
--									    1000000;
--								}
--								break;
--							case 1:{
--									max =
--									    max
--									    *
--									    1000;
--								}
--								break;
--							case 2:{
--									max =
--									    max
--									    * 1;
--								}
--								break;
-+						int unit, sign, max;
-+						unit = (data.value >> 10) &
-+							0x7;
-+						sign = (data.value >> 13) &
-+							0x1;
-+						max = (data.value >> 14) &
-+							0xfffff;
-+
-+						switch (unit) {
-+						case 0:{
-+							max = max * 1000000;
-+							}
-+							break;
-+						case 1:{
-+							max = max * 1000;
- 							}
--							if (sign) {
--								max = -max;
-+							break;
-+						case 2:{
-+							max = max * 1;
- 							}
--							cur_config[channel].max
--							    = max;
-+							break;
-+						}
-+
-+						if (sign)
-+							max = -max;
-+
-+						cur_config[channel].max = max;
- 						}
- 						break;
- 					}
-@@ -622,9 +602,9 @@ static int serial_2002_open(struct comedi_device *dev)
- 				int j, chan;
- 
- 				for (chan = 0, j = 0; j < 32; j++) {
--					if (c[j].kind == kind) {
-+					if (c[j].kind == kind)
- 						chan++;
--					}
-+
- 				}
- 				s = &dev->subdevices[i];
- 				s->n_chan = chan;
-@@ -649,9 +629,9 @@ static int serial_2002_open(struct comedi_device *dev)
- 				}
- 				for (chan = 0, j = 0; j < 32; j++) {
- 					if (c[j].kind == kind) {
--						if (mapping) {
-+						if (mapping)
- 							mapping[chan] = j;
--						}
-+
- 						if (range) {
- 							range[j].length = 1;
- 							range[j].range.min =
-@@ -704,9 +684,9 @@ err_alloc_configs:
- 
- static void serial_2002_close(struct comedi_device *dev)
- {
--	if (!IS_ERR(devpriv->tty) && (devpriv->tty != 0)) {
-+	if (!IS_ERR(devpriv->tty) && (devpriv->tty != 0))
- 		filp_close(devpriv->tty, 0);
--	}
-+
- }
- 
- static int serial2002_di_rinsn(struct comedi_device *dev,
-@@ -723,9 +703,9 @@ static int serial2002_di_rinsn(struct comedi_device *dev,
- 		poll_digital(devpriv->tty, chan);
- 		while (1) {
- 			read = serial_read(devpriv->tty, 1000);
--			if (read.kind != is_digital || read.index == chan) {
-+			if (read.kind != is_digital || read.index == chan)
- 				break;
--			}
-+
- 		}
- 		data[n] = read.value;
- 	}
-@@ -765,9 +745,9 @@ static int serial2002_ai_rinsn(struct comedi_device *dev,
- 		poll_channel(devpriv->tty, chan);
- 		while (1) {
- 			read = serial_read(devpriv->tty, 1000);
--			if (read.kind != is_channel || read.index == chan) {
-+			if (read.kind != is_channel || read.index == chan)
- 				break;
--			}
-+
- 		}
- 		data[n] = read.value;
- 	}
-@@ -801,9 +781,9 @@ static int serial2002_ao_rinsn(struct comedi_device *dev,
- 	int n;
- 	int chan = CR_CHAN(insn->chanspec);
- 
--	for (n = 0; n < insn->n; n++) {
-+	for (n = 0; n < insn->n; n++)
- 		data[n] = devpriv->ao_readback[chan];
--	}
-+
- 
- 	return n;
- }
-@@ -822,9 +802,9 @@ static int serial2002_ei_rinsn(struct comedi_device *dev,
- 		poll_channel(devpriv->tty, chan);
- 		while (1) {
- 			read = serial_read(devpriv->tty, 1000);
--			if (read.kind != is_channel || read.index == chan) {
-+			if (read.kind != is_channel || read.index == chan)
- 				break;
--			}
-+
- 		}
- 		data[n] = read.value;
- 	}
-@@ -836,16 +816,16 @@ static int serial2002_attach(struct comedi_device *dev,
- {
- 	struct comedi_subdevice *s;
- 
--	printk("comedi%d: serial2002: ", dev->minor);
-+	printk(KERN_INFO "comedi%d: serial2002: ", dev->minor);
- 	dev->board_name = thisboard->name;
--	if (alloc_private(dev, sizeof(struct serial2002_private)) < 0) {
-+	if (alloc_private(dev, sizeof(struct serial2002_private)) < 0)
- 		return -ENOMEM;
--	}
-+
- 	dev->open = serial_2002_open;
- 	dev->close = serial_2002_close;
- 	devpriv->port = it->options[0];
- 	devpriv->speed = it->options[1];
--	printk("/dev/ttyS%d @ %d\n", devpriv->port, devpriv->speed);
-+	printk(KERN_INFO "/dev/ttyS%d @ %d\n", devpriv->port, devpriv->speed);
- 
- 	if (alloc_subdevices(dev, 5) < 0)
- 		return -ENOMEM;
-@@ -904,15 +884,15 @@ static int serial2002_detach(struct comedi_device *dev)
- 	struct comedi_subdevice *s;
- 	int i;
- 
--	printk("comedi%d: serial2002: remove\n", dev->minor);
-+	printk(KERN_ERR "comedi%d: serial2002: remove\n", dev->minor);
- 	for (i = 0; i < 5; i++) {
- 		s = &dev->subdevices[i];
--		if (s->maxdata_list) {
-+		if (s->maxdata_list)
- 			kfree(s->maxdata_list);
--		}
--		if (s->range_table_list) {
-+
-+		if (s->range_table_list)
- 			kfree(s->range_table_list);
--		}
-+
- 	}
- 	return 0;
- }
--- 
-1.7.0.4
+Actually, the tg3 driver was trying to disable VLAN tag stripping
+when possible.  I believe this was primarily to support the raw packet
+interface.
 
