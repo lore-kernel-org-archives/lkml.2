@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054Ab1ANGml (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 01:42:41 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:56196 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751007Ab1ANGme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 01:42:34 -0500
-Date: Thu, 13 Jan 2011 22:42:28 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Pekka Enberg <penberg@kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] block driver updates for 2.6.38
-Message-ID: <20110113224228.3f7ae374@s6510>
-In-Reply-To: <AANLkTimZWMJQfc6E-ke+SbpaTeG9UKA--g=qFQa+11aW@mail.gmail.com>
-References: <4D2F03F2.4000707@fusionio.com>
-	<AANLkTi=t9FQaUhnXCk51bjZO82F8OGDDd9H5HyMPRPQd@mail.gmail.com>
-	<4D2F51B5.6060105@fusionio.com>
-	<AANLkTi=PDEyJNN3aKhHWzCKrTfzib-VCdvgD7auoWuzD@mail.gmail.com>
-	<20110113141957.1eaf4940@nehalam>
-	<AANLkTikdULkbB83Us_zXivv8Y5FGdHrixUXRiitacaSh@mail.gmail.com>
-	<20110113161115.1d564448@nehalam>
-	<AANLkTimZWMJQfc6E-ke+SbpaTeG9UKA--g=qFQa+11aW@mail.gmail.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753714Ab1ANGob (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 01:44:31 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39989 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546Ab1ANGoZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 01:44:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=pxgN3+ZOoe0nCmJCo5GxPpoIAERmKO636pQR8aZqYRRiXhxnjVFEQjh9r4FyCu79EA
+         G268w/93xB06HV3tvNJODciXISQmLWc2iviRE9WZQtyMPMzewS/wVhySpapJFcebdB0u
+         L/gWkVMb+yZBZu5G6vp2qyVrr57CdUw1BFzyQ=
+MIME-Version: 1.0
+In-Reply-To: <20110113082950.6747ebb8@queued.net>
+References: <1294919372-1904-1-git-send-email-ratbert.chuang@gmail.com>
+ <1294928559.3570.130.camel@edumazet-laptop> <20110113082950.6747ebb8@queued.net>
+From: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Date: Fri, 14 Jan 2011 14:44:03 +0800
+Message-ID: <AANLkTimsY88hD8HkBvMMTT2cs7vec2p8yUBNfeKsHod2@mail.gmail.com>
+Subject: Re: [PATCH] net: add Faraday FTMAC100 10/100 Ethernet driver
+To: Andres Salomon <dilinger@queued.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Po-Yu Chuang <ratbert@faraday-tech.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Jan 2011 17:03:21 -0800
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Dear Andres,
 
-> On Thu, Jan 13, 2011 at 4:11 PM, Stephen Hemminger
-> <shemminger@vyatta.com> wrote:
-> >
-> > It appears to be a different problem (not HPET MSI). Not sure what
-> > is causing it, but even 2.6.35 can't format a floppy without error.
-> 
-> Do you actually know that the hardware is good (ie does _any_ version
-> of Linux work)?
-> 
-> Floppy disks and drives have not been known for their robustness, and
-> most of them tend to be pretty old by now.
-> 
-> Dang, I think I should just try to go to Fry's and see if I can find a
-> floppy drive somewhere. Not that I even know if my motherboards
-> necessarily even have the _pins_ to connect it any more.
-> 
->                          Linus
+On Fri, Jan 14, 2011 at 12:29 AM, Andres Salomon <dilinger@queued.net> wrote:
+> On Thu, 13 Jan 2011 15:22:39 +0100
+> Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>> Le jeudi 13 janvier 2011 à 19:49 +0800, Po-Yu Chuang a écrit :
 
-Some people can't even remember what a floppy is...
-http://www.geek.com/articles/geek-pick/what-are-the-windows-a-and-b-drives-used-for-20110112/
+> No one else mentioned it, so I'll add:
+>
+> Don't explicitly inline functions unless they're in a header, or you
+> have a really good reason (and that reason should probably be described
+> in a comment).  Otherwise, just leave off the 'inline' keyword; the
+> compiler is smart enough to decide whether a function should be inlined
+> or not.
+
+OK, fixed.
+
+Thanks,
+Po-Yu Chuang
