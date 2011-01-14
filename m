@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757485Ab1ANBOh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 20:14:37 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:63251 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752343Ab1ANBOc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 20:14:32 -0500
-Message-ID: <4D2FA305.2030808@kernel.org>
-Date: Thu, 13 Jan 2011 17:12:37 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1757493Ab1ANBQV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 20:16:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55250 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752343Ab1ANBQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 20:16:13 -0500
+Date: Thu, 13 Jan 2011 20:15:39 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Hannes Reinecke <hare@suse.de>, k-ueda@ct.jp.nec.com, michaelc@cs.wisc.edu,
+        tytso@mit.edu, sshtylyov@mvista.com, linux-scsi@vger.kernel.org,
+        jaxboe@fusionio.com, jack@suse.cz, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, swhiteho@redhat.com,
+        linux-raid@vger.kernel.org, linux-ide@vger.kernel.org,
+        dm-devel@redhat.com, James.Bottomley@suse.de,
+        konishi.ryusuke@lab.ntt.co.jp, j-nomura@ce.jp.nec.com, vst@vlnb.net,
+        rwheeler@redhat.com, hch@lst.de, chris.mason@oracle.com, tj@kernel.org
+Subject: Re: [RFC PATCH 0/3] differentiate between I/O errors
+Message-ID: <20110114011538.GB21818@redhat.com>
+References: <20101130225956.GA8882@redhat.com>
+ <1291763802-8251-1-git-send-email-snitzer@redhat.com>
+ <20101210234036.GA4841@us.ibm.com>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Jason Wessel <jason.wessel@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC PATCH] x86: Add safe_udelay() and safe_msleep()
-References: <AANLkTika_bZxXO3PKek+BHoYqgYGPBPER-H9KJJXjJzn@mail.gmail.com> <20110111135655.GA6901@kroah.com> <4D2CFEAD.6070206@kernel.org> <1294799565.9586.13.camel@pasglop> <4D2F7AE9.2000809@kernel.org> <20110113224450.GA14918@kroah.com> <alpine.LFD.2.00.1101132349590.2678@localhost6.localdomain6> <4D2F84FC.7000804@kernel.org> <20110113234852.GB17904@kroah.com> <4D2F9948.8000804@kernel.org> <20110114004428.GA26847@kroah.com>
-In-Reply-To: <20110114004428.GA26847@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101210234036.GA4841@us.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2011 04:44 PM, Greg KH wrote:
-> On Thu, Jan 13, 2011 at 04:31:04PM -0800, Yinghai Lu wrote:
->> there are some udelay() in drivers/usb/early/ehci-dbgp.c
->>
->> that is for early USB debug port console support.
->>
->> We should replace them with early version udelay()
+On Fri, Dec 10 2010 at  6:40pm -0500,
+Malahal Naineni <malahal@us.ibm.com> wrote:
+
+> Mike Snitzer [snitzer@redhat.com] wrote:
+> > Refreshed Hannes' initial "scsi: Detailed I/O errors" patch against
+> > v2.6.37-rc5.  v2 introduces __scsi_error_from_host_byte to avoid
+> > the duplicate switch statement.  Also a few whitespace and comment
+> > changes.
+> > 
+> > Split DM mpath change out to separate v2 patch; failed discard is now
+> > retryable in the face of a non-target IO error.
+> > 
+> > Added improved block layer's I/O error message (based on the finer
+> > grained I/O error returns afforded by SCSI).
+> > 
+> > Comments/suggestions are welcome.
 > 
-> Again, I fail to see why.  They work fine today, right?
+> I did test the Hannes original patch with the latest Linus' git tree! I
+> used scsi_debug to simulate path failures as well as 'Media' failures
+> and it did work as expected. I will test your patches soon.
 
-did not test that for a while.
+Hi Malahal,
 
-from code review, we should not use udelay() that early.
+I was wondering if you had any feedback (testing or otherwise) for these
+patches:
 
-in arch/x86/lib/delay.c we have
-inline void __const_udelay(unsigned long xloops)
-{
-        int d0;
+https://patchwork.kernel.org/patch/384612/
+https://patchwork.kernel.org/patch/384602/
+https://patchwork.kernel.org/patch/390882/
 
-        xloops *= 4;
-        asm("mull %%edx"
-                :"=d" (xloops), "=&a" (d0)
-                :"1" (xloops), "0"
-                (this_cpu_read(cpu_info.loops_per_jiffy) * (HZ/4)));
+We haven't heard from Hannes in a bit but I was hoping we could at least
+understand that the few changes I made are agreeable and working as
+expected.
 
-        __delay(++xloops);
-}
-EXPORT_SYMBOL(__const_udelay);
-
-that percpu cpu_info.loops_per_jiffy only have value after smp_prepare_cpus() is called.
-
-> 
-> You _really_ need to prove what you are trying to do here, with lots of
-> details and descriptions of what the problem is, as it's getting a bit
-> annoying...
-
-sorry for that.
-
-Yinghai
+Thanks,
+Mike
