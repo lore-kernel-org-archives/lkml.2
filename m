@@ -1,115 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757824Ab1ANPnf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 10:43:35 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58952 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539Ab1ANPna (ORCPT
+	id S1757845Ab1ANPo2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 10:44:28 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:60997 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756857Ab1ANPoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 10:43:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=vT0yz5IxSTRZPbPbKGvD8oUuzBXsLsXO8afS2A7NlIeUhTWs3JQ6Pr5I5G2kYsD3as
-         QsByfAmP2GGTSSl5o2jmLgX9y70Za3OMJOBb6ILM5lu8C7Hm+7DDYopP9oFAHKw2syLB
-         /k/vFP+GF5x2zPq1tFPQSLtr9e8lj40O7E2gg=
-Date: Fri, 14 Jan 2011 18:43:18 +0300
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] battery-2.6.git
-Message-ID: <20110114154318.GA6483@oksana.dev.rtsoft.ru>
-Reply-To: cbouatmailru@gmail.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 14 Jan 2011 10:44:23 -0500
+Subject: Re: [PATCH] acpi/pm: If failed at validating ACPI PM timer,
+ inhibit future reads.
+From: john stultz <johnstul@us.ibm.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        williams@redhat.com, schwidefsky@de.ibm.com, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+In-Reply-To: <20110114140941.GA3062@dumpdata.com>
+References: <tip-08ec0c58fb8a05d3191d5cb6f5d6f81adb419798@git.kernel.org>
+	 <20110111081352.GA22867@shutemov.name>
+	 <alpine.LFD.2.00.1101110926040.12146@localhost6.localdomain6>
+	 <20110111083054.GB22867@shutemov.name>
+	 <alpine.LFD.2.00.1101110936291.12146@localhost6.localdomain6>
+	 <20110111095640.GC22867@shutemov.name>
+	 <20110113174909.GA28738@dumpdata.com> <1294941698.5617.12.camel@work-vm>
+	 <20110113214022.GA12097@dumpdata.com>
+	 <alpine.LFD.2.00.1101132301300.2678@localhost6.localdomain6>
+	 <20110114140941.GA3062@dumpdata.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 Jan 2011 07:44:09 -0800
+Message-ID: <1295019849.2655.8.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+On Fri, 2011-01-14 at 09:09 -0500, Konrad Rzeszutek Wilk wrote:
+> On Thu, Jan 13, 2011 at 11:15:16PM +0100, Thomas Gleixner wrote:
+> > On Thu, 13 Jan 2011, Konrad Rzeszutek Wilk wrote:
+> > 
+> > > tgl, John,
+> > > 
+> > > Should I push this to Linus or are you guys going to push
+> > > this patch during this merge window?
+> > 
+> > Wait a moment. This patch is fresh of the press and not that urgent,
+> > really.
+> 
+> It is a regression compared to 2.6.37 kernel. I don't know the
+> urgency requirements for regressions but I figured the earlier the
+> better.
+> 
+> >  
+> > >     I've traced it down to the fact that when we boot under Xen we do
+> > >     not have the HPET enabled nor the ACPI PM timer setup. The
+> > 
+> > Crap. If Xen would not have setup the pm timer then it would not even
+> > reach the consistency check. It would simply bail out via
+> 
+> Keep in mind that Linux (under Xen) does see the ACPI PM-Timer at bootup
+> (it parses the ACPI tables), and when it tries to actually read the 
+> values, so past this point:
+> 
+> > 
+> >         if (!pmtmr_ioport)
+> >                 return -ENODEV;
+> > 
+> 
+> .. it fails at:
+>    if (i == ACPI_PM_READ_CHECKS) {
+> 
+> and returns -ENODEV. So pmtmr_ioport was still valid at that time.
+> 
+> > and the whole misery would not have happened at all. Though it's a
+> > Good Thing that Xen is so screwed as it points to a real flaw which
+> > might happen on real hardware as well. See below
+> > 
+> > >     hpet_enable() is never called (b/c xen_time_init is called), and
+> > >     for calibration of tsc_khz (calibrate_tsc == xen_tsc_khz) we
+> > >     get a valid value.
+> > >     
+> > >     So 'tsc_read_refs' tries to read the ACPI PM timer (acpi_pm_read_early),
+> > >     however that is disabled under Xen:
+> > >     
+> > >     [    1.099272] calling  init_acpi_pm_clocksource+0x0/0xdc @ 1
+> > >     [    1.140186] PM-Timer failed consistency check  (0x0xffffff) - aborting.
+> > >     
+> > >     So the tsc_calibrate_check gets called, it can't do HPET, and reading
+> > >     from ACPI PM timer results in getting 0xffffff.. .. and
+> > >     (0xffff..-0xffff..)/some other value results in div_zero.
+> > 
+> > Nonsense. 0/(some other value) does not result in a divide by zero
+> > except "some other value" is zero.
+> 
+> <scratches his head> You are right. 
 
-Please pull battery-2.6.git tree to receive changes prepared for
-2.6.38. Two new drivers plus some assorted cleanups and bug fixes
-in this pull request.
+The (0xffff - 0xffff) bit ends up as the divisor in calc_pmtmr_ref.
 
-Thanks!
+> > 
+> > >     There is a check in 'tsc_refine_calibration_work' for invalid
+> > >     values:
+> > >     
+> > >        /* hpet or pmtimer available ? */
+> > >              if (!hpet && !ref_start && !ref_stop)
+> > >                       goto out;
+> > >     
+> > >     But since ref_start and ref_stop have 0xffffff it does not trigger.
+> > >
+> > >     This little fix makes the read to be 0 and the check triggers.
+> > 
+> > First of all the patch disables the pm_timer completely, which happens
+> > to results in a 0 read as a side effect. But the main point of this
+> 
+> I does not look like a side-effect. Specifically:
+> 
+> static inline u32 acpi_pm_read_early(void)
+> {
+>         if (!pmtmr_ioport)
+>                 return 0;
+> 
+> 	 return acpi_pm_read_verified() & ACPI_PM_MASK;
+> }
+> 
+> .. ends up taking the !pmtmr_ioport path which is what
+> tsc_refine_calibration_work has a check for.
+> 
+> > fix is to disable pmtimer in case of failure in the init function
+> > completely.
+> > 
+> > Further there are several error conditions in this init function and
+> > we really need to disable pmtimer for all of them not just for the
+> > case you encountered.
+> 
+> Good point. What about this patch? John, is it OK if I carry
+> your Ack-by on this modified patch?
 
-The following changes since commit e53beacd23d9cb47590da6a7a7f6d417b941a994:
-  Linus Torvalds (1):
-        Linux 2.6.37-rc2
+I'm actually looking at a different fix, as I'm worried by Thomas'
+comment about hitting the same issue on real hardware if we catch the
+same pmtrm value both times.
 
-are available in the git repository at:
+thanks
+-john
 
-  git://git.infradead.org/battery-2.6.git master
 
-Ameya Palande (1):
-      isp1704_charger: Correct length for storing model
 
-Anton Vorontsov (1):
-      jz4740-battery: Should include linux/io.h
 
-Daniel Drake (1):
-      olpc_battery: Ambient temperature is not available on XO-1.5
-
-Heikki Krogerus (3):
-      isp1704_charger: Detect HUB/Host chargers
-      isp1704_charger: Set isp->dev before anything needs it
-      isp1704_charger: Detect charger after probe
-
-Lars-Peter Clausen (6):
-      jz4740-battery: Protect against concurrent battery readings
-      power_supply: Add gpio charger driver
-      jz4740-battery: Check if platform_data is supplied
-      gpio-charger: Check result of kzalloc
-      gpio-charger: Provide default name for the power_supply
-      gpio-charger: Fix potential race between irq handler and probe/remove
-
-MyungJoo Ham (1):
-      power_supply: Add MAX17042 Fuel Gauge Driver
-
-Sascha Silbe (4):
-      olpc_battery: Add support for CHARGE_FULL_DESIGN
-      olpc_battery: Add support for CHARGE_NOW
-      olpc_battery: Add support for CURRENT_NOW and VOLTAGE_NOW
-      olpc_battery: Fix up XO-1.5 properties list
-
-Sven Neumann (1):
-      ds2760_battery: Fix calculation of time_to_empty_now
-
-Tejun Heo (1):
-      power_supply: Don't use flush_scheduled_work()
-
-Vasiliy Kulikov (1):
-      power_supply: Fix use after free and memory leak
-
-Vasily Khoruzhick (1):
-      s3c_adc_battery: Add gpio_inverted field to pdata
-
- drivers/power/Kconfig                  |   20 +++
- drivers/power/Makefile                 |    2 +
- drivers/power/collie_battery.c         |   13 +-
- drivers/power/ds2760_battery.c         |    2 +-
- drivers/power/gpio-charger.c           |  188 +++++++++++++++++++++++++
- drivers/power/intel_mid_battery.c      |    2 +-
- drivers/power/isp1704_charger.c        |  201 +++++++++++++++++++++------
- drivers/power/jz4740-battery.c         |   13 ++
- drivers/power/max17042_battery.c       |  239 ++++++++++++++++++++++++++++++++
- drivers/power/olpc_battery.c           |  114 +++++++++++++++-
- drivers/power/power_supply_core.c      |    6 +-
- drivers/power/s3c_adc_battery.c        |   12 ++-
- drivers/power/tosa_battery.c           |   13 +-
- drivers/power/wm97xx_battery.c         |    4 +-
- drivers/power/z2_battery.c             |    6 +-
- include/linux/power/gpio-charger.h     |   41 ++++++
- include/linux/power/max17042_battery.h |   30 ++++
- include/linux/s3c_adc_battery.h        |    1 +
- 18 files changed, 838 insertions(+), 69 deletions(-)
- create mode 100644 drivers/power/gpio-charger.c
- create mode 100644 drivers/power/max17042_battery.c
- create mode 100644 include/linux/power/gpio-charger.h
- create mode 100644 include/linux/power/max17042_battery.h
