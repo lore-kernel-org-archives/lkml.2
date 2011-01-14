@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757452Ab1ANRGw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 12:06:52 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:56344 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752043Ab1ANRGq (ORCPT
+	id S1757225Ab1ANRIc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 12:08:32 -0500
+Received: from 63.mail-out.ovh.net ([91.121.185.56]:36025 "HELO
+	63.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752043Ab1ANRI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 12:06:46 -0500
-From: John Stultz <johnstul@us.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: John Stultz <johnstul@us.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] Fix up calibration refinement conditionals to avoid divide by zero
-Date: Fri, 14 Jan 2011 09:06:28 -0800
-Message-Id: <1295024788-15619-1-git-send-email-johnstul@us.ibm.com>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
+	Fri, 14 Jan 2011 12:08:28 -0500
+Message-ID: <4D308308.8090103@example.com>
+Date: Fri, 14 Jan 2011 18:08:24 +0100
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Will you make your code buildable?
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 9442078095423467919
+X-Ovh-Remote: 95.49.240.53 (afjg53.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The conditional (!hpet && !ref_start && !ref_stop) doesn't really make
-sense. If the refs are null, but hpet is on, we still want to break out.
+Hello Peter, hello all,
 
-Additionally, we've seen cases where invalid non-null values are
-returned from emulated hardware, and this conditional misses those,
-resulting in a div by zero.
+I CC LKML, because maybe other are uding Peter's code also. I get 
+following code when I merge your code to Linus tree:
 
-The div by zero would be possible to trigger by chance if both reads
-from the hardware provided the exact same value (due to hardware
-wrapping).
+mm/migrate.c: In function ‘unmap_and_move_huge_page’:
+mm/migrate.c:845: error: ‘rcu_locked’ undeclared (first use in this 
+function)
+mm/migrate.c:845: error: (Each undeclared identifier is reported only once
+mm/migrate.c:845: error: for each function it appears in.)
 
-So checking if both the ref values are the same should handle if we
-don't have hardware (both null) or if they are the same value (either by
-invalid hardware, or by chance), avoiding the div by zero issue.
+I didn't manage to repair it by myself. Will you fix it?
 
-Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
----
- arch/x86/kernel/tsc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Regards,
 
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index c43e182..362ca9a 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -935,7 +935,7 @@ static void tsc_refine_calibration_work(struct work_struct *work)
- 	tsc_stop = tsc_read_refs(&ref_stop, hpet);
- 
- 	/* hpet or pmtimer available ? */
--	if (!hpet && !ref_start && !ref_stop)
-+	if (ref_start == ref_stop)
- 		goto out;
- 
- 	/* Check, whether the sampling was disturbed by an SMI */
+Piotr Hosowicz
 -- 
-1.7.3.2.146.gca209
-
+- Obiecali zbudowac 3 miliony mieszkan! I nie zbudowali!
+- Ale to bardzo dobrze, ze nie zbudowali! Nie od tego jest panstwo!
+- Kwasniewski obiecywal nie 3, a 10 milionow mieszkan!
+- No to wyglada na to, ze Kwasniewski zbudowal siedem,
+   a Kaczynscy teraz musza dobudowac trzy miliony.
+NP: Peter Green Splinter Group - Indians
+NB: 2.6.37-git11-corr2
