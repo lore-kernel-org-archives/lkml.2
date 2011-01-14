@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757361Ab1ANApz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 19:45:55 -0500
-Received: from kroah.org ([198.145.64.141]:40292 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752317Ab1ANApt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 19:45:49 -0500
-Date: Thu, 13 Jan 2011 16:44:28 -0800
-From: Greg KH <greg@kroah.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC PATCH] x86: Add safe_udelay() and safe_msleep()
-Message-ID: <20110114004428.GA26847@kroah.com>
-References: <AANLkTika_bZxXO3PKek+BHoYqgYGPBPER-H9KJJXjJzn@mail.gmail.com>
- <20110111135655.GA6901@kroah.com>
- <4D2CFEAD.6070206@kernel.org>
- <1294799565.9586.13.camel@pasglop>
- <4D2F7AE9.2000809@kernel.org>
- <20110113224450.GA14918@kroah.com>
- <alpine.LFD.2.00.1101132349590.2678@localhost6.localdomain6>
- <4D2F84FC.7000804@kernel.org>
- <20110113234852.GB17904@kroah.com>
- <4D2F9948.8000804@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D2F9948.8000804@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757395Ab1ANAqW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 19:46:22 -0500
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:49941 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752317Ab1ANAqQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 19:46:16 -0500
+X-Greylist: delayed 1227 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 Jan 2011 19:46:16 EST
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+References: <alpine.LNX.2.00.1101132332430.11347@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1101132332430.11347@swampdragon.chaosbits.net>
+Mime-Version: 1.0 (iPhone Mail 8C148)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <0203A9B5-3035-49A1-AAB7-207EB638A080@dotat.at>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+X-Mailer: iPhone Mail (8C148)
+From: Tony Finch <dot@dotat.at>
+Subject: Re: [PATCH] strncpy() will not \0 terminate result
+Date: Fri, 14 Jan 2011 00:25:17 +0000
+To: Jesper Juhl <jj@chaosbits.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 04:31:04PM -0800, Yinghai Lu wrote:
-> there are some udelay() in drivers/usb/early/ehci-dbgp.c
+This patch is incorrect. The strncpy is replacing "else" with "if  " so needs to copy exactly 4 bytes.
+
+Tony.
+--
+f.anthony.n.finch  <dot@dotat.at>  http://dotat.at/
+
+On 13 Jan 2011, at 22:35, Jesper Juhl <jj@chaosbits.net> wrote:
+
+> Hi,
 > 
-> that is for early USB debug port console support.
+> Mpass() in scripts/unifdef.c has this code:
+>  strncpy(keyword, "if  ", 4);
+> this will fail to \0 terminate the destination.
+> Following patch should fix that up.
 > 
-> We should replace them with early version udelay()
-
-Again, I fail to see why.  They work fine today, right?
-
-You _really_ need to prove what you are trying to do here, with lots of
-details and descriptions of what the problem is, as it's getting a bit
-annoying...
-
-thanks,
-
-greg k-h
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+> unifdef.c |    2 +-
+> 1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/scripts/unifdef.c b/scripts/unifdef.c
+> index 44d3978..d579249 100644
+> --- a/scripts/unifdef.c
+> +++ b/scripts/unifdef.c
+> @@ -376,7 +376,7 @@ static void Idrop (void) { Fdrop();  ignoreon(); }
+> static void Itrue (void) { Ftrue();  ignoreon(); }
+> static void Ifalse(void) { Ffalse(); ignoreon(); }
+> /* edit this line */
+> -static void Mpass (void) { strncpy(keyword, "if  ", 4); Pelif(); }
+> +static void Mpass (void) { strncpy(keyword, "if  ", 5); Pelif(); }
+> static void Mtrue (void) { keywordedit("else\n");  state(IS_TRUE_MIDDLE); }
+> static void Melif (void) { keywordedit("endif\n"); state(IS_FALSE_TRAILER); }
+> static void Melse (void) { keywordedit("endif\n"); state(IS_FALSE_ELSE); }
+> 
+> -- 
+> Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+> Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+> Plain text mails only, please.
+> 
