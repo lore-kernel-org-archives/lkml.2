@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489Ab1ANJtw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 04:49:52 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:46345 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462Ab1ANJtt (ORCPT
+	id S1756670Ab1ANJvn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 04:51:43 -0500
+Received: from 26.mail-out.ovh.net ([91.121.27.225]:58255 "HELO
+	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751462Ab1ANJvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 04:49:49 -0500
-X-AuditID: b753bd60-9e55eba000000f65-3b-4d301c3a4306
-Message-ID: <4D301C37.2040303@hitachi.com>
-Date: Fri, 14 Jan 2011 18:49:43 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Fri, 14 Jan 2011 04:51:38 -0500
+Message-ID: <4D301CA5.503@example.com>
+Date: Fri, 14 Jan 2011 10:51:33 +0100
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
 MIME-Version: 1.0
-To: Franck Bui-Huu <vagabon.xyz@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH -perf/perf/core 3/6] perf probe: Add --funcs to show available
- functions in symtab
-References: <20110113124548.22426.11201.stgit@ltc236.sdl.hitachi.co.jp>	<20110113124611.22426.10835.stgit@ltc236.sdl.hitachi.co.jp> <m3sjww7b04.fsf@gmail.com>
-In-Reply-To: <m3sjww7b04.fsf@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: error in 2.6.37-git10
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 2064618954578227480
+X-Ovh-Remote: 83.24.79.226 (dmx226.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/01/14 6:24), Franck Bui-Huu wrote:
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
-> 
-> [...]
-> 
->>  tools/perf/builtin-probe.c    |   29 +++++++++++++++++-
->>  tools/perf/util/probe-event.c |   67 ++++++++++++++++++++++++++++++++++++++++-
->>  tools/perf/util/probe-event.h |    1 +
->>  3 files changed, 94 insertions(+), 3 deletions(-)
-> 
-> "tools/perf/Documentation/perf-probe.txt" is missing ;)
-> 
+Hello,
 
-Oops, good catch :)
+Build failed here:
 
-Thanks!
+   CC [M]  fs/ecryptfs/main.o
+fs/ecryptfs/main.c:144: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or 
+‘__attribute__’ before ‘*’ token
+fs/ecryptfs/main.c: In function ‘ecryptfs_interpose’:
+fs/ecryptfs/main.c:204: error: implicit declaration of function 
+‘ecryptfs_get_inode’
+fs/ecryptfs/main.c:204: warning: initialization makes pointer from 
+integer without a cast
+fs/ecryptfs/main.c:206: error: expected ‘)’ before ‘return’
+fs/ecryptfs/main.c:212: error: expected expression before ‘}’ token
+fs/ecryptfs/main.c: In function ‘ecryptfs_mount’:
+fs/ecryptfs/main.c:569: warning: assignment makes pointer from integer 
+without a cast
+
+Regards,
+
+Piotr Hosowicz
 
 -- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Z cyklu "Uroki demokracji", czyli pytania i odpowiedzi w teledurniejach:
+- Gdzie odbywały się lądowania Aliantów (D-Day)?
+- Pearl Harbour?
+NP: Patrick O'Hearn - Beautiful World
+NB: 2.6.37-20110113-1411-pztidm+
