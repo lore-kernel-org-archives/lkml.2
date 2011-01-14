@@ -1,180 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757812Ab1ANNxa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 08:53:30 -0500
-Received: from shutemov.name ([188.40.19.243]:53269 "EHLO shutemov.name"
+	id S1757672Ab1ANN56 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 08:57:58 -0500
+Received: from mga09.intel.com ([134.134.136.24]:23785 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756652Ab1ANNth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 08:49:37 -0500
-From: "Kirill A. Shutemov" <kas@openvz.org>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>
-Cc: Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Rob Landley <rlandley@parallels.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        containers@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Kirill A. Shutemov" <kas@openvz.org>
-Subject: [PATCH v3 02/16] sunrpc: introduce init_rpc_pipefs
-Date: Fri, 14 Jan 2011 15:49:00 +0200
-Message-Id: <1295012954-7769-3-git-send-email-kas@openvz.org>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1295012954-7769-1-git-send-email-kas@openvz.org>
-References: <1295012954-7769-1-git-send-email-kas@openvz.org>
+	id S1757430Ab1ANN5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 08:57:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,322,1291622400"; 
+   d="scan'208";a="696860934"
+Date: Fri, 14 Jan 2011 14:57:47 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Mattias Wallin <mattias.wallin@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Andres Salomon <dilinger@queued.net>,
+        Sundar Iyer <sundar.iyer@stericsson.com>,
+        Axel Lin <axel.lin@gmail.com>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Joe Perches <joe@perches.com>, Stephen Warren <swarren@nvidia.com>,
+        Bryan Wu <bryan.wu@canonical.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: [GIT] [2.6.38] MFD pull request
+Message-ID: <20110114135747.GB20263@sortiz-mobl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce global variable init_rpc_pipefs and use it instead of
-rpc_get_mount()/rpc_put_mount().
+Hi Linus,
 
-Signed-off-by: Kirill A. Shutemov <kas@openvz.org>
----
- fs/nfs/cache_lib.c                 |    6 +++---
- include/linux/sunrpc/rpc_pipe_fs.h |    4 ++--
- net/sunrpc/clnt.c                  |   10 ++++------
- net/sunrpc/rpc_pipe.c              |   21 +++++----------------
- 4 files changed, 14 insertions(+), 27 deletions(-)
+This is the MFD pull request for the 2.6.38 merge window.
 
-diff --git a/fs/nfs/cache_lib.c b/fs/nfs/cache_lib.c
-index 8469031..dd7ca5f 100644
---- a/fs/nfs/cache_lib.c
-+++ b/fs/nfs/cache_lib.c
-@@ -117,7 +117,7 @@ int nfs_cache_register(struct cache_detail *cd)
- 	struct vfsmount *mnt;
- 	int ret;
- 
--	mnt = rpc_get_mount();
-+	mnt = mntget(init_rpc_pipefs);
- 	if (IS_ERR(mnt))
- 		return PTR_ERR(mnt);
- 	ret = vfs_path_lookup(mnt->mnt_root, mnt, "/cache", 0, &nd);
-@@ -129,13 +129,13 @@ int nfs_cache_register(struct cache_detail *cd)
- 	if (!ret)
- 		return ret;
- err:
--	rpc_put_mount();
-+	mntput(mnt);
- 	return ret;
- }
- 
- void nfs_cache_unregister(struct cache_detail *cd)
- {
- 	sunrpc_cache_unregister_pipefs(cd);
--	rpc_put_mount();
-+	mntput(init_rpc_pipefs);
- }
- 
-diff --git a/include/linux/sunrpc/rpc_pipe_fs.h b/include/linux/sunrpc/rpc_pipe_fs.h
-index cf14db9..b09bfa5 100644
---- a/include/linux/sunrpc/rpc_pipe_fs.h
-+++ b/include/linux/sunrpc/rpc_pipe_fs.h
-@@ -44,6 +44,8 @@ RPC_I(struct inode *inode)
- 	return container_of(inode, struct rpc_inode, vfs_inode);
- }
- 
-+extern struct vfsmount *init_rpc_pipefs;
-+
- extern int rpc_queue_upcall(struct inode *, struct rpc_pipe_msg *);
- 
- struct rpc_clnt;
-@@ -60,8 +62,6 @@ extern void rpc_remove_cache_dir(struct dentry *);
- extern struct dentry *rpc_mkpipe(struct dentry *, const char *, void *,
- 				 const struct rpc_pipe_ops *, int flags);
- extern int rpc_unlink(struct dentry *);
--extern struct vfsmount *rpc_get_mount(void);
--extern void rpc_put_mount(void);
- extern int register_rpc_pipefs(void);
- extern void unregister_rpc_pipefs(void);
- 
-diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
-index 57d344c..f3812d0 100644
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -112,9 +112,7 @@ rpc_setup_pipedir(struct rpc_clnt *clnt, char *dir_name)
- 	if (dir_name == NULL)
- 		return 0;
- 
--	path.mnt = rpc_get_mount();
--	if (IS_ERR(path.mnt))
--		return PTR_ERR(path.mnt);
-+	path.mnt = mntget(init_rpc_pipefs);
- 	error = vfs_path_lookup(path.mnt->mnt_root, path.mnt, dir_name, 0, &nd);
- 	if (error)
- 		goto err;
-@@ -140,7 +138,7 @@ rpc_setup_pipedir(struct rpc_clnt *clnt, char *dir_name)
- err_path_put:
- 	path_put(&nd.path);
- err:
--	rpc_put_mount();
-+	mntput(path.mnt);
- 	return error;
- }
- 
-@@ -251,7 +249,7 @@ static struct rpc_clnt * rpc_new_client(const struct rpc_create_args *args, stru
- out_no_auth:
- 	if (!IS_ERR(clnt->cl_path.dentry)) {
- 		rpc_remove_client_dir(clnt->cl_path.dentry);
--		rpc_put_mount();
-+		mntput(clnt->cl_path.mnt);
- 	}
- out_no_path:
- 	kfree(clnt->cl_principal);
-@@ -472,7 +470,7 @@ rpc_free_client(struct rpc_clnt *clnt)
- 			clnt->cl_protname, clnt->cl_server);
- 	if (!IS_ERR(clnt->cl_path.dentry)) {
- 		rpc_remove_client_dir(clnt->cl_path.dentry);
--		rpc_put_mount();
-+		mntput(clnt->cl_path.mnt);
- 	}
- 	if (clnt->cl_parent != clnt) {
- 		rpc_release_client(clnt->cl_parent);
-diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index 9ab9355..484c9a3 100644
---- a/net/sunrpc/rpc_pipe.c
-+++ b/net/sunrpc/rpc_pipe.c
-@@ -28,7 +28,8 @@
- #include <linux/sunrpc/rpc_pipe_fs.h>
- #include <linux/sunrpc/cache.h>
- 
--static struct vfsmount *rpc_mnt __read_mostly;
-+struct vfsmount *init_rpc_pipefs __read_mostly;
-+EXPORT_SYMBOL_GPL(init_rpc_pipefs);
- 
- static struct file_system_type rpc_pipe_fs_type;
- 
-@@ -420,18 +421,6 @@ struct rpc_filelist {
- 	umode_t mode;
- };
- 
--struct vfsmount *rpc_get_mount(void)
--{
--	return mntget(rpc_mnt);
--}
--EXPORT_SYMBOL_GPL(rpc_get_mount);
--
--void rpc_put_mount(void)
--{
--	mntput(rpc_mnt);
--}
--EXPORT_SYMBOL_GPL(rpc_put_mount);
--
- static int rpc_delete_dentry(const struct dentry *dentry)
- {
- 	return 1;
-@@ -1068,9 +1057,9 @@ int register_rpc_pipefs(void)
- 	if (err)
- 		goto destroy_cache;
- 
--	rpc_mnt = kern_mount(&rpc_pipe_fs_type);
--	if (IS_ERR(rpc_mnt)) {
--		err = PTR_ERR(rpc_mnt);
-+	init_rpc_pipefs = kern_mount(&rpc_pipe_fs_type);
-+	if (IS_ERR(init_rpc_pipefs)) {
-+		err = PTR_ERR(init_rpc_pipefs);
- 		goto unregister_fs;
- 	}
- 
+The biggest part of the update comes from the new irq API conversion and from
+various fixes all over the place. We also got support for the AMD cs5535
+companion device, and for Wolfson Microelectronics WM8326 (besides the WM8958
+one that got merged already).
+
+Thanks in advance for pulling it:
+
+The following changes since commit 52cfd503ad7176d23a5dd7af3981744feb60622f:
+
+  Merge branch 'release' of git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6 (2011-01-13 20:15:35 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-2.6.git for-next
+
+Andres Salomon (7):
+      mfd: Add cs5535-mfd driver for AMD Geode's CS5535/CS5536 support
+      mfd: Fix cs5535 warning on x86-64
+      gpio: Convert cs5535 from pci device to platform device
+      misc: Convert cs5535-mfgpt from pci device to platform device
+      gpio/misc: Add MODULE_ALIAS entries for CS5535 functions
+      x86: OLPC: convert olpc-xo1 driver from pci device to platform device
+      i2c: Convert SCx200 driver from using raw PCI to platform device
+
+Axel Lin (3):
+      mfd: Include <linux/io.h> instead of <asm/io.h>
+      mfd: Include <linux/gpio.h> instead of <asm/gpio.h>
+      mfd: Add __devexit annotation for vx855_remove
+
+Bryan Wu (1):
+      mfd: Fix twl_probe section mismatch warning in mfd/twl-core.c
+
+Joe Perches (4):
+      mfd: Update WARN uses
+      mfd: Use printf extension %pR for struct resource
+      misc: Fix cs5535 printk warnings
+      gpio: Fix cs5535 printk warnings
+
+Lennert Buytenhek (2):
+      mfd: Convert ezx-pcap to new irq_ methods
+      mfd: twl6030 irq_data conversion.
+
+Mark Brown (30):
+      mfd: Simplify WM832x subdevice instantiation
+      mfd: Add WM8326 support
+      mfd: Convert WM831x to new irq_ interrupt methods
+      mfd: Convert WM835x to new irq_ interrupt methods
+      mfd: Convert WM8994 to new irq_ interrupt methods
+      mfd: Provide pm_runtime_no_callbacks flag in cell data
+      mfd: Implement runtime PM for WM8994 core driver
+      mfd: Staticise unexported symbols in ASIC3
+      mfd: Correct ASIC3 IRQ_OWM resource setup
+      mfd: Use NULL to initialise NULL pointers in ab8500-debugfs
+      mfd: Staticise internal functions in HTC I2CCPLD driver
+      mfd: Convert 88PM860x driver to new irq_ APIs
+      mfd: Convert ASIC3 to new irq_ APIs
+      mfd: Convert AB3500 to new irq_ APIs
+      mfd: Convert AB8500 to new irq_ methods
+      mfd: Convert HTC EGPIO driver to irq_ API
+      mfd: Convert HTC I2C CPLD driver to irq_ API
+      mfd: Convert jz4740-adc to new irq_ methods
+      mfd: Convert max8925 to new irq_ API
+      mfd: Convert MAX8998 driver to irq_ API
+      mfd: Convert SMTPE driver to new irq_ APIs
+      mfd: Convert t7166xb driver to new irq_ API
+      mfd: Convert tc6393xb driver to new irq_ APIs
+      mfd: Convert tps6586x driver to new irq_ API
+      mfd: Convert TWL4030 to new irq_ APIs
+      mfd: Convert Wolfson MFD drivers to use irq_data accessor function
+      misc: Make AB8500_PWM driver depend on U8500 due to PWM breakage
+      mfd: Remove ARCH_U8500 dependency from AB8500
+      mfd: Convert WM831x away from legacy I2C PM operations
+      mfd: Flag WM831x /IRQ as a wake source
+
+Mattias Wallin (6):
+      mfd: Fix ab8500-debug indentation errors
+      mfd: ab8500-core improved error handling in get_chip_id
+      mfd: Export ab8500 chip id to sysfs
+      mfd: ab8500-core wake up from suspend
+      mfd: ab8500-core ioresources irq for subdrivers added
+      mfd: ab8500-core chip version cut 2.0 support
+
+MyungJoo Ham (3):
+      mfd: MAX8998/LP3974 hibernation support
+      mfd: Support LP3974 RTC
+      regulator: Support MAX8998/LP3974 DVS-GPIO
+
+Stephen Warren (1):
+      mfd: Remove tps6586x device ID check
+
+Sundar Iyer (1):
+      mfd/ab8500: remove spi support
+
+Uwe Kleine-König (1):
+      mfd: Don't open-code mc13xxx_unlock
+
+ arch/x86/Kconfig                    |    2 +-
+ arch/x86/platform/olpc/olpc-xo1.c   |  101 ++--
+ drivers/gpio/cs5535-gpio.c          |   93 ++---
+ drivers/i2c/busses/scx200_acb.c     |  200 +++----
+ drivers/mfd/88pm860x-core.c         |   36 +-
+ drivers/mfd/Kconfig                 |   16 +-
+ drivers/mfd/Makefile                |    3 +-
+ drivers/mfd/ab3550-core.c           |   28 +-
+ drivers/mfd/ab8500-core.c           |  306 ++++++++++--
+ drivers/mfd/ab8500-debugfs.c        | 1016 +++++++++++++++++-----------------
+ drivers/mfd/ab8500-spi.c            |  143 -----
+ drivers/mfd/asic3.c                 |   62 ++--
+ drivers/mfd/cs5535-mfd.c            |  151 ++++++
+ drivers/mfd/ezx-pcap.c              |   25 +-
+ drivers/mfd/htc-egpio.c             |   27 +-
+ drivers/mfd/htc-i2cpld.c            |   40 +-
+ drivers/mfd/jz4740-adc.c            |   25 +-
+ drivers/mfd/max8925-core.c          |   30 +-
+ drivers/mfd/max8998-irq.c           |   37 +-
+ drivers/mfd/max8998.c               |  134 +++++-
+ drivers/mfd/mc13xxx-core.c          |    2 +-
+ drivers/mfd/mfd-core.c              |    4 +
+ drivers/mfd/sm501.c                 |    9 +-
+ drivers/mfd/stmpe.c                 |   28 +-
+ drivers/mfd/t7l66xb.c               |   20 +-
+ drivers/mfd/tc6393xb.c              |   22 +-
+ drivers/mfd/tps65010.c              |    2 +-
+ drivers/mfd/tps6586x.c              |   36 +-
+ drivers/mfd/twl-core.c              |    2 +-
+ drivers/mfd/twl4030-irq.c           |   28 +-
+ drivers/mfd/twl6030-irq.c           |    2 +-
+ drivers/mfd/vx855.c                 |    2 +-
+ drivers/mfd/wm831x-core.c           |   17 +-
+ drivers/mfd/wm831x-i2c.c            |   14 +-
+ drivers/mfd/wm831x-irq.c            |   53 ++-
+ drivers/mfd/wm831x-spi.c            |   18 +
+ drivers/mfd/wm8350-irq.c            |   32 +-
+ drivers/mfd/wm8994-core.c           |   46 +-
+ drivers/mfd/wm8994-irq.c            |   32 +-
+ drivers/misc/Kconfig                |    2 +-
+ drivers/misc/cs5535-mfgpt.c         |   73 +--
+ drivers/regulator/max8998.c         |   94 +++-
+ drivers/rtc/rtc-max8998.c           |   54 ++-
+ include/linux/mfd/ab8500.h          |   53 +-
+ include/linux/mfd/core.h            |    6 +
+ include/linux/mfd/max8998-private.h |    2 +
+ include/linux/mfd/max8998.h         |   31 +-
+ include/linux/mfd/wm831x/core.h     |    1 +
+ 48 files changed, 1806 insertions(+), 1354 deletions(-)
+ delete mode 100644 drivers/mfd/ab8500-spi.c
+ create mode 100644 drivers/mfd/cs5535-mfd.c
+
 -- 
-1.7.3.4
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
