@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab1ANVV7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 16:21:59 -0500
-Received: from mx1.fusionio.com ([64.244.102.30]:59421 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752178Ab1ANVV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 16:21:58 -0500
-X-ASG-Debug-ID: 1295040117-1789a9600001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D30BE71.3050801@fusionio.com>
-Date: Fri, 14 Jan 2011 22:21:53 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1752716Ab1ANVXT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 16:23:19 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:40894 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752178Ab1ANVXS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 16:23:18 -0500
+Message-ID: <4D30BE98.7060809@kernel.org>
+Date: Fri, 14 Jan 2011 13:22:32 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Follow up block pull request for 2.6.38-rc1
-Content-Type: text/plain; charset="ISO-8859-1"
-X-ASG-Orig-Subj: [GIT PULL] Follow up block pull request for 2.6.38-rc1
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: Christoph Lameter <cl@linux.com>, Greg KH <greg@kroah.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH] x86: set percpu cpu0 lpj to default
+References: <AANLkTika_bZxXO3PKek+BHoYqgYGPBPER-H9KJJXjJzn@mail.gmail.com> <20110111135655.GA6901@kroah.com> <4D2CFEAD.6070206@kernel.org> <1294799565.9586.13.camel@pasglop> <4D2F7AE9.2000809@kernel.org> <20110113224450.GA14918@kroah.com> <alpine.LFD.2.00.1101132349590.2678@localhost6.localdomain6> <4D2F84FC.7000804@kernel.org> <20110113234852.GB17904@kroah.com> <4D2F9948.8000804@kernel.org> <20110114004428.GA26847@kroah.com> <4D2FA305.2030808@kernel.org> <alpine.DEB.2.00.1101140846560.2423@router.home>
+In-Reply-To: <alpine.DEB.2.00.1101140846560.2423@router.home>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1295040117
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.4741 1.0000 0.0000
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.52386
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Mainly pushing this now to get Tejuns tested fix out the door. Also
-included are two CFQ optimizations.
+We need to use udelay() in early stage.
 
-Please pull.
+For x86, normally udelay need to use percpu.loops_per_jiffy
+will need to wait per_cpu(cpu_info) is allocated and copied
+from boot_cpu_data, after it is in smp_prepare_cpus()
+boot_cpu_data.loops_per_jiffy get set in identify_boot_cpu from check_bugs.
 
-  git://git.kernel.dk/linux-2.6-block.git for-linus
+But cpu_data(0) can be referred early, that is in per cpu load data.
 
-Shaohua Li (2):
-      block cfq: make queue preempt work for queues from different workload
-      block cfq: compensate preempted queue even if it has no slice assigned
+Try to set it with default vaule instead leave it as zero.
 
-Tejun Heo (1):
-      block: restore multiple bd_link_disk_holder() support
+BTW: it it is some small...only 4096
 
- block/cfq-iosched.c   |   28 +++++++++++++--
- drivers/md/dm-table.c |    1 +
- drivers/md/md.c       |    1 +
- fs/block_dev.c        |   93 +++++++++++++++++++++++++++++++++++++++---------
- include/linux/fs.h    |    8 ++++-
- 5 files changed, 108 insertions(+), 23 deletions(-)
+Now: only user for udelay is ehci dgp early console.
 
--- 
-Jens Axboe
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
+---
+ arch/x86/kernel/setup.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+Index: linux-2.6/arch/x86/kernel/setup.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/setup.c
++++ linux-2.6/arch/x86/kernel/setup.c
+@@ -734,6 +734,7 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	early_trap_init();
+ 	early_cpu_init();
++	cpu_data(0).loops_per_jiffy = loops_per_jiffy;
+ 	early_ioremap_init();
+ 
+ 	setup_olpc_ofw_pgd();
