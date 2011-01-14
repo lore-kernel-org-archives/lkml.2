@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757449Ab1ANAMu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 19:12:50 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:46010 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752187Ab1ANAMo (ORCPT
+	id S1757437Ab1ANAQU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 19:16:20 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48912 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752187Ab1ANAQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 19:12:44 -0500
-X-SpamScore: -12
-X-BigFish: VPS-12(z426fnzbb2cK1432N98dN4015Lzz1202hzz8275bhz32i637h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LEZJRS-02-AH8-02
-X-M-MSG: 
-Date: Fri, 14 Jan 2011 00:55:03 +0100
-From: Robert Richter <robert.richter@amd.com>
-To: Andi Kleen <andi@firstfloor.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>
-Subject: Re: [PATCH] oprofile: Add support for missing Intel core i7 models
-Message-ID: <20110113235503.GY4739@erda.amd.com>
-References: <1294958291-5626-1-git-send-email-sbohrer@rgmadvisors.com>
+	Thu, 13 Jan 2011 19:16:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1294958291-5626-1-git-send-email-sbohrer@rgmadvisors.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+In-Reply-To: <201101131619.01893.bjorn.helgaas@hp.com>
+References: <1294327066-23518-1-git-send-email-jslaby@suse.cz>
+ <201101101140.45501.bjorn.helgaas@hp.com> <4D2ECEDC.4040804@gmail.com> <201101131619.01893.bjorn.helgaas@hp.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 13 Jan 2011 16:15:20 -0800
+Message-ID: <AANLkTinN40GMRL3bJ7LKDmhCYK1AYZfQ+mVYwxDP1ZQe@mail.gmail.com>
+Subject: Re: [PATCH 1/1] PCI: tune up ICH4 quirk for broken BIOSes
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Jiri Slaby <jirislaby@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
+        jbarnes@virtuousgeek.org, linux-pci@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Renninger <trenn@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.01.11 17:38:11, Shawn Bohrer wrote:
-> Added missing core i7 models found in "Intel 64 and IA-32 Architectures
-> Software Developer's Manual Volume 3B: System Programming Guide",
-> Table B-1.  Tested with oprofile 0.9.6 on a:
-> 
-> model      : 44
-> model name : Intel(R) Xeon(R) CPU           X5680  @ 3.33GHz
-> 
-> Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+On Thu, Jan 13, 2011 at 3:19 PM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+>
+> I think we're back to the question of why we have the ICH4 quirk in
+> the first place, and I don't know the answer to that.
 
-Andi,
+Iirc, there were several laptops that didn't have the ACPI region
+mentioned in any of the regular places, and we'd allocate the PCMCIA
+IO region on top of them. The machine would boot, but if anybody ever
+inserted a PCCard into the machine, the first access to the IO region
+would generally just halt it (because it was trying to read the
+PCCard, but the APCI region decodes first, and then the read from that
+usually put the CPU in a sleep state that it would never wake up from
+for obvious reasons).
 
-please ACK.
+So we do want the ICH4 quirk.
 
-Thanks,
+> Maybe you could make the ICH4 quirk only claim the region if it's
+> above PCIBIOS_MIN_IO, i.e., if it's in the area where we could put
+> another PCI device on top of it?
 
--Robert
+That may well be the best solution - we'd only mark it reserved if it
+might conflict with a dynamic allocation, and if it conflicts with
+other motherboard resources (like the IDE ports), then we don't know
+what the decode priority is anyway, so..
 
-> ---
->  arch/x86/oprofile/nmi_int.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-> index e2b7b0c..1523313 100644
-> --- a/arch/x86/oprofile/nmi_int.c
-> +++ b/arch/x86/oprofile/nmi_int.c
-> @@ -678,6 +678,9 @@ static int __init ppro_init(char **cpu_type)
->  		break;
->  	case 0x1a:
->  	case 0x1e:
-> +	case 0x1f:
-> +	case 0x25:
-> +	case 0x2c:
->  	case 0x2e:
->  		spec = &op_arch_perfmon_spec;
->  		*cpu_type = "i386/core_i7";
-> -- 
-> 1.7.3.4
-> 
-> 
+In this case, it looks like the legacy IDE ports get decoded before
+the dynamic BAR's. Which is not too much of a surprise (fixed
+addresses tend to be the first to get decoded).
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+                    Linus
