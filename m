@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757989Ab1ANRuw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 12:50:52 -0500
-Received: from mga02.intel.com ([134.134.136.20]:57007 "EHLO mga02.intel.com"
+	id S1758064Ab1ANR4S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 12:56:18 -0500
+Received: from smtp208.alice.it ([82.57.200.104]:51994 "EHLO smtp208.alice.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757693Ab1ANRur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 12:50:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,323,1291622400"; 
-   d="scan'208";a="593073187"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: "Andrea Arcangeli" <aarcange@redhat.com>
-Cc: linux-kernel@vger.kernel.org, "Andrew Morton" <akpm@linux-foundation.org>,
-        linux-arch@vger.kernel.org
-Subject: ia64 broken by transparent huge pages - other arches too?
-Date: Fri, 14 Jan 2011 09:50:45 -0800
-Message-Id: <4d308cf5394566ccc@agluck-desktop.sc.intel.com>
+	id S1752335Ab1ANR4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 12:56:13 -0500
+X-Greylist: delayed 344 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 Jan 2011 12:56:12 EST
+From: Alberto Mattea <alberto@mattea.info>
+To: linux-kernel@vger.kernel.org
+Subject: sata_nv silently ignores discard (TRIM) command?
+Date: Fri, 14 Jan 2011 18:50:24 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-020637-generic; KDE/4.5.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101141850.25252@alby>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Didn't Andrew make some rash promise at kernel summit about stopping
-eating if "-mm" wasn't included in linux-next by the end of November?
+Hello all.
+I'm testing linux 2.6.37 final with a Crucial RealSSD C300 (256GB).
+The chipset is a nforce 570 (M2N32-SLI Deluxe); lspci:
+IDE interface [0101]: nVidia Corporation MCP55 SATA Controller [10de:037f] 
+(rev a2) (prog-if 85 [Master SecO PriO])
+        Subsystem: ASUSTeK Computer Inc. Device [1043:cb84]
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
+Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort- 
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0 (750ns min, 250ns max)
+        Interrupt: pin C routed to IRQ 21
+        Region 0: I/O ports at f200 [size=8]
+        Region 1: I/O ports at f100 [size=4]
+        Region 2: I/O ports at f000 [size=8]
+        Region 3: I/O ports at ef00 [size=4]
+        Region 4: I/O ports at ee00 [size=16]
+        Region 5: Memory at fe02b000 (32-bit, non-prefetchable) [size=4K]
+        Capabilities: [44] Power Management version 2
+                Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA 
+PME(D0-,D1-,D2-,D3hot-,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [b0] MSI: Enable- Count=1/4 Maskable- 64bit+
+                Address: 0000000000000000  Data: 0000
+        Capabilities: [cc] HyperTransport: MSI Mapping Enable+ Fixed+
+        Kernel driver in use: sata_nv
+        Kernel modules: sata_nv
 
-Must be getting pretty hungry by now.
+On the device there is a single ext4 partition, mounted with -o discard. 
+Dmesg:
+EXT4-fs (sda1): re-mounted. Opts: errors=remount-
+ro,discard,data=writeback,commit=0
 
-The transparent huge page code just arrived in the merge window
-without having been in linux-next.  I see this error when trying
-to build for ia64 from Linus' tree this morning:
-
-In file included from /home/aegl/generic-smp/arch/ia64/include/asm/pgtable.h:611,
-                 from include/linux/mm.h:41,
-                 from /home/aegl/generic-smp/arch/ia64/include/asm/uaccess.h:39,
-                 from include/linux/poll.h:14,
-                 from include/linux/rtc.h:117,
-                 from include/linux/efi.h:19,
-                 from /home/aegl/generic-smp/arch/ia64/include/asm/sal.h:40,
-                 from /home/aegl/generic-smp/arch/ia64/include/asm/mca.h:20,
-                 from arch/ia64/kernel/asm-offsets.c:17:
-include/asm-generic/pgtable.h: In function ‘pmdp_get_and_clear’:
-include/asm-generic/pgtable.h:96: error: implicit declaration of function ‘__pmd’
-include/asm-generic/pgtable.h:96: error: incompatible types in return
-make[1]: *** [arch/ia64/kernel/asm-offsets.s] Error 1
-
-
-Looks like arch/*/include/pgtable.h needs to define __pmd() but only x86
-was blessed with it.
-
--Tony
+To test whether TRIM is working, I did the following:
+# dd if=/dev/urandom of=tempfile count=100 bs=512k oflag=direct
+# hdparm --fibmap tempfile
+(File begins at 66090496)
+# hdparm --read-sector 66090496 /dev/sda
+(Random data)
+# rm tempfile
+# sync
+# hdparm --read-sector 66090496 /dev/sda
+Now, if I'm correct after a successful TRIM the last command should output all 
+zeroes, but exactly the same random data is reported instead. However, there 
+is nothing in dmesg about TRIM failing. Does sata_nv support TRIM on the 570?
+Thanks
+Alberto
