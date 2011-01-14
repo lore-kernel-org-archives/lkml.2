@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab1ANBfm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 Jan 2011 20:35:42 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34060 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034Ab1ANBfe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 Jan 2011 20:35:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=XL0usZcAAZbMKWCBOO9kSx18wMK+shpit36iD5LJGpsTkSFmVzmkRVN/PHFGPICZwp
-         g1yWTdXIEzzl11S7WKlkv6gsYoVsCCPEilfjY3TJcEuxHj230gRdhukGRA/rV73jLw5J
-         zNaqep7GBrbUV3GF6R2hNFpmbcRHM1H0Oes8o=
-MIME-Version: 1.0
-Date: Fri, 14 Jan 2011 12:35:32 +1100
-Message-ID: <AANLkTimMwZnm3UKvmrPscBeZF77vh1sW0ERO1tuv1oNW@mail.gmail.com>
-Subject: [patch] fs: aio fix rcu lookup
-From: Nick Piggin <npiggin@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=0016364d2cbd3f930e0499c473e8
+	id S1757496Ab1ANBhW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 Jan 2011 20:37:22 -0500
+Received: from mga11.intel.com ([192.55.52.93]:39915 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752034Ab1ANBhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 Jan 2011 20:37:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,320,1291622400"; 
+   d="scan'208";a="877363155"
+Subject: Re: [PATCH 1/2] mm, Make __get_user_pages return -EHWPOISON for
+ HWPOISON page optionally
+From: Huang Ying <ying.huang@intel.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        Dean Nelson <dnelson@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <4D2ED737.6050802@redhat.com>
+References: <1294908168.4596.58.camel@yhuang-dev>
+	 <4D2ED737.6050802@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 Jan 2011 09:37:16 +0800
+Message-ID: <1294969036.4596.67.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016364d2cbd3f930e0499c473e8
-Content-Type: text/plain; charset=ISO-8859-1
+On Thu, 2011-01-13 at 18:43 +0800, Avi Kivity wrote:
+> On 01/13/2011 10:42 AM, Huang Ying wrote:
+> > Make __get_user_pages return -EHWPOISON for HWPOISON page only if
+> > FOLL_HWPOISON is specified.  With this patch, the interested callers
+> > can distinguish HWPOISON page from general FAULT page, while other
+> > callers will still get -EFAULT for pages, so the user space interface
+> > need not to be changed.
+> >
+> > get_user_pages_hwpoison is added as a variant of get_user_pages that
+> > can return -EHWPOISON for HWPOISON page.
+> >
+> > This feature is needed by KVM, where UCR MCE should be relayed to
+> > guest for HWPOISON page, while instruction emulation and MMIO will be
+> > tried for general FAULT page.
+> >
+> > The idea comes from Andrew Morton.
+> >
+> > Signed-off-by: Huang Ying<ying.huang@intel.com>
+> > Cc: Andrew Morton<akpm@linux-foundation.org>
+> >
+> > +#ifdef CONFIG_MEMORY_FAILURE
+> > +int get_user_pages_hwpoison(struct task_struct *tsk, struct mm_struct *mm,
+> > +			    unsigned long start, int nr_pages, int write,
+> > +			    int force, struct page **pages,
+> > +			    struct vm_area_struct **vmas);
+> > +#else
+> 
+> Since we'd also like to add get_user_pages_noio(), perhaps adding a 
+> flags field to get_user_pages() is better.
 
-Hi,
+Or export __get_user_pages()?
 
-While hunting down a bug in NFS's AIO, I believe I found this
-buggy code...
+Best Regards,
+Huang Ying
 
---0016364d2cbd3f930e0499c473e8
-Content-Type: application/octet-stream; name="fs-aio-race-fix.patch"
-Content-Disposition: attachment; filename="fs-aio-race-fix.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_giwf6nxn0
 
-ZnM6IGFpbyBmaXggcmN1IGlvY3R4IGxvb2t1cAoKYWlvLWRpby1pbnZhbGlkYXRlLWZhaWx1cmUg
-R1BGcyBpbiBhaW9fcHV0X3JlcSBmcm9tIGlvX3N1Ym1pdC4KCmxvb2t1cF9pb2N0eCBkb2Vzbid0
-IGltcGxlbWVudCB0aGUgcmN1IGxvb2t1cCBwYXR0ZXJuIHByb3Blcmx5LgpyY3VfcmVhZF9sb2Nr
-IGRvZXMgbm90IHByZXZlbnQgcmVmY291bnQgZ29pbmcgdG8gemVybywgc28gd2UKbWlnaHQgdGFr
-ZSBhIHJlZmNvdW50IG9uIGEgemVybyBjb3VudCBpb2N0eC4KClNpZ25lZC1vZmYtYnk6IE5pY2sg
-UGlnZ2luIDxucGlnZ2luQGtlcm5lbC5kaz4KCkluZGV4OiBsaW51eC0yLjYvZnMvYWlvLmMKPT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvZnMvYWlvLmMJMjAxMS0wMS0xNCAwMDoyOTowMC4w
-MDAwMDAwMDAgKzExMDAKKysrIGxpbnV4LTIuNi9mcy9haW8uYwkyMDExLTAxLTE0IDExOjMxOjQ3
-LjAwMDAwMDAwMCArMTEwMApAQCAtMjM5LDE1ICsyMzksMjMgQEAgc3RhdGljIHZvaWQgX19wdXRf
-aW9jdHgoc3RydWN0IGtpb2N0eCAqYwogCWNhbGxfcmN1KCZjdHgtPnJjdV9oZWFkLCBjdHhfcmN1
-X2ZyZWUpOwogfQogCi0jZGVmaW5lIGdldF9pb2N0eChraW9jdHgpIGRvIHsJCQkJCQlcCi0JQlVH
-X09OKGF0b21pY19yZWFkKCYoa2lvY3R4KS0+dXNlcnMpIDw9IDApOwkJCVwKLQlhdG9taWNfaW5j
-KCYoa2lvY3R4KS0+dXNlcnMpOwkJCQkJXAotfSB3aGlsZSAoMCkKLSNkZWZpbmUgcHV0X2lvY3R4
-KGtpb2N0eCkgZG8gewkJCQkJCVwKLQlCVUdfT04oYXRvbWljX3JlYWQoJihraW9jdHgpLT51c2Vy
-cykgPD0gMCk7CQkJXAotCWlmICh1bmxpa2VseShhdG9taWNfZGVjX2FuZF90ZXN0KCYoa2lvY3R4
-KS0+dXNlcnMpKSkgCQlcCi0JCV9fcHV0X2lvY3R4KGtpb2N0eCk7CQkJCQlcCi19IHdoaWxlICgw
-KQorc3RhdGljIGlubGluZSB2b2lkIGdldF9pb2N0eChzdHJ1Y3Qga2lvY3R4ICpraW9jdHgpCit7
-CisJQlVHX09OKGF0b21pY19yZWFkKCZraW9jdHgtPnVzZXJzKSA8PSAwKTsKKwlhdG9taWNfaW5j
-KCZraW9jdHgtPnVzZXJzKTsKK30KKworc3RhdGljIGlubGluZSBpbnQgdHJ5X2dldF9pb2N0eChz
-dHJ1Y3Qga2lvY3R4ICpraW9jdHgpCit7CisJcmV0dXJuIGF0b21pY19pbmNfbm90X3plcm8oJmtp
-b2N0eC0+dXNlcnMpOworfQorCitzdGF0aWMgaW5saW5lIHZvaWQgcHV0X2lvY3R4KHN0cnVjdCBr
-aW9jdHggKmtpb2N0eCkKK3sKKwlCVUdfT04oYXRvbWljX3JlYWQoJmtpb2N0eC0+dXNlcnMpIDw9
-IDApOworCWlmICh1bmxpa2VseShhdG9taWNfZGVjX2FuZF90ZXN0KCZraW9jdHgtPnVzZXJzKSkp
-CisJCV9fcHV0X2lvY3R4KGtpb2N0eCk7Cit9CiAKIC8qIGlvY3R4X2FsbG9jCiAgKglBbGxvY2F0
-ZXMgYW5kIGluaXRpYWxpemVzIGFuIGlvY3R4LiAgUmV0dXJucyBhbiBFUlJfUFRSIGlmIGl0IGZh
-aWxlZC4KQEAgLTYwMSw4ICs2MDksNyBAQCBzdGF0aWMgc3RydWN0IGtpb2N0eCAqbG9va3VwX2lv
-Y3R4KHVuc2lnCiAJcmN1X3JlYWRfbG9jaygpOwogCiAJaGxpc3RfZm9yX2VhY2hfZW50cnlfcmN1
-KGN0eCwgbiwgJm1tLT5pb2N0eF9saXN0LCBsaXN0KSB7Ci0JCWlmIChjdHgtPnVzZXJfaWQgPT0g
-Y3R4X2lkICYmICFjdHgtPmRlYWQpIHsKLQkJCWdldF9pb2N0eChjdHgpOworCQlpZiAoY3R4LT51
-c2VyX2lkID09IGN0eF9pZCAmJiAhY3R4LT5kZWFkICYmIHRyeV9nZXRfaW9jdHgoY3R4KSl7CiAJ
-CQlyZXQgPSBjdHg7CiAJCQlicmVhazsKIAkJfQo=
---0016364d2cbd3f930e0499c473e8--
