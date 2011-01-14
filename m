@@ -1,82 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757970Ab1ANQbE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 11:31:04 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23416 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757726Ab1ANQa7 (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Fri, 14 Jan 2011 11:30:59 -0500
-Date: Fri, 14 Jan 2011 11:28:45 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, andi@firstfloor.org,
-        williams@redhat.com, schwidefsky@de.ibm.com, mingo@elte.hu,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [PATCH] acpi/pm: If failed at validating ACPI PM timer,
- inhibit future reads.
-Message-ID: <20110114162845.GB12102@dumpdata.com>
-References: <20110111083054.GB22867@shutemov.name>
- <alpine.LFD.2.00.1101110936291.12146@localhost6.localdomain6>
- <20110111095640.GC22867@shutemov.name>
- <20110113174909.GA28738@dumpdata.com>
- <1294941698.5617.12.camel@work-vm>
- <20110113214022.GA12097@dumpdata.com>
- <alpine.LFD.2.00.1101132301300.2678@localhost6.localdomain6>
- <20110114140941.GA3062@dumpdata.com>
- <1295019849.2655.8.camel@work-vm>
- <1295020487.2655.17.camel@work-vm>
+	id S1757984Ab1ANQb2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 11:31:28 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:50019 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757929Ab1ANQbX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 11:31:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=tEZmlmy0gimb+0qZZZUzp+eHJLUO77ueiIf1S2PXjU0AY585df9NHOXUQgniISZAQk
+         1GBAKUDOc8HmMpN3O6q+w6RzwkyK8HSRFxXiMadbS3xMMHHuAng9K71Tzk10nRN5k2Hd
+         Xw6SMgJdk9j3OQvhW7Z47lewOuhLDBYkUDTZU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295020487.2655.17.camel@work-vm>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTimdPFGJxjWHPZ2kojxJoj76zDw2=fiwDiMrinjy@mail.gmail.com>
+References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie>
+	<4D2CE5C8.60601@de.ibm.com>
+	<AANLkTimr4WX3Ay8vC23MKOM+dOcpV+Ca5rg_gcei38nk@mail.gmail.com>
+	<4D2D8ED0.6080807@de.ibm.com>
+	<AANLkTik4h=4o8JEwfd+=CFVb4NgkwaEwxmM6n_+sDj3K@mail.gmail.com>
+	<alpine.LFD.2.00.1101121344070.8212@casper.infradead.org>
+	<AANLkTimdnYHWfBE1nB+2EDRouO7_FoRByVboMYw8WaHB@mail.gmail.com>
+	<AANLkTik=HYzW8--_W+qxi8S9QbAkf9ZZy=uLyaTeV+PC@mail.gmail.com>
+	<alpine.LFD.2.00.1101121538470.8212@casper.infradead.org>
+	<alpine.LFD.2.00.1101131752190.311@casper.infradead.org>
+	<AANLkTimdPFGJxjWHPZ2kojxJoj76zDw2=fiwDiMrinjy@mail.gmail.com>
+Date: Fri, 14 Jan 2011 18:29:04 +0200
+Message-ID: <AANLkTinCWvrLKS_nq_669SKLFeZgDcx0vi4QRX854hxZ@mail.gmail.com>
+Subject: Re: [git pull] drm for rc1
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: James Simmons <jsimmons@infradead.org>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Dave Airlie <airlied@linux.ie>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 07:54:47AM -0800, john stultz wrote:
-> On Fri, 2011-01-14 at 07:44 -0800, john stultz wrote:
-> > I'm actually looking at a different fix, as I'm worried by Thomas'
-> > comment about hitting the same issue on real hardware if we catch the
-> > same pmtrm value both times.
-> 
-> Konrad: Mind trying the following?
-> 
-> 
-> The conditional (!hpet && !ref_start && !ref_stop) doesn't really make
-> sense. If the refs are null, but hpet is on, we still want to break out.
-> 
-> So checking if both the ref values are the same should handle if we
-> don't have hardware (both null) or if they are the same value (either by
-> invalid hardware, or by chance), which can cause a divzero issue.
-> 
-> NOT FOR INCLUSION, I haven't had my coffee yet.
-> Signed-off-by: John Stultz <johnstul@us.ibm.com>
-
-Works great. (I pulled out my patch to test this).
-
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
-> 
-> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-> index 823f79a..fa2cb5e 100644
-> --- a/arch/x86/kernel/tsc.c
-> +++ b/arch/x86/kernel/tsc.c
-> @@ -935,7 +935,7 @@ static void tsc_refine_calibration_work(struct work_struct *work)
->  	tsc_stop = tsc_read_refs(&ref_stop, hpet);
->  
->  	/* hpet or pmtimer available ? */
-> -	if (!hpet && !ref_start && !ref_stop)
-> +	if (ref_start == ref_stop)
->  		goto out;
->  
->  	/* Check, whether the sampling was disturbed by an SMI */
-> 
-> 
-> 
+P.S. My laptop: radeon 3470 works perfect.
