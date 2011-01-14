@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007Ab1ANXqe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 18:46:34 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:24604 "EHLO mx2.netapp.com"
+	id S1754032Ab1ANXtK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 18:49:10 -0500
+Received: from hera.kernel.org ([140.211.167.34]:34910 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752536Ab1ANXqd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 18:46:33 -0500
-X-IronPort-AV: E=Sophos;i="4.60,325,1291622400"; 
-   d="scan'208";a="505719549"
-Subject: Re: NFS OOps  - kernel BUG at fs/nfs/nfs3xdr.c:1338
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Milan Broz <mbroz@redhat.com>,
-        "Mr. Charles Edward Lever" <Chuck.Lever@oracle.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org
-In-Reply-To: <4D30D9D6.2080809@redhat.com>
-References: <4D30D9D6.2080809@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Fri, 14 Jan 2011 18:46:31 -0500
-Message-ID: <1295048791.20016.15.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 14 Jan 2011 23:46:32.0660 (UTC) FILETIME=[45C6F140:01CBB445]
+	id S1753965Ab1ANXtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 18:49:09 -0500
+Date: Fri, 14 Jan 2011 23:48:51 GMT
+From: tip-bot for Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, hpa@linux.intel.com, jacob.jun.pan@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, jacob.jun.pan@linux.intel.com, hpa@linux.intel.com
+In-Reply-To: <1294963604-18111-1-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1294963604-18111-1-git-send-email-jacob.jun.pan@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, mrst: Set correct APB timer IRQ affinity for secondary cpu
+Message-ID: <tip-6550904ddbc3c286798a87edf95eeebcc62bc58a@git.kernel.org>
+Git-Commit-ID: 6550904ddbc3c286798a87edf95eeebcc62bc58a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 14 Jan 2011 23:48:52 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-01-15 at 00:18 +0100, Milan Broz wrote: 
-> Hi,
-> 
-> on today Linus' tree I get OOps if using nfs.
-> 
-> server (2.6.36) exports dir:
-> /dir   172.16.1.0/24(rw,async,all_squash,no_subtree_check,anonuid=500,anongid=500)
-> 
-> on client it is mounted  in fstab
-> server:/dir  /mnt/tst  nfs  rw,soft 0 0
-> 
-> and these commands OOpses it (simplified from a configure script):
-> 
-> cd /dir
-> touch x
-> install x y
-> 
-> [  105.327701] ------------[ cut here ]------------
-> [  105.327979] kernel BUG at fs/nfs/nfs3xdr.c:1338!
+Commit-ID:  6550904ddbc3c286798a87edf95eeebcc62bc58a
+Gitweb:     http://git.kernel.org/tip/6550904ddbc3c286798a87edf95eeebcc62bc58a
+Author:     Jacob Pan <jacob.jun.pan@linux.intel.com>
+AuthorDate: Thu, 13 Jan 2011 16:06:44 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 14 Jan 2011 11:53:44 -0800
 
-Chuck, why did you add those BUG_ON()s there? I know that
-nfsacl_encode() is for some unfathomable reason declared as returning an
-unsigned integer, but if you look at the actual code, you will see that
-it returns a number of negative signed error values depending on whether
-or not allocations succeeded, number of entries is valid, etc...
+x86, mrst: Set correct APB timer IRQ affinity for secondary cpu
 
-IOW: negative values are perfectly allowable here, and should simply
-cause the rpc call to be aborted, not an Oops.
+Offlining the secondary CPU causes the timer irq affinity to be set to
+CPU 0. When the secondary CPU is back online again, the wrong irq
+affinity will be used.
 
-Trond
--- 
-Trond Myklebust
-Linux NFS client maintainer
+This patch ensures secondary per CPU timer always has the correct
+IRQ affinity when enabled.
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+LKML-Reference: <1294963604-18111-1-git-send-email-jacob.jun.pan@linux.intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: <stable@kernel.org> 2.6.37
+---
+ arch/x86/kernel/apb_timer.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
+diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
+index 7c9ab59..51ef31a 100644
+--- a/arch/x86/kernel/apb_timer.c
++++ b/arch/x86/kernel/apb_timer.c
+@@ -313,14 +313,16 @@ static void apbt_setup_irq(struct apbt_dev *adev)
+ 	if (adev->irq == 0)
+ 		return;
+ 
++	irq_modify_status(adev->irq, 0, IRQ_MOVE_PCNTXT);
++	irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
++	/* APB timer irqs are set up as mp_irqs, timer is edge type */
++	__set_irq_handler(adev->irq, handle_edge_irq, 0, "edge");
++
+ 	if (system_state == SYSTEM_BOOTING) {
+-		irq_modify_status(adev->irq, 0, IRQ_MOVE_PCNTXT);
+-		irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
+-		/* APB timer irqs are set up as mp_irqs, timer is edge type */
+-		__set_irq_handler(adev->irq, handle_edge_irq, 0, "edge");
+ 		if (request_irq(adev->irq, apbt_interrupt_handler,
+-				IRQF_TIMER | IRQF_DISABLED | IRQF_NOBALANCING,
+-				adev->name, adev)) {
++					IRQF_TIMER | IRQF_DISABLED |
++					IRQF_NOBALANCING,
++					adev->name, adev)) {
+ 			printk(KERN_ERR "Failed request IRQ for APBT%d\n",
+ 			       adev->num);
+ 		}
