@@ -1,172 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751798Ab1ANUfc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 15:35:32 -0500
-Received: from fieldses.org ([174.143.236.118]:50937 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750774Ab1ANUfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 15:35:31 -0500
-Date: Fri, 14 Jan 2011 15:35:29 -0500
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: nfsd for 2.6.38
-Message-ID: <20110114203529.GB16942@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+	id S1752013Ab1ANUkV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 15:40:21 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54201
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751138Ab1ANUkU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 15:40:20 -0500
+Date: Fri, 14 Jan 2011 12:40:53 -0800 (PST)
+Message-Id: <20110114.124053.111572121.davem@davemloft.net>
+To: richm@oldelvet.org.uk
+Cc: sparclinux@vger.kernel.org, fberckel@xs4all.nl, julian.calaby@gmail.com,
+        sinan@writeme.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] cassini: Use local-mac-address prom property for
+ Cassini MAC address
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4D3035F0.6020503@oldelvet.org.uk>
+References: <1294324455.6193.70.camel@duncow>
+	<20110106.115123.35031451.davem@davemloft.net>
+	<4D3035F0.6020503@oldelvet.org.uk>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull nfsd development for 2.6.38 from:
+From: Richard Mortimer <richm@oldelvet.org.uk>
+Date: Fri, 14 Jan 2011 11:39:28 +0000
 
-  git://linux-nfs.org/~bfields/linux.git for-2.6.38
+> FYI Sinan Akman has reported that cassini does not compile for x86 any
+> longer. Message included below.
+> 
+> Does anyone have suggestions as to the best way to resolve this?
 
-This includes a first implementation of session trunking support and
-secinfo_no_name support, both mandatory features for NFSv4.1.  My list
-of issues that I believe we need fixed before server-side 4.1 can be
-considered minimally correct is at
+I'll fix it like this:
 
-  http://wiki.linux-nfs.org/wiki/index.php/Server_4.0_and_4.1_issues
+--------------------
+cassini: Fix build bustage on x86.
 
-I want to see that list done before we start merging optional 4.1
-features such as pNFS.  At my current rate I'm not sure when we'll get
-there--not soon.
+Unfortunately, not all CONFIG_OF platforms provide
+pci_device_to_OF_node().
 
-Also included is a stopgap measure to fix a longstanding failure to
-revoke delegations in all the cases we should.  It still leaves some
-races (and doesn't deal with local or Samba conflicts), so I hope to
-have a more complete solution ready for 2.6.39.
+Change the test to CONFIG_SPARC for now to deal with
+the build regressions.
 
-And some other miscellaneous cleanup and bugfixing.  Thanks especially
-to Mi Jinlong at Fujitsu, who has been writing tests and catching bugs
-in the new 4.1 code.
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/cassini.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
---b.
+diff --git a/drivers/net/cassini.c b/drivers/net/cassini.c
+index 7206ab2..3437613 100644
+--- a/drivers/net/cassini.c
++++ b/drivers/net/cassini.c
+@@ -3203,7 +3203,7 @@ static int cas_get_vpd_info(struct cas *cp, unsigned char *dev_addr,
+ 	int phy_type = CAS_PHY_MII_MDIO0; /* default phy type */
+ 	int mac_off  = 0;
+ 
+-#if defined(CONFIG_OF)
++#if defined(CONFIG_SPARC)
+ 	const unsigned char *addr;
+ #endif
+ 
+@@ -3354,7 +3354,7 @@ use_random_mac_addr:
+ 	if (found & VPD_FOUND_MAC)
+ 		goto done;
+ 
+-#if defined(CONFIG_OF)
++#if defined(CONFIG_SPARC)
+ 	addr = of_get_property(cp->of_node, "local-mac-address", NULL);
+ 	if (addr != NULL) {
+ 		memcpy(dev_addr, addr, 6);
+@@ -5031,7 +5031,7 @@ static int __devinit cas_init_one(struct pci_dev *pdev,
+ 	cp->msg_enable = (cassini_debug < 0) ? CAS_DEF_MSG_ENABLE :
+ 	  cassini_debug;
+ 
+-#if defined(CONFIG_OF)
++#if defined(CONFIG_SPARC)
+ 	cp->of_node = pci_device_to_OF_node(pdev);
+ #endif
+ 
+-- 
+1.7.3.4
 
-
-Dan Carpenter (1):
-      nfsd: fix NULL dereference in setattr()
-
-J. Bruce Fields (52):
-      svcrpc: don't set then immediately clear XPT_DEFERRED
-      nfsd4: centralize more calls to svc_xprt_received
-      svcrpc: simplify svc_close_all
-      svcrpc: svc_close_xprt comment
-      svcrpc: fix wspace-checking race
-      nfsd4: return serverfault on request for ssv
-      Merge commit 'v2.6.37-rc6' into for-2.6.38
-      nfsd4: replace unintuitive match_clientid_establishment
-      nfsd4: fix mixed 4.0/4.1 handling, 4.1 reboot
-      nfsd: fix offset printk's in nfsd3 read/write
-      nfsd4: 4.1 SECINFO should consume filehandle
-      nfsd4: move guts of nfsd4_lookupp into helper
-      nfsd4: implement secinfo_no_name
-      svcrpc: modifying valid sunrpc cache entries is racy
-      SUNRPC: Remove more code when NFSD_DEPRECATED is not configured
-      nfsd: don't drop requests on -ENOMEM
-      svcrpc: avoid double reply caused by deferral race
-      svcrpc: simpler request dropping
-      nfsd: stop translating EAGAIN to nfserr_dropit
-      nfsd: remove some unnecessary dropit handling
-      svcrpc: take lock on turning entry NEGATIVE in cache_check
-      svcrpc: ensure cache_check caller sees updated entry
-      nfsd4: eliminate lease delete callback
-      nfsd4: use a single struct file for delegations
-      locks: eliminate fl_mylease callback
-      locks: minor setlease cleanup
-      nfsd4: name->id mapping should fail with BADOWNER not BADNAME
-      nfsd4: move idmap and acl header files into fs/nfsd
-      nfsd4: remove outdated pathname-comments
-      nfsd4: return nfs errno from name_to_id functions
-      Documentation: don't remove lock manager fl_release_private
-      Merge commit 'v2.6.37' into for-2.6.38-incoming
-      Documentation: fl_mylease no longer exists
-      nfsd4: modify session list under cl_lock
-      nfsd4: support BIND_CONN_TO_SESSION
-      nfsd4: allow backchannel recovery
-      rpc: move sk_bc_xprt to svc_xprt
-      rpc: keep backchannel xprt as long as server connection
-      rpc: allow xprt_class->setup to return a preexisting xprt
-      nfsd4: keep finer-grained callback status
-      nfsd4: set sequence flag when backchannel is down
-      nfsd4: re-probe callback on connection loss
-      nfsd4: make sure sequence flags are set after destroy_session
-      nfsd4: add helper function to run callbacks
-      nfsd4: give out delegations more quickly in 4.1 case
-      nfsd4: simplify nfsd4_cb_prepare
-      nfsd4: allow restarting callbacks
-      nfsd4: initialize cb_per_client
-      nfsd: don't support msnfs export option
-      nfsd4: break lease on nfsd setattr
-      nfsd: break lease on unlink, link, and rename
-      nfsd4: fix callback restarting
-
-Joe Perches (1):
-      net/sunrpc/auth_gss/gss_krb5_crypto.c: Use normal negative error value return
-
-Kirill A. Shutemov (1):
-      nfsd: declare several functions of nfs4callback as static
-
-Mi Jinlong (4):
-      NFSv4.1: Make sure nfsd can decode SP4_SSV correctly at exchange_id
-      NFS4.1: server gets drc mem fail should reply error at create_session
-      NFS4.1: Fix bug server don't reply the right fore_channel to client at create_session
-      nfsd4: fix oops on secinfo_no_name result encoding
-
-NeilBrown (2):
-      sunrpc: remove xpt_pool
-      sunrpc: svc_sock_names should hold ref to socket being closed.
-
-Shan Wei (1):
-      net: sunrpc: kill unused macros
-
-Takuma Umeya (1):
-      nfs4: set source address when callback is generated
-
-bookjovi@gmail.com (1):
-      nfs: add missed CONFIG_NFSD_DEPRECATED
-
- Documentation/filesystems/Locking             |    2 -
- fs/locks.c                                    |    8 +-
- include/linux/nfs4_acl.h => fs/nfsd/acl.h     |    2 -
- fs/nfsd/export.c                              |    4 -
- include/linux/nfsd_idmap.h => fs/nfsd/idmap.h |    6 +-
- fs/nfsd/nfs3proc.c                            |    8 +-
- fs/nfsd/nfs4acl.c                             |    2 +-
- fs/nfsd/nfs4callback.c                        |  151 ++++++++++------
- fs/nfsd/nfs4idmap.c                           |   15 +-
- fs/nfsd/nfs4proc.c                            |   59 +++++--
- fs/nfsd/nfs4recover.c                         |    1 -
- fs/nfsd/nfs4state.c                           |  243 +++++++++++++++----------
- fs/nfsd/nfs4xdr.c                             |  115 +++++++++---
- fs/nfsd/nfsctl.c                              |    4 +-
- fs/nfsd/nfsd.h                                |    1 +
- fs/nfsd/nfsproc.c                             |    6 +-
- fs/nfsd/nfssvc.c                              |    2 +-
- fs/nfsd/state.h                               |   16 ++-
- fs/nfsd/vfs.c                                 |   86 +++------
- fs/nfsd/xdr4.h                                |    9 +-
- include/linux/fs.h                            |    1 -
- include/linux/nfs4.h                          |    6 +
- include/linux/nfsd/export.h                   |    2 +-
- include/linux/sunrpc/cache.h                  |    3 +
- include/linux/sunrpc/svc.h                    |    1 +
- include/linux/sunrpc/svc_xprt.h               |    2 +-
- include/linux/sunrpc/svcsock.h                |    1 -
- include/linux/sunrpc/xprt.h                   |    1 +
- net/sunrpc/auth_gss/gss_krb5_crypto.c         |    2 +-
- net/sunrpc/auth_gss/svcauth_gss.c             |    2 -
- net/sunrpc/cache.c                            |   54 ++++--
- net/sunrpc/svc.c                              |    3 +-
- net/sunrpc/svc_xprt.c                         |   97 +++++-----
- net/sunrpc/svcauth.c                          |    1 -
- net/sunrpc/svcauth_unix.c                     |   17 ++-
- net/sunrpc/svcsock.c                          |   20 ++-
- net/sunrpc/xprt.c                             |    5 +-
- net/sunrpc/xprtsock.c                         |   34 +++-
- 38 files changed, 608 insertions(+), 384 deletions(-)
- rename include/linux/nfs4_acl.h => fs/nfsd/acl.h (98%)
- rename include/linux/nfsd_idmap.h => fs/nfsd/idmap.h (92%)
