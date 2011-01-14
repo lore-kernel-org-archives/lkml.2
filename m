@@ -1,91 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757352Ab1ANHi5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 02:38:57 -0500
-Received: from cantor.suse.de ([195.135.220.2]:55567 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751218Ab1ANHit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 02:38:49 -0500
-Message-ID: <4D2FFF00.8020702@suse.de>
-Date: Fri, 14 Jan 2011 08:45:04 +0100
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
+	id S1757382Ab1ANHjd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 02:39:33 -0500
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:42343 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757187Ab1ANHj0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 02:39:26 -0500
+Message-ID: <4D2FFBED.6010406@ce.jp.nec.com>
+Date: Fri, 14 Jan 2011 16:31:57 +0900
+From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>, michaelc@cs.wisc.edu,
-        tytso@mit.edu, linux-scsi@vger.kernel.org, jaxboe@fusionio.com,
-        vst@vlnb.net, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, linux-raid@vger.kernel.org,
-        linux-ide@vger.kernel.org,
+To: Milan Broz <mbroz@redhat.com>, Tejun Heo <tj@kernel.org>
+CC: Jens Axboe <axboe@kernel.dk>, Valdis.Kletnieks@vt.edu,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Neil Brown <neilb@suse.de>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-raid@vger.kernel.org,
         device-mapper development <dm-devel@redhat.com>,
-        James.Bottomley@suse.de, Sergei Shtylyov <sshtylyov@mvista.com>,
-        konishi.ryusuke@lab.ntt.co.jp, linux-fsdevel@vger.kernel.org,
-        jack@suse.cz, rwheeler@redhat.com, swhiteho@redhat.com,
-        chris.mason@oracle.com, Tejun Heo <tj@kernel.org>
-Subject: Re: training mpath to discern between SCSI errors
-References: <4C7B984E.4070802@suse.de> <4C7B9F14.9080900@mvista.com> <4C7BA670.2060303@suse.de> <4C7BC5B4.3010707@suse.de> <4CBC00B3.7090603@ce.jp.nec.com> <4CBC35AE.9050002@suse.de> <20101119031149.GA28455@us.ibm.com> <20101130225956.GA8882@redhat.com> <4D0B31B5.101@suse.de> <20101217140605.GA740@redhat.com> <20110114010948.GA21818@redhat.com>
-In-Reply-To: <20110114010948.GA21818@redhat.com>
+        Kay Sievers <kay.sievers@vrfy.org>, Alasdair G Kergon <agk@redhat.com>
+Subject: Re: [PATCH] block: restore multiple bd_link_disk_holder() support
+References: <16069.1294853673@localhost> <4D2E4611.90002@redhat.com> <4D2E6129.8000700@ce.jp.nec.com> <20110113172133.GE14096@htj.dyndns.org> <4D2F4799.5030901@redhat.com>
+In-Reply-To: <4D2F4799.5030901@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2011 02:09 AM, Mike Snitzer wrote:
-> On Fri, Dec 17 2010 at  9:06am -0500,
-> Mike Snitzer <snitzer@redhat.com> wrote:
-> 
->> On Fri, Dec 17 2010 at  4:47am -0500,
->> Hannes Reinecke <hare@suse.de> wrote:
->>
->>> On 11/30/2010 11:59 PM, Mike Snitzer wrote:
->>>> Hannes,
->>>>
->>>> Any chance you've had time to fold your proposed logging changes in and
->>>> rebase this patch?  Could you post that updated patch?
->>>>
->>> yes, will be following shortly.
->>>
->>>> I'd like to help see this patch through to inclussion when 2.6.38 merge
->>>> window opens.  I can help with further review, testing and development.
->>>>
->>> Ok, thanks.
->>
->> I took some steps at furthering your work.  Here is the cover letter to
->> the patches I resently sent to dm-devel:
->> https://www.redhat.com/archives/dm-devel/2010-December/msg00090.html
->>
->> And here are the patches:
->> https://patchwork.kernel.org/patch/384612/
->> https://patchwork.kernel.org/patch/384602/
->> https://patchwork.kernel.org/patch/390882/
->>
->> Please feel free to change these how ever you see fit but your feedback
->> is really appreciated.
-> 
-> Hannes,
-> 
-> Any update?  I'd really like to see this work get upstream ASAP.  I'm
-> doubtful that is possible for 2.6.38 given the merge window is likely to
-> close shortly.
-> 
-Sorry for the late answer; the above patches somehow got lost in my
-various mail folders :-(
+Hi,
 
-But yes, the patchset looks okay.
-Feel free to add my Acked-by: to last two.
-
-> Regardless, if we could get consensus on this work now and then stage it
-> with James that would be great.
+On 01/14/11 03:42, Milan Broz wrote:
+>> Milan, Jun, can you guys please verify this works correctly for the
+>> multi holder dm case?  Thank you.
 > 
-Indeed. Will you resend it to linux-scsi or shall I do it?
+> Hi,
+> 
+> unfortunately not. And the problem is much worse,
+> it breaks lvm resize operation completely.
 
-Cheers,
+For quick testing, try this:
+("/dev/sdf" can be other block device.
+ "testA" and "testB" can be other dm names which aren't used in
+ your machine.)
 
-Hannes
+# echo "0 10 linear /dev/sdf 0" | dmsetup create testA
+# echo "0 10 linear /dev/sdf 10" | dmsetup create testB
+(at this point, /dev/sdf has multiple holders)
+# echo "0 20 linear /dev/sdf 10" | dmsetup load testB
+(at this point, /dev/mapper/testB has 2 claims on /dev/sdf)
+# dmsetup resume testB
+(/dev/mapper/testB has 1 claim on /dev/sdf)
+# dmsetup remove testA
+# dmsetup remove testB
+
+
+Thanks,
 -- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: Markus Rex, HRB 16746 (AG Nürnberg)
+Jun'ichi Nomura, NEC Corporation
