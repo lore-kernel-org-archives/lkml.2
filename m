@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758052Ab1ANSAb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 13:00:31 -0500
-Received: from mail.atmel.fr ([81.80.104.162]:50759 "EHLO atmel-es2.atmel.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752312Ab1ANSA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 13:00:29 -0500
-Message-ID: <4D308F30.6070503@atmel.com>
-Date: Fri, 14 Jan 2011 19:00:16 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "'linux-arm-kernel@lists.infradead.org'" 
+	id S1757707Ab1ANSFR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 13:05:17 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36214 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756939Ab1ANSFM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 13:05:12 -0500
+Date: Fri, 14 Jan 2011 18:04:55 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: "'linux-arm-kernel@lists.infradead.org'" 
 	<linux-arm-kernel@lists.infradead.org>,
         Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Igor Plyatov <plyatov@gmail.com>
-CC: Andrew Victor <linux@maxim.org.za>,
+        Igor Plyatov <plyatov@gmail.com>, Andrew Victor <linux@maxim.org.za>,
         Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
         Sergio Tanzilli <tanzilli@acmesystems.it>
-Subject: [GIT PULL] AT91: patches for v2.6.38-rc1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [GIT PULL] AT91: patches for v2.6.38-rc1
+Message-ID: <20110114180455.GL15996@n2100.arm.linux.org.uk>
+References: <4D308F30.6070503@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D308F30.6070503@atmel.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+On Fri, Jan 14, 2011 at 07:00:16PM +0100, Nicolas Ferre wrote:
+> Hi Russell,
+> 
+> Can you please pull those little changes for AT91? They add two 
+> new boards already discussed on the mailing list and a little 
+> cleanup patch:
 
-Can you please pull those little changes for AT91? They add two 
-new boards already discussed on the mailing list and a little 
-cleanup patch:
+Has this already been in linux-next?
 
-The following changes since commit 9e9bc9736756f25d6c47b4eba0ebf25b20a6f153:
+We should only be merging new code during a merge window which has
+already had visibility in linux-next, with the exception of bug fixes
+and regression fixes.
 
-  Merge branch 'v4l_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6 (2011-01-06 18:32:12 -0800)
+Regression fixes can be merged at any time provided they're obvious.
+Any regression fix should be acceptable during the merge window.
 
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-2.6-at91.git for_rmk
-
-Igor Plyatov (1):
-      AT91: Support for gsia18s board
-
-Jesper Juhl (1):
-      AT91: board-sam9m10g45ek.c: Remove duplicate inclusion of mach/hardware.h
-
-Sergio Tanzilli (1):
-      AT91: Acme Systems FOX Board G20 board files
-
- arch/arm/mach-at91/Kconfig                |   13 +
- arch/arm/mach-at91/Makefile               |    2 +
- arch/arm/mach-at91/board-foxg20.c         |  274 ++++++++++++++
- arch/arm/mach-at91/board-gsia18s.c        |  584 +++++++++++++++++++++++++++++
- arch/arm/mach-at91/board-sam9m10g45ek.c   |    1 -
- arch/arm/mach-at91/include/mach/gsia18s.h |   33 ++
- 6 files changed, 906 insertions(+), 1 deletions(-)
- create mode 100644 arch/arm/mach-at91/board-foxg20.c
- create mode 100644 arch/arm/mach-at91/board-gsia18s.c
- create mode 100644 arch/arm/mach-at91/include/mach/gsia18s.h
-
-Thanks, best regards,
--- 
-Nicolas Ferre
+Bug fixes any time up until (I'd say) the last week of the -rc series.
