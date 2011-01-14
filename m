@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757669Ab1ANOOq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 09:14:46 -0500
-Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:41527
-	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757546Ab1ANONg (ORCPT
+	id S1757768Ab1ANOPP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 09:15:15 -0500
+Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:51795 "EHLO
+	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751923Ab1ANONZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 09:13:36 -0500
+	Fri, 14 Jan 2011 09:13:25 -0500
 From: matt mooney <mfm@muteddisk.com>
 To: Michal Marek <mmarek@suse.cz>
 Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [RESEND PATCH 16/27] ide: change to new flag variable
-Date: Fri, 14 Jan 2011 06:12:39 -0800
-Message-Id: <9f38b4a1cb0035e9605856b3b116cec6e11476e9.1295006565.git.mfm@muteddisk.com>
+Subject: [RESEND PATCH 07/27] microblaze: change to new flag variable
+Date: Fri, 14 Jan 2011 06:12:30 -0800
+Message-Id: <cc64e68a71abc5be604000a1e41a075941b07cbc.1295006565.git.mfm@muteddisk.com>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <cover.1295006561.git.mfm@muteddisk.com>
 References: <cover.1295006561.git.mfm@muteddisk.com>
@@ -24,24 +24,23 @@ Replace EXTRA_CFLAGS with ccflags-y.
 
 Signed-off-by: matt mooney <mfm@muteddisk.com>
 Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
-Acked-by: David S. Miller <davem@davemloft.net>
 ---
- drivers/ide/Makefile |    2 +-
+ arch/microblaze/kernel/cpu/Makefile |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/ide/Makefile b/drivers/ide/Makefile
-index 81df925..7f879b2 100644
---- a/drivers/ide/Makefile
-+++ b/drivers/ide/Makefile
-@@ -2,7 +2,7 @@
- # link order is important here
- #
+diff --git a/arch/microblaze/kernel/cpu/Makefile b/arch/microblaze/kernel/cpu/Makefile
+index 59cc7bc..fceed4e 100644
+--- a/arch/microblaze/kernel/cpu/Makefile
++++ b/arch/microblaze/kernel/cpu/Makefile
+@@ -6,7 +6,7 @@ ifdef CONFIG_FUNCTION_TRACER
+ CFLAGS_REMOVE_cache.o = -pg
+ endif
  
--EXTRA_CFLAGS				+= -Idrivers/ide
-+ccflags-y				:= -Idrivers/ide
+-EXTRA_CFLAGS += -DCPU_MAJOR=$(CPU_MAJOR) -DCPU_MINOR=$(CPU_MINOR) \
++ccflags-y := -DCPU_MAJOR=$(CPU_MAJOR) -DCPU_MINOR=$(CPU_MINOR) \
+ 		-DCPU_REV=$(CPU_REV)
  
- ide-core-y += ide.o ide-ioctls.o ide-io.o ide-iops.o ide-lib.o ide-probe.o \
- 	      ide-taskfile.o ide-pm.o ide-park.o ide-sysfs.o ide-devsets.o \
+ obj-y += cache.o cpuinfo.o cpuinfo-pvr-full.o cpuinfo-static.o mb.o pvr.o
 -- 
 1.7.3.4
 
