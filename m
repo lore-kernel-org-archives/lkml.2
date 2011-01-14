@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757095Ab1ANIWY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 03:22:24 -0500
-Received: from mga09.intel.com ([134.134.136.24]:18773 "EHLO mga09.intel.com"
+	id S1756671Ab1ANI2U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 03:28:20 -0500
+Received: from mga03.intel.com ([143.182.124.21]:63848 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752865Ab1ANIWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 03:22:19 -0500
+	id S1751046Ab1ANI2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 03:28:15 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,322,1291622400"; 
-   d="scan'208";a="592927205"
-Date: Fri, 14 Jan 2011 15:55:19 +0800
-From: Yong Wang <yong.y.wang@linux.intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Feng Tang <feng.tang@intel.com>, Jacob Pan <jacob.jun.pan@intel.com>,
-        Alan Cox <alan@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] x86, apbt: Set affinity properly for apb timers in all
-	cases
-Message-ID: <20110114075519.GA20428@ywang-moblin2.bj.intel.com>
+   d="scan'208";a="374530046"
+Date: Fri, 14 Jan 2011 16:22:55 +0800
+From: Chuanxiao Dong <chuanxiao.dong@intel.com>
+To: linux-mmc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, cjb@laptop.org, ohad@wizery.com
+Subject: [PATCH v1 0/3]mmc: add runtime pm for mmc host stack
+Message-ID: <20110114082255.GA27523@intel.com>
+Reply-To: Chuanxiao Dong <chuanxiao.dong@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit e4d2ebca only sets timer affinity when system boots. We also
-need to set affinity properly in other cases like when onlining CPU
-because apb timer acts as per-cpu tick device. Otherwise, we are
-observing system hang on onling CPU which is offlined previously.
+Hi all,
+   These are the version 1 patches for enabling runtime power management for
+   mmc host driver stack.
 
-Signed-off-by: Yong Wang <yong.y.wang@intel.com>
----
- arch/x86/kernel/apb_timer.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+   Right now runtime pm in mmc driver stack can only care about the
+   power of SDIO card, not the host controller. Host controller also needs
+   runtime pm to save power.
 
-diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
-index 7c9ab59..449b111 100644
---- a/arch/x86/kernel/apb_timer.c
-+++ b/arch/x86/kernel/apb_timer.c
-@@ -313,9 +313,10 @@ static void apbt_setup_irq(struct apbt_dev *adev)
- 	if (adev->irq == 0)
- 		return;
- 
-+	irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
-+
- 	if (system_state == SYSTEM_BOOTING) {
- 		irq_modify_status(adev->irq, 0, IRQ_MOVE_PCNTXT);
--		irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
- 		/* APB timer irqs are set up as mp_irqs, timer is edge type */
- 		__set_irq_handler(adev->irq, handle_edge_irq, 0, "edge");
- 		if (request_irq(adev->irq, apbt_interrupt_handler,
--- 
-1.5.5.1
+   MMC host can let the host device go into runtime suspended state when
+   there is no user request to deal, and wake up host device when there
+   comes one. MMC driver will manage the power of host controller like this
+   way.
 
+   patch1: implemented runtime pm for mmc host
+   patch2: implemented runtime pm for SDHCI host controller
+   patch3: Do not let mmc host clock gated when host is in runtime suspended
+   state.
+
+Thanks
+Chuanxiao
