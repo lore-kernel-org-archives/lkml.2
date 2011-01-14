@@ -1,61 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756932Ab1ANJxc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 04:53:32 -0500
-Received: from mtagate6.uk.ibm.com ([194.196.100.166]:46218 "EHLO
-	mtagate6.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756825Ab1ANJxY (ORCPT
+	id S1756875Ab1ANJ4d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 04:56:33 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:33431 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab1ANJ4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 04:53:24 -0500
-Date: Fri, 14 Jan 2011 10:53:21 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Bojan Smojver <bojan@rexursive.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, pm list <linux-pm@lists.linux-foundation.org>,
-        "linux-ext4@vger.kernel.org development" <linux-ext4@vger.kernel.org>,
-        LKML Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-pm] Oops while going into hibernate
-Message-ID: <20110114095321.GA2696@osiris.boeblingen.de.ibm.com>
-References: <alpine.LFD.2.02.1101121443230.1900@localhost6.localdomain6>
- <20110112162655.GA13496@thunk.org>
- <alpine.LFD.2.02.1101121755400.2011@localhost6.localdomain6>
- <20110112172646.GB13496@thunk.org>
- <alpine.LFD.2.02.1101121934060.2011@localhost6.localdomain6>
- <A01161D0-D08F-4522-A546-90057B2E1F2A@mit.edu>
- <alpine.LFD.2.02.1101131238480.1899@localhost6.localdomain6>
- <20110113133612.GD2534@osiris.boeblingen.de.ibm.com>
- <20110113184626.GA31800@thunk.org>
- <1294954212.2781.8.camel@shrek.rexursive.com>
+	Fri, 14 Jan 2011 04:56:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=I5qUEHYzGvtty3gRJ4QcYmjxxE94YAAoeX3y8MpfEPJPSt9vyYluyB5TmM+ua+SnNu
+         bnJpE1mfcOLBTjdNy0XjcVtqh81f+af7wW9VUjuKRMABrf88GMV2p9/NUyIWOnUOF3wL
+         NIaf1m4DSsZZb3JKqOLMRhxxybNVvp2E2poPk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294954212.2781.8.camel@shrek.rexursive.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Fri, 14 Jan 2011 17:56:23 +0800
+Message-ID: <AANLkTi=BPra1SJ3BHN0L1e6L9MKj3EJ0agjaA+m7CkGj@mail.gmail.com>
+Subject: [PATCH] kbuild: add global tags generation (fixed signed-off-by)
+From: Jianbin Kang <kjbmail@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 08:30:12AM +1100, Bojan Smojver wrote:
-> On Thu, 2011-01-13 at 13:46 -0500, Ted Ts'o wrote:
-> > I'm still a bit concerned with the call to set the pages' PTE to be
-> > dirty that I found in the hibernate code, but I accept the fact that
-> > removing it doesn't solve the s390 crash.  It still seems wrong to me,
-> > and hopefully someone from linux-pm can look at that more closely. 
-> 
-> If I'm understanding things correctly, this should affect only the
-> situation when compression is not used. Otherwise, pages that are read
-> into by block I/O are decompressed first and copied into different
-> pages. No?
+kbuild: add global tags generation
 
-When the pages get copied to their final resting place the dirty bits
-of the corresponding physical pages get set automatically by the
-hardware.
-If there would be some code that would clear the dirty bit after the
-copy operation then we would have some underindication and as a result
-the possibility of data corruption, but we've never seen this.
-However since s390 is the only architecture which has dirty bits for
-physical pages I doubt that there is any such code present. So the
-bug should happen independently of image compression.
+gnu global (http://www.gnu.org/software/global/) is a source code tagging system
+It is really cheap to support it in kbuild system.
 
-What is missing is code that restores the original storage keys after
-the pages have been copied to their final place.
-I need to read the suspend/resume code and figure out how to fix this.
+    Signed-off-by: Jianbin Kang <kjbmail@gmail.com>
+
+diff --git a/Makefile b/Makefile
+index 74b2555..127a371 100644
+--- a/Makefile
++++ b/Makefile
+@@ -420,7 +420,7 @@ endif
+ # of make so .config is not included in this case either (for *config).
+
+ no-dot-config-targets := clean mrproper distclean \
+-			 cscope TAGS tags help %docs check% coccicheck \
++			 cscope gtags TAGS tags help %docs check% coccicheck \
+ 			 include/linux/version.h headers_% \
+ 			 kernelversion %src-pkg
+
+@@ -1134,7 +1134,7 @@ CLEAN_FILES +=	vmlinux System.map \
+ MRPROPER_DIRS  += include/config usr/include include/generated
+ MRPROPER_FILES += .config .config.old .version .old_version             \
+                   include/linux/version.h                               \
+-		  Module.symvers tags TAGS cscope*
++		  Module.symvers tags TAGS cscope* GPATH GTAGS GRTAGS GSYMS
+
+ # clean - Delete most, but leave enough to build external modules
+ #
+@@ -1221,6 +1221,7 @@ help:
+ 	@echo  '  modules_prepare - Set up for building external modules'
+ 	@echo  '  tags/TAGS	  - Generate tags file for editors'
+ 	@echo  '  cscope	  - Generate cscope index'
++	@echo  '  gtags           - Generate global index'
+ 	@echo  '  kernelrelease	  - Output the release version string'
+ 	@echo  '  kernelversion	  - Output the version stored in Makefile'
+ 	@echo  '  headers_install - Install sanitised kernel headers to
+INSTALL_HDR_PATH'; \
+@@ -1379,7 +1380,7 @@ clean: $(clean-dirs)
+ quiet_cmd_tags = GEN     $@
+       cmd_tags = $(CONFIG_SHELL) $(srctree)/scripts/tags.sh $@
+
+-tags TAGS cscope: FORCE
++tags TAGS cscope gtags: FORCE
+ 	$(call cmd,tags)
+
+ # Scripts to check various things for consistency
+diff --git a/scripts/tags.sh b/scripts/tags.sh
+index bbbe584..0a64ea4 100755
+--- a/scripts/tags.sh
++++ b/scripts/tags.sh
+@@ -114,6 +114,11 @@ docscope()
+ 	cscope -b -f cscope.out
+ }
+
++dogtags()
++{
++	all_sources | gtags -f -
++}
++
+ exuberant()
+ {
+ 	all_sources | xargs $1 -a                               \
+@@ -187,6 +192,10 @@ case "$1" in
+ 		docscope
+ 		;;
+
++	"gtags")
++		dogtags
++		;;
++
+ 	"tags")
+ 		rm -f tags
+ 		xtags ctags
