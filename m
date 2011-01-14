@@ -1,39 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab1ANWx1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 17:53:27 -0500
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:53449 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752849Ab1ANWx0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 17:53:26 -0500
+	id S1752845Ab1ANW7w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 17:59:52 -0500
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:41713 "EHLO smtp2.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752190Ab1ANW7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 17:59:51 -0500
+Date: Sat, 15 Jan 2011 00:59:49 +0200 (EET)
+From: Meelis Roos <mroos@linux.ee>
+To: linux-parisc@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: compile failure on hppa64: pte_mkwrite
+Message-ID: <alpine.SOC.1.00.1101150057210.8462@math.ut.ee>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
 MIME-Version: 1.0
-In-Reply-To: <1294983293-10177-3-git-send-email-omar.ramirez@ti.com>
-References: <1294983293-10177-1-git-send-email-omar.ramirez@ti.com>
-	<1294983293-10177-3-git-send-email-omar.ramirez@ti.com>
-Date: Fri, 14 Jan 2011 16:53:25 -0600
-Message-ID: <AANLkTinG5tQJ=aFHJDcLJnWX7RF3Jjru_pUqXXn4=wue@mail.gmail.com>
-Subject: Re: [PATCH 2/2] staging: tidspbridge: replace mbox callback with notifier_call
-From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Felipe Contreras <felipe.contreras@nokia.com>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        devel <devel@driverdev.osuosl.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 11:34 PM, Omar Ramirez Luna <omar.ramirez@ti.com> wrote:
-> Lately, mailbox callbacks have been replaced by notifier block
-> call chains, this needs to be changed in the users of mailbox,
-> otherwise compilation will break due to missing parameters.
+Tried todays 2.6.37+git on hppa64 and it fail to compile:
 
-Please hold on applying this patch, it is not right as io_mbx_msg
-differs on what a notifier_call parameters and type should be.
+  CC      arch/parisc/kernel/asm-offsets.s
+In file included from /home/mroos/linux-2.6/arch/parisc/include/asm/pgtable.h:13,
+                 from arch/parisc/kernel/asm-offsets.c:37:
+include/linux/mm.h: In function 'maybe_mkwrite':
+include/linux/mm.h:482: error: implicit declaration of function 'pte_mkwrite'
+include/linux/mm.h:482: error: incompatible types when assigning to type 'pte_t' from type 'int'
+In file included from arch/parisc/kernel/asm-offsets.c:37:
+/home/mroos/linux-2.6/arch/parisc/include/asm/pgtable.h: At top level:
+/home/mroos/linux-2.6/arch/parisc/include/asm/pgtable.h:338: error: conflicting types for 'pte_mkwrite'
+include/linux/mm.h:482: note: previous implicit declaration of 'pte_mkwrite' was here
+make[1]: *** [arch/parisc/kernel/asm-offsets.s] Error 1
+make: *** [prepare0] Error 2
 
-Regards,
+It seems pte_mkwrite is referenced in mm.h but not defined anywhere in 
+include directory.
 
-Omar
+-- 
+Meelis Roos (mroos@linux.ee)
