@@ -1,96 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757934Ab1ANQlo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 11:41:44 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43598 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757980Ab1ANQlg (ORCPT
+	id S1757952Ab1ANQpz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 11:45:55 -0500
+Received: from casper.infradead.org ([85.118.1.10]:38710 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757726Ab1ANQps (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 11:41:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=xcPRVBMqSu1Juhzl7VtRLT4JLkpt9oeXBlCLUd1w79MELbw6lFkhc/nb85XpAytE5X
-         4TViiVJfwE5ra/BhhbG04j8Oww9bNGUpGgXcS6vQZO9H4y8TvS8xpxZmA/yjCk2o5wyS
-         pfbIIR4lCrPgVByjZ/YeEdmWhjgUK0qqWJsRc=
-Date: Fri, 14 Jan 2011 17:35:20 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Milan Broz <mbroz@redhat.com>
-Cc: Karel Zak <kzak@redhat.com>,
-        device-mapper development <dm-devel@redhat.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [dm-devel] linux-next - WARNING: at fs/block_dev.c:824
- bd_link_disk_holder+0x92/0x1ac()
-Message-ID: <20110114163520.GD978@htj.dyndns.org>
-References: <4D2EE156.1050006@redhat.com>
- <20110113122701.GG16523@nb.net.home>
- <20110113131216.GF30719@htj.dyndns.org>
- <20110113132637.GH16523@nb.net.home>
- <20110113133722.GG30719@htj.dyndns.org>
- <4D2F04FF.1070309@redhat.com>
- <20110113141107.GI30719@htj.dyndns.org>
- <4D2F0B6A.6010201@redhat.com>
- <AANLkTinJ68D6Yc-U-Q=ZfS9mqozj5qtHPtySZHOgjcgP@mail.gmail.com>
- <4D2F110E.3010401@redhat.com>
+	Fri, 14 Jan 2011 11:45:48 -0500
+Date: Fri, 14 Jan 2011 16:38:46 +0000 (GMT)
+From: James Simmons <jsimmons@infradead.org>
+To: Anca Emanuel <anca.emanuel@gmail.com>
+cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Dave Airlie <airlied@linux.ie>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [git pull] drm for rc1
+In-Reply-To: <AANLkTimdPFGJxjWHPZ2kojxJoj76zDw2=fiwDiMrinjy@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1101141633200.5594@casper.infradead.org>
+References: <alpine.DEB.2.00.1101102250090.15019@skynet.skynet.ie> <4D2CE5C8.60601@de.ibm.com> <AANLkTimr4WX3Ay8vC23MKOM+dOcpV+Ca5rg_gcei38nk@mail.gmail.com> <4D2D8ED0.6080807@de.ibm.com> <AANLkTik4h=4o8JEwfd+=CFVb4NgkwaEwxmM6n_+sDj3K@mail.gmail.com>
+ <alpine.LFD.2.00.1101121344070.8212@casper.infradead.org> <AANLkTimdnYHWfBE1nB+2EDRouO7_FoRByVboMYw8WaHB@mail.gmail.com> <AANLkTik=HYzW8--_W+qxi8S9QbAkf9ZZy=uLyaTeV+PC@mail.gmail.com> <alpine.LFD.2.00.1101121538470.8212@casper.infradead.org>
+ <alpine.LFD.2.00.1101131752190.311@casper.infradead.org> <AANLkTimdPFGJxjWHPZ2kojxJoj76zDw2=fiwDiMrinjy@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D2F110E.3010401@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: MULTIPART/MIXED; BOUNDARY="1985284609-50622417-1295023126=:5594"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-On Thu, Jan 13, 2011 at 03:49:50PM +0100, Milan Broz wrote:
-> So listing block device tree using ONE interface (sysfs) to check
-> and display device tree for ALL subsystems seems to be good idea for
-> me.  In this exactly defined case.
+--1985284609-50622417-1295023126=:5594
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+
+
+On Thu, 13 Jan 2011, Anca Emanuel wrote:
+
+> On Thu, Jan 13, 2011 at 7:55 PM, James Simmons <jsimmons@infradead.org> wrote:
+> >
+> >> > > With your patch, I can boot the system. But nouveau is not loaded.
+> >> > > dmesg attached.
+> >> > >
+> >> >
+> >> > Forget to mention: the revert makes first steps of boot look the same
+> >> > (change the resolution of the text)
+> >> > but with your patch, I see a big ugly ununtu logo, (I think that is
+> >> > because nouveau is not loaded)
+> >
+> > Okay, can you do one more experiment for me. Since you already reverted
+> > the patch to get it booting I like to ask you to add
+> >
+> > drm_fb_helper_fill_fix(info, fb_helper->fb);
+> >
+> > back into the drm_fb_helper_set_par function in drm_fb_helper.c. You have
+> > something like this:
+> >
+> >        mutex_lock(&dev->mode_config.mutex);
+> >        for (i = 0; i < fb_helper->crtc_count; i++) {
+> >                crtc = fb_helper->crtc_info[i].mode_set.crtc;
+> >                ret = crtc->funcs->set_config(&fb_helper->crtc_info[i].mode_set);
+> >                if (ret) {
+> >                        mutex_unlock(&dev->mode_config.mutex);
+> >                        return ret;
+> >                }
+> >                drm_fb_helper_fill_fix(info, fb_helper->fb);
+> >        }
+> >        mutex_unlock(&dev->mode_config.mutex);
+> >
+> > Tell me if your system is still usable after that. Thanks for testing for
+> > me.
+> >
 > 
-> I am not saying that symlinks are perfect, just that generic
-> interface here is not superfluous.
+> after
+> 
+> git revert dfe63bb0ad9810db13aab0058caba97866e0a681
+> 
+> and
+> 
+> 
+> diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
+> index 5c4f9b9..2aad663 100644
+> --- a/drivers/gpu/drm/drm_fb_helper.c
+> +++ b/drivers/gpu/drm/drm_fb_helper.c
+> @@ -816,6 +816,7 @@ int drm_fb_helper_set_par(struct fb_info *info)
+>                         mutex_unlock(&dev->mode_config.mutex);
+>                         return ret;
+>                 }
+> +               drm_fb_helper_fill_fix(info, fb_helper->fb->pitch, fb_helper->fb
+>         }
+>         mutex_unlock(&dev->mode_config.mutex);
+> 
+> I get an working system. ( the boot screen is not ok )
+> Tested suspend/resume. Dmesg attached.
 
-I'm not saying finding out the current owner is superflous.  That
-actually is useful but what's implemented now doesn't satisfy that in
-any generic manner.  It only works for md/dm and is designed in such
-way that it can't be used out of that scope.
+Just as I thought. Even this breaks the nouveau driver.
 
-So, it's only useful for md/dm and for those two cases it tries to
-show information which doesn't really belong there using an overly
-complex mechanism.
+Could you now add also in the drm_fb_helper_fill_fix function
 
-Block device open allows _nesting_ by the claiming device.  It is
-never meant to track different nested claimers and it shows in the
-implementation and interface.  The holder tracking doesn't fit
-anywhere.  It's a completely separate piece of logic which doesn't mix
-with anything else in the block layer.
+DRM_INFO("pitch %d, depth %d\n", fb_helper->fb->pitch, 
+          fb_helper->fb->depth);
+ 
+I have a feeling the values are not right. Thanks.
 
-If you consider its only user - dm-table, the whole picture is
-somewhat uglier.  dm-table tracks how it uses block devices but only
-within a single target, so there are two separate layers of reference
-counting going on.  This again is caused by the above stated design
-inconsistency.
-
-As block device only considers single claimer which doesn't have to be
-another device, the owner naturally should have been something which
-only points to single in-kernel entity in a way which doesn't require
-link to another sysfs entry.
-
-Karel pointed out that having different methods between md and dm
-would be silly; however, that is a problem which should be solved
-between dm and md and actually is a quite artificial problem (or
-solution).  It only exists because dm and md do very similar things in
-many cases.  A block device can be used by many more things which are
-way out of the scope which can be represented in the sysfs hierarchy.
-It simply is impossible to represent that relationship with symlinks
-under block device sysfs hierarchy.
-
-Thank you.
-
--- 
-tejun
+--1985284609-50622417-1295023126=:5594--
