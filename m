@@ -1,96 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994Ab1AOPOU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 10:14:20 -0500
-Received: from ns1.huweb.hu ([62.112.193.37]:59672 "EHLO ns1.huweb.hu"
+	id S1753111Ab1AOPPc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 10:15:32 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:47549 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752545Ab1AOPOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 10:14:19 -0500
-Message-ID: <38935164A54A4EE38D32AD5046EA0DFD@M2007>
-From: "Gabor FUNK" <FUNK.Gabor@hunetkft.hu>
-To: <linux-kernel@vger.kernel.org>
-Subject: kernel tcp messages crippled randomly?
-Date: Sat, 15 Jan 2011 16:13:56 +0100
+	id S1752802Ab1AOPPb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jan 2011 10:15:31 -0500
+Date: Sat, 15 Jan 2011 16:15:15 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] core kernel fixes
+Message-ID: <20110115151515.GA11124@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-2";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5931
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
-X-MailScanner-ID: 1Pe7pV-0007j2-D5
-X-huweb-ns1-MailScanner: Found to be clean
-X-huweb-ns1-MailScanner-From: funk.gabor@hunetkft.hu
-X-huweb-ns1-MessageSize: 5726
-X-huweb-ns1-Authenticated-ID: bcd9805ec380393dea9f77d47cc6f2e5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Linus,
 
-I just replaced an old server with a new one, put kernel version 2.6.37 (amd64) on it.
-I just noticed strange/crippled entries in kern.log/syslog, seemingly coming ONLY from the kernel, eg. other log entries generated 
-by apache/ftp/sql/exim/etc don't exhibit such problem.
-Also in general, kernel messages are fine, but sometimes they get "scrambled"...
-[It is under a good streess, hundreds of www-s, sql, mails, etc., no problems (no core/kernel panic, so likely hw has no problems, 
-looks healthy otherwise)]
+Please pull the latest core-fixes-for-linus git tree from:
 
-Find log part below, look for:
-"uepcel hukwno" and "nxetdysrn idw" for "UnExPeCtEdLy sHrUnK WiNdOw" (every 2nd letter)
-"eeeyhnwd" is same "unExpEctEdlY sHruNk WinDow" (every 3rd letter)
-"rpie" / "eard" for RePaIrEd
-    and
-"pigpceI" / "dopn aktN" for "DrOpPiNg pAcKeTiN" - the "kernel / nf_ct_ftp" lines.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-fixes-for-linus
 
-Is it just me, or, erm... not?
+ Thanks,
 
-(btw, port 8081 is running a lighttpd)
+	Ingo
 
-Thanks,
+------------------>
+Paul E. McKenney (2):
+      rcu: demote SRCU_SYNCHRONIZE_DELAY from kernel-parameter status
+      rcu: avoid pointless blocked-task warnings
 
-G.
+Steven Rostedt (1):
+      rtmutex: Fix comment about why new_owner can be NULL in wake_futex_pi()
 
----
 
-Jan 14 22:55:19 ns1 kernel: : C:Pe 7291.1:5554uepcel hukwno 5948130346 rpie)<>C:Pe 8.4.1.543788 nxetdysrn idw11319:88778(eard
-Jan 14 22:55:20 ns1 kernel: : TCP: Peer 189.248.113.75:49377/8081 unexpectedly shrunk window 1818371798:1818376758 (repaired)
-Jan 15 11:15:16 ns1 kernel: : TCP: Peer 93.108.182.189:49303/8081 unexpectedly shrunk window 2235699385:2235701010 (repaired)
-Jan 15 11:15:16 ns1 kernel: : TCP: Pee 910146:76/01uepcel hukwno 2165936401 rpie)<>C:Pe 910146:76/01nptlsu nw245:671(pr)<7>TCP: Peer 
-93.108.182.189:4930388 nxetdysrn idw23698:25000(eard
-Jan 15 11:24:15 ns1 kernel: : C:Pe 4372:5/8uxcd uwo32:43ri)
-Jan 15 13:39:39 ns1 kernel: : TCP: Peer 217.208.245.66:55511/8081 unexpectedly shrunk window 3424515429:3424520381 (repaired)
-Jan 15 14:14:45 ns1 kernel: : TCP: Peer 189.106.231.213:57107/8081 unexpectedly shrunk window 3521837958:352184647 rpie)<7>TCP: Peer 
-189.106.231.213:57107/8081 unexpectedly shrunk window 3521837958:3521846475 (repaired)
-Jan 15 14:15:33 ns1 kernel: C:Pe 902.3760 eeeyhnwd 6364829rae
-Jan 15 14:15:58 ns1 kernel: : TCP: Peer 18.0.32:2/8uxcd rkio4808123 eid<7>TCP: Peer 84.183.181.79:54549/8081 unexpectedly shrunk 
-window 3957382290:3957395358 (repaired)
-Jan 15 14:15:59 ns1 kernel: : TCP: Peer 84.183.181.79:54549/8081 unexpectedly shrunk window 3957382290:3957395358 (repaired)
-Jan 15 14:16:00 ns1 kernel: C:e 902.3760 eeeyhnwd 418333(pr)<7>TCP: Peer 84.183.181.79:54549/8081 unexpectedly shrunk window 
-3957382290:3957395358 (repaired)
-Jan 15 14:16:03 ns1 kernel: : TCP: Peer 84.183.181.79:54549/8081 unexpectedly shrunk window 3957382290:3957395358 (repaired)
-Jan 15 14:16:45 ns1 kernel: : TCP: Peer 189.106.231.213:57364/8081 unexpectedly shrunk window 486063161:486071678 (repaired)
-Jan 15 14:17:27 ns1 kernel: : C:Pe 7108.7:39/01uepcel hukwno 1255324556 rpie)pigpceI=OTeh R=212133 S=3632 =T0 C0T4=6FOTS2P4 
-=56A324IWR0   PU64D5
-Jan 15 14:17:28 ns1 kernel: : nf_ct_ftp: dropping packetIN= OUT=eth0 SRC=62.112.193.37 DST=213.163.39.234 LEN=92 TOS=0x00 PREC=0x00 
-TTL=64 ID=57662 DF PROTO=TCP SPT=21 DPT=44132 SEQ=1545444681 ACK=3116252248 WINDOW=9 RES=0x00 ACK PSH URGP=0 UID=65534 GID=65534
-Jan 15 14:17:29 ns1 kernel: nf_ct_ftp: dropping packetIN= OUT=eth0 SRC=62.112.193.37 DST=213.163.39.234 LEN=92 TOS=0x00 PREC=0x00 
-TTL=64 ID=57665 DF PROTO=TCP SPT=21 DPT=44132 SEQ=1545444681 ACK=3116252248 WINDOW=9 RES=0x00 ACK PSH URGP=0 UID=65534 GID=65534
-Jan 15 14:17:33 ns1 kernel: nf_ct_ft:dopn aktN U=t0SC6.1.9.7DT23133.3 E=2TS00 RC00 T=4I=77 FPOOTPST2 P=43 E=55461AK31224 IDW9RS00 C 
-S RP0UD654GD654
-Jan 15 14:17:35 ns1 kernel: nf_ct_ftp: dropping packetIN= OUT=eth0 SRC=62.112.193.37 DST=213.163.39.234 LEN=92 TOS=0x00 PREC=0x00 
-TTL=64 ID=57673 DF PROTO=TCP SPT=21 DPT=44132 SEQ=1545444681 ACK=3116252248 WINDOW=9 RES=0x00 ACK PSH URGP=0 UID=65534 GID=65534
-Jan 15 14:17:38 ns1 kernel: : nf_ct_ftp: dropping packetIN= OUT=eth0 SRC=62.112.193.37 DST=213.163.39.234 LEN=92 TOS=0x00 PREC=0x00 
-TTL=64 ID=57677 DF PROTO=TCP SPT=21 DPT=44132 SEQ=1545444681 ACK=3116252248 WINDOW=9 RES=0x00 ACK PSH URGP=0 UID=65534 GID=65534
-Jan 15 14:22:22 ns1 kernel: : nf_ct_ftp: dropping packetIN= OUT=eth0 SRC=62.112.193.37 DST=213.163.39.234 LEN=92 TOS=0x00 PREC=0x00 
-TTL=64 ID=57658 DF PROTO=TCP SPT=21 DPT=44132 SEQ=55461AK31224 IDW9RS00 C PHUG= I=53 I=53 <>fc_t:dopn aktN U=t0SC6.1.9.7DT23133.3 
-E=2TS00 RC00 T=4I=75 FPOOTPST2 P=43 E=55461AK3154WD=R=0A HR=U=5 D54<7>TCP: Peer 189.106.231.213:58360/8081 unexpectedlysrn 
-idw21364:11053(eard
-Jan 15 14:22:23 ns1 kernel: : TCP: Peer 189.106.231.213:58360/8081 unexpectedly shrunk window 2111396046:2111404563 (repaired)
-Jan 15 14:22:24 ns1 kernel: : TCP: Peer 189.106.231.213:58397/8081 unexpectedly shrunk window 2210186308:2210191921 (repaired)
-Jan 15 14:22:25 ns1 kernel: : C:Pe 8.0.3.1:86/01uepcel hukwno 11906145 eid<7>TCP: Peer 189.106.231.213:58397/8081 unexpectedly 
-shrunk window 2210186308:2210191921 (repaired) 
+ init/Kconfig     |   15 ---------------
+ kernel/futex.c   |    7 +++----
+ kernel/rcutiny.c |    3 ++-
+ kernel/srcu.c    |   15 +++++++++++++--
+ 4 files changed, 18 insertions(+), 22 deletions(-)
 
+diff --git a/init/Kconfig b/init/Kconfig
+index 8dfd094..bd1ea92 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -497,21 +497,6 @@ config RCU_BOOST_DELAY
+ 
+ 	  Accept the default if unsure.
+ 
+-config SRCU_SYNCHRONIZE_DELAY
+-	int "Microseconds to delay before waiting for readers"
+-	range 0 20
+-	default 10
+-	help
+-	  This option controls how long SRCU delays before entering its
+-	  loop waiting on SRCU readers.  The purpose of this loop is
+-	  to avoid the unconditional context-switch penalty that would
+-	  otherwise be incurred if there was an active SRCU reader,
+-	  in a manner similar to adaptive locking schemes.  This should
+-	  be set to be a bit longer than the common-case SRCU read-side
+-	  critical-section overhead.
+-
+-	  Accept the default if unsure.
+-
+ endmenu # "RCU Subsystem"
+ 
+ config IKCONFIG
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 3019b92..5696d38 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -791,10 +791,9 @@ static int wake_futex_pi(u32 __user *uaddr, u32 uval, struct futex_q *this)
+ 	new_owner = rt_mutex_next_owner(&pi_state->pi_mutex);
+ 
+ 	/*
+-	 * This happens when we have stolen the lock and the original
+-	 * pending owner did not enqueue itself back on the rt_mutex.
+-	 * Thats not a tragedy. We know that way, that a lock waiter
+-	 * is on the fly. We make the futex_q waiter the pending owner.
++	 * It is possible that the next waiter (the one that brought
++	 * this owner to the kernel) timed out and is no longer
++	 * waiting on the lock.
+ 	 */
+ 	if (!new_owner)
+ 		new_owner = this->task;
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index 0344937..0c343b9 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -189,7 +189,8 @@ static int rcu_kthread(void *arg)
+ 	unsigned long flags;
+ 
+ 	for (;;) {
+-		wait_event(rcu_kthread_wq, have_rcu_kthread_work != 0);
++		wait_event_interruptible(rcu_kthread_wq,
++					 have_rcu_kthread_work != 0);
+ 		morework = rcu_boost();
+ 		local_irq_save(flags);
+ 		work = have_rcu_kthread_work;
+diff --git a/kernel/srcu.c b/kernel/srcu.c
+index 98d8c1e..73ce23f 100644
+--- a/kernel/srcu.c
++++ b/kernel/srcu.c
+@@ -156,6 +156,16 @@ void __srcu_read_unlock(struct srcu_struct *sp, int idx)
+ EXPORT_SYMBOL_GPL(__srcu_read_unlock);
+ 
+ /*
++ * We use an adaptive strategy for synchronize_srcu() and especially for
++ * synchronize_srcu_expedited().  We spin for a fixed time period
++ * (defined below) to allow SRCU readers to exit their read-side critical
++ * sections.  If there are still some readers after 10 microseconds,
++ * we repeatedly block for 1-millisecond time periods.  This approach
++ * has done well in testing, so there is no need for a config parameter.
++ */
++#define SYNCHRONIZE_SRCU_READER_DELAY 10
++
++/*
+  * Helper function for synchronize_srcu() and synchronize_srcu_expedited().
+  */
+ static void __synchronize_srcu(struct srcu_struct *sp, void (*sync_func)(void))
+@@ -207,11 +217,12 @@ static void __synchronize_srcu(struct srcu_struct *sp, void (*sync_func)(void))
+ 	 * will have finished executing.  We initially give readers
+ 	 * an arbitrarily chosen 10 microseconds to get out of their
+ 	 * SRCU read-side critical sections, then loop waiting 1/HZ
+-	 * seconds per iteration.
++	 * seconds per iteration.  The 10-microsecond value has done
++	 * very well in testing.
+ 	 */
+ 
+ 	if (srcu_readers_active_idx(sp, idx))
+-		udelay(CONFIG_SRCU_SYNCHRONIZE_DELAY);
++		udelay(SYNCHRONIZE_SRCU_READER_DELAY);
+ 	while (srcu_readers_active_idx(sp, idx))
+ 		schedule_timeout_interruptible(1);
+ 
