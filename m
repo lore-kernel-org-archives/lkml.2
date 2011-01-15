@@ -1,94 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab1AOUY1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 15:24:27 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:47401 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753933Ab1AOUYT (ORCPT
+	id S1753965Ab1AOUbp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 15:31:45 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49617 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753793Ab1AOUbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 15:24:19 -0500
-From: Andy Whitcroft <apw@canonical.com>
-To: Dmitry Torokhov <dtor@mail.ru>
-Cc: Andy Whitcroft <apw@canonical.com>, linux-input@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>, Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] Input: sysrq -- ensure sysrq_enabled and __sysrq_enabled are consistent
-Date: Sat, 15 Jan 2011 20:23:57 +0000
-Message-Id: <1295123037-2649-2-git-send-email-apw@canonical.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1295123037-2649-1-git-send-email-apw@canonical.com>
-References: <1295123037-2649-1-git-send-email-apw@canonical.com>
+	Sat, 15 Jan 2011 15:31:44 -0500
+Date: Sat, 15 Jan 2011 20:30:55 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Christer Weinigel <christer@weinigel.se>
+Cc: Saravana Kannan <skannan@codeaurora.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Locking in the clk API
+Message-ID: <20110115203055.GA15283@n2100.arm.linux.org.uk>
+References: <201101111016.42819.jeremy.kerr@canonical.com> <20110111091607.GI12552@n2100.arm.linux.org.uk> <4D2D184A.8020405@codeaurora.org> <20110112090301.GS11039@n2100.arm.linux.org.uk> <4D31A8F1.4080301@weinigel.se> <20110115145358.GC15996@n2100.arm.linux.org.uk> <4D31D45A.8080509@weinigel.se> <20110115172033.GM15996@n2100.arm.linux.org.uk> <4D31DCF6.7090805@weinigel.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D31DCF6.7090805@weinigel.se>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently sysrq_enabled and __sysrq_enabled are initialised separatly
-and inconsitantly, leading to sysrq being actually enabled by reported
-as not enabled in sysfs.  The first change to the sysfs configurable
-synchronises these two:
+On Sat, Jan 15, 2011 at 06:44:22PM +0100, Christer Weinigel wrote:
+> On 01/15/2011 06:20 PM, Russell King - ARM Linux wrote:
+> > You really need to read the entire thread - I've already said that yet
+>
+>> discussion continues about how to solve the problem.  This thread which
+>> has been running for a number of days now has been entirely about how
+>> to solve this.
+>
+>
+> Sigh, the always oh so polite Russell.  I have read the thread before; I  
+> reread the whole thread one more time before posting.
 
-    static int __read_mostly sysrq_enabled = 1;
-    static int __sysrq_enabled;
+Look, the clk API unification issue has been rattling around for six months
+or more not making very much progress.  Should it continue to be discussed
+for another six months while nothing happens because agreement can't be
+reached?
 
-Add a new configuration value which sets the default for these preventing
-them becoming out of sync again.  Default this to 1 to mirror previous
-behaviour.
+Do you not realise what you suggested has already been proposed?
 
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
----
- drivers/tty/sysrq.c |    2 +-
- kernel/sysctl.c     |    3 ++-
- lib/Kconfig.debug   |    9 +++++++++
- 3 files changed, 12 insertions(+), 2 deletions(-)
+Does it help the discussion to have more people coming into the discussion
+saying "we should do X" when we've already had people suggesting that we
+should already do X - and we've had people saying afterwards "we should
+do Y"?
 
-diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
-index c556ed9..ba8cf87 100644
---- a/drivers/tty/sysrq.c
-+++ b/drivers/tty/sysrq.c
-@@ -46,7 +46,7 @@
- #include <asm/irq_regs.h>
- 
- /* Whether we react on sysrq keys or just ignore them */
--static int __read_mostly sysrq_enabled = 1;
-+static int __read_mostly sysrq_enabled = CONFIG_MAGIC_SYSRQ_DEFAULT;
- static bool __read_mostly sysrq_always_enabled;
- 
- static bool sysrq_on(void)
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index bc86bb3..85fd935 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -170,7 +170,8 @@ static int proc_taint(struct ctl_table *table, int write,
- #endif
- 
- #ifdef CONFIG_MAGIC_SYSRQ
--static int __sysrq_enabled; /* Note: sysrq code ises it's own private copy */
-+/* Note: sysrq code uses it's own private copy */
-+static int __sysrq_enabled = CONFIG_MAGIC_SYSRQ_DEFAULT;
- 
- static int sysrq_sysctl_handler(ctl_table *table, int write,
- 				void __user *buffer, size_t *lenp,
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 2d05adb..459105e 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -50,6 +50,15 @@ config MAGIC_SYSRQ
- 	  keys are documented in <file:Documentation/sysrq.txt>. Don't say Y
- 	  unless you really know what this hack does.
- 
-+config MAGIC_SYSRQ_DEFAULT
-+	int "Magic SysRq key default"
-+	default 1
-+        range 0 1
-+	help
-+	  Set the default value for the sysrq sysfs control to this value.
-+	  Setting this to 1 will enable sysrq on boot, to 0 will disable
-+	  sysrq on boot.
-+
- config STRIP_ASM_SYMS
- 	bool "Strip assembler-generated symbols during link"
- 	default n
--- 
-1.7.2.3
+Do you really think that you saying "we should do X" means that we'll have
+lots of people suddenly saying "oh yes, you're right" when they didn't
+before?
 
+It's covering old ground over and over again.  Raising the same points
+over and over again is just a pointless waste of time - it just sends the
+discussion around the same loops time and time again.  Nothing actually
+ever gets resolved but lots of time gets wasted discussing it.
+
+>> Consider this: is it better to continue talking about this for the next
+>> six months, while still having N spinlock based implementations, and M
+>> mutex based implementations.
+>>
+>> Or is it better to consolidate the N spinlock based implementations
+>> down to one spinlock implementation, and M mutex based implementations
+>> down to one mutex implementation, and then discuss how to resolve the
+>> differences between the two implementations?
+>
+>
+> Going that way might very well mean that you will be stuck with two  
+> implementations forever.  But yes, it might be better with two working  
+> ones than one which takes a bit longer to finish.
+>
+> But my impression is that the different suggestions in the thread aren't  
+> that far apart.  Except for the discussion if clk_enable/disable should  
+> be able to sleep or not, people seem to agree on most of the rest of the  
+> API.
+
+As I said, at this point I _really_ don't care what happens provided
+it doesn't end up screwing the facilities enjoyed by the existing
+implementations.
+
+I'm tired of reading this discussion.
