@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443Ab1AOPoo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 10:44:44 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:57938 "EHLO smtps.tip.net.au"
+	id S1753269Ab1AOPvf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 10:51:35 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:51580 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753192Ab1AOPon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 10:44:43 -0500
-Date: Sun, 16 Jan 2011 02:44:34 +1100
+	id S1752145Ab1AOPve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jan 2011 10:51:34 -0500
+Date: Sun, 16 Jan 2011 02:51:27 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ozan Caglayan <ozan@pardus.org.tr>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the final tree (linus'
- tree related)
-Message-Id: <20110116024434.3a5ccabb.sfr@canb.auug.org.au>
-In-Reply-To: <201101151419.16758.rjw@sisk.pl>
-References: <20110115133412.58b8cd89.sfr@canb.auug.org.au>
-	<201101151419.16758.rjw@sisk.pl>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Parisc List <linux-parisc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Change in parisc tree source for Linux Next
+Message-Id: <20110116025127.8e04a478.sfr@canb.auug.org.au>
+In-Reply-To: <1295105731.5973.25.camel@mulgrave.site>
+References: <1295105731.5973.25.camel@mulgrave.site>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA1";
- boundary="Signature=_Sun__16_Jan_2011_02_44_34_+1100_+rn4Bzohlg.aYF3W"
+ boundary="Signature=_Sun__16_Jan_2011_02_51_27_+1100_A3YXxvT0pUNBQtC."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__16_Jan_2011_02_44_34_+1100_+rn4Bzohlg.aYF3W
+--Signature=_Sun__16_Jan_2011_02_51_27_+1100_A3YXxvT0pUNBQtC.
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Raphael,
+Hi James,
 
-On Sat, 15 Jan 2011 14:19:16 +0100 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+On Sat, 15 Jan 2011 09:35:31 -0600 James Bottomley <James.Bottomley@HansenP=
+artnership.com> wrote:
 >
-> It looks like the non-CONFIG_ACPI version of acpi_find_root_bridge_handle=
-()
-> is just not necessary any more, because acpi_find_root_bridge_handle() is=
- only
-> used in code that depends on CONFIG_ACPI.
+> We've had a change of maintainer over at parisc and a consequent tree
+> change.  Could you replace
 >=20
-> A patch removing it is appended, please test.
+> git://git.kernel.org/pub/scm/linux/kernel/git/kyle/parisc-2.6.git#next
+>=20
+> with
+>=20
+> git://git.kernel.org/pub/scm/linux/kernel/git/jejb/parisc-2.6.git#for-next
+>=20
+> as the parisc tree for inclusion in linux next.
 
-That fixes the compile error for my powerpc allyesconfig build.
-And my x86_64 allmodconfig and i386 defconfig builds still work.
+No worries.  Done.
+
+> Hopefully, there won't be any issues with it, but if there are, please
+> send them directly to the parisc list (we have multiple maintainers, so
+> one of us will see and sort it out).
+>=20
+> Parisc List <linux-parisc@vger.kernel.org>
+
+Also changed.
+
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
 
---Signature=_Sun__16_Jan_2011_02_44_34_+1100_+rn4Bzohlg.aYF3W
+--Signature=_Sun__16_Jan_2011_02_51_27_+1100_A3YXxvT0pUNBQtC.
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQEcBAEBAgAGBQJNMcDiAAoJEDMEi1NhKgbscU8IAIoaRW3UaF79vKeVgQBQLqCE
-KZPAhuEFBgl9EZ3blSxCoMvcjcQ3cQQl+gknYQ1rcDGUQUtnspH8iGQTJlkJ9w7f
-+pUK+l4tROIqeUq/icxCp+zIt4O0sYHbMw3BqLrm8h8AmkKDsAZJX6K1rS1tDlsf
-OUnA4H2vBtYdh4OYAxXfYfk+G8g3D9U9H7bzlY4WzVErLRBXJXW2iFc6I79LHhMw
-8l2B6q7VE5kX9+Lw87eDX1Z58VrD3zR0j3YOL6eDNI08KVhCyAqF41tpQExd+xlt
-rzR5gLI0XP7aX8zVFON9Y+Ng09KoV0BaUD+VOx+r5dYFM1Umlzy4Ig4VGCV0Eec=
-=xvq6
+iQEcBAEBAgAGBQJNMcJ/AAoJEDMEi1NhKgbsp4EH+watncaHOfwzX3R/XJJ/xKAo
+QJUjR0DUyq8HPOZiQTGY4A0kD1VaQzseHYax6PaDxvvFcN8ahVdHLSukgknqCQNU
+mlCxotkjZWUMS7fFCzQzXG/Pg6CE8GvfYPRbk4WK05UnJI6z4FAC31e8FHV/ERLq
+Ok5dD46TWCmrphWx/WgyA6wxj1Bd0vl3P29XfPsc4r8cphgCTaypaMersC1ryiw5
+DhH0QnACh3LSMx8JJLNjaCi5fTSgmcihoNEaHeM6E+Rix3NczMUG6j2faQkmE4Bw
+IzqOB3KaDBQS+o6AUoMEH9RyAWENwqQFzVyirMilZcs7oN+BEc+NE9V72FpoFKg=
+=glHl
 -----END PGP SIGNATURE-----
 
---Signature=_Sun__16_Jan_2011_02_44_34_+1100_+rn4Bzohlg.aYF3W--
+--Signature=_Sun__16_Jan_2011_02_51_27_+1100_A3YXxvT0pUNBQtC.--
