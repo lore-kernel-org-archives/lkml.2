@@ -1,101 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786Ab1AOCDX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 21:03:23 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:56999 "EHLO
+	id S1752379Ab1AOCDA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 21:03:00 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:56952 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396Ab1AOCDD (ORCPT
+	with ESMTP id S1751849Ab1AOCC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 21:03:03 -0500
+	Fri, 14 Jan 2011 21:02:58 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=message-id:user-agent:date:from:to:cc:subject:references:
 	content-disposition:x-system-of-record;
-	b=pkRktFtbsyQe6ShYSc+NtNj+s9NFQOcHIThf01z+0YrXZFRsyCaf/5j+NtuPkAIPh
-	4PzCN89JPXTjq9aNtrfMA==
-Message-Id: <20110115015817.069769529@google.com>
+	b=hx+PSXYjUsZX0n1v84VLxKha8ToJNIUVUX+hBvc/fQaFbx9BQKkfgefoKs0/nHE2G
+	6t33s7nRtRN5IeBEhjXQA==
+Message-Id: <20110115015817.255632044@google.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 14 Jan 2011 17:57:50 -0800
+Date: Fri, 14 Jan 2011 17:57:52 -0800
 From: Paul Turner <pjt@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Mike Galbraith <efault@gmx.de>, Nick Piggin <npiggin@kernel.dk>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Subject: [wake_afine fixes/improvements 1/3] sched: update effective_load() to use global share weights
+Subject: [wake_afine fixes/improvements 3/3] sched: introduce sched_feat(NO_HOT_AFFINE)
 References: <20110115015749.692623529@google.com>
-Content-Disposition: inline; filename=fix_wake_affine.patch
+Content-Disposition: inline; filename=task_hot_lazy.patch
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously effective_load would approximate the global load weight present on
-a group taking advantage of:
+re-introduce the cache-cold requirement for affine wake-up balancing.
 
-entity_weight = tg->shares ( lw / global_lw ), where entity_weight was provided
-by tg_shares_up.
+A much more aggressive migration cost (currently 0.5ms) appears to have tilted
+the needle towards favouring not performing affine migrations for cache_hot 
+tasks.
 
-This worked (approximately) for an 'empty' (at tg level) cpu since we would
-place boost load representative of what a newly woken task would receive.
-
-However, now that load is instantaneously updated this assumption is no longer
-true and the load calculation is rather incorrect in this case.
-
-Fix this (and improve the general case) by re-writing effective_load to take
-advantage of the new shares distribution code.
+Since the update_rq path is more expensive now (and the 'hot' window so small),
+avoid hammering it in the common case where the (possibly slightly stale) 
+rq->clock_task value has already advanced enough to invalidate hot-ness.
 
 Signed-off-by: Paul Turner <pjt@google.com>
 
 ---
- kernel/sched_fair.c |   32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+ kernel/sched_fair.c     |   20 +++++++++++++++++++-
+ kernel/sched_features.h |    5 +++++
+ 2 files changed, 24 insertions(+), 1 deletion(-)
 
 Index: tip3/kernel/sched_fair.c
 ===================================================================
 --- tip3.orig/kernel/sched_fair.c
 +++ tip3/kernel/sched_fair.c
-@@ -1362,27 +1362,27 @@ static long effective_load(struct task_g
- 		return wl;
+@@ -1376,6 +1376,23 @@ task_hot(struct task_struct *p, u64 now)
+ 	return delta < (s64)sysctl_sched_migration_cost;
+ }
  
- 	for_each_sched_entity(se) {
--		long S, rw, s, a, b;
-+		long lw, w;
++/*
++ * Since sched_migration_cost is (relatively) very small we only need to
++ * actually update the clock in the boundary case when determining whether a
++ * task is hot or not.
++ */
++static int task_hot_lazy(struct task_struct *p)
++{
++	struct rq *rq = task_rq(p);
++
++	if (!task_hot(p, rq->clock_task))
++		return 0;
++
++	update_rq_clock(rq);
++
++	return task_hot(p, rq->clock_task);
++}
++
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ /*
+  * effective_load() calculates the load change as seen from the root_task_group
+@@ -1664,7 +1681,8 @@ select_task_rq_fair(struct rq *rq, struc
+ 	int sync = wake_flags & WF_SYNC;
  
--		S = se->my_q->tg->shares;
--		s = se->load.weight;
--		rw = se->my_q->load.weight;
-+		tg = se->my_q->tg;
-+		w = se->my_q->load.weight;
- 
--		a = S*(rw + wl);
--		b = S*rw + s*wg;
-+		/* use this cpu's instantaneous contribution */
-+		lw = atomic_read(&tg->load_weight);
-+		lw -= se->my_q->load_contribution;
-+		lw += w + wg;
- 
--		wl = s*(a-b);
-+		wl += w;
- 
--		if (likely(b))
--			wl /= b;
-+		if (lw > 0 && wl < lw)
-+			wl = (wl * tg->shares) / lw;
-+		else
-+			wl = tg->shares;
- 
--		/*
--		 * Assume the group is already running and will
--		 * thus already be accounted for in the weight.
--		 *
--		 * That is, moving shares between CPUs, does not
--		 * alter the group weight.
--		 */
-+		/* zero point is MIN_SHARES */
-+		if (wl < MIN_SHARES)
-+			wl = MIN_SHARES;
-+		wl -= se->load.weight;
- 		wg = 0;
+ 	if (sd_flag & SD_BALANCE_WAKE) {
+-		if (cpumask_test_cpu(cpu, &p->cpus_allowed))
++		if (cpumask_test_cpu(cpu, &p->cpus_allowed) &&
++		   (!sched_feat(NO_HOT_AFFINE) || !task_hot_lazy(p)))
+ 			want_affine = 1;
+ 		new_cpu = prev_cpu;
  	}
- 
+Index: tip3/kernel/sched_features.h
+===================================================================
+--- tip3.orig/kernel/sched_features.h
++++ tip3/kernel/sched_features.h
+@@ -64,3 +64,8 @@ SCHED_FEAT(OWNER_SPIN, 1)
+  * Decrement CPU power based on irq activity
+  */
+ SCHED_FEAT(NONIRQ_POWER, 1)
++
++/*
++ * Don't consider cache-hot tasks for affine wakeups
++ */
++SCHED_FEAT(NO_HOT_AFFINE, 1)
 
 
