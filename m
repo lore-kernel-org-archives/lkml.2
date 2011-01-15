@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab1AOLIw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 06:08:52 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49905 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752169Ab1AOLIu (ORCPT
+	id S1752519Ab1AOLKh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 06:10:37 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:46214 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752362Ab1AOLKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 06:08:50 -0500
-Date: Sat, 15 Jan 2011 11:08:48 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: sedat.dilek@gmail.com
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: linux-next: Tree for January 15 (Call Trace in fs/dcache.c +
- autofs4)
-Message-ID: <20110115110848.GL19804@ZenIV.linux.org.uk>
-References: <AANLkTik4JfjBEurjX4T3sAtGf9CPJvQYkV5aZWgE=XD1@mail.gmail.com>
- <AANLkTin0SUG3Q3aHVfBqCV8=iWThy3MTfG90ikMsrox9@mail.gmail.com>
- <20110115075723.GJ19804@ZenIV.linux.org.uk>
- <20110115090702.GK19804@ZenIV.linux.org.uk>
- <AANLkTinPs5toSudLXuu3=a0RoGHUqYvF8YyhdrXgckXY@mail.gmail.com>
+	Sat, 15 Jan 2011 06:10:36 -0500
+X-Sasl-enc: YIFpTkmUVohEjjQ7+v+gnJYJtBhzToCdBqlw2zMx/xCO 1295089834
+X-User-Agent: K-9 Mail for Android
+References: <1295005953-12173-1-git-send-email-viresh.kumar@st.com> <4D304A84.1000601@fastmail.fm> <AANLkTikQwgzTZrTVQ_kfxwNdT-_8Ly5FjCxiXB2gxj3W@mail.gmail.com> <20110114160508.41105533.akpm@linux-foundation.org>
+In-Reply-To: <20110114160508.41105533.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinPs5toSudLXuu3=a0RoGHUqYvF8YyhdrXgckXY@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH resend] fs/eventpoll.c: fix compilation warning
+From: Jack Stone <jwjstone@fastmail.fm>
+Date: Sat, 15 Jan 2011 11:10:19 +0000
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Shawn Bohrer <shawn.bohrer@gmail.com>
+CC: Viresh Kumar <viresh.kumar@st.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk
+Message-ID: <d67da8d3-b7fd-4fef-8490-a028fe41cf43@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 15, 2011 at 12:00:54PM +0100, Sedat Dilek wrote:
+"Andrew Morton" <akpm@linux-foundation.org> wrote:
+>I've looked at this warning several times - the code is non-buggy and
+>it's a bit sad to add extra instructions unnecessarily.  It would be
+>better to make this warning go away by cleaning up or restructuring the
+>code.  
+>
+>And the code _is_ pretty stupid.  If timed_out is set to 1 then the
+>function does a great pile of useless junk.  I had a quick tinkle, made
+>things worse and gave up:
 
-> > Argh... ??In __do_follow_link() replace
-> >
-> > ?? ?? ?? ??if (link->mnt != nd->path.mnt)
-> > with
-> > ?? ?? ?? ??if (link->mnt == nd->path.mnt)
-> >
-> > Mismerge yesterday ;-/ ??I've pushed fix for that in for-next, will fold
-> > shortly. ??As for autofs4 breakage, I've a preliminary fix, testing it
-> > now.
-> >
-> 
-> Hey, cool and thanks.
-> 
-> Not sure if you catched them all, I have noticed on my latest
-> ("buggy") linux-next kernel these Call Traces when doing an
-> update-grub.
+[snip]
 
-That might be vfsmount being dropped when it shouldn't or dentry leaked.
-And seeing that it's umount(8), I would suspect the latter...
+>I think the attempt to munge the "timeout==0" spacial case into the
+>main body of the polling loop was a mistake, and that the code would be
+>better/cleaner if that special case was handled quite separately.
 
-Anyway, with the latest from dhowells we probably should have
-d_set_d_op() mess on autofs4 under control (in #for-next).  Whether
-it's enough to actually fix the sucker is a separate question, of
-course - there might very well be more crap.
+I can have a go at a patch later on today if you wish.
 
-I've instrumented mntput() et.al. here; hopefully that'll make catching
-the remaining turds easier.  As for dcache leaks... ouch.  Could you
-try to reproduce that one on the mainline kernel?  At least that'd
-isolate things a bit.
+Thanks,
+
+Jack
+
+
+-- 
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
