@@ -1,85 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515Ab1AOHqX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 02:46:23 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:36837 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311Ab1AOHqV convert rfc822-to-8bit (ORCPT
+	id S1751701Ab1AOHyt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 02:54:49 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:59248 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751519Ab1AOHyq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 02:46:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=wXCI9B10m1UHdPG+ZoC2Vrcvu0N2egrDWq1pOauKBsHbDaHzRsI1PPq8rnC04CMqDv
-         YsFaXQ8fzVLLmOPBMEASdveELZEZTWohul3srlbJ9g6AdgYncORQVm7mpgi/c5jXXUYU
-         K0MiAG6Gkraqh7/gD0KG5niLCyBrL8mgAvglw=
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <AANLkTik4JfjBEurjX4T3sAtGf9CPJvQYkV5aZWgE=XD1@mail.gmail.com>
-References: <AANLkTik4JfjBEurjX4T3sAtGf9CPJvQYkV5aZWgE=XD1@mail.gmail.com>
-Date: Sat, 15 Jan 2011 08:46:20 +0100
-Message-ID: <AANLkTin0SUG3Q3aHVfBqCV8=iWThy3MTfG90ikMsrox9@mail.gmail.com>
-Subject: Re: linux-next: Tree for January 15 (Call Trace in fs/dcache.c + autofs4)
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 15 Jan 2011 02:54:46 -0500
+Date: Fri, 14 Jan 2011 23:54:37 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Huang Ying <ying.huang@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH] ACPI: don't attempt to use hest_tab unless
+ !acpi_pci_disabled
+Message-ID: <20110114235437.669f820d@queued.net>
+In-Reply-To: <alpine.LFD.2.02.1101142310240.2551@x980>
+References: <20110114181620.188e7a62@queued.net>
+	<alpine.LFD.2.02.1101142310240.2551@x980>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 15, 2011 at 8:39 AM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
-> On Sat, Jan 15, 2011 at 3:44 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> Hi all,
->>
->> Reminder: do not add any v2.6.39 material to your linux-next included
->> trees until after v2.6.38-rc1 is released.
->>
->> Changes since 20110114:
->>
->
-> Just reporting as I see this Call Trace in my dmesg, not sure which of
-> the trees is causing it.
->
-> - Sedat -
->
-> [    5.324728] ------------[ cut here ]------------
-> [    5.324779] WARNING: at
-> /home/sd/src/linux-2.6/linux-2.6.37/debian/build/source_i386_none/fs/dcache.c:1360
-> d_set_d_op+0x27/0x8f()
-> [    5.324830] Hardware name: 2374SG6
-> [    5.324863] Modules linked in: autofs4 ext4 mbcache jbd2 crc16
-> dm_mod usbhid hid uas usb_storage sg sd_mod sr_mod cdrom crc_t10dif
-> ata_generic ata_piix libata uhci_hcd ehci_hcd usbcore scsi_mod thermal
-> e1000 thermal_sys floppy nls_base [last unloaded: scsi_wait_scan]
-> [    5.325555] Pid: 1, comm: systemd Not tainted
-> 2.6.37-next20110115.dileks.1-686-iniza #1
-> [    5.325602] Call Trace:
-> [    5.325641]  [<c1031327>] ? warn_slowpath_common+0x65/0x7a
-> [    5.325679]  [<c10d45a1>] ? d_set_d_op+0x27/0x8f
-> [    5.325716]  [<c103134b>] ? warn_slowpath_null+0xf/0x13
-> [    5.325753]  [<c10d45a1>] ? d_set_d_op+0x27/0x8f
-> [    5.325794]  [<f86dc5ff>] ? autofs4_fill_super+0x1a5/0x292 [autofs4]
-> [    5.325834]  [<c10c8d70>] ? sget+0x131/0x142
-> [    5.325870]  [<c10c8dbb>] ? mount_nodev+0x3a/0x62
-> [    5.325908]  [<f86dc000>] ? autofs_mount+0x0/0x14 [autofs4]
-> [    5.325946]  [<f86dc010>] ? autofs_mount+0x10/0x14 [autofs4]
-> [    5.325984]  [<f86dc45a>] ? autofs4_fill_super+0x0/0x292 [autofs4]
-> [    5.326023]  [<c10c8a83>] ? vfs_kern_mount+0x99/0x193
-> [    5.326060]  [<c10c8bbe>] ? do_kern_mount+0x2f/0xb0
-> [    5.326097]  [<c10db5bb>] ? do_mount+0x1ab/0x1d1
-> [    5.326134]  [<c10db67f>] ? sys_mount+0x61/0x8f
-> [    5.326173]  [<c1002fdf>] ? sysenter_do_call+0x12/0x28
-> [    5.326209] ---[ end trace 425b18696c1ee13e ]---
->
-> - EOT -
->
+On Fri, 14 Jan 2011 23:24:27 -0500 (EST)
+Len Brown <lenb@kernel.org> wrote:
 
-Will try the patch from [1] as there was no feedback yet.
+[...]
+> > This patch causes apei_hest_parse to check both hest_disabled and
+> > acpi_pci_disabled before continuing.  With it, the XO-1 boots
+> > properly.
+> 
+> The X0-1 has no ACPI support, and thus you are running
+> with acpi_disabled=1, yes?
 
-- Sedat -
+The XO-1 has no ACPI support, but ACPI support is enabled in the kernel
+(as the XO-1.5 does have ACPI support, and the same kernel is used
+between both) and I'm not passing any arguments to the kernel regarding
+it. The kernel's ACPI code detects that it's not there and disables it
+(the kernel message that's seen is "ACPI: Interpreter disabled.")
 
-[1] https://lkml.org/lkml/2011/1/12/394
+This is what sets apci_pci_disabled to 1; I'm not doing it manually.
+
+> 
+> It would be better for the fix to depend on acpi_disabled.
+> acpi_disbled=1 is a supported configuration, while
+> acpi_pci_disabled is a just a debug flag, maybe someday
+> it will go away.
+
+Ah, ok.  The reason I went with acpi_pci_disabled is because that's
+acpi_pci_root_init() checks, and that's what specifies whether or not
+acpi_hest_init gets called.. but it's all the same to me. :)
+
+> 
+> Looks like acpi_hest_init() bails for acpi_disabled,
+> and thus hest_ghes_dev_register()doens't run and invoke
+> apei_hest_parse(), so we are set there.
+> 
+> Seems like drivers/pci/pcie/aer/aerdrv_acpi.c,
+> should not invoke apei_hest_parse() when acpi_disabled=1.
+> Either that or we have to have apei_hest_parse(),
+> which is exported to modules check acpi_disabled --
+> and its callers need to check for failure.
+
+>From a safety standpoint, I'd prefer to have apei_hest_parse
+check for acpi_disabled, rather than relying on clients to know to
+check for it.  Here's an updated patch.
+
+
+
+
+
+From: Andres Salomon <dilinger@queued.net>
+
+I've hit the following oops on boot on an XO-1:
+
+[    0.662755] BUG: unable to handle kernel NULL pointer dereference at 00000024
+[    0.666349] IP: [<c11a0514>] apei_hest_parse+0xbc/0xcc
+[    0.666349] *pde = 00000000
+[    0.666349] Oops: 0000 [#1] SMP
+[    0.666349] last sysfs file:
+[    0.666349] Modules linked in:
+[    0.666349]
+[    0.666349] Pid: 1, comm: swapper Not tainted 2.6.37+ #74 /
+[    0.666349] EIP: 0060:[<c11a0514>] EFLAGS: 00010206 CPU: 0
+[    0.666349] EIP is at apei_hest_parse+0xbc/0xcc
+[    0.666349] EAX: 00000028 EBX: 00000000 ECX: 00000000 EDX: 00000000
+[    0.666349] ESI: 00000001 EDI: 00000000 EBP: c1161171 ESP: cb441fa8
+[    0.666349]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+[    0.666349] Process swapper (pid: 1, ti=cb440000 task=cb43c000 task.ti=cb440000)
+[    0.666349] Stack:
+[    0.666349]  c1450960 00000001 00000020 c141fa10 c11611aa c141fa1e c1001151 00000000
+[    0.666349]  c1450960 00000001 00000020 00000000 c1401346 00000000 c1401221 00000000
+[    0.666349]  c10034be 00000000 00000000 00000000 00000000 00000000
+[    0.666349] Call Trace:
+[    0.666349]  [<c141fa10>] ? aer_service_init+0x0/0x22
+[    0.666349]  [<c11611aa>] ? aer_acpi_firmware_first+0x15/0x22
+[    0.666349]  [<c141fa1e>] ? aer_service_init+0xe/0x22
+[    0.666349]  [<c1001151>] ? do_one_initcall+0x68/0x10f
+[    0.666349]  [<c1401346>] ? kernel_init+0x125/0x19d
+[    0.666349]  [<c1401221>] ? kernel_init+0x0/0x19d
+[    0.666349]  [<c10034be>] ? kernel_thread_helper+0x6/0x10
+[    0.666349] Code: 76 18 0f b7 40 02 50 68 c2 ae 35 c1 e8 3e e8 0f 00 b8 ea ff ff ff 59 5b eb 1c 89 fa ff d5 85 c0 75 14 89 f0 43 8b 0d 50 ed 3f c1 <3b> 59
+ 24 0f 82 64 ff ff ff 31 c0 5b 5e 5f 5d c3 8b 50 0c 8d 4a
+
+The apei_hest_parse function is using hest_tab, which hasn't been initialized.
+This is because acpi_hest_init has never been called (as acpi_pci_disabled is 1,
+so it never gets called from acpi_pci_root_init), and hest_disabled is never
+set to 1.  When the aer_driver calls apei_hest_parse, the hest_disabled check
+passes, and it oopses processing hest_tab.
+
+This patch causes apei_hest_parse to check both hest_disabled and
+acpi_disabled before continuing.
+
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ drivers/acpi/apei/hest.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/acpi/apei/hest.c b/drivers/acpi/apei/hest.c
+index 4ee58e7..7262eaf 100644
+--- a/drivers/acpi/apei/hest.c
++++ b/drivers/acpi/apei/hest.c
+@@ -89,7 +89,7 @@ int apei_hest_parse(apei_hest_func_t func, void *data)
+ 	struct acpi_hest_header *hest_hdr;
+ 	int i, rc, len;
+ 
+-	if (hest_disable)
++	if (hest_disable || acpi_disabled)
+ 		return -EINVAL;
+ 
+ 	hest_hdr = (struct acpi_hest_header *)(hest_tab + 1);
+-- 
+1.7.2.3
+
