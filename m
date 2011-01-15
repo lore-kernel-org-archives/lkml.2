@@ -1,84 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715Ab1AOTCp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 14:02:45 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59263 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752589Ab1AOTCn convert rfc822-to-8bit (ORCPT
+	id S1753815Ab1AOTEE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 14:04:04 -0500
+Received: from x35.xmailserver.org ([64.71.152.41]:35889 "EHLO
+	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752589Ab1AOTEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 14:02:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=NjpXwJl/qfj/fOnHKz2N21eZOmn3NAHMPAJCg+rlXbGAmUr+9ZxTtjI7s41GRdQRQg
-         Se+Z6mx853w6wx8P0nlFjB7ADo4TPbeLjYc5XAZWNRn3CwXEBbeG4/2ZF7TbsoJFbn4y
-         L4Qkx/+Tk475ciiHiZV9eKTQCPrBm7wWXG4Tk=
+	Sat, 15 Jan 2011 14:04:01 -0500
+X-AuthUser: davidel@xmailserver.org
+Date: Sat, 15 Jan 2011 11:03:59 -0800 (PST)
+From: Davide Libenzi <davidel@xmailserver.org>
+X-X-Sender: davide@davide-lnx1
+To: Shawn Bohrer <shawn.bohrer@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jack Stone <jwjstone@fastmail.fm>, Viresh Kumar <viresh.kumar@st.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 3/3] epoll: remove unnecessary test of ep->ovflist for
+ available events
+In-Reply-To: <1295110837-3061-3-git-send-email-shawn.bohrer@gmail.com>
+Message-ID: <alpine.DEB.2.00.1101150938090.6884@davide-lnx1>
+References: <20110115162027.GA2552@lintop> <1295110837-3061-3-git-send-email-shawn.bohrer@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
+X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
 MIME-Version: 1.0
-In-Reply-To: <20110115172320.GU9506@random.random>
-References: <4d308cf5394566ccc@agluck-desktop.sc.intel.com>
-	<1295076096.4875.60.camel@pasglop>
-	<20110115155925.GT9506@random.random>
-	<1295110048.5973.36.camel@mulgrave.site>
-	<20110115172320.GU9506@random.random>
-Date: Sat, 15 Jan 2011 20:02:41 +0100
-X-Google-Sender-Auth: SV5TFV9newFAjdFV_fpy_rfGHU4
-Message-ID: <AANLkTinMP2oeaWxiXXW-5psRyxeuBfkGth9cU7EgNvGO@mail.gmail.com>
-Subject: Re: ia64 broken by transparent huge pages - other arches too?
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 15, 2011 at 18:23, Andrea Arcangeli <aarcange@redhat.com> wrote:
->> The problem is very often not in the actual code, but in the side
->> effects the code causes.  This is what linux-next integration helps
->> mitigate. So, please use it next time.  Just testing on x86 in your own
->> configuration isn't sufficient to pick up the problems.
->
-> I fully agree with you about build time regression, there linux-next
-> might have helped more. I'm talking about runtime regressions. If it
-> build it'll work because nothing relevant has changed for not-x86
-> archs.
->
-> By all means next times I'll try to get through linux-next too if this
-> is preferred, but the brainer part has been heavily tested and that's
-> the important thing as far as I can see.
->
-> I'm also not sure if having it in linux-next instead of -mm, would
-> have been better in terms of handling of the patchstream. I think
-> having it managed in -mm reviewed by all other -mm developers using
-> raw patches floating in the linux-mm and mm-commit lists, was ideal
-> and potentially more valuable for an increased amount of review, than
-> what a blind pull from linux-next could provide. For the brainer part,
-> maximizing the reviewing was certainly more valuable than checking if
-> it builds and boots on some arch not affected in any functional way.
+On Sat, 15 Jan 2011, Shawn Bohrer wrote:
 
-These are not mutually exclusive options: we want to (a) have everything
-reviewed and discussed _and_ (b) have everything build (and optionally run)
-tested in linux-next. If perfection was the goal, we don't settle for anything
-less.
+> The additional test for ep->ovflist != EP_UNACTIVE_PTR to signify
+> available events was added in 5071f97ec6d74f006072de0ce89b67c8792fe5a1
+> but doesn't appear to do anything.  Either this is a bug or the check
+> isn't needed.
+> 
+> If the ep->ovflist is not EP_UNACTIVE_PTR then ep_send_events() calls
+> ep_scan_ready_list() which sets ep->ovflist = NULL thus loosing any
+> events which may have been stored there.
+> 
+> Signed-off-by: Shawn Bohrer <shawn.bohrer@gmail.com>
 
-Furthermore, even stupid and trivial to fix build issues may mask other
-more severe issues, and delay the fixing of those.
+NACK. Not only NACK, but hell NACK.
+The epoll_wait() might hit right after the delivery of the current events 
+ended in/right-after:
 
-Gr{oetje,eeting}s,
+	error = (*sproc)(ep, &txlist, priv);
 
-                        Geert
+So, if there are overflowed events, a following ep_send_events() can go 
+fetch them, because ep_scan_ready_list() will go drop them back in the 
+ready list (right after the line above).
+Events in the overflow list are no different from the ones in the ready 
+list, and removing such test will make you, either return with no events 
+when they are really there, or take another unnecessary spin lock/unlock 
+trip.
+On the contrary, a missed optimization is applying the same rule even 
+above, instead of the bare list_empty(). Will send a patch to Andrew.
+And no, it is not a bug, because ep_scan_ready_list() is protected by a 
+mutex.
+	
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+- Davide
+
+
