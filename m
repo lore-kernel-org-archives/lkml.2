@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850Ab1AOLvN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 06:51:13 -0500
-Received: from unimail.uninorte.edu.co ([190.144.171.18]:59256 "EHLO
+	id S1752920Ab1AOMYG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 07:24:06 -0500
+Received: from unimail.uninorte.edu.co ([190.144.171.18]:49408 "EHLO
 	unimail.uninorte.edu.co" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752587Ab1AOLvE (ORCPT
+	with ESMTP id S1752827Ab1AOMYE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 06:51:04 -0500
-X-AuditID: ac140104-b7ba2ae000001ea8-68-4d31841793de
-Message-ID: <20110115062412.976168ci0569h80s@unimail.uninorte.edu.co>
-Date: Sat, 15 Jan 2011 06:24:12 -0500
+	Sat, 15 Jan 2011 07:24:04 -0500
+X-AuditID: ac140104-b7ba2ae000001ea8-e1-4d319028f936
+Message-ID: <20110115071542.1546734rrxqroh66@unimail.uninorte.edu.co>
+Date: Sat, 15 Jan 2011 07:15:42 -0500
 From: Antonino Vidal Ortega <avidal@uninorte.edu.co>
 Reply-to: choi_chu05@yahoo.co.jp
 To: undisclosed-recipients:;
