@@ -1,210 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab1AORB0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 12:01:26 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:38245 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751704Ab1AORBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 12:01:09 -0500
-From: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
-To: <sfr@canb.auug.org.au>, "Arnd Bergmann" <arnd@arndb.de>, <gregkh@suse.de>,
-        <jbarnes@virtuousgeek.org>, <dmitry.torokhov@gmail.com>,
-        <dtor@mail.ru>, <rubini@cvml.unipv.it>
-Cc: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <linux-next@vger.kernel.org>
-Subject: Request for unicore32 architecture codes to merge into linux-next
-Date: Sun, 16 Jan 2011 01:00:31 +0800
-Message-ID: <004901cbb4d5$b9bb1370$2d313a50$@mprc.pku.edu.cn>
+	id S1753495Ab1AORHm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 12:07:42 -0500
+Received: from 51.197.216.81.static.s-h.siw.siwnet.net ([81.216.197.51]:41735
+	"EHLO sloth.weinigel.se" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752671Ab1AORHk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jan 2011 12:07:40 -0500
+Message-ID: <4D31D45A.8080509@weinigel.se>
+Date: Sat, 15 Jan 2011 18:07:38 +0100
+From: Christer Weinigel <christer@weinigel.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Saravana Kannan <skannan@codeaurora.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Locking in the clk API
+References: <201101111016.42819.jeremy.kerr@canonical.com> <20110111091607.GI12552@n2100.arm.linux.org.uk> <4D2D184A.8020405@codeaurora.org> <20110112090301.GS11039@n2100.arm.linux.org.uk> <4D31A8F1.4080301@weinigel.se> <20110115145358.GC15996@n2100.arm.linux.org.uk>
+In-Reply-To: <20110115145358.GC15996@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: Acu01Bx6iBXdB0/BSn6z7slvf9IENA==
-Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 01/15/2011 03:53 PM, Russell King - ARM Linux wrote:
+> On Sat, Jan 15, 2011 at 03:02:25PM +0100, Christer Weinigel wrote:
+>> On platforms that need to sleep to enable the UART clock, configuring
+>> the UART as the kernel console should be equivalent to userspace opening
+>> the UART device, i.e. enable the clock.  At least to me that feels like
+>> an acceptable tradeoff, and if I wanted to save the last bit of power
+>> I'll have to refrain from using UART as the kernel console.
+>
+> Well, we're not discussing a _new_ API here - we're discussing an API
+> with existing users which works completely fine on the devices its
+> used, with differing expectations between implementations.
 
-I want to merge unicore32 repo into linux-next tree, the position is (unicore32 branch):
-  git://git.kernel.org/pub/scm/linux/kernel/git/epip/linux-2.6-unicore32.git
+Yes, so to fulfil the requirement that printk needs to call clk_enable 
+from atomic contexts, document that clk_enable can not sleep.  Or add 
+the clk_enable_atomic call and modify printk to use it.
 
-Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
----
- MAINTAINERS                                   |    8 +
- arch/unicore32/.gitignore                     |   21 +
- arch/unicore32/Kconfig                        |  248 +++
- arch/unicore32/Kconfig.debug                  |   68 +
- arch/unicore32/Makefile                       |   97 ++
- arch/unicore32/boot/Makefile                  |   47 +
- arch/unicore32/boot/compressed/Makefile       |   68 +
- arch/unicore32/boot/compressed/head.S         |  204 +++
- arch/unicore32/boot/compressed/misc.c         |  126 ++
- arch/unicore32/boot/compressed/piggy.S.in     |    6 +
- arch/unicore32/boot/compressed/vmlinux.lds.in |   61 +
- arch/unicore32/configs/debug_defconfig        |  210 +++
- arch/unicore32/configs/nb0916_defconfig       |  202 +++
- arch/unicore32/include/asm/Kbuild             |    2 +
- arch/unicore32/include/asm/assembler.h        |  131 ++
- arch/unicore32/include/asm/bitops.h           |   47 +
- arch/unicore32/include/asm/byteorder.h        |   24 +
- arch/unicore32/include/asm/cache.h            |   27 +
- arch/unicore32/include/asm/cacheflush.h       |  211 +++
- arch/unicore32/include/asm/checksum.h         |   41 +
- arch/unicore32/include/asm/cpu-single.h       |   45 +
- arch/unicore32/include/asm/cputype.h          |   33 +
- arch/unicore32/include/asm/delay.h            |   52 +
- arch/unicore32/include/asm/dma-mapping.h      |  124 ++
- arch/unicore32/include/asm/dma.h              |   23 +
- arch/unicore32/include/asm/elf.h              |   94 ++
- arch/unicore32/include/asm/fpstate.h          |   26 +
- arch/unicore32/include/asm/fpu-ucf64.h        |   53 +
- arch/unicore32/include/asm/futex.h            |  143 ++
- arch/unicore32/include/asm/gpio.h             |  103 ++
- arch/unicore32/include/asm/hwcap.h            |   32 +
- arch/unicore32/include/asm/io.h               |   52 +
- arch/unicore32/include/asm/irq.h              |  107 ++
- arch/unicore32/include/asm/irqflags.h         |   53 +
- arch/unicore32/include/asm/linkage.h          |   22 +
- arch/unicore32/include/asm/memblock.h         |   46 +
- arch/unicore32/include/asm/memory.h           |  123 ++
- arch/unicore32/include/asm/mmu.h              |   17 +
- arch/unicore32/include/asm/mmu_context.h      |   87 +
- arch/unicore32/include/asm/mutex.h            |   20 +
- arch/unicore32/include/asm/page.h             |   80 +
- arch/unicore32/include/asm/pci.h              |   46 +
- arch/unicore32/include/asm/pgalloc.h          |  110 ++
- arch/unicore32/include/asm/pgtable-hwdef.h    |   55 +
- arch/unicore32/include/asm/pgtable.h          |  317 ++++
- arch/unicore32/include/asm/processor.h        |   92 ++
- arch/unicore32/include/asm/ptrace.h           |  176 +++
- arch/unicore32/include/asm/sigcontext.h       |   29 +
- arch/unicore32/include/asm/stacktrace.h       |   31 +
- arch/unicore32/include/asm/string.h           |   38 +
- arch/unicore32/include/asm/suspend.h          |   30 +
- arch/unicore32/include/asm/system.h           |  161 ++
- arch/unicore32/include/asm/thread_info.h      |  154 ++
- arch/unicore32/include/asm/timex.h            |   34 +
- arch/unicore32/include/asm/tlb.h              |   98 ++
- arch/unicore32/include/asm/tlbflush.h         |  195 +++
- arch/unicore32/include/asm/traps.h            |   21 +
- arch/unicore32/include/asm/uaccess.h          |   47 +
- arch/unicore32/include/asm/unistd.h           |   18 +
- arch/unicore32/include/mach/PKUnity.h         |  104 ++
- arch/unicore32/include/mach/bitfield.h        |   24 +
- arch/unicore32/include/mach/dma.h             |   41 +
- arch/unicore32/include/mach/hardware.h        |   45 +
- arch/unicore32/include/mach/map.h             |   20 +
- arch/unicore32/include/mach/memory.h          |   58 +
- arch/unicore32/include/mach/ocd.h             |   36 +
- arch/unicore32/include/mach/pm.h              |   43 +
- arch/unicore32/include/mach/regs-ac97.h       |   32 +
- arch/unicore32/include/mach/regs-dmac.h       |   81 +
- arch/unicore32/include/mach/regs-gpio.h       |   70 +
- arch/unicore32/include/mach/regs-i2c.h        |   63 +
- arch/unicore32/include/mach/regs-intc.h       |   28 +
- arch/unicore32/include/mach/regs-nand.h       |   79 +
- arch/unicore32/include/mach/regs-ost.h        |   92 ++
- arch/unicore32/include/mach/regs-pci.h        |   94 ++
- arch/unicore32/include/mach/regs-pm.h         |  126 ++
- arch/unicore32/include/mach/regs-ps2.h        |   20 +
- arch/unicore32/include/mach/regs-resetc.h     |   34 +
- arch/unicore32/include/mach/regs-rtc.h        |   37 +
- arch/unicore32/include/mach/regs-sdc.h        |  156 ++
- arch/unicore32/include/mach/regs-spi.h        |   98 ++
- arch/unicore32/include/mach/regs-uart.h       |    3 +
- arch/unicore32/include/mach/regs-umal.h       |  229 +++
- arch/unicore32/include/mach/regs-unigfx.h     |  200 +++
- arch/unicore32/include/mach/uncompress.h      |   34 +
- arch/unicore32/kernel/Makefile                |   34 +
- arch/unicore32/kernel/asm-offsets.c           |  112 ++
- arch/unicore32/kernel/clock.c                 |  388 +++++
- arch/unicore32/kernel/cpu-ucv2.c              |   93 ++
- arch/unicore32/kernel/debug-macro.S           |   89 ++
- arch/unicore32/kernel/debug.S                 |   85 +
- arch/unicore32/kernel/dma.c                   |  180 +++
- arch/unicore32/kernel/early_printk.c          |   59 +
- arch/unicore32/kernel/elf.c                   |   38 +
- arch/unicore32/kernel/entry.S                 |  824 ++++++++++
- arch/unicore32/kernel/fpu-ucf64.c             |  126 ++
- arch/unicore32/kernel/gpio.c                  |  122 ++
- arch/unicore32/kernel/head.S                  |  252 +++
- arch/unicore32/kernel/hibernate.c             |  160 ++
- arch/unicore32/kernel/hibernate_asm.S         |  117 ++
- arch/unicore32/kernel/init_task.c             |   44 +
- arch/unicore32/kernel/irq.c                   |  426 +++++
- arch/unicore32/kernel/ksyms.c                 |   99 ++
- arch/unicore32/kernel/ksyms.h                 |   15 +
- arch/unicore32/kernel/module.c                |  152 ++
- arch/unicore32/kernel/pci.c                   |  404 +++++
- arch/unicore32/kernel/pm.c                    |  123 ++
- arch/unicore32/kernel/process.c               |  389 +++++
- arch/unicore32/kernel/ptrace.c                |  598 +++++++
- arch/unicore32/kernel/puv3-core.c             |  260 ++++
- arch/unicore32/kernel/puv3-nb0916.c           |  175 +++
- arch/unicore32/kernel/puv3-smw0919.c          |  115 ++
- arch/unicore32/kernel/pwm.c                   |  263 ++++
- arch/unicore32/kernel/rtc.c                   |  380 +++++
- arch/unicore32/kernel/setup.c                 |  360 +++++
- arch/unicore32/kernel/setup.h                 |   30 +
- arch/unicore32/kernel/signal.c                |  494 ++++++
- arch/unicore32/kernel/sleep.S                 |  202 +++
- arch/unicore32/kernel/stacktrace.c            |  131 ++
- arch/unicore32/kernel/sys.c                   |  126 ++
- arch/unicore32/kernel/time.c                  |  148 ++
- arch/unicore32/kernel/traps.c                 |  333 ++++
- arch/unicore32/kernel/vmlinux.lds.S           |   61 +
- arch/unicore32/lib/Makefile                   |   27 +
- arch/unicore32/lib/backtrace.S                |  163 ++
- arch/unicore32/lib/clear_user.S               |   57 +
- arch/unicore32/lib/copy_from_user.S           |  108 ++
- arch/unicore32/lib/copy_page.S                |   39 +
- arch/unicore32/lib/copy_template.S            |  214 +++
- arch/unicore32/lib/copy_to_user.S             |   96 ++
- arch/unicore32/lib/delay.S                    |   51 +
- arch/unicore32/lib/findbit.S                  |   98 ++
- arch/unicore32/lib/strncpy_from_user.S        |   45 +
- arch/unicore32/lib/strnlen_user.S             |   42 +
- arch/unicore32/mm/Kconfig                     |   50 +
- arch/unicore32/mm/Makefile                    |   15 +
- arch/unicore32/mm/alignment.c                 |  523 +++++++
- arch/unicore32/mm/cache-ucv2.S                |  212 +++
- arch/unicore32/mm/dma-swiotlb.c               |   34 +
- arch/unicore32/mm/extable.c                   |   24 +
- arch/unicore32/mm/fault.c                     |  479 ++++++
- arch/unicore32/mm/flush.c                     |   98 ++
- arch/unicore32/mm/init.c                      |  517 ++++++
- arch/unicore32/mm/iomap.c                     |   56 +
- arch/unicore32/mm/ioremap.c                   |  261 ++++
- arch/unicore32/mm/mm.h                        |   39 +
- arch/unicore32/mm/mmu.c                       |  533 +++++++
- arch/unicore32/mm/pgd.c                       |  102 ++
- arch/unicore32/mm/proc-macros.S               |  145 ++
- arch/unicore32/mm/proc-syms.c                 |   23 +
- arch/unicore32/mm/proc-ucv2.S                 |  134 ++
- arch/unicore32/mm/tlb-ucv2.S                  |   89 ++
- drivers/input/keyboard/Kconfig                |   11 +
- drivers/input/keyboard/atkbd.c                |    4 +
- drivers/input/mouse/psmouse-base.c            |   41 +
- drivers/input/serio/i8042.h                   |    2 +
- drivers/pci/Makefile                          |    1 +
- drivers/staging/puv3/Kconfig                  |  125 ++
- drivers/staging/puv3/Makefile                 |   22 +
- drivers/staging/puv3/TODO                     |    7 +
- drivers/staging/puv3/i8042-ucio.h             |   89 ++
- drivers/staging/puv3/puv3-atkbd.h             |   43 +
- drivers/staging/puv3/puv3_ac97.c              |  369 +++++
- drivers/staging/puv3/puv3_i2c.c               |  309 ++++
- drivers/staging/puv3/puv3_pcm.c               |  435 ++++++
- drivers/staging/puv3/puv3_pcm.h               |   28 +
- drivers/staging/puv3/puv3_umal.c              | 2069 +++++++++++++++++++++++++
- drivers/staging/puv3/puv3_unifb.c             |  965 ++++++++++++
- include/asm-generic/ftrace.h                  |   16 +
- include/asm-generic/sizes.h                   |   47 +
- include/asm-generic/uaccess.h                 |    8 +-
- include/linux/fb.h                            |    2 +
- 172 files changed, 23554 insertions(+), 3 deletions(-)
+>> Both of these feel like they should use a call such as clk_get_atomic
+>> and be able to handle EWOULDBLOCK/EAGAIN (or whatever error code is used
+>> to indicate that it would have to sleep) and delegate to a worker thread
+>> to enable the clock.  To catch uses of plain clk_enable from atomic
+>> contects, add a WARN_ON/BUG_ON(in_atomic()).  It won't catch everything,
+>> but would help a bit at least.
+>
+> We've never allowed clk_get() to be called in interruptible context,
+> so that's not the issue.  The issue is purely about clk_enable() and
+> clk_disable() and whether they should be able to be called in atomic
+> context or not.
 
+My bad, it should have said "clk_enable_atomic".
 
+> There's been a lot of talk on this issue for ages with no real progress
+> that I'm just going to repeat: let's unify those implementations which
+> use a spinlock for their clks into one consolidated solution, and
+> a separate consolidated solution for those which use a mutex.
+>
+> This will at least allow us to have _some_ consolidation of the existing
+> implementations - and it doesn't add anything to the problem at hand.
+> It might actually help identify what can be done at code level to resolve
+> this issue.
+
+Won't that cause a lot of code duplication?  If it's possible to have 
+one sane implementation, why not go for it at once?
+
+   /Christer
