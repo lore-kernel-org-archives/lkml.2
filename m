@@ -1,93 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab1AOQDi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 11:03:38 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42477 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173Ab1AOQDh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 11:03:37 -0500
-Date: Sat, 15 Jan 2011 17:03:29 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Christer Weinigel <christer@weinigel.se>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Locking in the clk API
-Message-ID: <20110115160329.GD6917@pengutronix.de>
-References: <201101111016.42819.jeremy.kerr@canonical.com>
- <20110111091607.GI12552@n2100.arm.linux.org.uk>
- <4D2D184A.8020405@codeaurora.org>
- <20110112090301.GS11039@n2100.arm.linux.org.uk>
- <4D31A8F1.4080301@weinigel.se>
- <20110115145358.GC15996@n2100.arm.linux.org.uk>
- <20110115150331.GB6917@pengutronix.de>
- <20110115151507.GD15996@n2100.arm.linux.org.uk>
+	id S1753327Ab1AOQGC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 11:06:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38817 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751173Ab1AOQF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jan 2011 11:05:59 -0500
+Message-ID: <4D31C6BF.4000402@suse.cz>
+Date: Sat, 15 Jan 2011 17:09:35 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110115151507.GD15996@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Vegard Nossum <vegard.nossum@gmail.com>
+Cc: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>, linux-acpi@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Zhang Rui <rui.zhang@intel.com>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Zimn@jasper.es,
+        Arnaud Lacombe <lacombar@gmail.com>
+Subject: Re: on builds/randconfigs
+References: <20101213163607.0b0a7c3a.sfr@canb.auug.org.au>	<alpine.LFD.2.02.1101121257580.18873@x980>	<20110112131800.d64c1a86.akpm@linux-foundation.org>	<201101122224.54330.rjw@sisk.pl>	<alpine.LFD.2.02.1101121654000.19754@x980>	<4D2EEEAA.7040200@suse.cz> <AANLkTinpjHZgKhLN19kn=0o6aXbMAJEooEUtHSxGyotm@mail.gmail.com>
+In-Reply-To: <AANLkTinpjHZgKhLN19kn=0o6aXbMAJEooEUtHSxGyotm@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 15, 2011 at 03:15:07PM +0000, Russell King - ARM Linux wrote:
-> On Sat, Jan 15, 2011 at 04:03:31PM +0100, Uwe Kleine-König wrote:
-> > Hi Russell,
-> > 
-> > On Sat, Jan 15, 2011 at 02:53:58PM +0000, Russell King - ARM Linux wrote:
-> > > We've been around returning EAGAIN, WARN_ONs, BUG_ONs, having clk_enable()
-> > > vs clk_enable_atomic(), clk_enable_cansleep() vs clk_enable(), etc.
-> > > 
-> > > There's been a lot of talk on this issue for ages with no real progress
-> > > that I'm just going to repeat: let's unify those implementations which
-> > > use a spinlock for their clks into one consolidated solution, and
-> > > a separate consolidated solution for those which use a mutex.
-> > > 
-> > > This will at least allow us to have _some_ consolidation of the existing
-> > > implementations - and it doesn't add anything to the problem at hand.
-> > > It might actually help identify what can be done at code level to resolve
-> > > this issue.
-> > Great, so how should we do it?  Take Jeremy's patch and make the
-> > differenciation between sleeping and atomic implementation a Kconfig
-> > variable?
-> 
-> No - I've been suggesting for about a week now about doing two entirely
-> separate consolidations.
-I didn't read that out of your mails.
- 
-> I think it would be insane to do the consolidation of the two different
-> implementations in one patch or even one patch set.  There needs to be
-> a consolidation of spinlock-based clks as one patch set, which is
-> entirely separate and independent from the consolidation of mutex-based
-> clks.
-I think they should share most of the code.  Apart from calling
-different locking functions they should be pretty much identical, no?
+Dne 15.1.2011 13:24, Vegard Nossum napsal(a):
+> I'll be happy to give a tour of the satconfig code if you or anybody
+> else would like to start hacking on it.
 
-> What if one of the consolidations turns out to be a problem?  Do we want
-> to throw both out, or do we want to keep as much as we possibly can?
-Do you really expect fundamental problems that make it necessary to
-switch all platforms that use the (say) sleeping variant back to their
-original implementation?  I don't think that when the general idea of
-using clk_ops prooves for the atomic case it cannot happen that a
-"native" implementation for a sleeping clk is better that a sleeping
-clk_ops implementation.
+Sure, I'm interested!
 
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Michal
