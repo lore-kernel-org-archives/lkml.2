@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab1AOVy6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 16:54:58 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:51057 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753376Ab1AOVy4 (ORCPT
+	id S1754098Ab1AOWIS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 17:08:18 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53219 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752783Ab1AOWIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 16:54:56 -0500
+	Sat, 15 Jan 2011 17:08:15 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=IWd8qepaYSXdh5NaOYFZSaRQ5B6H7klIf4WDloFhwB/+8KttHohTNC1I4j5yvs/MBR
-         rpM+mtw7O1gUr1d/DWD3tiYcKhaqsXc+GZ50jd2L+DoUPKN1yOYrxq9+9ju4S3uCQpxI
-         TrgKHYnFS6hbUqH5fwIovmRAm7xejMgsROKDc=
-Date: Sat, 15 Jan 2011 13:54:50 -0800
+        b=R3LpVd66deCQ1uLIVr0IWWaq0DBNFU/zbKbymVYo+NfTNCtv9ZMJCjg8muIEg9UH8T
+         EHb9gVyiESCMXarXopd7boLrFfSPJW98scyq22vhai+XbZfRg76BLEBkkficJPk8wufJ
+         Eg4vJLDzntQV4cvbL6zh61rg9SQqZjO+ZJkPI=
+Date: Sat, 15 Jan 2011 14:08:09 -0800
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: linux-input@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] sysrq is half-enabled by default
-Message-ID: <20110115215450.GB19872@core.coreip.homeip.net>
-References: <1295123037-2649-1-git-send-email-apw@canonical.com>
+To: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+Cc: sfr@canb.auug.org.au, Arnd Bergmann <arnd@arndb.de>, gregkh@suse.de,
+        jbarnes@virtuousgeek.org, rubini@cvml.unipv.it,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: Request for unicore32 architecture codes to merge into linux-next
+Message-ID: <20110115220809.GC19872@core.coreip.homeip.net>
+References: <004901cbb4d5$b9bb1370$2d313a50$@mprc.pku.edu.cn>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1295123037-2649-1-git-send-email-apw@canonical.com>
+In-Reply-To: <004901cbb4d5$b9bb1370$2d313a50$@mprc.pku.edu.cn>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+Hi,
 
-On Sat, Jan 15, 2011 at 08:23:56PM +0000, Andy Whitcroft wrote:
-> It seems that recent cleanups to sysrq handling have lead to us having
-> two copies of the sysrq enable status.  At boot these are currently
-> inconsistently specified leading to sysrq actually being enabled but
-> reported as not enabled in sysfs.  Following this email is a patch to
-> link both of these copies to a common configuration setting.
+On Sun, Jan 16, 2011 at 01:00:31AM +0800, Guan Xuetao wrote:
+> Hi,
+> 
+> I want to merge unicore32 repo into linux-next tree, the position is (unicore32 branch):
+>   git://git.kernel.org/pub/scm/linux/kernel/git/epip/linux-2.6-unicore32.git
 > 
 
-Thanks for noticing this, but I do not think we need a new configuration
-parameter. We did not have it for about 10 years and distributions know
-how to disable it upon boot if they want to.
+Have these changes been reviewed at all? Looking at the input parts I
+doubt it... We try _really_ hard to avoid sprinkling arch #ifedefs in
+the common code.
 
-Do youthink you could cange the patch and add a default value (1) to
-inlude/linux/sysrq.h and use it in sysctl and the handler code?
+So, for input:
 
-Thanks!
+- how big is the difference between standard keytable and the one you
+  are introducing? Looks like you are just adding 5 new keys that are
+  not critical for booting. So please just update keymap from userpsace
+  as we do for countless laptops and keyboards out there.
+
+- Trying to enable mouse 1000 times can lead to loooong delays. Have
+  you tried to figure out why you need the loop?
+
+- What kind of mice can be connected to teh devices? I am concerned that
+  your super-strict protocol checks will cause more harm then good (i do
+  not believe they are valied in general case, overflow is just and
+  additional bit).
+
+Please split changes related into logically separated patches and post
+them on linux-input@vger.kernel.org (along with linux-kernel if you
+prefer) for review and comments.
+
+Thanks.
 
 -- 
 Dmitry
