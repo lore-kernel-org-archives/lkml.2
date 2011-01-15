@@ -1,108 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab1AORUB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 12:20:01 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:59146 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752145Ab1AORUA (ORCPT
+	id S1752890Ab1AORVd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 12:21:33 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47187 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173Ab1AORVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 12:20:00 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 15 Jan 2011 18:19:48 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: linux1394-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] firewire: core: fix unstable I/O with Canon camcorder
-Message-ID: <20110115181948.6e7eac2f@stein>
-In-Reply-To: <20110112151921.0a363daa@stein>
-References: <AANLkTimIFRbKWYjFd56acxT2A6nnH6l3-7Q_UyORnonW@mail.gmail.com>
-	<4C017477.8000008@s5r6.in-berlin.de>
-	<4C0284E7.3050803@s5r6.in-berlin.de>
-	<tkrat.740b506673ccbf6d@s5r6.in-berlin.de>
-	<20101120202044.283f1212@stein>
-	<20110112151921.0a363daa@stein>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 15 Jan 2011 12:21:32 -0500
+Date: Sat, 15 Jan 2011 17:20:33 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Christer Weinigel <christer@weinigel.se>
+Cc: Saravana Kannan <skannan@codeaurora.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Locking in the clk API
+Message-ID: <20110115172033.GM15996@n2100.arm.linux.org.uk>
+References: <201101111016.42819.jeremy.kerr@canonical.com> <20110111091607.GI12552@n2100.arm.linux.org.uk> <4D2D184A.8020405@codeaurora.org> <20110112090301.GS11039@n2100.arm.linux.org.uk> <4D31A8F1.4080301@weinigel.se> <20110115145358.GC15996@n2100.arm.linux.org.uk> <4D31D45A.8080509@weinigel.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D31D45A.8080509@weinigel.se>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Regression since commit 10389536742c, "firewire: core: check for 1394a
-compliant IRM, fix inaccessibility of Sony camcorder":
+On Sat, Jan 15, 2011 at 06:07:38PM +0100, Christer Weinigel wrote:
+> On 01/15/2011 03:53 PM, Russell King - ARM Linux wrote:
+>> On Sat, Jan 15, 2011 at 03:02:25PM +0100, Christer Weinigel wrote:
+>>> On platforms that need to sleep to enable the UART clock, configuring
+>>> the UART as the kernel console should be equivalent to userspace opening
+>>> the UART device, i.e. enable the clock.  At least to me that feels like
+>>> an acceptable tradeoff, and if I wanted to save the last bit of power
+>>> I'll have to refrain from using UART as the kernel console.
+>>
+>> Well, we're not discussing a _new_ API here - we're discussing an API
+>> with existing users which works completely fine on the devices its
+>> used, with differing expectations between implementations.
+>
+> Yes, so to fulfil the requirement that printk needs to call clk_enable  
+> from atomic contexts, document that clk_enable can not sleep.  Or add  
+> the clk_enable_atomic call and modify printk to use it.
 
-The camcorder Canon MV5i generates lots of bus resets when asynchronous
-requests are sent to it (e.g. Config ROM read requests or FCP Command
-write requests) if the camcorder is not root node.  This causes drop-
-outs in videos or makes the camcorder entirely inaccessible.
-https://bugzilla.redhat.com/show_bug.cgi?id=633260
+You really need to read the entire thread - I've already said that yet
+discussion continues about how to solve the problem.  This thread which
+has been running for a number of days now has been entirely about how
+to solve this.
 
-Fix this by allowing any Canon device, even if it is a pre-1394a IRM
-like MV5i are, to remain root node (if it is at least Cycle Master
-capable).  With the FireWire controller cards that I tested, MV5i always
-becomes root node when plugged in and left to its own devices.
+>> There's been a lot of talk on this issue for ages with no real progress
+>> that I'm just going to repeat: let's unify those implementations which
+>> use a spinlock for their clks into one consolidated solution, and
+>> a separate consolidated solution for those which use a mutex.
+>>
+>> This will at least allow us to have _some_ consolidation of the existing
+>> implementations - and it doesn't add anything to the problem at hand.
+>> It might actually help identify what can be done at code level to resolve
+>> this issue.
+>
+> Won't that cause a lot of code duplication?  If it's possible to have  
+> one sane implementation, why not go for it at once?
 
-Reported-by: Ralf Lange
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: <stable@kernel.org> # 2.6.32.y and newer
----
- drivers/firewire/core-card.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+No one can agree on what the one sane implementation should be.
 
-Index: b/drivers/firewire/core-card.c
-===================================================================
---- a/drivers/firewire/core-card.c
-+++ b/drivers/firewire/core-card.c
-@@ -75,6 +75,8 @@ static size_t config_rom_length = 1 + 4 
- #define BIB_IRMC		((1) << 31)
- #define NODE_CAPABILITIES	0x0c0083c0 /* per IEEE 1394 clause 8.3.2.6.5.2 */
- 
-+#define CANON_OUI		0x000085
-+
- static void generate_config_rom(struct fw_card *card, __be32 *config_rom)
- {
- 	struct fw_descriptor *desc;
-@@ -284,6 +286,7 @@ static void bm_work(struct work_struct *
- 	bool root_device_is_running;
- 	bool root_device_is_cmc;
- 	bool irm_is_1394_1995_only;
-+	bool keep_this_irm;
- 
- 	spin_lock_irq(&card->lock);
- 
-@@ -305,6 +308,10 @@ static void bm_work(struct work_struct *
- 	irm_is_1394_1995_only = irm_device && irm_device->config_rom &&
- 			(irm_device->config_rom[2] & 0x000000f0) == 0;
- 
-+	/* Canon MV5i works unreliably if it is not root node. */
-+	keep_this_irm = irm_device && irm_device->config_rom &&
-+			irm_device->config_rom[3] >> 8 == CANON_OUI;
-+
- 	root_id  = root_node->node_id;
- 	irm_id   = card->irm_node->node_id;
- 	local_id = card->local_node->node_id;
-@@ -333,7 +340,7 @@ static void bm_work(struct work_struct *
- 			goto pick_me;
- 		}
- 
--		if (irm_is_1394_1995_only) {
-+		if (irm_is_1394_1995_only && !keep_this_irm) {
- 			new_root_id = local_id;
- 			fw_notify("%s, making local node (%02x) root.\n",
- 				  "IRM is not 1394a compliant", new_root_id);
-@@ -382,7 +389,7 @@ static void bm_work(struct work_struct *
- 
- 		spin_lock_irq(&card->lock);
- 
--		if (rcode != RCODE_COMPLETE) {
-+		if (rcode != RCODE_COMPLETE && !keep_this_irm) {
- 			/*
- 			 * The lock request failed, maybe the IRM
- 			 * isn't really IRM capable after all. Let's
+Consider this: is it better to continue talking about this for the next
+six months, while still having N spinlock based implementations, and M
+mutex based implementations.
 
+Or is it better to consolidate the N spinlock based implementations
+down to one spinlock implementation, and M mutex based implementations
+down to one mutex implementation, and then discuss how to resolve the
+differences between the two implementations?
 
--- 
-Stefan Richter
--=====-==-== ---= -====
-http://arcgraph.de/sr/
+I personally don't care whether we stick with the ever growing number of
+clk API implementations, whether we continue discussing it for the next
+six months, or whether we consolidate what we can.  I suspect there are
+people who do care greatly, so I'm trying to suggest a way we can see
+_some_ kind of progress on this consolidation effort.
