@@ -1,84 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890Ab1AORVd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 12:21:33 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47187 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173Ab1AORVc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 12:21:32 -0500
-Date: Sat, 15 Jan 2011 17:20:33 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Christer Weinigel <christer@weinigel.se>
-Cc: Saravana Kannan <skannan@codeaurora.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Locking in the clk API
-Message-ID: <20110115172033.GM15996@n2100.arm.linux.org.uk>
-References: <201101111016.42819.jeremy.kerr@canonical.com> <20110111091607.GI12552@n2100.arm.linux.org.uk> <4D2D184A.8020405@codeaurora.org> <20110112090301.GS11039@n2100.arm.linux.org.uk> <4D31A8F1.4080301@weinigel.se> <20110115145358.GC15996@n2100.arm.linux.org.uk> <4D31D45A.8080509@weinigel.se>
+	id S1753200Ab1AORXb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 12:23:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29177 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751347Ab1AORX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jan 2011 12:23:28 -0500
+Date: Sat, 15 Jan 2011 18:23:20 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org
+Subject: Re: ia64 broken by transparent huge pages - other arches too?
+Message-ID: <20110115172320.GU9506@random.random>
+References: <4d308cf5394566ccc@agluck-desktop.sc.intel.com>
+ <1295076096.4875.60.camel@pasglop>
+ <20110115155925.GT9506@random.random>
+ <1295110048.5973.36.camel@mulgrave.site>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D31D45A.8080509@weinigel.se>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1295110048.5973.36.camel@mulgrave.site>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 15, 2011 at 06:07:38PM +0100, Christer Weinigel wrote:
-> On 01/15/2011 03:53 PM, Russell King - ARM Linux wrote:
->> On Sat, Jan 15, 2011 at 03:02:25PM +0100, Christer Weinigel wrote:
->>> On platforms that need to sleep to enable the UART clock, configuring
->>> the UART as the kernel console should be equivalent to userspace opening
->>> the UART device, i.e. enable the clock.  At least to me that feels like
->>> an acceptable tradeoff, and if I wanted to save the last bit of power
->>> I'll have to refrain from using UART as the kernel console.
->>
->> Well, we're not discussing a _new_ API here - we're discussing an API
->> with existing users which works completely fine on the devices its
->> used, with differing expectations between implementations.
->
-> Yes, so to fulfil the requirement that printk needs to call clk_enable  
-> from atomic contexts, document that clk_enable can not sleep.  Or add  
-> the clk_enable_atomic call and modify printk to use it.
+On Sat, Jan 15, 2011 at 10:47:28AM -0600, James Bottomley wrote:
+> Andrea, what you say above isn't true, you're not thinking broadly
+> enough: the kernel is a complex set of code interactions.  For instance,
+> you caused this build break on parisc (which is a regression even though
+> parisc has no transparent huge pages at all):
+> 
+> http://marc.info/?l=linux-arch&m=129504371532124
 
-You really need to read the entire thread - I've already said that yet
-discussion continues about how to solve the problem.  This thread which
-has been running for a number of days now has been entirely about how
-to solve this.
+Yes I've seen the arm build fix. Thanks for it! ;)
 
->> There's been a lot of talk on this issue for ages with no real progress
->> that I'm just going to repeat: let's unify those implementations which
->> use a spinlock for their clks into one consolidated solution, and
->> a separate consolidated solution for those which use a mutex.
->>
->> This will at least allow us to have _some_ consolidation of the existing
->> implementations - and it doesn't add anything to the problem at hand.
->> It might actually help identify what can be done at code level to resolve
->> this issue.
->
-> Won't that cause a lot of code duplication?  If it's possible to have  
-> one sane implementation, why not go for it at once?
+> That was just from a simple code rearrangement (independent of any of
+> the config options).
+> 
+> One of the points of getting stuff through linux-next is that all of
+> these problems get sorted out long before the code hits mainline.  This
+> happens because linux-next gets a wide range of config randomisation
+> testing plus quite a few different architecture builds and runs.
+> 
+> The problem is very often not in the actual code, but in the side
+> effects the code causes.  This is what linux-next integration helps
+> mitigate. So, please use it next time.  Just testing on x86 in your own
+> configuration isn't sufficient to pick up the problems.
 
-No one can agree on what the one sane implementation should be.
+I fully agree with you about build time regression, there linux-next
+might have helped more. I'm talking about runtime regressions. If it
+build it'll work because nothing relevant has changed for not-x86
+archs.
 
-Consider this: is it better to continue talking about this for the next
-six months, while still having N spinlock based implementations, and M
-mutex based implementations.
+By all means next times I'll try to get through linux-next too if this
+is preferred, but the brainer part has been heavily tested and that's
+the important thing as far as I can see.
 
-Or is it better to consolidate the N spinlock based implementations
-down to one spinlock implementation, and M mutex based implementations
-down to one mutex implementation, and then discuss how to resolve the
-differences between the two implementations?
+I'm also not sure if having it in linux-next instead of -mm, would
+have been better in terms of handling of the patchstream. I think
+having it managed in -mm reviewed by all other -mm developers using
+raw patches floating in the linux-mm and mm-commit lists, was ideal
+and potentially more valuable for an increased amount of review, than
+what a blind pull from linux-next could provide. For the brainer part,
+maximizing the reviewing was certainly more valuable than checking if
+it builds and boots on some arch not affected in any functional way.
 
-I personally don't care whether we stick with the ever growing number of
-clk API implementations, whether we continue discussing it for the next
-six months, or whether we consolidate what we can.  I suspect there are
-people who do care greatly, so I'm trying to suggest a way we can see
-_some_ kind of progress on this consolidation effort.
+I think the sparc/arm build issues because of cleanup code refactoring
+are not worth worrying too much about, or at least they shouldn't be
+the argument for lack of testing. Said that, I apologize for the
+annoyance and I appreciate your help in the arm case. ia64 I fixed it
+with a one liner already.
+
+Overall I think the end result is great, perfection was the goal and
+if these build issues are the only error I think we got as close as
+humanly possible to it. And it's definitely thanks to an huge amount
+of help and feedback from the whole Linux community (both developers,
+maintainers and testers) if we could achieve this result, I could
+never achieve this alone.
+
+Sincerely thanks everyone!
+Andrea
