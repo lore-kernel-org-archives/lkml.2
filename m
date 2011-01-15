@@ -1,79 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126Ab1AONJU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 08:09:20 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46508 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752911Ab1AONJT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 08:09:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=dIbL9A8OB64W1slMCsi1bCbf9FdXMYdpnXS6zCWoTfv0HGpvbwYbJ94hvXHZHcGEXF
-         TQRTEDn/b9gDhfteJ2ozL3Ka23ZAwhWP4NNLG8V6SnRWK2H6B0+tjdvK8NileycPRbBO
-         /krkoOYyVXUfBWSJkhUk9b5FqWYVJ63SvGY98=
-Date: Sat, 15 Jan 2011 14:09:13 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Greg KH <greg@kroah.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	id S1753137Ab1AONUE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 08:20:04 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38368 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752911Ab1AONUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jan 2011 08:20:01 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: build failure after merge of the final tree (linus' tree related)
+Date: Sat, 15 Jan 2011 14:19:16 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37+; KDE/4.4.4; x86_64; ; )
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ozan Caglayan <ozan@pardus.org.tr>,
         Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: set percpu cpu0 lpj to default
-Message-ID: <20110115130913.GA27123@htj.dyndns.org>
-References: <20110113224450.GA14918@kroah.com>
- <alpine.LFD.2.00.1101132349590.2678@localhost6.localdomain6>
- <4D2F84FC.7000804@kernel.org>
- <20110113234852.GB17904@kroah.com>
- <4D2F9948.8000804@kernel.org>
- <20110114004428.GA26847@kroah.com>
- <4D2FA305.2030808@kernel.org>
- <alpine.DEB.2.00.1101140846560.2423@router.home>
- <4D30BE98.7060809@kernel.org>
- <alpine.DEB.2.00.1101141527400.10415@router.home>
+        Linus <torvalds@linux-foundation.org>
+References: <20110115133412.58b8cd89.sfr@canb.auug.org.au>
+In-Reply-To: <20110115133412.58b8cd89.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1101141527400.10415@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101151419.16758.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Saturday, January 15, 2011, Stephen Rothwell wrote:
+> Hi all,
+> 
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> In file included from drivers/pci/pcie/aer/aerdrv.c:20:
+> include/linux/pci-acpi.h:39: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'acpi_find_root_bridge_handle'
+> 
+> Caused by commit 415e12b2379239973feab91850b0dce985c6058a ("PCI/ACPI:
+> Request _OSC control once for each root bridge (v3)").  (Yet another
+> patch not seen in linux-next until merged into Linus' tree.  In this case
+> the breakage was not seen because the new part of the pci tree was
+> excluded from linux-next for several days because of another commit that
+> broke my builds.
 
-It doesn't seem like Christoph's recent patches had anything to do
-with it.  The problem is the default loops_per_jiffy has initial value
-of 1 << 12 but the per cpu one used on x86 starts as zero triggering
-warning if delay is used before calibration.
+Ah.  I thought it was in linux-next. :-(
 
-So, all that's necessary is just to initialize it with the same
-constant when defining the per cpu variable like the following.  It
-probably would be better to define a named constant for it tho.
+> That other commit was only excluded from the pci tree
+> just before being sent to Linus :-()
+> 
+> This is the non CONFIG_ACPI version of acpi_find_root_bridge_handle()
+> which returns an acpi_handle.  pci-acpi.h is now always included in
+> drivers/pci/pcie/aer/aerdrv.c.
+> 
+> I tried ifef'ing out the inclusion of pci-acpi.h, but that only made
+> matters worse.  I have just left it for today.  Please fix.
 
-Thanks.
+It looks like the non-CONFIG_ACPI version of acpi_find_root_bridge_handle()
+is just not necessary any more, because acpi_find_root_bridge_handle() is only
+used in code that depends on CONFIG_ACPI.
 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 763df77..1898c70 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -131,7 +131,10 @@ DEFINE_PER_CPU(cpumask_var_t, cpu_core_map);
- EXPORT_PER_CPU_SYMBOL(cpu_core_map);
+A patch removing it is appended, please test.
+
+Thanks,
+Rafael
+
+---
+ include/linux/pci-acpi.h |    3 ---
+ 1 file changed, 3 deletions(-)
+
+Index: linux-2.6/include/linux/pci-acpi.h
+===================================================================
+--- linux-2.6.orig/include/linux/pci-acpi.h
++++ linux-2.6/include/linux/pci-acpi.h
+@@ -35,9 +35,6 @@ static inline acpi_handle acpi_pci_get_b
+ 	return acpi_get_pci_rootbridge_handle(pci_domain_nr(pbus),
+ 					      pbus->number);
+ }
+-#else
+-static inline acpi_handle acpi_find_root_bridge_handle(struct pci_dev *pdev)
+-{ return NULL; }
+ #endif
  
- /* Per CPU bogomips and other parameters */
--DEFINE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
-+DEFINE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info) =
-+{
-+	.loops_per_jiffy	= 1 << 12,
-+};
- EXPORT_PER_CPU_SYMBOL(cpu_info);
- 
- atomic_t init_deasserted;
-
--- 
-tejun
+ #ifdef CONFIG_ACPI_APEI
