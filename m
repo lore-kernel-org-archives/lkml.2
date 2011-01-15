@@ -1,68 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940Ab1AOPDw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 10:03:52 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37876 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752799Ab1AOPDv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 10:03:51 -0500
-Date: Sat, 15 Jan 2011 16:03:31 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Christer Weinigel <christer@weinigel.se>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Locking in the clk API
-Message-ID: <20110115150331.GB6917@pengutronix.de>
-References: <201101111016.42819.jeremy.kerr@canonical.com>
- <20110111091607.GI12552@n2100.arm.linux.org.uk>
- <4D2D184A.8020405@codeaurora.org>
- <20110112090301.GS11039@n2100.arm.linux.org.uk>
- <4D31A8F1.4080301@weinigel.se>
- <20110115145358.GC15996@n2100.arm.linux.org.uk>
+	id S1752994Ab1AOPOU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 10:14:20 -0500
+Received: from ns1.huweb.hu ([62.112.193.37]:59672 "EHLO ns1.huweb.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752545Ab1AOPOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jan 2011 10:14:19 -0500
+Message-ID: <38935164A54A4EE38D32AD5046EA0DFD@M2007>
+From: "Gabor FUNK" <FUNK.Gabor@hunetkft.hu>
+To: <linux-kernel@vger.kernel.org>
+Subject: kernel tcp messages crippled randomly?
+Date: Sat, 15 Jan 2011 16:13:56 +0100
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110115145358.GC15996@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-2";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5931
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+X-MailScanner-ID: 1Pe7pV-0007j2-D5
+X-huweb-ns1-MailScanner: Found to be clean
+X-huweb-ns1-MailScanner-From: funk.gabor@hunetkft.hu
+X-huweb-ns1-MessageSize: 5726
+X-huweb-ns1-Authenticated-ID: bcd9805ec380393dea9f77d47cc6f2e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+Hi,
 
-On Sat, Jan 15, 2011 at 02:53:58PM +0000, Russell King - ARM Linux wrote:
-> We've been around returning EAGAIN, WARN_ONs, BUG_ONs, having clk_enable()
-> vs clk_enable_atomic(), clk_enable_cansleep() vs clk_enable(), etc.
-> 
-> There's been a lot of talk on this issue for ages with no real progress
-> that I'm just going to repeat: let's unify those implementations which
-> use a spinlock for their clks into one consolidated solution, and
-> a separate consolidated solution for those which use a mutex.
-> 
-> This will at least allow us to have _some_ consolidation of the existing
-> implementations - and it doesn't add anything to the problem at hand.
-> It might actually help identify what can be done at code level to resolve
-> this issue.
-Great, so how should we do it?  Take Jeremy's patch and make the
-differenciation between sleeping and atomic implementation a Kconfig
-variable?
+I just replaced an old server with a new one, put kernel version 2.6.37 (amd64) on it.
+I just noticed strange/crippled entries in kern.log/syslog, seemingly coming ONLY from the kernel, eg. other log entries generated 
+by apache/ftp/sql/exim/etc don't exhibit such problem.
+Also in general, kernel messages are fine, but sometimes they get "scrambled"...
+[It is under a good streess, hundreds of www-s, sql, mails, etc., no problems (no core/kernel panic, so likely hw has no problems, 
+looks healthy otherwise)]
 
-Best regards
-Uwe
+Find log part below, look for:
+"uepcel hukwno" and "nxetdysrn idw" for "UnExPeCtEdLy sHrUnK WiNdOw" (every 2nd letter)
+"eeeyhnwd" is same "unExpEctEdlY sHruNk WinDow" (every 3rd letter)
+"rpie" / "eard" for RePaIrEd
+    and
+"pigpceI" / "dopn aktN" for "DrOpPiNg pAcKeTiN" - the "kernel / nf_ct_ftp" lines.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Is it just me, or, erm... not?
+
+(btw, port 8081 is running a lighttpd)
+
+Thanks,
+
+G.
+
+---
+
+Jan 14 22:55:19 ns1 kernel: : C:Pe 7291.1:5554uepcel hukwno 5948130346 rpie)<>C:Pe 8.4.1.543788 nxetdysrn idw11319:88778(eard
+Jan 14 22:55:20 ns1 kernel: : TCP: Peer 189.248.113.75:49377/8081 unexpectedly shrunk window 1818371798:1818376758 (repaired)
+Jan 15 11:15:16 ns1 kernel: : TCP: Peer 93.108.182.189:49303/8081 unexpectedly shrunk window 2235699385:2235701010 (repaired)
+Jan 15 11:15:16 ns1 kernel: : TCP: Pee 910146:76/01uepcel hukwno 2165936401 rpie)<>C:Pe 910146:76/01nptlsu nw245:671(pr)<7>TCP: Peer 
+93.108.182.189:4930388 nxetdysrn idw23698:25000(eard
+Jan 15 11:24:15 ns1 kernel: : C:Pe 4372:5/8uxcd uwo32:43ri)
+Jan 15 13:39:39 ns1 kernel: : TCP: Peer 217.208.245.66:55511/8081 unexpectedly shrunk window 3424515429:3424520381 (repaired)
+Jan 15 14:14:45 ns1 kernel: : TCP: Peer 189.106.231.213:57107/8081 unexpectedly shrunk window 3521837958:352184647 rpie)<7>TCP: Peer 
+189.106.231.213:57107/8081 unexpectedly shrunk window 3521837958:3521846475 (repaired)
+Jan 15 14:15:33 ns1 kernel: C:Pe 902.3760 eeeyhnwd 6364829rae
+Jan 15 14:15:58 ns1 kernel: : TCP: Peer 18.0.32:2/8uxcd rkio4808123 eid<7>TCP: Peer 84.183.181.79:54549/8081 unexpectedly shrunk 
+window 3957382290:3957395358 (repaired)
+Jan 15 14:15:59 ns1 kernel: : TCP: Peer 84.183.181.79:54549/8081 unexpectedly shrunk window 3957382290:3957395358 (repaired)
+Jan 15 14:16:00 ns1 kernel: C:e 902.3760 eeeyhnwd 418333(pr)<7>TCP: Peer 84.183.181.79:54549/8081 unexpectedly shrunk window 
+3957382290:3957395358 (repaired)
+Jan 15 14:16:03 ns1 kernel: : TCP: Peer 84.183.181.79:54549/8081 unexpectedly shrunk window 3957382290:3957395358 (repaired)
+Jan 15 14:16:45 ns1 kernel: : TCP: Peer 189.106.231.213:57364/8081 unexpectedly shrunk window 486063161:486071678 (repaired)
+Jan 15 14:17:27 ns1 kernel: : C:Pe 7108.7:39/01uepcel hukwno 1255324556 rpie)pigpceI=OTeh R=212133 S=3632 =T0 C0T4=6FOTS2P4 
+=56A324IWR0   PU64D5
+Jan 15 14:17:28 ns1 kernel: : nf_ct_ftp: dropping packetIN= OUT=eth0 SRC=62.112.193.37 DST=213.163.39.234 LEN=92 TOS=0x00 PREC=0x00 
+TTL=64 ID=57662 DF PROTO=TCP SPT=21 DPT=44132 SEQ=1545444681 ACK=3116252248 WINDOW=9 RES=0x00 ACK PSH URGP=0 UID=65534 GID=65534
+Jan 15 14:17:29 ns1 kernel: nf_ct_ftp: dropping packetIN= OUT=eth0 SRC=62.112.193.37 DST=213.163.39.234 LEN=92 TOS=0x00 PREC=0x00 
+TTL=64 ID=57665 DF PROTO=TCP SPT=21 DPT=44132 SEQ=1545444681 ACK=3116252248 WINDOW=9 RES=0x00 ACK PSH URGP=0 UID=65534 GID=65534
+Jan 15 14:17:33 ns1 kernel: nf_ct_ft:dopn aktN U=t0SC6.1.9.7DT23133.3 E=2TS00 RC00 T=4I=77 FPOOTPST2 P=43 E=55461AK31224 IDW9RS00 C 
+S RP0UD654GD654
+Jan 15 14:17:35 ns1 kernel: nf_ct_ftp: dropping packetIN= OUT=eth0 SRC=62.112.193.37 DST=213.163.39.234 LEN=92 TOS=0x00 PREC=0x00 
+TTL=64 ID=57673 DF PROTO=TCP SPT=21 DPT=44132 SEQ=1545444681 ACK=3116252248 WINDOW=9 RES=0x00 ACK PSH URGP=0 UID=65534 GID=65534
+Jan 15 14:17:38 ns1 kernel: : nf_ct_ftp: dropping packetIN= OUT=eth0 SRC=62.112.193.37 DST=213.163.39.234 LEN=92 TOS=0x00 PREC=0x00 
+TTL=64 ID=57677 DF PROTO=TCP SPT=21 DPT=44132 SEQ=1545444681 ACK=3116252248 WINDOW=9 RES=0x00 ACK PSH URGP=0 UID=65534 GID=65534
+Jan 15 14:22:22 ns1 kernel: : nf_ct_ftp: dropping packetIN= OUT=eth0 SRC=62.112.193.37 DST=213.163.39.234 LEN=92 TOS=0x00 PREC=0x00 
+TTL=64 ID=57658 DF PROTO=TCP SPT=21 DPT=44132 SEQ=55461AK31224 IDW9RS00 C PHUG= I=53 I=53 <>fc_t:dopn aktN U=t0SC6.1.9.7DT23133.3 
+E=2TS00 RC00 T=4I=75 FPOOTPST2 P=43 E=55461AK3154WD=R=0A HR=U=5 D54<7>TCP: Peer 189.106.231.213:58360/8081 unexpectedlysrn 
+idw21364:11053(eard
+Jan 15 14:22:23 ns1 kernel: : TCP: Peer 189.106.231.213:58360/8081 unexpectedly shrunk window 2111396046:2111404563 (repaired)
+Jan 15 14:22:24 ns1 kernel: : TCP: Peer 189.106.231.213:58397/8081 unexpectedly shrunk window 2210186308:2210191921 (repaired)
+Jan 15 14:22:25 ns1 kernel: : C:Pe 8.0.3.1:86/01uepcel hukwno 11906145 eid<7>TCP: Peer 189.106.231.213:58397/8081 unexpectedly 
+shrunk window 2210186308:2210191921 (repaired) 
+
