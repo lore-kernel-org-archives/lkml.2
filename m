@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205Ab1AOCKh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 21:10:37 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:56210 "EHLO smtps.tip.net.au"
+	id S1752288Ab1AOCeW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 21:34:22 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:51234 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751849Ab1AOCKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 21:10:35 -0500
-Date: Sat, 15 Jan 2011 13:10:27 +1100
+	id S1752095Ab1AOCeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 21:34:20 -0500
+Date: Sat, 15 Jan 2011 13:34:12 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrea Arcangeli <aarcange@redhat.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: linux-next: build failure after merge of the final tree
-Message-Id: <20110115131027.2c07ccb0.sfr@canb.auug.org.au>
+        Ozan Caglayan <ozan@pardus.org.tr>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linus <torvalds@linux-foundation.org>
+Subject: linux-next: build failure after merge of the final tree (linus'
+ tree related)
+Message-Id: <20110115133412.58b8cd89.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA1";
- boundary="Signature=_Sat__15_Jan_2011_13_10_27_+1100_hNSpGVEiXVydVZiM"
+ boundary="Signature=_Sat__15_Jan_2011_13_34_12_+1100_j_Xe.DuqjJpRxB5u"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__15_Jan_2011_13_10_27_+1100_hNSpGVEiXVydVZiM
+--Signature=_Sat__15_Jan_2011_13_34_12_+1100_j_Xe.DuqjJpRxB5u
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi all,
 
-After merging the final tree, today's linux-next build (sparc32 defconfig)
-failed like this:
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-In file included from arch/sparc/include/asm/pgtable_32.h:455,
-                 from arch/sparc/include/asm/pgtable.h:6,
-                 from include/linux/mm.h:41,
-                 from arch/sparc/kernel/process_32.c:17:
-include/asm-generic/pgtable.h: In function 'pmdp_get_and_clear':
-include/asm-generic/pgtable.h:96: error: implicit declaration of function '=
-__pmd'
-include/asm-generic/pgtable.h:96: error: incompatible types when returning =
-type 'int' but 'pmd_t' was expected
+In file included from drivers/pci/pcie/aer/aerdrv.c:20:
+include/linux/pci-acpi.h:39: error: expected '=3D', ',', ';', 'asm' or '__a=
+ttribute__' before 'acpi_find_root_bridge_handle'
 
-and *lots* more.
+Caused by commit 415e12b2379239973feab91850b0dce985c6058a ("PCI/ACPI:
+Request _OSC control once for each root bridge (v3)").  (Yet another
+patch not seen in linux-next until merged into Linus' tree.  In this case
+the breakage was not seen because the new part of the pci tree was
+excluded from linux-next for several days because of another commit that
+broke my builds.  That other commit was only excluded from the pci tree
+just before being sent to Linus :-()
 
-Caused by commit e2cda322648122dc400c85ada80eaddbc612ef6a ("thp: add pmd
-mangling generic functions").  This has already been reported broken in
-other architectures as well.
+This is the non CONFIG_ACPI version of acpi_find_root_bridge_handle()
+which returns an acpi_handle.  pci-acpi.h is now always included in
+drivers/pci/pcie/aer/aerdrv.c.
 
-I have just left it for today.
+I tried ifef'ing out the inclusion of pci-acpi.h, but that only made
+matters worse.  I have just left it for today.  Please fix.
+
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
 
---Signature=_Sat__15_Jan_2011_13_10_27_+1100_hNSpGVEiXVydVZiM
+--Signature=_Sat__15_Jan_2011_13_34_12_+1100_j_Xe.DuqjJpRxB5u
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQEcBAEBAgAGBQJNMQITAAoJEDMEi1NhKgbsz3YH/AzT7jgf6SrD6WR1dYSbXcuO
-CqntKj+wGZstEVqsW51IP/5DdcUpx1kBSzN+KoPA1bCZUH+KxRDEeVYU/bCzz7NX
-zXaiNq7XFJhi5I1dqeBzD9eXEcJtvDHPcS7jYLEx97fRGLQfhM+J9yO36IpIPQNX
-bsmVxG3jvimXfjy5LWXe/M8AQvFMIilFYQlWvTgTMRUm6xth4K6IRIg9PXMNV/2z
-SgAHDmM489ujw9ZTaxdAbfLhnquyoSMppaKCLEUiXazNxf/O5zI2OoAFX8PdqHRT
-Pz4NKrLU2siNKxLe+wn6ETC1qgtjwWadHMStDAyQphJpA5DHMG7tjkYywNY/UNU=
-=wzLi
+iQEcBAEBAgAGBQJNMQekAAoJEDMEi1NhKgbs6agH/0fNyFKcLUmhidPGmpZWAoFN
+MpCYXwE0FEZMkbLYUIqCj0I3bzE1pBz9g451M1NJzgDCy3gim1/qQU2tJm3DT0Kw
+x2tmimDCN4AQizRSKJWpfkjBPMu6J0gO69/pzJdKJNIJU9VoT7oA0yTFZdcxXC+i
+m2M8Vi7mRuyAzsmAlRljRvhDFW71/vMMnI89LVWCfe1RsNulZKLSONzXMpkYv9X3
+7YgtykiwOVUPg+OTx64cTNdbWZCKO5sKbeVKvfnU2tO82mDILjk0KN02X4LVNt5B
+G72BxmSXyouY+CbP25k1Xe6fPfLJcTYzvb9I/vkgRz3M005udJ6E3MhOObRGgqo=
+=sUFc
 -----END PGP SIGNATURE-----
 
---Signature=_Sat__15_Jan_2011_13_10_27_+1100_hNSpGVEiXVydVZiM--
+--Signature=_Sat__15_Jan_2011_13_34_12_+1100_j_Xe.DuqjJpRxB5u--
