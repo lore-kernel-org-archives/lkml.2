@@ -1,57 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751895Ab1AOJHM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 04:07:12 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46983 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751385Ab1AOJHF (ORCPT
+	id S1752107Ab1AOJtn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 04:49:43 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:49202 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548Ab1AOJtl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 04:07:05 -0500
-Date: Sat, 15 Jan 2011 09:07:02 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: sedat.dilek@gmail.com
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: linux-next: Tree for January 15 (Call Trace in fs/dcache.c +
- autofs4)
-Message-ID: <20110115090702.GK19804@ZenIV.linux.org.uk>
-References: <AANLkTik4JfjBEurjX4T3sAtGf9CPJvQYkV5aZWgE=XD1@mail.gmail.com>
- <AANLkTin0SUG3Q3aHVfBqCV8=iWThy3MTfG90ikMsrox9@mail.gmail.com>
- <20110115075723.GJ19804@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110115075723.GJ19804@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Sat, 15 Jan 2011 04:49:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:date:in-reply-to:references
+         :content-type:x-mailer:content-transfer-encoding:message-id
+         :mime-version;
+        b=gwzV7m+cBwfj/gyKS9bkqruGtnR7DPbbnknlqO7Gcj+b6gGnETemtreLjTKlE3/meh
+         2GdSOnTN/C8h8AI0LUR8AAVOmL7tMM5pjZ/5mcsqmryxVqNsm7/BMADhgkifplT1qQKL
+         IQ5yXbOSEmGRt5HZHcCY1W5G9YRYZNJgW/v5c=
+Subject: Re: [PATCH 4/5] nouveau: Change the backlight parent device to the
+ connector, not the PCI dev
+From: Ben Skeggs <skeggsb@gmail.com>
+Reply-To: skeggsb@gmail.com
+To: Matthew Garrett <mjg@redhat.com>
+Cc: akpm@linux-foundation.org, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-acpi@vger.kernel.org, rpurdie@rpsys.net
+Date: Sat, 15 Jan 2011 19:49:07 +1000
+In-Reply-To: <1295033065-13450-4-git-send-email-mjg@redhat.com>
+References: <1295033065-13450-1-git-send-email-mjg@redhat.com>
+	 <1295033065-13450-4-git-send-email-mjg@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 2.91.5 (2.91.5-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1295084953.2013.0.camel@nisroch>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 15, 2011 at 07:57:23AM +0000, Al Viro wrote:
-> On Sat, Jan 15, 2011 at 08:46:20AM +0100, Sedat Dilek wrote:
+On Fri, 2011-01-14 at 14:24 -0500, Matthew Garrett wrote:
+> We may eventually end up with per-connector backlights, especially with
+> ddcci devices. Make sure that the parent node for the backlight device is
+> the connector rather than the PCI device.
 > 
-> > Will try the patch from [1] as there was no feedback yet.
-> > 
-> > - Sedat -
-> > 
-> > [1] https://lkml.org/lkml/2011/1/12/394
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Acked-by: Ben Skeggs <bskeggs@redhat.com>
+
+> ---
+>  drivers/gpu/drm/nouveau/nouveau_backlight.c |   24 ++++++++++++++----------
+>  drivers/gpu/drm/nouveau/nouveau_connector.c |    9 +++++++++
+>  drivers/gpu/drm/nouveau/nouveau_drv.h       |    8 ++++----
+>  drivers/gpu/drm/nouveau/nouveau_state.c     |    6 ------
+>  4 files changed, 27 insertions(+), 20 deletions(-)
 > 
-> There's also vfsmount refcounting breakage somewhere in automount series,
-> unfortunately caught only when redoing said refcounting on top of it [1] ;-/
-> I'm bisecting it right now, will post when it's done.
-> 
-> [1] with mnt{get,put}_long() variant the breakage is present, but not
-> immediately noticable.  With (local) rewrite to saner rules it became
-> visible, but I spent quite a while trying to find the bug in the most
-> obvious place - i.e. that rewrite.
+> diff --git a/drivers/gpu/drm/nouveau/nouveau_backlight.c b/drivers/gpu/drm/nouveau/nouveau_backlight.c
+> index 18d7bcc..00a55df 100644
+> --- a/drivers/gpu/drm/nouveau/nouveau_backlight.c
+> +++ b/drivers/gpu/drm/nouveau/nouveau_backlight.c
+> @@ -88,10 +88,11 @@ static const struct backlight_ops nv50_bl_ops = {
+>  	.update_status = nv50_set_intensity,
+>  };
+>  
+> -static int nouveau_nv40_backlight_init(struct drm_device *dev)
+> +static int nouveau_nv40_backlight_init(struct drm_connector *connector)
+>  {
+> -	struct backlight_properties props;
+> +	struct drm_device *dev = connector->dev;
+>  	struct drm_nouveau_private *dev_priv = dev->dev_private;
+> +	struct backlight_properties props;
+>  	struct backlight_device *bd;
+>  
+>  	if (!(nv_rd32(dev, NV40_PMC_BACKLIGHT) & NV40_PMC_BACKLIGHT_MASK))
+> @@ -100,7 +101,7 @@ static int nouveau_nv40_backlight_init(struct drm_device *dev)
+>  	memset(&props, 0, sizeof(struct backlight_properties));
+>  	props.type = BACKLIGHT_RAW;
+>  	props.max_brightness = 31;
+> -	bd = backlight_device_register("nv_backlight", &dev->pdev->dev, dev,
+> +	bd = backlight_device_register("nv_backlight", &connector->kdev, dev,
+>  				       &nv40_bl_ops, &props);
+>  	if (IS_ERR(bd))
+>  		return PTR_ERR(bd);
+> @@ -112,10 +113,11 @@ static int nouveau_nv40_backlight_init(struct drm_device *dev)
+>  	return 0;
+>  }
+>  
+> -static int nouveau_nv50_backlight_init(struct drm_device *dev)
+> +static int nouveau_nv50_backlight_init(struct drm_connector *connector)
+>  {
+> -	struct backlight_properties props;
+> +	struct drm_device *dev = connector->dev;
+>  	struct drm_nouveau_private *dev_priv = dev->dev_private;
+> +	struct backlight_properties props;
+>  	struct backlight_device *bd;
+>  
+>  	if (!nv_rd32(dev, NV50_PDISPLAY_SOR_BACKLIGHT))
+> @@ -124,7 +126,7 @@ static int nouveau_nv50_backlight_init(struct drm_device *dev)
+>  	memset(&props, 0, sizeof(struct backlight_properties));
+>  	props.type = BACKLIGHT_RAW;
+>  	props.max_brightness = 1025;
+> -	bd = backlight_device_register("nv_backlight", &dev->pdev->dev, dev,
+> +	bd = backlight_device_register("nv_backlight", &connector->kdev, dev,
+>  				       &nv50_bl_ops, &props);
+>  	if (IS_ERR(bd))
+>  		return PTR_ERR(bd);
+> @@ -135,8 +137,9 @@ static int nouveau_nv50_backlight_init(struct drm_device *dev)
+>  	return 0;
+>  }
+>  
+> -int nouveau_backlight_init(struct drm_device *dev)
+> +int nouveau_backlight_init(struct drm_connector *connector)
+>  {
+> +	struct drm_device *dev = connector->dev;
+>  	struct drm_nouveau_private *dev_priv = dev->dev_private;
+>  
+>  #ifdef CONFIG_ACPI
+> @@ -149,9 +152,9 @@ int nouveau_backlight_init(struct drm_device *dev)
+>  
+>  	switch (dev_priv->card_type) {
+>  	case NV_40:
+> -		return nouveau_nv40_backlight_init(dev);
+> +		return nouveau_nv40_backlight_init(connector);
+>  	case NV_50:
+> -		return nouveau_nv50_backlight_init(dev);
+> +		return nouveau_nv50_backlight_init(connector);
+>  	default:
+>  		break;
+>  	}
+> @@ -159,8 +162,9 @@ int nouveau_backlight_init(struct drm_device *dev)
+>  	return 0;
+>  }
+>  
+> -void nouveau_backlight_exit(struct drm_device *dev)
+> +void nouveau_backlight_exit(struct drm_connector *connector)
+>  {
+> +	struct drm_device *dev = connector->dev;
+>  	struct drm_nouveau_private *dev_priv = dev->dev_private;
+>  
+>  	if (dev_priv->backlight) {
+> diff --git a/drivers/gpu/drm/nouveau/nouveau_connector.c b/drivers/gpu/drm/nouveau/nouveau_connector.c
+> index a21e000..3a1ecc7 100644
+> --- a/drivers/gpu/drm/nouveau/nouveau_connector.c
+> +++ b/drivers/gpu/drm/nouveau/nouveau_connector.c
+> @@ -116,6 +116,10 @@ nouveau_connector_destroy(struct drm_connector *connector)
+>  				      nouveau_connector_hotplug, connector);
+>  	}
+>  
+> +	if (connector->connector_type == DRM_MODE_CONNECTOR_LVDS ||
+> +	    connector->connector_type == DRM_MODE_CONNECTOR_eDP)
+> +		nouveau_backlight_exit(connector);
+> +
+>  	kfree(nv_connector->edid);
+>  	drm_sysfs_connector_remove(connector);
+>  	drm_connector_cleanup(connector);
+> @@ -893,6 +897,11 @@ nouveau_connector_create(struct drm_device *dev, int index)
+>  	}
+>  
+>  	drm_sysfs_connector_add(connector);
+> +
+> +	if (connector->connector_type == DRM_MODE_CONNECTOR_LVDS ||
+> +	    connector->connector_type == DRM_MODE_CONNECTOR_eDP)
+> +		nouveau_backlight_init(connector);
+> +
+>  	dcb->drm = connector;
+>  	return dcb->drm;
+>  
+> diff --git a/drivers/gpu/drm/nouveau/nouveau_drv.h b/drivers/gpu/drm/nouveau/nouveau_drv.h
+> index 46e3257..1918ed1 100644
+> --- a/drivers/gpu/drm/nouveau/nouveau_drv.h
+> +++ b/drivers/gpu/drm/nouveau/nouveau_drv.h
+> @@ -999,15 +999,15 @@ static inline int nouveau_acpi_edid(struct drm_device *dev, struct drm_connector
+>  
+>  /* nouveau_backlight.c */
+>  #ifdef CONFIG_DRM_NOUVEAU_BACKLIGHT
+> -extern int nouveau_backlight_init(struct drm_device *);
+> -extern void nouveau_backlight_exit(struct drm_device *);
+> +extern int nouveau_backlight_init(struct drm_connector *);
+> +extern void nouveau_backlight_exit(struct drm_connector *);
+>  #else
+> -static inline int nouveau_backlight_init(struct drm_device *dev)
+> +static inline int nouveau_backlight_init(struct drm_connector *dev)
+>  {
+>  	return 0;
+>  }
+>  
+> -static inline void nouveau_backlight_exit(struct drm_device *dev) { }
+> +static inline void nouveau_backlight_exit(struct drm_connector *dev) { }
+>  #endif
+>  
+>  /* nouveau_bios.c */
+> diff --git a/drivers/gpu/drm/nouveau/nouveau_state.c b/drivers/gpu/drm/nouveau/nouveau_state.c
+> index a54fc43..f688f04 100644
+> --- a/drivers/gpu/drm/nouveau/nouveau_state.c
+> +++ b/drivers/gpu/drm/nouveau/nouveau_state.c
+> @@ -738,10 +738,6 @@ nouveau_card_init(struct drm_device *dev)
+>  			goto out_fence;
+>  	}
+>  
+> -	ret = nouveau_backlight_init(dev);
+> -	if (ret)
+> -		NV_ERROR(dev, "Error %d registering backlight\n", ret);
+> -
+>  	nouveau_fbcon_init(dev);
+>  	drm_kms_helper_poll_init(dev);
+>  	return 0;
+> @@ -793,8 +789,6 @@ static void nouveau_card_takedown(struct drm_device *dev)
+>  	struct drm_nouveau_private *dev_priv = dev->dev_private;
+>  	struct nouveau_engine *engine = &dev_priv->engine;
+>  
+> -	nouveau_backlight_exit(dev);
+> -
+>  	if (!engine->graph.accel_blocked) {
+>  		nouveau_fence_fini(dev);
+>  		nouveau_channel_put_unlocked(&dev_priv->channel);
 
-Argh...  In __do_follow_link() replace
 
-	if (link->mnt != nd->path.mnt)
-with
-	if (link->mnt == nd->path.mnt)
-
-Mismerge yesterday ;-/  I've pushed fix for that in for-next, will fold
-shortly.  As for autofs4 breakage, I've a preliminary fix, testing it
-now.
