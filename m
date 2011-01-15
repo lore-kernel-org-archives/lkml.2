@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955Ab1AOI5k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 03:57:40 -0500
-Received: from racecourse.oldelvet.net ([93.93.128.81]:38545 "EHLO
-	racecourse.oldelvet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab1AOI5j (ORCPT
+	id S1751895Ab1AOJHM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 04:07:12 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46983 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751385Ab1AOJHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 03:57:39 -0500
-X-Greylist: delayed 596 seconds by postgrey-1.27 at vger.kernel.org; Sat, 15 Jan 2011 03:57:39 EST
-Subject: Re: [PATCH v3] cassini: Use local-mac-address prom property for
- Cassini MAC address
-From: Richard Mortimer <richm@oldelvet.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: richm@oldelvet.org.uk, sparclinux@vger.kernel.org, fberckel@xs4all.nl,
-        julian.calaby@gmail.com, sinan@writeme.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110114.124053.111572121.davem@davemloft.net>
-References: <1294324455.6193.70.camel@duncow>
-	 <20110106.115123.35031451.davem@davemloft.net>
-	 <4D3035F0.6020503@oldelvet.org.uk>
-	 <20110114.124053.111572121.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 15 Jan 2011 08:47:28 +0000
-Message-ID: <1295081248.3996.0.camel@duncow>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 15 Jan 2011 04:07:05 -0500
+Date: Sat, 15 Jan 2011 09:07:02 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: sedat.dilek@gmail.com
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: linux-next: Tree for January 15 (Call Trace in fs/dcache.c +
+ autofs4)
+Message-ID: <20110115090702.GK19804@ZenIV.linux.org.uk>
+References: <AANLkTik4JfjBEurjX4T3sAtGf9CPJvQYkV5aZWgE=XD1@mail.gmail.com>
+ <AANLkTin0SUG3Q3aHVfBqCV8=iWThy3MTfG90ikMsrox9@mail.gmail.com>
+ <20110115075723.GJ19804@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110115075723.GJ19804@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-14 at 12:40 -0800, David Miller wrote:
-> From: Richard Mortimer <richm@oldelvet.org.uk>
-> Date: Fri, 14 Jan 2011 11:39:28 +0000
+On Sat, Jan 15, 2011 at 07:57:23AM +0000, Al Viro wrote:
+> On Sat, Jan 15, 2011 at 08:46:20AM +0100, Sedat Dilek wrote:
 > 
-> > FYI Sinan Akman has reported that cassini does not compile for x86 any
-> > longer. Message included below.
+> > Will try the patch from [1] as there was no feedback yet.
 > > 
-> > Does anyone have suggestions as to the best way to resolve this?
+> > - Sedat -
+> > 
+> > [1] https://lkml.org/lkml/2011/1/12/394
 > 
-> I'll fix it like this:
+> There's also vfsmount refcounting breakage somewhere in automount series,
+> unfortunately caught only when redoing said refcounting on top of it [1] ;-/
+> I'm bisecting it right now, will post when it's done.
 > 
-Thank you.
+> [1] with mnt{get,put}_long() variant the breakage is present, but not
+> immediately noticable.  With (local) rewrite to saner rules it became
+> visible, but I spent quite a while trying to find the bug in the most
+> obvious place - i.e. that rewrite.
 
-Regards
+Argh...  In __do_follow_link() replace
 
-Richard
+	if (link->mnt != nd->path.mnt)
+with
+	if (link->mnt == nd->path.mnt)
 
-
+Mismerge yesterday ;-/  I've pushed fix for that in for-next, will fold
+shortly.  As for autofs4 breakage, I've a preliminary fix, testing it
+now.
