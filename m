@@ -1,152 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538Ab1AOABJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 19:01:09 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44945 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750795Ab1AOABI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 19:01:08 -0500
-From: Omar Ramirez Luna <omar.ramirez@ti.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Felipe Contreras <felipe.contreras@nokia.com>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        devel <devel@driverdev.osuosl.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 2/2] staging: tidspbridge: replace mbox callback with notifier_call
-Date: Fri, 14 Jan 2011 17:49:51 -0600
-Message-Id: <1295048991-23230-1-git-send-email-omar.ramirez@ti.com>
-X-Mailer: git-send-email 1.7.1
+	id S1751673Ab1AOAFr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 19:05:47 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38557 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751320Ab1AOAFq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 19:05:46 -0500
+Date: Fri, 14 Jan 2011 16:05:08 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Shawn Bohrer <shawn.bohrer@gmail.com>
+Cc: Jack Stone <jwjstone@fastmail.fm>, Viresh Kumar <viresh.kumar@st.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        viro@zeniv.linux.org.uk
+Subject: Re: [PATCH resend] fs/eventpoll.c: fix compilation warning
+Message-Id: <20110114160508.41105533.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTikQwgzTZrTVQ_kfxwNdT-_8Ly5FjCxiXB2gxj3W@mail.gmail.com>
+References: <1295005953-12173-1-git-send-email-viresh.kumar@st.com>
+	<4D304A84.1000601@fastmail.fm>
+	<AANLkTikQwgzTZrTVQ_kfxwNdT-_8Ly5FjCxiXB2gxj3W@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lately, mailbox callbacks have been replaced by notifier block
-call chains, this needs to be changed in the users of mailbox,
-otherwise compilation will break due to missing parameters.
+On Fri, 14 Jan 2011 08:48:11 -0600
+Shawn Bohrer <shawn.bohrer@gmail.com> wrote:
 
-For this new change to work, io_mbox_msg needs to be compatible
-with the notifier_call definition.
+> On Fri, Jan 14, 2011 at 7:07 AM, Jack Stone <jwjstone@fastmail.fm> wrote:
+> > [cc Al Viro and Shawn Bohrer]
+> > On 14/01/2011 11:52, Viresh Kumar wrote:
+> >> This patch fixes following compilation warning
+> >> fs/eventpoll.c:1119: warning: 'slack' may be used uninitialized in this function
+> >>
+> >> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+> >> ---
+> >>  fs/eventpoll.c |    2 +-
+> >>  1 files changed, 1 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+> >> index 8cf0724..89b5e98 100644
+> >> --- a/fs/eventpoll.c
+> >> +++ b/fs/eventpoll.c
+> >> @@ -1116,7 +1116,7 @@ static int ep_poll(struct eventpoll *ep, struct epoll_event  user *events,
+> >>  {
+> >>       int res, eavail, timed_out = 0;
+> >>       unsigned long flags;
+> >> -     long slack;
+> >> +     long uninitialized_var(slack);
+> >>       wait_queue_t wait;
+> >>       struct timespec end_time;
+> >>       ktime_t expires, *to = NULL;
+> >
+> > Hi Viresh,
+> >
+> > This is certainly the correct thing to do if timeout cannot be negative.
+> >
+> > Al, Shawn
+> >
+> > Can timeout be negative, and if so what does it mean?
+> 
+> Yes timeout can be negative.  When timeout is negative it signifies an
+> infinite timeout.  Therefore I think the correct fix is to initialize
+> slack to 0.  I actually sent a patch to fix this back in November, but
+> it looks like it was never applied.
+> 
+> https://lkml.org/lkml/2010/11/27/143
+> 
+> Andrew, can you apply this patch?  Let me know if I need to resend.
 
-Reported-by: Hari Kanigeri <h-kanigeri2@ti.com>
-Signed-off-by: Omar Ramirez Luna <omar.ramirez@ti.com>
----
- drivers/staging/tidspbridge/core/io_sm.c           |    8 +++---
- drivers/staging/tidspbridge/core/tiomap3430.c      |   10 +++++---
- .../staging/tidspbridge/include/dspbridge/io_sm.h  |   21 +++++++------------
- 3 files changed, 18 insertions(+), 21 deletions(-)
+I've looked at this warning several times - the code is non-buggy and
+it's a bit sad to add extra instructions unnecessarily.  It would be
+better to make this warning go away by cleaning up or restructuring the
+code.  
 
-diff --git a/drivers/staging/tidspbridge/core/io_sm.c b/drivers/staging/tidspbridge/core/io_sm.c
-index 5718645..27e0aa8 100644
---- a/drivers/staging/tidspbridge/core/io_sm.c
-+++ b/drivers/staging/tidspbridge/core/io_sm.c
-@@ -949,7 +949,7 @@ func_end:
-  *      Calls the Bridge's CHNL_ISR to determine if this interrupt is ours, then
-  *      schedules a DPC to dispatch I/O.
-  */
--void io_mbox_msg(u32 msg)
-+int io_mbox_msg(struct notifier_block *self, unsigned long len, void *msg)
- {
- 	struct io_mgr *pio_mgr;
- 	struct dev_object *dev_obj;
-@@ -959,9 +959,9 @@ void io_mbox_msg(u32 msg)
- 	dev_get_io_mgr(dev_obj, &pio_mgr);
+And the code _is_ pretty stupid.  If timed_out is set to 1 then the
+function does a great pile of useless junk.  I had a quick tinkle, made
+things worse and gave up:
+
+--- a/fs/eventpoll.c~a
++++ a/fs/eventpoll.c
+@@ -1124,16 +1124,20 @@ static int ep_poll(struct eventpoll *ep,
+ 	struct timespec end_time;
+ 	ktime_t expires, *to = NULL;
  
- 	if (!pio_mgr)
--		return;
-+		return NOTIFY_BAD;
- 
--	pio_mgr->intr_val = (u16)msg;
-+	pio_mgr->intr_val = (u16)((u32)msg);
- 	if (pio_mgr->intr_val & MBX_PM_CLASS)
- 		io_dispatch_pm(pio_mgr);
- 
-@@ -973,7 +973,7 @@ void io_mbox_msg(u32 msg)
- 		spin_unlock_irqrestore(&pio_mgr->dpc_lock, flags);
- 		tasklet_schedule(&pio_mgr->dpc_tasklet);
+-	if (timeout > 0) {
+-		ktime_get_ts(&end_time);
+-		timespec_add_ns(&end_time, (u64)timeout * NSEC_PER_MSEC);
+-		slack = select_estimate_accuracy(&end_time);
+-		to = &expires;
+-		*to = timespec_to_ktime(end_time);
+-	} else if (timeout == 0) {
+-		timed_out = 1;
++	if (timeout == 0) {
++		/*
++		 * explanation of what timeout==0 means goes here
++		 */
++		spin_lock_irqsave(&ep->lock, flags);
++		goto skip;
  	}
--	return;
-+	return NOTIFY_OK;
- }
  
- /*
-diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
-index c3126e2..a3f69f6 100644
---- a/drivers/staging/tidspbridge/core/tiomap3430.c
-+++ b/drivers/staging/tidspbridge/core/tiomap3430.c
-@@ -223,6 +223,10 @@ static struct bridge_drv_interface drv_interface_fxns = {
- 	bridge_msg_set_queue_id,
- };
- 
-+static struct notifier_block dsp_mbox_notifier = {
-+	.notifier_call = io_mbox_msg,
-+};
++	ktime_get_ts(&end_time);
++	timespec_add_ns(&end_time, (u64)timeout * NSEC_PER_MSEC);
++	slack = select_estimate_accuracy(&end_time);
++	to = &expires;
++	*to = timespec_to_ktime(end_time);
 +
- static inline void flush_all(struct bridge_dev_context *dev_context)
- {
- 	if (dev_context->dw_brd_state == BRD_DSP_HIBERNATION ||
-@@ -553,7 +557,7 @@ static int bridge_brd_start(struct bridge_dev_context *dev_ctxt,
- 		 * Enable Mailbox events and also drain any pending
- 		 * stale messages.
- 		 */
--		dev_context->mbox = omap_mbox_get("dsp");
-+		dev_context->mbox = omap_mbox_get("dsp", &dsp_mbox_notifier);
- 		if (IS_ERR(dev_context->mbox)) {
- 			dev_context->mbox = NULL;
- 			pr_err("%s: Failed to get dsp mailbox handle\n",
-@@ -563,8 +567,6 @@ static int bridge_brd_start(struct bridge_dev_context *dev_ctxt,
+ retry:
+ 	spin_lock_irqsave(&ep->lock, flags);
  
- 	}
- 	if (!status) {
--		dev_context->mbox->rxq->callback = (int (*)(void *))io_mbox_msg;
--
- /*PM_IVA2GRPSEL_PER = 0xC0;*/
- 		temp = readl(resources->dw_per_pm_base + 0xA8);
- 		temp = (temp & 0xFFFFFF30) | 0xC0;
-@@ -685,7 +687,7 @@ static int bridge_brd_stop(struct bridge_dev_context *dev_ctxt)
- 	/* Disable the mailbox interrupts */
- 	if (dev_context->mbox) {
- 		omap_mbox_disable_irq(dev_context->mbox, IRQ_RX);
--		omap_mbox_put(dev_context->mbox);
-+		omap_mbox_put(dev_context->mbox, &dsp_mbox_notifier);
- 		dev_context->mbox = NULL;
- 	}
- 	/* Reset IVA2 clocks*/
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-index 18aec55..8d32b56 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-@@ -72,22 +72,17 @@ extern void io_dpc(unsigned long ref_data);
- /*
-  *  ======== io_mbox_msg ========
-  *  Purpose:
-- *      Main interrupt handler for the shared memory Bridge channel manager.
-- *      Calls the Bridge's chnlsm_isr to determine if this interrupt is ours,
-- *      then schedules a DPC to dispatch I/O.
-+ *	Main message handler for the shared memory Bridge channel manager.
-+ *	Determine if this message is ours, then schedules a DPC to
-+ *	dispatch I/O.
-  *  Parameters:
-- *      ref_data:   Pointer to the channel manager object for this board.
-- *                  Set in an initial call to ISR_Install().
-+ *	self:	Pointer to its own notifier_block struct.
-+ *	len:	Length of message.
-+ *	msg:	Message code received.
-  *  Returns:
-- *      TRUE if interrupt handled; FALSE otherwise.
-- *  Requires:
-- *      Must be in locked memory if executing in kernel mode.
-- *      Must only call functions which are in locked memory if Kernel mode.
-- *      Must only call asynchronous services.
-- *      Interrupts are disabled and EOI for this interrupt has been sent.
-- *  Ensures:
-+ *	NOTIFY_OK if handled; NOTIFY_BAD otherwise.
-  */
--void io_mbox_msg(u32 msg);
-+int io_mbox_msg(struct notifier_block *self, unsigned long len, void *msg);
+@@ -1149,9 +1153,10 @@ retry:
  
- /*
-  *  ======== io_request_chnl ========
--- 
-1.7.1
+ 		for (;;) {
+ 			/*
+-			 * We don't want to sleep if the ep_poll_callback() sends us
+-			 * a wakeup in between. That's why we set the task state
+-			 * to TASK_INTERRUPTIBLE before doing the checks.
++			 * We don't want to sleep if the ep_poll_callback()
++			 * sends us a wakeup in between. That's why we set the
++			 * task state to TASK_INTERRUPTIBLE before doing the
++			 * checks.
+ 			 */
+ 			set_current_state(TASK_INTERRUPTIBLE);
+ 			if (!list_empty(&ep->rdllist) || timed_out)
+@@ -1171,6 +1176,7 @@ retry:
+ 
+ 		set_current_state(TASK_RUNNING);
+ 	}
++skip:
+ 	/* Is it worth to try to dig for events ? */
+ 	eavail = !list_empty(&ep->rdllist) || ep->ovflist != EP_UNACTIVE_PTR;
+ 
+_
+
+
+but you get the idea ;)
+
+I think the attempt to munge the "timeout==0" spacial case into the
+main body of the polling loop was a mistake, and that the code would be
+better/cleaner if that special case was handled quite separately.
 
