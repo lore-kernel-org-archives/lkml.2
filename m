@@ -1,92 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876Ab1AOAx7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 19:53:59 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58113 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213Ab1AOAx5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 19:53:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=ryHZl1jcUkxY7urAInW459M8PytGUNbJ+MvmzViAcLnUN7OLdl9m++QzwG9oYoa0qB
-         jJaMIviadqYpzclqSiBHemVqswqEkhFxhcd81aHqpogDSogoLUxw2CeKAYYhmQmvgPWM
-         vY9ysrqNEaXKNITPDTfzIuQ9BMT8XDb258lZE=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTik1tcL_ABdnq5r=MCxmLJtdP0nhOzA8irP1n0CC@mail.gmail.com>
-References: <AANLkTikAWjK7ACyt=LedhyyrhsCk1WCiyWz182CXMe9C@mail.gmail.com>
-	<4D0FE546.7050302@bluewatersys.com>
-	<AANLkTinyYKrhTcBMMCE4A2oFQHm11cqSZQozytGu+d6o@mail.gmail.com>
-	<4D1011CF.9080800@bluewatersys.com>
-	<AANLkTi=7O-HwQRcybnLSt+r+A64g=D7rZY7NbdEMFys3@mail.gmail.com>
-	<4D110269.9030805@bluewatersys.com>
-	<20101222211815.GA31054@alchark-u3s>
-	<4D12730B.2030909@bluewatersys.com>
-	<20101222222501.GA32693@alchark-u3s>
-	<4D1282DA.4020804@bluewatersys.com>
-	<20101222233821.GA20893@alchark-u3s>
-	<AANLkTik1tcL_ABdnq5r=MCxmLJtdP0nhOzA8irP1n0CC@mail.gmail.com>
-Date: Sat, 15 Jan 2011 03:53:56 +0300
-Message-ID: <AANLkTinb3A5CJ6r4Y0D0kMwJn8ZEyf_0mb4uW99mmUZ9@mail.gmail.com>
-Subject: Re: [PATCH 1/6 v12] ARM: Add basic architecture support for
- VIA/WonderMedia 85xx SoC's
-From: Alexey Charkov <alchark@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Alexey Charkov <alchark@gmail.com>, Ryan Mallon <ryan@bluewatersys.com>,
-        linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        Eric Miao <eric.y.miao@gmail.com>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1752106Ab1AOA6c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 19:58:32 -0500
+Received: from wine.ocn.ne.jp ([122.1.235.145]:55367 "EHLO smtp.wine.ocn.ne.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751248Ab1AOA6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 19:58:31 -0500
+To: safford@watson.ibm.com, dhowells@redhat.com, jj@chaosbits.net
+Cc: jmorris@namei.org, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Trusted and Encrypted Keys: fix up TSS_rawhmac() so wealways kfree() and remember to call va_end()
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <alpine.LNX.2.00.1101132100190.11347@swampdragon.chaosbits.net>
+	<1295011682.7804.2.camel@localhost.localdomain>
+	<201101142245.GGI86457.OQFFFMOtVOHJLS@I-love.SAKURA.ne.jp>
+	<201101142307.EHC56742.FVtMFHOOFSQJOL@I-love.SAKURA.ne.jp>
+In-Reply-To: <201101142307.EHC56742.FVtMFHOOFSQJOL@I-love.SAKURA.ne.jp>
+Message-Id: <201101150958.HJG17666.tFOOFSFVLQHJOM@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sat, 15 Jan 2011 09:58:23 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/12/28 Alexey Charkov <alchark@gmail.com>:
-> 2010/12/23 Alexey Charkov <alchark@gmail.com>:
->> This adds support for the family of Systems-on-Chip produced initially
->> by VIA and now its subsidiary WonderMedia that have recently become
->> widespread in lower-end Chinese ARM-based tablets and netbooks.
->>
->> Support is included for both VT8500 and WM8505, selectable by a
->> configuration switch at kernel build time.
->>
->> Included are basic machine initialization files, register and
->> interrupt definitions, support for the on-chip interrupt controller,
->> high-precision OS timer, GPIO lines, necessary macros for early debug,
->> pulse-width-modulated outputs control, as well as platform device
->> configurations for the specific drivers implemented elsewhere.
->>
->> Signed-off-by: Alexey Charkov <alchark@gmail.com>
->
-> Russell, will you take this for .38? Please note that the last
-> revision of this patch was also submitted to the ARM Linux patch
-> tracking system:
->
-> http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6597/1
->
-> Best regards,
-> Alexey
->
+Tetsuo Handa wrote:
+> Tetsuo Handa wrote:
+> > Please wait. That patch is incorrect. I'm making patch now.
+> I'm doing "git pull" now. Using 2.6.37-git11 instead.
+"git pull" completed.
+Refreshed using security-testing-2.6#for-linus and compile tested.
+Please review and test.
 
-Russell, I realize that there are quite a lot of other things to worry
-about currently in the ARM Linux world, but could you please still
-consider merging this patch before .38 window closes?
+ From 161ec4ee18cc86b41277b9a92a8fb2e732b3662f Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Sat, 15 Jan 2011 05:23:53 +0900
+Subject: [PATCH 1/3] trusted-keys: another free memory bugfix
 
-It has been (at different stages):
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-Reviewed-by: Ryan Mallon <ryan@bluewatersys.com>
+TSS_rawhmac() forgot to call va_end()/kfree() when data == NULL and
+forgot to call va_end() when crypto_shash_update() < 0.
+Fix these bugs by escaping from the loop using "break"
+(rather than "return"/"goto") in order to make sure that
+va_end()/kfree() are always called.
 
-There's also a patch to the i8042 input controller that Dmitry
-Torokhov wished to be merged together with this code. That one is:
-Acked-by: Dmitry Torokhov <dtor@mail.ru>
-and available at:
-http://lists.arm.linux.org.uk/lurker/message/20101222.214141.c745816a.en.html
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+---
+ security/keys/trusted_defined.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-Best regards,
-Alexey
+diff --git a/security/keys/trusted_defined.c b/security/keys/trusted_defined.c
+index 932f868..7b21795 100644
+--- a/security/keys/trusted_defined.c
++++ b/security/keys/trusted_defined.c
+@@ -101,11 +101,13 @@ static int TSS_rawhmac(unsigned char *digest, const unsigned char *key,
+ 		if (dlen == 0)
+ 			break;
+ 		data = va_arg(argp, unsigned char *);
+-		if (data == NULL)
+-			return -EINVAL;
++		if (data == NULL) {
++			ret = -EINVAL;
++			break;
++		}
+ 		ret = crypto_shash_update(&sdesc->shash, data, dlen);
+ 		if (ret < 0)
+-			goto out;
++			break;
+ 	}
+ 	va_end(argp);
+ 	if (!ret)
+-- 
+1.6.1
+
+ From 06bbcce524ceedb404519cade2c592d66c251595 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Sat, 15 Jan 2011 05:40:51 +0900
+Subject: [PATCH 2/3] trusted-keys: check for NULL before using it
+
+TSS_rawhmac() checks for data != NULL before using it.
+We should do the same thing for TSS_authhmac().
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+---
+ security/keys/trusted_defined.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/security/keys/trusted_defined.c b/security/keys/trusted_defined.c
+index 7b21795..f7d0677 100644
+--- a/security/keys/trusted_defined.c
++++ b/security/keys/trusted_defined.c
+@@ -148,6 +148,11 @@ static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
+ 		if (dlen == 0)
+ 			break;
+ 		data = va_arg(argp, unsigned char *);
++		if (!data) {
++			ret = -EINVAL;
++			va_end(argp);
++			goto out;
++		}
+ 		ret = crypto_shash_update(&sdesc->shash, data, dlen);
+ 		if (ret < 0) {
+ 			va_end(argp);
+-- 
+1.6.1
+
+ From b4d611a1489da65366ad3e72a00093be76d39fc5 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Sat, 15 Jan 2011 05:47:22 +0900
+Subject: [PATCH 3/3] trusted-keys: avoid scattring va_end()
+
+We can avoid scattering va_end() within the
+
+  va_start();
+  for (;;) {
+
+  }
+  va_end();
+
+loop, assuming that crypto_shash_init()/crypto_shash_update() return 0 on
+success and negative value otherwise.
+
+Make TSS_authhmac()/TSS_checkhmac1()/TSS_checkhmac2() similar to TSS_rawhmac()
+by removing "va_end()/goto" from the loop.
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+---
+ security/keys/trusted_defined.c |   30 +++++++++++++-----------------
+ 1 files changed, 13 insertions(+), 17 deletions(-)
+
+diff --git a/security/keys/trusted_defined.c b/security/keys/trusted_defined.c
+index f7d0677..2836c6d 100644
+--- a/security/keys/trusted_defined.c
++++ b/security/keys/trusted_defined.c
+@@ -150,17 +150,15 @@ static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
+ 		data = va_arg(argp, unsigned char *);
+ 		if (!data) {
+ 			ret = -EINVAL;
+-			va_end(argp);
+-			goto out;
++			break;
+ 		}
+ 		ret = crypto_shash_update(&sdesc->shash, data, dlen);
+-		if (ret < 0) {
+-			va_end(argp);
+-			goto out;
+-		}
++		if (ret < 0)
++			break;
+ 	}
+ 	va_end(argp);
+-	ret = crypto_shash_final(&sdesc->shash, paramdigest);
++	if (!ret)
++		ret = crypto_shash_final(&sdesc->shash, paramdigest);
+ 	if (!ret)
+ 		ret = TSS_rawhmac(digest, key, keylen, SHA1_DIGEST_SIZE,
+ 				  paramdigest, TPM_NONCE_SIZE, h1,
+@@ -229,13 +227,12 @@ static int TSS_checkhmac1(unsigned char *buffer,
+ 			break;
+ 		dpos = va_arg(argp, unsigned int);
+ 		ret = crypto_shash_update(&sdesc->shash, buffer + dpos, dlen);
+-		if (ret < 0) {
+-			va_end(argp);
+-			goto out;
+-		}
++		if (ret < 0)
++			break;
+ 	}
+ 	va_end(argp);
+-	ret = crypto_shash_final(&sdesc->shash, paramdigest);
++	if (!ret)
++		ret = crypto_shash_final(&sdesc->shash, paramdigest);
+ 	if (ret < 0)
+ 		goto out;
+ 
+@@ -323,13 +320,12 @@ static int TSS_checkhmac2(unsigned char *buffer,
+ 			break;
+ 		dpos = va_arg(argp, unsigned int);
+ 		ret = crypto_shash_update(&sdesc->shash, buffer + dpos, dlen);
+-		if (ret < 0) {
+-			va_end(argp);
+-			goto out;
+-		}
++		if (ret < 0)
++			break;
+ 	}
+ 	va_end(argp);
+-	ret = crypto_shash_final(&sdesc->shash, paramdigest);
++	if (!ret)
++		ret = crypto_shash_final(&sdesc->shash, paramdigest);
+ 	if (ret < 0)
+ 		goto out;
+ 
+-- 
+1.6.1
