@@ -1,303 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab1AOPY2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 10:24:28 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:34236 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752557Ab1AOPY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 10:24:26 -0500
-Date: Sat, 15 Jan 2011 16:24:10 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf fixes
-Message-ID: <20110115152410.GA12751@elte.hu>
+	id S1753197Ab1AOPbI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 10:31:08 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:44732 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752154Ab1AOPbF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jan 2011 10:31:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=eTYEuDsKjUYp0RT34/pdqOb1LpWiHJQ4KcTggwY548M4WqlWbRumPjy3LQ4CrB+c9S
+         YSkvwIZ6/VGSPbPeqeu6/s09zPIOfSEHEbkMcTJrFIes4P1uZfAvfckzXIn36qUjGfR0
+         o6f6RjuaWe+m5nRqseLTRVXEyCN7V0Sinmlqw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110114173050.GJ15996@n2100.arm.linux.org.uk>
+References: <1294990949-2729-1-git-send-email-ccross@android.com>
+	<AANLkTimqiqABxCejdeOQWZZ62DVUZW2v-yMpdu1aNDQT@mail.gmail.com>
+	<20110114120229.GA15996@n2100.arm.linux.org.uk>
+	<1295014231.7901.41.camel@e102109-lin.cambridge.arm.com>
+	<20110114154919.GE15996@n2100.arm.linux.org.uk>
+	<1295022193.7901.56.camel@e102109-lin.cambridge.arm.com>
+	<20110114163520.GH15996@n2100.arm.linux.org.uk>
+	<1295024327.7901.70.camel@e102109-lin.cambridge.arm.com>
+	<20110114173050.GJ15996@n2100.arm.linux.org.uk>
+Date: Sat, 15 Jan 2011 15:31:04 +0000
+X-Google-Sender-Auth: 0YNv_Wus6dgKoERNi965q3Trq2s
+Message-ID: <AANLkTin_pMzNc-ZL+rVcwaVawer0poyxhatqw5P-A2qW@mail.gmail.com>
+Subject: Re: [PATCH] ARM: vfp: Fix up exception location in Thumb mode
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Colin Cross <ccross@android.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On 14 January 2011 17:30, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Fri, Jan 14, 2011 at 04:58:47PM +0000, Catalin Marinas wrote:
+>> I agree, this code needs some clean-up. Maybe for Undef we could unify
+>> the ARM and Thumb-2 offsets so that they are both 4 (it may confuse the
+>> breakpoint code, I haven't checked).
+>>
+>> Otherwise just let the code handling the undef deal with the ARM/Thumb
+>> difference. For SVC, it makes sense to have different offsets as we
+>> always return to the next instruction.
+[...]
+> When the VFP support code tests the state of the VFP hardware during boot,
+> it sets the VFP handler to point at vfp_testing_entry, bypassing the normal
+> VFP handling code, and executes a VFP instruction.
+>
+> If this VFP instruction faults (eg, because there is no VFP hardware
+> present or we're not permitted to use it), it could end up resuming
+> execution in the middle of the 16-bit paired instruction because
+> regs->ARM_pc points in the middle of it.
 
-Please pull the latest perf-fixes-for-linus git tree from:
+Yes, that's possible. We probably never tried a Thumb-2 kernel where
+VFP isn't present.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-fixes-for-linus
+> Or maybe we should just make it unconditional that whenever we have an
+> undefined instruction exception, the regs->ARM_pc value will always be
+> set for resuming execution after the faulted instruction.  That makes
+> it consistent with r2 throughout the code in every case.
 
- Thanks,
+I have some comments below.
 
-	Ingo
+> diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+> index 2b46fea..5876eec 100644
+> --- a/arch/arm/kernel/entry-armv.S
+> +++ b/arch/arm/kernel/entry-armv.S
+> @@ -461,27 +461,35 @@ ENDPROC(__irq_usr)
+>        .align  5
+>  __und_usr:
+>        usr_entry
+> -
+> -       @
+> -       @ fall through to the emulation code, which returns using r9 if
+> -       @ it has emulated the instruction, or the more conventional lr
+> -       @ if we are to treat this as a real undefined instruction
+>        @
+> -       @  r0 - instruction
+> +       @ The emulation code returns using r9 if it has emulated the
+> +       @ instruction, or the more conventional lr if we are to treat
+> +       @ this as a real undefined instruction
+>        @
+>        adr     r9, BSYM(ret_from_exception)
+>        adr     lr, BSYM(__und_usr_unknown)
+> +       @
+> +       @ r2 = regs->ARM_pc, which is either 2 or 4 bytes ahead of the
+> +       @ faulting instruction depending on Thumb mode.
+> +       @ r3 = regs->ARM_cpsr
+> +       @
+>        tst     r3, #PSR_T_BIT                  @ Thumb mode?
+> -       itet    eq                              @ explicit IT needed for the 1f label
+> +       itttt   eq                              @ explicit IT needed for the 1f label
+>        subeq   r4, r2, #4                      @ ARM instr at LR - 4
+> -       subne   r4, r2, #2                      @ Thumb instr at LR - 2
+>  1:     ldreqt  r0, [r4]
 
------------------->
-Arnaldo Carvalho de Melo (3):
-      perf evsel: Fix order of event list deletion
-      perf top: Fix annotate segv
-      Revert "perf tools: Emit clearer message for sys_perf_event_open ENOENT return"
+The itttt above should just be itt. The reveq is conditionally
+compiled and beq doesn't necessarily need one.
 
-Kirill Smelkov (1):
-      perf record: Add "nodelay" mode, disabled by default
+>  #ifdef CONFIG_CPU_ENDIAN_BE8
+>        reveq   r0, r0                          @ little endian instruction
+>  #endif
+> +       @
+> +       @ r0 = 32-bit ARM instruction which caused the exception
+> +       @ r2 = PC value for the following instruction (:= regs->ARM_pc)
 
-Lai Jiangshan (1):
-      tracing: Remove syscall_exit_fields
+Is r2 here always the PC value following instruction? If the Thumb
+instruction was 32-bit, it just points in the middle of the faulting
+instruction.
 
-Stephane Eranian (1):
-      perf sched: Fix list of events, dropping unsupported ':r' modifier
+> +       @ r4 = PC value for the faulting instruction
+> +       @
+>        beq     call_fpe
+> +
+>        @ Thumb instruction
+>  #if __LINUX_ARM_ARCH__ >= 7
+> +       sub     r4, r2, #2                      @ Thumb instr at LR - 2
+>  2:
+>  ARM(  ldrht   r5, [r4], #2    )
+>  THUMB(        ldrht   r5, [r4]        )
+> @@ -492,18 +500,19 @@ __und_usr:
+>  3:     ldrht   r0, [r4]
+>        add     r2, r2, #2                      @ r2 is PC + 2, make it PC + 4
+>        orr     r0, r0, r5, lsl #16
+> +       @
+> +       @ r0 = the two 16-bit Thumb instructions which caused the exception
+> +       @ r2 = PC value for the following Thumb instruction (:= regs->ARM_pc+2)
 
-Steven Rostedt (1):
-      tracing: Only process module tracepoints once
+That's correct.
 
+> +       @ r4 = PC value for the first 16-bit Thumb instruction
 
- include/trace/events/module.h            |   10 +++++++++
- kernel/trace/trace_syscalls.c            |   33 ++++++++++-------------------
- tools/perf/Documentation/perf-record.txt |    3 ++
- tools/perf/builtin-record.c              |   12 ++++++++--
- tools/perf/builtin-sched.c               |   18 ++++++++--------
- tools/perf/builtin-stat.c                |    1 +
- tools/perf/builtin-top.c                 |    5 ++-
- tools/perf/perf.c                        |    2 -
- 8 files changed, 47 insertions(+), 37 deletions(-)
+I think r4 here points in the middle of tha faulting instruction for
+32-bit Thumb.
 
-diff --git a/include/trace/events/module.h b/include/trace/events/module.h
-index c7bb2f0..c6bae36 100644
---- a/include/trace/events/module.h
-+++ b/include/trace/events/module.h
-@@ -1,5 +1,15 @@
-+/*
-+ * Because linux/module.h has tracepoints in the header, and ftrace.h
-+ * eventually includes this file, define_trace.h includes linux/module.h
-+ * But we do not want the module.h to override the TRACE_SYSTEM macro
-+ * variable that define_trace.h is processing, so we only set it
-+ * when module events are being processed, which would happen when
-+ * CREATE_TRACE_POINTS is defined.
-+ */
-+#ifdef CREATE_TRACE_POINTS
- #undef TRACE_SYSTEM
- #define TRACE_SYSTEM module
-+#endif
- 
- #if !defined(_TRACE_MODULE_H) || defined(TRACE_HEADER_MULTI_READ)
- #define _TRACE_MODULE_H
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index bac752f..b706529 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -23,9 +23,6 @@ static int syscall_exit_register(struct ftrace_event_call *event,
- static int syscall_enter_define_fields(struct ftrace_event_call *call);
- static int syscall_exit_define_fields(struct ftrace_event_call *call);
- 
--/* All syscall exit events have the same fields */
--static LIST_HEAD(syscall_exit_fields);
--
- static struct list_head *
- syscall_get_enter_fields(struct ftrace_event_call *call)
- {
-@@ -34,34 +31,28 @@ syscall_get_enter_fields(struct ftrace_event_call *call)
- 	return &entry->enter_fields;
- }
- 
--static struct list_head *
--syscall_get_exit_fields(struct ftrace_event_call *call)
--{
--	return &syscall_exit_fields;
--}
--
- struct trace_event_functions enter_syscall_print_funcs = {
--	.trace                  = print_syscall_enter,
-+	.trace		= print_syscall_enter,
- };
- 
- struct trace_event_functions exit_syscall_print_funcs = {
--	.trace                  = print_syscall_exit,
-+	.trace		= print_syscall_exit,
- };
- 
- struct ftrace_event_class event_class_syscall_enter = {
--	.system			= "syscalls",
--	.reg			= syscall_enter_register,
--	.define_fields		= syscall_enter_define_fields,
--	.get_fields		= syscall_get_enter_fields,
--	.raw_init		= init_syscall_trace,
-+	.system		= "syscalls",
-+	.reg		= syscall_enter_register,
-+	.define_fields	= syscall_enter_define_fields,
-+	.get_fields	= syscall_get_enter_fields,
-+	.raw_init	= init_syscall_trace,
- };
- 
- struct ftrace_event_class event_class_syscall_exit = {
--	.system			= "syscalls",
--	.reg			= syscall_exit_register,
--	.define_fields		= syscall_exit_define_fields,
--	.get_fields		= syscall_get_exit_fields,
--	.raw_init		= init_syscall_trace,
-+	.system		= "syscalls",
-+	.reg		= syscall_exit_register,
-+	.define_fields	= syscall_exit_define_fields,
-+	.fields		= LIST_HEAD_INIT(event_class_syscall_exit.fields),
-+	.raw_init	= init_syscall_trace,
- };
- 
- extern unsigned long __start_syscalls_metadata[];
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 52462ae..e032716 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -61,6 +61,9 @@ OPTIONS
- -r::
- --realtime=::
- 	Collect data with this RT SCHED_FIFO priority.
-+-D::
-+--no-delay::
-+	Collect data without buffering.
- -A::
- --append::
- 	Append to the output file to do incremental profiling.
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 7069bd3..df6064a 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -49,6 +49,7 @@ static int			pipe_output			=      0;
- static const char		*output_name			= "perf.data";
- static int			group				=      0;
- static int			realtime_prio			=      0;
-+static bool			nodelay				=  false;
- static bool			raw_samples			=  false;
- static bool			sample_id_all_avail		=   true;
- static bool			system_wide			=  false;
-@@ -307,6 +308,11 @@ static void create_counter(struct perf_evsel *evsel, int cpu)
- 		attr->sample_type	|= PERF_SAMPLE_CPU;
- 	}
- 
-+	if (nodelay) {
-+		attr->watermark = 0;
-+		attr->wakeup_events = 1;
-+	}
-+
- 	attr->mmap		= track;
- 	attr->comm		= track;
- 	attr->inherit		= !no_inherit;
-@@ -331,9 +337,6 @@ try_again:
- 			else if (err ==  ENODEV && cpu_list) {
- 				die("No such device - did you specify"
- 					" an out-of-range profile CPU?\n");
--			} else if (err == ENOENT) {
--				die("%s event is not supported. ",
--				     event_name(evsel));
- 			} else if (err == EINVAL && sample_id_all_avail) {
- 				/*
- 				 * Old kernel, no attr->sample_id_type_all field
-@@ -480,6 +483,7 @@ static void atexit_header(void)
- 			process_buildids();
- 		perf_header__write(&session->header, output, true);
- 		perf_session__delete(session);
-+		perf_evsel_list__delete();
- 		symbol__exit();
- 	}
- }
-@@ -845,6 +849,8 @@ const struct option record_options[] = {
- 		    "record events on existing thread id"),
- 	OPT_INTEGER('r', "realtime", &realtime_prio,
- 		    "collect data with this RT SCHED_FIFO priority"),
-+	OPT_BOOLEAN('D', "no-delay", &nodelay,
-+		    "collect data without buffering"),
- 	OPT_BOOLEAN('R', "raw-samples", &raw_samples,
- 		    "collect raw sample records from all opened counters"),
- 	OPT_BOOLEAN('a', "all-cpus", &system_wide,
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index abd4b84..29e7ffd 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1843,15 +1843,15 @@ static const char *record_args[] = {
- 	"-f",
- 	"-m", "1024",
- 	"-c", "1",
--	"-e", "sched:sched_switch:r",
--	"-e", "sched:sched_stat_wait:r",
--	"-e", "sched:sched_stat_sleep:r",
--	"-e", "sched:sched_stat_iowait:r",
--	"-e", "sched:sched_stat_runtime:r",
--	"-e", "sched:sched_process_exit:r",
--	"-e", "sched:sched_process_fork:r",
--	"-e", "sched:sched_wakeup:r",
--	"-e", "sched:sched_migrate_task:r",
-+	"-e", "sched:sched_switch",
-+	"-e", "sched:sched_stat_wait",
-+	"-e", "sched:sched_stat_sleep",
-+	"-e", "sched:sched_stat_iowait",
-+	"-e", "sched:sched_stat_runtime",
-+	"-e", "sched:sched_process_exit",
-+	"-e", "sched:sched_process_fork",
-+	"-e", "sched:sched_wakeup",
-+	"-e", "sched:sched_migrate_task",
- };
- 
- static int __cmd_record(int argc, const char **argv)
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index c385a63..0ff11d9 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -743,6 +743,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- out_free_fd:
- 	list_for_each_entry(pos, &evsel_list, node)
- 		perf_evsel__free_stat_priv(pos);
-+	perf_evsel_list__delete();
- out:
- 	thread_map__delete(threads);
- 	threads = NULL;
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 6ce4042..05344c6 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1247,8 +1247,6 @@ try_again:
- 				die("Permission error - are you root?\n"
- 					"\t Consider tweaking"
- 					" /proc/sys/kernel/perf_event_paranoid.\n");
--			if (err == ENOENT)
--				die("%s event is not supported. ", event_name(evsel));
- 			/*
- 			 * If it's cycles then fall back to hrtimer
- 			 * based cpu-clock-tick sw counter, which
-@@ -1473,6 +1471,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
- 		pos->attr.sample_period = default_interval;
- 	}
- 
-+	sym_evsel = list_entry(evsel_list.next, struct perf_evsel, node);
-+
- 	symbol_conf.priv_size = (sizeof(struct sym_entry) +
- 				 (nr_counters + 1) * sizeof(unsigned long));
- 
-@@ -1490,6 +1490,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
- out_free_fd:
- 	list_for_each_entry(pos, &evsel_list, node)
- 		perf_evsel__free_mmap(pos);
-+	perf_evsel_list__delete();
- 
- 	return status;
- }
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 5b1ecd6..595d0f4 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -286,8 +286,6 @@ static int run_builtin(struct cmd_struct *p, int argc, const char **argv)
- 	status = p->fn(argc, argv, prefix);
- 	exit_browser(status);
- 
--	perf_evsel_list__delete();
--
- 	if (status)
- 		return status & 0xff;
- 
+> +       @
+>  #else
+>        b       __und_usr_unknown
+>  #endif
+> - UNWIND(.fnend         )
+> + UNWIND(.fnend)
+>  ENDPROC(__und_usr)
+>
+> -       @
+> -       @ fallthrough to call_fpe
+> -       @
+> -
+>  /*
+> - * The out of line fixup for the ldrt above.
+> + * The out of line fixup for the ldrt instructions above.
+>  */
+>        .pushsection .fixup, "ax"
+>  4:     mov     pc, r9
+> @@ -534,11 +543,12 @@ ENDPROC(__und_usr)
+>  * NEON handler code.
+>  *
+>  * Emulators may wish to make use of the following registers:
+> - *  r0  = instruction opcode.
+> - *  r2  = PC+4
+> + *  r0  = instruction opcode (32-bit ARM or two 16-bit Thumb)
+> + *  r2  = PC value to resume execution after successful emulation
+>  *  r9  = normal "successful" return address
+> - *  r10 = this threads thread_info structure.
+> + *  r10 = this threads thread_info structure
+>  *  lr  = unrecognised instruction return address
+> + * IRQs disabled, FIQs enabled.
+>  */
+>        @
+>        @ Fall-through from Thumb-2 __und_usr
+> diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+> index ee57640..eeb9250 100644
+> --- a/arch/arm/kernel/traps.c
+> +++ b/arch/arm/kernel/traps.c
+> @@ -347,9 +347,9 @@ asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
+>        void __user *pc;
+>
+>        /*
+> -        * According to the ARM ARM, PC is 2 or 4 bytes ahead,
+> -        * depending whether we're in Thumb mode or not.
+> -        * Correct this offset.
+> +        * According to the ARM ARM, the PC is 2 or 4 bytes ahead
+> +        * depending on Thumb mode.  Correct this offset so that
+> +        * regs->ARM_pc points at the faulting instruction.
+>         */
+>        regs->ARM_pc -= correction;
+>
+> diff --git a/arch/arm/vfp/entry.S b/arch/arm/vfp/entry.S
+> index 4fa9903..2bf6089 100644
+> --- a/arch/arm/vfp/entry.S
+> +++ b/arch/arm/vfp/entry.S
+> @@ -19,6 +19,14 @@
+>  #include <asm/vfpmacros.h>
+>  #include "../kernel/entry-header.S"
+>
+> +@ VFP entry point.
+> +@
+> +@  r0  = instruction opcode (32-bit ARM or two 16-bit Thumb)
+> +@  r2  = PC value to resume execution after successful emulation
+> +@  r9  = normal "successful" return address
+> +@  r10 = this threads thread_info structure
+> +@  lr  = unrecognised instruction return address
+> +@
+>  ENTRY(do_vfp)
+>  #ifdef CONFIG_PREEMPT
+>        ldr     r4, [r10, #TI_PREEMPT]  @ get preempt count
+> diff --git a/arch/arm/vfp/vfphw.S b/arch/arm/vfp/vfphw.S
+> index 9897dcf..7292921 100644
+> --- a/arch/arm/vfp/vfphw.S
+> +++ b/arch/arm/vfp/vfphw.S
+> @@ -61,13 +61,13 @@
+>
+>  @ VFP hardware support entry point.
+>  @
+> -@  r0  = faulted instruction
+> -@  r2  = faulted PC+4
+> -@  r9  = successful return
+> +@  r0  = instruction opcode (32-bit ARM or two 16-bit Thumb)
+> +@  r2  = PC value to resume execution after successful emulation
+
+That's right.
+
+> +@  r9  = normal "successful" return address
+>  @  r10 = vfp_state union
+>  @  r11 = CPU number
+> -@  lr  = failure return
+> -
+> +@  lr  = unrecognised instruction return address
+> +@  IRQs enabled.
+>  ENTRY(vfp_support_entry)
+>        DBGSTR3 "instr %08x pc %08x state %p", r0, r2, r10
+>
+> @@ -138,9 +138,12 @@ check_for_exception:
+>                                        @ exception before retrying branch
+>                                        @ out before setting an FPEXC that
+>                                        @ stops us reading stuff
+> -       VFPFMXR FPEXC, r1               @ restore FPEXC last
+> -       sub     r2, r2, #4
+> -       str     r2, [sp, #S_PC]         @ retry the instruction
+> +       VFPFMXR FPEXC, r1               @ Restore FPEXC last
+> +       sub     r2, r2, #4              @ Retry current instruction - if Thumb
+> +       str     r2, [sp, #S_PC]         @ mode it's two 16-bit instructions,
+> +                                       @ else it's one 32-bit instruction, so
+> +                                       @ always subtract 4 from the following
+> +                                       @ instruction address.
+
+I would say it's always a 32-bit instruction but made up of two 16-bit
+values to allow half-word alignment.
+
+-- 
+Catalin
