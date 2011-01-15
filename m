@@ -1,88 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005Ab1AOVLA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 16:11:00 -0500
-Received: from nm5-vm0.bullet.mail.ac4.yahoo.com ([98.139.52.68]:39688 "HELO
-	nm5-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753378Ab1AOVK7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 16:10:59 -0500
-X-Yahoo-Newman-Id: 359458.31061.bm@omp1019.mail.ac4.yahoo.com
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: AGllb4gVM1kynlwZaPB6UBZW5XVuDtbTVSt5oYibz5o4H4g
- 8vl4XH9p1Mtg1JAR2pXSZ48lZMqjzVLJ50INOPHeR.pjXd33M.l9.4NqHUSo
- S7ufhsmpnWlaBIs4pUlJhpzQmFM6KZNAlyi1NdChLOJmxSRZMBzgZRicGGI1
- QCxTUmcs7pGtgKVjfYxZ9q1z46L6JKVaEM86_0B3AyokElv7PgrRcYSqZy1R
- UPzapl6XCx9orhpN.PWtbPlzRV.ntZ9sHsqIWGzAIh3FLZ7vXrIFGej0OZrR
- SanN6jEScFRa3z0KqxR08H2B7x2lrg6jKhpse3_GF7AHLj2ZCiqQixF0QeFe
- C1F7pY2177QqyYw7Ro9EGERKK4MkPZz9JDp7n.Ut_E_A-
-X-Yahoo-Newman-Property: ymail-3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Joel Becker <jlbec@evilplan.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH] configfs: change depends -> select SYSFS
-Date: Sat, 15 Jan 2011 13:10:51 -0800
-Message-Id: <1295125851-25279-1-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.5.6.5
+	id S1754026Ab1AOVcW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 16:32:22 -0500
+Received: from gate.crashing.org ([63.228.1.57]:33449 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753462Ab1AOVcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jan 2011 16:32:20 -0500
+Subject: Re: ia64 broken by transparent huge pages - other arches too?
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org
+In-Reply-To: <20110115172320.GU9506@random.random>
+References: <4d308cf5394566ccc@agluck-desktop.sc.intel.com>
+	 <1295076096.4875.60.camel@pasglop> <20110115155925.GT9506@random.random>
+	 <1295110048.5973.36.camel@mulgrave.site>
+	 <20110115172320.GU9506@random.random>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 16 Jan 2011 08:31:23 +1100
+Message-ID: <1295127083.4875.70.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+On Sat, 2011-01-15 at 18:23 +0100, Andrea Arcangeli wrote:
+> 
+> 
+> By all means next times I'll try to get through linux-next too if this
+> is preferred, but the brainer part has been heavily tested and that's
+> the important thing as far as I can see.
 
-Hi Linus,
+Linux-next is the integration testing essentially. That's where we find
+such build regression and to a lesser extent maybe, runtime regressions.
 
-The following patch should be included for 38-rc1 to fix a rdd
-reported linux-next kbuild warning introduced by TARGET_CORE
-using 'select CONFIGFS_FS' from over the holidays, that was not
-included with the initial target merge yesterday.
+I think you under estimate the pain caused by build breakage. The main
+problem is that it makes bisection difficult, and that's a pretty big
+deal in a merge window. If everybody stops caring about build breakage,
+bisection would essentially become unusable accross merge windows.
 
-Thanks!
+> I'm also not sure if having it in linux-next instead of -mm, would
+> have been better in terms of handling of the patchstream. I think
+> having it managed in -mm reviewed by all other -mm developers using
+> raw patches floating in the linux-mm and mm-commit lists, was ideal
+> and potentially more valuable for an increased amount of review, than
+> what a blind pull from linux-next could provide. For the brainer part,
+> maximizing the reviewing was certainly more valuable than checking if
+> it builds and boots on some arch not affected in any functional way.
 
-----------------------------------------------------------------
+It's not a matter of -mm vs. -next. You should not have a patch set that
+is still a work in progress in -next. The later is for things that are
+essentially ready to merge, to simmer there for a few days to find out
+typically bad patch collisions (more than simple fixups), such build
+breakages, major runtime breakages, etc... Ideally, things in -next
+don't need a respin before going upstream but at least there's a last
+chance to do so. 
 
-This patch changes configfs to select SYSFS to fix the following:
+The question becomes should -mm itself go into -next, and that I'm less
+certain of. It depends on what criterias Andrew applies to things that
+go into -mm I suppose, but if they qualify as "mature stuff ready to go
+upstream" then by all means.
 
-warning: (TARGET_CORE && GFS2_FS) selects CONFIGFS_FS which has unmet direct dependencies (SYSFS)
+> I think the sparc/arm build issues because of cleanup code refactoring
+> are not worth worrying too much about, or at least they shouldn't be
+> the argument for lack of testing. Said that, I apologize for the
+> annoyance and I appreciate your help in the arm case. ia64 I fixed it
+> with a one liner already.
 
-This patch also fixes whitespace breakage in the 'help' section.
+But that's the whole point... all those "little issues" have actually
+broken build on 3 architectures so far, and this is -bad-. Yes, none of
+them is major, all of them are easily fixed ... and all of them have
+been a pain in the neck for some people somewhere and have broken
+bisection accross a portion of the merge window.
 
-Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
-Acked-by: Joel Becker <jlbec@evilplan.org>
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
----
- fs/configfs/Kconfig |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+Having a bit of time in -next allows to easily avoid most of this.
 
-diff --git a/fs/configfs/Kconfig b/fs/configfs/Kconfig
-index 13587cc..0e4bd23 100644
---- a/fs/configfs/Kconfig
-+++ b/fs/configfs/Kconfig
-@@ -1,11 +1,11 @@
- config CONFIGFS_FS
- 	tristate "Userspace-driven configuration filesystem"
--	depends on SYSFS
-+	select SYSFS
- 	help
--	  configfs is a ram-based filesystem that provides the converse
--	  of sysfs's functionality. Where sysfs is a filesystem-based
--	  view of kernel objects, configfs is a filesystem-based manager
--	  of kernel objects, or config_items.
-+	configfs is a RAM-based filesystem that provides the converse
-+	of sysfs's functionality. Where sysfs is a filesystem-based
-+	view of kernel objects, configfs is a filesystem-based manager
-+	of kernel objects, or config_items.
- 
--	  Both sysfs and configfs can and should exist together on the
--	  same system. One is not a replacement for the other.
-+	Both sysfs and configfs can and should exist together on the
-+	same system. One is not a replacement for the other.
--- 
-1.7.3.5
+> Overall I think the end result is great, perfection was the goal and
+> if these build issues are the only error I think we got as close as
+> humanly possible to it. And it's definitely thanks to an huge amount
+> of help and feedback from the whole Linux community (both developers,
+> maintainers and testers) if we could achieve this result, I could
+> never achieve this alone.
+
+Cheers,
+Ben.
+
 
