@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752238Ab1AOBFU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 20:05:20 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:61872 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751600Ab1AOBFT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 20:05:19 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=fwlNDkRQO-EA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=ZxIm5Uz51tWomcq9HaAA:9 a=bSqz_5DaOEpJrgaY-h9qRYIsQAEA:4 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Message-Id: <20110115010442.446174852@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Fri, 14 Jan 2011 20:04:42 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 0/2] [GIT PULL][2.6.38] tracing: clean ups and fixes
+	id S1752295Ab1AOBFz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 20:05:55 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:59136 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751981Ab1AOBFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 20:05:53 -0500
+Date: Sat, 15 Jan 2011 12:05:44 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Xen Devel <Xen-devel@lists.xensource.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: linux-next: manual merge of the xen tree with Linus tree
+Message-Id: <20110115120544.98a1f091.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sat__15_Jan_2011_12_05_44_+1100_lVrfyAeP.knEwynh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Sat__15_Jan_2011_12_05_44_+1100_lVrfyAeP.knEwynh
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ingo,
+Hi all,
 
-Please pull the latest tip/perf/urgent tree, which can be found at:
+Today's linux-next merge of the xen tree got a conflict in
+drivers/xen/Kconfig, drivers/xen/gntdev.c and include/xen/gntdev.h
+between various commits Linus' tree and various commits from the xen tree.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-tip/perf/urgent
+As previously discussed, I have dropped the xen tree for today (as it
+contains an older version of the changes that were merged into Linus'
+tree).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Sat__15_Jan_2011_12_05_44_+1100_lVrfyAeP.knEwynh
+Content-Type: application/pgp-signature
 
-Lai Jiangshan (1):
-      tracing: Remove syscall_exit_fields
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Steven Rostedt (1):
-      tracing: Only process module tracepoints once
+iQEcBAEBAgAGBQJNMPLoAAoJEDMEi1NhKgbsHWQH/0YoS5Lw23JD28G2FK0wpVbI
++aBXmAVtwQU96W1OD1BKy3QDxmSJ7an5s5YOm1wDnKGb8esXSfOm8DoQfxYbZe7b
+iFx57F9QT9h8qaBQZtRjcxj6tADnWIHG61b4ObPNjgM8eXiQAU6OMSFEnBOUb8v5
+a94LElKhT0tPMOadZQ9A4fxtd8juC8iuuZXyvlSf2jni/LwjdEsfyU1FAHWOdZtD
+W5qpJU/2InmlySguY3eUATtzegHkWqO7S9e0gQ2VKwsvclFZsRG0+rLlsa7vELGk
+JicdqxHhnwcoOaHEj5ugMnDxuuuU6PjJdBc07jbg3VHPgKCv4wi2FpdqcgCoopE=
+=VWs6
+-----END PGP SIGNATURE-----
 
-----
- include/trace/events/module.h |   10 ++++++++++
- kernel/trace/trace_syscalls.c |   33 ++++++++++++---------------------
- 2 files changed, 22 insertions(+), 21 deletions(-)
-
+--Signature=_Sat__15_Jan_2011_12_05_44_+1100_lVrfyAeP.knEwynh--
