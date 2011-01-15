@@ -1,462 +1,514 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab1AORfH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 12:35:07 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57557 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180Ab1AORfD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 12:35:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=oXBj92OWMEGUDo03E2CGKVwmmXBjZIGpIHtuQtfJVkiE/nY5UoyZ6TfB+zF0F9s/pf
-         Dc8JqoW3eexnmA1SwynV1gGzFTVdWNoAw7HJcQKs/VdrhazzLEmfHQSXhyCkmZbHcP8n
-         CB7RYs1/0QVQwQvyHKolH8C87WmN7iHLERmmc=
-MIME-Version: 1.0
-In-Reply-To: <1295033065-13450-3-git-send-email-mjg@redhat.com>
-References: <1295033065-13450-1-git-send-email-mjg@redhat.com>
-	<1295033065-13450-3-git-send-email-mjg@redhat.com>
-Date: Sat, 15 Jan 2011 12:34:52 -0500
-Message-ID: <AANLkTikHTnu4OD8PNH+1B8ZcQSm7W1gGq6pAeSWN===q@mail.gmail.com>
-Subject: Re: [PATCH 3/5] radeon: Expose backlight class device for legacy LVDS encoder
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: akpm@linux-foundation.org,
-        =?ISO-8859-1?Q?Michel_D=E4nzer?= <michel@daenzer.net>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-acpi@vger.kernel.org, rpurdie@rpsys.net,
-        =?ISO-8859-1?Q?Michel_D=E4nzer?= <daenzer@vmware.com>,
-        intel-gfx@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753231Ab1AORiy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 12:38:54 -0500
+Received: from mail.perches.com ([173.55.12.10]:3177 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750966Ab1AORiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jan 2011 12:38:51 -0500
+Subject: Re: [2.6.37 vanilla] PC freezing, call stack pointing at
+ net/sched/sch_generic.c
+From: Joe Perches <joe@perches.com>
+To: David Robin <david.robin@gmail.com>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTimrP5Mqg340SwHrvdn=4KkvRchOjoy3-_f-9UJg@mail.gmail.com>
+References: <AANLkTimrP5Mqg340SwHrvdn=4KkvRchOjoy3-_f-9UJg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 15 Jan 2011 09:38:49 -0800
+Message-ID: <1295113129.21277.29.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 2:24 PM, Matthew Garrett <mjg@redhat.com> wrote:
-> From: Michel Dänzer <michel@daenzer.net>
->
-> Allows e.g. power management daemons to control the backlight level. Inspired
-> by the corresponding code in radeonfb.
->
-> (Updated to add backlight type and make the connector the parent device - mjg)
->
-> Signed-off-by: Michel Dänzer <daenzer@vmware.com>
-> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+On Sat, 2011-01-15 at 14:49 +0100, David Robin wrote:
+> Hello,
+> 
+> As I noticed you are one of the latest forcedeth contributers, I take
+> the opportunity to report you this series of errors in forcedeth
+> driver, which caused my desktop PC to freeze, in a reproducable way.
+> 
+> I am running Debian testing on a nForce4-based motheboard, and an AMD
+> Athlon X2 Dual Core Processor 4200+.
+> The stock 2.6.32-5 kernel package is running perfectly fine, whereas
+> 2.6.37 kernel image I compiled is freezing after 1 or 2 days of
+> uptime.
+> 
+> Unfortunately, I have tried to compile intermediate versions of Linux
+> kernel to try and identify the period when the issue was introduced.
 
-Acked-by: Alex Deucher <alexdeucher@gmail.com>
+Try git-bisect.
+http://www.reactivated.net/weblog/archives/2006/01/using-git-bisect-to-find-buggy-kernel-patches/
 
-> Cc: dri-devel@lists.freedesktop.org
-> ---
->  drivers/gpu/drm/radeon/Kconfig                  |    1 +
->  drivers/gpu/drm/radeon/radeon_connectors.c      |   15 ++
->  drivers/gpu/drm/radeon/radeon_legacy_encoders.c |  257 ++++++++++++++++++++++-
->  drivers/gpu/drm/radeon/radeon_mode.h            |   10 +
->  4 files changed, 277 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/gpu/drm/radeon/Kconfig b/drivers/gpu/drm/radeon/Kconfig
-> index 1c02d23..9746fee 100644
-> --- a/drivers/gpu/drm/radeon/Kconfig
-> +++ b/drivers/gpu/drm/radeon/Kconfig
-> @@ -1,6 +1,7 @@
->  config DRM_RADEON_KMS
->        bool "Enable modesetting on radeon by default - NEW DRIVER"
->        depends on DRM_RADEON
-> +       select BACKLIGHT_CLASS_DEVICE
->        help
->          Choose this option if you want kernel modesetting enabled by default.
->
-> diff --git a/drivers/gpu/drm/radeon/radeon_connectors.c b/drivers/gpu/drm/radeon/radeon_connectors.c
-> index 22b7e3d..e842fb5 100644
-> --- a/drivers/gpu/drm/radeon/radeon_connectors.c
-> +++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-> @@ -40,6 +40,10 @@ radeon_atombios_connected_scratch_regs(struct drm_connector *connector,
->                                       struct drm_encoder *encoder,
->                                       bool connected);
->
-> +extern void
-> +radeon_legacy_backlight_init(struct radeon_encoder *radeon_encoder,
-> +                            struct drm_connector *drm_connector);
-> +
->  void radeon_connector_hotplug(struct drm_connector *connector)
->  {
->        struct drm_device *dev = connector->dev;
-> @@ -1517,6 +1521,17 @@ radeon_add_legacy_connector(struct drm_device *dev,
->                connector->polled = DRM_CONNECTOR_POLL_HPD;
->        connector->display_info.subpixel_order = subpixel_order;
->        drm_sysfs_connector_add(connector);
-> +       if (connector_type == DRM_MODE_CONNECTOR_LVDS) {
-> +               struct drm_encoder *drm_encoder;
-> +
-> +               list_for_each_entry(drm_encoder, &dev->mode_config.encoder_list, head) {
-> +                       struct radeon_encoder *radeon_encoder;
-> +
-> +                       radeon_encoder = to_radeon_encoder(drm_encoder);
-> +                       if (radeon_encoder->encoder_id == ENCODER_OBJECT_ID_INTERNAL_LVDS)
-> +                               radeon_legacy_backlight_init(radeon_encoder, connector);
-> +               }
-> +       }
->        return;
->
->  failed:
-> diff --git a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
-> index 59f834b..ba7dcc6 100644
-> --- a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
-> +++ b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
-> @@ -28,6 +28,10 @@
->  #include "radeon_drm.h"
->  #include "radeon.h"
->  #include "atom.h"
-> +#include <linux/backlight.h>
-> +#ifdef CONFIG_PMAC_BACKLIGHT
-> +#include <asm/backlight.h>
-> +#endif
->
->  static void radeon_legacy_encoder_disable(struct drm_encoder *encoder)
->  {
-> @@ -39,7 +43,7 @@ static void radeon_legacy_encoder_disable(struct drm_encoder *encoder)
->        radeon_encoder->active_device = 0;
->  }
->
-> -static void radeon_legacy_lvds_dpms(struct drm_encoder *encoder, int mode)
-> +static void radeon_legacy_lvds_update(struct drm_encoder *encoder, int mode)
->  {
->        struct drm_device *dev = encoder->dev;
->        struct radeon_device *rdev = dev->dev_private;
-> @@ -47,15 +51,23 @@ static void radeon_legacy_lvds_dpms(struct drm_encoder *encoder, int mode)
->        uint32_t lvds_gen_cntl, lvds_pll_cntl, pixclks_cntl, disp_pwr_man;
->        int panel_pwr_delay = 2000;
->        bool is_mac = false;
-> +       uint8_t backlight_level;
->        DRM_DEBUG_KMS("\n");
->
-> +       lvds_gen_cntl = RREG32(RADEON_LVDS_GEN_CNTL);
-> +       backlight_level = (lvds_gen_cntl >> RADEON_LVDS_BL_MOD_LEVEL_SHIFT) & 0xff;
-> +
->        if (radeon_encoder->enc_priv) {
->                if (rdev->is_atom_bios) {
->                        struct radeon_encoder_atom_dig *lvds = radeon_encoder->enc_priv;
->                        panel_pwr_delay = lvds->panel_pwr_delay;
-> +                       if (lvds->bl_dev)
-> +                               backlight_level = lvds->backlight_level;
->                } else {
->                        struct radeon_encoder_lvds *lvds = radeon_encoder->enc_priv;
->                        panel_pwr_delay = lvds->panel_pwr_delay;
-> +                       if (lvds->bl_dev)
-> +                               backlight_level = lvds->backlight_level;
->                }
->        }
->
-> @@ -82,11 +94,13 @@ static void radeon_legacy_lvds_dpms(struct drm_encoder *encoder, int mode)
->                lvds_pll_cntl &= ~RADEON_LVDS_PLL_RESET;
->                WREG32(RADEON_LVDS_PLL_CNTL, lvds_pll_cntl);
->
-> -               lvds_gen_cntl = RREG32(RADEON_LVDS_GEN_CNTL);
-> -               lvds_gen_cntl |= (RADEON_LVDS_ON | RADEON_LVDS_EN | RADEON_LVDS_DIGON | RADEON_LVDS_BLON);
-> +               lvds_gen_cntl &= ~(RADEON_LVDS_DISPLAY_DIS |
-> +                                  RADEON_LVDS_BL_MOD_LEVEL_MASK);
-> +               lvds_gen_cntl |= (RADEON_LVDS_ON | RADEON_LVDS_EN |
-> +                                 RADEON_LVDS_DIGON | RADEON_LVDS_BLON |
-> +                                 (backlight_level << RADEON_LVDS_BL_MOD_LEVEL_SHIFT));
->                if (is_mac)
->                        lvds_gen_cntl |= RADEON_LVDS_BL_MOD_EN;
-> -               lvds_gen_cntl &= ~(RADEON_LVDS_DISPLAY_DIS);
->                udelay(panel_pwr_delay * 1000);
->                WREG32(RADEON_LVDS_GEN_CNTL, lvds_gen_cntl);
->                break;
-> @@ -95,7 +109,6 @@ static void radeon_legacy_lvds_dpms(struct drm_encoder *encoder, int mode)
->        case DRM_MODE_DPMS_OFF:
->                pixclks_cntl = RREG32_PLL(RADEON_PIXCLKS_CNTL);
->                WREG32_PLL_P(RADEON_PIXCLKS_CNTL, 0, ~RADEON_PIXCLK_LVDS_ALWAYS_ONb);
-> -               lvds_gen_cntl = RREG32(RADEON_LVDS_GEN_CNTL);
->                lvds_gen_cntl |= RADEON_LVDS_DISPLAY_DIS;
->                if (is_mac) {
->                        lvds_gen_cntl &= ~RADEON_LVDS_BL_MOD_EN;
-> @@ -119,6 +132,25 @@ static void radeon_legacy_lvds_dpms(struct drm_encoder *encoder, int mode)
->
->  }
->
-> +static void radeon_legacy_lvds_dpms(struct drm_encoder *encoder, int mode)
-> +{
-> +       struct radeon_device *rdev = encoder->dev->dev_private;
-> +       struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
-> +       DRM_DEBUG("\n");
-> +
-> +       if (radeon_encoder->enc_priv) {
-> +               if (rdev->is_atom_bios) {
-> +                       struct radeon_encoder_atom_dig *lvds = radeon_encoder->enc_priv;
-> +                       lvds->dpms_mode = mode;
-> +               } else {
-> +                       struct radeon_encoder_lvds *lvds = radeon_encoder->enc_priv;
-> +                       lvds->dpms_mode = mode;
-> +               }
-> +       }
-> +
-> +       radeon_legacy_lvds_update(encoder, mode);
-> +}
-> +
->  static void radeon_legacy_lvds_prepare(struct drm_encoder *encoder)
->  {
->        struct radeon_device *rdev = encoder->dev->dev_private;
-> @@ -237,9 +269,222 @@ static const struct drm_encoder_helper_funcs radeon_legacy_lvds_helper_funcs = {
->        .disable = radeon_legacy_encoder_disable,
->  };
->
-> +#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
-> +
-> +#define MAX_RADEON_LEVEL 0xFF
-> +
-> +struct radeon_backlight_privdata {
-> +       struct radeon_encoder *encoder;
-> +       uint8_t negative;
-> +};
-> +
-> +static uint8_t radeon_legacy_lvds_level(struct backlight_device *bd)
-> +{
-> +       struct radeon_backlight_privdata *pdata = bl_get_data(bd);
-> +       uint8_t level;
-> +
-> +       /* Convert brightness to hardware level */
-> +       if (bd->props.brightness < 0)
-> +               level = 0;
-> +       else if (bd->props.brightness > MAX_RADEON_LEVEL)
-> +               level = MAX_RADEON_LEVEL;
-> +       else
-> +               level = bd->props.brightness;
-> +
-> +       if (pdata->negative)
-> +               level = MAX_RADEON_LEVEL - level;
-> +
-> +       return level;
-> +}
-> +
-> +static int radeon_legacy_backlight_update_status(struct backlight_device *bd)
-> +{
-> +       struct radeon_backlight_privdata *pdata = bl_get_data(bd);
-> +       struct radeon_encoder *radeon_encoder = pdata->encoder;
-> +       struct drm_device *dev = radeon_encoder->base.dev;
-> +       struct radeon_device *rdev = dev->dev_private;
-> +       int dpms_mode = DRM_MODE_DPMS_ON;
-> +
-> +       if (radeon_encoder->enc_priv) {
-> +               if (rdev->is_atom_bios) {
-> +                       struct radeon_encoder_atom_dig *lvds = radeon_encoder->enc_priv;
-> +                       dpms_mode = lvds->dpms_mode;
-> +                       lvds->backlight_level = radeon_legacy_lvds_level(bd);
-> +               } else {
-> +                       struct radeon_encoder_lvds *lvds = radeon_encoder->enc_priv;
-> +                       dpms_mode = lvds->dpms_mode;
-> +                       lvds->backlight_level = radeon_legacy_lvds_level(bd);
-> +               }
-> +       }
-> +
-> +       if (bd->props.brightness > 0)
-> +               radeon_legacy_lvds_update(&radeon_encoder->base, dpms_mode);
-> +       else
-> +               radeon_legacy_lvds_update(&radeon_encoder->base, DRM_MODE_DPMS_OFF);
-> +
-> +       return 0;
-> +}
-> +
-> +static int radeon_legacy_backlight_get_brightness(struct backlight_device *bd)
-> +{
-> +       struct radeon_backlight_privdata *pdata = bl_get_data(bd);
-> +       struct radeon_encoder *radeon_encoder = pdata->encoder;
-> +       struct drm_device *dev = radeon_encoder->base.dev;
-> +       struct radeon_device *rdev = dev->dev_private;
-> +       uint8_t backlight_level;
-> +
-> +       backlight_level = (RREG32(RADEON_LVDS_GEN_CNTL) >>
-> +                          RADEON_LVDS_BL_MOD_LEVEL_SHIFT) & 0xff;
-> +
-> +       return pdata->negative ? MAX_RADEON_LEVEL - backlight_level : backlight_level;
-> +}
-> +
-> +static const struct backlight_ops radeon_backlight_ops = {
-> +       .get_brightness = radeon_legacy_backlight_get_brightness,
-> +       .update_status  = radeon_legacy_backlight_update_status,
-> +};
-> +
-> +void radeon_legacy_backlight_init(struct radeon_encoder *radeon_encoder,
-> +                                 struct drm_connector *drm_connector)
-> +{
-> +       struct drm_device *dev = radeon_encoder->base.dev;
-> +       struct radeon_device *rdev = dev->dev_private;
-> +       struct backlight_device *bd;
-> +       struct backlight_properties props;
-> +       struct radeon_backlight_privdata *pdata;
-> +       uint8_t backlight_level;
-> +
-> +       if (!radeon_encoder->enc_priv)
-> +               return;
-> +
-> +#ifdef CONFIG_PMAC_BACKLIGHT
-> +       if (!pmac_has_backlight_type("ati") &&
-> +           !pmac_has_backlight_type("mnca"))
-> +               return;
-> +#endif
-> +
-> +       pdata = kmalloc(sizeof(struct radeon_backlight_privdata), GFP_KERNEL);
-> +       if (!pdata) {
-> +               DRM_ERROR("Memory allocation failed\n");
-> +               goto error;
-> +       }
-> +
-> +       props.max_brightness = MAX_RADEON_LEVEL;
-> +       props.type = BACKLIGHT_RAW;
-> +       bd = backlight_device_register("radeon_bl", &drm_connector->kdev,
-> +                                      pdata, &radeon_backlight_ops, &props);
-> +       if (IS_ERR(bd)) {
-> +               DRM_ERROR("Backlight registration failed\n");
-> +               goto error;
-> +       }
-> +
-> +       pdata->encoder = radeon_encoder;
-> +
-> +       backlight_level = (RREG32(RADEON_LVDS_GEN_CNTL) >>
-> +                          RADEON_LVDS_BL_MOD_LEVEL_SHIFT) & 0xff;
-> +
-> +       /* First, try to detect backlight level sense based on the assumption
-> +        * that firmware set it up at full brightness
-> +        */
-> +       if (backlight_level == 0)
-> +               pdata->negative = true;
-> +       else if (backlight_level == 0xff)
-> +               pdata->negative = false;
-> +       else {
-> +               /* XXX hack... maybe some day we can figure out in what direction
-> +                * backlight should work on a given panel?
-> +                */
-> +               pdata->negative = (rdev->family != CHIP_RV200 &&
-> +                                  rdev->family != CHIP_RV250 &&
-> +                                  rdev->family != CHIP_RV280 &&
-> +                                  rdev->family != CHIP_RV350);
-> +
-> +#ifdef CONFIG_PMAC_BACKLIGHT
-> +               pdata->negative = (pdata->negative ||
-> +                                  of_machine_is_compatible("PowerBook4,3") ||
-> +                                  of_machine_is_compatible("PowerBook6,3") ||
-> +                                  of_machine_is_compatible("PowerBook6,5"));
-> +#endif
-> +       }
-> +
-> +       if (rdev->is_atom_bios) {
-> +               struct radeon_encoder_atom_dig *lvds = radeon_encoder->enc_priv;
-> +               lvds->bl_dev = bd;
-> +       } else {
-> +               struct radeon_encoder_lvds *lvds = radeon_encoder->enc_priv;
-> +               lvds->bl_dev = bd;
-> +       }
-> +
-> +       bd->props.brightness = radeon_legacy_backlight_get_brightness(bd);
-> +       bd->props.power = FB_BLANK_UNBLANK;
-> +       backlight_update_status(bd);
-> +
-> +       DRM_INFO("radeon legacy LVDS backlight initialized\n");
-> +
-> +       return;
-> +
-> +error:
-> +       kfree(pdata);
-> +       return;
-> +}
-> +
-> +static void radeon_legacy_backlight_exit(struct radeon_encoder *radeon_encoder)
-> +{
-> +       struct drm_device *dev = radeon_encoder->base.dev;
-> +       struct radeon_device *rdev = dev->dev_private;
-> +       struct backlight_device *bd = NULL;
-> +
-> +       if (!radeon_encoder->enc_priv)
-> +               return;
-> +
-> +       if (rdev->is_atom_bios) {
-> +               struct radeon_encoder_atom_dig *lvds = radeon_encoder->enc_priv;
-> +               bd = lvds->bl_dev;
-> +               lvds->bl_dev = NULL;
-> +       } else {
-> +               struct radeon_encoder_lvds *lvds = radeon_encoder->enc_priv;
-> +               bd = lvds->bl_dev;
-> +               lvds->bl_dev = NULL;
-> +       }
-> +
-> +       if (bd) {
-> +               struct radeon_legacy_backlight_privdata *pdata;
-> +
-> +               pdata = bl_get_data(bd);
-> +               backlight_device_unregister(bd);
-> +               kfree(pdata);
-> +
-> +               DRM_INFO("radeon legacy LVDS backlight unloaded\n");
-> +       }
-> +}
-> +
-> +#else /* !CONFIG_BACKLIGHT_CLASS_DEVICE */
-> +
-> +static void radeon_legacy_backlight_init(struct radeon_encoder *encoder)
-> +{
-> +}
-> +
-> +static void radeon_legacy_backlight_exit(struct radeon_encoder *encoder)
-> +{
-> +}
-> +
-> +#endif
-> +
-> +
-> +static void radeon_lvds_enc_destroy(struct drm_encoder *encoder)
-> +{
-> +       struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
-> +
-> +       if (radeon_encoder->enc_priv) {
-> +               radeon_legacy_backlight_exit(radeon_encoder);
-> +               kfree(radeon_encoder->enc_priv);
-> +       }
-> +       drm_encoder_cleanup(encoder);
-> +       kfree(radeon_encoder);
-> +}
->
->  static const struct drm_encoder_funcs radeon_legacy_lvds_enc_funcs = {
-> -       .destroy = radeon_enc_destroy,
-> +       .destroy = radeon_lvds_enc_destroy,
->  };
->
->  static void radeon_legacy_primary_dac_dpms(struct drm_encoder *encoder, int mode)
-> diff --git a/drivers/gpu/drm/radeon/radeon_mode.h b/drivers/gpu/drm/radeon/radeon_mode.h
-> index 12bdeab..32c6257 100644
-> --- a/drivers/gpu/drm/radeon/radeon_mode.h
-> +++ b/drivers/gpu/drm/radeon/radeon_mode.h
-> @@ -300,6 +300,11 @@ struct radeon_encoder_lvds {
->        uint32_t lvds_gen_cntl;
->        /* panel mode */
->        struct drm_display_mode native_mode;
-> +#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
-> +       struct backlight_device *bl_dev;
-> +       int      dpms_mode;
-> +       uint8_t  backlight_level;
-> +#endif
->  };
->
->  struct radeon_encoder_tv_dac {
-> @@ -353,6 +358,11 @@ struct radeon_encoder_atom_dig {
->        uint32_t lcd_ss_id;
->        /* panel mode */
->        struct drm_display_mode native_mode;
-> +#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
-> +       struct backlight_device *bl_dev;
-> +       int dpms_mode;
-> +       uint8_t backlight_level;
-> +#endif
->  };
->
->  struct radeon_encoder_atom_dac {
-> --
-> 1.7.3.4
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
->
+Here's a list of the changelog since 2.6.32
+------------------
+
+$ git shortlog v2.6.32..v2.6.37 -- drivers/net/forcedeth.c
+Alexey Dobriyan (1):
+      drivers/net/: use DEFINE_PCI_DEVICE_TABLE()
+
+Ayaz Abdulla (1):
+      forcedeth: fix tx limit2 flag check
+
+David S. Miller (3):
+      Merge branch 'master' of master.kernel.org:/.../davem/net-2.6
+      Merge branch 'master' of master.kernel.org:/.../davem/net-2.6
+      forcedeth: Kill NAPI config options.
+
+Eric Dumazet (3):
+      drivers: net: use skb_headlen()
+      net: trans_start cleanups
+      drivers/net: return operator cleanup
+
+Jesse Gross (1):
+      vlan: Don't check for vlan group before vlan_tx_tag_present.
+
+Jiri Pirko (2):
+      net: convert multiple drivers to use netdev_for_each_mc_addr, part4
+      net: convert multicast list to list_head
+
+Joe Perches (2):
+      drivers/net: request_irq - Remove unnecessary leading & from second arg
+      drivers/net: Remove address use from assignments of function pointers
+
+Julia Lawall (1):
+      forcedeth: correct valid flag
+
+Mike Ditto (1):
+      forcedeth: Fix different hardware statistics versions.
+
+Tejun Heo (1):
+      include cleanup: Update gfp.h and slab.h includes to prepare for breaking implicit s
+
+Tom Herbert (2):
+      forcedeth: GRO support
+      forcedeth: Account for consumed budget in napi poll
+
+stephen hemminger (1):
+      forcedeth: Stay in NAPI as long as there's work
+
+------------------
+
+Based only on the changelog, I'd guess it might be the NAPI change
+and some hardware issue, but who really knows.
+
+git bisect should help figure that out.
+
+> Are you the right person I should report this error too,
+
+No.
+
+You should report this to linux-kernel@vger.kernel.org
+and to netdev@vger.kernel.org
+
+I added them to the cc's on this reply.
+
+>  and is there more debug information I could provide ?
+
+Not really, other than it'd really help if you could
+run the git bisect.
+
+David Robin's original attachment:
+----------------------
+Jan 14 01:50:02 gizeh kernel: [13653.828013] ------------[ cut here ]------------
+Jan 14 01:50:02 gizeh kernel: [13653.828023] WARNING: at net/sched/sch_generic.c:258 dev_watchdog+0xfc/0x1a2()
+Jan 14 01:50:02 gizeh kernel: [13653.828026] Hardware name: MS-7125
+Jan 14 01:50:02 gizeh kernel: [13653.828029] NETDEV WATCHDOG: eth1 (forcedeth): transmit queue 0 timed out
+Jan 14 01:50:02 gizeh kernel: [13653.828031] Modules linked in: radeon ttm drm_kms_helper drm i2c_algo_bit fuse loop firewire_sbp2 usbhid hid arc4 ecb option usb_wwan usbserial ath5k ath snd_hda_codec_hdmi sg snd_hda_intel ohci_hcd sr_mod cdrom mac80211 firewire_ohci ehci_hcd i2c_nforce2 usbcore snd_hda_codec cfg80211 snd_intel8x0 firewire_core k8temp parport_pc sata_sil pata_amd sky2 rfkill snd_hwdep i2c_core parport snd_ac97_codec pcspkr shpchp evdev forcedeth ac97_bus nls_base snd_pcm snd_timer snd tpm_tis tpm tpm_bios soundcore processor button edac_core pci_hotplug crc_itu_t snd_page_alloc edac_mce_amd ext3 jbd mbcache sd_mod crc_t10dif sata_nv ata_generic libata scsi_mod thermal fan thermal_sys
+Jan 14 01:50:02 gizeh kernel: [13653.828085] Pid: 2096, comm: Xorg Not tainted 2.6.37 #1
+Jan 14 01:50:02 gizeh kernel: [13653.828087] Call Trace:
+Jan 14 01:50:02 gizeh kernel: [13653.828090]  <IRQ>  [<ffffffff8103bc50>] ? warn_slowpath_common+0x78/0x8c
+Jan 14 01:50:02 gizeh kernel: [13653.828099]  [<ffffffff8103bd03>] ? warn_slowpath_fmt+0x45/0x4a
+Jan 14 01:50:02 gizeh kernel: [13653.828103]  [<ffffffff8125ce41>] ? netif_tx_lock+0x3d/0x65
+Jan 14 01:50:02 gizeh kernel: [13653.828106]  [<ffffffff8125cf65>] ? dev_watchdog+0xfc/0x1a2
+Jan 14 01:50:02 gizeh kernel: [13653.828111]  [<ffffffff8104fa7c>] ? __queue_work+0x22d/0x251
+Jan 14 01:50:02 gizeh kernel: [13653.828116]  [<ffffffff81047c33>] ? run_timer_softirq+0x1c2/0x285
+Jan 14 01:50:02 gizeh kernel: [13653.828119]  [<ffffffff8125ce69>] ? dev_watchdog+0x0/0x1a2
+Jan 14 01:50:02 gizeh kernel: [13653.828124]  [<ffffffff8105c45e>] ? ktime_get+0x5f/0xb8
+Jan 14 01:50:02 gizeh kernel: [13653.828127]  [<ffffffff81041552>] ? __do_softirq+0xc9/0x1ab
+Jan 14 01:50:02 gizeh kernel: [13653.828131]  [<ffffffff8100388c>] ? call_softirq+0x1c/0x28
+Jan 14 01:50:02 gizeh kernel: [13653.828134]  [<ffffffff81004ca5>] ? do_softirq+0x31/0x63
+Jan 14 01:50:02 gizeh kernel: [13653.828137]  [<ffffffff810413f0>] ? irq_exit+0x36/0x79
+Jan 14 01:50:02 gizeh kernel: [13653.828142]  [<ffffffff81018d72>] ? smp_apic_timer_interrupt+0x87/0x94
+Jan 14 01:50:02 gizeh kernel: [13653.828146]  [<ffffffff81003353>] ? apic_timer_interrupt+0x13/0x20
+Jan 14 01:50:02 gizeh kernel: [13653.828148]  <EOI>  [<ffffffff8118b12c>] ? delay_tsc+0x1a/0x4e
+Jan 14 01:50:02 gizeh kernel: [13653.828171]  [<ffffffffa0336acc>] ? radeon_freelist_get+0xd5/0xf6 [radeon]
+Jan 14 01:50:02 gizeh kernel: [13653.828181]  [<ffffffffa033a495>] ? radeon_cp_buffers+0xe5/0x169 [radeon]
+Jan 14 01:50:02 gizeh kernel: [13653.828191]  [<ffffffffa02f1e06>] ? drm_ioctl+0x26c/0x322 [drm]
+Jan 14 01:50:02 gizeh kernel: [13653.828201]  [<ffffffffa033a3b0>] ? radeon_cp_buffers+0x0/0x169 [radeon]
+Jan 14 01:50:02 gizeh kernel: [13653.828205]  [<ffffffff81002497>] ? do_signal+0x584/0x68a
+Jan 14 01:50:02 gizeh kernel: [13653.828209]  [<ffffffff810f0ea4>] ? do_vfs_ioctl+0x4a2/0x4ef
+Jan 14 01:50:02 gizeh kernel: [13653.828213]  [<ffffffff8100a7a8>] ? restore_i387_xstate+0x61/0x139
+Jan 14 01:50:02 gizeh kernel: [13653.828216]  [<ffffffff8100334e>] ? apic_timer_interrupt+0xe/0x20
+Jan 14 01:50:02 gizeh kernel: [13653.828220]  [<ffffffff810f0f3c>] ? sys_ioctl+0x4b/0x6f
+Jan 14 01:50:02 gizeh kernel: [13653.828223]  [<ffffffff810029bb>] ? system_call_fastpath+0x16/0x1b
+Jan 14 01:50:02 gizeh kernel: [13653.828226] ---[ end trace 119f4557b810af02 ]---
+Jan 14 01:50:02 gizeh kernel: [13653.828229] eth1: Got tx_timeout. irq: 00000036
+Jan 14 01:50:02 gizeh kernel: [13653.828231] eth1: Ring at 12a73c000
+Jan 14 01:50:02 gizeh kernel: [13653.828233] eth1: Dumping tx registers
+Jan 14 01:50:02 gizeh kernel: [13653.828238]   0: 00000036 00000000 00000003 0000000d 00000000 00000000 00000000 00000000
+Jan 14 01:50:02 gizeh kernel: [13653.828243]  20: 06255300 ff701365 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 01:50:02 gizeh kernel: [13653.828249]  40: 0420e20e 0000a855 00002e20 00000000 00000000 00000000 00000000 00000000
+Jan 14 01:50:02 gizeh kernel: [13653.828254]  60: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 01:50:02 gizeh kernel: [13653.828260]  80: 003b0f3c 00000001 00040000 007f0020 0000061c 00000001 00200000 80007fae
+Jan 14 01:50:02 gizeh kernel: [13653.828265]  a0: 0016070f 00000016 d2091100 0000b21b 00000001 00000000 2d00cccd 00004ce4
+Jan 14 01:50:02 gizeh kernel: [13653.828271]  c0: 10000001 00000001 00000001 00000001 00000001 00000001 00000001 00000001
+Jan 14 01:50:02 gizeh kernel: [13653.828276]  e0: 00000001 00000001 00000001 00000001 00000001 00000001 00000001 00000001
+Jan 14 01:50:02 gizeh kernel: [13653.828282] 100: 2a73e000 2a73c000 01ff00ff 00008000 00010064 00000000 00000024 2a73e500
+Jan 14 01:50:02 gizeh kernel: [13653.828287] 120: 2a73d4c0 bf435380 a000ffde 117bf040 8000061c 2a73e50c 2a73d374 01e08000
+Jan 14 01:50:02 gizeh kernel: [13653.828293] 140: 00304120 80002600 00000001 00000001 00000000 00000000 00000000 00000000
+Jan 14 01:50:02 gizeh kernel: [13653.828298] 160: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 01:50:02 gizeh kernel: [13653.828304] 180: 00000016 00000008 0194796d 00008103 0000002a 00004000 0194000f 00000003
+Jan 14 01:50:02 gizeh kernel: [13653.828309] 1a0: 00000016 00000008 0194796d 00008103 0000002a 00004000 0194000f 00000003
+Jan 14 01:50:02 gizeh kernel: [13653.828315] 1c0: 00000016 00000008 0194796d 00008103 0000002a 00004000 0194000f 00000003
+Jan 14 01:50:02 gizeh kernel: [13653.828320] 1e0: 00000016 00000008 0194796d 00008103 0000002a 00004000 0194000f 00000003
+Jan 14 01:50:02 gizeh kernel: [13653.828326] 200: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 01:50:02 gizeh kernel: [13653.828331] 220: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 01:50:02 gizeh kernel: [13653.828336] 240: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 01:50:02 gizeh kernel: [13653.828342] 260: 00000000 00000000 fe020001 00000100 00000000 00000000 7e020001 00000100
+Jan 14 01:50:02 gizeh kernel: [13653.828347] 280: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 01:50:02 gizeh kernel: [13653.828352] 2a0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 01:50:02 gizeh kernel: [13653.828358] 2c0: 00000000 00000000 00000000 00000000 00000000 00000001 00000001 00000001
+Jan 14 01:50:02 gizeh kernel: [13653.828360] eth1: Dumping tx ring
+Jan 14 01:50:02 gizeh kernel: [13653.828364] 000: 00000000 b7267402 20000029 // 00000000 b7267602 20000029 // 00000000 b7267802 20000029 // 00000000 b7267a02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828370] 004: 00000000 b7267c02 20000029 // 00000000 b7267e02 20000029 // 00000001 2498b202 20000029 // 00000001 2498aa02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828375] 008: 00000000 b736c002 20000029 // 00000000 b736c202 20000029 // 00000000 b736c402 20000029 // 00000000 b736c602 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828380] 00c: 00000000 b736c802 20000029 // 00000000 b736ca02 20000029 // 00000000 b736cc02 20000029 // 00000000 b736ce02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828385] 010: 00000000 b736d002 20000029 // 00000000 b736d202 20000029 // 00000000 b736d402 20000029 // 00000000 b736d602 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828390] 014: 00000000 b736d802 20000029 // 00000000 b736da02 20000029 // 00000000 b736dc02 20000029 // 00000000 b736de02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828395] 018: 00000000 b72a2002 20000029 // 00000000 b72a2202 20000029 // 00000000 b72a2402 20000029 // 00000000 b72a2602 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828400] 01c: 00000000 b72a2802 20000029 // 00000000 b72a2a02 20000029 // 00000000 b72a2c02 20000029 // 00000000 b72a2e02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828405] 020: 00000000 b72a3002 20000029 // 00000000 b72a3202 20000029 // 00000000 b72a3402 20000029 // 00000000 b72a3602 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828410] 024: 00000000 b72a3802 20000029 // 00000000 b72a3a02 20000029 // 00000000 b72a3c02 20000029 // 00000000 b72a3e02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828415] 028: 00000000 b72a4002 20000029 // 00000000 b72a4202 20000029 // 00000000 b72a4402 20000029 // 00000000 b72a4602 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828420] 02c: 00000000 b72a4802 20000029 // 00000000 b72a4a02 20000029 // 00000000 b72a4c02 20000029 // 00000000 b72a4e02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828425] 030: 00000000 bf4150fa 20000040 // 00000000 bf4150ee 22000046 // 00000000 a465c8ee 22000046 // 00000001 26b710fe 00000000
+Jan 14 01:50:02 gizeh kernel: [13653.828430] 034: 00000000 b6d01374 220005ee // 00000000 a465ed0a 00000000 // 00000000 cda7562e 220005ee // 00000001 26b73d0a 00000000
+Jan 14 01:50:02 gizeh kernel: [13653.828435] 038: 00000000 bf6dfd77 00000000 // 00000000 cdac7000 220005b4 // 00000000 bf414cee 22000046 // 00000000 bf4148ee 22000046
+Jan 14 01:50:02 gizeh kernel: [13653.828440] 03c: 00000000 bf415cfe 00000000 // 00000000 b6d0191c 200005ee // 00000000 bf41750a 00000000 // 00000000 cda75be2 00000000
+Jan 14 01:50:02 gizeh kernel: [13653.828445] 040: 00000000 04d69000 200005ee // 00000000 bf41650a 00000000 // 00000000 cdac72f1 220005b4 // 00000000 cd9b30fe 00000000
+Jan 14 01:50:02 gizeh kernel: [13653.828450] 044: 00000000 b6cefd94 00000000 // 00000000 b6d01000 200005ee // 00000000 b72d78ee 20000046 // 00000001 26b7150a 00000000
+Jan 14 01:50:02 gizeh kernel: [13653.828455] 048: 00000000 cda7500b 200005ee // 00000000 b72d4d0a 00000000 // 00000000 cdac786b 200005b4 // 00000000 b72d5d0a 00000000
+Jan 14 01:50:02 gizeh kernel: [13653.828460] 04c: 00000000 04cd5951 20000040 // 00000000 b72d710a 00000000 // 00000000 cdac7de5 00000000 // 00000000 bf435000 220005b4
+Jan 14 01:50:02 gizeh kernel: [13653.828465] 050: 00000001 2a69e8ee 2c000041 // 00000000 a465cd0a 0c000035 // 00000000 bf6df2b8 a0000579 // 00000001 2a55050a 0c000035
+Jan 14 01:50:02 gizeh kernel: [13653.828470] 054: 00000000 04cd5951 a0000004 // 00000000 a465dcfe 0c000041 // 00000000 b6cefd94 8000026b // 00000000 b6d01000 a000033b
+Jan 14 01:50:02 gizeh kernel: [13653.828476] 058: 00000001 26b6d8ee 2c000041 // 00000001 2613290a 0c000035 // 00000000 cda7500b a00005b3 // 00000001 2a1f150a 0c000035
+Jan 14 01:50:02 gizeh kernel: [13653.828481] 05c: 00000000 04cd5951 a0000004 // 00000000 b6dfb10a 0c000035 // 00000000 bf6df2b8 a0000579 // 00000000 b6dfa4ee 2c000041
+Jan 14 01:50:02 gizeh kernel: [13653.828486] 060: 00000000 a465e8fe 0c000041 // 00000000 b6cefd94 8000026b // 00000000 b6d01000 a000033b // 00000000 b6df990a 0c000035
+Jan 14 01:50:02 gizeh kernel: [13653.828491] 064: 00000000 04cd5951 a0000004 // 00000000 b728710a 0c000035 // 00000000 cda7500b a00005b3 // 00000000 b728410a 0c000035
+Jan 14 01:50:02 gizeh kernel: [13653.828496] 068: 00000000 bf6df2b8 a0000579 // 00000000 b728590a 0c000035 // 00000000 04cd5951 a0000004 // 00000000 a465d4fe 0c000041
+Jan 14 01:50:02 gizeh kernel: [13653.828501] 06c: 00000000 b6cefd94 8000026b // 00000000 b6d01000 a000033b // 00000000 b7287d0a 0c000035 // 00000000 cda7500b a00005b3
+Jan 14 01:50:02 gizeh kernel: [13653.828506] 070: 00000000 b728450a 0c000035 // 00000000 bf6df2b8 a0000579 // 00000000 b728510a 0c000035 // 00000000 04cd5951 a0000004
+Jan 14 01:50:02 gizeh kernel: [13653.828512] 074: 00000000 a465e4fe 0c000041 // 00000000 b6cefd94 8000026b // 00000000 b6d01000 a000033b // 00000000 b7284d0a 0c000035
+Jan 14 01:50:02 gizeh kernel: [13653.828517] 078: 00000000 cda7500b a00005b3 // 00000001 26b7310a 0c000035 // 00000000 04cd5951 a0000004 // 00000001 26b7290a 0c000035
+Jan 14 01:50:02 gizeh kernel: [13653.828522] 07c: 00000000 bf6df2b8 a0000579 // 00000000 a465d0fe 0c000041 // 00000000 b6cefd94 8000026b // 00000000 b6d01000 a000033b
+Jan 14 01:50:02 gizeh kernel: [13653.828527] 080: 00000001 2f80e50a 0c000035 // 00000000 cda7500b a00005b3 // 00000001 2f80e10a 0c000035 // 00000000 04cd5951 a0000004
+Jan 14 01:50:02 gizeh kernel: [13653.828532] 084: 00000001 2a48610a 0c000035 // 00000000 bf6df2b8 a0000579 // 00000000 b72fb002 20000029 // 00000000 b72fb202 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828537] 088: 00000000 b72fb602 20000029 // 00000000 b72fba02 20000029 // 00000000 b72faa02 20000029 // 00000000 b72fa402 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828542] 08c: 00000000 b72fbc02 20000029 // 00000000 b72fa002 20000029 // 00000000 b72fbe02 20000029 // 00000000 b72fae02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828547] 090: 00000000 b72fa802 20000029 // 00000000 b72fa602 20000029 // 00000001 29f47202 20000029 // 00000001 29f46402 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828552] 094: 00000001 29f47602 20000029 // 00000001 29f46002 20000029 // 00000001 29f46202 20000029 // 00000001 26a2f402 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828557] 098: 00000001 26a2e602 20000029 // 00000001 26a2e202 20000029 // 00000001 26a2e002 20000029 // 00000001 26a2ea02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828562] 09c: 00000001 26a2ec02 20000029 // 00000001 26a2fe02 20000029 // 00000001 26afe202 20000029 // 00000001 26afea02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828567] 0a0: 00000001 26afe402 20000029 // 00000001 26afec02 20000029 // 00000001 26affe02 20000029 // 00000001 29826402 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828572] 0a4: 00000001 29826802 20000029 // 00000001 29bcbe02 20000029 // 00000001 29bca802 20000029 // 00000001 269b9c02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828578] 0a8: 00000001 269b8802 20000029 // 00000001 269b9e02 20000029 // 00000001 26859e02 20000029 // 00000001 26858802 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828583] 0ac: 00000001 26859602 20000029 // 00000001 26858402 20000029 // 00000001 26859002 20000029 // 00000001 26859c02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828588] 0b0: 00000001 26859202 20000029 // 00000001 26858202 20000029 // 00000001 26859402 20000029 // 00000001 26859802 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828593] 0b4: 00000001 26858c02 20000029 // 00000001 2907f402 20000029 // 00000001 24932202 20000029 // 00000001 24933e02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828598] 0b8: 00000001 2a2b2202 20000029 // 00000001 2a0c1c02 20000029 // 00000001 26aff402 20000029 // 00000001 26affa02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828603] 0bc: 00000000 b7210002 20000029 // 00000000 b7210202 20000029 // 00000000 b7210402 20000029 // 00000000 b7210602 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828608] 0c0: 00000000 b7210802 20000029 // 00000000 b7210a02 20000029 // 00000000 b7210c02 20000029 // 00000000 b7210e02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828613] 0c4: 00000000 b7211002 20000029 // 00000000 b7211202 20000029 // 00000000 b7211402 20000029 // 00000000 b7211602 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828618] 0c8: 00000000 b7211802 20000029 // 00000000 b7211a02 20000029 // 00000000 b7211c02 20000029 // 00000000 b7211e02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828623] 0cc: 00000001 2a6c4a02 20000029 // 00000000 b6c26002 20000029 // 00000000 b6c26202 20000029 // 00000000 b6c26402 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828628] 0d0: 00000000 b6c26602 20000029 // 00000000 b6c26802 20000029 // 00000000 b6c26a02 20000029 // 00000000 b6c26c02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828633] 0d4: 00000000 b6c26e02 20000029 // 00000000 b6c27002 20000029 // 00000000 b6c27202 20000029 // 00000000 b6c27402 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828638] 0d8: 00000000 b6c27602 20000029 // 00000000 b6c27802 20000029 // 00000000 b6c27a02 20000029 // 00000000 b6c27c02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828643] 0dc: 00000000 b6c27e02 20000029 // 00000000 b70c0002 20000029 // 00000000 b70c0202 20000029 // 00000000 b70c0402 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828648] 0e0: 00000000 b70c0602 20000029 // 00000000 b70c0802 20000029 // 00000000 b70c0a02 20000029 // 00000000 b70c0c02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828653] 0e4: 00000000 b70c0e02 20000029 // 00000000 b70c1002 20000029 // 00000000 b70c1202 20000029 // 00000000 b70c1402 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828659] 0e8: 00000000 b70c1602 20000029 // 00000001 2498a202 20000029 // 00000001 2498a402 20000029 // 00000001 2498ba02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828664] 0ec: 00000000 b70c1802 20000029 // 00000000 b70c1a02 20000029 // 00000000 b70c1c02 20000029 // 00000000 b70c1e02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828669] 0f0: 00000000 b7266002 20000029 // 00000000 b7266202 20000029 // 00000000 37aae002 20000029 // 00000000 37aae402 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828673] 0f4: 00000000 37aae602 20000029 // 00000000 37aaea02 20000029 // 00000000 37aaec02 20000029 // 00000000 37aaee02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828678] 0f8: 00000000 b7266402 20000029 // 00000000 b7266602 20000029 // 00000000 b7266802 20000029 // 00000000 b7266a02 20000029
+Jan 14 01:50:02 gizeh kernel: [13653.828683] 0fc: 00000000 b7266c02 20000029 // 00000000 b7266e02 20000029 // 00000000 b7267002 20000029 // 00000000 b7267202 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828017] eth1: Got tx_timeout. irq: 00000036
+Jan 14 03:10:22 gizeh kernel: [18473.828021] eth1: Ring at 12a73c000
+Jan 14 03:10:22 gizeh kernel: [18473.828023] eth1: Dumping tx registers
+Jan 14 03:10:22 gizeh kernel: [18473.828028]   0: 00000036 00000000 00000003 000a000d 00000000 00000000 00000000 00000000
+Jan 14 03:10:22 gizeh kernel: [18473.828034]  20: 06255300 ff701365 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 03:10:22 gizeh kernel: [18473.828039]  40: 0420e20e 0000a855 00002e20 00000000 00000000 00000000 00000000 00000000
+Jan 14 03:10:22 gizeh kernel: [18473.828045]  60: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 03:10:22 gizeh kernel: [18473.828050]  80: 003b0f3c 00c02601 00040000 007f0020 0000061c 00000001 00200000 80007fae
+Jan 14 03:10:22 gizeh kernel: [18473.828056]  a0: 0016070f 00000016 d2091100 0000b21b 00000001 00000000 2d00cccd 00004ce4
+Jan 14 03:10:22 gizeh kernel: [18473.828061]  c0: 10000001 00000001 00000001 00000001 00000001 00000001 00000001 00000001
+Jan 14 03:10:22 gizeh kernel: [18473.828067]  e0: 00000001 00000001 00000001 00000001 00000001 00000001 00000001 00000001
+Jan 14 03:10:22 gizeh kernel: [18473.828072] 100: 2a73e000 2a73c000 01ff00ff 00002601 00010064 00000000 0000002a 2a73e600
+Jan 14 03:10:22 gizeh kernel: [18473.828078] 120: 2a73d4c0 b72a5e40 a000ffeb 117bf040 8000061c 2a73e604 2a73d374 01e08000
+Jan 14 03:10:22 gizeh kernel: [18473.828083] 140: 00304120 80002600 00000001 00000001 00000000 00000000 00000000 00000000
+Jan 14 03:10:22 gizeh kernel: [18473.828089] 160: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 03:10:22 gizeh kernel: [18473.828095] 180: 00000016 00000008 0194796d 00008103 0000002a 00004000 0194000f 00000003
+Jan 14 03:10:22 gizeh kernel: [18473.828100] 1a0: 00000016 00000008 0194796d 00008103 0000002a 00004000 0194000f 00000003
+Jan 14 03:10:22 gizeh kernel: [18473.828106] 1c0: 00000016 00000008 0194796d 00008103 0000002a 00004000 0194000f 00000003
+Jan 14 03:10:22 gizeh kernel: [18473.828111] 1e0: 00000016 00000008 0194796d 00008103 0000002a 00004000 0194000f 00000003
+Jan 14 03:10:22 gizeh kernel: [18473.828117] 200: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 03:10:22 gizeh kernel: [18473.828122] 220: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 03:10:22 gizeh kernel: [18473.828127] 240: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 03:10:22 gizeh kernel: [18473.828133] 260: 00000000 00000000 fe020001 00000100 00000000 00000000 7e020001 00000100
+Jan 14 03:10:22 gizeh kernel: [18473.828138] 280: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 03:10:22 gizeh kernel: [18473.828143] 2a0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 03:10:22 gizeh kernel: [18473.828149] 2c0: 00000000 00000000 00000000 00000000 00000000 00000001 00000001 00000001
+Jan 14 03:10:22 gizeh kernel: [18473.828151] eth1: Dumping tx ring
+Jan 14 03:10:22 gizeh kernel: [18473.828155] 000: 00000000 b736d402 20000029 // 00000000 b736d602 20000029 // 00000000 b736d802 20000029 // 00000000 b736da02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828161] 004: 00000000 b736de02 20000029 // 00000000 b736dc02 20000029 // 00000000 b734a202 20000029 // 00000000 b736c202 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828166] 008: 00000000 b7210002 20000029 // 00000000 b7210402 20000029 // 00000000 b7210602 20000029 // 00000000 b7210a02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828171] 00c: 00000000 b7210c02 20000029 // 00000000 b7211002 20000029 // 00000000 b7210e02 20000029 // 00000000 b7211202 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828176] 010: 00000000 b7211402 20000029 // 00000000 b7211602 20000029 // 00000000 b7211802 20000029 // 00000000 b7211a02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828181] 014: 00000000 b7211c02 20000029 // 00000000 b7211e02 20000029 // 00000000 b72a2202 20000029 // 00000000 b7210202 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828186] 018: 00000000 b6c26002 20000029 // 00000000 b6c26402 20000029 // 00000000 b6c26802 20000029 // 00000000 b6c26a02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828191] 01c: 00000000 b6c26c02 20000029 // 00000000 b6c26e02 20000029 // 00000000 b6c27002 20000029 // 00000000 b6c27202 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828196] 020: 00000000 b6c27402 20000029 // 00000000 b6c27602 20000029 // 00000000 b6c27802 20000029 // 00000000 b6c27a02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828201] 024: 00000000 b6c27c02 20000029 // 00000000 b6c27e02 20000029 // 00000000 b7210802 20000029 // 00000000 b6c26602 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828206] 028: 00000000 b70c0002 20000029 // 00000000 b70c0602 20000029 // 00000000 b70c0802 20000029 // 00000000 b70c0a02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828211] 02c: 00000000 b70c0c02 20000029 // 00000000 b70c0e02 20000029 // 00000000 b70c1002 20000029 // 00000000 b70c1202 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828216] 030: 00000000 b70c1402 20000029 // 00000000 b70c1602 20000029 // 00000000 b70c1a02 20000029 // 00000000 b70c1c02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828221] 034: 00000000 b70c1e02 20000029 // 00000000 b736c402 20000029 // 00000000 b70c0402 20000029 // 00000000 cdb26002 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828226] 038: 00000000 cdb26602 20000029 // 00000000 cdb26802 20000029 // 00000000 cdb26a02 20000029 // 00000000 cdb26c02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828231] 03c: 00000000 cdb26e02 20000029 // 00000000 cdb27002 20000029 // 00000000 cdb27202 20000029 // 00000000 cdb27402 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828236] 040: 00000000 cdb27602 20000029 // 00000000 cdb27802 20000029 // 00000000 cdb27a02 20000029 // 00000000 cdb27c02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828240] 044: 00000000 cdb27e02 20000029 // 00000000 b6c26202 20000029 // 00000000 b70c1802 20000029 // 00000000 cdb26402 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828246] 048: 00000000 b7304002 20000029 // 00000000 b7304402 20000029 // 00000000 b7304802 20000029 // 00000000 b7304a02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828250] 04c: 00000000 b7304c02 20000029 // 00000000 b7304e02 20000029 // 00000000 b7305002 20000029 // 00000000 00000000 00000000
+Jan 14 03:10:22 gizeh kernel: [18473.828256] 050: 00000000 b72a5002 00000000 // 00000000 20000040 a0000029 // 00000000 22000040 a0000029 // 00000000 22000040 a0000029
+Jan 14 03:10:22 gizeh kernel: [18473.828261] 054: 00000000 22000040 a0000029 // 00000000 22000040 a0000029 // 00000000 22000040 a0000029 // 00000000 22000040 a0000029
+Jan 14 03:10:22 gizeh kernel: [18473.828266] 058: 00000000 22000040 a0000029 // 00000000 22000040 a0000029 // 00000000 22000040 a0000029 // 00000000 22000040 a0000029
+Jan 14 03:10:22 gizeh kernel: [18473.828271] 05c: 00000000 22000040 a0000029 // 00000000 22000040 a0000029 // 00000000 22000040 a0000029 // 00000000 22000040 a0000029
+Jan 14 03:10:22 gizeh kernel: [18473.828276] 060: 00000001 2498b202 20000029 // 00000001 2498aa02 20000029 // 00000001 2498a202 20000029 // 00000001 2498a402 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828281] 064: 00000001 2498ba02 20000029 // 00000001 2a6c4a02 20000029 // 00000001 26afe202 20000029 // 00000001 26afea02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828286] 068: 00000001 26afe402 20000029 // 00000001 26afec02 20000029 // 00000001 26affe02 20000029 // 00000001 26aff402 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828291] 06c: 00000001 26affa02 20000029 // 00000001 2a0c1c02 20000029 // 00000001 2a2b2202 20000029 // 00000001 24932202 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828296] 070: 00000001 24933e02 20000029 // 00000001 2907f402 20000029 // 00000001 26859e02 20000029 // 00000001 26858802 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828301] 074: 00000001 26859602 20000029 // 00000001 26858402 20000029 // 00000001 26859002 20000029 // 00000001 26859c02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828306] 078: 00000001 26859202 20000029 // 00000001 26858202 20000029 // 00000001 26859402 20000029 // 00000001 26859802 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828311] 07c: 00000001 26858c02 20000029 // 00000001 269b9c02 20000029 // 00000001 269b8802 20000029 // 00000001 269b9e02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828316] 080: 00000001 29bcbe02 20000029 // 00000001 29bca802 20000029 // 00000001 29826402 20000029 // 00000001 29826802 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828321] 084: 00000001 26a2f402 20000029 // 00000001 26a2e602 20000029 // 00000001 26a2e202 20000029 // 00000001 26a2e002 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828326] 088: 00000001 26a2ea02 20000029 // 00000001 26a2ec02 20000029 // 00000001 29f47202 20000029 // 00000001 29f46402 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828331] 08c: 00000001 29f47602 20000029 // 00000001 29f46002 20000029 // 00000001 29f46202 20000029 // 00000000 b72fb002 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828336] 090: 00000000 b72fb202 20000029 // 00000000 b72fb602 20000029 // 00000000 b72fba02 20000029 // 00000000 b72faa02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828341] 094: 00000000 b72fa402 20000029 // 00000000 b72fbc02 20000029 // 00000000 b72fa002 20000029 // 00000000 b72fbe02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828346] 098: 00000000 b72fae02 20000029 // 00000000 37aaf202 20000029 // 00000000 37aaf402 20000029 // 00000000 37aaf602 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828351] 09c: 00000000 37aaf802 20000029 // 00000000 37aafa02 20000029 // 00000000 37aafc02 20000029 // 00000000 37aafe02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828356] 0a0: 00000000 37aaf002 20000029 // 00000000 37aae002 20000029 // 00000000 37aae402 20000029 // 00000000 37aae602 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828361] 0a4: 00000000 37aaea02 20000029 // 00000000 37aaec02 20000029 // 00000000 37aaee02 20000029 // 00000001 26a2fe02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828366] 0a8: 00000001 24932a02 20000029 // 00000001 24933602 20000029 // 00000001 24933202 20000029 // 00000001 24933802 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828371] 0ac: 00000001 269b9802 20000029 // 00000001 269b8e02 20000029 // 00000001 269b9a02 20000029 // 00000001 2498a002 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828376] 0b0: 00000001 29bcb402 20000029 // 00000001 24932602 20000029 // 00000001 24932402 20000029 // 00000001 269b8402 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828381] 0b4: 00000000 37aae802 20000029 // 00000001 24933c02 20000029 // 00000001 269b9002 20000029 // 00000001 26afe002 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828386] 0b8: 00000000 b7256002 20000029 // 00000000 b7256402 20000029 // 00000000 b7256802 20000029 // 00000000 b7256a02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828391] 0bc: 00000000 b7256c02 20000029 // 00000000 b7256e02 20000029 // 00000000 b7257002 20000029 // 00000000 b7257202 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828396] 0c0: 00000000 b7257402 20000029 // 00000000 b7257602 20000029 // 00000000 b7257802 20000029 // 00000000 b7257a02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828401] 0c4: 00000000 b7257c02 20000029 // 00000000 b7257e02 20000029 // 00000001 24932c02 20000029 // 00000000 b7256602 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828406] 0c8: 00000000 b734a002 20000029 // 00000000 b734a602 20000029 // 00000000 b734a802 20000029 // 00000000 b734aa02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828411] 0cc: 00000000 b734ac02 20000029 // 00000000 b734ae02 20000029 // 00000000 b734b002 20000029 // 00000000 b734b202 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828416] 0d0: 00000000 b734b402 20000029 // 00000000 b734b602 20000029 // 00000000 b734b802 20000029 // 00000000 b734ba02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828421] 0d4: 00000000 b734bc02 20000029 // 00000000 b734be02 20000029 // 00000000 37aae202 20000029 // 00000000 b734a402 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828426] 0d8: 00000000 b7266602 20000029 // 00000000 b7266802 20000029 // 00000000 b7266a02 20000029 // 00000000 b7266c02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828431] 0dc: 00000000 b7266e02 20000029 // 00000000 b7267002 20000029 // 00000000 b7267202 20000029 // 00000000 b7267402 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828436] 0e0: 00000000 b7267602 20000029 // 00000000 b7267802 20000029 // 00000000 b7267a02 20000029 // 00000000 b7267c02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828441] 0e4: 00000000 b7266402 20000029 // 00000000 b7267e02 20000029 // 00000000 b7256202 20000029 // 00000000 b7266202 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828446] 0e8: 00000000 b72a2002 20000029 // 00000000 b72a2402 20000029 // 00000000 b72a2802 20000029 // 00000000 b72a2a02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828451] 0ec: 00000000 b72a2c02 20000029 // 00000000 b72a2e02 20000029 // 00000000 b72a3002 20000029 // 00000000 b72a3202 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828456] 0f0: 00000000 b72a3402 20000029 // 00000000 b72a3602 20000029 // 00000000 b72a3802 20000029 // 00000000 b72a3a02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828461] 0f4: 00000000 b72a3c02 20000029 // 00000000 b72a3e02 20000029 // 00000000 b7266002 20000029 // 00000000 b72a2602 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828466] 0f8: 00000000 b736c002 20000029 // 00000000 b736c602 20000029 // 00000000 b736c802 20000029 // 00000000 b736ca02 20000029
+Jan 14 03:10:22 gizeh kernel: [18473.828470] 0fc: 00000000 b736cc02 20000029 // 00000000 b736ce02 20000029 // 00000000 b736d002 20000029 // 00000000 b736d202 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836016] eth1: Got tx_timeout. irq: 00000036
+Jan 14 05:03:47 gizeh kernel: [25278.836019] eth1: Ring at 12a73c000
+Jan 14 05:03:47 gizeh kernel: [25278.836021] eth1: Dumping tx registers
+Jan 14 05:03:47 gizeh kernel: [25278.836026]   0: 00000036 00000000 00000003 0002000d 00000000 00000000 00000000 00000000
+Jan 14 05:03:47 gizeh kernel: [25278.836032]  20: 06255300 ff701365 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 05:03:47 gizeh kernel: [25278.836038]  40: 0420e20e 0000a855 00002e20 00000000 00000000 00000000 00000000 00000000
+Jan 14 05:03:47 gizeh kernel: [25278.836043]  60: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 05:03:47 gizeh kernel: [25278.836049]  80: 003b0f3c 00000000 00040000 007f0020 0000061c 00000001 00200000 80007fae
+Jan 14 05:03:47 gizeh kernel: [25278.836054]  a0: 0016070f 00000016 d2091100 0000b21b 00000001 00000000 2d00cccd 00004ce4
+Jan 14 05:03:47 gizeh kernel: [25278.836059]  c0: 10000001 00000001 00000001 00000001 00000001 00000001 00000001 00000001
+Jan 14 05:03:47 gizeh kernel: [25278.836065]  e0: 00000001 00000001 00000001 00000001 00000001 00000001 00000001 00000001
+Jan 14 05:03:47 gizeh kernel: [25278.836070] 100: 2a73e000 2a73c000 01ff00ff 00000000 00010064 00000000 00000026 2a73e700
+Jan 14 05:03:47 gizeh kernel: [25278.836076] 120: 2a73d4c0 00002c00 b7302a02 117bf040 8000061c 2a73e614 2a73d374 01e08000
+Jan 14 05:03:47 gizeh kernel: [25278.836081] 140: 00304120 00002600 00000001 00000001 00000000 00000000 00000000 00000000
+Jan 14 05:03:47 gizeh kernel: [25278.836087] 160: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 05:03:47 gizeh kernel: [25278.836092] 180: 00000016 00000008 0194796d 00008103 0000002a 00004000 0194000f 00000003
+Jan 14 05:03:47 gizeh kernel: [25278.836098] 1a0: 00000016 00000008 0194796d 00008103 0000002a 00004000 0194000f 00000003
+Jan 14 05:03:47 gizeh kernel: [25278.836103] 1c0: 00000016 00000008 0194796d 00008103 0000002a 00004000 0194000f 00000003
+Jan 14 05:03:47 gizeh kernel: [25278.836109] 1e0: 00000016 00000008 0194796d 00008103 0000002a 00004000 0194000f 00000003
+Jan 14 05:03:47 gizeh kernel: [25278.836114] 200: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 05:03:47 gizeh kernel: [25278.836119] 220: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 05:03:47 gizeh kernel: [25278.836125] 240: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 05:03:47 gizeh kernel: [25278.836130] 260: 00000000 00000000 fe020001 00000100 00000000 00000000 7e020001 00000100
+Jan 14 05:03:47 gizeh kernel: [25278.836136] 280: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 05:03:47 gizeh kernel: [25278.836141] 2a0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 05:03:47 gizeh kernel: [25278.836147] 2c0: 00000000 00000000 00000000 00000000 00000000 00000001 00000001 00000001
+Jan 14 05:03:47 gizeh kernel: [25278.836149] eth1: Dumping tx ring
+Jan 14 05:03:47 gizeh kernel: [25278.836153] 000: 00000000 b72a2802 20000029 // 00000000 b72a2a02 20000029 // 00000000 b72a2c02 20000029 // 00000000 b72a2e02 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836158] 004: 00000000 b72a3002 20000029 // 00000000 b72a3202 20000029 // 00000000 b72a3402 20000029 // 00000000 b72a3602 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836163] 008: 00000000 b72a3802 20000029 // 00000000 b72a3a02 20000029 // 00000000 b72a3c02 20000029 // 00000000 b72a3e02 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836168] 00c: 00000000 b72a2602 20000029 // 00000000 b736c002 20000029 // 00000000 b736c402 20000029 // 00000000 b736c802 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836173] 010: 00000000 b736ca02 20000029 // 00000000 b736cc02 20000029 // 00000000 b736ce02 20000029 // 00000000 b736d002 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836178] 014: 00000000 b736d202 20000029 // 00000000 b736d402 20000029 // 00000000 b736d602 20000029 // 00000000 b736d802 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836183] 018: 00000000 b736da02 20000029 // 00000000 b736dc02 20000029 // 00000000 b736de02 20000029 // 00000000 b72a2202 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836188] 01c: 00000000 b7256002 20000029 // 00000000 b7266202 20000029 // 00000000 b7210002 20000029 // 00000000 b7210402 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836193] 020: 00000000 b7210602 20000029 // 00000000 b7210a02 20000029 // 00000000 b7210c02 20000029 // 00000000 b7210e02 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836198] 024: 00000000 b7211002 20000029 // 00000000 b7211202 20000029 // 00000000 b7211402 20000029 // 00000000 b7211602 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836203] 028: 00000000 b7211802 20000029 // 00000000 b7211a02 20000029 // 00000000 b7211c02 20000029 // 00000000 b7211e02 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836208] 02c: 00000000 b736c602 20000029 // 00000000 b7210802 20000029 // 00000000 b6c26002 20000029 // 00000000 b6c26402 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836213] 030: 00000000 b6c26802 20000029 // 00000000 b6c26a02 20000029 // 00000000 b6c26c02 20000029 // 00000000 b6c26e02 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836218] 034: 00000000 b6c27002 20000029 // 00000000 b6c27202 20000029 // 00000000 b6c27402 20000029 // 00000000 b6c27602 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836223] 038: 00000000 b6c27802 20000029 // 00000000 b6c27a02 20000029 // 00000000 b6c27c02 20000029 // 00000000 b6c27e02 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836228] 03c: 00000000 b7210202 20000029 // 00000000 b6c26602 20000029 // 00000000 b734a002 20000029 // 00000000 b734a802 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836233] 040: 00000000 b734aa02 20000029 // 00000000 b734ac02 20000029 // 00000000 b734a602 20000029 // 00000000 b734ae02 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836238] 044: 00000000 b734b002 20000029 // 00000000 b734b202 20000029 // 00000000 b734b402 20000029 // 00000000 b734b602 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836243] 048: 00000000 b734b802 20000029 // 00000000 b734ba02 20000029 // 00000000 b734bc02 20000029 // 00000000 b734be02 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836248] 04c: 00000000 b736c202 20000029 // 00000000 b734a402 20000029 // 00000000 b70c0002 20000029 // 00000000 b70c0402 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836253] 050: 00000000 b70c0602 20000029 // 00000000 b70c0a02 20000029 // 00000000 b70c0c02 20000029 // 00000000 b70c0e02 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836258] 054: 00000000 b70c1002 20000029 // 00000000 b70c1202 20000029 // 00000000 b70c1402 20000029 // 00000000 b70c1802 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836263] 058: 00000000 b70c1a02 20000029 // 00000000 b70c1c02 20000029 // 00000000 b70c1e02 20000029 // 00000000 b6c26202 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836268] 05c: 00000000 b70c0802 20000029 // 00000000 b6c7e002 20000029 // 00000000 b6c7e402 20000029 // 00000000 00000000 00000000
+Jan 14 05:03:47 gizeh kernel: [25278.836273] 060: 00000000 22000040 a0000029 // 00000000 b7305602 a0000029 // 00000000 b7305802 a0000029 // 00000000 b7305a02 a0000029
+Jan 14 05:03:47 gizeh kernel: [25278.836278] 064: 00000000 b7305c02 a0000029 // 00000000 b7305e02 a0000029 // 00000000 b7304002 a0000029 // 00000000 b7304402 a0000029
+Jan 14 05:03:47 gizeh kernel: [25278.836283] 068: 00000000 b7304802 a0000029 // 00000000 b7304a02 a0000029 // 00000000 b7304c02 a0000029 // 00000000 b7304e02 a0000029
+Jan 14 05:03:47 gizeh kernel: [25278.836288] 06c: 00000000 b7305002 a0000029 // 00000000 b7305402 a0000029 // 00000001 24932202 a0000029 // 00000001 24932a02 a0000029
+Jan 14 05:03:47 gizeh kernel: [25278.836293] 070: 00000001 24933202 20000029 // 00000001 24933802 20000029 // 00000001 24932602 20000029 // 00000001 26afe402 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836298] 074: 00000001 26afec02 20000029 // 00000001 26affe02 20000029 // 00000001 26aff402 20000029 // 00000001 26affa02 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836303] 078: 00000001 26afe002 20000029 // 00000001 269b9c02 20000029 // 00000001 269b9e02 20000029 // 00000001 269b9802 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836308] 07c: 00000001 269b9a02 20000029 // 00000001 269b8402 20000029 // 00000001 269b9002 20000029 // 00000001 29bcbe02 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836313] 080: 00000001 29bcb402 20000029 // 00000001 2498b202 20000029 // 00000001 2498a402 20000029 // 00000001 2498ba02 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836318] 084: 00000001 2498a002 20000029 // 00000001 26a2f402 20000029 // 00000001 26a2e202 20000029 // 00000001 26a2e002 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836323] 088: 00000001 26a2ec02 20000029 // 00000001 26a2fe02 20000029 // 00000001 29f47202 20000029 // 00000001 29f46002 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836329] 08c: 00000001 29f46202 20000029 // 00000001 29826402 20000029 // 00000001 26858802 20000029 // 00000001 26859602 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836334] 090: 00000001 26858402 20000029 // 00000001 26859c02 20000029 // 00000001 26859202 20000029 // 00000001 26858202 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836339] 094: 00000001 26859402 20000029 // 00000001 26859802 20000029 // 00000001 26858c02 20000029 // 00000001 2a6c4a02 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836344] 098: 00000000 b7304602 20000029 // 00000001 24933602 20000029 // 00000001 24933c02 20000029 // 00000001 24932c02 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836349] 09c: 00000001 26afe202 20000029 // 00000001 29bca802 20000029 // 00000001 2498a202 20000029 // 00000001 26a2e602 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836354] 0a0: 00000001 29826802 20000029 // 00000001 26859002 20000029 // 00000001 2a0c1c02 20000029 // 00000001 24932402 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836359] 0a4: 00000001 26afea02 20000029 // 00000001 269b8e02 20000029 // 00000001 26a2ea02 20000029 // 00000001 29f47602 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836364] 0a8: 00000001 26859e02 20000029 // 00000001 24933e02 20000029 // 00000001 2498aa02 20000029 // 00000001 269b8802 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836369] 0ac: 00000001 29f46402 20000029 // 00000001 2a2b2202 20000029 // 00000000 37aae002 20000029 // 00000000 37aae602 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836374] 0b0: 00000000 37aae802 20000029 // 00000000 37aaea02 20000029 // 00000000 37aaec02 20000029 // 00000000 37aaee02 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836379] 0b4: 00000000 37aaf002 20000029 // 00000000 37aaf202 20000029 // 00000000 37aaf402 20000029 // 00000000 37aaf602 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836384] 0b8: 00000000 37aaf802 20000029 // 00000000 37aafa02 20000029 // 00000000 37aafc02 20000029 // 00000000 37aafe02 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836388] 0bc: 00000000 b7304202 20000029 // 00000000 37aae402 20000029 // 00000000 b72a4002 20000029 // 00000000 b72a4402 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836393] 0c0: 00000000 b72a4602 20000029 // 00000000 b72a4a02 20000029 // 00000000 b72a4c02 20000029 // 00000000 b72a4e02 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836398] 0c4: 00000000 b72a5002 20000029 // 00000000 b72a5202 20000029 // 00000000 b72a5402 20000029 // 00000000 b72a5602 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836403] 0c8: 00000000 b72a5802 20000029 // 00000000 b72a5a02 20000029 // 00000000 b72a5c02 20000029 // 00000000 b72a5e02 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836409] 0cc: 00000001 2907f402 20000029 // 00000000 b72a4802 20000029 // 00000000 b732c202 20000029 // 00000000 b732c402 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836414] 0d0: 00000000 b732c802 20000029 // 00000000 b732ca02 20000029 // 00000000 b732cc02 20000029 // 00000000 b732ce02 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836419] 0d4: 00000000 b732d202 20000029 // 00000000 b732d402 20000029 // 00000000 b732d002 20000029 // 00000000 b732d602 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836423] 0d8: 00000000 b732d802 20000029 // 00000000 b732da02 20000029 // 00000000 b732dc02 20000029 // 00000000 b732de02 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836428] 0dc: 00000000 37aae202 20000029 // 00000000 b732c002 20000029 // 00000000 b7256202 20000029 // 00000000 b7256602 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836434] 0e0: 00000000 b7256802 20000029 // 00000000 b7256a02 20000029 // 00000000 b7256e02 20000029 // 00000000 b7257002 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836439] 0e4: 00000000 b7257202 20000029 // 00000000 b7257402 20000029 // 00000000 b7257602 20000029 // 00000000 b7257802 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836444] 0e8: 00000000 b7257a02 20000029 // 00000000 b7257c02 20000029 // 00000000 b7257e02 20000029 // 00000000 b732c602 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836449] 0ec: 00000000 b7256402 20000029 // 00000000 b7266002 20000029 // 00000000 b7266602 20000029 // 00000000 b7266802 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836454] 0f0: 00000000 b7266a02 20000029 // 00000000 b7266c02 20000029 // 00000000 b7266e02 20000029 // 00000000 b7267002 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836459] 0f4: 00000000 b7267202 20000029 // 00000000 b7267402 20000029 // 00000000 b7267802 20000029 // 00000000 b7267602 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836464] 0f8: 00000000 b7267a02 20000029 // 00000000 b7267c02 20000029 // 00000000 b7267e02 20000029 // 00000000 b72a4202 20000029
+Jan 14 05:03:47 gizeh kernel: [25278.836469] 0fc: 00000000 b7266402 20000029 // 00000000 b7256c02 20000029 // 00000000 b72a2002 20000029 // 00000000 b72a2402 20000029
+Jan 14 06:25:34 gizeh rsyslogd: [origin software="rsyslogd" swVersion="4.6.4" x-pid="1750" x-info="http://www.rsyslog.com"] rsyslogd was HUPed, type 'lightweight'.
+Jan 14 07:15:47 gizeh kernel: [33198.836015] eth1: Got tx_timeout. irq: 00000036
+Jan 14 07:15:47 gizeh kernel: [33198.836019] eth1: Ring at 12a73c000
+Jan 14 07:15:47 gizeh kernel: [33198.836021] eth1: Dumping tx registers
+Jan 14 07:15:47 gizeh kernel: [33198.836026]   0: 00000036 00000000 00000003 000d000d 00000000 00000000 00000000 00000000
+Jan 14 07:15:47 gizeh kernel: [33198.836032]  20: 06255300 ff701365 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 07:15:47 gizeh kernel: [33198.836037]  40: 0420e20e 0000a855 00002e20 00000000 00000000 00000000 00000000 00000000
+Jan 14 07:15:47 gizeh kernel: [33198.836042]  60: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 07:15:47 gizeh kernel: [33198.836048]  80: 003b0f3c 00c02601 00040000 007f0020 0000061c 00000001 00200000 80007fae
+Jan 14 07:15:47 gizeh kernel: [33198.836054]  a0: 0016070f 00000016 d2091100 0000b21b 00000001 00000000 2d00cccd 00004ce4
+Jan 14 07:15:47 gizeh kernel: [33198.836059]  c0: 10000001 00000001 00000001 00000001 00000001 00000001 00000001 00000001
+Jan 14 07:15:47 gizeh kernel: [33198.836064]  e0: 00000001 00000001 00000001 00000001 00000001 00000001 00000001 00000001
+Jan 14 07:15:47 gizeh kernel: [33198.836070] 100: 2a73e000 2a73c000 01ff00ff 00002601 00010064 00000000 00000039 2a73e800
+Jan 14 07:15:47 gizeh kernel: [33198.836076] 120: 2a73d4c0 00002c40 b73029c2 117bf040 8000061c 2a73e614 2a73d374 01e08000
+Jan 14 07:15:47 gizeh kernel: [33198.836081] 140: 00304120 00002600 00000001 00000001 00000000 00000000 00000000 00000000
+Jan 14 07:15:47 gizeh kernel: [33198.836086] 160: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 07:15:47 gizeh kernel: [33198.836092] 180: 00000016 00000008 0194796d 00008103 0000002a 00004000 0194000f 00000003
+Jan 14 07:15:47 gizeh kernel: [33198.836097] 1a0: 00000016 00000008 0194796d 00008103 0000002a 00004000 0194000f 00000003
+Jan 14 07:15:47 gizeh kernel: [33198.836103] 1c0: 00000016 00000008 0194796d 00008103 0000002a 00004000 0194000f 00000003
+Jan 14 07:15:47 gizeh kernel: [33198.836108] 1e0: 00000016 00000008 0194796d 00008103 0000002a 00004000 0194000f 00000003
+Jan 14 07:15:47 gizeh kernel: [33198.836114] 200: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 07:15:47 gizeh kernel: [33198.836119] 220: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 07:15:47 gizeh kernel: [33198.836124] 240: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 07:15:47 gizeh kernel: [33198.836130] 260: 00000000 00000000 fe020001 00000100 00000000 00000000 7e020001 00000100
+Jan 14 07:15:47 gizeh kernel: [33198.836135] 280: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 07:15:47 gizeh kernel: [33198.836141] 2a0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+Jan 14 07:15:47 gizeh kernel: [33198.836146] 2c0: 00000000 00000000 00000000 00000000 00000000 00000001 00000001 00000001
+Jan 14 07:15:47 gizeh kernel: [33198.836148] eth1: Dumping tx ring
+Jan 14 07:15:47 gizeh kernel: [33198.836152] 000: 00000000 b732c602 20000029 // 00000000 b732ca02 20000029 // 00000000 b732cc02 20000029 // 00000000 b732ce02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836158] 004: 00000000 b732d002 20000029 // 00000000 b732d202 20000029 // 00000000 b732d602 20000029 // 00000000 b732d402 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836163] 008: 00000000 b732d802 20000029 // 00000000 b732da02 20000029 // 00000000 b732dc02 20000029 // 00000000 b732de02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836168] 00c: 00000000 b72a4202 20000029 // 00000000 b732c202 20000029 // 00000000 b7256002 20000029 // 00000000 b7256402 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836173] 010: 00000000 99e2b802 20000029 // 00000000 99e2b202 20000029 // 00000000 99e2ae02 20000029 // 00000000 99e2a202 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836178] 014: 00000000 99e2b402 20000029 // 00000000 99e2aa02 20000029 // 00000000 99e2bc02 20000029 // 00000000 99e2ba02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836183] 018: 00000000 99e2a802 20000029 // 00000000 99e2a602 20000029 // 00000000 b70c0602 20000029 // 00000000 b7256e02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836188] 01c: 00000000 55a2e402 20000029 // 00000000 55a2f602 20000029 // 00000000 55a2f202 20000029 // 00000000 55a2f802 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836193] 020: 00000000 55a2ec02 20000029 // 00000000 55a2e202 20000029 // 00000000 55a2ea02 20000029 // 00000000 55a2fe02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836198] 024: 00000000 55a2fc02 20000029 // 00000000 55a2fa02 20000029 // 00000000 55a2ee02 20000029 // 00000000 55a2e802 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836203] 028: 00000000 55a2e002 20000029 // 00000000 55a2e602 20000029 // 00000000 99e2be02 20000029 // 00000000 99e2a002 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836208] 02c: 00000000 99e2b002 20000029 // 00000000 b7256602 20000029 // 00000000 b7256a02 20000029 // 00000000 b7257e02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836213] 030: 00000000 b7256c02 20000029 // 00000000 b7257202 20000029 // 00000000 b7257602 20000029 // 00000000 b7257002 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836218] 034: 00000000 b7257402 20000029 // 00000000 b7257a02 20000029 // 00000000 b7257c02 20000029 // 00000000 b7257802 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836223] 038: 00000000 b732c802 20000029 // 00000000 55a2f002 20000029 // 00000000 99e2a402 20000029 // 00000000 99e2b602 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836228] 03c: 00000000 b7256802 20000029 // 00000000 55a2f402 20000029 // 00000001 1e7c4002 20000029 // 00000001 1e7c4402 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836233] 040: 00000001 1e7c4802 20000029 // 00000001 1e7c4a02 20000029 // 00000001 1e7c4c02 20000029 // 00000001 1e7c4e02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836238] 044: 00000001 1e7c5002 20000029 // 00000001 1e7c5202 20000029 // 00000001 1e7c5402 20000029 // 00000001 1e7c5602 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836243] 048: 00000001 1e7c5802 20000029 // 00000001 1e7c5a02 20000029 // 00000001 1e7c5e02 20000029 // 00000000 99e2ac02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836248] 04c: 00000001 1e7c4202 20000029 // 00000001 1e7c5c02 20000029 // 00000001 1faac002 20000029 // 00000001 1faac802 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836253] 050: 00000001 1faaca02 20000029 // 00000001 1faacc02 20000029 // 00000001 1faac602 20000029 // 00000001 1faace02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836258] 054: 00000001 1faad002 20000029 // 00000001 1faad202 20000029 // 00000001 1faad402 20000029 // 00000001 1faad602 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836263] 058: 00000001 1faad802 20000029 // 00000001 1faada02 20000029 // 00000001 1faadc02 20000029 // 00000001 1faade02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836268] 05c: 00000001 1e7c4602 20000029 // 00000001 1faac202 20000029 // 00000001 13708002 20000029 // 00000001 13708402 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836273] 060: 00000001 13708602 20000029 // 00000001 13708c02 20000029 // 00000001 13708e02 20000029 // 00000001 13709002 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836278] 064: 00000001 13709202 20000029 // 00000001 13709402 20000029 // 00000001 13709602 20000029 // 00000001 13709802 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836283] 068: 00000001 13709a02 20000029 // 00000001 13709c02 20000029 // 00000001 13709e02 20000029 // 00000000 b7256202 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836288] 06c: 00000001 13708802 20000029 // 00000001 1faac402 20000029 // 00000001 0d884002 20000029 // 00000000 00000000 00000000
+Jan 14 07:15:47 gizeh kernel: [33198.836293] 070: 00000000 b6c7e602 a0000029 // 00000000 b6c7ea02 a0000029 // 00000000 b6c7ec02 a0000029 // 00000000 b6c7ee02 a0000029
+Jan 14 07:15:47 gizeh kernel: [33198.836298] 074: 00000000 b6c7f202 a0000029 // 00000000 b6c7f402 a0000029 // 00000000 b6c7f602 a0000029 // 00000000 b6c7e202 a0000029
+Jan 14 07:15:47 gizeh kernel: [33198.836303] 078: 00000000 b6c7f802 a0000029 // 00000000 b6c7fa02 a0000029 // 00000000 b6c7fc02 a0000029 // 00000000 b6c7fe02 a0000029
+Jan 14 07:15:47 gizeh kernel: [33198.836308] 07c: 00000000 b6c7e402 a0000029 // 00000000 b6c7e002 a0000029 // 00000001 2907f402 a0000029 // 00000001 29f47202 a0000029
+Jan 14 07:15:47 gizeh kernel: [33198.836313] 080: 00000001 29f47602 20000029 // 00000001 29f46402 20000029 // 00000001 269b9c02 20000029 // 00000001 269b9a02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836318] 084: 00000001 269b8402 20000029 // 00000001 269b9002 20000029 // 00000001 269b8e02 20000029 // 00000001 269b8802 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836323] 088: 00000001 2498b202 20000029 // 00000001 2498a002 20000029 // 00000001 2498a202 20000029 // 00000001 2498aa02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836329] 08c: 00000001 24932202 20000029 // 00000001 24933202 20000029 // 00000001 24933802 20000029 // 00000001 24933602 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836334] 090: 00000001 24933c02 20000029 // 00000001 24932c02 20000029 // 00000001 24932402 20000029 // 00000001 24933e02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836339] 094: 00000001 26858802 20000029 // 00000001 26859202 20000029 // 00000001 26858202 20000029 // 00000001 26859402 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836344] 098: 00000001 26859802 20000029 // 00000001 26858c02 20000029 // 00000001 26859002 20000029 // 00000001 26859e02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836349] 09c: 00000001 26a2f402 20000029 // 00000001 26a2e002 20000029 // 00000001 26a2fe02 20000029 // 00000001 26a2e602 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836354] 0a0: 00000001 26a2ea02 20000029 // 00000001 26afe402 20000029 // 00000001 26affe02 20000029 // 00000001 26aff402 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836359] 0a4: 00000001 26afe002 20000029 // 00000001 26afe202 20000029 // 00000001 26afea02 20000029 // 00000001 2a0c1c02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836364] 0a8: 00000001 29826802 20000029 // 00000001 29bcbe02 20000029 // 00000001 2a6c4a02 20000029 // 00000000 b6c7f002 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836369] 0ac: 00000001 2a2b2202 20000029 // 00000001 269b9e02 20000029 // 00000001 2498a402 20000029 // 00000001 24932a02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836374] 0b0: 00000001 26858402 20000029 // 00000001 26859c02 20000029 // 00000001 26a2ec02 20000029 // 00000001 26affa02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836379] 0b4: 00000001 29826402 20000029 // 00000001 29bca802 20000029 // 00000001 29f46002 20000029 // 00000001 269b9802 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836384] 0b8: 00000001 26859602 20000029 // 00000001 26a2e202 20000029 // 00000001 29f46202 20000029 // 00000001 29bcb402 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836389] 0bc: 00000001 2498ba02 20000029 // 00000000 b6c7e802 20000029 // 00000000 b7304002 20000029 // 00000000 b7304602 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836394] 0c0: 00000000 b7304802 20000029 // 00000000 b7304a02 20000029 // 00000000 b7304c02 20000029 // 00000000 b7304e02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836398] 0c4: 00000000 b7305002 20000029 // 00000000 b7305202 20000029 // 00000000 b7305402 20000029 // 00000000 b7305602 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836403] 0c8: 00000000 b7305802 20000029 // 00000000 b7305a02 20000029 // 00000000 b7305c02 20000029 // 00000000 b7305e02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836408] 0cc: 00000001 24932602 20000029 // 00000000 b7304402 20000029 // 00000000 cdb26002 20000029 // 00000000 cdb26402 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836413] 0d0: 00000000 cdb26602 20000029 // 00000000 cdb26a02 20000029 // 00000000 cdb26c02 20000029 // 00000000 cdb26e02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836418] 0d4: 00000000 cdb27002 20000029 // 00000000 cdb27202 20000029 // 00000000 cdb27402 20000029 // 00000000 cdb27602 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836423] 0d8: 00000000 cdb27802 20000029 // 00000000 cdb27a02 20000029 // 00000000 cdb27c02 20000029 // 00000000 cdb27e02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836428] 0dc: 00000001 26afec02 20000029 // 00000000 cdb26802 20000029 // 00000000 b70c0002 20000029 // 00000000 b70c0402 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836433] 0e0: 00000000 b70c0802 20000029 // 00000000 b70c0a02 20000029 // 00000000 b70c0c02 20000029 // 00000000 b70c0e02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836438] 0e4: 00000000 b70c1002 20000029 // 00000000 b70c1202 20000029 // 00000000 b70c1402 20000029 // 00000000 b70c1602 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836443] 0e8: 00000000 b70c1802 20000029 // 00000000 b70c1c02 20000029 // 00000000 b70c1e02 20000029 // 00000000 cdb26202 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836448] 0ec: 00000000 b7304202 20000029 // 00000000 b72a4002 20000029 // 00000000 b72a4402 20000029 // 00000000 b72a4802 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836453] 0f0: 00000000 b72a4a02 20000029 // 00000000 b72a4c02 20000029 // 00000000 b72a4e02 20000029 // 00000000 b72a5002 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836458] 0f4: 00000000 b72a5202 20000029 // 00000000 b72a5402 20000029 // 00000000 b72a5802 20000029 // 00000000 b72a5a02 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836463] 0f8: 00000000 b72a5c02 20000029 // 00000000 b72a5e02 20000029 // 00000000 b70c0202 20000029 // 00000000 b72a5602 20000029
+Jan 14 07:15:47 gizeh kernel: [33198.836468] 0fc: 00000000 b72a4602 20000029 // 00000000 b70c1a02 20000029 // 00000000 b732c002 20000029 // 00000000 b732c402 20000029
+
+
