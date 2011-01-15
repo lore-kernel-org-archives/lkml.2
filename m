@@ -1,614 +1,462 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944Ab1AORcU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 12:32:20 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45570 "EHLO
+	id S1752688Ab1AORfH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 12:35:07 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57557 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab1AORcS (ORCPT
+	with ESMTP id S1751180Ab1AORfD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 12:32:18 -0500
+	Sat, 15 Jan 2011 12:35:03 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=a7cLHY/mwL0daD3x/rxRX8nNcwbd8+TledMUaHmmqkb9T0FyUo0cspZ0gvRwDia2uU
-         z0yau1fE/uJdpf1yQYhl+Yn3kvROEUod5LAAavfQWuYeadI+4Wo00xUMcJ3KOidjty4F
-         XfDfPhrUcVhj/d1qd5BZza46ceavDsoPqBVCY=
-Date: Sat, 15 Jan 2011 18:32:11 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Shaohua Li <shli@kernel.org>
-Cc: djwong@us.ibm.com, Jens Axboe <axboe@kernel.dk>,
-        "Theodore Ts'o" <tytso@mit.edu>, Neil Brown <neilb@suse.de>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, Jan Kara <jack@suse.cz>,
-        Mike Snitzer <snitzer@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <cmm@us.ibm.com>,
-        linux-ext4@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Josef Bacik <josef@redhat.com>
-Subject: Re: [PATCH v7.1] block: Coordinate flush requests
-Message-ID: <20110115173211.GC27123@htj.dyndns.org>
-References: <20110113025646.GB27381@tux1.beaverton.ibm.com>
- <AANLkTi=hF8hwgtx+N-dBNRjoffX7nQmaehkE3PsFpSDq@mail.gmail.com>
- <20110113074603.GC27381@tux1.beaverton.ibm.com>
- <AANLkTi=pkM1-91cKULt=5L=cPpTUcR5qqFrbj7Bjtk36@mail.gmail.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=oXBj92OWMEGUDo03E2CGKVwmmXBjZIGpIHtuQtfJVkiE/nY5UoyZ6TfB+zF0F9s/pf
+         Dc8JqoW3eexnmA1SwynV1gGzFTVdWNoAw7HJcQKs/VdrhazzLEmfHQSXhyCkmZbHcP8n
+         CB7RYs1/0QVQwQvyHKolH8C87WmN7iHLERmmc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=pkM1-91cKULt=5L=cPpTUcR5qqFrbj7Bjtk36@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1295033065-13450-3-git-send-email-mjg@redhat.com>
+References: <1295033065-13450-1-git-send-email-mjg@redhat.com>
+	<1295033065-13450-3-git-send-email-mjg@redhat.com>
+Date: Sat, 15 Jan 2011 12:34:52 -0500
+Message-ID: <AANLkTikHTnu4OD8PNH+1B8ZcQSm7W1gGq6pAeSWN===q@mail.gmail.com>
+Subject: Re: [PATCH 3/5] radeon: Expose backlight class device for legacy LVDS encoder
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: akpm@linux-foundation.org,
+        =?ISO-8859-1?Q?Michel_D=E4nzer?= <michel@daenzer.net>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-acpi@vger.kernel.org, rpurdie@rpsys.net,
+        =?ISO-8859-1?Q?Michel_D=E4nzer?= <daenzer@vmware.com>,
+        intel-gfx@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Jan 14, 2011 at 2:24 PM, Matthew Garrett <mjg@redhat.com> wrote:
+> From: Michel Dänzer <michel@daenzer.net>
+>
+> Allows e.g. power management daemons to control the backlight level. Inspired
+> by the corresponding code in radeonfb.
+>
+> (Updated to add backlight type and make the connector the parent device - mjg)
+>
+> Signed-off-by: Michel Dänzer <daenzer@vmware.com>
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
 
-On Fri, Jan 14, 2011 at 09:00:22AM +0800, Shaohua Li wrote:
-> it appears we can easily implement this in blk_do_flush, I had
-> something at my hand too, passed test but no data yet.
+Acked-by: Alex Deucher <alexdeucher@gmail.com>
 
-> Task1: ...FS.....C
-> Task2: ....F......S...C
-> Task3: ......F.........S..C
-> F means a flush is queued, S means a flush is dispatched, C means the flush
-> is completed. In above, when Task2's flush is completed, we actually can
-> make Task3 flush complete, as Task2's flush is dispatched after Task3's flush
-> is queued. With the same reason, we can't merge Task2 and Task3's flush with
-> Task1's.
-
-I think this is the correct direction but we can take it further.  The
-only thing block layer has to guarantee is (ignoring FUA support),
-
-* If the flush request is empty, at least one flush is executed upon
-  its completion.
-
-* If the flush request is not empty, the payload is written only after
-  a preceding flush and follwed by another flush if requested.
-
-So, if we can combine N flushes with or without data,
-
- PREFLUSH -> N flush data payloads -> POSTFLUSH
-
-The following is something I hacked past few hours.  I just made it
-compile so it's definitely horridly broken.  Please don't try to even
-test it, but it should still give an idea about the direction.  I'll
-try to finish this early next week.
-
-Thank you.
-
-Index: work/block/cfq-iosched.c
-===================================================================
---- work.orig/block/cfq-iosched.c
-+++ work/block/cfq-iosched.c
-@@ -54,9 +54,9 @@ static const int cfq_hist_divisor = 4;
- #define CFQQ_SEEKY(cfqq)	(hweight32(cfqq->seek_history) > 32/8)
- 
- #define RQ_CIC(rq)		\
--	((struct cfq_io_context *) (rq)->elevator_private)
--#define RQ_CFQQ(rq)		(struct cfq_queue *) ((rq)->elevator_private2)
--#define RQ_CFQG(rq)		(struct cfq_group *) ((rq)->elevator_private3)
-+	((struct cfq_io_context *) (rq)->elevator_private[0])
-+#define RQ_CFQQ(rq)		(struct cfq_queue *) ((rq)->elevator_private[1])
-+#define RQ_CFQG(rq)		(struct cfq_group *) ((rq)->elevator_private[2])
- 
- static struct kmem_cache *cfq_pool;
- static struct kmem_cache *cfq_ioc_pool;
-@@ -3609,12 +3609,12 @@ static void cfq_put_request(struct reque
- 
- 		put_io_context(RQ_CIC(rq)->ioc);
- 
--		rq->elevator_private = NULL;
--		rq->elevator_private2 = NULL;
-+		rq->elevator_private[0] = NULL;
-+		rq->elevator_private[1] = NULL;
- 
- 		/* Put down rq reference on cfqg */
- 		cfq_put_cfqg(RQ_CFQG(rq));
--		rq->elevator_private3 = NULL;
-+		rq->elevator_private[2] = NULL;
- 
- 		cfq_put_queue(cfqq);
- 	}
-@@ -3702,9 +3702,9 @@ new_queue:
- 
- 	cfqq->allocated[rw]++;
- 	cfqq->ref++;
--	rq->elevator_private = cic;
--	rq->elevator_private2 = cfqq;
--	rq->elevator_private3 = cfq_ref_get_cfqg(cfqq->cfqg);
-+	rq->elevator_private[0] = cic;
-+	rq->elevator_private[1] = cfqq;
-+	rq->elevator_private[2] = cfq_ref_get_cfqg(cfqq->cfqg);
- 
- 	spin_unlock_irqrestore(q->queue_lock, flags);
- 
-Index: work/block/elevator.c
-===================================================================
---- work.orig/block/elevator.c
-+++ work/block/elevator.c
-@@ -673,6 +673,11 @@ void elv_insert(struct request_queue *q,
- 		q->elevator->ops->elevator_add_req_fn(q, rq);
- 		break;
- 
-+	case ELEVATOR_INSERT_FLUSH:
-+		rq->cmd_flags |= REQ_SOFTBARRIER;
-+		blk_insert_flush(rq);
-+		break;
-+
- 	default:
- 		printk(KERN_ERR "%s: bad insertion point %d\n",
- 		       __func__, where);
-@@ -725,12 +730,15 @@ int elv_queue_empty(struct request_queue
- 	struct elevator_queue *e = q->elevator;
- 
- 	if (!list_empty(&q->queue_head))
--		return 0;
-+		return false;
-+
-+	if (!q->flush_seq && !list_empty(&q->pending_flushes))
-+		return false;
- 
- 	if (e->ops->elevator_queue_empty_fn)
- 		return e->ops->elevator_queue_empty_fn(q);
- 
--	return 1;
-+	return true;
- }
- EXPORT_SYMBOL(elv_queue_empty);
- 
-@@ -759,7 +767,7 @@ int elv_set_request(struct request_queue
- 	if (e->ops->elevator_set_req_fn)
- 		return e->ops->elevator_set_req_fn(q, rq, gfp_mask);
- 
--	rq->elevator_private = NULL;
-+	memset(rq->elevator_private, 0, sizeof(rq->elevator_private));
- 	return 0;
- }
- 
-@@ -781,21 +789,25 @@ int elv_may_queue(struct request_queue *
- 	return ELV_MQUEUE_MAY;
- }
- 
-+static void elv_abort_request(struct request_queue *q, struct request *rq)
-+{
-+	rq->cmd_flags |= REQ_QUIET;
-+	trace_block_rq_abort(q, rq);
-+	/*
-+	 * Mark this request as started so we don't trigger any debug logic
-+	 * in the end I/O path.
-+	 */
-+	blk_start_request(rq);
-+	__blk_end_request_all(rq, -EIO);
-+}
-+
- void elv_abort_queue(struct request_queue *q)
- {
--	struct request *rq;
-+	while (!list_empty(&q->queue_head))
-+		elv_abort_request(q, list_entry_rq(q->queue_head.next));
- 
--	while (!list_empty(&q->queue_head)) {
--		rq = list_entry_rq(q->queue_head.next);
--		rq->cmd_flags |= REQ_QUIET;
--		trace_block_rq_abort(q, rq);
--		/*
--		 * Mark this request as started so we don't trigger
--		 * any debug logic in the end I/O path.
--		 */
--		blk_start_request(rq);
--		__blk_end_request_all(rq, -EIO);
--	}
-+	while (!list_empty(&q->pending_flushes))
-+		elv_abort_request(q, list_entry_rq(q->queue_head.next));
- }
- EXPORT_SYMBOL(elv_abort_queue);
- 
-Index: work/include/linux/blkdev.h
-===================================================================
---- work.orig/include/linux/blkdev.h
-+++ work/include/linux/blkdev.h
-@@ -110,9 +110,10 @@ struct request {
- 	 * Three pointers are available for the IO schedulers, if they need
- 	 * more they have to dynamically allocate it.
- 	 */
--	void *elevator_private;
--	void *elevator_private2;
--	void *elevator_private3;
-+	union {
-+		void *elevator_private[3];
-+		struct list_head flush_list;
-+	};
- 
- 	struct gendisk *rq_disk;
- 	struct hd_struct *part;
-@@ -364,10 +365,11 @@ struct request_queue
- 	 */
- 	unsigned int		flush_flags;
- 	unsigned int		flush_seq;
-+	int			flush_data_cnt;
- 	int			flush_err;
- 	struct request		flush_rq;
--	struct request		*orig_flush_rq;
- 	struct list_head	pending_flushes;
-+	struct list_head	running_flushes;
- 
- 	struct mutex		sysfs_lock;
- 
-Index: work/block/blk-core.c
-===================================================================
---- work.orig/block/blk-core.c
-+++ work/block/blk-core.c
-@@ -151,27 +151,27 @@ static void req_bio_endio(struct request
- {
- 	struct request_queue *q = rq->q;
- 
--	if (&q->flush_rq != rq) {
--		if (error)
--			clear_bit(BIO_UPTODATE, &bio->bi_flags);
--		else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
--			error = -EIO;
--
--		if (unlikely(nbytes > bio->bi_size)) {
--			printk(KERN_ERR "%s: want %u bytes done, %u left\n",
--			       __func__, nbytes, bio->bi_size);
--			nbytes = bio->bi_size;
--		}
-+	if (error)
-+		clear_bit(BIO_UPTODATE, &bio->bi_flags);
-+	else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
-+		error = -EIO;
-+
-+	if (unlikely(nbytes > bio->bi_size)) {
-+		printk(KERN_ERR "%s: want %u bytes done, %u left\n",
-+		       __func__, nbytes, bio->bi_size);
-+		nbytes = bio->bi_size;
-+	}
- 
--		if (unlikely(rq->cmd_flags & REQ_QUIET))
--			set_bit(BIO_QUIET, &bio->bi_flags);
-+	if (unlikely(rq->cmd_flags & REQ_QUIET))
-+		set_bit(BIO_QUIET, &bio->bi_flags);
- 
--		bio->bi_size -= nbytes;
--		bio->bi_sector += (nbytes >> 9);
-+	bio->bi_size -= nbytes;
-+	bio->bi_sector += (nbytes >> 9);
- 
--		if (bio_integrity(bio))
--			bio_integrity_advance(bio, nbytes);
-+	if (bio_integrity(bio))
-+		bio_integrity_advance(bio, nbytes);
- 
-+	if (!(rq->cmd_flags & REQ_FLUSH_SEQ)) {
- 		if (bio->bi_size == 0)
- 			bio_endio(bio, error);
- 	} else {
-@@ -1219,7 +1219,7 @@ static int __make_request(struct request
- 	spin_lock_irq(q->queue_lock);
- 
- 	if (bio->bi_rw & (REQ_FLUSH | REQ_FUA)) {
--		where = ELEVATOR_INSERT_FRONT;
-+		where = ELEVATOR_INSERT_FLUSH;
- 		goto get_rq;
- 	}
- 
-Index: work/block/blk-flush.c
-===================================================================
---- work.orig/block/blk-flush.c
-+++ work/block/blk-flush.c
-@@ -16,9 +16,12 @@ enum {
- 	QUEUE_FSEQ_DATA		= (1 << 2), /* data write in progress */
- 	QUEUE_FSEQ_POSTFLUSH	= (1 << 3), /* post-flushing in progress */
- 	QUEUE_FSEQ_DONE		= (1 << 4),
-+
-+	QUEUE_FSEQ_ACTIONS	= QUEUE_FSEQ_PREFLUSH | QUEUE_FSEQ_DATA |
-+				  QUEUE_FSEQ_POSTFLUSH,
- };
- 
--static struct request *queue_next_fseq(struct request_queue *q);
-+static void queue_next_fseq(struct request_queue *q);
- 
- unsigned blk_flush_cur_seq(struct request_queue *q)
- {
-@@ -27,10 +30,10 @@ unsigned blk_flush_cur_seq(struct reques
- 	return 1 << ffz(q->flush_seq);
- }
- 
--static struct request *blk_flush_complete_seq(struct request_queue *q,
--					      unsigned seq, int error)
-+static void blk_flush_complete_seq(struct request_queue *q, unsigned seq,
-+				   int error)
- {
--	struct request *next_rq = NULL;
-+	struct request *rq, *n;
- 
- 	if (error && !q->flush_err)
- 		q->flush_err = error;
-@@ -40,35 +43,28 @@ static struct request *blk_flush_complet
- 
- 	if (blk_flush_cur_seq(q) != QUEUE_FSEQ_DONE) {
- 		/* not complete yet, queue the next flush sequence */
--		next_rq = queue_next_fseq(q);
-+		queue_next_fseq(q);
- 	} else {
--		/* complete this flush request */
--		__blk_end_request_all(q->orig_flush_rq, q->flush_err);
--		q->orig_flush_rq = NULL;
-+		/* complete all running flush requests */
-+		list_for_each_entry_safe(rq, n, &q->running_flushes, flush_list)
-+			__blk_end_request_all(rq, q->flush_err);
-+		INIT_LIST_HEAD(&q->running_flushes);
- 		q->flush_seq = 0;
--
--		/* dispatch the next flush if there's one */
--		if (!list_empty(&q->pending_flushes)) {
--			next_rq = list_entry_rq(q->pending_flushes.next);
--			list_move(&next_rq->queuelist, &q->queue_head);
--		}
- 	}
--	return next_rq;
- }
- 
- static void blk_flush_complete_seq_end_io(struct request_queue *q,
- 					  unsigned seq, int error)
- {
- 	bool was_empty = elv_queue_empty(q);
--	struct request *next_rq;
- 
--	next_rq = blk_flush_complete_seq(q, seq, error);
-+	blk_flush_complete_seq(q, seq, error);
- 
- 	/*
- 	 * Moving a request silently to empty queue_head may stall the
- 	 * queue.  Kick the queue in those cases.
- 	 */
--	if (was_empty && next_rq)
-+	if (was_empty && !elv_queue_empty(q))
- 		__blk_run_queue(q);
- }
- 
-@@ -81,7 +77,12 @@ static void pre_flush_end_io(struct requ
- static void flush_data_end_io(struct request *rq, int error)
- {
- 	elv_completed_request(rq->q, rq);
--	blk_flush_complete_seq_end_io(rq->q, QUEUE_FSEQ_DATA, error);
-+
-+	rq->cmd_flags &= ~REQ_FLUSH_SEQ;
-+	rq->end_io = NULL;
-+
-+	if (!--rq->q->flush_data_cnt)
-+		blk_flush_complete_seq_end_io(rq->q, QUEUE_FSEQ_DATA, error);
- }
- 
- static void post_flush_end_io(struct request *rq, int error)
-@@ -93,13 +94,13 @@ static void post_flush_end_io(struct req
- static void init_flush_request(struct request *rq, struct gendisk *disk)
- {
- 	rq->cmd_type = REQ_TYPE_FS;
--	rq->cmd_flags = WRITE_FLUSH;
-+	rq->cmd_flags = WRITE_FLUSH | REQ_FLUSH_SEQ;
- 	rq->rq_disk = disk;
- }
- 
--static struct request *queue_next_fseq(struct request_queue *q)
-+static void queue_next_fseq(struct request_queue *q)
- {
--	struct request *orig_rq = q->orig_flush_rq;
-+	struct request *orig_rq = list_entry_rq(q->running_flushes.next);
- 	struct request *rq = &q->flush_rq;
- 
- 	blk_rq_init(q, rq);
-@@ -110,17 +111,18 @@ static struct request *queue_next_fseq(s
- 		rq->end_io = pre_flush_end_io;
- 		break;
- 	case QUEUE_FSEQ_DATA:
--		init_request_from_bio(rq, orig_rq->bio);
--		/*
--		 * orig_rq->rq_disk may be different from
--		 * bio->bi_bdev->bd_disk if orig_rq got here through
--		 * remapping drivers.  Make sure rq->rq_disk points
--		 * to the same one as orig_rq.
--		 */
--		rq->rq_disk = orig_rq->rq_disk;
--		rq->cmd_flags &= ~(REQ_FLUSH | REQ_FUA);
--		rq->cmd_flags |= orig_rq->cmd_flags & (REQ_FLUSH | REQ_FUA);
--		rq->end_io = flush_data_end_io;
-+		list_for_each_entry_reverse(rq, &q->running_flushes,
-+					    flush_list) {
-+			WARN_ON_ONCE(rq->end_io || rq->end_io_data);
-+
-+			if (!blk_rq_sectors(rq))
-+				continue;
-+
-+			rq->cmd_flags |= REQ_FLUSH_SEQ;
-+			rq->end_io = flush_data_end_io;
-+			list_add(&rq->queuelist, &q->queue_head);
-+			q->flush_data_cnt++;
-+		}
- 		break;
- 	case QUEUE_FSEQ_POSTFLUSH:
- 		init_flush_request(rq, orig_rq->rq_disk);
-@@ -131,64 +133,80 @@ static struct request *queue_next_fseq(s
- 	}
- 
- 	elv_insert(q, rq, ELEVATOR_INSERT_FRONT);
--	return rq;
- }
- 
--struct request *blk_do_flush(struct request_queue *q, struct request *rq)
-+static unsigned int blk_flush_policy(unsigned int fflags, struct request *rq)
- {
--	unsigned int fflags = q->flush_flags; /* may change, cache it */
--	bool has_flush = fflags & REQ_FLUSH, has_fua = fflags & REQ_FUA;
--	bool do_preflush = has_flush && (rq->cmd_flags & REQ_FLUSH);
--	bool do_postflush = has_flush && !has_fua && (rq->cmd_flags & REQ_FUA);
--	unsigned skip = 0;
-+	unsigned int policy = 0;
-+
-+	if (fflags & REQ_FLUSH) {
-+		if (rq->cmd_flags & REQ_FLUSH)
-+			policy |= QUEUE_FSEQ_PREFLUSH;
-+		if (blk_rq_sectors(rq))
-+			policy |= QUEUE_FSEQ_DATA;
-+		if (!(fflags & REQ_FUA) && (rq->cmd_flags & REQ_FUA))
-+			policy |= QUEUE_FSEQ_POSTFLUSH;
-+	}
-+	return policy;
-+}
-+
-+void blk_insert_flush(struct request *rq)
-+{
-+	struct request_queue *q = rq->q;
-+	unsigned int fflags = q->flush_flags;
- 
- 	/*
--	 * Special case.  If there's data but flush is not necessary,
--	 * the request can be issued directly.
-+	 * If there's data but flush is not necessary, the request can be
-+	 * issued directly.
- 	 *
- 	 * Flush w/o data should be able to be issued directly too but
- 	 * currently some drivers assume that rq->bio contains
- 	 * non-zero data if it isn't NULL and empty FLUSH requests
- 	 * getting here usually have bio's without data.
- 	 */
--	if (blk_rq_sectors(rq) && !do_preflush && !do_postflush) {
-+	if (blk_flush_policy(fflags, rq) &
-+	    (QUEUE_FSEQ_PREFLUSH | QUEUE_FSEQ_POSTFLUSH)) {
-+		INIT_LIST_HEAD(&rq->flush_list);
-+		list_add_tail(&rq->flush_list, &q->pending_flushes);
-+	} else {
- 		rq->cmd_flags &= ~REQ_FLUSH;
--		if (!has_fua)
-+		if (!(fflags & REQ_FUA))
- 			rq->cmd_flags &= ~REQ_FUA;
--		return rq;
-+		list_add(&rq->queuelist, &q->queue_head);
- 	}
-+}
- 
--	/*
--	 * Sequenced flushes can't be processed in parallel.  If
--	 * another one is already in progress, queue for later
--	 * processing.
--	 */
--	if (q->flush_seq) {
--		list_move_tail(&rq->queuelist, &q->pending_flushes);
--		return NULL;
--	}
-+bool blk_do_flush(struct request_queue *q)
-+{
-+	unsigned int fflags = q->flush_flags; /* may change, cache it */
-+	unsigned int skip = QUEUE_FSEQ_ACTIONS;
-+	struct request *rq;
- 
--	/*
--	 * Start a new flush sequence
--	 */
-+	/* sequenced flushes can't be processed in parallel */
-+	if (q->flush_seq)
-+		return false;
-+
-+	/* start a new flush sequence */
-+	q->flush_data_cnt = 0;
- 	q->flush_err = 0;
- 	q->flush_seq |= QUEUE_FSEQ_STARTED;
- 
--	/* adjust FLUSH/FUA of the original request and stash it away */
--	rq->cmd_flags &= ~REQ_FLUSH;
--	if (!has_fua)
--		rq->cmd_flags &= ~REQ_FUA;
--	blk_dequeue_request(rq);
--	q->orig_flush_rq = rq;
--
--	/* skip unneded sequences and return the first one */
--	if (!do_preflush)
--		skip |= QUEUE_FSEQ_PREFLUSH;
--	if (!blk_rq_sectors(rq))
--		skip |= QUEUE_FSEQ_DATA;
--	if (!do_postflush)
--		skip |= QUEUE_FSEQ_POSTFLUSH;
--	return blk_flush_complete_seq(q, skip, 0);
-+	/*
-+	 * Collect what needs to be done, adjust REQ_FLUSH/FUA and stash
-+	 * away the original flush requests.
-+	 */
-+	list_splice_init(&q->pending_flushes, &q->running_flushes);
-+	list_for_each_entry(rq, &q->running_flushes, flush_list) {
-+		skip &= ~blk_flush_policy(fflags, rq);
-+
-+		rq->cmd_flags &= ~REQ_FLUSH;
-+		if (!(fflags & REQ_FUA))
-+			rq->cmd_flags &= ~REQ_FUA;
-+	}
-+
-+	/* skip unneded sequences and queue the first one */
-+	blk_flush_complete_seq(q, skip, 0);
-+	return !q->flush_seq;
- }
- 
- static void bio_end_flush(struct bio *bio, int err)
-Index: work/block/blk.h
-===================================================================
---- work.orig/block/blk.h
-+++ work/block/blk.h
-@@ -51,21 +51,20 @@ static inline void blk_clear_rq_complete
-  */
- #define ELV_ON_HASH(rq)		(!hlist_unhashed(&(rq)->hash))
- 
--struct request *blk_do_flush(struct request_queue *q, struct request *rq);
-+void blk_insert_flush(struct request *rq);
-+bool blk_do_flush(struct request_queue *q);
- 
- static inline struct request *__elv_next_request(struct request_queue *q)
- {
- 	struct request *rq;
- 
- 	while (1) {
--		while (!list_empty(&q->queue_head)) {
-+		if (!list_empty(&q->pending_flushes) && blk_do_flush(q))
-+			continue;
-+
-+		if (!list_empty(&q->queue_head)) {
- 			rq = list_entry_rq(q->queue_head.next);
--			if (!(rq->cmd_flags & (REQ_FLUSH | REQ_FUA)) ||
--			    rq == &q->flush_rq)
--				return rq;
--			rq = blk_do_flush(q, rq);
--			if (rq)
--				return rq;
-+			return rq;
- 		}
- 
- 		if (!q->elevator->ops->elevator_dispatch_fn(q, 0))
-Index: work/include/linux/elevator.h
-===================================================================
---- work.orig/include/linux/elevator.h
-+++ work/include/linux/elevator.h
-@@ -167,6 +167,7 @@ extern struct request *elv_rb_find(struc
- #define ELEVATOR_INSERT_BACK	2
- #define ELEVATOR_INSERT_SORT	3
- #define ELEVATOR_INSERT_REQUEUE	4
-+#define ELEVATOR_INSERT_FLUSH	5
- 
- /*
-  * return values from elevator_may_queue_fn
-Index: work/include/linux/blk_types.h
-===================================================================
---- work.orig/include/linux/blk_types.h
-+++ work/include/linux/blk_types.h
-@@ -148,6 +148,7 @@ enum rq_flag_bits {
- 	__REQ_ALLOCED,		/* request came from our alloc pool */
- 	__REQ_COPY_USER,	/* contains copies of user pages */
- 	__REQ_FLUSH,		/* request for cache flush */
-+	__REQ_FLUSH_SEQ,	/* request for flush sequence */
- 	__REQ_IO_STAT,		/* account I/O stat */
- 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
- 	__REQ_SECURE,		/* secure discard (used with __REQ_DISCARD) */
-@@ -188,6 +189,7 @@ enum rq_flag_bits {
- #define REQ_ALLOCED		(1 << __REQ_ALLOCED)
- #define REQ_COPY_USER		(1 << __REQ_COPY_USER)
- #define REQ_FLUSH		(1 << __REQ_FLUSH)
-+#define REQ_FLUSH_SEQ		(1 << __REQ_FLUSH_SEQ)
- #define REQ_IO_STAT		(1 << __REQ_IO_STAT)
- #define REQ_MIXED_MERGE		(1 << __REQ_MIXED_MERGE)
- #define REQ_SECURE		(1 << __REQ_SECURE)
+> Cc: dri-devel@lists.freedesktop.org
+> ---
+>  drivers/gpu/drm/radeon/Kconfig                  |    1 +
+>  drivers/gpu/drm/radeon/radeon_connectors.c      |   15 ++
+>  drivers/gpu/drm/radeon/radeon_legacy_encoders.c |  257 ++++++++++++++++++++++-
+>  drivers/gpu/drm/radeon/radeon_mode.h            |   10 +
+>  4 files changed, 277 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/radeon/Kconfig b/drivers/gpu/drm/radeon/Kconfig
+> index 1c02d23..9746fee 100644
+> --- a/drivers/gpu/drm/radeon/Kconfig
+> +++ b/drivers/gpu/drm/radeon/Kconfig
+> @@ -1,6 +1,7 @@
+>  config DRM_RADEON_KMS
+>        bool "Enable modesetting on radeon by default - NEW DRIVER"
+>        depends on DRM_RADEON
+> +       select BACKLIGHT_CLASS_DEVICE
+>        help
+>          Choose this option if you want kernel modesetting enabled by default.
+>
+> diff --git a/drivers/gpu/drm/radeon/radeon_connectors.c b/drivers/gpu/drm/radeon/radeon_connectors.c
+> index 22b7e3d..e842fb5 100644
+> --- a/drivers/gpu/drm/radeon/radeon_connectors.c
+> +++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+> @@ -40,6 +40,10 @@ radeon_atombios_connected_scratch_regs(struct drm_connector *connector,
+>                                       struct drm_encoder *encoder,
+>                                       bool connected);
+>
+> +extern void
+> +radeon_legacy_backlight_init(struct radeon_encoder *radeon_encoder,
+> +                            struct drm_connector *drm_connector);
+> +
+>  void radeon_connector_hotplug(struct drm_connector *connector)
+>  {
+>        struct drm_device *dev = connector->dev;
+> @@ -1517,6 +1521,17 @@ radeon_add_legacy_connector(struct drm_device *dev,
+>                connector->polled = DRM_CONNECTOR_POLL_HPD;
+>        connector->display_info.subpixel_order = subpixel_order;
+>        drm_sysfs_connector_add(connector);
+> +       if (connector_type == DRM_MODE_CONNECTOR_LVDS) {
+> +               struct drm_encoder *drm_encoder;
+> +
+> +               list_for_each_entry(drm_encoder, &dev->mode_config.encoder_list, head) {
+> +                       struct radeon_encoder *radeon_encoder;
+> +
+> +                       radeon_encoder = to_radeon_encoder(drm_encoder);
+> +                       if (radeon_encoder->encoder_id == ENCODER_OBJECT_ID_INTERNAL_LVDS)
+> +                               radeon_legacy_backlight_init(radeon_encoder, connector);
+> +               }
+> +       }
+>        return;
+>
+>  failed:
+> diff --git a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
+> index 59f834b..ba7dcc6 100644
+> --- a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
+> +++ b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
+> @@ -28,6 +28,10 @@
+>  #include "radeon_drm.h"
+>  #include "radeon.h"
+>  #include "atom.h"
+> +#include <linux/backlight.h>
+> +#ifdef CONFIG_PMAC_BACKLIGHT
+> +#include <asm/backlight.h>
+> +#endif
+>
+>  static void radeon_legacy_encoder_disable(struct drm_encoder *encoder)
+>  {
+> @@ -39,7 +43,7 @@ static void radeon_legacy_encoder_disable(struct drm_encoder *encoder)
+>        radeon_encoder->active_device = 0;
+>  }
+>
+> -static void radeon_legacy_lvds_dpms(struct drm_encoder *encoder, int mode)
+> +static void radeon_legacy_lvds_update(struct drm_encoder *encoder, int mode)
+>  {
+>        struct drm_device *dev = encoder->dev;
+>        struct radeon_device *rdev = dev->dev_private;
+> @@ -47,15 +51,23 @@ static void radeon_legacy_lvds_dpms(struct drm_encoder *encoder, int mode)
+>        uint32_t lvds_gen_cntl, lvds_pll_cntl, pixclks_cntl, disp_pwr_man;
+>        int panel_pwr_delay = 2000;
+>        bool is_mac = false;
+> +       uint8_t backlight_level;
+>        DRM_DEBUG_KMS("\n");
+>
+> +       lvds_gen_cntl = RREG32(RADEON_LVDS_GEN_CNTL);
+> +       backlight_level = (lvds_gen_cntl >> RADEON_LVDS_BL_MOD_LEVEL_SHIFT) & 0xff;
+> +
+>        if (radeon_encoder->enc_priv) {
+>                if (rdev->is_atom_bios) {
+>                        struct radeon_encoder_atom_dig *lvds = radeon_encoder->enc_priv;
+>                        panel_pwr_delay = lvds->panel_pwr_delay;
+> +                       if (lvds->bl_dev)
+> +                               backlight_level = lvds->backlight_level;
+>                } else {
+>                        struct radeon_encoder_lvds *lvds = radeon_encoder->enc_priv;
+>                        panel_pwr_delay = lvds->panel_pwr_delay;
+> +                       if (lvds->bl_dev)
+> +                               backlight_level = lvds->backlight_level;
+>                }
+>        }
+>
+> @@ -82,11 +94,13 @@ static void radeon_legacy_lvds_dpms(struct drm_encoder *encoder, int mode)
+>                lvds_pll_cntl &= ~RADEON_LVDS_PLL_RESET;
+>                WREG32(RADEON_LVDS_PLL_CNTL, lvds_pll_cntl);
+>
+> -               lvds_gen_cntl = RREG32(RADEON_LVDS_GEN_CNTL);
+> -               lvds_gen_cntl |= (RADEON_LVDS_ON | RADEON_LVDS_EN | RADEON_LVDS_DIGON | RADEON_LVDS_BLON);
+> +               lvds_gen_cntl &= ~(RADEON_LVDS_DISPLAY_DIS |
+> +                                  RADEON_LVDS_BL_MOD_LEVEL_MASK);
+> +               lvds_gen_cntl |= (RADEON_LVDS_ON | RADEON_LVDS_EN |
+> +                                 RADEON_LVDS_DIGON | RADEON_LVDS_BLON |
+> +                                 (backlight_level << RADEON_LVDS_BL_MOD_LEVEL_SHIFT));
+>                if (is_mac)
+>                        lvds_gen_cntl |= RADEON_LVDS_BL_MOD_EN;
+> -               lvds_gen_cntl &= ~(RADEON_LVDS_DISPLAY_DIS);
+>                udelay(panel_pwr_delay * 1000);
+>                WREG32(RADEON_LVDS_GEN_CNTL, lvds_gen_cntl);
+>                break;
+> @@ -95,7 +109,6 @@ static void radeon_legacy_lvds_dpms(struct drm_encoder *encoder, int mode)
+>        case DRM_MODE_DPMS_OFF:
+>                pixclks_cntl = RREG32_PLL(RADEON_PIXCLKS_CNTL);
+>                WREG32_PLL_P(RADEON_PIXCLKS_CNTL, 0, ~RADEON_PIXCLK_LVDS_ALWAYS_ONb);
+> -               lvds_gen_cntl = RREG32(RADEON_LVDS_GEN_CNTL);
+>                lvds_gen_cntl |= RADEON_LVDS_DISPLAY_DIS;
+>                if (is_mac) {
+>                        lvds_gen_cntl &= ~RADEON_LVDS_BL_MOD_EN;
+> @@ -119,6 +132,25 @@ static void radeon_legacy_lvds_dpms(struct drm_encoder *encoder, int mode)
+>
+>  }
+>
+> +static void radeon_legacy_lvds_dpms(struct drm_encoder *encoder, int mode)
+> +{
+> +       struct radeon_device *rdev = encoder->dev->dev_private;
+> +       struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
+> +       DRM_DEBUG("\n");
+> +
+> +       if (radeon_encoder->enc_priv) {
+> +               if (rdev->is_atom_bios) {
+> +                       struct radeon_encoder_atom_dig *lvds = radeon_encoder->enc_priv;
+> +                       lvds->dpms_mode = mode;
+> +               } else {
+> +                       struct radeon_encoder_lvds *lvds = radeon_encoder->enc_priv;
+> +                       lvds->dpms_mode = mode;
+> +               }
+> +       }
+> +
+> +       radeon_legacy_lvds_update(encoder, mode);
+> +}
+> +
+>  static void radeon_legacy_lvds_prepare(struct drm_encoder *encoder)
+>  {
+>        struct radeon_device *rdev = encoder->dev->dev_private;
+> @@ -237,9 +269,222 @@ static const struct drm_encoder_helper_funcs radeon_legacy_lvds_helper_funcs = {
+>        .disable = radeon_legacy_encoder_disable,
+>  };
+>
+> +#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
+> +
+> +#define MAX_RADEON_LEVEL 0xFF
+> +
+> +struct radeon_backlight_privdata {
+> +       struct radeon_encoder *encoder;
+> +       uint8_t negative;
+> +};
+> +
+> +static uint8_t radeon_legacy_lvds_level(struct backlight_device *bd)
+> +{
+> +       struct radeon_backlight_privdata *pdata = bl_get_data(bd);
+> +       uint8_t level;
+> +
+> +       /* Convert brightness to hardware level */
+> +       if (bd->props.brightness < 0)
+> +               level = 0;
+> +       else if (bd->props.brightness > MAX_RADEON_LEVEL)
+> +               level = MAX_RADEON_LEVEL;
+> +       else
+> +               level = bd->props.brightness;
+> +
+> +       if (pdata->negative)
+> +               level = MAX_RADEON_LEVEL - level;
+> +
+> +       return level;
+> +}
+> +
+> +static int radeon_legacy_backlight_update_status(struct backlight_device *bd)
+> +{
+> +       struct radeon_backlight_privdata *pdata = bl_get_data(bd);
+> +       struct radeon_encoder *radeon_encoder = pdata->encoder;
+> +       struct drm_device *dev = radeon_encoder->base.dev;
+> +       struct radeon_device *rdev = dev->dev_private;
+> +       int dpms_mode = DRM_MODE_DPMS_ON;
+> +
+> +       if (radeon_encoder->enc_priv) {
+> +               if (rdev->is_atom_bios) {
+> +                       struct radeon_encoder_atom_dig *lvds = radeon_encoder->enc_priv;
+> +                       dpms_mode = lvds->dpms_mode;
+> +                       lvds->backlight_level = radeon_legacy_lvds_level(bd);
+> +               } else {
+> +                       struct radeon_encoder_lvds *lvds = radeon_encoder->enc_priv;
+> +                       dpms_mode = lvds->dpms_mode;
+> +                       lvds->backlight_level = radeon_legacy_lvds_level(bd);
+> +               }
+> +       }
+> +
+> +       if (bd->props.brightness > 0)
+> +               radeon_legacy_lvds_update(&radeon_encoder->base, dpms_mode);
+> +       else
+> +               radeon_legacy_lvds_update(&radeon_encoder->base, DRM_MODE_DPMS_OFF);
+> +
+> +       return 0;
+> +}
+> +
+> +static int radeon_legacy_backlight_get_brightness(struct backlight_device *bd)
+> +{
+> +       struct radeon_backlight_privdata *pdata = bl_get_data(bd);
+> +       struct radeon_encoder *radeon_encoder = pdata->encoder;
+> +       struct drm_device *dev = radeon_encoder->base.dev;
+> +       struct radeon_device *rdev = dev->dev_private;
+> +       uint8_t backlight_level;
+> +
+> +       backlight_level = (RREG32(RADEON_LVDS_GEN_CNTL) >>
+> +                          RADEON_LVDS_BL_MOD_LEVEL_SHIFT) & 0xff;
+> +
+> +       return pdata->negative ? MAX_RADEON_LEVEL - backlight_level : backlight_level;
+> +}
+> +
+> +static const struct backlight_ops radeon_backlight_ops = {
+> +       .get_brightness = radeon_legacy_backlight_get_brightness,
+> +       .update_status  = radeon_legacy_backlight_update_status,
+> +};
+> +
+> +void radeon_legacy_backlight_init(struct radeon_encoder *radeon_encoder,
+> +                                 struct drm_connector *drm_connector)
+> +{
+> +       struct drm_device *dev = radeon_encoder->base.dev;
+> +       struct radeon_device *rdev = dev->dev_private;
+> +       struct backlight_device *bd;
+> +       struct backlight_properties props;
+> +       struct radeon_backlight_privdata *pdata;
+> +       uint8_t backlight_level;
+> +
+> +       if (!radeon_encoder->enc_priv)
+> +               return;
+> +
+> +#ifdef CONFIG_PMAC_BACKLIGHT
+> +       if (!pmac_has_backlight_type("ati") &&
+> +           !pmac_has_backlight_type("mnca"))
+> +               return;
+> +#endif
+> +
+> +       pdata = kmalloc(sizeof(struct radeon_backlight_privdata), GFP_KERNEL);
+> +       if (!pdata) {
+> +               DRM_ERROR("Memory allocation failed\n");
+> +               goto error;
+> +       }
+> +
+> +       props.max_brightness = MAX_RADEON_LEVEL;
+> +       props.type = BACKLIGHT_RAW;
+> +       bd = backlight_device_register("radeon_bl", &drm_connector->kdev,
+> +                                      pdata, &radeon_backlight_ops, &props);
+> +       if (IS_ERR(bd)) {
+> +               DRM_ERROR("Backlight registration failed\n");
+> +               goto error;
+> +       }
+> +
+> +       pdata->encoder = radeon_encoder;
+> +
+> +       backlight_level = (RREG32(RADEON_LVDS_GEN_CNTL) >>
+> +                          RADEON_LVDS_BL_MOD_LEVEL_SHIFT) & 0xff;
+> +
+> +       /* First, try to detect backlight level sense based on the assumption
+> +        * that firmware set it up at full brightness
+> +        */
+> +       if (backlight_level == 0)
+> +               pdata->negative = true;
+> +       else if (backlight_level == 0xff)
+> +               pdata->negative = false;
+> +       else {
+> +               /* XXX hack... maybe some day we can figure out in what direction
+> +                * backlight should work on a given panel?
+> +                */
+> +               pdata->negative = (rdev->family != CHIP_RV200 &&
+> +                                  rdev->family != CHIP_RV250 &&
+> +                                  rdev->family != CHIP_RV280 &&
+> +                                  rdev->family != CHIP_RV350);
+> +
+> +#ifdef CONFIG_PMAC_BACKLIGHT
+> +               pdata->negative = (pdata->negative ||
+> +                                  of_machine_is_compatible("PowerBook4,3") ||
+> +                                  of_machine_is_compatible("PowerBook6,3") ||
+> +                                  of_machine_is_compatible("PowerBook6,5"));
+> +#endif
+> +       }
+> +
+> +       if (rdev->is_atom_bios) {
+> +               struct radeon_encoder_atom_dig *lvds = radeon_encoder->enc_priv;
+> +               lvds->bl_dev = bd;
+> +       } else {
+> +               struct radeon_encoder_lvds *lvds = radeon_encoder->enc_priv;
+> +               lvds->bl_dev = bd;
+> +       }
+> +
+> +       bd->props.brightness = radeon_legacy_backlight_get_brightness(bd);
+> +       bd->props.power = FB_BLANK_UNBLANK;
+> +       backlight_update_status(bd);
+> +
+> +       DRM_INFO("radeon legacy LVDS backlight initialized\n");
+> +
+> +       return;
+> +
+> +error:
+> +       kfree(pdata);
+> +       return;
+> +}
+> +
+> +static void radeon_legacy_backlight_exit(struct radeon_encoder *radeon_encoder)
+> +{
+> +       struct drm_device *dev = radeon_encoder->base.dev;
+> +       struct radeon_device *rdev = dev->dev_private;
+> +       struct backlight_device *bd = NULL;
+> +
+> +       if (!radeon_encoder->enc_priv)
+> +               return;
+> +
+> +       if (rdev->is_atom_bios) {
+> +               struct radeon_encoder_atom_dig *lvds = radeon_encoder->enc_priv;
+> +               bd = lvds->bl_dev;
+> +               lvds->bl_dev = NULL;
+> +       } else {
+> +               struct radeon_encoder_lvds *lvds = radeon_encoder->enc_priv;
+> +               bd = lvds->bl_dev;
+> +               lvds->bl_dev = NULL;
+> +       }
+> +
+> +       if (bd) {
+> +               struct radeon_legacy_backlight_privdata *pdata;
+> +
+> +               pdata = bl_get_data(bd);
+> +               backlight_device_unregister(bd);
+> +               kfree(pdata);
+> +
+> +               DRM_INFO("radeon legacy LVDS backlight unloaded\n");
+> +       }
+> +}
+> +
+> +#else /* !CONFIG_BACKLIGHT_CLASS_DEVICE */
+> +
+> +static void radeon_legacy_backlight_init(struct radeon_encoder *encoder)
+> +{
+> +}
+> +
+> +static void radeon_legacy_backlight_exit(struct radeon_encoder *encoder)
+> +{
+> +}
+> +
+> +#endif
+> +
+> +
+> +static void radeon_lvds_enc_destroy(struct drm_encoder *encoder)
+> +{
+> +       struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
+> +
+> +       if (radeon_encoder->enc_priv) {
+> +               radeon_legacy_backlight_exit(radeon_encoder);
+> +               kfree(radeon_encoder->enc_priv);
+> +       }
+> +       drm_encoder_cleanup(encoder);
+> +       kfree(radeon_encoder);
+> +}
+>
+>  static const struct drm_encoder_funcs radeon_legacy_lvds_enc_funcs = {
+> -       .destroy = radeon_enc_destroy,
+> +       .destroy = radeon_lvds_enc_destroy,
+>  };
+>
+>  static void radeon_legacy_primary_dac_dpms(struct drm_encoder *encoder, int mode)
+> diff --git a/drivers/gpu/drm/radeon/radeon_mode.h b/drivers/gpu/drm/radeon/radeon_mode.h
+> index 12bdeab..32c6257 100644
+> --- a/drivers/gpu/drm/radeon/radeon_mode.h
+> +++ b/drivers/gpu/drm/radeon/radeon_mode.h
+> @@ -300,6 +300,11 @@ struct radeon_encoder_lvds {
+>        uint32_t lvds_gen_cntl;
+>        /* panel mode */
+>        struct drm_display_mode native_mode;
+> +#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
+> +       struct backlight_device *bl_dev;
+> +       int      dpms_mode;
+> +       uint8_t  backlight_level;
+> +#endif
+>  };
+>
+>  struct radeon_encoder_tv_dac {
+> @@ -353,6 +358,11 @@ struct radeon_encoder_atom_dig {
+>        uint32_t lcd_ss_id;
+>        /* panel mode */
+>        struct drm_display_mode native_mode;
+> +#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
+> +       struct backlight_device *bl_dev;
+> +       int dpms_mode;
+> +       uint8_t backlight_level;
+> +#endif
+>  };
+>
+>  struct radeon_encoder_atom_dac {
+> --
+> 1.7.3.4
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>
