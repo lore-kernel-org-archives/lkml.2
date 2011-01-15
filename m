@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354Ab1AOBBV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 20:01:21 -0500
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:4714 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752160Ab1AOA73 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752790Ab1AOA73 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 14 Jan 2011 19:59:29 -0500
-Subject: [PATCH net-next 2/8] vmxnet3: Preserve the MAC address configured by
-	ifconfig
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-From: Shreyas N Bhatewara <sbhatewara@vmware.com>
-Cc: pv-drivers@vmware.com
-Date: Fri, 14 Jan 2011 16:59:31 -0800
-Message-ID: <20110115005930.1064.82144.stgit@sbhatewara-dev1.eng.vmware.com>
-In-Reply-To: <20110115005701.1064.67435.stgit@sbhatewara-dev1.eng.vmware.com>
-References: <20110115005701.1064.67435.stgit@sbhatewara-dev1.eng.vmware.com>
-User-Agent: StGit/0.15
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57535 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752428Ab1AOA7W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 Jan 2011 19:59:22 -0500
+Date: Sat, 15 Jan 2011 00:58:18 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Alexey Charkov <alchark@gmail.com>
+Cc: Ryan Mallon <ryan@bluewatersys.com>, linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6 v12] ARM: Add basic architecture support for
+	VIA/WonderMedia 85xx SoC's
+Message-ID: <20110115005818.GV15996@n2100.arm.linux.org.uk>
+References: <4D1011CF.9080800@bluewatersys.com> <AANLkTi=7O-HwQRcybnLSt+r+A64g=D7rZY7NbdEMFys3@mail.gmail.com> <4D110269.9030805@bluewatersys.com> <20101222211815.GA31054@alchark-u3s> <4D12730B.2030909@bluewatersys.com> <20101222222501.GA32693@alchark-u3s> <4D1282DA.4020804@bluewatersys.com> <20101222233821.GA20893@alchark-u3s> <AANLkTik1tcL_ABdnq5r=MCxmLJtdP0nhOzA8irP1n0CC@mail.gmail.com> <AANLkTinb3A5CJ6r4Y0D0kMwJn8ZEyf_0mb4uW99mmUZ9@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinb3A5CJ6r4Y0D0kMwJn8ZEyf_0mb4uW99mmUZ9@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While activating the device get it's MAC address from netdev. This will allow
-the MAC address iconfigured using ifconfig to persist through the reset.
+On Sat, Jan 15, 2011 at 03:53:56AM +0300, Alexey Charkov wrote:
+> 2010/12/28 Alexey Charkov <alchark@gmail.com>:
+> > 2010/12/23 Alexey Charkov <alchark@gmail.com>:
+> >> This adds support for the family of Systems-on-Chip produced initially
+> >> by VIA and now its subsidiary WonderMedia that have recently become
+> >> widespread in lower-end Chinese ARM-based tablets and netbooks.
+> >>
+> >> Support is included for both VT8500 and WM8505, selectable by a
+> >> configuration switch at kernel build time.
+> >>
+> >> Included are basic machine initialization files, register and
+> >> interrupt definitions, support for the on-chip interrupt controller,
+> >> high-precision OS timer, GPIO lines, necessary macros for early debug,
+> >> pulse-width-modulated outputs control, as well as platform device
+> >> configurations for the specific drivers implemented elsewhere.
+> >>
+> >> Signed-off-by: Alexey Charkov <alchark@gmail.com>
+> >
+> > Russell, will you take this for .38? Please note that the last
+> > revision of this patch was also submitted to the ARM Linux patch
+> > tracking system:
+> >
+> > http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6597/1
+> >
+> > Best regards,
+> > Alexey
+> >
+> 
+> Russell, I realize that there are quite a lot of other things to worry
+> about currently in the ARM Linux world, but could you please still
+> consider merging this patch before .38 window closes?
 
-Signed-off-by: Shreyas N Bhatewara <sbhatewara@vmware.com>
----
- drivers/net/vmxnet3/vmxnet3_drv.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+It got lost in the patch system in the middle of the SPEAR deluge -
+and after that deluge I did say on list that it would result in things
+being missed.  I've basically been ignoring everything in there since
+beyond the top few newest entries.
 
-diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
-index 562bdbb..89bcee8 100644
---- a/drivers/net/vmxnet3/vmxnet3_drv.c
-+++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-@@ -48,6 +48,9 @@ static atomic_t devices_found;
- static int enable_mq = 1;
- static int irq_share_mode;
- 
-+static void
-+vmxnet3_write_mac_addr(struct vmxnet3_adapter *adapter, u8 *mac);
-+
- /*
-  *    Enable/Disable the given intr
-  */
-@@ -2168,6 +2171,8 @@ vmxnet3_setup_driver_shared(struct vmxnet3_adapter *adapter)
- 	/* rx filter settings */
- 	devRead->rxFilterConf.rxMode = 0;
- 	vmxnet3_restore_vlan(adapter);
-+	vmxnet3_write_mac_addr(adapter, adapter->netdev->dev_addr);
-+
- 	/* the rest are already zeroed */
- }
- 
-
+In any case, I believe it's too late in this merge window with only
+four days left to start merging large amounts of code.  I'd get
+moaned at by Linus.  Sorry.
