@@ -1,124 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019Ab1AOUta (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 15:49:30 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:38833 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752789Ab1AOUt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 15:49:29 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andres Salomon <dilinger@queued.net>
-Subject: Re: [PATCH] ACPI: don't attempt to use hest_tab unless !acpi_pci_disabled
-Date: Sat, 15 Jan 2011 21:48:43 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37+; KDE/4.4.4; x86_64; ; )
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Huang Ying <ying.huang@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-References: <20110114181620.188e7a62@queued.net> <201101152138.11183.rjw@sisk.pl> <20110115124242.4f9ae65d@queued.net>
-In-Reply-To: <20110115124242.4f9ae65d@queued.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1754043Ab1AOUwe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 15:52:34 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:52388 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753329Ab1AOUwd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jan 2011 15:52:33 -0500
+Subject: Re: [patch] [SCSI] target: checking for NULL instead of IS_ERR
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Dan Carpenter <error27@gmail.com>
+Cc: James Bottomley <James.Bottomley@suse.de>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, kernel-janitors@vger.kernel.org
+In-Reply-To: <20110115140300.GC2721@bicker>
+References: <20110115140300.GC2721@bicker>
+Content-Type: text/plain
+Date: Sat, 15 Jan 2011 12:52:24 -0800
+Message-Id: <1295124744.22813.8.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101152148.43791.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, January 15, 2011, Andres Salomon wrote:
-> On Sat, 15 Jan 2011 21:38:10 +0100
-> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+On Sat, 2011-01-15 at 17:03 +0300, Dan Carpenter wrote:
+> blkdev_get_by_path() returns an ERR_PTR() or error and it doesn't return
+> a NULL.  It looks like this bug would be easy to trigger by mistake.
 > 
-> > On Saturday, January 15, 2011, Andres Salomon wrote:
-> > > On Sat, 15 Jan 2011 14:01:18 +0100
-> > > "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> > > 
-> > > > On Saturday, January 15, 2011, Andres Salomon wrote:
-> > > > > On Fri, 14 Jan 2011 23:24:27 -0500 (EST)
-> > > > > Len Brown <lenb@kernel.org> wrote:
-> > > > > 
-> > > > > [...]
-> > > > > > > This patch causes apei_hest_parse to check both
-> > > > > > > hest_disabled and acpi_pci_disabled before continuing.
-> > > > > > > With it, the XO-1 boots properly.
-> > > > > > 
-> > > > > > The X0-1 has no ACPI support, and thus you are running
-> > > > > > with acpi_disabled=1, yes?
-> > > > > 
-> > > > > The XO-1 has no ACPI support, but ACPI support is enabled in the
-> > > > > kernel (as the XO-1.5 does have ACPI support, and the same
-> > > > > kernel is used between both) and I'm not passing any arguments
-> > > > > to the kernel regarding it. The kernel's ACPI code detects that
-> > > > > it's not there and disables it (the kernel message that's seen
-> > > > > is "ACPI: Interpreter disabled.")
-> > > > > 
-> > > > > This is what sets apci_pci_disabled to 1; I'm not doing it
-> > > > > manually.
-> > > > 
-> > > > Hmm.  Does the appended patch help instead?
-> > > 
-> > > Nope.  acpi_hest_init returns immediately if acpi_disabled, and thus
-> > > never sets hest_disable.  You either need to set hest_disable, or
-> > > ensure apei_hest_parse checks more than just hest_disable.
-> > 
-> > OK, so the new one below should help, right?
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
 > 
-> Yes, that looks better
 
-OK
+Good catch here Dan..  This was added after a linux-next build failure
+over the holidays, but I completely missed the fact that it returns
+ERR_PTR..  Thanks for spotting this one!
 
-> (though you probably just want to use 'goto err;' instead).
+The same problem exists in target_core_pscsi.c:pscsi_create_type_disk()
+as well..  Committed both fixes as 862ede4cbaf in
+lio-core-2.6.git/linus-38-rc1 against the .38 mainline target merge, and
+cherry picked into scsi-post-merge-2.6.git/for-jejb..
 
-Indeed.
+James, please make sure this fix is included in your next pull to Linus.
 
-> I can test it later today.
+--nab
 
-Cool, thanks.  Please try the version below with the 'goto'.
+> diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
+> index c6e0d75..3456135 100644
+> --- a/drivers/target/target_core_iblock.c
+> +++ b/drivers/target/target_core_iblock.c
+> @@ -154,7 +154,7 @@ static struct se_device *iblock_create_virtdevice(
+>  
+>  	bd = blkdev_get_by_path(ib_dev->ibd_udev_path,
+>  				FMODE_WRITE|FMODE_READ|FMODE_EXCL, ib_dev);
+> -	if (!(bd))
+> +	if (IS_ERR(bd))
+>  		goto failed;
+>  	/*
+>  	 * Setup the local scope queue_limits from struct request_queue->limits
 
-Rafael
-
----
- drivers/acpi/apei/hest.c |    6 +++---
- drivers/acpi/pci_root.c  |    4 ++--
- 2 files changed, 5 insertions(+), 5 deletions(-)
-
-Index: linux-2.6/drivers/acpi/pci_root.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/pci_root.c
-+++ linux-2.6/drivers/acpi/pci_root.c
-@@ -631,11 +631,11 @@ static int acpi_pci_root_remove(struct a
- 
- static int __init acpi_pci_root_init(void)
- {
-+	acpi_hest_init();
-+
- 	if (acpi_pci_disabled)
- 		return 0;
- 
--	acpi_hest_init();
--
- 	pci_acpi_crs_quirks();
- 	if (acpi_bus_register_driver(&acpi_pci_root_driver) < 0)
- 		return -ENODEV;
-Index: linux-2.6/drivers/acpi/apei/hest.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/apei/hest.c
-+++ linux-2.6/drivers/acpi/apei/hest.c
-@@ -201,14 +201,14 @@ void __init acpi_hest_init(void)
- 	int rc = -ENODEV;
- 	unsigned int ghes_count = 0;
- 
--	if (acpi_disabled)
--		return;
--
- 	if (hest_disable) {
- 		pr_info(HEST_PFX "Table parsing disabled.\n");
- 		return;
- 	}
- 
-+	if (acpi_disabled)
-+		goto err;
-+
- 	status = acpi_get_table(ACPI_SIG_HEST, 0,
- 				(struct acpi_table_header **)&hest_tab);
- 	if (status == AE_NOT_FOUND) {
