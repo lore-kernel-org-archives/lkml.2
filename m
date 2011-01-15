@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753860Ab1AOSfE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 13:35:04 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:60903 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753836Ab1AOSfB convert rfc822-to-8bit (ORCPT
+	id S1753715Ab1AOTCp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 14:02:45 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59263 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752589Ab1AOTCn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 13:35:01 -0500
+	Sat, 15 Jan 2011 14:02:43 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=cYv/I3740K2T/KuB4hU9x6UyeKO2F+sphafjacfwTJa4T9s5fVPjHrgOUqgclmu3Hu
-         2SCSVwFpWfCd914hT+PV5+ZNksl0KQlT+RYFQz/xcpkbkAMWsvDNpxmwTK+zDlbR8e7V
-         w2BwLA916ZnrFfHoJelhVbYZlx02QtUpkOuNM=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=NjpXwJl/qfj/fOnHKz2N21eZOmn3NAHMPAJCg+rlXbGAmUr+9ZxTtjI7s41GRdQRQg
+         Se+Z6mx853w6wx8P0nlFjB7ADo4TPbeLjYc5XAZWNRn3CwXEBbeG4/2ZF7TbsoJFbn4y
+         L4Qkx/+Tk475ciiHiZV9eKTQCPrBm7wWXG4Tk=
 MIME-Version: 1.0
-In-Reply-To: <6291.1295063252@jrobl>
-References: <8855.1294927436@jrobl>
-	<AANLkTik1bj=Z9xFv8JfYrxqefFL1owmH=Rctj=XnH4Mp@mail.gmail.com>
-	<20110114030325.GU19804@ZenIV.linux.org.uk>
-	<AANLkTi=H7Zhe4VMsh_tdrd7Atb9FX8j4AdiMNepXGsj9@mail.gmail.com>
-	<6291.1295063252@jrobl>
-Date: Sun, 16 Jan 2011 05:11:01 +1100
-Message-ID: <AANLkTinnCNskNku=Ps75+PWgwH2tK9GbC7RbCkiPDgD2@mail.gmail.com>
-Subject: Re: vfs-scale, d_revalidate from nfsd
-From: Nick Piggin <npiggin@gmail.com>
-To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20110115172320.GU9506@random.random>
+References: <4d308cf5394566ccc@agluck-desktop.sc.intel.com>
+	<1295076096.4875.60.camel@pasglop>
+	<20110115155925.GT9506@random.random>
+	<1295110048.5973.36.camel@mulgrave.site>
+	<20110115172320.GU9506@random.random>
+Date: Sat, 15 Jan 2011 20:02:41 +0100
+X-Google-Sender-Auth: SV5TFV9newFAjdFV_fpy_rfGHU4
+Message-ID: <AANLkTinMP2oeaWxiXXW-5psRyxeuBfkGth9cU7EgNvGO@mail.gmail.com>
+Subject: Re: ia64 broken by transparent huge pages - other arches too?
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 15, 2011 at 2:47 PM, J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
+On Sat, Jan 15, 2011 at 18:23, Andrea Arcangeli <aarcange@redhat.com> wrote:
+>> The problem is very often not in the actual code, but in the side
+>> effects the code causes. Â This is what linux-next integration helps
+>> mitigate. So, please use it next time. Â Just testing on x86 in your own
+>> configuration isn't sufficient to pick up the problems.
 >
-> Nick Piggin:
->> Of course. I was discussing it with Miklos yesterday too, but haven't
->> finished getting a proposal together.
->>
->> The main idea here would be to just pass in a flags parameter rather
->> thank poking in nd to get the rcu-walk status. That would solve this
->> problem and also avoid nd for most filesystems that don't care about
->> it.
+> I fully agree with you about build time regression, there linux-next
+> might have helped more. I'm talking about runtime regressions. If it
+> build it'll work because nothing relevant has changed for not-x86
+> archs.
 >
-> Let me make sure.
-> - add a flag parameter to ->d_revalidate. not remove the panameter nd.
-> - FS ->d_revalidate() will (probably) return -ECHILD when LOOKUP_RCU is
->  set.
-> Right?
+> By all means next times I'll try to get through linux-next too if this
+> is preferred, but the brainer part has been heavily tested and that's
+> the important thing as far as I can see.
 >
->
-> Then how about the callers?
-> Current sequence is
-> - NFSD calls lookup_one_len
-> - __lookup_hash
-> - do_revalidate
-> - d_revalidate
-> {
->        status = dentry->d_op->d_revalidate(dentry, nd);
->        if (status == -ECHILD) {
->                ;;;
->                status = dentry->d_op->d_revalidate(dentry, nd);
->        }
-> }
->
-> There will be no change in NFSD but VFS d_revalidate(), such like this?
-> VFS d_revalidate()
-> {
->        if (nd) {
->                dentry->d_op->d_revalidate(dentry, nd, nd->flags);
->                if (-ECHILD) {
->                        dentry->d_op->d_revalidate(dentry, nd, nd->flags);
->                }
->        } else
->                return dentry->d_op->d_revalidate(dentry, NULL, 0);
-> }
+> I'm also not sure if having it in linux-next instead of -mm, would
+> have been better in terms of handling of the patchstream. I think
+> having it managed in -mm reviewed by all other -mm developers using
+> raw patches floating in the linux-mm and mm-commit lists, was ideal
+> and potentially more valuable for an increased amount of review, than
+> what a blind pull from linux-next could provide. For the brainer part,
+> maximizing the reviewing was certainly more valuable than checking if
+> it builds and boots on some arch not affected in any functional way.
 
-Yes that's the idea. I also want to pass a struct inode * parameter, to
-facilitate rcu-walk implementations that want to check the inode
-(such as fuse).
+These are not mutually exclusive options: we want to (a) have everything
+reviewed and discussed _and_ (b) have everything build (and optionally run)
+tested in linux-next. If perfection was the goal, we don't settle for anything
+less.
+
+Furthermore, even stupid and trivial to fix build issues may mask other
+more severe issues, and delay the fixing of those.
+
+Gr{oetje,eeting}s,
+
+Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â Â  Â Â  -- Linus Torvalds
