@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790Ab1AOA73 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 Jan 2011 19:59:29 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57535 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752428Ab1AOA7W (ORCPT
+	id S1752413Ab1AOBFW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 Jan 2011 20:05:22 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:54760 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751794Ab1AOBFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 Jan 2011 19:59:22 -0500
-Date: Sat, 15 Jan 2011 00:58:18 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Alexey Charkov <alchark@gmail.com>
-Cc: Ryan Mallon <ryan@bluewatersys.com>, linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6 v12] ARM: Add basic architecture support for
-	VIA/WonderMedia 85xx SoC's
-Message-ID: <20110115005818.GV15996@n2100.arm.linux.org.uk>
-References: <4D1011CF.9080800@bluewatersys.com> <AANLkTi=7O-HwQRcybnLSt+r+A64g=D7rZY7NbdEMFys3@mail.gmail.com> <4D110269.9030805@bluewatersys.com> <20101222211815.GA31054@alchark-u3s> <4D12730B.2030909@bluewatersys.com> <20101222222501.GA32693@alchark-u3s> <4D1282DA.4020804@bluewatersys.com> <20101222233821.GA20893@alchark-u3s> <AANLkTik1tcL_ABdnq5r=MCxmLJtdP0nhOzA8irP1n0CC@mail.gmail.com> <AANLkTinb3A5CJ6r4Y0D0kMwJn8ZEyf_0mb4uW99mmUZ9@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinb3A5CJ6r4Y0D0kMwJn8ZEyf_0mb4uW99mmUZ9@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 14 Jan 2011 20:05:19 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=c4K3OtSgUW4A:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=FOI7FFCQKlPIwOgrCoMA:9 a=tAA0sBuQvleWViVjETIA:7 a=9Pyjwv27-xzwNKylci5qQXPV95EA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20110115010517.907508227@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Fri, 14 Jan 2011 20:04:43 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 1/2] tracing: Only process module tracepoints once
+References: <20110115010442.446174852@goodmis.org>
+Content-Disposition: inline; filename=0001-tracing-Only-process-module-tracepoints-once.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 15, 2011 at 03:53:56AM +0300, Alexey Charkov wrote:
-> 2010/12/28 Alexey Charkov <alchark@gmail.com>:
-> > 2010/12/23 Alexey Charkov <alchark@gmail.com>:
-> >> This adds support for the family of Systems-on-Chip produced initially
-> >> by VIA and now its subsidiary WonderMedia that have recently become
-> >> widespread in lower-end Chinese ARM-based tablets and netbooks.
-> >>
-> >> Support is included for both VT8500 and WM8505, selectable by a
-> >> configuration switch at kernel build time.
-> >>
-> >> Included are basic machine initialization files, register and
-> >> interrupt definitions, support for the on-chip interrupt controller,
-> >> high-precision OS timer, GPIO lines, necessary macros for early debug,
-> >> pulse-width-modulated outputs control, as well as platform device
-> >> configurations for the specific drivers implemented elsewhere.
-> >>
-> >> Signed-off-by: Alexey Charkov <alchark@gmail.com>
-> >
-> > Russell, will you take this for .38? Please note that the last
-> > revision of this patch was also submitted to the ARM Linux patch
-> > tracking system:
-> >
-> > http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6597/1
-> >
-> > Best regards,
-> > Alexey
-> >
-> 
-> Russell, I realize that there are quite a lot of other things to worry
-> about currently in the ARM Linux world, but could you please still
-> consider merging this patch before .38 window closes?
+From: Steven Rostedt <srostedt@redhat.com>
 
-It got lost in the patch system in the middle of the SPEAR deluge -
-and after that deluge I did say on list that it would result in things
-being missed.  I've basically been ignoring everything in there since
-beyond the top few newest entries.
+The commit:
 
-In any case, I believe it's too late in this merge window with only
-four days left to start merging large amounts of code.  I'd get
-moaned at by Linus.  Sorry.
+ 9f987b3141f086de27832514aad9f50a53f754
+ tracing: Include module.h in define_trace.h
+
+only solved half the problem. If the trace/events/module.h header is
+included at the time of define_trace.h (or in ftrace.h within it),
+the module.h TRACE_SYSTEM will override the current TRACE_SYSTEM
+macro.
+
+Since define_trace.h is included when CREATE_TRACE_POINTS is set,
+and the first thing it does is to #undef CREATE_TRACE_POINTS,
+by placing the module.h TRACE_SYSTEM inside a
+ #ifdef CREATE_TRACE_POINTS
+we can prevent it from overriding the TRACE_SYSTEM that is
+being processed, and still process the module.h tracepoints
+when the module code defines CREATE_TRACE_POINTS and includes
+the trace/events/module.h header.
+
+As with commit 9f987b3141, this is only an issue if module.h
+is not included before the trace/events/<event>.h file is
+included, which (luckily) has not happened yet.
+
+Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/trace/events/module.h |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
+
+diff --git a/include/trace/events/module.h b/include/trace/events/module.h
+index c7bb2f0..c6bae36 100644
+--- a/include/trace/events/module.h
++++ b/include/trace/events/module.h
+@@ -1,5 +1,15 @@
++/*
++ * Because linux/module.h has tracepoints in the header, and ftrace.h
++ * eventually includes this file, define_trace.h includes linux/module.h
++ * But we do not want the module.h to override the TRACE_SYSTEM macro
++ * variable that define_trace.h is processing, so we only set it
++ * when module events are being processed, which would happen when
++ * CREATE_TRACE_POINTS is defined.
++ */
++#ifdef CREATE_TRACE_POINTS
+ #undef TRACE_SYSTEM
+ #define TRACE_SYSTEM module
++#endif
+ 
+ #if !defined(_TRACE_MODULE_H) || defined(TRACE_HEADER_MULTI_READ)
+ #define _TRACE_MODULE_H
+-- 
+1.7.2.3
+
+
