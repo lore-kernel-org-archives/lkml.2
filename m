@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab1AOM0j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 07:26:39 -0500
-Received: from freeflow.nu ([178.79.134.28]:56738 "EHLO freeflow.nu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752884Ab1AOM0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 07:26:38 -0500
-Date: Sat, 15 Jan 2011 14:26:35 +0200 (EET)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tiger
-To: torvalds@linux-foundation.org
-cc: cl@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        kamezawa.hiroyu@jp.fujitsu.com
-Subject: [GIT PULL] SLAB changes for v2.6.38-rc1
-Message-ID: <alpine.DEB.2.00.1101151426140.4320@tiger>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753037Ab1AOMb5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 07:31:57 -0500
+Received: from unimail.uninorte.edu.co ([190.144.171.18]:53096 "EHLO
+	unimail.uninorte.edu.co" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752884Ab1AOMbz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jan 2011 07:31:55 -0500
+X-AuditID: ac140104-b7ba2ae000001ea8-b9-4d319245c84a
+Message-ID: <20110115072443.13738dzcvrs9yjuz@unimail.uninorte.edu.co>
+Date: Sat, 15 Jan 2011 07:24:43 -0500
+From: Antonino Vidal Ortega <avidal@uninorte.edu.co>
+Reply-to: johnson_williams_209@yahoo.co.jp
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.4)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Here's a fix for potential deadlock while accessing SLUB sysfs files
-reported by Bart van Assche. The fix includes an out-of-topic change
-to memory hotplug locking from Kamezawa-san.
+RE: FUND FINAL PAYMENT BOARD/PAYMENT SETTLEMENT VALUE AMOUNT: $850,000.00USD:
 
-There's also a minor SLAB cleanup from H Hartley Sweeten included.
+We apologized for the delay of your payment. From the Record of outstanding
+Debt due for payment to you:{ AWARD LOTTERY FUND CLAIMS} is US$850,000.00Usd
+(EIGHT HUNDRED AND FIFTY THOUSAND DOLLARS).
 
-                         Pekka
+THIS OFFICE: FUND PAYMENT COMMITTEE IN CONJUNCTION WITH OVERSEA CREDIT
+COMMISSION has been mandated to Make payment to all outstanding debt:
+choose any preferred method of which you will like to receive the payment with
 
-The following changes since commit 38567333a6dabd0f2b4150e9fb6dd8e3ba2985e5:
-   Linus Torvalds (1):
-         Merge git://git.kernel.org/.../jejb/scsi-post-merge-2.6
+{1} Wire Transfer to your nominated bank account of your choice within 48hours
 
-are available in the git repository at:
+{2} Certified  Bank Draft Mail to your home address.
 
-   ssh://master.kernel.org/pub/scm/linux/kernel/git/penberg/slab-2.6.git slab/urgent
+Get in touched with Mr. William Oversea Credit Commission.E-mail:
+johnson_williams_209@yahoo.co.jp
 
-Christoph Lameter (1):
-       slub: Avoid use of slub_lock in show_slab_objects()
+you are required to contact him with the following details, as
+this will enable us to process and release your cash prize in 48hours.
+NOTE THAT THESE DETAILS ARE VERY IMPORTANT FOR YOUR PAYMENT
 
-H Hartley Sweeten (1):
-       mm/slab.c: make local symbols static
+(1)Your Full Name:
+(2)Your valid Telephone and fax Numbers:
+(3)Present occupation: (4)Date of birth:
+(5)Your account info for wire transfer into your account:
+Residential Address in AUSTRALIA,If you are not presently in AUSTRALIA  
+specify your country
 
-KAMEZAWA Hiroyuki (1):
-       memory hotplug: one more lock on memory hotplug
+Mrs. Rosemary Russell.
+VICE PRESIDENT
+FINAL PAYMENT SETTLEMENT BOARD
+@2011
 
-Pekka Enberg (2):
-       Merge branch 'slub/hotplug' into slab/urgent
-       Update Pekka's email address in MAINTAINERS
 
-  MAINTAINERS                    |    4 ++--
-  include/linux/memory_hotplug.h |    6 ++++++
-  mm/memory_hotplug.c            |    4 ++++
-  mm/slab.c                      |    6 +++---
-  mm/slub.c                      |    4 ++--
-  5 files changed, 17 insertions(+), 7 deletions(-)
+
+
