@@ -1,105 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab1AONdw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 08:33:52 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54617 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752443Ab1AONdu (ORCPT
+	id S1753129Ab1AONeN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 08:34:13 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:38346 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752818Ab1AONeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 08:33:50 -0500
+	Sat, 15 Jan 2011 08:34:12 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=OqzWQgiZdsDc1RbKpwmqM1Ksaf25a8a12Up/yWHapzcdTlOdZmmpMGNYit+5ZreS4I
-         Dk2Nqyl4skymOpeHfGyrqHs8NF+JE2Jc/WkUJIg1M/vbtZJrbKOEMzMmR4Z1trURjww7
-         edXyvlgbDjoBFeBF2Zl5PysRLtEXaolkwGS9M=
-Date: Sat, 15 Jan 2011 14:33:44 +0100
-From: Tejun Heo <tj@kernel.org>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Jens Axboe <axboe@kernel.dk>, "Theodore Ts'o" <tytso@mit.edu>,
-        Neil Brown <neilb@suse.de>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        Jan Kara <jack@suse.cz>, Mike Snitzer <snitzer@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <cmm@us.ibm.com>,
-        linux-ext4@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Josef Bacik <josef@redhat.com>
-Subject: Re: [PATCH v7.1] block: Coordinate flush requests
-Message-ID: <20110115133344.GB27123@htj.dyndns.org>
-References: <20110113025646.GB27381@tux1.beaverton.ibm.com>
- <20110113104240.GA30719@htj.dyndns.org>
- <20110113185946.GD27381@tux1.beaverton.ibm.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=vFsKUh5YRaPdFh96pCvCdy8nPP0eKqU+5iAtM0EZ+S1QpqtO1Ok+4CAaVJlTZJExku
+         /FEYqHjfofrPu1WMLnQmmy7vZs0LxBEzDEFGygmS8P8VbF3p2bKLmWbcwLhDBOYyYWsk
+         zjZmePCanTu93DERBRFwkmxkRLhpeIiXmBtxI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110113185946.GD27381@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201101131423.51640.helmut.schaa@googlemail.com>
+References: <m31v4hkmkf.fsf@ingo.homenetwork>
+	<201101131423.51640.helmut.schaa@googlemail.com>
+Date: Sat, 15 Jan 2011 14:34:11 +0100
+Message-ID: <AANLkTimMVdsGONSD9OmnX2eJk51H5Pzj4K8irHa=E-qx@mail.gmail.com>
+Subject: Re: BUG in rt2x00lib_txdone() with 2.6.37-rc8
+From: Ivo Van Doorn <ivdoorn@gmail.com>
+To: Helmut Schaa <helmut.schaa@googlemail.com>
+Cc: Ingo Brunberg <ingo_brunberg@web.de>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi,
 
-On Thu, Jan 13, 2011 at 10:59:46AM -0800, Darrick J. Wong wrote:
-> > But wouldn't it be better to implement this directly in the flush
-> > machinary instead of as blkdev_issue_flush() wrapper?  We have all the
-> > information at the request queue level so we can easily detect whether
-> > flushes can be merged or not and whether something is issued by
-> > blkdev_issue_flush() or by directly submitting bio wouldn't matter at
-> > all.  Am I missing something?
-> 
-> Could you clarify where exactly you meant by "in the flush
-> machinery"?  I think what you're suggesting is that
-> blk_flush_complete_seq could scan the pending flush list to find a
-> run of consecutive pure flush requests, submit the last one, and set
-> things up so that during the completion of the flush, all the
-> requests in that run are returned with the real flush's return code.
+> Just a shot in the dark but since the stack trace shows the newly added
+> watchdog this might be the result of a race between a regular txdone work
+> (mac80211 workqueue) vs the watchdog work (global workqueue).
+>
+> I guess the following situation could happen:
+> A regular tx done work calls rt2x00lib_txdone which first sets entry->skb to
+> NULL, calls the driver specific clear_entry and afterwards increases
+> Q_INDEX_DONE. If the watchdog work calls rt2x00lib_txdone on a different CPU
+> inbetween the skb might be NULL and cause the above oops.
 
-Yeah, something along that line.
+This could be, would be interesting to know if compat-wireless also shows
+this problem. Because the queue refactoring code which should have solved
+these race conditions was added after 2.6.37.
 
-> If that's what you meant, then yes, it could be done that way.
-> However, I have a few reasons for choosing the blkdev_issue_flush
-> approach.  First, as far as I could tell in the kernel, all the code
-> paths that involve upper layers issuing pure flushes go through
-> blkdev_issue_flush, so it seems like a convenient place to capture
-> all the incoming pure flushes.
-
-That means it _can_ be done there but doesn't mean it's the best spot.
-
-> Other parts of the kernel issue writes with the flush flag set, but
-> we want those to go through the regular queuing mechanisms anyway.
-> Second, with the proposed patch, any upper-layer code that has a
-> requirement for a pure flush to be issued without coordination can
-> do so by submitting the bio directly (or blkdev_issue_flush_now can
-> be exported).
-
-I don't think anyone would need such capability but even if someone
-does that should be implemented as a separate explicit
-DONT_MERGE_THIS_FLUSH flag, not by exploting subtle inconsistencies on
-the wrapper interface.
-
-> Third, baking the coordination into the flush machinery makes that
-> machinery more complicated to understand and maintain.
-
-And the third point is completely nuts.  That's like saying putting
-things related together makes the concentrated code more complex, so
-let's scatter things all over the place.  No, it's not making the code
-more complex.  It's putting the complexity where it belongs.  It
-decreases maintenance overhead by increasing consistency.  Not only
-that it even results in visibly more consistent and sane _behavior_
-and the said complex machinary is less than 300 lines long.
-
-> So in short, I went with the blkdev_issue_flush approach because the
-> code is easier to understand, and it's not losing any pure flushes
-> despite casting a narrower net.
-
-No, not at all.  You're adding an unobvious logic into a wrapper
-interface creating incosistent behavior and creating artificial
-distinctions between pure and non-pure flushes and flushes issued by
-bio and the wrapper interface.  Come on.  Think about it again.  You
-can't be seriously standing by the above rationales.
-
-Thanks.
-
--- 
-tejun
+Ivo
