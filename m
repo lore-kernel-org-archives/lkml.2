@@ -1,95 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500Ab1AOPn3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 10:43:29 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:52679 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753383Ab1AOPlI (ORCPT
+	id S1753745Ab1AOPnk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 10:43:40 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59956 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459Ab1AOPn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 10:41:08 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 08/16] perf record: Use struct perf_mmap and helpers
-Date: Sat, 15 Jan 2011 13:40:37 -0200
-Message-Id: <1295106045-31192-9-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1295106045-31192-1-git-send-email-acme@infradead.org>
-References: <1295106045-31192-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sat, 15 Jan 2011 10:43:28 -0500
+Date: Sat, 15 Jan 2011 15:43:19 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Colin Cross <ccross@android.com>
+Subject: Re: [PATCH] ARM: vfp: Fix up exception location in Thumb mode
+Message-ID: <20110115154319.GG15996@n2100.arm.linux.org.uk>
+References: <AANLkTimqiqABxCejdeOQWZZ62DVUZW2v-yMpdu1aNDQT@mail.gmail.com> <20110114120229.GA15996@n2100.arm.linux.org.uk> <1295014231.7901.41.camel@e102109-lin.cambridge.arm.com> <20110114154919.GE15996@n2100.arm.linux.org.uk> <1295022193.7901.56.camel@e102109-lin.cambridge.arm.com> <20110114163520.GH15996@n2100.arm.linux.org.uk> <1295024327.7901.70.camel@e102109-lin.cambridge.arm.com> <20110114173050.GJ15996@n2100.arm.linux.org.uk> <20110114184759.GN15996@n2100.arm.linux.org.uk> <AANLkTi=p+f7TO+_g677VXNJkt-mu+8d8c6T9qgt5MVtn@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=p+f7TO+_g677VXNJkt-mu+8d8c6T9qgt5MVtn@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Sat, Jan 15, 2011 at 03:38:16PM +0000, Catalin Marinas wrote:
+> On 14 January 2011 18:47, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > diff -u b/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+> > --- b/arch/arm/kernel/entry-armv.S
+> > +++ b/arch/arm/kernel/entry-armv.S
+> > @@ -499,10 +499,11 @@
+> >        blo     __und_usr_unknown
+> >  3:     ldrht   r0, [r4]
+> >        add     r2, r2, #2                      @ r2 is PC + 2, make it PC + 4
+> > -       orr     r0, r0, r5, lsl #16
+> > +       str     r2, [sp, #S_PC]                 @ it's a 2x16bit instr, update
+> > +       orr     r0, r0, r5, lsl #16             @  regs->ARM_pc
+> >        @
+> >        @ r0 = the two 16-bit Thumb instructions which caused the exception
+> > -       @ r2 = PC value for the following Thumb instruction (:= regs->ARM_pc+2)
+> > +       @ r2 = PC value for the following Thumb instruction (:= regs->ARM_pc)
+> >        @ r4 = PC value for the first 16-bit Thumb instruction
+> >        @
+> >  #else
+> 
+> Do we need to modify the VFP entry code to avoit the store to ARM_pc?
 
-Paving the way to using perf_evsel->mmap, do this to reduce the patch
-noise in the next ones.
+The one after the sub #4 instruction?
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-record.c |   25 ++++---------------------
- 1 files changed, 4 insertions(+), 21 deletions(-)
+That's answered by the comments... "retry the instruction" and that
+r2 = regs->ARM_pc in every case, and both r2 and regs->ARM_pc point
+at the _following_ instruction...
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 4bba4f8..c24151f 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -78,26 +78,9 @@ static off_t			post_processing_offset;
- static struct perf_session	*session;
- static const char		*cpu_list;
- 
--struct mmap_data {
--	void			*base;
--	unsigned int		mask;
--	unsigned int		prev;
--};
--
--static struct mmap_data		mmap_array[MAX_NR_CPUS];
--
--static unsigned long mmap_read_head(struct mmap_data *md)
--{
--	struct perf_event_mmap_page *pc = md->base;
--	long head;
--
--	head = pc->data_head;
--	rmb();
--
--	return head;
--}
-+static struct perf_mmap		mmap_array[MAX_NR_CPUS];
- 
--static void mmap_write_tail(struct mmap_data *md, unsigned long tail)
-+static void mmap_write_tail(struct perf_mmap *md, unsigned long tail)
- {
- 	struct perf_event_mmap_page *pc = md->base;
- 
-@@ -136,9 +119,9 @@ static int process_synthesized_event(event_t *event,
- 	return 0;
- }
- 
--static void mmap_read(struct mmap_data *md)
-+static void mmap_read(struct perf_mmap *md)
- {
--	unsigned int head = mmap_read_head(md);
-+	unsigned int head = perf_mmap__read_head(md);
- 	unsigned int old = md->prev;
- 	unsigned char *data = md->base + page_size;
- 	unsigned long size;
--- 
-1.6.2.5
-
+I do hope this isn't a case that _more_ comments are making this more
+confusing (which seems to be the way with documentation - the more
+words you use, the more questions people have).  Maybe we should get
+rid of all the comments instead?
