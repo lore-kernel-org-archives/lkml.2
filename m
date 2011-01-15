@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753671Ab1AOPnK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 10:43:10 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:52681 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753389Ab1AOPlI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753390Ab1AOPlI (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 15 Jan 2011 10:41:08 -0500
+Received: from casper.infradead.org ([85.118.1.10]:37070 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753309Ab1AOPlD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jan 2011 10:41:03 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -15,13 +15,13 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 04/16] perf evsel: Allow specifying if the inherit bit should be set
-Date: Sat, 15 Jan 2011 13:40:33 -0200
-Message-Id: <1295106045-31192-5-git-send-email-acme@infradead.org>
+Subject: [PATCH 11/16] perf record: Use perf_evlist__mmap
+Date: Sat, 15 Jan 2011 13:40:40 -0200
+Message-Id: <1295106045-31192-12-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1295106045-31192-1-git-send-email-acme@infradead.org>
 References: <1295106045-31192-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,8 +29,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-As this is a per-cpu attribute, we can't set it up in advance and use it
-for all the calls.
+There is more stuff that can go to the perf_ev{sel,list} layer, like
+detecting if sample_id_all is available, etc, but lets try using this in
+'perf test' first.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -42,129 +43,126 @@ Cc: Tom Zanussi <tzanussi@gmail.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-stat.c |    4 ++--
- tools/perf/builtin-test.c |    4 ++--
- tools/perf/util/evsel.c   |   16 +++++++++-------
- tools/perf/util/evsel.h   |    6 +++---
- 4 files changed, 16 insertions(+), 14 deletions(-)
+ tools/perf/builtin-record.c |   59 ++++++++-----------------------------------
+ 1 files changed, 11 insertions(+), 48 deletions(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 453c4e9..d151eaa 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -169,7 +169,7 @@ static int create_perf_stat_counter(struct perf_evsel *evsel)
- 				    PERF_FORMAT_TOTAL_TIME_RUNNING;
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index f2a8f3b..5321367 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -30,6 +30,7 @@
+ #include <sys/mman.h>
  
- 	if (system_wide)
--		return perf_evsel__open_per_cpu(evsel, cpus, false);
-+		return perf_evsel__open_per_cpu(evsel, cpus, false, false);
+ #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
++#define SID(e, x, y) xyarray__entry(e->id, x, y)
  
- 	attr->inherit = !no_inherit;
- 	if (target_pid == -1 && target_tid == -1) {
-@@ -177,7 +177,7 @@ static int create_perf_stat_counter(struct perf_evsel *evsel)
- 		attr->enable_on_exec = 1;
- 	}
+ enum write_mode_t {
+ 	WRITE_FORCE,
+@@ -78,8 +79,6 @@ static off_t			post_processing_offset;
+ static struct perf_session	*session;
+ static const char		*cpu_list;
  
--	return perf_evsel__open_per_thread(evsel, threads, false);
-+	return perf_evsel__open_per_thread(evsel, threads, false, false);
- }
- 
- /*
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 1dd02c0..419ce20 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -289,7 +289,7 @@ static int test__open_syscall_event(void)
- 		goto out_thread_map_delete;
- 	}
- 
--	if (perf_evsel__open_per_thread(evsel, threads, false) < 0) {
-+	if (perf_evsel__open_per_thread(evsel, threads, false, false) < 0) {
- 		pr_debug("failed to open counter: %s, "
- 			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
- 			 strerror(errno));
-@@ -370,7 +370,7 @@ static int test__open_syscall_event_on_all_cpus(void)
- 		goto out_cpu_free;
- 	}
- 
--	if (perf_evsel__open(evsel, cpus, threads, false) < 0) {
-+	if (perf_evsel__open(evsel, cpus, threads, false, false) < 0) {
- 		pr_debug("failed to open counter: %s, "
- 			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
- 			 strerror(errno));
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index da473ec..82a0053 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -128,7 +128,7 @@ int __perf_evsel__read(struct perf_evsel *evsel,
- }
- 
- static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
--			      struct thread_map *threads, bool group)
-+			      struct thread_map *threads, bool group, bool inherit)
+-static struct perf_mmap		mmap_array[MAX_NR_CPUS];
+-
+ static void advance_output(size_t size)
  {
- 	int cpu, thread;
+ 	bytes_written += size;
+@@ -196,20 +195,14 @@ static struct perf_header_attr *get_header_attr(struct perf_event_attr *a, int n
+ 	return h_attr;
+ }
  
-@@ -139,6 +139,8 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
- 	for (cpu = 0; cpu < cpus->nr; cpu++) {
- 		int group_fd = -1;
+-static void create_counter(struct perf_evlist *evlist,
+-			   struct perf_evsel *evsel, int cpu)
++static void create_counter(struct perf_evsel *evsel, int cpu)
+ {
+ 	char *filter = evsel->filter;
+ 	struct perf_event_attr *attr = &evsel->attr;
+ 	struct perf_header_attr *h_attr;
++	struct perf_sample_id *sid;
+ 	int thread_index;
+ 	int ret;
+-	struct {
+-		u64 count;
+-		u64 time_enabled;
+-		u64 time_running;
+-		u64 id;
+-	} read_data;
  
-+		evsel->attr.inherit = (cpus->map[cpu] < 0) && inherit;
+ 	for (thread_index = 0; thread_index < threads->nr; thread_index++) {
+ 		h_attr = get_header_attr(attr, evsel->idx);
+@@ -223,45 +216,12 @@ static void create_counter(struct perf_evlist *evlist,
+ 			}
+ 		}
+ 
+-		if (read(FD(evsel, cpu, thread_index), &read_data, sizeof(read_data)) == -1) {
+-			perror("Unable to read perf file descriptor");
+-			exit(-1);
+-		}
+-
+-		if (perf_header_attr__add_id(h_attr, read_data.id) < 0) {
++		sid = SID(evsel, cpu, thread_index);
++		if (perf_header_attr__add_id(h_attr, sid->id) < 0) {
+ 			pr_warning("Not enough memory to add id\n");
+ 			exit(-1);
+ 		}
+ 
+-		assert(FD(evsel, cpu, thread_index) >= 0);
+-		fcntl(FD(evsel, cpu, thread_index), F_SETFL, O_NONBLOCK);
+-
+-		if (evsel->idx || thread_index) {
+-			struct perf_evsel *first;
+-			first = list_entry(evlist->entries.next, struct perf_evsel, node);
+-			ret = ioctl(FD(evsel, cpu, thread_index),
+-				    PERF_EVENT_IOC_SET_OUTPUT,
+-				    FD(first, cpu, 0));
+-			if (ret) {
+-				error("failed to set output: %d (%s)\n", errno,
+-						strerror(errno));
+-				exit(-1);
+-			}
+-		} else {
+-			mmap_array[cpu].prev = 0;
+-			mmap_array[cpu].mask = mmap_pages*page_size - 1;
+-			mmap_array[cpu].base = mmap(NULL, (mmap_pages+1)*page_size,
+-				PROT_READ | PROT_WRITE, MAP_SHARED, FD(evsel, cpu, thread_index), 0);
+-			if (mmap_array[cpu].base == MAP_FAILED) {
+-				error("failed to mmap with %d (%s)\n", errno, strerror(errno));
+-				exit(-1);
+-			}
+-
+-			evlist->pollfd[evlist->nr_fds].fd = FD(evsel, cpu, thread_index);
+-			evlist->pollfd[evlist->nr_fds].events = POLLIN;
+-			evlist->nr_fds++;
+-		}
+-
+ 		if (filter != NULL) {
+ 			ret = ioctl(FD(evsel, cpu, thread_index),
+ 				    PERF_EVENT_IOC_SET_FILTER, filter);
+@@ -423,9 +383,12 @@ try_again:
+ 		}
+ 	}
+ 
++	if (perf_evlist__mmap(evlist, cpus, threads, mmap_pages, false) < 0)
++		die("failed to mmap with %d (%s)\n", errno, strerror(errno));
 +
- 		for (thread = 0; thread < threads->nr; thread++) {
- 			FD(evsel, cpu, thread) = sys_perf_event_open(&evsel->attr,
- 								     threads->map[thread],
-@@ -182,7 +184,7 @@ static struct {
- };
- 
- int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
--		     struct thread_map *threads, bool group)
-+		     struct thread_map *threads, bool group, bool inherit)
- {
- 	if (cpus == NULL) {
- 		/* Work around old compiler warnings about strict aliasing */
-@@ -192,17 +194,17 @@ int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
- 	if (threads == NULL)
- 		threads = &empty_thread_map.map;
- 
--	return __perf_evsel__open(evsel, cpus, threads, group);
-+	return __perf_evsel__open(evsel, cpus, threads, group, inherit);
+ 	for (cpu = 0; cpu < cpus->nr; ++cpu) {
+ 		list_for_each_entry(pos, &evlist->entries, node)
+-			create_counter(evlist, pos, cpu);
++			create_counter(pos, cpu);
+ 	}
  }
  
- int perf_evsel__open_per_cpu(struct perf_evsel *evsel,
--			     struct cpu_map *cpus, bool group)
-+			     struct cpu_map *cpus, bool group, bool inherit)
- {
--	return __perf_evsel__open(evsel, cpus, &empty_thread_map.map, group);
-+	return __perf_evsel__open(evsel, cpus, &empty_thread_map.map, group, inherit);
- }
+@@ -502,8 +465,8 @@ static void mmap_read_all(void)
+ 	int i;
  
- int perf_evsel__open_per_thread(struct perf_evsel *evsel,
--				struct thread_map *threads, bool group)
-+				struct thread_map *threads, bool group, bool inherit)
- {
--	return __perf_evsel__open(evsel, &empty_cpu_map.map, threads, group);
-+	return __perf_evsel__open(evsel, &empty_cpu_map.map, threads, group, inherit);
- }
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 0962b50..1594696 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -46,11 +46,11 @@ void perf_evsel__free_fd(struct perf_evsel *evsel);
- void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
+ 	for (i = 0; i < cpus->nr; i++) {
+-		if (mmap_array[i].base)
+-			mmap_read(&mmap_array[i]);
++		if (evsel_list->mmap[i].base)
++			mmap_read(&evsel_list->mmap[i]);
+ 	}
  
- int perf_evsel__open_per_cpu(struct perf_evsel *evsel,
--			     struct cpu_map *cpus, bool group);
-+			     struct cpu_map *cpus, bool group, bool inherit);
- int perf_evsel__open_per_thread(struct perf_evsel *evsel,
--				struct thread_map *threads, bool group);
-+				struct thread_map *threads, bool group, bool inherit);
- int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
--		     struct thread_map *threads, bool group);
-+		     struct thread_map *threads, bool group, bool inherit);
- 
- #define perf_evsel__match(evsel, t, c)		\
- 	(evsel->attr.type == PERF_TYPE_##t &&	\
+ 	if (perf_header__has_feat(&session->header, HEADER_TRACE_INFO))
 -- 
 1.6.2.5
 
