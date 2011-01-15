@@ -1,73 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818Ab1AOOyt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 09:54:49 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43329 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752358Ab1AOOys (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 09:54:48 -0500
-Date: Sat, 15 Jan 2011 14:53:58 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Christer Weinigel <christer@weinigel.se>
-Cc: Saravana Kannan <skannan@codeaurora.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Locking in the clk API
-Message-ID: <20110115145358.GC15996@n2100.arm.linux.org.uk>
-References: <201101111016.42819.jeremy.kerr@canonical.com> <20110111091607.GI12552@n2100.arm.linux.org.uk> <4D2D184A.8020405@codeaurora.org> <20110112090301.GS11039@n2100.arm.linux.org.uk> <4D31A8F1.4080301@weinigel.se>
+	id S1752949Ab1AOOzW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 09:55:22 -0500
+Received: from hera.kernel.org ([140.211.167.34]:44679 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752358Ab1AOOzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jan 2011 09:55:19 -0500
+Date: Sat, 15 Jan 2011 14:55:03 GMT
+From: tip-bot for Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
+        laijs@cn.fujitsu.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
+        laijs@cn.fujitsu.com
+In-Reply-To: <4D301C0E.8090408@cn.fujitsu.com>
+References: <4D301C0E.8090408@cn.fujitsu.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] tracing: Remove syscall_exit_fields
+Message-ID: <tip-7f85803a26f304e698c673838aab06cc6d4d6e59@git.kernel.org>
+Git-Commit-ID: 7f85803a26f304e698c673838aab06cc6d4d6e59
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <4D31A8F1.4080301@weinigel.se>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 15 Jan 2011 14:55:04 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 15, 2011 at 03:02:25PM +0100, Christer Weinigel wrote:
-> This feels a bit like perfect being the enemy of good.
->
-> On platforms that need to sleep to enable the UART clock, configuring  
-> the UART as the kernel console should be equivalent to userspace opening  
-> the UART device, i.e. enable the clock.  At least to me that feels like  
-> an acceptable tradeoff, and if I wanted to save the last bit of power  
-> I'll have to refrain from using UART as the kernel console.
->
-> If both printk to the console and disabling the clock is really really  
-> neccesary, add a clk_enable_busywait, but that will be a bit of a hack.
+Commit-ID:  7f85803a26f304e698c673838aab06cc6d4d6e59
+Gitweb:     http://git.kernel.org/tip/7f85803a26f304e698c673838aab06cc6d4d6e59
+Author:     Lai Jiangshan <laijs@cn.fujitsu.com>
+AuthorDate: Fri, 14 Jan 2011 17:49:02 +0800
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Fri, 14 Jan 2011 18:06:35 -0500
 
-Well, we're not discussing a _new_ API here - we're discussing an API
-with existing users which works completely fine on the devices its
-used, with differing expectations between implementations.
+tracing: Remove syscall_exit_fields
 
-> Both of these feel like they should use a call such as clk_get_atomic  
-> and be able to handle EWOULDBLOCK/EAGAIN (or whatever error code is used  
-> to indicate that it would have to sleep) and delegate to a worker thread  
-> to enable the clock.  To catch uses of plain clk_enable from atomic  
-> contects, add a WARN_ON/BUG_ON(in_atomic()).  It won't catch everything,  
-> but would help a bit at least.
+There is no need for syscall_exit_fields as the syscall
+exit event class can already host the fields in its structure,
+like most other trace events do by default. Use that
+default behavior instead.
 
-We've never allowed clk_get() to be called in interruptible context,
-so that's not the issue.  The issue is purely about clk_enable() and
-clk_disable() and whether they should be able to be called in atomic
-context or not.
+Following this scheme, we don't need anymore to override the
+get_fields() callback of the syscall exit event class either.
 
-We've been around returning EAGAIN, WARN_ONs, BUG_ONs, having clk_enable()
-vs clk_enable_atomic(), clk_enable_cansleep() vs clk_enable(), etc.
+Hence both syscall_exit_fields and syscall_get_exit_fields() can
+be removed.
 
-There's been a lot of talk on this issue for ages with no real progress
-that I'm just going to repeat: let's unify those implementations which
-use a spinlock for their clks into one consolidated solution, and
-a separate consolidated solution for those which use a mutex.
+Also changed some indentation to keep the following under 80
+characters:
 
-This will at least allow us to have _some_ consolidation of the existing
-implementations - and it doesn't add anything to the problem at hand.
-It might actually help identify what can be done at code level to resolve
-this issue.
+".fields		= LIST_HEAD_INIT(event_class_syscall_exit.fields),"
+
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+LKML-Reference: <4D301C0E.8090408@cn.fujitsu.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_syscalls.c |   33 ++++++++++++---------------------
+ 1 files changed, 12 insertions(+), 21 deletions(-)
+
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index bac752f..b706529 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -23,9 +23,6 @@ static int syscall_exit_register(struct ftrace_event_call *event,
+ static int syscall_enter_define_fields(struct ftrace_event_call *call);
+ static int syscall_exit_define_fields(struct ftrace_event_call *call);
+ 
+-/* All syscall exit events have the same fields */
+-static LIST_HEAD(syscall_exit_fields);
+-
+ static struct list_head *
+ syscall_get_enter_fields(struct ftrace_event_call *call)
+ {
+@@ -34,34 +31,28 @@ syscall_get_enter_fields(struct ftrace_event_call *call)
+ 	return &entry->enter_fields;
+ }
+ 
+-static struct list_head *
+-syscall_get_exit_fields(struct ftrace_event_call *call)
+-{
+-	return &syscall_exit_fields;
+-}
+-
+ struct trace_event_functions enter_syscall_print_funcs = {
+-	.trace                  = print_syscall_enter,
++	.trace		= print_syscall_enter,
+ };
+ 
+ struct trace_event_functions exit_syscall_print_funcs = {
+-	.trace                  = print_syscall_exit,
++	.trace		= print_syscall_exit,
+ };
+ 
+ struct ftrace_event_class event_class_syscall_enter = {
+-	.system			= "syscalls",
+-	.reg			= syscall_enter_register,
+-	.define_fields		= syscall_enter_define_fields,
+-	.get_fields		= syscall_get_enter_fields,
+-	.raw_init		= init_syscall_trace,
++	.system		= "syscalls",
++	.reg		= syscall_enter_register,
++	.define_fields	= syscall_enter_define_fields,
++	.get_fields	= syscall_get_enter_fields,
++	.raw_init	= init_syscall_trace,
+ };
+ 
+ struct ftrace_event_class event_class_syscall_exit = {
+-	.system			= "syscalls",
+-	.reg			= syscall_exit_register,
+-	.define_fields		= syscall_exit_define_fields,
+-	.get_fields		= syscall_get_exit_fields,
+-	.raw_init		= init_syscall_trace,
++	.system		= "syscalls",
++	.reg		= syscall_exit_register,
++	.define_fields	= syscall_exit_define_fields,
++	.fields		= LIST_HEAD_INIT(event_class_syscall_exit.fields),
++	.raw_init	= init_syscall_trace,
+ };
+ 
+ extern unsigned long __start_syscalls_metadata[];
