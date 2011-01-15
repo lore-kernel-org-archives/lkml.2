@@ -1,140 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751701Ab1AOHyt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 02:54:49 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:59248 "EHLO lunge.queued.net"
+	id S1751471Ab1AOHyf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 02:54:35 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:45411 "EHLO smtp5-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751519Ab1AOHyq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 02:54:46 -0500
-Date: Fri, 14 Jan 2011 23:54:37 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Huang Ying <ying.huang@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] ACPI: don't attempt to use hest_tab unless
- !acpi_pci_disabled
-Message-ID: <20110114235437.669f820d@queued.net>
-In-Reply-To: <alpine.LFD.2.02.1101142310240.2551@x980>
-References: <20110114181620.188e7a62@queued.net>
-	<alpine.LFD.2.02.1101142310240.2551@x980>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1751180Ab1AOHye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jan 2011 02:54:34 -0500
+Message-ID: <4D3152AE.9060509@free.fr>
+Date: Sat, 15 Jan 2011 08:54:22 +0100
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: =?UTF-8?B?QnJ1bm8gUHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+CC: Linux Containers <containers@lists.linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFD] reboot / shutdown of a container
+References: <4D2F299B.4000509@free.fr>	<20110113210918.48f3e85e@neptune.home>	<4D2F6F63.8090904@free.fr>	<20110113225059.6f46cd44@neptune.home>	<4D2F780B.6090800@free.fr> <20110115001109.1bb6b786@neptune.home>
+In-Reply-To: <20110115001109.1bb6b786@neptune.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Jan 2011 23:24:27 -0500 (EST)
-Len Brown <lenb@kernel.org> wrote:
+On 01/15/2011 12:11 AM, Bruno Prémont wrote:
+> On Thu, 13 January 2011 Daniel Lezcano<daniel.lezcano@free.fr>  wrote:
+>> On 01/13/2011 10:50 PM, Bruno Prémont wrote:
+>>> On Thu, 13 January 2011 Daniel Lezcano<daniel.lezcano@free.fr>   wrote:
+>>>> On 01/13/2011 09:09 PM, Bruno Prémont wrote:
+>>>>> On Thu, 13 January 2011 Daniel Lezcano<daniel.lezcano@free.fr>    wrote:
+>>>>>> in the container implementation, we are facing the problem of a process
+>>>>>> calling the sys_reboot syscall which of course makes the host to
+>>>>>> poweroff/reboot.
+>>>>>>
+>>>>>> If we drop the cap_sys_reboot capability, sys_reboot fails and the
+>>>>>> container reach a shutdown state but the init process stay there, hence
+>>>>>> the container becomes stuck waiting indefinitely the process '1' to exit.
+>>>>>>
+>>>>>> The current implementation to make the shutdown / reboot of the
+>>>>>> container to work is we watch, from a process outside of the container,
+>>>>>> the<rootfs>/var/run/utmp file and check the runlevel each time the file
+>>>>>> changes. When the 'reboot' or 'shutdown' level is detected, we wait for
+>>>>>> a single remaining in the container and then we kill it.
+>>>>>>
+>>>>>> That works but this is not efficient in case of a large number of
+>>>>>> containers as we will have to watch a lot of utmp files. In addition,
+>>>>>> the /var/run directory must *not* mounted as tmpfs in the distro.
+>>>>>> Unfortunately, it is the default setup on most of the distros and tends
+>>>>>> to generalize. That implies, the rootfs init's scripts must be modified
+>>>>>> for the container when we put in place its rootfs and as /var/run is
+>>>>>> supposed to be a tmpfs, most of the applications do not cleanup the
+>>>>>> directory, so we need to add extra services to wipeout the files.
+>>>>>>
+>>>>>> More problems arise when we do an upgrade of the distro inside the
+>>>>>> container, because all the setup we made at creation time will be lost.
+>>>>>> The upgrade overwrite the scripts, the fstab and so on.
+>>>>>>
+>>>>>> We did what was possible to solve the problem from userspace but we
+>>>>>> reach always a limit because there are different implementations of the
+>>>>>> 'init' process and the init's scripts differ from a distro to another
+>>>>>> and the same with the versions.
+>>>>>>
+>>>>>> We think this problem can only be solved from the kernel.
+>>>>>>
+>>>>>> The idea was to send a signal SIGPWR to the parent of the pid '1' of the
+>>>>>> pid namespace when the sys_reboot is called. Of course that won't occur
+>>>>>> for the init pid namespace.
+>>>>> Wouldn't sending SIGKILL to the pid '1' process of the originating PID
+>>>>> namespace be sufficient (that would trigger a SIGCHLD for the parent
+>>>>> process in the outer PID namespace.
+>>>> This is already the case. The question is : when do we send this signal ?
+>>>> We have to wait for the container system shutdown before killing it.
+>>> I meant that sys_reboot() would kill the namespace's init if it's not
+>>> called from boot namespace.
+>>>
+>>> See below
+>>>
+>>>>> (as far as I remember the PID namespace is killed when its 'init' exits,
+>>>>> if this is not the case all other processes in the given namespace would
+>>>>> have to be killed as well)
+>>>> Yes, absolutely but this is not the point, reaping the container is not
+>>>> a problem.
+>>>>
+>>>> What we are trying to achieve is to shutdown properly the container from
+>>>> inside (from outside will be possible too with the setns syscall).
+>>>>
+>>>> Assuming the process '1234' creates a new process in a new namespace set
+>>>> and wait for it.
+>>>>
+>>>> The new process '1' will exec /sbin/init and the system will boot up.
+>>>> But, when the system is shutdown or rebooted, after the down scripts are
+>>>> executed the kill -15 -1 will be invoked, killing all the processes
+>>>> expect the process '1' and the caller. This one will then call
+>>>> 'sys_reboot' and exit. Hence we still have the init process idle and its
+>>>> parent '1234' waiting for it to die.
+>>> This call to sys_reboot() would kill "new process '1'" instead of trying to
+>>> operate on the HW box.
+>>> This also has the advantage that a container would not require an informed
+>>> parent "monitoring" it from outside (though it would not be restarted even if
+>>> requested without such informed outside parent).
+>> Oh, ok. Sorry I misunderstood.
+>>
+>> Yes, that could be better than crossing the namespace boundaries.
+>>
+>>>> If we are able to receive the information in the process '1234' : "the
+>>>> sys_reboot was called in the child pid namespace", we can take then kill
+>>>> our child pid.  If this information is raised via a signal sent by the
+>>>> kernel with the proper information in the siginfo_t (eg. si_code
+>>>> contains "LINUX_REBOOT_CMD_RESTART", "LINUX_REBOOT_CMD_HALT", ... ), the
+>>>> solution will be generic for all the shutdown/reboot of any kind of
+>>>> container and init version.
+>>> Could this be passed for a SIGCHLD? (when namespace is reaped, and received
+>>> by 1234 from above example assuming sys_reboot() kills the "new process '1'")
+>> Yes, that sounds a good idea.
+>>
+>>> Looks like yes, but with the need to define new values for si_code (reusing
+>>> LINUX_REBOOT_CMD_* would certainly clash, no matter which signal is choosen).
+>> CLD_REBOOT_CMD_RESTART
+>> CLD_REBOOT_CMD_HALT
+>> CLD_REBOOT_CMD_POWER_OFF
+> I would just map both to the same thing...
+>
+>> CLD_REBOOT_CMD_RESTART2 (what about the cmd buffer, shall we ignore it ?)
+> The cmd buffer could be passed via si_ptr if we want it, otherwise it would
+> be the same as for CLD_REBOOT_CMD_RESTART (which would have si_ptr set to NULL
+> in case no si_code differentiation is needed)
+>
+>> CLD_REBOOT_CMD_KEXEC (?)
+> I don't think kexec makes any sense inside a container, such a sys_reboot()
+> call should probably fail or fallback to _RESTART
+>
+>> CLD_REBOOT_CMD_SW_SUSPEND (useful for the future checkpoint/restart)
+> Looks reasonable
+>
+>> LINUX_REBOOT_CMD_CAD_ON and LINUX_REBOOT_CMD_CAD_OFF could be disabled
+>> for a non-init pid namespace, no ?
+> I haven't looked at how/when the state set by these is checked, but it could
+> keep its meaning and a CAD shortcut would act on the container to which the
+> active task on the given tty belongs. (so as if the process which would have
+> gotten SIGINT had issued sys_reboot(LINUX_REBOOT_CMD_RESTART), permissions
+> set aside)
 
-[...]
-> > This patch causes apei_hest_parse to check both hest_disabled and
-> > acpi_pci_disabled before continuing.  With it, the XO-1 boots
-> > properly.
-> 
-> The X0-1 has no ACPI support, and thus you are running
-> with acpi_disabled=1, yes?
+That makes sense.
 
-The XO-1 has no ACPI support, but ACPI support is enabled in the kernel
-(as the XO-1.5 does have ACPI support, and the same kernel is used
-between both) and I'm not passing any arguments to the kernel regarding
-it. The kernel's ACPI code detects that it's not there and disables it
-(the kernel message that's seen is "ACPI: Interpreter disabled.")
+Thanks Bruno !
 
-This is what sets apci_pci_disabled to 1; I'm not doing it manually.
-
-> 
-> It would be better for the fix to depend on acpi_disabled.
-> acpi_disbled=1 is a supported configuration, while
-> acpi_pci_disabled is a just a debug flag, maybe someday
-> it will go away.
-
-Ah, ok.  The reason I went with acpi_pci_disabled is because that's
-acpi_pci_root_init() checks, and that's what specifies whether or not
-acpi_hest_init gets called.. but it's all the same to me. :)
-
-> 
-> Looks like acpi_hest_init() bails for acpi_disabled,
-> and thus hest_ghes_dev_register()doens't run and invoke
-> apei_hest_parse(), so we are set there.
-> 
-> Seems like drivers/pci/pcie/aer/aerdrv_acpi.c,
-> should not invoke apei_hest_parse() when acpi_disabled=1.
-> Either that or we have to have apei_hest_parse(),
-> which is exported to modules check acpi_disabled --
-> and its callers need to check for failure.
-
->From a safety standpoint, I'd prefer to have apei_hest_parse
-check for acpi_disabled, rather than relying on clients to know to
-check for it.  Here's an updated patch.
-
-
-
-
-
-From: Andres Salomon <dilinger@queued.net>
-
-I've hit the following oops on boot on an XO-1:
-
-[    0.662755] BUG: unable to handle kernel NULL pointer dereference at 00000024
-[    0.666349] IP: [<c11a0514>] apei_hest_parse+0xbc/0xcc
-[    0.666349] *pde = 00000000
-[    0.666349] Oops: 0000 [#1] SMP
-[    0.666349] last sysfs file:
-[    0.666349] Modules linked in:
-[    0.666349]
-[    0.666349] Pid: 1, comm: swapper Not tainted 2.6.37+ #74 /
-[    0.666349] EIP: 0060:[<c11a0514>] EFLAGS: 00010206 CPU: 0
-[    0.666349] EIP is at apei_hest_parse+0xbc/0xcc
-[    0.666349] EAX: 00000028 EBX: 00000000 ECX: 00000000 EDX: 00000000
-[    0.666349] ESI: 00000001 EDI: 00000000 EBP: c1161171 ESP: cb441fa8
-[    0.666349]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-[    0.666349] Process swapper (pid: 1, ti=cb440000 task=cb43c000 task.ti=cb440000)
-[    0.666349] Stack:
-[    0.666349]  c1450960 00000001 00000020 c141fa10 c11611aa c141fa1e c1001151 00000000
-[    0.666349]  c1450960 00000001 00000020 00000000 c1401346 00000000 c1401221 00000000
-[    0.666349]  c10034be 00000000 00000000 00000000 00000000 00000000
-[    0.666349] Call Trace:
-[    0.666349]  [<c141fa10>] ? aer_service_init+0x0/0x22
-[    0.666349]  [<c11611aa>] ? aer_acpi_firmware_first+0x15/0x22
-[    0.666349]  [<c141fa1e>] ? aer_service_init+0xe/0x22
-[    0.666349]  [<c1001151>] ? do_one_initcall+0x68/0x10f
-[    0.666349]  [<c1401346>] ? kernel_init+0x125/0x19d
-[    0.666349]  [<c1401221>] ? kernel_init+0x0/0x19d
-[    0.666349]  [<c10034be>] ? kernel_thread_helper+0x6/0x10
-[    0.666349] Code: 76 18 0f b7 40 02 50 68 c2 ae 35 c1 e8 3e e8 0f 00 b8 ea ff ff ff 59 5b eb 1c 89 fa ff d5 85 c0 75 14 89 f0 43 8b 0d 50 ed 3f c1 <3b> 59
- 24 0f 82 64 ff ff ff 31 c0 5b 5e 5f 5d c3 8b 50 0c 8d 4a
-
-The apei_hest_parse function is using hest_tab, which hasn't been initialized.
-This is because acpi_hest_init has never been called (as acpi_pci_disabled is 1,
-so it never gets called from acpi_pci_root_init), and hest_disabled is never
-set to 1.  When the aer_driver calls apei_hest_parse, the hest_disabled check
-passes, and it oopses processing hest_tab.
-
-This patch causes apei_hest_parse to check both hest_disabled and
-acpi_disabled before continuing.
-
-Signed-off-by: Andres Salomon <dilinger@queued.net>
----
- drivers/acpi/apei/hest.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/acpi/apei/hest.c b/drivers/acpi/apei/hest.c
-index 4ee58e7..7262eaf 100644
---- a/drivers/acpi/apei/hest.c
-+++ b/drivers/acpi/apei/hest.c
-@@ -89,7 +89,7 @@ int apei_hest_parse(apei_hest_func_t func, void *data)
- 	struct acpi_hest_header *hest_hdr;
- 	int i, rc, len;
- 
--	if (hest_disable)
-+	if (hest_disable || acpi_disabled)
- 		return -EINVAL;
- 
- 	hest_hdr = (struct acpi_hest_header *)(hest_tab + 1);
--- 
-1.7.2.3
+   -- Daniel (cooking a patch ... ;)
 
