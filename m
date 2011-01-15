@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093Ab1AOPSQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 10:18:16 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:45876 "EHLO mx2.mail.elte.hu"
+	id S1752908Ab1AOPVp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 10:21:45 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:33930 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751878Ab1AOPSO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 10:18:14 -0500
-Date: Sat, 15 Jan 2011 16:17:59 +0100
+	id S1751431Ab1AOPVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jan 2011 10:21:43 -0500
+Date: Sat, 15 Jan 2011 16:21:32 +0100
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86 fixes
-Message-ID: <20110115151759.GA12020@elte.hu>
+Subject: [GIT PULL] timers fixes
+Message-ID: <20110115152132.GA12447@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -31,127 +31,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest x86-fixes-for-linus git tree from:
+Please pull the latest timers-fixes-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fixes-for-linus
-
-
-out-of-topic modifications in x86-fixes-for-linus:
---------------------------------------------------
-drivers/acpi/numa.c                # 9378b63: x86, ia64, acpi: Clean up x86-ism
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timers-fixes-for-linus
 
  Thanks,
 
 	Ingo
 
 ------------------>
-H. Peter Anvin (1):
-      x86, olpc: Add missing Kconfig dependencies
+H Hartley Sweeten (1):
+      timekeeping: Make local variables static
 
-Jacob Pan (1):
-      x86, mrst: Set correct APB timer IRQ affinity for secondary cpu
-
-John Stultz (1):
-      x86: tsc: Fix calibration refinement conditionals to avoid divide by zero
-
-Tony Luck (1):
-      x86, ia64, acpi: Clean up x86-ism in drivers/acpi/numa.c
+Nicolas Pitre (1):
+      time: Rename misnamed minsec argument of clocks_calc_mult_shift()
 
 
- arch/x86/Kconfig            |    1 +
- arch/x86/kernel/apb_timer.c |   14 ++++++++------
- arch/x86/kernel/tsc.c       |    4 ++--
- drivers/acpi/numa.c         |    8 ++------
- 4 files changed, 13 insertions(+), 14 deletions(-)
+ kernel/time/clocksource.c |    8 ++++----
+ kernel/time/timekeeping.c |    4 ++--
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index b6fccb0..184bc88 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2064,6 +2064,7 @@ config OLPC
- 	bool "One Laptop Per Child support"
- 	select GPIOLIB
- 	select OLPC_OPENFIRMWARE
-+	depends on !X86_64 && !X86_PAE
- 	---help---
- 	  Add support for detecting the unique features of the OLPC
- 	  XO hardware.
-diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
-index 7c9ab59..51ef31a 100644
---- a/arch/x86/kernel/apb_timer.c
-+++ b/arch/x86/kernel/apb_timer.c
-@@ -313,14 +313,16 @@ static void apbt_setup_irq(struct apbt_dev *adev)
- 	if (adev->irq == 0)
- 		return;
- 
-+	irq_modify_status(adev->irq, 0, IRQ_MOVE_PCNTXT);
-+	irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
-+	/* APB timer irqs are set up as mp_irqs, timer is edge type */
-+	__set_irq_handler(adev->irq, handle_edge_irq, 0, "edge");
-+
- 	if (system_state == SYSTEM_BOOTING) {
--		irq_modify_status(adev->irq, 0, IRQ_MOVE_PCNTXT);
--		irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
--		/* APB timer irqs are set up as mp_irqs, timer is edge type */
--		__set_irq_handler(adev->irq, handle_edge_irq, 0, "edge");
- 		if (request_irq(adev->irq, apbt_interrupt_handler,
--				IRQF_TIMER | IRQF_DISABLED | IRQF_NOBALANCING,
--				adev->name, adev)) {
-+					IRQF_TIMER | IRQF_DISABLED |
-+					IRQF_NOBALANCING,
-+					adev->name, adev)) {
- 			printk(KERN_ERR "Failed request IRQ for APBT%d\n",
- 			       adev->num);
- 		}
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 463901e..ae09f97 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -464,7 +464,7 @@ unsigned long native_calibrate_tsc(void)
- 		tsc_pit_min = min(tsc_pit_min, tsc_pit_khz);
- 
- 		/* hpet or pmtimer available ? */
--		if (!hpet && !ref1 && !ref2)
-+		if (ref1 == ref2)
- 			continue;
- 
- 		/* Check, whether the sampling was disturbed by an SMI */
-@@ -935,7 +935,7 @@ static void tsc_refine_calibration_work(struct work_struct *work)
- 	tsc_stop = tsc_read_refs(&ref_stop, hpet);
- 
- 	/* hpet or pmtimer available ? */
--	if (!hpet && !ref_start && !ref_stop)
-+	if (ref_start == ref_stop)
- 		goto out;
- 
- 	/* Check, whether the sampling was disturbed by an SMI */
-diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
-index d9926af..5eb25eb 100644
---- a/drivers/acpi/numa.c
-+++ b/drivers/acpi/numa.c
-@@ -275,23 +275,19 @@ acpi_table_parse_srat(enum acpi_srat_type id,
- int __init acpi_numa_init(void)
+diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+index c18d7ef..8588abc 100644
+--- a/kernel/time/clocksource.c
++++ b/kernel/time/clocksource.c
+@@ -113,7 +113,7 @@ EXPORT_SYMBOL_GPL(timecounter_cyc2time);
+  * @shift:	pointer to shift variable
+  * @from:	frequency to convert from
+  * @to:		frequency to convert to
+- * @minsec:	guaranteed runtime conversion range in seconds
++ * @maxsec:	guaranteed runtime conversion range in seconds
+  *
+  * The function evaluates the shift/mult pair for the scaled math
+  * operations of clocksources and clockevents.
+@@ -122,7 +122,7 @@ EXPORT_SYMBOL_GPL(timecounter_cyc2time);
+  * NSEC_PER_SEC == 1GHz and @from is the counter frequency. For clock
+  * event @to is the counter frequency and @from is NSEC_PER_SEC.
+  *
+- * The @minsec conversion range argument controls the time frame in
++ * The @maxsec conversion range argument controls the time frame in
+  * seconds which must be covered by the runtime conversion with the
+  * calculated mult and shift factors. This guarantees that no 64bit
+  * overflow happens when the input value of the conversion is
+@@ -131,7 +131,7 @@ EXPORT_SYMBOL_GPL(timecounter_cyc2time);
+  * factors.
+  */
+ void
+-clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 minsec)
++clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 maxsec)
  {
- 	int ret = 0;
--	int nr_cpu_entries = nr_cpu_ids;
- 
--#ifdef CONFIG_X86
- 	/*
- 	 * Should not limit number with cpu num that is from NR_CPUS or nr_cpus=
- 	 * SRAT cpu entries could have different order with that in MADT.
- 	 * So go over all cpu entries in SRAT to get apicid to node mapping.
+ 	u64 tmp;
+ 	u32 sft, sftacc= 32;
+@@ -140,7 +140,7 @@ clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 minsec)
+ 	 * Calculate the shift factor which is limiting the conversion
+ 	 * range:
  	 */
--	nr_cpu_entries = MAX_LOCAL_APIC;
--#endif
+-	tmp = ((u64)minsec * from) >> 32;
++	tmp = ((u64)maxsec * from) >> 32;
+ 	while (tmp) {
+ 		tmp >>=1;
+ 		sftacc--;
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 5bb86da..eef7452 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -49,7 +49,7 @@ struct timekeeper {
+ 	u32	mult;
+ };
  
- 	/* SRAT: Static Resource Affinity Table */
- 	if (!acpi_table_parse(ACPI_SIG_SRAT, acpi_parse_srat)) {
- 		acpi_table_parse_srat(ACPI_SRAT_TYPE_X2APIC_CPU_AFFINITY,
--				     acpi_parse_x2apic_affinity, nr_cpu_entries);
-+				     acpi_parse_x2apic_affinity, 0);
- 		acpi_table_parse_srat(ACPI_SRAT_TYPE_CPU_AFFINITY,
--				     acpi_parse_processor_affinity, nr_cpu_entries);
-+				     acpi_parse_processor_affinity, 0);
- 		ret = acpi_table_parse_srat(ACPI_SRAT_TYPE_MEMORY_AFFINITY,
- 					    acpi_parse_memory_affinity,
- 					    NR_NODE_MEMBLKS);
+-struct timekeeper timekeeper;
++static struct timekeeper timekeeper;
+ 
+ /**
+  * timekeeper_setup_internals - Set up internals to use clocksource clock.
+@@ -164,7 +164,7 @@ static struct timespec total_sleep_time;
+ /*
+  * The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock.
+  */
+-struct timespec raw_time;
++static struct timespec raw_time;
+ 
+ /* flag for if timekeeping is suspended */
+ int __read_mostly timekeeping_suspended;
