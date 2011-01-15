@@ -1,65 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145Ab1AOPQT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 10:16:19 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46047 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751878Ab1AOPQS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 10:16:18 -0500
-Date: Sat, 15 Jan 2011 15:15:07 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Christer Weinigel <christer@weinigel.se>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Locking in the clk API
-Message-ID: <20110115151507.GD15996@n2100.arm.linux.org.uk>
-References: <201101111016.42819.jeremy.kerr@canonical.com> <20110111091607.GI12552@n2100.arm.linux.org.uk> <4D2D184A.8020405@codeaurora.org> <20110112090301.GS11039@n2100.arm.linux.org.uk> <4D31A8F1.4080301@weinigel.se> <20110115145358.GC15996@n2100.arm.linux.org.uk> <20110115150331.GB6917@pengutronix.de>
+	id S1753093Ab1AOPSQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 10:18:16 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:45876 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751878Ab1AOPSO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jan 2011 10:18:14 -0500
+Date: Sat, 15 Jan 2011 16:17:59 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86 fixes
+Message-ID: <20110115151759.GA12020@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110115150331.GB6917@pengutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 15, 2011 at 04:03:31PM +0100, Uwe Kleine-König wrote:
-> Hi Russell,
-> 
-> On Sat, Jan 15, 2011 at 02:53:58PM +0000, Russell King - ARM Linux wrote:
-> > We've been around returning EAGAIN, WARN_ONs, BUG_ONs, having clk_enable()
-> > vs clk_enable_atomic(), clk_enable_cansleep() vs clk_enable(), etc.
-> > 
-> > There's been a lot of talk on this issue for ages with no real progress
-> > that I'm just going to repeat: let's unify those implementations which
-> > use a spinlock for their clks into one consolidated solution, and
-> > a separate consolidated solution for those which use a mutex.
-> > 
-> > This will at least allow us to have _some_ consolidation of the existing
-> > implementations - and it doesn't add anything to the problem at hand.
-> > It might actually help identify what can be done at code level to resolve
-> > this issue.
-> Great, so how should we do it?  Take Jeremy's patch and make the
-> differenciation between sleeping and atomic implementation a Kconfig
-> variable?
+Linus,
 
-No - I've been suggesting for about a week now about doing two entirely
-separate consolidations.
+Please pull the latest x86-fixes-for-linus git tree from:
 
-I think it would be insane to do the consolidation of the two different
-implementations in one patch or even one patch set.  There needs to be
-a consolidation of spinlock-based clks as one patch set, which is
-entirely separate and independent from the consolidation of mutex-based
-clks.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fixes-for-linus
 
-What if one of the consolidations turns out to be a problem?  Do we want
-to throw both out, or do we want to keep as much as we possibly can?
+
+out-of-topic modifications in x86-fixes-for-linus:
+--------------------------------------------------
+drivers/acpi/numa.c                # 9378b63: x86, ia64, acpi: Clean up x86-ism
+
+ Thanks,
+
+	Ingo
+
+------------------>
+H. Peter Anvin (1):
+      x86, olpc: Add missing Kconfig dependencies
+
+Jacob Pan (1):
+      x86, mrst: Set correct APB timer IRQ affinity for secondary cpu
+
+John Stultz (1):
+      x86: tsc: Fix calibration refinement conditionals to avoid divide by zero
+
+Tony Luck (1):
+      x86, ia64, acpi: Clean up x86-ism in drivers/acpi/numa.c
+
+
+ arch/x86/Kconfig            |    1 +
+ arch/x86/kernel/apb_timer.c |   14 ++++++++------
+ arch/x86/kernel/tsc.c       |    4 ++--
+ drivers/acpi/numa.c         |    8 ++------
+ 4 files changed, 13 insertions(+), 14 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index b6fccb0..184bc88 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2064,6 +2064,7 @@ config OLPC
+ 	bool "One Laptop Per Child support"
+ 	select GPIOLIB
+ 	select OLPC_OPENFIRMWARE
++	depends on !X86_64 && !X86_PAE
+ 	---help---
+ 	  Add support for detecting the unique features of the OLPC
+ 	  XO hardware.
+diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
+index 7c9ab59..51ef31a 100644
+--- a/arch/x86/kernel/apb_timer.c
++++ b/arch/x86/kernel/apb_timer.c
+@@ -313,14 +313,16 @@ static void apbt_setup_irq(struct apbt_dev *adev)
+ 	if (adev->irq == 0)
+ 		return;
+ 
++	irq_modify_status(adev->irq, 0, IRQ_MOVE_PCNTXT);
++	irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
++	/* APB timer irqs are set up as mp_irqs, timer is edge type */
++	__set_irq_handler(adev->irq, handle_edge_irq, 0, "edge");
++
+ 	if (system_state == SYSTEM_BOOTING) {
+-		irq_modify_status(adev->irq, 0, IRQ_MOVE_PCNTXT);
+-		irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
+-		/* APB timer irqs are set up as mp_irqs, timer is edge type */
+-		__set_irq_handler(adev->irq, handle_edge_irq, 0, "edge");
+ 		if (request_irq(adev->irq, apbt_interrupt_handler,
+-				IRQF_TIMER | IRQF_DISABLED | IRQF_NOBALANCING,
+-				adev->name, adev)) {
++					IRQF_TIMER | IRQF_DISABLED |
++					IRQF_NOBALANCING,
++					adev->name, adev)) {
+ 			printk(KERN_ERR "Failed request IRQ for APBT%d\n",
+ 			       adev->num);
+ 		}
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index 463901e..ae09f97 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -464,7 +464,7 @@ unsigned long native_calibrate_tsc(void)
+ 		tsc_pit_min = min(tsc_pit_min, tsc_pit_khz);
+ 
+ 		/* hpet or pmtimer available ? */
+-		if (!hpet && !ref1 && !ref2)
++		if (ref1 == ref2)
+ 			continue;
+ 
+ 		/* Check, whether the sampling was disturbed by an SMI */
+@@ -935,7 +935,7 @@ static void tsc_refine_calibration_work(struct work_struct *work)
+ 	tsc_stop = tsc_read_refs(&ref_stop, hpet);
+ 
+ 	/* hpet or pmtimer available ? */
+-	if (!hpet && !ref_start && !ref_stop)
++	if (ref_start == ref_stop)
+ 		goto out;
+ 
+ 	/* Check, whether the sampling was disturbed by an SMI */
+diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
+index d9926af..5eb25eb 100644
+--- a/drivers/acpi/numa.c
++++ b/drivers/acpi/numa.c
+@@ -275,23 +275,19 @@ acpi_table_parse_srat(enum acpi_srat_type id,
+ int __init acpi_numa_init(void)
+ {
+ 	int ret = 0;
+-	int nr_cpu_entries = nr_cpu_ids;
+ 
+-#ifdef CONFIG_X86
+ 	/*
+ 	 * Should not limit number with cpu num that is from NR_CPUS or nr_cpus=
+ 	 * SRAT cpu entries could have different order with that in MADT.
+ 	 * So go over all cpu entries in SRAT to get apicid to node mapping.
+ 	 */
+-	nr_cpu_entries = MAX_LOCAL_APIC;
+-#endif
+ 
+ 	/* SRAT: Static Resource Affinity Table */
+ 	if (!acpi_table_parse(ACPI_SIG_SRAT, acpi_parse_srat)) {
+ 		acpi_table_parse_srat(ACPI_SRAT_TYPE_X2APIC_CPU_AFFINITY,
+-				     acpi_parse_x2apic_affinity, nr_cpu_entries);
++				     acpi_parse_x2apic_affinity, 0);
+ 		acpi_table_parse_srat(ACPI_SRAT_TYPE_CPU_AFFINITY,
+-				     acpi_parse_processor_affinity, nr_cpu_entries);
++				     acpi_parse_processor_affinity, 0);
+ 		ret = acpi_table_parse_srat(ACPI_SRAT_TYPE_MEMORY_AFFINITY,
+ 					    acpi_parse_memory_affinity,
+ 					    NR_NODE_MEMBLKS);
