@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129Ab1AONeN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 08:34:13 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:38346 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752818Ab1AONeM (ORCPT
+	id S1751518Ab1AONqW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 08:46:22 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38580 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839Ab1AONqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 08:34:12 -0500
+	Sat, 15 Jan 2011 08:46:21 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=vFsKUh5YRaPdFh96pCvCdy8nPP0eKqU+5iAtM0EZ+S1QpqtO1Ok+4CAaVJlTZJExku
-         /FEYqHjfofrPu1WMLnQmmy7vZs0LxBEzDEFGygmS8P8VbF3p2bKLmWbcwLhDBOYyYWsk
-         zjZmePCanTu93DERBRFwkmxkRLhpeIiXmBtxI=
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=Sm6higfJKrzsJ8g/NMrSooVs+QiCqwAch4dYGdnGCukWrLCfDqpFlh+eFni+91Gu+n
+         JnCSpAvwO5RFBLV/fi+m6CcBzSCO2++gzPypv602RJ/d6KBmyHg5+protD62N1rq6vSR
+         DMjM3TAwTzXNLThwYw4RuUSXUziXDuz1y7OL4=
+Date: Sat, 15 Jan 2011 16:46:05 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: reiserfs-devel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] reiserfs: potential ERR_PTR dereference
+Message-ID: <20110115134605.GB2721@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	reiserfs-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <201101131423.51640.helmut.schaa@googlemail.com>
-References: <m31v4hkmkf.fsf@ingo.homenetwork>
-	<201101131423.51640.helmut.schaa@googlemail.com>
-Date: Sat, 15 Jan 2011 14:34:11 +0100
-Message-ID: <AANLkTimMVdsGONSD9OmnX2eJk51H5Pzj4K8irHa=E-qx@mail.gmail.com>
-Subject: Re: BUG in rt2x00lib_txdone() with 2.6.37-rc8
-From: Ivo Van Doorn <ivdoorn@gmail.com>
-To: Helmut Schaa <helmut.schaa@googlemail.com>
-Cc: Ingo Brunberg <ingo_brunberg@web.de>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+reiserfs_iget() returns an ERR_PTR on allocation failures.  All the
+other callers check for it so we should check here too.
 
-> Just a shot in the dark but since the stack trace shows the newly added
-> watchdog this might be the result of a race between a regular txdone work
-> (mac80211 workqueue) vs the watchdog work (global workqueue).
->
-> I guess the following situation could happen:
-> A regular tx done work calls rt2x00lib_txdone which first sets entry->skb to
-> NULL, calls the driver specific clear_entry and afterwards increases
-> Q_INDEX_DONE. If the watchdog work calls rt2x00lib_txdone on a different CPU
-> inbetween the skb might be NULL and cause the above oops.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-This could be, would be interesting to know if compat-wireless also shows
-this problem. Because the queue refactoring code which should have solved
-these race conditions was added after 2.6.37.
-
-Ivo
+diff --git a/fs/reiserfs/super.c b/fs/reiserfs/super.c
+index 0aab04f..6949b98 100644
+--- a/fs/reiserfs/super.c
++++ b/fs/reiserfs/super.c
+@@ -237,7 +237,7 @@ static int finish_unfinished(struct super_block *s)
+ 		pathrelse(&path);
+ 
+ 		inode = reiserfs_iget(s, &obj_key);
+-		if (!inode) {
++		if (IS_ERR_OR_NULL(inode)) {
+ 			/* the unlink almost completed, it just did not manage to remove
+ 			   "save" link and release objectid */
+ 			reiserfs_warning(s, "vs-2180", "iget failed for %K",
