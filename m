@@ -1,83 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137Ab1AONUE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 Jan 2011 08:20:04 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:38368 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752911Ab1AONUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 Jan 2011 08:20:01 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: build failure after merge of the final tree (linus' tree related)
-Date: Sat, 15 Jan 2011 14:19:16 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37+; KDE/4.4.4; x86_64; ; )
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ozan Caglayan <ozan@pardus.org.tr>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linus <torvalds@linux-foundation.org>
-References: <20110115133412.58b8cd89.sfr@canb.auug.org.au>
-In-Reply-To: <20110115133412.58b8cd89.sfr@canb.auug.org.au>
+	id S1752860Ab1AONdw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 Jan 2011 08:33:52 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54617 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752443Ab1AONdu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 Jan 2011 08:33:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=OqzWQgiZdsDc1RbKpwmqM1Ksaf25a8a12Up/yWHapzcdTlOdZmmpMGNYit+5ZreS4I
+         Dk2Nqyl4skymOpeHfGyrqHs8NF+JE2Jc/WkUJIg1M/vbtZJrbKOEMzMmR4Z1trURjww7
+         edXyvlgbDjoBFeBF2Zl5PysRLtEXaolkwGS9M=
+Date: Sat, 15 Jan 2011 14:33:44 +0100
+From: Tejun Heo <tj@kernel.org>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Jens Axboe <axboe@kernel.dk>, "Theodore Ts'o" <tytso@mit.edu>,
+        Neil Brown <neilb@suse.de>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        Jan Kara <jack@suse.cz>, Mike Snitzer <snitzer@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <cmm@us.ibm.com>,
+        linux-ext4@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Josef Bacik <josef@redhat.com>
+Subject: Re: [PATCH v7.1] block: Coordinate flush requests
+Message-ID: <20110115133344.GB27123@htj.dyndns.org>
+References: <20110113025646.GB27381@tux1.beaverton.ibm.com>
+ <20110113104240.GA30719@htj.dyndns.org>
+ <20110113185946.GD27381@tux1.beaverton.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101151419.16758.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110113185946.GD27381@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, January 15, 2011, Stephen Rothwell wrote:
-> Hi all,
+Hello,
+
+On Thu, Jan 13, 2011 at 10:59:46AM -0800, Darrick J. Wong wrote:
+> > But wouldn't it be better to implement this directly in the flush
+> > machinary instead of as blkdev_issue_flush() wrapper?  We have all the
+> > information at the request queue level so we can easily detect whether
+> > flushes can be merged or not and whether something is issued by
+> > blkdev_issue_flush() or by directly submitting bio wouldn't matter at
+> > all.  Am I missing something?
 > 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> In file included from drivers/pci/pcie/aer/aerdrv.c:20:
-> include/linux/pci-acpi.h:39: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'acpi_find_root_bridge_handle'
-> 
-> Caused by commit 415e12b2379239973feab91850b0dce985c6058a ("PCI/ACPI:
-> Request _OSC control once for each root bridge (v3)").  (Yet another
-> patch not seen in linux-next until merged into Linus' tree.  In this case
-> the breakage was not seen because the new part of the pci tree was
-> excluded from linux-next for several days because of another commit that
-> broke my builds.
+> Could you clarify where exactly you meant by "in the flush
+> machinery"?  I think what you're suggesting is that
+> blk_flush_complete_seq could scan the pending flush list to find a
+> run of consecutive pure flush requests, submit the last one, and set
+> things up so that during the completion of the flush, all the
+> requests in that run are returned with the real flush's return code.
 
-Ah.  I thought it was in linux-next. :-(
+Yeah, something along that line.
 
-> That other commit was only excluded from the pci tree
-> just before being sent to Linus :-()
-> 
-> This is the non CONFIG_ACPI version of acpi_find_root_bridge_handle()
-> which returns an acpi_handle.  pci-acpi.h is now always included in
-> drivers/pci/pcie/aer/aerdrv.c.
-> 
-> I tried ifef'ing out the inclusion of pci-acpi.h, but that only made
-> matters worse.  I have just left it for today.  Please fix.
+> If that's what you meant, then yes, it could be done that way.
+> However, I have a few reasons for choosing the blkdev_issue_flush
+> approach.  First, as far as I could tell in the kernel, all the code
+> paths that involve upper layers issuing pure flushes go through
+> blkdev_issue_flush, so it seems like a convenient place to capture
+> all the incoming pure flushes.
 
-It looks like the non-CONFIG_ACPI version of acpi_find_root_bridge_handle()
-is just not necessary any more, because acpi_find_root_bridge_handle() is only
-used in code that depends on CONFIG_ACPI.
+That means it _can_ be done there but doesn't mean it's the best spot.
 
-A patch removing it is appended, please test.
+> Other parts of the kernel issue writes with the flush flag set, but
+> we want those to go through the regular queuing mechanisms anyway.
+> Second, with the proposed patch, any upper-layer code that has a
+> requirement for a pure flush to be issued without coordination can
+> do so by submitting the bio directly (or blkdev_issue_flush_now can
+> be exported).
 
-Thanks,
-Rafael
+I don't think anyone would need such capability but even if someone
+does that should be implemented as a separate explicit
+DONT_MERGE_THIS_FLUSH flag, not by exploting subtle inconsistencies on
+the wrapper interface.
 
----
- include/linux/pci-acpi.h |    3 ---
- 1 file changed, 3 deletions(-)
+> Third, baking the coordination into the flush machinery makes that
+> machinery more complicated to understand and maintain.
 
-Index: linux-2.6/include/linux/pci-acpi.h
-===================================================================
---- linux-2.6.orig/include/linux/pci-acpi.h
-+++ linux-2.6/include/linux/pci-acpi.h
-@@ -35,9 +35,6 @@ static inline acpi_handle acpi_pci_get_b
- 	return acpi_get_pci_rootbridge_handle(pci_domain_nr(pbus),
- 					      pbus->number);
- }
--#else
--static inline acpi_handle acpi_find_root_bridge_handle(struct pci_dev *pdev)
--{ return NULL; }
- #endif
- 
- #ifdef CONFIG_ACPI_APEI
+And the third point is completely nuts.  That's like saying putting
+things related together makes the concentrated code more complex, so
+let's scatter things all over the place.  No, it's not making the code
+more complex.  It's putting the complexity where it belongs.  It
+decreases maintenance overhead by increasing consistency.  Not only
+that it even results in visibly more consistent and sane _behavior_
+and the said complex machinary is less than 300 lines long.
+
+> So in short, I went with the blkdev_issue_flush approach because the
+> code is easier to understand, and it's not losing any pure flushes
+> despite casting a narrower net.
+
+No, not at all.  You're adding an unobvious logic into a wrapper
+interface creating incosistent behavior and creating artificial
+distinctions between pure and non-pure flushes and flushes issued by
+bio and the wrapper interface.  Come on.  Think about it again.  You
+can't be seriously standing by the above rationales.
+
+Thanks.
+
+-- 
+tejun
