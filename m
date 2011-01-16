@@ -1,97 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784Ab1APTW5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 14:22:57 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:15785 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406Ab1APTW4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 14:22:56 -0500
-Date: Sun, 16 Jan 2011 20:22:54 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Anca Emanuel <anca.emanuel@gmail.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Please revert nouveau.
-In-Reply-To: <AANLkTim5-oQO4i7bc5mZZogXfuiHc_qk6S1Bz1eA83__@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1101162019530.13377@swampdragon.chaosbits.net>
-References: <AANLkTimBXn8zoQdPE0t-P5FZ_rLi+1jzuzG+WxeiCwFD@mail.gmail.com> <AANLkTim6u9WUE7RkXUYEbTqftZ8gmB1xTYD_H8c7yhpu@mail.gmail.com> <AANLkTinVDdUX70E12fqJBBsd+zKDF4zpnG4YSUhCuQCD@mail.gmail.com> <AANLkTimG+61dj-KNeAJZLta4+r1TyXyo1nO7VwJnxUW7@mail.gmail.com>
- <AANLkTikfp56XBE+B0hvvYD2nSJXpQ65XO7gwL2ZLU5uU@mail.gmail.com> <AANLkTimyrHqDpG4DmLym5AeHBbWziETDXjvBU+eaFfcb@mail.gmail.com> <AANLkTim5-oQO4i7bc5mZZogXfuiHc_qk6S1Bz1eA83__@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753836Ab1APT3c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 14:29:32 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:39809 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753772Ab1APT3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jan 2011 14:29:30 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Andres Salomon <dilinger@queued.net>
+Subject: Re: [PATCH] ACPI: don't attempt to use hest_tab unless !acpi_pci_disabled
+Date: Sun, 16 Jan 2011 20:28:33 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37+; KDE/4.4.4; x86_64; ; )
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Huang Ying <ying.huang@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+References: <20110114181620.188e7a62@queued.net> <201101152148.43791.rjw@sisk.pl> <20110115192422.706af049@queued.net>
+In-Reply-To: <20110115192422.706af049@queued.net>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-749714665-1295205774=:13377"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101162028.33572.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323328-749714665-1295205774=:13377
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Sun, 16 Jan 2011, Anca Emanuel wrote:
-
-> On Sun, Jan 16, 2011 at 8:56 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > On Sun, Jan 16, 2011 at 10:50 AM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
-> >>
-> >> after
-> >> git revert dfe63bb0ad9810db13aab0058caba97866e0a681
-> >
-> > You are aware that that was already reverted yesterday? See commit 3632ef89.
-> >
-> >> and
-> >>
-> >> diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
-> >> index 5c4f9b9..2aad663 100644
-> >> --- a/drivers/gpu/drm/drm_fb_helper.c
-> >> +++ b/drivers/gpu/drm/drm_fb_helper.c
-> >> @@ -816,6 +816,7 @@ int drm_fb_helper_set_par(struct fb_info *info)
-> >>                        mutex_unlock(&dev->mode_config.mutex);
-> >>                        return ret;
-> >>                }
-> >> +               drm_fb_helper_fill_fix(info, fb_helper->fb->pitch,
-> >> fb_helper->fb->depth);
-> >>        }
-> >>        mutex_unlock(&dev->mode_config.mutex);
-> >>
-> >> I have an partial working sistem.
-> >
-> > What does "partial working system" even MEAN?
-> >
-> > Anca, stop emailing worthless crap. Tell what the problems are. And cc
-> > the right people rather than asking me personally to just "revert"
-> > without even saying what the problem is. And if you feel like they
-> > have been ignoring you, then I have a clue for you: I bet they have
-> > been frustrated by the same things I am frustrated by.
-> >
-> > IOW, do a nice proper bug-report. Do it to the right people. Include
-> > useful information, and remember that the developers DO NOT see the
-> > problem you have (if they did, they'd not have done the changes), so
-> > "doesn't work" or "the boot screen is not ok" is not something anybody
-> > is ever going to find useful.
-> >
-> >         Linus
-> >
+On Sunday, January 16, 2011, Andres Salomon wrote:
+> On Sat, 15 Jan 2011 21:48:43 +0100
+> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 > 
-> Linus, I am a beginner, I will try to be more useful in the future.
+> > On Saturday, January 15, 2011, Andres Salomon wrote:
+> > > On Sat, 15 Jan 2011 21:38:10 +0100
+> > > "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> > > 
+> > > > On Saturday, January 15, 2011, Andres Salomon wrote:
+> > > > > On Sat, 15 Jan 2011 14:01:18 +0100
+> > > > > "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> > > > > 
+> > > > > > On Saturday, January 15, 2011, Andres Salomon wrote:
+> > > > > > > On Fri, 14 Jan 2011 23:24:27 -0500 (EST)
+> > > > > > > Len Brown <lenb@kernel.org> wrote:
+> > > > > > > 
+> > > > > > > [...]
+> > > > > > > > > This patch causes apei_hest_parse to check both
+> > > > > > > > > hest_disabled and acpi_pci_disabled before continuing.
+> > > > > > > > > With it, the XO-1 boots properly.
+> > > > > > > > 
+> > > > > > > > The X0-1 has no ACPI support, and thus you are running
+> > > > > > > > with acpi_disabled=1, yes?
+> > > > > > > 
+> > > > > > > The XO-1 has no ACPI support, but ACPI support is enabled
+> > > > > > > in the kernel (as the XO-1.5 does have ACPI support, and
+> > > > > > > the same kernel is used between both) and I'm not passing
+> > > > > > > any arguments to the kernel regarding it. The kernel's ACPI
+> > > > > > > code detects that it's not there and disables it (the
+> > > > > > > kernel message that's seen is "ACPI: Interpreter disabled.")
+> > > > > > > 
+> > > > > > > This is what sets apci_pci_disabled to 1; I'm not doing it
+> > > > > > > manually.
+> > > > > > 
+> > > > > > Hmm.  Does the appended patch help instead?
+> > > > > 
+> > > > > Nope.  acpi_hest_init returns immediately if acpi_disabled, and
+> > > > > thus never sets hest_disable.  You either need to set
+> > > > > hest_disable, or ensure apei_hest_parse checks more than just
+> > > > > hest_disable.
+> > > > 
+> > > > OK, so the new one below should help, right?
+> > > 
+> > > Yes, that looks better
+> > 
+> > OK
+> > 
+> > > (though you probably just want to use 'goto err;' instead).
+> > 
+> > Indeed.
+> > 
+> > > I can test it later today.
+> > 
+> > Cool, thanks.  Please try the version below with the 'goto'.
+> > 
+> > Rafael
+> 
+> 
+> Yep, just tested it out; it works fine.
 
-Here's a bug report form that will help you include relevant info: 
-http://www.kernel.org/pub/linux/docs/lkml/reporting-bugs.html
+Great, thanks!
 
-To see what the right people to send your report to are, check the 
-MAINTAINERS file, the CREDITS file, possibly names listed at the top of 
-relevant source files, 'git blame <file in question>' is also sometimes 
-useful to come up with names of people who might be interested.
-After adding all the right people to the mail, adding lkml to CC is 
-usually a good idea.
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
---8323328-749714665-1295205774=:13377--
+Rafael
