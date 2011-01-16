@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101Ab1APWFi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 17:05:38 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:51414 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753992Ab1APWFf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 17:05:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=fs9p0Wob8knAT9iE5en9nVrkQxzF8u2q7hGmBxVi7m96K6pA1ObqMsLPHfLsNvIpKR
-         6lF/nP7RZEmTU3s8H9AJbinZKYrkB1vHLhnpiSGwGR7AViD7I+CY6u+HYLPH9Fp1Mj0W
-         OCQ+fKjzcQkGFmV5clhw/yxZ9iwEaQ7aBsYKQ=
-MIME-Version: 1.0
-In-Reply-To: <20110116213650.GC22723@ZenIV.linux.org.uk>
-References: <20110116185745.GB22723@ZenIV.linux.org.uk>
-	<AANLkTim1SS2Y1EL9iB2jDSUbqofoaWXig-xHa12Ogm95@mail.gmail.com>
-	<20110116213650.GC22723@ZenIV.linux.org.uk>
-Date: Sun, 16 Jan 2011 23:05:32 +0100
-Message-ID: <AANLkTin1_KDLt7sCvfG=HNzKq2R+j1hScG_n6Ys61jL6@mail.gmail.com>
-Subject: Re: [git pull] vfs pile 2 (automount work)
-From: Joachim Eastwood <manabian@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
+	id S1754131Ab1APWG0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 17:06:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753992Ab1APWGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jan 2011 17:06:25 -0500
+Date: Sun, 16 Jan 2011 23:06:14 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Luck, Tony" <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: ia64 broken by transparent huge pages - other arches too?
+Message-ID: <20110116220614.GH9506@random.random>
+References: <4d308cf5394566ccc@agluck-desktop.sc.intel.com>
+ <1295076096.4875.60.camel@pasglop>
+ <AANLkTikZ+MmM9f0tidpccDAimtUkDvJ3N=3KE+xFxc63@mail.gmail.com>
+ <20110116131039.0f0a9359.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110116131039.0f0a9359.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/16/11, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Sun, Jan 16, 2011 at 10:15:31PM +0100, Joachim Eastwood wrote:
->> Hi,
->>
->> On 1/16/11, Al Viro <viro@zeniv.linux.org.uk> wrote:
->> > Al Viro (3):
->> >       sanitize vfsmount refcounting changes
->>
->> f03c65993b98eeb909a4012ce7833c5857d74755 - sanitize vfsmount refcounting
->> changes
->>
->> Breaks my ARM !CONFIG_SMP compile
->>
->>   CC      fs/namespace.o
->> fs/namespace.c: In function 'commit_tree':
->> fs/namespace.c:629: error: 'struct vfsmount' has no member named
->> 'mnt_longterm'
->> fs/namespace.c: In function 'umount_tree':
->> fs/namespace.c:1192: error: 'struct vfsmount' has no member named
->> 'mnt_longterm'
->> fs/namespace.c: In function 'mnt_make_longterm':
->> fs/namespace.c:2246: error: 'struct vfsmount' has no member named
->> 'mnt_longterm'
->> fs/namespace.c: In function 'mnt_make_shortterm':
->> fs/namespace.c:2251: error: 'struct vfsmount' has no member named
->> 'mnt_longterm'
->> fs/namespace.c:2254: error: 'struct vfsmount' has no member named
->> 'mnt_longterm'
->> fs/namespace.c: In function 'dup_mnt_ns':
->> fs/namespace.c:2295: error: 'struct vfsmount' has no member named
->> 'mnt_longterm'
->> fs/namespace.c:2299: error: 'struct vfsmount' has no member named
->> 'mnt_longterm'
->> fs/namespace.c:2305: error: 'struct vfsmount' has no member named
->> 'mnt_longterm'
->> fs/namespace.c: In function 'create_mnt_ns':
->> fs/namespace.c:2351: error: 'struct vfsmount' has no member named
->> 'mnt_longterm'
->
-> Aaaaargh... Brown paperbag time - all testing was on SMP boxen ;-/  The fix
-> follows.  Linus, I've dropped that into for-linus in usual place
-> (git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/), so if you
-> prefer to pull it, it's there.
->
-> commit 91ed228ab50daa7aca54faa8bf5208b97e3448b8
-> Author: Al Viro <viro@zeniv.linux.org.uk>
-> Date:   Sun Jan 16 16:32:11 2011 -0500
->
->     mnt_longterm is there only on SMP
->
->     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+On Sun, Jan 16, 2011 at 01:10:39PM -0800, Andrew Morton wrote:
+> I believe it's the below.  I haven't tested it yet and nor has anyone
+> else apart from Andrea, afaik.
 
-Thanks,
-The patch fixed it.
+Correct. I tested it with sparc64 cross compiler using ARCH=sparc32 in
+addition to x86_32/64 with THP on and off. It should solve the
+problem.
 
-regards
-Joachim Eastwood
+James' fix for arm still needed in addition to it, I'm appending it.
+
+Thanks and sorry again for the arch build trouble.
+Andrea
+
+===
+Subject: [PATCH] parisc: fix compile breakage caused by inlining maybe_mkwrite
+
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+
+on Parisc, we have an include of linux/mm.h inside our asm/pgtable.h, so
+this patch 
+
+commit 14fd403f2146f740942d78af4e0ee59396ad8eab
+Author: Andrea Arcangeli <aarcange@redhat.com>
+Date:   Thu Jan 13 15:46:37 2011 -0800
+
+    thp: export maybe_mkwrite
+
+Causes us an unsatisfiable use of pte_mkwrite in linux/mm.h
+
+The fix is obviously not to include linux/mm.h in our pgtable.h, which
+unbreaks the build.
+
+James
+
+---
+
+diff --git a/arch/parisc/include/asm/pgtable.h b/arch/parisc/include/asm/pgtable.h
+index f3c0973..5d7b8ce 100644
+--- a/arch/parisc/include/asm/pgtable.h
++++ b/arch/parisc/include/asm/pgtable.h
+@@ -10,11 +10,13 @@
+  * we simulate an x86-style page table for the linux mm code
+  */
+ 
+-#include <linux/mm.h>		/* for vm_area_struct */
+ #include <linux/bitops.h>
++#include <linux/spinlock.h>
+ #include <asm/processor.h>
+ #include <asm/cache.h>
+ 
++struct vm_area_struct;
++
+ /*
+  * kern_addr_valid(ADDR) tests if ADDR is pointing to valid kernel
+  * memory.  For the return value to be meaningful, ADDR must be >=
+
+
