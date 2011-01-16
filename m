@@ -1,141 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206Ab1APOjr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 09:39:47 -0500
-Received: from mout.perfora.net ([74.208.4.194]:49427 "EHLO mout.perfora.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752718Ab1APOjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 09:39:45 -0500
-thread-index: Acu1izIpVS6Dq/FVShilWa8gAU31yA==
-Thread-Topic: Please check out TexasTrue.com!  
-From: "Karen Thomas" <success@yahoo.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: Please check out TexasTrue.com!  
-Date: Sun, 16 Jan 2011 09:39:35 -0500
-Message-ID: <CCECD19F3B03457A9BF3FADFE461560B@hosting.xp>
+	id S1753220Ab1APPEm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 10:04:42 -0500
+Received: from casper.infradead.org ([85.118.1.10]:46120 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753012Ab1APPEj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jan 2011 10:04:39 -0500
+Message-ID: <4D332507.4090204@infradead.org>
+Date: Sun, 16 Jan 2011 15:04:07 -0200
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Ben Gamari <bgamari.foss@gmail.com>
+CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "Igor M. Liplianin" <liplianin@me.by>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, aospan@netup.ru
+Subject: Re: [PATCH 01/18] Altera FPGA firmware download module.
+References: <201012310726.31851.liplianin@netup.ru> <201012311212.19715.laurent.pinchart@ideasonboard.com> <4D1DBE2A.5080003@infradead.org> <201012311230.51903.laurent.pinchart@ideasonboard.com> <4D1DC2DD.6050400@infradead.org> <8739p45x3v.fsf@gmail.com>
+In-Reply-To: <8739p45x3v.fsf@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft CDO for Windows 2000
-Content-Class: urn:content-classes:message
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4721
-X-Provags-ID: V02:K0:fedCMkVXuHryhdUwhyqcZwIt0ApSm9/G8NXIdiq7Kac
- w/algVvdE6w1Q8SkbHPn/dPtRGwg68+U14lrNc0xjM6+m5dgPp
- TmaPKXFVbxxKpYPmtsGnvUKppuP829ApKWBcIOEzst0bIWhxwL
- UviL+JCVj3jbvMb+43iUpyzzO/T9bl5LyXoSLRypxyVmiyYVv
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-Hello Friend,
+Em 07-01-2011 17:31, Ben Gamari escreveu:
+> Hi Mauro,
+> 
+> On Fri, 31 Dec 2010 09:47:41 -0200, Mauro Carvalho Chehab <mchehab@infradead.org> wrote:
+>> Em 31-12-2010 09:30, Laurent Pinchart escreveu:
+>>> Hi Mauro,
+>>>
+>>> [snip]
+>>>
+>>> I understand this. However, a complete JTAG state machine in the kernel, plus 
+>>> an Altera firmware parser, seems to be a lot of code that could live in 
+>>> userspace.
+>>
+>> Moving it to userspace would mean a kernel driver that would depend on an
+>> userspace daemon^Wfirmware loader to work. I would NAK such designs.
+>>
+>> The way it is is fine from my POV.
+> 
+> Any furthur comment on this? As I noted, I strongly disagree and would
+> point out that there is no shortage of precedent for the use of
+> userspace callbacks for loading of firmware, especially when the process
+> is as tricky as this.
+> 
+> I also work with Altera FPGAs and have a strong interest in making this
+> work yet from my perspective it seems pretty clear that the best way
+> forward both for both maintainability and useability is to keep
+> this code in user-space. There is absolutely no reason why this code
+> _must_ be in the kernel and punting it out to userspace only requires
+> a udev rule.
+> 
+> Placing this functionality in userspace results in a massive duplication
+> of code, as there are already a number of functional user-space JTAG
+> implementations.
 
-EMAIL PROCESSING HOME BIZ GLOBAL MONEY MAKING MACHINE 2011
+On all V4L/DVB drivers I'm ware of, firmwares are loaded via request_firmware, when
+userspace tries to use the device, or when the driver is loaded (eventually, it might
+have some v4l/dvb legacy drivers with some weird implementation, but this is a bad
+practice).
 
-CONGATULATIONS:SECURE TO GET YOUR $1,000 GAURANTEED COMMISSIONS NOW!!!
+There's currently no V4L/DVB load firmware daemon or V4L/DVB udev rules for loading
+firmware that I'm ware of, and I don't like the idea of adding an extra complexity
+for userspace to use this device.
 
-This Is Different, Powerful And Big. The Grand Father Of All Email Processing 
-Programs. Finally Anyone Can Make Money In 3 Different Ways,Earning $1000's 
-Per Week Processing Emails From Home. No Experience Necessary!
+So, I'll be adding this driver as proposed. Yet, as some points are risen, I'll
+be moving those drivers to staging for 2.6.38. This will give you some time for
+propose patches and to better discuss this question.
+> 
+>>> If I understand it correctly the driver assumes the firmware is in an Altera 
+>>> proprietary format. If we really want JTAG code in the kernel we should at 
+>>> least split the file parser and the TAP access code.
+>>>
+>>
+>> Agreed, but I don't think this would be a good reason to block the code merge
+>> for .38.
+>>
+> Sure, but there should be agreement that a kernel-mode JTAG state
+> machine really is the best way forward (i.e. necessary for effective
+> firmware upload) before we commit to carry this code around forever.
+> 
+> - Ben
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-If  You Can Send And Receive Emails, We Can Teach You How To Transform Your 
-PC Into A Money-Making Machine. Your Email In-Box Will Be Flooded With Cash 24/7 
-Even While You Sleep. This Is Perfect For Stay-at-home Moms & Dads, Ideal For 
-Everyone And Best In The Recession.
-
-Get Paid $25 For Every Email You Process How Many Emails Can You Process In One Day?
- 2, 4, 7, 24, or 247 . .? Can You Do It 24/7?If you can process 40 emails a day, 
-You could earn $1000.00 every day!You Are Guaranteed To Get Paid Instantly For 
-Each Email You Process!This is an easy, profitable opportunity to earn $1000's
-every week from home.No experience required.You will be well tutored with our 
-easy-to-follow step-by-step instructions.
-
-It's Easy To Make Money Everyday Even If You're Starting From Scratch With
-Zero Knowledge, Experience Or Budget!I'll Show You Exactly How.
-
-We've Start putting New 40 Members in YOUR TEAM for the January 9th -18th 2011
-weekly commission cycle...and GROWING everyday earn by $1000 or more.
-
-IMPORTANT: January 18, 2011 is the Cut-Off day to lock in your
-position then faster you act the higher commission you  will earn!!!
-
-Go Here To Secure not less than $1,000 commission Now and it still growing
-as  many people joining under you. if you secure your position right away:
-$1,000 commission will Arrive Through your Paypal or Credit Card 0n February   
-20/2011 of..And Hurry For 7 days & 8 Remaining Position This Week!!
-
-This Program is Hands Free Once your Membership are set up, you will be 
-able to earn $1,000 in less than  2 hours a day.I will show you how we do that  
-and then I will help you through the process so that YOU SUCCEED!
-
-You are alredy to access the $1,000 in any ATM if you join early before cut-off.
-
-Click below!! and order before cut-off
-
-https://www.plimus.com/jsp/redirect.jsp?contractId=2859340&referrer=profit2010
-
-TYPE   DATE & TIME --- NEW MEMBERS --- COUNTRY
-
-P -- JAN.15  @ 2:38  AM-----Abraham Williams--------- United States
-P -- JAN.15  @ 2:53  AM-----Christian Garnet -------- United Kingdom
-P -- JAN.15  @ 2:56  AM-----Madelyn Anderson--------- Germany
-M -- JAN.15  @ 4:19  AM-----Gelbert Hotfild---------- Singapore
-P -- JAN.14  @ 4:28  AM-----Carlo Echevarria--------- Italy
-M -- JAN.14  @ 6:01  AM-----lalaine Whitney---------- Australia
-P -- JAN.14  @ 7:11  AM-----Rebecca Underwood-------- Hungary
-P -- JAN.14  @ 7:39  AM-----Jericho Sanchez---------- Canada
-P -- JAN.14  @ 9:42  AM-----Thomas Coolin------------ Sri Lanka
-M -- JAN.13  @ 9:58  PM-----Grace Taylor------------- Russia
-P -- JAN.13  @ 10:21 PM-----Gina Jonhson------------- New Zealand
-P -- JAN.13  @ 11:24 PM-----Effren Christobal-------- Romania
-M -- JAN.13  @ 11:33 PM-----Tracia Miller------------ Puerto Rico
-P -- JAN.12  @ 11:41 PM-----Jane Jacob--------------- Potugal
-P -- JAN.12  @ 11:47 PM-----Janice Pulbirds---------- United States
-P -- JAN.12  @ 11:53 PM-----Shirley Roots------------ United States
-P -- JAN.11  @ 1:45  AM --- Ryann Lambert ----------- Europe
-M -- JAN.11  @ 12:34 AM --- Nick Gauci -------------- Calefornia
-M -- JAN.11  @ 10:24 AM --- Don Riley --------------- Netherland
-P -- JAN.11  @ 10:30 AM --- Lorne Whittaker --------- Swetzerland
-P -- JAN.10  @ 02:14 AM --- Ashwani Vohra ----------- Brazil
-M -- JAN.10  @ 2:34  AM --- Kevin Hunter ------------ United States
-P -- JAN.10  @ 1:54  AM --- Charles James Mills ----- South Africa
-P -- JAN.10  @ 12:34 AM --- Delia Lane -------------- New York
-P -- JAN.10  @ 6:45  AM --- Haji Ebrahim------------- Saudi Arabia
-M -- JAN.09  @ 5:34  AM --- Aleksander Ewamoto ------ Japan
-P -- JAN.09  @ 12:34 PM --- Andrew Karim ------------ England
-P -- JAN.09  @ 8:23  AM --- Carla Pereira ----------- South Korea
-P -- JAN.09  @ 2:34  PM --- Carl Krause ------------- India
-M -- JAN.09  @ 9:14  AM --- David Heart-------------- Denmark
-
-Therefore, you have a GUARANTEED $1,000  CommissionS  every month from now on!.
-
-Earn $25 Per Process!Each $25 x 40 =$1,000  Commission will be yours...!
-
-Be Sure to Copy the link below & Paste into your browser and press enter:
-To Secure your $1,000  commission!
-
-You are alredy to access the $1,000 in any ATM if you join early before cut-off.
-
-Click below!! And order Now before cut-off
-
-https://www.plimus.com/jsp/redirect.jsp?contractId=2859340&referrer=profit2010
-
-Just one simple payment of $25. and you could have earnt $1,000 every day,
-Please do realize that if you don\'t ORDER NOW, ALL Commission that
-are currently is yours to take. As soon as I receive the confirmation
-of your ORDER, I will be in touch with you to help you get started.
-
-I personally recommend it and endorse it 100%, with all my reputation.
-
-Caring for Your Success, Karen Thomas 
-
-Date: Saturday, January 15, 2011
-From: The Creator, Email Processing HomeBiz
-Subject: New: 3 Ways To Earn
-
-
-
-
-
-http://www.texastrue.com
