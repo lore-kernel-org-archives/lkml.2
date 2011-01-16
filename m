@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204Ab1APXGS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 18:06:18 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44875 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751658Ab1APXGR (ORCPT
+	id S1752339Ab1APXHz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 18:07:55 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:37803 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751867Ab1APXHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 18:06:17 -0500
-Date: Sun, 16 Jan 2011 23:06:14 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Joachim Eastwood <manabian@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] vfs pile 2 (automount work)
-Message-ID: <20110116230614.GE22723@ZenIV.linux.org.uk>
-References: <20110116185745.GB22723@ZenIV.linux.org.uk>
- <AANLkTim1SS2Y1EL9iB2jDSUbqofoaWXig-xHa12Ogm95@mail.gmail.com>
- <AANLkTinZ5ng+hbOHz7DKy82HPqFwYhQvmmbM+ioSWp9x@mail.gmail.com>
- <20110116214426.GD22723@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110116214426.GD22723@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 16 Jan 2011 18:07:51 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Mon, 17 Jan 2011 00:06:59 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Joel Becker <jlbec@evilplan.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: Re: [PATCH] configfs: change depends -> select SYSFS
+Message-ID: <20110117000659.57352da7@stein>
+In-Reply-To: <1295214807.22813.57.camel@haakon2.linux-iscsi.org>
+References: <1295125851-25279-1-git-send-email-nab@linux-iscsi.org>
+	<20110116141105.59e5b3a2@stein>
+	<1295214807.22813.57.camel@haakon2.linux-iscsi.org>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 16, 2011 at 09:44:26PM +0000, Al Viro wrote:
-
-> Already fixed.  Actually, taking it out of ifdef would work (the only
-> place that actually cares about the value of that sucker is SMP side
-> of mntput()), but we are obviously better off just not touching it on
-> UP at all - why do pointless work and waste space?
+On Jan 16 Nicholas A. Bellinger wrote:
+> On Sun, 2011-01-16 at 14:11 +0100, Stefan Richter wrote:
+> > On Jan 15 Nicholas A. Bellinger wrote:
+> > > This patch changes configfs to select SYSFS to fix the following:
+> > > 
+> > > warning: (TARGET_CORE && GFS2_FS) selects CONFIGFS_FS which has unmet direct dependencies (SYSFS)
+> > 
+> > Why don't you fix target-core's Kconfig instead?
 > 
-> See the patch upthread.  ->mnt_longterm is SMP-only optimization of
-> mntput(); it's there only to free the common case of mntput() from
-> cacheline bouncing and on UP it's needed at all.
+> The thought here was that since modern configfs is mounted
+> at /sys/kernel/config/, selecting SYSFS by default when building
+> CONFIGFS_FS made the most sense for existing configfs consumers.
 
-PS: the patch does survive UP beating.  Could you pull
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus ?
-There's only one patch at the moment:
+I for one think that layered "select" directives will open too many cans
+of worms.
 
-Al Viro (1):
-      mnt_longterm is there only on SMP
+Best don't use select at all.
 
- fs/namespace.c |   31 ++++++++++++++++++++++++-------
- 1 files changed, 24 insertions(+), 7 deletions(-)
+If you use it, select only options that don't depend on anything else.
 
+If you feel that people really want you to provide a select for them which
+selects something that in turn depends on other things, then I suggest you
+rather let your own option depend on these lower dependencies:
+
+config HIGHLEVEL_FEATURE
+	tristate "some driver"
+	depends on SYSFS  # because CONFIGFS depends on it
+	select CONFIGFS
+-- 
+Stefan Richter
+-=====-==-== ---= =---=
+http://arcgraph.de/sr/
