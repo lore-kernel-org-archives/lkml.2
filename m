@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751577Ab1APFmi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 00:42:38 -0500
-Received: from sj-iport-6.cisco.com ([171.71.176.117]:21643 "EHLO
-	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab1APFmg (ORCPT
+	id S1751573Ab1APFqf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 00:46:35 -0500
+Received: from sj-iport-4.cisco.com ([171.68.10.86]:49914 "EHLO
+	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab1APFqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 00:42:36 -0500
-Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+	Sun, 16 Jan 2011 00:46:35 -0500
+Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAG8UMk2rR7Hu/2dsb2JhbACkaXOkVJgahVAEhHCGLw
+X-IronPort-Anti-Spam-Result: AvsEACIVMk2rR7Hu/2dsb2JhbACkaXOkVZgdhVAEhHCGL4Uw
 From: Roland Dreier <rdreier@cisco.com>
 To: linux-kernel@vger.kernel.org,
         "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: [PATCH] [SCSI] target: Fix memory leak on error path
-X-Message-Flag: Warning: May contain useful information
-Date: Sat, 15 Jan 2011 21:42:32 -0800
-Message-ID: <ada1v4d1k1j.fsf@cisco.com>
+Subject: [PATCH] [SCSI] target: Remove unneeded test of se_cmd
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+X-Message-Flag: Warning: May contain useful information
+Date: Sat, 15 Jan 2011 21:46:31 -0800
+Message-ID: <adazkr1z9hk.fsf@cisco.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If allocation of pt->pscsi_cdb fails, we need to free the just-allocated
-pt or else it will be leaked.
+se_cmd is dereferenced unconditionally in many other parts of
+transport_get_lun_for_cmd() so remove the last test whether se_cmd is NULL.
 
 Signed-off-by: Roland Dreier <rolandd@cisco.com>
 ---
- drivers/target/target_core_pscsi.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+I'm not 100% sure of this patch (perhaps se_cmd can be NULL here and the
+whole rest of the function needs to be fixed instead), but this seems
+like the more sensible thing.
 
-diff --git a/drivers/target/target_core_pscsi.c b/drivers/target/target_core_pscsi.c
-index 742d246..60a2509 100644
---- a/drivers/target/target_core_pscsi.c
-+++ b/drivers/target/target_core_pscsi.c
-@@ -817,6 +817,7 @@ pscsi_alloc_task(struct se_cmd *cmd)
- 		if (!(pt->pscsi_cdb)) {
- 			printk(KERN_ERR "pSCSI: Unable to allocate extended"
- 					" pt->pscsi_cdb\n");
-+			kfree(pt);
- 			return NULL;
+ drivers/target/target_core_device.c |   22 +++++++++-------------
+ 1 files changed, 9 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
+index 317ce58..d94933d 100644
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -69,21 +69,17 @@ int transport_get_lun_for_cmd(
+ 	deve = se_cmd->se_deve =
+ 			&SE_NODE_ACL(se_sess)->device_list[unpacked_lun];
+ 	if (deve->lun_flags & TRANSPORT_LUNFLAGS_INITIATOR_ACCESS) {
+-		if (se_cmd) {
+-			deve->total_cmds++;
+-			deve->total_bytes += se_cmd->data_length;
+-
+-			if (se_cmd->data_direction == DMA_TO_DEVICE) {
+-				if (deve->lun_flags &
+-						TRANSPORT_LUNFLAGS_READ_ONLY) {
+-					read_only = 1;
+-					goto out;
+-				}
+-				deve->write_bytes += se_cmd->data_length;
+-			} else if (se_cmd->data_direction ==
+-				   DMA_FROM_DEVICE) {
+-				deve->read_bytes += se_cmd->data_length;
++		deve->total_cmds++;
++		deve->total_bytes += se_cmd->data_length;
++
++		if (se_cmd->data_direction == DMA_TO_DEVICE) {
++			if (deve->lun_flags & TRANSPORT_LUNFLAGS_READ_ONLY) {
++				read_only = 1;
++				goto out;
+ 			}
++			deve->write_bytes += se_cmd->data_length;
++		} else if (se_cmd->data_direction == DMA_FROM_DEVICE) {
++			deve->read_bytes += se_cmd->data_length;
  		}
- 	} else
+ 		deve->deve_cmds++;
+ 
