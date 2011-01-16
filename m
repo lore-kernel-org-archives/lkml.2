@@ -1,88 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab1APVZC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 16:25:02 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48314 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753666Ab1APVZA convert rfc822-to-8bit (ORCPT
+	id S1754045Ab1APVgy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 16:36:54 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59812 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753953Ab1APVgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 16:25:00 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=qdOM7xmp7MVdWyfQwu9Jju9uJs1oXizD/CyjnqpH70LdosrIw8+c1D6pfx9moolvEC
-         kBkJ6b7n22eUGfGK+Uv/igDlSPnisUGZGzFVsNfgh2ieoJMCoUu4aa4TRfoxJqyZp+RV
-         7xYlAyXkB3m4emmHPD9+Fs7Cl57RP76iQUMp0=
+	Sun, 16 Jan 2011 16:36:53 -0500
+Date: Sun, 16 Jan 2011 21:36:50 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Joachim Eastwood <manabian@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] vfs pile 2 (automount work)
+Message-ID: <20110116213650.GC22723@ZenIV.linux.org.uk>
+References: <20110116185745.GB22723@ZenIV.linux.org.uk>
+ <AANLkTim1SS2Y1EL9iB2jDSUbqofoaWXig-xHa12Ogm95@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110115154019.GF15996@n2100.arm.linux.org.uk>
-References: <1294990949-2729-1-git-send-email-ccross@android.com>
-	<AANLkTimqiqABxCejdeOQWZZ62DVUZW2v-yMpdu1aNDQT@mail.gmail.com>
-	<20110114120229.GA15996@n2100.arm.linux.org.uk>
-	<1295014231.7901.41.camel@e102109-lin.cambridge.arm.com>
-	<20110114154919.GE15996@n2100.arm.linux.org.uk>
-	<1295022193.7901.56.camel@e102109-lin.cambridge.arm.com>
-	<20110114163520.GH15996@n2100.arm.linux.org.uk>
-	<1295024327.7901.70.camel@e102109-lin.cambridge.arm.com>
-	<20110114173050.GJ15996@n2100.arm.linux.org.uk>
-	<AANLkTin_pMzNc-ZL+rVcwaVawer0poyxhatqw5P-A2qW@mail.gmail.com>
-	<20110115154019.GF15996@n2100.arm.linux.org.uk>
-Date: Sun, 16 Jan 2011 21:25:00 +0000
-X-Google-Sender-Auth: Ml2Z0Pr6FIcTgWhwfHkVcRgDo6s
-Message-ID: <AANLkTim8OhAtqADck0Snq-7z7opw=coiQ4=DeO0O7Qa-@mail.gmail.com>
-Subject: Re: [PATCH] ARM: vfp: Fix up exception location in Thumb mode
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Colin Cross <ccross@android.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTim1SS2Y1EL9iB2jDSUbqofoaWXig-xHa12Ogm95@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 January 2011 15:40, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Sat, Jan 15, 2011 at 03:31:04PM +0000, Catalin Marinas wrote:
->> On 14 January 2011 17:30, Russell King - ARM Linux
->> <linux@arm.linux.org.uk> wrote:
->> > +@  r9  = normal "successful" return address
->> >  @  r10 = vfp_state union
->> >  @  r11 = CPU number
->> > -@  lr  = failure return
->> > -
->> > +@  lr  = unrecognised instruction return address
->> > +@  IRQs enabled.
->> >  ENTRY(vfp_support_entry)
->> >        DBGSTR3 "instr %08x pc %08x state %p", r0, r2, r10
->> >
->> > @@ -138,9 +138,12 @@ check_for_exception:
->> >                                        @ exception before retrying branch
->> >                                        @ out before setting an FPEXC that
->> >                                        @ stops us reading stuff
->> > -       VFPFMXR FPEXC, r1               @ restore FPEXC last
->> > -       sub     r2, r2, #4
->> > -       str     r2, [sp, #S_PC]         @ retry the instruction
->> > +       VFPFMXR FPEXC, r1               @ Restore FPEXC last
->> > +       sub     r2, r2, #4              @ Retry current instruction - if Thumb
->> > +       str     r2, [sp, #S_PC]         @ mode it's two 16-bit instructions,
->> > +                                       @ else it's one 32-bit instruction, so
->> > +                                       @ always subtract 4 from the following
->> > +                                       @ instruction address.
->>
->> I would say it's always a 32-bit instruction but made up of two 16-bit
->> values to allow half-word alignment.
->
-> Do you have a suggested replacement text?
+On Sun, Jan 16, 2011 at 10:15:31PM +0100, Joachim Eastwood wrote:
+> Hi,
+> 
+> On 1/16/11, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > Al Viro (3):
+> >       sanitize vfsmount refcounting changes
+> 
+> f03c65993b98eeb909a4012ce7833c5857d74755 - sanitize vfsmount refcounting changes
+> 
+> Breaks my ARM !CONFIG_SMP compile
+> 
+>   CC      fs/namespace.o
+> fs/namespace.c: In function 'commit_tree':
+> fs/namespace.c:629: error: 'struct vfsmount' has no member named 'mnt_longterm'
+> fs/namespace.c: In function 'umount_tree':
+> fs/namespace.c:1192: error: 'struct vfsmount' has no member named 'mnt_longterm'
+> fs/namespace.c: In function 'mnt_make_longterm':
+> fs/namespace.c:2246: error: 'struct vfsmount' has no member named 'mnt_longterm'
+> fs/namespace.c: In function 'mnt_make_shortterm':
+> fs/namespace.c:2251: error: 'struct vfsmount' has no member named 'mnt_longterm'
+> fs/namespace.c:2254: error: 'struct vfsmount' has no member named 'mnt_longterm'
+> fs/namespace.c: In function 'dup_mnt_ns':
+> fs/namespace.c:2295: error: 'struct vfsmount' has no member named 'mnt_longterm'
+> fs/namespace.c:2299: error: 'struct vfsmount' has no member named 'mnt_longterm'
+> fs/namespace.c:2305: error: 'struct vfsmount' has no member named 'mnt_longterm'
+> fs/namespace.c: In function 'create_mnt_ns':
+> fs/namespace.c:2351: error: 'struct vfsmount' has no member named 'mnt_longterm'
 
-Maybe something like: Retry the current VFP instruction (32-bit in
-both ARM and Thumb modes).
+Aaaaargh... Brown paperbag time - all testing was on SMP boxen ;-/  The fix
+follows.  Linus, I've dropped that into for-linus in usual place
+(git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/), so if you
+prefer to pull it, it's there.
 
-(I was wondering whether we can get on the above code path with
-asynchronous VFP exceptions where the interrupted instruction may not
-be the VFP one. But I think all Thumb-2 processors these days generate
-synchronous exceptions)
+commit 91ed228ab50daa7aca54faa8bf5208b97e3448b8
+Author: Al Viro <viro@zeniv.linux.org.uk>
+Date:   Sun Jan 16 16:32:11 2011 -0500
 
--- 
-Catalin
+    mnt_longterm is there only on SMP
+    
+    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 48809e2..9f544f3 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -611,6 +611,21 @@ static void attach_mnt(struct vfsmount *mnt, struct path *path)
+ 	list_add_tail(&mnt->mnt_child, &path->mnt->mnt_mounts);
+ }
+ 
++static inline void __mnt_make_longterm(struct vfsmount *mnt)
++{
++#ifdef CONFIG_SMP
++	atomic_inc(&mnt->mnt_longterm);
++#endif
++}
++
++/* needs vfsmount lock for write */
++static inline void __mnt_make_shortterm(struct vfsmount *mnt)
++{
++#ifdef CONFIG_SMP
++	atomic_dec(&mnt->mnt_longterm);
++#endif
++}
++
+ /*
+  * vfsmount lock must be held for write
+  */
+@@ -626,7 +641,7 @@ static void commit_tree(struct vfsmount *mnt)
+ 	list_add_tail(&head, &mnt->mnt_list);
+ 	list_for_each_entry(m, &head, mnt_list) {
+ 		m->mnt_ns = n;
+-		atomic_inc(&m->mnt_longterm);
++		__mnt_make_longterm(m);
+ 	}
+ 
+ 	list_splice(&head, n->list.prev);
+@@ -1189,7 +1204,7 @@ void umount_tree(struct vfsmount *mnt, int propagate, struct list_head *kill)
+ 		list_del_init(&p->mnt_list);
+ 		__touch_mnt_namespace(p->mnt_ns);
+ 		p->mnt_ns = NULL;
+-		atomic_dec(&p->mnt_longterm);
++		__mnt_make_shortterm(p);
+ 		list_del_init(&p->mnt_child);
+ 		if (p->mnt_parent != p) {
+ 			p->mnt_parent->mnt_ghosts++;
+@@ -2243,16 +2258,18 @@ static struct mnt_namespace *alloc_mnt_ns(void)
+ 
+ void mnt_make_longterm(struct vfsmount *mnt)
+ {
+-	atomic_inc(&mnt->mnt_longterm);
++	__mnt_make_longterm(mnt);
+ }
+ 
+ void mnt_make_shortterm(struct vfsmount *mnt)
+ {
++#ifdef CONFIG_SMP
+ 	if (atomic_add_unless(&mnt->mnt_longterm, -1, 1))
+ 		return;
+ 	br_write_lock(vfsmount_lock);
+ 	atomic_dec(&mnt->mnt_longterm);
+ 	br_write_unlock(vfsmount_lock);
++#endif
+ }
+ 
+ /*
+@@ -2292,17 +2309,17 @@ static struct mnt_namespace *dup_mnt_ns(struct mnt_namespace *mnt_ns,
+ 	q = new_ns->root;
+ 	while (p) {
+ 		q->mnt_ns = new_ns;
+-		atomic_inc(&q->mnt_longterm);
++		__mnt_make_longterm(q);
+ 		if (fs) {
+ 			if (p == fs->root.mnt) {
+ 				fs->root.mnt = mntget(q);
+-				atomic_inc(&q->mnt_longterm);
++				__mnt_make_longterm(q);
+ 				mnt_make_shortterm(p);
+ 				rootmnt = p;
+ 			}
+ 			if (p == fs->pwd.mnt) {
+ 				fs->pwd.mnt = mntget(q);
+-				atomic_inc(&q->mnt_longterm);
++				__mnt_make_longterm(q);
+ 				mnt_make_shortterm(p);
+ 				pwdmnt = p;
+ 			}
+@@ -2348,7 +2365,7 @@ struct mnt_namespace *create_mnt_ns(struct vfsmount *mnt)
+ 	new_ns = alloc_mnt_ns();
+ 	if (!IS_ERR(new_ns)) {
+ 		mnt->mnt_ns = new_ns;
+-		atomic_inc(&mnt->mnt_longterm);
++		__mnt_make_longterm(mnt);
+ 		new_ns->root = mnt;
+ 		list_add(&new_ns->list, &new_ns->root->mnt_list);
+ 	}
