@@ -1,87 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317Ab1APPs1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 10:48:27 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64054 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752509Ab1APPsZ (ORCPT
+	id S1753344Ab1APPuY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 10:50:24 -0500
+Received: from mta5.srv.hcvlny.cv.net ([167.206.4.200]:40246 "EHLO
+	mta5.srv.hcvlny.cv.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752509Ab1APPuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 10:48:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=eeZCxIn99pW+ZWsW6ws9LFasSNBrgkjbntd6IAWubgG5QwtxqHiJZB6mGGcW7xGDMQ
-         VFhGQz9PaSmGNvy/z0sYaiTphdiJkvLmMFEM3LqwPuOsJB4vr7At0x5ib4xHaSzIglKc
-         7wSaUMLk8unMsoTTf0fAPz1D0CW0jGO1escRM=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] vfs: cleanup do_vfs_ioctl()
-Date: Mon, 17 Jan 2011 00:48:17 +0900
-Message-Id: <1295192897-8690-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.3.4.600.g982838b0
+	Sun, 16 Jan 2011 10:50:21 -0500
+Date: Sun, 16 Jan 2011 10:50:18 -0500
+From: Vadim Tsozik <tsozik@yahoo.com>
+Subject: Re: [PATCH 1/1] mct_u232: added _ioctl,
+ _msr_to_icount and _get_icount functions
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Pete Zaitcev <zaitcev@redhat.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Vadim Tsozik <tsozik@yahoo.com>
+Message-id: <201101161550.p0GFoIR0002441@localhost6.localdomain6>
+Content-transfer-encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move declaration of 'inode' to beginning of the function. Since it
-is referenced directly or indirectly (in case of FIFREEZE/FITHAW/
-FS_IOC_FIEMAP) it's not harmful IMHO. And remove unnecessary casts
-using 'argp' instead.
+Greg,
+I apologize for the delay. Finally I managed to configure sendmail to relay messages via my ISP SMTP (Too bad, my ISP blocks port 25).
+Below you can find patch generated off your 2.6.37-rc7 usb branch. Please let me know if you have any problem to apply this.
+Thank you in advance,
+ Vadim.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Added mct_u232_ioctl (implements TIOCMIWAIT command), mct_u232_get_icount (implements TIOCGICOUNT command) and mct_u232_msr_to_icount functions. MCT U232 P9 is one of a few usb to serail adapters which converts USB +/-5v voltage levels to COM +/-15 voltages. So it can also power COM interfaced devices. This makes it very usable for legacy COM interfaced data-acquisition hardware. I tested new implementation with AWARE Electronics RM-60 radiation meter, which sends pulse via RNG COM line whenever new particle is registered.
+
+Signed-off-by: Vadim Tsozik <tsozik@yahoo.com>
+
 ---
- fs/ioctl.c |   21 ++++++++-------------
- 1 files changed, 8 insertions(+), 13 deletions(-)
 
-diff --git a/fs/ioctl.c b/fs/ioctl.c
-index a59635e295fa..6dc1acf9ed68 100644
---- a/fs/ioctl.c
-+++ b/fs/ioctl.c
-@@ -541,6 +541,7 @@ int do_vfs_ioctl(struct file *filp, unsigned int fd, unsigned int cmd,
+Patch below is based on linux-2.6.37-rc7
+
+--- usb/serial/mct_u232.c.orig	2010-12-26 16:54:16.660294924 -0500
++++ usb/serial/mct_u232.c	2010-12-27 15:29:30.895141755 -0500
+@@ -78,6 +78,8 @@
+ #include <asm/unaligned.h>
+ #include <linux/usb.h>
+ #include <linux/usb/serial.h>
++#include <linux/serial.h>
++#include <linux/ioctl.h>
+ #include "mct_u232.h"
+ 
+ /*
+@@ -104,6 +106,10 @@ static void mct_u232_break_ctl(struct tt
+ static int  mct_u232_tiocmget(struct tty_struct *tty, struct file *file);
+ static int  mct_u232_tiocmset(struct tty_struct *tty, struct file *file,
+ 			unsigned int set, unsigned int clear);
++static int  mct_u232_ioctl(struct tty_struct *tty, struct file *file,
++			unsigned int cmd, unsigned long arg);
++static int  mct_u232_get_icount(struct tty_struct *tty,
++			struct serial_icounter_struct *icount);
+ static void mct_u232_throttle(struct tty_struct *tty);
+ static void mct_u232_unthrottle(struct tty_struct *tty);
+ 
+@@ -150,9 +156,10 @@ static struct usb_serial_driver mct_u232
+ 	.tiocmset =	     mct_u232_tiocmset,
+ 	.attach =	     mct_u232_startup,
+ 	.release =	     mct_u232_release,
++	.ioctl =             mct_u232_ioctl,
++	.get_icount =        mct_u232_get_icount,
+ };
+ 
+-
+ struct mct_u232_private {
+ 	spinlock_t lock;
+ 	unsigned int	     control_state; /* Modem Line Setting (TIOCM) */
+@@ -160,6 +167,9 @@ struct mct_u232_private {
+ 	unsigned char	     last_lsr;      /* Line Status Register */
+ 	unsigned char	     last_msr;      /* Modem Status Register */
+ 	unsigned int	     rx_flags;      /* Throttling flags */
++	struct async_icount  icount;
++	wait_queue_head_t    msr_wait;	/* for handling sleeping while waiting
++						for msr change to happen */
+ };
+ 
+ #define THROTTLED		0x01
+@@ -386,6 +396,20 @@ static int mct_u232_get_modem_stat(struc
+ 	return rc;
+ } /* mct_u232_get_modem_stat */
+ 
++static void mct_u232_msr_to_icount(struct async_icount *icount,
++						unsigned char msr)
++{
++	/* Translate Control Line states */
++	if (msr & MCT_U232_MSR_DDSR)
++		icount->dsr++;
++	if (msr & MCT_U232_MSR_DCTS)
++		icount->cts++;
++	if (msr & MCT_U232_MSR_DRI)
++		icount->rng++;
++	if (msr & MCT_U232_MSR_DCD)
++		icount->dcd++;
++} /* mct_u232_msr_to_icount */
++
+ static void mct_u232_msr_to_state(unsigned int *control_state,
+ 						unsigned char msr)
  {
- 	int error = 0;
- 	int __user *argp = (int __user *)arg;
-+	struct inode *inode = filp->f_path.dentry->d_inode;
+@@ -422,6 +446,7 @@ static int mct_u232_startup(struct usb_s
+ 	if (!priv)
+ 		return -ENOMEM;
+ 	spin_lock_init(&priv->lock);
++	init_waitqueue_head(&priv->msr_wait);
+ 	usb_set_serial_port_data(serial->port[0], priv);
  
- 	switch (cmd) {
- 	case FIOCLEX:
-@@ -560,13 +561,11 @@ int do_vfs_ioctl(struct file *filp, unsigned int fd, unsigned int cmd,
- 		break;
+ 	init_waitqueue_head(&serial->port[0]->write_wait);
+@@ -621,6 +646,8 @@ static void mct_u232_read_int_callback(s
+ 	/* Record Control Line states */
+ 	mct_u232_msr_to_state(&priv->control_state, priv->last_msr);
  
- 	case FIOQSIZE:
--		if (S_ISDIR(filp->f_path.dentry->d_inode->i_mode) ||
--		    S_ISREG(filp->f_path.dentry->d_inode->i_mode) ||
--		    S_ISLNK(filp->f_path.dentry->d_inode->i_mode)) {
--			loff_t res =
--				inode_get_bytes(filp->f_path.dentry->d_inode);
--			error = copy_to_user((loff_t __user *)arg, &res,
--					     sizeof(res)) ? -EFAULT : 0;
-+		if (S_ISDIR(inode->i_mode) || S_ISREG(inode->i_mode) ||
-+		    S_ISLNK(inode->i_mode)) {
-+			loff_t res = inode_get_bytes(inode);
-+			error = copy_to_user(argp, &res, sizeof(res)) ?
-+					-EFAULT : 0;
- 		} else
- 			error = -ENOTTY;
- 		break;
-@@ -583,14 +582,10 @@ int do_vfs_ioctl(struct file *filp, unsigned int fd, unsigned int cmd,
- 		return ioctl_fiemap(filp, arg);
++	mct_u232_msr_to_icount(&priv->icount, priv->last_msr);
++
+ #if 0
+ 	/* Not yet handled. See belkin_sa.c for further information */
+ 	/* Now to report any errors */
+@@ -647,6 +674,7 @@ static void mct_u232_read_int_callback(s
+ 		tty_kref_put(tty);
+ 	}
+ #endif
++	wake_up_interruptible(&priv->msr_wait);
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ exit:
+ 	retval = usb_submit_urb(urb, GFP_ATOMIC);
+@@ -826,7 +854,6 @@ static void mct_u232_throttle(struct tty
+ 	}
+ }
  
- 	case FIGETBSZ:
--	{
--		struct inode *inode = filp->f_path.dentry->d_inode;
--		int __user *p = (int __user *)arg;
--		return put_user(inode->i_sb->s_blocksize, p);
--	}
-+		return put_user(inode->i_sb->s_blocksize, argp);
+-
+ static void mct_u232_unthrottle(struct tty_struct *tty)
+ {
+ 	struct usb_serial_port *port = tty->driver_data;
+@@ -847,6 +874,82 @@ static void mct_u232_unthrottle(struct t
+ 	}
+ }
  
- 	default:
--		if (S_ISREG(filp->f_path.dentry->d_inode->i_mode))
-+		if (S_ISREG(inode->i_mode))
- 			error = file_ioctl(filp, cmd, arg);
- 		else
- 			error = vfs_ioctl(filp, cmd, arg);
--- 
-1.7.3.4.600.g982838b0
-
++static int  mct_u232_ioctl(struct tty_struct *tty, struct file *file,
++			unsigned int cmd, unsigned long arg)
++{
++	DEFINE_WAIT(wait);
++	struct usb_serial_port *port = tty->driver_data;
++	struct mct_u232_private *mct_u232_port = usb_get_serial_port_data(port);
++	struct async_icount cnow, cprev;
++	unsigned long flags;
++
++	dbg("%s - port %d, cmd = 0x%x", __func__, port->number, cmd);
++
++	switch (cmd) {
++
++	case TIOCMIWAIT:
++
++		dbg("%s (%d) TIOCMIWAIT", __func__,  port->number);
++
++		spin_lock_irqsave(&mct_u232_port->lock, flags);
++		cprev = mct_u232_port->icount;
++		spin_unlock_irqrestore(&mct_u232_port->lock, flags);
++		for ( ; ; ) {
++			prepare_to_wait(&mct_u232_port->msr_wait,
++					&wait, TASK_INTERRUPTIBLE);
++			schedule();
++			finish_wait(&mct_u232_port->msr_wait, &wait);
++			/* see if a signal did it */
++			if (signal_pending(current))
++				return -ERESTARTSYS;
++			spin_lock_irqsave(&mct_u232_port->lock, flags);
++			cnow = mct_u232_port->icount;
++			spin_unlock_irqrestore(&mct_u232_port->lock, flags);
++			if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
++			    cnow.dcd == cprev.dcd && cnow.cts == cprev.cts)
++				return -EIO; /* no change => error */
++			if (((arg & TIOCM_RNG) && (cnow.rng != cprev.rng)) ||
++			    ((arg & TIOCM_DSR) && (cnow.dsr != cprev.dsr)) ||
++			    ((arg & TIOCM_CD)  && (cnow.dcd != cprev.dcd)) ||
++			    ((arg & TIOCM_CTS) && (cnow.cts != cprev.cts))) {
++				return 0;
++			}
++			cprev = cnow;
++		}
++
++	}
++	return -ENOIOCTLCMD;
++}
++
++static int  mct_u232_get_icount(struct tty_struct *tty,
++			struct serial_icounter_struct *icount)
++{
++	struct usb_serial_port *port = tty->driver_data;
++	struct mct_u232_private *mct_u232_port = usb_get_serial_port_data(port);
++	struct async_icount *ic = &mct_u232_port->icount;
++	unsigned long flags;
++
++	spin_lock_irqsave(&mct_u232_port->lock, flags);
++
++	icount->cts = ic->cts;
++	icount->dsr = ic->dsr;
++	icount->rng = ic->rng;
++	icount->dcd = ic->dcd;
++	icount->rx = ic->rx;
++	icount->tx = ic->tx;
++	icount->frame = ic->frame;
++	icount->overrun = ic->overrun;
++	icount->parity = ic->parity;
++	icount->brk = ic->brk;
++	icount->buf_overrun = ic->buf_overrun;
++
++	spin_unlock_irqrestore(&mct_u232_port->lock, flags);
++
++	dbg("%s (%d) TIOCGICOUNT RX=%d, TX=%d",
++		__func__,  port->number, icount->rx, icount->tx);
++	return 0;
++}
++
+ static int __init mct_u232_init(void)
+ {
+ 	int retval;
