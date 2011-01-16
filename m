@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430Ab1APXTK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 18:19:10 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58901 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab1APXTH (ORCPT
+	id S1752608Ab1APXTz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 18:19:55 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:58542 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752258Ab1APXTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 18:19:07 -0500
-Date: Sun, 16 Jan 2011 23:19:01 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Joel Becker <jlbec@evilplan.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: Re: [PATCH] configfs: change depends -> select SYSFS
-Message-ID: <20110116231901.GF22723@ZenIV.linux.org.uk>
-References: <1295125851-25279-1-git-send-email-nab@linux-iscsi.org>
- <20110116141105.59e5b3a2@stein>
- <1295214807.22813.57.camel@haakon2.linux-iscsi.org>
- <20110117000659.57352da7@stein>
- <AANLkTik=Pv1KdiBa3RbSoqmDC92F33jyFb0b-Ej_iGRN@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTik=Pv1KdiBa3RbSoqmDC92F33jyFb0b-Ej_iGRN@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 16 Jan 2011 18:19:52 -0500
+Subject: Re: [PATCH] target: Fix memory leak in
+	fd_set_configfs_dev_params().
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, James Bottomley <James.Bottomley@suse.de>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+In-Reply-To: <alpine.LNX.2.00.1101162357250.13377@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1101162006410.13377@swampdragon.chaosbits.net>
+	 <1295218456.22813.61.camel@haakon2.linux-iscsi.org>
+	 <alpine.LNX.2.00.1101162357250.13377@swampdragon.chaosbits.net>
+Content-Type: text/plain
+Date: Sun, 16 Jan 2011 15:19:48 -0800
+Message-Id: <1295219988.22813.72.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 16, 2011 at 03:11:57PM -0800, Linus Torvalds wrote:
-> Why the hell should a OCFS2 user have to know that he needs to enable
-> configfs to be able to enable ocfs2?
+On Sun, 2011-01-16 at 23:59 +0100, Jesper Juhl wrote:
+> On Sun, 16 Jan 2011, Nicholas A. Bellinger wrote:
 > 
-> The thing is, we should do exactly the reverse of what you say, and
-> work towards the goal of "depends on" going away. Right now, the main
-> reason to use "depends on" is actually just that our Kconfig solvers
-> are stupid, and don't generally handle "select" very well. But that's
-> hopefully getting fixed.
+> > On Sun, 2011-01-16 at 20:17 +0100, Jesper Juhl wrote:
+> > > match_strdup() dynamically allocates memory and it is the responsabillity 
+> > > of the caller to free that memory. In 
+> > > drivers/target/target_core_file.c::fd_set_configfs_dev_params() two calls 
+> > > are made to match_strdup() and in neither case is the allocated memory 
+> > > freed, but instead it is leaked.
+> > > 
+> > > This patch should take care of the problem by kfree()'ing the allocated 
+> > > memory once it is no longer needed. It also makes sure to return -ENOMEM 
+> > > if the memory allocation in match_strdup() should fail.
+> > > 
+> > > Please review and consider for inclusion.
+> > > 
+> > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > 
+> > Ugh, this was my fault during the recent v4.0 configfs parameter
+> > conversion.  Committed as 5c45b37 in lio-core-2.6.git/linus-38-rc1 and I
+> > will fix up the other handful of match_strdup() breakage and carry into
+> > scsi-post-merge-2.6.git/for-jejb shortly.
+> > 
+> > Thanks for catching this..
+> > 
+> 
+> You're welcome.
+> Yes, I did see a bunch of other match_strdup() related problems, but I 
+> thought I'd just fix up one file initially to see the general reaction, 
+> then do the rest later when this one had been merged. but if you want to 
+> fix up the remainder, feel free.
+> 
+> I guess we can merge this patch as a starting point?
+> 
 
-How do you eliminate things like "it really depends on having DMA"?
-When we configure e.g. s390 or uml kernel, it's not like we could
-enable a PCI driver and have architecture magically switch to a
-PCI-supporting one, after all...
+Sure, the other two follow-up match_strdup() memory leak bugfix patches
+for target/iblock and target_core_configfs.c APTPL metadata token
+parsing have been included into the scsi-post-merge-2.6.git/for-jejb
+queue.
+
+Thanks again!
+
+--nab
+
