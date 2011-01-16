@@ -1,80 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613Ab1APTFi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 14:05:38 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:36000 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753335Ab1APTFg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 14:05:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=J8GpdmHP4omARFNOi3cIE7u6qtoSlfg02IP/m2RsKqevCZUd4yB4eR+Zo3IhTK85y2
-         y20RU6t7BbqY7LrKh1N8xpUoiiRv2DAaFwxSIMOLnhe0NxmB6SogsESgZ511jQwcSuxY
-         YKUPCdoFhdua+xFIbAR+Rsr1fL38j8MXsI760=
+	id S1753693Ab1APTIO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 14:08:14 -0500
+Received: from lucidpixels.com ([75.144.35.66]:46789 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753335Ab1APTIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jan 2011 14:08:12 -0500
+Date: Sun, 16 Jan 2011 14:08:11 -0500 (EST)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: "Ian E. Morgan" <penguin.wrangler@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-net@vger.kernel.org,
+        Alan Piszcz <ap@solarrain.com>
+Subject: Re: Only ~85MiB/s (e1000e/write) to ~310MiB/s RAID-0 on ATOM
+ board?
+In-Reply-To: <AANLkTimMz9xgVB2njxvKEe=CXrvig_1wTc1g7keTHZp1@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1101161402430.29729@p34.internal.lan>
+References: <alpine.DEB.2.00.1101071506480.10997@p34.internal.lan> <AANLkTimMz9xgVB2njxvKEe=CXrvig_1wTc1g7keTHZp1@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimyrHqDpG4DmLym5AeHBbWziETDXjvBU+eaFfcb@mail.gmail.com>
-References: <AANLkTimBXn8zoQdPE0t-P5FZ_rLi+1jzuzG+WxeiCwFD@mail.gmail.com>
-	<AANLkTim6u9WUE7RkXUYEbTqftZ8gmB1xTYD_H8c7yhpu@mail.gmail.com>
-	<AANLkTinVDdUX70E12fqJBBsd+zKDF4zpnG4YSUhCuQCD@mail.gmail.com>
-	<AANLkTimG+61dj-KNeAJZLta4+r1TyXyo1nO7VwJnxUW7@mail.gmail.com>
-	<AANLkTikfp56XBE+B0hvvYD2nSJXpQ65XO7gwL2ZLU5uU@mail.gmail.com>
-	<AANLkTimyrHqDpG4DmLym5AeHBbWziETDXjvBU+eaFfcb@mail.gmail.com>
-Date: Sun, 16 Jan 2011 21:03:36 +0200
-Message-ID: <AANLkTim5-oQO4i7bc5mZZogXfuiHc_qk6S1Bz1eA83__@mail.gmail.com>
-Subject: Re: Please revert nouveau.
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 16, 2011 at 8:56 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sun, Jan 16, 2011 at 10:50 AM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
->>
->> after
->> git revert dfe63bb0ad9810db13aab0058caba97866e0a681
->
-> You are aware that that was already reverted yesterday? See commit 3632ef89.
->
->> and
->>
->> diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
->> index 5c4f9b9..2aad663 100644
->> --- a/drivers/gpu/drm/drm_fb_helper.c
->> +++ b/drivers/gpu/drm/drm_fb_helper.c
->> @@ -816,6 +816,7 @@ int drm_fb_helper_set_par(struct fb_info *info)
->>                        mutex_unlock(&dev->mode_config.mutex);
->>                        return ret;
->>                }
->> +               drm_fb_helper_fill_fix(info, fb_helper->fb->pitch,
->> fb_helper->fb->depth);
->>        }
->>        mutex_unlock(&dev->mode_config.mutex);
->>
->> I have an partial working sistem.
->
-> What does "partial working system" even MEAN?
->
-> Anca, stop emailing worthless crap. Tell what the problems are. And cc
-> the right people rather than asking me personally to just "revert"
-> without even saying what the problem is. And if you feel like they
-> have been ignoring you, then I have a clue for you: I bet they have
-> been frustrated by the same things I am frustrated by.
->
-> IOW, do a nice proper bug-report. Do it to the right people. Include
-> useful information, and remember that the developers DO NOT see the
-> problem you have (if they did, they'd not have done the changes), so
-> "doesn't work" or "the boot screen is not ok" is not something anybody
-> is ever going to find useful.
->
->         Linus
->
 
-Linus, I am a beginner, I will try to be more useful in the future.
+On Sun, 16 Jan 2011, Ian E. Morgan wrote:
+
+> Justin,
+>
+> I have two Supermicro 5015a-EHF-D525's. They use the same Intel 82574L
+> NICs as your slightly older board.
+> I asked myself the same questions as you just recently, and my
+> research into multi-queue NIC support led to:
+>
+> Receive Packet Steering
+>
+> Take a look at the output of NET_TX and NET_RX in /proc/softirq.
+> The interrupts were not balanced across the cpus until I did:
+>
+> echo f > /sys/devices/pci0000:00/0000:00:1c.1/0000:02:00.0/net/eth0/queues/rx-0/rps_cpus
+> ("f" being a bitmask of cpus)
+>
+> Then the interrupts started balancing across all cpus.
+> I haven't had a chance to try this in a high throughput transfer
+> situation yet, as I just happened to look into this last night.
+>
+> Hope it leads you down the right path, and please let me know if it
+> does or doesn't help, or any other solutions you've found or come up
+> with.
+>
+> --
+> Ian Morgan
+
+
+Hi Ian,
+
+Thanks for the response & suggestion!
+
+Tried it on kernel 2.6.37:
+
+Made sure it was enabled:
+# grep RPS .config
+CONFIG_RPS=y
+
+Only achieved 79.98M/s on > 4 GB of data via FTP (downloading), does not
+appear to change much.
+
+# cat /sys/class/net/eth1/queues/rx-0/rps_cpus
+0
+
+# echo f > /sys/class/net/eth1/queues/rx-0/rps_cpus
+# cat /sys/class/net/eth1/queues/rx-0/rps_cpus
+f
+#
+
+# cat /proc/softirqs
+                     CPU0       CPU1       CPU2       CPU3
+           HI:          0          0          0          0
+        TIMER:     508490     507869     508325     508253
+       NET_TX:      22933      24274      23800      22124
+       NET_RX:      94412     218903      93273      95787
+        BLOCK:      63945      22646      21324       8084
+BLOCK_IOPOLL:          0          0          0          0
+      TASKLET:          8          4          2          5
+        SCHED:     244572     218617     262071     242491
+      HRTIMER:          0          0          0          0
+          RCU:      52859      53519      53715      55199
+
+
+What speed(s) do you achieve with the D525s?
+
+If anyone finds out why these boards cannot achieve > 90-100MiB/s to disk,
+I'd be curious to know why, thanks.
+
+Justin.
+
