@@ -1,66 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753648Ab1APS4o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 13:56:44 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55886 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753626Ab1APS4m convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 13:56:42 -0500
+	id S1753631Ab1APS5s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 13:57:48 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42576 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753552Ab1APS5r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jan 2011 13:57:47 -0500
+Date: Sun, 16 Jan 2011 18:57:45 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] vfs pile 2 (automount work)
+Message-ID: <20110116185745.GB22723@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikfp56XBE+B0hvvYD2nSJXpQ65XO7gwL2ZLU5uU@mail.gmail.com>
-References: <AANLkTimBXn8zoQdPE0t-P5FZ_rLi+1jzuzG+WxeiCwFD@mail.gmail.com>
- <AANLkTim6u9WUE7RkXUYEbTqftZ8gmB1xTYD_H8c7yhpu@mail.gmail.com>
- <AANLkTinVDdUX70E12fqJBBsd+zKDF4zpnG4YSUhCuQCD@mail.gmail.com>
- <AANLkTimG+61dj-KNeAJZLta4+r1TyXyo1nO7VwJnxUW7@mail.gmail.com> <AANLkTikfp56XBE+B0hvvYD2nSJXpQ65XO7gwL2ZLU5uU@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 16 Jan 2011 10:56:20 -0800
-Message-ID: <AANLkTimyrHqDpG4DmLym5AeHBbWziETDXjvBU+eaFfcb@mail.gmail.com>
-Subject: Re: Please revert nouveau.
-To: Anca Emanuel <anca.emanuel@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 16, 2011 at 10:50 AM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
->
-> after
-> git revert dfe63bb0ad9810db13aab0058caba97866e0a681
+	This pile consists mostly automount patchset by dhowells plus
+fixes for related mainline bugs.  There's more, but I'd rather keep
+pull requests separate; I'll send another one tonight and there will
+be more on Monday.  Please, pull from
 
-You are aware that that was already reverted yesterday? See commit 3632ef89.
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
 
-> and
->
-> diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
-> index 5c4f9b9..2aad663 100644
-> --- a/drivers/gpu/drm/drm_fb_helper.c
-> +++ b/drivers/gpu/drm/drm_fb_helper.c
-> @@ -816,6 +816,7 @@ int drm_fb_helper_set_par(struct fb_info *info)
->                        mutex_unlock(&dev->mode_config.mutex);
->                        return ret;
->                }
-> +               drm_fb_helper_fill_fix(info, fb_helper->fb->pitch,
-> fb_helper->fb->depth);
->        }
->        mutex_unlock(&dev->mode_config.mutex);
->
-> I have an partial working sistem.
+Shortlog:
+Al Viro (3):
+      do_lookup() fix
+      fix old umount_tree() breakage
+      sanitize vfsmount refcounting changes
 
-What does "partial working system" even MEAN?
+David Howells (11):
+      Add a dentry op to handle automounting rather than abusing follow_link()
+      Add a dentry op to allow processes to be held during pathwalk transit
+      Add an AT_NO_AUTOMOUNT flag to suppress terminal automount
+      AFS: Use d_automount() rather than abusing follow_link()
+      NFS: Use d_automount() rather than abusing follow_link()
+      CIFS: Use d_automount() rather than abusing follow_link()
+      Remove the automount through follow_link() kludge code from pathwalk
+      Remove a further kludge from __do_follow_link()
+      Allow d_manage() to be used in RCU-walk mode
+      Unexport do_add_mount() and add in follow_automount(), not ->d_automount()
+      autofs4: Merge the remaining dentry ops tables
 
-Anca, stop emailing worthless crap. Tell what the problems are. And cc
-the right people rather than asking me personally to just "revert"
-without even saying what the problem is. And if you feel like they
-have been ignoring you, then I have a clue for you: I bet they have
-been frustrated by the same things I am frustrated by.
+Ian Kent (9):
+      autofs4: Add d_automount() dentry operation
+      autofs4: Add d_manage() dentry operation
+      autofs4: Remove unused code
+      autofs4: Clean up inode operations
+      autofs4: Clean up dentry operations
+      autofs4: Clean up autofs4_free_ino()
+      autofs4: Fix wait validation
+      autofs4: Add v4 pseudo direct mount support
+      autofs4: Bump version
 
-IOW, do a nice proper bug-report. Do it to the right people. Include
-useful information, and remember that the developers DO NOT see the
-problem you have (if they did, they'd not have done the changes), so
-"doesn't work" or "the boot screen is not ok" is not something anybody
-is ever going to find useful.
-
-         Linus
+Diffstat:
+ Documentation/filesystems/Locking |    4 +
+ Documentation/filesystems/vfs.txt |   43 +++
+ drivers/mtd/mtdchar.c             |    2 +-
+ drivers/staging/autofs/dirhash.c  |    5 +-
+ fs/afs/dir.c                      |    1 +
+ fs/afs/inode.c                    |    3 +-
+ fs/afs/internal.h                 |    1 +
+ fs/afs/mntpt.c                    |   56 +---
+ fs/anon_inodes.c                  |    2 +-
+ fs/autofs4/autofs_i.h             |   99 ++++--
+ fs/autofs4/dev-ioctl.c            |    2 +-
+ fs/autofs4/expire.c               |   51 ++--
+ fs/autofs4/inode.c                |   26 +--
+ fs/autofs4/root.c                 |  673 ++++++++++++++++---------------------
+ fs/autofs4/waitq.c                |   17 +-
+ fs/cifs/cifs_dfs_ref.c            |  120 +++----
+ fs/cifs/cifsfs.h                  |    6 +
+ fs/cifs/dir.c                     |    2 +
+ fs/cifs/inode.c                   |    8 +-
+ fs/dcache.c                       |    5 +-
+ fs/fs_struct.c                    |   35 ++-
+ fs/internal.h                     |    5 +
+ fs/namei.c                        |  379 +++++++++++++++------
+ fs/namespace.c                    |  179 +++++-----
+ fs/nfs/dir.c                      |    4 +-
+ fs/nfs/inode.c                    |    4 +-
+ fs/nfs/internal.h                 |    1 +
+ fs/nfs/namespace.c                |   79 ++---
+ fs/nfsd/vfs.c                     |    5 +-
+ fs/pipe.c                         |    2 +-
+ fs/stat.c                         |    4 +-
+ fs/super.c                        |    2 +-
+ include/linux/auto_fs4.h          |    2 +-
+ include/linux/dcache.h            |   16 +-
+ include/linux/fcntl.h             |    1 +
+ include/linux/fs.h                |    2 +
+ include/linux/mount.h             |   11 +-
+ include/linux/namei.h             |    5 +-
+ include/linux/nfs_fs.h            |    1 -
+ include/linux/path.h              |    2 -
+ 40 files changed, 1010 insertions(+), 855 deletions(-)
