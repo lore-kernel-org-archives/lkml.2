@@ -1,56 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882Ab1APKGU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 05:06:20 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:51629 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751006Ab1APKGS convert rfc822-to-8bit (ORCPT
+	id S1751975Ab1APKql (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 05:46:41 -0500
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:59657 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751852Ab1APKqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 05:06:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=StPM0LkZyMXzm2bnOrdfv3ZFvQnRzAymFeWOQnUJ8aRnwpn9egH/ZPlVeaZoIg/kgn
-         N4dkPBv/lhKCKQ3D5AH32zY7Pwux7JsD39Mnb+nEH57z4hPBu0o4/MtlOjJ3dFc6eS0I
-         +vH6v37Wt84Yy88+0gBkvxu3emoykh4nZcO9A=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Hans de Bruin <jmdebruin@xmsnet.nl>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: Bug in linux-2.6.37-rc8+: Weird X display upon hibernating
-Date: Sun, 16 Jan 2011 11:06:10 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.4.5; i686; ; )
-Cc: Siddu <siddu.sjce@gmail.com>, linux-kernel@vger.kernel.org
-References: <AANLkTinCSu68cC_jzO8MZs4Q=u+EABiZxkRv3gbyfqMk@mail.gmail.com> <AANLkTin4yh3mQ7pbGPvYFNgNnRDVrmJUD4yUJT1tusC7@mail.gmail.com> <4D2B5C08.4010109@xmsnet.nl>
-In-Reply-To: <4D2B5C08.4010109@xmsnet.nl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201101161106.11217.maciej.rutecki@gmail.com>
+	Sun, 16 Jan 2011 05:46:40 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: linux-kernel@vger.kernel.org
+Cc: Felipe Balbi <balbi@ti.com>, David Airlie <airlied@linux.ie>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        dri-devel@lists.freedesktop.org
+Subject: [PATCH 1/2] drm: fixup headers_check
+Date: Sun, 16 Jan 2011 12:46:22 +0200
+Message-Id: <1295174783-4099-1-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.7.3.4.598.g85356
+Organization: Texas Instruments\n
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On poniedziałek, 10 stycznia 2011 o 20:20:40 Hans de Bruin wrote:
-> On 01/09/2011 06:07 PM, Siddu wrote:
-> > seems like its not getting much attention here .... atleast can anyone
-> > tell me which is the right place to be brought into notice ?
-> 
-> If you want to avoid the lkml you might want to look at buzilla. Rafael
-> Wysocki has a list of bugs/regressions for each kernel release. The list
-> for 2.6.37 is at:
-> 
-> https://bugzilla.kernel.org/show_bug.cgi?id=21782
-> 
-> If your problem is not there yet, you can add an entry.
+Drop the following headers_check errors:
+/linux-2.6/usr/include/drm/drm_mode.h:85: found
+__[us]{8,16,32,64} type without #include <linux/types.h>
+/linux-2.6/usr/include/drm/i915_drm.h:120: found
+__[us]{8,16,32,64} type without #include <linux/types.h>
+/linux-2.6/usr/include/drm/mga_drm.h:260: found
+__[us]{8,16,32,64} type without #include <linux/types.h>
+/linux-2.6/usr/include/drm/radeon_drm.h:758: found
+__[us]{8,16,32,64} type without #include <linux/types.h>
+/linux-2.6/usr/include/drm/via_drm.h:117: found
+__[us]{8,16,32,64} type without #include <linux/types.h>
 
-Firstly you must sure, that _is_ regression. Siddu wrote: "Here is something 
-strange which seems to happening with 2.6.37-rc8+
-also i am not sure if this existed earlier ."
+Cc: David Airlie <airlied@linux.ie>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: dri-devel@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ include/drm/drm_mode.h   |    2 ++
+ include/drm/i915_drm.h   |    1 +
+ include/drm/mga_drm.h    |    1 +
+ include/drm/radeon_drm.h |    1 +
+ include/drm/via_drm.h    |    1 +
+ 5 files changed, 6 insertions(+), 0 deletions(-)
 
-Regards
-
+diff --git a/include/drm/drm_mode.h b/include/drm/drm_mode.h
+index 0fc7397..1678d7b 100644
+--- a/include/drm/drm_mode.h
++++ b/include/drm/drm_mode.h
+@@ -27,6 +27,8 @@
+ #ifndef _DRM_MODE_H
+ #define _DRM_MODE_H
+ 
++#include <linux/types.h>
++
+ #define DRM_DISPLAY_INFO_LEN	32
+ #define DRM_CONNECTOR_NAME_LEN	32
+ #define DRM_DISPLAY_MODE_LEN	32
+diff --git a/include/drm/i915_drm.h b/include/drm/i915_drm.h
+index 0039f1f..4b211c8 100644
+--- a/include/drm/i915_drm.h
++++ b/include/drm/i915_drm.h
+@@ -27,6 +27,7 @@
+ #ifndef _I915_DRM_H_
+ #define _I915_DRM_H_
+ 
++#include <linux/types.h>
+ #include "drm.h"
+ 
+ /* Please note that modifications to all structs defined here are
+diff --git a/include/drm/mga_drm.h b/include/drm/mga_drm.h
+index c16097f..1107097 100644
+--- a/include/drm/mga_drm.h
++++ b/include/drm/mga_drm.h
+@@ -35,6 +35,7 @@
+ #ifndef __MGA_DRM_H__
+ #define __MGA_DRM_H__
+ 
++#include <linux/types.h>
+ #include "drm.h"
+ 
+ /* WARNING: If you change any of these defines, make sure to change the
+diff --git a/include/drm/radeon_drm.h b/include/drm/radeon_drm.h
+index e95a86b..f9ec151 100644
+--- a/include/drm/radeon_drm.h
++++ b/include/drm/radeon_drm.h
+@@ -33,6 +33,7 @@
+ #ifndef __RADEON_DRM_H__
+ #define __RADEON_DRM_H__
+ 
++#include <linux/types.h>
+ #include "drm.h"
+ 
+ /* WARNING: If you change any of these defines, make sure to change the
+diff --git a/include/drm/via_drm.h b/include/drm/via_drm.h
+index fd11a5b..23880b0 100644
+--- a/include/drm/via_drm.h
++++ b/include/drm/via_drm.h
+@@ -24,6 +24,7 @@
+ #ifndef _VIA_DRM_H_
+ #define _VIA_DRM_H_
+ 
++#include <linux/types.h>
+ #include "drm.h"
+ 
+ /* WARNING: These defines must be the same as what the Xserver uses.
 -- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+1.7.3.4.598.g85356
+
