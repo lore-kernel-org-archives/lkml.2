@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab1APRv3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 12:51:29 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54907 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753061Ab1APRv1 (ORCPT
+	id S1753479Ab1APRz2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 12:55:28 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41534 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753061Ab1APRzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 12:51:27 -0500
-Date: Sun, 16 Jan 2011 17:51:09 +0000
-From: Russell King <rmk@arm.linux.org.uk>
-To: Akinobu Mita <akinobu.mita@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH v4 05/24] arm: introduce little-endian bitops
-Message-ID: <20110116175109.GC13615@flint.arm.linux.org.uk>
-Mail-Followup-To: Akinobu Mita <akinobu.mita@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-References: <1295183333-13802-1-git-send-email-akinobu.mita@gmail.com> <1295183333-13802-6-git-send-email-akinobu.mita@gmail.com>
+	Sun, 16 Jan 2011 12:55:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295183333-13802-6-git-send-email-akinobu.mita@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1295125851-25279-1-git-send-email-nab@linux-iscsi.org>
+References: <1295125851-25279-1-git-send-email-nab@linux-iscsi.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 16 Jan 2011 09:54:31 -0800
+Message-ID: <AANLkTikmyDsq37e6D1FXGXTJ7zztsnxfZvPBBHqO_Tch@mail.gmail.com>
+Subject: Re: [PATCH] configfs: change depends -> select SYSFS
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Joel Becker <jlbec@evilplan.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 16, 2011 at 10:08:34PM +0900, Akinobu Mita wrote:
-> Introduce little-endian bit operations by renaming native ext2 bit
-> operations.  The ext2 bit operations are kept as wrapper macros using
-> little-endian bit operations to maintain bisectability until the
-> conversions are finished.
+On Sat, Jan 15, 2011 at 1:10 PM, Nicholas A. Bellinger
+<nab@linux-iscsi.org> wrote:
+>
+> This patch changes configfs to select SYSFS to fix the following:
+>
+> warning: (TARGET_CORE && GFS2_FS) selects CONFIGFS_FS which has unmet direct dependencies (SYSFS)
 
-This looks fine to me - is there any chance we can get this in to mainline
-so we can avoid conflicts between this and some patches I'm working on atm
-to fix the unsafe UP+SMP kernel combination with ARMs bitops ?
+I'm ok with this part. But:
 
-It's doing some stuff which needs to be done anyway (the casting to
-unsigned long pointers for the ext2/minix find bit functions) which
-otherwise will be duplicated in my patches.
+> This patch also fixes whitespace breakage in the 'help' section.
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+This is just bogus. The help text is _supposed_ to have that extra
+indentation so that it stands out from the rest of the Kconfig stuff.
+
+                   Linus
