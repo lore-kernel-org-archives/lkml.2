@@ -1,61 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab1APPm5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 10:42:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40016 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752888Ab1APPmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 10:42:55 -0500
-Message-ID: <4D3311FA.8020202@redhat.com>
-Date: Sun, 16 Jan 2011 17:42:50 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: "Zhai, Edwin" <edwin.zhai@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>
-Subject: Re: [PATCH -v2] vmx: increase ple_gap default to 64
-References: <20110103101907.2926ecca@annuminas.surriel.com>	<4D229221.8070305@intel.com> <20110104095133.62525567@annuminas.surriel.com>
-In-Reply-To: <20110104095133.62525567@annuminas.surriel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753317Ab1APPs1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 10:48:27 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64054 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752509Ab1APPsZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jan 2011 10:48:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=eeZCxIn99pW+ZWsW6ws9LFasSNBrgkjbntd6IAWubgG5QwtxqHiJZB6mGGcW7xGDMQ
+         VFhGQz9PaSmGNvy/z0sYaiTphdiJkvLmMFEM3LqwPuOsJB4vr7At0x5ib4xHaSzIglKc
+         7wSaUMLk8unMsoTTf0fAPz1D0CW0jGO1escRM=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] vfs: cleanup do_vfs_ioctl()
+Date: Mon, 17 Jan 2011 00:48:17 +0900
+Message-Id: <1295192897-8690-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.3.4.600.g982838b0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/2011 04:51 PM, Rik van Riel wrote:
-> On some CPUs, a ple_gap of 41 is simply insufficient to ever trigger
-> PLE exits, even with the minimalistic PLE test from kvm-unit-tests.
->
-> http://git.kernel.org/?p=virt/kvm/kvm-unit-tests.git;a=commitdiff;h=eda71b28fa122203e316483b35f37aaacd42f545
->
-> For example, the Xeon X5670 CPU needs a ple_gap of at least 48 in
-> order to get pause loop exits:
->
-> # modprobe kvm_intel ple_gap=47
-> # taskset 1 /usr/local/bin/qemu-system-x86_64 -device testdev,chardev=log -chardev stdio,id=log -kernel x86/vmexit.flat -append ple-round-robin -smp 2
-> VNC server running on `::1:5900'
-> enabling apic
-> enabling apic
-> ple-round-robin 58298446
-> # rmmod kvm_intel
-> # modprobe kvm_intel ple_gap=48
-> # taskset 1 /usr/local/bin/qemu-system-x86_64 -device testdev,chardev=log -chardev stdio,id=log -kernel x86/vmexit.flat -append ple-round-robin -smp 2
-> VNC server running on `::1:5900'
-> enabling apic
-> enabling apic
-> ple-round-robin 36616
->
-> Increase the ple_gap to 128 to be on the safe side.  Is this enough
-> for a CPU with HT that has a busy sibling thread, or should it be
-> even larger?   On the X5670, loading up the sibling thread with an
-> infinite loop does not seem to increase the required ple_gap.
->
+Move declaration of 'inode' to beginning of the function. Since it
+is referenced directly or indirectly (in case of FIFREEZE/FITHAW/
+FS_IOC_FIEMAP) it's not harmful IMHO. And remove unnecessary casts
+using 'argp' instead.
 
-Applied, thanks.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ fs/ioctl.c |   21 ++++++++-------------
+ 1 files changed, 8 insertions(+), 13 deletions(-)
 
+diff --git a/fs/ioctl.c b/fs/ioctl.c
+index a59635e295fa..6dc1acf9ed68 100644
+--- a/fs/ioctl.c
++++ b/fs/ioctl.c
+@@ -541,6 +541,7 @@ int do_vfs_ioctl(struct file *filp, unsigned int fd, unsigned int cmd,
+ {
+ 	int error = 0;
+ 	int __user *argp = (int __user *)arg;
++	struct inode *inode = filp->f_path.dentry->d_inode;
+ 
+ 	switch (cmd) {
+ 	case FIOCLEX:
+@@ -560,13 +561,11 @@ int do_vfs_ioctl(struct file *filp, unsigned int fd, unsigned int cmd,
+ 		break;
+ 
+ 	case FIOQSIZE:
+-		if (S_ISDIR(filp->f_path.dentry->d_inode->i_mode) ||
+-		    S_ISREG(filp->f_path.dentry->d_inode->i_mode) ||
+-		    S_ISLNK(filp->f_path.dentry->d_inode->i_mode)) {
+-			loff_t res =
+-				inode_get_bytes(filp->f_path.dentry->d_inode);
+-			error = copy_to_user((loff_t __user *)arg, &res,
+-					     sizeof(res)) ? -EFAULT : 0;
++		if (S_ISDIR(inode->i_mode) || S_ISREG(inode->i_mode) ||
++		    S_ISLNK(inode->i_mode)) {
++			loff_t res = inode_get_bytes(inode);
++			error = copy_to_user(argp, &res, sizeof(res)) ?
++					-EFAULT : 0;
+ 		} else
+ 			error = -ENOTTY;
+ 		break;
+@@ -583,14 +582,10 @@ int do_vfs_ioctl(struct file *filp, unsigned int fd, unsigned int cmd,
+ 		return ioctl_fiemap(filp, arg);
+ 
+ 	case FIGETBSZ:
+-	{
+-		struct inode *inode = filp->f_path.dentry->d_inode;
+-		int __user *p = (int __user *)arg;
+-		return put_user(inode->i_sb->s_blocksize, p);
+-	}
++		return put_user(inode->i_sb->s_blocksize, argp);
+ 
+ 	default:
+-		if (S_ISREG(filp->f_path.dentry->d_inode->i_mode))
++		if (S_ISREG(inode->i_mode))
+ 			error = file_ioctl(filp, cmd, arg);
+ 		else
+ 			error = vfs_ioctl(filp, cmd, arg);
 -- 
-error compiling committee.c: too many arguments to function
+1.7.3.4.600.g982838b0
 
