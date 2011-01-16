@@ -1,116 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063Ab1APO2t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 09:28:49 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:35034 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab1APO2r (ORCPT
+	id S1753183Ab1APOiv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 09:38:51 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:13516 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718Ab1APOit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 09:28:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=GxkXLi4tGjv5+2F0AgQs0BG3eW3h4vckOYz5vENa54ub9kStjQXFDXIwsbCjrEUzd/
-         L7AmF2Y2uDxpMneTzmPEDI+qY2D+kg1jRykrhuFA9bjWwuWZfliq1QIOehajCE3LzZ2Z
-         AFkqe9DpEeesHKyn/QgtxaURHcNVipOGkEYUE=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] fs: fix address space warnings in ioctl_fiemap()
-Date: Sun, 16 Jan 2011 23:28:17 +0900
-Message-Id: <1295188097-7798-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.3.4.600.g982838b0
+	Sun, 16 Jan 2011 09:38:49 -0500
+Date: Sun, 16 Jan 2011 15:38:47 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-crypto@vger.kernel.org
+cc: tadeusz.struk@intel.com, linux-kernel@vger.kernel.org, x86@kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Huang Ying <ying.huang@intel.com>,
+        Adrian Hoban <adrian.hoban@intel.com>,
+        Gabriele Paoloni <gabriele.paoloni@intel.com>,
+        aidan.o.mahony@intel.com
+Subject: [PATCH] rfc4106, Intel, AES-NI: Don't leak memory in
+ rfc4106_set_hash_subkey().
+Message-ID: <alpine.LNX.2.00.1101161527440.8049@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fi_extents_start field of struct fiemap_extent_info is a
-user pointer but was not marked as __user. This makes sparse
-emit following warnings:
+There's a small memory leak in 
+arch/x86/crypto/aesni-intel_glue.c::rfc4106_set_hash_subkey(). If the call 
+to kmalloc() fails and returns NULL then the memory allocated previously 
+by ablkcipher_request_alloc() is not freed when we leave the function.
 
-  CHECK   fs/ioctl.c
-fs/ioctl.c:114:26: warning: incorrect type in argument 1 (different address spaces)
-fs/ioctl.c:114:26:    expected void [noderef] <asn:1>*dst
-fs/ioctl.c:114:26:    got struct fiemap_extent *[assigned] dest
-fs/ioctl.c:202:14: warning: incorrect type in argument 1 (different address spaces)
-fs/ioctl.c:202:14:    expected void const volatile [noderef] <asn:1>*<noident>
-fs/ioctl.c:202:14:    got struct fiemap_extent *[assigned] fi_extents_start
-fs/ioctl.c:212:27: warning: incorrect type in argument 1 (different address spaces)
-fs/ioctl.c:212:27:    expected void [noderef] <asn:1>*dst
-fs/ioctl.c:212:27:    got char *<noident>
+I could have just added a call to ablkcipher_request_free() before we 
+return -ENOMEM, but that started to look too much like the code we 
+already had at the end of the function, so I chose instead to rework the 
+code a bit so that there are now a few labels at the end that we goto when 
+various allocations fail, so we don't have to repeat the same blocks of 
+code (this also reduces the object code size slightly).
 
-Also add 'ufiemap' variable to eliminate unnecessary casts.
+Please review and consider merging.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- fs/ioctl.c         |   10 +++++-----
- include/linux/fs.h |    4 ++--
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ aesni-intel_glue.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/fs/ioctl.c b/fs/ioctl.c
-index d6cc16476620..a59635e295fa 100644
---- a/fs/ioctl.c
-+++ b/fs/ioctl.c
-@@ -86,7 +86,7 @@ int fiemap_fill_next_extent(struct fiemap_extent_info *fieinfo, u64 logical,
- 			    u64 phys, u64 len, u32 flags)
- {
- 	struct fiemap_extent extent;
--	struct fiemap_extent *dest = fieinfo->fi_extents_start;
-+	struct fiemap_extent __user *dest = fieinfo->fi_extents_start;
+  compile tested only.
+
+diff --git a/arch/x86/crypto/aesni-intel_glue.c b/arch/x86/crypto/aesni-intel_glue.c
+index e1e60c7..e013552 100644
+--- a/arch/x86/crypto/aesni-intel_glue.c
++++ b/arch/x86/crypto/aesni-intel_glue.c
+@@ -873,21 +873,19 @@ rfc4106_set_hash_subkey(u8 *hash_subkey, const u8 *key, unsigned int key_len)
+ 	crypto_ablkcipher_clear_flags(ctr_tfm, ~0);
  
- 	/* only count the extents */
- 	if (fieinfo->fi_extents_max == 0) {
-@@ -173,6 +173,7 @@ static int fiemap_check_ranges(struct super_block *sb,
- static int ioctl_fiemap(struct file *filp, unsigned long arg)
- {
- 	struct fiemap fiemap;
-+	struct fiemap __user *ufiemap = (struct fiemap __user *) arg;
- 	struct fiemap_extent_info fieinfo = { 0, };
- 	struct inode *inode = filp->f_path.dentry->d_inode;
- 	struct super_block *sb = inode->i_sb;
-@@ -182,8 +183,7 @@ static int ioctl_fiemap(struct file *filp, unsigned long arg)
- 	if (!inode->i_op->fiemap)
- 		return -EOPNOTSUPP;
+ 	ret = crypto_ablkcipher_setkey(ctr_tfm, key, key_len);
+-	if (ret) {
+-		crypto_free_ablkcipher(ctr_tfm);
+-		return ret;
+-	}
++	if (ret)
++		goto out;
  
--	if (copy_from_user(&fiemap, (struct fiemap __user *)arg,
--			   sizeof(struct fiemap)))
-+	if (copy_from_user(&fiemap, ufiemap, sizeof(fiemap)))
- 		return -EFAULT;
+ 	req = ablkcipher_request_alloc(ctr_tfm, GFP_KERNEL);
+ 	if (!req) {
+-		crypto_free_ablkcipher(ctr_tfm);
+-		return -EINVAL;
++		ret = -EINVAL;
++		goto out_free_ablkcipher;
+ 	}
  
- 	if (fiemap.fm_extent_count > FIEMAP_MAX_EXTENTS)
-@@ -196,7 +196,7 @@ static int ioctl_fiemap(struct file *filp, unsigned long arg)
+ 	req_data = kmalloc(sizeof(*req_data), GFP_KERNEL);
+ 	if (!req_data) {
+-		crypto_free_ablkcipher(ctr_tfm);
+-		return -ENOMEM;
++		ret = -ENOMEM;
++		goto out_free_request;
+ 	}
+ 	memset(req_data->iv, 0, sizeof(req_data->iv));
  
- 	fieinfo.fi_flags = fiemap.fm_flags;
- 	fieinfo.fi_extents_max = fiemap.fm_extent_count;
--	fieinfo.fi_extents_start = (struct fiemap_extent *)(arg + sizeof(fiemap));
-+	fieinfo.fi_extents_start = ufiemap->fm_extents;
+@@ -913,9 +911,12 @@ rfc4106_set_hash_subkey(u8 *hash_subkey, const u8 *key, unsigned int key_len)
+ 		if (!ret)
+ 			ret = req_data->result.err;
+ 	}
++out_free_request:
+ 	ablkcipher_request_free(req);
+ 	kfree(req_data);
++out_free_ablkcipher:
+ 	crypto_free_ablkcipher(ctr_tfm);
++out:
+ 	return ret;
+ }
  
- 	if (fiemap.fm_extent_count != 0 &&
- 	    !access_ok(VERIFY_WRITE, fieinfo.fi_extents_start,
-@@ -209,7 +209,7 @@ static int ioctl_fiemap(struct file *filp, unsigned long arg)
- 	error = inode->i_op->fiemap(inode, &fieinfo, fiemap.fm_start, len);
- 	fiemap.fm_flags = fieinfo.fi_flags;
- 	fiemap.fm_mapped_extents = fieinfo.fi_extents_mapped;
--	if (copy_to_user((char *)arg, &fiemap, sizeof(fiemap)))
-+	if (copy_to_user(ufiemap, &fiemap, sizeof(fiemap)))
- 		error = -EFAULT;
- 
- 	return error;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 08824e0ef381..d1777ab1fc5d 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1481,8 +1481,8 @@ struct fiemap_extent_info {
- 	unsigned int fi_flags;		/* Flags as passed from user */
- 	unsigned int fi_extents_mapped;	/* Number of mapped extents */
- 	unsigned int fi_extents_max;	/* Size of fiemap_extent array */
--	struct fiemap_extent *fi_extents_start; /* Start of fiemap_extent
--						 * array */
-+	struct fiemap_extent __user *fi_extents_start; /* Start of
-+							fiemap_extent array */
- };
- int fiemap_fill_next_extent(struct fiemap_extent_info *info, u64 logical,
- 			    u64 phys, u64 len, u32 flags);
+
+
 -- 
-1.7.3.4.600.g982838b0
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
 
