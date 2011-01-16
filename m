@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab1APUlm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 15:41:42 -0500
-Received: from mail.bluewatersys.com ([202.124.120.130]:34324 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753666Ab1APUlj (ORCPT
+	id S1753979Ab1APUuO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 15:50:14 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:16667 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753666Ab1APUuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 15:41:39 -0500
-Message-ID: <4D33580A.8090007@bluewatersys.com>
-Date: Mon, 17 Jan 2011 09:41:46 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+	Sun, 16 Jan 2011 15:50:10 -0500
+Date: Sun, 16 Jan 2011 21:50:09 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-nfs@vger.kernel.org
+cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] NFS4: Avoid potential NULL pointer dereference in
+ decode_and_add_ds().
+Message-ID: <alpine.LNX.2.00.1101162145290.13377@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Ben Herrenchmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH 1/2] Add a common struct clk
-References: <1294199462.347935.472473715866.0.gpush@pororo> <20110110104122.GI12078@pengutronix.de> <20110110110028.GB12552@n2100.arm.linux.org.uk> <201101110854.15653.jeremy.kerr@canonical.com> <AANLkTikjnz6RBCpOZM2imzX3d1ANUkaOZ2Qg9nqhpfpt@mail.gmail.com>
-In-Reply-To: <AANLkTikjnz6RBCpOZM2imzX3d1ANUkaOZ2Qg9nqhpfpt@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2011 08:26 PM, Grant Likely wrote:
-> On Mon, Jan 10, 2011 at 5:54 PM, Jeremy Kerr <jeremy.kerr@canonical.com> wrote:
->> Hi Russell,
->>
->>> Unless the locking problems can be resolved, the patches aren't ready.
->>>
->>> From what I've seen there's still quite a problem with what kind of
->>> lock to use in the clock - mutex or spinlock.
->>
->> Yes, the clock driver may either use a spinlock or mutex.
->>
->> However, this exactly the same as the current clock code, my patches do not
->> alter what we currently have.
->>
->> I do agree that we should define some specific semantics for the clock API
->> with regards to sleeping, and I'll start a new thread about that. But we
->> should definitely separate that issue from the problem of having multiple
->> definitions for struct clk, which is what these patches address.
-> 
-> Given that each current struct clk implementation makes it's own
-> decisions about how to handle locking, would it not make sense to omit
-> locking entirely?  At least as a first step?  Let the clock ops
-> implement their own locking.  Make enable count management their
-> responsibility too.  That's all that the lock protects anyway.  The
-> clk_* apis can fall directly through to the ops hooks with no
-> manipulation or locking.  The way v3 of the patch worked.
+strrchr() can return NULL if nothing is found. If this happens we'll 
+dereference a NULL pointer in 
+fs/nfs/nfs4filelayoutdev.c::decode_and_add_ds().
 
-This doesn't really work in a generic API because the call sites need to
-know whether it safe to call clk_enable/disable, etc from a
-non-sleepable context. This has essentially the same problems as using a
-union with both a mutex and a spinlock.
+I tried to find some other code that guarantees that this can never 
+happen but I was unsuccessful. So, unless someone else can point to some 
+code that ensures this can never be a problem, I believe this patch is 
+needed.
 
-That said, although we are aiming for a generic clock API, it's usage
-typically isn't. Most of the users of the clock API are machine/platform
-specific drivers and so they can make assumptions about the
-implementation of the clock API calls. We currently do have a generic
-set of clock calls which do not define rules about calling from atomic
-context. We have a number of drivers, for several platforms, using the
-clk_enable/disable calls. Some platforms are using sleeping clocks and
-others are using atomic clocks, but because the _usage_ of the API is
-largely platform specific it all hangs together.
+While I was changing this code I also noticed that all the dprintk() 
+statements, except one, start with "%s:". The one missing the ":" I added 
+it to.
 
-This is a bit ugly in practice. It's hardly desirable to have an API
-which looks generic, but in reality is platform/machine specific. I'm
-guessing that a large benefit of having a unified API and well defined
-rules about whether clock API calls may sleep or not allows the usage of
-the clock API to become more generic.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ nfs4filelayoutdev.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-I agree with Russell that the best short term approach is to create two
-clock APIs, one for clocks which are atomic and the other for clocks
-which need to sleep. If nothing else this at least allows the rules
-about calling context to nailed down.
+  only compile tested.
 
-~Ryan
+diff --git a/fs/nfs/nfs4filelayoutdev.c b/fs/nfs/nfs4filelayoutdev.c
+index 51fe64a..5a85b8f 100644
+--- a/fs/nfs/nfs4filelayoutdev.c
++++ b/fs/nfs/nfs4filelayoutdev.c
+@@ -214,7 +214,7 @@ decode_and_add_ds(__be32 **pp, struct inode *inode)
+ 
+ 	/* ipv6 length plus port is legal */
+ 	if (rlen > INET6_ADDRSTRLEN + 8) {
+-		dprintk("%s Invalid address, length %d\n", __func__,
++		dprintk("%s: Invalid address, length %d\n", __func__,
+ 			rlen);
+ 		goto out_err;
+ 	}
+@@ -225,6 +225,11 @@ decode_and_add_ds(__be32 **pp, struct inode *inode)
+ 	/* replace the port dots with dashes for the in4_pton() delimiter*/
+ 	for (i = 0; i < 2; i++) {
+ 		char *res = strrchr(buf, '.');
++		if (!res) {
++			dprintk("%s: Failed finding expected dots in port\n",
++				__func__);
++			goto out_free;
++		}
+ 		*res = '-';
+ 	}
+ 
 
 -- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
