@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908Ab1APUFo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 15:05:44 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:16202 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753769Ab1APUFm (ORCPT
+	id S1753904Ab1APUMq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 15:12:46 -0500
+Received: from amavis-outgoing2.knology.net ([24.214.64.231]:58854 "EHLO
+	amavis-outgoing2.knology.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752978Ab1APUMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 15:05:42 -0500
-Date: Sun, 16 Jan 2011 21:05:41 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Rob Landley <rlandley@parallels.com>
-cc: linux-kernel@vger.kernel.org, tglx@linuxtronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org,
-        "K. Y. Srinivasan" <ksrinivasan@novell.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH] Use sed instead of perl to generate
- x86/kernel/cpu/capflags.c.
-In-Reply-To: <4D334E1E.7090708@parallels.com>
-Message-ID: <alpine.LNX.2.00.1101162103450.13377@swampdragon.chaosbits.net>
-References: <4D334E1E.7090708@parallels.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 16 Jan 2011 15:12:44 -0500
+Subject: scsi: include linux/scatterlist.h to pick up ARCH_HAS_SG_CHAIN
+From: David Dillow <dillowda@ornl.gov>
+To: linux-scsi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, James.Bottomley@suse.de
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 16 Jan 2011 15:12:39 -0500
+Message-ID: <1295208759.2574.14.camel@obelisk.thedillows.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 16 Jan 2011, Rob Landley wrote:
+If the compiled object doesn't include linux/scatterlist.h before
+scsi/scsi.h, it will get an incorrect definition of
+SCSI_MAX_SG_CHAIN_SEGMENTS.
 
-> From: Rob Landley <rlandley@parallels.com>
-> 
-> Generate capflags.c with sed (POSIX 2008) instead of perl.
-> 
+Signed-off-by: David Dillow <dillowda@ornl.gov>
+--
+This fixes an issue I found while working on the SRP initiator, where
+linux/scatterlist.h was being pulled in by scsi/scsi_device.h. It's not
+clear if I'm supposed to include linux/scatterlist.h myself, or if I'm
+including the scsi headers in the wrong order. It makes sense for me
+that scsi.h would pickup the needed headers itself to prevent confusion.
 
-While I'm not personally a great perl fan, this still begs the 
-question, why?
-
-We already depend on perl for other stuff, so why replace something that 
-works with something that may or may not work?
+Another option is to potentially get rid of the ARCH_HAS_SG_CHAIN define
+as all archs have it save m68knommu.
 
 
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
+index 648d233..b76d400 100644
+--- a/include/scsi/scsi.h
++++ b/include/scsi/scsi.h
+@@ -9,6 +9,7 @@
+ #define _SCSI_SCSI_H
+ 
+ #include <linux/types.h>
++#include <linux/scatterlist.h>
+ 
+ struct scsi_cmnd;
+ 
+
 
