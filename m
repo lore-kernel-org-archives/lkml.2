@@ -1,46 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131Ab1APNLa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 08:11:30 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:34843 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab1APNL1 (ORCPT
+	id S1752934Ab1APNMD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 08:12:03 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49634 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752680Ab1APNJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 08:11:27 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sun, 16 Jan 2011 14:11:05 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Joel Becker <jlbec@evilplan.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: Re: [PATCH] configfs: change depends -> select SYSFS
-Message-ID: <20110116141105.59e5b3a2@stein>
-In-Reply-To: <1295125851-25279-1-git-send-email-nab@linux-iscsi.org>
-References: <1295125851-25279-1-git-send-email-nab@linux-iscsi.org>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 16 Jan 2011 08:09:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=FtLrlZ/BRMnha61DEzwwM2BCqud7vND7iHmD1RoZtiGFOfDSgcHdPgWD5mNtzL6OOU
+         PeAvOITf5rb6OEhYHLutr7iFoIHej+cH1qo+c+ZXHicZlkf2egaa2nGp/oH9+TxFwZLu
+         iNUQhl/nfaQSqY2uzXXTlPCqFzBdV4kX/usLM=
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, Jan Kara <jack@suse.cz>
+Subject: [PATCH v4 13/24] ext3: use little-endian bitops
+Date: Sun, 16 Jan 2011 22:08:42 +0900
+Message-Id: <1295183333-13802-14-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1295183333-13802-1-git-send-email-akinobu.mita@gmail.com>
+References: <1295183333-13802-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jan 15 Nicholas A. Bellinger wrote:
-> This patch changes configfs to select SYSFS to fix the following:
-> 
-> warning: (TARGET_CORE && GFS2_FS) selects CONFIGFS_FS which has unmet direct dependencies (SYSFS)
+As a preparation for removing ext2 non-atomic bit operations from
+asm/bitops.h.  This converts ext2 non-atomic bit operations to
+little-endian bit operations.
 
-Why don't you fix target-core's Kconfig instead?
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Acked-by: Jan Kara <jack@suse.cz>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
 
-> This patch also fixes whitespace breakage in the 'help' section.
+Change from v3:
+ - change to the post-fix notation e.g. s/test_le_bit/test_bit_le/
 
-There is no whitespace breakage in fs/configfs/Kconfig.
+The whole series is available in the git repository at:
+ git://git.kernel.org/pub/scm/linux/kernel/git/mita/linux-2.6.git le-bitops-v4
+
+ include/linux/ext3_fs.h |   15 ++++++++++-----
+ 1 files changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/ext3_fs.h b/include/linux/ext3_fs.h
+index 65990ef..0faf57c 100644
+--- a/include/linux/ext3_fs.h
++++ b/include/linux/ext3_fs.h
+@@ -418,13 +418,18 @@ struct ext3_inode {
+ #define EXT2_MOUNT_DATA_FLAGS		EXT3_MOUNT_DATA_FLAGS
+ #endif
+ 
+-#define ext3_set_bit			ext2_set_bit
++#define ext3_set_bit(nr, addr)	\
++	__test_and_set_bit_le((nr), (unsigned long *)(addr))
+ #define ext3_set_bit_atomic		ext2_set_bit_atomic
+-#define ext3_clear_bit			ext2_clear_bit
++#define ext3_clear_bit(nr, addr)	\
++	__test_and_clear_bit_le((nr), (unsigned long *)(addr))
+ #define ext3_clear_bit_atomic		ext2_clear_bit_atomic
+-#define ext3_test_bit			ext2_test_bit
+-#define ext3_find_first_zero_bit	ext2_find_first_zero_bit
+-#define ext3_find_next_zero_bit		ext2_find_next_zero_bit
++#define ext3_test_bit(nr, addr)	\
++	test_bit_le((nr), (unsigned long *)(addr))
++#define ext3_find_first_zero_bit(addr, size)	\
++	find_first_zero_bit_le((unsigned long *)(addr), (size))
++#define ext3_find_next_zero_bit(addr, size, off)	\
++	find_next_zero_bit_le((unsigned long *)(addr), (size), (off))
+ 
+ /*
+  * Maximal mount counts between two filesystem checks
 -- 
-Stefan Richter
--=====-==-== ---= =----
-http://arcgraph.de/sr/
+1.7.3.4
+
