@@ -1,79 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111Ab1APLcJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 06:32:09 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37082 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751918Ab1APLcH (ORCPT
+	id S1752131Ab1APLmk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 06:42:40 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:41490 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab1APLmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 06:32:07 -0500
+	Sun, 16 Jan 2011 06:42:39 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=hxXgcVqQ4wYMnx83Supt7FBpr16jMpRBam1DMRt2yis1Fv6qVx8sWF10ewxmaizv+u
-         dquXz/Q+bNSXHQngd0JtWvzxiu9gp2wqidfIo7ju3dkmosQbM7AZsVlnHVqX6AtuZcW8
-         S8eMBUCWYPtY9QQ7adK6Q/R67Rzn3n+rmKM2Y=
-Message-ID: <4D32D733.8090909@gmail.com>
-Date: Sun, 16 Jan 2011 12:32:03 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=djgSEVq337IaA5y8BorHMyQbxgjikytGk6ukZkO3vklIBJOGKnTG6/L6SnhoEiUAPi
+         lh/eH1rBTuTTLOHG4w35ovK7594vgZi8gQVPMWXZaqU3Mij3fEd5MsgrU7aYidB/ji7M
+         QnA5Zy7uFdkr8f5xJWTpjvj82ecLX5TQmMLQU=
 MIME-Version: 1.0
-To: Ian Kent <raven@themaw.net>
-CC: Valdis.Kletnieks@vt.edu, autofs@linux.kernel.org,
-        mm-commits@vger.kernel.org, npiggin@kernel.dk,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-fsdevel@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: [autofs] WARNING: at fs/dcache.c:1359 d_set_d_op [was: mmotm
- 2011-01-06-15-41 uploaded]
-References: <201101070014.p070Egpo023959@imap1.linux-foundation.org>	 <4D2ECB56.4070802@gmail.com> <12521.1294932824@localhost>	 <4D2F1CD7.5090100@gmail.com> <1294993243.2794.4.camel@perseus>
-In-Reply-To: <1294993243.2794.4.camel@perseus>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110116111809.GD2456@legolas.emea.dhcp.ti.com>
+References: <1295174783-4099-1-git-send-email-balbi@ti.com>
+	<0d30dc$kp159h@orsmga001.jf.intel.com>
+	<20110116111616.GC2456@legolas.emea.dhcp.ti.com>
+	<20110116111809.GD2456@legolas.emea.dhcp.ti.com>
+Date: Sun, 16 Jan 2011 21:42:37 +1000
+Message-ID: <AANLkTikD2gy9PVd=2N_iQEXNRZ-5x725asoeZQZBruOU@mail.gmail.com>
+Subject: Re: [PATCH 1/2] drm: fixup headers_check
+From: Dave Airlie <airlied@gmail.com>
+To: balbi@ti.com
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, linux-kernel@vger.kernel.org,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Content-Type: multipart/mixed; boundary=90e6ba181bda0615960499f52a16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2011 09:20 AM, Ian Kent wrote:
-> On Thu, 2011-01-13 at 16:40 +0100, Jiri Slaby wrote:
->> On 01/13/2011 04:33 PM, Valdis.Kletnieks@vt.edu wrote:
->>> On Thu, 13 Jan 2011 10:52:22 +0100, Jiri Slaby said:
->>>> On 01/07/2011 12:41 AM, akpm@linux-foundation.org wrote:
->>>>> The mm-of-the-moment snapshot 2011-01-06-15-41 has been uploaded to
->>>>
->>>> Hi, after some uptime and several suspend/resume cycles, I got:
->>>> WARNING: at fs/dcache.c:1359 d_set_d_op+0x82/0xb0()
->>>> Hardware name: To Be Filled By O.E.M.
->>>> Modules linked in: dvb_usb_af9015 tda18271 af9013 dvb_usb dvb_core
->>>> Pid: 3474, comm: automount Tainted: G        W   2.6.37-mm1_64+ #1344
->>>> Call Trace:
->>>>  [<ffffffff8106bd2a>] ? warn_slowpath_common+0x7a/0xb0
->>>>  [<ffffffff8106bd75>] ? warn_slowpath_null+0x15/0x20
->>>>  [<ffffffff81125a32>] ? d_set_d_op+0x82/0xb0
->>>>  [<ffffffff8120d829>] ? autofs4_dir_mkdir+0x169/0x180
->>>
->>> Wow. So it wasn't just configfs that trips over this one.  I'm now hoping that
->>> Al audited all the pseudo file systems for this...
->>
->> Well, CCing Al.
->>
->> I don't see any recent change in fs/autofs4 in:
->> http://git.kernel.org/?p=linux/kernel/git/viro/vfs-2.6.git;a=history;f=fs/autofs4;hb=refs/heads/for-next
->>
->> So maybe not all?
-> 
-> Did you see:
-> https://lkml.org/lkml/2011/1/12/394
+--90e6ba181bda0615960499f52a16
+Content-Type: text/plain; charset=ISO-8859-1
 
-I haven't.
+I'll push the attached I think this time.
 
-> Haven't had any feedback on this yet, odd or maybe no news is good news?
+Dave.
 
-Works for me.
+--90e6ba181bda0615960499f52a16
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-drm-add-comments-to-stop-pointless-patches.patch"
+Content-Disposition: attachment; 
+	filename="0001-drm-add-comments-to-stop-pointless-patches.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gizvei570
 
-thanks,
--- 
-js
+RnJvbSAxMjIyYWQ0MTg4YWEyYTYwNDZkYTkzMTQ4NzU0MzUwN2E1OWI3ZmFjIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBEYXZlIEFpcmxpZSA8YWlybGllZEByZWRoYXQuY29tPgpEYXRl
+OiBTdW4sIDE2IEphbiAyMDExIDIxOjM1OjEwICsxMDAwClN1YmplY3Q6IFtQQVRDSF0gZHJtOiBh
+ZGQgY29tbWVudHMgdG8gc3RvcCBwb2ludGxlc3MgcGF0Y2hlcy4KCkhvdyBhYm91dCB5b3UgZml4
+IHRoZSBoZWFkZXJzIHNjcmlwdCB0byBiZSByZWN1cnNpdmU/CgpTaWduZWQtb2ZmLWJ5OiBEYXZl
+IEFpcmxpZSA8YWlybGllZEByZWRoYXQuY29tPgotLS0KIGluY2x1ZGUvZHJtL2RybV9tb2RlLmgg
+ICB8ICAgIDMgKysrCiBpbmNsdWRlL2RybS9pOTE1X2RybS5oICAgfCAgICAxICsKIGluY2x1ZGUv
+ZHJtL21nYV9kcm0uaCAgICB8ICAgIDEgKwogaW5jbHVkZS9kcm0vcmFkZW9uX2RybS5oIHwgICAg
+MSArCiBpbmNsdWRlL2RybS92aWFfZHJtLmggICAgfCAgICAxICsKIDUgZmlsZXMgY2hhbmdlZCwg
+NyBpbnNlcnRpb25zKCspLCAwIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2luY2x1ZGUvZHJt
+L2RybV9tb2RlLmggYi9pbmNsdWRlL2RybS9kcm1fbW9kZS5oCmluZGV4IDBmYzczOTcuLjdhMWY2
+YzUgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvZHJtL2RybV9tb2RlLmgKKysrIGIvaW5jbHVkZS9kcm0v
+ZHJtX21vZGUuaApAQCAtMjcsNiArMjcsOSBAQAogI2lmbmRlZiBfRFJNX01PREVfSAogI2RlZmlu
+ZSBfRFJNX01PREVfSAogCisvKiB0aGlzIGZpbGUgZG9lc24ndCBuZWVkIGxpbnV4L3R5cGVzLmgg
+aW5jbHVkZWQgKi8KKyNpbmNsdWRlICJkcm0uaCIKKwogI2RlZmluZSBEUk1fRElTUExBWV9JTkZP
+X0xFTgkzMgogI2RlZmluZSBEUk1fQ09OTkVDVE9SX05BTUVfTEVOCTMyCiAjZGVmaW5lIERSTV9E
+SVNQTEFZX01PREVfTEVOCTMyCmRpZmYgLS1naXQgYS9pbmNsdWRlL2RybS9pOTE1X2RybS5oIGIv
+aW5jbHVkZS9kcm0vaTkxNV9kcm0uaAppbmRleCAwMDM5ZjFmLi4wZGEwNDIwIDEwMDY0NAotLS0g
+YS9pbmNsdWRlL2RybS9pOTE1X2RybS5oCisrKyBiL2luY2x1ZGUvZHJtL2k5MTVfZHJtLmgKQEAg
+LTI3LDYgKzI3LDcgQEAKICNpZm5kZWYgX0k5MTVfRFJNX0hfCiAjZGVmaW5lIF9JOTE1X0RSTV9I
+XwogCisvKiB0aGlzIGZpbGUgZG9lc24ndCBuZWVkIGxpbnV4L3R5cGVzLmggaW5jbHVkZWQgKi8K
+ICNpbmNsdWRlICJkcm0uaCIKIAogLyogUGxlYXNlIG5vdGUgdGhhdCBtb2RpZmljYXRpb25zIHRv
+IGFsbCBzdHJ1Y3RzIGRlZmluZWQgaGVyZSBhcmUKZGlmZiAtLWdpdCBhL2luY2x1ZGUvZHJtL21n
+YV9kcm0uaCBiL2luY2x1ZGUvZHJtL21nYV9kcm0uaAppbmRleCBjMTYwOTdmLi40MWI0MDgxIDEw
+MDY0NAotLS0gYS9pbmNsdWRlL2RybS9tZ2FfZHJtLmgKKysrIGIvaW5jbHVkZS9kcm0vbWdhX2Ry
+bS5oCkBAIC0zNSw2ICszNSw3IEBACiAjaWZuZGVmIF9fTUdBX0RSTV9IX18KICNkZWZpbmUgX19N
+R0FfRFJNX0hfXwogCisvKiB0aGlzIGZpbGUgZG9lc24ndCBuZWVkIGxpbnV4L3R5cGVzLmggaW5j
+bHVkZWQgKi8KICNpbmNsdWRlICJkcm0uaCIKIAogLyogV0FSTklORzogSWYgeW91IGNoYW5nZSBh
+bnkgb2YgdGhlc2UgZGVmaW5lcywgbWFrZSBzdXJlIHRvIGNoYW5nZSB0aGUKZGlmZiAtLWdpdCBh
+L2luY2x1ZGUvZHJtL3JhZGVvbl9kcm0uaCBiL2luY2x1ZGUvZHJtL3JhZGVvbl9kcm0uaAppbmRl
+eCBlOTVhODZiLi5jMzNmNjU2IDEwMDY0NAotLS0gYS9pbmNsdWRlL2RybS9yYWRlb25fZHJtLmgK
+KysrIGIvaW5jbHVkZS9kcm0vcmFkZW9uX2RybS5oCkBAIC0zMyw2ICszMyw3IEBACiAjaWZuZGVm
+IF9fUkFERU9OX0RSTV9IX18KICNkZWZpbmUgX19SQURFT05fRFJNX0hfXwogCisvKiB0aGlzIGZp
+bGUgZG9lc24ndCBuZWVkIGxpbnV4L3R5cGVzLmggaW5jbHVkZWQgKi8KICNpbmNsdWRlICJkcm0u
+aCIKIAogLyogV0FSTklORzogSWYgeW91IGNoYW5nZSBhbnkgb2YgdGhlc2UgZGVmaW5lcywgbWFr
+ZSBzdXJlIHRvIGNoYW5nZSB0aGUKZGlmZiAtLWdpdCBhL2luY2x1ZGUvZHJtL3ZpYV9kcm0uaCBi
+L2luY2x1ZGUvZHJtL3ZpYV9kcm0uaAppbmRleCBmZDExYTViLi5jY2RlNTg5IDEwMDY0NAotLS0g
+YS9pbmNsdWRlL2RybS92aWFfZHJtLmgKKysrIGIvaW5jbHVkZS9kcm0vdmlhX2RybS5oCkBAIC0y
+NCw2ICsyNCw3IEBACiAjaWZuZGVmIF9WSUFfRFJNX0hfCiAjZGVmaW5lIF9WSUFfRFJNX0hfCiAK
+Ky8qIHRoaXMgZmlsZSBkb2Vzbid0IG5lZWQgbGludXgvdHlwZXMuaCBpbmNsdWRlZCAqLwogI2lu
+Y2x1ZGUgImRybS5oIgogCiAvKiBXQVJOSU5HOiBUaGVzZSBkZWZpbmVzIG11c3QgYmUgdGhlIHNh
+bWUgYXMgd2hhdCB0aGUgWHNlcnZlciB1c2VzLgotLSAKMS43LjIuMwoK
+--90e6ba181bda0615960499f52a16--
