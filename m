@@ -1,96 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab1APOHH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 09:07:07 -0500
-Received: from 82-117-125-11.tcdsl.calypso.net ([82.117.125.11]:60661 "EHLO
-	smtp.ossman.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752764Ab1APOHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 09:07:03 -0500
-X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Jan 2011 09:07:03 EST
-Date: Sun, 16 Jan 2011 15:01:54 +0100
-From: Pierre Ossman <pierre-list@ossman.eu>
-To: linux-ide@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: Strange read data corruption on ext4/LVM/md
-Message-ID: <20110116150154.127ea8b1@mjolnir.ossman.eu>
-In-Reply-To: <20100715213801.627f095a@mjolnir.ossman.eu>
-References: <20100519225653.1fedb453@mjolnir.ossman.eu>
-	<20100519230426.47c6c1ed@mjolnir.ossman.eu>
-	<20100519232906.3be82279@mjolnir.ossman.eu>
-	<20100519233408.7436bd9b@mjolnir.ossman.eu>
-	<20100520091429.192d560c@mjolnir.ossman.eu>
-	<4BF4F979.4070903@kernel.org>
-	<20100520112945.61bf9705@mjolnir.ossman.eu>
-	<4BF50405.4070706@kernel.org>
-	<20100520122227.16ea1cbc@mjolnir.ossman.eu>
-	<20100520160049.1528772b@mjolnir.ossman.eu>
-	<20100520182852.58f504fb@mjolnir.ossman.eu>
-	<20100715213801.627f095a@mjolnir.ossman.eu>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA256; protocol="application/pgp-signature"; boundary="=_freyr.ossman.eu-28819-1295186517-0001-2"
+	id S1752856Ab1APOQq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 09:16:46 -0500
+Received: from proxima.lp0.eu ([81.2.80.65]:50586 "EHLO proxima.lp0.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752165Ab1APOQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jan 2011 09:16:44 -0500
+X-Greylist: delayed 428 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Jan 2011 09:16:43 EST
+Message-ID: <4D32FC1C.3010905@simon.arlott.org.uk>
+Date: Sun, 16 Jan 2011 14:09:32 +0000
+From: Simon Arlott <simon@fire.lp0.eu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101114 Lightning/1.0b3pre Thunderbird/3.1.6
+MIME-Version: 1.0
+To: netdev <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: jesse@nicira.com
+Subject: 2.6.37 regression: adding main interface to a bridge breaks vlan
+ interface RX
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME-formatted message.  If you see this text it means that your
-E-mail software does not support MIME-formatted messages.
+[    1.666706] forcedeth 0000:00:08.0: ifname eth0, PHY OUI 0x5043 @ 16, addr 00:e0:81:4d:2b:ec
+[    1.666767] forcedeth 0000:00:08.0: highdma csum vlan pwrctl mgmt gbit lnktim msi desc-v3
 
---=_freyr.ossman.eu-28819-1295186517-0001-2
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+I have eth0 and eth0.3840 which works until I add eth0 to a bridge.
+While eth0 is in a bridge (the bridge device is up), eth0.3840 is unable
+to receive packets. Using tcpdump on eth0 shows the packets being
+received with a VLAN tag but they don't appear on eth0.3840. They appear
+with the VLAN tag on the bridge interface.
 
-On Thu, 15 Jul 2010 21:38:01 +0200
-Pierre Ossman <pierre-list@ossman.eu> wrote:
+If I remove eth0 from the bridge, eth0.3840 starts working again. It
+still works if eth0.3840 is part of a bridge but eth0 isn't (the device
+is in promiscuous mode). I've only tested with broadcast traffic.
 
->=20
-> Status update:
->=20
-> 1. Putting the other sil3132 controller did not make any problems
-> appear.
->=20
-> 2. Next I swapped that controller with the one next to it to test if
-> this specific board design in combination with this specific slot was
-> causing the issues. Still no corruption.
->=20
-> 3. Today I put the "bad" controller back in, but in a different slot.
-> Still not seeing any issues.
->=20
-> I could move it back to the inital slot to see if the problem
-> reappears, but I'm just happy the system is error free again so I'll
-> write this off as a temporary glitch or a bad combination of card and
-> slot.
->=20
+This works with 2.6.36.
 
-Time for an update to this somewhat old thread. The problem has
-remained, but being so very rare that I cannot reproduce it often
-enough for systematic testing. Both motherboard and the "bad"
-controller have been swapped out with different (but identical) cards.
+git bisect produces 3701e51382a026cba10c60b03efabe534fba4ca4 as the
+first bad commit.
 
-These days there are some controller cards based on Marvell's 88SE9128,
-which seems to be a decent chip. So the next step is chucking all the
-sil3132 stuff in favour of those...
+The behaviour of drivers/net/forcedeth.c nv_rx_process_optimized looks
+ok - vlan_gro_receive and napi_gro_receive are called correctly. (The
+likely(!np->vlangrp) looks odd as it'll always be false if vlans are in
+use).
 
-Rgds
---=20
-     -- Pierre Ossman
-
-  WARNING: This correspondence is being monitored by FRA, a
-  Swedish intelligence agency. Make sure your server uses
-  encryption for SMTP traffic and consider using PGP for
-  end-to-end encryption.
-
---=_freyr.ossman.eu-28819-1295186517-0001-2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-
-iF4EAREIAAYFAk0y+lQACgkQopDLsoqlmEKhVgD8DBBdMq/YniFjd1dvAn19VSem
-cBMoHEHaBvN0pYCmdhoA/RzSj9m80mchlYS/3kcqHpgZa6b7kC5YJeEBQtY5BlHA
-=3V+M
------END PGP SIGNATURE-----
-
---=_freyr.ossman.eu-28819-1295186517-0001-2--
+-- 
+Simon Arlott
