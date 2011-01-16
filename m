@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab1APW7j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 17:59:39 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:18294 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab1APW7h (ORCPT
+	id S1752134Ab1APXEg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 18:04:36 -0500
+Received: from nm18.bullet.mail.sp2.yahoo.com ([98.139.91.88]:20466 "HELO
+	nm18.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751254Ab1APXEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 17:59:37 -0500
-Date: Sun, 16 Jan 2011 23:59:36 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-cc: linux-kernel@vger.kernel.org, James Bottomley <James.Bottomley@suse.de>
-Subject: Re: [PATCH] target: Fix memory leak in
- fd_set_configfs_dev_params().
-In-Reply-To: <1295218456.22813.61.camel@haakon2.linux-iscsi.org>
-Message-ID: <alpine.LNX.2.00.1101162357250.13377@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1101162006410.13377@swampdragon.chaosbits.net> <1295218456.22813.61.camel@haakon2.linux-iscsi.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 16 Jan 2011 18:04:35 -0500
+X-Yahoo-Newman-Id: 980520.79946.bm@omp1017.mail.sp2.yahoo.com
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: HWkCysQVM1ktrH_e8Uq741F.4YxAhCqabgnpJPP4jzSqJG2
+ ih0eZeH6Os_i0kHrnCkcpR.AMjCSbeTKDcuJMQGimB0yTzzwDXgDxW7whgln
+ P_NH8k6iEuO6ubgwj6e4hCU0qViG8eHhdDgsLNblw1lIA0b9VdA5g_j.Z3IU
+ syccTby0Smq1MR598GwLVz3LE5f3tuCyrpcmc3v9orVN9dH6AXm_7SIP.6Q1
+ 3spKDSazbsMgylFOZajMy9icKPxEoHbjgVOleWu7hOQzngacQh65xTbKDTUL
+ PZHBF5PkMOuTTdSoyQorlHk_b9.pan.FnltemnTf07g4BhJYK_lw3XraMA3J
+ rjY06arSDjaLB.okaVXVwQmRc4xJ3xWur
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Cc: James Bottomley <James.Bottomley@suse.de>, Jesper Juhl <jj@chaosbits.net>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH] target/iblock: Fix memory leak in iblock_set_configfs_dev_params
+Date: Sun, 16 Jan 2011 15:04:30 -0800
+Message-Id: <1295219071-32722-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 16 Jan 2011, Nicholas A. Bellinger wrote:
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-> On Sun, 2011-01-16 at 20:17 +0100, Jesper Juhl wrote:
-> > match_strdup() dynamically allocates memory and it is the responsabillity 
-> > of the caller to free that memory. In 
-> > drivers/target/target_core_file.c::fd_set_configfs_dev_params() two calls 
-> > are made to match_strdup() and in neither case is the allocated memory 
-> > freed, but instead it is leaked.
-> > 
-> > This patch should take care of the problem by kfree()'ing the allocated 
-> > memory once it is no longer needed. It also makes sure to return -ENOMEM 
-> > if the memory allocation in match_strdup() should fail.
-> > 
-> > Please review and consider for inclusion.
-> > 
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> 
-> Ugh, this was my fault during the recent v4.0 configfs parameter
-> conversion.  Committed as 5c45b37 in lio-core-2.6.git/linus-38-rc1 and I
-> will fix up the other handful of match_strdup() breakage and carry into
-> scsi-post-merge-2.6.git/for-jejb shortly.
-> 
-> Thanks for catching this..
-> 
+The match_strdup() allocation for Opt_udev_path needs to be released
+after usage.
 
-You're welcome.
-Yes, I did see a bunch of other match_strdup() related problems, but I 
-thought I'd just fix up one file initially to see the general reaction, 
-then do the rest later when this one had been merged. but if you want to 
-fix up the remainder, feel free.
+Reported-off-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ drivers/target/target_core_iblock.c |   13 +++++++++----
+ 1 files changed, 9 insertions(+), 4 deletions(-)
 
-I guess we can merge this patch as a starting point?
-
+diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
+index 67f0c09..422187b 100644
+--- a/drivers/target/target_core_iblock.c
++++ b/drivers/target/target_core_iblock.c
+@@ -469,7 +469,7 @@ static ssize_t iblock_set_configfs_dev_params(struct se_hba *hba,
+ 					       const char *page, ssize_t count)
+ {
+ 	struct iblock_dev *ib_dev = se_dev->se_dev_su_ptr;
+-	char *orig, *ptr, *opts;
++	char *orig, *ptr, *arg_p, *opts;
+ 	substring_t args[MAX_OPT_ARGS];
+ 	int ret = 0, arg, token;
+ 
+@@ -492,9 +492,14 @@ static ssize_t iblock_set_configfs_dev_params(struct se_hba *hba,
+ 				ret = -EEXIST;
+ 				goto out;
+ 			}
+-
+-			ret = snprintf(ib_dev->ibd_udev_path, SE_UDEV_PATH_LEN,
+-				"%s", match_strdup(&args[0]));
++			arg_p = match_strdup(&args[0]);
++			if (!arg_p) {
++				ret = -ENOMEM;
++				break;
++			}
++			snprintf(ib_dev->ibd_udev_path, SE_UDEV_PATH_LEN,
++					"%s", arg_p);
++			kfree(arg_p);
+ 			printk(KERN_INFO "IBLOCK: Referencing UDEV path: %s\n",
+ 					ib_dev->ibd_udev_path);
+ 			ib_dev->ibd_flags |= IBDF_HAS_UDEV_PATH;
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.5.6.5
 
