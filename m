@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368Ab1APQaK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 11:30:10 -0500
-Received: from 63.mail-out.ovh.net ([91.121.185.56]:57498 "HELO
-	63.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753245Ab1APQaI (ORCPT
+	id S1753431Ab1APRN2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 12:13:28 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43494 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751081Ab1APRN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 11:30:08 -0500
-Message-ID: <4D331D0A.7070106@example.com>
-Date: Sun, 16 Jan 2011 17:30:02 +0100
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Current GIT for networking
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+	Sun, 16 Jan 2011 12:13:26 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=sQWaPPuvU5ZuccqQCfiaO5KD6QGQtbA4zbGrkHjdQc8Sc+wKwcg1HVMfxEPYddvptA
+         7gFoHe7k1l2mKt9gT9ZRmKuWg31FywIhvSRsXL9EtJcCjzbaLnRFouF6zba7mez+JbIF
+         K1vfBaLsUJi8Z5nYIKzAqkxLkyaIArJzt0P+k=
+Subject: Re: Current GIT for networking
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: piotr@hosowicz.com
+Cc: David Miller <davem@davemloft.net>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D331D0A.7070106@example.com>
+References: <4D331D0A.7070106@example.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 16 Jan 2011 18:13:15 +0100
+Message-ID: <1295197995.12859.6.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 2093047927332696357
-X-Ovh-Remote: 83.24.91.125 (dnj125.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dave, hello all,
+Le dimanche 16 janvier 2011 Ã  17:30 +0100, Piotr Hosowicz a Ã©crit :
+> Hello Dave, hello all,
+> 
+> Dave, I noticed that the following GIT resource fetches vaery quickly, 
+> almost instantly. Is the location still as follows?
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6.git master
 
-Dave, I noticed that the following GIT resource fetches vaery quickly, 
-almost instantly. Is the location still as follows?
+Yep, as mentioned in MAINTAINERS :
 
-git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6.git master
+NETWORKING [GENERAL]
+M:      "David S. Miller" <davem@davemloft.net>
+L:      netdev@vger.kernel.org
+W:      http://www.linuxfoundation.org/en/Net
+W:      http://patchwork.ozlabs.org/project/netdev/list/
+T:      git git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6.git
+T:      git git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next-2.6.git
+S:      Maintained
+F:      net/
+F:      include/net/
+F:      include/linux/in.h
+F:      include/linux/net.h
+F:      include/linux/netdevice.h
 
-Regards,
 
-Piotr Hosowicz
-
--- 
-- Jaka jest najwiêksza anomalia fizjologiczno-polityczna?
-- Cz³onek wysuniêty z ramienia na czo³o.
-NP: Peter Green Splinter Group - Turn Your Love Away
-NB: 2.6.37-20110116-1520-tidm+
