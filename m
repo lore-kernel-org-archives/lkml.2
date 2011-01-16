@@ -1,42 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305Ab1APXlX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 18:41:23 -0500
-Received: from ozlabs.org ([203.10.76.45]:37323 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751254Ab1APXlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 18:41:22 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Subject: Re: [PATCH] param: add null statement to compiled-in module params
-Date: Mon, 17 Jan 2011 10:11:15 +1030
-User-Agent: KMail/1.13.5 (Linux/2.6.35-24-generic; KDE/4.5.1; i686; ; )
-Cc: linux-kernel@vger.kernel.org, Dan Carpenter <error27@gmail.com>
-References: <1294230424-4089-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1294230424-4089-1-git-send-email-linus.walleij@stericsson.com>
+	id S1752457Ab1APXq3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 18:46:29 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39521 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752138Ab1APXq1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jan 2011 18:46:27 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101171011.16182.rusty@rustcorp.com.au>
+In-Reply-To: <20110116231901.GF22723@ZenIV.linux.org.uk>
+References: <1295125851-25279-1-git-send-email-nab@linux-iscsi.org>
+ <20110116141105.59e5b3a2@stein> <1295214807.22813.57.camel@haakon2.linux-iscsi.org>
+ <20110117000659.57352da7@stein> <AANLkTik=Pv1KdiBa3RbSoqmDC92F33jyFb0b-Ej_iGRN@mail.gmail.com>
+ <20110116231901.GF22723@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 16 Jan 2011 15:45:35 -0800
+Message-ID: <AANLkTikWHkfb1-Yh_O=rYEqzgz48rwRggCp6uhr+E86J@mail.gmail.com>
+Subject: Re: [PATCH] configfs: change depends -> select SYSFS
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Joel Becker <jlbec@evilplan.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Jan 2011 10:57:04 pm Linus Walleij wrote:
-> Add an unused struct declaration statement requiring a
-> terminating semicolon to the compile-in case to provoke an
-> error if __MODULE_INFO() is used without the terminating
-> semicolon. Previously MODULE_ALIAS("foo") (no semicolon)
-> compiled fine if MODULE was not selected.
+On Sun, Jan 16, 2011 at 3:19 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> How do you eliminate things like "it really depends on having DMA"?
+> When we configure e.g. s390 or uml kernel, it's not like we could
+> enable a PCI driver and have architecture magically switch to a
+> PCI-supporting one, after all...
 
-I really prefer the other way; make everyone use a semicolon.
+If it's something that cannot be changed, then it should be "depends on".
 
-Let's look how many we're talking about... hmm, I'm having
-trouble finding any!
+Think about it - writing a "hard requirement" as "depends on" is
+perfectly sane. It makes semantic sense, and it is useful to filter
+out things that you simply CANNOT have, because you've selected a
+configuration or an architecture that simply do not _support_ those
+features.
 
-Could you patch this the other way, to make MODULE_ALIAS w/o a
-semicolon always an error?
+But if it's something where it's not about a feature that is needed,
+but about a configuration dependency, it's IMNSHO almost always the
+wrong thing to have "depends on".
 
-Thanks,
-Rusty.
+Another way of thinking about this is to think about what features are
+the one that a user *cares* about, and wants to enable or disable by
+hand.
+
+Just think about that for a moment - isn't _that_ what a kernel config
+should be asking about?
+
+And now ask yourself, do you really expect some random user to say "I
+want to enable SYSFS and CONFIGFS, because I am going to use ocfs2 on
+my system"?
+
+Really?
+
+Or do you expect a high-quality implementation of a configuration
+script to allow the user to just say "I want ocfs2", and then figure
+out the dependencies and solve them for you?
+
+I'd say that the latter case is OBVIOUSLY the quality implementation,
+while the former one is just stupid.
+
+                   Linus
