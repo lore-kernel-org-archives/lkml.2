@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143Ab1APLtX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 06:49:23 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62470 "EHLO
+	id S1752135Ab1APLvs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 06:51:48 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41367 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088Ab1APLtW convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751799Ab1APLvr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 06:49:22 -0500
+	Sun, 16 Jan 2011 06:51:47 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:date
          :x-google-sender-auth:message-id:subject:from:to:cc:content-type
          :content-transfer-encoding;
-        b=VI+4m5OXh3B006GYNiWeduV6Nb5nl5z8473k7ZgQpCSibBD9+hvX3iJL5qOsa5Wg5w
-         XxsFxMm9mEb3bpInaaKRUkcexw7kzLSPGjGifjvX/dq39dbGYts27IyS8g5BopYe5l9n
-         9G3o8aIzYVL7deq/Gc89P1iGD99iTNZpkH+6s=
+        b=dhIhW/RUPa8LoLYp8fUSf+fAvjPhifYP9UpQKEwFyuKrrc3DDFhuwF4aF+lGB0CvH/
+         nMUswS2btdAISVVjUdfCe61WU0TfiOOGpIixN2QJGhNRTW84gGtL2TgFAfOGGhob5TTy
+         OPCkU9P/GG6iO8lna5MxVbHU3zAo6pNHbAhKU=
 MIME-Version: 1.0
-In-Reply-To: <20110115154019.GF15996@n2100.arm.linux.org.uk>
-References: <1294990949-2729-1-git-send-email-ccross@android.com>
-	<AANLkTimqiqABxCejdeOQWZZ62DVUZW2v-yMpdu1aNDQT@mail.gmail.com>
+In-Reply-To: <20110115154319.GG15996@n2100.arm.linux.org.uk>
+References: <AANLkTimqiqABxCejdeOQWZZ62DVUZW2v-yMpdu1aNDQT@mail.gmail.com>
 	<20110114120229.GA15996@n2100.arm.linux.org.uk>
 	<1295014231.7901.41.camel@e102109-lin.cambridge.arm.com>
 	<20110114154919.GE15996@n2100.arm.linux.org.uk>
@@ -26,19 +25,20 @@ References: <1294990949-2729-1-git-send-email-ccross@android.com>
 	<20110114163520.GH15996@n2100.arm.linux.org.uk>
 	<1295024327.7901.70.camel@e102109-lin.cambridge.arm.com>
 	<20110114173050.GJ15996@n2100.arm.linux.org.uk>
-	<AANLkTin_pMzNc-ZL+rVcwaVawer0poyxhatqw5P-A2qW@mail.gmail.com>
-	<20110115154019.GF15996@n2100.arm.linux.org.uk>
-Date: Sun, 16 Jan 2011 11:49:21 +0000
-X-Google-Sender-Auth: wu3SheeT4w2tscfnyuHv_z9XSq8
-Message-ID: <AANLkTikY46rXDBzgKM=9zwAda4=bhRCXDKJM6UA0yyLU@mail.gmail.com>
-Subject: [PATCH] ARM: vfp: Fix up exception location in Thumb mode
+	<20110114184759.GN15996@n2100.arm.linux.org.uk>
+	<AANLkTi=p+f7TO+_g677VXNJkt-mu+8d8c6T9qgt5MVtn@mail.gmail.com>
+	<20110115154319.GG15996@n2100.arm.linux.org.uk>
+Date: Sun, 16 Jan 2011 11:51:47 +0000
+X-Google-Sender-Auth: wJyuR_Ypwad-PISZA31Iha99rdo
+Message-ID: <AANLkTinzWQyW=A0Z9sPnCYfEdKLNR8wY_+Yzw_8DPTfB@mail.gmail.com>
+Subject: Re: [PATCH] ARM: vfp: Fix up exception location in Thumb mode
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: Russell King - ARM Linux <linux@arm.linux.org.uk>
 Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Colin Cross <ccross@android.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+        Colin Cross <ccross@android.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
@@ -47,89 +47,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Saturday, 15 January 2011, Russell King - ARM Linux
 <linux@arm.linux.org.uk> wrote:
-> On Sat, Jan 15, 2011 at 03:31:04PM +0000, Catalin Marinas wrote:
->> On 14 January 2011 17:30, Russell King - ARM Linux
+> On Sat, Jan 15, 2011 at 03:38:16PM +0000, Catalin Marinas wrote:
+>> On 14 January 2011 18:47, Russell King - ARM Linux
 >> <linux@arm.linux.org.uk> wrote:
->> > diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
->> > index 2b46fea..5876eec 100644
->> > --- a/arch/arm/kernel/entry-armv.S
+>> > diff -u b/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+>> > --- b/arch/arm/kernel/entry-armv.S
 >> > +++ b/arch/arm/kernel/entry-armv.S
->> > @@ -461,27 +461,35 @@ ENDPROC(__irq_usr)
->> >        .align  5
->> >  __und_usr:
->> >        usr_entry
->> > -
->> > -       @
->> > -       @ fall through to the emulation code, which returns using r9 if
->> > -       @ it has emulated the instruction, or the more conventional lr
->> > -       @ if we are to treat this as a real undefined instruction
+>> > @@ -499,10 +499,11 @@
+>> >        blo     __und_usr_unknown
+>> >  3:     ldrht   r0, [r4]
+>> >        add     r2, r2, #2                      @ r2 is PC + 2, make it PC + 4
+>> > -       orr     r0, r0, r5, lsl #16
+>> > +       str     r2, [sp, #S_PC]                 @ it's a 2x16bit instr, update
+>> > +       orr     r0, r0, r5, lsl #16             @  regs->ARM_pc
 >> >        @
->> > -       @  r0 - instruction
->> > +       @ The emulation code returns using r9 if it has emulated the
->> > +       @ instruction, or the more conventional lr if we are to treat
->> > +       @ this as a real undefined instruction
+>> >        @ r0 = the two 16-bit Thumb instructions which caused the exception
+>> > -       @ r2 = PC value for the following Thumb instruction (:= regs->ARM_pc+2)
+>> > +       @ r2 = PC value for the following Thumb instruction (:= regs->ARM_pc)
+>> >        @ r4 = PC value for the first 16-bit Thumb instruction
 >> >        @
->> >        adr     r9, BSYM(ret_from_exception)
->> >        adr     lr, BSYM(__und_usr_unknown)
->> > +       @
->> > +       @ r2 = regs->ARM_pc, which is either 2 or 4 bytes ahead of the
->> > +       @ faulting instruction depending on Thumb mode.
->> > +       @ r3 = regs->ARM_cpsr
->> > +       @
->> >        tst     r3, #PSR_T_BIT                  @ Thumb mode?
->> > -       itet    eq                              @ explicit IT needed for the 1f label
->> > +       itttt   eq                              @ explicit IT needed for the 1f label
->> >        subeq   r4, r2, #4                      @ ARM instr at LR - 4
->> > -       subne   r4, r2, #2                      @ Thumb instr at LR - 2
->> >  1:     ldreqt  r0, [r4]
+>> >  #else
 >>
->> The itttt above should just be itt. The reveq is conditionally
->> compiled and beq doesn't necessarily need one.
+>> Do we need to modify the VFP entry code to avoit the store to ARM_pc?
 >
-> It's a reveq, so I thought we should cover all the instructions with
-> an 'eq' conditional for thumb.
+> The one after the sub #4 instruction?
 
-If the it instruction doesn't cover all instructions, gas generates
-some more its. But in this case, for little endian, the it instruction
-covers more since reveq isn't included and having the beq not last in
-the block I think is unpredictable. If you really want to optimise the
-big endian case not to have an additional it generated by gas, you can
-write ittt so that beq is included with little endian but not with big
-endian. I wouldn't bother much for an extra it anyway.
-
->> >  #ifdef CONFIG_CPU_ENDIAN_BE8
->> >        reveq   r0, r0                          @ little endian instruction
->> >  #endif
->> > +       @
->> > +       @ r0 = 32-bit ARM instruction which caused the exception
->> > +       @ r2 = PC value for the following instruction (:= regs->ARM_pc)
->>
->> Is r2 here always the PC value following instruction? If the Thumb
->> instruction was 32-bit, it just points in the middle of the faulting
->> instruction.
->
-> Is the T bit ever zero in this case?  The code here is:
->
->         tst     r3, #PSR_T_BIT
->         subeq   r4, r2, #4
-> 1:      ldreqt  r0, [r4]
->         reveq   r0, r0
->         beq     call_fpe
-
-You can have the T bit set but the instruction a 32-bit Thumb in which
-case r2 is in the middle of such instruction rather than the next.
-Unless you only refer to the ARM mode, in which case the comment is
-fine.
-
-> So, if !T, then we subtract 4 and load the instruction (which was the
-> faulting instruction).  So r2 is the following instruction.
->
-> Ah, maybe you're getting confused by the comment.  Should we put
-> an 'eq' suffix on the end of each line? ;)
-
-Maybe mention that this is ARM. I think documenting this code is
-difficult anyway. I found myself not reading the comments at all when
-revisiting this code :) but they may be useful for others.
+No, I misread the code, we still need the one after sub #4.
 
 
 -- 
