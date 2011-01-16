@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722Ab1APJ33 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 04:29:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62729 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750743Ab1APJ31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 04:29:27 -0500
-Date: Sun, 16 Jan 2011 17:30:02 +0800
-From: Han Pingtian <phan@redhat.com>
-To: acme@redhat.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] perf test: free cpus at the end of
- test__open_syscall_event_on_all_cpus()
-Message-ID: <20110116093002.GA5038@localhost.redhat.com>
+	id S1751882Ab1APKGU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 05:06:20 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:51629 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006Ab1APKGS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jan 2011 05:06:18 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=StPM0LkZyMXzm2bnOrdfv3ZFvQnRzAymFeWOQnUJ8aRnwpn9egH/ZPlVeaZoIg/kgn
+         N4dkPBv/lhKCKQ3D5AH32zY7Pwux7JsD39Mnb+nEH57z4hPBu0o4/MtlOjJ3dFc6eS0I
+         +vH6v37Wt84Yy88+0gBkvxu3emoykh4nZcO9A=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Hans de Bruin <jmdebruin@xmsnet.nl>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: Bug in linux-2.6.37-rc8+: Weird X display upon hibernating
+Date: Sun, 16 Jan 2011 11:06:10 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.4.5; i686; ; )
+Cc: Siddu <siddu.sjce@gmail.com>, linux-kernel@vger.kernel.org
+References: <AANLkTinCSu68cC_jzO8MZs4Q=u+EABiZxkRv3gbyfqMk@mail.gmail.com> <AANLkTin4yh3mQ7pbGPvYFNgNnRDVrmJUD4yUJT1tusC7@mail.gmail.com> <4D2B5C08.4010109@xmsnet.nl>
+In-Reply-To: <4D2B5C08.4010109@xmsnet.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201101161106.11217.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Call free() on cpu_map pointer cpus to clean up malloced memories
-at the end of test__open_syscall_event_on_all_cpus().
+On poniedziałek, 10 stycznia 2011 o 20:20:40 Hans de Bruin wrote:
+> On 01/09/2011 06:07 PM, Siddu wrote:
+> > seems like its not getting much attention here .... atleast can anyone
+> > tell me which is the right place to be brought into notice ?
+> 
+> If you want to avoid the lkml you might want to look at buzilla. Rafael
+> Wysocki has a list of bugs/regressions for each kernel release. The list
+> for 2.6.37 is at:
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=21782
+> 
+> If your problem is not there yet, you can add an entry.
 
-Signed-off-by: Han Pingtian <phan@redhat.com>
----
- tools/perf/builtin-test.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Firstly you must sure, that _is_ regression. Siddu wrote: "Here is something 
+strange which seems to happening with 2.6.37-rc8+
+also i am not sure if this existed earlier ."
 
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index e7f098b..ae1e9a4 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -422,6 +422,7 @@ out_evsel_delete:
- 	perf_evsel__delete(evsel);
- out_cpu_free:
- 	CPU_FREE(cpu_set);
-+	free(cpus);
- out_thread_map_delete:
- 	thread_map__delete(threads);
- 	return err;
+Regards
+
 -- 
-1.7.3.4
+Maciej Rutecki
+http://www.maciek.unixy.pl
