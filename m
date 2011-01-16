@@ -1,105 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab1APUjU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 15:39:20 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:16568 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245Ab1APUjT (ORCPT
+	id S1753965Ab1APUlm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 15:41:42 -0500
+Received: from mail.bluewatersys.com ([202.124.120.130]:34324 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753666Ab1APUlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 15:39:19 -0500
-Date: Sun, 16 Jan 2011 21:39:18 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Rob Landley <rlandley@parallels.com>
-cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org,
-        "K. Y. Srinivasan" <ksrinivasan@novell.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH] Use sed instead of perl to generate
- x86/kernel/cpu/capflags.c.
-In-Reply-To: <4D335554.7020403@parallels.com>
-Message-ID: <alpine.LNX.2.00.1101162136360.13377@swampdragon.chaosbits.net>
-References: <4D334E1E.7090708@parallels.com> <alpine.LNX.2.00.1101162103450.13377@swampdragon.chaosbits.net> <4D335554.7020403@parallels.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 16 Jan 2011 15:41:39 -0500
+Message-ID: <4D33580A.8090007@bluewatersys.com>
+Date: Mon, 17 Jan 2011 09:41:46 +1300
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Ben Herrenchmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [PATCH 1/2] Add a common struct clk
+References: <1294199462.347935.472473715866.0.gpush@pororo> <20110110104122.GI12078@pengutronix.de> <20110110110028.GB12552@n2100.arm.linux.org.uk> <201101110854.15653.jeremy.kerr@canonical.com> <AANLkTikjnz6RBCpOZM2imzX3d1ANUkaOZ2Qg9nqhpfpt@mail.gmail.com>
+In-Reply-To: <AANLkTikjnz6RBCpOZM2imzX3d1ANUkaOZ2Qg9nqhpfpt@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 16 Jan 2011, Rob Landley wrote:
+On 01/16/2011 08:26 PM, Grant Likely wrote:
+> On Mon, Jan 10, 2011 at 5:54 PM, Jeremy Kerr <jeremy.kerr@canonical.com> wrote:
+>> Hi Russell,
+>>
+>>> Unless the locking problems can be resolved, the patches aren't ready.
+>>>
+>>> From what I've seen there's still quite a problem with what kind of
+>>> lock to use in the clock - mutex or spinlock.
+>>
+>> Yes, the clock driver may either use a spinlock or mutex.
+>>
+>> However, this exactly the same as the current clock code, my patches do not
+>> alter what we currently have.
+>>
+>> I do agree that we should define some specific semantics for the clock API
+>> with regards to sleeping, and I'll start a new thread about that. But we
+>> should definitely separate that issue from the problem of having multiple
+>> definitions for struct clk, which is what these patches address.
+> 
+> Given that each current struct clk implementation makes it's own
+> decisions about how to handle locking, would it not make sense to omit
+> locking entirely?  At least as a first step?  Let the clock ops
+> implement their own locking.  Make enable count management their
+> responsibility too.  That's all that the lock protects anyway.  The
+> clk_* apis can fall directly through to the ops hooks with no
+> manipulation or locking.  The way v3 of the patch worked.
 
-> On 01/16/2011 02:05 PM, Jesper Juhl wrote:
-> > On Sun, 16 Jan 2011, Rob Landley wrote:
-> > 
-> >> From: Rob Landley <rlandley@parallels.com>
-> >>
-> >> Generate capflags.c with sed (POSIX 2008) instead of perl.
-> >>
-> > 
-> > While I'm not personally a great perl fan, this still begs the 
-> > question, why?
-> 
-> 1) In general, simpler is better.  (Why ship autoconf files to build on
-> hosts that don't have autoconf?  Why fix make oldconfig so it builds on
-> platforms that don't have curses installed?)
-> 
-> 2) Making reliable cross compile build environments involves creating a
-> known build environment on the host, generally removing everything you
-> don't actually _need_ so it can't screw things up when you introduce
-> another target or upgrade packages on your host.
-> 
-> I've maintained such a build environment (aboriginal linux) for several
-> years.  I've personally encountered literally _dozens_ of others, and
-> expect there are at least hundreds if not thousands out in the wild.
-> 
-> 3) Perl is not a well-defined langauge.  It is a single implementation,
-> not a standard.  (Like Microsoft Word and Excel, their file formats are
-> just "what this program emits/parses".  Similarly, Perl is what the perl
-> binary runs.  Attemts to rewrite it based on Parrot famously collapsed
-> into a black hole of corner cases.)
-> 
-> Meaning, if you have a platform on which the one and only implementation
-> of perl doesn't run, you have no alternative implementations to try.
-> (Did I mention that Perl's configuration stage is implemented in perl?)
-> 
-> This moves to an alternative standardized by POSIX, which has well
-> understood behavior with multiple independent implementations (gnu, bsd,
-> busybox...)
-> 
-> > We already depend on perl for other stuff, so why replace something that 
-> > works with something that may or may not work?
-> 
-> We have various development scripts that depend on perl, curses, python,
-> QT, and so on.  But building a _kernel_ doesn't depend on any of that...
-> except perl.  I'm not proposing removing checkstack.pl and such, because
-> "development system" != "build machine".  A build machine can be a
-> headless box, a development system usually has things like Gnome or KDE
-> installed.
-> 
-> The kernel's dependency on Perl was introduced in 2.6.25.  Before 2008
-> the kernel built just fine on a host that didn't have perl installed,
-> and I've been patching the kernel to remove the requirement ever since
-> in my own build environment.  (And building the resulting kernel for a
-> dozen different targets, and submitting those patches here when they
-> changed.  They just haven't changed in a while.)
-> 
-> Perl is used in exactly three places during the kernel build.  I have
-> patches to remove the other two instances of perl use, and using them
-> have built a kernel on a system that doesn't have perl installed.  I'm
-> tweaking them for submission later today.  My prevoius submissions (such
-> as http://lkml.indiana.edu/hypermail/linux/kernel/0901.0/00148.html)
-> treated them as a series, but since the three issues are really
-> orthogonal I'm posting them individually this time, and cc-ing the
-> various people get_maintainer.pl says to.
-> 
+This doesn't really work in a generic API because the call sites need to
+know whether it safe to call clk_enable/disable, etc from a
+non-sleepable context. This has essentially the same problems as using a
+union with both a mutex and a spinlock.
 
-Thanks a lot for spelling out the reasons.
-Those are good reasons in my opinion. I'll test your changes once all 3 
-are posted and if things still work I'll be sure to reply with a 
-Tested-by: to help things along.
+That said, although we are aiming for a generic clock API, it's usage
+typically isn't. Most of the users of the clock API are machine/platform
+specific drivers and so they can make assumptions about the
+implementation of the clock API calls. We currently do have a generic
+set of clock calls which do not define rules about calling from atomic
+context. We have a number of drivers, for several platforms, using the
+clk_enable/disable calls. Some platforms are using sleeping clocks and
+others are using atomic clocks, but because the _usage_ of the API is
+largely platform specific it all hangs together.
+
+This is a bit ugly in practice. It's hardly desirable to have an API
+which looks generic, but in reality is platform/machine specific. I'm
+guessing that a large benefit of having a unified API and well defined
+rules about whether clock API calls may sleep or not allows the usage of
+the clock API to become more generic.
+
+I agree with Russell that the best short term approach is to create two
+clock APIs, one for clocks which are atomic and the other for clocks
+which need to sleep. If nothing else this at least allows the rules
+about calling context to nailed down.
+
+~Ryan
 
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+Bluewater Systems Ltd - ARM Technology Solution Centre
 
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
