@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479Ab1APRz2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 12:55:28 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41534 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753061Ab1APRzZ (ORCPT
+	id S1753515Ab1APRzf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 12:55:35 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:51840 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753061Ab1APRzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 12:55:25 -0500
+	Sun, 16 Jan 2011 12:55:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:content-type;
+        b=RncEHa41EXMNSJ2oiiVwOih+jUEUog/0zlz04ujGe3rHzuqOCFvildAmL0eu5f/bTs
+         prLEwK0D1Q97Nueo8ZITUFwr6VV3g9QyfaoaNJMq/mArQT1wKUwahy2w39C6DFun26mh
+         F47D+3zpBlLosoMNRJw6FXWRDcPQdG4aFnrnw=
 MIME-Version: 1.0
-In-Reply-To: <1295125851-25279-1-git-send-email-nab@linux-iscsi.org>
-References: <1295125851-25279-1-git-send-email-nab@linux-iscsi.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 16 Jan 2011 09:54:31 -0800
-Message-ID: <AANLkTikmyDsq37e6D1FXGXTJ7zztsnxfZvPBBHqO_Tch@mail.gmail.com>
-Subject: Re: [PATCH] configfs: change depends -> select SYSFS
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Joel Becker <jlbec@evilplan.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        James Bottomley <James.Bottomley@suse.de>
+Date: Sun, 16 Jan 2011 19:55:31 +0200
+X-Google-Sender-Auth: mps9iqoi3NEYanuuThh-EL1KDdo
+Message-ID: <AANLkTinqnX30+oNYMAmcWiSssqQTOq+s4Gnb8fUWdKSa@mail.gmail.com>
+Subject: WARN_ON_ONCE() in mark_buffer_dirty() being triggered during ext2
+ umount of an 'errored' block device
+From: Dan Aloni <dan@aloni.org>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 15, 2011 at 1:10 PM, Nicholas A. Bellinger
-<nab@linux-iscsi.org> wrote:
->
-> This patch changes configfs to select SYSFS to fix the following:
->
-> warning: (TARGET_CORE && GFS2_FS) selects CONFIGFS_FS which has unmet direct dependencies (SYSFS)
+Hello,
 
-I'm ok with this part. But:
+With a block device driver that I've implemented, I noticed that if
+the block device is in an error state (i.e. all requests return
+immediately with an error), and I invoke umount on an ext2 file system
+mount on that block device, I get an unexpected kernel stack dump.
 
-> This patch also fixes whitespace breakage in the 'help' section.
+The relevant bits of the stack dump show that umount indirectly calls
+mark_buffer_dirty(), and then the WARN_ON_ONCE(!buffer_uptodate(bh))
+in mark_buffer_dirty() is triggered. I've seen this behavior with ext2
+but did not test other file systems.
 
-This is just bogus. The help text is _supposed_ to have that extra
-indentation so that it stands out from the rest of the Kconfig stuff.
+Now, I suspect this problem has something to do with
+end_buffer_async_write() calling clear_buffer_uptodate(bh) but I'm no
+VFS expert. The kernel is based on 2.6.32.12 but the code I'm talking
+about seems to apply to latest as well.
 
-                   Linus
+Or - is it possible that I've mis-implemented the block device driver?
+
+Thanks,
+- Dan
