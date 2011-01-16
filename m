@@ -1,39 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040Ab1APKts (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 05:49:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14165 "EHLO mx1.redhat.com"
+	id S1752009Ab1APLHh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 06:07:37 -0500
+Received: from mga02.intel.com ([134.134.136.20]:26259 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751799Ab1APKtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 05:49:47 -0500
-Message-ID: <4D32CD45.3090503@redhat.com>
-Date: Sun, 16 Jan 2011 12:49:41 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2 v2] perf-kvm support for SVM
-References: <1295019902-31339-1-git-send-email-joerg.roedel@amd.com>
-In-Reply-To: <1295019902-31339-1-git-send-email-joerg.roedel@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751839Ab1APLHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jan 2011 06:07:36 -0500
+Message-Id: <0d30dc$kp159h@orsmga001.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,329,1291622400"; 
+   d="scan'208";a="697341233"
+Date: Sun, 16 Jan 2011 11:07:32 +0000
+To: Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] drm: fixup headers_check
+Cc: Felipe Balbi <balbi@ti.com>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org
+References: <1295174783-4099-1-git-send-email-balbi@ti.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <1295174783-4099-1-git-send-email-balbi@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2011 05:45 PM, Joerg Roedel wrote:
-> Hi,
->
-> here is the reworked version of the patch-set. Only patch 1/2 has
-> changed and now contains the real fix for the crashes that were seen and
-> has an updated log message.
->
+On Sun, 16 Jan 2011 12:46:22 +0200, Felipe Balbi <balbi@ti.com> wrote:
+> Drop the following headers_check errors:
+> /linux-2.6/usr/include/drm/drm_mode.h:85: found
+> __[us]{8,16,32,64} type without #include <linux/types.h>
+> /linux-2.6/usr/include/drm/i915_drm.h:120: found
+> __[us]{8,16,32,64} type without #include <linux/types.h>
+> /linux-2.6/usr/include/drm/mga_drm.h:260: found
+> __[us]{8,16,32,64} type without #include <linux/types.h>
+> /linux-2.6/usr/include/drm/radeon_drm.h:758: found
+> __[us]{8,16,32,64} type without #include <linux/types.h>
+> /linux-2.6/usr/include/drm/via_drm.h:117: found
+> __[us]{8,16,32,64} type without #include <linux/types.h>
+> 
+> Cc: David Airlie <airlied@linux.ie>
+> Cc: Chris Wilson <chris@chris-wilson.co.uk>
+> Cc: dri-devel@lists.freedesktop.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> ---
+>  include/drm/drm_mode.h   |    2 ++
+>  include/drm/i915_drm.h   |    1 +
+>  include/drm/mga_drm.h    |    1 +
+>  include/drm/radeon_drm.h |    1 +
+>  include/drm/via_drm.h    |    1 +
+>  5 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/drm/drm_mode.h b/include/drm/drm_mode.h
+> index 0fc7397..1678d7b 100644
+> --- a/include/drm/drm_mode.h
+> +++ b/include/drm/drm_mode.h
+> @@ -27,6 +27,8 @@
+>  #ifndef _DRM_MODE_H
+>  #define _DRM_MODE_H
+>  
+> +#include <linux/types.h>
+> +
 
-Thanks, applied.  2.6.37 and earlier aren't affected, yes?  So I'm 
-queuing it for 2.6.38 only.
+Would
+
+#if 0
+#include <linux/types.h> /* silence make header_check */
+#endif
+
+be an acceptable compromise?
+-Chris
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Chris Wilson, Intel Open Source Technology Centre
