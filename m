@@ -1,90 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877Ab1APHM0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 02:12:26 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:58803 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867Ab1APHMZ (ORCPT
+	id S1751897Ab1APH0m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 02:26:42 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35201 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751273Ab1APH0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 02:12:25 -0500
-Subject: Re: [PATCH] [SCSI] target: Remove unneeded test of se_cmd
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Roland Dreier <rdreier@cisco.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-In-Reply-To: <adazkr1z9hk.fsf@cisco.com>
-References: <adazkr1z9hk.fsf@cisco.com>
-Content-Type: text/plain
-Date: Sat, 15 Jan 2011 23:12:21 -0800
-Message-Id: <1295161941.22813.25.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Sun, 16 Jan 2011 02:26:41 -0500
+MIME-Version: 1.0
+In-Reply-To: <201101110854.15653.jeremy.kerr@canonical.com>
+References: <1294199462.347935.472473715866.0.gpush@pororo>
+ <20110110104122.GI12078@pengutronix.de> <20110110110028.GB12552@n2100.arm.linux.org.uk>
+ <201101110854.15653.jeremy.kerr@canonical.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Sun, 16 Jan 2011 00:26:20 -0700
+X-Google-Sender-Auth: YetNNM_JQ9hoLja_bikM5ISgzu0
+Message-ID: <AANLkTikjnz6RBCpOZM2imzX3d1ANUkaOZ2Qg9nqhpfpt@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Add a common struct clk
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Ben Herrenchmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-01-15 at 21:46 -0800, Roland Dreier wrote:
-> se_cmd is dereferenced unconditionally in many other parts of
-> transport_get_lun_for_cmd() so remove the last test whether se_cmd is NULL.
-> 
-> Signed-off-by: Roland Dreier <rolandd@cisco.com>
-> ---
-> I'm not 100% sure of this patch (perhaps se_cmd can be NULL here and the
-> whole rest of the function needs to be fixed instead), but this seems
-> like the more sensible thing.
-> 
+On Mon, Jan 10, 2011 at 5:54 PM, Jeremy Kerr <jeremy.kerr@canonical.com> wrote:
+> Hi Russell,
+>
+>> Unless the locking problems can be resolved, the patches aren't ready.
+>>
+>> From what I've seen there's still quite a problem with what kind of
+>> lock to use in the clock - mutex or spinlock.
+>
+> Yes, the clock driver may either use a spinlock or mutex.
+>
+> However, this exactly the same as the current clock code, my patches do not
+> alter what we currently have.
+>
+> I do agree that we should define some specific semantics for the clock API
+> with regards to sleeping, and I'll start a new thread about that. But we
+> should definitely separate that issue from the problem of having multiple
+> definitions for struct clk, which is what these patches address.
 
-Yep, the explict test for se_cmd is left-over legacy cruft, and can be
-safely dropped here..  Committed as 722a630caa and pushed into
-lio-core-2.6.git/linus-38-rc1 and scsi-post-merge-2.6.git/for-jejb.
+Given that each current struct clk implementation makes it's own
+decisions about how to handle locking, would it not make sense to omit
+locking entirely?  At least as a first step?  Let the clock ops
+implement their own locking.  Make enable count management their
+responsibility too.  That's all that the lock protects anyway.  The
+clk_* apis can fall directly through to the ops hooks with no
+manipulation or locking.  The way v3 of the patch worked.
 
-Thanks again Roland!
+Just having a common struct clk definition (without the locking) is
+valuable on its own to get closer to supporting multiple platforms
+with a single kernel on ARM.  It certainly shouldn't be worse that the
+current state.  Locking consolidation can be implemented in follow-on
+patches.
 
---nab
-
->  drivers/target/target_core_device.c |   22 +++++++++-------------
->  1 files changed, 9 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
-> index 317ce58..d94933d 100644
-> --- a/drivers/target/target_core_device.c
-> +++ b/drivers/target/target_core_device.c
-> @@ -69,21 +69,17 @@ int transport_get_lun_for_cmd(
->  	deve = se_cmd->se_deve =
->  			&SE_NODE_ACL(se_sess)->device_list[unpacked_lun];
->  	if (deve->lun_flags & TRANSPORT_LUNFLAGS_INITIATOR_ACCESS) {
-> -		if (se_cmd) {
-> -			deve->total_cmds++;
-> -			deve->total_bytes += se_cmd->data_length;
-> -
-> -			if (se_cmd->data_direction == DMA_TO_DEVICE) {
-> -				if (deve->lun_flags &
-> -						TRANSPORT_LUNFLAGS_READ_ONLY) {
-> -					read_only = 1;
-> -					goto out;
-> -				}
-> -				deve->write_bytes += se_cmd->data_length;
-> -			} else if (se_cmd->data_direction ==
-> -				   DMA_FROM_DEVICE) {
-> -				deve->read_bytes += se_cmd->data_length;
-> +		deve->total_cmds++;
-> +		deve->total_bytes += se_cmd->data_length;
-> +
-> +		if (se_cmd->data_direction == DMA_TO_DEVICE) {
-> +			if (deve->lun_flags & TRANSPORT_LUNFLAGS_READ_ONLY) {
-> +				read_only = 1;
-> +				goto out;
->  			}
-> +			deve->write_bytes += se_cmd->data_length;
-> +		} else if (se_cmd->data_direction == DMA_FROM_DEVICE) {
-> +			deve->read_bytes += se_cmd->data_length;
->  		}
->  		deve->deve_cmds++;
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+g.
