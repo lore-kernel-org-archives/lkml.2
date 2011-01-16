@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750856Ab1APFQX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 00:16:23 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46220 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750734Ab1APFQW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 00:16:22 -0500
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Alan Cox <alan@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sun, 16 Jan 2011 05:16:14 +0000
-Message-ID: <1295154974.3693.53.camel@localhost>
+	id S1751143Ab1APFQv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 00:16:51 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49238
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750888Ab1APFQu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jan 2011 00:16:50 -0500
+Date: Sat, 15 Jan 2011 21:17:22 -0800 (PST)
+Message-Id: <20110115.211722.39173519.davem@davemloft.net>
+To: richm@oldelvet.org.uk
+Cc: 609371@bugs.debian.org, ben@decadent.org.uk, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org, fweisbec@gmail.com,
+        mingo@redhat.com
+Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
+ Unknown relocation: 36
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4D3074FE.3030707@oldelvet.org.uk>
+References: <20110113.155700.102679408.davem@davemloft.net>
+	<4D302B2F.7030108@oldelvet.org.uk>
+	<4D3074FE.3030707@oldelvet.org.uk>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: [PATCH] 68360serial: Plumb in rs_360_get_icount()
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 0587102cf9f427c185bfdeb2cef41e13ee0264b1 replaced a direct
-implementation of SIOCGICOUNT with an implementation of
-tty_operations::get_icount, but it did not actually set
-rs_360_ops.get_icount.
+From: Richard Mortimer <richm@oldelvet.org.uk>
+Date: Fri, 14 Jan 2011 16:08:30 +0000
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: stable@kernel.org [2.6.37]
----
-I have not even compiled this (it's an m68k-specific driver), but it
-looks obvious enough.
+[ Frederic, Steven, Ingo, the short version of the story is that we
+  need to make it such that the _ftrace_events section is aligned
+  properly for 64-bit systems, and in particular that GCC can see this
+  too.  Otherwise GCC thinks 64-bit words will be unaligned and we get
+  all kinds of funky relocations being used in modules on sparc64 that
+  really there is never any reason to see. ]
 
-Ben.
+> They seem to come from scsi.o at
+> 
+> .LLC51:
+>         .asciz  "scsi_eh_wakeup"
+>         .section        _ftrace_events,"aw",@progbits
+>         .align 4
+>         .type   event_scsi_eh_wakeup, #object
+>         .size   event_scsi_eh_wakeup, 136
+> event_scsi_eh_wakeup:
+>         .skip   16
+>         .uaxword        event_class_scsi_eh_wakeup
+>         .uaxword        .LLC51
+>         .skip   8
+>         .skip   40
+>         .uaxword        ftrace_event_type_funcs_scsi_eh_wakeup
+>         .uaxword        print_fmt_scsi_eh_wakeup
+>         .skip   40
 
- drivers/serial/68360serial.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+These ".uaxword" emissions are a bug, and if we let them stand then
+ftrace events are going to load every long word object using a
+sequence of byte-sized accesses.  This will absolutely kill
+performance.
 
-diff --git a/drivers/serial/68360serial.c b/drivers/serial/68360serial.c
-index e843b90..677a496 100644
---- a/drivers/serial/68360serial.c
-+++ b/drivers/serial/68360serial.c
-@@ -2428,6 +2428,7 @@ static const struct tty_operations rs_360_ops = {
- 	/* .read_proc = rs_360_read_proc, */
- 	.tiocmget = rs_360_tiocmget,
- 	.tiocmset = rs_360_tiocmset,
-+	.get_icount = rs_360_get_icount,
- };
- 
- static int __init rs_360_init(void)
--- 
-1.7.2.3
+This is exactly why I wanted to find out why this started happening
+out of nowhere, instead of blindly adding support for new relocation
+types to the sparc module loader.
 
+The set of relocations supported by the sparc module loading code is
+not meant to be "all relocations which are legal" but rather it's
+meant to support the most minimum set of relocations that the kernel
+actually _needs_ and should be making use of.
 
+I think the problem we have here is that the _ftrace_events section is
+not aligned sufficiently.  That ".align 4" mnemonic is a good indication
+of this.  It should at least "8" on sparc64.
+
+So we need to figure out why that is happening, and fix that instead.
+
+Thanks.
