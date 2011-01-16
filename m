@@ -1,92 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab1APLmk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 06:42:40 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:41490 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab1APLmj (ORCPT
+	id S1752143Ab1APLtX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 06:49:23 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62470 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088Ab1APLtW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 06:42:39 -0500
+	Sun, 16 Jan 2011 06:49:22 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=djgSEVq337IaA5y8BorHMyQbxgjikytGk6ukZkO3vklIBJOGKnTG6/L6SnhoEiUAPi
-         lh/eH1rBTuTTLOHG4w35ovK7594vgZi8gQVPMWXZaqU3Mij3fEd5MsgrU7aYidB/ji7M
-         QnA5Zy7uFdkr8f5xJWTpjvj82ecLX5TQmMLQU=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=VI+4m5OXh3B006GYNiWeduV6Nb5nl5z8473k7ZgQpCSibBD9+hvX3iJL5qOsa5Wg5w
+         XxsFxMm9mEb3bpInaaKRUkcexw7kzLSPGjGifjvX/dq39dbGYts27IyS8g5BopYe5l9n
+         9G3o8aIzYVL7deq/Gc89P1iGD99iTNZpkH+6s=
 MIME-Version: 1.0
-In-Reply-To: <20110116111809.GD2456@legolas.emea.dhcp.ti.com>
-References: <1295174783-4099-1-git-send-email-balbi@ti.com>
-	<0d30dc$kp159h@orsmga001.jf.intel.com>
-	<20110116111616.GC2456@legolas.emea.dhcp.ti.com>
-	<20110116111809.GD2456@legolas.emea.dhcp.ti.com>
-Date: Sun, 16 Jan 2011 21:42:37 +1000
-Message-ID: <AANLkTikD2gy9PVd=2N_iQEXNRZ-5x725asoeZQZBruOU@mail.gmail.com>
-Subject: Re: [PATCH 1/2] drm: fixup headers_check
-From: Dave Airlie <airlied@gmail.com>
-To: balbi@ti.com
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, linux-kernel@vger.kernel.org,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Content-Type: multipart/mixed; boundary=90e6ba181bda0615960499f52a16
+In-Reply-To: <20110115154019.GF15996@n2100.arm.linux.org.uk>
+References: <1294990949-2729-1-git-send-email-ccross@android.com>
+	<AANLkTimqiqABxCejdeOQWZZ62DVUZW2v-yMpdu1aNDQT@mail.gmail.com>
+	<20110114120229.GA15996@n2100.arm.linux.org.uk>
+	<1295014231.7901.41.camel@e102109-lin.cambridge.arm.com>
+	<20110114154919.GE15996@n2100.arm.linux.org.uk>
+	<1295022193.7901.56.camel@e102109-lin.cambridge.arm.com>
+	<20110114163520.GH15996@n2100.arm.linux.org.uk>
+	<1295024327.7901.70.camel@e102109-lin.cambridge.arm.com>
+	<20110114173050.GJ15996@n2100.arm.linux.org.uk>
+	<AANLkTin_pMzNc-ZL+rVcwaVawer0poyxhatqw5P-A2qW@mail.gmail.com>
+	<20110115154019.GF15996@n2100.arm.linux.org.uk>
+Date: Sun, 16 Jan 2011 11:49:21 +0000
+X-Google-Sender-Auth: wu3SheeT4w2tscfnyuHv_z9XSq8
+Message-ID: <AANLkTikY46rXDBzgKM=9zwAda4=bhRCXDKJM6UA0yyLU@mail.gmail.com>
+Subject: [PATCH] ARM: vfp: Fix up exception location in Thumb mode
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Colin Cross <ccross@android.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---90e6ba181bda0615960499f52a16
-Content-Type: text/plain; charset=ISO-8859-1
+On Saturday, 15 January 2011, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Sat, Jan 15, 2011 at 03:31:04PM +0000, Catalin Marinas wrote:
+>> On 14 January 2011 17:30, Russell King - ARM Linux
+>> <linux@arm.linux.org.uk> wrote:
+>> > diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+>> > index 2b46fea..5876eec 100644
+>> > --- a/arch/arm/kernel/entry-armv.S
+>> > +++ b/arch/arm/kernel/entry-armv.S
+>> > @@ -461,27 +461,35 @@ ENDPROC(__irq_usr)
+>> >        .align  5
+>> >  __und_usr:
+>> >        usr_entry
+>> > -
+>> > -       @
+>> > -       @ fall through to the emulation code, which returns using r9 if
+>> > -       @ it has emulated the instruction, or the more conventional lr
+>> > -       @ if we are to treat this as a real undefined instruction
+>> >        @
+>> > -       @  r0 - instruction
+>> > +       @ The emulation code returns using r9 if it has emulated the
+>> > +       @ instruction, or the more conventional lr if we are to treat
+>> > +       @ this as a real undefined instruction
+>> >        @
+>> >        adr     r9, BSYM(ret_from_exception)
+>> >        adr     lr, BSYM(__und_usr_unknown)
+>> > +       @
+>> > +       @ r2 = regs->ARM_pc, which is either 2 or 4 bytes ahead of the
+>> > +       @ faulting instruction depending on Thumb mode.
+>> > +       @ r3 = regs->ARM_cpsr
+>> > +       @
+>> >        tst     r3, #PSR_T_BIT                  @ Thumb mode?
+>> > -       itet    eq                              @ explicit IT needed for the 1f label
+>> > +       itttt   eq                              @ explicit IT needed for the 1f label
+>> >        subeq   r4, r2, #4                      @ ARM instr at LR - 4
+>> > -       subne   r4, r2, #2                      @ Thumb instr at LR - 2
+>> >  1:     ldreqt  r0, [r4]
+>>
+>> The itttt above should just be itt. The reveq is conditionally
+>> compiled and beq doesn't necessarily need one.
+>
+> It's a reveq, so I thought we should cover all the instructions with
+> an 'eq' conditional for thumb.
 
-I'll push the attached I think this time.
+If the it instruction doesn't cover all instructions, gas generates
+some more its. But in this case, for little endian, the it instruction
+covers more since reveq isn't included and having the beq not last in
+the block I think is unpredictable. If you really want to optimise the
+big endian case not to have an additional it generated by gas, you can
+write ittt so that beq is included with little endian but not with big
+endian. I wouldn't bother much for an extra it anyway.
 
-Dave.
+>> >  #ifdef CONFIG_CPU_ENDIAN_BE8
+>> >        reveq   r0, r0                          @ little endian instruction
+>> >  #endif
+>> > +       @
+>> > +       @ r0 = 32-bit ARM instruction which caused the exception
+>> > +       @ r2 = PC value for the following instruction (:= regs->ARM_pc)
+>>
+>> Is r2 here always the PC value following instruction? If the Thumb
+>> instruction was 32-bit, it just points in the middle of the faulting
+>> instruction.
+>
+> Is the T bit ever zero in this case?  The code here is:
+>
+>         tst     r3, #PSR_T_BIT
+>         subeq   r4, r2, #4
+> 1:      ldreqt  r0, [r4]
+>         reveq   r0, r0
+>         beq     call_fpe
 
---90e6ba181bda0615960499f52a16
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-drm-add-comments-to-stop-pointless-patches.patch"
-Content-Disposition: attachment; 
-	filename="0001-drm-add-comments-to-stop-pointless-patches.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gizvei570
+You can have the T bit set but the instruction a 32-bit Thumb in which
+case r2 is in the middle of such instruction rather than the next.
+Unless you only refer to the ARM mode, in which case the comment is
+fine.
 
-RnJvbSAxMjIyYWQ0MTg4YWEyYTYwNDZkYTkzMTQ4NzU0MzUwN2E1OWI3ZmFjIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBEYXZlIEFpcmxpZSA8YWlybGllZEByZWRoYXQuY29tPgpEYXRl
-OiBTdW4sIDE2IEphbiAyMDExIDIxOjM1OjEwICsxMDAwClN1YmplY3Q6IFtQQVRDSF0gZHJtOiBh
-ZGQgY29tbWVudHMgdG8gc3RvcCBwb2ludGxlc3MgcGF0Y2hlcy4KCkhvdyBhYm91dCB5b3UgZml4
-IHRoZSBoZWFkZXJzIHNjcmlwdCB0byBiZSByZWN1cnNpdmU/CgpTaWduZWQtb2ZmLWJ5OiBEYXZl
-IEFpcmxpZSA8YWlybGllZEByZWRoYXQuY29tPgotLS0KIGluY2x1ZGUvZHJtL2RybV9tb2RlLmgg
-ICB8ICAgIDMgKysrCiBpbmNsdWRlL2RybS9pOTE1X2RybS5oICAgfCAgICAxICsKIGluY2x1ZGUv
-ZHJtL21nYV9kcm0uaCAgICB8ICAgIDEgKwogaW5jbHVkZS9kcm0vcmFkZW9uX2RybS5oIHwgICAg
-MSArCiBpbmNsdWRlL2RybS92aWFfZHJtLmggICAgfCAgICAxICsKIDUgZmlsZXMgY2hhbmdlZCwg
-NyBpbnNlcnRpb25zKCspLCAwIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2luY2x1ZGUvZHJt
-L2RybV9tb2RlLmggYi9pbmNsdWRlL2RybS9kcm1fbW9kZS5oCmluZGV4IDBmYzczOTcuLjdhMWY2
-YzUgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvZHJtL2RybV9tb2RlLmgKKysrIGIvaW5jbHVkZS9kcm0v
-ZHJtX21vZGUuaApAQCAtMjcsNiArMjcsOSBAQAogI2lmbmRlZiBfRFJNX01PREVfSAogI2RlZmlu
-ZSBfRFJNX01PREVfSAogCisvKiB0aGlzIGZpbGUgZG9lc24ndCBuZWVkIGxpbnV4L3R5cGVzLmgg
-aW5jbHVkZWQgKi8KKyNpbmNsdWRlICJkcm0uaCIKKwogI2RlZmluZSBEUk1fRElTUExBWV9JTkZP
-X0xFTgkzMgogI2RlZmluZSBEUk1fQ09OTkVDVE9SX05BTUVfTEVOCTMyCiAjZGVmaW5lIERSTV9E
-SVNQTEFZX01PREVfTEVOCTMyCmRpZmYgLS1naXQgYS9pbmNsdWRlL2RybS9pOTE1X2RybS5oIGIv
-aW5jbHVkZS9kcm0vaTkxNV9kcm0uaAppbmRleCAwMDM5ZjFmLi4wZGEwNDIwIDEwMDY0NAotLS0g
-YS9pbmNsdWRlL2RybS9pOTE1X2RybS5oCisrKyBiL2luY2x1ZGUvZHJtL2k5MTVfZHJtLmgKQEAg
-LTI3LDYgKzI3LDcgQEAKICNpZm5kZWYgX0k5MTVfRFJNX0hfCiAjZGVmaW5lIF9JOTE1X0RSTV9I
-XwogCisvKiB0aGlzIGZpbGUgZG9lc24ndCBuZWVkIGxpbnV4L3R5cGVzLmggaW5jbHVkZWQgKi8K
-ICNpbmNsdWRlICJkcm0uaCIKIAogLyogUGxlYXNlIG5vdGUgdGhhdCBtb2RpZmljYXRpb25zIHRv
-IGFsbCBzdHJ1Y3RzIGRlZmluZWQgaGVyZSBhcmUKZGlmZiAtLWdpdCBhL2luY2x1ZGUvZHJtL21n
-YV9kcm0uaCBiL2luY2x1ZGUvZHJtL21nYV9kcm0uaAppbmRleCBjMTYwOTdmLi40MWI0MDgxIDEw
-MDY0NAotLS0gYS9pbmNsdWRlL2RybS9tZ2FfZHJtLmgKKysrIGIvaW5jbHVkZS9kcm0vbWdhX2Ry
-bS5oCkBAIC0zNSw2ICszNSw3IEBACiAjaWZuZGVmIF9fTUdBX0RSTV9IX18KICNkZWZpbmUgX19N
-R0FfRFJNX0hfXwogCisvKiB0aGlzIGZpbGUgZG9lc24ndCBuZWVkIGxpbnV4L3R5cGVzLmggaW5j
-bHVkZWQgKi8KICNpbmNsdWRlICJkcm0uaCIKIAogLyogV0FSTklORzogSWYgeW91IGNoYW5nZSBh
-bnkgb2YgdGhlc2UgZGVmaW5lcywgbWFrZSBzdXJlIHRvIGNoYW5nZSB0aGUKZGlmZiAtLWdpdCBh
-L2luY2x1ZGUvZHJtL3JhZGVvbl9kcm0uaCBiL2luY2x1ZGUvZHJtL3JhZGVvbl9kcm0uaAppbmRl
-eCBlOTVhODZiLi5jMzNmNjU2IDEwMDY0NAotLS0gYS9pbmNsdWRlL2RybS9yYWRlb25fZHJtLmgK
-KysrIGIvaW5jbHVkZS9kcm0vcmFkZW9uX2RybS5oCkBAIC0zMyw2ICszMyw3IEBACiAjaWZuZGVm
-IF9fUkFERU9OX0RSTV9IX18KICNkZWZpbmUgX19SQURFT05fRFJNX0hfXwogCisvKiB0aGlzIGZp
-bGUgZG9lc24ndCBuZWVkIGxpbnV4L3R5cGVzLmggaW5jbHVkZWQgKi8KICNpbmNsdWRlICJkcm0u
-aCIKIAogLyogV0FSTklORzogSWYgeW91IGNoYW5nZSBhbnkgb2YgdGhlc2UgZGVmaW5lcywgbWFr
-ZSBzdXJlIHRvIGNoYW5nZSB0aGUKZGlmZiAtLWdpdCBhL2luY2x1ZGUvZHJtL3ZpYV9kcm0uaCBi
-L2luY2x1ZGUvZHJtL3ZpYV9kcm0uaAppbmRleCBmZDExYTViLi5jY2RlNTg5IDEwMDY0NAotLS0g
-YS9pbmNsdWRlL2RybS92aWFfZHJtLmgKKysrIGIvaW5jbHVkZS9kcm0vdmlhX2RybS5oCkBAIC0y
-NCw2ICsyNCw3IEBACiAjaWZuZGVmIF9WSUFfRFJNX0hfCiAjZGVmaW5lIF9WSUFfRFJNX0hfCiAK
-Ky8qIHRoaXMgZmlsZSBkb2Vzbid0IG5lZWQgbGludXgvdHlwZXMuaCBpbmNsdWRlZCAqLwogI2lu
-Y2x1ZGUgImRybS5oIgogCiAvKiBXQVJOSU5HOiBUaGVzZSBkZWZpbmVzIG11c3QgYmUgdGhlIHNh
-bWUgYXMgd2hhdCB0aGUgWHNlcnZlciB1c2VzLgotLSAKMS43LjIuMwoK
---90e6ba181bda0615960499f52a16--
+> So, if !T, then we subtract 4 and load the instruction (which was the
+> faulting instruction).  So r2 is the following instruction.
+>
+> Ah, maybe you're getting confused by the comment.  Should we put
+> an 'eq' suffix on the end of each line? ;)
+
+Maybe mention that this is ARM. I think documenting this code is
+difficult anyway. I found myself not reading the comments at all when
+revisiting this code :) but they may be useful for others.
+
+
+-- 
+Catalin
