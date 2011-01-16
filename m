@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753735Ab1APTPD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 14:15:03 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:60479 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497Ab1APTPB convert rfc822-to-8bit (ORCPT
+	id S1753756Ab1APTRa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 14:17:30 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:15695 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753548Ab1APTR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 14:15:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=lRFO1rF2vwmliPKy+AtI70Z6caLG3K1xEaEfRPNo1pcHAmZ4SEt57/maYYH6rP28oC
-         Geyh1lHkE1X7aWcLAPoMy28HuinpDOjevz9WWKWWgciW4jOmvAk9xzmrI9izoQO81NX0
-         lRkJ/PWCjflm4wiUg9Hs7Qa6suw70P7pGY6YQ=
+	Sun, 16 Jan 2011 14:17:27 -0500
+Date: Sun, 16 Jan 2011 20:17:25 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: James Bottomley <James.Bottomley@suse.de>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Subject: [PATCH] target: Fix memory leak in fd_set_configfs_dev_params().
+Message-ID: <alpine.LNX.2.00.1101162006410.13377@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTim5-oQO4i7bc5mZZogXfuiHc_qk6S1Bz1eA83__@mail.gmail.com>
-References: <AANLkTimBXn8zoQdPE0t-P5FZ_rLi+1jzuzG+WxeiCwFD@mail.gmail.com>
-	<AANLkTim6u9WUE7RkXUYEbTqftZ8gmB1xTYD_H8c7yhpu@mail.gmail.com>
-	<AANLkTinVDdUX70E12fqJBBsd+zKDF4zpnG4YSUhCuQCD@mail.gmail.com>
-	<AANLkTimG+61dj-KNeAJZLta4+r1TyXyo1nO7VwJnxUW7@mail.gmail.com>
-	<AANLkTikfp56XBE+B0hvvYD2nSJXpQ65XO7gwL2ZLU5uU@mail.gmail.com>
-	<AANLkTimyrHqDpG4DmLym5AeHBbWziETDXjvBU+eaFfcb@mail.gmail.com>
-	<AANLkTim5-oQO4i7bc5mZZogXfuiHc_qk6S1Bz1eA83__@mail.gmail.com>
-Date: Sun, 16 Jan 2011 20:15:00 +0100
-Message-ID: <AANLkTims8orQTCoWKhzJXM1AEH5nZZ7Ssr9S1mYfdcDM@mail.gmail.com>
-Subject: Re: Please revert nouveau.
-From: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
-To: Anca Emanuel <anca.emanuel@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+match_strdup() dynamically allocates memory and it is the responsabillity 
+of the caller to free that memory. In 
+drivers/target/target_core_file.c::fd_set_configfs_dev_params() two calls 
+are made to match_strdup() and in neither case is the allocated memory 
+freed, but instead it is leaked.
 
-On Sun, Jan 16, 2011 at 8:03 PM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
-> On Sun, Jan 16, 2011 at 8:56 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->> On Sun, Jan 16, 2011 at 10:50 AM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
->>>
->>> after
->>> git revert dfe63bb0ad9810db13aab0058caba97866e0a681
->>
->> You are aware that that was already reverted yesterday? See commit 3632ef89.
->>
->>> and
->>>
->>> diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
->>> index 5c4f9b9..2aad663 100644
->>> --- a/drivers/gpu/drm/drm_fb_helper.c
->>> +++ b/drivers/gpu/drm/drm_fb_helper.c
->>> @@ -816,6 +816,7 @@ int drm_fb_helper_set_par(struct fb_info *info)
->>>                        mutex_unlock(&dev->mode_config.mutex);
->>>                        return ret;
->>>                }
->>> +               drm_fb_helper_fill_fix(info, fb_helper->fb->pitch,
->>> fb_helper->fb->depth);
->>>        }
->>>        mutex_unlock(&dev->mode_config.mutex);
->>>
->>> I have an partial working sistem.
->>
->> What does "partial working system" even MEAN?
->>
->> Anca, stop emailing worthless crap. Tell what the problems are. And cc
->> the right people rather than asking me personally to just "revert"
->> without even saying what the problem is. And if you feel like they
->> have been ignoring you, then I have a clue for you: I bet they have
->> been frustrated by the same things I am frustrated by.
->>
->> IOW, do a nice proper bug-report. Do it to the right people. Include
->> useful information, and remember that the developers DO NOT see the
->> problem you have (if they did, they'd not have done the changes), so
->> "doesn't work" or "the boot screen is not ok" is not something anybody
->> is ever going to find useful.
->>
->>         Linus
->>
->
-> Linus, I am a beginner, I will try to be more useful in the future.
+This patch should take care of the problem by kfree()'ing the allocated 
+memory once it is no longer needed. It also makes sure to return -ENOMEM 
+if the memory allocation in match_strdup() should fail.
 
-Take a look at /REPORTING-BUGS and /Documentation/BUG-HUNTING : )
+Please review and consider for inclusion.
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ target_core_file.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+  compile tested only.
+
+diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
+index 0aaca88..676a010 100644
+--- a/drivers/target/target_core_file.c
++++ b/drivers/target/target_core_file.c
+@@ -537,15 +537,26 @@ static ssize_t fd_set_configfs_dev_params(
+ 		token = match_token(ptr, tokens, args);
+ 		switch (token) {
+ 		case Opt_fd_dev_name:
++			arg_p = match_strdup(&args[0]);
++			if (!arg_p) {
++				ret = -ENOMEM;
++				break;
++			}
+ 			snprintf(fd_dev->fd_dev_name, FD_MAX_DEV_NAME,
+-					"%s", match_strdup(&args[0]));
++					"%s", arg_p);
++			kfree(arg_p);
+ 			printk(KERN_INFO "FILEIO: Referencing Path: %s\n",
+ 					fd_dev->fd_dev_name);
+ 			fd_dev->fbd_flags |= FBDF_HAS_PATH;
+ 			break;
+ 		case Opt_fd_dev_size:
+ 			arg_p = match_strdup(&args[0]);
++			if (!arg_p) {
++				ret = -ENOMEM;
++				break;
++			}
+ 			ret = strict_strtoull(arg_p, 0, &fd_dev->fd_dev_size);
++			kfree(arg_p);
+ 			if (ret < 0) {
+ 				printk(KERN_ERR "strict_strtoull() failed for"
+ 						" fd_dev_size=\n");
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
