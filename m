@@ -1,94 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220Ab1APPEm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 10:04:42 -0500
-Received: from casper.infradead.org ([85.118.1.10]:46120 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753012Ab1APPEj (ORCPT
+	id S1753156Ab1APPIi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 10:08:38 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:40977 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752641Ab1APPIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 10:04:39 -0500
-Message-ID: <4D332507.4090204@infradead.org>
-Date: Sun, 16 Jan 2011 15:04:07 -0200
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
+	Sun, 16 Jan 2011 10:08:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:content-type;
+        b=KHpo1rW6oVy7svswIMLZO3iZxo9ZxnBUp95+kWQ4A3GCytrn6xn3PhRVZVSndcw3hQ
+         99ZLYdELXOWwdYIuIgOYwDnLVJkBKiBFb8k4sfUgAEds/YjiisTTu6ubVE2IxzWJZWHL
+         0vl/0aIez0pbHyeNJtuNF97M/JBTe3gqk9YNI=
 MIME-Version: 1.0
-To: Ben Gamari <bgamari.foss@gmail.com>
-CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "Igor M. Liplianin" <liplianin@me.by>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, aospan@netup.ru
-Subject: Re: [PATCH 01/18] Altera FPGA firmware download module.
-References: <201012310726.31851.liplianin@netup.ru> <201012311212.19715.laurent.pinchart@ideasonboard.com> <4D1DBE2A.5080003@infradead.org> <201012311230.51903.laurent.pinchart@ideasonboard.com> <4D1DC2DD.6050400@infradead.org> <8739p45x3v.fsf@gmail.com>
-In-Reply-To: <8739p45x3v.fsf@gmail.com>
+From: Hui Zhu <teawater@gmail.com>
+Date: Sun, 16 Jan 2011 23:00:55 +0800
+Message-ID: <AANLkTin_az45dt=BA38=6N52Qz8X+TyntjWzDo1_73q6@mail.gmail.com>
+Subject: [PATCH] Fix smbfs/dir.o build error
+To: Greg Kroah-Hartman <gregkh@suse.de>, Nick Piggin <npiggin@kernel.dk>,
+        Jeff Layton <jlayton@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 07-01-2011 17:31, Ben Gamari escreveu:
-> Hi Mauro,
-> 
-> On Fri, 31 Dec 2010 09:47:41 -0200, Mauro Carvalho Chehab <mchehab@infradead.org> wrote:
->> Em 31-12-2010 09:30, Laurent Pinchart escreveu:
->>> Hi Mauro,
->>>
->>> [snip]
->>>
->>> I understand this. However, a complete JTAG state machine in the kernel, plus 
->>> an Altera firmware parser, seems to be a lot of code that could live in 
->>> userspace.
->>
->> Moving it to userspace would mean a kernel driver that would depend on an
->> userspace daemon^Wfirmware loader to work. I would NAK such designs.
->>
->> The way it is is fine from my POV.
-> 
-> Any furthur comment on this? As I noted, I strongly disagree and would
-> point out that there is no shortage of precedent for the use of
-> userspace callbacks for loading of firmware, especially when the process
-> is as tricky as this.
-> 
-> I also work with Altera FPGAs and have a strong interest in making this
-> work yet from my perspective it seems pretty clear that the best way
-> forward both for both maintainability and useability is to keep
-> this code in user-space. There is absolutely no reason why this code
-> _must_ be in the kernel and punting it out to userspace only requires
-> a udev rule.
-> 
-> Placing this functionality in userspace results in a massive duplication
-> of code, as there are already a number of functional user-space JTAG
-> implementations.
+  CC [M]  drivers/staging/smbfs/dir.o
+/home/teawater/kernel/linux-2.6/drivers/staging/smbfs/dir.c:286:
+error: static declaration of 'smbfs_dentry_operations' follows
+non-static declaration
+/home/teawater/kernel/linux-2.6/drivers/staging/smbfs/proto.h:42:
+note: previous declaration of 'smbfs_dentry_operations' was here
+/home/teawater/kernel/linux-2.6/drivers/staging/smbfs/dir.c:294:
+error: static declaration of 'smbfs_dentry_operations_case' follows
+non-static declaration
+/home/teawater/kernel/linux-2.6/drivers/staging/smbfs/proto.h:41:
+note: previous declaration of 'smbfs_dentry_operations_case' was here
+make[5]: *** [drivers/staging/smbfs/dir.o] Error 1
+make[4]: *** [drivers/staging/smbfs] Error 2
+make[3]: *** [drivers/staging] Error 2
+make[2]: *** [drivers] Error 2
+make[1]: *** [sub-make] Error 2
+make: *** [all] Error 2
 
-On all V4L/DVB drivers I'm ware of, firmwares are loaded via request_firmware, when
-userspace tries to use the device, or when the driver is loaded (eventually, it might
-have some v4l/dvb legacy drivers with some weird implementation, but this is a bad
-practice).
+Not sure it is fixed or not.
 
-There's currently no V4L/DVB load firmware daemon or V4L/DVB udev rules for loading
-firmware that I'm ware of, and I don't like the idea of adding an extra complexity
-for userspace to use this device.
+Thanks,
+Hui
 
-So, I'll be adding this driver as proposed. Yet, as some points are risen, I'll
-be moving those drivers to staging for 2.6.38. This will give you some time for
-propose patches and to better discuss this question.
-> 
->>> If I understand it correctly the driver assumes the firmware is in an Altera 
->>> proprietary format. If we really want JTAG code in the kernel we should at 
->>> least split the file parser and the TAP access code.
->>>
->>
->> Agreed, but I don't think this would be a good reason to block the code merge
->> for .38.
->>
-> Sure, but there should be agreement that a kernel-mode JTAG state
-> machine really is the best way forward (i.e. necessary for effective
-> firmware upload) before we commit to carry this code around forever.
-> 
-> - Ben
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Signed-off-by: Hui Zhu <teawater@gmail.com>
+---
+ drivers/staging/smbfs/dir.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+--- a/drivers/staging/smbfs/dir.c
++++ b/drivers/staging/smbfs/dir.c
+@@ -283,7 +283,7 @@ static int smb_compare_dentry(const stru
+ 		unsigned int, const char *, const struct qstr *);
+ static int smb_delete_dentry(const struct dentry *);
+
+-static const struct dentry_operations smbfs_dentry_operations =
++const struct dentry_operations smbfs_dentry_operations =
+ {
+ 	.d_revalidate	= smb_lookup_validate,
+ 	.d_hash		= smb_hash_dentry,
+@@ -291,7 +291,7 @@ static const struct dentry_operations sm
+ 	.d_delete	= smb_delete_dentry,
+ };
+
+-static const struct dentry_operations smbfs_dentry_operations_case =
++const struct dentry_operations smbfs_dentry_operations_case =
+ {
+ 	.d_revalidate	= smb_lookup_validate,
+ 	.d_delete	= smb_delete_dentry,
