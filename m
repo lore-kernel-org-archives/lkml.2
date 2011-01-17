@@ -1,92 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946Ab1AQIG0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 03:06:26 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:35407 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526Ab1AQIGZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 03:06:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=p3zdo73cJvPAqEu+mDY1RpFhtPkSce/K1U6ER9i3Qn5qhitYoj37rFXZ9lD1nFIOEk
-         1PF6yQnVSztg04FvlToQ4h5OWOlfzr22wmM8leOGmj0kenY9o1SAIOSMK1e0mytUdvJu
-         Lz7BK1dpbsQVMeUrO8C4m7Ey2mRNz7mNHVPPA=
-Date: Mon, 17 Jan 2011 16:06:15 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Dave Anderson <anderson@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] /proc/kcore: fix seeking
-Message-ID: <20110117080615.GF11358@cr0.nay.redhat.com>
-References: <4D2B1AD5.9000707@redhat.com>
- <20110111160437.GF17312@hack>
- <20110111162317.GA1703@nowhere>
- <20110114094442.GB10219@cr0.nay.redhat.com>
- <20110114162914.GA1782@nowhere>
+	id S1752991Ab1AQIIS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 03:08:18 -0500
+Received: from mx01.sz.bfs.de ([194.94.69.103]:23731 "EHLO mx01.sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752526Ab1AQIIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jan 2011 03:08:17 -0500
+Message-ID: <4D33F8E7.5030900@bfs.de>
+Date: Mon, 17 Jan 2011 09:08:07 +0100
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.14) Gecko/20101013 SUSE/3.0.9 Thunderbird/3.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110114162914.GA1782@nowhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dan Carpenter <error27@gmail.com>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] [SCSI] target: dubious one-bit signed bitfield
+References: <20110115140445.GD2721@bicker> <4D31CCFB.1060504@bfs.de> <20110115165401.GE2721@bicker>
+In-Reply-To: <20110115165401.GE2721@bicker>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 05:29:19PM +0100, Frederic Weisbecker wrote:
->On Fri, Jan 14, 2011 at 05:44:42PM +0800, Américo Wang wrote:
->> On Tue, Jan 11, 2011 at 05:23:23PM +0100, Frederic Weisbecker wrote:
->> >On Wed, Jan 12, 2011 at 12:04:37AM +0800, Américo Wang wrote:
->> >> On Mon, Jan 10, 2011 at 09:42:29AM -0500, Dave Anderson wrote:
->> >> >From: Dave Anderson <anderson@redhat.com>
->> >> >
->> >> >Commit 34aacb2920667d405a8df15968b7f71ba46c8f18
->> >> >("procfs: Use generic_file_llseek in /proc/kcore")
->> >> >broke seeking on /proc/kcore.  This changes it back
->> >> >to use default_llseek in order to restore the original
->> >> >behavior.
->> >> >
->> >> >The problem with generic_file_llseek is that it only
->> >> >allows seeks up to inode->i_sb->s_maxbytes, which is
->> >> >2GB-1 on procfs, where the memory file offset values in
->> >> >the /proc/kcore PT_LOAD segments may exceed or start
->> >> >beyond that offset value.
->> >> >
->> >> 
->> >> Is the race solved? Using default_llseek() still races
->> >> with read_kcore() on fpos, AFAIK.
->> >
->> >Hmm, how does it race there?
->> >
->> >read_kcore() manipulates fpos, which can't be changed behind
->> >us inside the read callback as it's a snapshot. Also read_kcore()
->> >can change the value of fpos, which is writed back to file->fpos
->> >from sys_read().
->> >
->> >So the last resulting race here the natural one between
->> >seeking and reading, which is up to the user to take care
->> >of.
->> 
->> Hmm, I just read the changelog of commit
->> 34aacb2920667d405a8df15968b7f71ba46c8f18, which claims to fix
->> the race. So anything changed in vfs layer after that?
->
->
->Ah it didn't fix any race, it just got rid of the bkl, OTOH
->I said in my changelog:
->
->	"/proc/kcore has no llseek and then falls down to use default_llseek.
->	This is racy against read_kcore() that directly manipulates fpos
->	but it doesn't hold the bkl there so using it in llseek doesn't
->	protect anything."
->
->So I think this just testifies my crude misunderstanding of the code when I wrote
->that changelog. I didn't realize fpos is a copy of the file offset that is writed back
->later. Hence my changelog was buggy.
 
-Ok, thanks for explaining this!
-Dave's patch should be alright.
+
+Am 15.01.2011 17:54, schrieb Dan Carpenter:
+> On Sat, Jan 15, 2011 at 05:36:11PM +0100, walter harms wrote:
+>>
+>>
+>> Am 15.01.2011 15:04, schrieb Dan Carpenter:
+>>> The signed one-bit types can be 0 or -1 which can cause a problem if
+>>> someone ever checks if (foo->lu_gp_assoc == 1).  The current code is
+>>> fine because everyone just checks zero vs non-zero.  But Sparse
+>>> complains about it so lets change it.  The warnings look like this:
+>>>
+>>
+>> Your code looks ok,
+>> but to avoid that kind of errors it may be better to use int here.
+>>
+> 
+> I'm afraid I don't understand what you are saying.
+> 
+
+IMHO, it is better to just drop the bitfield. Most people expect int as return.
+
+re,
+ wh
