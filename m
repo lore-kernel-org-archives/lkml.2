@@ -1,34 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751247Ab1AQFVh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 00:21:37 -0500
-Received: from sj-iport-5.cisco.com ([171.68.10.87]:12573 "EHLO
-	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761Ab1AQFVg (ORCPT
+	id S1751136Ab1AQFdG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 00:33:06 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:41792
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750744Ab1AQFdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 00:21:36 -0500
-Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
-From: Roland Dreier <rdreier@cisco.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Roland Dreier <rolandd@cisco.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>
-Subject: Re: [PATCH 01/30] infiniband: update workqueue usage
-References: <1292086307-19211-1-git-send-email-tj@kernel.org>
-	<1292086307-19211-2-git-send-email-tj@kernel.org>
-X-Message-Flag: Warning: May contain useful information
-Date: Sun, 16 Jan 2011 21:21:32 -0800
-In-Reply-To: <1292086307-19211-2-git-send-email-tj@kernel.org> (Tejun Heo's
-	message of "Sat, 11 Dec 2010 17:51:18 +0100")
-Message-ID: <adamxn0yujn.fsf@cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 17 Jan 2011 00:33:04 -0500
+Date: Sun, 16 Jan 2011 21:33:36 -0800 (PST)
+Message-Id: <20110116.213336.102559857.davem@davemloft.net>
+To: rdreier@cisco.com
+Cc: error27@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: question about smatch error
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <adar5ccyver.fsf@cisco.com>
+References: <adar5ccyver.fsf@cisco.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So I went ahead and applied Tejun's patch, since I think it should be no
-worse than what we have now... I agree the qib stuff looks fine.
+From: Roland Dreier <rdreier@cisco.com>
+Date: Sun, 16 Jan 2011 21:02:52 -0800
 
- - R.
+> where eui is a u8*, and I don't see how smatch even thinks it knows how
+> big the buffer is in the first place.
+
+It can see that the one and only caller passes in a pointer in the
+middle of an on-stack ib_gid struct, and it knows how big those
+objects are.
+
