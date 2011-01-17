@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738Ab1AQC2P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 21:28:15 -0500
-Received: from helios.rbi.informatik.uni-frankfurt.de ([141.2.1.4]:47744 "EHLO
-	helios.rbi.informatik.uni-frankfurt.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751253Ab1AQC2N (ORCPT
+	id S1751820Ab1AQCgM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 21:36:12 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:36596 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515Ab1AQCgK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 21:28:13 -0500
-X-Greylist: delayed 6839 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 Jan 2011 21:28:13 EST
-Date: Mon, 17 Jan 2011 01:34:11 +0100
-From: Martin Teufel <teufel@informatik.uni-frankfurt.de>
-To: linux-kernel@vger.kernel.org
-Subject: Do GEODE_MFGPT_TIMER and GEODE_WDT really depend on MGEODE_LX?
-Message-ID: <20110117003411.GA27646@hekate.rbi.informatik.uni-frankfurt.de>
+	Sun, 16 Jan 2011 21:36:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=b1nz76JGY4XtT3TK6GL489c5Bb0IxE/NLVDNM44gNlyI9MyKojsfRB8g4O8TZ/vvll
+         7rrX7YNfjr3W8G7fkCFp+c0WODcugq2ebLNm3VUqgSMeNF6wQ4Q4j/6K5G6BoJtz20n9
+         iUBIfgBq2FwZscTWMEhgZ3KKquLyjLYYlIe3I=
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20110116175109.GC13615@flint.arm.linux.org.uk>
+References: <1295183333-13802-1-git-send-email-akinobu.mita@gmail.com>
+	<1295183333-13802-6-git-send-email-akinobu.mita@gmail.com>
+	<20110116175109.GC13615@flint.arm.linux.org.uk>
+Date: Mon, 17 Jan 2011 11:36:09 +0900
+Message-ID: <AANLkTim=n7iVn_b6CRaWzwLLocC-rbH58ueEFFs6vfv8@mail.gmail.com>
+Subject: Re: [PATCH v4 05/24] arm: introduce little-endian bitops
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Akinobu Mita <akinobu.mita@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2011/1/17 Russell King <rmk@arm.linux.org.uk>:
+> On Sun, Jan 16, 2011 at 10:08:34PM +0900, Akinobu Mita wrote:
+>> Introduce little-endian bit operations by renaming native ext2 bit
+>> operations.  The ext2 bit operations are kept as wrapper macros using
+>> little-endian bit operations to maintain bisectability until the
+>> conversions are finished.
+>
+> This looks fine to me - is there any chance we can get this in to mainline
+> so we can avoid conflicts between this and some patches I'm working on atm
+> to fix the unsafe UP+SMP kernel combination with ARMs bitops ?
 
---SUOF0GtieIMvvwua
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-
-Hi,
-
-since a few days I am running my own debian 2.6.32-5 on my ALIX machines
-and the watchdogs (GEODE_MFGPT_TIMER, GEODE_WDT) are running and doing a
-good job. Now I thought about an upstream solution for the debian stock
-kernel but therefore need to know if GEODE_MFGPT_TIMER and GEODE_WDT
-really depend on MGEODE_LX, as the Linux kernel configuration points
-out.
-In other words: Is it possible to compile a kernel with these drivers
-which is not Geode LX specific (where MGEODE_LX is not set) and/or is it
-possible to add these modules later by module-assistant (to a kernel
-where MGEODE_LX is not set)?
-
-Please note that I'm *not* on the mailing list, so please send me a CC
-of your answer(s) - thanks.
-
-Best regards,
-Martin
-
---SUOF0GtieIMvvwua
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk0zjoMACgkQK1fQl8zzxa5/bwCfRBHfb/dASOIoj4PPp3zmBCoP
-uqcAn0BWeBtbmM24PkQS5h3/vRwgM9U3
-=Scey
------END PGP SIGNATURE-----
-
---SUOF0GtieIMvvwua--
+The le bitops is still unacceptable to mainline.
+So please do the fixes without bothering about the conflict.
