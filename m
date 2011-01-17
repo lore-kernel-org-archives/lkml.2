@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137Ab1AQWmp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 17:42:45 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:19765 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753068Ab1AQWmn (ORCPT
+	id S1753151Ab1AQWnL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 17:43:11 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:57444 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752668Ab1AQWnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 17:42:43 -0500
-Date: Mon, 17 Jan 2011 23:42:45 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Nico Schottelius <nico-kernel-20110117@schottelius.org>
-cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.37-05761-gf878133: Intel (i915) renders incorrectly
-In-Reply-To: <20110117222824.GA20444@schottelius.org>
-Message-ID: <alpine.LNX.2.00.1101172341410.27021@swampdragon.chaosbits.net>
-References: <20110117222824.GA20444@schottelius.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 17 Jan 2011 17:43:09 -0500
+Subject: Re: [PATCH] target: remove duplicate include of
+	target/target_core_device.h from drivers/target/target_core_hba.c
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, James Bottomley <James.Bottomley@suse.de>,
+        linux-scsi@vger.kernel.org
+In-Reply-To: <alpine.LNX.2.00.1101172326060.27021@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1101172242510.27021@swampdragon.chaosbits.net>
+	 <1295302951.22813.227.camel@haakon2.linux-iscsi.org>
+	 <alpine.LNX.2.00.1101172326060.27021@swampdragon.chaosbits.net>
+Content-Type: text/plain
+Date: Mon, 17 Jan 2011 14:43:05 -0800
+Message-Id: <1295304185.22813.247.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Jan 2011, Nico Schottelius wrote:
-> Hey!
+On Mon, 2011-01-17 at 23:26 +0100, Jesper Juhl wrote:
+> On Mon, 17 Jan 2011, Nicholas A. Bellinger wrote:
 > 
-> After several suspend/resume cycles, the display is completly
-> screwed up, only parts are shown and rendering is slow.
+> > On Mon, 2011-01-17 at 22:46 +0100, Jesper Juhl wrote:
+> > > drivers/target/target_core_hba.c includes target/target_core_device.h 
+> > > twice - the two includes are even on two lines next to each other.
+> > > This patch removes the duplicate include.
+> > > 
+> > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > 
+> > Committed as:
+> > 
+> > [linus-38-rc1 95f39d1] target: remove duplicate include target_core_device.h
+> > 
+> > Please let me know if you have more include cleanups so they can be git
+> > squashed'  into a single commit for scsi-post-merge-2.6.git/for-jejb.
+> > 
+> I only found that one so far...
 > 
-> Attached are xorg.log and dmesg part.
-> 
-> Not sure anymore, whether LKML is the right destination
-> or some freedesktop-ml?
 
-If it works with older kernel but not with newer, then lkml should 
-certainly be included in CC at least.
+<nod>  So for minor stuff like this (especially when the merge window is
+winding down) feel tree to send this to me directly and CC linux-scsi
+and I will make sure this gets in via scsi-post-merge-2.6.git/for-jejb.
 
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+--nab
 
