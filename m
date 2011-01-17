@@ -1,38 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166Ab1AQQy1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 11:54:27 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:44072 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990Ab1AQQy0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 11:54:26 -0500
-Subject: Re: [RFC][PATCH 0/2 v1.0]sched: updating /proc/schedstat
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ciju Rajan K <ciju@linux.vnet.ibm.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>
-In-Reply-To: <4D341ECD.3020503@linux.vnet.ibm.com>
-References: <4D341ECD.3020503@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 17 Jan 2011 17:54:49 +0100
-Message-ID: <1295283289.30950.172.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753382Ab1AQRCJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 12:02:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50780 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751955Ab1AQRCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jan 2011 12:02:07 -0500
+Date: Mon, 17 Jan 2011 18:02:03 +0100
+From: Jan Kara <jack@suse.cz>
+To: Simon Xu <xu.simon@oracle.com>
+Cc: jack@suse.cz, linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ext2: reduce redundant check of '*options'
+Message-ID: <20110117170203.GF5294@quack.suse.cz>
+References: <1294922362-2237-1-git-send-email-xu.simon@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294922362-2237-1-git-send-email-xu.simon@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-17 at 16:19 +0530, Ciju Rajan K wrote:
-> Hi All,
+On Thu 13-01-11 20:39:22, Simon Xu wrote:
+> We don't need to check whether '*options' equals to ',' twice.
+Well, but the code is so rarely executed that even if the compiler would
+not be able to optimize out the second test, it would not matter. And the
+code is not better readable afterwards either. So I find this more or less
+unnecessary code churn...
+
+Seriously, if you want to do some useful fixing then have a look for
+example at making ext3/4 (in fact JBD/JBD2) handle transaction allocation
+failures gratefully.  Currently we just loop in start_this_handle()
+infinitely until we can make the allocation which is a bit dumb. So it
+would be good, to make as many places as possible able to handle ENOMEM
+from start_this_handle() and propagate the error to user space. In some
+cases, it might not be easily possible (e.g. during writeout of dirty
+memory, where proper handling needs more thought) but lots of cases
+should be rather simple and need just auditing the code paths. Thanks.
+
+								Honza
 > 
-> Here is the first version of the patch set, which updates
-> the /proc/schedstat statistics. Please review the patches and let me
-> know your thoughts.
-
-Whats the impact on existing userspace, does the change warrant the
-effort of changing the userspace tools?
-
-Also, attachment fail.
+> Signed-off-by: Simon Xu <xu.simon@oracle.com>
+> ---
+>  fs/ext2/super.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+> index 7731695..bd5b66b 100644
+> --- a/fs/ext2/super.c
+> +++ b/fs/ext2/super.c
+> @@ -377,13 +377,13 @@ static unsigned long get_sb_block(void **data)
+>  		return 1;	/* Default location */
+>  	options += 3;
+>  	sb_block = simple_strtoul(options, &options, 0);
+> -	if (*options && *options != ',') {
+> +	if (*options == ',') {
+> +		options++;
+> +	} else if (*options) {
+>  		printk("EXT2-fs: Invalid sb specification: %s\n",
+>  		       (char *) *data);
+>  		return 1;
+>  	}
+> -	if (*options == ',')
+> -		options++;
+>  	*data = (void *) options;
+>  	return sb_block;
+>  }
+> -- 
+> 1.7.3.5
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
