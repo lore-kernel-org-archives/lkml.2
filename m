@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135Ab1AQCvc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 21:51:32 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60004 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751515Ab1AQCv3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 21:51:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinets0TKJmODLB4u9kH1v_KS3UWfxhvP-UQ=vmP@mail.gmail.com>
-References: <1295183333-13802-1-git-send-email-akinobu.mita@gmail.com>
- <AANLkTikWZYOqxD_CyJ=zF2Lp2Mnt6Z2E1aPUspwMjrz_@mail.gmail.com> <AANLkTinets0TKJmODLB4u9kH1v_KS3UWfxhvP-UQ=vmP@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 16 Jan 2011 18:50:39 -0800
-Message-ID: <AANLkTimvUaGJ1eps5thgBUKjAjXuNN-6O4i-oBXZtQsd@mail.gmail.com>
-Subject: Re: [PATCH v4 00/24] Introduce little endian bitops
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        akpm@linux-foundation.org, Russell King <rmk@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752191Ab1AQCwH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 21:52:07 -0500
+Received: from mga01.intel.com ([192.55.52.88]:55612 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751515Ab1AQCwC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jan 2011 21:52:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,332,1291622400"; 
+   d="scan'208";a="647584092"
+Subject: [PATCH 0/4]x86: allocate up to 32 tlb invalidate vectors -resend
+From: Shaohua Li <shaohua.li@intel.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 Jan 2011 10:51:59 +0800
+Message-ID: <1295232719.1949.706.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 16, 2011 at 6:37 PM, Akinobu Mita <akinobu.mita@gmail.com> wrote:
->
-> Changing *_bit_le() to take "void *" instead of "unsigned long *"
-> makes this patch series acceptable?
+last post is lost, resent.
 
-That would seem to at least make all the filesystem code happier, and
-they can continue to do just something like
+Hi,
+In workload with heavy page reclaim, flush_tlb_page() is frequently
+used. We currently have 8 vectors for tlb flush, which is fine for small
+machines. But for big machines with a lot of CPUs, the 8 vectors are
+shared by all CPUs and we need lock to protect them. This will cause a
+lot of lock contentions. please see the patch 3 for detailed number of
+the lock contention.
+Andi Kleen suggests we can use 32 vectors for tlb flush, which should be
+fine for even 8 socket machines. Test shows this reduces lock contention
+dramatically (see patch 3 for number).
+One might argue if this will waste too many vectors and leave less
+vectors for devices. This could be a problem. But even we use 32
+vectors, we still leave 78 vectors for devices. And we now have per-cpu
+vector, vector isn't scarce any more, but I'm open if anybody has
+objections.
 
-   #define ext2_set_bit __set_bit_le
+Thanks,
+Shaohua
 
-(or whatever the exact sequence ends up being).
-
-> Or do we also need to change *_bit_le() to handle unaligned address
-> correctly?  (i.e. not only long aligned address but also byte aligned
-> address)
-
-No, I don't think that is required. We've never done it before, and
-we've never had the type-safety for the little-endian (aka "minix")
-bitops historically. So I'd just keep the status quo.
-
-              Linus
