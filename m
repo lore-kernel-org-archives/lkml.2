@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751980Ab1AQCwN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 21:52:13 -0500
-Received: from mga02.intel.com ([134.134.136.20]:19528 "EHLO mga02.intel.com"
+	id S1752512Ab1AQCwS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 21:52:18 -0500
+Received: from mga01.intel.com ([192.55.52.88]:15177 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751983Ab1AQCwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 21:52:06 -0500
+	id S1752383Ab1AQCwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jan 2011 21:52:15 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,332,1291622400"; 
-   d="scan'208";a="697468959"
-Subject: [PATCH 1/4]x86: cleanup vector usage
+   d="scan'208";a="878002645"
+Subject: [PATCH 4/4]x86: avoid tlbstate lock if no enough cpus
 From: Shaohua Li <shaohua.li@intel.com>
 To: lkml <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
@@ -17,8 +17,8 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Eric Dumazet <eric.dumazet@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Jan 2011 10:52:02 +0800
-Message-ID: <1295232722.1949.707.camel@sli10-conroe>
+Date: Mon, 17 Jan 2011 10:52:10 +0800
+Message-ID: <1295232730.1949.710.camel@sli10-conroe>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -26,91 +26,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup the vector usage and make them continuous if possible.
+This one isn't related to previous patch. If online cpus are below
+NUM_INVALIDATE_TLB_VECTORS, we don't need the lock. The comments
+in the code declares we don't need the check, but a hot lock still
+needs an atomic operation and expensive, so add the check here.
+
+Uses nr_cpu_ids here as suggested by Eric Dumazet.
 
 Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 ---
- arch/x86/include/asm/irq_vectors.h |   40 +++++++++++++++++++------------------
- 1 file changed, 21 insertions(+), 19 deletions(-)
+ arch/x86/mm/tlb.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-Index: linux/arch/x86/include/asm/irq_vectors.h
+Index: linux/arch/x86/mm/tlb.c
 ===================================================================
---- linux.orig/arch/x86/include/asm/irq_vectors.h	2010-11-02 10:31:51.000000000 +0800
-+++ linux/arch/x86/include/asm/irq_vectors.h	2010-11-02 14:41:01.000000000 +0800
-@@ -1,6 +1,7 @@
- #ifndef _ASM_X86_IRQ_VECTORS_H
- #define _ASM_X86_IRQ_VECTORS_H
+--- linux.orig/arch/x86/mm/tlb.c	2010-11-04 10:59:09.000000000 +0800
++++ linux/arch/x86/mm/tlb.c	2010-11-04 13:17:51.000000000 +0800
+@@ -179,12 +179,8 @@ static void flush_tlb_others_ipi(const s
+ 	sender = this_cpu_read(tlb_vector_offset);
+ 	f = &flush_state[sender];
  
-+#include <linux/threads.h>
- /*
-  * Linux IRQ vector layout.
-  *
-@@ -16,8 +17,8 @@
-  *  Vectors   0 ...  31 : system traps and exceptions - hardcoded events
-  *  Vectors  32 ... 127 : device interrupts
-  *  Vector  128         : legacy int80 syscall interface
-- *  Vectors 129 ... 237 : device interrupts
-- *  Vectors 238 ... 255 : special interrupts
-+ *  Vectors 129 ... 229 : device interrupts
-+ *  Vectors 230 ... 255 : special interrupts
-  *
-  * 64-bit x86 has per CPU IDT tables, 32-bit has one shared IDT table.
-  *
-@@ -96,37 +97,38 @@
- #define THRESHOLD_APIC_VECTOR		0xf9
- #define REBOOT_VECTOR			0xf8
+-	/*
+-	 * Could avoid this lock when
+-	 * num_online_cpus() <= NUM_INVALIDATE_TLB_VECTORS, but it is
+-	 * probably not worth checking this for a cache-hot lock.
+-	 */
+-	raw_spin_lock(&f->tlbstate_lock);
++	if (nr_cpu_ids > NUM_INVALIDATE_TLB_VECTORS)
++		raw_spin_lock(&f->tlbstate_lock);
  
--/* f0-f7 used for spreading out TLB flushes: */
--#define INVALIDATE_TLB_VECTOR_END	0xf7
--#define INVALIDATE_TLB_VECTOR_START	0xf0
--#define NUM_INVALIDATE_TLB_VECTORS	   8
--
--/*
-- * Local APIC timer IRQ vector is on a different priority level,
-- * to work around the 'lost local interrupt if more than 2 IRQ
-- * sources per level' errata.
-- */
--#define LOCAL_TIMER_VECTOR		0xef
--
- /*
-  * Generic system vector for platform specific use
-  */
--#define X86_PLATFORM_IPI_VECTOR		0xed
-+#define X86_PLATFORM_IPI_VECTOR		0xf7
+ 	f->flush_mm = mm;
+ 	f->flush_va = va;
+@@ -202,7 +198,8 @@ static void flush_tlb_others_ipi(const s
  
- /*
-  * IRQ work vector:
-  */
--#define IRQ_WORK_VECTOR			0xec
-+#define IRQ_WORK_VECTOR			0xf6
+ 	f->flush_mm = NULL;
+ 	f->flush_va = 0;
+-	raw_spin_unlock(&f->tlbstate_lock);
++	if (nr_cpu_ids > NUM_INVALIDATE_TLB_VECTORS)
++		raw_spin_unlock(&f->tlbstate_lock);
+ }
  
--#define UV_BAU_MESSAGE			0xea
-+#define UV_BAU_MESSAGE			0xf5
- 
- /*
-  * Self IPI vector for machine checks
-  */
--#define MCE_SELF_VECTOR			0xeb
-+#define MCE_SELF_VECTOR			0xf4
- 
- /* Xen vector callback to receive events in a HVM domain */
--#define XEN_HVM_EVTCHN_CALLBACK		0xe9
-+#define XEN_HVM_EVTCHN_CALLBACK		0xf3
-+
-+/*
-+ * Local APIC timer IRQ vector is on a different priority level,
-+ * to work around the 'lost local interrupt if more than 2 IRQ
-+ * sources per level' errata.
-+ */
-+#define LOCAL_TIMER_VECTOR		0xef
-+
-+/* f0-f7 used for spreading out TLB flushes: */
-+#define NUM_INVALIDATE_TLB_VECTORS	   8
-+#define INVALIDATE_TLB_VECTOR_END	0xee
-+#define INVALIDATE_TLB_VECTOR_START	\
-+	(INVALIDATE_TLB_VECTOR_END - NUM_INVALIDATE_TLB_VECTORS + 1)
- 
- #define NR_VECTORS			 256
- 
+ void native_flush_tlb_others(const struct cpumask *cpumask,
 
 
