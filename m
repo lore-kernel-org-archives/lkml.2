@@ -1,221 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab1AQKyI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 05:54:08 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:37237 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab1AQKyE (ORCPT
+	id S1753251Ab1AQK4S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 05:56:18 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:11033 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210Ab1AQK4R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 05:54:04 -0500
-Message-ID: <4D341FC8.4070604@linux.vnet.ibm.com>
-Date: Mon, 17 Jan 2011 16:24:00 +0530
-From: Ciju Rajan K <ciju@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	Mon, 17 Jan 2011 05:56:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=iZrqRjN70Gi4GPAL4MuWk11LSA2DKhhEZ9vgOqmOHhGXZF6V9y4859WJjPPg2kZGip
+         QTmHAhCuihTU+qoyRqAA==
 MIME-Version: 1.0
-To: lkml <linux-kernel@vger.kernel.org>
-CC: Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>
-Subject: [PATCH 2/2 v1.0]sched: Updating the sched-stat documentation
-References: <4D341ECD.3020503@linux.vnet.ibm.com>
-In-Reply-To: <4D341ECD.3020503@linux.vnet.ibm.com>
-Content-Type: multipart/mixed;
- boundary="------------000405030409070605060001"
+In-Reply-To: <1295261505.28388.189.camel@minggr.sh.intel.com>
+References: <1291267223.2405.314.camel@minggr.sh.intel.com>
+	<AANLkTikZgmUQ2SHOL41_t-Vwss8T6tazTRJT2bVR+xRQ@mail.gmail.com>
+	<1295227769.28388.82.camel@minggr.sh.intel.com>
+	<AANLkTinGWPABoYszmbLcSRroFg74e6mpz=5FK7-C9cKK@mail.gmail.com>
+	<1295261505.28388.189.camel@minggr.sh.intel.com>
+Date: Mon, 17 Jan 2011 11:56:13 +0100
+Message-ID: <AANLkTingX0aBCU0EJzgFeC1E55BoVShC+ZY-qHazM-Hd@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/3 v3] perf: Implement Nehalem uncore pmu
+From: Stephane Eranian <eranian@google.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Andi Kleen <andi@firstfloor.org>,
+        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000405030409070605060001
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Mon, Jan 17, 2011 at 11:51 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+> On Mon, 2011-01-17 at 16:44 +0800, Stephane Eranian wrote:
+>> On Mon, Jan 17, 2011 at 2:29 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+>> > On Fri, 2011-01-14 at 01:14 +0800, Stephane Eranian wrote:
+>> >> Lin,
+>> >
+>> > Hi, Stephane,
+>> >
+>> > Sorry for late response, I'm just back from vacation.
+>> >
+>> >>
+>> >> On Thu, Dec 2, 2010 at 6:20 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+>> >> > +static void uncore_pmu_enable_all(int nmi_core)
+>> >> > +{
+>> >> > +       u64 ctrl;
+>> >> > +
+>> >> > +       ctrl = ((1 << UNCORE_NUM_GENERAL_COUNTERS) - 1) | MSR_UNCORE_PERF_GLOBAL_CTRL_EN_FC0;
+>> >> > +
+>> >> > +       /* Route all interrupts to the first core that accesses uncore */
+>> >> > +       ctrl |= 1ULL << (48 + nmi_core);
+>> >> > +
+>> >> > +       wrmsrl(MSR_UNCORE_PERF_GLOBAL_CTRL, ctrl);
+>> >> > +}
+>> >>
+>> >> Are you sure nmi_core is always between 0-3 on a 4-core system and 0-5
+>> >> on a 6-core system?
+>> >> In other words, is that what topology_core_id(raw_smp_processor_id()) returns?
+>> >
+>> > I just have a look at a 6-core system, the core id is not 0-5
+>> >
+>> > $ cat /proc/cpuinfo |grep "core id"
+>> > core id         : 0
+>> > core id         : 1
+>> > core id         : 2
+>> > core id         : 8
+>> > core id         : 9
+>> > core id         : 10
+>> >
+>> > So we'd better route all the interrupts to the first core of the socket.
+>> >
+>> I recently realized the issue with 0,1,2,8,9,10. At the time I wrote the perfmon
+>> support for uncore, those systems did not exist. Sparse APIC id is a major pain
+>> for uncore PMU interrupt routine given the way UNC_GLOBAL_CTRL works.
+>>
+>> Unfortunately, routing to core 0 (core_cpu_id=0) won't be enough in the
+>> presence of HOTPLUG CPU. Imagine I disable the first three 3 cores.
+>> Now you the cpu you have to play with are 8,9,10. You need to remap
+>> to a number between 0-5.
+>
+> Good idea.
+>
+> And I have confirmed that there are 6 interrupt target bits on my 6-core
+> Westmere machine, although documentation does not say this.
+>
+> u64 val=0x3FULL << 48;
+> wrmsrl(MSR_UNCORE_PERF_GLOBAL_CTRL, val);
+>
+Yes, at least, this part looks good ;->
 
-This patch updates the sched-stat documentation. 
 
---------------000405030409070605060001
-Content-Type: text/plain;
- name="patch2_v1.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="patch2_v1.patch"
-
-Signed-off-by: Ciju Rajan K <ciju@linux.vnet.ibm.com>
----
-
-diff -Naurp a/Documentation/scheduler/sched-stats.txt b/Documentation/scheduler/sched-stats.txt
---- a/Documentation/scheduler/sched-stats.txt	2011-01-17 01:07:47.000000000 +0530
-+++ b/Documentation/scheduler/sched-stats.txt	2011-01-17 15:32:05.000000000 +0530
-@@ -26,119 +26,81 @@ Note that any such script will necessari
- reason to change versions is changes in the output format.  For those wishing
- to write their own scripts, the fields are described here.
- 
-+The first two fields of /proc/schedstat indicates the version (current
-+version is 16) and jiffies values. The following values are from 
-+cpu & domain statistics.
-+
- CPU statistics
- --------------
--cpu<N> 1 2 3 4 5 6 7 8 9 10 11 12
-+The format is like this:
-+
-+cpu<N> 1 2 3 4 5 6 7 8
- 
--NOTE: In the sched_yield() statistics, the active queue is considered empty
--    if it has only one process in it, since obviously the process calling
--    sched_yield() is that process.
--
--First four fields are sched_yield() statistics:
--     1) # of times both the active and the expired queue were empty
--     2) # of times just the active queue was empty
--     3) # of times just the expired queue was empty
--     4) # of times sched_yield() was called
--
--Next three are schedule() statistics:
--     5) # of times we switched to the expired queue and reused it
--     6) # of times schedule() was called
--     7) # of times schedule() left the processor idle
--
--Next two are try_to_wake_up() statistics:
--     8) # of times try_to_wake_up() was called
--     9) # of times try_to_wake_up() was called to wake up the local cpu
--
--Next three are statistics describing scheduling latency:
--    10) sum of all time spent running by tasks on this processor (in jiffies)
--    11) sum of all time spent waiting to run by tasks on this processor (in
--        jiffies)
--    12) # of timeslices run on this cpu
-+NOTE: In the sched_yield() statistics, the active queue is considered
-+      empty if it has only one process in it, since obviously the 
-+      process calling sched_yield() is that process.
-+
-+     1) # of times sched_yield() was called on this CPU
-+     2) # of times scheduler runs on this CPU
-+     3) # of times scheduler picks idle task as next task on this CPU
-+     4) # of times try_to_wake_up() is run on this CPU 
-+        (Number of times task wakeup is attempted from this CPU)
-+     5) # of times try_to_wake_up() wakes up a task on the same CPU 
-+        (local wakeup)
-+     6) Time(ns) for which tasks have run on this CPU
-+     7) Time(ns) for which tasks on this CPU's runqueue have waited 
-+        before getting to run on the CPU
-+     8) # of tasks that have run on this CPU
- 
- 
- Domain statistics
- -----------------
--One of these is produced per domain for each cpu described. (Note that if
--CONFIG_SMP is not defined, *no* domains are utilized and these lines
--will not appear in the output.)
-+One of these is produced per domain for each cpu described. 
-+(Note that if CONFIG_SMP is not defined, *no* domains are utilized
-+ and these lines will not appear in the output.)
- 
--domain<N> <cpumask> 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36
-+domain<N> <cpumask> 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
- 
- The first field is a bit mask indicating what cpus this domain operates over.
- 
--The next 24 are a variety of load_balance() statistics in grouped into types
--of idleness (idle, busy, and newly idle):
-+The next 24 are a variety of load_balance() statistics grouped into
-+types of idleness (idle, busy, and newly idle). The three idle 
-+states are:
-+
-+CPU_NEWLY_IDLE:    Load balancer is being run on a CPU which is 
-+                   about to enter IDLE state
-+CPU_IDLE:          This state is entered after CPU_NEWLY_IDLE 
-+                   state fails to find a new task for this CPU
-+CPU_NOT_IDLE:      Load balancer is being run on a CPU when it is 
-+                   not in IDLE state (busy times)
-+
-+There are eight stats available for each of the three idle states:
- 
--     1) # of times in this domain load_balance() was called when the
--        cpu was idle
-+     1) # of times in this domain load_balance() was called
-      2) # of times in this domain load_balance() checked but found
--        the load did not require balancing when the cpu was idle
-+        the load did not require balancing
-      3) # of times in this domain load_balance() tried to move one or
--        more tasks and failed, when the cpu was idle
-+        more tasks and failed
-      4) sum of imbalances discovered (if any) with each call to
--        load_balance() in this domain when the cpu was idle
--     5) # of times in this domain pull_task() was called when the cpu
--        was idle
-+        load_balance() in this domain
-+     5) # of times in this domain pull_task() was called
-      6) # of times in this domain pull_task() was called even though
--        the target task was cache-hot when idle
-+        the target task was cache-hot
-      7) # of times in this domain load_balance() was called but did
--        not find a busier queue while the cpu was idle
--     8) # of times in this domain a busier queue was found while the
--        cpu was idle but no busier group was found
--
--     9) # of times in this domain load_balance() was called when the
--        cpu was busy
--    10) # of times in this domain load_balance() checked but found the
--        load did not require balancing when busy
--    11) # of times in this domain load_balance() tried to move one or
--        more tasks and failed, when the cpu was busy
--    12) sum of imbalances discovered (if any) with each call to
--        load_balance() in this domain when the cpu was busy
--    13) # of times in this domain pull_task() was called when busy
--    14) # of times in this domain pull_task() was called even though the
--        target task was cache-hot when busy
--    15) # of times in this domain load_balance() was called but did not
--        find a busier queue while the cpu was busy
--    16) # of times in this domain a busier queue was found while the cpu
--        was busy but no busier group was found
--
--    17) # of times in this domain load_balance() was called when the
--        cpu was just becoming idle
--    18) # of times in this domain load_balance() checked but found the
--        load did not require balancing when the cpu was just becoming idle
--    19) # of times in this domain load_balance() tried to move one or more
--        tasks and failed, when the cpu was just becoming idle
--    20) sum of imbalances discovered (if any) with each call to
--        load_balance() in this domain when the cpu was just becoming idle
--    21) # of times in this domain pull_task() was called when newly idle
--    22) # of times in this domain pull_task() was called even though the
--        target task was cache-hot when just becoming idle
--    23) # of times in this domain load_balance() was called but did not
--        find a busier queue while the cpu was just becoming idle
--    24) # of times in this domain a busier queue was found while the cpu
--        was just becoming idle but no busier group was found
--
-+        not find a busier queue
-+     8) # of times in this domain a busier queue was found but no 
-+        busier group was found
-+     
-    Next three are active_load_balance() statistics:
-     25) # of times active_load_balance() was called
-     26) # of times active_load_balance() tried to move a task and failed
-     27) # of times active_load_balance() successfully moved a task
- 
--   Next three are sched_balance_exec() statistics:
--    28) sbe_cnt is not used
--    29) sbe_balanced is not used
--    30) sbe_pushed is not used
--
--   Next three are sched_balance_fork() statistics:
--    31) sbf_cnt is not used
--    32) sbf_balanced is not used
--    33) sbf_pushed is not used
--
--   Next three are try_to_wake_up() statistics:
--    34) # of times in this domain try_to_wake_up() awoke a task that
-+   Next two are try_to_wake_up() statistics:
-+    28) # of times in this domain try_to_wake_up() awoke a task that
-         last ran on a different cpu in this domain
--    35) # of times in this domain try_to_wake_up() moved a task to the
-+    29) # of times in this domain try_to_wake_up() moved a task to the
-         waking cpu because it was cache-cold on its own cpu anyway
--    36) # of times in this domain try_to_wake_up() started passive balancing
- 
- /proc/<pid>/schedstat
- ----------------
-
---------------000405030409070605060001--
+> Thanks,
+> Lin Ming
+>
+>>
+>>
+>> > Thanks for the catch.
+>> > Lin Ming
+>> >
+>> >>
+>> >> Note that, unfortunately, I have not seen documentation that says on
+>> >> 6-core system
+>> >> UNC_GLOBAL_CTRL has 6 interrupt target bits, but it would make sense.
+>> >>
+>> >>
+>> >> Otherwise, you will get a kernel panic when you wrmsr UNC_GLOBAL_CTRL.
+>> >>
+>> >> > +
+>> >> > +       if (uncore->n_events == 1) {
+>> >> > +               nmi_core = topology_core_id(raw_smp_processor_id());
+>> >> > +               uncore->nmi_core = nmi_core;
+>> >> > +               uncore_pmu_enable_all(nmi_core);
+>> >> > +       }
+>> >
+>> >
+>> >
+>
+>
+>
