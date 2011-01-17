@@ -1,54 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748Ab1AQSWq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 13:22:46 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:37097 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752131Ab1AQSWo (ORCPT
+	id S1752456Ab1AQSZh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 13:25:37 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:22018 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515Ab1AQSZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 13:22:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=BEL9+svBbwF44fcrGvTg7CafLrMiNOqhrdsgythUCqoRGTQ628NOXIJu8YJAS1uU18
-         L4RM1LTJ+I6InuRvMcC8HEOKGke0YmXFyuLeNwxb01IBEOMwE9ML4aTRf0g6JZDulKk0
-         jKfmI2DNhsQbgmzIXcJ1zcjuTlVGY3Y4T0meY=
-Message-ID: <4D34876C.7020702@gmail.com>
-Date: Mon, 17 Jan 2011 19:16:12 +0100
-From: Franck Bui-Huu <vagabon.xyz@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf-record: auto detect when stdout is a pipe
-References: <m3ipxo966i.fsf@gmail.com> <20110117172747.GD2085@ghostprotocols.net>
-In-Reply-To: <20110117172747.GD2085@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 17 Jan 2011 13:25:36 -0500
+Date: Mon, 17 Jan 2011 10:24:20 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: James Bottomley <James.Bottomley@suse.de>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Joel Becker <jlbec@evilplan.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: [PATCH] configfs: change depends -> select SYSFS
+Message-Id: <20110117102420.5a1c1bf0.randy.dunlap@oracle.com>
+In-Reply-To: <1295244354.22813.98.camel@haakon2.linux-iscsi.org>
+References: <1295125851-25279-1-git-send-email-nab@linux-iscsi.org>
+	<20110116141105.59e5b3a2@stein>
+	<1295214807.22813.57.camel@haakon2.linux-iscsi.org>
+	<20110117000659.57352da7@stein>
+	<1295223733.2998.8.camel@mulgrave.site>
+	<1295244354.22813.98.camel@haakon2.linux-iscsi.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2011 06:27 PM, Arnaldo Carvalho de Melo wrote:
-> Em Sun, Jan 16, 2011 at 05:14:45PM +0100, Franck Bui-Huu escreveu:
->> From: Franck Bui-Huu <fbuihuu@gmail.com>
->>
->> This patch gives the ability to perf-record to detect when its stdout
->> has been redirected to a pipe. There's now no more need to add '-o -'
->> switch in this case.
->>
->> However '-o <path>' option has always precedence, that is if specified
->> and stdout has been connected via a pipe then the output will go into
->> the specified output.
->>
+On Sun, 16 Jan 2011 22:05:54 -0800 Nicholas A. Bellinger wrote:
+
+> On Sun, 2011-01-16 at 18:22 -0600, James Bottomley wrote:
+> > On Mon, 2011-01-17 at 00:06 +0100, Stefan Richter wrote:
+> > > On Jan 16 Nicholas A. Bellinger wrote:
+> > > > On Sun, 2011-01-16 at 14:11 +0100, Stefan Richter wrote:
+> > > > > On Jan 15 Nicholas A. Bellinger wrote:
+> > > > > > This patch changes configfs to select SYSFS to fix the following:
+> > > > > > 
+> > > > > > warning: (TARGET_CORE && GFS2_FS) selects CONFIGFS_FS which has unmet direct dependencies (SYSFS)
+> > > > > 
+> > > > > Why don't you fix target-core's Kconfig instead?
+> > > > 
+> > > > The thought here was that since modern configfs is mounted
+> > > > at /sys/kernel/config/, selecting SYSFS by default when building
+> > > > CONFIGFS_FS made the most sense for existing configfs consumers.
+> > > 
+> > > I for one think that layered "select" directives will open too many cans
+> > > of worms.
+> > 
+> > select, since we have it, should be clean ... as in if you select
+> > something, you don't have to expose yourself to a huge pile of missing
+> > depends that only show up in obscure configurations.
+> > 
+> > 
+> > > Best don't use select at all.
+> > 
+> > The object of select is not to trip up the user.  If we used a purely
+> > depend based configuration, the user would have to know to select, say,
+> > the right SCSI transport classes before they get presented with drivers.
+> > It's completely correct, since transport classes are internal
+> > implementations, to have the user select drivers and Kconfig work out
+> > via the select directive what transport classes are needed.
+> > 
+> > > If you use it, select only options that don't depend on anything else.
+> > > 
+> > > If you feel that people really want you to provide a select for them which
+> > > selects something that in turn depends on other things, then I suggest you
+> > > rather let your own option depend on these lower dependencies:
+> > > 
+> > > config HIGHLEVEL_FEATURE
+> > > 	tristate "some driver"
+> > > 	depends on SYSFS  # because CONFIGFS depends on it
+> > > 	select CONFIGFS
+> > 
+> > This is what I don't understand.
+> > 
+> > Actually I think the whole premise of the patch (to get back to the
+> > original topic) is wrong.
+> > 
+> > TARGET_CORE depends on SCSI; SCSI has to have sysfs to survive ... we
+> > just don't work without it yet we neither select nor depend on it.
+> > SYSFS is only deselectable for embedded anyway, so I think the
+> > configuration which generated this whole argument was likely a bogus one
+> > and consequently, none of the patches are needed (or if they are,
+> > they're the tip of the iceberg).
+> > 
 > 
-> I guess we could have that in perf report as well? I.e. if stdin is a
-> FIFO...
+> This sounds fine for TARGET_CORE, but would still leave GFS2_FS with an
+> unmet direct dependency according to the original warning above.
+> Unfortuately I do not recall which exactly linux-next build
+> configuration was causing this warning to occur from the original post:
 > 
+> http://marc.info/?l=linux-next&m=129355383112997&w=2
+> 
+> Any more thoughts here Randy..?
 
-Yes, I noticed that too, perf-script is also a candidate.
 
-I'll do.
+I've looked at GFS2 a bit now and I think that the warning is bogus:
 
-		Franck
+kconfig complains with:
+warning: (TARGET_CORE && GFS2_FS) selects CONFIGFS_FS which has unmet direct dependencies (SYSFS)
+
+but the "select" is conditional:
+config GFS2_FS
+	tristate "GFS2 file system support"
+	depends on (64BIT || LBDAF)
+	select DLM if GFS2_FS_LOCKING_DLM
+	select CONFIGFS_FS if GFS2_FS_LOCKING_DLM
+	select SYSFS if GFS2_FS_LOCKING_DLM
+
+and the same condition selects both SYSFS and CONFIGFS_FS.  Furthermore, the
+conditional is not true, so neither of them is being selected/enabled.
+Looks like a minor kconfig buglet to me.
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
