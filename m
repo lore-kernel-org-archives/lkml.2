@@ -1,266 +1,525 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab1AQHUf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 02:20:35 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:51861 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085Ab1AQHUa (ORCPT
+	id S1752835Ab1AQHaX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 02:30:23 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:36501 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab1AQHaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 02:20:30 -0500
-From: Hong Xu <hong.xu@atmel.com>
-To: linux-mtd@lists.infradead.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, jamie@jamieiles.com, jacmet@sunsite.dk
-Cc: nicolas.ferre@atmel.com, hong.xu@atmel.com
-Subject: [PATCH] MTD: atmel_nand: Add DMA support to access Nandflash
-Date: Mon, 17 Jan 2011 15:20:09 +0800
-Message-Id: <1295248809-30334-2-git-send-email-hong.xu@atmel.com>
-X-Mailer: git-send-email 1.7.3.3
-In-Reply-To: <hong.xu@atmel.com>
-References: <hong.xu@atmel.com>
+	Mon, 17 Jan 2011 02:30:22 -0500
+From: Thomas Chou <thomas@wytron.com.tw>
+To: David Brownell <dbrownell@users.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
+        devicetree-discuss@lists.ozlabs.org,
+        spi-devel-general@lists.sourceforge.net,
+        Mike Frysinger <vapier@gentoo.org>, Thomas Chou <thomas@wytron.com.tw>
+Subject: [PATCH v2] spi: add OpenCores tiny SPI driver
+Date: Mon, 17 Jan 2011 15:32:22 +0800
+Message-Id: <1295249542-26743-1-git-send-email-thomas@wytron.com.tw>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1294800109-31603-1-git-send-email-thomas@wytron.com.tw>
+References: <1294800109-31603-1-git-send-email-thomas@wytron.com.tw>
+X-SA-Exim-Connect-IP: 192.168.1.15
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some SAM9 chips have the ability to perform DMA between CPU and SMC controller.
-This patch adds DMA support for SAM9RL, SAM9G45, SSAM9G46,AM9M10, SAM9M11.
+This patch adds support of OpenCores tiny SPI driver.
 
-Signed-off-by: Hong Xu <hong.xu@atmel.com>
+http://opencores.org/project,tiny_spi
+
+Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
 ---
- drivers/mtd/nand/atmel_nand.c |  160 ++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 158 insertions(+), 2 deletions(-)
+v2 minor cleanup, same as Grant suggest for spi_altera.
 
-diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
-index ccce0f0..ba59913 100644
---- a/drivers/mtd/nand/atmel_nand.c
-+++ b/drivers/mtd/nand/atmel_nand.c
-@@ -48,6 +48,9 @@
- #define no_ecc		0
- #endif
+ drivers/spi/Kconfig             |    6 +
+ drivers/spi/Makefile            |    1 +
+ drivers/spi/oc_tiny_spi.c       |  422 +++++++++++++++++++++++++++++++++++++++
+ include/linux/spi/oc_tiny_spi.h |   14 ++
+ 4 files changed, 443 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/spi/oc_tiny_spi.c
+ create mode 100644 include/linux/spi/oc_tiny_spi.h
+
+diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+index c58d81b..46a2ddc 100644
+--- a/drivers/spi/Kconfig
++++ b/drivers/spi/Kconfig
+@@ -227,6 +227,12 @@ config SPI_FSL_ESPI
+ 	  From MPC8536, 85xx platform uses the controller, and all P10xx,
+ 	  P20xx, P30xx,P40xx, P50xx uses this controller.
  
-+static int use_dma = 1;
-+module_param(use_dma, int, 0);
++config SPI_OC_TINY_SPI
++	tristate "OpenCores tiny SPI"
++	select SPI_BITBANG
++	help
++	  This is the driver for OpenCores tiny SPI master controller.
 +
- static int on_flash_bbt = 0;
- module_param(on_flash_bbt, int, 0);
- 
-@@ -89,11 +92,21 @@ struct atmel_nand_host {
- 	struct nand_chip	nand_chip;
- 	struct mtd_info		mtd;
- 	void __iomem		*io_base;
-+	dma_addr_t		io_phys;
- 	struct atmel_nand_data	*board;
- 	struct device		*dev;
- 	void __iomem		*ecc;
+ config SPI_OMAP_UWIRE
+ 	tristate "OMAP1 MicroWire"
+ 	depends on ARCH_OMAP1
+diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
+index 10e516a..6a2ae28 100644
+--- a/drivers/spi/Makefile
++++ b/drivers/spi/Makefile
+@@ -25,6 +25,7 @@ obj-$(CONFIG_SPI_GPIO)			+= spi_gpio.o
+ obj-$(CONFIG_SPI_IMX)			+= spi_imx.o
+ obj-$(CONFIG_SPI_LM70_LLP)		+= spi_lm70llp.o
+ obj-$(CONFIG_SPI_PXA2XX)		+= pxa2xx_spi.o
++obj-$(CONFIG_SPI_OC_TINY_SPI)		+= oc_tiny_spi.o
+ obj-$(CONFIG_SPI_OMAP_UWIRE)		+= omap_uwire.o
+ obj-$(CONFIG_SPI_OMAP24XX)		+= omap2_mcspi.o
+ obj-$(CONFIG_SPI_OMAP_100K)		+= omap_spi_100k.o
+diff --git a/drivers/spi/oc_tiny_spi.c b/drivers/spi/oc_tiny_spi.c
+new file mode 100644
+index 0000000..ead7a09
+--- /dev/null
++++ b/drivers/spi/oc_tiny_spi.c
+@@ -0,0 +1,422 @@
++/*
++ * OpenCores tiny SPI master driver
++ *
++ * http://opencores.org/project,tiny_spi
++ *
++ * Copyright (C) 2011 Thomas Chou <thomas@wytron.com.tw>
++ *
++ * Based on spi_s3c24xx.c, which is:
++ * Copyright (c) 2006 Ben Dooks
++ * Copyright (c) 2006 Simtec Electronics
++ *	Ben Dooks <ben@simtec.co.uk>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
 +
-+	int dma_ready;
-+	struct completion comp;
-+	struct dma_chan *dma_chan;
- };
- 
-+static int cpu_has_dma(void)
++#include <linux/init.h>
++#include <linux/spinlock.h>
++#include <linux/interrupt.h>
++#include <linux/delay.h>
++#include <linux/errno.h>
++#include <linux/err.h>
++#include <linux/clk.h>
++#include <linux/platform_device.h>
++#include <linux/spi/spi.h>
++#include <linux/spi/spi_bitbang.h>
++#include <linux/spi/oc_tiny_spi.h>
++#include <linux/io.h>
++#include <linux/gpio.h>
++#include <linux/of.h>
++
++#define DRV_NAME "oc_tiny_spi"
++
++#define TINY_SPI_RXDATA 0
++#define TINY_SPI_TXDATA 4
++#define TINY_SPI_STATUS 8
++#define TINY_SPI_CONTROL 12
++#define TINY_SPI_BAUD 16
++
++#define TINY_SPI_STATUS_TXE 0x1
++#define TINY_SPI_STATUS_TXR 0x2
++
++struct tiny_spi {
++	/* bitbang has to be first */
++	struct spi_bitbang bitbang;
++	struct completion done;
++
++	void __iomem *base;
++	int irq;
++	unsigned int freq;
++	unsigned int baudwidth;
++	unsigned int baud;
++	unsigned int speed_hz;
++	unsigned int mode;
++	unsigned int len;
++	unsigned int txc, rxc;
++	const u8 *txp;
++	u8 *rxp;
++};
++
++static inline struct tiny_spi *tiny_spi_to_hw(struct spi_device *sdev)
 +{
-+	return cpu_is_at91sam9rl() || cpu_is_at91sam9g45();
++	return spi_master_get_devdata(sdev->master);
 +}
 +
- /*
-  * Enable NAND.
-  */
-@@ -150,7 +163,7 @@ static int atmel_nand_device_ready(struct mtd_info *mtd)
- /*
-  * Minimal-overhead PIO for data access.
-  */
--static void atmel_read_buf(struct mtd_info *mtd, u8 *buf, int len)
-+static void atmel_read_buf8(struct mtd_info *mtd, u8 *buf, int len)
- {
- 	struct nand_chip	*nand_chip = mtd->priv;
- 
-@@ -164,7 +177,7 @@ static void atmel_read_buf16(struct mtd_info *mtd, u8 *buf, int len)
- 	__raw_readsw(nand_chip->IO_ADDR_R, buf, len / 2);
- }
- 
--static void atmel_write_buf(struct mtd_info *mtd, const u8 *buf, int len)
-+static void atmel_write_buf8(struct mtd_info *mtd, const u8 *buf, int len)
- {
- 	struct nand_chip	*nand_chip = mtd->priv;
- 
-@@ -178,6 +191,123 @@ static void atmel_write_buf16(struct mtd_info *mtd, const u8 *buf, int len)
- 	__raw_writesw(nand_chip->IO_ADDR_W, buf, len / 2);
- }
- 
-+static void dma_complete_func(void *completion)
++static unsigned int tiny_spi_baud(struct spi_device *spi, unsigned int hz)
 +{
-+	complete(completion);
++	struct tiny_spi *hw = tiny_spi_to_hw(spi);
++
++	return min(DIV_ROUND_UP(hw->freq, hz * 2), (1U << hw->baudwidth)) - 1;
 +}
 +
-+static int atmel_nand_dma_op(struct mtd_info *mtd, void *buf, int len,
-+			       int is_read)
++static void tiny_spi_chipselect(struct spi_device *spi, int is_active)
 +{
-+	struct dma_device *dma_dev;
-+	enum dma_ctrl_flags flags;
-+	dma_addr_t dma_src_addr, dma_dst_addr, phys_addr;
-+	struct dma_async_tx_descriptor *tx = NULL;
-+	dma_cookie_t cookie;
-+	struct nand_chip *chip = mtd->priv;
-+	struct atmel_nand_host *host = chip->priv;
-+	void *p = buf;
++	gpio_set_value(spi->chip_select,
++		       (spi->mode & SPI_CS_HIGH) ? is_active : !is_active);
++}
 +
-+	if (buf >= high_memory) {
-+		struct page *pg;
++static int tiny_spi_setup_transfer(struct spi_device *spi,
++				   struct spi_transfer *t)
++{
++	struct tiny_spi *hw = tiny_spi_to_hw(spi);
++	unsigned int baud = hw->baud;
 +
-+		if (((size_t)buf & PAGE_MASK) !=
-+		    ((size_t)(buf + len - 1) & PAGE_MASK))
-+			goto err_dma;
-+
-+		pg = vmalloc_to_page(buf);
-+		if (pg == 0)
-+			goto err_dma;
-+		p = page_address(pg) + ((size_t)buf & ~PAGE_MASK);
++	if (t) {
++		if (t->speed_hz && t->speed_hz != hw->speed_hz)
++			baud = tiny_spi_baud(spi, t->speed_hz);
 +	}
++	writel(baud, hw->base + TINY_SPI_BAUD);
++	writel(hw->mode, hw->base + TINY_SPI_CONTROL);
++	return 0;
++}
 +
-+	dma_dev = host->dma_chan->device;
++static int tiny_spi_setup(struct spi_device *spi)
++{
++	struct tiny_spi *hw = tiny_spi_to_hw(spi);
 +
-+	flags = DMA_CTRL_ACK | DMA_COMPL_SKIP_DEST_UNMAP | DMA_PREP_INTERRUPT |
-+			DMA_COMPL_SKIP_SRC_UNMAP;
-+
-+	if (is_read)
-+		phys_addr = dma_map_single(dma_dev->dev, p, len,
-+					   DMA_FROM_DEVICE);
-+	else
-+		phys_addr = dma_map_single(dma_dev->dev, p, len,
-+					   DMA_TO_DEVICE);
-+	if (dma_mapping_error(dma_dev->dev, phys_addr)) {
-+		dev_err(host->dev, "Failed to dma_map_single\n");
-+		goto err_dma;
++	if (spi->max_speed_hz != hw->speed_hz) {
++		hw->speed_hz = spi->max_speed_hz;
++		hw->baud = tiny_spi_baud(spi, hw->speed_hz);
 +	}
++	hw->mode = spi->mode & (SPI_CPOL | SPI_CPHA);
++	return 0;
++}
 +
-+	if (is_read) {
-+		dma_src_addr = host->io_phys;
-+		dma_dst_addr = phys_addr;
++#ifndef CONFIG_TINY_SPI_IDLE_VAL
++# define CONFIG_TINY_SPI_IDLE_VAL 0x00
++#endif
++
++static int tiny_spi_txrx_bufs(struct spi_device *spi, struct spi_transfer *t)
++{
++	struct tiny_spi *hw = tiny_spi_to_hw(spi);
++	const u8 *txp = t->tx_buf;
++	u8 *rxp = t->rx_buf;
++	unsigned int i;
++
++	if (hw->irq >= 0) {
++		/* use intrrupt driven data transfer */
++		hw->len = t->len;
++		hw->txp = t->tx_buf;
++		hw->rxp = t->rx_buf;
++		hw->txc = 0;
++		hw->rxc = 0;
++		init_completion(&hw->done);
++
++		/* send the first byte */
++		if (t->len > 1) {
++			writeb(hw->txp ? *hw->txp++ : CONFIG_TINY_SPI_IDLE_VAL,
++			       hw->base + TINY_SPI_TXDATA);
++			hw->txc++;
++			writeb(hw->txp ? *hw->txp++ : CONFIG_TINY_SPI_IDLE_VAL,
++			       hw->base + TINY_SPI_TXDATA);
++			hw->txc++;
++			writeb(TINY_SPI_STATUS_TXR, hw->base + TINY_SPI_STATUS);
++		} else {
++			writeb(hw->txp ? *hw->txp++ : CONFIG_TINY_SPI_IDLE_VAL,
++			       hw->base + TINY_SPI_TXDATA);
++			hw->txc++;
++			writeb(TINY_SPI_STATUS_TXE, hw->base + TINY_SPI_STATUS);
++		}
++
++		wait_for_completion(&hw->done);
++	} else if (txp && rxp) {
++		/* we need to tighten the transfer loop */
++		writeb(*txp++, hw->base + TINY_SPI_TXDATA);
++		if (t->len > 1) {
++			writeb(*txp++, hw->base + TINY_SPI_TXDATA);
++			for (i = 2; i < t->len; i++) {
++				u8 rx, tx = *txp++;
++				while (!(readb(hw->base + TINY_SPI_STATUS) &
++					 TINY_SPI_STATUS_TXR))
++					cpu_relax();
++				rx = readb(hw->base + TINY_SPI_TXDATA);
++				writeb(tx, hw->base + TINY_SPI_TXDATA);
++				*rxp++ = rx;
++			}
++			while (!(readb(hw->base + TINY_SPI_STATUS) &
++				 TINY_SPI_STATUS_TXR))
++				cpu_relax();
++			*rxp++ = readb(hw->base + TINY_SPI_TXDATA);
++		}
++		while (!(readb(hw->base + TINY_SPI_STATUS) &
++			 TINY_SPI_STATUS_TXE))
++			cpu_relax();
++		*rxp++ = readb(hw->base + TINY_SPI_RXDATA);
++	} else if (rxp) {
++		writeb(CONFIG_TINY_SPI_IDLE_VAL, hw->base + TINY_SPI_TXDATA);
++		if (t->len > 1) {
++			writeb(CONFIG_TINY_SPI_IDLE_VAL,
++			       hw->base + TINY_SPI_TXDATA);
++			for (i = 2; i < t->len; i++) {
++				u8 rx;
++				while (!(readb(hw->base + TINY_SPI_STATUS) &
++					 TINY_SPI_STATUS_TXR))
++					cpu_relax();
++				rx = readb(hw->base + TINY_SPI_TXDATA);
++				writeb(CONFIG_TINY_SPI_IDLE_VAL,
++				       hw->base + TINY_SPI_TXDATA);
++				*rxp++ = rx;
++			}
++			while (!(readb(hw->base + TINY_SPI_STATUS) &
++				 TINY_SPI_STATUS_TXR))
++				cpu_relax();
++			*rxp++ = readb(hw->base + TINY_SPI_TXDATA);
++		}
++		while (!(readb(hw->base + TINY_SPI_STATUS) &
++			 TINY_SPI_STATUS_TXE))
++			cpu_relax();
++		*rxp++ = readb(hw->base + TINY_SPI_RXDATA);
++	} else if (txp) {
++		writeb(*txp++, hw->base + TINY_SPI_TXDATA);
++		if (t->len > 1) {
++			writeb(*txp++, hw->base + TINY_SPI_TXDATA);
++			for (i = 2; i < t->len; i++) {
++				u8 tx = *txp++;
++				while (!(readb(hw->base + TINY_SPI_STATUS) &
++					 TINY_SPI_STATUS_TXR))
++					cpu_relax();
++				writeb(tx, hw->base + TINY_SPI_TXDATA);
++			}
++		}
++		while (!(readb(hw->base + TINY_SPI_STATUS) &
++			 TINY_SPI_STATUS_TXE))
++			cpu_relax();
 +	} else {
-+		dma_src_addr = phys_addr;
-+		dma_dst_addr = host->io_phys;
++		writeb(CONFIG_TINY_SPI_IDLE_VAL, hw->base + TINY_SPI_TXDATA);
++		if (t->len > 1) {
++			writeb(CONFIG_TINY_SPI_IDLE_VAL,
++			       hw->base + TINY_SPI_TXDATA);
++			for (i = 2; i < t->len; i++) {
++				while (!(readb(hw->base + TINY_SPI_STATUS) &
++					 TINY_SPI_STATUS_TXR))
++					cpu_relax();
++				writeb(CONFIG_TINY_SPI_IDLE_VAL,
++				       hw->base + TINY_SPI_TXDATA);
++			}
++		}
++		while (!(readb(hw->base + TINY_SPI_STATUS) &
++			 TINY_SPI_STATUS_TXE))
++			cpu_relax();
++	}
++	return t->len;
++}
++
++static irqreturn_t tiny_spi_irq(int irq, void *dev)
++{
++	struct tiny_spi *hw = dev;
++
++	writeb(0, hw->base + TINY_SPI_STATUS);
++	if (hw->rxc + 1 == hw->len) {
++		if (hw->rxp)
++			*hw->rxp++ = readb(hw->base + TINY_SPI_RXDATA);
++		hw->rxc++;
++		complete(&hw->done);
++	} else {
++		if (hw->rxp)
++			*hw->rxp++ = readb(hw->base + TINY_SPI_TXDATA);
++		hw->rxc++;
++		if (hw->txc < hw->len) {
++			writeb(hw->txp ? *hw->txp++ : CONFIG_TINY_SPI_IDLE_VAL,
++			       hw->base + TINY_SPI_TXDATA);
++			hw->txc++;
++			writeb(TINY_SPI_STATUS_TXR,
++			       hw->base + TINY_SPI_STATUS);
++		} else {
++			writeb(TINY_SPI_STATUS_TXE,
++			       hw->base + TINY_SPI_STATUS);
++		}
++	}
++	return IRQ_HANDLED;
++}
++
++#ifdef CONFIG_OF
++static int __devinit tiny_spi_of_probe(struct platform_device *pdev,
++				       struct tiny_spi *hw)
++{
++	const __be32 *val;
++
++	hw->bitbang.master->dev.of_node = pdev->dev.of_node;
++	val = of_get_property(pdev->dev.of_node, "baud-width", NULL);
++	if (val)
++		hw->baudwidth = be32_to_cpup(val);
++	val = of_get_property(pdev->dev.of_node, "clock-frequency", NULL);
++	if (val)
++		hw->freq = be32_to_cpup(val);
++	return 0;
++}
++#else
++static int __devinit tiny_spi_of_probe(struct platform_device *pdev,
++				       struct tiny_spi *hw)
++{
++	return 0;
++}
++#endif
++
++static int __devinit tiny_spi_probe(struct platform_device *pdev)
++{
++	struct tiny_spi_platform_data *platp = pdev->dev.platform_data;
++	struct tiny_spi *hw;
++	struct spi_master *master;
++	struct resource *res;
++	int err = 0;
++
++	master = spi_alloc_master(&pdev->dev, sizeof(struct tiny_spi));
++	if (master == NULL) {
++		dev_err(&pdev->dev, "No memory for spi_master\n");
++		err = -ENOMEM;
++		goto err_no_mem;
 +	}
 +
-+	tx = dma_dev->device_prep_dma_memcpy(host->dma_chan, dma_dst_addr,
-+					     dma_src_addr, len, flags);
-+	if (!tx) {
-+		dev_err(host->dev, "Failed to prepare DMA memcpy\n");
-+		goto err;
++	/* setup the master state. */
++	master->bus_num = pdev->id;
++	master->num_chipselect = 255;
++	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH;
++	master->setup = tiny_spi_setup;
++
++	hw = spi_master_get_devdata(master);
++	platform_set_drvdata(pdev, hw);
++
++	/* setup the state for the bitbang driver */
++	hw->bitbang.master = spi_master_get(master);
++	if (hw->bitbang.master == NULL) {
++		dev_err(&pdev->dev, "Cannot get device\n");
++		err = -ENODEV;
++		goto err_no_dev;
++	}
++	hw->bitbang.setup_transfer = tiny_spi_setup_transfer;
++	hw->bitbang.chipselect = tiny_spi_chipselect;
++	hw->bitbang.txrx_bufs = tiny_spi_txrx_bufs;
++
++	/* find and map our resources */
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (res == NULL) {
++		dev_err(&pdev->dev, "Cannot get IORESOURCE_MEM\n");
++		err = -ENOENT;
++		goto err_no_iores;
++	}
++	hw->base = ioremap(res->start, (res->end - res->start) + 1);
++	if (hw->base == 0) {
++		dev_err(&pdev->dev, "Cannot map IO\n");
++		err = -ENXIO;
++		goto err_no_iomap;
++	}
++	/* irq is optional */
++	hw->irq = platform_get_irq(pdev, 0);
++	if (hw->irq >= 0) {
++		init_completion(&hw->done);
++		err = request_irq(hw->irq, tiny_spi_irq, 0, pdev->name, hw);
++		if (err) {
++			dev_err(&pdev->dev, "Cannot claim IRQ\n");
++			goto err_no_irq;
++		}
++	}
++	/* find platform data */
++	if (platp) {
++		hw->freq = platp->freq;
++		hw->baudwidth = platp->baudwidth;
++	} else {
++		err = tiny_spi_of_probe(pdev, hw);
++		if (err)
++			goto err_no_of;
 +	}
 +
-+	init_completion(&host->comp);
-+	tx->callback = dma_complete_func;
-+	tx->callback_param = &host->comp;
-+
-+	cookie = tx->tx_submit(tx);
-+	if (dma_submit_error(cookie)) {
-+		dev_err(host->dev, "Failed to do DMA tx_submit\n");
-+		goto err;
++	/* register our spi controller */
++	err = spi_bitbang_start(&hw->bitbang);
++	if (err) {
++		dev_err(&pdev->dev, "Failed to register SPI master\n");
++		goto err_register;
 +	}
-+
-+	dma_async_issue_pending(host->dma_chan);
-+
-+	wait_for_completion(&host->comp);
++	dev_info(&pdev->dev, "base %p, irq %d\n", hw->base, hw->irq);
 +
 +	return 0;
 +
-+err:
-+	if (is_read)
-+		dma_unmap_single(dma_dev->dev, phys_addr, len, DMA_FROM_DEVICE);
-+	else
-+		dma_unmap_single(dma_dev->dev, phys_addr, len, DMA_TO_DEVICE);
-+err_dma:
-+	/* Fall back to CPU I/O */
-+	return -1;
++err_register:
++err_no_of:
++	if (hw->irq >= 0)
++		free_irq(hw->irq, hw);
++err_no_irq:
++	iounmap(hw->base);
++err_no_iomap:
++err_no_iores:
++	spi_master_put(master);
++err_no_mem:
++err_no_dev:
++	return err;
 +}
 +
-+static void atmel_read_buf(struct mtd_info *mtd, u8 *buf, int len)
++static int __devexit tiny_spi_remove(struct platform_device *dev)
 +{
-+	struct nand_chip *chip = mtd->priv;
-+	struct atmel_nand_host *host = chip->priv;
++	struct tiny_spi *hw = platform_get_drvdata(dev);
++	struct spi_master *master = hw->bitbang.master;
 +
-+	if (host->dma_ready && len >= mtd->oobsize)
-+		if (atmel_nand_dma_op(mtd, buf, len, 1) == 0)
-+			return;
++	spi_bitbang_stop(&hw->bitbang);
 +
-+	if (host->board->bus_width_16)
-+		atmel_read_buf16(mtd, buf, len);
-+	else
-+		atmel_read_buf8(mtd, buf, len);
++	if (hw->irq >= 0)
++		free_irq(hw->irq, hw);
++	iounmap(hw->base);
++
++	platform_set_drvdata(dev, NULL);
++	spi_master_put(master);
++	return 0;
 +}
 +
-+static void atmel_write_buf(struct mtd_info *mtd, const u8 *buf, int len)
++#ifdef CONFIG_OF
++static struct of_device_id oc_tiny_spi_match[] = {
++	{
++		.compatible = "opencores,oc_tiny_spi",
++	},
++	{},
++}
++MODULE_DEVICE_TABLE(of, oc_tiny_spi_match);
++#endif
++
++static struct platform_driver tiny_spidrv = {
++	.remove = __devexit_p(tiny_spi_remove),
++	.driver = {
++		.name = DRV_NAME,
++		.owner = THIS_MODULE,
++		.pm = NULL,
++#ifdef CONFIG_OF
++		.of_match_table = oc_tiny_spi_match,
++#endif
++	},
++};
++
++static int __init tiny_spi_init(void)
 +{
-+	struct nand_chip *chip = mtd->priv;
-+	struct atmel_nand_host *host = chip->priv;
-+
-+	if (host->dma_ready && len >= mtd->oobsize)
-+		if (atmel_nand_dma_op(mtd, (void *)buf, len, 0) == 0)
-+			return;
-+
-+	if (host->board->bus_width_16)
-+		atmel_write_buf16(mtd, buf, len);
-+	else
-+		atmel_write_buf8(mtd, buf, len);
++	return platform_driver_probe(&tiny_spidrv, tiny_spi_probe);
 +}
++module_init(tiny_spi_init);
 +
- /*
-  * Calculate HW ECC
-  *
-@@ -398,6 +528,8 @@ static int __init atmel_nand_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
-+	host->io_phys = (dma_addr_t)mem->start;
++static void __exit tiny_spi_exit(void)
++{
++	platform_driver_unregister(&tiny_spidrv);
++}
++module_exit(tiny_spi_exit);
 +
- 	host->io_base = ioremap(mem->start, mem->end - mem->start + 1);
- 	if (host->io_base == NULL) {
- 		printk(KERN_ERR "atmel_nand: ioremap failed\n");
-@@ -516,6 +648,24 @@ static int __init atmel_nand_probe(struct platform_device *pdev)
- 		}
- 	}
- 
-+	if (cpu_has_dma() && use_dma) {
-+		dma_cap_mask_t mask;
++MODULE_DESCRIPTION("OpenCores tiny SPI driver");
++MODULE_AUTHOR("Thomas Chou <thomas@wytron.com.tw>");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:" DRV_NAME);
+diff --git a/include/linux/spi/oc_tiny_spi.h b/include/linux/spi/oc_tiny_spi.h
+new file mode 100644
+index 0000000..83de49d
+--- /dev/null
++++ b/include/linux/spi/oc_tiny_spi.h
+@@ -0,0 +1,14 @@
++#ifndef _LINUX_SPI_OC_TINY_SPI_H
++#define _LINUX_SPI_OC_TINY_SPI_H
 +
-+		dma_cap_zero(mask);
-+		dma_cap_set(DMA_MEMCPY, mask);
-+		host->dma_chan = dma_request_channel(mask, 0, NULL);
++/**
++ * struct tiny_spi_platform_data - platform data of the OpenCores tiny SPI
++ * @freq:	input clock freq to the core.
++ * @baudwidth:	baud rate divider width of the core.
++ */
++struct tiny_spi_platform_data {
++	uint freq;
++	uint baudwidth;
++};
 +
-+		if (!host->dma_chan) {
-+			dev_err(host->dev, "Failed to request DMA channel\n");
-+			host->dma_ready = 0;
-+		} else
-+			host->dma_ready = 1;
-+	}
-+	if (host->dma_ready)
-+		dev_info(host->dev, "Using DMA for NAND access.\n");
-+	else
-+		dev_info(host->dev, "No DMA support for NAND access.\n");
-+
- 	/* second phase scan */
- 	if (nand_scan_tail(mtd)) {
- 		res = -ENXIO;
-@@ -555,6 +705,8 @@ err_scan_ident:
- err_no_card:
- 	atmel_nand_disable(host);
- 	platform_set_drvdata(pdev, NULL);
-+	if (host->dma_chan)
-+		dma_release_channel(host->dma_chan);
- 	if (host->ecc)
- 		iounmap(host->ecc);
- err_ecc_ioremap:
-@@ -578,6 +730,10 @@ static int __exit atmel_nand_remove(struct platform_device *pdev)
- 
- 	if (host->ecc)
- 		iounmap(host->ecc);
-+
-+	if (host->dma_chan)
-+		dma_release_channel(host->dma_chan);
-+
- 	iounmap(host->io_base);
- 	kfree(host);
- 
++#endif /* _LINUX_SPI_OC_TINY_SPI_H */
 -- 
-1.7.3.3
+1.7.3.4
 
