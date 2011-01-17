@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531Ab1AQBij (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 20:38:39 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:43621 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751975Ab1AQBif (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 20:38:35 -0500
-Date: Sun, 16 Jan 2011 20:38:32 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Catalin Marinas <catalin.marinas@arm.com>, Nicolas Pitre <nico@cam.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Alexander Shishkin <virtuoso@slind.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] arm 32v6k fix 2-byte cmpxchg comment
-Message-ID: <20110117013832.GA7882@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 20:35:21 up 54 days,  6:38,  4 users,  load average: 0.00, 0.00,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752159Ab1AQBqr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 20:46:47 -0500
+Received: from mga11.intel.com ([192.55.52.93]:14051 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751729Ab1AQBqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jan 2011 20:46:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,331,1291622400"; 
+   d="scan'208";a="877992783"
+Subject: Re: [PATCH] ACPI: Fix memory leak in
+ acpi_ev_asynch_execute_gpe_method().
+From: Lin Ming <ming.m.lin@intel.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>
+In-Reply-To: <alpine.LNX.2.00.1101162033531.13377@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1101162033531.13377@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 Jan 2011 09:47:11 +0800
+Message-ID: <1295228831.28388.84.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Impact: code comment fix
+On Mon, 2011-01-17 at 03:37 +0800, Jesper Juhl wrote:
+> We will leak the memory allocated to 'local_gpe_event_info' if 
+> 'acpi_ut_acquire_mutex()' fails or if 'acpi_ev_valid_gpe_event()' fails in 
+> drivers/acpi/acpica/evgpe.c::acpi_ev_asynch_execute_gpe_method().
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  evgpe.c |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/acpi/acpica/evgpe.c b/drivers/acpi/acpica/evgpe.c
+> index 7c339d3..b6de1fb 100644
+> --- a/drivers/acpi/acpica/evgpe.c
+> +++ b/drivers/acpi/acpica/evgpe.c
+> @@ -471,6 +471,7 @@ static void ACPI_SYSTEM_XFACE acpi_ev_asynch_execute_gpe_method(void *context)
+>  
+>  	status = acpi_ut_acquire_mutex(ACPI_MTX_EVENTS);
+>  	if (ACPI_FAILURE(status)) {
+> +		ACPI_FREE(local_gpe_event_info);
+>  		return_VOID;
+>  	}
+>  
+> @@ -478,6 +479,7 @@ static void ACPI_SYSTEM_XFACE acpi_ev_asynch_execute_gpe_method(void *context)
+>  
+>  	if (!acpi_ev_valid_gpe_event(gpe_event_info)) {
+>  		status = acpi_ut_release_mutex(ACPI_MTX_EVENTS);
+> +		ACPI_FREE(local_gpe_event_info);
+>  		return_VOID;
+>  	}
+>  
+> 
 
-commit ecd322c9b3e4ac70f9f108badde3eb6b99c7993d introduced a 2-byte cmpxchg with
-a comment mismatch (labeled __cmpxchg1).
+Acked-by: Lin Ming <ming.m.lin@intel.com>
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Catalin Marinas <catalin.marinas@arm.com>
-CC: Nicolas Pitre <nico@cam.org>
-CC: Russell King <rmk+kernel@arm.linux.org.uk>
-CC: Alexander Shishkin <virtuoso@slind.org>
----
- arch/arm/include/asm/system.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks.
 
-Index: linux-2.6-lttng/arch/arm/include/asm/system.h
-===================================================================
---- linux-2.6-lttng.orig/arch/arm/include/asm/system.h	2010-08-20 17:13:18.000000000 -0400
-+++ linux-2.6-lttng/arch/arm/include/asm/system.h	2010-08-20 17:17:12.000000000 -0400
-@@ -375,7 +375,7 @@ static inline unsigned long __cmpxchg(vo
- 		break;
- 	case 2:
- 		do {
--			asm volatile("@ __cmpxchg1\n"
-+			asm volatile("@ __cmpxchg2\n"
- 			"	ldrexh	%1, [%2]\n"
- 			"	mov	%0, #0\n"
- 			"	teq	%1, %3\n"
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
