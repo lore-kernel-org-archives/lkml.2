@@ -1,33 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914Ab1AQWRM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 17:17:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38238 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752680Ab1AQWRL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 17:17:11 -0500
+	id S1752903Ab1AQWVC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 17:21:02 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:19511 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630Ab1AQWU7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jan 2011 17:20:59 -0500
+Date: Mon, 17 Jan 2011 23:21:00 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+cc: linux-kernel@vger.kernel.org, James Bottomley <James.Bottomley@suse.de>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH] target: Fix memory leak in
+ fd_set_configfs_dev_params().
+In-Reply-To: <1295302597.22813.222.camel@haakon2.linux-iscsi.org>
+Message-ID: <alpine.LNX.2.00.1101172320440.27021@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1101162006410.13377@swampdragon.chaosbits.net>  <1295218456.22813.61.camel@haakon2.linux-iscsi.org>  <alpine.LNX.2.00.1101162357250.13377@swampdragon.chaosbits.net>  <1295219988.22813.72.camel@haakon2.linux-iscsi.org> 
+ <alpine.LNX.2.00.1101171929150.27021@swampdragon.chaosbits.net> <1295302597.22813.222.camel@haakon2.linux-iscsi.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-X-Fcc: ~/Mail/linus
-Cc: oleg@redhat.com, jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/7] clone: kill CLONE_STOPPED
-In-Reply-To: Tejun Heo's message of  Friday, 24 December 2010 15:00:51 +0100 <1293199257-11255-2-git-send-email-tj@kernel.org>
-References: <1293199257-11255-1-git-send-email-tj@kernel.org>
-	<1293199257-11255-2-git-send-email-tj@kernel.org>
-X-Antipastobozoticataclysm: Bariumenemanilow
-Message-Id: <20110117221705.C2E88180996@magilla.sf.frob.com>
-Date: Mon, 17 Jan 2011 14:17:05 -0800 (PST)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is already stale as of commit 43bb40c.  Probably this whole series
-needs a new iteration on the current tree.  I hope we can hash out these
-into mergeable state pretty soon.
+On Mon, 17 Jan 2011, Nicholas A. Bellinger wrote:
 
-Thanks,
-Roland
+> On Mon, 2011-01-17 at 19:29 +0100, Jesper Juhl wrote:
+> > On Sun, 16 Jan 2011, Nicholas A. Bellinger wrote:
+> > 
+> > > On Sun, 2011-01-16 at 23:59 +0100, Jesper Juhl wrote:
+> > > > On Sun, 16 Jan 2011, Nicholas A. Bellinger wrote:
+> > > > 
+> > > > > On Sun, 2011-01-16 at 20:17 +0100, Jesper Juhl wrote:
+> > > > > > match_strdup() dynamically allocates memory and it is the responsabillity 
+> > > > > > of the caller to free that memory. In 
+> > > > > > drivers/target/target_core_file.c::fd_set_configfs_dev_params() two calls 
+> > > > > > are made to match_strdup() and in neither case is the allocated memory 
+> > > > > > freed, but instead it is leaked.
+> > > > > > 
+> > > > > > This patch should take care of the problem by kfree()'ing the allocated 
+> > > > > > memory once it is no longer needed. It also makes sure to return -ENOMEM 
+> > > > > > if the memory allocation in match_strdup() should fail.
+> > > > > > 
+> > > > > > Please review and consider for inclusion.
+> > > > > > 
+> > > > > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > > > > 
+> > > > > Ugh, this was my fault during the recent v4.0 configfs parameter
+> > > > > conversion.  Committed as 5c45b37 in lio-core-2.6.git/linus-38-rc1 and I
+> > > > > will fix up the other handful of match_strdup() breakage and carry into
+> > > > > scsi-post-merge-2.6.git/for-jejb shortly.
+> > > > > 
+> > > > > Thanks for catching this..
+> > > > > 
+> > > > 
+> > > > You're welcome.
+> > > > Yes, I did see a bunch of other match_strdup() related problems, but I 
+> > > > thought I'd just fix up one file initially to see the general reaction, 
+> > > > then do the rest later when this one had been merged. but if you want to 
+> > > > fix up the remainder, feel free.
+> > > > 
+> > > > I guess we can merge this patch as a starting point?
+> > > > 
+> > > 
+> > > Sure, the other two follow-up match_strdup() memory leak bugfix patches
+> > > for target/iblock and target_core_configfs.c APTPL metadata token
+> > > parsing have been included into the scsi-post-merge-2.6.git/for-jejb
+> > > queue.
+> > > 
+> > Ok, I assume you'll add my patch there as well?
+> > 
+> 
+> Your patch along with the two followup match_strdup() fixes and your
+> Reported-by' have been included in the LIO upstream tree (now merged
+> with mainline tracking linus-38-rc1), and in the queue for
+> scsi-post-merge-2.6.git/for-jejb branch for linux-scsi review ->
+> mainline for-38.
+> 
+
+Thank you.
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
