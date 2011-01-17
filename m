@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab1AQLvz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 06:51:55 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:55960
-	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751985Ab1AQLvx (ORCPT
+	id S1752847Ab1AQMIC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 07:08:02 -0500
+Received: from casper.infradead.org ([85.118.1.10]:36279 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428Ab1AQMH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 06:51:53 -0500
-X-SpamScore: -39
-X-BigFish: VPS-39(zzbb2dKbb2cK1432N98dN4015L9371Pzz1202hzz15d4Rz32i637h668h)
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LF6058-01-8QJ-02
-X-M-MSG: 
-Date: Mon, 17 Jan 2011 12:34:21 +0100
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>
-CC: Joerg Roedel <joro@8bytes.org>, Marcelo Tosatti <mtosatti@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2 v2] perf-kvm support for SVM
-Message-ID: <20110117113421.GC31122@amd.com>
-References: <1295019902-31339-1-git-send-email-joerg.roedel@amd.com>
- <4D32CD45.3090503@redhat.com>
- <20110116153506.GI6376@8bytes.org>
- <4D3310E3.9020909@redhat.com>
+	Mon, 17 Jan 2011 07:07:59 -0500
+Date: Mon, 17 Jan 2011 10:07:21 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Franck Bui-Huu <vagabon.xyz@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Chase Douglas <chase.douglas@canonical.com>
+Subject: Re: [PATCH -perf/perf/core  5/6] perf probe: Add variable filter
+	support
+Message-ID: <20110117120721.GB3902@ghostprotocols.net>
+References: <20110113124548.22426.11201.stgit@ltc236.sdl.hitachi.co.jp> <20110113124624.22426.72527.stgit@ltc236.sdl.hitachi.co.jp> <m3wrm87ba7.fsf@gmail.com> <4D2FB7FD.3020004@hitachi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D3310E3.9020909@redhat.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+In-Reply-To: <4D2FB7FD.3020004@hitachi.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 16, 2011 at 10:38:11AM -0500, Avi Kivity wrote:
-> On 01/16/2011 05:35 PM, Joerg Roedel wrote:
-> > On Sun, Jan 16, 2011 at 12:49:41PM +0200, Avi Kivity wrote:
-> > >  On 01/14/2011 05:45 PM, Joerg Roedel wrote:
-> >
-> > >>  here is the reworked version of the patch-set. Only patch 1/2 has
-> > >>  changed and now contains the real fix for the crashes that were seen and
-> > >>  has an updated log message.
-> > >>
-> > >
-> > >  Thanks, applied.  2.6.37 and earlier aren't affected, yes?  So I'm
-> > >  queuing it for 2.6.38 only.
-> >
-> > I think the problem is there since KVM has lazy state switching. So the
-> > fix in patch 1 should make it in all currently maintained stable-trees.
-> >
-> 
-> The problem is with load_gs_index(), yes?  In 2.6.37 this is called 
-> before stgi(), so it's protected from nmi.
+Em Fri, Jan 14, 2011 at 11:42:05AM +0900, Masami Hiramatsu escreveu:
+> (2011/01/14 6:18), Franck Bui-Huu wrote:
+> > I'm wondering if the different syntax below could be simpler:
+> > 
+> >    $ perf probe add <probe>
+> >    $ perf probe del <probe>
+> >    $ perf probe show       
+> >    $ perf probe list <line>
+> >            ...       --vars[=<pattern>] [--externs] <probe>
+> >            ...       --funcs[=<pattern>]
+ 
+> Hm, well, if no one complains about changing the syntax of perf probe,
+> it may make things simple (maybe we'll also have to drop "perf probe
+> <PROBE>" syntax). Nowadays we already have perf-kvm, perf-sched, etc.
+> which use sub-sub commands.
+ 
+> IMHO, for avoiding confusion old options and "perf-list", below
+> sub-sub commands are more suitable.
+ 
+>    $ perf probe add <probe>
+>    $ perf probe del <probe>
+>    $ perf probe list
+>    $ perf probe lines <line>
+>    $ perf probe vars [--filter=<pattern>|-F <pattern>] [--extern] <probe>
+>    $ perf probe funcs [--filter=<pattern>|-F <pattern>]
 
-Ok, you are right :) So the fix is only necessary for 2.6.38.
+Right, and when packaging, we can do just like Ingo and Thomas are doing
+with 'perf trace', create a hardlink and if argv[0] is 'probe', that is
+an alias to 'perf probe', so we would do it just like:
 
-	Joerg
+$ probe add <probe>
+$ probe del <probe>
+$ probe list
+$ probe lines <line>
+$ probe vars [--filter=<pattern>|-F <pattern>] [--extern] <probe>
+$ probe funcs [--filter=<pattern>|-F <pattern>]
 
--- 
-AMD Operating System Research Center
+[root@felicio ~]# probe
+bash: probe: command not found...
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+Also google told me that there was an /sbin/probe utility, but that was
+a long time ago, in the kernel-pcmcia-cs package, nowadays we have
+pcmciautils and it doesn't have this command, so I think it is up for
+grabs :-)
 
+So I think that the 'probe funcs' makes sense, will apply that patch in
+perf/core.
+
+- Arnaldo
