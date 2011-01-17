@@ -1,36 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab1AQNYv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 08:24:51 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:58847 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752026Ab1AQNYu convert rfc822-to-8bit (ORCPT
+	id S1752451Ab1AQNfR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 08:35:17 -0500
+Received: from exprod6ob117.obsmtp.com ([64.18.1.38]:43306 "HELO
+	exprod6ob117.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752070Ab1AQNfP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 08:24:50 -0500
-Subject: Re: [PATCH] sched: replace rq->bkl_count with
- rq->rq_sched_info.bkl_count
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1294991859-13246-1-git-send-email-yong.zhang0@gmail.com>
-References: <1294991859-13246-1-git-send-email-yong.zhang0@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 17 Jan 2011 14:25:27 +0100
-Message-ID: <1295270727.30950.100.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 17 Jan 2011 08:35:15 -0500
+From: "MacNair, Russell" <MacnairRN@CDM.com>
+To: "info@webmaster.com" <info@webmaster.com>
+Date: Mon, 17 Jan 2011 07:42:55 -0500
+Subject: Your Webmail Quota Has Exceeded The Set Quota/Limit
+Thread-Topic: Your Webmail Quota Has Exceeded The Set Quota/Limit
+Thread-Index: AQHLtkQPvw8xyimBd0aIOfpvNm+qlQ==
+Message-ID: <7D74C4D45606DF428A8DCDB5B621BBB5895784BBE0@CAMEXCMS1.cdminc.internal.cdm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-14 at 15:57 +0800, Yong Zhang wrote:
-> Now rq->rq_sched_info.bkl_count is not used for rq, scroll
-> rq->bkl_count into it. Thus we can save some space for rq.
-> 
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Peter Zijlstra <peterz@infradead.org>
+Your Webmail Quota Has Exceeded The Set Quota/Limit Which Is 20GB.
+You Are Currently Running On 23GB Due To Hidden Files And Folder On Your Mailbox.
+Please Click the Link Below To Validate Your Mailbox And Increase Your Quota.
+Click Here: <http://wildpagemarketing.com/Form/use/abegliveam4Godsake/form1.html>
+Failure To Click This Link And Validate Your Quota May Result In Loss Of Important Information In Your Mailbox/Or Cause Limited Access To It.
+Thanks
+HELP DESK
 
-
-Thanks, applied
