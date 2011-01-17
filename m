@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753018Ab1AQTf7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 14:35:59 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:49157 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751658Ab1AQTf5 (ORCPT
+	id S1752976Ab1AQTjP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 14:39:15 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62403 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751658Ab1AQTjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 14:35:57 -0500
-Date: Mon, 17 Jan 2011 13:35:50 -0600
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        ecryptfs-devel@lists.launchpad.net
-Subject: [GIT PULL] eCryptfs fixes for 2.6.38-rc1
-Message-ID: <20110117193549.GB31581@boyd.l.tihix.com>
+	Mon, 17 Jan 2011 14:39:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=A1lWTe/ZsAA51YZSwVAwkWdyLBcNGxq08WGRMnaiElveMA+/aR0z7siXyVTOL02gLx
+         zwYdFYs7fzSoguAK3Thaj9HuKuE1/jj8G8F81icDU4QclArn0bG3bJ3o9YWsXRsYIAcY
+         ScawMZM8Lj49plm2u7v6P7xoBdpjmS0UwF0Lk=
+Date: Mon, 17 Jan 2011 21:39:10 +0200
+From: Ilya Dryomov <idryomov@gmail.com>
+To: linux-btrfs@vger.kernel.org
+Cc: Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] Btrfs: fix memory leak in btrfs_parse_early_options()
+Message-ID: <20110117193910.GA26094@kwango.lan.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+strsep() modifies the string pointer, therefore freeing it instead of
+original one results in a small memory leak.  Fixes kmemleak warning.
 
-The following changes since commit e78bf5e6cbe837daa6ab628a5f679548742994d3:
+Signed-off-by: Ilya Dryomov <idryomov@gmail.com>
+---
+ fs/btrfs/super.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-  drivers/nfc/pn544.c: fix min_t warnings (2011-01-16 17:28:21 -0800)
+diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
+index 883c6fa..291b630 100644
+--- a/fs/btrfs/super.c
++++ b/fs/btrfs/super.c
+@@ -277,7 +277,7 @@ static int btrfs_parse_early_options(const char *options, fmode_t flags,
+ 		struct btrfs_fs_devices **fs_devices)
+ {
+ 	substring_t args[MAX_OPT_ARGS];
+-	char *opts, *p;
++	char *opts, *opts_orig, *p;
+ 	int error = 0;
+ 	int intarg;
+ 
+@@ -288,7 +288,7 @@ static int btrfs_parse_early_options(const char *options, fmode_t flags,
+ 	 * strsep changes the string, duplicate it because parse_options
+ 	 * gets called twice
+ 	 */
+-	opts = kstrdup(options, GFP_KERNEL);
++	opts = opts_orig = kstrdup(options, GFP_KERNEL);
+ 	if (!opts)
+ 		return -ENOMEM;
+ 
+@@ -326,7 +326,7 @@ static int btrfs_parse_early_options(const char *options, fmode_t flags,
+ 	}
+ 
+  out_free_opts:
+-	kfree(opts);
++	kfree(opts_orig);
+  out:
+ 	/*
+ 	 * If no subvolume name is specified we use the default one.  Allocate
+-- 
+1.7.2.3
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/ecryptfs/ecryptfs-2.6.git for-linus
-
-Edward Shishkin (1):
-      ecryptfs: fix truncation error in ecryptfs_read_update_atime
-
-Frank Swiderski (1):
-      ecryptfs: remove unnecessary decrypt when extending a file
-
-Joe Perches (1):
-      fs/ecryptfs: Add printf format/argument verification and fix fallout
-
-Roberto Sassu (4):
-      ecryptfs: moved ECRYPTFS_SUPER_MAGIC definition to linux/magic.h
-      ecryptfs: missing initialization of the superblock 'magic' field
-      ecryptfs: test lower_file pointer when lower_file_mutex is locked
-      ecryptfs: fixed testing of file descriptor flags
-
-Tyler Hicks (1):
-      ecryptfs: Fix ecryptfs_printk() size_t warnings
-
- fs/ecryptfs/crypto.c          |   30 ++++++++++++++----------------
- fs/ecryptfs/ecryptfs_kernel.h |    2 +-
- fs/ecryptfs/file.c            |   28 +++++++++++++---------------
- fs/ecryptfs/inode.c           |   32 ++++++++++++++------------------
- fs/ecryptfs/keystore.c        |   26 +++++++++++++-------------
- fs/ecryptfs/main.c            |    9 ++++++---
- fs/ecryptfs/mmap.c            |   35 +++++++++++++++++++++--------------
- include/linux/magic.h         |    1 +
- 8 files changed, 83 insertions(+), 80 deletions(-)
