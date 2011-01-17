@@ -1,128 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163Ab1AQXMA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 18:12:00 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:46984 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753100Ab1AQXL7 (ORCPT
+	id S1752390Ab1AQXY1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 18:24:27 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:40712 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311Ab1AQXY0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 18:11:59 -0500
-Date: Mon, 17 Jan 2011 17:11:48 -0600
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Roberto Sassu <roberto.sassu@polito.it>
-Subject: Re: linux-next: manual merge of the ecryptfs tree with Linus' tree
-Message-ID: <20110117231147.GC31581@boyd.l.tihix.com>
-References: <20110115111535.c919c470.sfr@canb.auug.org.au>
+	Mon, 17 Jan 2011 18:24:26 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=WEcLrue0XNfZjhclCe3fLRILqdoq87ihuai53qVv7n7huC0rKvNPMXrZswO3QMAO/E
+         mF56Z7P/4iNDodmoAct/nj9xGXu/FjAeFF+ulNouT14hQ1iMlpm5ZmJ1ixEtaraweyMJ
+         T7O/0Nrdh19znQuCvb5F5gIL+KvfzAon9XClU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110115111535.c919c470.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <x49tyh7mjr6.fsf@segfault.boston.devel.redhat.com>
+References: <AANLkTimMwZnm3UKvmrPscBeZF77vh1sW0ERO1tuv1oNW@mail.gmail.com>
+	<x494o9bbkqo.fsf@segfault.boston.devel.redhat.com>
+	<AANLkTimuCgn4aHzUJRmQfsXjG_UF-3W8fAWb0Y-sSPsM@mail.gmail.com>
+	<x49tyh7mjr6.fsf@segfault.boston.devel.redhat.com>
+Date: Tue, 18 Jan 2011 10:24:24 +1100
+Message-ID: <AANLkTikgsGHJ+q6=We_zPAivyABq+z2f6Atv6ZScLYOU@mail.gmail.com>
+Subject: Re: [patch] fs: aio fix rcu lookup
+From: Nick Piggin <npiggin@gmail.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat Jan 15, 2011 at 11:15:35AM +1100, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Tyler,
-> 
-> Today's linux-next merge of the ecryptfs tree got a conflict in
-> fs/ecryptfs/main.c between commit
-> 66cb76666d69502fe982990b2cff5b6d607fd3b1 ("sanitize ecryptfs ->mount()")
-> from Linus' tree and commit c65b788ce32e9cd1c7d221551275774f1aa83084
-> ("ecryptfs: missing initialization of the superblock 'magic' field") from
-> the ecryptfs tree.
-> 
-> I fixed it up (I think - see below) and can carry the fix as necessary.
+On Tue, Jan 18, 2011 at 6:07 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
+> Nick Piggin <npiggin@gmail.com> writes:
+>
+>> On Sat, Jan 15, 2011 at 1:52 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
+>>> Nick Piggin <npiggin@gmail.com> writes:
+>>>
+>>>> Hi,
+>>>>
+>>>> While hunting down a bug in NFS's AIO, I believe I found this
+>>>> buggy code...
+>>>>
+>>>> fs: aio fix rcu ioctx lookup
+>>>>
+>>>> aio-dio-invalidate-failure GPFs in aio_put_req from io_submit.
+>>>>
+>>>> lookup_ioctx doesn't implement the rcu lookup pattern properly.
+>>>> rcu_read_lock does not prevent refcount going to zero, so we
+>>>> might take a refcount on a zero count ioctx.
+>>>
+>>> So, does this patch fix the problem?  You didn't actually say....
+>>
+>> No, it seemd to be an NFS AIO problem, although it was a
+>> slightly older kernel so I'll re test after -rc1 if I haven't heard
+>> back about it.
+>
+> OK.
+>
+>> Do you agree with the theoretical problem? I didn't try to
+>> write a racer to break it yet. Inserting a delay before the
+>> get_ioctx might do the trick.
+>
+> I'm not convinced, no.  The last reference to the kioctx is always the
+> process, released in the exit_aio path, or via sys_io_destroy.  In both
+> cases, we cancel all aios, then wait for them all to complete before
+> dropping the final reference to the context.
 
-Thanks Stephen - I made the same fix up earlier today when preparing a
-branch for a pull request to Linus. Linus has completed the pull and
-I've updated the eCryptfs next branch accordingly, so you shouldn't see
-any merge conflicts today.
+That wouldn't appear to prevent a concurrent thread from doing an
+io operation that requires ioctx lookup, and taking the last reference
+after the io_cancel thread drops the ref.
 
-Tyler
 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc fs/ecryptfs/main.c
-> index d3b28ab,70009a7..0000000
-> --- a/fs/ecryptfs/main.c
-> +++ b/fs/ecryptfs/main.c
-> @@@ -546,54 -587,34 +546,55 @@@ static struct dentry *ecryptfs_mount(st
->   	/* ->kill_sb() will take care of sbi after that point */
->   	sbi = NULL;
->   	s->s_op = &ecryptfs_sops;
->  +	s->s_d_op = &ecryptfs_dops;
->   
->  -	rc = -ENOMEM;
->  -	s->s_root = d_alloc(NULL, &(const struct qstr) {
->  -			     .hash = 0,.name = "/",.len = 1});
->  +	err = "Reading sb failed";
->  +	rc = kern_path(dev_name, LOOKUP_FOLLOW | LOOKUP_DIRECTORY, &path);
->  +	if (rc) {
->  +		ecryptfs_printk(KERN_WARNING, "kern_path() failed\n");
->  +		goto out1;
->  +	}
->  +	if (path.dentry->d_sb->s_type == &ecryptfs_fs_type) {
->  +		rc = -EINVAL;
->  +		printk(KERN_ERR "Mount on filesystem of type "
->  +			"eCryptfs explicitly disallowed due to "
->  +			"known incompatibilities\n");
->  +		goto out_free;
->  +	}
->  +	ecryptfs_set_superblock_lower(s, path.dentry->d_sb);
->  +	s->s_maxbytes = path.dentry->d_sb->s_maxbytes;
->  +	s->s_blocksize = path.dentry->d_sb->s_blocksize;
-> ++	s->s_magic = ECRYPTFS_SUPER_MAGIC;
->  +
->  +	inode = ecryptfs_get_inode(path.dentry->d_inode, s);
->  +	rc = PTR_ERR(inode);
->  +	if (IS_ERR(inode))
->  +		goto out_free;
->  +
->  +	s->s_root = d_alloc_root(inode);
->   	if (!s->s_root) {
->  -		deactivate_locked_super(s);
->  -		goto out;
->  +		iput(inode);
->  +		rc = -ENOMEM;
->  +		goto out_free;
->   	}
->  -	s->s_root->d_op = &ecryptfs_dops;
->  -	s->s_root->d_sb = s;
->  -	s->s_root->d_parent = s->s_root;
->   
->  +	rc = -ENOMEM;
->   	root_info = kmem_cache_zalloc(ecryptfs_dentry_info_cache, GFP_KERNEL);
->  -	if (!root_info) {
->  -		deactivate_locked_super(s);
->  -		goto out;
->  -	}
->  +	if (!root_info)
->  +		goto out_free;
->  +
->   	/* ->kill_sb() will take care of root_info */
->   	ecryptfs_set_dentry_private(s->s_root, root_info);
->  +	ecryptfs_set_dentry_lower(s->s_root, path.dentry);
->  +	ecryptfs_set_dentry_lower_mnt(s->s_root, path.mnt);
->  +
->   	s->s_flags |= MS_ACTIVE;
->  -	rc = ecryptfs_read_super(s, dev_name);
->  -	if (rc) {
->  -		deactivate_locked_super(s);
->  -		err = "Reading sb failed";
->  -		goto out;
->  -	}
->   	return dget(s->s_root);
->   
->  +out_free:
->  +	path_put(&path);
->  +out1:
->  +	deactivate_locked_super(s);
->   out:
->   	if (sbi) {
->   		ecryptfs_destroy_mount_crypt_stat(&sbi->mount_crypt_stat);
+> So, while I agree that what you wrote is better, I remain unconvinced of
+> it solving a real-world problem.  Feel free to push it in as a cleanup,
+> though.
+
+Well I think it has to be technically correct first. If there is indeed a
+guaranteed ref somehow, it just needs a comment.
