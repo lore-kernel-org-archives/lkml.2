@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542Ab1AQCwe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 21:52:34 -0500
-Received: from mga02.intel.com ([134.134.136.20]:19528 "EHLO mga02.intel.com"
+	id S1752338Ab1AQCwL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 21:52:11 -0500
+Received: from mga11.intel.com ([192.55.52.93]:58407 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752111Ab1AQCwM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 21:52:12 -0500
+	id S1752111Ab1AQCwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jan 2011 21:52:09 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,332,1291622400"; 
-   d="scan'208";a="697468975"
-Subject: [PATCH 3/4]x86: make tlb invalidate vector number configurable
+   d="scan'208";a="647584107"
+Subject: [PATCH 2/4]x86: allocate 32 tlb_invalidate_interrupt handlers
 From: Shaohua Li <shaohua.li@intel.com>
 To: lkml <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
@@ -17,8 +17,8 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Eric Dumazet <eric.dumazet@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Jan 2011 10:52:07 +0800
-Message-ID: <1295232727.1949.709.camel@sli10-conroe>
+Date: Mon, 17 Jan 2011 10:52:05 +0800
+Message-ID: <1295232725.1949.708.camel@sli10-conroe>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -26,67 +26,179 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the maxium TLB invalidate vectors depend on NR_CPUS, and the maxium
-number is 32.
-we currently only have 8 vectors for TLB invalidate. If we have a lot
-of CPUs, the CPUs need share the 8 vectors and tlbstate_lock is used
-to protect them. flush_tlb_page() is heavily used in page reclaim,
-which will cause a lot of lock contention for tlbstate_lock. Andi Kleen
-suggests increasing the vectors number to 32, which should be good for
-current typical systems to reduce the tlbstate_lock contention.
-
-My test system has 4 sockets and 64G memory, and 64 CPUs. My workload
-creates 64 processes. Each process mmap reads a big empty sparse file.
-The total size of the files are 2*total_mem, so this will cause a lot
-of page reclaim. Below is the result I get from perf:
-without the patch:
-    24.25%           usemem  [kernel]                                   [k] _raw_spin_lock
-                     |
-                     --- _raw_spin_lock
-                        |
-                        |--42.15%-- native_flush_tlb_others
-with the patch:
-    14.96%           usemem  [kernel]                                   [k] _raw_spin_lock
-                     |
-                     --- _raw_spin_lock
-                        |--13.89%-- native_flush_tlb_others
-So this heavily reduces the tlbstate_lock contention.
+Add up to 32 invalidate_interrupt handler. How many handlers are
+added depends on NUM_INVALIDATE_TLB_VECTORS. So if NUM_INVALIDATE_TLB_VECTORS
+is smaller than 32, we reduce code size.
 
 Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 ---
- arch/x86/include/asm/irq_vectors.h |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/entry_arch.h |    5 +-
+ arch/x86/include/asm/hw_irq.h     |   24 +++++++++++
+ arch/x86/kernel/entry_64.S        |    5 +-
+ arch/x86/kernel/irqinit.c         |   79 ++++++++++++++++++++++++++++++++++----
+ 4 files changed, 103 insertions(+), 10 deletions(-)
 
-Index: linux/arch/x86/include/asm/irq_vectors.h
+Index: linux/arch/x86/include/asm/hw_irq.h
 ===================================================================
---- linux.orig/arch/x86/include/asm/irq_vectors.h	2010-11-02 14:41:01.000000000 +0800
-+++ linux/arch/x86/include/asm/irq_vectors.h	2010-11-02 14:52:10.000000000 +0800
-@@ -17,8 +17,8 @@
-  *  Vectors   0 ...  31 : system traps and exceptions - hardcoded events
-  *  Vectors  32 ... 127 : device interrupts
-  *  Vector  128         : legacy int80 syscall interface
-- *  Vectors 129 ... 229 : device interrupts
-- *  Vectors 230 ... 255 : special interrupts
-+ *  Vectors 129 ... INVALIDATE_TLB_VECTOR_START-1 : device interrupts
-+ *  Vectors INVALIDATE_TLB_VECTOR_START ... 255 : special interrupts
-  *
-  * 64-bit x86 has per CPU IDT tables, 32-bit has one shared IDT table.
-  *
-@@ -124,8 +124,13 @@
-  */
- #define LOCAL_TIMER_VECTOR		0xef
+--- linux.orig/arch/x86/include/asm/hw_irq.h	2011-01-11 16:24:55.000000000 +0800
++++ linux/arch/x86/include/asm/hw_irq.h	2011-01-17 09:58:51.000000000 +0800
+@@ -45,6 +45,30 @@ extern void invalidate_interrupt4(void);
+ extern void invalidate_interrupt5(void);
+ extern void invalidate_interrupt6(void);
+ extern void invalidate_interrupt7(void);
++extern void invalidate_interrupt8(void);
++extern void invalidate_interrupt9(void);
++extern void invalidate_interrupt10(void);
++extern void invalidate_interrupt11(void);
++extern void invalidate_interrupt12(void);
++extern void invalidate_interrupt13(void);
++extern void invalidate_interrupt14(void);
++extern void invalidate_interrupt15(void);
++extern void invalidate_interrupt16(void);
++extern void invalidate_interrupt17(void);
++extern void invalidate_interrupt18(void);
++extern void invalidate_interrupt19(void);
++extern void invalidate_interrupt20(void);
++extern void invalidate_interrupt21(void);
++extern void invalidate_interrupt22(void);
++extern void invalidate_interrupt23(void);
++extern void invalidate_interrupt24(void);
++extern void invalidate_interrupt25(void);
++extern void invalidate_interrupt26(void);
++extern void invalidate_interrupt27(void);
++extern void invalidate_interrupt28(void);
++extern void invalidate_interrupt29(void);
++extern void invalidate_interrupt30(void);
++extern void invalidate_interrupt31(void);
  
--/* f0-f7 used for spreading out TLB flushes: */
--#define NUM_INVALIDATE_TLB_VECTORS	   8
-+/* up to 32 vectors used for spreading out TLB flushes: */
-+#if NR_CPUS > 32
-+#define NUM_INVALIDATE_TLB_VECTORS 32
-+#else
-+#define NUM_INVALIDATE_TLB_VECTORS NR_CPUS
-+#endif
+ extern void irq_move_cleanup_interrupt(void);
+ extern void reboot_interrupt(void);
+Index: linux/arch/x86/kernel/irqinit.c
+===================================================================
+--- linux.orig/arch/x86/kernel/irqinit.c	2011-01-11 16:24:56.000000000 +0800
++++ linux/arch/x86/kernel/irqinit.c	2011-01-17 09:58:51.000000000 +0800
+@@ -164,14 +164,77 @@ static void __init smp_intr_init(void)
+ 	alloc_intr_gate(RESCHEDULE_VECTOR, reschedule_interrupt);
+ 
+ 	/* IPIs for invalidation */
+-	alloc_intr_gate(INVALIDATE_TLB_VECTOR_START+0, invalidate_interrupt0);
+-	alloc_intr_gate(INVALIDATE_TLB_VECTOR_START+1, invalidate_interrupt1);
+-	alloc_intr_gate(INVALIDATE_TLB_VECTOR_START+2, invalidate_interrupt2);
+-	alloc_intr_gate(INVALIDATE_TLB_VECTOR_START+3, invalidate_interrupt3);
+-	alloc_intr_gate(INVALIDATE_TLB_VECTOR_START+4, invalidate_interrupt4);
+-	alloc_intr_gate(INVALIDATE_TLB_VECTOR_START+5, invalidate_interrupt5);
+-	alloc_intr_gate(INVALIDATE_TLB_VECTOR_START+6, invalidate_interrupt6);
+-	alloc_intr_gate(INVALIDATE_TLB_VECTOR_START+7, invalidate_interrupt7);
++#define ALLOC_INVTLB_VEC(NR) \
++	alloc_intr_gate(INVALIDATE_TLB_VECTOR_START+NR, \
++		invalidate_interrupt##NR)
 +
- #define INVALIDATE_TLB_VECTOR_END	0xee
- #define INVALIDATE_TLB_VECTOR_START	\
- 	(INVALIDATE_TLB_VECTOR_END - NUM_INVALIDATE_TLB_VECTORS + 1)
++	switch (NUM_INVALIDATE_TLB_VECTORS) {
++	default:
++		ALLOC_INVTLB_VEC(31);
++	case 31:
++		ALLOC_INVTLB_VEC(30);
++	case 30:
++		ALLOC_INVTLB_VEC(29);
++	case 29:
++		ALLOC_INVTLB_VEC(28);
++	case 28:
++		ALLOC_INVTLB_VEC(27);
++	case 27:
++		ALLOC_INVTLB_VEC(26);
++	case 26:
++		ALLOC_INVTLB_VEC(25);
++	case 25:
++		ALLOC_INVTLB_VEC(24);
++	case 24:
++		ALLOC_INVTLB_VEC(23);
++	case 23:
++		ALLOC_INVTLB_VEC(22);
++	case 22:
++		ALLOC_INVTLB_VEC(21);
++	case 21:
++		ALLOC_INVTLB_VEC(20);
++	case 20:
++		ALLOC_INVTLB_VEC(19);
++	case 19:
++		ALLOC_INVTLB_VEC(18);
++	case 18:
++		ALLOC_INVTLB_VEC(17);
++	case 17:
++		ALLOC_INVTLB_VEC(16);
++	case 16:
++		ALLOC_INVTLB_VEC(15);
++	case 15:
++		ALLOC_INVTLB_VEC(14);
++	case 14:
++		ALLOC_INVTLB_VEC(13);
++	case 13:
++		ALLOC_INVTLB_VEC(12);
++	case 12:
++		ALLOC_INVTLB_VEC(11);
++	case 11:
++		ALLOC_INVTLB_VEC(10);
++	case 10:
++		ALLOC_INVTLB_VEC(9);
++	case 9:
++		ALLOC_INVTLB_VEC(8);
++	case 8:
++		ALLOC_INVTLB_VEC(7);
++	case 7:
++		ALLOC_INVTLB_VEC(6);
++	case 6:
++		ALLOC_INVTLB_VEC(5);
++	case 5:
++		ALLOC_INVTLB_VEC(4);
++	case 4:
++		ALLOC_INVTLB_VEC(3);
++	case 3:
++		ALLOC_INVTLB_VEC(2);
++	case 2:
++		ALLOC_INVTLB_VEC(1);
++	case 1:
++		ALLOC_INVTLB_VEC(0);
++		break;
++	}
+ 
+ 	/* IPI for generic function call */
+ 	alloc_intr_gate(CALL_FUNCTION_VECTOR, call_function_interrupt);
+Index: linux/arch/x86/include/asm/entry_arch.h
+===================================================================
+--- linux.orig/arch/x86/include/asm/entry_arch.h	2011-01-11 16:24:55.000000000 +0800
++++ linux/arch/x86/include/asm/entry_arch.h	2011-01-17 09:58:51.000000000 +0800
+@@ -16,10 +16,13 @@ BUILD_INTERRUPT(call_function_single_int
+ BUILD_INTERRUPT(irq_move_cleanup_interrupt,IRQ_MOVE_CLEANUP_VECTOR)
+ BUILD_INTERRUPT(reboot_interrupt,REBOOT_VECTOR)
+ 
+-.irpc idx, "01234567"
++.irp idx,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15, \
++	16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
++.if NUM_INVALIDATE_TLB_VECTORS > \idx
+ BUILD_INTERRUPT3(invalidate_interrupt\idx,
+ 		 (INVALIDATE_TLB_VECTOR_START)+\idx,
+ 		 smp_invalidate_interrupt)
++.endif
+ .endr
+ #endif
+ 
+Index: linux/arch/x86/kernel/entry_64.S
+===================================================================
+--- linux.orig/arch/x86/kernel/entry_64.S	2011-01-17 09:41:38.000000000 +0800
++++ linux/arch/x86/kernel/entry_64.S	2011-01-17 09:58:51.000000000 +0800
+@@ -975,9 +975,12 @@ apicinterrupt X86_PLATFORM_IPI_VECTOR \
+ 	x86_platform_ipi smp_x86_platform_ipi
+ 
+ #ifdef CONFIG_SMP
+-.irpc idx, "01234567"
++.irp idx,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15, \
++	16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
++.if NUM_INVALIDATE_TLB_VECTORS > \idx
+ apicinterrupt (INVALIDATE_TLB_VECTOR_START)+\idx \
+ 	invalidate_interrupt\idx smp_invalidate_interrupt
++.endif
+ .endr
+ #endif
+ 
 
 
