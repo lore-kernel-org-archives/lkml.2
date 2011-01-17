@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751586Ab1AQAGJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 19:06:09 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41292 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab1AQAGG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 19:06:06 -0500
-Date: Mon, 17 Jan 2011 00:05:58 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Joel Becker <jlbec@evilplan.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: Re: [PATCH] configfs: change depends -> select SYSFS
-Message-ID: <20110117000558.GG22723@ZenIV.linux.org.uk>
-References: <1295125851-25279-1-git-send-email-nab@linux-iscsi.org>
- <20110116141105.59e5b3a2@stein>
- <1295214807.22813.57.camel@haakon2.linux-iscsi.org>
- <20110117000659.57352da7@stein>
- <AANLkTik=Pv1KdiBa3RbSoqmDC92F33jyFb0b-Ej_iGRN@mail.gmail.com>
- <20110116231901.GF22723@ZenIV.linux.org.uk>
- <AANLkTikWHkfb1-Yh_O=rYEqzgz48rwRggCp6uhr+E86J@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikWHkfb1-Yh_O=rYEqzgz48rwRggCp6uhr+E86J@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751715Ab1AQARL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 19:17:11 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:47999 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751138Ab1AQARH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jan 2011 19:17:07 -0500
+Date: Mon, 17 Jan 2011 11:17:00 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Ben Dooks <ben-linux@fluff.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: linux-next: manual merge of the bjdooks-i2c tree with Linus' tree
+Message-Id: <20110117111700.7fefe690.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 16, 2011 at 03:45:35PM -0800, Linus Torvalds wrote:
+Hi Ben,
 
-> And now ask yourself, do you really expect some random user to say "I
-> want to enable SYSFS and CONFIGFS, because I am going to use ocfs2 on
-> my system"?
-> 
-> Really?
-> 
-> Or do you expect a high-quality implementation of a configuration
-> script to allow the user to just say "I want ocfs2", and then figure
-> out the dependencies and solve them for you?
-> 
-> I'd say that the latter case is OBVIOUSLY the quality implementation,
-> while the former one is just stupid.
+Today's linux-next merge of the bjdooks-i2c tree got a conflict in
+arch/arm/mach-pxa/pxa27x.c between commit
+a3f4c927d379cfaa597bc8ff75dc9d28f8d9200e ("ARM: PXA SoCs: irq_data
+conversion") from Linus' tree and commit
+0a56f28ec486273d84d25571573908344aa67176 ("arm/pxa2xx: reorganize I2C
+files") from the bjdooks-i2c tree.
 
-It's a bit more complicated than that...
-	* nitpick: config option for a driver foo should be seen only after
-foo got enabled, so that's another case where we need depends on
-	* nitpick 2: some switchable things really shouldn't be selectable,
-or you'll get users wondering which of the drivers they'd enabled had
-lead to 32bit kernel on their amd64 boxen ;-)
-	* all nitpicks aside, there ought to be a way to say "no, I _REALLY_
-don't want that shit doing #define if(x) <horrible pile of crap> and if it
-means that I can't have oprofile, so be it".  Without chasing tons of select
-chains to see which FPOS do I need to disable to get rid of the damn thing.
-Right now the propagation of select chains makes it more and more unpleasant.
+I fixed it up (see below) and can carry the fix as necessary.
 
-IOW, it would be very nice to be able to pin a select target down, turning
-selects leading to it into hard dependencies.
+Ben, is that stuff going into 2.6.38?  If so, please get Linus to pull it
+as it has quite a few conflicts (especially this one commit) ...
 
-Another obviously missing thing is that dependencies should propagate back
-through select chains.  I.e. if A selects B, then hard dependencies of B
-should append to those of A.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-It gets really lousy when you have shitloads of drivers spread over several
-Kconfig menus, all selecting an option that has a hard dependency.  As it
-is, if you want e.g. allmodconfig to produce something that builds you have
-to chase them all down and add dependencies to each of those drivers.  We
-have such piles in e.g. drivers/media.
+diff --cc arch/arm/mach-pxa/pxa27x.c
+index 987301f,1c77e89..0000000
+--- a/arch/arm/mach-pxa/pxa27x.c
++++ b/arch/arm/mach-pxa/pxa27x.c
+@@@ -17,10 -17,8 +17,11 @@@
+  #include <linux/suspend.h>
+  #include <linux/platform_device.h>
+  #include <linux/sysdev.h>
+ +#include <linux/io.h>
+ +#include <linux/irq.h>
++ #include <linux/i2c/pxa-i2c.h>
+  
+ +#include <asm/mach/map.h>
+  #include <mach/hardware.h>
+  #include <asm/irq.h>
+  #include <mach/irqs.h>
+@@@ -30,10 -28,7 +31,8 @@@
+  #include <mach/ohci.h>
+  #include <mach/pm.h>
+  #include <mach/dma.h>
+ +#include <mach/smemc.h>
+  
+- #include <plat/i2c.h>
+- 
+  #include "generic.h"
+  #include "devices.h"
+  #include "clock.h"
