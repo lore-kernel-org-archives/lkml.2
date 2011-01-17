@@ -1,49 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689Ab1AQG6H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 01:58:07 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:32786 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574Ab1AQG6D (ORCPT
+	id S1752779Ab1AQG72 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 01:59:28 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:43065 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab1AQG70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 01:58:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=bNLwCEnME3krRy0uDoZ3zl3gQstfvy6j/D+bq91xCOj1+g43QkRgetA+mjl3RKDbkj
-         6pqA5u1n4IctjTYReYbGthso4ZvTBLe6srwYtwWwHR8EtHJEu6VVXRaD72aE5Mg/UIyn
-         CzCI5bob9gm8B3dpkRgozJFo4LvjeLalKlEXA=
-Date: Mon, 17 Jan 2011 14:57:53 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: xing lin <linxingnku@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: BUG: unable to handle kernel paging request at ffff8800cf669000
-Message-ID: <20110117065753.GD11358@cr0.nay.redhat.com>
-References: <AANLkTin9dGAQ1fZM_8MsFr3dGwc17vGEGszY_hPMdozp@mail.gmail.com>
+	Mon, 17 Jan 2011 01:59:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTin9dGAQ1fZM_8MsFr3dGwc17vGEGszY_hPMdozp@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1295245760-4566-1-git-send-email-thomas@wytron.com.tw>
+References: <4D040D1C.2020705@home.nl> <1295245760-4566-1-git-send-email-thomas@wytron.com.tw>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Sun, 16 Jan 2011 23:59:05 -0700
+X-Google-Sender-Auth: LH8y8PAaSLQewIkYmSbo2w5YUqQ
+Message-ID: <AANLkTi=8+Q5dm+5Pa-cYkmaBWQ4S7jgjZOL0ovtmrdxB@mail.gmail.com>
+Subject: Re: [PATCH] alter_ps2: Add devicetree support
+To: Thomas Chou <thomas@wytron.com.tw>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
+        nios2-dev@sopc.et.ntust.edu.tw, linux-input@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Walter Goossens <waltergoossens@home.nl>
+Content-Type: text/plain; charset=Big5
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 04:30:51PM -0700, xing lin wrote:
->Hi,
+On Sun, Jan 16, 2011 at 11:29 PM, Thomas Chou <thomas@wytron.com.tw> wrote:
+> From: Walter Goossens <waltergoossens@home.nl>
 >
->I wrote a kernel module to calculate the hash for each page frame, in
->order to see how many pages are duplicated. It works well in 32-bit
->Linux with 2GB physical memory. But when I tried to run this module in
->64-bit Linux(2.6.32-24-generic with NUMA enabled) with 12GB physical
->memory, it can calculates hashes for the first 63553 in-use pages but
->then reports a bug when the page frame number reaches 849513. This
->page frame should be in use since the count for the page instance is
->1. I do not know why sha_transform results in a page_fault(the data to
->be digested is the page which should be in memory). Would anyone give
->me some hints? Thanks.
+> Signed-off-by: Walter Goossens <waltergoossens@home.nl>
+> Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
+> ---
+>  drivers/input/serio/altera_ps2.c |   16 ++++++++++++++++
+>  1 files changed, 16 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/input/serio/altera_ps2.c b/drivers/input/serio/altera_ps2.c
+> index 7998560..93054a1 100644
+> --- a/drivers/input/serio/altera_ps2.c
+> +++ b/drivers/input/serio/altera_ps2.c
+> @@ -19,6 +19,9 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/io.h>
+>  #include <linux/slab.h>
+> +#ifdef CONFIG_OF
+> +#include <linux/of.h>
+> +#endif
+>
+>  #define DRV_NAME "altera_ps2"
+>
+> @@ -173,6 +176,16 @@ static int __devexit altera_ps2_remove(struct platform_device *pdev)
+>        return 0;
+>  }
+>
+> +#ifdef CONFIG_OF
+> +static struct of_device_id altera_ps2_match[] = {
+> +       {
+> +               .compatible = "altera,altera_ps2",
+> +       },
+
+So is this an FPGA soft core PS2 device?  Is there any kind of version
+attached to the soft core?  The compatible value should specify an
+exact version of the implementation that this driver works with.
+(Newer core versions can claim compatibility with older ones, so the
+driver's compatible list doesn't need to be exhaustive).
+
+Otherwise, this patch looks correct.
+
+g.
+
+> +       {},
+> +}
+> +MODULE_DEVICE_TABLE(of, altera_jtaguart_match);
+> +#endif /* CONFIG_OF */
+> +
+>  /*
+>  * Our device driver structure
+>  */
+> @@ -182,6 +195,9 @@ static struct platform_driver altera_ps2_driver = {
+>        .driver = {
+>                .name   = DRV_NAME,
+>                .owner  = THIS_MODULE,
+> +#ifdef CONFIG_OF
+> +               .of_match_table = altera_ps2_match,
+> +#endif
+>        },
+>  };
+>
+> --
+> 1.7.3.4
+>
 >
 
-Isn't this what KSM does? :) Check mm/ksm.c, it uses jhash2().
 
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
