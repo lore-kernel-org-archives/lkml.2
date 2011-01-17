@@ -1,257 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085Ab1AQGRd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 01:17:33 -0500
-Received: from mga02.intel.com ([134.134.136.20]:27035 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752614Ab1AQGRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 01:17:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,332,1291622400"; 
-   d="scan'208";a="697502829"
-From: Huang Ying <ying.huang@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        ying.huang@intel.com, Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Chris Mason <chris.mason@oracle.com>
-Subject: [PATCH -v10 3/4] irq_work, Use llist in irq_work
-Date: Mon, 17 Jan 2011 14:16:58 +0800
-Message-Id: <1295245019-7816-4-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1295245019-7816-1-git-send-email-ying.huang@intel.com>
-References: <1295245019-7816-1-git-send-email-ying.huang@intel.com>
+	id S1752647Ab1AQGUM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 01:20:12 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:60723 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab1AQGUK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jan 2011 01:20:10 -0500
+Message-ID: <4D33E00E.5050802@wytron.com.tw>
+Date: Mon, 17 Jan 2011 14:22:06 +0800
+From: Thomas Chou <thomas@wytron.com.tw>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: David Brownell <dbrownell@users.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        nios2-dev@sopc.et.ntust.edu.tw, Mike Frysinger <vapier@gentoo.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net
+Subject: Re: [PATCH v2] spi: New driver for Altera SPI
+References: <1254981838-20584-1-git-send-email-thomas@wytron.com.tw>	<1295243200-28230-1-git-send-email-thomas@wytron.com.tw> <20110117165958.f89e8220.sfr@canb.auug.org.au>
+In-Reply-To: <20110117165958.f89e8220.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.1.15
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use llist in irq_work instead of the lock-less linked list
-implementation in irq_work to avoid the code duplication.
+On 01/17/2011 01:59 PM, Stephen Rothwell wrote:
+>> +/*
+>> + * struct altera_spi_platform_data - platform data of the Altera SPI
+>> + * @interrupt:	use intrrupt driven data transfer.
+>> + */
+>> +struct altera_spi_platform_data {
+>> +	int interrupt;
+>> +};
+>
+> Is there some reason that this struct definition cannot just be placed
+> in spi_altera.c and so save a whole extra file (and its inclusion)?
+>
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
----
- include/linux/irq_work.h |   15 ++++---
- init/Kconfig             |    1 
- kernel/irq_work.c        |   92 ++++++++++++++++++-----------------------------
- 3 files changed, 47 insertions(+), 61 deletions(-)
+Hi Stephen,
 
---- a/include/linux/irq_work.h
-+++ b/include/linux/irq_work.h
-@@ -1,20 +1,23 @@
- #ifndef _LINUX_IRQ_WORK_H
- #define _LINUX_IRQ_WORK_H
- 
-+#include <linux/llist.h>
-+
- struct irq_work {
--	struct irq_work *next;
-+	unsigned long flags;
-+	struct llist_node llnode;
- 	void (*func)(struct irq_work *);
- };
- 
- static inline
--void init_irq_work(struct irq_work *entry, void (*func)(struct irq_work *))
-+void init_irq_work(struct irq_work *work, void (*func)(struct irq_work *))
- {
--	entry->next = NULL;
--	entry->func = func;
-+	work->flags = 0;
-+	work->func = func;
- }
- 
--bool irq_work_queue(struct irq_work *entry);
-+bool irq_work_queue(struct irq_work *work);
- void irq_work_run(void);
--void irq_work_sync(struct irq_work *entry);
-+void irq_work_sync(struct irq_work *work);
- 
- #endif /* _LINUX_IRQ_WORK_H */
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -27,6 +27,7 @@ config HAVE_IRQ_WORK
- config IRQ_WORK
- 	bool
- 	depends on HAVE_IRQ_WORK
-+	select LLIST
- 
- menu "General setup"
- 
---- a/kernel/irq_work.c
-+++ b/kernel/irq_work.c
-@@ -17,49 +17,34 @@
-  * claimed   NULL, 3 -> {pending}       : claimed to be enqueued
-  * pending   next, 3 -> {busy}          : queued, pending callback
-  * busy      NULL, 2 -> {free, claimed} : callback in progress, can be claimed
-- *
-- * We use the lower two bits of the next pointer to keep PENDING and BUSY
-- * flags.
-  */
- 
- #define IRQ_WORK_PENDING	1UL
- #define IRQ_WORK_BUSY		2UL
- #define IRQ_WORK_FLAGS		3UL
- 
--static inline bool irq_work_is_set(struct irq_work *entry, int flags)
--{
--	return (unsigned long)entry->next & flags;
--}
--
--static inline struct irq_work *irq_work_next(struct irq_work *entry)
--{
--	unsigned long next = (unsigned long)entry->next;
--	next &= ~IRQ_WORK_FLAGS;
--	return (struct irq_work *)next;
--}
-+#define LIST_NONEMPTY_BIT	0
- 
--static inline struct irq_work *next_flags(struct irq_work *entry, int flags)
--{
--	unsigned long next = (unsigned long)entry;
--	next |= flags;
--	return (struct irq_work *)next;
--}
-+struct irq_work_list {
-+	unsigned long flags;
-+	struct llist_head llist;
-+};
- 
--static DEFINE_PER_CPU(struct irq_work *, irq_work_list);
-+static DEFINE_PER_CPU(struct irq_work_list, irq_work_lists);
- 
- /*
-  * Claim the entry so that no one else will poke at it.
-  */
--static bool irq_work_claim(struct irq_work *entry)
-+static bool irq_work_claim(struct irq_work *work)
- {
--	struct irq_work *next, *nflags;
-+	unsigned long flags, nflags;
- 
- 	do {
--		next = entry->next;
--		if ((unsigned long)next & IRQ_WORK_PENDING)
-+		flags = work->flags;
-+		if (flags & IRQ_WORK_PENDING)
- 			return false;
--		nflags = next_flags(next, IRQ_WORK_FLAGS);
--	} while (cmpxchg(&entry->next, next, nflags) != next);
-+		nflags = flags | IRQ_WORK_FLAGS;
-+	} while (cmpxchg(&work->flags, flags, nflags) != flags);
- 
- 	return true;
- }
-@@ -75,23 +60,19 @@ void __weak arch_irq_work_raise(void)
- /*
-  * Queue the entry and raise the IPI if needed.
-  */
--static void __irq_work_queue(struct irq_work *entry)
-+static void __irq_work_queue(struct irq_work *work)
- {
--	struct irq_work *next;
-+	struct irq_work_list *irq_work_list;
- 
--	preempt_disable();
-+	irq_work_list = &get_cpu_var(irq_work_lists);
- 
--	do {
--		next = __this_cpu_read(irq_work_list);
--		/* Can assign non-atomic because we keep the flags set. */
--		entry->next = next_flags(next, IRQ_WORK_FLAGS);
--	} while (this_cpu_cmpxchg(irq_work_list, next, entry) != next);
-+	llist_add(&work->llnode, &irq_work_list->llist);
- 
- 	/* The list was empty, raise self-interrupt to start processing. */
--	if (!irq_work_next(entry))
-+	if (!test_and_set_bit(LIST_NONEMPTY_BIT, &irq_work_list->flags))
- 		arch_irq_work_raise();
- 
--	preempt_enable();
-+	put_cpu_var(irq_work_list);
- }
- 
- /*
-@@ -100,16 +81,16 @@ static void __irq_work_queue(struct irq_
-  *
-  * Can be re-enqueued while the callback is still in progress.
-  */
--bool irq_work_queue(struct irq_work *entry)
-+bool irq_work_queue(struct irq_work *work)
- {
--	if (!irq_work_claim(entry)) {
-+	if (!irq_work_claim(work)) {
- 		/*
- 		 * Already enqueued, can't do!
- 		 */
- 		return false;
- 	}
- 
--	__irq_work_queue(entry);
-+	__irq_work_queue(work);
- 	return true;
- }
- EXPORT_SYMBOL_GPL(irq_work_queue);
-@@ -120,34 +101,35 @@ EXPORT_SYMBOL_GPL(irq_work_queue);
-  */
- void irq_work_run(void)
- {
--	struct irq_work *list;
-+	struct irq_work *work;
-+	struct irq_work_list *irq_work_list;
-+	struct llist_node *llnode;
- 
--	if (this_cpu_read(irq_work_list) == NULL)
-+	irq_work_list = &__get_cpu_var(irq_work_lists);
-+	if (llist_empty(&irq_work_list->llist))
- 		return;
- 
- 	BUG_ON(!in_irq());
- 	BUG_ON(!irqs_disabled());
- 
--	list = this_cpu_xchg(irq_work_list, NULL);
--
--	while (list != NULL) {
--		struct irq_work *entry = list;
-+	clear_bit(LIST_NONEMPTY_BIT, &irq_work_list->flags);
-+	llnode = llist_del_all(&irq_work_list->llist);
-+	while (llnode != NULL) {
-+		work = llist_entry(llnode, struct irq_work, llnode);
- 
--		list = irq_work_next(list);
-+		llnode = llnode->next;
- 
- 		/*
--		 * Clear the PENDING bit, after this point the @entry
-+		 * Clear the PENDING bit, after this point the @work
- 		 * can be re-used.
- 		 */
--		entry->next = next_flags(NULL, IRQ_WORK_BUSY);
--		entry->func(entry);
-+		work->flags = IRQ_WORK_BUSY;
-+		work->func(work);
- 		/*
- 		 * Clear the BUSY bit and return to the free state if
- 		 * no-one else claimed it meanwhile.
- 		 */
--		(void)cmpxchg(&entry->next,
--			      next_flags(NULL, IRQ_WORK_BUSY),
--			      NULL);
-+		(void)cmpxchg(&work->flags, IRQ_WORK_BUSY, 0);
- 	}
- }
- EXPORT_SYMBOL_GPL(irq_work_run);
-@@ -156,11 +138,11 @@ EXPORT_SYMBOL_GPL(irq_work_run);
-  * Synchronize against the irq_work @entry, ensures the entry is not
-  * currently in use.
-  */
--void irq_work_sync(struct irq_work *entry)
-+void irq_work_sync(struct irq_work *work)
- {
- 	WARN_ON_ONCE(irqs_disabled());
- 
--	while (irq_work_is_set(entry, IRQ_WORK_BUSY))
-+	while (work->flags & IRQ_WORK_BUSY)
- 		cpu_relax();
- }
- EXPORT_SYMBOL_GPL(irq_work_sync);
+It is needed for board configuration file to attach this platform data, 
+which is used to choose between interrupt driven data transfer or 
+polling method. The data transfer rate is usually faster for polling, as 
+interrupt overhead is higher.
+
+Best regards,
+Thomas
+
