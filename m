@@ -1,65 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253Ab1AQKuK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 05:50:10 -0500
-Received: from cantor.suse.de ([195.135.220.2]:49460 "EHLO mx1.suse.de"
+	id S1753159Ab1AQKvU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 05:51:20 -0500
+Received: from mga01.intel.com ([192.55.52.88]:30252 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752641Ab1AQKuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 05:50:07 -0500
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: David Ahern <daahern@cisco.com>
-Subject: Re: perf timechart broken
-Date: Mon, 17 Jan 2011 11:50:04 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-18-desktop; KDE/4.5.3; x86_64; ; )
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-perf-users@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-References: <201101071104.37576.trenn@suse.de> <201101141800.18913.trenn@suse.de> <4D308331.6010106@cisco.com>
-In-Reply-To: <4D308331.6010106@cisco.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1751143Ab1AQKvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jan 2011 05:51:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,332,1291622400"; 
+   d="scan'208";a="878090721"
+Subject: Re: [RFC PATCH 2/3 v3] perf: Implement Nehalem uncore pmu
+From: Lin Ming <ming.m.lin@intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Andi Kleen <andi@firstfloor.org>,
+        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTinGWPABoYszmbLcSRroFg74e6mpz=5FK7-C9cKK@mail.gmail.com>
+References: <1291267223.2405.314.camel@minggr.sh.intel.com>
+	 <AANLkTikZgmUQ2SHOL41_t-Vwss8T6tazTRJT2bVR+xRQ@mail.gmail.com>
+	 <1295227769.28388.82.camel@minggr.sh.intel.com>
+	 <AANLkTinGWPABoYszmbLcSRroFg74e6mpz=5FK7-C9cKK@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 Jan 2011 18:51:45 +0800
+Message-ID: <1295261505.28388.189.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101171150.05444.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 14 January 2011 18:09:05 David Ahern wrote:
+On Mon, 2011-01-17 at 16:44 +0800, Stephane Eranian wrote:
+> On Mon, Jan 17, 2011 at 2:29 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+> > On Fri, 2011-01-14 at 01:14 +0800, Stephane Eranian wrote:
+> >> Lin,
+> >
+> > Hi, Stephane,
+> >
+> > Sorry for late response, I'm just back from vacation.
+> >
+> >>
+> >> On Thu, Dec 2, 2010 at 6:20 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+> >> > +static void uncore_pmu_enable_all(int nmi_core)
+> >> > +{
+> >> > +       u64 ctrl;
+> >> > +
+> >> > +       ctrl = ((1 << UNCORE_NUM_GENERAL_COUNTERS) - 1) | MSR_UNCORE_PERF_GLOBAL_CTRL_EN_FC0;
+> >> > +
+> >> > +       /* Route all interrupts to the first core that accesses uncore */
+> >> > +       ctrl |= 1ULL << (48 + nmi_core);
+> >> > +
+> >> > +       wrmsrl(MSR_UNCORE_PERF_GLOBAL_CTRL, ctrl);
+> >> > +}
+> >>
+> >> Are you sure nmi_core is always between 0-3 on a 4-core system and 0-5
+> >> on a 6-core system?
+> >> In other words, is that what topology_core_id(raw_smp_processor_id()) returns?
+> >
+> > I just have a look at a 6-core system, the core id is not 0-5
+> >
+> > $ cat /proc/cpuinfo |grep "core id"
+> > core id         : 0
+> > core id         : 1
+> > core id         : 2
+> > core id         : 8
+> > core id         : 9
+> > core id         : 10
+> >
+> > So we'd better route all the interrupts to the first core of the socket.
+> >
+> I recently realized the issue with 0,1,2,8,9,10. At the time I wrote the perfmon
+> support for uncore, those systems did not exist. Sparse APIC id is a major pain
+> for uncore PMU interrupt routine given the way UNC_GLOBAL_CTRL works.
 > 
-> On 01/14/11 10:00, Thomas Renninger wrote:
-> >> http://www.mail-archive.com/linux-perf-
-> > users@vger.kernel.org/msg00057.html
-> > Looks slightly different, the segfault should happen in:
-> > process_sample_event
-> > But looks very much related, possibly it has not been made/make with 
-> > DEBUG=1
-> > and -O6 was added and the backtrace is not 100% correct?
+> Unfortunately, routing to core 0 (core_cpu_id=0) won't be enough in the
+> presence of HOTPLUG CPU. Imagine I disable the first three 3 cores.
+> Now you the cpu you have to play with are 8,9,10. You need to remap
+> to a number between 0-5.
+
+Good idea.
+
+And I have confirmed that there are 6 interrupt target bits on my 6-core
+Westmere machine, although documentation does not say this.
+
+u64 val=0x3FULL << 48;
+wrmsrl(MSR_UNCORE_PERF_GLOBAL_CTRL, val);
+
+Thanks,
+Lin Ming
+
 > 
-> perf was built with DEBUG=1; that's how I got the pretty backtrace
-> versus having the arguments optimized out. The cpu=6291457 is the
-> garbage causing the segfault
-Then it's the same issue.
+> 
+> > Thanks for the catch.
+> > Lin Ming
+> >
+> >>
+> >> Note that, unfortunately, I have not seen documentation that says on
+> >> 6-core system
+> >> UNC_GLOBAL_CTRL has 6 interrupt target bits, but it would make sense.
+> >>
+> >>
+> >> Otherwise, you will get a kernel panic when you wrmsr UNC_GLOBAL_CTRL.
+> >>
+> >> > +
+> >> > +       if (uncore->n_events == 1) {
+> >> > +               nmi_core = topology_core_id(raw_smp_processor_id());
+> >> > +               uncore->nmi_core = nmi_core;
+> >> > +               uncore_pmu_enable_all(nmi_core);
+> >> > +       }
+> >
+> >
+> >
 
-> (there are only 2 cores in the system).
-> 6291457 = 0x600001. Perhaps a mask is missing?
-No, the power_start and power_end event have different kernel
-structures, but in builtin-timechart.c the same struct is used.
-cpu is at the end.
-Therefore pe->cpu_id (in power_end case) accesses uninitialized
-data.
 
-But using the cpu data from the event itself (data.cpu, the cpu on
-which the event got emited) for fixing this is fine.
-It's the way it was done before the bug got introduced.
-As said, this won't work if the kernel code triggering the C-state
-is executed on a different CPU than the CPU which is affected by
-the C-state change. But such HW does not yet exist on X86 afaik and the
-power_start event dies out anyway.
-
-I resubmitted the fix for 2.6.3{6,7} stable kernels and added you
-to CC.
-
-   Thomas
