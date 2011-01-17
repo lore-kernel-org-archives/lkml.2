@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913Ab1AQQRM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 11:17:12 -0500
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:5132 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750795Ab1AQQRI (ORCPT
+	id S1753028Ab1AQQVP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 11:21:15 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49035 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab1AQQVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 11:17:08 -0500
-X-Greylist: delayed 3743 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Jan 2011 11:17:07 EST
-X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host p0HFE9hl023704
-Subject: Re: [PATCH] configfs: change depends -> select SYSFS
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Joel Becker <jlbec@evilplan.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        James Bottomley <James.Bottomley@suse.de>
-In-Reply-To: <20110117015220.11b43ae7@stein>
-References: <1295125851-25279-1-git-send-email-nab@linux-iscsi.org>
-	 <20110116141105.59e5b3a2@stein>
-	 <1295214807.22813.57.camel@haakon2.linux-iscsi.org>
-	 <20110117000659.57352da7@stein>
-	 <AANLkTik=Pv1KdiBa3RbSoqmDC92F33jyFb0b-Ej_iGRN@mail.gmail.com>
-	 <20110116231901.GF22723@ZenIV.linux.org.uk>
-	 <AANLkTikWHkfb1-Yh_O=rYEqzgz48rwRggCp6uhr+E86J@mail.gmail.com>
-	 <20110117015220.11b43ae7@stein>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Jan 2011 12:16:53 +0100
-Message-ID: <1295263013.24967.6.camel@thorin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
-X-DCC-debian-Metrics: esgaroth.petrovitsch.priv.at; whitelist
+	Mon, 17 Jan 2011 11:21:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=DAtM6PnCIZ5H+QdP5EH0fUfTBRPlx+nWLRPlxzrSrEFHEkhKssZ1ePw4zj2HtVAc45
+         tThOjh6rKk3HqveC1aAvljFD8Yk4blhSR1r6CNKyT4DtzZgm9e+h1vF8CoLcd3PpeMjQ
+         8pGFHQskAKtDvEQLfn+EqYw7BhM0Wwh+ZiFD8=
+Date: Mon, 17 Jan 2011 17:21:08 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Subject: Re: [PATCH] tracing, perf : add cpu hotplug trace events
+Message-ID: <20110117162105.GA1778@nowhere>
+References: <AANLkTimsR3=BKSF8EyASu4_T_vTznw4yEqmxPS8gOQCy@mail.gmail.com>
+ <20110107151200.GB1736@nowhere>
+ <AANLkTi=L3=_2dzHH4Wu6QWXw=AUjxtrAu60xfM3-Qwn4@mail.gmail.com>
+ <20110114183516.GB1926@nowhere>
+ <AANLkTi=nugnkimG75Qh3t2vu8-qy2LKKHwoY2FFFpWDp@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=nugnkimG75Qh3t2vu8-qy2LKKHwoY2FFFpWDp@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-17 at 01:52 +0100, Stefan Richter wrote:
-[...] 
-> We already have different UIs.  But perhaps we have too much UI down in
-> the Kconfig files.  I.e., perhaps Kconfig shouldn't know the difference
+On Mon, Jan 17, 2011 at 07:49:58AM -0600, Vincent Guittot wrote:
+> I was just wondering which tracepoints format between my 1st proposal
+> and yours was the easier to post process by an application like
+> pytimechart.
 
-IOMHO not really.
+No idea as pytimechart uses his own ad hoc event parsing. Either
+way there won't be much differences though.
 
-> between depends-on and select.  Let the different UIs present the
+> I have updated the cpu hotplug tracepoint according to your remarks
+> and steve's ones. I have just replaced the second
+> cpu_arch_die_start/end in your proposal by cpu_arch_dead_start/endfrq
 
-The UI should know the difference as it should guide/force the user -
-especially the less experienced ones which aren't expected to know every
-bit of hardware and kernel-internal stuff (as in "do I need gzip
-compression?").
+Tracepoints tend to describe actions rather than states, although I can
+show you some exceptions as well. But this tends to be the major
+tendency. I suggest you to be stay consistent with this scheme.
 
-And there are two (IMHO very) different semantics:
-- select: enables/activates/includes necessary other parts (like the
-  "gzip compression" example from above and other library-like).
-- depends on: to purposely disable knobs because it makes no sense to
-  configure e.g. ext-specific stuff if I don't have/want ext or because
-  the physical hardware is not present/available (find more and better
-  in Al Viros mail of course).
-
-> dependency graph to the operator in different ways, suitable to different
-> tasks.
-
-That would be quite cute.
-
-> /handwave off.
-AOL.
-Bernd
--- 
-Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
-                     LUGA : http://www.luga.at
-
+Thanks.
