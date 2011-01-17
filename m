@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044Ab1AQUgY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 15:36:24 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:54483 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710Ab1AQUgW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 15:36:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=oAMDVj6QapgcJ6KJ73Kfnifo/lRPMlQI7qr178zZPMIT6KAZM/6RsBzHhFKfhyYdur
-         eyjgt1N++MjWcpbhT9KBxbu0Te2i3rTBq/Vj6+BYKbPjAjc9EuO27mdIXCrJCeUjZ5fF
-         5LUsiO+jmXDpIRS8Yk/9XP93KWJNktcpjtEec=
+	id S1752343Ab1AQUms (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 15:42:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3795 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750710Ab1AQUmp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jan 2011 15:42:45 -0500
+Date: Mon, 17 Jan 2011 21:34:59 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Alan Stern <stern@rowland.harvard.edu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prasad <prasad@linux.vnet.ibm.com>, Roland McGrath <roland@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Q: perf_event && task->ptrace_bps[]
+Message-ID: <20110117203459.GA32700@redhat.com>
+References: <20101108145647.GA3426@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <m3pqrxr1vl.fsf@ingo.homenetwork>
-References: <m31v4hkmkf.fsf@ingo.homenetwork>
-	<201101131423.51640.helmut.schaa@googlemail.com>
-	<AANLkTimMVdsGONSD9OmnX2eJk51H5Pzj4K8irHa=E-qx@mail.gmail.com>
-	<m3pqrxr1vl.fsf@ingo.homenetwork>
-Date: Mon, 17 Jan 2011 21:36:20 +0100
-Message-ID: <AANLkTimdSkHFPKSEsEYpEr1jFxhNXuXjPH2dxOnmvj1E@mail.gmail.com>
-Subject: Re: BUG in rt2x00lib_txdone() with 2.6.37-rc8
-From: Ivo Van Doorn <ivdoorn@gmail.com>
-To: Ingo Brunberg <ingo_brunberg@web.de>
-Cc: helmut.schaa@googlemail.com, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101108145647.GA3426@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Sun, Jan 16, 2011 at 3:58 AM, Ingo Brunberg <ingo_brunberg@web.de> wrote:
-> Ivo Van Doorn <ivdoorn@gmail.com> writes:
+On 11/08, Oleg Nesterov wrote:
 >
->> This could be, would be interesting to know if compat-wireless also shows
->> this problem. Because the queue refactoring code which should have solved
->> these race conditions was added after 2.6.37.
+> I am trying to understand the usage of hw-breakpoints in arch_ptrace().
+> ptrace_set_debugreg() and related code looks obviously racy. Nothing
+> protects us against flush_ptrace_hw_breakpoint() called by the dying
+> tracee. Afaics we can leak perf_event or use the already freed memory
+> or both.
 >
-> I really would like to give it a try, but compat-wireless-2011-01-15
-> crashes right on module loading. Is there a version known to work?
+> Am I missed something?
+>
+> Looking into the git history, I don't even know which patch should be
+> blamed (if I am right), there were too many changes. I noticed that
+> 2ebd4ffb6d0cb877787b1e42be8485820158857e "perf events: Split out task
+> search into helper" moved the PF_EXITING check from find_get_context().
+> This check coould help if sys_ptrace() races with SIGKILL, but it was
+> racy anyway.
 
-You could try the rt2x00-special package:
-http://kernel.org/pub/linux/kernel/people/ivd/compat-rt2x00.tar.bz2
-this is compat-wireless + rt2x00 patches from rt2x00.git.
+Ping.
 
-For me it is working without any crashes..
+Any idea how to fix this cleanly? May be we can reuse perf_event_mutex,
+but this looks soooo ugly. And do_exit()->flush_ptrace_hw_breakpoint()
+has the strange "FIXME:" comment which doesn't help me to understand
+what can we do.
 
-Ivo
+Probably the best fix is to change this code so that the tracer owns
+->ptrace_bps[], not the tracee. But this is not trivial, and needs a
+lot of changes in ptrace code.
+
+
+I am reading perf_event.c, but all I found so far is a couple of trivial
+methods to crash the kernel via sys_perf_event_open(), will report
+tomorrow...
+
+Oleg.
+
