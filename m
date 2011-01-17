@@ -1,173 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928Ab1AQTuv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 14:50:51 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:65501 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327Ab1AQTus (ORCPT
+	id S1753563Ab1AQUAL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 15:00:11 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:62333 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753513Ab1AQUAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 14:50:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=cnAgtpfd0r5sQe35upLgxkXQSvKnD5lyaRoiYe7rnysP82Kx5aSMj3I6Vpfu51ag4R
-         tVVENq0tUNkQIFwkMFpx1QV0maIRvQH9nLXuyZhPJuvx5M7CBNyDjld6iIaFsO6YZd16
-         wxSs+SfsyFNGUEE7/S4lysJ2GXFdR8WS5J+lg=
-Date: Mon, 17 Jan 2011 17:50:34 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Franck Bui-Huu <vagabon.xyz@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Han Pingtian <phan@redhat.com>
-Subject: Re: [PATCH 1/2] perf-tools: Fix tracepoint event type recording
-Message-ID: <20110117195034.GF2085@ghostprotocols.net>
-References: <m34o97wg94.fsf@gmail.com>
+	Mon, 17 Jan 2011 15:00:08 -0500
+Message-ID: <4D349FBC.6050606@metafoo.de>
+Date: Mon, 17 Jan 2011 20:59:56 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m34o97wg94.fsf@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Daniel Mack <daniel@caiaq.de>, Sven Neumann <s.neumann@raumfeld.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: resume regression in 2.6.37
+References: <1294933492.2535.23.camel@sven>	<alpine.LFD.2.00.1101131720350.2678@localhost6.localdomain6>	<1294938961.10740.24.camel@sven>	<alpine.LFD.2.00.1101131827080.2678@localhost6.localdomain6>	<1295260580.2060.29.camel@sven>	<alpine.LFD.2.00.1101171142380.2678@localhost6.localdomain6> <4D349787.80201@metafoo.de>
+In-Reply-To: <4D349787.80201@metafoo.de>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jan 17, 2011 at 07:13:11PM +0100, Franck Bui-Huu escreveu:
-> From: Franck Bui-Huu <fbuihuu@gmail.com>
-> 
-> Tracepoint event registering was done by store_event_type() which took
-> the full event name (sys + ':' + event) as argument.
-> 
-> However commit f006d25a15216a483cec71e886786874f66f9452 broke this
-> by only passing a subset of this full name, that is the substring
-> following the colon.
-> 
-> The consequence of this is that no more tracepoint event type was
-> valid, hence making the trace info section empty.
-> 
-> This patch fixes this by merging store_event_type() into
-> parse_single_tracepoint_event(), so a tracepoint type event is
-> registered when parsed.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Please try not to do multiple, unrelated changes in a single patch, see
-below:
- 
-> Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
-> ---
->  tools/perf/util/header.c       |   15 ++++++++++-----
->  tools/perf/util/header.h       |    2 +-
->  tools/perf/util/parse-events.c |   38 ++++++--------------------------------
->  3 files changed, 17 insertions(+), 38 deletions(-)
+On 01/17/2011 08:24 PM, Lars-Peter Clausen wrote:
+> On 01/17/2011 01:40 PM, Thomas Gleixner wrote:
+>> On Mon, 17 Jan 2011, Sven Neumann wrote:
 > 
-> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-> index 989fa2d..35b707c 100644
-> --- a/tools/perf/util/header.c
-> +++ b/tools/perf/util/header.c
-> @@ -104,10 +104,12 @@ int perf_header__add_attr(struct perf_header *self,
->  static int event_count;
->  static struct perf_trace_event_type *events;
->  
-> -int perf_header__push_event(u64 id, const char *name)
-> +int perf_header__push_event(u64 id, const char *name, size_t len)
->  {
-> -	if (strlen(name) > MAX_EVENT_NAME)
-> +	if (len > MAX_EVENT_NAME - 1) {
->  		pr_warning("Event %s will be truncated\n", name);
-> +		len = MAX_EVENT_NAME - 1;
-> +	}
->  
->  	if (!events) {
->  		events = malloc(sizeof(struct perf_trace_event_type));
-> @@ -123,7 +125,8 @@ int perf_header__push_event(u64 id, const char *name)
->  	}
->  	memset(&events[event_count], 0, sizeof(struct perf_trace_event_type));
->  	events[event_count].event_id = id;
-> -	strncpy(events[event_count].name, name, MAX_EVENT_NAME - 1);
-> +	strncpy(events[event_count].name, name, len);
-> +	events[event_count].name[len] = '\0';
-
-Is this change related to what you describe in the changelog comment? It
-is a cleanup, can be done as a follow up patch, for perf/core.
-
-The problem you describe deserves perf/urgent treatment, please redo
-this patch with just the essential bits for that fix.
-
->  	event_count++;
->  	return 0;
->  }
-> @@ -1126,8 +1129,10 @@ int event__synthesize_event_types(event__handler_t process,
->  int event__process_event_type(event_t *self,
->  			      struct perf_session *session __unused)
->  {
-> -	if (perf_header__push_event(self->event_type.event_type.event_id,
-> -				    self->event_type.event_type.name) < 0)
-> +	struct perf_trace_event_type *event_type = &self->event_type.event_type;
+>>> On Thu, 2011-01-13 at 18:33 +0100, Thomas Gleixner wrote:
+>>>
+>>>>> Without the revert there is absolutely no sign of resume. With the
+>>>>> change reverted I can see that the PXA powers up again, there's an LED
+>>>>> showing that the USB controller has power again. Unfortunately there's
+>>>>> seems to be another problem and the resume doesn't complete. I've tried
+>>>>> to get console output by using no_console_suspend, but there's just
+>>>>> gibberish on the console after resume :(
+>>>>>
+>>>>> Any idea on how to proceed from here? I could perhaps ask our hardware
+>>>>> engineer to try find out where exactly we are stuck in the resume. But
+>>>>> I'd like to avoid that if possible.
+>>>>
+>>>> Can you stick a printk into the set_wake() function of that irq chip
+>>>> and print the irq and on arguments and the return value . Run that
+>>>> with both stock 2.6.37 and the patch reverted.
+>>>
+>>> pxa3xx_set_wake(31, 1) returns 0
+>>>
+>>> Same result with stock 2.6.37 and the patch reverted. Except that
+>>> without the patch reverted, the device doesn't power up again.
+> 
+>> Ok, can we agree that the patch has no functional impact on the
+>> set_wake function? And I don't see a reason why reverting that patch
+>> results in a working resume. That does not make sense at all. Which
+>> compiler version are you using ?
+> 
+>> Thanks,
+> 
+>> 	tglx
+> 
+> 
+> Hi
+> 
+> If you take a look at the pxa gpio irq handling you'll see that it sets the
+> "set_wake" field of it's irq_chip after calling set_irq_chip for all of the irqs, so
+> the compat handler gets never installed.
+> 
+> So I guess the following patch fixes it:
+> 
+> diff --git a/arch/arm/mach-pxa/irq.c b/arch/arm/mach-pxa/irq.c
+> --- a/arch/arm/mach-pxa/irq.c
+> +++ b/arch/arm/mach-pxa/irq.c
+> @@ -111,13 +111,13 @@ static void __init pxa_init_low_gpio_irq(set_wake_t fn)
+>  	GRER0 &= ~0x3;
+>  	GEDR0 = 0x3;
+> 
+> +	pxa_low_gpio_chip.set_wake = fn;
 > +
-> +	if (perf_header__push_event(event_type->event_id,
-> +				    event_type->name, strlen(event_type->name)) < 0)
->  		return -ENOMEM;
+>  	for (irq = IRQ_GPIO0; irq <= IRQ_GPIO1; irq++) {
+>  		set_irq_chip(irq, &pxa_low_gpio_chip);
+>  		set_irq_handler(irq, handle_edge_irq);
+>  		set_irq_flags(irq, IRQF_VALID);
+>  	}
+> -
+> -	pxa_low_gpio_chip.set_wake = fn;
+>  }
+> 
+>  void __init pxa_init_irq(int irq_nr, set_wake_t fn)
+> @@ -142,13 +142,14 @@ void __init pxa_init_irq(int irq_nr, set_wake_t fn)
+>  	/* only unmasked interrupts kick us out of idle */
+>  	ICCR = 1;
+> 
+> +	pxa_internal_irq_chip.set_wake = fn;
+> +
+>  	for (irq = PXA_IRQ(0); irq < PXA_IRQ(irq_nr); irq++) {
+>  		set_irq_chip(irq, &pxa_internal_irq_chip);
+>  		set_irq_handler(irq, handle_level_irq);
+>  		set_irq_flags(irq, IRQF_VALID);
+>  	}
+> 
+> -	pxa_internal_irq_chip.set_wake = fn;
+>  	pxa_init_low_gpio_irq(fn);
+>  }
+> 
+and
 
-Ditto.
- 
->  	return 0;
-> diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-> index 33f16be..0603a02 100644
-> --- a/tools/perf/util/header.h
-> +++ b/tools/perf/util/header.h
-> @@ -72,7 +72,7 @@ int perf_header__write_pipe(int fd);
->  int perf_header__add_attr(struct perf_header *self,
->  			  struct perf_header_attr *attr);
->  
-> -int perf_header__push_event(u64 id, const char *name);
-> +int perf_header__push_event(u64 id, const char *name, size_t name_len);
->  char *perf_header__find_event(u64 id);
->  
->  struct perf_header_attr *perf_header_attr__new(struct perf_event_attr *attr);
-> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-> index 5cb6f4b..a58407e 100644
-> --- a/tools/perf/util/parse-events.c
-> +++ b/tools/perf/util/parse-events.c
-> @@ -417,6 +417,7 @@ parse_single_tracepoint_event(char *sys_name,
->  	char id_buf[4];
->  	u64 id;
->  	int fd;
-> +	size_t len;
->  
->  	snprintf(evt_path, MAXPATHLEN, "%s/%s/%s/id", debugfs_path,
->  		 sys_name, evt_name);
-> @@ -434,7 +435,6 @@ parse_single_tracepoint_event(char *sys_name,
->  	id = atoll(id_buf);
->  	attr->config = id;
->  	attr->type = PERF_TYPE_TRACEPOINT;
-> -	*strp += strlen(sys_name) + evt_length + 1; /* + 1 for the ':' */
->  
->  	attr->sample_type |= PERF_SAMPLE_RAW;
->  	attr->sample_type |= PERF_SAMPLE_TIME;
-> @@ -442,7 +442,11 @@ parse_single_tracepoint_event(char *sys_name,
->  
->  	attr->sample_period = 1;
->  
-> +	len = strlen(sys_name) + evt_length + 1; /* + 1 for the ':' */
-> +	if (perf_header__push_event(id, *strp, len) < 0)
-> +		return EVT_FAILED;
+diff --git a/arch/arm/mach-pxa/pxa3xx.c b/arch/arm/mach-pxa/pxa3xx.c
+index d1c747c..6fc8281 100644
+- --- a/arch/arm/mach-pxa/pxa3xx.c
++++ b/arch/arm/mach-pxa/pxa3xx.c
+@@ -558,13 +558,13 @@ static void __init pxa_init_ext_wakeup_irq(set_wake_t fn)
+ {
+ 	int irq;
 
-Since you're changing the point where perf_header__push_event() is
-called, consider doing it _after_ parse_events() finishes, by traversing
-the evsel_list, that way, as a bonus, later, in perf/core we can kill
-some more global variables:
++	pxa_ext_wakeup_chip.set_wake = fn;
++
+ 	for (irq = IRQ_WAKEUP0; irq <= IRQ_WAKEUP1; irq++) {
+ 		set_irq_chip(irq, &pxa_ext_wakeup_chip);
+ 		set_irq_handler(irq, handle_edge_irq);
+ 		set_irq_flags(irq, IRQF_VALID);
+ 	}
+- -
+- -	pxa_ext_wakeup_chip.set_wake = fn;
+ }
 
-static int event_count;
-static struct perf_trace_event_type *events;
+ void __init pxa3xx_init_irq(void)
+_______________________________________________
+linux-arm-kernel mailing list
+linux-arm-kernel@lists.infradead.org
+http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-These variables should be in 'struct perf_header', but anyway, this is
-for later, I'm digressing, please just try to do it after
-parse_events(), traversing the evsel_list and getting the tracepoint
-name in string form using event_name(evsel) (that also uses an static
-variagle, argh, another fix to do).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-Doing it that way and excluding the strnlen cleanup, the patch should be
-much smaller.
-
-We also untie event parsing from header handling, that are only together
-in record, not in, say, top.
-  
-- Arnaldo
+iEYEARECAAYFAk00n7wACgkQBX4mSR26RiO1lgCfRblXeDhxuXHe7sKzQEApzyS7
+wjgAniUvOc9RdV5jms1SU5ivQ0T3NogK
+=heYm
+-----END PGP SIGNATURE-----
