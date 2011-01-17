@@ -1,221 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab1AQIhJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 03:37:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33868 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752926Ab1AQIhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 03:37:05 -0500
-Date: Mon, 17 Jan 2011 10:36:45 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: virtualization@lists.osdl.org, netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] vhost-net: Unify the code of mergeable and big
- buffer handling
-Message-ID: <20110117083644.GA23479@redhat.com>
-References: <20110117081058.18900.67456.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
- <20110117081108.18900.60053.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110117081108.18900.60053.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753196Ab1AQIkB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 03:40:01 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64628 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753024Ab1AQIj5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jan 2011 03:39:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=KC3VrQAmoL+6tg9XxsXGWQ3+Z6Elp0okfttyaKEW9qSdBDiXJPKTDKuhidz28MItPQ
+         5AlLsbpnrTWSUmv/2W2eyo2fbrbAl4tlliAlwlqtUJfAuESVCuXFQRUngxiDSFyPmRes
+         6Yh6nlod01dHbeJD+HyL/m9sgtdwyVDvsvdoo=
+Subject: [PATCH 1/2] video: nuc900fb: fix compile error
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Wan ZongShun <mcuos.com@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-fbdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Wang Qiang <rurality.linux@gmail.com>
+Content-Type: text/plain
+Date: Mon, 17 Jan 2011 16:32:23 +0800
+Message-Id: <1295253143.12890.3.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 17, 2011 at 04:11:08PM +0800, Jason Wang wrote:
-> Codes duplication were found between the handling of mergeable and big
-> buffers, so this patch tries to unify them. This could be easily done
-> by adding a quota to the get_rx_bufs() which is used to limit the
-> number of buffers it returns (for mergeable buffer, the quota is
-> simply UIO_MAXIOV, for big buffers, the quota is just 1), and then the
-> previous handle_rx_mergeable() could be resued also for big buffers.
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>From a4bd940fa4d162f95e51e67c7ec4973b1d5b6866 Mon Sep 17 00:00:00 2001
+From: Axel Lin <axel.lin@gmail.com>
+Date: Mon, 17 Jan 2011 16:24:36 +0800
+Subject: [PATCH 1/2] video: nuc900fb: fix compile error
 
-We actually started this way. However the code turned out
-to have measureable overhead when handle_rx_mergeable
-is called with quota 1.
-So before applying this I'd like to see some data
-to show this is not the case anymore.
+This patch fixes below compile error:
 
-> ---
->  drivers/vhost/net.c |  128 +++------------------------------------------------
->  1 files changed, 7 insertions(+), 121 deletions(-)
-> 
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index 95e49de..c32a2e4 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -227,6 +227,7 @@ static int peek_head_len(struct sock *sk)
->   * @iovcount	- returned count of io vectors we fill
->   * @log		- vhost log
->   * @log_num	- log offset
-> + * @quota       - headcount quota, 1 for big buffer
->   *	returns number of buffer heads allocated, negative on error
->   */
->  static int get_rx_bufs(struct vhost_virtqueue *vq,
-> @@ -234,7 +235,8 @@ static int get_rx_bufs(struct vhost_virtqueue *vq,
->  		       int datalen,
->  		       unsigned *iovcount,
->  		       struct vhost_log *log,
-> -		       unsigned *log_num)
-> +		       unsigned *log_num,
-> +		       unsigned int quota)
->  {
->  	unsigned int out, in;
->  	int seg = 0;
-> @@ -242,7 +244,7 @@ static int get_rx_bufs(struct vhost_virtqueue *vq,
->  	unsigned d;
->  	int r, nlogs = 0;
->  
-> -	while (datalen > 0) {
-> +	while (datalen > 0 && headcount < quota) {
->  		if (unlikely(seg >= UIO_MAXIOV)) {
->  			r = -ENOBUFS;
->  			goto err;
-> @@ -282,116 +284,7 @@ err:
->  
->  /* Expects to be always run from workqueue - which acts as
->   * read-size critical section for our kind of RCU. */
-> -static void handle_rx_big(struct vhost_net *net)
-> -{
-> -	struct vhost_virtqueue *vq = &net->dev.vqs[VHOST_NET_VQ_RX];
-> -	unsigned out, in, log, s;
-> -	int head;
-> -	struct vhost_log *vq_log;
-> -	struct msghdr msg = {
-> -		.msg_name = NULL,
-> -		.msg_namelen = 0,
-> -		.msg_control = NULL, /* FIXME: get and handle RX aux data. */
-> -		.msg_controllen = 0,
-> -		.msg_iov = vq->iov,
-> -		.msg_flags = MSG_DONTWAIT,
-> -	};
-> -
-> -	struct virtio_net_hdr hdr = {
-> -		.flags = 0,
-> -		.gso_type = VIRTIO_NET_HDR_GSO_NONE
-> -	};
-> -
-> -	size_t len, total_len = 0;
-> -	int err;
-> -	size_t hdr_size;
-> -	struct socket *sock = rcu_dereference(vq->private_data);
-> -	if (!sock || skb_queue_empty(&sock->sk->sk_receive_queue))
-> -		return;
-> -
-> -	mutex_lock(&vq->mutex);
-> -	vhost_disable_notify(vq);
-> -	hdr_size = vq->vhost_hlen;
-> -
-> -	vq_log = unlikely(vhost_has_feature(&net->dev, VHOST_F_LOG_ALL)) ?
-> -		vq->log : NULL;
-> -
-> -	for (;;) {
-> -		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
-> -					 ARRAY_SIZE(vq->iov),
-> -					 &out, &in,
-> -					 vq_log, &log);
-> -		/* On error, stop handling until the next kick. */
-> -		if (unlikely(head < 0))
-> -			break;
-> -		/* OK, now we need to know about added descriptors. */
-> -		if (head == vq->num) {
-> -			if (unlikely(vhost_enable_notify(vq))) {
-> -				/* They have slipped one in as we were
-> -				 * doing that: check again. */
-> -				vhost_disable_notify(vq);
-> -				continue;
-> -			}
-> -			/* Nothing new?  Wait for eventfd to tell us
-> -			 * they refilled. */
-> -			break;
-> -		}
-> -		/* We don't need to be notified again. */
-> -		if (out) {
-> -			vq_err(vq, "Unexpected descriptor format for RX: "
-> -			       "out %d, int %d\n",
-> -			       out, in);
-> -			break;
-> -		}
-> -		/* Skip header. TODO: support TSO/mergeable rx buffers. */
-> -		s = move_iovec_hdr(vq->iov, vq->hdr, hdr_size, in);
-> -		msg.msg_iovlen = in;
-> -		len = iov_length(vq->iov, in);
-> -		/* Sanity check */
-> -		if (!len) {
-> -			vq_err(vq, "Unexpected header len for RX: "
-> -			       "%zd expected %zd\n",
-> -			       iov_length(vq->hdr, s), hdr_size);
-> -			break;
-> -		}
-> -		err = sock->ops->recvmsg(NULL, sock, &msg,
-> -					 len, MSG_DONTWAIT | MSG_TRUNC);
-> -		/* TODO: Check specific error and bomb out unless EAGAIN? */
-> -		if (err < 0) {
-> -			vhost_discard_vq_desc(vq, 1);
-> -			break;
-> -		}
-> -		/* TODO: Should check and handle checksum. */
-> -		if (err > len) {
-> -			pr_debug("Discarded truncated rx packet: "
-> -				 " len %d > %zd\n", err, len);
-> -			vhost_discard_vq_desc(vq, 1);
-> -			continue;
-> -		}
-> -		len = err;
-> -		err = memcpy_toiovec(vq->hdr, (unsigned char *)&hdr, hdr_size);
-> -		if (err) {
-> -			vq_err(vq, "Unable to write vnet_hdr at addr %p: %d\n",
-> -			       vq->iov->iov_base, err);
-> -			break;
-> -		}
-> -		len += hdr_size;
-> -		vhost_add_used_and_signal(&net->dev, vq, head, len);
-> -		if (unlikely(vq_log))
-> -			vhost_log_write(vq, vq_log, log, len);
-> -		total_len += len;
-> -		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
-> -			vhost_poll_queue(&vq->poll);
-> -			break;
-> -		}
-> -	}
-> -
-> -	mutex_unlock(&vq->mutex);
-> -}
-> -
-> -/* Expects to be always run from workqueue - which acts as
-> - * read-size critical section for our kind of RCU. */
-> -static void handle_rx_mergeable(struct vhost_net *net)
-> +static void handle_rx(struct vhost_net *net)
->  {
->  	struct vhost_virtqueue *vq = &net->dev.vqs[VHOST_NET_VQ_RX];
->  	unsigned uninitialized_var(in), log;
-> @@ -431,7 +324,8 @@ static void handle_rx_mergeable(struct vhost_net *net)
->  		sock_len += sock_hlen;
->  		vhost_len = sock_len + vhost_hlen;
->  		headcount = get_rx_bufs(vq, vq->heads, vhost_len,
-> -					&in, vq_log, &log);
-> +					&in, vq_log, &log,
-> +					likely(mergeable) ? UIO_MAXIOV : 1);
->  		/* On error, stop handling until the next kick. */
->  		if (unlikely(headcount < 0))
->  			break;
-> @@ -497,14 +391,6 @@ static void handle_rx_mergeable(struct vhost_net *net)
->  	mutex_unlock(&vq->mutex);
->  }
->  
-> -static void handle_rx(struct vhost_net *net)
-> -{
-> -	if (vhost_has_feature(&net->dev, VIRTIO_NET_F_MRG_RXBUF))
-> -		handle_rx_mergeable(net);
-> -	else
-> -		handle_rx_big(net);
-> -}
-> -
->  static void handle_tx_kick(struct vhost_work *work)
->  {
->  	struct vhost_virtqueue *vq = container_of(work, struct vhost_virtqueue,
+  CC      drivers/video/nuc900fb.o
+drivers/video/nuc900fb.c: In function 'nuc900fb_suspend':
+drivers/video/nuc900fb.c:726: error: too few arguments to function 'nuc900fb_stop_lcd'
+drivers/video/nuc900fb.c: In function 'nuc900fb_resume':
+drivers/video/nuc900fb.c:743: error: 'bfinfo' undeclared (first use in this function)
+drivers/video/nuc900fb.c:743: error: (Each undeclared identifier is reported only once
+drivers/video/nuc900fb.c:743: error: for each function it appears in.)
+make[2]: *** [drivers/video/nuc900fb.o] Error 1
+make[1]: *** [drivers/video] Error 2
+make: *** [drivers] Error 2
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/video/nuc900fb.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/video/nuc900fb.c b/drivers/video/nuc900fb.c
+index 62498bd..29ef92f 100644
+--- a/drivers/video/nuc900fb.c
++++ b/drivers/video/nuc900fb.c
+@@ -723,7 +723,7 @@ static int nuc900fb_suspend(struct platform_device *dev, pm_message_t state)
+ 	struct fb_info	   *fbinfo = platform_get_drvdata(dev);
+ 	struct nuc900fb_info *info = fbinfo->par;
+ 
+-	nuc900fb_stop_lcd();
++	nuc900fb_stop_lcd(fbinfo);
+ 	msleep(1);
+ 	clk_disable(info->clk);
+ 	return 0;
+@@ -740,7 +740,7 @@ static int nuc900fb_resume(struct platform_device *dev)
+ 	msleep(1);
+ 
+ 	nuc900fb_init_registers(fbinfo);
+-	nuc900fb_activate_var(bfinfo);
++	nuc900fb_activate_var(fbinfo);
+ 
+ 	return 0;
+ }
+-- 
+1.7.2
+
+
+
