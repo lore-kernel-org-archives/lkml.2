@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060Ab1AQUZB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 15:25:01 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:17817 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791Ab1AQUY4 (ORCPT
+	id S1753100Ab1AQUZu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 15:25:50 -0500
+Received: from flmx07.ccur.com ([173.221.59.12]:7526 "EHLO flmx07.ccur.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752745Ab1AQUZt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 15:24:56 -0500
-Date: Mon, 17 Jan 2011 21:24:57 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: netdev@vger.kernel.org
-cc: linux-ns83820@kvack.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Kulikov Vasiliy <segooon@gmail.com>,
-        Denis Kirjanov <dkirjanov@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Benjamin LaHaise <bcrl@kvack.org>
-Subject: [PATCH] ns83820: Avoid bad pointer deref in ns83820_init_one().
-Message-ID: <alpine.LNX.2.00.1101172116330.27021@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 17 Jan 2011 15:25:49 -0500
+X-Greylist: delayed 326 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Jan 2011 15:25:49 EST
+From: "Shaffer, Scott" <scott.shaffer@ccur.com>
+To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+CC: "'tglx@linutronix.de'" <tglx@linutronix.de>,
+        "'mingo@elte.hu'" <mingo@elte.hu>
+Date: Mon, 17 Jan 2011 15:20:21 -0500
+Subject: [PATCH] fix bad delta time values in /proc/timer_list
+Thread-Topic: [PATCH] fix bad delta time values in /proc/timer_list
+Thread-Index: Acu2g/c6AKEa9YFOSXS7V3XiKwdSpA==
+Message-ID: <653CEFD4210E904494F3E2FB9F6A479716464979C7@FLMX07.iccur.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In drivers/net/ns83820.c::ns83820_init_one() we dynamically allocate 
-memory via alloc_etherdev(). We then call PRIV() on the returned storage 
-which is 'return netdev_priv()'. netdev_priv() takes the pointer it is 
-passed and adds 'ALIGN(sizeof(struct net_device), NETDEV_ALIGN)' to it and 
-returns it. Then we test the resulting pointer for NULL, which it is 
-unlikely to be at this point, and later dereference it. This will go bad 
-if alloc_etherdev() actually returned NULL.
+elapsed times printed from /proc/timer_list are incorrect for the
+CLOCK_REALTIME timer list.
 
-This patch reworks the code slightly so that we test for a NULL pointer 
-(and return -ENOMEM) directly after calling alloc_etherdev().
+print_timer() is passed monotonic nsecs as current time, but should
+be passed monotonic nsecs + hrtimer_clock_base.offset for the
+timer list it is printing.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- ns83820.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+This patch fixes CLOCK_REALTIME timer lists, and does not break
+CLOCK_MONOTONIC timer lists.
 
-  Compile tested only. I have no way to test this for real.
 
-diff --git a/drivers/net/ns83820.c b/drivers/net/ns83820.c
-index 84134c7..a41b2cf 100644
---- a/drivers/net/ns83820.c
-+++ b/drivers/net/ns83820.c
-@@ -1988,12 +1988,11 @@ static int __devinit ns83820_init_one(struct pci_dev *pci_dev,
+This shows a thread's timer that is <10ms:
+
+xunil2.ccur.com # grep -A 9 "cpu: 1" /proc/timer_list
+cpu: 1
+ clock 0:
+  .base:       f67031d0
+  .index:      0
+  .resolution: 1 nsecs
+  .get_time:   ktime_get_real
+  .offset:     1294953310697580572 nsecs
+active timers:
+ #0: <f518ff3c>, hrtimer_wakeup, S:01, hrtimer_start_range_ns, pthread_sleep2/7067
+ # expires at 1295021767185712301-1295021767185712301 nsecs [in 1294953310698070434 to 1294953310698070434 nsecs]
+
+
+With the patch below, that thread's timer looks like:
+
+ #0: <f37d7f3c>, hrtimer_wakeup, S:01, hrtimer_start_range_ns, pthread_sleep2/9403
+ # expires at 1295022944770566772-1295022944770566772 nsecs [in 5305914 to 5305914 nsecs]
+
+
+Signed-off-by: Scott Shaffer <scott.shaffer@ccur.com>
+
+--- a/kernel/time/timer_list.c	2011-01-04 19:50:19.000000000 -0500
++++ b/kernel/time/timer_list.c	2011-01-14 14:09:03.000000000 -0500
+@@ -102,7 +102,8 @@ next_one:
+ 		tmp = *timer;
+ 		raw_spin_unlock_irqrestore(&base->cpu_base->lock, flags);
+ 
+-		print_timer(m, timer, &tmp, i, now);
++		print_timer(m, timer, &tmp, i,
++			(now + ktime_to_ns(base->offset)));
+ 		next++;
+ 		goto next_one;
  	}
- 
- 	ndev = alloc_etherdev(sizeof(struct ns83820));
--	dev = PRIV(ndev);
--
- 	err = -ENOMEM;
--	if (!dev)
-+	if (!ndev)
- 		goto out;
- 
-+	dev = PRIV(ndev);
- 	dev->ndev = ndev;
- 
- 	spin_lock_init(&dev->rx_info.lock);
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
