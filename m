@@ -1,102 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267Ab1AQIkI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 03:40:08 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:41337 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752962Ab1AQIkE convert rfc822-to-8bit (ORCPT
+	id S1753241Ab1AQIlM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 03:41:12 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50984 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752962Ab1AQIlK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 03:40:04 -0500
+	Mon, 17 Jan 2011 03:41:10 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=NotrdW7glvEsygf5VrHWJFzx+atjsgKzW+bNWOFdiapPmklUSRJsOFtIl32LGTvrfm
-         Ex5lZ5Mv8yVZiPF9zjhYPQ1BpVGntMqY79Rnnpr8js77bYiZ/OygkuJwVk+moxXLleIl
-         jbvuP/eQEMp0DA8SXcyU7I8bBmlhhwHLej+o8=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=qFqhkMwYmjfHhEsMpXy3LFOn8GvEjZYJtBzq0v0r5Zn7DWpvGHE4Z2YE+IA9v7lZ5B
+         +Eqa1kA+Wf3Wmd+MEjiQ3JpnwSyYpWTQJy1D0mQ61h6adfElOgAzESuFaCmK34QkNSoD
+         yqaa7aF5cFIiVrIJUPP0ZvI4fRlN5ThWiiCXY=
 MIME-Version: 1.0
-In-Reply-To: <1295253143.12890.3.camel@mola>
-References: <1295253143.12890.3.camel@mola>
-Date: Mon, 17 Jan 2011 16:40:02 +0800
-Message-ID: <AANLkTinXNoxtvobV1go9bLqJohiyic8qzznsoHvyJsh3@mail.gmail.com>
-Subject: Re: [PATCH 1/2] video: nuc900fb: fix compile error
-From: Wan ZongShun <mcuos.com@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-fbdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Wang Qiang <rurality.linux@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <4D33BA7F.3030606@cn.fujitsu.com>
+References: <1294735916.1949.637.camel@sli10-conroe>
+	<AANLkTim72yNM1svGbFTKW8pSnFP9W+YgvGs4moXq+pyo@mail.gmail.com>
+	<20110112023026.GA26525@sli10-conroe.sh.intel.com>
+	<AANLkTim=eCQ4AuipHXK=M-2ox4KZ8jntjcDbg+J6kfFb@mail.gmail.com>
+	<4D33BA7F.3030606@cn.fujitsu.com>
+Date: Mon, 17 Jan 2011 16:41:08 +0800
+X-Google-Sender-Auth: ZDlhHncE8hE-vvbgteCryxwC5GM
+Message-ID: <AANLkTim-DctQ+xpM7YVtOmmAxNqRV3nWKT1OwS2nJVV0@mail.gmail.com>
+Subject: Re: [PATCH 1/2]block cfq: make queue preempt work for queues from
+ different workload
+From: Shaohua Li <shli@kernel.org>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Corrado Zoccolo <czoccolo@gmail.com>, Jens Axboe <jaxboe@fusionio.com>,
+        lkml <linux-kernel@vger.kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/1/17 Axel Lin <axel.lin@gmail.com>:
-> >From a4bd940fa4d162f95e51e67c7ec4973b1d5b6866 Mon Sep 17 00:00:00 2001
-> From: Axel Lin <axel.lin@gmail.com>
-> Date: Mon, 17 Jan 2011 16:24:36 +0800
-> Subject: [PATCH 1/2] video: nuc900fb: fix compile error
+2011/1/17 Gui Jianfeng <guijianfeng@cn.fujitsu.com>:
+> Shaohua Li wrote:
+>> 2011/1/12 Shaohua Li <shaohua.li@intel.com>:
+>>> Hi,
+>>> On Wed, Jan 12, 2011 at 05:07:47AM +0800, Corrado Zoccolo wrote:
+>>>> Hi Shaohua,
+>>>> On Tue, Jan 11, 2011 at 9:51 AM, Shaohua Li <shaohua.li@intel.com> wrote:
+>>>>> I got this:
+>>>>>             fio-874   [007]  2157.724514:   8,32   m   N cfq874 preempt
+>>>>>             fio-874   [007]  2157.724519:   8,32   m   N cfq830 slice expired t=1
+>>>>>             fio-874   [007]  2157.724520:   8,32   m   N cfq830 sl_used=1 disp=0 charge=1 iops=0 sect=0
+>>>>>             fio-874   [007]  2157.724521:   8,32   m   N cfq830 set_active wl_prio:0 wl_type:0
+>>>>>             fio-874   [007]  2157.724522:   8,32   m   N cfq830 Not idling. st->count:1
+>>>>> cfq830 is an async queue, and preempted by a sync queue cfq874. But since we
+>>>>> have cfqg->saved_workload_slice mechanism, the preempt is a nop.
+>>>>> Looks currently our preempt is totally broken if the two queues are not from
+>>>>> the same workload type.
+>>>>> Below patch fixes it. This will might make async queue starvation, but it's
+>>>>> what our old code does before cgroup is added.
+>>>> have you measured latency improvements by un-breaking preemption?
+>>>> AFAIK, preemption behaviour changed since 2.6.33, before cgroups were
+>>>> added, and the latency before the changes that weakened preemption in
+>>>> 2.6.33 was far worse.
+>>> Yes. I'm testing a SD card for MeeGo. The random write is very slow (~12k/s) but
+>>> random read is relatively fast > 1M/s.
+>>>
+>>> Without patch:
+>>> write: (groupid=0, jobs=1): err= 0: pid=3876
+>>>  write: io=966656 B, bw=8054 B/s, iops=1 , runt=120008msec
+>>>    clat (usec): min=5 , max=1716.3K, avg=88637.38, stdev=207100.44
+>>>     lat (usec): min=5 , max=1716.3K, avg=88637.69, stdev=207100.41
+>>>    bw (KB/s) : min=    0, max=   52, per=168.17%, avg=11.77, stdev= 8.85
+>>> read: (groupid=0, jobs=1): err= 0: pid=3877
+>>>  read : io=52516KB, bw=448084 B/s, iops=109 , runt=120014msec
+>>>    slat (usec): min=7 , max=1918.5K, avg=519.78, stdev=25777.85
+>>>    clat (msec): min=1 , max=2728 , avg=71.17, stdev=216.92
+>>>     lat (msec): min=1 , max=2756 , avg=71.69, stdev=219.52
+>>>    bw (KB/s) : min=    1, max= 1413, per=66.42%, avg=567.22, stdev=461.50
+>>>
+>>> With patch:
+>>> write: (groupid=0, jobs=1): err= 0: pid=4884
+>>>  write: io=81920 B, bw=677 B/s, iops=0 , runt=120983msec
+>>>    clat (usec): min=13 , max=742976 , avg=155694.10, stdev=244610.02
+>>>     lat (usec): min=13 , max=742976 , avg=155694.50, stdev=244609.89
+>>>    bw (KB/s) : min=    0, max=   31, per=inf%, avg= 8.40, stdev=12.78
+>>> read: (groupid=0, jobs=1): err= 0: pid=4885
+>>>  read : io=133008KB, bw=1108.3KB/s, iops=277 , runt=120022msec
+>>>    slat (usec): min=8 , max=1159.1K, avg=164.24, stdev=9116.65
+>>>    clat (msec): min=1 , max=1988 , avg=28.34, stdev=55.81
+>>>     lat (msec): min=1 , max=1989 , avg=28.51, stdev=57.51
+>>>    bw (KB/s) : min=    2, max= 1808, per=51.10%, avg=1133.42, stdev=275.59
+>>>
+>>> Both read latency/throughput has big difference with the patch, but write
+>>> gets starvation.
+>> Hi Jens and others,
+>> How do you think about the patch?
 >
-> This patch fixes below compile error:
+> Further more, Consider the following piece code.
 >
-> Â CC Â  Â  Â drivers/video/nuc900fb.o
-> drivers/video/nuc900fb.c: In function 'nuc900fb_suspend':
-> drivers/video/nuc900fb.c:726: error: too few arguments to function 'nuc900fb_stop_lcd'
-> drivers/video/nuc900fb.c: In function 'nuc900fb_resume':
-> drivers/video/nuc900fb.c:743: error: 'bfinfo' undeclared (first use in this function)
-> drivers/video/nuc900fb.c:743: error: (Each undeclared identifier is reported only once
-> drivers/video/nuc900fb.c:743: error: for each function it appears in.)
-> make[2]: *** [drivers/video/nuc900fb.o] Error 1
-> make[1]: *** [drivers/video] Error 2
-> make: *** [drivers] Error 2
+> 2132         /*
+> 2133          * For RT and BE, we have to choose also the type
+> 2134          * (SYNC, SYNC_NOIDLE, ASYNC), and to compute a workload
+> 2135          * expiration time
+> 2136          */
+> 2137         st = service_tree_for(cfqg, cfqd->serving_prio, cfqd->serving_type);
+> 2138         count = st->count;
+> 2139
+> 2140         /*
+> 2141          * check workload expiration, and that we still have other queues ready
+> 2142          */
+> 2143         if (count && !time_after(jiffies, cfqd->workload_expires))
+> 2144                 return;
 >
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
-> Â drivers/video/nuc900fb.c | Â  Â 4 ++--
-> Â 1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/video/nuc900fb.c b/drivers/video/nuc900fb.c
-> index 62498bd..29ef92f 100644
-> --- a/drivers/video/nuc900fb.c
-> +++ b/drivers/video/nuc900fb.c
-> @@ -723,7 +723,7 @@ static int nuc900fb_suspend(struct platform_device *dev, pm_message_t state)
-> Â  Â  Â  Â struct fb_info Â  Â  *fbinfo = platform_get_drvdata(dev);
-> Â  Â  Â  Â struct nuc900fb_info *info = fbinfo->par;
->
-> - Â  Â  Â  nuc900fb_stop_lcd();
-> + Â  Â  Â  nuc900fb_stop_lcd(fbinfo);
-> Â  Â  Â  Â msleep(1);
-> Â  Â  Â  Â clk_disable(info->clk);
-> Â  Â  Â  Â return 0;
-> @@ -740,7 +740,7 @@ static int nuc900fb_resume(struct platform_device *dev)
-> Â  Â  Â  Â msleep(1);
->
-> Â  Â  Â  Â nuc900fb_init_registers(fbinfo);
-> - Â  Â  Â  nuc900fb_activate_var(bfinfo);
-> + Â  Â  Â  nuc900fb_activate_var(fbinfo);
->
-> Â  Â  Â  Â return 0;
-> Â }
+> here, cfqd->serving_prio might be changed. But we continue to check workload expire
+> to decide whether let the old workload run. I don't think this makes too much sence.
+> I think if cfqd->serving_prio gets changed, we should recalculate workload type.
+> Am i missing something?
+This is already fixed in latest git
+e4ea0c16a85d221ebcc3a21f32e321440459e0fc
 
-Thanks for your patches.
-Acked-by: Wan ZongShun <mcuos.com@gmail.com>
-> --
-> 1.7.2
->
->
->
->
-
-
-
--- 
-*linux-arm-kernel mailing list
-mail addr:linux-arm-kernel@lists.infradead.org
-you can subscribe by:
-http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-
-* linux-arm-NUC900 mailing list
-mail addr:NUC900@googlegroups.com
-main web: https://groups.google.com/group/NUC900
-you can subscribe it by sending me mail:
-mcuos.com@gmail.com
+Thanks,
+Shaohua
