@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750863Ab1AQFDB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 00:03:01 -0500
-Received: from rtp-iport-1.cisco.com ([64.102.122.148]:45060 "EHLO
-	rtp-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710Ab1AQFC5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 00:02:57 -0500
-Authentication-Results: rtp-iport-1.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAI5cM02tJV2Z/2dsb2JhbACkX3OmQ5gohVAEhHCGLw
-From: Roland Dreier <rdreier@cisco.com>
-To: Dan Carpenter <error27@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: question about smatch error
-X-Message-Flag: Warning: May contain useful information
-Date: Sun, 16 Jan 2011 21:02:52 -0800
-Message-ID: <adar5ccyver.fsf@cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1750993Ab1AQFR6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 00:17:58 -0500
+Received: from ozlabs.org ([203.10.76.45]:57635 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750728Ab1AQFR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jan 2011 00:17:57 -0500
+Date: Mon, 17 Jan 2011 16:17:42 +1100
+From: Anton Blanchard <anton@samba.org>
+To: Paul Mackerras <paulus@samba.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] powerpc: perf: Fix frequency calculation for overflowing
+ counters
+Message-ID: <20110117161742.5feb3761@kryten>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
 
-I'm running smatch against some of my code, and I'm seeing the errors
+When profiling a benchmark that is almost 100% userspace, I noticed some
+wildly inaccurate profiles that showed almost all time spent in the kernel.
+Closer examination shows we were programming a tiny number of cycles into
+the PMU after each overflow (about ~200 away from the next overflow). This
+gets us stuck in a loop which we eventually break out of by throttling the
+PMU (there are regular throttle/unthrottle events in the log).
 
-drivers/infiniband/hw/mlx4/main.c +784 mlx4_addrconf_ifid_eui48(5) error: buffer overflow 'eui' 3 <= 3
-drivers/infiniband/hw/mlx4/main.c +785 mlx4_addrconf_ifid_eui48(6) error: buffer overflow 'eui' 3 <= 4
-drivers/infiniband/hw/mlx4/main.c +787 mlx4_addrconf_ifid_eui48(8) error: buffer overflow 'eui' 3 <= 3
-drivers/infiniband/hw/mlx4/main.c +788 mlx4_addrconf_ifid_eui48(9) error: buffer overflow 'eui' 3 <= 4
+It looks like we aren't setting event->hw.last_period to something same
+and the frequency to period calculations in perf are going haywire. With
+the following patch we find the correct period after a few interrupts and
+stay there. I also see no more throttle events.
 
-and I can't understand what smatch is trying to say -- the code in
-question is basically
+Signed-off-by: Anton Blanchard <anton@samba.org>
+---
 
-	if (vlan_id < 0x1000) {
-		eui[3] = vlan_id >> 8;
-		eui[4] = vlan_id & 0xff;
-	} else {
-		eui[3] = 0xff;
-		eui[4] = 0xfe;
-	}
-
-where eui is a u8*, and I don't see how smatch even thinks it knows how
-big the buffer is in the first place.
-
-This is with up-to-date smatch from git (my tree is at 798c4c13).
-
-Thanks,
-  Roland
+diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
+index 5674807..ab6f6be 100644
+--- a/arch/powerpc/kernel/perf_event.c
++++ b/arch/powerpc/kernel/perf_event.c
+@@ -1212,6 +1212,7 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
+ 			if (left <= 0)
+ 				left = period;
+ 			record = 1;
++			event->hw.last_period = event->hw.sample_period;
+ 		}
+ 		if (left < 0x80000000LL)
+ 			val = 0x80000000LL - left;
