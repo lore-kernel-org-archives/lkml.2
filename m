@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118Ab1AQIMT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 03:12:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4566 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753074Ab1AQIMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 03:12:16 -0500
-Subject: [PATCH 3/3] vhost-net: use lock_sock_fast() in peek_head_len()
-To: virtualization@lists.osdl.org, netdev@vger.kernel.org, kvm@vger.kernel.org,
-        mst@redhat.com
-From: Jason Wang <jasowang@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 17 Jan 2011 16:11:17 +0800
-Message-ID: <20110117081117.18900.48672.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
-In-Reply-To: <20110117081058.18900.67456.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
-References: <20110117081058.18900.67456.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
-User-Agent: StGit/0.15
+	id S1753068Ab1AQIa1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 03:30:27 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:54145 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753018Ab1AQIaX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jan 2011 03:30:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=RUDEiElg2jeC1xqP6u8YGLVejCfA+8mFQwaLd7OXglRFHW3rvapfQJ/+ZcWL1SxW93
+         8E5f5Cbu0xgysOrtWsSuT1AnJmCpD4QAx/rtyhFnIWvwXxtNONgMx+83NJePrAGCyvpO
+         in0Xu8sJpaPlER9pCZM9qMKGyQt3soW16Pkko=
+Date: Mon, 17 Jan 2011 00:22:51 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Davidlohr Bueso <dave@gnu.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
+Subject: Re: [PATCH] input: ct82710c: return proper error code for
+ ct82c710_open
+Message-ID: <20110117082251.GB22802@core.coreip.homeip.net>
+References: <1294940150.2200.4.camel@offworld>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294940150.2200.4.camel@offworld>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can use lock_sock_fast() instead of lock_sock() in order to get
-speedup in peek_head_len().
+On Thu, Jan 13, 2011 at 02:35:50PM -0300, Davidlohr Bueso wrote:
+> From: Davidlohr Bueso <dave@gnu.org>
+> 
+> If request_irq() fails we should return the proper error instead of -1.
+> 
+> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/vhost/net.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Will apply, thank you. You don't really have the device, do you?
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index c32a2e4..50b622a 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -211,12 +211,12 @@ static int peek_head_len(struct sock *sk)
- {
- 	struct sk_buff *head;
- 	int len = 0;
-+	bool slow = lock_sock_fast(sk);
- 
--	lock_sock(sk);
- 	head = skb_peek(&sk->sk_receive_queue);
- 	if (head)
- 		len = head->len;
--	release_sock(sk);
-+	unlock_sock_fast(sk, slow);
- 	return len;
- }
- 
+Thanks.
 
+-- 
+Dmitry
