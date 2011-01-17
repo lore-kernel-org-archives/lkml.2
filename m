@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340Ab1AQBTS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 20:19:18 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:54020 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751658Ab1AQBTR convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 20:19:17 -0500
-Date: Sun, 16 Jan 2011 20:19:16 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC patch 00/28] Removal of trace event semicolons
-Message-ID: <20110117011916.GB6668@Krystal>
-References: <20110109215927.633266833@efficios.com> <20110115234440.GC1768@nowhere>
+	id S1752369Ab1AQBTv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 20:19:51 -0500
+Received: from ozlabs.org ([203.10.76.45]:41785 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752111Ab1AQBTs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jan 2011 20:19:48 -0500
+From: Jeremy Kerr <jk@ozlabs.org>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: Locking in the clk API
+Date: Mon, 17 Jan 2011 09:19:44 +0800
+User-Agent: KMail/1.13.5 (Linux/2.6.35-24-generic; KDE/4.5.1; x86_64; ; )
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
+	<u.kleine-koenig@pengutronix.de>
+References: <201101111016.42819.jeremy.kerr@canonical.com>
+In-Reply-To: <201101111016.42819.jeremy.kerr@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20110115234440.GC1768@nowhere>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 20:15:48 up 54 days,  6:18,  4 users,  load average: 0.00, 0.00,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101170919.45100.jk@ozlabs.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> On Sun, Jan 09, 2011 at 04:59:27PM -0500, Mathieu Desnoyers wrote:
-> > Hi,
-> > 
-> > I am hereby proposing the removal of trailing semicolons within the trace event
-> > headers.
-> > 
-> > Please refer to "patch 01: TRACE_EVENT: gradual semicolon removal" for
-> > explanation of this change. This patchset is based on the 2.6.37 kernel.
-> > 
-> > Feedback is welcome,
-> > 
-> > Thanks,
-> > 
-> > Mathieu
-> 
-> 
-> So, it seems there is no issue in spreading the whole into
-> each relevant trees?
+Hi all,
 
-Because there is a dependency on patch 01, I think it would be much less painful
-to bring in the whole patchset through the tracing tree rather than each
-targeted tree. Otherwise, we have to ensure that each tree has pulled the commit
-from the tracing tree before pulling the patches that depend on it.
+Based on the discussion from this thread, my plan is to:
 
-And it only really touches the include/trace/ header files, so it's not as if it
-touched any specific subsystem code.
+* Change the 'common struct clk' patches to only use a spinlock for locking. 
+This means that clk_{en,dis}able will acquire a per-clk spinlock (for enable 
+counts), and be callable from atomic contexts.
 
-Thanks,
+* Rework the initial docs (posted in the first mail of this thread) document 
+to illustrate the new locking requirements.
 
-Mathieu
+* Request input from the platforms that require clk_enable (etc) to sleep, 
+about how we can merge the two implementations.
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Russell - is this OK?
+
+Cheers,
+
+
+Jeremy
