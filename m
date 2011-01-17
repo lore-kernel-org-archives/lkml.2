@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528Ab1AQReB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 12:34:01 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:53792 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938Ab1AQRd7 (ORCPT
+	id S1753525Ab1AQRgN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 12:36:13 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:57893 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753445Ab1AQRgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 12:33:59 -0500
-MIME-Version: 1.0
-In-Reply-To: <20110117162105.GA1778@nowhere>
-References: <AANLkTimsR3=BKSF8EyASu4_T_vTznw4yEqmxPS8gOQCy@mail.gmail.com>
-	<20110107151200.GB1736@nowhere>
-	<AANLkTi=L3=_2dzHH4Wu6QWXw=AUjxtrAu60xfM3-Qwn4@mail.gmail.com>
-	<20110114183516.GB1926@nowhere>
-	<AANLkTi=nugnkimG75Qh3t2vu8-qy2LKKHwoY2FFFpWDp@mail.gmail.com>
-	<20110117162105.GA1778@nowhere>
-Date: Mon, 17 Jan 2011 11:33:58 -0600
-Message-ID: <AANLkTinob=u4BGpZgzgDKkYWZz=5S8wSfdoQvLSr=DRU@mail.gmail.com>
-Subject: Re: [PATCH] tracing, perf : add cpu hotplug trace events
-From: Vincent Guittot <vincent.guittot@linaro.org>
+	Mon, 17 Jan 2011 12:36:12 -0500
+Date: Mon, 17 Jan 2011 12:36:07 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Amit Kucheria <amit.kucheria@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC patch 00/28] Removal of trace event semicolons
+Message-ID: <20110117173607.GB16154@Krystal>
+References: <20110109215927.633266833@efficios.com> <20110115234440.GC1768@nowhere> <20110117011916.GB6668@Krystal> <20110117164059.GC1778@nowhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110117164059.GC1778@nowhere>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 12:35:04 up 54 days, 22:38,  6 users,  load average: 0.12, 0.10,
+	0.05
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 January 2011 10:21, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Mon, Jan 17, 2011 at 07:49:58AM -0600, Vincent Guittot wrote:
->> I was just wondering which tracepoints format between my 1st proposal
->> and yours was the easier to post process by an application like
->> pytimechart.
->
-> No idea as pytimechart uses his own ad hoc event parsing. Either
-> way there won't be much differences though.
->
->> I have updated the cpu hotplug tracepoint according to your remarks
->> and steve's ones. I have just replaced the second
->> cpu_arch_die_start/end in your proposal by cpu_arch_dead_start/endfrq
->
-> Tracepoints tend to describe actions rather than states, although I can
-> show you some exceptions as well. But this tends to be the major
-> tendency. I suggest you to be stay consistent with this scheme.
->
+* Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> On Sun, Jan 16, 2011 at 08:19:16PM -0500, Mathieu Desnoyers wrote:
+> > * Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> > > On Sun, Jan 09, 2011 at 04:59:27PM -0500, Mathieu Desnoyers wrote:
+> > > > Hi,
+> > > > 
+> > > > I am hereby proposing the removal of trailing semicolons within the trace event
+> > > > headers.
+> > > > 
+> > > > Please refer to "patch 01: TRACE_EVENT: gradual semicolon removal" for
+> > > > explanation of this change. This patchset is based on the 2.6.37 kernel.
+> > > > 
+> > > > Feedback is welcome,
+> > > > 
+> > > > Thanks,
+> > > > 
+> > > > Mathieu
+> > > 
+> > > 
+> > > So, it seems there is no issue in spreading the whole into
+> > > each relevant trees?
+> > 
+> > Because there is a dependency on patch 01, I think it would be much less painful
+> > to bring in the whole patchset through the tracing tree rather than each
+> > targeted tree. Otherwise, we have to ensure that each tree has pulled the commit
+> > from the tracing tree before pulling the patches that depend on it.
+> 
+> Ok.
+>  
+> > And it only really touches the include/trace/ header files, so it's not as if it
+> > touched any specific subsystem code.
+> 
+> Beware, there are many trace events all over the kernel, not only in
+> include/trace
 
-For the cpu_die function which is called in the idle loop, we use
-cpu_hotplug_arch_die_start/end
-and for the __cpu_die function which waits for the cpu death, we could
-use cpu_hotplug_arch_wait_death_start/end ?
+That's right. I grepped for all includes of define_trace.h throughout the whole
+kernel to find the others. But they also depend on patch 01.
 
-as a summary we have :
+Thanks,
 
-cpu_hotplug_up_start/end
-cpu_hotplug_down_start/end
-cpu_hotplug_arch_up_start/end
-cpu_hotplug_arch_disable_start/end
-cpu_hotplug_arch_die_start/end
-cpu_hotplug_arch_wait_death_start/end
+Mathieu
 
 
-> Thanks.
->
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
