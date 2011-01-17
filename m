@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751798Ab1AQAWN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 19:22:13 -0500
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:54578 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab1AQAWL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 19:22:11 -0500
-Message-ID: <4D338ABC.7020600@ce.jp.nec.com>
-Date: Mon, 17 Jan 2011 09:18:04 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Milan Broz <mbroz@redhat.com>, Tejun Heo <tj@kernel.org>
-CC: Jens Axboe <axboe@kernel.dk>, Valdis.Kletnieks@vt.edu,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Neil Brown <neilb@suse.de>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-raid@vger.kernel.org,
-        device-mapper development <dm-devel@redhat.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Alasdair G Kergon <agk@redhat.com>
-Subject: Re: [PATCH UPDATED] block: restore multiple bd_link_disk_holder()
- support
-References: <16069.1294853673@localhost> <4D2E4611.90002@redhat.com> <4D2E6129.8000700@ce.jp.nec.com> <20110113172133.GE14096@htj.dyndns.org> <4D2F4799.5030901@redhat.com> <4D2FFBED.6010406@ce.jp.nec.com> <20110114161043.GB978@htj.dyndns.org> <4D30BB78.5020101@redhat.com>
-In-Reply-To: <4D30BB78.5020101@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752027Ab1AQAW0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 19:22:26 -0500
+Received: from cantor.suse.de ([195.135.220.2]:35488 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751885Ab1AQAWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jan 2011 19:22:24 -0500
+Subject: Re: [PATCH] configfs: change depends -> select SYSFS
+From: James Bottomley <James.Bottomley@suse.de>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Joel Becker <jlbec@evilplan.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>
+In-Reply-To: <20110117000659.57352da7@stein>
+References: <1295125851-25279-1-git-send-email-nab@linux-iscsi.org>
+	 <20110116141105.59e5b3a2@stein>
+	 <1295214807.22813.57.camel@haakon2.linux-iscsi.org>
+	 <20110117000659.57352da7@stein>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 16 Jan 2011 18:22:12 -0600
+Message-ID: <1295223733.2998.8.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/11 06:09, Milan Broz wrote:
-> On 01/14/2011 05:10 PM, Tejun Heo wrote:
->> Commit e09b457b (block: simplify holder symlink handling) incorrectly
->> assumed that there is only one link at maximum.  dm may use multiple
->> links and expects block layer to track reference count for each link,
->> which is different from and unrelated to the exclusive device holder
->> identified by @holder when the device is opened.
->>
->> Remove the single holder assumption and automatic removal of the link
->> and revive the per-link reference count tracking.  The code
->> essentially behaves the same as before commit e09b457b sans the
->> unnecessary kobject reference count dancing.
->>
->> While at it, note that this facility should not be used by anyone else
->> than the current ones.  Sysfs symlinks shouldn't be abused like this
->> and the whole thing doesn't belong in the block layer at all.
->>
->> Signed-off-by: Tejun Heo <tj@kernel.org>
->> Reported-by: Milan Broz <mbroz@redhat.com>
->> Cc: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
->> Cc: Neil Brown <neilb@suse.de>
->> Cc: linux-raid@vger.kernel.org
->> Cc: Kay Sievers <kay.sievers@vrfy.org>
->> ---
->> Thanks for the test commands.  They were very helpful.  Can you please
->> test this one?
+On Mon, 2011-01-17 at 00:06 +0100, Stefan Richter wrote:
+> On Jan 16 Nicholas A. Bellinger wrote:
+> > On Sun, 2011-01-16 at 14:11 +0100, Stefan Richter wrote:
+> > > On Jan 15 Nicholas A. Bellinger wrote:
+> > > > This patch changes configfs to select SYSFS to fix the following:
+> > > > 
+> > > > warning: (TARGET_CORE && GFS2_FS) selects CONFIGFS_FS which has unmet direct dependencies (SYSFS)
+> > > 
+> > > Why don't you fix target-core's Kconfig instead?
+> > 
+> > The thought here was that since modern configfs is mounted
+> > at /sys/kernel/config/, selecting SYSFS by default when building
+> > CONFIGFS_FS made the most sense for existing configfs consumers.
 > 
-> Hi,
-> 
-> yes, this one works for me. I run full lvm2 testsuite and no warnings.
-> Thanks!
-> 
-> Tested-by: Milan Broz <mbroz@redhat.com>
+> I for one think that layered "select" directives will open too many cans
+> of worms.
 
-Thanks Tejun, Milan!
-If it passed my quick test and the lvm2 testsuite,
-I have nothing to add here.
-And the code looks ok, too.
+select, since we have it, should be clean ... as in if you select
+something, you don't have to expose yourself to a huge pile of missing
+depends that only show up in obscure configurations.
 
--- 
-Jun'ichi Nomura, NEC Corporation
+
+> Best don't use select at all.
+
+The object of select is not to trip up the user.  If we used a purely
+depend based configuration, the user would have to know to select, say,
+the right SCSI transport classes before they get presented with drivers.
+It's completely correct, since transport classes are internal
+implementations, to have the user select drivers and Kconfig work out
+via the select directive what transport classes are needed.
+
+> If you use it, select only options that don't depend on anything else.
+> 
+> If you feel that people really want you to provide a select for them which
+> selects something that in turn depends on other things, then I suggest you
+> rather let your own option depend on these lower dependencies:
+> 
+> config HIGHLEVEL_FEATURE
+> 	tristate "some driver"
+> 	depends on SYSFS  # because CONFIGFS depends on it
+> 	select CONFIGFS
+
+This is what I don't understand.
+
+Actually I think the whole premise of the patch (to get back to the
+original topic) is wrong.
+
+TARGET_CORE depends on SCSI; SCSI has to have sysfs to survive ... we
+just don't work without it yet we neither select nor depend on it.
+SYSFS is only deselectable for embedded anyway, so I think the
+configuration which generated this whole argument was likely a bogus one
+and consequently, none of the patches are needed (or if they are,
+they're the tip of the iceberg).
+
+James
+
+
