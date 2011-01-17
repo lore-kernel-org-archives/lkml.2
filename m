@@ -1,101 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751438Ab1AQFtn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 00:49:43 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:35089 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750761Ab1AQFtl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 00:49:41 -0500
-Date: Mon, 17 Jan 2011 00:49:37 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: ltt-dev@lists.casi.polymtl.ca
-Cc: linux-kernel@vger.kernel.org, Avik Sil <avik.sil@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [ANNOUNCEMENT] LTTng development roadmap, snapshot 20110116
-Message-ID: <20110117054937.GA12175@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 23:57:38 up 54 days, 10:00,  6 users,  load average: 0.00, 0.02,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751903Ab1AQGAP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 01:00:15 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:44099 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750863Ab1AQGAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jan 2011 01:00:11 -0500
+Date: Mon, 17 Jan 2011 16:59:58 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Chou <thomas@wytron.com.tw>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        nios2-dev@sopc.et.ntust.edu.tw, Mike Frysinger <vapier@gentoo.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net
+Subject: Re: [PATCH v2] spi: New driver for Altera SPI
+Message-Id: <20110117165958.f89e8220.sfr@canb.auug.org.au>
+In-Reply-To: <1295243200-28230-1-git-send-email-thomas@wytron.com.tw>
+References: <1254981838-20584-1-git-send-email-thomas@wytron.com.tw>
+	<1295243200-28230-1-git-send-email-thomas@wytron.com.tw>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__17_Jan_2011_16_59_58_+1100_o1M42irch8Wbv.GQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Signature=_Mon__17_Jan_2011_16_59_58_+1100_o1M42irch8Wbv.GQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I just released a development snapshot of the current LTTng so those interested
-can start building it in various configurations. The targets of this
-development phase were as follows:
+Hi Thomas,
 
-1) The size of the kernel patchset has been shrinked for Linux distributions by
-   removing all LTTng-specific instrumentation from the tree.
+On Mon, 17 Jan 2011 13:46:40 +0800 Thomas Chou <thomas@wytron.com.tw> wrote:
+>
+> This patch adds a new SPI driver to support the Altera SOPC Builder
+> SPI component. It uses the bitbanging library.
 
-2) The lttng-modules package now implements an ABI based on anonymous file
-   descriptors (inspired from perf) rather than the full-blown VFS tree the
-   previous LTTng versions were implementing.
+Just a general query.
 
-3) lttng-modules now exports trace data and metadata in the CTF (Common Trace
-   Format).
+> diff --git a/include/linux/spi/spi_altera.h b/include/linux/spi/spi_alter=
+a.h
+> new file mode 100644
+> index 0000000..b3d7f69
+> --- /dev/null
+> +++ b/include/linux/spi/spi_altera.h
+> @@ -0,0 +1,12 @@
+> +#ifndef _LINUX_SPI_SPI_ALTERA_H
+> +#define _LINUX_SPI_SPI_ALTERA_H
+> +
+> +/*
+> + * struct altera_spi_platform_data - platform data of the Altera SPI
+> + * @interrupt:	use intrrupt driven data transfer.
+> + */
+> +struct altera_spi_platform_data {
+> +	int interrupt;
+> +};
 
-4) lttng-modules now uses the Generic Ring Buffer Library.
+Is there some reason that this struct definition cannot just be placed
+in spi_altera.c and so save a whole extra file (and its inclusion)?
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-The kernel tree snapshot is available as a tarball at:
-http://lttng.org/files/lttng/patch-2.6.37-lttng-dev-snapshot-20110116.tar.bz2
+--Signature=_Mon__17_Jan_2011_16_59_58_+1100_o1M42irch8Wbv.GQ
+Content-Type: application/pgp-signature
 
-The kernel patchset contains the following subdirectories:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-trace-event-merged/                (3 patches, merged in the tracing tree)
- 5 files changed, 22 insertions(+), 17 deletions(-)
+iQEcBAEBAgAGBQJNM9reAAoJEDMEi1NhKgbsZqAH/jh2V0e38zKKPugvDETezbC9
+1/KuXsK+Q3nq7+5r7jDBkQeyx1jbPwGoFBVNRAh34+CekvrpMc69XdFqGoIMRMBw
+HVKWBMhCAL73IS0PK21ewOGIlI4pyNf0XJS5iS3WmllZxSIOn2UI0soGhW1ic/Ya
+eVOwFawjCJ1OTnAFMrNfpYUD6VqG32r53mSMjWsalHvX/7yJYZFJKPY2NDq4c2b6
+wMatp9/tgDf0ajbauJr6BvJ4ti8wTf5rWf0enxheG1VMYp/Qgoz81g3gQ9iyK5S6
+pUuPs0wxkJI+z6p5YGSgZKRRrPubyvYBY2tuWph/az0qZ8NxDEOgIcHGSm6xXKk=
+=gZYc
+-----END PGP SIGNATURE-----
 
-trace-event-semicolon-removal/     (29 patches)
- 37 files changed, 730 insertions(+), 662 deletions(-)
-
-trace-event-assign-macros/         (8 patches)
- 10 files changed, 251 insertions(+), 223 deletions(-)
-
-trace-clock/                       (19 patches)
- 60 files changed, 2750 insertions(+), 216 deletions(-)
-
-lib-ring-buffer/                   (9 patches)
- 34 files changed, 6635 insertions(+), 71 deletions(-)
-
-lttng/                             (3 patches)
- 3 files changed, 11 insertions(+), 1 deletion(-)
-
-lib-ring-buffer-improvements/      (7 patches)
- 12 files changed, 279 insertions(+), 14 deletions(-)
-
-
-The LTTng kernel patchset is needed to build the current lttng-modules git tree
-(a kernel module package). To fetch it:
-
-git clone git://git.lttng.org/lttng-modules.git
-(.c and .h files:   3170 lines total)
-
-I currently have only a rather basic test program to interface with the new ABI
-(available at http://lttng.org/files/lttng/test-lttng-ioctl.c), but I am
-planning to work on the new strace-like command line program within the next
-weeks (note: the location of the debugfs LTTng file will very likely change).
-The objective is to create one single command-line tool to control both the
-LTTng kernel tracer and the UST user-space tracer.
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+--Signature=_Mon__17_Jan_2011_16_59_58_+1100_o1M42irch8Wbv.GQ--
