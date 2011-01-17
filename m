@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264Ab1AQAxy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 19:53:54 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:40671 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751427Ab1AQAxx (ORCPT
+	id S1752204Ab1AQBIM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 20:08:12 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:62972 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751658Ab1AQBII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 19:53:53 -0500
-Date: Mon, 17 Jan 2011 09:53:45 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH 1/3] MAINTAINERS: Move s3c2410 drivers to ARM/SAMSUNG ARM
-In-reply-to: <0bd9310fc4d79ee83f9f657640be251d84dbf86f.1294998254.git.ben-linux@fluff.org>
-To: "'Ben Dooks'" <ben-linux@fluff.org>, linux-kernel@vger.kernel.org
-Cc: linux@simtec.co.uk
-Message-id: <038101cbb5e1$021300e0$063902a0$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: Acuzz6SFkp+eUEFdSGCMnOAViLw4BACET6Bg
-References: <0bd9310fc4d79ee83f9f657640be251d84dbf86f.1294998254.git.ben-linux@fluff.org>
+	Sun, 16 Jan 2011 20:08:08 -0500
+Message-ID: <4D33965A.1090505@oracle.com>
+Date: Sun, 16 Jan 2011 17:07:38 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Joel Becker <jlbec@evilplan.org>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: Re: [PATCH] configfs: change depends -> select SYSFS
+References: <1295125851-25279-1-git-send-email-nab@linux-iscsi.org>	<20110116141105.59e5b3a2@stein>	<1295214807.22813.57.camel@haakon2.linux-iscsi.org>	<20110117000659.57352da7@stein>	<AANLkTik=Pv1KdiBa3RbSoqmDC92F33jyFb0b-Ej_iGRN@mail.gmail.com>	<20110116231901.GF22723@ZenIV.linux.org.uk>	<AANLkTikWHkfb1-Yh_O=rYEqzgz48rwRggCp6uhr+E86J@mail.gmail.com> <20110117015220.11b43ae7@stein>
+In-Reply-To: <20110117015220.11b43ae7@stein>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Dooks wrote:
+On 01/16/11 16:52, Stefan Richter wrote:
+> On Jan 16 Linus Torvalds wrote:
+>> Or do you expect a high-quality implementation of a configuration
+>> script to allow the user to just say "I want ocfs2", and then figure
+>> out the dependencies and solve them for you?
+>>
+>> I'd say that the latter case is OBVIOUSLY the quality implementation,
+>> while the former one is just stupid.
 > 
-> There are currnetly two entries under the "SIMTEC EB2410ITX (BAST)"
-> machine entry for drivers/*/*s3c2410*, which is catching everything
-> s3c2410 driver related.
+> As Al noted, there also needs to be a convenient way to *disable* options.
 > 
-> This entry is for a specific S3C2410 based machine, so move these two
-> file entries to the "ARM/SAMSUNG ARM ARCHITECTURES" entry, where it
-> will reach a wider audience of interested parties.
+> Hence, the Kconfig files should merely declare the dependencies.  Then,
+> some user interfaces should deal with the this database of dependencies
+> and let different people achieve different goals as easily as possible.
 > 
-> Signed-off-by: Ben Dooks <ben-linux@fluff.org>
-> Cc: Simtec Linux Team <linux@simtec.co.uk>
-> Cc: Kukjin Kim <kgene.kim@samsung.com>
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+> We already have different UIs.  But perhaps we have too much UI down in
+> the Kconfig files.  I.e., perhaps Kconfig shouldn't know the difference
+> between depends-on and select.  Let the different UIs present the
+> dependency graph to the operator in different ways, suitable to different
+> tasks.
 
-Thanks.
+I agree, I think that the UIs should list a kconfig symbol and its dependencies,
+then let the user enable them as needed.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+> /handwave off.
 
-> ---
->  MAINTAINERS |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 64d7621..464f0ec 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -975,6 +975,8 @@ S:	Maintained
->  F:	arch/arm/plat-samsung/
->  F:	arch/arm/plat-s3c24xx/
->  F:	arch/arm/plat-s5p/
-> +F:	drivers/*/*s3c2410*
-> +F:	drivers/*/*/*s3c2410*
-> 
->  ARM/S3C2410 ARM ARCHITECTURE
->  M:	Ben Dooks <ben-linux@fluff.org>
-> @@ -5565,8 +5567,6 @@ M:	Vincent Sanders <support@simtec.co.uk>
->  W:	http://www.simtec.co.uk/products/EB2410ITX/
->  S:	Supported
->  F:	arch/arm/mach-s3c2410/
-> -F:	drivers/*/*s3c2410*
-> -F:	drivers/*/*/*s3c2410*
-> 
->  TI DAVINCI MACHINE SUPPORT
->  M:	Kevin Hilman <khilman@deeprootsystems.com>
-> --
-> 1.7.1
 
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
