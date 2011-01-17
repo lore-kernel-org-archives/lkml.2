@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab1AQLAH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 06:00:07 -0500
-Received: from mga02.intel.com ([134.134.136.20]:16164 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751210Ab1AQLAC convert rfc822-to-8bit (ORCPT
+	id S1753359Ab1AQLvz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 06:51:55 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:55960
+	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751985Ab1AQLvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 06:00:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,332,1291622400"; 
-   d="scan'208";a="697564394"
-From: "Tardy, Pierre" <pierre.tardy@intel.com>
-To: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cjb@laptop.org" <cjb@laptop.org>, "ohad@wizery.com" <ohad@wizery.com>
-Date: Mon, 17 Jan 2011 10:59:25 +0000
-Subject: RE: [PATCH v1 1/3]mmc: implemented runtime pm for mmc host
-Thread-Topic: [PATCH v1 1/3]mmc: implemented runtime pm for mmc host
-Thread-Index: AcuzxUMTTjCRN6kDQo+D/jJpKwzH1gCb6uFA
-Message-ID: <8250E4885F9967469CAC3FB5CBA2CE69934E7AA2FE@irsmsx501.ger.corp.intel.com>
-References: <20110114082310.GB27523@intel.com>
-In-Reply-To: <20110114082310.GB27523@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	Mon, 17 Jan 2011 06:51:53 -0500
+X-SpamScore: -39
+X-BigFish: VPS-39(zzbb2dKbb2cK1432N98dN4015L9371Pzz1202hzz15d4Rz32i637h668h)
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LF6058-01-8QJ-02
+X-M-MSG: 
+Date: Mon, 17 Jan 2011 12:34:21 +0100
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Avi Kivity <avi@redhat.com>
+CC: Joerg Roedel <joro@8bytes.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2 v2] perf-kvm support for SVM
+Message-ID: <20110117113421.GC31122@amd.com>
+References: <1295019902-31339-1-git-send-email-joerg.roedel@amd.com>
+ <4D32CD45.3090503@redhat.com>
+ <20110116153506.GI6376@8bytes.org>
+ <4D3310E3.9020909@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4D3310E3.9020909@redhat.com>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jan 16, 2011 at 10:38:11AM -0500, Avi Kivity wrote:
+> On 01/16/2011 05:35 PM, Joerg Roedel wrote:
+> > On Sun, Jan 16, 2011 at 12:49:41PM +0200, Avi Kivity wrote:
+> > >  On 01/14/2011 05:45 PM, Joerg Roedel wrote:
+> >
+> > >>  here is the reworked version of the patch-set. Only patch 1/2 has
+> > >>  changed and now contains the real fix for the crashes that were seen and
+> > >>  has an updated log message.
+> > >>
+> > >
+> > >  Thanks, applied.  2.6.37 and earlier aren't affected, yes?  So I'm
+> > >  queuing it for 2.6.38 only.
+> >
+> > I think the problem is there since KVM has lazy state switching. So the
+> > fix in patch 1 should make it in all currently maintained stable-trees.
+> >
+> 
+> The problem is with load_gs_index(), yes?  In 2.6.37 this is called 
+> before stgi(), so it's protected from nmi.
 
-> MMC host has a sysfs interface to let user specify the auto suspended delay.
-> Each slot of the host controller can have a different delay for runtime
-> suspended.
+Ok, you are right :) So the fix is only necessary for 2.6.38.
 
+	Joerg
 
->   out:
-> +	/* power off host controller */
-> +	pm_runtime_put(&host->class_dev);
-If you want to use autosuspend feature, then you need to use the function pm_runtime_put_autosuspend().
+-- 
+AMD Operating System Research Center
 
-
-I'm also worried about this patch not taking in account the 8 clock cycles before shutting down the clock, contrary to the clock gating fw.
-If you power down hc, you will also gate the clock. So the sdio protocol might not be strictly followed.
-
-
-Regards,
-Pierre
----------------------------------------------------------------------
-Intel Corporation SAS (French simplified joint stock company)
-Registered headquarters: "Les Montalets"- 2, rue de Paris, 
-92196 Meudon Cedex, France
-Registration Number:  302 456 199 R.C.S. NANTERRE
-Capital: 4,572,000 Euros
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
