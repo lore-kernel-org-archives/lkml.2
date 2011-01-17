@@ -1,98 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab1AQS24 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 13:28:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2370 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751497Ab1AQS2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 13:28:54 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: David Dillow <dillowda@ornl.gov>
-Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH v2 alt 2]  fs/direct-io.c: don't try to allocate more than BIO_MAX_PAGES in a bio
-References: <1294977946.21790.20.camel@obelisk.thedillows.org>
-	<x498vynbl4e.fsf@segfault.boston.devel.redhat.com>
-	<1295023584.24487.16.camel@lap75545.ornl.gov>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 17 Jan 2011 13:28:52 -0500
-In-Reply-To: <1295023584.24487.16.camel@lap75545.ornl.gov> (David Dillow's
-	message of "Fri, 14 Jan 2011 11:46:24 -0500")
-Message-ID: <x49y66jmljv.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1752364Ab1AQS36 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 13:29:58 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:14518 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745Ab1AQS34 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jan 2011 13:29:56 -0500
+Date: Mon, 17 Jan 2011 19:29:56 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+cc: linux-kernel@vger.kernel.org, James Bottomley <James.Bottomley@suse.de>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH] target: Fix memory leak in
+ fd_set_configfs_dev_params().
+In-Reply-To: <1295219988.22813.72.camel@haakon2.linux-iscsi.org>
+Message-ID: <alpine.LNX.2.00.1101171929150.27021@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1101162006410.13377@swampdragon.chaosbits.net>  <1295218456.22813.61.camel@haakon2.linux-iscsi.org>  <alpine.LNX.2.00.1101162357250.13377@swampdragon.chaosbits.net> <1295219988.22813.72.camel@haakon2.linux-iscsi.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Dillow <dillowda@ornl.gov> writes:
+On Sun, 16 Jan 2011, Nicholas A. Bellinger wrote:
 
-> When using devices that support max_segments > BIO_MAX_PAGES (256),
-> direct IO tries to allocate a bio with more pages than allowed, which
-> leads to an oops in dio_bio_alloc(). Clamp the request to the supported
-> maximum, and change dio_bio_alloc() to reflect that bio_alloc() will
-> always return a bio when called with __GFP_WAIT and a valid number of
-> vectors.
+> On Sun, 2011-01-16 at 23:59 +0100, Jesper Juhl wrote:
+> > On Sun, 16 Jan 2011, Nicholas A. Bellinger wrote:
+> > 
+> > > On Sun, 2011-01-16 at 20:17 +0100, Jesper Juhl wrote:
+> > > > match_strdup() dynamically allocates memory and it is the responsabillity 
+> > > > of the caller to free that memory. In 
+> > > > drivers/target/target_core_file.c::fd_set_configfs_dev_params() two calls 
+> > > > are made to match_strdup() and in neither case is the allocated memory 
+> > > > freed, but instead it is leaked.
+> > > > 
+> > > > This patch should take care of the problem by kfree()'ing the allocated 
+> > > > memory once it is no longer needed. It also makes sure to return -ENOMEM 
+> > > > if the memory allocation in match_strdup() should fail.
+> > > > 
+> > > > Please review and consider for inclusion.
+> > > > 
+> > > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > > 
+> > > Ugh, this was my fault during the recent v4.0 configfs parameter
+> > > conversion.  Committed as 5c45b37 in lio-core-2.6.git/linus-38-rc1 and I
+> > > will fix up the other handful of match_strdup() breakage and carry into
+> > > scsi-post-merge-2.6.git/for-jejb shortly.
+> > > 
+> > > Thanks for catching this..
+> > > 
+> > 
+> > You're welcome.
+> > Yes, I did see a bunch of other match_strdup() related problems, but I 
+> > thought I'd just fix up one file initially to see the general reaction, 
+> > then do the rest later when this one had been merged. but if you want to 
+> > fix up the remainder, feel free.
+> > 
+> > I guess we can merge this patch as a starting point?
+> > 
+> 
+> Sure, the other two follow-up match_strdup() memory leak bugfix patches
+> for target/iblock and target_core_configfs.c APTPL metadata token
+> parsing have been included into the scsi-post-merge-2.6.git/for-jejb
+> queue.
+> 
+Ok, I assume you'll add my patch there as well?
 
-I like this version better than the first, just clean up the comment to
-conform to CodingStyle and you can add my
+> Thanks again!
+> 
+np
 
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-Be sure to CC akpm on the next posting, as DIO changes usually go in
-through his tree.
-
-Cheers,
-Jeff
-
-> Signed-off-by: David Dillow <dillowda@ornl.gov>
-> --
-> Second alternate, my preferred that reflects that bio_alloc() cannot
-> fail when properly called. I can take or leave the comment.
->
->
-> diff --git a/fs/direct-io.c b/fs/direct-io.c
-> index 85882f6..96a01d8 100644
-> --- a/fs/direct-io.c
-> +++ b/fs/direct-io.c
-> @@ -325,13 +325,17 @@ void dio_end_io(struct bio *bio, int error)
->  }
->  EXPORT_SYMBOL_GPL(dio_end_io);
->  
-> -static int
-> +static void
->  dio_bio_alloc(struct dio *dio, struct block_device *bdev,
->  		sector_t first_sector, int nr_vecs)
->  {
->  	struct bio *bio;
->  
-> +	/* bio_alloc() is guaranteed to return a bio when called with
-> +	 * __GFP_WAIT and we request a valid number of vectors.
-> +	 */
->  	bio = bio_alloc(GFP_KERNEL, nr_vecs);
-> +	BUG_ON(!bio);
->  
->  	bio->bi_bdev = bdev;
->  	bio->bi_sector = first_sector;
-> @@ -342,7 +346,6 @@ dio_bio_alloc(struct dio *dio, struct block_device *bdev,
->  
->  	dio->bio = bio;
->  	dio->logical_offset_in_bio = dio->cur_page_fs_offset;
-> -	return 0;
->  }
->  
->  /*
-> @@ -583,8 +586,9 @@ static int dio_new_bio(struct dio *dio, sector_t start_sector)
->  		goto out;
->  	sector = start_sector << (dio->blkbits - 9);
->  	nr_pages = min(dio->pages_in_io, bio_get_nr_vecs(dio->map_bh.b_bdev));
-> +	nr_pages = min(nr_pages, BIO_MAX_PAGES);
->  	BUG_ON(nr_pages <= 0);
-> -	ret = dio_bio_alloc(dio, dio->map_bh.b_bdev, sector, nr_pages);
-> +	dio_bio_alloc(dio, dio->map_bh.b_bdev, sector, nr_pages);
->  	dio->boundary = 0;
->  out:
->  	return ret;
