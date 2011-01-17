@@ -1,92 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751311Ab1AQKF6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 05:05:58 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:17966 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747Ab1AQKFz (ORCPT
+	id S1751758Ab1AQKIl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 05:08:41 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:54738 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033Ab1AQKIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 05:05:55 -0500
-Subject: Re: [PATCH v4 09/24] bitops: introduce little-endian bitops for
- most architectures
-From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        akpm@linux-foundation.org, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Bryan Wu <bryan.wu@analog.com>, Mikael Starvik <starvik@axis.com>,
-        David Howells <dhowells@redhat.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        "Luck, Tony" <tony.luck@intel.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Kyle McMartin <kyle@mcmartin.ca>, Matthew Wilcox <willy@debian.org>,
-        Grant Grundler <grundler@parisc-linux.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Kazumoto Kojima <kkojima@rr.iij4u.or.jp>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Zankel <chris@zankel.net>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-In-Reply-To: <1295183333-13802-10-git-send-email-akinobu.mita@gmail.com>
-References: <1295183333-13802-1-git-send-email-akinobu.mita@gmail.com>
-	 <1295183333-13802-10-git-send-email-akinobu.mita@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Atmel Corporation
-Date: Mon, 17 Jan 2011 11:01:52 +0100
-Message-ID: <1295258512.15492.13.camel@hcegtvedt>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 17 Jan 2011 10:01:54.0964 (UTC) FILETIME=[9202ED40:01CBB62D]
+	Mon, 17 Jan 2011 05:08:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=EW8qGoreSS1uVgYrc+mG8YdpGAwMuVQzv0DAuR3hhxNtdLca5D7Ak6MLC9TZlTQkWO
+         w/3spP705EabwOfPVZJd6vfYJfP391USvqFvGoDt9syzVETGaS/I6swLpPGTOzneavh0
+         4GModmzTXgm17j/5h8qligAz/YgkSEPUjv+oU=
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] arm: mach-omap2: potential NULL dereference
+Date: Mon, 17 Jan 2011 13:08:32 +0300
+Message-Id: <1295258913-31048-1-git-send-email-segoon@openwall.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-01-16 at 22:08 +0900, Akinobu Mita wrote: 
-> Introduce little-endian bit operations to the architectures which do not
-> have native little-endian bit operations.  (alpha, avr32, blackfin, cris,
-> frv, h8300, ia64, m32r, mips, mn10300, parisc, sh, sparc, tile, x86,
-> xtensa)
-> 
-> These architectures can just include generic implementation
-> (asm-generic/bitops/le.h).
-> 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: Richard Henderson <rth@twiddle.net>
-> Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-> Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-> Cc: Bryan Wu <bryan.wu@analog.com>
-> Cc: Mikael Starvik <starvik@axis.com>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
-> Cc: "Luck, Tony" <tony.luck@intel.com>
-> Cc: Ralf Baechle <ralf@linux-mips.org>
-> Cc: Kyle McMartin <kyle@mcmartin.ca>
-> Cc: Matthew Wilcox <willy@debian.org>
-> Cc: Grant Grundler <grundler@parisc-linux.org>
-> Cc: Paul Mundt <lethal@linux-sh.org>
-> Cc: Kazumoto Kojima <kkojima@rr.iij4u.or.jp>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Chris Zankel <chris@zankel.net>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
-> Change from v3:
->  - No change
-> 
-> The whole series is available in the git repository at:
->  git://git.kernel.org/pub/scm/linux/kernel/git/mita/linux-2.6.git le-bitops-v4
-> 
->  arch/alpha/include/asm/bitops.h              |    1 +
->  arch/avr32/include/asm/bitops.h              |    1 +
+If kzalloc() failed, return -ENOMEM.
+sr_dev_init() should signal by return value that there is an error.
 
-For the AVR32 related change,
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+---
+ Cannot compile this driver, so it is not tested at all.
 
-Acked-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+ arch/arm/mach-omap2/sr_device.c |   19 +++++++++++++++----
+ 1 files changed, 15 insertions(+), 4 deletions(-)
 
-<snipp>
-
+diff --git a/arch/arm/mach-omap2/sr_device.c b/arch/arm/mach-omap2/sr_device.c
+index b1e0af1..20fccfb 100644
+--- a/arch/arm/mach-omap2/sr_device.c
++++ b/arch/arm/mach-omap2/sr_device.c
+@@ -40,7 +40,7 @@ static struct omap_device_pm_latency omap_sr_latency[] = {
+ };
+ 
+ /* Read EFUSE values from control registers for OMAP3430 */
+-static void __init sr_set_nvalues(struct omap_volt_data *volt_data,
++static int __init sr_set_nvalues(struct omap_volt_data *volt_data,
+ 				struct omap_sr_data *sr_data)
+ {
+ 	struct omap_sr_nvalue_table *nvalue_table;
+@@ -51,6 +51,8 @@ static void __init sr_set_nvalues(struct omap_volt_data *volt_data,
+ 
+ 	nvalue_table = kzalloc(sizeof(struct omap_sr_nvalue_table)*count,
+ 			GFP_KERNEL);
++	if (nvalue_table == NULL)
++		return -ENOMEM;
+ 
+ 	for (i = 0; i < count; i++) {
+ 		u32 v;
+@@ -75,6 +77,8 @@ static void __init sr_set_nvalues(struct omap_volt_data *volt_data,
+ 
+ 	sr_data->nvalue_table = nvalue_table;
+ 	sr_data->nvalue_count = count;
++
++	return 0;
+ }
+ 
+ static int sr_dev_init(struct omap_hwmod *oh, void *user)
+@@ -84,15 +88,18 @@ static int sr_dev_init(struct omap_hwmod *oh, void *user)
+ 	struct omap_volt_data *volt_data;
+ 	char *name = "smartreflex";
+ 	static int i;
++	int err = 0;
+ 
+ 	sr_data = kzalloc(sizeof(struct omap_sr_data), GFP_KERNEL);
+ 	if (!sr_data) {
++		err = -ENOMEM;
+ 		pr_err("%s: Unable to allocate memory for %s sr_data.Error!\n",
+ 			__func__, oh->name);
+-		return -ENOMEM;
++		goto exit;
+ 	}
+ 
+ 	if (!oh->vdd_name) {
++		err = -EINVAL;
+ 		pr_err("%s: No voltage domain specified for %s."
+ 			"Cannot initialize\n", __func__, oh->name);
+ 		goto exit;
+@@ -104,6 +111,7 @@ static int sr_dev_init(struct omap_hwmod *oh, void *user)
+ 
+ 	sr_data->voltdm = omap_voltage_domain_lookup(oh->vdd_name);
+ 	if (IS_ERR(sr_data->voltdm)) {
++		err = PTR_ERR(sr_data->voltdm);
+ 		pr_err("%s: Unable to get voltage domain pointer for VDD %s\n",
+ 			__func__, oh->vdd_name);
+ 		goto exit;
+@@ -111,12 +119,15 @@ static int sr_dev_init(struct omap_hwmod *oh, void *user)
+ 
+ 	omap_voltage_get_volttable(sr_data->voltdm, &volt_data);
+ 	if (!volt_data) {
++		err = -EINVAL;
+ 		pr_warning("%s: No Voltage table registerd fo VDD%d."
+ 			"Something really wrong\n\n", __func__, i + 1);
+ 		goto exit;
+ 	}
+ 
+-	sr_set_nvalues(volt_data, sr_data);
++	err = sr_set_nvalues(volt_data, sr_data);
++	if (err)
++		goto exit;
+ 
+ 	sr_data->enable_on_init = sr_enable_on_init;
+ 
+@@ -129,7 +140,7 @@ static int sr_dev_init(struct omap_hwmod *oh, void *user)
+ exit:
+ 	i++;
+ 	kfree(sr_data);
+-	return 0;
++	return err;
+ }
+ 
+ /*
 -- 
-Hans-Christian Egtvedt
+1.7.0.4
 
