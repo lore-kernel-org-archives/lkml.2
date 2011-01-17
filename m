@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750Ab1AQJdx (ORCPT <rfc822;w@1wt.eu>);
+	id S1752925Ab1AQJeJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 04:34:09 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:63654 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683Ab1AQJdx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 Jan 2011 04:33:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32116 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751886Ab1AQJdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 04:33:50 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <201101170039.p0H0d1f5085735@www262.sakura.ne.jp>
-References: <201101170039.p0H0d1f5085735@www262.sakura.ne.jp> <alpine.LNX.2.00.1101132100190.11347@swampdragon.chaosbits.net> <1295011682.7804.2.camel@localhost.localdomain> <201101142245.GGI86457.OQFFFMOtVOHJLS@I-love.SAKURA.ne.jp> <201101142307.EHC56742.FVtMFHOOFSQJOL@I-love.SAKURA.ne.jp> <alpine.LNX.2.00.1101161504050.8049@swampdragon.chaosbits.net> 
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Cc: dhowells@redhat.com, safford@watson.ibm.com, safford@us.ibm.com,
-        jj@chaosbits.net, jmorris@namei.org, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] trusted-keys: another free memory bugfix
-Date: Mon, 17 Jan 2011 09:33:30 +0000
-Message-ID: <3542.1295256810@redhat.com>
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=LZOZcGbuDqolGlWwrBxCsa4FSp8oKvYjG4jM8O0d7n0kdMikhhVdDXFtxjTXKzhDjr
+         7nyuLLErJIoHzuN6YPXPwYiyRepYKw0O/qtMAhurZPAArMNUn7g5rslo97ylnonXudKz
+         XJuKs8qJm1jENJ85fnk4s7LG34s7S+yrTmsbY=
+Subject: Re: [PATCH 3/3] vhost-net: use lock_sock_fast() in peek_head_len()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: virtualization@lists.osdl.org, netdev@vger.kernel.org, kvm@vger.kernel.org,
+        mst@redhat.com, linux-kernel@vger.kernel.org
+In-Reply-To: <20110117081117.18900.48672.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+References: <20110117081058.18900.67456.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+	 <20110117081117.18900.48672.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 Jan 2011 10:33:48 +0100
+Message-ID: <1295256828.3335.2.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp> wrote:
-
-> From 94e965700f1e401408836d4aa782105483196842 Mon Sep 17 00:00:00 2001
-> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Date: Mon, 17 Jan 2011 09:22:47 +0900
-> Subject: [PATCH 1/3] trusted-keys: another free memory bugfix
+Le lundi 17 janvier 2011 à 16:11 +0800, Jason Wang a écrit :
+> We can use lock_sock_fast() instead of lock_sock() in order to get
+> speedup in peek_head_len().
 > 
-> TSS_rawhmac() forgot to call va_end()/kfree() when data == NULL and
-> forgot to call va_end() when crypto_shash_update() < 0.
-> Fix these bugs by escaping from the loop using "break"
-> (rather than "return"/"goto") in order to make sure that
-> va_end()/kfree() are always called.
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  drivers/vhost/net.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index c32a2e4..50b622a 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -211,12 +211,12 @@ static int peek_head_len(struct sock *sk)
+>  {
+>  	struct sk_buff *head;
+>  	int len = 0;
+> +	bool slow = lock_sock_fast(sk);
+>  
+> -	lock_sock(sk);
+>  	head = skb_peek(&sk->sk_receive_queue);
+>  	if (head)
+>  		len = head->len;
+> -	release_sock(sk);
+> +	unlock_sock_fast(sk, slow);
+>  	return len;
+>  }
+>  
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 
-Acked-by: David Howells <dhowells@redhat.com>
+
