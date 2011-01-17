@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187Ab1AQVBY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 16:01:24 -0500
-Received: from mail-fx0-f66.google.com ([209.85.161.66]:63436 "EHLO
-	mail-fx0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757Ab1AQVBV (ORCPT
+	id S1752342Ab1AQVBq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 16:01:46 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:39233 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab1AQVBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 16:01:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=JtxpJGjHSagmb67H/KNsNhuAKrrAFywU394mmd5YNBGRqpCyNmUVNi4ZvfGK6wLvHL
-         eRc8JWJ3doej/aP8V7Ar352uS9IhNhWgVHrvDZNZ8Xhh3SKIp2HXk9iLdQ+z8kUuCLuS
-         TIJENkLZwnGil/eyX1SldfgeyD47Fcr7QBxUc=
-Date: Mon, 17 Jan 2011 22:01:17 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Oleg Nesterov <oleg@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Prasad <prasad@linux.vnet.ibm.com>, Roland McGrath <roland@redhat.com>,
+	Mon, 17 Jan 2011 16:01:41 -0500
+Subject: Re: [PATCH 1/3] trusted-keys: another free memory bugfix
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: safford@watson.ibm.com, David Safford <safford@us.ibm.com>,
+        jj@chaosbits.net, dhowells@redhat.com, jmorris@namei.org,
+        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: Q: perf_event && task->ptrace_bps[]
-Message-ID: <20110117210115.GC16856@nowhere>
-References: <20101108145647.GA3426@redhat.com>
- <20110117203459.GA32700@redhat.com>
- <1295297576.30950.382.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295297576.30950.382.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201101170039.p0H0d1f5085735@www262.sakura.ne.jp>
+References: <alpine.LNX.2.00.1101132100190.11347@swampdragon.chaosbits.net>
+	 <1295011682.7804.2.camel@localhost.localdomain>
+	 <201101142245.GGI86457.OQFFFMOtVOHJLS@I-love.SAKURA.ne.jp>
+	 <201101142307.EHC56742.FVtMFHOOFSQJOL@I-love.SAKURA.ne.jp>
+	 <alpine.LNX.2.00.1101161504050.8049@swampdragon.chaosbits.net>
+	 <201101170039.p0H0d1f5085735@www262.sakura.ne.jp>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 Jan 2011 16:01:32 -0500
+Message-ID: <1295298092.2642.2.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 17, 2011 at 09:52:56PM +0100, Peter Zijlstra wrote:
-> On Mon, 2011-01-17 at 21:34 +0100, Oleg Nesterov wrote:
-> > On 11/08, Oleg Nesterov wrote:
-> > >
-> > > I am trying to understand the usage of hw-breakpoints in arch_ptrace().
-> > > ptrace_set_debugreg() and related code looks obviously racy. Nothing
-> > > protects us against flush_ptrace_hw_breakpoint() called by the dying
-> > > tracee. Afaics we can leak perf_event or use the already freed memory
-> > > or both.
-> > >
-> > > Am I missed something?
-> > >
-> > > Looking into the git history, I don't even know which patch should be
-> > > blamed (if I am right), there were too many changes. I noticed that
-> > > 2ebd4ffb6d0cb877787b1e42be8485820158857e "perf events: Split out task
-> > > search into helper" moved the PF_EXITING check from find_get_context().
-> > > This check coould help if sys_ptrace() races with SIGKILL, but it was
-> > > racy anyway.
-> > 
-> > Ping.
-> > 
-> > Any idea how to fix this cleanly? May be we can reuse perf_event_mutex,
-> > but this looks soooo ugly. And do_exit()->flush_ptrace_hw_breakpoint()
-> > has the strange "FIXME:" comment which doesn't help me to understand
-> > what can we do.
-> > 
-> > Probably the best fix is to change this code so that the tracer owns
-> > ->ptrace_bps[], not the tracee. But this is not trivial, and needs a
-> > lot of changes in ptrace code.
+On Mon, 2011-01-17 at 09:39 +0900, Tetsuo Handa wrote:
+> Resending in separated mails in case somebody missed that
+> there was 3 patches in one mail.
+> ----------------------------------------
+> From 94e965700f1e401408836d4aa782105483196842 Mon Sep 17 00:00:00 2001
+> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Date: Mon, 17 Jan 2011 09:22:47 +0900
+> Subject: [PATCH 1/3] trusted-keys: another free memory bugfix
 > 
-> Wasn't this sorted by: 8882135bcd332f294df5455747ea43ba9e6f77ad?
+> TSS_rawhmac() forgot to call va_end()/kfree() when data == NULL and
+> forgot to call va_end() when crypto_shash_update() < 0.
+> Fix these bugs by escaping from the loop using "break"
+> (rather than "return"/"goto") in order to make sure that
+> va_end()/kfree() are always called.
 > 
-> Or is this purely related to the ptrace muck? in which case I guess
-> Frederic is you man, I never looked at the hw_breakpoint stuff in
-> general and the ptrace bits in particular.
+> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-Yeah sorry I lost track on this and left it unanswered in the middle.
-Just lemme rewalk the thread and I'm back :)
+Acked-by: Mimi Zohar <zohar@us.ibm.com>
+
+> ---
+>  security/keys/trusted_defined.c |    8 +++++---
+>  1 files changed, 5 insertions(+), 3 deletions(-)
+> 
+> diff --git a/security/keys/trusted_defined.c b/security/keys/trusted_defined.c
+> index 932f868..7b21795 100644
+> --- a/security/keys/trusted_defined.c
+> +++ b/security/keys/trusted_defined.c
+> @@ -101,11 +101,13 @@ static int TSS_rawhmac(unsigned char *digest, const unsigned char *key,
+>  		if (dlen == 0)
+>  			break;
+>  		data = va_arg(argp, unsigned char *);
+> -		if (data == NULL)
+> -			return -EINVAL;
+> +		if (data == NULL) {
+> +			ret = -EINVAL;
+> +			break;
+> +		}
+>  		ret = crypto_shash_update(&sdesc->shash, data, dlen);
+>  		if (ret < 0)
+> -			goto out;
+> +			break;
+>  	}
+>  	va_end(argp);
+>  	if (!ret)
+
+
