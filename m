@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab1AQCqU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 21:46:20 -0500
-Received: from mga11.intel.com ([192.55.52.93]:5439 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751515Ab1AQCqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 21:46:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,332,1291622400"; 
-   d="scan'208";a="878001634"
-Subject: [PATCH]x86: make relocatable kernel work with new binutils -resend
-From: Shaohua Li <shaohua.li@intel.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "Lu, Hongjiu" <hongjiu.lu@intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Jan 2011 10:46:01 +0800
-Message-ID: <1295232361.1949.675.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752135Ab1AQCvc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 21:51:32 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60004 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751515Ab1AQCv3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jan 2011 21:51:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinets0TKJmODLB4u9kH1v_KS3UWfxhvP-UQ=vmP@mail.gmail.com>
+References: <1295183333-13802-1-git-send-email-akinobu.mita@gmail.com>
+ <AANLkTikWZYOqxD_CyJ=zF2Lp2Mnt6Z2E1aPUspwMjrz_@mail.gmail.com> <AANLkTinets0TKJmODLB4u9kH1v_KS3UWfxhvP-UQ=vmP@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 16 Jan 2011 18:50:39 -0800
+Message-ID: <AANLkTimvUaGJ1eps5thgBUKjAjXuNN-6O4i-oBXZtQsd@mail.gmail.com>
+Subject: Re: [PATCH v4 00/24] Introduce little endian bitops
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        akpm@linux-foundation.org, Russell King <rmk@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-last post is lost, resend it.
+On Sun, Jan 16, 2011 at 6:37 PM, Akinobu Mita <akinobu.mita@gmail.com> wrote:
+>
+> Changing *_bit_le() to take "void *" instead of "unsigned long *"
+> makes this patch series acceptable?
 
-The CONFIG_RELOCATABLE is broken with new binutils, which will make boot
-panic. According to Lu Hongjiu, the affected binutils are from
-2.20.51.0.12 to 2.21.51.0.3, which are release since Oct 22 this year.
-At least ubuntu 10.10 is using such binutils. see:
-http://sourceware.org/bugzilla/show_bug.cgi?id=12327
-The reason of boot panic is we have 'jiffies = jiffies_64;' in
-vmlinux.lds.S. The jiffies isn't in any section. In kernel build, there
-is warning saying jiffies is an absolute address and can't be
-relocatable. At runtime, jiffies will have virtual address 0.
+That would seem to at least make all the filesystem code happier, and
+they can continue to do just something like
 
-Signed-off-by: Shaohua Li<shaohua.li@intel.com>
+   #define ext2_set_bit __set_bit_le
 
----
- arch/x86/kernel/vmlinux.lds.S |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+(or whatever the exact sequence ends up being).
 
-Index: linux/arch/x86/kernel/vmlinux.lds.S
-===================================================================
---- linux.orig/arch/x86/kernel/vmlinux.lds.S	2011-01-17 09:13:58.000000000 +0800
-+++ linux/arch/x86/kernel/vmlinux.lds.S	2011-01-17 09:58:28.000000000 +0800
-@@ -34,11 +34,9 @@ OUTPUT_FORMAT(CONFIG_OUTPUT_FORMAT, CONF
- #ifdef CONFIG_X86_32
- OUTPUT_ARCH(i386)
- ENTRY(phys_startup_32)
--jiffies = jiffies_64;
- #else
- OUTPUT_ARCH(i386:x86-64)
- ENTRY(phys_startup_64)
--jiffies_64 = jiffies;
- #endif
- 
- #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
-@@ -142,6 +140,11 @@ SECTIONS
- 		CACHELINE_ALIGNED_DATA(L1_CACHE_BYTES)
- 
- 		DATA_DATA
-+#ifdef CONFIG_X86_32
-+		jiffies = jiffies_64;
-+#else
-+		jiffies_64 = jiffies;
-+#endif
- 		CONSTRUCTORS
- 
- 		/* rarely changed data like cpu maps */
+> Or do we also need to change *_bit_le() to handle unaligned address
+> correctly?  (i.e. not only long aligned address but also byte aligned
+> address)
 
+No, I don't think that is required. We've never done it before, and
+we've never had the type-safety for the little-endian (aka "minix")
+bitops historically. So I'd just keep the status quo.
 
+              Linus
