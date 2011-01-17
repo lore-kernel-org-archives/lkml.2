@@ -1,189 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859Ab1AQT34 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 14:29:56 -0500
-Received: from ausc60ps301.us.dell.com ([143.166.148.206]:38725 "EHLO
-	ausc60ps301.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752603Ab1AQT3w convert rfc822-to-8bit (ORCPT
+	id S1752921Ab1AQTf3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 14:35:29 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:46230 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751781Ab1AQTf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 14:29:52 -0500
-X-Loopcount0: from 10.175.216.249
-From: <Narendra_K@Dell.com>
-To: <sfr@canb.auug.org.au>
-CC: <jbarnes@virtuousgeek.org>, <lenb@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-next@vger.kernel.org>,
-        <Matt_Domsch@Dell.com>, <Charles_Rose@Dell.com>,
-        <Surya_Prabhakar@Dell.com>
-Date: Mon, 17 Jan 2011 11:28:48 -0800
-Subject: Re: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
- allmodconfig
-Thread-Topic: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
- allmodconfig
-Thread-Index: Acu2fMNkSiSL+anbQq2xKrcgSlLe3A==
-Message-ID: <20110117195215.GA2708@fedora14-r610.oslab.blr.amer.dell.com>
-References: <20110112203414.GA5657@fedora14-r610.oslab.blr.amer.dell.com>
- <20110112160229.7b8d82c1@jbarnes-desktop>
- <alpine.LFD.2.02.1101122217370.19754@x980>
- <20110113075556.789ac3c3@jbarnes-vaio.home>
- <20110113162755.GA5872@fedora14-r610.oslab.blr.amer.dell.com>
- <20110114154458.GA18289@fedora14-r610.oslab.blr.amer.dell.com>
- <20110115080949.62176a3c.sfr@canb.auug.org.au>
-In-Reply-To: <20110115080949.62176a3c.sfr@canb.auug.org.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mutt/1.5.21 (2010-09-15)
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 17 Jan 2011 14:35:28 -0500
+Date: Mon, 17 Jan 2011 14:35:25 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Miller <davem@davemloft.net>, richm@oldelvet.org.uk,
+        609371@bugs.debian.org, ben@decadent.org.uk,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, mingo@redhat.com
+Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
+	Unknown relocation: 36
+Message-ID: <20110117193525.GD16154@Krystal>
+References: <4D3074FE.3030707@oldelvet.org.uk> <20110115.211722.39173519.davem@davemloft.net> <1295187469.22527.13.camel@duncow> <20110116.113944.48514452.davem@davemloft.net> <1295273486.16479.15.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295273486.16479.15.camel@gandalf.stny.rr.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 13:28:48 up 54 days, 23:31,  6 users,  load average: 0.06, 0.09,
+	0.03
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 15, 2011 at 02:39:49AM +0530, Stephen Rothwell wrote:
-> Hi Narendra,
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> [ Added Mathieu on Cc, since he likes alignments ;-) ]
+
+Oh yes, alignments are so much fun! (for some definitions of fun) ;)
+
 > 
-> On Fri, 14 Jan 2011 20:52:42 +0530 <Narendra_K@Dell.com> wrote:
-> >
-> > This patch addresses the build failure described in this thread by
-> > compiling fs/nls/nls_base.c always into vmlinux, thus making the base
-> > nls functions available always.
+> On Sun, 2011-01-16 at 11:39 -0800, David Miller wrote:
+> > From: Richard Mortimer <richm@oldelvet.org.uk>
+> > Date: Sun, 16 Jan 2011 14:17:49 +0000
+> > 
+> > > I'm wondering if gcc is just getting better at honouring the source
+> > > code. The DEFINE_EVENT macros in include/trace/ftrace.h have a
+> > > __aligned__(4) attribute in them. Maybe that should be 8 on sparc64
+> > > systems.
+> > > The aligned 4 seems to be unchanged since include/trace/ftrace.h was
+> > > created in f42c85e74faa422cf0bc747ed808681145448f88 in April 2009.
+> > 
+> > That needs to be at least "8" on 64-bit systems.  Why is this aligned
+> > directive there at all?
 > 
-> Even on platforms that don't support ACPI or DMI ...
+> IIRC, the problem showed up in 64-bit systems. OK, x86-64 (but of
+> course ;-).
 > 
-> > From: Narendra K <narendra_k@dell.com>
-> > Subject: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by allmodconfig
-> > 
-> > This patch fixes the following build breakage introduced by the patch
-> > PCI:export ACPI _DSM provided firmware instance number and string to sysfs.
-> > (previously commit a6247cd4be20cb5439db5cb7b0b6cc67fdc8e2a2).
-> > 
-> > http://marc.info/?l=linux-pci&m=129313294112736&w=1
-> > 
-> > drivers/built-in.o: In function `T.647':
-> > pci-label.c:(.text+0x28514): undefined reference to `utf16s_to_utf8s'
-> > 
-> > This happens because 'make allmodconfig' sets CONFIG_NLS=m and makes
-> > 'utf16s_to_utf8s` unavailable to drivers/pci/pci-label.o which is built
-> > into vmlinux.
-> > 
-> > This is fixed by making fs/nls/nls_base.c always compile as part of
-> > vmlinux thus making the base nls functions available always.
-> > +++ b/fs/nls/Makefile
-> > @@ -2,7 +2,7 @@
-> >  # Makefile for native language support
-> >  #
-> >  
-> > -obj-$(CONFIG_NLS)		+= nls_base.o
-> > +obj-y				+= nls_base.o
+> The problem comes when the linker puts these sections together. We read
+> all the sections as one big array. If the linker puts in holes, then
+> this breaks the array, and the kernel crashes while reading the section.
 > 
-> You should really restrict this to CONFIG_ACPI || CONFIG_DMI ||
-> CONFIG_NLS ... maybe create a CONFIG_NLS_BASE that is selected by ACPI,
-> DMI and NLS?
+> I guess one solution is to remove the alignment at the allocation and
+> place it at the structure. This will mean all accesses to this structure
+> will need to be on an alignment.
 
-Hi Stephen,
+The problem with these alignments is that they are just a hint to gcc, telling
+it what the minimum alignment of a type should be. gcc is free to align on a
+larger boundary if it wants to.
 
-Thank you for the suggestions. 
+But the following test program is very instructive:
 
-I agree with your suggestion that we should compile nls_base.o
-conditionally, only when ACPI || DMI || NLS. I have introduced a bew
-config option CONFIG_NLS_BASE and made ACPI, DMI and NLS select it.
+#include <stdio.h>
 
-V1 -> V2:
+struct test {
+        void *a;
+        void *b;
+        void *c;
+        void *d;
+        void *e;
+        void *f;
+        void *g;
+        void *h;
+        void *i;
+        void *j;
+        void *k;
+        void *l;
+        void *m;
+        void *n;
+        void *o;
+        void *p;
+        void *q;
+};
 
-1. Conditionally compile fs/nls/nls_base.c by introducing a new config
-option CONFIG_NLS_BASE, which is selected by (ACPI || DMI || NLS).
-Behavior of the rest of the files under fs/nls is not changed.
+int main()
+{
+        struct test __attribute__((aligned(4))) v;
+        printf("%d\n", __alignof__(v));
+        return 0;
+}
 
-From: Narendra K <narendra_k@dell.com>
-Subject: [PATCH V2] Fix build failure when CONFIG_NLS is set to 'm' by allmodconfig
+(on x86_64, with gcc 4.5.1 and gcc 4.4.4)
 
-This patch fixes the following build breakage introduced by the patch
-PCI:export ACPI _DSM provided firmware instance number and string to sysfs.
-(previously commit a6247cd4be20cb5439db5cb7b0b6cc67fdc8e2a2).
+if we put the "__attribute__((aligned(4)))" at the v definition (variable
+attribute), the program returns an alignment of 4. If we move it after struct
+test declaration (type attribute), the program returns an alignment of 8 (thus
+taking the max between the attribute alignment and the largest field).
 
-http://marc.info/?l=linux-pci&m=129313294112736&w=1
+But that's a real problem, because in include/trace/ftrace.h, we have an
+alignment of 4 forced on the definition, but there is a mismatch with
+trace_events.c:
 
-drivers/built-in.o: In function `T.647':
-pci-label.c:(.text+0x28514): undefined reference to `utf16s_to_utf8s'
+extern struct ftrace_event_call __start_ftrace_events[];
+extern struct ftrace_event_call __stop_ftrace_events[];
 
-This happens because 'make allmodconfig' sets CONFIG_NLS=m and makes
-'utf16s_to_utf8s` unavailable to drivers/pci/pci-label.o which is built
-into vmlinux.
+for which the alignment attribute is missing (so an alignment of 8 will be
+used there).
 
-This is fixed by making fs/nls/nls_base.c compile conditionally into
-vmlinux by introducing a new config option CONFIG_NLS_BASE which is
-selected by (ACPI || DMI || NLS). This makes
+So it all worked as long as the size of struct ftrace_event_call was a multiple
+of 8 bytes (struct ftrace_event_call constains 2 integers if we exclude the perf
+fields), but the new fields added by perf contain a supplementary 4-byte
+integer, which seems to be causing the breakage: the structures are appended one
+next to another when defined, but the iteration on these structures thinks they
+are 8-byte aligned.
 
-Signed-off-by: Narendra K <narendra_k@dell.com>
----
- fs/Makefile     |    2 +-
- fs/nls/Kconfig  |   14 ++++++++++++++
- fs/nls/Makefile |    2 +-
- 3 files changed, 16 insertions(+), 2 deletions(-)
+Steven, what were you trying to fix in the first place when you added the
+aligned(4) to the definition ? It might have just been that the _ftrace_events
+section needed to be aligned on at least 8 bytes in the linker scripts, but was
+only aligned on 4-bytes. Forcing the definition alignment down to 4 possibly
+fixed the problem you experienced on x86_64, but seems to be causing other
+problems.
 
-diff --git a/fs/Makefile b/fs/Makefile
-index a7f7cef..1e78b9b 100644
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -86,7 +86,7 @@ obj-$(CONFIG_NFS_FS)		+= nfs/
- obj-$(CONFIG_EXPORTFS)		+= exportfs/
- obj-$(CONFIG_NFSD)		+= nfsd/
- obj-$(CONFIG_LOCKD)		+= lockd/
--obj-$(CONFIG_NLS)		+= nls/
-+obj-y				+= nls/
- obj-$(CONFIG_SYSV_FS)		+= sysv/
- obj-$(CONFIG_CIFS)		+= cifs/
- obj-$(CONFIG_NCP_FS)		+= ncpfs/
-diff --git a/fs/nls/Kconfig b/fs/nls/Kconfig
-index a39edc4..2fb92e5 100644
---- a/fs/nls/Kconfig
-+++ b/fs/nls/Kconfig
-@@ -4,6 +4,7 @@
- 
- menuconfig NLS
- 	tristate "Native language support"
-+	select NLS_BASE
- 	---help---
- 	  The base Native Language Support. A number of filesystems
- 	  depend on it (e.g. FAT, JOLIET, NT, BEOS filesystems), as well
-@@ -17,6 +18,19 @@ menuconfig NLS
- 
- if NLS
- 
-+config NLS_BASE
-+	bool "Base NLS functions"
-+	depends on ACPI || DMI
-+	default y
-+	---help---
-+	  The base NLS support functions which handle unicode traslations.
-+
-+	  If unsure, say Y.
-+
-+	  This config option is selected by ACPI && DMI && NLS as the
-+	  functions defined here are needed in vmlinux and if built as
-+	  module cause build issues.
-+
- config NLS_DEFAULT
- 	string "Default NLS Option"
- 	default "iso8859-1"
-diff --git a/fs/nls/Makefile b/fs/nls/Makefile
-index f499dd7..dde741f 100644
---- a/fs/nls/Makefile
-+++ b/fs/nls/Makefile
-@@ -2,7 +2,7 @@
- # Makefile for native language support
- #
- 
--obj-$(CONFIG_NLS)		+= nls_base.o
-+obj-$(CONFIG_NLS_BASE)		+= nls_base.o
- 
- obj-$(CONFIG_NLS_CODEPAGE_437)	+= nls_cp437.o
- obj-$(CONFIG_NLS_CODEPAGE_737)	+= nls_cp737.o
+I would recommend to:
+
+- Keep the linker script _ftrace_events alignment as it is now (aligned on 32
+  bytes).
+- Remove the aligned(4) attributes from all struct ftrace_event_call
+  definitions.
+
+And see how this works. The only problem that might come up is if gcc decides to
+align struct ftrace_event_call (which is about 136 bytes in size) on an
+alignment larger than 32 bytes, which would be really surprising.
+
+Mathieu
+
+> 
+> -- Steve
+> 
+> 
+
 -- 
-1.7.3.1
-
-With regards,
-Narendra K
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
