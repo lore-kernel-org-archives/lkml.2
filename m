@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542Ab1AQMlO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 07:41:14 -0500
-Received: from www.tglx.de ([62.245.132.106]:49884 "EHLO www.tglx.de"
+	id S1752446Ab1AQMz5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 07:55:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50756 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751823Ab1AQMlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 07:41:01 -0500
-Date: Mon, 17 Jan 2011 13:40:52 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sven Neumann <s.neumann@raumfeld.com>
-cc: Daniel Mack <daniel@caiaq.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: resume regression in 2.6.37
-In-Reply-To: <1295260580.2060.29.camel@sven>
-Message-ID: <alpine.LFD.2.00.1101171142380.2678@localhost6.localdomain6>
-References: <1294933492.2535.23.camel@sven>  <alpine.LFD.2.00.1101131720350.2678@localhost6.localdomain6>  <1294938961.10740.24.camel@sven>  <alpine.LFD.2.00.1101131827080.2678@localhost6.localdomain6> <1295260580.2060.29.camel@sven>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752029Ab1AQMz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jan 2011 07:55:57 -0500
+Date: Mon, 17 Jan 2011 10:55:34 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Franck Bui-Huu <fbuihuu@gmail.com>, linux-kernel@vger.kernel.org,
+        2nddept-manager@sdl.hitachi.co.jp,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH -perf/perf/core 4/6] perf: Add strfilter for general
+	purpose string filter
+Message-ID: <20110117125534.GD3902@ghostprotocols.net>
+References: <20110113124548.22426.11201.stgit@ltc236.sdl.hitachi.co.jp> <20110113124617.22426.25293.stgit@ltc236.sdl.hitachi.co.jp> <20110117124029.GC3902@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110117124029.GC3902@ghostprotocols.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Jan 2011, Sven Neumann wrote:
-
-> On Thu, 2011-01-13 at 18:33 +0100, Thomas Gleixner wrote:
+Em Mon, Jan 17, 2011 at 10:40:29AM -0200, Arnaldo Carvalho de Melo escreveu:
+> Em Thu, Jan 13, 2011 at 09:46:17PM +0900, Masami Hiramatsu escreveu:
+> > Add strfilter for general purpose string filter.
+> > Every filter rules are descrived by glob matching pattern
+> > and '!' prefix which means Logical NOT.
+> > A strfilter consists of those filter rules connected
+> > with '&' and '|'. A set of rules can be folded by using
+> > '(' and ')'. It also accepts spaces around rules and those
 > 
-> > > Without the revert there is absolutely no sign of resume. With the
-> > > change reverted I can see that the PXA powers up again, there's an LED
-> > > showing that the USB controller has power again. Unfortunately there's
-> > > seems to be another problem and the resume doesn't complete. I've tried
-> > > to get console output by using no_console_suspend, but there's just
-> > > gibberish on the console after resume :(
-> > > 
-> > > Any idea on how to proceed from here? I could perhaps ask our hardware
-> > > engineer to try find out where exactly we are stuck in the resume. But
-> > > I'd like to avoid that if possible.
-> > 
-> > Can you stick a printk into the set_wake() function of that irq chip
-> > and print the irq and on arguments and the return value . Run that
-> > with both stock 2.6.37 and the patch reverted.
-> 
-> pxa3xx_set_wake(31, 1) returns 0
-> 
-> Same result with stock 2.6.37 and the patch reverted. Except that
-> without the patch reverted, the device doesn't power up again.
+> You're not checking strfilter__alloc results, I'm fixing this for you
+> this time :-)
 
-Ok, can we agree that the patch has no functional impact on the
-set_wake function? And I don't see a reason why reverting that patch
-results in a working resume. That does not make sense at all. Which
-compiler version are you using ?
+Not really, please check strdup() result and strfilter__delete() needs
+to traverse all the nodes, not just the ones pointed at the root, right?
 
-Thanks,
+Please address these problems and resubmit this patch, I merged the
+first three, folding the documentation one you sent for --funcs into the
+third, where the feature was added.
 
-	tglx
+Please rebase from my perf/core branch at:
 
+http://git.kernel.org/?p=linux/kernel/git/acme/linux-2.6.git;a=shortlog;h=refs/heads/perf/core
 
-
-
+- Arnaldo
