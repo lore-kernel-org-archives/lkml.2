@@ -1,97 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab1AQREc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 12:04:32 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:38429 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753353Ab1AQREb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 12:04:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=iWNOvI7+G25ltgm6g+ZDuMYmO7t3P7O2cVcs68vvkmbo6C/3Yh46zfm77c+oRseA92
-         jwEvtaXvrQSuxS0O23wf0/kmKkoUpBlD+S8Wsk5i37Q8FyW/jN6vF5WURVZiRYyUwEbj
-         u4DhqDoeV7G8Zep/wmIyLqphPW4Qxozs1JyCA=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1101162145290.13377@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1101162145290.13377@swampdragon.chaosbits.net>
-Date: Mon, 17 Jan 2011 12:04:29 -0500
-X-Google-Sender-Auth: 96hmGEvLq5NCzMa90GXdSTBge_A
-Message-ID: <AANLkTik+Z5C89Hb9Xu3az=deMsXj4rqvYpU=i7vXgdFx@mail.gmail.com>
-Subject: Re: [PATCH] NFS4: Avoid potential NULL pointer dereference in decode_and_add_ds().
-From: Fred Isaman <iisaman@netapp.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-nfs@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753450Ab1AQRTx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 12:19:53 -0500
+Received: from mail.perches.com ([173.55.12.10]:3185 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752131Ab1AQRTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jan 2011 12:19:51 -0500
+Subject: Re: [PATCH v2] net: add Faraday FTMAC100 10/100 Ethernet driver
+From: Joe Perches <joe@perches.com>
+To: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ratbert@faraday-tech.com, bhutchings@solarflare.com,
+        eric.dumazet@gmail.com, dilinger@queued.net
+In-Reply-To: <1295256060-2091-1-git-send-email-ratbert.chuang@gmail.com>
+References: <1294919372-1904-1-git-send-email-ratbert.chuang@gmail.com>
+	 <1295256060-2091-1-git-send-email-ratbert.chuang@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 Jan 2011 09:19:48 -0800
+Message-ID: <1295284788.21277.65.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 16, 2011 at 3:50 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> strrchr() can return NULL if nothing is found. If this happens we'll
-> dereference a NULL pointer in
-> fs/nfs/nfs4filelayoutdev.c::decode_and_add_ds().
->
-> I tried to find some other code that guarantees that this can never
-> happen but I was unsuccessful. So, unless someone else can point to some
-> code that ensures this can never be a problem, I believe this patch is
-> needed.
->
+On Mon, 2011-01-17 at 17:21 +0800, Po-Yu Chuang wrote:
+> From: Po-Yu Chuang <ratbert@faraday-tech.com>
+> FTMAC100 Ethernet Media Access Controller supports 10/100 Mbps and
+> MII.  This driver has been working on some ARM/NDS32 SoC's including
+> Faraday A320 and Andes AG101.
 
-The only guarantee is the assumption that the server isn't sending
-garbage.  As such, this patch looks good to me.
+Hi again.
 
-Fred
-
-> While I was changing this code I also noticed that all the dprintk()
-> statements, except one, start with "%s:". The one missing the ":" I added
-> it to.
->
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> Signed-off-by: Po-Yu Chuang <ratbert@faraday-tech.com>
 > ---
->  nfs4filelayoutdev.c |    7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
->
->  only compile tested.
->
-> diff --git a/fs/nfs/nfs4filelayoutdev.c b/fs/nfs/nfs4filelayoutdev.c
-> index 51fe64a..5a85b8f 100644
-> --- a/fs/nfs/nfs4filelayoutdev.c
-> +++ b/fs/nfs/nfs4filelayoutdev.c
-> @@ -214,7 +214,7 @@ decode_and_add_ds(__be32 **pp, struct inode *inode)
->
->        /* ipv6 length plus port is legal */
->        if (rlen > INET6_ADDRSTRLEN + 8) {
-> -               dprintk("%s Invalid address, length %d\n", __func__,
-> +               dprintk("%s: Invalid address, length %d\n", __func__,
->                        rlen);
->                goto out_err;
->        }
-> @@ -225,6 +225,11 @@ decode_and_add_ds(__be32 **pp, struct inode *inode)
->        /* replace the port dots with dashes for the in4_pton() delimiter*/
->        for (i = 0; i < 2; i++) {
->                char *res = strrchr(buf, '.');
-> +               if (!res) {
-> +                       dprintk("%s: Failed finding expected dots in port\n",
-> +                               __func__);
-> +                       goto out_free;
-> +               }
->                *res = '-';
->        }
->
->
-> --
-> Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-> Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-> Plain text mails only, please.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+> v2:
+> always use NAPI
+> do not use our own net_device_stats structure
+> don't set trans_start and last_rx
+> stats.rx_packets and stats.rx_bytes include dropped packets
+> add missed netif_napi_del()
+> initialize spinlocks in probe function
+> remove rx_lock and hw_lock
+> use netdev_[err/info/dbg] instead of dev_* ones
+> use netdev_alloc_skb_ip_align()
+> remove ftmac100_get_stats()
+> use is_valid_ether_addr() instead of is_zero_ether_addr()
+> add const to ftmac100_ethtool_ops and ftmac100_netdev_ops
+> use net_ratelimit() instead of printk_ratelimit()
+> no explicit inline
+> use %pM to print MAC address
+> add comment before wmb
+> use napi poll() to handle all interrupts
+
+This looks very clean, thanks for doing the rework.
+
+Now the the really trivial...
+
+> + * priveate data
+
+private
+
+> +static void ftmac100_enable_all_int(struct ftmac100 *priv)
+> +{
+> +	unsigned int imr;
+> +
+> +	imr = FTMAC100_INT_RPKT_FINISH | FTMAC100_INT_NORXBUF
+> +	     | FTMAC100_INT_XPKT_OK | FTMAC100_INT_XPKT_LOST
+> +	     | FTMAC100_INT_RPKT_LOST | FTMAC100_INT_AHB_ERR
+> +	     | FTMAC100_INT_PHYSTS_CHG;
+
+This could be a #define.
+
+> +	maccr = FTMAC100_MACCR_XMT_EN |
+> +		FTMAC100_MACCR_RCV_EN |
+> +		FTMAC100_MACCR_XDMA_EN |
+> +		FTMAC100_MACCR_RDMA_EN |
+> +		FTMAC100_MACCR_CRC_APD |
+> +		FTMAC100_MACCR_FULLDUP |
+> +		FTMAC100_MACCR_RX_RUNT |
+> +		FTMAC100_MACCR_RX_BROADPKT;
+
+Here too.
+
+> +static int ftmac100_rx_packet_error(struct ftmac100 *priv,
+> +		struct ftmac100_rxdes *rxdes)
+[]
+> +	if (unlikely(ftmac100_rxdes_frame_too_long(rxdes))) {
+> +		if (net_ratelimit())
+> +			netdev_info(netdev, "rx frame too long\n");
+> +
+> +		netdev->stats.rx_length_errors++;
+> +		error = 1;
+> +	}
+> +
+> +	if (unlikely(ftmac100_rxdes_runt(rxdes))) {
+
+else if ?
+
+> +static int ftmac100_rx_packet(struct ftmac100 *priv, int *processed)
+> +{
+> +	struct net_device *netdev = priv->netdev;
+> +	struct ftmac100_rxdes *rxdes;
+> +	struct sk_buff *skb;
+> +	int length;
+> +	int copied = 0;
+> +	int done = 0;
+
+You could use bool/true/false here for copied and done
+and all the other uses of an int for a logical bool.
+
+> +static void ftmac100_txdes_set_dma_own(struct ftmac100_txdes *txdes)
+> +{
+> +	/*
+> +	 * Make sure dma own bit will not be set before any other
+> +	 * descriptor fiels.
+
+field/fields
+
+> +static int ftmac100_mdio_read(struct net_device *netdev, int phy_id, int reg)
+> +{
+> +	struct ftmac100 *priv = netdev_priv(netdev);
+> +	int phycr;
+> +	int i;
+> +
+> +	phycr = FTMAC100_PHYCR_PHYAD(phy_id) |
+> +		FTMAC100_PHYCR_REGAD(reg) |
+> +		FTMAC100_PHYCR_MIIRD;
+> +
+> +	iowrite32(phycr, priv->base + FTMAC100_OFFSET_PHYCR);
+> +	for (i = 0; i < 10; i++) {
+> +		phycr = ioread32(priv->base + FTMAC100_OFFSET_PHYCR);
+> +
+> +		if ((phycr & FTMAC100_PHYCR_MIIRD) == 0)
+> +			return phycr & FTMAC100_PHYCR_MIIRDATA;
+> +
+> +		usleep_range(100, 1000);
+> +	}
+> +
+> +	netdev_err(netdev, "mdio read timed out\n");
+> +	return 0xffff;
+
+0xffff is a rather odd return, perhaps a #define?
+
+> +/******************************************************************************
+> + * initialization / finalization
+> + *****************************************************************************/
+> +static int __init ftmac100_init(void)
+> +{
+> +	printk(KERN_INFO "Loading " DRV_NAME ": version " DRV_VERSION " ...\n");
+
+You could use
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+before any #include and
+	pr_info("Loading version " DRV_VERSION " ...\n");
+
+One last comment on split long line indentation style
+and long function declarations.
+
+There's no required style so you can use what you are
+most comfortable doing.
+
+Most of drivers/net uses an alignment to open parenthesis
+using maximal tabs and minimal necessary spaces instead of
+an extra tabstop.
+
+Like:
+
+static int some_long_function(type var1, type var2...
+			      type varN)
+and
+	some_long_function(var1, var2, ...
+			   varN);
+
+not
+static int some_long_function(type var1, type var2...
+				type varN)
+and
+	some_long_function(var1, var2, ...
+				varN);
+
