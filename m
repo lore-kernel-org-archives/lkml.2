@@ -1,128 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab1AQPZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 10:25:29 -0500
-Received: from pcpool00.mathematik.uni-freiburg.de ([132.230.30.150]:41702
-	"EHLO pcpool00.mathematik.uni-freiburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752617Ab1AQPZ0 (ORCPT
+	id S1753137Ab1AQP1e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 10:27:34 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:56477 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210Ab1AQP1d convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 10:25:26 -0500
-X-Greylist: delayed 2705 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 Jan 2011 10:25:25 EST
-Date: Mon, 17 Jan 2011 15:39:54 +0100
-From: "Bernhard R. Link" 
-	<brl+ccmadness@pcpool00.mathematik.uni-freiburg.de>
-To: David Miller <davem@davemloft.net>
-Cc: richm@oldelvet.org.uk, 609371@bugs.debian.org, ben@decadent.org.uk,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        Jesper.Nilsson@axis.com, jeffm@suse.com
-Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
-	Unknown relocation: 36
-Message-ID: <20110117143954.GA17813@pcpool00.mathematik.uni-freiburg.de>
-Mail-Followup-To: David Miller <davem@davemloft.net>, richm@oldelvet.org.uk,
-	609371@bugs.debian.org, ben@decadent.org.uk,
-	sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-	rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-	Jesper.Nilsson@axis.com, jeffm@suse.com
-References: <4D302B2F.7030108@oldelvet.org.uk> <4D3074FE.3030707@oldelvet.org.uk> <20110115.211722.39173519.davem@davemloft.net> <20110116.220755.179947617.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110116.220755.179947617.davem@davemloft.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 17 Jan 2011 10:27:33 -0500
+Subject: RE: Bug in scheduler when using rt_mutex
+From: Peter Zijlstra <peterz@infradead.org>
+To: samu.p.onkalo@nokia.com
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, tglx@linutronix.de
+In-Reply-To: <90C2C3D80A94B8448891D39FF568E8760760B892@008-AM1MPN1-012.mgdnok.nokia.com>
+References: <1295275365.12840.13.camel@kolo>
+	 <1295276401.30950.125.camel@laptop>
+	 <90C2C3D80A94B8448891D39FF568E8760760B892@008-AM1MPN1-012.mgdnok.nokia.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 17 Jan 2011 16:28:04 +0100
+Message-ID: <1295278084.30950.127.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* David Miller <davem@davemloft.net> [110117 07:07]:
-> Although I've seen commentary to the contrary, in fact using a too-small
-> __attribute__((aligned())) directive will lower the alignment of data
-> members, and yes that means it will lower the alignemnt to be below the
-> natural and required alignment for the given type.
->
-> So if you have, on 64-bit:
->
-> struct foo {
-> 	void *bar;
-> };
->
-> static struct foo test __attribute__((__aligned__(4)));
->
-> The compiler will emit "test" with 4-byte alignment into the data
-> section, even though 8-byte alignment is required for "test.bar"
->
-> Assuming we wanted that to actually happen, the GCC manual is very
-> explicit to state that in order for this to work, such down-aligned
-> data structures must also use the "packed" attribute.
+On Mon, 2011-01-17 at 15:15 +0000, samu.p.onkalo@nokia.com wrote:
+> 
+> >-----Original Message-----
+> >From: ext Peter Zijlstra [mailto:peterz@infradead.org]
+> >Sent: 17 January, 2011 17:00
+> >To: Onkalo Samu.P (Nokia-MS/Tampere)
+> >Cc: mingo@elte.hu; linux-kernel@vger.kernel.org; tglx
+> >Subject: Re: Bug in scheduler when using rt_mutex
+> >
+> >On Mon, 2011-01-17 at 16:42 +0200, Onkalo Samu wrote:
+> >> Hi
+> >>
+> >> I believe that there are some problems in the scheduling when
+> >> the following happens:
+> >> - Normal priority process locks rt_mutex and sleeps while keeping it
+> >> locked.
+> >
+> >There's your fail, don't do that!
+> 
+> So that is forbidden:
+> 
+> rt_mutex_lock();
+> wait_for_completion(); <--- shared HW finishes its job
+> rt_mutex_unlock();
 
-The manual seems to have changed in that regard.
+Well, its pointless, its non-deterministic, so you totally void the
+usage of rt_mutex. 
 
-http://gcc.gnu.org/onlinedocs/gcc-4.2.4/gcc/Variable-Attributes.html
-and earlier versions say:
+> >Why does I2C core use rt_mutex, that's utterly broken.
+> 
+> To get low priority task finish ongoing I2C access in time under
+> heavy load cases I think.
 
-"The aligned attribute can only increase the alignment; but you can
-decrease it by specifying packed as well. See below."
+FYI, I'm queueing a revert for that patch. Random driver junk should not
+_ever_ use that.
 
-but http://gcc.gnu.org/onlinedocs/gcc-4.3.5/gcc/Variable-Attributes.html
-and later versions say:
+> >> Based on my debugging following sequence occurs (single CPU
+> >> system):
+> >>
+> >> 1) There is some user process running at the background (like
+> >> cat /dev/zero..)
+> >> 2) User process reads sysfs entry which causes I2C acccess
+> >> 3) User process locks rt_mutex in the I2C-core
+> >> 4) User process sleeps while it keeps rt_mutex locked
+> >> (wait_for_completion in I2C transfer function)
+> >
+> >That's where things go wrong, there's absolutely nothing you can do to
+> >fix the system once you block while holding a mutex.
+> 
+> Of course other processes are waiting until the (rt_)mutex is unlocked.
+> Problem is that after the rt_mutex_unlock is done, the task which  just released
+> the lock, may be in some non-running state for minutes.
 
-"When used on a struct, or struct member, the aligned attribute can only
-increase the alignment; in order to decrease it, the packed attribute
-must be specified as well. When used as part of a typedef, the aligned
-attribute can both increase and decrease alignment, and specifying the
-packed attribute will generate a warning."
+Yeah, saw that, writing a patch for that, there's more than one problem
+there.
 
-And seems to still be a bit confusing, as an attribute in a
-variable declaration seems to count as typedef:
-
-| struct foo {
-|         void *bar;
-| };
-| 
-| static struct foo a __attribute__((__aligned__(2)));
-| static struct foo b;
-| 
-| struct foo2 {
-|         void *bar;
-| } __attribute__((__aligned__(2)));
-| 
-| static struct foo2 c __attribute__((__aligned__(2)));
-| static struct foo2 d;
-| 
-| struct foo3 {
-|         void *bar;
-| } __attribute__((__aligned__(2))) __attribute__((__packed__));
-| 
-| static struct foo3 e;
-| 
-| int main() {
-|         printf("a: %d, b: %d, c: %d, d: %d, e: %d\n",
-|                 __alignof__(a), __alignof__(b),
-|                 __alignof__(c), __alignof__(d),
-|                 __alignof__(e)
-|                 );
-|         return 0;
-| }
-
-gives something like:
-a: 2, b: 4, c: 2, d: 4, e: 2
-or on sparc64:
-a: 2, b: 8, c: 2, d: 8, e: 2
-
-> I think we want none of this, and I think we should elide the align
-> directives entirely, or at least fix them so we don't get unaligned
-> stuff on 64-bit.
-
-One fix might be to move the __attribute__ from include/trace/ftrace.h
-(and from include/linux/syscalls.h) to include/linux/ftrace_event.h
-and attach it to the struct there. This way it should only increase it.
-
-> Ugh, and I just noticed that include/linux/klist.h does this fixed
-> alignment of "4" too, where is this stuff coming from?  It's
-> wrong on 64-bit, at best.  But I can't see the impetus behind doing
-> this at all in the first place.
-
-Is that actually misaligned? Unless I still mix things up, that is in the
-struct thus should be fine (i.e. the "d" case in my example above).
-
-	Bernhard R. Link
