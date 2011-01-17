@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578Ab1AQSOB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 13:14:01 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:54295 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119Ab1AQSOA (ORCPT
+	id S1752614Ab1AQSOd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 13:14:33 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:59562 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752119Ab1AQSOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 13:14:00 -0500
+	Mon, 17 Jan 2011 13:14:31 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:user-agent:mime-version
-         :content-type;
-        b=ISRJlU3liygGc2Tlje4qodRdxwIibIKfLYkOypwWrKAJlOe6cGh/aY815cIn0zOnZA
-         R7zg5O61el1lPLTylZjsgvb/JRm3heFW0185byLcZezITGqFVqpPUx2NXCjhn1tB/wp7
-         Lbe19MBmuoN0fT+zs3m9UdEiPkmNTGFNDJawk=
-From: Franck Bui-Huu <vagabon.xyz@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] perf-tools: minor cleanup in parse_single_tracepoint_event() when parsing id
-Date: Mon, 17 Jan 2011 19:13:56 +0100
-Message-ID: <m3zkqzv1nf.fsf@gmail.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.2 (gnu/linux)
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=MslEjrE1TflJPt82RsyZ/N641IRm3GKImFDuXTNX6C1zZBHffWJWEUp2nyp6XwEODN
+         FaACtIavHmFR/xoR0Oaspz6zCfm00I6zGsYkx/u6j/VRK3szfq4TmlX8dFzoZ4g8V9ii
+         zEH9nm+i5px8Nl1Xbsh9a1bgKLMFKdFudLA3E=
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20110117175555.GA30554@srcf.ucam.org>
+References: <AANLkTi=fjL0yxXWrDddafdBs7biJ326sXjaagTseVEVg@mail.gmail.com>
+	<20110117175555.GA30554@srcf.ucam.org>
+Date: Mon, 17 Jan 2011 11:14:29 -0700
+Message-ID: <AANLkTimurinF+Ng+HD0GjtfFgmXnvKPU80_OzVLNNeUA@mail.gmail.com>
+Subject: Re: [PATCH] toshiba_acpi: Additional TOS1900 devices support
+From: Azael Avalos <coproscefalo@gmail.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Franck Bui-Huu <fbuihuu@gmail.com>
+Hi,
 
-And trust the kernel to return a valid number as the previous code
-already assume.
+On Mon, Jan 17, 2011 at 10:55 AM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> I think this needs to be tidied up some more to interact nicely with the
+> ec driver, and I'm still a bit concerned that there may be devices of
+> the TOS1900 type that implement the old-syle interface but not this one
+> (I'll check the files I have here). I'll try to break this up into
+> something more generic.
 
-Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
----
- tools/perf/util/parse-events.c |   16 +++++-----------
- 1 files changed, 5 insertions(+), 11 deletions(-)
+So far I've seen 3 types of TOS1900 devices
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index a58407e..777ce03 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -414,25 +414,19 @@ parse_single_tracepoint_event(char *sys_name,
- 			      const char **strp)
- {
- 	char evt_path[MAXPATHLEN];
--	char id_buf[4];
- 	u64 id;
--	int fd;
-+	FILE *fp;
- 	size_t len;
- 
- 	snprintf(evt_path, MAXPATHLEN, "%s/%s/%s/id", debugfs_path,
- 		 sys_name, evt_name);
- 
--	fd = open(evt_path, O_RDONLY);
--	if (fd < 0)
--		return EVT_FAILED;
--
--	if (read(fd, id_buf, sizeof(id_buf)) < 0) {
--		close(fd);
-+	fp = fopen(evt_path, "r");
-+	if (!fp)
- 		return EVT_FAILED;
--	}
-+	fscanf(fp, "%Lu", &id);
-+	fclose(fp);
- 
--	close(fd);
--	id = atoll(id_buf);
- 	attr->config = id;
- 	attr->type = PERF_TYPE_TRACEPOINT;
- 
+1 - The ones that the ENAB call is sufficient to enable hotkeys
+
+2 - Another kind using HCI_HOTKEY_EVENTS call (and using
+the EC to access the NTFY method)
+
+3 - My current laptop (Qosmio X505) which the ENAB and/or
+the HCI_HOTKEY_EVENTS calls don't work...
+
+I've already asked Toshiba for info on this, but there's no ETA
+on when I'll get it.
+
+
+Saludos
+Azael Avalos
+
+
+
 -- 
-1.7.3.2
+-- El mundo apesta y vosotros apestais tambien --
