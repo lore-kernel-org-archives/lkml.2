@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512Ab1AQCwS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 21:52:18 -0500
-Received: from mga01.intel.com ([192.55.52.88]:15177 "EHLO mga01.intel.com"
+	id S1752542Ab1AQCwe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 21:52:34 -0500
+Received: from mga02.intel.com ([134.134.136.20]:19528 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752383Ab1AQCwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 21:52:15 -0500
+	id S1752111Ab1AQCwM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 Jan 2011 21:52:12 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,332,1291622400"; 
-   d="scan'208";a="878002645"
-Subject: [PATCH 4/4]x86: avoid tlbstate lock if no enough cpus
+   d="scan'208";a="697468975"
+Subject: [PATCH 3/4]x86: make tlb invalidate vector number configurable
 From: Shaohua Li <shaohua.li@intel.com>
 To: lkml <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
@@ -17,8 +17,8 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Eric Dumazet <eric.dumazet@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Jan 2011 10:52:10 +0800
-Message-ID: <1295232730.1949.710.camel@sli10-conroe>
+Date: Mon, 17 Jan 2011 10:52:07 +0800
+Message-ID: <1295232727.1949.709.camel@sli10-conroe>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -26,46 +26,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This one isn't related to previous patch. If online cpus are below
-NUM_INVALIDATE_TLB_VECTORS, we don't need the lock. The comments
-in the code declares we don't need the check, but a hot lock still
-needs an atomic operation and expensive, so add the check here.
+Make the maxium TLB invalidate vectors depend on NR_CPUS, and the maxium
+number is 32.
+we currently only have 8 vectors for TLB invalidate. If we have a lot
+of CPUs, the CPUs need share the 8 vectors and tlbstate_lock is used
+to protect them. flush_tlb_page() is heavily used in page reclaim,
+which will cause a lot of lock contention for tlbstate_lock. Andi Kleen
+suggests increasing the vectors number to 32, which should be good for
+current typical systems to reduce the tlbstate_lock contention.
 
-Uses nr_cpu_ids here as suggested by Eric Dumazet.
+My test system has 4 sockets and 64G memory, and 64 CPUs. My workload
+creates 64 processes. Each process mmap reads a big empty sparse file.
+The total size of the files are 2*total_mem, so this will cause a lot
+of page reclaim. Below is the result I get from perf:
+without the patch:
+    24.25%           usemem  [kernel]                                   [k] _raw_spin_lock
+                     |
+                     --- _raw_spin_lock
+                        |
+                        |--42.15%-- native_flush_tlb_others
+with the patch:
+    14.96%           usemem  [kernel]                                   [k] _raw_spin_lock
+                     |
+                     --- _raw_spin_lock
+                        |--13.89%-- native_flush_tlb_others
+So this heavily reduces the tlbstate_lock contention.
 
 Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 ---
- arch/x86/mm/tlb.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/irq_vectors.h |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-Index: linux/arch/x86/mm/tlb.c
+Index: linux/arch/x86/include/asm/irq_vectors.h
 ===================================================================
---- linux.orig/arch/x86/mm/tlb.c	2010-11-04 10:59:09.000000000 +0800
-+++ linux/arch/x86/mm/tlb.c	2010-11-04 13:17:51.000000000 +0800
-@@ -179,12 +179,8 @@ static void flush_tlb_others_ipi(const s
- 	sender = this_cpu_read(tlb_vector_offset);
- 	f = &flush_state[sender];
+--- linux.orig/arch/x86/include/asm/irq_vectors.h	2010-11-02 14:41:01.000000000 +0800
++++ linux/arch/x86/include/asm/irq_vectors.h	2010-11-02 14:52:10.000000000 +0800
+@@ -17,8 +17,8 @@
+  *  Vectors   0 ...  31 : system traps and exceptions - hardcoded events
+  *  Vectors  32 ... 127 : device interrupts
+  *  Vector  128         : legacy int80 syscall interface
+- *  Vectors 129 ... 229 : device interrupts
+- *  Vectors 230 ... 255 : special interrupts
++ *  Vectors 129 ... INVALIDATE_TLB_VECTOR_START-1 : device interrupts
++ *  Vectors INVALIDATE_TLB_VECTOR_START ... 255 : special interrupts
+  *
+  * 64-bit x86 has per CPU IDT tables, 32-bit has one shared IDT table.
+  *
+@@ -124,8 +124,13 @@
+  */
+ #define LOCAL_TIMER_VECTOR		0xef
  
--	/*
--	 * Could avoid this lock when
--	 * num_online_cpus() <= NUM_INVALIDATE_TLB_VECTORS, but it is
--	 * probably not worth checking this for a cache-hot lock.
--	 */
--	raw_spin_lock(&f->tlbstate_lock);
-+	if (nr_cpu_ids > NUM_INVALIDATE_TLB_VECTORS)
-+		raw_spin_lock(&f->tlbstate_lock);
- 
- 	f->flush_mm = mm;
- 	f->flush_va = va;
-@@ -202,7 +198,8 @@ static void flush_tlb_others_ipi(const s
- 
- 	f->flush_mm = NULL;
- 	f->flush_va = 0;
--	raw_spin_unlock(&f->tlbstate_lock);
-+	if (nr_cpu_ids > NUM_INVALIDATE_TLB_VECTORS)
-+		raw_spin_unlock(&f->tlbstate_lock);
- }
- 
- void native_flush_tlb_others(const struct cpumask *cpumask,
+-/* f0-f7 used for spreading out TLB flushes: */
+-#define NUM_INVALIDATE_TLB_VECTORS	   8
++/* up to 32 vectors used for spreading out TLB flushes: */
++#if NR_CPUS > 32
++#define NUM_INVALIDATE_TLB_VECTORS 32
++#else
++#define NUM_INVALIDATE_TLB_VECTORS NR_CPUS
++#endif
++
+ #define INVALIDATE_TLB_VECTOR_END	0xee
+ #define INVALIDATE_TLB_VECTOR_START	\
+ 	(INVALIDATE_TLB_VECTOR_END - NUM_INVALIDATE_TLB_VECTORS + 1)
 
 
