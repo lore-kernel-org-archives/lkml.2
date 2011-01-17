@@ -1,72 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976Ab1AQTjP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 14:39:15 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62403 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751658Ab1AQTjL (ORCPT
+	id S1752907Ab1AQTq2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 14:46:28 -0500
+Received: from racecourse.oldelvet.net ([93.93.128.81]:47695 "EHLO
+	racecourse.oldelvet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751327Ab1AQTqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 14:39:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=A1lWTe/ZsAA51YZSwVAwkWdyLBcNGxq08WGRMnaiElveMA+/aR0z7siXyVTOL02gLx
-         zwYdFYs7fzSoguAK3Thaj9HuKuE1/jj8G8F81icDU4QclArn0bG3bJ3o9YWsXRsYIAcY
-         ScawMZM8Lj49plm2u7v6P7xoBdpjmS0UwF0Lk=
-Date: Mon, 17 Jan 2011 21:39:10 +0200
-From: Ilya Dryomov <idryomov@gmail.com>
-To: linux-btrfs@vger.kernel.org
-Cc: Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] Btrfs: fix memory leak in btrfs_parse_early_options()
-Message-ID: <20110117193910.GA26094@kwango.lan.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 17 Jan 2011 14:46:24 -0500
+Subject: R_SPARC_13 (Re: Bug#609371: linux-image-2.6.37-trunk-sparc64:
+ module scsi_mod: Unknown relocation: 36)
+From: Richard Mortimer <richm@oldelvet.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: richm@oldelvet.org.uk, 609371@bugs.debian.org, ben@decadent.org.uk,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        Jesper.Nilsson@axis.com, jeffm@suse.com
+In-Reply-To: <1295259761.32152.20.camel@duncow>
+References: <4D302B2F.7030108@oldelvet.org.uk>
+	 <4D3074FE.3030707@oldelvet.org.uk>
+	 <20110115.211722.39173519.davem@davemloft.net>
+	 <20110116.220755.179947617.davem@davemloft.net>
+	 <1295259761.32152.20.camel@duncow>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 Jan 2011 19:46:21 +0000
+Message-ID: <1295293581.32152.70.camel@duncow>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-strsep() modifies the string pointer, therefore freeing it instead of
-original one results in a small memory leak.  Fixes kmemleak warning.
+On Mon, 2011-01-17 at 10:22 +0000, Richard Mortimer wrote:
+> On Sun, 2011-01-16 at 22:07 -0800, David Miller wrote:
+> > From: David Miller <davem@davemloft.net>
+> > Date: Sat, 15 Jan 2011 21:17:22 -0800 (PST)
+> 
+> > > I think the problem we have here is that the _ftrace_events section is
+> > > not aligned sufficiently.  That ".align 4" mnemonic is a good indication
+> > > of this.  It should at least "8" on sparc64.
+> > 
+> I noticed another potentially 64 bit unfriendly alignment on struct
+> tracepoint in include/linux/tracepoint.h. I don't think that the
+> alignment of 32 breaks anything but it does leave a 24 byte hole. I
+> don't know enough about tracing to know if that is necessary.
+> 
+> struct tracepoint {
+>         const char *name;               /* Tracepoint name */
+>         int state;                      /* State. */
+>         void (*regfunc)(void);
+>         void (*unregfunc)(void);
+>         struct tracepoint_func *funcs;
+> }  __attribute__((aligned(32)));        /*
+>                                          * Aligned on 32 bytes because it is
+>                                          * globally visible and gcc happily
+>                                          * align these on the structure size.
+>                                          * Keep in sync with vmlinux.lds.h.
+>                                          */
+> 
+> Note I spotted this when looking at some residual sparc64 relocation
+> issues when _ftrace_events alignment is changed to 8. I'll follow those
+> issues up in a separate email when I get time later today.
 
-Signed-off-by: Ilya Dryomov <idryomov@gmail.com>
----
- fs/btrfs/super.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+I did some experiments looking at what happens when the
+include/trace/ftrace.h __aligned__(4) usages for _ftrace_events are
+changed to __aligned__(8). This causes the R_SPARC_UA64 relocations to
+go to R_SPARC_64 and gets rid of that particular issue.
 
-diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
-index 883c6fa..291b630 100644
---- a/fs/btrfs/super.c
-+++ b/fs/btrfs/super.c
-@@ -277,7 +277,7 @@ static int btrfs_parse_early_options(const char *options, fmode_t flags,
- 		struct btrfs_fs_devices **fs_devices)
- {
- 	substring_t args[MAX_OPT_ARGS];
--	char *opts, *p;
-+	char *opts, *opts_orig, *p;
- 	int error = 0;
- 	int intarg;
- 
-@@ -288,7 +288,7 @@ static int btrfs_parse_early_options(const char *options, fmode_t flags,
- 	 * strsep changes the string, duplicate it because parse_options
- 	 * gets called twice
- 	 */
--	opts = kstrdup(options, GFP_KERNEL);
-+	opts = opts_orig = kstrdup(options, GFP_KERNEL);
- 	if (!opts)
- 		return -ENOMEM;
- 
-@@ -326,7 +326,7 @@ static int btrfs_parse_early_options(const char *options, fmode_t flags,
- 	}
- 
-  out_free_opts:
--	kfree(opts);
-+	kfree(opts_orig);
-  out:
- 	/*
- 	 * If no subvolume name is specified we use the default one.  Allocate
--- 
-1.7.2.3
+However it does not cause the R_SPARC_13 relocation records to go away.
+They still persist and the ones I've looked at are be related to uses of
+struct tracepoint that I mentioned earlier. I tried various different
+values of alignment for both __ftrace_events and struct tracepoint but
+nothing made the uses of R_SPARC_13 go away.
+
+As an example from drivers/scsi/scsi_error.c function scsi_eh_wakeup().
+
+This has relocation records of
+
+0000000000002be0 R_SPARC_HI22      __tracepoint_scsi_eh_wakeup
+0000000000002be4 R_SPARC_LO10      __tracepoint_scsi_eh_wakeup
+0000000000002be4 R_SPARC_13        *ABS*+0x0000000000000008
+0000000000002bf4 R_SPARC_LO10      __tracepoint_scsi_eh_wakeup
+0000000000002bf4 R_SPARC_13        *ABS*+0x0000000000000020
+
+for the following assembly code
+
+sethi  %hi(__tracepoint_scsi_eh_wakeup), %g1   !, tmp135
+lduw    [%g1+%lo(__tracepoint_scsi_eh_wakeup)+8], %g2   ! __tracepoint_scsi_eh_wakeup.state,
+cmp     %g2, 0  ! __tracepoint_scsi_eh_wakeup.state,
+be,pt   %icc, .LL454
+nop    !
+ldx     [%g1+%lo(__tracepoint_scsi_eh_wakeup)+32], %l0  !, it_func_ptr
+brz,pn  %l0, .LL454     ! it_func_ptr,
+
+this corresponds to the first few lines of
+
+void scsi_eh_wakeup(struct Scsi_Host *shost)
+{
+        if (shost->host_busy == shost->host_failed) {
+                trace_scsi_eh_wakeup(shost);
+                wake_up_process(shost->ehandler);
+                SCSI_LOG_ERROR_RECOVERY(5,
+                                printk("Waking error handler thread\n"));
+        }
+}
+
+
+If I try compiling with the -Os option removed from KBUILD_CFLAGS it
+produces a more traditional R_SPARC_HI22 and R_SPARC_LO10 output as
+shown below. So maybe there is a really need to add R_SPARC_13 support
+to the sparc64 module loader to allow for the optimizations that the
+compiler is making now.
+
+00000000000001bc R_SPARC_HI22      __tracepoint_scsi_eh_wakeup
+00000000000001c0 R_SPARC_LO10      __tracepoint_scsi_eh_wakeup
+00000000000001dc R_SPARC_HI22      __tracepoint_scsi_eh_wakeup+0x0000000000000020
+00000000000001e0 R_SPARC_LO10      __tracepoint_scsi_eh_wakeup+0x0000000000000020
+
+
+        ldx     [%fp+2175], %g1 ! shost, tmp123
+        stx     %g1, [%fp+2007] ! tmp123, shost
+        sethi   %hi(__tracepoint_scsi_eh_wakeup), %g1   !, tmp125
+        or      %g1, %lo(__tracepoint_scsi_eh_wakeup), %g1      ! tmp125,, tmp124
+        ld      [%g1+8], %g1    ! __tracepoint_scsi_eh_wakeup.state, D.32824
+        xor     %g1, 0, %g1     ! D.32824,, tmp126
+        subcc   %g0, %g1, %g0   !, tmp126
+        addx    %g0, 0, %g1     !,, D.32823
+        brz     %g1, .LL3
+         nop    ! D.32822,
+        sethi   %hi(__tracepoint_scsi_eh_wakeup+32), %g1        !, tmp127
+        or      %g1, %lo(__tracepoint_scsi_eh_wakeup+32), %g1   ! tmp127,, D.32820
+        ldx     [%g1], %g1      !* D.32820, tmp128
+        stx     %g1, [%fp+2015] ! tmp128, _________p1
+
+Regards
+
+Richard
 
