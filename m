@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527Ab1APXtO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 Jan 2011 18:49:14 -0500
-Received: from lechat.rtp-net.org ([88.191.19.38]:43508 "EHLO
-	lechat.rtp-net.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134Ab1APXtM (ORCPT
+	id S1751586Ab1AQAGJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 Jan 2011 19:06:09 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41292 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736Ab1AQAGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 Jan 2011 18:49:12 -0500
-From: Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org>
-To: Samuel Thibault <samuel.thibault@ens-lyon.org>
-Cc: rpurdie@rpsys.net, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/1] leds: add keyboard num/caps lock trigger
-Organization: RtpNet
-References: <20110113125921.818344418@rtp-net.org>
-	<20110113131323.GJ5995@const.bordeaux.inria.fr>
-Date: Mon, 17 Jan 2011 00:54:05 +0100
-In-Reply-To: <20110113131323.GJ5995@const.bordeaux.inria.fr> (Samuel
-	Thibault's message of "Thu, 13 Jan 2011 14:13:23 +0100")
-Message-ID: <87aaj01k2q.fsf@lechat.rtp-net.org>
-User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
+	Sun, 16 Jan 2011 19:06:06 -0500
+Date: Mon, 17 Jan 2011 00:05:58 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Joel Becker <jlbec@evilplan.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: Re: [PATCH] configfs: change depends -> select SYSFS
+Message-ID: <20110117000558.GG22723@ZenIV.linux.org.uk>
+References: <1295125851-25279-1-git-send-email-nab@linux-iscsi.org>
+ <20110116141105.59e5b3a2@stein>
+ <1295214807.22813.57.camel@haakon2.linux-iscsi.org>
+ <20110117000659.57352da7@stein>
+ <AANLkTik=Pv1KdiBa3RbSoqmDC92F33jyFb0b-Ej_iGRN@mail.gmail.com>
+ <20110116231901.GF22723@ZenIV.linux.org.uk>
+ <AANLkTikWHkfb1-Yh_O=rYEqzgz48rwRggCp6uhr+E86J@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikWHkfb1-Yh_O=rYEqzgz48rwRggCp6uhr+E86J@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Samuel Thibault <samuel.thibault@ens-lyon.org> writes:
+On Sun, Jan 16, 2011 at 03:45:35PM -0800, Linus Torvalds wrote:
 
-> Hello,
+> And now ask yourself, do you really expect some random user to say "I
+> want to enable SYSFS and CONFIGFS, because I am going to use ocfs2 on
+> my system"?
+> 
+> Really?
+> 
+> Or do you expect a high-quality implementation of a configuration
+> script to allow the user to just say "I want ocfs2", and then figure
+> out the dependencies and solve them for you?
+> 
+> I'd say that the latter case is OBVIOUSLY the quality implementation,
+> while the former one is just stupid.
 
-Hi,
->
->
-> Arnaud Patard, le Thu 13 Jan 2011 13:59:13 +0100, a écrit :
->> Implement a led trigger which enable/disable a led according
->> to keyboard leds events.
->
-> This is already being implemented in a more generic and useful way,
-> also permitting to use the keyboard leds for other triggers, see the
-> leds-route-kbd-leds-through-the-generic-leds-layer.patch in the mm tree,
-> and the “route kbd LEDs through the generic LEDs layer” thread here.
+It's a bit more complicated than that...
+	* nitpick: config option for a driver foo should be seen only after
+foo got enabled, so that's another case where we need depends on
+	* nitpick 2: some switchable things really shouldn't be selectable,
+or you'll get users wondering which of the drivers they'd enabled had
+lead to 32bit kernel on their amd64 boxen ;-)
+	* all nitpicks aside, there ought to be a way to say "no, I _REALLY_
+don't want that shit doing #define if(x) <horrible pile of crap> and if it
+means that I can't have oprofile, so be it".  Without chasing tons of select
+chains to see which FPOS do I need to disable to get rid of the damn thing.
+Right now the propagation of select chains makes it more and more unpleasant.
 
-I've download the patch at [1] and after a quick runtime test, got no
-success. When booting with the LEDS_INPUT set to y, the machine is
-hanging. I didn't have a serial console at hand so no log for now. I've
-then tried it as module, and it didn't work too. No freeze, but led
-state did not change.
-Moreover, I found a bug. The kbd_update_leds_helper() change is
-wrong. It should use !!(leds & (1<<VC_*)) and not !!(leds & VC_*).
+IOW, it would be very nice to be able to pin a select target down, turning
+selects leading to it into hard dependencies.
 
-btw, my use case/problem is different than yours. I've a arm system
-where the keyboard is usb hid one and the led I'm trying to control a
-led connected on a gpio.
+Another obviously missing thing is that dependencies should propagate back
+through select chains.  I.e. if A selects B, then hard dependencies of B
+should append to those of A.
 
-Arnaud
-
-[1] http://userweb.kernel.org/~akpm/mmotm/broken-out/leds-route-kbd-leds-through-the-generic-leds-layer.patch
+It gets really lousy when you have shitloads of drivers spread over several
+Kconfig menus, all selecting an option that has a hard dependency.  As it
+is, if you want e.g. allmodconfig to produce something that builds you have
+to chase them all down and add dependencies to each of those drivers.  We
+have such piles in e.g. drivers/media.
