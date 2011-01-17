@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab1AQSm3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 13:42:29 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:14848 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791Ab1AQSm0 (ORCPT
+	id S1752342Ab1AQSvA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 13:51:00 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43598 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751659Ab1AQSu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 13:42:26 -0500
-Date: Mon, 17 Jan 2011 19:42:26 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Fred Isaman <iisaman@netapp.com>
-cc: linux-nfs@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFS4: Avoid potential NULL pointer dereference in
- decode_and_add_ds().
-In-Reply-To: <AANLkTik+Z5C89Hb9Xu3az=deMsXj4rqvYpU=i7vXgdFx@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1101171941560.27021@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1101162145290.13377@swampdragon.chaosbits.net> <AANLkTik+Z5C89Hb9Xu3az=deMsXj4rqvYpU=i7vXgdFx@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 17 Jan 2011 13:50:57 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 17 Jan 2011 11:50:36 -0700
+X-Google-Sender-Auth: utMhFqiQH6SMBnmw7aL_HXTfHvw
+Message-ID: <AANLkTikCJy4QWGxyRwv53JGMKf12Zqh_8pZOy82eAWWc@mail.gmail.com>
+Subject: [git pull] and spi bugfix and a devicetree patch.
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        spi-devel-general@lists.sourceforge.net,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        Guennadi Liakhovetski <lg@denx.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Jan 2011, Fred Isaman wrote:
+Hi Linus,
 
-> On Sun, Jan 16, 2011 at 3:50 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> > strrchr() can return NULL if nothing is found. If this happens we'll
-> > dereference a NULL pointer in
-> > fs/nfs/nfs4filelayoutdev.c::decode_and_add_ds().
-> >
-> > I tried to find some other code that guarantees that this can never
-> > happen but I was unsuccessful. So, unless someone else can point to some
-> > code that ensures this can never be a problem, I believe this patch is
-> > needed.
-> >
-> 
-> The only guarantee is the assumption that the server isn't sending
-> garbage.  As such, this patch looks good to me.
-> 
+To more minor changes.  This should be it from me for the merge window.
 
-Thanks. Can I add your Acked-by: if/when I resend the patch?
+g.
+
+The following changes since commit e78bf5e6cbe837daa6ab628a5f679548742994d3:
+
+  drivers/nfc/pn544.c: fix min_t warnings (2011-01-16 17:28:21 -0800)
+
+are available in the git repository at:
+  git://git.secretlab.ca/git/linux-2.6 next-devicetree
+
+Grant Likely (1):
+      dt/flattree: Return virtual address from early_init_dt_alloc_memory_arch()
+
+Guennadi Liakhovetski (1):
+      spi/spi_sh_msiof: fix a wrong free_irq() parameter
+
+ arch/microblaze/kernel/prom.c |    4 ++--
+ arch/mips/kernel/prom.c       |    6 ++----
+ arch/powerpc/kernel/prom.c    |    4 ++--
+ drivers/of/fdt.c              |    8 +-------
+ drivers/spi/spi_sh_msiof.c    |    2 +-
+ include/linux/of_fdt.h        |    2 +-
+ 6 files changed, 9 insertions(+), 17 deletions(-)
+
 
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
