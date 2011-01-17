@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727Ab1AQUrD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 15:47:03 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43878 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751725Ab1AQUq7 (ORCPT
+	id S1752539Ab1AQUwg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 15:52:36 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:47764 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092Ab1AQUwf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 15:46:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=IsFTFFQwgpUJ4kGwcRXnelgEPiXrm2V6ZOFhmHZ7qbrzcPidd218HulB0S4wZjXrj/
-         IuinWJI39S1kPfFGSwB7BsqItwhLUie0JehH9Zw1R8tKMcBdWEvLrbOgKNwux/Jt2l3k
-         dYFsSGchxh2q13+yFCf/tBGaCB+uzgTIv6ANQ=
-Subject: Re: [PATCH v2] net: add Faraday FTMAC100 10/100 Ethernet driver
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Po-Yu Chuang <ratbert.chuang@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ratbert@faraday-tech.com,
-        joe@perches.com, dilinger@queued.net
-In-Reply-To: <1295290718.6264.19.camel@bwh-desktop>
-References: <1294919372-1904-1-git-send-email-ratbert.chuang@gmail.com>
-	 <1295256060-2091-1-git-send-email-ratbert.chuang@gmail.com>
-	 <1295285354.3335.10.camel@edumazet-laptop>
-	 <1295290718.6264.19.camel@bwh-desktop>
+	Mon, 17 Jan 2011 15:52:35 -0500
+Subject: Re: Q: perf_event && task->ptrace_bps[]
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>, Prasad <prasad@linux.vnet.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20110117203459.GA32700@redhat.com>
+References: <20101108145647.GA3426@redhat.com>
+	 <20110117203459.GA32700@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Jan 2011 21:39:32 +0100
-Message-ID: <1295296772.3362.7.camel@edumazet-laptop>
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 17 Jan 2011 21:52:56 +0100
+Message-ID: <1295297576.30950.382.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 17 janvier 2011 à 18:58 +0000, Ben Hutchings a écrit :
-> On Mon, 2011-01-17 at 18:29 +0100, Eric Dumazet wrote:
-> > Le lundi 17 janvier 2011 à 17:21 +0800, Po-Yu Chuang a écrit :
-> > 
-> > 
-> > > +static int ftmac100_rx_packet(struct ftmac100 *priv, int *processed)
-> > > +{
-> > > +	struct net_device *netdev = priv->netdev;
-> > > +	struct ftmac100_rxdes *rxdes;
-> > > +	struct sk_buff *skb;
-> > > +	int length;
-> > > +	int copied = 0;
-> > > +	int done = 0;
-> > > +
-> > > +	rxdes = ftmac100_rx_locate_first_segment(priv);
-> > > +	if (!rxdes)
-> > > +		return 0;
-> > > +
-> > > +	length = ftmac100_rxdes_frame_length(rxdes);
-> > > +
-> > > +	netdev->stats.rx_packets++;
-> > > +	netdev->stats.rx_bytes += length;
-> > > +
-> > > +	if (unlikely(ftmac100_rx_packet_error(priv, rxdes))) {
-> > > +		ftmac100_rx_drop_packet(priv);
-> > > +		return 1;
-> > > +	}
-> > > +
-> > > +	/* start processing */
-> > > +	skb = netdev_alloc_skb_ip_align(netdev, length);
-> > > +	if (unlikely(!skb)) {
-> > > +		if (net_ratelimit())
-> > > +			netdev_err(netdev, "rx skb alloc failed\n");
-> > > +
-> > > +		ftmac100_rx_drop_packet(priv);
-> > > +		return 1;
-> > > +	}
-> > > +
-> > 
-> > Please dont increase rx_packets/rx_bytes before the
-> > netdev_alloc_skb_ip_align().
-> > 
-> > In case of mem allocation failure, it would be better not pretending we
-> > handled a packet.
+On Mon, 2011-01-17 at 21:34 +0100, Oleg Nesterov wrote:
+> On 11/08, Oleg Nesterov wrote:
 > >
-> > drivers/net/r8169.c for example does the rx_packets/rx_bytes only if
-> > packet is delivered to upper stack.
+> > I am trying to understand the usage of hw-breakpoints in arch_ptrace().
+> > ptrace_set_debugreg() and related code looks obviously racy. Nothing
+> > protects us against flush_ptrace_hw_breakpoint() called by the dying
+> > tracee. Afaics we can leak perf_event or use the already freed memory
+> > or both.
+> >
+> > Am I missed something?
+> >
+> > Looking into the git history, I don't even know which patch should be
+> > blamed (if I am right), there were too many changes. I noticed that
+> > 2ebd4ffb6d0cb877787b1e42be8485820158857e "perf events: Split out task
+> > search into helper" moved the PF_EXITING check from find_get_context().
+> > This check coould help if sys_ptrace() races with SIGKILL, but it was
+> > racy anyway.
 > 
-> That's news to me.  I specifically advised Po-Yu Chuang to increment
-> these earlier because my understanding is that all packets/bytes should
-> be counted.  And drivers which use hardware MAC stats will generally do
-> that, so I really don't think it makes sense to make other drivers
-> different deliberately.
+> Ping.
 > 
+> Any idea how to fix this cleanly? May be we can reuse perf_event_mutex,
+> but this looks soooo ugly. And do_exit()->flush_ptrace_hw_breakpoint()
+> has the strange "FIXME:" comment which doesn't help me to understand
+> what can we do.
+> 
+> Probably the best fix is to change this code so that the tracer owns
+> ->ptrace_bps[], not the tracee. But this is not trivial, and needs a
+> lot of changes in ptrace code.
 
-I see, but when one frame is dropped because of RX ring buffer
-under/overflow we dont account for the lost packet/bytes.
+Wasn't this sorted by: 8882135bcd332f294df5455747ea43ba9e6f77ad?
 
-Thats probably not very important, but would be good if all drivers
-behave the same.
+Or is this purely related to the ptrace muck? in which case I guess
+Frederic is you man, I never looked at the hw_breakpoint stuff in
+general and the ptrace bits in particular.
 
+> I am reading perf_event.c, but all I found so far is a couple of trivial
+> methods to crash the kernel via sys_perf_event_open(), will report
+> tomorrow...
 
-
+Ow, that's not too pretty.. 
