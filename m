@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390Ab1AQTG1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 14:06:27 -0500
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:33045 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751816Ab1AQTG0 (ORCPT
+	id S1752584Ab1AQTIS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 14:08:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15574 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752055Ab1AQTIQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 14:06:26 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Subject:Message-ID:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=Hh53/bADSTx0nyyp0K7+ZjOeluLRVwnfXVGwmiwC4n3235uv3jdpEL+HMw4odp3B+YwR7M/AyfsqQ7hkkcuwSixayO4Sta97mFZ5n/ye3RHt8nTnerL7sY3zY+a/DLvD;
-Date: Mon, 17 Jan 2011 11:06:21 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: linux-kernel@vger.kernel.org, lwn@lwn.net
-Subject: Linux Plumbers' Conference 2011: Call for Tracks
-Message-ID: <20110117110621.7baf024f@jbarnes-desktop>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+	Mon, 17 Jan 2011 14:08:16 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Nick Piggin <npiggin@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] fs: aio fix rcu lookup
+References: <AANLkTimMwZnm3UKvmrPscBeZF77vh1sW0ERO1tuv1oNW@mail.gmail.com>
+	<x494o9bbkqo.fsf@segfault.boston.devel.redhat.com>
+	<AANLkTimuCgn4aHzUJRmQfsXjG_UF-3W8fAWb0Y-sSPsM@mail.gmail.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 17 Jan 2011 14:07:41 -0500
+In-Reply-To: <AANLkTimuCgn4aHzUJRmQfsXjG_UF-3W8fAWb0Y-sSPsM@mail.gmail.com>
+	(Nick Piggin's message of "Sat, 15 Jan 2011 02:00:25 +1100")
+Message-ID: <x49tyh7mjr6.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linux Plumbers' Conference 2011 Call for Track Ideas
+Nick Piggin <npiggin@gmail.com> writes:
 
-The Linux Plumbers' Conference will take place in Santa Rosa, CA,
-September 7-9, 2011.  The structure of the conference remains the same
-as in previous years; rather than focus on presenting completed work or
-problems and solutions, we encourage BoF and brainstorming sessions that
-gather experts from different parts of the Linux ecosystem to discuss
-complex problems with implications for multiple systems, with an eye
-toward making progress and reaching consensus on their solutions.  As in
-past years, we aim to foster a workshop like atmosphere, where once
-consensus is reached, attendees can spend time developing solutions in
-real-time, sharing experience and evaluating trade-offs.
+> On Sat, Jan 15, 2011 at 1:52 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
+>> Nick Piggin <npiggin@gmail.com> writes:
+>>
+>>> Hi,
+>>>
+>>> While hunting down a bug in NFS's AIO, I believe I found this
+>>> buggy code...
+>>>
+>>> fs: aio fix rcu ioctx lookup
+>>>
+>>> aio-dio-invalidate-failure GPFs in aio_put_req from io_submit.
+>>>
+>>> lookup_ioctx doesn't implement the rcu lookup pattern properly.
+>>> rcu_read_lock does not prevent refcount going to zero, so we
+>>> might take a refcount on a zero count ioctx.
+>>
+>> So, does this patch fix the problem?  You didn't actually say....
+>
+> No, it seemd to be an NFS AIO problem, although it was a
+> slightly older kernel so I'll re test after -rc1 if I haven't heard
+> back about it.
 
-The program committee is now looking for track proposals.  The ideal
-track proposal is focused enough to allow progress and attract the right
-particpants, but also spans several components of the Linux technology
-stack and a set of problems that can specifically benefit from face to
-face discussion between the various teams involved.  Proposals should
-include a list of projects involved, key contributors to lead
-discussions, and an owner for the track.  The track owner is responsible
-for facilitating and scheduling sessions and generally making sure the
-track is successful (metrics for this will vary by track & discussion).
+OK.
 
-Track proposals should be sent to lpc-planning@linuxplumbersconf.org.
+> Do you agree with the theoretical problem? I didn't try to
+> write a racer to break it yet. Inserting a delay before the
+> get_ioctx might do the trick.
 
---
-LPC 2011 Planning Committee
+I'm not convinced, no.  The last reference to the kioctx is always the
+process, released in the exit_aio path, or via sys_io_destroy.  In both
+cases, we cancel all aios, then wait for them all to complete before
+dropping the final reference to the context.
+
+So, while I agree that what you wrote is better, I remain unconvinced of
+it solving a real-world problem.  Feel free to push it in as a cleanup,
+though.
+
+Cheers,
+Jeff
