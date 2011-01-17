@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab1AQJ4w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 04:56:52 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44416 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752583Ab1AQJ4v convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 04:56:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=sz/P5PjglA6b0ex3DYVg0vP/nFPZ3QpVA/Hk+B7MLAW+Mdldzcrk/u5/BxCD71In0+
-         /VVlX69kiLr7czk/Z4toXELfFSzgvrhtmRcc0h/CH7kuVcYL5QCWumJPrIcYUi4loRtu
-         jaUczNcAf/llQwLL9UVw+BDK9j8AW571eJUSE=
+	id S1753194Ab1AQJ6G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 04:58:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25942 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752437Ab1AQJ6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jan 2011 04:58:03 -0500
+Date: Mon, 17 Jan 2011 11:57:38 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: virtualization@lists.osdl.org, netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
+Subject: Re: [PATCH 3/3] vhost-net: use lock_sock_fast() in peek_head_len()
+Message-ID: <20110117095738.GG23479@redhat.com>
+References: <20110117081058.18900.67456.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+ <20110117081117.18900.48672.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1295253729-23153-2-git-send-email-stanley.miao@windriver.com>
-References: <1295253729-23153-1-git-send-email-stanley.miao@windriver.com>
-	<1295253729-23153-2-git-send-email-stanley.miao@windriver.com>
-Date: Mon, 17 Jan 2011 09:56:50 +0000
-X-Google-Sender-Auth: SzPl-GsfxEeX9aS-PwmFhhT_zPg
-Message-ID: <AANLkTi=RSpXHRpoZJsGLhVgQ=E=tcNGm8GXYC9UPaDrA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] Support BE8 mode kernel modules relocation
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: "Stanley.Miao" <stanley.miao@windriver.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110117081117.18900.48672.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 January 2011 08:42, Stanley.Miao <stanley.miao@windriver.com> wrote:
-> The code section in BE8 kernel modules is in little-endian while data
-> section is in big-endian. When reading code from memory in the relocation
-> procedure, these instructions are read according to big-endian, so they
-> need to be inverted before writing to memory and after reading from memory.
-[...]
-> --- a/arch/arm/include/asm/io.h
-> +++ b/arch/arm/include/asm/io.h
-> @@ -233,6 +233,18 @@ extern void _memset_io(volatile void __iomem *, int, size_t);
->
->  #endif /* __mem_pci */
->
-> +#ifdef CONFIG_CPU_ENDIAN_BE8
-> +#define read_instr32(c)                        __swab32(*(u32 *)c)
-> +#define read_instr16(c)                        __swab16(*(u16 *)c)
-> +#define write_instr32(v,a)             (*(u32 *)(a) = __swab32((__force __u32)(v)))
-> +#define write_instr16(v,a)             (*(u16 *)(a) = __swab16((__force __u16)(v)))
-> +#else
-> +#define read_instr32(c)                        (*(u32 *)c)
-> +#define read_instr16(c)                        (*(u16 *)c)
-> +#define write_instr32(v,a)             (*(u32 *)(a) = (v))
-> +#define write_instr16(v,a)             (*(u16 *)(a) = (v))
-> +#endif
+On Mon, Jan 17, 2011 at 04:11:17PM +0800, Jason Wang wrote:
+> We can use lock_sock_fast() instead of lock_sock() in order to get
+> speedup in peek_head_len().
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-Can we not use cpu_to_le32 etc in here (and as Russell said, they are
-not really IO)?
+Queued for 2.6.39, thanks everyone.
 
--- 
-Catalin
+> ---
+>  drivers/vhost/net.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index c32a2e4..50b622a 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -211,12 +211,12 @@ static int peek_head_len(struct sock *sk)
+>  {
+>  	struct sk_buff *head;
+>  	int len = 0;
+> +	bool slow = lock_sock_fast(sk);
+>  
+> -	lock_sock(sk);
+>  	head = skb_peek(&sk->sk_receive_queue);
+>  	if (head)
+>  		len = head->len;
+> -	release_sock(sk);
+> +	unlock_sock_fast(sk, slow);
+>  	return len;
+>  }
+>  
