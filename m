@@ -1,124 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539Ab1AQVNP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 16:13:15 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:57265 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993Ab1AQVNN (ORCPT
+	id S1752661Ab1AQVXW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 16:23:22 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:58628 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752078Ab1AQVXT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 16:13:13 -0500
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Linux Btrfs" <linux-btrfs@vger.kernel.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Btrfs updates
-Date: Mon, 17 Jan 2011 16:13:01 -0500
-Message-Id: <1295298216-sup-6206@think>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
+	Mon, 17 Jan 2011 16:23:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=xFFVNUqg1GzCjYU7qdA0tP1naOUTmIwmSVwrv0mR/Ha6qZ7S0kLP50Ne3sDcsb5U1C
+         QG6YbFtL4tKxrxAzUXrD3mcbQlaSFvfLPicXCBFnhnijIicOOLC1ePZllrZeOy/EoSRw
+         i+OV6Lwg/Rm2Cssyw39AuQhsqnuCW87WQNopY=
+MIME-Version: 1.0
+In-Reply-To: <20110117083208.GA7569@ff.dom.local>
+References: <AANLkTinHOFwPCwJNCy9cFMCf+_VNb-7YFk-3VJFXoaoZ@mail.gmail.com>
+	<20110117083208.GA7569@ff.dom.local>
+Date: Mon, 17 Jan 2011 22:23:18 +0100
+Message-ID: <AANLkTikF4HtXzvyiST72t4XE14sjCX-27CLLWvsF8D5o@mail.gmail.com>
+Subject: Re: NETLINK: Failed to browse: Invalid argument from avahi-daemon in
+ F14 since 2.6.37-git8
+From: Alessandro Suardi <alessandro.suardi@gmail.com>
+To: Jarek Poplawski <jarkao2@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On Mon, Jan 17, 2011 at 9:32 AM, Jarek Poplawski <jarkao2@gmail.com> wrote:
+> On 2011-01-15 19:34, Alessandro Suardi wrote:
+>> /var/log/messages says:
+>>
+>> Jan 13 12:42:02 duff avahi-daemon[2771]: Found user 'avahi' (UID 70)
+>> and group 'avahi' (GID 70).
+>> Jan 13 12:42:02 duff avahi-daemon[2771]: Successfully dropped root privileges.
+>> Jan 13 12:42:02 duff avahi-daemon[2771]: avahi-daemon 0.6.27 starting up.
+>> Jan 13 12:42:02 duff avahi-daemon[2771]: Successfully called chroot().
+>> Jan 13 12:42:02 duff avahi-daemon[2771]: Successfully dropped remaining capabilities.
+>> Jan 13 12:42:02 duff avahi-daemon[2771]: Loading service file /services/ssh.service.
+>> Jan 13 12:42:02 duff avahi-daemon[2771]: Loading service file /services/udisks.service.
+>> Jan 13 12:42:02 duff avahi-daemon[2771]: NETLINK: Failed to browse: Invalid argument
+>> Jan 13 12:42:23 duff acpid: starting up with netlink and the input layer
+>>
+>>
+>> Happens both at boot and after boot if restarting avahi-daemon service,
+>>  and there is a 10-15" wait before the service start script prints a [FAILED]
+>>  red tag; avahi-daemon process does start up anyways.
+>>
+>> -git7 is the latest "good" kernel
+>> -git8, -git9, -git11, -git13 have been reproducing the issue
+>>
+>>
+>> thanks, ciao,
+>
+> Seems to be resolved in this thread:
+>
+> http://www.spinics.net/lists/netdev/msg152762.html
 
-The for-linus branch of the btrfs-unstable git tree:
+Thanks Jarek - filed Fedora bug 670316 for this one.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git for-linus
+https://bugzilla.redhat.com/show_bug.cgi?id=670316
 
-Has our collection of features and fixes for 2.6.38-rc1.  The git tree
-is actually against 2.6.36 and these commits have been tested against
-.36, .37 and Linus' current git.  There's no particular reason for the
-.36 part, other than it's what one of my build boxes was running.
+--alessandro
 
-The highlights this time around are LZO compression from Li Zefan and a
-large collection of multi-device fixes from Miao Xie.  Liubo kicked in
-the start of our forced-readonly support, which will be the building
-block for ripping out a big collection of BUG_ONs and replacing them
-with kinder gentler error messages.
+ "There's always a siren singing you to shipwreck"
 
-Li Zefan also added readonly snapshot support, and I'll have the
-corresponding btrfs-progs changes integrated this week.
-
-This pull does have a duplicate for the btrfs ctree.c build fix that
-Linus already has in his tree.  Git merge seems to do magic on this one,
-it applies without doing a duplicate #include.
-
-Li Zefan (9) commits (+1354/-542):
-    Btrfs: Add BTRFS_IOC_SUBVOL_GETFLAGS/SETFLAGS ioctls (+85/-0)
-    btrfs: Allow to specify compress method when defrag (+26/-2)
-    btrfs: Allow to add new compression algorithm (+473/-282)
-    btrfs: Extract duplicate decompress code (+115/-194)
-    Btrfs: Refactor btrfs_ioctl_snap_create() (+40/-44)
-    Btrfs: Add readonly snapshots support (+75/-10)
-    btrfs: Add lzo compression support (+527/-8)
-    btrfs: Fix error handling in zlib (+8/-0)
-    btrfs: Fix bugs in zlib workspace (+5/-2)
-
-Miao Xie (6) commits (+695/-186):
-    btrfs: make the chunk allocator utilize the devices better (+300/-103)
-    btrfs: try to reclaim some space when chunk allocation fails (+7/-2)
-    btrfs: fix wrong free space information of btrfs (+286/-7)
-    btrfs: restructure find_free_dev_extent() (+91/-68)
-    btrfs: fix wrong calculation of stripe size (+8/-2)
-    btrfs: fix wrong data space statistics (+3/-4)
-
-Jesper Juhl (2) commits (+5/-1):
-    btrfs: Don't pass NULL ptr to func that may deref it. (+2/-0)
-    btrfs: Mem leak in btrfs_get_acl() (+3/-1)
-
-Tsutomu Itoh (2) commits (+17/-0):
-    btrfs: Fix memory leak in btrfs_read_fs_root_no_radix() (+1/-0)
-    btrfs: check NULL or not (+16/-0)
-
-Stefan Schmidt (1) commits (+1/-0):
-    fs/btrfs: Fix build of ctree
-
-Ben Hutchings (1) commits (+4/-0):
-    btrfs: Require CAP_SYS_ADMIN for filesystem rebalance
-
-Chris Mason (1) commits (+2/-1):
-    Btrfs: fix off by one while setting block groups readonly
-
-Dave Young (1) commits (+8/-4):
-    btrfs: mount failure return value fix
-
-liubo (1) commits (+523/-2):
-    Btrfs: forced readonly mounts on errors
-
-Josef Bacik (1) commits (+0/-5):
-    Btrfs: don't warn if we get ENOSPC in btrfs_block_rsv_check
-
-Total: (25) commits (+2609/-741)
-
- fs/btrfs/Kconfig        |    2 +
- fs/btrfs/Makefile       |    2 +-
- fs/btrfs/acl.c          |    4 +-
- fs/btrfs/btrfs_inode.h  |    2 +-
- fs/btrfs/compression.c  |  329 ++++++++++++++++++++++++-
- fs/btrfs/compression.h  |   72 ++++--
- fs/btrfs/ctree.c        |    8 +
- fs/btrfs/ctree.h        |   49 ++++-
- fs/btrfs/disk-io.c      |  412 ++++++++++++++++++++++++++++++-
- fs/btrfs/disk-io.h      |    1 +
- fs/btrfs/extent-tree.c  |   90 ++++++-
- fs/btrfs/extent_io.c    |    7 +-
- fs/btrfs/extent_io.h    |   17 ++-
- fs/btrfs/extent_map.c   |    2 +
- fs/btrfs/extent_map.h   |    3 +-
- fs/btrfs/file.c         |   13 +
- fs/btrfs/inode.c        |   90 +++++---
- fs/btrfs/ioctl.c        |  220 +++++++++++++----
- fs/btrfs/ioctl.h        |   12 +-
- fs/btrfs/lzo.c          |  420 +++++++++++++++++++++++++++++++
- fs/btrfs/ordered-data.c |   18 ++-
- fs/btrfs/ordered-data.h |    8 +-
- fs/btrfs/super.c        |  281 ++++++++++++++++++++--
- fs/btrfs/transaction.c  |   11 +
- fs/btrfs/transaction.h  |    1 +
- fs/btrfs/volumes.c      |  626 ++++++++++++++++++++++++++++++++++-------------
- fs/btrfs/volumes.h      |   27 ++
- fs/btrfs/xattr.c        |   18 ++
- fs/btrfs/zlib.c         |  369 ++++++----------------------
- 29 files changed, 2491 insertions(+), 623 deletions(-)
+   (Radiohead, "There There")
