@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab1AQRda (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 12:33:30 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63300 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938Ab1AQRd1 (ORCPT
+	id S1753528Ab1AQReB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 12:34:01 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:53792 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751938Ab1AQRd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 12:33:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=nWw5eKF/785LFsi/Fl9YPItE5SHNUYZNkTh+w4LgEuEznWGLVFnBuRzGrjsWUzadpY
-         89CdvTZHehmbcvA+BA1M4qe8sdb1Qeg7RC4xg6KAXVx2702MdmTbP3Io0s/xTcEtP+pi
-         uJruxRebju8Mel9PgU+U08wgZ/LVHn1FFqG9Y=
-Subject: Re: [PATCH v2] net: add Faraday FTMAC100 10/100 Ethernet driver
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ratbert@faraday-tech.com, bhutchings@solarflare.com, joe@perches.com,
-        dilinger@queued.net
-In-Reply-To: <1295256060-2091-1-git-send-email-ratbert.chuang@gmail.com>
-References: <1294919372-1904-1-git-send-email-ratbert.chuang@gmail.com>
-	 <1295256060-2091-1-git-send-email-ratbert.chuang@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 Jan 2011 18:29:14 +0100
-Message-ID: <1295285354.3335.10.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Mon, 17 Jan 2011 12:33:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110117162105.GA1778@nowhere>
+References: <AANLkTimsR3=BKSF8EyASu4_T_vTznw4yEqmxPS8gOQCy@mail.gmail.com>
+	<20110107151200.GB1736@nowhere>
+	<AANLkTi=L3=_2dzHH4Wu6QWXw=AUjxtrAu60xfM3-Qwn4@mail.gmail.com>
+	<20110114183516.GB1926@nowhere>
+	<AANLkTi=nugnkimG75Qh3t2vu8-qy2LKKHwoY2FFFpWDp@mail.gmail.com>
+	<20110117162105.GA1778@nowhere>
+Date: Mon, 17 Jan 2011 11:33:58 -0600
+Message-ID: <AANLkTinob=u4BGpZgzgDKkYWZz=5S8wSfdoQvLSr=DRU@mail.gmail.com>
+Subject: Re: [PATCH] tracing, perf : add cpu hotplug trace events
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 17 janvier 2011 à 17:21 +0800, Po-Yu Chuang a écrit :
+On 17 January 2011 10:21, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Mon, Jan 17, 2011 at 07:49:58AM -0600, Vincent Guittot wrote:
+>> I was just wondering which tracepoints format between my 1st proposal
+>> and yours was the easier to post process by an application like
+>> pytimechart.
+>
+> No idea as pytimechart uses his own ad hoc event parsing. Either
+> way there won't be much differences though.
+>
+>> I have updated the cpu hotplug tracepoint according to your remarks
+>> and steve's ones. I have just replaced the second
+>> cpu_arch_die_start/end in your proposal by cpu_arch_dead_start/endfrq
+>
+> Tracepoints tend to describe actions rather than states, although I can
+> show you some exceptions as well. But this tends to be the major
+> tendency. I suggest you to be stay consistent with this scheme.
+>
+
+For the cpu_die function which is called in the idle loop, we use
+cpu_hotplug_arch_die_start/end
+and for the __cpu_die function which waits for the cpu death, we could
+use cpu_hotplug_arch_wait_death_start/end ?
+
+as a summary we have :
+
+cpu_hotplug_up_start/end
+cpu_hotplug_down_start/end
+cpu_hotplug_arch_up_start/end
+cpu_hotplug_arch_disable_start/end
+cpu_hotplug_arch_die_start/end
+cpu_hotplug_arch_wait_death_start/end
 
 
-> +static int ftmac100_rx_packet(struct ftmac100 *priv, int *processed)
-> +{
-> +	struct net_device *netdev = priv->netdev;
-> +	struct ftmac100_rxdes *rxdes;
-> +	struct sk_buff *skb;
-> +	int length;
-> +	int copied = 0;
-> +	int done = 0;
-> +
-> +	rxdes = ftmac100_rx_locate_first_segment(priv);
-> +	if (!rxdes)
-> +		return 0;
-> +
-> +	length = ftmac100_rxdes_frame_length(rxdes);
-> +
-> +	netdev->stats.rx_packets++;
-> +	netdev->stats.rx_bytes += length;
-> +
-> +	if (unlikely(ftmac100_rx_packet_error(priv, rxdes))) {
-> +		ftmac100_rx_drop_packet(priv);
-> +		return 1;
-> +	}
-> +
-> +	/* start processing */
-> +	skb = netdev_alloc_skb_ip_align(netdev, length);
-> +	if (unlikely(!skb)) {
-> +		if (net_ratelimit())
-> +			netdev_err(netdev, "rx skb alloc failed\n");
-> +
-> +		ftmac100_rx_drop_packet(priv);
-> +		return 1;
-> +	}
-> +
-
-Please dont increase rx_packets/rx_bytes before the
-netdev_alloc_skb_ip_align().
-
-In case of mem allocation failure, it would be better not pretending we
-handled a packet.
-
-drivers/net/r8169.c for example does the rx_packets/rx_bytes only if
-packet is delivered to upper stack.
-
-
-
+> Thanks.
+>
