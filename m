@@ -1,83 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390Ab1AQXY1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 18:24:27 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40712 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311Ab1AQXY0 convert rfc822-to-8bit (ORCPT
+	id S1752717Ab1AQX0Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 18:26:24 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:38588 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602Ab1AQX0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 18:24:26 -0500
+	Mon, 17 Jan 2011 18:26:22 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=WEcLrue0XNfZjhclCe3fLRILqdoq87ihuai53qVv7n7huC0rKvNPMXrZswO3QMAO/E
-         mF56Z7P/4iNDodmoAct/nj9xGXu/FjAeFF+ulNouT14hQ1iMlpm5ZmJ1ixEtaraweyMJ
-         T7O/0Nrdh19znQuCvb5F5gIL+KvfzAon9XClU=
-MIME-Version: 1.0
-In-Reply-To: <x49tyh7mjr6.fsf@segfault.boston.devel.redhat.com>
-References: <AANLkTimMwZnm3UKvmrPscBeZF77vh1sW0ERO1tuv1oNW@mail.gmail.com>
-	<x494o9bbkqo.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTimuCgn4aHzUJRmQfsXjG_UF-3W8fAWb0Y-sSPsM@mail.gmail.com>
-	<x49tyh7mjr6.fsf@segfault.boston.devel.redhat.com>
-Date: Tue, 18 Jan 2011 10:24:24 +1100
-Message-ID: <AANLkTikgsGHJ+q6=We_zPAivyABq+z2f6Atv6ZScLYOU@mail.gmail.com>
-Subject: Re: [patch] fs: aio fix rcu lookup
-From: Nick Piggin <npiggin@gmail.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=R/fK6okOlZiYcZg6+ZmC93okWKrmk/GCAqsHchR6AMg8VO/uy67hjS0y/gP3RFTXpe
+         PSC9ZI6UX1E03CQhk0eNK2nbUXKcgxD8klQR9R2U1awzQN0mZgzzHVq5EXzmK+KpTUhf
+         YZpKqHBsfTqWjY0+jxcQYik0TZoQ5vCPq8iuY=
+Subject: [PATCH] USB: serial: Updated support for ICOM devices
+From: Pieter Maes <maescool@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Jan 2011 00:26:16 +0100
+Message-ID: <1295306776.16281.5.camel@pietmacubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 18, 2011 at 6:07 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
-> Nick Piggin <npiggin@gmail.com> writes:
->
->> On Sat, Jan 15, 2011 at 1:52 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
->>> Nick Piggin <npiggin@gmail.com> writes:
->>>
->>>> Hi,
->>>>
->>>> While hunting down a bug in NFS's AIO, I believe I found this
->>>> buggy code...
->>>>
->>>> fs: aio fix rcu ioctx lookup
->>>>
->>>> aio-dio-invalidate-failure GPFs in aio_put_req from io_submit.
->>>>
->>>> lookup_ioctx doesn't implement the rcu lookup pattern properly.
->>>> rcu_read_lock does not prevent refcount going to zero, so we
->>>> might take a refcount on a zero count ioctx.
->>>
->>> So, does this patch fix the problem?  You didn't actually say....
->>
->> No, it seemd to be an NFS AIO problem, although it was a
->> slightly older kernel so I'll re test after -rc1 if I haven't heard
->> back about it.
->
-> OK.
->
->> Do you agree with the theoretical problem? I didn't try to
->> write a racer to break it yet. Inserting a delay before the
->> get_ioctx might do the trick.
->
-> I'm not convinced, no.  The last reference to the kioctx is always the
-> process, released in the exit_aio path, or via sys_io_destroy.  In both
-> cases, we cancel all aios, then wait for them all to complete before
-> dropping the final reference to the context.
+I found the original patch on the db0fhn repeater wiki (couldn't find the email
+of the origial author) I guess it was never commited.
+I updated and added some Icom HAM-radio devices to the ftdi driver.
+Added extra comments to make clear what devices it are.
 
-That wouldn't appear to prevent a concurrent thread from doing an
-io operation that requires ioctx lookup, and taking the last reference
-after the io_cancel thread drops the ref.
+Signed-off-by: Pieter Maes <maescool@gmail.com>
+---
+ drivers/usb/serial/ftdi_sio.c     |   12 +++++++++++-
+ drivers/usb/serial/ftdi_sio_ids.h |   22 +++++++++++++++++-----
+ 2 files changed, 28 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index a2668d0..4787c0c 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -676,7 +676,17 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_PCDJ_DAC2_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_RRCIRKITS_LOCOBUFFER_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ASK_RDR400_PID) },
+-	{ USB_DEVICE(ICOM_ID1_VID, ICOM_ID1_PID) },
++	{ USB_DEVICE(ICOM_VID, ICOM_ID_1_PID) },
++	{ USB_DEVICE(ICOM_VID, ICOM_OPC_U_UC_PID) },
++	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2C1_PID) },
++	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2C2_PID) },
++	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2D_PID) },
++	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2VT_PID) },
++	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2VR_PID) },
++	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP4KVT_PID) },
++	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP4KVR_PID) },
++	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2KVT_PID) },
++	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2KVR_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ACG_HFDUAL_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_YEI_SERVOCENTER31_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_THORLABS_PID) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index bf08672..4e0eec3 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -569,11 +569,23 @@
+ #define OCT_US101_PID		0x0421	/* OCT US101 USB to RS-232 */
+ 
+ /*
+- * Icom ID-1 digital transceiver
+- */
+-
+-#define ICOM_ID1_VID            0x0C26
+-#define ICOM_ID1_PID            0x0004
++ * Definitions for Icom Inc. devices
++ */
++#define ICOM_VID		0x0C26 /* Icom vendor ID */
++/* Note: ID-1 is a communications tranceiver for HAM-radio operators */
++#define ICOM_ID_1_PID		0x0004 /* ID-1 USB to RS-232 */
++/* Note: OPC is an Optional cable to connect an Icom Tranceiver */
++#define ICOM_OPC_U_UC_PID	0x0018 /* OPC-478UC, OPC-1122U cloning cable */
++/* Note: ID-RP* devices are Icom Repeater Devices for HAM-radio */
++#define ICOM_ID_RP2C1_PID	0x0009 /* ID-RP2C Asset 1 to RS-232 */
++#define ICOM_ID_RP2C2_PID	0x000A /* ID-RP2C Asset 2 to RS-232 */
++#define ICOM_ID_RP2D_PID	0x000B /* ID-RP2D configuration port*/
++#define ICOM_ID_RP2VT_PID	0x000C /* ID-RP2V Transmit config port */
++#define ICOM_ID_RP2VR_PID	0x000D /* ID-RP2V Receive config port */
++#define ICOM_ID_RP4KVT_PID	0x0010 /* ID-RP4000V Transmit config port */
++#define ICOM_ID_RP4KVR_PID	0x0011 /* ID-RP4000V Receive config port */
++#define ICOM_ID_RP2KVT_PID	0x0012 /* ID-RP2000V Transmit config port */
++#define ICOM_ID_RP2KVR_PID	0x0013 /* ID-RP2000V Receive config port */
+ 
+ /*
+  * GN Otometrics (http://www.otometrics.com)
+-- 
+1.7.1
 
 
-> So, while I agree that what you wrote is better, I remain unconvinced of
-> it solving a real-world problem.  Feel free to push it in as a cleanup,
-> though.
 
-Well I think it has to be technically correct first. If there is indeed a
-guaranteed ref somehow, it just needs a comment.
