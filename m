@@ -1,195 +1,302 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab1AQIfb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 03:35:31 -0500
-Received: from mail.windriver.com ([147.11.1.11]:50262 "EHLO
+	id S1753224Ab1AQIf3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 03:35:29 -0500
+Received: from mail.windriver.com ([147.11.1.11]:50282 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753141Ab1AQIfL (ORCPT
+	with ESMTP id S1752926Ab1AQIfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 03:35:11 -0500
+	Mon, 17 Jan 2011 03:35:13 -0500
 From: "Stanley.Miao" <stanley.miao@windriver.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 1/3] Support BE8 mode kernel modules relocation
-Date: Mon, 17 Jan 2011 16:42:07 +0800
-Message-Id: <1295253729-23153-2-git-send-email-stanley.miao@windriver.com>
+Subject: [PATCH 3/3] Add ARM kernel debug macros for locating the boot problems quickly
+Date: Mon, 17 Jan 2011 16:42:09 +0800
+Message-Id: <1295253729-23153-4-git-send-email-stanley.miao@windriver.com>
 X-Mailer: git-send-email 1.5.6.3
 In-Reply-To: <1295253729-23153-1-git-send-email-stanley.miao@windriver.com>
 References: <1295253729-23153-1-git-send-email-stanley.miao@windriver.com>
-X-OriginalArrivalTime: 17 Jan 2011 08:35:00.0059 (UTC) FILETIME=[6DAF92B0:01CBB621]
+X-OriginalArrivalTime: 17 Jan 2011 08:35:02.0716 (UTC) FILETIME=[6F44FFC0:01CBB621]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code section in BE8 kernel modules is in little-endian while data
-section is in big-endian. When reading code from memory in the relocation
-procedure, these instructions are read according to big-endian, so they
-need to be inverted before writing to memory and after reading from memory.
+When we are porting Linux to a new board, we ofter encounter the problems
+that the board can't boot up and there is no any messages output in
+console. These debug macros can help the developers print registers' value
+or messages easily and locate the root cause quickly.
+
+All these debug macros are under CONFIG_DEBUG_LL. When CONFIG_DEBUG_LL is
+enabled, the following messages will be printed in the boot procedure.
+
+Uncompressing Linux... done, booting the kernel.
+r13:005454ec
+stext enter.
+__lookup_processor_type enter.
+__lookup_machine_type enter.
+__vet_atags enter.
+__create_page_tables enter.
+__enable_mmu enter.
+__mmap_switched enter.
+__lookup_processor_type enter.
+__lookup_machine_type enter.
+secondary_startup enter.
+__lookup_processor_type enter.
+__enable_mmu enter.
+__secondary_switched enter.
+Linux version 2.6.38.rc1 ...
 
 Signed-off-by: Stanley.Miao <stanley.miao@windriver.com>
 ---
- arch/arm/Makefile         |    1 +
- arch/arm/include/asm/io.h |   12 ++++++++++
- arch/arm/kernel/module.c  |   51 ++++++++++++++++++++++++--------------------
- 3 files changed, 41 insertions(+), 23 deletions(-)
+ arch/arm/kernel/debug_macro.S |   88 +++++++++++++++++++++++++++++++++++++++++
+ arch/arm/kernel/head-common.S |    8 ++++
+ arch/arm/kernel/head.S        |   19 +++++++--
+ arch/arm/kernel/vmlinux.lds.S |    7 +++
+ 4 files changed, 118 insertions(+), 4 deletions(-)
+ create mode 100644 arch/arm/kernel/debug_macro.S
 
-diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index 3eec793..03e7761 100644
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -13,6 +13,7 @@
- LDFLAGS_vmlinux	:=-p --no-undefined -X
- ifeq ($(CONFIG_CPU_ENDIAN_BE8),y)
- LDFLAGS_vmlinux	+= --be8
-+LDFLAGS_MODULE	+= --be8
- endif
- 
- OBJCOPYFLAGS	:=-O binary -R .note -R .note.gnu.build-id -R .comment -S
-diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
-index 815efa2..2f088c5 100644
---- a/arch/arm/include/asm/io.h
-+++ b/arch/arm/include/asm/io.h
-@@ -233,6 +233,18 @@ extern void _memset_io(volatile void __iomem *, int, size_t);
- 
- #endif	/* __mem_pci */
- 
-+#ifdef CONFIG_CPU_ENDIAN_BE8
-+#define read_instr32(c)			__swab32(*(u32 *)c)
-+#define read_instr16(c)			__swab16(*(u16 *)c)
-+#define write_instr32(v,a)		(*(u32 *)(a) = __swab32((__force __u32)(v)))
-+#define write_instr16(v,a)		(*(u16 *)(a) = __swab16((__force __u16)(v)))
-+#else
-+#define read_instr32(c)			(*(u32 *)c)
-+#define read_instr16(c)			(*(u16 *)c)
-+#define write_instr32(v,a)		(*(u32 *)(a) = (v))
-+#define write_instr16(v,a)		(*(u16 *)(a) = (v))
-+#endif
+diff --git a/arch/arm/kernel/debug_macro.S b/arch/arm/kernel/debug_macro.S
+new file mode 100644
+index 0000000..033acf3
+--- /dev/null
++++ b/arch/arm/kernel/debug_macro.S
+@@ -0,0 +1,88 @@
++/*
++ *  linux/arch/arm/kernel/debug_macro.S
++ *
++ *  Copyright (c) 2011 Wind River Systems, Inc.
++ *  Stanley.Miao <stanley.miao@windriver.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ *  32-bit debugging code
++ */
 +
++#ifdef CONFIG_DEBUG_LL
++
++	.macro  kputc,val
++	mov     r0, \val
++	bl      printch
++	.endm
++
++	.macro	dbgmsg, str
++	stmfd   sp!, {r0-r3, lr}
++	adr	r0, \str
++	bl	printascii
++	ldmfd   sp!, {r0-r3, lr}
++	.endm
++
++	.macro  read_reg reg, num
++	stmfd	sp!, {r0-r4, lr}
++	kputc	#'r'
++	mov	r4, #\num
++	cmp	r4, #10
++	blt	901f
++	sub	r4, r4, #10
++	kputc	#'1'
++901:	add	r0, r4, #'0'
++	bl	printch
++	kputc   #':'
++	ldmfd	sp, {r0-r4, lr}
++	mov     r0, \reg
++	bl      printhex8
++	kputc   #'\n'
++	ldmfd   sp!, {r0-r4, lr}
++	.endm
++
++	.macro	PRINT_SCTLR
++	stmfd	sp!, {r0-r4, lr}
++	kputc	#'S'
++	kputc	#'C'
++	kputc	#'T'
++	kputc	#'L'
++	kputc	#'R'
++	kputc	#':'
++	mrc	p15, 0, r0, c1, c0, 0
++	bl	printhex8
++	kputc	#'\n'
++	ldmfd   sp!, {r0-r4, lr}
++	.endm
++
++	.macro	PRINT_CPSR
++	stmfd	sp!, {r0-r4, lr}
++	kputc	#'C'
++	kputc	#'P'
++	kputc	#'S'
++	kputc	#'R'
++	kputc	#':'
++	mrs	r0, cpsr
++	bl	printhex8
++	kputc	#'\n'
++	ldmfd   sp!, {r0-r4, lr}
++	.endm
++
++#define DBG_MSG(x)	dbgmsg dbg_##x
++#define PRINT_REG(x)	read_reg r##x, x
++
++#undef ENDPROC
++#define ENDPROC(name) \
++	.type name, %function; \
++		END(name); \
++	dbg_##name:; \
++	.ascii #name; \
++	.asciz " enter.\n"; \
++	.align 2
++
++#else
++#define DBG_MSG(x)
++#define PRINT_REG(x)
++#endif
+diff --git a/arch/arm/kernel/head-common.S b/arch/arm/kernel/head-common.S
+index 37cfa88..f916bb8 100644
+--- a/arch/arm/kernel/head-common.S
++++ b/arch/arm/kernel/head-common.S
+@@ -74,6 +74,7 @@ str_a3:	.asciz	"\nPlease check your kernel config and/or bootloader.\n"
+  *  r5 = mach_info pointer in physical address space
+  */
+ __lookup_machine_type:
++	DBG_MSG(__lookup_machine_type)
+ 	adr	r3, __lookup_machine_type_data
+ 	ldmia	r3, {r4, r5, r6}
+ 	sub	r3, r3, r4			@ get offset between virt&phys
+@@ -114,6 +115,7 @@ __lookup_machine_type_data:
+  *  r5, r6 corrupted
+  */
+ __vet_atags:
++	DBG_MSG(__vet_atags)
+ 	tst	r2, #0x3			@ aligned?
+ 	bne	1f
+ 
+@@ -149,6 +151,7 @@ ENDPROC(__vet_atags)
+  */
+ 	__INIT
+ __mmap_switched:
++	DBG_MSG(__mmap_switched)
+ 	adr	r3, __mmap_switched_data
+ 
+ 	ldmia	r3!, {r4, r5, r6, r7}
+@@ -225,6 +228,7 @@ ENDPROC(lookup_processor_type)
+  */
+ 	__CPUINIT
+ __lookup_processor_type:
++	DBG_MSG(__lookup_processor_type)
+ 	adr	r3, __lookup_processor_type_data
+ 	ldmia	r3, {r4 - r6}
+ 	sub	r3, r3, r4			@ get offset between virt&phys
+@@ -284,3 +288,7 @@ __error:
+ 1:	mov	r0, r0
+ 	b	1b
+ ENDPROC(__error)
++
++		.align
++		.section ".boot.stack", "aw"
++boot_stack:	.space 512
+diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
+index dd6b369..bde50cd 100644
+--- a/arch/arm/kernel/head.S
++++ b/arch/arm/kernel/head.S
+@@ -33,6 +33,7 @@
+ #define KERNEL_RAM_VADDR	(PAGE_OFFSET + TEXT_OFFSET)
+ #define KERNEL_RAM_PADDR	(PHYS_OFFSET + TEXT_OFFSET)
+ 
++#include "debug_macro.S"
+ 
  /*
-  * ioremap and friends.
-  *
-diff --git a/arch/arm/kernel/module.c b/arch/arm/kernel/module.c
-index d9bd786..9c58a0d 100644
---- a/arch/arm/kernel/module.c
-+++ b/arch/arm/kernel/module.c
-@@ -14,6 +14,7 @@
- #include <linux/moduleloader.h>
- #include <linux/kernel.h>
- #include <linux/mm.h>
-+#include <linux/io.h>
- #include <linux/elf.h>
- #include <linux/vmalloc.h>
- #include <linux/fs.h>
-@@ -148,7 +149,7 @@ apply_relocate(Elf32_Shdr *sechdrs, const char *strtab, unsigned int symindex,
- 		case R_ARM_PC24:
- 		case R_ARM_CALL:
- 		case R_ARM_JUMP24:
--			offset = (*(u32 *)loc & 0x00ffffff) << 2;
-+			offset = (read_instr32(loc) & 0x00ffffff) << 2;
- 			if (offset & 0x02000000)
- 				offset -= 0x04000000;
+  * swapper_pg_dir is the virtual address of the initial page table.
+@@ -82,6 +83,9 @@
+ ENTRY(stext)
+ 	setmode	PSR_F_BIT | PSR_I_BIT | SVC_MODE, r9 @ ensure svc mode
+ 						@ and irqs disabled
++	ldr	r13, =(__stack_end - PAGE_OFFSET + PHYS_OFFSET)
++	PRINT_REG(13)
++	DBG_MSG(stext)
+ 	mrc	p15, 0, r9, c0, c0		@ get processor id
+ 	bl	__lookup_processor_type		@ r5=procinfo r9=cpuid
+ 	movs	r10, r5				@ invalid processor (r5=0)?
+@@ -102,8 +106,8 @@ ENTRY(stext)
+ 	 * above.  On return, the CPU will be ready for the MMU to be
+ 	 * turned on, and r0 will hold the CPU control register value.
+ 	 */
+-	ldr	r13, =__mmap_switched		@ address to jump to after
+-						@ mmu has been enabled
++	ldr	r0, =__mmap_switched		@ address to jump to after
++	str	r0, [r13, #-4]!			@ mmu has been enabled
+ 	adr	lr, BSYM(1f)			@ return (PIC) address
+  ARM(	add	pc, r10, #PROCINFO_INITFUNC	)
+  THUMB(	add	r12, r10, #PROCINFO_INITFUNC	)
+@@ -126,6 +130,7 @@ ENDPROC(stext)
+  *  r4 = physical page table address
+  */
+ __create_page_tables:
++	DBG_MSG(__create_page_tables)
+ 	pgtbl	r4				@ page table address
  
-@@ -165,8 +166,8 @@ apply_relocate(Elf32_Shdr *sechdrs, const char *strtab, unsigned int symindex,
- 
- 			offset >>= 2;
- 
--			*(u32 *)loc &= 0xff000000;
--			*(u32 *)loc |= offset & 0x00ffffff;
-+			write_instr32((read_instr32(loc) & 0xff000000) |
-+						(offset & 0x00ffffff), loc);
- 			break;
- 
- 	       case R_ARM_V4BX:
-@@ -174,9 +175,9 @@ apply_relocate(Elf32_Shdr *sechdrs, const char *strtab, unsigned int symindex,
- 			* other bits to re-code instruction as
- 			* MOV PC,Rm.
- 			*/
--		       *(u32 *)loc &= 0xf000000f;
--		       *(u32 *)loc |= 0x01a0f000;
--		       break;
-+			write_instr32((read_instr32(loc) & 0xf000000f) |
-+							0x01a0f000, loc);
-+			break;
- 
- 		case R_ARM_PREL31:
- 			offset = *(u32 *)loc + sym->st_value - loc;
-@@ -185,7 +186,7 @@ apply_relocate(Elf32_Shdr *sechdrs, const char *strtab, unsigned int symindex,
- 
- 		case R_ARM_MOVW_ABS_NC:
- 		case R_ARM_MOVT_ABS:
--			offset = *(u32 *)loc;
-+			offset = read_instr32(loc);
- 			offset = ((offset & 0xf0000) >> 4) | (offset & 0xfff);
- 			offset = (offset ^ 0x8000) - 0x8000;
- 
-@@ -193,16 +194,16 @@ apply_relocate(Elf32_Shdr *sechdrs, const char *strtab, unsigned int symindex,
- 			if (ELF32_R_TYPE(rel->r_info) == R_ARM_MOVT_ABS)
- 				offset >>= 16;
- 
--			*(u32 *)loc &= 0xfff0f000;
--			*(u32 *)loc |= ((offset & 0xf000) << 4) |
--					(offset & 0x0fff);
-+			write_instr32((read_instr32(loc) & 0xfff0f000) |
-+					((offset & 0xf000) << 4) |
-+					(offset & 0x0fff), loc);
- 			break;
- 
- #ifdef CONFIG_THUMB2_KERNEL
- 		case R_ARM_THM_CALL:
- 		case R_ARM_THM_JUMP24:
--			upper = *(u16 *)loc;
--			lower = *(u16 *)(loc + 2);
-+			upper = read_instr16(loc);
-+			lower = read_instr16(loc + 2);
- 
- 			/*
- 			 * 25 bit signed address range (Thumb-2 BL and B.W
-@@ -242,17 +243,19 @@ apply_relocate(Elf32_Shdr *sechdrs, const char *strtab, unsigned int symindex,
- 			sign = (offset >> 24) & 1;
- 			j1 = sign ^ (~(offset >> 23) & 1);
- 			j2 = sign ^ (~(offset >> 22) & 1);
--			*(u16 *)loc = (u16)((upper & 0xf800) | (sign << 10) |
--					    ((offset >> 12) & 0x03ff));
--			*(u16 *)(loc + 2) = (u16)((lower & 0xd000) |
--						  (j1 << 13) | (j2 << 11) |
--						  ((offset >> 1) & 0x07ff));
-+			write_instr16((u16)((upper & 0xf800) | (sign << 10) |
-+						((offset >> 12) & 0x03ff)),
-+					loc);
-+			write_instr16((u16)((lower & 0xd000) |
-+						(j1 << 13) | (j2 << 11) |
-+						((offset >> 1) & 0x07ff)),
-+					loc + 2);
- 			break;
- 
- 		case R_ARM_THM_MOVW_ABS_NC:
- 		case R_ARM_THM_MOVT_ABS:
--			upper = *(u16 *)loc;
--			lower = *(u16 *)(loc + 2);
-+			upper = read_instr16(loc);
-+			lower = read_instr16(loc + 2);
- 
- 			/*
- 			 * MOVT/MOVW instructions encoding in Thumb-2:
-@@ -273,12 +276,14 @@ apply_relocate(Elf32_Shdr *sechdrs, const char *strtab, unsigned int symindex,
- 			if (ELF32_R_TYPE(rel->r_info) == R_ARM_THM_MOVT_ABS)
- 				offset >>= 16;
- 
--			*(u16 *)loc = (u16)((upper & 0xfbf0) |
-+			write_instr16((u16)((upper & 0xfbf0) |
- 					    ((offset & 0xf000) >> 12) |
--					    ((offset & 0x0800) >> 1));
--			*(u16 *)(loc + 2) = (u16)((lower & 0x8f00) |
-+					    ((offset & 0x0800) >> 1)),
-+					doc);
-+			write_instr16((u16)((lower & 0x8f00) |
- 						  ((offset & 0x0700) << 4) |
--						  (offset & 0x00ff));
-+						  (offset & 0x00ff)),
-+					doc + 2);
- 			break;
+ 	/*
+@@ -278,6 +283,8 @@ ENTRY(secondary_startup)
+ 	 * as it has already been validated by the primary processor.
+ 	 */
+ 	setmode	PSR_F_BIT | PSR_I_BIT | SVC_MODE, r9
++	ldr	r13, =(__stack_end - PAGE_OFFSET + PHYS_OFFSET)
++	DBG_MSG(secondary_startup)
+ 	mrc	p15, 0, r9, c0, c0		@ get processor id
+ 	bl	__lookup_processor_type
+ 	movs	r10, r5				@ invalid processor?
+@@ -292,7 +299,7 @@ ENTRY(secondary_startup)
+ 	sub	r4, r4, r5			@ mmu has been enabled
+ 	ldr	r4, [r7, r4]			@ get secondary_data.pgdir
+ 	adr	lr, BSYM(__enable_mmu)		@ return address
+-	mov	r13, r12			@ __secondary_switched address
++	str	r12, [r13, #-4]!		@ __secondary_switched address
+  ARM(	add	pc, r10, #PROCINFO_INITFUNC	) @ initialise processor
+ 						  @ (return control reg)
+  THUMB(	add	r12, r10, #PROCINFO_INITFUNC	)
+@@ -303,6 +310,7 @@ ENDPROC(secondary_startup)
+ 	 * r6  = &secondary_data
+ 	 */
+ ENTRY(__secondary_switched)
++	DBG_MSG(__secondary_switched)
+ 	ldr	sp, [r7, #4]			@ get secondary_data.stack
+ 	mov	fp, #0
+ 	b	secondary_start_kernel
+@@ -330,6 +338,7 @@ __secondary_data:
+  *  r13 = *virtual* address to jump to upon completion
+  */
+ __enable_mmu:
++	DBG_MSG(__enable_mmu)
+ #ifdef CONFIG_ALIGNMENT_TRAP
+ 	orr	r0, r0, #CR_A
+ #else
+@@ -373,7 +382,9 @@ __turn_mmu_on:
+ 	mcr	p15, 0, r0, c1, c0, 0		@ write control reg
+ 	mrc	p15, 0, r3, c0, c0, 0		@ read id reg
+ 	mov	r3, r3
+-	mov	r3, r13
++	sub	r13, r13, #PHYS_OFFSET
++	add	r13, r13, #PAGE_OFFSET
++	ldr	r3, [r13], #4
+ 	mov	pc, r3
+ __enable_mmu_end:
+ ENDPROC(__turn_mmu_on)
+diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
+index cead889..5030bc0 100644
+--- a/arch/arm/kernel/vmlinux.lds.S
++++ b/arch/arm/kernel/vmlinux.lds.S
+@@ -246,6 +246,13 @@ SECTIONS
  #endif
  
+ 	BSS_SECTION(0, 0, 0)
++	.stack : {
++		. = ALIGN(4);
++		__stack_start = .;
++		*(.boot.stack)
++		. = ALIGN(4);
++		__stack_end = .;
++	}
+ 	_end = .;
+ 
+ 	STABS_DEBUG
 -- 
 1.5.4.3
 
