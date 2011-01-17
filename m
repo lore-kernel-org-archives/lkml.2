@@ -1,117 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab1AQTZN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 14:25:13 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:59594 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752319Ab1AQTZL (ORCPT
+	id S1752859Ab1AQT34 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 14:29:56 -0500
+Received: from ausc60ps301.us.dell.com ([143.166.148.206]:38725 "EHLO
+	ausc60ps301.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752603Ab1AQT3w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 14:25:11 -0500
-Message-ID: <4D349787.80201@metafoo.de>
-Date: Mon, 17 Jan 2011 20:24:55 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	Mon, 17 Jan 2011 14:29:52 -0500
+X-Loopcount0: from 10.175.216.249
+From: <Narendra_K@Dell.com>
+To: <sfr@canb.auug.org.au>
+CC: <jbarnes@virtuousgeek.org>, <lenb@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-next@vger.kernel.org>,
+        <Matt_Domsch@Dell.com>, <Charles_Rose@Dell.com>,
+        <Surya_Prabhakar@Dell.com>
+Date: Mon, 17 Jan 2011 11:28:48 -0800
+Subject: Re: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
+ allmodconfig
+Thread-Topic: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
+ allmodconfig
+Thread-Index: Acu2fMNkSiSL+anbQq2xKrcgSlLe3A==
+Message-ID: <20110117195215.GA2708@fedora14-r610.oslab.blr.amer.dell.com>
+References: <20110112203414.GA5657@fedora14-r610.oslab.blr.amer.dell.com>
+ <20110112160229.7b8d82c1@jbarnes-desktop>
+ <alpine.LFD.2.02.1101122217370.19754@x980>
+ <20110113075556.789ac3c3@jbarnes-vaio.home>
+ <20110113162755.GA5872@fedora14-r610.oslab.blr.amer.dell.com>
+ <20110114154458.GA18289@fedora14-r610.oslab.blr.amer.dell.com>
+ <20110115080949.62176a3c.sfr@canb.auug.org.au>
+In-Reply-To: <20110115080949.62176a3c.sfr@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mutt/1.5.21 (2010-09-15)
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Sven Neumann <s.neumann@raumfeld.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Daniel Mack <daniel@caiaq.de>
-Subject: Re: resume regression in 2.6.37
-References: <1294933492.2535.23.camel@sven>	<alpine.LFD.2.00.1101131720350.2678@localhost6.localdomain6>	<1294938961.10740.24.camel@sven>	<alpine.LFD.2.00.1101131827080.2678@localhost6.localdomain6>	<1295260580.2060.29.camel@sven> <alpine.LFD.2.00.1101171142380.2678@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1101171142380.2678@localhost6.localdomain6>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Sat, Jan 15, 2011 at 02:39:49AM +0530, Stephen Rothwell wrote:
+> Hi Narendra,
+> 
+> On Fri, 14 Jan 2011 20:52:42 +0530 <Narendra_K@Dell.com> wrote:
+> >
+> > This patch addresses the build failure described in this thread by
+> > compiling fs/nls/nls_base.c always into vmlinux, thus making the base
+> > nls functions available always.
+> 
+> Even on platforms that don't support ACPI or DMI ...
+> 
+> > From: Narendra K <narendra_k@dell.com>
+> > Subject: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by allmodconfig
+> > 
+> > This patch fixes the following build breakage introduced by the patch
+> > PCI:export ACPI _DSM provided firmware instance number and string to sysfs.
+> > (previously commit a6247cd4be20cb5439db5cb7b0b6cc67fdc8e2a2).
+> > 
+> > http://marc.info/?l=linux-pci&m=129313294112736&w=1
+> > 
+> > drivers/built-in.o: In function `T.647':
+> > pci-label.c:(.text+0x28514): undefined reference to `utf16s_to_utf8s'
+> > 
+> > This happens because 'make allmodconfig' sets CONFIG_NLS=m and makes
+> > 'utf16s_to_utf8s` unavailable to drivers/pci/pci-label.o which is built
+> > into vmlinux.
+> > 
+> > This is fixed by making fs/nls/nls_base.c always compile as part of
+> > vmlinux thus making the base nls functions available always.
+> > +++ b/fs/nls/Makefile
+> > @@ -2,7 +2,7 @@
+> >  # Makefile for native language support
+> >  #
+> >  
+> > -obj-$(CONFIG_NLS)		+= nls_base.o
+> > +obj-y				+= nls_base.o
+> 
+> You should really restrict this to CONFIG_ACPI || CONFIG_DMI ||
+> CONFIG_NLS ... maybe create a CONFIG_NLS_BASE that is selected by ACPI,
+> DMI and NLS?
 
-On 01/17/2011 01:40 PM, Thomas Gleixner wrote:
-> On Mon, 17 Jan 2011, Sven Neumann wrote:
->
->> On Thu, 2011-01-13 at 18:33 +0100, Thomas Gleixner wrote:
->>
->>>> Without the revert there is absolutely no sign of resume. With the
->>>> change reverted I can see that the PXA powers up again, there's an LED
->>>> showing that the USB controller has power again. Unfortunately there's
->>>> seems to be another problem and the resume doesn't complete. I've tried
->>>> to get console output by using no_console_suspend, but there's just
->>>> gibberish on the console after resume :(
->>>>
->>>> Any idea on how to proceed from here? I could perhaps ask our hardware
->>>> engineer to try find out where exactly we are stuck in the resume. But
->>>> I'd like to avoid that if possible.
->>>
->>> Can you stick a printk into the set_wake() function of that irq chip
->>> and print the irq and on arguments and the return value . Run that
->>> with both stock 2.6.37 and the patch reverted.
->>
->> pxa3xx_set_wake(31, 1) returns 0
->>
->> Same result with stock 2.6.37 and the patch reverted. Except that
->> without the patch reverted, the device doesn't power up again.
->
-> Ok, can we agree that the patch has no functional impact on the
-> set_wake function? And I don't see a reason why reverting that patch
-> results in a working resume. That does not make sense at all. Which
-> compiler version are you using ?
->
-> Thanks,
->
-> 	tglx
->
+Hi Stephen,
 
-Hi
+Thank you for the suggestions. 
 
-If you take a look at the pxa gpio irq handling you'll see that it sets the
-"set_wake" field of it's irq_chip after calling set_irq_chip for all of the irqs, so
-the compat handler gets never installed.
+I agree with your suggestion that we should compile nls_base.o
+conditionally, only when ACPI || DMI || NLS. I have introduced a bew
+config option CONFIG_NLS_BASE and made ACPI, DMI and NLS select it.
 
-So I guess the following patch fixes it:
+V1 -> V2:
 
-diff --git a/arch/arm/mach-pxa/irq.c b/arch/arm/mach-pxa/irq.c
-- --- a/arch/arm/mach-pxa/irq.c
-+++ b/arch/arm/mach-pxa/irq.c
-@@ -111,13 +111,13 @@ static void __init pxa_init_low_gpio_irq(set_wake_t fn)
- 	GRER0 &= ~0x3;
- 	GEDR0 = 0x3;
+1. Conditionally compile fs/nls/nls_base.c by introducing a new config
+option CONFIG_NLS_BASE, which is selected by (ACPI || DMI || NLS).
+Behavior of the rest of the files under fs/nls is not changed.
 
-+	pxa_low_gpio_chip.set_wake = fn;
+From: Narendra K <narendra_k@dell.com>
+Subject: [PATCH V2] Fix build failure when CONFIG_NLS is set to 'm' by allmodconfig
+
+This patch fixes the following build breakage introduced by the patch
+PCI:export ACPI _DSM provided firmware instance number and string to sysfs.
+(previously commit a6247cd4be20cb5439db5cb7b0b6cc67fdc8e2a2).
+
+http://marc.info/?l=linux-pci&m=129313294112736&w=1
+
+drivers/built-in.o: In function `T.647':
+pci-label.c:(.text+0x28514): undefined reference to `utf16s_to_utf8s'
+
+This happens because 'make allmodconfig' sets CONFIG_NLS=m and makes
+'utf16s_to_utf8s` unavailable to drivers/pci/pci-label.o which is built
+into vmlinux.
+
+This is fixed by making fs/nls/nls_base.c compile conditionally into
+vmlinux by introducing a new config option CONFIG_NLS_BASE which is
+selected by (ACPI || DMI || NLS). This makes
+
+Signed-off-by: Narendra K <narendra_k@dell.com>
+---
+ fs/Makefile     |    2 +-
+ fs/nls/Kconfig  |   14 ++++++++++++++
+ fs/nls/Makefile |    2 +-
+ 3 files changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/fs/Makefile b/fs/Makefile
+index a7f7cef..1e78b9b 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -86,7 +86,7 @@ obj-$(CONFIG_NFS_FS)		+= nfs/
+ obj-$(CONFIG_EXPORTFS)		+= exportfs/
+ obj-$(CONFIG_NFSD)		+= nfsd/
+ obj-$(CONFIG_LOCKD)		+= lockd/
+-obj-$(CONFIG_NLS)		+= nls/
++obj-y				+= nls/
+ obj-$(CONFIG_SYSV_FS)		+= sysv/
+ obj-$(CONFIG_CIFS)		+= cifs/
+ obj-$(CONFIG_NCP_FS)		+= ncpfs/
+diff --git a/fs/nls/Kconfig b/fs/nls/Kconfig
+index a39edc4..2fb92e5 100644
+--- a/fs/nls/Kconfig
++++ b/fs/nls/Kconfig
+@@ -4,6 +4,7 @@
+ 
+ menuconfig NLS
+ 	tristate "Native language support"
++	select NLS_BASE
+ 	---help---
+ 	  The base Native Language Support. A number of filesystems
+ 	  depend on it (e.g. FAT, JOLIET, NT, BEOS filesystems), as well
+@@ -17,6 +18,19 @@ menuconfig NLS
+ 
+ if NLS
+ 
++config NLS_BASE
++	bool "Base NLS functions"
++	depends on ACPI || DMI
++	default y
++	---help---
++	  The base NLS support functions which handle unicode traslations.
 +
- 	for (irq = IRQ_GPIO0; irq <= IRQ_GPIO1; irq++) {
- 		set_irq_chip(irq, &pxa_low_gpio_chip);
- 		set_irq_handler(irq, handle_edge_irq);
- 		set_irq_flags(irq, IRQF_VALID);
- 	}
-- -
-- -	pxa_low_gpio_chip.set_wake = fn;
- }
-
- void __init pxa_init_irq(int irq_nr, set_wake_t fn)
-@@ -142,13 +142,14 @@ void __init pxa_init_irq(int irq_nr, set_wake_t fn)
- 	/* only unmasked interrupts kick us out of idle */
- 	ICCR = 1;
-
-+	pxa_internal_irq_chip.set_wake = fn;
++	  If unsure, say Y.
 +
- 	for (irq = PXA_IRQ(0); irq < PXA_IRQ(irq_nr); irq++) {
- 		set_irq_chip(irq, &pxa_internal_irq_chip);
- 		set_irq_handler(irq, handle_level_irq);
- 		set_irq_flags(irq, IRQF_VALID);
- 	}
++	  This config option is selected by ACPI && DMI && NLS as the
++	  functions defined here are needed in vmlinux and if built as
++	  module cause build issues.
++
+ config NLS_DEFAULT
+ 	string "Default NLS Option"
+ 	default "iso8859-1"
+diff --git a/fs/nls/Makefile b/fs/nls/Makefile
+index f499dd7..dde741f 100644
+--- a/fs/nls/Makefile
++++ b/fs/nls/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for native language support
+ #
+ 
+-obj-$(CONFIG_NLS)		+= nls_base.o
++obj-$(CONFIG_NLS_BASE)		+= nls_base.o
+ 
+ obj-$(CONFIG_NLS_CODEPAGE_437)	+= nls_cp437.o
+ obj-$(CONFIG_NLS_CODEPAGE_737)	+= nls_cp737.o
+-- 
+1.7.3.1
 
-- -	pxa_internal_irq_chip.set_wake = fn;
- 	pxa_init_low_gpio_irq(fn);
- }
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk00l4cACgkQBX4mSR26RiMTMQCdGCiu3ALAIEe0dUkX3u5xeHmz
-dggAnj2cePanr6HFi+6KQ4tF7cT6xoq0
-=yxJs
------END PGP SIGNATURE-----
+With regards,
+Narendra K
