@@ -1,126 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752356Ab1AQSgM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 13:36:12 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:14722 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990Ab1AQSgL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 13:36:11 -0500
-Date: Mon, 17 Jan 2011 19:36:11 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-cc: safford@watson.ibm.com, safford@us.ibm.com, dhowells@redhat.com,
-        jmorris@namei.org, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] trusted-keys: avoid scattring va_end()
-In-Reply-To: <201101170044.p0H0iLQW087457@www262.sakura.ne.jp>
-Message-ID: <alpine.LNX.2.00.1101171935560.27021@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1101132100190.11347@swampdragon.chaosbits.net> <1295011682.7804.2.camel@localhost.localdomain> <201101142245.GGI86457.OQFFFMOtVOHJLS@I-love.SAKURA.ne.jp> <201101142307.EHC56742.FVtMFHOOFSQJOL@I-love.SAKURA.ne.jp>
- <alpine.LNX.2.00.1101161504050.8049@swampdragon.chaosbits.net> <201101170039.p0H0d1f5085735@www262.sakura.ne.jp> <201101170041.p0H0ffFE086481@www262.sakura.ne.jp> <201101170044.p0H0iLQW087457@www262.sakura.ne.jp>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752257Ab1AQSlZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 13:41:25 -0500
+Received: from www.tglx.de ([62.245.132.106]:41242 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750993Ab1AQSlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jan 2011 13:41:22 -0500
+Date: Mon, 17 Jan 2011 19:41:13 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sven Neumann <s.neumann@raumfeld.com>
+cc: Daniel Mack <daniel@caiaq.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: resume regression in 2.6.37
+In-Reply-To: <1295273083.2060.34.camel@sven>
+Message-ID: <alpine.LFD.2.00.1101171940490.2678@localhost6.localdomain6>
+References: <1294933492.2535.23.camel@sven>  <alpine.LFD.2.00.1101131720350.2678@localhost6.localdomain6>  <1294938961.10740.24.camel@sven>  <alpine.LFD.2.00.1101131827080.2678@localhost6.localdomain6>  <1295260580.2060.29.camel@sven> 
+ <alpine.LFD.2.00.1101171142380.2678@localhost6.localdomain6> <1295273083.2060.34.camel@sven>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Jan 2011, Tetsuo Handa wrote:
+On Mon, 17 Jan 2011, Sven Neumann wrote:
+> On Mon, 2011-01-17 at 13:40 +0100, Thomas Gleixner wrote:
+> > On Mon, 17 Jan 2011, Sven Neumann wrote:
+> > 
+> > > On Thu, 2011-01-13 at 18:33 +0100, Thomas Gleixner wrote:
+> > > 
+> > > > > Without the revert there is absolutely no sign of resume. With the
+> > > > > change reverted I can see that the PXA powers up again, there's an LED
+> > > > > showing that the USB controller has power again. Unfortunately there's
+> > > > > seems to be another problem and the resume doesn't complete. I've tried
+> > > > > to get console output by using no_console_suspend, but there's just
+> > > > > gibberish on the console after resume :(
+> > > > > 
+> > > > > Any idea on how to proceed from here? I could perhaps ask our hardware
+> > > > > engineer to try find out where exactly we are stuck in the resume. But
+> > > > > I'd like to avoid that if possible.
+> > > > 
+> > > > Can you stick a printk into the set_wake() function of that irq chip
+> > > > and print the irq and on arguments and the return value . Run that
+> > > > with both stock 2.6.37 and the patch reverted.
+> > > 
+> > > pxa3xx_set_wake(31, 1) returns 0
+> > > 
+> > > Same result with stock 2.6.37 and the patch reverted. Except that
+> > > without the patch reverted, the device doesn't power up again.
+> > 
+> > Ok, can we agree that the patch has no functional impact on the
+> > set_wake function? And I don't see a reason why reverting that patch
+> > results in a working resume. That does not make sense at all. Which
+> > compiler version are you using ?
+> 
+> I agree that this is all very weird and as far as I understand the patch
+> it should have no functional impact. Unfortunately reverting the patch
+> does not result in a working resume, but at least it makes a difference
+> and at the moment it's the only trace I have.
+> 
+> My cross-compile tool-chain uses GCC 4.3.5.
 
-> >From 65b41710a476deae2e0899a4df40c02d199a4ee3 Mon Sep 17 00:00:00 2001
-> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Date: Mon, 17 Jan 2011 09:27:27 +0900
-> Subject: [PATCH 3/3] trusted-keys: avoid scattring va_end()
-> 
-> We can avoid scattering va_end() within the
-> 
->   va_start();
->   for (;;) {
-> 
->   }
->   va_end();
-> 
-> loop, assuming that crypto_shash_init()/crypto_shash_update() return 0 on
-> success and negative value otherwise.
-> 
-> Make TSS_authhmac()/TSS_checkhmac1()/TSS_checkhmac2() similar to TSS_rawhmac()
-> by removing "va_end()/goto" from the loop.
-> 
-> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> ---
->  security/keys/trusted_defined.c |   30 +++++++++++++-----------------
->  1 files changed, 13 insertions(+), 17 deletions(-)
-> 
-> diff --git a/security/keys/trusted_defined.c b/security/keys/trusted_defined.c
-> index f7d0677..2836c6d 100644
-> --- a/security/keys/trusted_defined.c
-> +++ b/security/keys/trusted_defined.c
-> @@ -150,17 +150,15 @@ static int TSS_authhmac(unsigned char *digest, const unsigned char *key,
->  		data = va_arg(argp, unsigned char *);
->  		if (!data) {
->  			ret = -EINVAL;
-> -			va_end(argp);
-> -			goto out;
-> +			break;
->  		}
->  		ret = crypto_shash_update(&sdesc->shash, data, dlen);
-> -		if (ret < 0) {
-> -			va_end(argp);
-> -			goto out;
-> -		}
-> +		if (ret < 0)
-> +			break;
->  	}
->  	va_end(argp);
-> -	ret = crypto_shash_final(&sdesc->shash, paramdigest);
-> +	if (!ret)
-> +		ret = crypto_shash_final(&sdesc->shash, paramdigest);
->  	if (!ret)
->  		ret = TSS_rawhmac(digest, key, keylen, SHA1_DIGEST_SIZE,
->  				  paramdigest, TPM_NONCE_SIZE, h1,
-> @@ -229,13 +227,12 @@ static int TSS_checkhmac1(unsigned char *buffer,
->  			break;
->  		dpos = va_arg(argp, unsigned int);
->  		ret = crypto_shash_update(&sdesc->shash, buffer + dpos, dlen);
-> -		if (ret < 0) {
-> -			va_end(argp);
-> -			goto out;
-> -		}
-> +		if (ret < 0)
-> +			break;
->  	}
->  	va_end(argp);
-> -	ret = crypto_shash_final(&sdesc->shash, paramdigest);
-> +	if (!ret)
-> +		ret = crypto_shash_final(&sdesc->shash, paramdigest);
->  	if (ret < 0)
->  		goto out;
->  
-> @@ -323,13 +320,12 @@ static int TSS_checkhmac2(unsigned char *buffer,
->  			break;
->  		dpos = va_arg(argp, unsigned int);
->  		ret = crypto_shash_update(&sdesc->shash, buffer + dpos, dlen);
-> -		if (ret < 0) {
-> -			va_end(argp);
-> -			goto out;
-> -		}
-> +		if (ret < 0)
-> +			break;
->  	}
->  	va_end(argp);
-> -	ret = crypto_shash_final(&sdesc->shash, paramdigest);
-> +	if (!ret)
-> +		ret = crypto_shash_final(&sdesc->shash, paramdigest);
->  	if (ret < 0)
->  		goto out;
->  
-> 
-Looks good to me...
+Can you try a different compiler ?
 
-Reviewed-by: Jesper Juhl <jj@chaosbits.net>
+Thanks,
 
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+	tglx
