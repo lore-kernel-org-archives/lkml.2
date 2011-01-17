@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675Ab1AQGqK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 01:46:10 -0500
+	id S1752735Ab1AQGq2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 01:46:28 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:59005 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761Ab1AQGqI (ORCPT
+	with ESMTP id S1752688Ab1AQGqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 01:46:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=NgWNvkDRie1KaaQhg18w2cMM0pfgLEUlsaI2hYuKAWdLqPUmL2E/qnk/Ru6cw5mdw7
-         cNTTQUqHVUyFH1iKW99Lxo8EHjdZbSewTfyrg9/yWVHYGi6nm+8B4pBeQSl9cbDDsIpV
-         PRTYwQAEbcK3yGH3yAdENslli7I0wxcd84KEs=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>, Matthew Wilcox <matthew@wil.cx>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] locks: use assign_type()
-Date: Mon, 17 Jan 2011 15:45:59 +0900
-Message-Id: <1295246759-5738-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.3.4.600.g982838b0
+	Mon, 17 Jan 2011 01:46:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <4D33E00E.5050802@wytron.com.tw>
+References: <1254981838-20584-1-git-send-email-thomas@wytron.com.tw>
+ <1295243200-28230-1-git-send-email-thomas@wytron.com.tw> <20110117165958.f89e8220.sfr@canb.auug.org.au>
+ <4D33E00E.5050802@wytron.com.tw>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Sun, 16 Jan 2011 23:45:51 -0700
+X-Google-Sender-Auth: D7Rml386BOcRPVVPm_9rftY88S8
+Message-ID: <AANLkTi=D4Rcxbei2oo+EHc6X1O-2Oo+VWHAasK_JLj5W@mail.gmail.com>
+Subject: Re: [PATCH v2] spi: New driver for Altera SPI
+To: Thomas Chou <thomas@wytron.com.tw>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        nios2-dev@sopc.et.ntust.edu.tw, Mike Frysinger <vapier@gentoo.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net
+Content-Type: text/plain; charset=Big5
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- fs/locks.c |   12 +-----------
- 1 files changed, 1 insertions(+), 11 deletions(-)
+On Sun, Jan 16, 2011 at 11:22 PM, Thomas Chou <thomas@wytron.com.tw> wrote:
+> On 01/17/2011 01:59 PM, Stephen Rothwell wrote:
+>>>
+>>> +/*
+>>> + * struct altera_spi_platform_data - platform data of the Altera SPI
+>>> + * @interrupt: use intrrupt driven data transfer.
+>>> + */
+>>> +struct altera_spi_platform_data {
+>>> +       int interrupt;
+>>> +};
+>>
+>> Is there some reason that this struct definition cannot just be placed
+>> in spi_altera.c and so save a whole extra file (and its inclusion)?
+>>
+>
+> Hi Stephen,
+>
+> It is needed for board configuration file to attach this platform data,
+> which is used to choose between interrupt driven data transfer or polling
+> method. The data transfer rate is usually faster for polling, as interrupt
+> overhead is higher.
 
-diff --git a/fs/locks.c b/fs/locks.c
-index 0f3998291f78..2c2d3b804d62 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -415,17 +415,7 @@ static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
- 	fl->fl_ops = NULL;
- 	fl->fl_lmops = NULL;
- 
--	switch (l->l_type) {
--	case F_RDLCK:
--	case F_WRLCK:
--	case F_UNLCK:
--		fl->fl_type = l->l_type;
--		break;
--	default:
--		return -EINVAL;
--	}
--
--	return (0);
-+	return assign_type(fl, l->l_type);
- }
- #endif
- 
--- 
-1.7.3.4.600.g982838b0
+In this case, that decision could simply be made based on whether or
+not the device has an irq resource.  No irq == polled mode.
 
+g.
