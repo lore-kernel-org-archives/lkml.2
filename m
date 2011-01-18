@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753080Ab1ARGtu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 01:49:50 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44411
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750812Ab1ARGts (ORCPT
+	id S1753013Ab1ARGuc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 01:50:32 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39060 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428Ab1ARGub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 01:49:48 -0500
-Date: Mon, 17 Jan 2011 22:50:22 -0800 (PST)
-Message-Id: <20110117.225022.59651505.davem@davemloft.net>
-To: richm@oldelvet.org.uk
-Cc: 609371@bugs.debian.org, ben@decadent.org.uk, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rostedt@goodmis.org, fweisbec@gmail.com,
-        mingo@redhat.com, Jesper.Nilsson@axis.com, jeffm@suse.com
-Subject: Re: R_SPARC_13
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110117.163709.15244083.davem@davemloft.net>
-References: <20110117.130238.245404805.davem@davemloft.net>
-	<1295307243.32152.106.camel@duncow>
-	<20110117.163709.15244083.davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Jan 2011 01:50:31 -0500
+Date: Tue, 18 Jan 2011 06:50:28 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] more autofs bits
+Message-ID: <20110118065028.GL22723@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Mon, 17 Jan 2011 16:37:09 -0800 (PST)
+	Contains: fix for leak in do_loopback(), a couple of autofs
+fixes from Ian and a bunch of autofs cleanups (some from a year ago ;-/)
+I'd finally got around to.  Again, this is not all - there'll be one
+more later tonight.  This one is just autofs bits.  Please, pull from
 
-> So we do end up seeing the R_SPARC_LO10 + R_SPARC_13 sequences in the
-> final module object.
-> 
-> Therefore, we really should handle R_SPARC_13 in the sparc module loader.
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
 
-Ok, I now feel like I'm hallucinating.
+Shortlog:
+Al Viro (8):
+      autofs4: keep symlink body in inode->i_private
+      autofs4: autofs4_mkroot() is not different from autofs4_init_ino()
+      autofs4: pass mode to autofs4_get_inode() explicitly
+      autofs4: kill ->size in autofs_info
+      autofs4: autofs4_get_inode() doesn't need autofs_info * argument anymore
+      autofs4: mkdir and symlink always get a dentry that had passed lookup
+      autofs4: split autofs4_init_ino()
+      autofs4: clean ->d_release() and autofs4_free_ino() up
 
-davem@sunset:~/src/GIT/linux-2.6-stable$ uname -a
-Linux sunset 2.6.37 #1 SMP Wed Jan 12 20:14:59 PST 2011 sparc64 GNU/Linux
-davem@sunset:~/src/GIT/linux-2.6-stable$ objdump --reloc /lib/modules/2.6.37/kernel/net/ipv6/ipv6.ko | grep R_SPARC_13
-0000000000000c7c R_SPARC_13        *ABS*+0x0000000000000004
-0000000000001ae4 R_SPARC_13        *ABS*+0x0000000000000018
-0000000000001b0c R_SPARC_13        *ABS*+0x0000000000000008
- ...
-davem@sunset:~/src/GIT/linux-2.6-stable$ lsmod | grep ipv6
-ipv6                  240422  12 
-davem@sunset:~/src/GIT/linux-2.6-stable$ 
+Ian Kent (3):
+      autofs4 - fix get_next_positive_dentry()
+      vfs - fix dentry ref count in do_lookup()
+      autofs4 - fix debug print in autofs4_lookup()
 
-I must be missing something obvious.
-
+Diffstat:
+ fs/autofs4/autofs_i.h |   14 ++------
+ fs/autofs4/expire.c   |    4 +-
+ fs/autofs4/inode.c    |   88 ++++++++++++------------------------------------
+ fs/autofs4/root.c     |   74 +++++++++++++++++++---------------------
+ fs/autofs4/symlink.c  |    3 +-
+ fs/namei.c            |    4 ++-
+ 6 files changed, 66 insertions(+), 121 deletions(-)
