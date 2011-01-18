@@ -1,112 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab1ARUbS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 15:31:18 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:34477 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753564Ab1ARUbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 15:31:15 -0500
-Date: Tue, 18 Jan 2011 12:28:46 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>, kvm@vger.kernel.org,
-        virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vhost: rcu annotation fixup
-Message-ID: <20110118202846.GN2193@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110118110845.GA11555@redhat.com>
- <20110118174834.GF2193@linux.vnet.ibm.com>
- <20110118175500.GA6935@redhat.com>
- <20110118190232.GM2193@linux.vnet.ibm.com>
- <20110118201031.GC18760@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110118201031.GC18760@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1753431Ab1ARUd3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 15:33:29 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:47311 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752780Ab1ARUd1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 15:33:27 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=qgX8/f1lC0yniNMThx0IWo6q3BJbz5DzTBw59XLxEGXlqGUixljbnhaX7/f12462DS
+         TWhkvv4wuUfdt1Noe+wMMhaaIwi88HOFYxqPNPd4i6WelLVufGdt73EkLoF9rq3RZ2JT
+         5BnTbikMFhfXO2AyYsFdakks8SA51NWC17vEE=
+Subject: Re: WARNING in module rt2870sta stable kernel 2.6.37
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Denis Kirjanov <kirjanov@gmail.com>
+Cc: Giangiacomo Mariotti <gg.mariotti@gmail.com>, Greg KH <gregkh@suse.de>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+In-Reply-To: <AANLkTi=-4k0hbM9gESLBfzJW_reonqX_GMiVzXzRJFqu@mail.gmail.com>
+References: <AANLkTi=HsE+h9GU8rM6zW2BVtoayEGfKOmPCsrrNHiz5@mail.gmail.com>
+	 <AANLkTi=-4k0hbM9gESLBfzJW_reonqX_GMiVzXzRJFqu@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Jan 2011 21:33:23 +0100
+Message-ID: <1295382803.3194.11.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 18, 2011 at 10:10:31PM +0200, Michael S. Tsirkin wrote:
-> On Tue, Jan 18, 2011 at 11:02:33AM -0800, Paul E. McKenney wrote:
-> > On Tue, Jan 18, 2011 at 07:55:00PM +0200, Michael S. Tsirkin wrote:
-> > > On Tue, Jan 18, 2011 at 09:48:34AM -0800, Paul E. McKenney wrote:
-> > > > On Tue, Jan 18, 2011 at 01:08:45PM +0200, Michael S. Tsirkin wrote:
-> > > > > When built with rcu checks enabled, vhost triggers
-> > > > > bogus warnings as vhost features are read without
-> > > > > dev->mutex sometimes.
-> > > > > Fixing it properly is not trivial as vhost.h does not
-> > > > > know which lockdep classes it will be used under.
-> > > > > Disable the warning by stubbing out the check for now.
-> > > > > 
-> > > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > > > ---
-> > > > >  drivers/vhost/vhost.h |    4 +---
-> > > > >  1 files changed, 1 insertions(+), 3 deletions(-)
-> > > > > 
-> > > > > diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-> > > > > index 2af44b7..2d03a31 100644
-> > > > > --- a/drivers/vhost/vhost.h
-> > > > > +++ b/drivers/vhost/vhost.h
-> > > > > @@ -173,9 +173,7 @@ static inline int vhost_has_feature(struct vhost_dev *dev, int bit)
-> > > > >  {
-> > > > >  	unsigned acked_features;
-> > > > > 
-> > > > > -	acked_features =
-> > > > > -		rcu_dereference_index_check(dev->acked_features,
-> > > > > -					    lockdep_is_held(&dev->mutex));
-> > > > > +	acked_features = rcu_dereference_index_check(dev->acked_features, 1);
-> > > > 
-> > > > Ouch!!!
-> > > > 
-> > > > Could you please at least add a comment?
-> > > 
-> > > Yes, OK.
-> > > 
-> > > > Alternatively, pass in the lock that is held and check for that?  Given
-> > > > that this is a static inline, the compiler should be able to optimize
-> > > > the argument away when !PROVE_RCU, correct?
-> > > > 
-> > > > 							Thanx, Paul
-> > > 
-> > > Hopefully, yes. We don't always have a lock: the idea was
-> > > to create a lockdep for these cases. But we can't pass
-> > > the pointer to that ...
-> > 
-> > I suppose you could pass a pointer to the lockdep map structure.
-> > Not sure if this makes sense, but it would handle the situation.
-> 
-> Will it compile with lockdep disabled too? What will the pointer be?
+Le mardi 18 janvier 2011 à 23:25 +0300, Denis Kirjanov a écrit :
+> I have sent a patch to fix this problem: https://lkml.org/lkml/2011/1/10/329
+> It also fixes a bug #26472: https://bugzilla.kernel.org/show_bug.cgi?id=26472
 
-One (crude) approach would be to make the pointer void* if lockdep
-is disabled.
+OK, next time CC netdev so that we can Ack your patches ;)
 
-> > Alternatively, create a helper function that checks the possibilities
-> > and screams if none of them are in effect.
-> > 
-> > 							Thanx, Paul
-> 
-> The problem here is the callee needs to know about all callers.
 
-As does the guy reading the code.  ;-)
 
-							Thanx, Paul
-
-> > > > >  	return acked_features & (1 << bit);
-> > > > >  }
-> > > > > 
-> > > > > -- 
-> > > > > 1.7.3.2.91.g446ac
-> > > > > --
-> > > > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > > > > the body of a message to majordomo@vger.kernel.org
-> > > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > > > Please read the FAQ at  http://www.tux.org/lkml/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
