@@ -1,213 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753072Ab1ARRWR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 12:22:17 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:30375 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753045Ab1ARRWO (ORCPT
+	id S1753137Ab1ARRWg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 12:22:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20739 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753110Ab1ARRWb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 12:22:14 -0500
-Date: Tue, 18 Jan 2011 09:18:50 -0800
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: gregkh@suse.de, chris.mason@oracle.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, matthew@wil.cx,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, ngupta@vflare.org,
-        jeremy@goop.org, kurt.hackel@oracle.com, npiggin@kernel.dk,
-        riel@redhat.com, konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
-        mel@csn.ul.ie, minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        sfr@canb.auug.org.au, wfg@mail.ustc.edu.cn, tytso@mit.edu,
-        viro@ZenIV.linux.org.uk, hughd@google.com, hannes@cmpxchg.org
-Subject: [PATCH V1 0/3] drivers/staging: kztmem: dynamic page cache/swap
-	compression
-Message-ID: <20110118171850.GA20439@ca-server1.us.oracle.com>
+	Tue, 18 Jan 2011 12:22:31 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Nick Piggin <npiggin@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] fs: aio fix rcu lookup
+References: <AANLkTimMwZnm3UKvmrPscBeZF77vh1sW0ERO1tuv1oNW@mail.gmail.com>
+	<x494o9bbkqo.fsf@segfault.boston.devel.redhat.com>
+	<AANLkTimuCgn4aHzUJRmQfsXjG_UF-3W8fAWb0Y-sSPsM@mail.gmail.com>
+	<x49tyh7mjr6.fsf@segfault.boston.devel.redhat.com>
+	<AANLkTikgsGHJ+q6=We_zPAivyABq+z2f6Atv6ZScLYOU@mail.gmail.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 18 Jan 2011 12:21:58 -0500
+Message-ID: <x49fwsq9lft.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.16 (2007-06-11)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH V1 0/3] drivers/staging: kztmem: dynamic page cache/swap compression
+Nick Piggin <npiggin@gmail.com> writes:
 
-HIGH_LEVEL OVERVIEW
+> On Tue, Jan 18, 2011 at 6:07 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
+>> Nick Piggin <npiggin@gmail.com> writes:
+>>
+>>> On Sat, Jan 15, 2011 at 1:52 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
+>>>> Nick Piggin <npiggin@gmail.com> writes:
+>>>>
+>>>>> Hi,
+>>>>>
+>>>>> While hunting down a bug in NFS's AIO, I believe I found this
+>>>>> buggy code...
+>>>>>
+>>>>> fs: aio fix rcu ioctx lookup
+>>>>>
+>>>>> aio-dio-invalidate-failure GPFs in aio_put_req from io_submit.
+>>>>>
+>>>>> lookup_ioctx doesn't implement the rcu lookup pattern properly.
+>>>>> rcu_read_lock does not prevent refcount going to zero, so we
+>>>>> might take a refcount on a zero count ioctx.
+>>>>
+>>>> So, does this patch fix the problem?  You didn't actually say....
+>>>
+>>> No, it seemd to be an NFS AIO problem, although it was a
+>>> slightly older kernel so I'll re test after -rc1 if I haven't heard
+>>> back about it.
+>>
+>> OK.
+>>
+>>> Do you agree with the theoretical problem? I didn't try to
+>>> write a racer to break it yet. Inserting a delay before the
+>>> get_ioctx might do the trick.
+>>
+>> I'm not convinced, no.  The last reference to the kioctx is always the
+>> process, released in the exit_aio path, or via sys_io_destroy.  In both
+>> cases, we cancel all aios, then wait for them all to complete before
+>> dropping the final reference to the context.
+>
+> That wouldn't appear to prevent a concurrent thread from doing an
+> io operation that requires ioctx lookup, and taking the last reference
+> after the io_cancel thread drops the ref.
 
-Kztmem doubles RAM efficiency while providing a significant
-performance boost on many workloads.
+io_cancel isn't of any concern here.  When io_setup is called, it
+creates the ioctx and takes 2 references to it.  There are two paths to
+destroying the ioctx: one is through process exit, the other is through
+a call to sys_io_destroy.  The former means that you can't submit more
+I/O anyway (which in turn means that there won't be any more lookups on
+the ioctx), so I'll focus on the latter.
 
-Summary for kernel DEVELOPERS: Kztmem uses lzo1x compression to increase
-RAM efficiency for both page cache and swap resulting in a significant
-performance increase (3-4% or more) on memory-pressured workloads
-due to a large reduction in disk I/O.  To do this, kztmem uses an
-in-kernel (no virtualization required) implementation of transcendent
-memory ("tmem"), which has other proven uses and intriguing future uses
-as well.
+What you're asking about, then, is a race between lookup_ioctx and
+io_destroy.  The first thing io_destroy does is to set ctx->dead to 1
+and remove the ioctx from the list:
 
-Summary for kernel MAINTAINERS: Kztmem is a fully-functional,
-in-kernel (non-virtualization) implementation of transcendent memory
-("tmem"), providing an in-kernel user for cleancache and frontswap.
-The patch is based on 2.6.37 and requires either the cleancache patch
-or the frontswap patch or both.  The patch is proposed as a staging
-driver to obtain broader exposure for further evolution and,
-GregKH-willing, is merge-able at the next opportunity. Kztmem will
-hopefully also, Linus-and-akpm-willing, remove the barrier to merge-ability
-for cleancache and frontswap.  Please note that there is a dependency
-on xvmalloc.[ch], currently in drivers/staging/zram.
+   spin_lock(&mm->ioctx_lock);
+   was_dead = ioctx->dead;
+   ioctx->dead = 1;
+   hlist_del_rcu(&ioctx->list);
+   spin_unlock(&mm->ioctx_lock);
 
-Want to try it out?  A complete monolithic patch for 2.6.37 including
-kztmem, cleancache, and frontswap can be downloaded at:
-http://oss.oracle.com/projects/tmem/dist/files/kztmem/kztmem-linux-2.6.37-110117.patch
-IMPORTANT NOTE: kztmem must be specified as a kernel boot parameter
+   if (likely(!was_dead))
+           put_ioctx(ioctx); /* twice for the list */
 
-This version (V1) has changed considerably from V0, thanks to some
-excellent feedback from Jeremy Fitzhardinge.  Feedback from others would
-be greatly appreciated.  See "SPECIFIC AREAS FOR HELP/FEEDBACK" below.
+   aio_cancel_all(ioctx);
+   wait_for_all_aios(ioctx);
 
+   wake_up(&ioctx->wait);
+   put_ioctx(ioctx);   /* once for the lookup */
 
-"ACADEMIC" OVERVIEW
+The lookup code is this:
 
-The objective of all of this code (including previously posted
-cleancache and frontswap patches) is to provide a mechanism
-by which the kernel can store a potentially huge amount of
-certain kinds of page-oriented data so that it (the kernel)
-can be more flexible, dynamic, and/or efficient in the amount
-of directly-addressable RAM that it uses with little or no loss
-of performance and, on some workloads and configuration, even a
-substantial increase in performance.
+   rcu_read_lock();
 
-The data store for this page-oriented data, called "page-
-addressable memory", or "PAM", is assumed to be 
-cheaper, slower, more plentiful, and/or more idiosyncratic
-than RAM, but faster, more-expensive, and/or scarcer than disk.
-Data in this store is page-addressable only, not byte-addressable,
-which increases flexibility for the methods by which the
-data can be stored, for example allowing for compression and
-efficient deduplication.  Further, the number of pages that
-can be stored is entirely dynamic, which allows for multiple
-independent data sources to share PAM resources effectively
-and securely.
+   hlist_for_each_entry_rcu(ctx, n, &mm->ioctx_list, list) {
+   if (ctx->user_id == ctx_id && !ctx->dead) {
+           get_ioctx(ctx);
+           ret = ctx;
+           break;
+...
 
-Cleancache and frontswap are data sources for two types of this
-page-oriented data: "ephemeral pages" such as clean page cache
-pages that can be recovered elsewhere if necessary (e.g. from
-disk); and "persistent" pages which are dirty pages that need
-a short-term home to survive a brief RAM utilization spike but
-need not be permanently saved to survive a reboot (e.g. swap).
-The data source "puts" and "gets" pages and is also responsible
-for directing coherency, via explicit "flushes" of pages and
-related-groups of pages called "objects".
+In order for the race to occur, the lookup code would have to find the
+ioctx on the list without the dead mark set.  Then, the io_destroy code
+would have to do all of its work, including its two put_ioctx calls, and
+finally the get_ioctx from the lookup would have to happen.
 
-Transcendent memory, or "tmem", is a clean API/ABI that provides
-for an efficient address translation layer and a set of highly
-concurrent access methods to copy data between the data source
-and the PAM data store.  The first tmem implementation is in Xen.
-This second tmem implementation is in-kernel (no virtualization
-required) but is designed to be easily extensible for KVM or
-possibly for cgroups.
+Possible?  Maybe.  It certainly isn't explicitly protected against.  Go
+ahead and re-post the patch.  I agree that it's a theoretical race.  =)
 
-A PAM data store must be fast enough to be accessed synchronously
-since, when a put/get/flush is invoked by a data source, the
-data transfer or invalidation is assumed to be completed on return.
-The first PAM is implemented as a secure pool of Xen hypervisor memory
-to allow highly-dynamic memory load balancing between guests.
-This second PAM implementation uses in-kernel compression to roughly
-halve RAM requirements for some workloads.  Future proposed PAM
-possibilities include:  fast NVRAM, memory blades, far-far NUMA.
-The clean layering provided here should simplify the implementation
-of these future PAM data stores for Linux.
-
-THIS PATCHSET
-
-(NOTE: use requires cleancache and/or frontswap patches!)
-
-This patchset provides an in-kernel implementation of transcendent
-memory ("tmem") [1] and a PAM implementation where pages are compressed
-and kept in kernel space (i.e. no virtualization, neither Xen nor KVM,
-is required).
-
-This patch is fully functional, but will benefit from some tuning and
-some "policy" implementation.  It demonstrates an in-kernel user for
-the cleancache and frontswap patches [2,3] and, in many ways,
-supplements/replaces the zram/zcache patches [4,5] with a more
-dynamic mechanism.  Though some or all of this code may eventually
-belong in mm or lib, this patch places it with staging drivers
-so it can obtain exposure as its usage evolves.
-
-The in-kernel transcendent memory implementation (see tmem.c)
-conforms to the same ABI as the Xen tmem shim [6] but also provides
-a generic interface to be used by one or more page-addressable
-memory ("PAM") [7] implementations.  This generic tmem code is
-also designed to support multiple "clients", so should be easily
-adaptable for KVM or possibly cgroups, allowing multiple guests
-to more efficiently "timeshare" physical memory.
-
-Kztmem (see kztmem.c) provides both "host" services (setup and
-core memory allocation) for a single client for the generic tmem
-code plus two different PAM implementations:
-
-A. "compression buddies" ("zbud") which mates compression with a
-   shrinker interface to store ephemeral pages so they can be
-   easily reclaimed; compressed pages are paired and stored in
-   a physical page, resulting in higher internal fragmentation
-B. a shim to xvMalloc [8] which is more space-efficient but
-   less receptive to page reclamation, so is fine for persistent
-   pages
-
-Both of these use lzo1x compression (see linux/lib/lzo/*).
-
-IMHO, it should be relatively easy to plug in other PAM implementations,
-such as: PRAM [9], disaggregated memory [10], or far-far NUMA.
-
-References:
-[1] http://oss.oracle.com/projects/tmem 
-[2] http://lkml.org/lkml/2010/9/3/383 
-[3] https://lkml.org/lkml/2010/9/22/337 
-[4] http://lkml.org/lkml/2010/8/9/226 
-[5] http://lkml.org/lkml/2010/7/16/161 
-[6] http://lkml.org/lkml/2010/9/3/405 
-[7] http://marc.info/?l=linux-mm&m=127811271605009 
-[8] http://code.google.com/p/compcache/wiki/xvMalloc 
-[9] http://www.linuxsymposium.org/2010/view_abstract.php?content_kty=35
-[10] http://www.eecs.umich.edu/~tnm/trev_test/dissertationsPDF/kevinL.pdf
-
-SPECIFIC REQUESTED AREAS FOR ADVICE/FEEDBACK
-
-1. Some debugging code and extensive sysfs entries have been left in
-   place for this patch so its activity can be easily monitored. I welcome
-   other developers to play with it.
-2. Little policy is in place (yet) to limit kztmem from eventually
-   absorbing all free memory for compressed frontswap pages or
-   (if the shrinker isn't "fast enough") compressed cleancache
-   pages.  On some workloads and some memory sizes, this eventually
-   results in OOMs.  (In my testing, the OOM'ing is not worse, just
-   different.)  I'd appreciate feedback on or patches that try
-   out various policies.
-3. I've studied the GFP flags but am still not fully clear on the best
-   combination to use with kztmem memory allocation.  In particular,
-   I think "timid" GFP choices result in lower hit rate, while using
-   GFP_ATOMIC might be considered rude, but results in a higher hit
-   rate and may ve fine for this usage.  I'd appreciate guidance on this.
-4. I think I have the irq/softirq/premption code correct but I'm
-   definitely a kernel novice in this area, so review would be
-   appreciated.
-5. Cleancache works best when the "clean working set" is larger
-   than the active file cache, but smaller than the memory available
-   for cleancache store.  This scenario can be difficult to duplicate
-   in a kernel with fixed RAM size. For best results, kztmem may benefit
-   from tuning changes to file cache parameters.
-6. Benchmarking: Theoretically, kztmem should have a negligible
-   worst case performance loss and a substantial best case performance
-   gain.  Older processors may show a bigger worst case hit.  I'd
-   appreciate any help running workloads on different boxes to better
-   characterize worst case and best case performance.
-
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-
- drivers/staging/Kconfig         |    2 
- drivers/staging/Makefile        |    1 
- drivers/staging/kztmem/Kconfig  |    8 
- drivers/staging/kztmem/Makefile |    1 
- drivers/staging/kztmem/kztmem.c | 1653 ++++++++++++++++++++++++++++++++++++++++
- drivers/staging/kztmem/tmem.c   |  710 +++++++++++++++++
- drivers/staging/kztmem/tmem.h   |  195 ++++
- 7 files changed, 2570 insertions(+)
+Cheers,
+Jeff
