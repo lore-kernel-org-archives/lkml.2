@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042Ab1ARL3Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 06:29:16 -0500
-Received: from fnsrvlx3.fnbs.net.my ([202.9.108.191]:50890 "EHLO
-	smtp-gw.fnbs.net.my" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751190Ab1ARL3P convert rfc822-to-8bit (ORCPT
+	id S1751541Ab1ARLhO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 06:37:14 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55257 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750745Ab1ARLhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 06:29:15 -0500
-X-Greylist: delayed 2009 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Jan 2011 06:29:15 EST
-From: "British Online Promotion 2011" <bnl-bnl@hotmail.co.uk>
-Subject: Dear: e-Mail Winner
-X-Mailer: v3.1s ( 115.242.52.59 - adli )
-X-X-Originating-IP: 115.242.52.59
-Date: Tue, 18 Jan 2011 18:53:19 +0800
-Message-id: <4d35711f.79.51b.1518195499@seca-dyme.com>
+	Tue, 18 Jan 2011 06:37:12 -0500
+Date: Tue, 18 Jan 2011 11:37:10 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>, myungjoo.ham@gmail.com
+Subject: Re: [PATCH v5] MFD MAX8998/LP3974: Support Charger
+Message-ID: <20110118113709.GD26498@opensource.wolfsonmicro.com>
+References: <20110104135651.GD24774@opensource.wolfsonmicro.com>
+ <1294982579-10404-1-git-send-email-myungjoo.ham@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: 202.9.108.191
-X-SpamDetect: ********************: 20.799999 Content: cid=421(2.5) cid=419(2.5) cid=357(1.5) cid=276(1.5) cid=244(3.0) cid=137(3.0) cid=136(1.5) =15.5, Content Spam match=7.0, From3consonants=0.3, Aspam=-2.0
-X-Aspam: Words 0.0 -pregnant -salesmen -objections -decided -unborn -_____ -amended -sender -boss 
-X-Aspam: External-IP matched 202.9.108 2.0
-X-Aspam: Best match was sample aspam_good\m4166.msg
-X-Aspam: Total 2.0
-X-SpamContent: IsSpam
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294982579-10404-1-git-send-email-myungjoo.ham@samsung.com>
+X-Cookie: You will outgrow your usefulness.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-British National Lottery Sweepstakes Jackpot® Winner 
-2011
-    Dear: e-Mail Winner,   Winning Notification
+On Fri, Jan 14, 2011 at 02:22:59PM +0900, MyungJoo Ham wrote:
+> With the new regulator, "CHARGER", users can control charging
+> current and turn on and off the charger. Note that the charger
+> specification of LP3974 is different from that of MAX8998.
+> 
+> driver/power/max8998.c supports power supply APIs for
+> 
+> 1. "ONLINE" monitors the charger status, which can be
+> different from the status "CHARGER"; e.g., users allowed the charger
+> to charge, but the MAX8998 chip decided not to do so.
+> 
+> 2. "PRESENT" monitors the battery status (the existence of the
+> battery).
+> 
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-Your email address as indicated was drawn and attached to
-Ticket
-no:56475600545188 with Serial  no:2113-05 and drew the lucky
-numbers
-9-21-17-39-23-13(20) which subsequently won you 1,000,000.00
-(One Million
-Great Britain pounds) as one of the 10 jackpot winners in
-this draw.
-contact our fiduciary agent for claims with the contact
-below.
-
-Agent Name: william Gore.
-Email:bnl-bnl@hotmail.co.uk
-
-Name:.... 
-Address:.
-Country...
-Occupation:....
-PhoneNumber:....
-
-Sincerely,  
-Mr. Johnson White.
-Copyright © 1991-2011.
+My major concern here is still that the regulator and power drivers
+aren't connected at all - it feels like either the regulator driver is
+redundant or the power driver ought to be a consumer of the regulator
+driver.
