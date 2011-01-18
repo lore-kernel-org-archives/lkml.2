@@ -1,109 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410Ab1ARVuU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 16:50:20 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:35389 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750961Ab1ARVuS (ORCPT
+	id S1752849Ab1ARVws (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 16:52:48 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:41648 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751733Ab1ARVwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 16:50:18 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18XjUs/158XWfnW1mqDrWPohfgDtZB00UCcMaAi89
-	YD+2OGrIB/1OGq
-From: Peter =?iso-8859-15?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Corey Minyard <minyard@acm.org>
-Subject: Re: [PATCH] char/ipmi: fix OOPS caused by pnp_unregister_driver on unregistered driver
-Date: Tue, 18 Jan 2011 22:50:14 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.4.5; x86_64; ; )
-Cc: Matthew Garrett <mjg@redhat.com>, openipmi-developer@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-References: <1294587680-1924-1-git-send-email-peterhuewe@gmx.de>
-In-Reply-To: <1294587680-1924-1-git-send-email-peterhuewe@gmx.de>
+	Tue, 18 Jan 2011 16:52:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=Ee0J7JMnnv5Nh5WPYVpo64r9MKgl/jIZnauWjYJ65AvAFK27b+2jxh+YsiSjV5Nr8T
+         HP/vmLIx1YzL/i/M4Vgw==
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101182250.15227.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+In-Reply-To: <1295273644.30950.121.camel@laptop>
+References: <20110115015749.692623529@google.com> <20110115015817.160235155@google.com>
+ <1295273644.30950.121.camel@laptop>
+From: Paul Turner <pjt@google.com>
+Date: Tue, 18 Jan 2011 13:52:14 -0800
+Message-ID: <AANLkTimUzdGYjWVu9KpvJZuaSq+NFW40GULZGcDSkJRt@mail.gmail.com>
+Subject: Re: [wake_afine fixes/improvements 2/3] sched: clean up task_hot()
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Nick Piggin <npiggin@kernel.dk>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag 09 Januar 2011, 16:41:20 schrieb Peter Huewe:
-> This patch fixes an OOPS triggered when calling modprobe ipmi_si a
-> second time after the first modprobe returned without finding any ipmi
-> devices.
-> 
-> The OOPS is caused by calling pnp_unregister_driver on a (possibly)
-> unregistered pnp driver. (Although I'm not sure why it works the first
-> time)
-> 
-> IPMI System Interface driver.
-> ipmi_si: Adding default-specified kcs state machine
-> ipmi_si: Trying default-specified kcs state machine at i/o address 0xca2,
-> slave address 0x0, irq 0 ipmi_si: Interface detection failed
-> ipmi_si: Adding default-specified smic state machine
-> ipmi_si: Trying default-specified smic state machine at i/o address 0xca9,
-> slave address 0x0, irq 0 ipmi_si: Interface detection failed
-> ipmi_si: Adding default-specified bt state machine
-> ipmi_si: Trying default-specified bt state machine at i/o address 0xe4,
-> slave address 0x0, irq 0 ipmi_si: Interface detection failed
-> ipmi_si: Unable to find any System Interface(s)
-> 
-> IPMI System Interface driver.
-> BUG: unable to handle kernel paging request at c9ccb990
-> IP: [<c1380c98>] put_driver+0x8/0x20
-> *pde = 05e2f067 *pte = 00000000
-> Oops: 0000 [#1]
-> last sysfs file: /sys/module/ipmi_msghandler/initstate
-> Modules linked in: ipmi_si(+) ipmi_msghandler snd_seq_dummy snd_seq_oss
-> snd_seq_midi_event snd_seq snd_pcm_oss snd_mixer_oss ipv6 pcmcia
-> pcmcia_core lp fuse snd_ens1371 snd_via82xx gameport snd_ac97_codec
-> ac97_bus snd_pcm ppdev snd_timer snd_mpu401_uart snd_rawmidi
-> snd_seq_device snd via686a snd_page_alloc hwmon soundcore parport_pc
-> shpchp rtc_cmos psmouse rtc_core parport rtc_lib button evdev serio_raw sg
-> [last unloaded: pcmcia_core]
-> 
-> Pid: 1653, comm: insmod Not tainted 2.6.37 #1 8363-686A/VT8363
-> EIP: 0060:[<c1380c98>] EFLAGS: 00010286 CPU: 0
-> EIP is at put_driver+0x8/0x20
-> EAX: c9ccb960 EBX: c12cc2e0 ECX: 00000000 EDX: c9ccb960
-> ESI: c9ceb960 EDI: 00000000 EBP: c5e8fee0 ESP: c5e8fee0
->  DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
-> Process insmod (pid: 1653, ti=c5e8e000 task=c6e0a000 task.ti=c5e8e000)
-> Stack:
->  c5e8ff04 c1380db5 c1118ba3 c9ceb8c0 c5e8fef8 c1380e99 00000000 00000004
->  00000000 c5e8ff0c c12cc49c c5e8ff58 c9ce9640 c9cea71c 000001a4 00000000
->  c9ceb65c c19fc3f8 fffffffc 00000000 c5e8ff38 c107b185 c5e8ff54 c105063c
-> Call Trace:
->  [<c1380db5>] ? driver_register+0x105/0x130
->  [<c1118ba3>] ? sysfs_create_file+0x33/0x40
->  [<c1380e99>] ? driver_create_file+0x19/0x20
->  [<c12cc49c>] ? pnp_register_driver+0x1c/0x20
->  [<c9ce9640>] ? init_ipmi_si+0x294/0x88f [ipmi_si]
->  [<c107b185>] ? tracepoint_module_notify+0x25/0x30
->  [<c105063c>] ? notifier_call_chain+0x4c/0x70
->  [<c1001206>] ? do_one_initcall+0x116/0x160
->  [<c9ce93ac>] ? init_ipmi_si+0x0/0x88f [ipmi_si]
->  [<c1062f41>] ? sys_init_module+0x91/0x1d0
->  [<c17b7ebc>] ? syscall_call+0x7/0xb
-> Code: 01 00 00 c7 04 24 c7 1c 91 c1 e8 64 14 cb ff 83 c4 0c 5b 5e c9 c3 8d
-> b6 00 00 00 00 8d bc 27 00 00 00 00 55 89 e5 3e 8d 74 26 00 <8b> 40 30 e8
-> 70 18 ee ff c9 c3 8d b4 26 00 00 00 00 8d bc 27 00 EIP: [<c1380c98>]
-> put_driver+0x8/0x20 SS:ESP 0068:c5e8fee0
-> CR2: 00000000c9ccb990
-> ---[ end trace 9b4a0dc647b099c4 ]---
-> 
-> Since the OOPS occurs in the current 2.6.37 release, I added stable on
-> CC.
-> The code exists in this form since 27d0567ab6 (2009-12-17), but could
-> not reproduce it in 2.6.33.
-> 
-> KernelVersion: 2.6.37
-> Cc: <stable@kernel.org>
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-> ---
- Ping - any updates on this one?
+On Mon, Jan 17, 2011 at 6:14 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Fri, 2011-01-14 at 17:57 -0800, Paul Turner wrote:
+>> plain text document attachment (no_hot_sd.patch)
+>> We no longer compute per-domain migration costs or have use for task_hot()
+>> external to the fair scheduling class.
+>
+> Ok, so this a mostly a pure code move (aside from removing the unused sd
+> argument). I do seem to remember that various folks played around with
+> bringing the per sd cache refill cost back.. any conclusion on that?
+>
+> (not really a big point, we can easily add the argument back when
+> needed)
+>
 
-Thanks,
-Peter
+Yeah this one's solely housekeeping.
+
+I think there probably is value in a relative notion of what it means
+to be hot that's based on the domain distance (especially with the
+slightly more exotic topologies we're starting to see), but until some
+framework exists I figured I might as well clean it up while I was
+there.
