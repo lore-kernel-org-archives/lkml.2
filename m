@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753013Ab1ARGuc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 01:50:32 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39060 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428Ab1ARGub (ORCPT
+	id S1753003Ab1ARG7B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 01:59:01 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:55478 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823Ab1ARG7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 01:50:31 -0500
-Date: Tue, 18 Jan 2011 06:50:28 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [git pull] more autofs bits
-Message-ID: <20110118065028.GL22723@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 18 Jan 2011 01:59:00 -0500
+From: Thomas Weber <weber@corscience.de>
+To: linux-omap@vger.kernel.org
+Cc: Daniel Morsing <daniel.morsing@gmail.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Thomas Weber <weber@corscience.de>
+Subject: [PATCHv3 2/2] OMAP3: Devkit8000: Fix tps65930 pullup/pulldown configuration
+Date: Tue, 18 Jan 2011 07:58:52 +0100
+Message-Id: <1295333932-23935-3-git-send-email-weber@corscience.de>
+X-Mailer: git-send-email 1.7.4.rc2
+In-Reply-To: <1295333932-23935-1-git-send-email-weber@corscience.de>
+References: <1295333932-23935-1-git-send-email-weber@corscience.de>
+X-Provags-ID: V02:K0:8hwXFYSSUONOT+Bpo6MeRWn6TWmUa940GDpfwLX7oit
+ x37Frdn5dz1LJTpoQZzax7HHfmDQE+dwblKmcW2i5KEPsZV9a5
+ SWH0wn1JuO3jaeX6sHuZBuiCmLGLKD6Og3ZJQFCmpkRGopm3cx
+ YsBdecTyg38OX3chOrU0SHO91EHEfZVSnWQkPT9w16DJfMiUdR
+ ksY5O9xRYVeYx7LnBGLig==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Contains: fix for leak in do_loopback(), a couple of autofs
-fixes from Ian and a bunch of autofs cleanups (some from a year ago ;-/)
-I'd finally got around to.  Again, this is not all - there'll be one
-more later tonight.  This one is just autofs bits.  Please, pull from
+From: Daniel Morsing <daniel.morsing@gmail.com>
 
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
+gpio7 on the tps65930 is used as an output on the devkit8000 and
+gpio1 is not connected. Remove gpio7 and change gpio1 to pulldown
 
-Shortlog:
-Al Viro (8):
-      autofs4: keep symlink body in inode->i_private
-      autofs4: autofs4_mkroot() is not different from autofs4_init_ino()
-      autofs4: pass mode to autofs4_get_inode() explicitly
-      autofs4: kill ->size in autofs_info
-      autofs4: autofs4_get_inode() doesn't need autofs_info * argument anymore
-      autofs4: mkdir and symlink always get a dentry that had passed lookup
-      autofs4: split autofs4_init_ino()
-      autofs4: clean ->d_release() and autofs4_free_ino() up
+Signed-off-by: Daniel Morsing <daniel.morsing@gmail.com>
+---
+ arch/arm/mach-omap2/board-devkit8000.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-Ian Kent (3):
-      autofs4 - fix get_next_positive_dentry()
-      vfs - fix dentry ref count in do_lookup()
-      autofs4 - fix debug print in autofs4_lookup()
+diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
+index 719f4e5..9fb416b 100644
+--- a/arch/arm/mach-omap2/board-devkit8000.c
++++ b/arch/arm/mach-omap2/board-devkit8000.c
+@@ -262,8 +262,7 @@ static struct twl4030_gpio_platform_data devkit8000_gpio_data = {
+ 	.irq_base	= TWL4030_GPIO_IRQ_BASE,
+ 	.irq_end	= TWL4030_GPIO_IRQ_END,
+ 	.use_leds	= true,
+-	.pullups	= BIT(1),
+-	.pulldowns	= BIT(2) | BIT(6) | BIT(7) | BIT(8) | BIT(13)
++	.pulldowns	= BIT(1) | BIT(2) | BIT(6) | BIT(8) | BIT(13)
+ 				| BIT(15) | BIT(16) | BIT(17),
+ 	.setup		= devkit8000_twl_gpio_setup,
+ };
+-- 
+1.7.4.rc2
 
-Diffstat:
- fs/autofs4/autofs_i.h |   14 ++------
- fs/autofs4/expire.c   |    4 +-
- fs/autofs4/inode.c    |   88 ++++++++++++------------------------------------
- fs/autofs4/root.c     |   74 +++++++++++++++++++---------------------
- fs/autofs4/symlink.c  |    3 +-
- fs/namei.c            |    4 ++-
- 6 files changed, 66 insertions(+), 121 deletions(-)
