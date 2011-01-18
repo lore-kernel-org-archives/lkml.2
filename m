@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752285Ab1ARWJb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 17:09:31 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:53535 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751714Ab1ARWJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 17:09:30 -0500
-Date: Tue, 18 Jan 2011 23:09:14 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        brgerst@gmail.com, arjan@linux.intel.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de, linux@merz-ka.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86: Clear irqstack thread_info
-Message-ID: <20110118220914.GB15672@elte.hu>
-References: <AANLkTimyKXfJ1x8tgwrr1hYnNLrPfgE1NTe4z7L6tUDm@mail.gmail.com>
- <tip-7b698ea377e10b074ceef0d79218e6622d618421@git.kernel.org>
- <1295387110.19231.36.camel@jaguar>
+	id S1752245Ab1ARWMC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 17:12:02 -0500
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:48415 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751597Ab1ARWMA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 17:12:00 -0500
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH 1/1] PCI: allocate essential resources before reserving hotplug resources
+Date: Tue, 18 Jan 2011 15:11:14 -0700
+User-Agent: KMail/1.13.2 (Linux/2.6.32-26-generic; KDE/4.4.2; x86_64; ; )
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, clemens@ladisch.de,
+        Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        peter.henriksson@gmail.com, ebiederm@aristanetworks.com
+References: <20101006225834.GE2945@ram-laptop> <201101181352.08013.bjorn.helgaas@hp.com> <20110118214253.GA10069@ram-laptop>
+In-Reply-To: <20110118214253.GA10069@ram-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295387110.19231.36.camel@jaguar>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101181511.16343.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday, January 18, 2011 02:42:53 pm Ram Pai wrote:
+> On Tue, Jan 18, 2011 at 01:52:06PM -0700, Bjorn Helgaas wrote:
 
-* Pekka Enberg <penberg@kernel.org> wrote:
-
-> On Tue, 2011-01-18 at 19:03 +0000, tip-bot for Brian Gerst wrote:
-> > Commit-ID:  7b698ea377e10b074ceef0d79218e6622d618421
-> > Gitweb:     http://git.kernel.org/tip/7b698ea377e10b074ceef0d79218e6622d618421
-> > Author:     Brian Gerst <brgerst@gmail.com>
-> > AuthorDate: Mon, 17 Jan 2011 07:32:10 -0500
-> > Committer:  Ingo Molnar <mingo@elte.hu>
-> > CommitDate: Tue, 18 Jan 2011 14:58:37 +0100
-> > 
-> > x86: Clear irqstack thread_info
-> > 
-> > Mathias Merz reported that v2.6.37 failed to boot on his
-> > system.
-> > 
-> > Make sure that the thread_info part of the irqstack is
-> > initialized to zeroes.
-> > 
-> > Reported-and-Tested-by: Matthias Merz <linux@merz-ka.de>
-> > Signed-off-by: Brian Gerst <brgerst@gmail.com>
-> > Acked-by: Pekka Enberg <penberg@kernel.org>
-> > Cc: Arjan van de Ven <arjan@linux.intel.com>
-> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> > LKML-Reference: <AANLkTimyKXfJ1x8tgwrr1hYnNLrPfgE1NTe4z7L6tUDm@mail.gmail.com>
-> > Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> > This is a PCI-specific issue, so I'm not comfortable adding add_size
+> > to struct resource.  That penalizes all resource users while only
+> > helping PCI.  Also, the struct resource lives forever, and the
+> > add_size information is only useful while we're configuring the
+> > bridge.
 > 
-> This needs to be tagged for -stable as well.
+> Any suggestion on how to do this without adding a field to struct resource?
 
-Indeed, i meant to do that but forgot. I've forwarded it to the -stable guys now.
+It *is* a little ugly.  You compute some of this info early, in
+pbus_size_io/mem(), but it's not used until later.  Maybe it would
+make sense in struct pci_bus?  That's a pain, too, because then you
+have to test the resource type in adjust_resources_sorted() but at
+least it's a per-PCI bridge structure.
 
-Thanks,
-
-	Ingo
+Bjorn
