@@ -1,105 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808Ab1ARQhv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 11:37:51 -0500
-Received: from casper.infradead.org ([85.118.1.10]:54385 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab1ARQhp convert rfc822-to-8bit (ORCPT
+	id S1752680Ab1ARQjL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 11:39:11 -0500
+Received: from mga02.intel.com ([134.134.136.20]:34610 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752168Ab1ARQjI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 11:37:45 -0500
-Subject: Re: [RFC][PATCH 17/18] sched: Move the second half of ttwu() to
- the remote cpu
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
-        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110107152207.GA16341@redhat.com>
-References: <20110104145929.772813816@chello.nl>
-	 <20110104150103.164045216@chello.nl> <20110105210754.GA2579@redhat.com>
-	 <1294326577.2016.373.camel@laptop>  <20110107152207.GA16341@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 18 Jan 2011 11:39:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,339,1291622400"; 
+   d="scan'208";a="594096171"
+From: "Tardy, Pierre" <pierre.tardy@intel.com>
+To: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cjb@laptop.org" <cjb@laptop.org>, "ohad@wizery.com" <ohad@wizery.com>
+Date: Tue, 18 Jan 2011 16:39:02 +0000
+Subject: RE: [PATCH v1 1/3]mmc: implemented runtime pm for mmc host
+Thread-Topic: [PATCH v1 1/3]mmc: implemented runtime pm for mmc host
+Thread-Index: AcuzxUMTTjCRN6kDQo+D/jJpKwzH1gCb6uFAACqFtKAAE6N1oA==
+Message-ID: <8250E4885F9967469CAC3FB5CBA2CE69934E7AAB20@irsmsx501.ger.corp.intel.com>
+References: <20110114082310.GB27523@intel.com>
+ <8250E4885F9967469CAC3FB5CBA2CE69934E7AA2FE@irsmsx501.ger.corp.intel.com>
+ <5D8008F58939784290FAB48F54975198351D4FA654@shsmsx502.ccr.corp.intel.com>
+In-Reply-To: <5D8008F58939784290FAB48F54975198351D4FA654@shsmsx502.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 18 Jan 2011 17:38:08 +0100
-Message-ID: <1295368688.30950.925.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-07 at 16:22 +0100, Oleg Nesterov wrote:
+> > I'm also worried about this patch not taking in account the 8 clock cycles before
+> > shutting down the clock, contrary to the clock gating fw.
+> > If you power down hc, you will also gate the clock. So the sdio protocol might not be
+> > strictly followed.
+> As mmc spec said, 8 clock cycles is needed. That is right.
+> But I think if we have set the auto suspended delay for host, runtime pm core could make sure host to
+> wait at least the auto suspended delay before shutting down the power of the device. So if the auto
+> suspended delay is longer than 8 clock cycles, the mmc protocol can be followed, right?
+I disagree. You cannot enforce this. It depends on clock speed, that can vary with sdio cards. 
+User can change the autosuspend delay to whatever he wants, it should just change performance, but not functionality.
 
-> Why sched_fork() does set_task_cpu() ? Just curious, it seems
-> that wake_up_new_task() does all we need.
+Why don't you just take my clock gating version?
+Its working well, I'm using this for 2 weeks, and follow the linux-mmc latest improvement.
 
-The only reason I can come up with is to properly initialize the
-data-structures before make the thing visible, by the time
-wake_up_new_task() comes along, its already fully visible.
-
-> ttwu_queue_remote() does "struct task_struct *next = NULL".
-> Probably "next = rq->wake_list" makes more sens. Otherwise the
-> first cmpxchg() always fails if rq->wake_list != NULL.
-
-Indeed, I think Yong mentioned the same a while back.. done.
-
-> Doesn't __migrate_task() need pi_lock? Consider:
-> 
-> 1. A task T runs on CPU_0, it does set_current_state(TASK_INTERRUBTIBLE)
-> 
-> 2. some CPU does set_cpus_allowed_ptr(T, new_mask), new_mask doesn't
->    include CPU_0.
-> 
->    T is running, cpumask_any_and() picks CPU_1, set_cpus_allowed_ptr()
->    drops pi_lock and rq->lock before stop_one_cpu().
-> 
-> 3. T calls schedule() and becomes deactivated.
-> 
-> 4. CPU_2 does try_to_wake_up(T, TASK_INTERRUPTIBLE), takes pi_lock
->    and sees on_rq == F.
->
-> 5. set_cpus_allowed_ptr() resumes and calls stop_one_cpu(cpu => 1).
-> 
-> 6. cpu_stopper_thread() runs on CPU_1 and calls ____migrate_task().
->    It locks CPU_0 and CPU_1 rq's and checks task_cpu() == src_cpu.
-> 
-> 7. CPU_2 calls select_task_rq(), it returns (to simplify) 2.
-> 
->    Now try_to_wake_up() does set_task_cpu(T, 2), and calls
->    ttwu_queue()->ttwu_do_activate()->activate_task().
-> 
-> 8. __migrate_task() on CPU_1 sees p->on_rq and starts the
->    deactivate/activate dance racing with ttwu_do_activate()
->    on CPU_2.
-
-Drad, yes I think you're right, now you've got me worried about the
-other migration paths too.. however did you come up with that
-scenario? :-)
-
-A simple fix would be to keep ->pi_lock locked over the call to
-stop_one_cpu() from set_cpus_allowed_ptr().
-
-I think the sched_fair.c load-balance code paths are ok because we only
-find a task to migrate after we've obtained both runqueue locks, so even
-if we migrate current, it cannot schedule (step 3).
-
-I'm not at all sure about the sched_rt load-balance paths, will need to
-twist my head around that..
+Regards,
+Pierre
 
 
-> And a final question. This is really, really minor, but
-> activate_task/deactivate_task are not symmetric, the former
-> always sets p->on_rq. Looks correct, but imho a bit confusing and
-> can complicate the understanding. Since p->on_rq is cleared
-> explicitly by schedule(), perhaps it can be set explicitly to
-> in try_to_wake_up_*. Or, perhaps, activate/deactivate can check
-> ENQUEUE_WAKEUP/DEQUEUE_SLEEP and set/clear p->on_rq. Once again,
-> this is purely cosmetic issue.
+---------------------------------------------------------------------
+Intel Corporation SAS (French simplified joint stock company)
+Registered headquarters: "Les Montalets"- 2, rue de Paris, 
+92196 Meudon Cedex, France
+Registration Number:  302 456 199 R.C.S. NANTERRE
+Capital: 4,572,000 Euros
 
-Right, only because I didn't want to add conditionals and there's two
-ENQUEUE_WAKEUP sites and didn't want to replicate the assignment. I'll
-fix it up.
-
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
 
