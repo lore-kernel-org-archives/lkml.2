@@ -1,45 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753610Ab1ARDJF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 22:09:05 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63709 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753470Ab1ARDJE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 22:09:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=qFLmbcrdOkvonYst0ipHEDZD5jLygu3qsQMUIWvZfwmxF20mdMCtAUKWAVdn2PeIR6
-         AmdrrFzdiSTjo2WYojCks/HJ0wAV0W9JgB7x7cx6uHfw+BxyKJis0oO2+o5/+u4QIWlI
-         qtadxkMx47sNT0wk0pltfEFPBM+GpOezBi8PA=
+	id S1753557Ab1ARDwS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 22:52:18 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:43541 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753444Ab1ARDwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 Jan 2011 22:52:17 -0500
+Message-ID: <20110118015725.8023226gzgrf1q45@webmail.elte.hu>
+Date: Tue, 18 Jan 2011 01:57:25 +0100
+From: ECOWAS/UNITED NATIONS <perlne@elte.hu>
+Reply-to: ecobank_lnt01@yahoo.co.jp
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
-In-Reply-To: <1295288462.3335.55.camel@edumazet-laptop>
-References: <1294919372-1904-1-git-send-email-ratbert.chuang@gmail.com>
- <1295256060-2091-1-git-send-email-ratbert.chuang@gmail.com> <1295288462.3335.55.camel@edumazet-laptop>
-From: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Date: Tue, 18 Jan 2011 11:08:42 +0800
-Message-ID: <AANLkTi=YU-JeKFtD6iDEuH+JsK2EHmGnq3ehXfy+-AA8@mail.gmail.com>
-Subject: Re: [PATCH v2] net: add Faraday FTMAC100 10/100 Ethernet driver
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ratbert@faraday-tech.com, bhutchings@solarflare.com, joe@perches.com,
-        dilinger@queued.net
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+ charset=ISO-8859-2;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
+X-Originating-IP: 82.128.14.170
+X-ELTE-Username: perlne
+X-ELTE-SpamScore: 1.0
+X-ELTE-SpamLevel: s
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=1.0 required=5.9 tests=ADVANCE_FEE_2,BAYES_00,MISSING_SUBJECT autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
+	1.2 ADVANCE_FEE_2          Appears to be advance fee fraud (Nigerian 419)
+	1.8 MISSING_SUBJECT        Missing Subject: header
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Eric,
 
-On Tue, Jan 18, 2011 at 2:21 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> BTW, shouldnt you use cpu_to_be32() or cpu_to_le32(), if this driver is
-> multi platform ?
+ECO BANK NIG PLC
+3-5 BROAD STREET
+IKOYI ROAD
+LAGOS.NIGERIA
 
-This reminds me another thing. Should I use u32 instead of unsigned int for all
-hardware related variables (registers, descriptors) ?
-Not quite sure about these cross-platform issues.
+2011 SCAM VICTIMS COMPENSATIONS PAYMENTS.
 
-best regards,
-Po-Yu Chuang
+Dear Victim Of Scam.
+
+YOUR REF/PAYMENTS CODE: ECB/06654 FOR $500,000 USD ONLY.
+
+This is to bring to your notice that our bank (ECOBANK INTL. PLC) is
+delegated by the ECOWAS/UNITED NATIONS in Central Bank to pay victims
+of scam $500,000 (Five Hundred Thousand Dollars Only).
+
+For verification you are to view the following link.
+
+http://www.un.org/News/Press/docs/2003/ik344.doc.htm
+
+You are to send the following informations for remittance.
+
+Your Name.___________________________
+Address.___________________________
+Phone .___________________________
+Amount Defrauded.___________________________
+Country.________________________
+
+Send a copy of your response with the PAYMENT CODE
+NUMBER(ECB/06654).
+
+NAME: MR.CLEMENT SYLVANIUS
+       SCAMMED VICTIM/REF/PAYMENTS CODE:
+       ECB/06654 $500,000 USD.
+
+
+Email: ecobank_lnt01@yahoo.co.jp
+
+Yours Faithfully,
+Mrs. Rosemary Peter
+PUBLIC RELATIONS OFFICER
+Copyright (C) 2011
+
+
+
+
+
