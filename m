@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab1AREfp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 23:35:45 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:36904 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751947Ab1AREfm (ORCPT
+	id S1752999Ab1AREgE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 23:36:04 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62794 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838Ab1AREgC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 23:35:42 -0500
-Date: Tue, 18 Jan 2011 13:33:24 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
-Cc: sfr@canb.auug.org.au, Arnd Bergmann <arnd@arndb.de>, gregkh@suse.de,
-        jbarnes@virtuousgeek.org, dmitry.torokhov@gmail.com, dtor@mail.ru,
-        rubini@cvml.unipv.it, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-next@vger.kernel.org
-Subject: Re: Request for unicore32 architecture codes to merge into linux-next
-Message-ID: <20110118043323.GF2122@linux-sh.org>
-References: <004901cbb4d5$b9bb1370$2d313a50$@mprc.pku.edu.cn>
+	Mon, 17 Jan 2011 23:36:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=NfqB8pysQ7TX3E3d/bjs251zb4bcqbE7s+AxTRz530lryssBeED+gzXtXo7ikFLzsV
+         53Pkp1TAIv3acgmPNq2XM8g6MkgN2ipZoOjVHslynMXvZyFTCXEn0E17Ocs+UNtk2Bbd
+         L4d4g9BLkK3i1ViNew8I76CydLwBwiPPHVVN4=
+Date: Mon, 17 Jan 2011 20:35:55 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: linux-kernel@vger.kernel.org, Cyril Chemparathy <cyril@ti.com>,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH 04/16] input: tnetv107x-touchscreen: don't treat NULL clk
+ as an error
+Message-ID: <20110118043555.GA23851@core.coreip.homeip.net>
+References: <1294749833-32019-1-git-send-email-jamie@jamieiles.com>
+ <1294749833-32019-5-git-send-email-jamie@jamieiles.com>
+ <20110112055640.GC22944@core.coreip.homeip.net>
+ <20110118042535.GA23781@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <004901cbb4d5$b9bb1370$2d313a50$@mprc.pku.edu.cn>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <20110118042535.GA23781@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 16, 2011 at 01:00:31AM +0800, Guan Xuetao wrote:
->  drivers/staging/puv3/Kconfig                  |  125 ++
->  drivers/staging/puv3/Makefile                 |   22 +
->  drivers/staging/puv3/TODO                     |    7 +
->  drivers/staging/puv3/i8042-ucio.h             |   89 ++
->  drivers/staging/puv3/puv3-atkbd.h             |   43 +
->  drivers/staging/puv3/puv3_ac97.c              |  369 +++++
->  drivers/staging/puv3/puv3_i2c.c               |  309 ++++
->  drivers/staging/puv3/puv3_pcm.c               |  435 ++++++
->  drivers/staging/puv3/puv3_pcm.h               |   28 +
->  drivers/staging/puv3/puv3_umal.c              | 2069 +++++++++++++++++++++++++
->  drivers/staging/puv3/puv3_unifb.c             |  965 ++++++++++++
+On Mon, Jan 17, 2011 at 08:25:35PM -0800, Dmitry Torokhov wrote:
+> On Tue, Jan 11, 2011 at 09:56:41PM -0800, Dmitry Torokhov wrote:
+> > On Tue, Jan 11, 2011 at 12:43:41PM +0000, Jamie Iles wrote:
+> > > clk_get() returns a struct clk cookie to the driver and some platforms
+> > > may return NULL if they only support a single clock.  clk_get() has only
+> > > failed if it returns a ERR_PTR() encoded pointer.
+> > > 
+> > > Cc: Cyril Chemparathy <cyril@ti.com>
+> > > Cc: linux-input@vger.kernel.org
+> > > Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+> > 
+> > Applied both, thank you Jamie.
+> > 
+> 
+> Actually, if we pass clk that is NULL along we going to get oops on many
+> arches, so I am going to change it to IS_ERR_OR_NULL.
+> 
 
-Staging is not a shortcut around having things reviewed or broken out
-logically. It's of course fine to merge the bulk of things in one go for
-when a new architecture is going on, but logically disparate parts still
-need to be broken out and sent to the proper places for review. It's
-obvious you haven't done this for any of the non-arch bits and hiding
-things under staging is not going to make this step any less necessary.
+Oh, wait... OK, I got confused by the changelog. IS_ERR is proper,
+sorry.
 
-If you want your framebuffer driver reviewed, then split it out and
-submit it to the linux-fbdev list for review. Once that's had a going
-over and been Acked then of course it can be merged through whatever tree
-you like, and there's even a good chance that you don't need to bother
-with staging at all.
-
-Using staging as a review circumvention measure however is just not going
-to fly.
+-- 
+Dmitry
