@@ -1,35 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751903Ab1ARK26 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 05:28:58 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54967 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208Ab1ARK25 (ORCPT
+	id S1752042Ab1ARKaV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 05:30:21 -0500
+Received: from casper.infradead.org ([85.118.1.10]:43632 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243Ab1ARKaT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 05:28:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=FAmptCof6LpXvkcPSjVV/651ZhNxyYi9UuUnHKf9yhmBX7goHJ5zgomGiCoEtsUZZ3
-         itecaRqhdvHWJTP1DzviZhAHSb1GlHkO3DckSyB5g/ScZOmZVmbYThs74D37D7c12RNM
-         gsWEYWfg7V92EYsxM5MVj3CyPJPNqgfPPLFOs=
-MIME-Version: 1.0
-Date: Tue, 18 Jan 2011 08:28:57 -0200
-Message-ID: <AANLkTimYSyzuZrWXDsW1kxB=QD_4ua01csLv760zwZ-b@mail.gmail.com>
-Subject: Inode - Kernel Mode
-From: Artur Baruchi <mail.baruchi@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Jan 2011 05:30:19 -0500
+Subject: Re: [PATCH 00/21] mm: Preemptibility -v6
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>, Nick Piggin <npiggin@kernel.dk>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org
+In-Reply-To: <alpine.LSU.2.00.1101172301340.2899@sister.anvils>
+References: <20101126143843.801484792@chello.nl>
+	 <alpine.LSU.2.00.1101172301340.2899@sister.anvils>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 18 Jan 2011 11:30:47 +0100
+Message-ID: <1295346647.30950.477.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guys.
+On Mon, 2011-01-17 at 23:12 -0800, Hugh Dickins wrote:
+> I understand you're intending to update your preemptible mmu_gather
+> patchset against 2.6.38-rc1, so I've spent a while looking through
+> (and running) your last posted version (plus its two fixes from BenH).
+> 
+> I've had no problems in running it, I can't tell if it's quicker or
+> slower than the unpatched.  The only argument against the patchset,
+> really, would be performance: and though there are no bad reports on
+> it as yet, I do wonder how we proceed if a genuine workload shows up
+> which is adversely affected.  Oh well, silly to worry about the
+> hypothetical I suppose.
+> 
+Wow, _HUGE_ review, thanks! I'll slowly make my way through it when I do
+the rebase against .38-rc1, most suggestions look very good indeed.
 
-I'm able to get the inode number for a given file. Is there a way to
-get the file size, since I already have the inode ?
+And as to performance, there's the no-regression report from Yanmin
+running it through the Intel test farm. However Nick also had a
+particular workload he wanted to test, Nick, do you think you've got a
+few spare minutes to dig that workload up and give it a run?
 
-Thanks in advance.
-
-Att.
-Artur Baruchi
+But I guess you're right, there's always a chance someone hits
+something, and I guess there's nothing to it but to deal with it when
+that comes..
