@@ -1,36 +1,334 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab1ARUu3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 15:50:29 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42390
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752856Ab1ARUu2 (ORCPT
+	id S1753388Ab1ARUwz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 15:52:55 -0500
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:32832 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752856Ab1ARUwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 15:50:28 -0500
-Date: Tue, 18 Jan 2011 12:51:01 -0800 (PST)
-Message-Id: <20110118.125101.246517701.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless-2.6 2010-01-18
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110118202135.GA15402@tuxdriver.com>
-References: <20110118202135.GA15402@tuxdriver.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 18 Jan 2011 15:52:54 -0500
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH 1/1] PCI: allocate essential resources before reserving hotplug resources
+Date: Tue, 18 Jan 2011 13:52:06 -0700
+User-Agent: KMail/1.13.2 (Linux/2.6.32-26-generic; KDE/4.4.2; x86_64; ; )
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, clemens@ladisch.de,
+        Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        peter.henriksson@gmail.com, ebiederm@aristanetworks.com
+References: <20101006225834.GE2945@ram-laptop> <20110111211021.GA26352@ram-laptop> <20110114181915.GA7476@ram-laptop>
+In-Reply-To: <20110114181915.GA7476@ram-laptop>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201101181352.08013.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Tue, 18 Jan 2011 15:21:35 -0500
+On Friday, January 14, 2011 11:19:15 am Ram Pai wrote:
+>     PCI: reserve  additional  resources  for hotplug bridges
+>     only after all essential resources are allocated.
+>     
+>     Linux  tries  to reserve minimal  resources for  hotplug
+>     bridges.  This  works   fine as long as there are enough
+>     resources  to  satisfy  all  other  essential   resource
+>     requirements.  However  if  enough  resources   are  not
+>     available    to    satisfy  both the essential resources 
+>     and   the   reservation  for   hotplug  resources,   the
+>     resource-allocator reports error and returns failure.
+>     
+>     This patch distinguishes between essential resources and
+>     nice-to-have   resources.   Any   failure   to  allocate
+>     nice-to-have resources are ignored.
+>     
+>     This  behavior  can  be  particularly  useful to trigger
+>     automatic  reallocation, if  the  OS  discovers  genuine
+>     resource  allocation  conflicts  or  genuine unallocated
+>     requests caused  by  not-so-smart allocation behavior of 
+>     the native BIOS.
+>     
+>     https://bugzilla.kernel.org/show_bug.cgi?id=15960
+>     captures  the  details  of  the issue and the motivation
+>     behind this patch.
 
-> Here is another batch of fixes intended for 2.6.38.  Included are a
-> locking fix, and endian fix, a lockdep fix, an error code fix, a memory
-> leak fix, a type fix, and a couple of others.
+Please don't indent and right-justify the changelog.
+
+This is a PCI-specific issue, so I'm not comfortable adding add_size
+to struct resource.  That penalizes all resource users while only
+helping PCI.  Also, the struct resource lives forever, and the
+add_size information is only useful while we're configuring the
+bridge.
+
+Bjorn
+
+> Signed-off-by: Ram Pai <linuxram@us.ibm.com>
 > 
-> Please let me know if there are problems!
-
-Pulled, thanks John.
+> drivers/pci/setup-bus.c |  142 +++++++++++++++++++++++++++++++++++-------------
+> include/linux/ioport.h  |    1 
+> 2 files changed, 105 insertions(+), 38 deletions(-)
+> 
+> diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+> index 66cb8f4..76a7fb7 100644
+> --- a/drivers/pci/setup-bus.c
+> +++ b/drivers/pci/setup-bus.c
+> @@ -91,7 +91,26 @@ static void __dev_sort_resources(struct pci_dev *dev,
+>  	pdev_sort_resources(dev, head);
+>  }
+>  
+> -static void __assign_resources_sorted(struct resource_list *head,
+> +
+> +static void adjust_resources_sorted(struct resource_list *head)
+> +{
+> +	struct resource *res;
+> +	struct resource_list *list, *tmp;
+> +	int idx;
+> +
+> +	for (list = head->next; list;) {
+> +		res = list->res;
+> +		idx = res - &list->dev->resource[0];
+> +		if (res->add_size)
+> +			adjust_resource(res, res->start, 
+> +				resource_size(res) + res->add_size);
+> +		tmp = list;
+> +		list = list->next;
+> +		kfree(tmp);
+> +	}
+> +}
+> +
+> +static void assign_requested_resources_sorted(struct resource_list *head,
+>  				 struct resource_list_x *fail_head)
+>  {
+>  	struct resource *res;
+> @@ -114,14 +133,25 @@ static void __assign_resources_sorted(struct resource_list *head,
+>  			}
+>  			res->start = 0;
+>  			res->end = 0;
+> +			res->add_size = 0;
+>  			res->flags = 0;
+>  		}
+>  		tmp = list;
+>  		list = list->next;
+> -		kfree(tmp);
+>  	}
+>  }
+>  
+> +static void __assign_resources_sorted(struct resource_list *head,
+> +				 struct resource_list_x *fail_head)
+> +{
+> +	/* Satisfy the must-have resource requests */
+> +	assign_requested_resources_sorted(head, fail_head);
+> +
+> +	/* Try to satisfy any additional nice-to-have resource 
+> +		requests */
+> +	adjust_resources_sorted(head);
+> +}
+> +
+>  static void pdev_assign_resources_sorted(struct pci_dev *dev,
+>  				 struct resource_list_x *fail_head)
+>  {
+> @@ -404,15 +434,37 @@ static struct resource *find_free_bus_resource(struct pci_bus *bus, unsigned lon
+>  	return NULL;
+>  }
+>  
+> +static resource_size_t calculate_iosize(resource_size_t size, 
+> +		resource_size_t min_size, 
+> +		resource_size_t size1, 
+> +		resource_size_t old_size, 
+> +		resource_size_t align)
+> +{
+> +	if (size < min_size)
+> +		size = min_size;
+> +	if (old_size == 1 )
+> +		old_size = 0;
+> +	/* To be fixed in 2.5: we should have sort of HAVE_ISA
+> +	   flag in the struct pci_bus. */
+> +#if defined(CONFIG_ISA) || defined(CONFIG_EISA)
+> +	size = (size & 0xff) + ((size & ~0xffUL) << 2);
+> +#endif
+> +	size = ALIGN(size + size1, align);
+> +	if (size < old_size)
+> +		size = old_size;
+> +	return size;
+> +}
+> +
+>  /* Sizing the IO windows of the PCI-PCI bridge is trivial,
+>     since these windows have 4K granularity and the IO ranges
+>     of non-bridge PCI devices are limited to 256 bytes.
+>     We must be careful with the ISA aliasing though. */
+> -static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size)
+> +static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size, 
+> +			resource_size_t add_size)
+>  {
+>  	struct pci_dev *dev;
+>  	struct resource *b_res = find_free_bus_resource(bus, IORESOURCE_IO);
+> -	unsigned long size = 0, size1 = 0, old_size;
+> +	unsigned long size = 0, size1 = 0;
+>  
+>  	if (!b_res)
+>   		return;
+> @@ -435,20 +487,16 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size)
+>  				size1 += r_size;
+>  		}
+>  	}
+> -	if (size < min_size)
+> -		size = min_size;
+> -	old_size = resource_size(b_res);
+> -	if (old_size == 1)
+> -		old_size = 0;
+> -/* To be fixed in 2.5: we should have sort of HAVE_ISA
+> -   flag in the struct pci_bus. */
+> -#if defined(CONFIG_ISA) || defined(CONFIG_EISA)
+> -	size = (size & 0xff) + ((size & ~0xffUL) << 2);
+> -#endif
+> -	size = ALIGN(size + size1, 4096);
+> -	if (size < old_size)
+> -		size = old_size;
+> -	if (!size) {
+> +
+> +	size = calculate_iosize(size, min_size, size1, 
+> +			resource_size(b_res), 4096);
+> +	if (add_size)
+> +		size1 = calculate_iosize(size, min_size+add_size, size1, 
+> +				resource_size(b_res), 4096);
+> +	else
+> +		size1  = size;
+> +
+> +	if (!size && !size1) {
+>  		if (b_res->start || b_res->end)
+>  			dev_info(&bus->self->dev, "disabling bridge window "
+>  				 "%pR to [bus %02x-%02x] (unused)\n", b_res,
+> @@ -459,16 +507,35 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size)
+>  	/* Alignment of the IO window is always 4K */
+>  	b_res->start = 4096;
+>  	b_res->end = b_res->start + size - 1;
+> +	b_res->add_size = size1-size;
+>  	b_res->flags |= IORESOURCE_STARTALIGN;
+>  }
+>  
+> +
+> +static resource_size_t calculate_memsize(resource_size_t size, 
+> +		resource_size_t min_size, 
+> +		resource_size_t size1, 
+> +		resource_size_t old_size, 
+> +		resource_size_t align)
+> +{
+> +	if (size < min_size)
+> +		size = min_size;
+> +	if (old_size == 1 )
+> +		old_size = 0;
+> +	if (size < old_size)
+> +		size = old_size;
+> +	size = ALIGN(size + size1, align);
+> +	return size;
+> +}
+> +
+>  /* Calculate the size of the bus and minimal alignment which
+>     guarantees that all child resources fit in this size. */
+>  static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+> -			 unsigned long type, resource_size_t min_size)
+> +			 unsigned long type, resource_size_t min_size, 
+> +				resource_size_t add_size)
+>  {
+>  	struct pci_dev *dev;
+> -	resource_size_t min_align, align, size, old_size;
+> +	resource_size_t min_align, align, size, size1;
+>  	resource_size_t aligns[12];	/* Alignments from 1Mb to 2Gb */
+>  	int order, max_order;
+>  	struct resource *b_res = find_free_bus_resource(bus, type);
+> @@ -516,13 +583,6 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+>  			mem64_mask &= r->flags & IORESOURCE_MEM_64;
+>  		}
+>  	}
+> -	if (size < min_size)
+> -		size = min_size;
+> -	old_size = resource_size(b_res);
+> -	if (old_size == 1)
+> -		old_size = 0;
+> -	if (size < old_size)
+> -		size = old_size;
+>  
+>  	align = 0;
+>  	min_align = 0;
+> @@ -537,8 +597,14 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+>  			min_align = align1 >> 1;
+>  		align += aligns[order];
+>  	}
+> -	size = ALIGN(size, min_align);
+> -	if (!size) {
+> +
+> +	size = calculate_memsize(size, min_size, 0, resource_size(b_res), align);
+> +	if (add_size)
+> +		size1 = calculate_memsize(size, min_size+add_size, 0, resource_size(b_res), align);
+> +	else
+> +		size1  = size;
+> +
+> +	if (!size && !size1) {
+>  		if (b_res->start || b_res->end)
+>  			dev_info(&bus->self->dev, "disabling bridge window "
+>  				 "%pR to [bus %02x-%02x] (unused)\n", b_res,
+> @@ -548,8 +614,8 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+>  	}
+>  	b_res->start = min_align;
+>  	b_res->end = size + min_align - 1;
+> -	b_res->flags |= IORESOURCE_STARTALIGN;
+> -	b_res->flags |= mem64_mask;
+> +	b_res->add_size = size1 - size;
+> +	b_res->flags |= IORESOURCE_STARTALIGN | mem64_mask;
+>  	return 1;
+>  }
+>  
+> @@ -606,7 +672,7 @@ void __ref pci_bus_size_bridges(struct pci_bus *bus)
+>  {
+>  	struct pci_dev *dev;
+>  	unsigned long mask, prefmask;
+> -	resource_size_t min_mem_size = 0, min_io_size = 0;
+> +	resource_size_t additional_mem_size = 0, additional_io_size = 0;
+>  
+>  	list_for_each_entry(dev, &bus->devices, bus_list) {
+>  		struct pci_bus *b = dev->subordinate;
+> @@ -637,11 +703,11 @@ void __ref pci_bus_size_bridges(struct pci_bus *bus)
+>  	case PCI_CLASS_BRIDGE_PCI:
+>  		pci_bridge_check_ranges(bus);
+>  		if (bus->self->is_hotplug_bridge) {
+> -			min_io_size  = pci_hotplug_io_size;
+> -			min_mem_size = pci_hotplug_mem_size;
+> +			additional_io_size  = pci_hotplug_io_size;
+> +			additional_mem_size = pci_hotplug_mem_size;
+>  		}
+>  	default:
+> -		pbus_size_io(bus, min_io_size);
+> +		pbus_size_io(bus, 0, additional_io_size);
+>  		/* If the bridge supports prefetchable range, size it
+>  		   separately. If it doesn't, or its prefetchable window
+>  		   has already been allocated by arch code, try
+> @@ -649,11 +715,11 @@ void __ref pci_bus_size_bridges(struct pci_bus *bus)
+>  		   resources. */
+>  		mask = IORESOURCE_MEM;
+>  		prefmask = IORESOURCE_MEM | IORESOURCE_PREFETCH;
+> -		if (pbus_size_mem(bus, prefmask, prefmask, min_mem_size))
+> +		if (pbus_size_mem(bus, prefmask, prefmask, 0, additional_mem_size))
+>  			mask = prefmask; /* Success, size non-prefetch only. */
+>  		else
+> -			min_mem_size += min_mem_size;
+> -		pbus_size_mem(bus, mask, IORESOURCE_MEM, min_mem_size);
+> +			additional_mem_size += additional_mem_size;
+> +		pbus_size_mem(bus, mask, IORESOURCE_MEM, 0, additional_mem_size);
+>  		break;
+>  	}
+>  }
+> diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+> index e9bb22c..d00c61c 100644
+> --- a/include/linux/ioport.h
+> +++ b/include/linux/ioport.h
+> @@ -18,6 +18,7 @@
+>  struct resource {
+>  	resource_size_t start;
+>  	resource_size_t end;
+> +	resource_size_t add_size;
+>  	const char *name;
+>  	unsigned long flags;
+>  	struct resource *parent, *sibling, *child;
+> 
