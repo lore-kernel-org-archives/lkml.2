@@ -1,38 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302Ab1ARASZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 19:18:25 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40614
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752634Ab1ARASY (ORCPT
+	id S1752957Ab1ARA14 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 19:27:56 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38469 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752575Ab1ARA1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 19:18:24 -0500
-Date: Mon, 17 Jan 2011 16:18:57 -0800 (PST)
-Message-Id: <20110117.161857.35031651.davem@davemloft.net>
-To: richm@oldelvet.org.uk
-Cc: 609371@bugs.debian.org, ben@decadent.org.uk, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rostedt@goodmis.org, fweisbec@gmail.com,
-        mingo@redhat.com, Jesper.Nilsson@axis.com, jeffm@suse.com
-Subject: Re: R_SPARC_13
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1295307243.32152.106.camel@duncow>
-References: <1295293581.32152.70.camel@duncow>
-	<20110117.130238.245404805.davem@davemloft.net>
-	<1295307243.32152.106.camel@duncow>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 17 Jan 2011 19:27:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:reply-to:organization:user-agent:mime-version
+         :to:subject:content-type:content-transfer-encoding;
+        b=uRa57c2H3/1L/3oZtd2b8M6Vugc/js0W//nuMJV4eizpTp1Fm6fSVFovre/0iBLmLz
+         RQAcHkta0eEpBQFWMSIRNp3p+rR6nTfbAEgIIXckCVIk5s8FvB3HE1S3ab07saeFP01+
+         xBhF2YP4n8Mj5olrDtLWXW3AgBN3N0l0Rh11Y=
+Message-ID: <4D34DE89.4030705@gmail.com>
+Date: Mon, 17 Jan 2011 16:27:53 -0800
+From: Donna Rigas <donna.rigas@gmail.com>
+Reply-To: donna.rigas@dynonavionics.com
+Organization: Dynon Avionics
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: serial port programming question (newbie)
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Mortimer <richm@oldelvet.org.uk>
-Date: Mon, 17 Jan 2011 23:34:03 +0000
+I see lots of serial port programming examples where the
+port settings are saved before being changed to the desired settings,
+then restored to the original before exiting the program via
+tcgetattr and tgsetattr. 
 
-> However the same R_SPARC_13 also exists in scsi_mod.ko. It exists in the
-> original Debian 2.6.37-trunk-sparc64 version and in my current build of
-> the same with the 8 byte alignment for _trace_events.
- ...
+I see one example where someone comments that this is not necessary.
 
-Thanks for the info Richard, I'll look more deeply into this.
+Can someone tell me whether or not it is necessary to save and restore the
+old settings and if so, why?
