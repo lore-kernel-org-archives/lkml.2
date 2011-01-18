@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455Ab1ARO66 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 09:58:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13081 "EHLO mx1.redhat.com"
+	id S1752502Ab1ARO7t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 09:59:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21814 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752063Ab1ARO65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 09:58:57 -0500
+	id S1751943Ab1ARO7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 09:59:47 -0500
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
@@ -19,19 +19,25 @@ Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
         James Morris <jmorris@namei.org>,
         David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
 Subject: Re: [PATCH 1/3] trusted-keys: rename trusted_defined files to trusted
-Date: Tue, 18 Jan 2011 14:58:42 +0000
-Message-ID: <21651.1295362722@redhat.com>
+Date: Tue, 18 Jan 2011 14:59:39 +0000
+Message-ID: <21676.1295362779@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
 
-> Rename trusted_defined.c and trusted_defined.h files to trusted.c and
-> trust.h, respectively. Based on request from David Howells.
+>  security/keys/Makefile          |    2 +-
+>  security/keys/trusted.c         | 1180 +++++++++++++++++++++++++++++++++++++++
+>  security/keys/trusted.h         |  134 +++++
+>  security/keys/trusted_defined.c | 1180 ---------------------------------------
+>  security/keys/trusted_defined.h |  134 -----
+>  5 files changed, 1315 insertions(+), 1315 deletions(-)
+>  create mode 100644 security/keys/trusted.c
+>  create mode 100644 security/keys/trusted.h
+>  delete mode 100644 security/keys/trusted_defined.c
+>  delete mode 100644 security/keys/trusted_defined.h
 
-Or even to trusted.h.
-
-Apart from that, feel free to add my Acked-by.
+Doesn't GIT have a shorthand way of describing renames in patches?
 
 David
