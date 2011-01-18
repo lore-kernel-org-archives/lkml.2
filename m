@@ -1,218 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496Ab1ARU3c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 15:29:32 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:53031 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753429Ab1ARU33 (ORCPT
+	id S1753419Ab1ARUaM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 15:30:12 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:37623 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753387Ab1ARUaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 15:29:29 -0500
-Subject: [PATCH 5/8] arm/dt: probe for platforms via the device tree
-To: linux-arm-kernel@lists.infradead.org
-From: Grant Likely <grant.likely@secretlab.ca>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        John Linn <John.Linn@xilinx.com>,
-        Lennert Buijtenhek <buytenh@wantstofly.org>
-Date: Tue, 18 Jan 2011 13:29:23 -0700
-Message-ID: <20110118202922.13011.84005.stgit@localhost6.localdomain6>
-In-Reply-To: <20110118195933.13011.56098.stgit@localhost6.localdomain6>
-References: <20110118195933.13011.56098.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	Tue, 18 Jan 2011 15:30:05 -0500
+Date: Tue, 18 Jan 2011 15:21:35 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless-2.6 2010-01-18
+Message-ID: <20110118202135.GA15402@tuxdriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a macro to define a device-tree-probable machine
-(DT_MACHINE_START/DT_MACHINE_END), and iterate through compiled-in
-mdescs once we have the DT.  This patch creates a new function,
-setup_machine_fdt() which is analogous to the setup_machine_atags()
-created in the previous patch.  It does all the early setup needed to
-use a device tree machine description.
+Dave,
 
-[based on work originally written by Jeremy Kerr <jeremy.kerr@canonical.com>]
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Here is another batch of fixes intended for 2.6.38.  Included are a
+locking fix, and endian fix, a lockdep fix, an error code fix, a memory
+leak fix, a type fix, and a couple of others.
+
+Please let me know if there are problems!
+
+Thanks,
+
+John
+
 ---
- arch/arm/include/asm/mach/arch.h |    2 +
- arch/arm/include/asm/prom.h      |    9 ++++++
- arch/arm/include/asm/setup.h     |    1 +
- arch/arm/kernel/devtree.c        |   60 ++++++++++++++++++++++++++++++++++++++
- arch/arm/kernel/setup.c          |   10 +++++-
- 5 files changed, 80 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
-index 3a0893a..2ed24e7 100644
---- a/arch/arm/include/asm/mach/arch.h
-+++ b/arch/arm/include/asm/mach/arch.h
-@@ -22,6 +22,8 @@ struct machine_desc {
- 	unsigned int		nr;		/* architecture number	*/
- 	const char		*name;		/* architecture name	*/
- 	unsigned long		boot_params;	/* tagged list		*/
-+	const char		**dt_compat;	/* array of device tree
-+						 * 'compatible' strings	*/
+The following changes since commit 16c0f9362433a76f01d174bb8b9c87b9a96198ee:
+
+  qeth: l3 hw tx csum circumvent hw bug (2011-01-15 20:45:57 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
+
+Amitkumar Karwar (1):
+      ieee80211: correct IEEE80211_ADDBA_PARAM_BUF_SIZE_MASK macro
+
+Axel Lin (1):
+      iwmc3200wifi: Return proper error for iwm_if_alloc
+
+Bob Copeland (1):
+      ath5k: fix locking in tx_complete_poll_work
+
+Jesper Juhl (1):
+      rt2x00: Don't leak mem in error path of rt2x00lib_request_firmware()
+
+Johannes Berg (1):
+      mac80211: fix lockdep warning
+
+Luciano Coelho (1):
+      mac80211: use maximum number of AMPDU frames as default in BA RX
+
+Luis R. Rodriguez (1):
+      ath9k_hw: ASPM interoperability fix for AR9380/AR9382
+
+Rajkumar Manoharan (2):
+      ath9k_htc: Fix endian issue in tx header
+      ath9k_hw: do PA offset calibration only on longcal interval
+
+Wey-Yi Guy (1):
+      iwlwifi: fix valid chain reading from EEPROM
+
+ drivers/net/wireless/ath/ath5k/base.c              |    4 ++++
+ drivers/net/wireless/ath/ath9k/ar9002_calib.c      |   10 +++++-----
+ .../net/wireless/ath/ath9k/ar9003_2p2_initvals.h   |    2 +-
+ drivers/net/wireless/ath/ath9k/ar9003_hw.c         |    4 ++--
+ drivers/net/wireless/ath/ath9k/htc.h               |    2 +-
+ drivers/net/wireless/ath/ath9k/htc_drv_txrx.c      |    8 +++++---
+ drivers/net/wireless/iwlwifi/iwl-agn-eeprom.c      |    2 +-
+ drivers/net/wireless/iwmc3200wifi/netdev.c         |    2 ++
+ drivers/net/wireless/rt2x00/rt2x00firmware.c       |    1 +
+ include/linux/ieee80211.h                          |    2 +-
+ net/mac80211/agg-rx.c                              |   11 ++---------
+ net/mac80211/main.c                                |   12 +++++++++++-
+ 12 files changed, 36 insertions(+), 24 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/ath5k/base.c b/drivers/net/wireless/ath/ath5k/base.c
+index 019a74d..09ae4ef 100644
+--- a/drivers/net/wireless/ath/ath5k/base.c
++++ b/drivers/net/wireless/ath/ath5k/base.c
+@@ -2294,6 +2294,8 @@ ath5k_tx_complete_poll_work(struct work_struct *work)
+ 	int i;
+ 	bool needreset = false;
  
- 	unsigned int		nr_irqs;	/* number of IRQs */
++	mutex_lock(&sc->lock);
++
+ 	for (i = 0; i < ARRAY_SIZE(sc->txqs); i++) {
+ 		if (sc->txqs[i].setup) {
+ 			txq = &sc->txqs[i];
+@@ -2321,6 +2323,8 @@ ath5k_tx_complete_poll_work(struct work_struct *work)
+ 		ath5k_reset(sc, NULL, true);
+ 	}
  
-diff --git a/arch/arm/include/asm/prom.h b/arch/arm/include/asm/prom.h
-index 8f1037f..b692f41 100644
---- a/arch/arm/include/asm/prom.h
-+++ b/arch/arm/include/asm/prom.h
-@@ -21,5 +21,14 @@ static inline void irq_dispose_mapping(unsigned int virq)
- 	return;
++	mutex_unlock(&sc->lock);
++
+ 	ieee80211_queue_delayed_work(sc->hw, &sc->tx_complete_work,
+ 		msecs_to_jiffies(ATH5K_TX_COMPLETE_POLL_INT));
  }
+diff --git a/drivers/net/wireless/ath/ath9k/ar9002_calib.c b/drivers/net/wireless/ath/ath9k/ar9002_calib.c
+index ea2e7d7..5e300bd 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9002_calib.c
++++ b/drivers/net/wireless/ath/ath9k/ar9002_calib.c
+@@ -679,10 +679,6 @@ static bool ar9002_hw_calibrate(struct ath_hw *ah,
  
-+extern struct machine_desc *setup_machine_fdt(unsigned int dt_phys);
-+
-+#else /* CONFIG_OF */
-+
-+static inline struct machine_desc *setup_machine_fdt(unsigned int dt_phys)
-+{
-+	return NULL;
-+}
-+
- #endif /* CONFIG_OF */
- #endif /* ASMARM_PROM_H */
-diff --git a/arch/arm/include/asm/setup.h b/arch/arm/include/asm/setup.h
-index 0809235..b46d320 100644
---- a/arch/arm/include/asm/setup.h
-+++ b/arch/arm/include/asm/setup.h
-@@ -223,6 +223,7 @@ extern struct meminfo meminfo;
+ 	/* Do NF cal only at longer intervals */
+ 	if (longcal || nfcal_pending) {
+-		/* Do periodic PAOffset Cal */
+-		ar9002_hw_pa_cal(ah, false);
+-		ar9002_hw_olc_temp_compensation(ah);
+-
+ 		/*
+ 		 * Get the value from the previous NF cal and update
+ 		 * history buffer.
+@@ -697,8 +693,12 @@ static bool ar9002_hw_calibrate(struct ath_hw *ah,
+ 			ath9k_hw_loadnf(ah, ah->curchan);
+ 		}
  
- extern void arm_reserve_devtree(unsigned long start, unsigned long size);
- extern int arm_add_memory(unsigned long start, unsigned long size);
-+extern char cmd_line[COMMAND_LINE_SIZE];
- 
- #endif  /*  __KERNEL__  */
- 
-diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
-index ac48da2..f7788be 100644
---- a/arch/arm/kernel/devtree.c
-+++ b/arch/arm/kernel/devtree.c
-@@ -21,6 +21,7 @@
- 
- #include <asm/setup.h>
- #include <asm/page.h>
-+#include <asm/mach/arch.h>
- 
- void __init early_init_dt_add_memory_arch(u64 base, u64 size)
- {
-@@ -45,3 +46,62 @@ unsigned int irq_create_of_mapping(struct device_node *controller,
- 	return intspec[0];
- }
- EXPORT_SYMBOL_GPL(irq_create_of_mapping);
-+
-+extern struct machine_desc __arch_info_begin, __arch_info_end;
-+
-+/**
-+ * setup_machine_fdt - Machine setup when an dtb was passed to the kernel
-+ * @dt_phys: physical address of dt blob
-+ *
-+ * If a dtb was passed to the kernel in r2, then use it to choose the
-+ * correct machine_desc and to setup the system.
-+ */
-+struct machine_desc * __init setup_machine_fdt(unsigned int dt_phys)
-+{
-+	struct boot_param_header *devtree;
-+	struct machine_desc *mdesc, *mdesc_best = NULL;
-+	unsigned int score, mdesc_score = ~1;
-+	unsigned long dt_root;
-+	const char *model;
-+
-+	devtree = phys_to_virt(dt_phys);
-+
-+	/* check device tree validity */
-+	if (be32_to_cpu(devtree->magic) != OF_DT_HEADER)
-+		return NULL;
-+
-+	/* Search the mdescs for the 'best' compatible value match */
-+	initial_boot_params = devtree;
-+	dt_root = of_get_flat_dt_root();
-+	for (mdesc = &__arch_info_begin; mdesc < &__arch_info_end; mdesc++) {
-+		score = of_flat_dt_match(dt_root, mdesc->dt_compat);
-+		if (score > 0 && score < mdesc_score) {
-+			mdesc_best = mdesc;
-+			mdesc_score = score;
+-		if (longcal)
++		if (longcal) {
+ 			ath9k_hw_start_nfcal(ah, false);
++			/* Do periodic PAOffset Cal */
++			ar9002_hw_pa_cal(ah, false);
++			ar9002_hw_olc_temp_compensation(ah);
 +		}
-+	}
-+	if (!mdesc_best) {
-+		printk("Machine not supported, unable to continue.\n");
-+		while (1);
-+	}
+ 	}
+ 
+ 	return iscaldone;
+diff --git a/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h b/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
+index 81f9cf2..9ecca93 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
++++ b/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
+@@ -1842,7 +1842,7 @@ static const u32 ar9300_2p2_soc_preamble[][2] = {
+ 
+ static const u32 ar9300PciePhy_pll_on_clkreq_disable_L1_2p2[][2] = {
+ 	/* Addr      allmodes  */
+-	{0x00004040, 0x08212e5e},
++	{0x00004040, 0x0821265e},
+ 	{0x00004040, 0x0008003b},
+ 	{0x00004044, 0x00000000},
+ };
+diff --git a/drivers/net/wireless/ath/ath9k/ar9003_hw.c b/drivers/net/wireless/ath/ath9k/ar9003_hw.c
+index 6137634..06fb2c8 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9003_hw.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_hw.c
+@@ -146,8 +146,8 @@ static void ar9003_hw_init_mode_regs(struct ath_hw *ah)
+ 		/* Sleep Setting */
+ 
+ 		INIT_INI_ARRAY(&ah->iniPcieSerdesLowPower,
+-				ar9300PciePhy_clkreq_enable_L1_2p2,
+-				ARRAY_SIZE(ar9300PciePhy_clkreq_enable_L1_2p2),
++				ar9300PciePhy_pll_on_clkreq_disable_L1_2p2,
++				ARRAY_SIZE(ar9300PciePhy_pll_on_clkreq_disable_L1_2p2),
+ 				2);
+ 
+ 		/* Fast clock modal settings */
+diff --git a/drivers/net/wireless/ath/ath9k/htc.h b/drivers/net/wireless/ath/ath9k/htc.h
+index 1ce506f..780ac5e 100644
+--- a/drivers/net/wireless/ath/ath9k/htc.h
++++ b/drivers/net/wireless/ath/ath9k/htc.h
+@@ -78,7 +78,7 @@ struct tx_frame_hdr {
+ 	u8 node_idx;
+ 	u8 vif_idx;
+ 	u8 tidno;
+-	u32 flags; /* ATH9K_HTC_TX_* */
++	__be32 flags; /* ATH9K_HTC_TX_* */
+ 	u8 key_type;
+ 	u8 keyix;
+ 	u8 reserved[26];
+diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
+index 33f3602..7a5ffca 100644
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
+@@ -113,6 +113,7 @@ int ath9k_htc_tx_start(struct ath9k_htc_priv *priv, struct sk_buff *skb)
+ 
+ 	if (ieee80211_is_data(fc)) {
+ 		struct tx_frame_hdr tx_hdr;
++		u32 flags = 0;
+ 		u8 *qc;
+ 
+ 		memset(&tx_hdr, 0, sizeof(struct tx_frame_hdr));
+@@ -136,13 +137,14 @@ int ath9k_htc_tx_start(struct ath9k_htc_priv *priv, struct sk_buff *skb)
+ 		/* Check for RTS protection */
+ 		if (priv->hw->wiphy->rts_threshold != (u32) -1)
+ 			if (skb->len > priv->hw->wiphy->rts_threshold)
+-				tx_hdr.flags |= ATH9K_HTC_TX_RTSCTS;
++				flags |= ATH9K_HTC_TX_RTSCTS;
+ 
+ 		/* CTS-to-self */
+-		if (!(tx_hdr.flags & ATH9K_HTC_TX_RTSCTS) &&
++		if (!(flags & ATH9K_HTC_TX_RTSCTS) &&
+ 		    (priv->op_flags & OP_PROTECT_ENABLE))
+-			tx_hdr.flags |= ATH9K_HTC_TX_CTSONLY;
++			flags |= ATH9K_HTC_TX_CTSONLY;
+ 
++		tx_hdr.flags = cpu_to_be32(flags);
+ 		tx_hdr.key_type = ath9k_cmn_get_hw_crypto_keytype(skb);
+ 		if (tx_hdr.key_type == ATH9K_KEY_TYPE_CLEAR)
+ 			tx_hdr.keyix = (u8) ATH9K_TXKEYIX_INVALID;
+diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-eeprom.c b/drivers/net/wireless/iwlwifi/iwl-agn-eeprom.c
+index 97906dd..14ceb4d 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-eeprom.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-eeprom.c
+@@ -168,7 +168,7 @@ int iwl_eeprom_check_sku(struct iwl_priv *priv)
+ 		/* not using .cfg overwrite */
+ 		radio_cfg = iwl_eeprom_query16(priv, EEPROM_RADIO_CONFIG);
+ 		priv->cfg->valid_tx_ant = EEPROM_RF_CFG_TX_ANT_MSK(radio_cfg);
+-		priv->cfg->valid_rx_ant = EEPROM_RF_CFG_TX_ANT_MSK(radio_cfg);
++		priv->cfg->valid_rx_ant = EEPROM_RF_CFG_RX_ANT_MSK(radio_cfg);
+ 		if (!priv->cfg->valid_tx_ant || !priv->cfg->valid_rx_ant) {
+ 			IWL_ERR(priv, "Invalid chain (0X%x, 0X%x)\n",
+ 				priv->cfg->valid_tx_ant,
+diff --git a/drivers/net/wireless/iwmc3200wifi/netdev.c b/drivers/net/wireless/iwmc3200wifi/netdev.c
+index 13a69eb..5091d77 100644
+--- a/drivers/net/wireless/iwmc3200wifi/netdev.c
++++ b/drivers/net/wireless/iwmc3200wifi/netdev.c
+@@ -126,6 +126,7 @@ void *iwm_if_alloc(int sizeof_bus, struct device *dev,
+ 	ndev = alloc_netdev_mq(0, "wlan%d", ether_setup, IWM_TX_QUEUES);
+ 	if (!ndev) {
+ 		dev_err(dev, "no memory for network device instance\n");
++		ret = -ENOMEM;
+ 		goto out_priv;
+ 	}
+ 
+@@ -138,6 +139,7 @@ void *iwm_if_alloc(int sizeof_bus, struct device *dev,
+ 				    GFP_KERNEL);
+ 	if (!iwm->umac_profile) {
+ 		dev_err(dev, "Couldn't alloc memory for profile\n");
++		ret = -ENOMEM;
+ 		goto out_profile;
+ 	}
+ 
+diff --git a/drivers/net/wireless/rt2x00/rt2x00firmware.c b/drivers/net/wireless/rt2x00/rt2x00firmware.c
+index f0e1eb7..be0ff78 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00firmware.c
++++ b/drivers/net/wireless/rt2x00/rt2x00firmware.c
+@@ -58,6 +58,7 @@ static int rt2x00lib_request_firmware(struct rt2x00_dev *rt2x00dev)
+ 
+ 	if (!fw || !fw->size || !fw->data) {
+ 		ERROR(rt2x00dev, "Failed to read Firmware.\n");
++		release_firmware(fw);
+ 		return -ENOENT;
+ 	}
+ 
+diff --git a/include/linux/ieee80211.h b/include/linux/ieee80211.h
+index 6042228..294169e 100644
+--- a/include/linux/ieee80211.h
++++ b/include/linux/ieee80211.h
+@@ -959,7 +959,7 @@ struct ieee80211_ht_info {
+ /* block-ack parameters */
+ #define IEEE80211_ADDBA_PARAM_POLICY_MASK 0x0002
+ #define IEEE80211_ADDBA_PARAM_TID_MASK 0x003C
+-#define IEEE80211_ADDBA_PARAM_BUF_SIZE_MASK 0xFFA0
++#define IEEE80211_ADDBA_PARAM_BUF_SIZE_MASK 0xFFC0
+ #define IEEE80211_DELBA_PARAM_TID_MASK 0xF000
+ #define IEEE80211_DELBA_PARAM_INITIATOR_MASK 0x0800
+ 
+diff --git a/net/mac80211/agg-rx.c b/net/mac80211/agg-rx.c
+index f138b19..227ca82 100644
+--- a/net/mac80211/agg-rx.c
++++ b/net/mac80211/agg-rx.c
+@@ -185,8 +185,6 @@ void ieee80211_process_addba_request(struct ieee80211_local *local,
+ 				     struct ieee80211_mgmt *mgmt,
+ 				     size_t len)
+ {
+-	struct ieee80211_hw *hw = &local->hw;
+-	struct ieee80211_conf *conf = &hw->conf;
+ 	struct tid_ampdu_rx *tid_agg_rx;
+ 	u16 capab, tid, timeout, ba_policy, buf_size, start_seq_num, status;
+ 	u8 dialog_token;
+@@ -231,13 +229,8 @@ void ieee80211_process_addba_request(struct ieee80211_local *local,
+ 		goto end_no_lock;
+ 	}
+ 	/* determine default buffer size */
+-	if (buf_size == 0) {
+-		struct ieee80211_supported_band *sband;
+-
+-		sband = local->hw.wiphy->bands[conf->channel->band];
+-		buf_size = IEEE80211_MIN_AMPDU_BUF;
+-		buf_size = buf_size << sband->ht_cap.ampdu_factor;
+-	}
++	if (buf_size == 0)
++		buf_size = IEEE80211_MAX_AMPDU_BUF;
+ 
+ 
+ 	/* examine state machine */
+diff --git a/net/mac80211/main.c b/net/mac80211/main.c
+index 485d36b..a46ff06 100644
+--- a/net/mac80211/main.c
++++ b/net/mac80211/main.c
+@@ -39,6 +39,8 @@ module_param(ieee80211_disable_40mhz_24ghz, bool, 0644);
+ MODULE_PARM_DESC(ieee80211_disable_40mhz_24ghz,
+ 		 "Disable 40MHz support in the 2.4GHz band");
+ 
++static struct lock_class_key ieee80211_rx_skb_queue_class;
 +
-+	model = of_get_flat_dt_prop(dt_root, "model", NULL);
-+	if (!model)
-+		model = of_get_flat_dt_prop(dt_root, "compatible", NULL);
-+	if (!model)
-+		model = "<unknown>";
-+	pr_info("Machine: %s, model: %s\n", mdesc_best->name, model);
-+
-+	arm_reserve_devtree(dt_phys, be32_to_cpu(devtree->totalsize));
-+
-+	/* Retrieve various information from the /chosen node */
-+	of_scan_flat_dt(early_init_dt_scan_chosen, NULL);
-+	/* Initialize {size,address}-cells info */
-+	of_scan_flat_dt(early_init_dt_scan_root, NULL);
-+	/* Setup memory, calling early_init_dt_add_memory_arch */
-+	of_scan_flat_dt(early_init_dt_scan_memory, NULL);
-+	/* Save command line for /proc/cmdline  */
-+	strlcpy(boot_command_line, cmd_line, COMMAND_LINE_SIZE);
-+
-+	return mdesc_best;
-+}
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index cbc1836..3db0cbb 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -20,6 +20,7 @@
- #include <linux/screen_info.h>
- #include <linux/init.h>
- #include <linux/kexec.h>
-+#include <linux/of_fdt.h>
- #include <linux/crash_dump.h>
- #include <linux/root_dev.h>
- #include <linux/cpu.h>
-@@ -42,6 +43,7 @@
- #include <asm/cachetype.h>
- #include <asm/tlbflush.h>
+ void ieee80211_configure_filter(struct ieee80211_local *local)
+ {
+ 	u64 mc;
+@@ -569,7 +571,15 @@ struct ieee80211_hw *ieee80211_alloc_hw(size_t priv_data_len,
+ 	spin_lock_init(&local->filter_lock);
+ 	spin_lock_init(&local->queue_stop_reason_lock);
  
-+#include <asm/prom.h>
- #include <asm/mach/arch.h>
- #include <asm/mach/irq.h>
- #include <asm/mach/time.h>
-@@ -125,7 +127,7 @@ EXPORT_SYMBOL(elf_platform);
+-	skb_queue_head_init(&local->rx_skb_queue);
++	/*
++	 * The rx_skb_queue is only accessed from tasklets,
++	 * but other SKB queues are used from within IRQ
++	 * context. Therefore, this one needs a different
++	 * locking class so our direct, non-irq-safe use of
++	 * the queue's lock doesn't throw lockdep warnings.
++	 */
++	skb_queue_head_init_class(&local->rx_skb_queue,
++				  &ieee80211_rx_skb_queue_class);
  
- static const char *cpu_name;
- static const char *machine_name;
--static char __initdata cmd_line[COMMAND_LINE_SIZE];
-+char cmd_line[COMMAND_LINE_SIZE];
- struct machine_desc *machine_desc __initdata;
+ 	INIT_DELAYED_WORK(&local->scan_work, ieee80211_scan_work);
  
- static char default_command_line[COMMAND_LINE_SIZE] __initdata = CONFIG_CMDLINE;
-@@ -838,7 +840,9 @@ void __init setup_arch(char **cmdline_p)
- 	unwind_init();
- 
- 	setup_processor();
--	mdesc = setup_machine_tags(machine_arch_type);
-+	mdesc = setup_machine_fdt(__atags_pointer);
-+	if (!mdesc)
-+		mdesc = setup_machine_tags(machine_arch_type);
- 	machine_desc = mdesc;
- 	machine_name = mdesc->name;
- 
-@@ -859,6 +863,8 @@ void __init setup_arch(char **cmdline_p)
- 	paging_init(mdesc);
- 	request_standard_resources(mdesc);
- 
-+	unflatten_device_tree();
-+
- #ifdef CONFIG_SMP
- 	if (is_smp())
- 		smp_init_cpus();
-
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
