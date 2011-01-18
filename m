@@ -1,136 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273Ab1ARPsx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 10:48:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58872 "EHLO mx1.redhat.com"
+	id S1752338Ab1ARPuN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 10:50:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62727 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751753Ab1ARPsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 10:48:52 -0500
-Message-ID: <4D35B61C.1060302@redhat.com>
-Date: Tue, 18 Jan 2011 10:47:40 -0500
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1751781Ab1ARPuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 10:50:12 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Tao Ma <tm@tao.ma>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] blktrace: Don't output messages if the user sets some action mask.
+References: <1295333017-5659-1-git-send-email-tm@tao.ma>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 18 Jan 2011 10:50:01 -0500
+In-Reply-To: <1295333017-5659-1-git-send-email-tm@tao.ma> (Tao Ma's message of
+	"Tue, 18 Jan 2011 14:43:37 +0800")
+Message-ID: <x491v4a5hzq.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: quintela@redhat.com
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-        Avi Kivity <avi@redhat.com>, Glauber Costa <glommer@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [KVM TSC trapping / migration 2/2] Add TSC KHZ MSR
-References: <1294308645-31113-1-git-send-email-zamsden@redhat.com>	<1294308645-31113-3-git-send-email-zamsden@redhat.com>	<20110107104859.GA12056@amt.cnet> <4D277B24.5000409@redhat.com>	<20110110135053.GA12991@amt.cnet> <m3bp3jwy19.fsf@trasno.org>
-In-Reply-To: <m3bp3jwy19.fsf@trasno.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2011 06:00 AM, Juan Quintela wrote:
-> Marcelo Tosatti<mtosatti@redhat.com>  wrote:
->    
->> On Fri, Jan 07, 2011 at 10:44:20AM -1000, Zachary Amsden wrote:
->>      
->>> On 01/07/2011 12:48 AM, Marcelo Tosatti wrote:
->>>        
->>>> On Thu, Jan 06, 2011 at 12:10:45AM -1000, Zachary Amsden wrote:
->>>>          
->>>>> Use an MSR to allow "soft" migration to hosts which do not support
->>>>> TSC trapping.  Rather than make this a required element of any
->>>>> migration protocol, we allow the TSC rate to be exported as a data
->>>>> field (useful in its own right), but we also allow a one time write
->>>>> of the MSR during VM creation.  The result is that for the common
->>>>> use case, no protocol change is required to communicate TSC rate
->>>>> to the receiving host.
->>>>>            
->>>> Migration to hosts which do not support the feature can be achieved by
->>>> saving/restoring the TSC rate + flags in a subsection. A subsection
->>>> seems more appropriate than an MSR for this.
->>>>          
->>> Yes, I looked at that, but it looked to me like a subsection was
->>> intended for an optional feature which MUST be present on the
->>> destination if the source is using the feature.  This way, newer
->>> hosts without the feature enabled can migrate to older hosts which
->>> do not support the feature.
->>>        
->> Right. But you can use a subsection to achieve the same effect. Just
->> consider that the source is not using the feature if you want to migrate
->> to an older host without support for it. Juan, is there a problem to
->> use subsections in this fashion?
->>
->> With the MSR scheme, there is no way for management to enforce support
->> of the feature on the destination (at least not that i can see). And
->> you create an MSR that does not exist on real hardware.
->>
->>      
->>> The TSC rate migration is slightly different; we may wish to migrate
->>> from a host with the TSC rate feature enabled to a host which does
->>> not support the TSC rate feature.  This is exactly the current
->>> behavior, the TSC rate will change on that migration, and I wanted
->>> to preserve that behavior.  I don't advise that mode of usage, but
->>> there may be use cases for it and it should be decided by policy,
->>> not dictated by our feature set.
->>>
->>> That said, I'm happy to remove the MSR if we truly don't want to
->>> support that mode of usage.
->>>        
-> Ok, I chime it late.
->
-> We are adding a new MSR to the comunication with userspace.  So far so
-> good, but this new field, need to be transmited to the "other end" of
-> the migration.  This means a new field for migration (notice that this
-> is independtly if this is an MSR or not).
->
->          VMSTATE_UINT64_V(system_time_msr, CPUState, 11),
->          VMSTATE_UINT64_V(wall_clock_msr, CPUState, 11),
->    
+Tao Ma <tm@tao.ma> writes:
 
-Oh, wow.  I thought the MSRs were sent automatically by qemu based on 
-what MSRs the kvm module told it were available.  It looks like EFER and 
-STAR and friends are all special cased as part of CPUstate.
+> From: Tao Ma <boyu.mt@taobao.com>
+>
+> Now if we enable blktrace, cfq has too many messages output to the
+> trace buffer. It is fine if we don't specify any action mask.
+> But if I do like this:
+> blktrace /dev/sdb -a issue -a complete -o - | blkparse -i -
+> I only want to see 'D' and 'C', while with the following command
+> dd if=/mnt/ocfs2/test of=/dev/null bs=4k count=1 iflag=direct
+>
+> I will get(with a 2.6.37 vanilla kernel):
+>   8,16   0        0     0.000000000     0  m   N cfq3805 alloced
+>   8,16   0        0     0.000004126     0  m   N cfq3805 insert_request
+>   8,16   0        0     0.000004884     0  m   N cfq3805 add_to_rr
+>   8,16   0        0     0.000008417     0  m   N cfq workload slice:300
+>   8,16   0        0     0.000009557     0  m   N cfq3805 set_active wl_prio:0 wl_type:2
+>   8,16   0        0     0.000010640     0  m   N cfq3805 fifo=          (null)
+>   8,16   0        0     0.000011193     0  m   N cfq3805 dispatch_insert
+>   8,16   0        0     0.000012221     0  m   N cfq3805 dispatched a request
+>   8,16   0        0     0.000012802     0  m   N cfq3805 activate rq, drv=1
+>   8,16   0        1     0.000013181  3805  D   R 114759 + 8 [dd]
+>   8,16   0        2     0.000164244     0  C   R 114759 + 8 [0]
+>   8,16   0        0     0.000167997     0  m   N cfq3805 complete rqnoidle 0
+>   8,16   0        0     0.000168782     0  m   N cfq3805 set_slice=100
+>   8,16   0        0     0.000169874     0  m   N cfq3805 arm_idle: 8 group_idle: 0
+>   8,16   0        0     0.000170189     0  m   N cfq schedule dispatch
+>   8,16   0        0     0.000397938     0  m   N cfq3805 slice expired t=0
+>   8,16   0        0     0.000399763     0  m   N cfq3805 sl_used=1 disp=1 charge=1 iops=0 sect=8
+>   8,16   0        0     0.000400227     0  m   N cfq3805 del_from_rr
+>   8,16   0        0     0.000400882     0  m   N cfq3805 put_queue
+>
+> See, there are 19 lines while I only need 2. I don't think it is
+> appropriate for a user.
+>
+> So this patch will disable any messages if the user specify what he want to
+> see. Now the output for the same command will look like:
+>   8,16   0        1     0.000000000  4908  D   R 114759 + 8 [dd]
+>   8,16   0        2     0.000146827     0  C   R 114759 + 8 [0]
+>
+> Yes, it is what I want to see.
+>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+> ---
+>  kernel/trace/blktrace.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+>
+> diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
+> index 153562d..8219ffa 100644
+> --- a/kernel/trace/blktrace.c
+> +++ b/kernel/trace/blktrace.c
+> @@ -138,6 +138,14 @@ void __trace_note_message(struct blk_trace *bt, const char *fmt, ...)
+>  		     !blk_tracer_enabled))
+>  		return;
+>  
+> +	/*
+> +	 * If the user does specify some action masks, don't send any note
+> +	 * message to the trace so that it won't pollute what the user really
+> +	 * want to see.
+> +	 */
+> +	if (bt->act_mask != (u16) -1)
+> +		return;
+> +
 
-So my approach has been doomed from the beginning.
-
-> This are the values that we are sending now.
-> We are getting now, a new value, the problem is how to migrate it.
->
-> Solutions:
-> - create a new field in a new field in CPUState, and up the version.
->    That would make backward migration impossible.
-> - create a new field, and sent it only it is has been used with a
->    subsection.  This makes migration backwards if this was not used.
->
-> - but, it appears that there if this features is not "known" on
->    destination, we can use the old way to migrate information.
->
->    BIG WARNING HERE: I don't claim to understand how clocks work at all
->
->    There is not a way to convince old qemu/kernels to ignore new fields
->    for good reason.  So the only solution here is to encode this new
->    vcpu->kvm->arch.virtual_tsc_khz in the two previous fields, in a way
->    that is understable for old qemu/new qemu.  old qemu will use old
->    method, new qemu will use a new method.
->
->    If there is not a common encoding that will work for both old/new
->    method, I can't really think of a way to make things work here :(
->
-> And as per the warning, I can't think of a way to encode
-> "virtual_tsc_khz" into "system_time_msr" and "wall_clock_msr" off-hand.
->
-> To make things clearer about optional features, after "lots" of
-> discussions, it was decided that target of migration will never ignore
-> anything sent, that means that the only one that can decide not to sent
-> a feature/value is the "source" of the migration.  There is no way to
-> express:
->
-> - try this method, if you don't know
-> - try this other second best, ...
->    
-
-That decides it then, the feature is migrated in the state it is set if 
-it is enabled.
-
-This makes things much simpler all around.
+I think you want to check for the BLK_TC_NOTIFY bit.
 
 Cheers,
-
-Zach
-
+Jeff
