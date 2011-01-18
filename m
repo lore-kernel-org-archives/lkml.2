@@ -1,126 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921Ab1ARWjn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 17:39:43 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52232 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532Ab1ARWjl (ORCPT
+	id S1752791Ab1ARWmh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 17:42:37 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49544 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751739Ab1ARWmf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 17:39:41 -0500
+	Tue, 18 Jan 2011 17:42:35 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=rGqTOypXEQXWvsqVgA2hk05IjgXUXZzOnKvopR8WmB3EMXCqixJRe+jLHNcU98aZux
-         vBRmzbdjL4cmfZFYE34rCBYxyFeOprvQ5/SUAnC8FrrUmYy2FOoctijiKokeBxo15eOI
-         VOfd3eWbzchbJHJPaihI47GtK3vzaZh18aSxE=
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Don Zickus <dzickus@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        stable@kernel.org
-Subject: [PATCH 1/3] watchdog: fix broken nowatchdog logic
-Date: Tue, 18 Jan 2011 23:37:44 +0100
-Message-Id: <1295390266-9347-1-git-send-email-marcin.slusarz@gmail.com>
-X-Mailer: git-send-email 1.7.3.3
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=FCUFtBd6UfI30tYJ+nl12FMZMpzZUhxwa+cAna9HcQwOVEC2meu2J4DoRVK/jFnWkm
+         OCVLUEYtbJot8S6jm8lYulGOImV8LDww3tXMwmpozmyF3o7EmRwrDqXQbRLq+35+WMNq
+         Ezs+sZdRYG7kzKpxwzFgeYRB+5CrrQ7RqiEr8=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTi=pj-pLYVSrU+6+BtioCWLod2ueZecNaap619fw@mail.gmail.com>
+References: <cover.1290852958.git.npiggin@kernel.dk>
+	<d44ddcf1d1e0813b3ce2b3872c7c702a31b62894.1290852959.git.npiggin@kernel.dk>
+	<AANLkTi=pj-pLYVSrU+6+BtioCWLod2ueZecNaap619fw@mail.gmail.com>
+Date: Wed, 19 Jan 2011 09:42:34 +1100
+Message-ID: <AANLkTik3ScP5rvR2bOXOEEH8SNZGg+xO6Gy32CW3XmU6@mail.gmail.com>
+Subject: Re: [PATCH 17/46] fs: Use rename lock and RCU for multi-step operations
+From: Nick Piggin <npiggin@gmail.com>
+To: Yehuda Sadeh Weinraub <yehudasa@gmail.com>
+Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sage Weil <sage@newdream.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Passing nowatchdog to kernel disables 2 things: creation of watchdog threads
-AND initialization of percpu watchdog_hrtimer. As hrtimers are initialized
-only at boot it's not possible to enable watchdog later - for me all watchdog
-threads started to eat 100% of CPU time, but they could just crash.
+On Wed, Jan 19, 2011 at 9:32 AM, Yehuda Sadeh Weinraub
+<yehudasa@gmail.com> wrote:
+> On Sat, Nov 27, 2010 at 1:44 AM, Nick Piggin <npiggin@kernel.dk> wrote:
+>> The remaining usages for dcache_lock is to allow atomic, multi-step read-side
+>> operations over the directory tree by excluding modifications to the tree.
+>> Also, to walk in the leaf->root direction in the tree where we don't have
+>> a natural d_lock ordering.
+>>
+>> This could be accomplished by taking every d_lock, but this would mean a
+>> huge number of locks and actually gets very tricky.
+>>
+>> Solve this instead by using the rename seqlock for multi-step read-side
+>> operations, retry in case of a rename so we don't walk up the wrong parent.
+>> Concurrent dentry insertions are not serialised against.  Concurrent deletes
+>> are tricky when walking up the directory: our parent might have been deleted
+>> when dropping locks so also need to check and retry for that.
+>>
+>> We can also use the rename lock in cases where livelock is a worry (and it
+>> is introduced in subsequent patch).
+>>
+>> Signed-off-by: Nick Piggin <npiggin@kernel.dk>
+> ..
+>> @@ -237,6 +238,7 @@ static struct dentry *d_kill(struct dentry *dentry, struct dentry *parent)
+>>        __releases(dcache_inode_lock)
+>>        __releases(dcache_lock)
+>>  {
+>> +       dentry->d_parent = NULL;
+>>        list_del(&dentry->d_u.d_child);
+>>        if (parent)
+>>                spin_unlock(&parent->d_lock);
+>
+> There's an issue with ceph as it references the
+> dentry->d_parent(->d_inode) at dentry_release(), so setting
+> dentry->d_parent to NULL here doesn't work with ceph. Though there is
+> some workaround for it, we would like to be sure that this one is
+> really required so that we don't exacerbate the ugliness. The
+> workaround is to keep a pointer to the parent inode in the private
+> dentry structure, which will be referenced only at the .release()
+> callback. This is clearly not ideal.
 
-Additionally, even if these threads would start properly,
-watchdog_disable_all_cpus was guarded by no_watchdog check, so you
-couldn't disable watchdog.
-
-To fix this, remove no_watchdog variable and use already existing
-watchdog_enabled variable.
-
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: stable@kernel.org
----
- kernel/watchdog.c |   18 +++++-------------
- 1 files changed, 5 insertions(+), 13 deletions(-)
-
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 0a507b1..ba52aa3 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -27,7 +27,7 @@
- #include <asm/irq_regs.h>
- #include <linux/perf_event.h>
- 
--int watchdog_enabled;
-+int watchdog_enabled = 1;
- int __read_mostly softlockup_thresh = 60;
- 
- static DEFINE_PER_CPU(unsigned long, watchdog_touch_ts);
-@@ -43,9 +43,6 @@ static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts_saved);
- static DEFINE_PER_CPU(struct perf_event *, watchdog_ev);
- #endif
- 
--static int no_watchdog;
--
--
- /* boot commands */
- /*
-  * Should we panic when a soft-lockup or hard-lockup occurs:
-@@ -75,7 +72,7 @@ __setup("softlockup_panic=", softlockup_panic_setup);
- 
- static int __init nowatchdog_setup(char *str)
- {
--	no_watchdog = 1;
-+	watchdog_enabled = 0;
- 	return 1;
- }
- __setup("nowatchdog", nowatchdog_setup);
-@@ -83,7 +80,7 @@ __setup("nowatchdog", nowatchdog_setup);
- /* deprecated */
- static int __init nosoftlockup_setup(char *str)
- {
--	no_watchdog = 1;
-+	watchdog_enabled = 0;
- 	return 1;
- }
- __setup("nosoftlockup", nosoftlockup_setup);
-@@ -469,9 +466,6 @@ static void watchdog_disable_all_cpus(void)
- {
- 	int cpu;
- 
--	if (no_watchdog)
--		return;
--
- 	for_each_online_cpu(cpu)
- 		watchdog_disable(cpu);
- 
-@@ -523,7 +517,8 @@ cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 		break;
- 	case CPU_ONLINE:
- 	case CPU_ONLINE_FROZEN:
--		err = watchdog_enable(hotcpu);
-+		if (watchdog_enabled)
-+			err = watchdog_enable(hotcpu);
- 		break;
- #ifdef CONFIG_HOTPLUG_CPU
- 	case CPU_UP_CANCELED:
-@@ -548,9 +543,6 @@ static int __init spawn_watchdog_task(void)
- 	void *cpu = (void *)(long)smp_processor_id();
- 	int err;
- 
--	if (no_watchdog)
--		return 0;
--
- 	err = cpu_callback(&cpu_nfb, CPU_UP_PREPARE, cpu);
- 	WARN_ON(notifier_to_errno(err));
- 
--- 
-1.7.3.3
-
+Hmm, I'll have to think about it. Probably we can check for
+d_count == 0 rather than parent != NULL I think?
