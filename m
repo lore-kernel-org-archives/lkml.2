@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042Ab1ARKaV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 05:30:21 -0500
-Received: from casper.infradead.org ([85.118.1.10]:43632 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243Ab1ARKaT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 05:30:19 -0500
-Subject: Re: [PATCH 00/21] mm: Preemptibility -v6
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
+	id S1752100Ab1ARKoV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 05:44:21 -0500
+Received: from ozlabs.org ([203.10.76.45]:52743 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751837Ab1ARKoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 05:44:20 -0500
+Date: Tue, 18 Jan 2011 21:44:04 +1100
+From: Anton Blanchard <anton@samba.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Scott Wood <scottwood@freescale.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>, Nick Piggin <npiggin@kernel.dk>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org
-In-Reply-To: <alpine.LSU.2.00.1101172301340.2899@sister.anvils>
-References: <20101126143843.801484792@chello.nl>
-	 <alpine.LSU.2.00.1101172301340.2899@sister.anvils>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 18 Jan 2011 11:30:47 +0100
-Message-ID: <1295346647.30950.477.camel@laptop>
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] powerpc: perf: Fix frequency calculation for overflowing
+ counters (FSL version)
+Message-ID: <20110118214404.2f42e634@kryten>
+In-Reply-To: <1295285881.30950.218.camel@laptop>
+References: <20110117161742.5feb3761@kryten>
+	<20110117113250.48098aaa@udp111988uds.am.freescale.net>
+	<1295285881.30950.218.camel@laptop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-17 at 23:12 -0800, Hugh Dickins wrote:
-> I understand you're intending to update your preemptible mmu_gather
-> patchset against 2.6.38-rc1, so I've spent a while looking through
-> (and running) your last posted version (plus its two fixes from BenH).
-> 
-> I've had no problems in running it, I can't tell if it's quicker or
-> slower than the unpatched.  The only argument against the patchset,
-> really, would be performance: and though there are no bad reports on
-> it as yet, I do wonder how we proceed if a genuine workload shows up
-> which is adversely affected.  Oh well, silly to worry about the
-> hypothetical I suppose.
-> 
-Wow, _HUGE_ review, thanks! I'll slowly make my way through it when I do
-the rebase against .38-rc1, most suggestions look very good indeed.
 
-And as to performance, there's the no-regression report from Yanmin
-running it through the Intel test farm. However Nick also had a
-particular workload he wanted to test, Nick, do you think you've got a
-few spare minutes to dig that workload up and give it a run?
+> > Does perf_event_fsl_emb.c need this as well (it has almost the same
+> > record_and_restart code)? 
+> 
+> I would think so.
 
-But I guess you're right, there's always a chance someone hits
-something, and I guess there's nothing to it but to deal with it when
-that comes..
+Good point:
+
+
+When fixing the frequency calculations for perf on powerpc I forgot
+to fix the FSL version.
+
+If we dont set event->hw.last_period the frequency to period calculations
+in perf go haywire and we continually throttle/unthrottle the PMU.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+---
+
+This is only compile tested.
+
+Index: powerpc.git/arch/powerpc/kernel/perf_event_fsl_emb.c
+===================================================================
+--- powerpc.git.orig/arch/powerpc/kernel/perf_event_fsl_emb.c	2011-01-18 21:23:57.761644115 +1100
++++ powerpc.git/arch/powerpc/kernel/perf_event_fsl_emb.c	2011-01-18 21:25:28.994477247 +1100
+@@ -596,6 +596,7 @@ static void record_and_restart(struct pe
+ 			if (left <= 0)
+ 				left = period;
+ 			record = 1;
++			event->hw.last_period = event->hw.sample_period;
+ 		}
+ 		if (left < 0x80000000LL)
+ 			val = 0x80000000LL - left;
+
+
