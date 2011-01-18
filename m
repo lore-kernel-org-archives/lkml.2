@@ -1,48 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166Ab1ARSF2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 13:05:28 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:52745 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867Ab1ARSF1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 13:05:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=Is1iVrKPcDGvlAsu1oCPO25jGF+wkjeztuG6pwAC8jA9MU/QPY6VZHVW+svK+cvQmC
-         macgxcJusXh8r6pmV8Qw==
+	id S1753132Ab1ARSJP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 13:09:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17847 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751859Ab1ARSJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 13:09:13 -0500
+Date: Tue, 18 Jan 2011 20:08:13 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, jasowang@redhat.com
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
+        virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv2] vhost: rcu annotation fixup
+Message-ID: <20110118180813.GA18757@redhat.com>
 MIME-Version: 1.0
-Date: Tue, 18 Jan 2011 19:05:12 +0100
-Message-ID: <AANLkTinVc=VRo+2=M3x5HEoF__SOJn7kBk7Ek0R94TG9@mail.gmail.com>
-Subject: [BUG] perf_event: inst_retired:any_p:c=16:i=1 is not equivalent to cpu_clk_unhalted:thread_p
-From: Stephane Eranian <eranian@google.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu,
-        Lin Ming <ming.m.lin@intel.com>, Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+When built with rcu checks enabled, vhost triggers
+bogus warnings as vhost features are read without
+dev->mutex sometimes, and private pointer is read
+with our kind of rcu where work serves as a
+read side critical section.
 
-commit 7639dae0ca11038286bbbcda05f2bef601c1eb8d
-Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date:   Tue Dec 14 21:26:40 2010 +0100
+Fixing it properly is not trivial.
+Disable the warnings by stubbing out the checks for now.
 
-    perf, x86: Provide a PEBS capable cycle event
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
+Changes from v1: add TODO, fix more warnings.
 
+ drivers/vhost/net.c   |    9 +++++----
+ drivers/vhost/vhost.h |    6 +++---
+ 2 files changed, 8 insertions(+), 7 deletions(-)
 
-Even with the transformation cmask=16:invert=1, you are not quite
-counting the same thing.
-
-inst_retired:any_p:c=16:i=1  is different from cpu_clk_unhalted:thread_p
-
-Simply because, I think, this form of inst_retired counts in HALTED state.
-
-This automatic transformation would be "okay" in per-thread mode, but
-not in system-wide mode. It should not be done under the cover. I would
-rather have this option at the user level.
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 9b3ca10..f616cef 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -128,8 +128,7 @@ static void handle_tx(struct vhost_net *net)
+ 	size_t hdr_size;
+ 	struct socket *sock;
+ 
+-	/* TODO: check that we are running from vhost_worker?
+-	 * Not sure it's worth it, it's straight-forward enough. */
++	/* TODO: check that we are running from vhost_worker? */
+ 	sock = rcu_dereference_check(vq->private_data, 1);
+ 	if (!sock)
+ 		return;
+@@ -306,7 +305,8 @@ static void handle_rx_big(struct vhost_net *net)
+ 	size_t len, total_len = 0;
+ 	int err;
+ 	size_t hdr_size;
+-	struct socket *sock = rcu_dereference(vq->private_data);
++	/* TODO: check that we are running from vhost_worker? */
++	struct socket *sock = rcu_dereference_check(vq->private_data, 1);
+ 	if (!sock || skb_queue_empty(&sock->sk->sk_receive_queue))
+ 		return;
+ 
+@@ -415,7 +415,8 @@ static void handle_rx_mergeable(struct vhost_net *net)
+ 	int err, headcount;
+ 	size_t vhost_hlen, sock_hlen;
+ 	size_t vhost_len, sock_len;
+-	struct socket *sock = rcu_dereference(vq->private_data);
++	/* TODO: check that we are running from vhost_worker? */
++	struct socket *sock = rcu_dereference_check(vq->private_data, 1);
+ 	if (!sock || skb_queue_empty(&sock->sk->sk_receive_queue))
+ 		return;
+ 
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index 2af44b7..b3363ae 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -173,9 +173,9 @@ static inline int vhost_has_feature(struct vhost_dev *dev, int bit)
+ {
+ 	unsigned acked_features;
+ 
+-	acked_features =
+-		rcu_dereference_index_check(dev->acked_features,
+-					    lockdep_is_held(&dev->mutex));
++	/* TODO: check that we are running from vhost_worker or dev mutex is
++	 * held? */
++	acked_features = rcu_dereference_index_check(dev->acked_features, 1);
+ 	return acked_features & (1 << bit);
+ }
+ 
+-- 
+1.7.3.2.91.g446ac
