@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163Ab1ARG7E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 01:59:04 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:52344 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752634Ab1ARG7B (ORCPT
+	id S1753020Ab1ARHKD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 02:10:03 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:40208 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428Ab1ARHKB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 01:59:01 -0500
-From: Thomas Weber <weber@corscience.de>
-To: linux-omap@vger.kernel.org
-Cc: Thomas Weber <weber@corscience.de>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Daniel Morsing <daniel.morsing@gmail.com>
-Subject: [PATCHv3 0/2] omap3: Devkit8000: misc fixes
-Date: Tue, 18 Jan 2011 07:58:50 +0100
-Message-Id: <1295333932-23935-1-git-send-email-weber@corscience.de>
-X-Mailer: git-send-email 1.7.4.rc2
-X-Provags-ID: V02:K0:us/Q90ZVOEpMlJWIVCOmP3DoN2cH/hqxvLyYi8nJYWP
- tn1Bvtg+UbTHMi0z9iBnVdfuftorS49CdKSv7D2ZxU0SzOPNws
- 1X2y47h0PfPZqpfINmLtxG+Fm5QnaCkwsahcZwpt+RLncmXqwc
- 9mFqkrnipMpQRNHZYnNxoPVfXMJSS5I5mtr/0bgJHbtOIt6/6k
- 4Ttj0sghDt1ynmlVrdW2w==
+	Tue, 18 Jan 2011 02:10:01 -0500
+Date: Tue, 18 Jan 2011 16:09:42 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: [GIT PULL] Samsung S5P fixes
+To: "'Linus Torvalds'" <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Message-id: <03f401cbb6de$b12a85a0$137f90e0$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: Acu23q0NA+8mNy/xR/uVxyQCFUS2wQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is a set of misc fixes for the devkit8000.
+Hi Linus,
 
-The only really notable one is the lcd enable gpio fix. It gets rid
-of some nasty low level twl4030 calls and replaces them with generic gpio
-calls. It also fixes a bug where the screen would not turn off when
-blanking.
+Please pull Samsung fixes from:
 
-Changes from v1: 
-	Pull the indention fix into "Change lcd power pin".
-	Change the pin for lcd pwren.
-	Fix the pullup/pulldown configuration after lcd prwen correction.
+git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
+s5p-fixes-for-linus
 
-Changes from v2:
-	Better comment for removing low level functions used for twl4030 gpio
-	Fix indention => indentation in comment
+These things had build problem with sound tree so couldn't merge it.
+Its dependency has disappeared in mainline now so I'm requesting pull this.
+Of course, it would be nice to see your merging this in before -rc1 :-)
 
-Daniel Morsing (1):
-  OMAP3: Devkit8000: Fix tps65930 pullup/pulldown configuration
+If any problems, please let me know.
 
-Thomas Weber (1):
-  OMAP3: Devkit8000: Change lcd power pin
+Thanks.
 
- arch/arm/mach-omap2/board-devkit8000.c |   10 +++-------
- 1 files changed, 3 insertions(+), 7 deletions(-)
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
--- 
-1.7.4.rc2
+The following changes since commit e6f597a1425b5af64917be3448b29e2d5a585ac8:
+
+ staging: fix build failure in bcm driver (2011-01-17 16:11:12 -0800)
+
+are available in the git repository at:
+   git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
+s5p-fixes-for-linus
+
+Jassi Brar (5):
+      ARM: S5P6442: Enable I2S device to work on SMDK6442
+      ARM: S5P6440: Add missing virtual ASoC DMA device
+      ARM: S5P6450: Add missing virtual ASoC DMA device
+      ARM: S5PV210: Add missing virtual ASoC DMA device
+      ARM: S5PV310: Add missing virtual ASoC DMA device
+
+ arch/arm/mach-s5p6442/mach-smdk6442.c |    1 +
+ arch/arm/mach-s5p64x0/mach-smdk6440.c |    1 +
+ arch/arm/mach-s5p64x0/mach-smdk6450.c |    1 +
+ arch/arm/mach-s5pv210/mach-smdkc110.c |    1 +
+ arch/arm/mach-s5pv210/mach-smdkv210.c |    1 +
+ arch/arm/mach-s5pv310/mach-smdkc210.c |    3 ++-
+ arch/arm/mach-s5pv310/mach-smdkv310.c |    3 ++-
+ 7 files changed, 9 insertions(+), 2 deletions(-)
 
