@@ -1,65 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100Ab1ARKoV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 05:44:21 -0500
-Received: from ozlabs.org ([203.10.76.45]:52743 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751837Ab1ARKoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 05:44:20 -0500
-Date: Tue, 18 Jan 2011 21:44:04 +1100
-From: Anton Blanchard <anton@samba.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Scott Wood <scottwood@freescale.com>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+	id S1752171Ab1ARKpM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 05:45:12 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:38542 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752011Ab1ARKpK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 05:45:10 -0500
+Subject: Re: [PATCH 00/21] mm: Preemptibility -v6
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] powerpc: perf: Fix frequency calculation for overflowing
- counters (FSL version)
-Message-ID: <20110118214404.2f42e634@kryten>
-In-Reply-To: <1295285881.30950.218.camel@laptop>
-References: <20110117161742.5feb3761@kryten>
-	<20110117113250.48098aaa@udp111988uds.am.freescale.net>
-	<1295285881.30950.218.camel@laptop>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+        David Miller <davem@davemloft.net>, Nick Piggin <npiggin@kernel.dk>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org
+In-Reply-To: <alpine.LSU.2.00.1101172301340.2899@sister.anvils>
+References: <20101126143843.801484792@chello.nl>
+	 <alpine.LSU.2.00.1101172301340.2899@sister.anvils>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 18 Jan 2011 11:44:44 +0100
+Message-ID: <1295347484.30950.495.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2011-01-17 at 23:12 -0800, Hugh Dickins wrote:
+> 18/21 mutex-provide_mutex_is_contended.patch
+>       I suppose so, though if we use it in the truncate path, then we are
+>       stuck with the vm_truncate_count stuff I'd rather hoped would go away;
+>       but I guess you're right, that if we did spin_needbreak/need_lockbreak
+>       before, then we ought to do this now - though I suspect I only added
+>       it because I had to insert a resched-point anyway, and it seemed a good
+>       idea at the time to check lockbreak too since that had just been added. 
 
-> > Does perf_event_fsl_emb.c need this as well (it has almost the same
-> > record_and_restart code)? 
-> 
-> I would think so.
-
-Good point:
-
-
-When fixing the frequency calculations for perf on powerpc I forgot
-to fix the FSL version.
-
-If we dont set event->hw.last_period the frequency to period calculations
-in perf go haywire and we continually throttle/unthrottle the PMU.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
----
-
-This is only compile tested.
-
-Index: powerpc.git/arch/powerpc/kernel/perf_event_fsl_emb.c
-===================================================================
---- powerpc.git.orig/arch/powerpc/kernel/perf_event_fsl_emb.c	2011-01-18 21:23:57.761644115 +1100
-+++ powerpc.git/arch/powerpc/kernel/perf_event_fsl_emb.c	2011-01-18 21:25:28.994477247 +1100
-@@ -596,6 +596,7 @@ static void record_and_restart(struct pe
- 			if (left <= 0)
- 				left = period;
- 			record = 1;
-+			event->hw.last_period = event->hw.sample_period;
- 		}
- 		if (left < 0x80000000LL)
- 			val = 0x80000000LL - left;
-
-
+Like the other missed cleanups now possible, these are things we can
+most definitely look at once the dust settles a bit. I just didn't want
+to rewrite the world in one go.
