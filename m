@@ -1,114 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753377Ab1ARTYH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 14:24:07 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:42394 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752852Ab1ARTWX (ORCPT
+	id S1752968Ab1ARTbC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 14:31:02 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:40029 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572Ab1ARTbA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 14:22:23 -0500
-From: Cyril Chemparathy <cyril@ti.com>
-To: davinci-linux-open-source@linux.davincidsp.com,
-        spi-devel-general@lists.sourceforge.net, sameo@linux.intel.com,
-        rpurdie@rpsys.net, dbrownell@users.sourceforge.net
-Cc: c-park@ti.com, linux-arm-kernel@lists.arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, Cyril Chemparathy <cyril@ti.com>
-Subject: [PATCH v8 00/11]  tnetv107x ssp drivers
-Date: Tue, 18 Jan 2011 14:21:34 -0500
-Message-Id: <1295378505-15221-1-git-send-email-cyril@ti.com>
-X-Mailer: git-send-email 1.7.1
+	Tue, 18 Jan 2011 14:31:00 -0500
+From: "Igor M. Liplianin" <liplianin@me.by>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Subject: Re: [PATCH 2/9 v2] Altera FPGA based CI driver module.
+Date: Tue, 18 Jan 2011 21:23:31 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.37-smp+; KDE/4.4.3; i686; ; )
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <4d20723d.cc7e0e0a.6f59.3762@mx.google.com> <4D333066.3020203@infradead.org>
+In-Reply-To: <4D333066.3020203@infradead.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201101182123.31987.liplianin@me.by>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TI's sequencer serial port (TI-SSP) is a jack-of-all-trades type of serial port
-device.  It has a built-in programmable execution engine that can be programmed
-to operate as almost any serial bus (I2C, SPI, EasyScale, and others).
+В сообщении от 16 января 2011 19:52:38 автор Mauro Carvalho Chehab написал:
+> Em 02-01-2011 10:01, Igor M. Liplianin escreveu:
+> > An Altera FPGA CI module for NetUP Dual DVB-T/C RF CI card.
+> > 
+> > Signed-off-by: Igor M. Liplianin <liplianin@netup.ru>
+> 
+> Igor,
+> 
+> There's something wrong with this patch. I got lots of error after applying
+> it:
+> 
+> drivers/media/video/cx23885/altera-ci.o: In function
+> `netup_ci_read_attribute_mem':
+> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:304:
+> multiple definition of `netup_ci_read_attribute_mem'
+> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
+> a/video/cx23885/cimax2.c:241: first defined here
+> drivers/media/video/cx23885/altera-ci.o: In function `netup_ci_op_cam':
+> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:269:
+> multiple definition of `netup_ci_op_cam'
+> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
+> a/video/cx23885/cimax2.c:171: first defined here
+> drivers/media/video/cx23885/altera-ci.o: In function
+> `netup_ci_slot_shutdown':
+> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:364:
+> multiple definition of `netup_ci_slot_shutdown'
+> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
+> a/video/cx23885/cimax2.c:293: first defined here
+> drivers/media/video/cx23885/altera-ci.o: In function
+> `netup_ci_slot_ts_ctl':
+> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:370:
+> multiple definition of `netup_ci_slot_ts_ctl'
+> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
+> a/video/cx23885/cimax2.c:320: first defined here
+> drivers/media/video/cx23885/altera-ci.o: In function
+> `netup_ci_write_cam_ctl':
+> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:322:
+> multiple definition of `netup_ci_write_cam_ctl'
+> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
+> a/video/cx23885/cimax2.c:259: first defined here
+> drivers/media/video/cx23885/altera-ci.o: In function
+> `netup_ci_read_cam_ctl':
+> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:315:
+> multiple definition of `netup_ci_read_cam_ctl'
+> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
+> a/video/cx23885/cimax2.c:252: first defined here
+> drivers/media/video/cx23885/altera-ci.o: In function
+> `netup_ci_write_attribute_mem':
+> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:310:
+> multiple definition of `netup_ci_write_attribute_mem'
+> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
+> a/video/cx23885/cimax2.c:247: first defined here
+> drivers/media/video/cx23885/altera-ci.o: In function
+> `netup_poll_ci_slot_status':
+> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:448:
+> multiple definition of `netup_poll_ci_slot_status'
+> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
+> a/video/cx23885/cimax2.c:403: first defined here
+> drivers/media/video/cx23885/altera-ci.o: In function
+> `netup_ci_slot_reset':
+> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:327:
+> multiple definition of `netup_ci_slot_reset'
+> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
+> a/video/cx23885/cimax2.c:264: first defined here
+> 
+> 
+> Please fix it and submit a new version. The better is to replace all those
+> new symbols to start with altera_ci.
+I see, allyesconfig...
 
-This patch series implements a driver stack that looks like the following:
+> 
+> While here, please, on the first patch, move the Altera FPGA driver to
+> staging, to give people some time do discuss about it.
+It means that cx23885 driver will depend on staging. Is it OK?
 
-                             +--------+
-                             | eeprom | . . .
-                             +--------+
-   +-----------+             +--------------+ +---------+
-   | regulator | . . .       |   i2c-gpio   | | 1-wire  | . . .
-   +-----------+             +--------------+ +---------+
-   +----------------------+  +--------------------------------+
-   |       ssp-spi        |  |           ssp-gpio             |
-   +----------------------+  +--------------------------------+
-   +----------------------------------------------------------+
-   |                            ssp                           |
-   +----------------------------------------------------------+
+> 
+> PS.: there are a few CodingStyle errors on this patch. Please always review
+> your patches with ./scripts/checkpatch.pl.
+I'll do it.
+> 
+> Thanks!
+> Mauro
 
-Changes between v8 and v7 of this series:
-  - Reorder commits, removed regulator driver patch (already upstreamed)
-  - Renamed static function definitions to keep namespace clean (mfd, gpio)
-  - Removed instance pdata in mfd driver
-
-Changes between v7 and v6 of this series:
-  - Workaround for iosel2 register not reading back set bits.
-  - Update backlight status once probe succeeds.
-
-Changes between v6 and v5 of this series:
-  - Changed initcalls to module_init() across all drivers.  This series now
-    uses a late_initcall() in the board to delay initialization of gpio and
-    regulator dependent devices.
-
-Changes between v5 and v4 of this series:
-  - Moved drivers from misc/gpio/spi to mfd
-  - Removed implicit init-time iosel setup
-  - Minor cleanups in backlight driver
-
-Changes between v3 and v4 of this series:
-  - Replaced polled wait for sequence termination with interrupt
-  - Improved locking within SSP driver
-  - Other minor cleanups
-
-Changes between v2 and v3 of this series:
-  - Minor cleanups in Kconfig and Makefile ordering
-
-Changes between v1 and v2 of this series:
-  - Replaced open()/close() semantics with dynamic platform_device
-    registration on SSP probe.
-  - Removed user-land interface to regulator registers
-  - More sensible regulator constraints
-  - Other minor cleanups
-
-
-Cyril Chemparathy (11):
-  mfd: add driver for sequencer serial port
-  spi: add ti-ssp spi master driver
-  gpio: add ti-ssp gpio driver
-  backlight: add support for tps6116x controller
-  davinci: add tnetv107x ssp platform device
-  davinci: add ssp config for tnetv107x evm board
-  davinci: add spi devices on tnetv107x evm
-  davinci: add tnetv107x evm regulators
-  davinci: add tnetv107x evm ti-ssp gpio device
-  davinci: add tnetv107x evm backlight device
-  davinci: add tnetv107x evm i2c eeprom device
-
- arch/arm/mach-davinci/board-tnetv107x-evm.c    |  197 ++++++++++
- arch/arm/mach-davinci/devices-tnetv107x.c      |   25 ++
- arch/arm/mach-davinci/include/mach/tnetv107x.h |    2 +
- arch/arm/mach-davinci/tnetv107x.c              |    2 +-
- drivers/gpio/Kconfig                           |   10 +
- drivers/gpio/Makefile                          |    1 +
- drivers/gpio/ti-ssp-gpio.c                     |  207 ++++++++++
- drivers/mfd/Kconfig                            |   11 +
- drivers/mfd/Makefile                           |    1 +
- drivers/mfd/ti-ssp.c                           |  476 ++++++++++++++++++++++++
- drivers/spi/Kconfig                            |   10 +
- drivers/spi/Makefile                           |    1 +
- drivers/spi/ti-ssp-spi.c                       |  402 ++++++++++++++++++++
- drivers/video/backlight/Kconfig                |    7 +
- drivers/video/backlight/Makefile               |    2 +-
- drivers/video/backlight/tps6116x.c             |  299 +++++++++++++++
- include/linux/mfd/ti_ssp.h                     |   97 +++++
- 17 files changed, 1748 insertions(+), 2 deletions(-)
- create mode 100644 drivers/gpio/ti-ssp-gpio.c
- create mode 100644 drivers/mfd/ti-ssp.c
- create mode 100644 drivers/spi/ti-ssp-spi.c
- create mode 100644 drivers/video/backlight/tps6116x.c
- create mode 100644 include/linux/mfd/ti_ssp.h
-
+-- 
+Igor M. Liplianin
+Microsoft Windows Free Zone - Linux used for all Computing Tasks
