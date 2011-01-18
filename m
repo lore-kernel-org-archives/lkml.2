@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751701Ab1ARNny (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 08:43:54 -0500
-Received: from thunk.org ([69.25.196.29]:41518 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751107Ab1ARNnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 08:43:52 -0500
-Date: Tue, 18 Jan 2011 08:43:45 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Jan Kara <jack@suse.cz>
-Cc: Simon Xu <xu.simon@oracle.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext2: reduce redundant check of '*options'
-Message-ID: <20110118134345.GC3138@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-	Simon Xu <xu.simon@oracle.com>, linux-ext4@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1294922362-2237-1-git-send-email-xu.simon@oracle.com>
- <20110117170203.GF5294@quack.suse.cz>
+	id S1751898Ab1ARNpV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 08:45:21 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:37750 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634Ab1ARNpU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 08:45:20 -0500
+X-AuditID: b753bd60-9d951ba00000044b-7b-4d35996df9c7
+Message-ID: <4D359969.3040203@hitachi.com>
+Date: Tue, 18 Jan 2011 22:45:13 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110117170203.GF5294@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Franck Bui-Huu <fbuihuu@gmail.com>, linux-kernel@vger.kernel.org,
+        2nddept-manager@sdl.hitachi.co.jp,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH -perf/perf/core 4/6] perf: Add strfilter for general	purpose
+ string filter
+References: <20110113124548.22426.11201.stgit@ltc236.sdl.hitachi.co.jp> <20110113124617.22426.25293.stgit@ltc236.sdl.hitachi.co.jp> <20110117124029.GC3902@ghostprotocols.net> <20110117125534.GD3902@ghostprotocols.net> <4D3470CB.6000408@hitachi.com>
+In-Reply-To: <4D3470CB.6000408@hitachi.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 17, 2011 at 06:02:03PM +0100, Jan Kara wrote:
-> Seriously, if you want to do some useful fixing then have a look for
-> example at making ext3/4 (in fact JBD/JBD2) handle transaction allocation
-> failures gratefully.  Currently we just loop in start_this_handle()
-> infinitely until we can make the allocation which is a bit dumb. So it
-> would be good, to make as many places as possible able to handle ENOMEM
-> from start_this_handle() and propagate the error to user space. In some
-> cases, it might not be easily possible (e.g. during writeout of dirty
-> memory, where proper handling needs more thought) but lots of cases
-> should be rather simple and need just auditing the code paths. Thanks.
+(2011/01/18 1:39), Masami Hiramatsu wrote:
+> (2011/01/17 21:55), Arnaldo Carvalho de Melo wrote:
+>> Em Mon, Jan 17, 2011 at 10:40:29AM -0200, Arnaldo Carvalho de Melo escreveu:
+>>> Em Thu, Jan 13, 2011 at 09:46:17PM +0900, Masami Hiramatsu escreveu:
+>>>> Add strfilter for general purpose string filter.
+>>>> Every filter rules are descrived by glob matching pattern
+>>>> and '!' prefix which means Logical NOT.
+>>>> A strfilter consists of those filter rules connected
+>>>> with '&' and '|'. A set of rules can be folded by using
+>>>> '(' and ')'. It also accepts spaces around rules and those
+>>>
+>>> You're not checking strfilter__alloc results, I'm fixing this for you
+>>> this time :-)
+>>
+>> Not really, please check strdup() result and strfilter__delete() needs
+>> to traverse all the nodes, not just the ones pointed at the root, right?
+> 
+> Would you mean that it should release all the node including
+> ascendants? Hmm, I think we might just need to update its parent
+> so that it doesn't get affected, because the strfilter__delete()
+> doesn't know which user variable points the parent of the given node.
+> E.g. If we remove "b*" from "(a* | b*)", just update it as "(a* | !*)"
 
-Uh, this is actually a rather subtle set of fixes that you are
-proposing, because it won't be obvious to someone who hasn't paid very
-careful attention to who calls certain functions (i.e., such as the
-writepages function), which get propagated to user space, and which
-will just cause mysterious data corruption of files --- especially
-since the writeback daemon doesn't check error returns (!!!).  So if
-someone changed writepages to return ENOMEM, and then said, "How
-delightful!  My work is done...", it would result in nothing getting
-back to userspace in most cases, and the writeback code would mark the
-pages as clean, and on the next reboot, the data would be lost.
+Hmm, I changed my mind. I think this is more than enough.
+It should be prohibited to pass the strfilter which is not
+the tree root. So, I think current strfilter__delete() is enough, isn't it?
 
-So this is *not* a change that I would recommend to people who are
-just beginning to learn how to program the kernel, and have been
-taught by some kernel programmers that the best thing to do is to take
-trivial-style changes and submit them upstream.
+Thank you,
 
-					- Ted
+-- 
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
