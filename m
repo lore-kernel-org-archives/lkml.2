@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861Ab1ARRHE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 12:07:04 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:46971 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752220Ab1ARRHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 12:07:03 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch] mm: compaction: prevent division-by-zero during user-requested compaction
-Date: Tue, 18 Jan 2011 18:06:52 +0100
-Message-Id: <1295370412-2645-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 1.7.3.4
+	id S1752830Ab1ARRQv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 12:16:51 -0500
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:46017 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752502Ab1ARRQt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 12:16:49 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=k/6fUreMc7J1AN+Gewy0DifdZyQMLYdOytyKqwMggzFL4C+ZXx/jD6vPuR2RLDWtK/S9bFwRCY6VC+89O0ioUX5FqfoegYGHg7hweggCd/OQs794vhcBbXHaFQScys57;
+Date: Tue, 18 Jan 2011 09:16:46 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Zou Nan hai <nanhai.zou@intel.com>,
+        Xiang Hai hao <haihao.xiang@intel.com>, Eric Anholt <eric@anholt.net>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: i915 completely broken with KMS off
+Message-ID: <20110118091646.73a5014c@jbarnes-desktop>
+In-Reply-To: <20110118115701.GA11952@gondor.apana.org.au>
+References: <20110118115701.GA11952@gondor.apana.org.au>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Up until '3e7d344 mm: vmscan: reclaim order-0 and use compaction
-instead of lumpy reclaim', compaction skipped calculating the
-fragmentation index of a zone when compaction was explicitely
-requested through the procfs knob.
+On Tue, 18 Jan 2011 22:57:01 +1100
+Herbert Xu <herbert@gondor.apana.org.au> wrote:
 
-However, when compaction_suitable was introduced, it did not come with
-an extra check for order == -1, set on explicit compaction requests,
-and passed this order on to the fragmentation index calculation, where
-it overshifts the number of requested pages, leading to a division by
-zero.
+> Hi:
+> 
+> I just upgraded my kernel on a machine with i915 and it has
+> started crashing constantly with messages like this:
+[snip]
+> The cause is this changeset:
+> 
+> commit 8187a2b70e34c727a06617441f74f202b6fefaf9
+> Author: Zou Nan hai <nanhai.zou@intel.com>
+> Date:   Fri May 21 09:08:55 2010 +0800
+> 
+>     drm/i915: introduce intel_ring_buffer structure (V2)
+> 
+> This changeset completely broke i915 without KMS because the new
+> intel_ring_buffer structure is never initialised with KMS off,
+> unless the ioctl I915_GEM_ENTERVT is invoked.
+> 
+> So without invoking that ioctl, the kernel will always crash
+> whenever the i915 driver dereferences pointers on the render_ring
+> data structure.
+> 
+> Or is this a hint to get people to convert to KMS :)
 
-This patch makes sure that order == -1 is recognized as the flag it is
-rather than passing it along as valid order parameter.
+Heh, well that would be one option for you. :)
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/compaction.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+The breakage was unintentional though; I imagine Chris will have an
+idea of how to fix it quickly for you.
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 6d592a0..114c145 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -453,6 +453,9 @@ unsigned long compaction_suitable(struct zone *zone, int order)
- 	if (!zone_watermark_ok(zone, 0, watermark, 0, 0))
- 		return COMPACT_SKIPPED;
- 
-+	if (order == -1)
-+		return COMPACT_CONTINUE;
-+
- 	/*
- 	 * fragmentation index determines if allocation failures are due to
- 	 * low memory or external fragmentation
 -- 
-1.7.3.4
-
+Jesse Barnes, Intel Open Source Technology Center
