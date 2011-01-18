@@ -1,88 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212Ab1ARWR2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 17:17:28 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57620 "EHLO
+	id S1752110Ab1ARWUB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 17:20:01 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:58961 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532Ab1ARWRZ convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751532Ab1ARWUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 17:17:25 -0500
+	Tue, 18 Jan 2011 17:20:00 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=bzhQrHw+8gmfpWNABhr65NIs8F8dhJ+F4SQdPDr4VT1baLHueeovkeBmce6yUbMipQ
-         89TsIKGuNbcwN4BI5PPUWhe64En8CqITYUj0+3ZDz8DVRvt9Mk3ieS3lZivvsUjdVQog
-         39YWjSkOziHo0PsQODhqj1VZQYRD0a+vMTeIY=
+         :cc:content-type;
+        b=MrPpMI5tiR59ueroZuf+saqbrPaQw/UmvwbMHn/4kap16x33ja5Y03cxF/CADs1dGA
+         bje0UMxX84wjF4uDMZJ2FObzJD107DtyT/1F3fot5HSPCL2Nog84oXIT2iKnjDHQpsrY
+         J4p4XSEgUtD7mhV+wyF8CnDxVP82HCcXixKbU=
 MIME-Version: 1.0
-In-Reply-To: <20110118190114.GA5070@quack.suse.cz>
-References: <AANLkTimMwZnm3UKvmrPscBeZF77vh1sW0ERO1tuv1oNW@mail.gmail.com>
-	<x494o9bbkqo.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTimuCgn4aHzUJRmQfsXjG_UF-3W8fAWb0Y-sSPsM@mail.gmail.com>
-	<x49tyh7mjr6.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTikgsGHJ+q6=We_zPAivyABq+z2f6Atv6ZScLYOU@mail.gmail.com>
-	<20110118190114.GA5070@quack.suse.cz>
-Date: Wed, 19 Jan 2011 09:17:23 +1100
-Message-ID: <AANLkTin1+B_1CV-weALdS8EYJO60BJd0b7AGWzc0wrWr@mail.gmail.com>
-Subject: Re: [patch] fs: aio fix rcu lookup
+In-Reply-To: <201101181759.32013.maciej.rutecki@gmail.com>
+References: <20110111110539.GP24920@pengutronix.de>
+	<201101181759.32013.maciej.rutecki@gmail.com>
+Date: Wed, 19 Jan 2011 09:19:59 +1100
+Message-ID: <AANLkTikC0ZV6pZ7jVmZ5DSrrkPCN4UPn3VY+zM2RWSc6@mail.gmail.com>
+Subject: Re: BUG: spinlock recursion (sys_chdir, user_path_at, do_path_lookup ...)
 From: Nick Piggin <npiggin@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Jeff Moyer <jmoyer@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
+To: maciej.rutecki@gmail.com
+Cc: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@pengutronix.de
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 6:01 AM, Jan Kara <jack@suse.cz> wrote:
->  Hi,
->
-> On Tue 18-01-11 10:24:24, Nick Piggin wrote:
->> On Tue, Jan 18, 2011 at 6:07 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
->> > Nick Piggin <npiggin@gmail.com> writes:
->> >> Do you agree with the theoretical problem? I didn't try to
->> >> write a racer to break it yet. Inserting a delay before the
->> >> get_ioctx might do the trick.
->> >
->> > I'm not convinced, no.  The last reference to the kioctx is always the
->> > process, released in the exit_aio path, or via sys_io_destroy.  In both
->> > cases, we cancel all aios, then wait for them all to complete before
->> > dropping the final reference to the context.
->>
->> That wouldn't appear to prevent a concurrent thread from doing an
->> io operation that requires ioctx lookup, and taking the last reference
->> after the io_cancel thread drops the ref.
->>
->> > So, while I agree that what you wrote is better, I remain unconvinced of
->> > it solving a real-world problem.  Feel free to push it in as a cleanup,
->> > though.
->>
->> Well I think it has to be technically correct first. If there is indeed a
->> guaranteed ref somehow, it just needs a comment.
->  Hmm, the code in io_destroy() indeed looks fishy. We delete the ioctx
-> from the hash table and set ioctx->dead which is supposed to stop
-> lookup_ioctx() from finding it (see the !ctx->dead check in
-> lookup_ioctx()). There's even a comment in io_destroy() saying:
->        /*
->         * Wake up any waiters.  The setting of ctx->dead must be seen
->         * by other CPUs at this point.  Right now, we rely on the
->         * locking done by the above calls to ensure this consistency.
->         */
-> But since lookup_ioctx() is called without any lock or barrier nothing
-> really seems to prevent the list traversal and ioctx->dead test to happen
-> before io_destroy() and get_ioctx() after io_destroy().
->
-> But wouldn't the right fix be to call synchronize_rcu() in io_destroy()?
-> Because with your fix we could still return 'dead' ioctx and I don't think
-> we are supposed to do that...
+2011/1/19 Maciej Rutecki <maciej.rutecki@gmail.com>:
+> I created a Bugzilla entry at
+> https://bugzilla.kernel.org/show_bug.cgi?id=27032
+> for your bug report, please add your address to the CC list in there, thanks!
 
-With my fix we won't oops, I was a bit concerned about ->dead,
-yes but I don't know what semantics it is attempted to have there.
+Sorry I missed this mail. This bug should have been fixed several
+days ago 90dbb77ba48dddb87445d238e84cd137cf97dd98
 
-synchronize_rcu() in io_destroy()  does not prevent it from returning
-as soon as lookup_ioctx drops the rcu_read_lock().
-
-The dead=1 in io_destroy indeed doesn't guarantee a whole lot.
-Anyone know?
+Thanks for the report, please do again if you see any problems.
