@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab1ARIFj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 03:05:39 -0500
-Received: from core.signal11.us ([64.251.29.136]:47900 "EHLO core.signal11.us"
+	id S1753319Ab1ARIGA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 03:06:00 -0500
+Received: from core.signal11.us ([64.251.29.136]:47857 "EHLO core.signal11.us"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753014Ab1ARIFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 03:05:12 -0500
+	id S1752814Ab1ARIFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 03:05:10 -0500
 From: Alan Ott <alan@signal11.us>
 To: Jiri Kosina <jkosina@suse.cz>, Marcel Holtmann <marcel@holtmann.org>,
         "Gustavo F. Padovan" <padovan@profusion.mobi>,
@@ -14,273 +14,124 @@ To: Jiri Kosina <jkosina@suse.cz>, Marcel Holtmann <marcel@holtmann.org>,
         Eric Dumazet <eric.dumazet@gmail.com>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
         linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org
-Cc: Alan Ott <alan@signal11.us>, Antonio Ospite <ospite@studenti.unina.it>
-Subject: [PATCH v5 3/4] hid: Add Support for Setting and Getting Feature Reports from hidraw
-Date: Tue, 18 Jan 2011 03:04:39 -0500
-Message-Id: <1295337880-12452-4-git-send-email-alan@signal11.us>
+Cc: Alan Ott <alan@signal11.us>
+Subject: [PATCH v5 1/4] bt hidp: Move hid_add_device() call to after hidp_session() has started.
+Date: Tue, 18 Jan 2011 03:04:37 -0500
+Message-Id: <1295337880-12452-2-git-send-email-alan@signal11.us>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1295337880-12452-1-git-send-email-alan@signal11.us>
 References: <1295337880-12452-1-git-send-email-alan@signal11.us>
 X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue Jan 18 03:05:11 2011
+X-DSPAM-Processed: Tue Jan 18 03:05:09 2011
 X-DSPAM-Confidence: 0.9899
 X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4d3549b7166888087114862
+X-DSPAM-Signature: 4d3549b5166704152116949
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Per the HID Specification, Feature reports must be sent and received on
-the Configuration endpoint (EP 0) through the Set_Report/Get_Report
-interfaces.  This patch adds two ioctls to hidraw to set and get feature
-reports to and from the device.  Modifications were made to hidraw and
-usbhid.
-
-New hidraw ioctls:
-  HIDIOCSFEATURE - Perform a Set_Report transfer of a Feature report.
-  HIDIOCGFEATURE - Perform a Get_Report transfer of a Feature report.
+Move the call to hid_add_device() (which calls a device's probe() function)
+to after the kernel_thread() call which starts the hidp_session() thread.
+This ensures the Bluetooth receive socket is fully running by the time a
+device's probe() function is called. This way, a device can communicate
+(send and receive) with the Bluetooth device from its probe() function.
 
 Signed-off-by: Alan Ott <alan@signal11.us>
-Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
 ---
- drivers/hid/hidraw.c          |  106 ++++++++++++++++++++++++++++++++++++++--
- drivers/hid/usbhid/hid-core.c |   35 +++++++++++++
- include/linux/hid.h           |    3 +
- include/linux/hidraw.h        |    3 +
- 4 files changed, 141 insertions(+), 6 deletions(-)
+ net/bluetooth/hidp/core.c |   28 ++++++++++++++++++++--------
+ net/bluetooth/hidp/hidp.h |    3 +++
+ 2 files changed, 23 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
-index 468e87b..8f06044 100644
---- a/drivers/hid/hidraw.c
-+++ b/drivers/hid/hidraw.c
-@@ -102,15 +102,14 @@ out:
- }
+diff --git a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
+index 29544c2..67cc4bc 100644
+--- a/net/bluetooth/hidp/core.c
++++ b/net/bluetooth/hidp/core.c
+@@ -563,6 +563,8 @@ static int hidp_session(void *arg)
+ 	init_waitqueue_entry(&intr_wait, current);
+ 	add_wait_queue(sk_sleep(ctrl_sk), &ctrl_wait);
+ 	add_wait_queue(sk_sleep(intr_sk), &intr_wait);
++	session->waiting_for_startup = 0;
++	wake_up_interruptible(&session->startup_queue);
+ 	while (!atomic_read(&session->terminate)) {
+ 		set_current_state(TASK_INTERRUPTIBLE);
  
- /* the first byte is expected to be a report number */
--static ssize_t hidraw_write(struct file *file, const char __user *buffer, size_t count, loff_t *ppos)
-+/* This function is to be called with the minors_lock mutex held */
-+static ssize_t hidraw_send_report(struct file *file, const char __user *buffer, size_t count, unsigned char report_type)
+@@ -754,6 +756,8 @@ static struct hid_ll_driver hidp_hid_driver = {
+ 	.hidinput_input_event = hidp_hidinput_event,
+ };
+ 
++/* This function sets up the hid device. It does not add it
++   to the HID system. That is done in hidp_add_connection(). */
+ static int hidp_setup_hid(struct hidp_session *session,
+ 				struct hidp_connadd_req *req)
  {
- 	unsigned int minor = iminor(file->f_path.dentry->d_inode);
- 	struct hid_device *dev;
- 	__u8 *buf;
- 	int ret = 0;
+@@ -795,16 +799,8 @@ static int hidp_setup_hid(struct hidp_session *session,
  
--	mutex_lock(&minors_lock);
+ 	hid->hid_output_raw_report = hidp_output_raw_report;
+ 
+-	err = hid_add_device(hid);
+-	if (err < 0)
+-		goto failed;
 -
- 	if (!hidraw_table[minor]) {
- 		ret = -ENODEV;
- 		goto out;
-@@ -148,14 +147,92 @@ static ssize_t hidraw_write(struct file *file, const char __user *buffer, size_t
- 		goto out_free;
- 	}
- 
--	ret = dev->hid_output_raw_report(dev, buf, count, HID_OUTPUT_REPORT);
-+	ret = dev->hid_output_raw_report(dev, buf, count, report_type);
- out_free:
- 	kfree(buf);
- out:
-+	return ret;
-+}
-+
-+/* the first byte is expected to be a report number */
-+static ssize_t hidraw_write(struct file *file, const char __user *buffer, size_t count, loff_t *ppos)
-+{
-+	ssize_t ret;
-+	mutex_lock(&minors_lock);
-+	ret = hidraw_send_report(file, buffer, count, HID_OUTPUT_REPORT);
- 	mutex_unlock(&minors_lock);
- 	return ret;
- }
- 
-+
-+/* This function performs a Get_Report transfer over the control endpoint
-+   per section 7.2.1 of the HID specification, version 1.1.  The first byte
-+   of buffer is the report number to request, or 0x0 if the defice does not
-+   use numbered reports. The report_type parameter can be HID_FEATURE_REPORT
-+   or HID_INPUT_REPORT.  This function is to be called with the minors_lock
-+   mutex held.  */
-+static ssize_t hidraw_get_report(struct file *file, char __user *buffer, size_t count, unsigned char report_type)
-+{
-+	unsigned int minor = iminor(file->f_path.dentry->d_inode);
-+	struct hid_device *dev;
-+	__u8 *buf;
-+	int ret = 0, len;
-+	unsigned char report_number;
-+
-+	dev = hidraw_table[minor]->hid;
-+
-+	if (!dev->hid_get_raw_report) {
-+		ret = -ENODEV;
-+		goto out;
-+	}
-+
-+	if (count > HID_MAX_BUFFER_SIZE) {
-+		printk(KERN_WARNING "hidraw: pid %d passed too large report\n",
-+				task_pid_nr(current));
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (count < 2) {
-+		printk(KERN_WARNING "hidraw: pid %d passed too short report\n",
-+				task_pid_nr(current));
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	buf = kmalloc(count * sizeof(__u8), GFP_KERNEL);
-+	if (!buf) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	/* Read the first byte from the user. This is the report number,
-+	   which is passed to dev->hid_get_raw_report(). */
-+	if (copy_from_user(&report_number, buffer, 1)) {
-+		ret = -EFAULT;
-+		goto out_free;
-+	}
-+
-+	ret = dev->hid_get_raw_report(dev, report_number, buf, count, report_type);
-+
-+	if (ret < 0)
-+		goto out_free;
-+
-+	len = (ret < count) ? ret : count;
-+
-+	if (copy_to_user(buffer, buf, len)) {
-+		ret = -EFAULT;
-+		goto out_free;
-+	}
-+
-+	ret = len;
-+
-+out_free:
-+	kfree(buf);
-+out:
-+	return ret;
-+}
-+
- static unsigned int hidraw_poll(struct file *file, poll_table *wait)
- {
- 	struct hidraw_list *list = file->private_data;
-@@ -295,7 +372,24 @@ static long hidraw_ioctl(struct file *file, unsigned int cmd,
- 		default:
- 			{
- 				struct hid_device *hid = dev->hid;
--				if (_IOC_TYPE(cmd) != 'H' || _IOC_DIR(cmd) != _IOC_READ) {
-+				if (_IOC_TYPE(cmd) != 'H') {
-+					ret = -EINVAL;
-+					break;
-+				}
-+
-+				if (_IOC_NR(cmd) == _IOC_NR(HIDIOCSFEATURE(0))) {
-+					int len = _IOC_SIZE(cmd);
-+					ret = hidraw_send_report(file, user_arg, len, HID_FEATURE_REPORT);
-+					break;
-+				}
-+				if (_IOC_NR(cmd) == _IOC_NR(HIDIOCGFEATURE(0))) {
-+					int len = _IOC_SIZE(cmd);
-+					ret = hidraw_get_report(file, user_arg, len, HID_FEATURE_REPORT);
-+					break;
-+				}
-+
-+				/* Begin Read-only ioctls. */
-+				if (_IOC_DIR(cmd) != _IOC_READ) {
- 					ret = -EINVAL;
- 					break;
- 				}
-@@ -327,7 +421,7 @@ static long hidraw_ioctl(struct file *file, unsigned int cmd,
- 						-EFAULT : len;
- 					break;
- 				}
--		}
-+			}
- 
- 		ret = -ENOTTY;
- 	}
-diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-index b336dd8..38c261a 100644
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -799,6 +799,40 @@ static int hid_alloc_buffers(struct usb_device *dev, struct hid_device *hid)
  	return 0;
- }
  
-+static int usbhid_get_raw_report(struct hid_device *hid,
-+		unsigned char report_number, __u8 *buf, size_t count,
-+		unsigned char report_type)
-+{
-+	struct usbhid_device *usbhid = hid->driver_data;
-+	struct usb_device *dev = hid_to_usb_dev(hid);
-+	struct usb_interface *intf = usbhid->intf;
-+	struct usb_host_interface *interface = intf->cur_altsetting;
-+	int skipped_report_id = 0;
-+	int ret;
-+
-+	/* Byte 0 is the report number. Report data starts at byte 1.*/
-+	buf[0] = report_number;
-+	if (report_number == 0x0) {
-+		/* Offset the return buffer by 1, so that the report ID
-+		   will remain in byte 0. */
-+		buf++;
-+		count--;
-+		skipped_report_id = 1;
+-failed:
+-	hid_destroy_device(hid);
+-	session->hid = NULL;
+-
+ fault:
+ 	kfree(session->rd_data);
+ 	session->rd_data = NULL;
+@@ -853,6 +849,8 @@ int hidp_add_connection(struct hidp_connadd_req *req, struct socket *ctrl_sock,
+ 	skb_queue_head_init(&session->ctrl_transmit);
+ 	skb_queue_head_init(&session->intr_transmit);
+ 
++	init_waitqueue_head(&session->startup_queue);
++	session->waiting_for_startup = 1;
+ 	session->flags   = req->flags & (1 << HIDP_BLUETOOTH_VENDOR_ID);
+ 	session->idle_to = req->idle_to;
+ 
+@@ -875,6 +873,14 @@ int hidp_add_connection(struct hidp_connadd_req *req, struct socket *ctrl_sock,
+ 	err = kernel_thread(hidp_session, session, CLONE_KERNEL);
+ 	if (err < 0)
+ 		goto unlink;
++	while (session->waiting_for_startup) {
++		wait_event_interruptible(session->startup_queue,
++			!session->waiting_for_startup);
 +	}
-+	ret = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0),
-+		HID_REQ_GET_REPORT,
-+		USB_DIR_IN | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
-+		((report_type + 1) << 8) | report_number,
-+		interface->desc.bInterfaceNumber, buf, count,
-+		USB_CTRL_SET_TIMEOUT);
 +
-+	/* count also the report id */
-+	if (ret > 0 && skipped_report_id)
-+		ret++;
++	err = hid_add_device(session->hid);
++	if (err < 0)
++		goto err_add_device;
+ 
+ 	if (session->input) {
+ 		hidp_send_ctrl_message(session,
+@@ -888,6 +894,12 @@ int hidp_add_connection(struct hidp_connadd_req *req, struct socket *ctrl_sock,
+ 	up_write(&hidp_session_sem);
+ 	return 0;
+ 
++err_add_device:
++	hid_destroy_device(session->hid);
++	session->hid = NULL;
++	atomic_inc(&session->terminate);
++	hidp_schedule(session);
 +
-+	return ret;
-+}
+ unlink:
+ 	hidp_del_timer(session);
+ 
+diff --git a/net/bluetooth/hidp/hidp.h b/net/bluetooth/hidp/hidp.h
+index 8d934a1..2cc35dc 100644
+--- a/net/bluetooth/hidp/hidp.h
++++ b/net/bluetooth/hidp/hidp.h
+@@ -157,6 +157,9 @@ struct hidp_session {
+ 	/* Report descriptor */
+ 	__u8 *rd_data;
+ 	uint rd_size;
 +
- static int usbhid_output_raw_report(struct hid_device *hid, __u8 *buf, size_t count,
- 		unsigned char report_type)
- {
-@@ -1139,6 +1173,7 @@ static int usbhid_probe(struct usb_interface *intf, const struct usb_device_id *
++	wait_queue_head_t startup_queue;
++	int waiting_for_startup;
+ };
  
- 	usb_set_intfdata(intf, hid);
- 	hid->ll_driver = &usb_hid_driver;
-+	hid->hid_get_raw_report = usbhid_get_raw_report;
- 	hid->hid_output_raw_report = usbhid_output_raw_report;
- 	hid->ff_init = hid_pidff_init;
- #ifdef CONFIG_USB_HIDDEV
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index d91c25e..e8ee0a9 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -504,6 +504,9 @@ struct hid_device {							/* device report descriptor */
- 				  struct hid_usage *, __s32);
- 	void (*hiddev_report_event) (struct hid_device *, struct hid_report *);
- 
-+	/* handler for raw input (Get_Report) data, used by hidraw */
-+	int (*hid_get_raw_report) (struct hid_device *, unsigned char, __u8 *, size_t, unsigned char);
-+
- 	/* handler for raw output data, used by hidraw */
- 	int (*hid_output_raw_report) (struct hid_device *, __u8 *, size_t, unsigned char);
- 
-diff --git a/include/linux/hidraw.h b/include/linux/hidraw.h
-index dd8d692..4b88e69 100644
---- a/include/linux/hidraw.h
-+++ b/include/linux/hidraw.h
-@@ -35,6 +35,9 @@ struct hidraw_devinfo {
- #define HIDIOCGRAWINFO		_IOR('H', 0x03, struct hidraw_devinfo)
- #define HIDIOCGRAWNAME(len)     _IOC(_IOC_READ, 'H', 0x04, len)
- #define HIDIOCGRAWPHYS(len)     _IOC(_IOC_READ, 'H', 0x05, len)
-+/* The first byte of SFEATURE and GFEATURE is the report number */
-+#define HIDIOCSFEATURE(len)    _IOC(_IOC_WRITE|_IOC_READ, 'H', 0x06, len)
-+#define HIDIOCGFEATURE(len)    _IOC(_IOC_WRITE|_IOC_READ, 'H', 0x07, len)
- 
- #define HIDRAW_FIRST_MINOR 0
- #define HIDRAW_MAX_DEVICES 64
+ static inline void hidp_schedule(struct hidp_session *session)
 -- 
 1.7.0.4
 
