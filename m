@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457Ab1ARPvz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 10:51:55 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:59258 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063Ab1ARPvy (ORCPT
+	id S1752572Ab1ARPwN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 10:52:13 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40057 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab1ARPwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 10:51:54 -0500
+	Tue, 18 Jan 2011 10:52:11 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=N8Qh0dI6s0LYISjTtuXrF/xm9FG1ltexbpa8szeF5iwrSWEW6NYte6kitNX0qMJUFY
-         ry2aAIBIivdqe+85zMCxbbMTCcUIaJqDbvhsQq0p0PHq1c8rChvXnD9Uhb0A+o3HN/rF
-         A0XB283NCQSctTzomF/b3gt2absjL+oIxduk8=
-Date: Tue, 18 Jan 2011 23:52:12 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Anithra P Janakiraman <anithra@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/0] Panic on softdog timeout
-Message-ID: <20110118155212.GB17710@hack>
-References: <4D358B34.7040902@linux.vnet.ibm.com>
+        b=RiDxYV75nWVyjmIc8uAAlUYe30Q0u3Rda3UFbDsiSaOhZVhMcenpbDNfSaIv7tAdCC
+         ACzBXhRVFvcbwFz/2mbnwIk2Ji4F5j1Wg8L43Ogy0vwHo2o+SKgF9GNN3rfiDehwPUTH
+         wdXoRxYsQpBuhQfZxQbYDQaIvHxO+V7pPa7q8=
+Date: Tue, 18 Jan 2011 16:52:06 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: mingo@elte.hu, rostedt@goodmis.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tracing: remove superfluous sub instructions
+Message-ID: <20110118155159.GA1791@nowhere>
+References: <1295364498-9288-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D358B34.7040902@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1295364498-9288-1-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 18, 2011 at 06:14:36PM +0530, Anithra P Janakiraman wrote:
->
->Hi.
->
->We currently have no way of determining the reason for failure when a
->softdog timeout occurs. At the minimum a snapshot of the system would
->help to determine the cause.
->The attached patch invokes panic on softdog timeout iff kdump is
->configured, if kdump is not configured it works as usual.
->
+On Tue, Jan 18, 2011 at 04:28:18PM +0100, Jiri Olsa wrote:
+> hi,
+> 
+> I think there's no need for substracting MCOUNT_INSN_SIZE from the
+> IP parameter before calling the function trace (/graph) handler.
+> 
+> Maybe I overlooked something, but all the IP usage I saw ended
+> up in the kallsyms_lookup function, which does the lookup using the
+> functions' start/end boundaries to find the correct symbol for pointer.
+> 
+> Thus it seems to me there's no point in substracting the
+> MCOUNT_INSN_SIZE value from the IP parameter.
+> 
+> I tested for x86_64 and got proper results, I believe it's
+> the same case for x86_32.
+> 
+> wbr,
+> jirka
+> 
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 
-We don't do it in this way, check softlockup_panic, we have
-a boot parameter, i.e. "softlockup_panic=". :)
+Well, that sounds right after all. If we are only interested in the
+symbol, the instruction that follows "call mcount" is still relevant
+as it must belong to the same function.
+
+Steve?
