@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab1AREzN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 23:55:13 -0500
-Received: from wipro-blr-out01.wipro.com ([203.91.198.74]:60928 "EHLO
-	wipro-blr-out02.wipro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752736Ab1AREzM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 23:55:12 -0500
-X-AuditID: cb5bdd58-b7cbcae000005855-70-4d351d2e19c4
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1751056Ab1ARFEh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 00:04:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41761 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750767Ab1ARFEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 00:04:35 -0500
+Message-ID: <4D351F25.7000708@suse.de>
+Date: Tue, 18 Jan 2011 10:33:33 +0530
+From: Suresh Jayaraman <sjayaraman@suse.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: Regarding platform drivers
-Date: Tue, 18 Jan 2011 10:25:08 +0530
-Message-ID: <B1C038EEDA7E0344BC837F2D591C949803B7EC0A@blr-m3-msg.wipro.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Regarding platform drivers
-Thread-Index: Acu2yUGdEWaqkoXPQnS1E53P5wyzbgAAmUCg
-From: <ananth.sundapalayam@wipro.com>
-To: <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 18 Jan 2011 04:55:09.0201 (UTC) FILETIME=[E1BC2010:01CBB6CB]
-X-Brightmail-Tracker: AAAAAA==
+To: Francesco Alfano <edacedpa@yahoo.it>
+Cc: linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org
+Subject: Re: Lose shared network resource
+References: <395199.61799.qm@web29510.mail.ird.yahoo.com>
+In-Reply-To: <395199.61799.qm@web29510.mail.ird.yahoo.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-I noticed that certain drivers are registered as platform drivers. 
-As a driver writer, what factors do I need to consider to decide if my
-driver would be a platform driver or a "regular" driver?
-If I have a DMA controller connected to the CPU via a Network-On-Chip,
-could I write a regular driver for it or does it need to be a platform
-driver?
+(good to Cc linux-cifs@vger.kernel.org though it might not have anything
+to do with cifs in this case)
 
-Thanks in advance,
+On 01/13/2011 09:06 PM, Francesco Alfano wrote:
+> Hello, 
+> I have a problem with the (exported) sharing of network resources. 
+> Initially i've used a sever with RedHat 7.3 kernel 2.4 now i've  installed 
+> Scientific Linux 5.5 with kernel 2.6.18-194.32.1.el5PAE with  Samba version 
+> 3.0.33-3.29.el5_5.1. 
+> 
+> The problem is that I lose the network connection periodically, about 10  
+> minutes! 
+> 
 
-Best Regards,
-Ananth.
+Are you using dhcp? If yes, it looks like a problem due to IPaddress not
+being persistent (possibly a bug in dhcpcd).
 
-PS: Kindly include my mail id in your response.
+Are you able to reproduce this problem if you use static IP?  Also, see
+if the problem is persisting if you use dhclient instead of dhcpcd.
 
+
+-- 
+Suresh Jayaraman
