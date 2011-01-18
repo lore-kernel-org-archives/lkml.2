@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530Ab1ARNEV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 08:04:21 -0500
-Received: from mail.sysgo.com ([195.145.229.155]:43958 "EHLO mail.sysgo.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751021Ab1ARNEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 08:04:20 -0500
-Message-ID: <4D358E31.4080700@sysgo.com>
-Date: Tue, 18 Jan 2011 13:57:21 +0100
-From: David Engraf <david.engraf@sysgo.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] serio: allow registered drivers to get status flag
-Content-Type: multipart/mixed;
- boundary="------------070306030407000808000604"
+	id S1751751Ab1ARNEg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 08:04:36 -0500
+Received: from mxs.selfip.ru ([77.221.143.26]:34944 "EHLO mxs.selfmail.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751597Ab1ARNEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 08:04:22 -0500
+X-ACL-SPF: 
+Subject: Re: [ANN] ulatencyd 0.3.1
+From: Vasiliy G Tolstov <v.tolstov@selfip.ru>
+Reply-To: v.tolstov@selfip.ru
+To: Daniel Poelzleithner <poelzi@poelzi.org>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <4D357204.3090505@poelzi.org>
+References: <4D357204.3090505@poelzi.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Selfip.Ru
+Date: Tue, 18 Jan 2011 16:03:34 +0300
+Message-ID: <1295355814.24148.4.camel@mobile>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 8bit
+X-ACL-DATA: Invalid Message-Id
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070306030407000808000604
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+On Tue, 2011-01-18 at 11:57 +0100, Daniel Poelzleithner wrote:
+> Hi all,
+> 
+> I'm happy to announce the release of ulatencyd 0.3.1
+> 
+> What is it ?
+> ============
+> 
+> ulatencyd is a scriptable daemon which constantly optimises the Linux
+> kernel for best user experience.
+> The default configuration tries reduce the latency for a typical desktop
+> system and protects the system from malicious processes/groups.
+> With a different configuration all other types of systems can be
+> adjusted as well.
+> 
+> Website: <https://github.com/poelzi/ulatencyd/>
+> 
+> • Ubuntu PPA: <https://launchpad.net/~poelzi/+archive/ulatencyd-stable>
+> • Latest Release:
+> <https://github.com/downloads/poelzi/ulatencyd/ulatencyd-0.3.1.tar.gz>
+> 
+> 
+> What's new in 0.3 (very short version)?
+> =======================================
+> 
+> • X-Server plugin which monitors the active windows and gives more
+>   priority to the recently active windows.
+> • Full scripted scheduler with flexible configuration that allows easy
+>   adjustment of the resulting cgroups and parameters.
+> • Protection rules against common cases of memory shortage, also known
+>   as the swap of death (even without swap).
+> • Scheduler configuration for desktop systems
+> • Fast C core with Lua embedding. Intelligent caching to reduce the
+>   load on filter rules and scheduler.
+> • Very detailed API for system inspection and adjustment.
+> • Rudimentary Rules for popular Desktop Environments KDE & Gnome
+> 
+> 
+> Does it work ?
+> ==============
+> 
+> Yes. Of course it is possible to still cause a swap of death or overload
+> the system so much, that it starts to get lag. But typical cases get
+> caught by the current rules. A make -j 50 of the linux kernel
+> on my dual core machine with 4 GB ram let me still work on the machine
+> quite well, but a make -j 80 still locks it down for like 4 minutes.
+> This is most likely because the heavy swapping done on the isolation
+> groups (their main memory usage is restraint). This may be fixed by
+> using the blockio subsystem, but this is not used yet. Planned for the
+> next version.
+> 
+> 
+> kind regards
+>  Daniel Poelzleithner
+> 
 
-Parse the status byte information to the registered serio drivers as 
-well as the character bytes.
-
-Signed-off-by: David Engraf <david.engraf@sysgo.com>
+Hello! May be offtopic, bu does ulatencyd works well together with
+systemd init system?
 
 
---------------070306030407000808000604
-Content-Type: text/x-diff;
- name="serport_parse_flags.diff"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="serport_parse_flags.diff"
-
---- linux-2.6.37/drivers/input/serio/serport.c.orig	2011-01-18 12:33:41.421709232 +0100
-+++ linux-2.6.37/drivers/input/serio/serport.c	2011-01-18 13:33:24.521711214 +0100
-@@ -116,8 +116,8 @@ static void serport_ldisc_close(struct t
- 
- /*
-  * serport_ldisc_receive() is called by the low level tty driver when characters
-- * are ready for us. We forward the characters, one by one to the 'interrupt'
-- * routine.
-+ * are ready for us. We forward the characters and flags, one by one to the 
-+ * 'interrupt' routine.
-  */
- 
- static void serport_ldisc_receive(struct tty_struct *tty, const unsigned char *cp, char *fp, int count)
-@@ -132,7 +132,7 @@ static void serport_ldisc_receive(struct
- 		goto out;
- 
- 	for (i = 0; i < count; i++)
--		serio_interrupt(serport->serio, cp[i], 0);
-+		serio_interrupt(serport->serio, cp[i], fp[i]);
- 
- out:
- 	spin_unlock_irqrestore(&serport->lock, flags);
-
---------------070306030407000808000604--
