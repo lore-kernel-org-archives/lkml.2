@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab1ARTxL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 14:53:11 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46774 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752497Ab1ARTxJ (ORCPT
+	id S1752994Ab1ART4m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 14:56:42 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:64094 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab1ART4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 14:53:09 -0500
-Date: Tue, 18 Jan 2011 19:52:58 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: maximilian attems <max@stro.at>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        Ralf =?iso-8859-1?Q?R=F6sch?= <ralf.roesch@rw-gmbh.de>,
-        debian-kernel@lists.debian.org
-Subject: Re: [PATCH] kbuild: create linux-headers package in deb-pkg
-Message-ID: <20110118195258.GA21934@decadent.org.uk>
-References: <1293201730-1583-1-git-send-email-tytso@mit.edu> <20101225112026.GF20262@vostochny.stro.at> <20110110174640.GA619@stro.at> <4D2F044E.7060607@suse.cz> <20110113143840.GN20262@vostochny.stro.at>
+	Tue, 18 Jan 2011 14:56:41 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Lars-Peter Clausen" <lars@metafoo.de>
+Subject: Re: [PATCH] asm-generic/io.h: Fix io{read,write}{16,32}be for big endian systems
+Date: Tue, 18 Jan 2011 20:56:35 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc8; KDE/4.5.1; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1295374261-19609-1-git-send-email-lars@metafoo.de> <201101181944.07146.arnd@arndb.de> <4D35E378.70300@metafoo.de>
+In-Reply-To: <4D35E378.70300@metafoo.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110113143840.GN20262@vostochny.stro.at>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101182056.35673.arnd@arndb.de>
+X-Provags-ID: V02:K0:W8bvabzXX6L/XQVr2Q/GpeE+jjpRnPxRcuLLG85SrOA
+ xF5qtGQnLNoHg9rWOAHeY5Xkpy3XTsRnwq5wAugHgeWOoxDQQ+
+ yOtt+dcy5QdcT+iw6DEqjhGMKb0n3NHUqN1lJjlHNqV376uo3/
+ 8bWeAubysuEq3GxJ+pZpcE0oLTuikjzBoggC06ztAwf5deZmrm
+ 1QClHB03YGH+Wn1dPmm0g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 13, 2011 at 02:38:41PM +0000, maximilian attems wrote:
-> On Thu, Jan 13, 2011 at 02:55:26PM +0100, Michal Marek wrote:
-[...]
-> > BTW, here is a bugreport I got privately about
-> > the very same issue:
-> > On 12.1.2011 10:02, Ralf Rösch wrote:
-> > | [...]
-> > | Attached you will find a patch to complete the build successfully for my
-> > | mipsel target.
-> > | The dpkg --print-architecture shows i386 which results in error:
-> > | dpkg-gencontrol: Fehler: aktuelle Host-Architektur »mipsel« erscheint
-> > | nicht in der Architekturliste (i386) des Pakets
-> > | (current host architecture 'mipsel' does not appear in package's list
-> > i386)
-> > | so I changed "arch" temporary to "any".
-> > |
-> > | It would be nice if it would be possible to make the kernel-headers
-> > | installable on any host.
-> > | They are needed very frequently for cross-compiling. (I already possible
-> > | with dpkg force).
+On Tuesday 18 January 2011 20:01:12 Lars-Peter Clausen wrote:
+> Well, i've though about that as well, but in the current asm-generic/io.h readl is
+> unconditionally defined as cpu_to_le32(__raw_readl(addr)) and ioread32 is defined as
+> readl.
 > 
-> Added Ben Hutchings and d-kernel on Cc. I do not use OOT modules, so
-> I don't have a strong word on that, but from what I see in Debian
-> they are arch specific.
+> So unless an arch io.h undefines those macros and redefines them (which none of the
+> current archs does, as far as i can see), we are o
+> 
+> If an arch chooses to redefine ioread or readl, it should probably also redefine
+> ioread{16,32}be.
 
-Kernel header packages should be labelled with the target architecture.
-This is because the headers include some generated files that are both
-architecture- and configuration-specific.
+Right, but the header file also serves as a template for new architectures
+that cannot directly use it. I would prefer not to give a possibly bad example
+here, especially when it's in a rarely used function.
 
-Any package of libraries or headers for some architecture is in theory
-useful for cross-development on any other architecture, yet we do not
-label them as architecture: all.  If we did that, we would then have to
-use a different name and installation path for each target so that they
-are co-installable; this would also bloat the package list files.  You
-should normally be able to convert a package for use in cross-
-development using dpkg-cross, which changes its name and paths
-accordingly.  However I don't know how well this will work for kernel
-headers.
+> > The right solution is probably to use swab16/swab32 for the
+> > big-endian functions. This also corrects the iowrite functions
+> > which really should be using cpu_to_be32 instead of be32_to_cpu
+> > (although they are always defined to be the same afaict.
+> 
+> This would first cause a conversion to little-endian, which is a swap() in the
+> generic case and then you would call swap() again on the result. Which is basically a
+> noop, but I'm not sure if compilers will detect this.
 
-Ben.
+The overhead of the swab() is certainly dwarfed by the long time spent in
+readl().
 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+I would prefer to swap twice in this case and let the compiler work it out
+if possible. The next best alternative would probably be to define both
+ioread and ioread_be using __raw_readl in combination with a le32_to_cpu
+or be32_to_cpu.
+
+	Arnd
