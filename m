@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752819Ab1ARSmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 13:42:46 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61925 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752772Ab1ARSmp (ORCPT
+	id S1752835Ab1ARSoP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 13:44:15 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:61403 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab1ARSoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 13:42:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=G7au9d8C7DaPw3/V3uNhac4GgV5XWL25RvjujoLPsX1ZpNKn176y/VaYAEnaoX/TLR
-         ntbWP/cQ7yuT5xtrSebJPAefl/odQMAspjeSc0n+4mIj6ZQSxqRHPsCe5Z+wLcuhjWy7
-         m5GOv4QaL0O1kP/LEnD9l/FSErLk4v5y3nQfk=
-Date: Tue, 18 Jan 2011 19:42:39 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prasad <prasad@linux.vnet.ibm.com>, Roland McGrath <roland@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Q: perf_event && task->ptrace_bps[]
-Message-ID: <20110118184234.GA1808@nowhere>
-References: <20101108145647.GA3426@redhat.com>
- <20110117203459.GA32700@redhat.com>
+	Tue, 18 Jan 2011 13:44:14 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Lars-Peter Clausen" <lars@metafoo.de>
+Subject: Re: [PATCH] asm-generic/io.h: Fix io{read,write}{16,32}be for big endian systems
+Date: Tue, 18 Jan 2011 19:44:07 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc8; KDE/4.5.1; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1295374261-19609-1-git-send-email-lars@metafoo.de>
+In-Reply-To: <1295374261-19609-1-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110117203459.GA32700@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101181944.07146.arnd@arndb.de>
+X-Provags-ID: V02:K0:OTWunNPUjSTdbaSwepottW7yPxKRue4kMAJgVafboan
+ gda9SaxKlqZvgt65uJQvT2yBhgeV5uhLUiV/5JzeB74RZ2Eh+I
+ EYdrqaup+dQez4qwpqiwQU02TPfT+WN/wSeT5QJta8cWP3UpUO
+ yotndZDJRxC19UVO5W6zx7Y30RxxCBNRTuDL2U+cyVnwf5At+A
+ MDFtEDMjElgTpPK6xgUYA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 17, 2011 at 09:34:59PM +0100, Oleg Nesterov wrote:
-> On 11/08, Oleg Nesterov wrote:
-> >
-> > I am trying to understand the usage of hw-breakpoints in arch_ptrace().
-> > ptrace_set_debugreg() and related code looks obviously racy. Nothing
-> > protects us against flush_ptrace_hw_breakpoint() called by the dying
-> > tracee. Afaics we can leak perf_event or use the already freed memory
-> > or both.
-> >
-> > Am I missed something?
-> >
-> > Looking into the git history, I don't even know which patch should be
-> > blamed (if I am right), there were too many changes. I noticed that
-> > 2ebd4ffb6d0cb877787b1e42be8485820158857e "perf events: Split out task
-> > search into helper" moved the PF_EXITING check from find_get_context().
-> > This check coould help if sys_ptrace() races with SIGKILL, but it was
-> > racy anyway.
+On Tuesday 18 January 2011 19:11:01 Lars-Peter Clausen wrote:
+> Currently io{read,write}{16,32} expand to
+>         *addr = cpu_to_leXX(cpu_to_beXX(val))
+> and
+>         val = beXX_to_cpu(leXX_to_cpu(*addr))
 > 
-> Ping.
+> While it should rather be:
+>         *addr = cpu_to_be{16,32}(val)
+> and
+>         val = be{16,32}_to_cpu(*addr)
 > 
-> Any idea how to fix this cleanly? May be we can reuse perf_event_mutex,
-> but this looks soooo ugly. And do_exit()->flush_ptrace_hw_breakpoint()
-> has the strange "FIXME:" comment which doesn't help me to understand
-> what can we do.
-
-Yeah forget about the FIXME, it's a stale thing I need to remove.
-
+> The current implementation works on litte-endian targets(where cpu_to_leXX is a
+> noop), but breaks on on big-endian targets, this patch fixes it.
 > 
-> Probably the best fix is to change this code so that the tracer owns
-> ->ptrace_bps[], not the tracee. But this is not trivial, and needs a
-> lot of changes in ptrace code.
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 
+The existing code looks broken on big-endian indeed, thanks
+for the report!
 
-How much complicated would it be?
+However, you cannot use __raw_readl in general, because that
+function knows nothing about the various kinds of I/O accesses
+(potentially) handled by readl. Think of architectures where
+readl is not a pointer dereference but something else.
 
-Because I see three solutions to solve this:
+The right solution is probably to use swab16/swab32 for the
+big-endian functions. This also corrects the iowrite functions
+which really should be using cpu_to_be32 instead of be32_to_cpu
+(although they are always defined to be the same afaict.
 
-- Have a mutex inside thread->ptrace_bps. The contention must be
-rare and only concern ptrace and tracee exit. That's the simplest.
-
-- Have an atomic refcount inside thread->ptrace_bps so that the actual
-flush can be delayed until necessary. Same as above, but exit and ptrace
-can execute concurrently, code must be a bit more complicated though.
-
-- Your solution. I'm just not sure how much change it involves. Seems
-like we need to notify the parent for it to flush the breakpoints
-when a task exits. Same when ptrace detaches we need to flush.
-
-What do you guys think? At a glance it seems a mutex or a refcount
-would take more memory for each thread, but I can manage to have
-->ptrace_bps a block only allocated if necessary. It would be only
-a pointer if no breakpoint is queued.
+	Arnd
