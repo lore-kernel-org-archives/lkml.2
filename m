@@ -1,44 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267Ab1ARJMy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 04:12:54 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:33787 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753061Ab1ARJMu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 04:12:50 -0500
-Date: Tue, 18 Jan 2011 18:10:32 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
-Cc: sfr@canb.auug.org.au, "'Arnd Bergmann'" <arnd@arndb.de>, gregkh@suse.de,
-        jbarnes@virtuousgeek.org, dmitry.torokhov@gmail.com, dtor@mail.ru,
-        rubini@cvml.unipv.it, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-next@vger.kernel.org
-Subject: Re: Request for unicore32 architecture codes to merge into linux-next
-Message-ID: <20110118091032.GA18525@linux-sh.org>
-References: <004901cbb4d5$b9bb1370$2d313a50$@mprc.pku.edu.cn> <20110118043323.GF2122@linux-sh.org> <01b501cbb6ef$3299f2a0$97cdd7e0$@mprc.pku.edu.cn>
+	id S1753389Ab1ARJPz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 04:15:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38443 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753053Ab1ARJPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 04:15:53 -0500
+From: Jason Wang <jasowang@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <01b501cbb6ef$3299f2a0$97cdd7e0$@mprc.pku.edu.cn>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+Content-Transfer-Encoding: 7bit
+Message-ID: <19765.23070.227449.870448@gargle.gargle.HOWL>
+Date: Tue, 18 Jan 2011 17:15:10 +0800
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>, virtualization@lists.osdl.org,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] vhost-net: check the support of mergeable buffer
+ outside the receive loop
+In-Reply-To: <20110118043650.GA2233@redhat.com>
+References: <20110117081058.18900.67456.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+	<20110117084644.GB23479@redhat.com>
+	<19765.5737.352179.50100@gargle.gargle.HOWL>
+	<20110118043650.GA2233@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 18, 2011 at 05:07:41PM +0800, Guan Xuetao wrote:
-> IMO, the whole architecture specific codes need to be merged first, and only some
-> necessary drivers are included under staging. Then, I could split the staging drivers
-> into corresponding mail-list, and then, additional drivers.
-> Otherwise, there are no architecture basic for drivers review.
-> 
-That's of course fine so long as the driver changes are reasonably
-self-contained. The situation we want to avoid is that you end up with
-drivers that depend on some private infrastructure of API where not
-enough context is provided when the two are decoupled. 
+Michael S. Tsirkin writes:
+ > On Tue, Jan 18, 2011 at 12:26:17PM +0800, Jason Wang wrote:
+ > > Michael S. Tsirkin writes:
+ > >  > On Mon, Jan 17, 2011 at 04:10:59PM +0800, Jason Wang wrote:
+ > >  > > No need to check the support of mergeable buffer inside the recevie
+ > >  > > loop as the whole handle_rx()_xx is in the read critical region.  So
+ > >  > > this patch move it ahead of the receiving loop.
+ > >  > > 
+ > >  > > Signed-off-by: Jason Wang <jasowang@redhat.com>
+ > >  > 
+ > >  > Well feature check is mostly just features & bit
+ > >  > so why would it be slower? Because of the rcu
+ > >  > adding memory barriers? Do you observe a
+ > >  > measureable speedup with this patch?
+ > >  > 
+ > > 
+ > > I do not measure the performance for just this patch, maybe not obvious. And it
+ > > can also help the code unification.
+ > > 
+ > >  > Apropos, I noticed that the check in vhost_has_feature
+ > >  > is wrong: it uses the same kind of RCU as the
+ > >  > private pointer. So we'll have to fix that properly
+ > >  > by adding more lockdep classes, but for now
+ > >  > we'll need to make
+ > >  > the check 1 || lockdep_is_held(&dev->mutex);
+ > >  > and add a TODO.
+ > >  > 
+ > > 
+ > > Not sure, lockdep_is_head(&dev->mutex) maybe not accurate but sufficient, as it
+ > > was always held in the read critical region.
+ > 
+ > Not really, when we call vhost_has_feature from the vq handling thread
+ > it's not.
+ > 
 
-In any event, the architecture bits are the most self-contained and have
-had the most review of anything in this series of patches, so it probably
-makes sense to work on getting those bits integrated and then dealing
-with the rest incrementally.
+Seems not, see vhost_net_ioctl().
+
+ > >  > > ---
+ > >  > >  drivers/vhost/net.c |    5 +++--
+ > >  > >  1 files changed, 3 insertions(+), 2 deletions(-)
+ > >  > > 
+ > >  > > diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+ > >  > > index 14fc189..95e49de 100644
+ > >  > > --- a/drivers/vhost/net.c
+ > >  > > +++ b/drivers/vhost/net.c
+ > >  > > @@ -411,7 +411,7 @@ static void handle_rx_mergeable(struct vhost_net *net)
+ > >  > >  	};
+ > >  > >  
+ > >  > >  	size_t total_len = 0;
+ > >  > > -	int err, headcount;
+ > >  > > +	int err, headcount, mergeable;
+ > >  > >  	size_t vhost_hlen, sock_hlen;
+ > >  > >  	size_t vhost_len, sock_len;
+ > >  > >  	struct socket *sock = rcu_dereference(vq->private_data);
+ > >  > > @@ -425,6 +425,7 @@ static void handle_rx_mergeable(struct vhost_net *net)
+ > >  > >  
+ > >  > >  	vq_log = unlikely(vhost_has_feature(&net->dev, VHOST_F_LOG_ALL)) ?
+ > >  > >  		vq->log : NULL;
+ > >  > > +	mergeable = vhost_has_feature(&net->dev, VIRTIO_NET_F_MRG_RXBUF);
+ > >  > >  
+ > >  > >  	while ((sock_len = peek_head_len(sock->sk))) {
+ > >  > >  		sock_len += sock_hlen;
+ > >  > > @@ -474,7 +475,7 @@ static void handle_rx_mergeable(struct vhost_net *net)
+ > >  > >  			break;
+ > >  > >  		}
+ > >  > >  		/* TODO: Should check and handle checksum. */
+ > >  > > -		if (vhost_has_feature(&net->dev, VIRTIO_NET_F_MRG_RXBUF) &&
+ > >  > > +		if (likely(mergeable) &&
+ > >  > >  		    memcpy_toiovecend(vq->hdr, (unsigned char *)&headcount,
+ > >  > >  				      offsetof(typeof(hdr), num_buffers),
+ > >  > >  				      sizeof hdr.num_buffers)) {
