@@ -1,196 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751795Ab1ARMdt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 07:33:49 -0500
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:48425 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706Ab1ARMdr (ORCPT
+	id S1751564Ab1ARMgy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 07:36:54 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:46699 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750865Ab1ARMgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 07:33:47 -0500
-Message-Id: <20110118123315.202373412@szeredi.hu>
-References: <20110118123233.712697250@szeredi.hu>
-User-Agent: quilt/0.46-1
-Date: Tue, 18 Jan 2011 13:32:36 +0100
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@zeniv.linux.org.uk
-Cc: dave@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 3/4] vfs: protect remounting superblock read-only
-Content-Disposition: inline; filename=vfs-protect-sb-remount.patch
+	Tue, 18 Jan 2011 07:36:53 -0500
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "'Milton Miller'" <miltonm@bga.com>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>
+Cc: "'David Brownell'" <dbrownell@users.sourceforge.net>,
+        <spi-devel-general@lists.sourceforge.net>,
+        <linux-kernel@vger.kernel.org>, <yong.y.wang@intel.com>,
+        <joel.clark@intel.com>, <kok.howg.ewe@intel.com>,
+        "'Toshiharu Okada'" <toshiharu-linux@dsn.okisemi.com>,
+        "'Wang, Qi'" <qi.wang@intel.com>
+References: <1293449027-3219-1-git-send-email-tomoya-linux@dsn.okisemi.com><20101229064937.GC8172@angua.secretlab.ca><280596192AA74D208C2C5F6389DBE8C1@hacdom.okisemi.com><20110105163835.GD17272@angua.secretlab.ca><46862922F48B45F781832619CF3F4B79@hacdom.okisemi.com> <topcliff-split@mdm.bga.com>  <CA1F4AF27C0D466BA059E4B050FF3360@hacdom.okisemi.com> <A780EBC01B4946F895EA47BE425B56F8@hacdom.okisemi.com>
+Subject: RE: [PATCH 1/3] spi_topcliff_pch: support new device ML7213
+Date: Tue, 18 Jan 2011 21:36:48 +0900
+Message-ID: <EEE6F4C641AC4593B5CDF5139FCAD0F6@hacdom.okisemi.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <A780EBC01B4946F895EA47BE425B56F8@hacdom.okisemi.com>
+Thread-Index: AcuuTF63DADl1Jf1TeW6DYK5JWPNRgDJS+zAAAB3ltAAKPoKsAExNNMg
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+Hi Grant,
 
-Currently remouting superblock read-only is racy in a major way.
+Need your help!
+Could you give us your answer ?
 
-With the per mount read-only infrastructure it is now possible to
-prevent most races, which this patch attempts.
+Thanks,
+-----------------------------------------
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
 
-Before starting the remount read-only, iterate through all mounts
-belonging to the superblock and if none of them have any pending
-writes, set sb->s_readonly_remount.  This indicates that remount is in
-progress and no further write requests are allowed.  If the remount
-succeeds set MS_RDONLY and reset s_readonly_remount.
 
-If the remounting is unsuccessful just reset s_readonly_remount.
-This can result in transient EROFS errors, despite the fact the
-remount failed.  Unfortunately hodling off writes is difficult as
-remount itself may touch the filesystem (e.g. through load_nls())
-which would deadlock.
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org 
+> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of 
+> Tomoya MORINAGA
+> Sent: Wednesday, January 12, 2011 2:27 PM
+> To: 'Milton Miller'; 'Grant Likely'
+> Cc: 'David Brownell'; 
+> spi-devel-general@lists.sourceforge.net; 
+> linux-kernel@vger.kernel.org; yong.y.wang@intel.com; 
+> joel.clark@intel.com; kok.howg.ewe@intel.com; 'Toshiharu 
+> Okada'; 'Wang, Qi'
+> Subject: RE: [PATCH 1/3] spi_topcliff_pch: support new device ML7213
+> 
+> On Tuesday, January 11, 2011 6:42 PM, Tomoya MORINAGA wrote:
+> > However, I couldn't clear my question.
+> 
+> I show the current our coding image.
+> Is the following agreeable with your saying ?
+> 
+> struct spi_platform_data {
+> 	u16 num_chipselect;
+> 	bool little_endian;
+> 	u8 bits_per_word;
+> 	struct spi_board_info *devices;
+> 	u8 num_devices;
+> };
+> 
+> static struct resource pch_spi_resources[] = {
+> 	{
+> 		.start 	= 0,
+> 		.end	= 0,
+> 		.flags	= IORESOURCE_MEM,
+> 	},
+> 	{
+> 		.start	= 0,
+> 		.end	= 0,
+> 		.flags	= IORESOURCE_IRQ,
+> 	},
+> };
+> 
+> static struct spi_platform_data pch_spi_platform_data = {
+> 	.num_chipselect = 2,
+> 	.little_endian = true,
+> };
+> 
+> static struct pch_spi_cell pch_spi_cfg0 = {
+> 	.name = "pch_spi",
+> 	.num_resources = ARRAY_SIZE(pch_spi_resources),
+> 	.resources = pch_spi_resources,
+> 	.platform_data = &pch_spi_platform_data,
+> 	.data_size = sizeof(pch_spi_platform_data), };
+> 
+> static int pch_spi_get_resources(struct pch_spi_board_data 
+> *board_dat, int num) {
+> 	int retval;
+> 	int i;
+> 
+> 	/* create workqueue */
+> 	board_dat->data[num]->wk = 
+> create_singlethread_workqueue(KBUILD_MODNAME);
+> 
+> 	pci_request_regions(board_dat->pdev, KBUILD_MODNAME); }
+> 
+> static int pch_spi_add_device(struct device *parent, int id,
+> 			  struct pch_spi_cell *cell,
+> 			  struct resource *mem_base, int irq_base,
+> 			      struct pch_spi_board_data *board_dat) {
+> 
+> 	platform_device_alloc(cell->name, id + cell->id);
+> 
+> 	res = kzalloc(sizeof(*res) * cell->num_resources, GFP_KERNEL);
+> 	if (!res)
+> 		goto fail_device;
+> 
+> 	platform_set_drvdata(pdev, cell->driver_data);
+> 
+> 	if (cell->data_size) {
+> 		platform_device_add_data(pdev,
+> 					cell->platform_data, 
+> cell->data_size);
+> 	}
+> 
+> 	for (i = 0; i < cell->num_resources; i++) {
+> 		if ((cell->resources[i].flags & IORESOURCE_MEM) 
+> && mem_base) {
+> 			res[i].parent = 
+> 			res[i].start = 
+> 			res[i].end = 
+> 		} else if (cell->resources[i].flags & IORESOURCE_IRQ) {
+> 			res[i].start = 
+> 			res[i].end   = 
+> 		} else {
+> 
+> 
+> 	}
+> 
+> 	ret = platform_device_add_resources(pdev, res, 
+> cell->num_resources);
+> 	if (ret)
+> 		goto fail_res;
+> 
+> 	ret = platform_device_add(pdev);
+> 	if (ret)
+> 		goto fail_res;
+> 
+> 	kfree(res);
+> 
+> 	spi_alloc_master( );
+> 
+> 	board_dat->data[num] = spi_master_get_devdata( );
+> 
+> 	pch_spi_get_resources( );
+> 
+> 	/* set master mode */
+> 	pch_spi_set_master_mode( );
+> 
+> 	/* Register the controller with the SPI core. */
+> 	spi_register_master( );
+> 
+> 	return 0;
+> }
+> 
+> int pch_spi_add_devices(struct device *parent,
+> 		    struct pch_spi_cell *cells, int n_devs,
+> 		    struct resource *mem_base,
+> 		    struct pch_spi_board_data *board_dat) {
+> 	pci_iomap()
+> 
+> 	for (i < n_devs)
+> 		pch_spi_add_device()
+> 
+> }
+> 
+> static int pch_spi_probe(struct pci_dev *pdev, const struct 
+> pci_device_id *id) {
+> 	board_dat = kzalloc(sizeof(struct pch_spi_board_data), 
+> GFP_KERNEL);
+> 	pci_enable_device()
+> 	request_irq()
+> 	pch_spi_add_devices(&pdev->dev, 
+> 			&pch_spi_cfg0,
+> 			2,
+> 			&pdev->resource[0], board_dat);
+> 
+> }
+> 
+> static irqreturn_t pch_spi_handler(int irq, void *dev_id) {
+> 
+> 	for (i = 0; i < board_dat->num; i++) {
+> 		data = board_dat->data[i];
+> 		io_remap_addr = data->io_remap_addr;
+> 		spsr = io_remap_addr + PCH_SPSR;
+> 
+> 		reg_spsr_val = ioread32(spsr);
+> 
+> 		/* Check if the interrupt is for SPI device */
+> 		if (reg_spsr_val & (SPSR_FI_BIT | SPSR_RFI_BIT)) {
+> 			pch_spi_handler_sub(data, reg_spsr_val, 
+> io_remap_addr);
+> 			ret = IRQ_HANDLED;
+> 		}
+> 
+> 		dev_dbg(&board_dat->pdev->dev, "%s EXIT return 
+> value=%d\n",
+> 			__func__, ret);
+> 	}
+> 	return ret;
+> }
+> 
+> Thanks,
+> -----------------------------------------
+> Tomoya MORINAGA
+> OKI SEMICONDUCTOR CO., LTD.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe 
+> linux-kernel" in the body of a message to 
+> majordomo@vger.kernel.org More majordomo info at  
+> http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Small races still remain because delayed writes due to nlink going to
-zero but inode still having a reference are not dealt with by this
-patch.
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/internal.h      |    1 +
- fs/namespace.c     |   40 +++++++++++++++++++++++++++++++++++++++-
- fs/super.c         |   22 ++++++++++++++++++----
- include/linux/fs.h |    3 +++
- 4 files changed, 61 insertions(+), 5 deletions(-)
-
-Index: linux-2.6/fs/internal.h
-===================================================================
---- linux-2.6.orig/fs/internal.h	2011-01-18 09:01:20.000000000 +0100
-+++ linux-2.6/fs/internal.h	2011-01-18 12:38:58.000000000 +0100
-@@ -74,6 +74,7 @@ extern int finish_automount(struct vfsmo
- 
- extern void mnt_make_longterm(struct vfsmount *);
- extern void mnt_make_shortterm(struct vfsmount *);
-+extern int sb_prepare_remount_readonly(struct super_block *);
- 
- extern void __init mnt_init(void);
- 
-Index: linux-2.6/fs/namespace.c
-===================================================================
---- linux-2.6.orig/fs/namespace.c	2011-01-18 12:37:27.000000000 +0100
-+++ linux-2.6/fs/namespace.c	2011-01-18 12:38:58.000000000 +0100
-@@ -311,6 +311,15 @@ static unsigned int mnt_get_writers(stru
- #endif
- }
- 
-+static int mnt_is_readonly(struct vfsmount *mnt)
-+{
-+	if (mnt->mnt_sb->s_readonly_remount)
-+		return 1;
-+	/* Order wrt setting s_flags/s_readonly_remount in do_remount() */
-+	smp_rmb();
-+	return __mnt_is_readonly(mnt);
-+}
-+
- /*
-  * Most r/o checks on a fs are for operations that take
-  * discrete amounts of time, like a write() or unlink().
-@@ -349,7 +358,7 @@ int mnt_want_write(struct vfsmount *mnt)
- 	 * MNT_WRITE_HOLD is cleared.
- 	 */
- 	smp_rmb();
--	if (__mnt_is_readonly(mnt)) {
-+	if (mnt_is_readonly(mnt)) {
- 		mnt_dec_writers(mnt);
- 		ret = -EROFS;
- 		goto out;
-@@ -466,6 +475,35 @@ static void __mnt_unmake_readonly(struct
- 	br_write_unlock(vfsmount_lock);
- }
- 
-+int sb_prepare_remount_readonly(struct super_block *sb)
-+{
-+	struct vfsmount *mnt;
-+	int err = 0;
-+
-+	br_write_lock(vfsmount_lock);
-+	list_for_each_entry(mnt, &sb->s_mounts, mnt_instance) {
-+		if (!(mnt->mnt_flags & MNT_READONLY)) {
-+			mnt->mnt_flags |= MNT_WRITE_HOLD;
-+			smp_mb();
-+			if (mnt_get_writers(mnt) > 0) {
-+				err = -EBUSY;
-+				break;
-+			}
-+		}
-+	}
-+	if (!err) {
-+		sb->s_readonly_remount = 1;
-+		smp_wmb();
-+	}
-+	list_for_each_entry(mnt, &sb->s_mounts, mnt_instance) {
-+		if (mnt->mnt_flags & MNT_WRITE_HOLD)
-+			mnt->mnt_flags &= ~MNT_WRITE_HOLD;
-+	}
-+	br_write_unlock(vfsmount_lock);
-+
-+	return err;
-+}
-+
- void simple_set_mnt(struct vfsmount *mnt, struct super_block *sb)
- {
- 	mnt->mnt_sb = sb;
-Index: linux-2.6/fs/super.c
-===================================================================
---- linux-2.6.orig/fs/super.c	2011-01-18 12:36:41.000000000 +0100
-+++ linux-2.6/fs/super.c	2011-01-18 12:38:58.000000000 +0100
-@@ -574,19 +574,29 @@ int do_remount_sb(struct super_block *sb
- 	/* If we are remounting RDONLY and current sb is read/write,
- 	   make sure there are no rw files opened */
- 	if (remount_ro) {
--		if (force)
-+		if (force) {
- 			mark_files_ro(sb);
--		else if (!fs_may_remount_ro(sb))
--			return -EBUSY;
-+		} else {
-+			retval = sb_prepare_remount_readonly(sb);
-+			if (retval)
-+				return retval;
-+
-+			retval = -EBUSY;
-+			if (!fs_may_remount_ro(sb))
-+				goto cancel_readonly;
-+		}
- 	}
- 
- 	if (sb->s_op->remount_fs) {
- 		retval = sb->s_op->remount_fs(sb, &flags, data);
- 		/* If forced remount, go ahead despite any errors */
- 		if (retval && !force)
--			return retval;
-+			goto cancel_readonly;
- 	}
- 	sb->s_flags = (sb->s_flags & ~MS_RMT_MASK) | (flags & MS_RMT_MASK);
-+	/* Needs to be ordered wrt mnt_is_readonly() */
-+	smp_wmb();
-+	sb->s_readonly_remount = 0;
- 
- 	/*
- 	 * Some filesystems modify their metadata via some other path than the
-@@ -599,6 +609,10 @@ int do_remount_sb(struct super_block *sb
- 	if (remount_ro && sb->s_bdev)
- 		invalidate_bdev(sb->s_bdev);
- 	return 0;
-+
-+cancel_readonly:
-+	sb->s_readonly_remount = 0;
-+	return retval;
- }
- 
- static void do_emergency_remount(struct work_struct *work)
-Index: linux-2.6/include/linux/fs.h
-===================================================================
---- linux-2.6.orig/include/linux/fs.h	2011-01-18 12:36:41.000000000 +0100
-+++ linux-2.6/include/linux/fs.h	2011-01-18 12:38:58.000000000 +0100
-@@ -1427,6 +1427,9 @@ struct super_block {
- 	 */
- 	char __rcu *s_options;
- 	const struct dentry_operations *s_d_op; /* default d_op for dentries */
-+
-+	/* Being remounted read-only */
-+	int s_readonly_remount;
- };
- 
- extern struct timespec current_fs_time(struct super_block *sb);
-
--- 
