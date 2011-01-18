@@ -1,32 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751903Ab1ARMJV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 07:09:21 -0500
-Received: from mail-fx0-f66.google.com ([209.85.161.66]:50315 "EHLO
+	id S1751018Ab1ARML5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 07:11:57 -0500
+Received: from mail-fx0-f66.google.com ([209.85.161.66]:57116 "EHLO
 	mail-fx0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab1ARMJU (ORCPT
+	with ESMTP id S1750706Ab1ARML4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 07:09:20 -0500
+	Tue, 18 Jan 2011 07:11:56 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
          :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=RrSzWtNib/H+VlNdjhpilNYsjyMK4npgX1RHkW8iHRsNa+QQQmiP+ct1dw3yO9uIGd
-         s7kcIsInyH3YNn6ORwWV2LWRLWHbmIkQURctPMxeqE34T3+zeZrDjXvu5JYUuautnAqe
-         PueSVme0oScahXz9/veMOqw8dRw+4jqJBErDc=
-Subject: Re: [PATCH 12/16] mtd: mpc5121_nfc: don't treat NULL clk as an
- error
+        b=HRB7zCgx9rAganFyP842vyFInkEiLy7FWQDkHkb+IokuwmMpw+l2K7NnE10onB6G9E
+         CcBXfHJXmSahEPD5BVgAtEGxrseNZYh0xoP2km50Idt3XPoad0SohvRVigdzblP9iSod
+         7nXOG3kOLth9/7doWFcdwHhuHp3j3sTergdFg=
+Subject: Re: [PATCH] mtdcore.c: local symbols should be static
 From: Artem Bityutskiy <dedekind1@gmail.com>
 Reply-To: dedekind1@gmail.com
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, Vincent Sanders <support@simtec.co.uk>,
-        linux-mtd@lists.infradead.org
-In-Reply-To: <1294749833-32019-13-git-send-email-jamie@jamieiles.com>
-References: <1294749833-32019-1-git-send-email-jamie@jamieiles.com>
-	 <1294749833-32019-13-git-send-email-jamie@jamieiles.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+In-Reply-To: <0D753D10438DA54287A00B027084269764CE0E54FC@AUSP01VMBX24.collaborationhost.net>
+References: <0D753D10438DA54287A00B027084269764CE0E54FC@AUSP01VMBX24.collaborationhost.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Jan 2011 14:09:13 +0200
-Message-ID: <1295352553.2470.132.camel@koala>
+Date: Tue, 18 Jan 2011 14:11:50 +0200
+Message-ID: <1295352710.2470.133.camel@koala>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Content-Transfer-Encoding: 8bit
@@ -34,14 +33,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-11 at 12:43 +0000, Jamie Iles wrote:
-> clk_get() returns a struct clk cookie to the driver and some platforms
-> may return NULL if they only support a single clock.  clk_get() has only
-> failed if it returns a ERR_PTR() encoded pointer.
+On Tue, 2011-01-11 at 18:37 -0600, H Hartley Sweeten wrote:
+> The three backing_dev_info symbols are only used in this file and
+> should be static.
 > 
-> Cc: Vincent Sanders <support@simtec.co.uk>
-> Cc: linux-mtd@lists.infradead.org
-> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: David Woodhouse <dwmw2@infradead.org>
 
 Pushed to l2-mtd-2.6.git, thanks.
 
