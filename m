@@ -1,95 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814Ab1ARGno (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 01:43:44 -0500
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:39051 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750812Ab1ARGnn (ORCPT
+	id S1753080Ab1ARGtu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 01:49:50 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44411
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750812Ab1ARGts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 01:43:43 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
-	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer:X-Identified-User;
-	b=Xsm7SNgFeIp8LwO3TaejFmh0yk0WxY66KqnmxFZTvH2ywwsI1g+1fTheFVwGR/vqyxd9EN6E/gfpzqB+6nNc95y4yBpBOVGq0Sw80FEFXNgkqjYOK6fHJ5aUwwjGF4AY;
-From: Tao Ma <tm@tao.ma>
-To: linux-kernel@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH] blktrace: Don't output messages if the user sets some action mask.
-Date: Tue, 18 Jan 2011 14:43:37 +0800
-Message-Id: <1295333017-5659-1-git-send-email-tm@tao.ma>
-X-Mailer: git-send-email 1.7.1
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 114.251.86.0 authed with tm@tao.ma}
+	Tue, 18 Jan 2011 01:49:48 -0500
+Date: Mon, 17 Jan 2011 22:50:22 -0800 (PST)
+Message-Id: <20110117.225022.59651505.davem@davemloft.net>
+To: richm@oldelvet.org.uk
+Cc: 609371@bugs.debian.org, ben@decadent.org.uk, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org, fweisbec@gmail.com,
+        mingo@redhat.com, Jesper.Nilsson@axis.com, jeffm@suse.com
+Subject: Re: R_SPARC_13
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110117.163709.15244083.davem@davemloft.net>
+References: <20110117.130238.245404805.davem@davemloft.net>
+	<1295307243.32152.106.camel@duncow>
+	<20110117.163709.15244083.davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tao Ma <boyu.mt@taobao.com>
+From: David Miller <davem@davemloft.net>
+Date: Mon, 17 Jan 2011 16:37:09 -0800 (PST)
 
-Now if we enable blktrace, cfq has too many messages output to the
-trace buffer. It is fine if we don't specify any action mask.
-But if I do like this:
-blktrace /dev/sdb -a issue -a complete -o - | blkparse -i -
-I only want to see 'D' and 'C', while with the following command
-dd if=/mnt/ocfs2/test of=/dev/null bs=4k count=1 iflag=direct
+> So we do end up seeing the R_SPARC_LO10 + R_SPARC_13 sequences in the
+> final module object.
+> 
+> Therefore, we really should handle R_SPARC_13 in the sparc module loader.
 
-I will get(with a 2.6.37 vanilla kernel):
-  8,16   0        0     0.000000000     0  m   N cfq3805 alloced
-  8,16   0        0     0.000004126     0  m   N cfq3805 insert_request
-  8,16   0        0     0.000004884     0  m   N cfq3805 add_to_rr
-  8,16   0        0     0.000008417     0  m   N cfq workload slice:300
-  8,16   0        0     0.000009557     0  m   N cfq3805 set_active wl_prio:0 wl_type:2
-  8,16   0        0     0.000010640     0  m   N cfq3805 fifo=          (null)
-  8,16   0        0     0.000011193     0  m   N cfq3805 dispatch_insert
-  8,16   0        0     0.000012221     0  m   N cfq3805 dispatched a request
-  8,16   0        0     0.000012802     0  m   N cfq3805 activate rq, drv=1
-  8,16   0        1     0.000013181  3805  D   R 114759 + 8 [dd]
-  8,16   0        2     0.000164244     0  C   R 114759 + 8 [0]
-  8,16   0        0     0.000167997     0  m   N cfq3805 complete rqnoidle 0
-  8,16   0        0     0.000168782     0  m   N cfq3805 set_slice=100
-  8,16   0        0     0.000169874     0  m   N cfq3805 arm_idle: 8 group_idle: 0
-  8,16   0        0     0.000170189     0  m   N cfq schedule dispatch
-  8,16   0        0     0.000397938     0  m   N cfq3805 slice expired t=0
-  8,16   0        0     0.000399763     0  m   N cfq3805 sl_used=1 disp=1 charge=1 iops=0 sect=8
-  8,16   0        0     0.000400227     0  m   N cfq3805 del_from_rr
-  8,16   0        0     0.000400882     0  m   N cfq3805 put_queue
+Ok, I now feel like I'm hallucinating.
 
-See, there are 19 lines while I only need 2. I don't think it is
-appropriate for a user.
+davem@sunset:~/src/GIT/linux-2.6-stable$ uname -a
+Linux sunset 2.6.37 #1 SMP Wed Jan 12 20:14:59 PST 2011 sparc64 GNU/Linux
+davem@sunset:~/src/GIT/linux-2.6-stable$ objdump --reloc /lib/modules/2.6.37/kernel/net/ipv6/ipv6.ko | grep R_SPARC_13
+0000000000000c7c R_SPARC_13        *ABS*+0x0000000000000004
+0000000000001ae4 R_SPARC_13        *ABS*+0x0000000000000018
+0000000000001b0c R_SPARC_13        *ABS*+0x0000000000000008
+ ...
+davem@sunset:~/src/GIT/linux-2.6-stable$ lsmod | grep ipv6
+ipv6                  240422  12 
+davem@sunset:~/src/GIT/linux-2.6-stable$ 
 
-So this patch will disable any messages if the user specify what he want to
-see. Now the output for the same command will look like:
-  8,16   0        1     0.000000000  4908  D   R 114759 + 8 [dd]
-  8,16   0        2     0.000146827     0  C   R 114759 + 8 [0]
-
-Yes, it is what I want to see.
-
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
----
- kernel/trace/blktrace.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-index 153562d..8219ffa 100644
---- a/kernel/trace/blktrace.c
-+++ b/kernel/trace/blktrace.c
-@@ -138,6 +138,14 @@ void __trace_note_message(struct blk_trace *bt, const char *fmt, ...)
- 		     !blk_tracer_enabled))
- 		return;
- 
-+	/*
-+	 * If the user does specify some action masks, don't send any note
-+	 * message to the trace so that it won't pollute what the user really
-+	 * want to see.
-+	 */
-+	if (bt->act_mask != (u16) -1)
-+		return;
-+
- 	local_irq_save(flags);
- 	buf = per_cpu_ptr(bt->msg_data, smp_processor_id());
- 	va_start(args, fmt);
--- 
-1.6.3.GIT
+I must be missing something obvious.
 
