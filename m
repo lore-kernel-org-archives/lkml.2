@@ -1,403 +1,359 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795Ab1ARVlK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 16:41:10 -0500
-Received: from webmail10.mail.sp.isp-net.nl ([217.149.192.62]:65280 "EHLO
-	webmail10.mail.sp.isp-net.nl" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751701Ab1ARVlJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 16:41:09 -0500
-Message-ID: <4D36092B.1090406@xmsnet.nl>
-Date: Tue, 18 Jan 2011 22:42:03 +0100
-From: Hans de Bruin <jmdebruin@xmsnet.nl>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101125 Thunderbird/3.0.11
+	id S1752837Ab1ARVnD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 16:43:03 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:55267 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751733Ab1ARVnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 16:43:01 -0500
+Date: Tue, 18 Jan 2011 13:42:53 -0800
+From: Ram Pai <linuxram@us.ibm.com>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, clemens@ladisch.de,
+        Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        peter.henriksson@gmail.com, ebiederm@aristanetworks.com
+Subject: Re: [PATCH 1/1] PCI: allocate essential resources before reserving
+ hotplug resources
+Message-ID: <20110118214253.GA10069@ram-laptop>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <20101006225834.GE2945@ram-laptop>
+ <20110111211021.GA26352@ram-laptop>
+ <20110114181915.GA7476@ram-laptop>
+ <201101181352.08013.bjorn.helgaas@hp.com>
 MIME-Version: 1.0
-To: Jesse Gross <jesse@nicira.com>
-CC: LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
-Subject: Re: [regression] 2.6.37+ commit 0363466866d9.... breaks tcp ipv6
-References: <4D335417.80704@xmsnet.nl>	<4D35EF64.1040906@xmsnet.nl> <AANLkTinejKw0pY5HncB2e0ocjqYuCwTBUwd2xkroWu+E@mail.gmail.com>
-In-Reply-To: <AANLkTinejKw0pY5HncB2e0ocjqYuCwTBUwd2xkroWu+E@mail.gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------090406030901050103050409"
-X-Language-Detected: en
-X-Spam-Scanned: InterNLnet Mail Scan System V2.03
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201101181352.08013.bjorn.helgaas@hp.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090406030901050103050409
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Tue, Jan 18, 2011 at 01:52:06PM -0700, Bjorn Helgaas wrote:
+> On Friday, January 14, 2011 11:19:15 am Ram Pai wrote:
+> >     PCI: reserve  additional  resources  for hotplug bridges
+> >     only after all essential resources are allocated.
+> >     
+> >     Linux  tries  to reserve minimal  resources for  hotplug
+> >     bridges.  This  works   fine as long as there are enough
+> >     resources  to  satisfy  all  other  essential   resource
+> >     requirements.  However  if  enough  resources   are  not
+> >     available    to    satisfy  both the essential resources 
+> >     and   the   reservation  for   hotplug  resources,   the
+> >     resource-allocator reports error and returns failure.
+> >     
+> >     This patch distinguishes between essential resources and
+> >     nice-to-have   resources.   Any   failure   to  allocate
+> >     nice-to-have resources are ignored.
+> >     
+> >     This  behavior  can  be  particularly  useful to trigger
+> >     automatic  reallocation, if  the  OS  discovers  genuine
+> >     resource  allocation  conflicts  or  genuine unallocated
+> >     requests caused  by  not-so-smart allocation behavior of 
+> >     the native BIOS.
+> >     
+> >     https://bugzilla.kernel.org/show_bug.cgi?id=15960
+> >     captures  the  details  of  the issue and the motivation
+> >     behind this patch.
+> 
+> Please don't indent and right-justify the changelog.
 
-On 01/18/2011 09:06 PM, Jesse Gross wrote:
-> On Tue, Jan 18, 2011 at 11:52 AM, Hans de Bruin<jmdebruin@xmsnet.nl>  wrote:
->> On 01/16/2011 09:24 PM, Hans de Bruin wrote:
->>>
->>> After last nights compile i lost the possibility to connect to ssh and
->>> http over ipv6. The connection stops at syn_sent. connections to my
->>> machine end in syn_recv. ping6 still works.
->>>
->>
->> The bisect ended in:
->>
->> 0363466866d901fbc658f4e63dd61e7cc93dd0af is the first bad commit
->> commit 0363466866d901fbc658f4e63dd61e7cc93dd0af
->> Author: Jesse Gross<jesse@nicira.com>
->> Date:   Sun Jan 9 06:23:35 2011 +0000
->>
->>     net offloading: Convert checksums to use centrally computed features.
->>
->>     In order to compute the features for other offloads (primarily
->>     scatter/gather), we need to first check the ability of the NIC to
->>     offload the checksum for the packet.  Since we have already computed
->>     this, we can directly use the result instead of figuring it out
->>     again.
->>
->>     Signed-off-by: Jesse Gross<jesse@nicira.com>
->>     Signed-off-by: David S. Miller<davem@davemloft.net>
->>
->>
->> ssh ::1  still works. And since dns still works I guess udp is not affected.
->> My nic is a:
->>
->> 09:00.0 Ethernet controller: Broadcom Corporation NetXtreme BCM5752 Gigabit
->> Ethernet PCI Express (rev 02)
->
-> Are you using vlans?  If so, can you please test this patch?
-> http://patchwork.ozlabs.org/patch/79264/
->
+Ooops. I did not see your comments earlier. I just out a patch without
+looking at your comments.
 
-No I am not using vlans. The option is even not set in the config file. 
-Except for the disk less bit is a straightforward setup:
+> 
+> This is a PCI-specific issue, so I'm not comfortable adding add_size
+> to struct resource.  That penalizes all resource users while only
+> helping PCI.  Also, the struct resource lives forever, and the
+> add_size information is only useful while we're configuring the
+> bridge.
 
-   bash-4.1# ip addr show
-1: lo: <LOOPBACK,UP,LOWER_UP> mtu 16436 qdisc noqueue state UNKNOWN
-     link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
-     inet 127.0.0.1/8 scope host lo
-     inet6 ::1/128 scope host
-        valid_lft forever preferred_lft forever
-2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP 
-qlen 1000
-     link/ether 00:1c:23:2d:73:87 brd ff:ff:ff:ff:ff:ff
-     inet 10.10.0.6/16 brd 10.10.255.255 scope global eth0
-     inet6 2001:610:76e:0:21c:23ff:fe2d:7387/64 scope global dynamic
-        valid_lft 86399sec preferred_lft 14399sec
-     inet6 fe80::21c:23ff:fe2d:7387/64 scope link
-        valid_lft forever preferred_lft forever
-3: sit0: <NOARP> mtu 1480 qdisc noop state DOWN
-     link/sit 0.0.0.0 brd 0.0.0.0
-bash-4.1# ip route show
-10.10.0.0/16 dev eth0  proto kernel  scope link  src 10.10.0.6
-default via 10.10.0.1 dev eth0
-bash-4.1# ip -6 route show
-2001:610:76e::/64 dev eth0  proto kernel  metric 256  expires 86404sec
-fe80::/64 dev eth0  proto kernel  metric 256
-ff00::/8 dev eth0  metric 256
-default via fe80::230:18ff:feae:75d8 dev eth0  proto kernel  metric 1024 
-  expires 29sec hoplimit 64
-bash-4.1# iptables -L
-Chain INPUT (policy ACCEPT)
-target     prot opt source               destination
+Any suggestion on how to do this without adding a field to struct resource?
 
-Chain FORWARD (policy ACCEPT)
-target     prot opt source               destination
-
-Chain OUTPUT (policy ACCEPT)
-target     prot opt source               destination
-bash-4.1# ip6tables -L
-Chain INPUT (policy ACCEPT)
-target     prot opt source               destination
-
-Chain FORWARD (policy ACCEPT)
-target     prot opt source               destination
-
-Chain OUTPUT (policy ACCEPT)
-target     prot opt source               destination
-bash-4.1# brctl show
-bridge name     bridge id               STP enabled     interfaces
-bash-4.1# cat /proc/cmdline
-root=/dev/nfs nfsroot=10.10.0.2:/nfs/root/psion/,v3,tcp ro ip=::: ::dhcp 
-BOOT_IMAGE=nightlybuild-psion
+RP
+> 
+> Bjorn
+> 
+> > Signed-off-by: Ram Pai <linuxram@us.ibm.com>
+> > 
+> > drivers/pci/setup-bus.c |  142 +++++++++++++++++++++++++++++++++++-------------
+> > include/linux/ioport.h  |    1 
+> > 2 files changed, 105 insertions(+), 38 deletions(-)
+> > 
+> > diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+> > index 66cb8f4..76a7fb7 100644
+> > --- a/drivers/pci/setup-bus.c
+> > +++ b/drivers/pci/setup-bus.c
+> > @@ -91,7 +91,26 @@ static void __dev_sort_resources(struct pci_dev *dev,
+> >  	pdev_sort_resources(dev, head);
+> >  }
+> >  
+> > -static void __assign_resources_sorted(struct resource_list *head,
+> > +
+> > +static void adjust_resources_sorted(struct resource_list *head)
+> > +{
+> > +	struct resource *res;
+> > +	struct resource_list *list, *tmp;
+> > +	int idx;
+> > +
+> > +	for (list = head->next; list;) {
+> > +		res = list->res;
+> > +		idx = res - &list->dev->resource[0];
+> > +		if (res->add_size)
+> > +			adjust_resource(res, res->start, 
+> > +				resource_size(res) + res->add_size);
+> > +		tmp = list;
+> > +		list = list->next;
+> > +		kfree(tmp);
+> > +	}
+> > +}
+> > +
+> > +static void assign_requested_resources_sorted(struct resource_list *head,
+> >  				 struct resource_list_x *fail_head)
+> >  {
+> >  	struct resource *res;
+> > @@ -114,14 +133,25 @@ static void __assign_resources_sorted(struct resource_list *head,
+> >  			}
+> >  			res->start = 0;
+> >  			res->end = 0;
+> > +			res->add_size = 0;
+> >  			res->flags = 0;
+> >  		}
+> >  		tmp = list;
+> >  		list = list->next;
+> > -		kfree(tmp);
+> >  	}
+> >  }
+> >  
+> > +static void __assign_resources_sorted(struct resource_list *head,
+> > +				 struct resource_list_x *fail_head)
+> > +{
+> > +	/* Satisfy the must-have resource requests */
+> > +	assign_requested_resources_sorted(head, fail_head);
+> > +
+> > +	/* Try to satisfy any additional nice-to-have resource 
+> > +		requests */
+> > +	adjust_resources_sorted(head);
+> > +}
+> > +
+> >  static void pdev_assign_resources_sorted(struct pci_dev *dev,
+> >  				 struct resource_list_x *fail_head)
+> >  {
+> > @@ -404,15 +434,37 @@ static struct resource *find_free_bus_resource(struct pci_bus *bus, unsigned lon
+> >  	return NULL;
+> >  }
+> >  
+> > +static resource_size_t calculate_iosize(resource_size_t size, 
+> > +		resource_size_t min_size, 
+> > +		resource_size_t size1, 
+> > +		resource_size_t old_size, 
+> > +		resource_size_t align)
+> > +{
+> > +	if (size < min_size)
+> > +		size = min_size;
+> > +	if (old_size == 1 )
+> > +		old_size = 0;
+> > +	/* To be fixed in 2.5: we should have sort of HAVE_ISA
+> > +	   flag in the struct pci_bus. */
+> > +#if defined(CONFIG_ISA) || defined(CONFIG_EISA)
+> > +	size = (size & 0xff) + ((size & ~0xffUL) << 2);
+> > +#endif
+> > +	size = ALIGN(size + size1, align);
+> > +	if (size < old_size)
+> > +		size = old_size;
+> > +	return size;
+> > +}
+> > +
+> >  /* Sizing the IO windows of the PCI-PCI bridge is trivial,
+> >     since these windows have 4K granularity and the IO ranges
+> >     of non-bridge PCI devices are limited to 256 bytes.
+> >     We must be careful with the ISA aliasing though. */
+> > -static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size)
+> > +static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size, 
+> > +			resource_size_t add_size)
+> >  {
+> >  	struct pci_dev *dev;
+> >  	struct resource *b_res = find_free_bus_resource(bus, IORESOURCE_IO);
+> > -	unsigned long size = 0, size1 = 0, old_size;
+> > +	unsigned long size = 0, size1 = 0;
+> >  
+> >  	if (!b_res)
+> >   		return;
+> > @@ -435,20 +487,16 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size)
+> >  				size1 += r_size;
+> >  		}
+> >  	}
+> > -	if (size < min_size)
+> > -		size = min_size;
+> > -	old_size = resource_size(b_res);
+> > -	if (old_size == 1)
+> > -		old_size = 0;
+> > -/* To be fixed in 2.5: we should have sort of HAVE_ISA
+> > -   flag in the struct pci_bus. */
+> > -#if defined(CONFIG_ISA) || defined(CONFIG_EISA)
+> > -	size = (size & 0xff) + ((size & ~0xffUL) << 2);
+> > -#endif
+> > -	size = ALIGN(size + size1, 4096);
+> > -	if (size < old_size)
+> > -		size = old_size;
+> > -	if (!size) {
+> > +
+> > +	size = calculate_iosize(size, min_size, size1, 
+> > +			resource_size(b_res), 4096);
+> > +	if (add_size)
+> > +		size1 = calculate_iosize(size, min_size+add_size, size1, 
+> > +				resource_size(b_res), 4096);
+> > +	else
+> > +		size1  = size;
+> > +
+> > +	if (!size && !size1) {
+> >  		if (b_res->start || b_res->end)
+> >  			dev_info(&bus->self->dev, "disabling bridge window "
+> >  				 "%pR to [bus %02x-%02x] (unused)\n", b_res,
+> > @@ -459,16 +507,35 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size)
+> >  	/* Alignment of the IO window is always 4K */
+> >  	b_res->start = 4096;
+> >  	b_res->end = b_res->start + size - 1;
+> > +	b_res->add_size = size1-size;
+> >  	b_res->flags |= IORESOURCE_STARTALIGN;
+> >  }
+> >  
+> > +
+> > +static resource_size_t calculate_memsize(resource_size_t size, 
+> > +		resource_size_t min_size, 
+> > +		resource_size_t size1, 
+> > +		resource_size_t old_size, 
+> > +		resource_size_t align)
+> > +{
+> > +	if (size < min_size)
+> > +		size = min_size;
+> > +	if (old_size == 1 )
+> > +		old_size = 0;
+> > +	if (size < old_size)
+> > +		size = old_size;
+> > +	size = ALIGN(size + size1, align);
+> > +	return size;
+> > +}
+> > +
+> >  /* Calculate the size of the bus and minimal alignment which
+> >     guarantees that all child resources fit in this size. */
+> >  static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+> > -			 unsigned long type, resource_size_t min_size)
+> > +			 unsigned long type, resource_size_t min_size, 
+> > +				resource_size_t add_size)
+> >  {
+> >  	struct pci_dev *dev;
+> > -	resource_size_t min_align, align, size, old_size;
+> > +	resource_size_t min_align, align, size, size1;
+> >  	resource_size_t aligns[12];	/* Alignments from 1Mb to 2Gb */
+> >  	int order, max_order;
+> >  	struct resource *b_res = find_free_bus_resource(bus, type);
+> > @@ -516,13 +583,6 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+> >  			mem64_mask &= r->flags & IORESOURCE_MEM_64;
+> >  		}
+> >  	}
+> > -	if (size < min_size)
+> > -		size = min_size;
+> > -	old_size = resource_size(b_res);
+> > -	if (old_size == 1)
+> > -		old_size = 0;
+> > -	if (size < old_size)
+> > -		size = old_size;
+> >  
+> >  	align = 0;
+> >  	min_align = 0;
+> > @@ -537,8 +597,14 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+> >  			min_align = align1 >> 1;
+> >  		align += aligns[order];
+> >  	}
+> > -	size = ALIGN(size, min_align);
+> > -	if (!size) {
+> > +
+> > +	size = calculate_memsize(size, min_size, 0, resource_size(b_res), align);
+> > +	if (add_size)
+> > +		size1 = calculate_memsize(size, min_size+add_size, 0, resource_size(b_res), align);
+> > +	else
+> > +		size1  = size;
+> > +
+> > +	if (!size && !size1) {
+> >  		if (b_res->start || b_res->end)
+> >  			dev_info(&bus->self->dev, "disabling bridge window "
+> >  				 "%pR to [bus %02x-%02x] (unused)\n", b_res,
+> > @@ -548,8 +614,8 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+> >  	}
+> >  	b_res->start = min_align;
+> >  	b_res->end = size + min_align - 1;
+> > -	b_res->flags |= IORESOURCE_STARTALIGN;
+> > -	b_res->flags |= mem64_mask;
+> > +	b_res->add_size = size1 - size;
+> > +	b_res->flags |= IORESOURCE_STARTALIGN | mem64_mask;
+> >  	return 1;
+> >  }
+> >  
+> > @@ -606,7 +672,7 @@ void __ref pci_bus_size_bridges(struct pci_bus *bus)
+> >  {
+> >  	struct pci_dev *dev;
+> >  	unsigned long mask, prefmask;
+> > -	resource_size_t min_mem_size = 0, min_io_size = 0;
+> > +	resource_size_t additional_mem_size = 0, additional_io_size = 0;
+> >  
+> >  	list_for_each_entry(dev, &bus->devices, bus_list) {
+> >  		struct pci_bus *b = dev->subordinate;
+> > @@ -637,11 +703,11 @@ void __ref pci_bus_size_bridges(struct pci_bus *bus)
+> >  	case PCI_CLASS_BRIDGE_PCI:
+> >  		pci_bridge_check_ranges(bus);
+> >  		if (bus->self->is_hotplug_bridge) {
+> > -			min_io_size  = pci_hotplug_io_size;
+> > -			min_mem_size = pci_hotplug_mem_size;
+> > +			additional_io_size  = pci_hotplug_io_size;
+> > +			additional_mem_size = pci_hotplug_mem_size;
+> >  		}
+> >  	default:
+> > -		pbus_size_io(bus, min_io_size);
+> > +		pbus_size_io(bus, 0, additional_io_size);
+> >  		/* If the bridge supports prefetchable range, size it
+> >  		   separately. If it doesn't, or its prefetchable window
+> >  		   has already been allocated by arch code, try
+> > @@ -649,11 +715,11 @@ void __ref pci_bus_size_bridges(struct pci_bus *bus)
+> >  		   resources. */
+> >  		mask = IORESOURCE_MEM;
+> >  		prefmask = IORESOURCE_MEM | IORESOURCE_PREFETCH;
+> > -		if (pbus_size_mem(bus, prefmask, prefmask, min_mem_size))
+> > +		if (pbus_size_mem(bus, prefmask, prefmask, 0, additional_mem_size))
+> >  			mask = prefmask; /* Success, size non-prefetch only. */
+> >  		else
+> > -			min_mem_size += min_mem_size;
+> > -		pbus_size_mem(bus, mask, IORESOURCE_MEM, min_mem_size);
+> > +			additional_mem_size += additional_mem_size;
+> > +		pbus_size_mem(bus, mask, IORESOURCE_MEM, 0, additional_mem_size);
+> >  		break;
+> >  	}
+> >  }
+> > diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+> > index e9bb22c..d00c61c 100644
+> > --- a/include/linux/ioport.h
+> > +++ b/include/linux/ioport.h
+> > @@ -18,6 +18,7 @@
+> >  struct resource {
+> >  	resource_size_t start;
+> >  	resource_size_t end;
+> > +	resource_size_t add_size;
+> >  	const char *name;
+> >  	unsigned long flags;
+> >  	struct resource *parent, *sibling, *child;
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 -- 
-Hans
-
-
---------------090406030901050103050409
-Content-Type: application/gzip;
- name="config.gz"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="config.gz"
-
-H4sIAEOlNE0CA5RcW3PbtrZ+37+C456Zs89M08SXqNmd8QMEgiIqkkAAULbywnFsJvHUsbIl
-uU3+/VkASAmgAErpQ1xhfbgvrBsW+Mu/fknQy3b19W77eH/39PQj+dw+t+u7bfuQfL37q03u
-V8+fHj//kTysnv93m7QPj1uoUTw+v3x//Xj5bpJc/Db57fL3ZN6un9unBBv0C9R/XD0DsFw9
-J3/ePSfnvycX53+cv/nj/F1y8eb8/F+/ABGzKqOzZnI1pSp53CTPq22yabf/6spv302ay4vr
-H3ukLplchaGA637QSipRY0VZ1aQEs5SIPZHViteqyZgokbo+a58+XV680hM56xFI4BzqZfbn
-9dnd+v7L6+/vJq/tSmzMtJuH9pP9vas3IxURFDe4ZLKpeYoU2XeLC4bnktUCk+YGKZynbLan
-7qpqFFmQSslRYjMVDKUYSbWHaWpKeCNrzplwCFIhPFcCQc8HtBwtSFPASCu8VCxQuSzr/Y8P
-rCJNWiJ3SypCUl3WlIjrrhQJbI8ByZnBFaSaqfxwelSiru0hgUHTh8XTOrCA+Q2hs9wZv9nM
-Ei3tTDlushS7wxc3kpS76pLTSq9jYAoWeIvzGUrTBhUzJqjKy0FPOZIN5nVD00LvM1WBbUQF
-nQpYJ+CxAi3dwfQQRUvSLORSArYIjMXrSkArt4FhAAejulBmKKFRIpzD1lPYUUk/kAFLSKJq
-3nAiTBdIEGdfzGb2JFJO4VdGhVQNzutqHsFxNCMD2G7apkcAlUjOG5YZPGx5dOJ0SkSFzPHm
-TEo6PZigrCUnVeqSd731THx5EeuAM17rMyGbCmRHY7lvVx/VKVUGGKvfHSLZMA47CYubgkiC
-labV7GCcHTIlwM5mkWDHGd7DrAyEI/ph2czkcB8ttzc4KxAQz1590hL81ebu7/bhVXv/PfEL
-Hr7vZNXcsJjmL+TIxp3QA74A0XL2+unx4+uvq4eXp3bz+n/qCkEdYDeCJHn920D6wR8rdZmQ
-A2ai4n1zw4TDGk6JUQQzo3Ke9Eq+fIOSDkZugX1goJVCxb4yyL45qRrYfVlyX/41c+AMUriq
-APaKVAtYLz2pEg7k5cVuyALYAwZecgoscnbmtISKBRESOEwX77beJQAfKBbgADNjO4xm9oHy
-wVp0lClQLsKk4oMrBH0KcxnR6SQwjkFHw1q6F7fWIT00OXnjSmIQUAvK8UGB/otV4fYKB5He
-NuX7mtQk2O1UwmkVDBPYEYSxCoIUCAitYmSQag5mbEd2CgKJFLhP9pwH/59sXj5ufmy27dc9
-5wXgEQrIiKZJmWbpkCh3YaCdBcEgWNLYKCVHQpKuraEahDMDKzQloW60tAPxokGRtVFmiA3K
-Mn0mlkGU6cIK7CB9Nxl5A3JAQp9B2H4WLtkst8B1Ig+XWwkCyhn+KblqAONOUdFqqcvCHKGJ
-TsXAwkaahZ+NMYpCuh5oGarAVNTSwqtii0EyoRiP6qmMNS41US4rnAtWgXLozIDzNzuZNe8s
-zx/DEnNCXIkH56bOGpnTTF2fv/VYqQZxjED1gZDPQQEZ49GdP54JVnMZMtZAzMMWwlF08TVo
-qSp88PSRj5BqCewUoXGaxkgVUTGSnY7mZzOB0AIvZSadw+bJJ4/SLDzRqC2pZaDBaTGHSguj
-TETqKxeBSmjSGvaOChHpQPhDwUDmQ4kv6k0Bc1wGvDMgtLsyMNN2MrY/4RXoJKoNFm/bjH2W
-BiVOTdPzybDBprM69+Vz+CWXpddqXwbnAFYA7BYZYqScKV64VjoXtFKOGeCZ8KQAy48JZ4oc
-Sz4XDQdbTLtrTj0wQJqsdkeZ1Yo4VjDhzKVKOqtQkTl7p+0f4RYYx8otkHlJXPOesoFWBkmZ
-NTtnzYi3zgnm7frTav317vm+Tcjf7fN2k6DnB/CNX5637Xqzl3t+E/uToYsxqysFtkZgYRel
-rbTDuGtGm/c1FXOnTBb11FqYngAAuwcpsKbm4XNWoGnocEFb3lAFyyjYtrOYSmMW4WmtudFj
-4fP9Z11yMHenpIi1SECFYaqnDxZpATur5QHWlsN+ykbuCHBiRAWaV9GMujEAa5UCr2mfFcYy
-dIi78Q1Lob0gAU5psNzY6EYN5IzNB0TtCiOlDoxlQWZgAYHvYtz2bmIN4jRUn9Pdvrq0/Aa2
-laA5Z3DeBrSS3sJ67cnS9DgAnbB8Dus2VUlDU99v5c7Ox2zx6uPdpn1I/rJH5dt69enx6fH5
-sxsQ0rDOED1mz+llwCwngrgz1cxLq8w5sUI1pRYR7iYZMSJLLe12yrdkaV34ItQWaRGMwWFm
-KCRLO0xdaboTPXGr7ohuy503ET4LXXWwGHZORzAeMO2Ue28XTFOUuf30CmwqZ2Hje6fgFJmJ
-gXVozWSWyPsvrfYEXflFmVXHFWOOrutLU4JSHWBwh9LTcPY+MJE+ZhGq2dN0XyNVuw6uzx7a
-uwdgrPZsaAj2DO1tsnHQiQkAwZFdDoNAY7hmmh+FntTezzQWtfRDQAkn5ii4rk4apIWdMswO
-ecpA91BwKxQI5rEaILrSU/bI4E4GHZnRHndkPh7w2MIb8PGFd2CnDPO0hR9AT1j4GxAN5JSV
-t8DTUUcm5QCPzMlHHlt9iz6+/C7upKGetgFD7NgOGN1lzwpoAXYDyi+Iy0DGffBpRn7z9eq+
-3WxW62T741ub3IE1+qm9276sW0eaKwoDYRWRuWsRVazJPzjqnc5y7fxbC/rYNUVNC0/jyZJH
-LnpKbqIGfuQT3AtSpTqMvPcBvMsg8Niq4EKYJoVUUaJI8eXF+W1kNLvALPgATCzB7adFLciw
-+8sL2DgaMtGtlmMlVbAnOm5qjC1jRe1tZyTQgoJlMquJDEWuYOmnjCnrh+x5gZSKRGZW6hu5
-IOEqRng7QlASR2lleRumTWINcuAJWpeUHiGP08tR6lWYOo8Maf57pPxduByLWrLIETV+CWFh
-fixvaIVzyvFklHwZjqiVMwKO/ez2fITaFJH9wEtBb6OruqAIXzYXceLvIXNXO+pe7KREipXR
-w9bJhshhw7z2j705Kebuxd5S2QDXxKtTcn0X50RLbIGN0fvNFefxdm5RmvroG26uJmTjumx2
-VIuCz/yyqR8R10WccVCsh5UVKYxfhRlf+jQobTh4kA2MEc9lXfpkOIR+QTfVydWwmC38kpJW
-tKxLc6GWoZIWy+u3Lt34jlgVpXS8Ow0G8WdHfFhsuMleyw8oqEwDcH15UweaB7+4kiVRKNhW
-XWKvPOdEWY0zKCOluaoD/85ZpNT4o47PUZZ1k5OCR7SmBYA3HZLBJhwur8/9MLm5PwPnXAdg
-BtEPJzbSOxwVGQUsWAHNILGMh68HHMP1aPFBIWWHxeZABOCU9YW+XiSCgbFhIo7dTZvWQcae
-iqluPFDbULBjH18jAwHYJConUGUDO2Uwct63oHKhbRTfstj3+yfBsWwSlRMB/n6zIPqecj/o
-RWnyR/ZBfAaiYhq+IKPv5nGjgui1yujtILK+F5MUC6YzUuJGixRRGjAiDS9exbRdBpZBKF5i
-KVde9K8rnFyFAnfmsp5lmSTq+s13/Mb+N2jPuxM31+b5UjYgTkWjDlN6fKgJXkWQLi6Dsw1d
-NaRCgUt+YzDGyaSAXe4NuBLW3L0XLgoyA0borLJmgYqa7KNAo3X7QZWoqpHH4vsRWVpgWl1l
-v7Uuz8DUc+9Xd83pS0/3/NpIHikHgR+9byYVYGc4u40VYItyZbwNI9GuHEE0tnWDvAk94hmI
-wz52BBLQPf/GoFVguNbSyyJy44j7QLAsR0I5pQ7Pgg4zI9tvjp85ETfQfUosK6lPUJmXw+PB
-VfyUGk3dTCnT+QNC1Fxno0SEjr4pFTrNit1cT648kynv9Fe4cqmEI6P0r0aiiir6gUTLu7PQ
-r6ET2PRhmrdMsFkruB587tkxaJhGBXaKbPgMXFZjTnnil2Rh+1ISrC8agjSMbZBbR+CNQA5f
-On9ozt+8Ccm1D83F2zfern1oLn3ooJVwM9fQjO+35UL7wn7axC0J+0JYIAkSrQ56tvpgUa1/
-YaJCC9PzTpa6l46goM1V7Vh9c9Gxq39wi7NIJQuPrjSBVK3Do5lkHct052V/a2cjB6t/2nXy
-9e757nP7tX3emtgBwmArrb7pHE/3Nss7Qry09mWYLWyCVnir9vldYaupbIS2usrQgumROWwL
-v8yleSaDhSD/b3yJZIm6FNZDRexFAyLYzi+TkWGYPuwVyaBzhAcFU6Sgr+WwtFaKVYPCBU0J
-G5RlaIhKPb2wGw2RkgWm21MaNJuBSECDo+hiOwvqoA1cS3AAm1SmKlZ1WsBZ14llzZIgLc/9
-FuLMYgeJaSMLFrPsgCl692AwMAaWNR3Ey1yAnMqDSjlJ4yNBnERknS8D7Y0Wr5Ns3f73pX2+
-/5Fs7u+6uy7H38kEee97QLqkUWiQuLijHKzUEKDNhWBNTYDqsCBF2D51+rA6eMYW5qpPp0tX
-mJxeSbu6JotkbKBuBQb2CvSRRqa8B+pMQ1CoICAWo40Phh5YYoPQZ11HioP9njyTwQxCZHfc
-vXQFgOYOfQ3axWcf1o9/2zs2z+DgoCw1GBqLnADL7RYydIzMJCt200TiYD7m9xMw7+Kxnlsj
-3cFojkJA9pNUKmLDA4JWLBaG3QEpzoeT2hNlSeNDvrIR6bHxdKvWVOai9iKKK1g1A9UzSs+B
-T6MAsme3wxj95svdun04VKv+XAs6jS+EyQXXt6tgOBsTNcKyfk74LmFdc2kBxjYREWJJqtrN
-f9Ixra4tM4Xpy6Yff/JvkNhJu73/7f8cCwF7gRkt02dMW9FhRW/IZWl/jkBSKsI+vyWjaukn
-yOge/RLbgl/WdzxAshLUiRxOA1fTizewSib3JjZUol0WcIyOJo6X8mCdoCi6AlLVoVydXA2z
-UjWYskVkpYbRo+5FRpd8sg+ASBQJNKNIxt73i4hVzgqOo4SGgYmYUVHeoKD7hsq0qfxkJIyR
-iBiV1qrV8zw4eOR7e/+yvfv41CafHvU/Ondru0leJ+Try9Pd4DjqxJJS6XQ1P5sK3CntBOxU
-lc5nywlKwylcNktGZ5i6eRq2aV0cztOw9JJKHG0SrLDDNzOGpMitAvkzJ37efEVUf3yrdvvP
-av0XWCgB4x6MN+KckLqiTr7dbTa4m4PfRnGGRaGmynoKoykoXsYxJZ0JFHPDTSM6MCLBWYvn
-kc5JKKxK7bSdHNYGPHFoCEVu1gCA0oU2JNLGREhDBiWAMjrV72ucB05QyCs+/N2kOeaDEehi
-HUDksRFogECCRydLOR0jzjSTkrK+jYTmeCShe1kBg7M5jeTs6cVsUB6nEcnjRMqjEQJDNxut
-6iqcDWYglurn8/Q1dfTO3jZo2XqkGws+6CuGnBIy0mIhWJyYUhRWaQpzbSrOduwWmPQOg+up
-K7F72dPTr8/uXz4+3p/5rZfpW0lnQfZdTHyWXEx00u4CRQ6pAdjToC8qsjjIZjLrk9qkKI0u
-y2SMjSajfDQZZSQ9hpLyyUj1CJ8NUKOMOAmxnGswDSBBtp2cymAu0GxCly4eiyeaRZBUHWwx
-lDUTkcaqVCkoHBOjVktODmqPLZlZdi1XOdhGxqOVI0AziZj40peyOpxYooiB1WN4vjSxANAN
-JQ9nJgM0o8UgHWNXGHWw94j+bLqv0mg6I17L1odbrVutWMGy2Lbr4fvoUO/wfwWt5k38sdQh
-tmDB8eos8qrSKcheMNMtb+Lr6aJsQk8Up0waNWtSjPlRkMTqOKhO9YUFOT4ypF1udGT2TaZ4
-dAXyy4vL4/1QgY+DYD/MpUAlj2M5H1mGHUqi6oRFkPSEplQ2uu4dL43y/a09wz1z3xqreZPc
-r75+fHzWXwywj0XDjA3m59jh3aP0kIdIr7/t3fpzu413o5CYgY7FBZKSZsvjPfYVAh2PVtDO
-r4k7nlzjp5qvssHBPoI+RWTs8dq0jiWShfCAPh2Leek/CvI2EPyr+y+jfKLAH8ZFLdUpa9vB
-WanfCp8Or6rpUhH5MxXMG+KfqXDafu/x5qieXCHyUDMAjUvmAFaejo2ZZAGodot+av1GUnZC
-6OJUJOVgm83IqXD7xYojcrHHmjfmP0YQJcJhq8NBnM4y1riKOTaBCvHc4QB4xD8PofOlTMni
-ZPhcaXvyVPj7mil0Kvhk0dbBCSrK08H4J6TM0NgZQSr7xZjR1vp4x8nd6/D67FT0odQeRQ+u
-YMew9eVFLKixOFQTlP8xYjPvrRbwdwUy3oOTC+lbbXGSuZ619+eDOAzADjSpR6V8ZwcN6tnZ
-6oSVKG97wPwohODqKEapIjrWQ0fHlvdGAInky3mogs2iLdRRGyVrKqRGB1/NirFFEuhmhIoE
-P3QpO/75e/KzHDSJc9AgKDIZZ5BJnEMmJ+y8gyE1nVwdh+kZHEcxruRxVF4cx+gVsZHt49jy
-hGkKFV9Hj/98UoixJ6Ocfdj9CP9Nxhiw9/azhkxHwxpxuwtoUUdYpDLyuYvIfQlSYfVVXAS1
-j1R8GLk4iGTQWQkj1K8t7XeLvFByGrkDWhSoat69uTgPv3xKQZiR0G4XhWcUwc+YuoiErhUq
-Imm5F2/DK4P4NEgg8DcSdLuByR3G/p0symhNSgjRy/L2KhqdN5ln4VXD4ZFOYdeRzo5cHAjA
-7iYn2bab7eBxte4LTK8ZqSLfeCkFSmkkmyzy2oqKNMwP00gSMJysW8FDt1g3VH9hSnqCE2cz
-vXjh1y8FnR4Q7Xz7Ws9t+7BJtqvkY5u0z9oBfdB3fAlY4gYAaFNBrr62yT+P6xY81E2fiJHo
-5B0oS+4S/VFE/TnE7Xr1lNw9fV6tH7dfvrpre0NLFGZQkc1pEXVQmv9EMiQRDcfUMeHa15ge
-TDpt/368b5N0l0Wy/77W431XnLDh5V5tPydh/S2d+Zlfn73efHx8fv1ltf329PL5zD3DC1Xy
-YNYbWKdVigpWuR/xELbt/iJ39yawz3++MW/q3ZSDHZRWBx/0sh8c6RHe17nkUjY5GF1iQWUk
-l1Rr9XimaanC54+DocGCSsre6+2B+lrPfMmtBA5Gs4Blwter7ep+9eTerFbcz1rsnuOHXvBn
-afQBP+bvm9gp7MiYSjmG0T2kCP9n8mYUUg/eGRwAMLsxwZjgLUQPKuw3Aw4riyVXrBi88rfM
-LaZp8vC4sUf4Y3t/97JpE2PHZ/LXRN+JJHCu97tsaz+199v2wT2nfV/VNB2diLx9N74S01Gy
-QOF1wqlgpRbCOF2kMX3WsIVO51b5aBf5+AREZII6hUADKCbR7ASa+nc9/qMVKzGxpMmDFTmb
-l2/fVuvtnq81UV9OeZ9YQjS1nz0JvpmVzikw1QcfGzVlaqYieSZADASxfUDHLeGpdHOwj6T/
-DZz216/J9u5b+2uC01ewZ04q045F/ITFXNjS8BB7MpMRwK5VMVo/8h2PHRnn8QUwEaOmiKSx
-GYj5liOK3fcYCBjks1hgwQAk1qaJ/s5ZZKfN51EN7PqrswVqffe80ZvgBYdtkzr5dsg7PiTD
-xxDU/HsEJJE8BQIKGP6MYAQ/1sz/M3Zt243i2vZX8tj7oUdzMRifM/pBXIwVI6AQ2DgvHulU
-eleNnUpqVKr36f77s5YAG7CWyEO6y5oTIXS/rDWVFccMBsiMZsSGsixkrFTIOGWyXU+aD/Yq
-eVe2MdOe9yIDup2wkMk5qaqxjxxC03FKYlCpbIn6o041NUKJGJhG/fwCkb/+Krfbu1dYd//3
-+e4rql/9+fj0PClZFe8uIkyqB/SiAEDTICMi23damiF55qyIr4Z0Dt+BSX6af8vTX+8/377d
-xSibqfuOMoaqFxOimurtnyQ18egS11JJC0XXDXaJgxB9ChXt2kGpwuHKSGv6InGgE5EbMOg5
-YdhIjNlrAqUBPBxpsMkMdePAmQmsYR52O2yVi3k4mvthBSRS0IEiNoBVXZQGuIYCMuJl4K9b
-mhCJ2F+ZcOl5jmXG3SXcW8B9A36C+T+xo6wIyZZVNLora9f3zbgpexBvnXyB4NI4rwPHXsIN
-CbhXDr+GBAhWQe+f0QSY0ERmAs/vGbG73hFksF7ZhkIsshg7CgOhrDnVtSkCdH6O5ZhKArtH
-eA9NwE0HWMEZCHFEgzKyKRvjHt8ZQHTPrJTog4HEMz8wvYEbHjb5k3eEim+zxJB/VD+nwCPP
-w2LqTdf1c7z49e315Z95X3fTwaluxJobR89qqrmOdLXMMlciQ+k+zN0zJxsXfz6+vPzx+PSf
-u9/uXp7//fj0j85PphymKOSSSqNDMn0avcIjnb2wiHVrVREbFrjxxCI6FqRZGUBq0TsWsDjL
-nJW9ENM4DsFxVqbfJhTnh4QwOcUn1UkxI9aTKnkz+dsx2O0Q6TWnGjmzN+zOYJIkubPdzeru
-l+3XH89H+PvXaJF4fZxXCW766ePuQZi2SsIE1dF/sWARz7HdneOKH/RG+NC39mvgSS43Qujf
-hY2MWvTA+w6UGFXyqYEpxIPWZLxu8vHLD9SCX20Rh/NGMpZV0O+sCz6asZe7U+c/pAoAlZgg
-ZFjAa1pUPzrhc/qKwSD3cCuDwD/JRHASzdAfgcAiHrGYkXA/syNxKWREgt3lKYZkh5Hw3bYl
-cR6VWSNJGK0J6mRP4p1vM6OzVdaJbRHzwgyWfUltW7ZNfyBOOhI6+q2SgCUfjnlxDnkdMtpu
-ALelcGO2JhuV8raf+tUmOdHzxpmj37BJyOquEOrkjnyKpyEVftDvs8Oo5gbEBHrHoM3v9IPN
-CVpNcdxyfX9QBba/0Zc8l/ZG/zq5JyyW5P7kEI0EF/NZEc0UXS+HiWmRu5NhLW/1MUVU0X3K
-GDQU6kwus0kgIRH9i+4JUxNZCygFcpu0jHbnNCStVIaKahFS/rrzqYxNOmzGiSEXdV6IaXvF
-pSBOAhsZnh9imMzahBubrNntxniiTrXujl/x+OmXWzeuf+Hp1/vz893PLwPr8/SECN57OTRk
-nx+//5yNBJiuiNURmeg9O1KFgHAJEyvZSBKv6iywPZ0+B6LwN/PXwlDlddQGgb1uieeQEcWR
-6q10TwN2TrSiSWNGHgndw7HY+EQxDRQchtYe0T7GpM0SKc18x2JGSo7DArFEGTg4boVGhojk
-OnAtQ5ZU6A+iaiKVpbIJJXEQPtAeWFMZqoOKqQ0c17bOpmql/Mfy2rNbuiB4uTNFIXlSVWqd
-TZ35354s47Hsz2GjWjdx2sYxJ8RNSmJ9UpYlIcRvcOnbkoaAuIdfZGTPh/cjkLEiqIQzKvgH
-YexwEC1Q9VsjXMY5bSFxu1J4/f7XT/IYiefl1EtWBZy3WxSsyajNpY6EH0JZpHaMTmNrLzSd
-avP+/OMF1W4u+73vs1SdRdHIpDuq1YafS8malkQlTNOS/Nz+bjuBZebgBTHOap76++I0+7wJ
-nBxmx8hD8GwdOiqFG/uByZP75BQWrIqnykhd2JnFpecFgfYuqoFS70P9w59qxyaOnS+cbL8n
-jjMvlDpi/sr2zSQY/taut1kgES7FF0KeHGtiZ+/CQQ929AxfiErWxZEdicX3ldXki9/f1jPK
-baUa306glEelowk6s6yUuvCsSDn8vyx1oDzlrERvbO2TfIvyiHsdpkwth+sqRvcfDDjqPNcJ
-sYk3en+CkhTEXHX0tqKJdnvCD6GjyaTiLDMQWFlmiYrIQIKFpLdZrwyMg4TpM2OmlAx5euZO
-ZOjJoC9Aw/C9gaIsFWsTAb+n63EMrLn+gOo+do8/Pv/f44/nO/5bcTec315E4Krx7Tnq55kH
-1moiIdwFw39Jd4aOEdWBE62JrcaOUkZYR3UHzwrOeNjV+tljlLVnh+KiHi87ko7pzdLBjTYt
-I2UimX9bN2n48vjj8QkNlbtBcJR1h9GuYD+kd57FnWrgqKEd6oEw0n04jsKuQ3c9AlBUItZ7
-ycLgsZ8JfXbNgjpEvk4izqkk/CmKh0LcSnDI5x9fH19GM6np+4KZ0N8o+KyZ6Fz3Oc4Jq7IT
-/D5PRDfHz3eaNDpgLNowBvLq3LCqRgVNDdpr010o2kQP+py3hptvr78iA0JUjqgJpmbXtI9M
-bOPzTjZETWfZcKPW/Ll7onh6GD4gTKqYEfPHntU3iPuapfixH6DOaSMtkU1wLuvTdCM2OZQo
-hjP4j3NV6fQWS93G/RDFTWB3U9bvjuePN4oEP++gFmfajVloItDO4mKqCzoEdmpzvCAkdy+0
-GxnkK0QdHF8ZStd9gTM7GBqa2aFik4RX7oZwJcCBDDdx9cVX5CdivSKO1PUaZRSsXf/vc1oS
-ZsS5jGiwO3Kmceik+y19XcaXY40apRAuZvf3QomnnXwr7bhbR/BX6rMEyjMi7ojGCtsJPoxS
-K4pCe80ijOajhYETndUMbnprFQZfPJTGYXgT52xqD8EzYZcR0lv24rWJ05jwIuuQXxSAcIpx
-GclRzeva9XQnitGdFBj+5e395+hIUbcG7qLnNmVAcMF914y3BlzEa883wYE9NQ0foTADsedZ
-yKmTYgTxBHRFoib1OMQlh5q98Uy4T9hi9PDGb0mYOiDusXK6S6nKSR2VEgUnI80ojbWju7r1
-7o+/rhbyv3yDyvDyz93ztz+eP39+/nz3W8/6FQazpy9fv/9rHnunHCcIMXNkFPSySZVExMwW
-YV2OiZoQ7UW4xXsLW40aGEzEXmHoBc5vXWV/7DZEqbzq7cNhWpnuavJ1NSskLL3p5Kq7bGfb
-c+pVxc8v8PJrckZ5f1NsNWGS3ImwnRnhSoLPdpbrEXkJ1IWCfcYCJST29mR5W6tK6B41M5yy
-JHXyjrAYVPYE6hQNR4qZKmIfpN/Q03UHneIv6u9lp+m91ddwg0JtiUeVSCVGDFkb4F789xxL
-Zx04Rkr4ybEe1t4SZ/03caIxcARr7bW10sphH8VYc1j9RNHh6RwGA/v6suO3W2d5Z/CpqaSw
-QpdFJc8MBp0mbaqGmDXOWK6ZFq9X9mqZEixQhG059gc43gc4/gc4m2WOu5iejbOyFjg1fLu9
-zPGdZc76A+9aL+SPjNb+Qj7vgzohpLwuFNta5DBlMWGm1G1pTkss7aXkcg91iEIjZ7u2A8vb
-LnICZ5sukDx37UkzB6YxxPJioKRrnzhQujAyzw7IheKF41gLHBxSFouq3KeLHF4HayPhPlqZ
-63AmfHeBsF4keEuE9RIhWCAE1hJhKZHBUiKDpURultKwWcrqzUIiaygt21vmrD7A8e2lxHjO
-yszBQdG3N0sc3/fMOdMtf5c5K2e9wNkG3sacZtOa4sIRAtJs7uJEYq9dc3ISEdkry13iOPYC
-B4+7V2thf4i0UMc6Wuhu1gujkoSZ1cLoLyI/WOjm652IFgq/FiUM7EuUlWUvUhbSgsY9UdnM
-+8xblh/4bLyP2QO17di2LhwP3ac7hh1yDNx1YJvHFORsPsJxPsBxlyneEiVbB14tP8Dy83SJ
-5Tvr3fYDpGSBlXHpkmc5l+qIx0tSRB9etF/nM3vLtq3FFGQHy9FKy14u+JgGXBYGI8uIOtrF
-WuFJiRY/hZQ8vGrDy7fXr0/vd/Lry9ent9e78PHpP99fHl+fR5v9MhxVSDTNQJejaVAZcbQ8
-Gcd+i06qLwSHK7fTfVfKFkR6ZcyLedSTWAaCPmuBQNl3K0ztWGIqlFK4PvlT0uicdBsP2vCT
-41EIJpfrCAZBKQLfakmCFB5laFbjvobkkb4V1qWEYZBw+KiPGQwUljltEvo4Gq0j1ws2dMJr
-QewOl0IpDG8st6VxZalAWHVi7DDKBxtilXfBNwGJH0WwsiwT7Not2QUMFM9aomw2KxKG2YNn
-+a6++FjYepahgFB9n9oIxcg1lydP8HuWP+B9pJSOCHIObeDRWXzMbGft0imskhQvTqOUHJIY
-hse+ydw6lfx4/P4F+6IbWyOWTo4K4Cfp+6ew2oARy68e87XOnml5e2CEgfmBx8T+LsKU75HC
-aL8mhA+GaHUXGg9HyCn6No666z4Am8Y5Vfeljk7aEJRHDsNFUhW6u17iatTNw4/zXsj+zGJy
-IIgC3fFWX+8QrGxilqdAFlO3MyPMA2LU7ECtSaSCNrY3TTyG4BfMky5SRr6AKkLEqDJSz7ED
-o+zCa3XDQpPJsNAX4aA4eLEXhww6F02NRh69+d9IlWWyw3rRaIGWpq/oWxjPYp3zPwDqRtlD
-ItloWLuiEfxteZZNr2TpAbw+Gd7LbgAuICPCbCpv3mMVmuLxNskkasqg6CuVZBSRGd5t4gzJ
-MHEuKaJIW+jdeJqfkxxad25MUkFcKAv4UdTnFBXgaYqEwqb2w7fYaLGvTsjHQ3Vx2+xwY/Q4
-CtB3rVXOMr/mmcqB+R3Jqh/e/nj89nz3x19//vn84+7LcOqos6aFUuQVZS8MaCkcCopOYVI5
-lIk/EBih642Q5BkUDFl+XMiaBCHLp4aIIwhq/iyjcmqHFrBdSlczO7ZJBwyMlh44sFnwA9On
-EDvDWQox6JzWW/0DWRJY3jqYtz1WQVtCw6qcmE2o2gcdDfkFhl4bS6g+UV1+h5IZ55II3aMi
-yslKeKAzOk8K6As4WdH2J8KJBDCXGvDwlUURFwVZcWAx7zvkh9awGkroyk2JEKvmRkYKJS54
-TmYfbdECYBNndN5WdcNIWCRQhfJCkFGLEHKCbibKI1DuEq1D26X3O2dRfDtgYaASmu/1lCY6
-hoDpjqlvYp5FcIP3jssTZ60LCKvkNGGV+QXjlqiPRoTGieaVKNmOVUskWGMFgX/r0R1/fYdl
-/z+35v7XaQ2XkGcncvoevb2+v708oxBYF1MnanczmcdZp876MWVoDyiLLaoPoYdDyPTWPOgH
-fGtTua2YgIX+dosXR99Gr4Hxxs1EXWwBM4KK6JI0j1VFTd+Cuy1m+kyj8HPwdzBKcBdiT1Rs
-syLVTQpl0Yzvr1Q/Ua3qPN2QmIajxh9UYD7eqpnEAtzhctZRUBlNHzjL5FOT5NF0zt8Dt17Z
-IxwSgvdoT2MTMN+rELp5KxmI7lEpzyWRrP65SdLwpmihNUVDND7lDDccoEssqptn+wqOuhh4
-xx4RxyDHdLnGeBLHFYWFIyF7hgmhtqYwCsFkPS8cvPdPplAh5y+s2FFAH4G5Qr6tKDMXjayX
-SKtFkgzZMTEyoOBta2/POeNP6fz/5x9SRsTNBeoZUgMAUTZXJ5wWCSyNOOH+pSpmXbID/cWd
-wWxj+x511IBxlM3sDGHyZXz+sSy2g2Bj+CBJXZzewyvLiHNv5dk0LvmupDPEoIJ0hdUqQ9Ck
-JqDW7wPsmGHXAB8dGnuoXZc6WwI8rANimxTRiFm25dOw4JQmi2pC7YmS8VVPy5UT2CbYbw1J
-o6WhLrDHGmqLT3HqdkunPmZVxgyFAj2xCYYpgvHxLvqVOfrVQvQ0Loqc0SCnsSTaFW5KwuiN
-kRYLMF8ixPeLMbSLUbRLne4Sboggl7a7thZwwwukvXEDI+zT8FYEZOe5i9ntHuwA7I5xQndU
-3aO4eRYmH6LdU1f9DLSyu1OmmGvtz2gRdI3RIDsyHcevMMvZREV/ikqewjo8ySgcFrcUtIsF
-p7Bu24ZEizxp2dTnb8Zg88NMPU1t+NPf5lre6hbVLKouGd/ZfVIeDh1NlkaQHqx2fMsJY1DV
-/qLEXtuOGTd0Tar6Bq21SKBTuC+q1HYMachaf+WviC1D1QWyRMKi3DX0kS3pNARwLhyPHhjL
-qN3RGVhxFKyji64SieuY0I1vRj36acnl2rLpqZYsch4deGjIOtPGTDfBZIFjGLl7fGHGpLZU
-CkmPJIfWcejvPImtaWpCyUx0WUDYPqhVJa6SdWf0O67ZfNnNDJN5PPPhvIibjN3bx8r3MtRE
-ci6JQ42ePnO67+wbvj8/occewLo9bIzVFVBxa+Lb2AodnOcJYVHVtOftlnoIzUQm2QFjT7bn
-+TyeCL3FiEjwWK46TWOJdhx+nW7ypSpivk9Okoqq0/ucxgVlkhZ5xWUyPREbQmefN3lhkrKM
-tcTbkgdIyvRd+1MyT3MToc96RL7iCMNmURKvSE+V2oOZvqU+8nzHZoF7mLTwPK3nZHz7vGiH
-MOrTEa8aEWZJyWLHxEo3K8uEHzmnq49SJ8WdsHmeiULqXTU7EMaPap7zOXRb6TQImup4PqIq
-EAz3UN2yYioiMQqmU1smNctOeXvbWKMii2KygD81EDsj4aqIIuKaqisMIyKxqz3ilKeKUT0X
-E7LJZ/kjNS1MCa83guwAc5TwmUaTor8+rLEnZ0qXQDo/pYAyvi9OfYwj8bxrOP00tBmZjG9A
-VoE7mO7Vlw2lq0nQKJyOEuUr54kZwkydxMMpZnOZ3bHCz3zUwEDlSLRj8ryLYgIpdmPX8AmU
-zKG5FBLtK6TiyXMY6yK8Lvqou4ahk2f8+v70/IImcm9/vasx7O3m3hb1Jnx8ujN4De9OFsiE
-TDcoSZogNqERO5oUpY5KNyxkW+2YvEMn0qtq/Eh1Zqo75q9by8KCIt/TokT8jDCCkx6e55EK
-r9AYYdeE55qWrFLEGjW2jvQ9TUgs2saxrV1pTC2XpW377SJn7VuLHNd3jJzCnDMNkTMyC2zb
-GHEVMN/3Nmsj6ah5+3QydWRz/FI9ei2i6OXxXevwqFpSJGjNOdwTJ9ZZKnEx/WytMb3Nizr5
-nzuVO3VR4SHx5+fvz6+f3+/eXrvLK/6AKeb1YpC7b4//DI7Tjy/v6v4pvIvq+fP/KjG+cUy7
-55fv6lKqb3hf/NfXP9+mrbznTbujPrDrbAiI1WzLQj24hTEiGlvYjkEuY0dJeGow+Der9ZCM
-48ra0Jjn6bH7Rgx6xxoUJoFNzG4qaY/itWtzJR4Nbc8qQcbRz1xRJjqi+7OG0Z1kxsNGzg6p
-r8uPb4//RkHGq8DLtIONo8CipfvUPA3mUtqoZxp0429TZwm/f5t0hQ+a0ao/dNDIY9+SGK8i
-1BGaRjuA1d6Frk2L9QsTHRTt3JWtRY47mCfvEqhtOjTmKYcuIEoyJayjj7uEDrnVQ32Zi0AL
-J6JMUi2yrfEEjBd6sMnVlFqHqavJtAgv2Sc9oOcncUp/8wCea67FU2WlQaTjqA9vGm04LgZh
-9o4u0IDralXPMNeqfSb1Sd0XIc/wpkwtKqL63DiuowcLuV47FokFKwqDPqHImBbM2UEwfdaV
-meNarhYqau4Hnr6afYpQI1CLQG+C96hpQVlGZdB6WmxXrvQxSrZNSABWYXGcxETnACuYkJkL
-UfJEwCIYrwrQv0RJbV5ueNRSTiIsMi1E1GVl4Ic76Vq0hd6q0Gfg8UiUY6csoIdEjrfMkY9F
-xHMHfihKtGkZemRdDj8Qxzrj7JHNzKFZ0ymq2cC36wAxXUgQE6lEcML/u0cJj3Y1CYubumkN
-aT/IhF4MVbzwDGNflqTQHo+GeVxmmF9mhrn60P1Hp3VEuAV3NOUCRc/CYyXUR+JqsEiouwFU
-/uEu3v83di3LbetI9FdU2d+K3pYXWYAgKSHiywAoy96wfB1l7JrETslyTeXvBw2SEkCiQW3i
-CH0ANt6vxunG7MnDUyvUn90aJwFO8KwCZRxVG8KAo28mdFbye8JVfeAI4LLw7EfA9Cu+RwEP
-JY/wdrImatrq23vlcj0CGtbj4dfT6QB0rD+PTx+n4+fz6fNo+eDK8qLeDdKIuS0syvvA5SMh
-tS6B1E/P/h2kaoaH8VK1njLt89kqxFcRfoX3YiP6dPzRZ1OFNAIgkTLeeLVBrbHQqi8J9KGB
-cZEFVP3AqdbVvltLPbXwnbeRigg3tiXJORD1FGMgEhmnKOY+ECEqlCxOK4+cBhj7I0jhYawI
-05TitSc2iDBKcQpNOKpRvRR5SqPWoPCijyUMsTlm6t+MBSRz5ysKiWvdzSWtam4bI0Af6dhB
-Gypz8eAObM1KvxxPz2PDXy5Aes1ctxQOPO8O0mOIobbUMTxJiDsf0+Fgo+YI7lCVmeFVySIw
-F3Cb9moV+c7dnuFxHGjqmNDaeKGYzMY33qQBgjC0GpDlzXQAMpvO/BCgDrhF5rkWw8WCzgY+
-xUQymY5XV2Cm/oT2CrLwIjQDATIzWpiVH5POJ3Llz3lwN0OcgLQIMVvMbhHGkhYTp7PJbKCI
-90rdyRCkw/FTX/AVrNPeavoqNSv9fD/+7sg6aVK14ej2gaZtTVfLoea3mEwGIYvZEORm7m8Q
-Qm4nN5KsBupyJQcUBshsMQhBGLjPEJEupwMaB3fz1dgP4cWCjv2lt5uNp31D9fe3f2hRYiNM
-mBLHuf1lPij33vUcZsAlydrNxbtfLc8vCSqH0ypCI74J3Vck4HijSkiBuaKMy+9MitIHkXSi
-9h3VfYq5cMuINmzwprFh2VZtMXEXbS0/wSYkBUbrr4kDoyzJ75GJuGComlqIuiGBCy1JuDcL
-tR+/KpAVj7cMcaGgP0PTgnqywLAMBin4Qum/lXs9/tbP4xx3JFEYOtmPmxeaalXToUANwacX
-D9zcayENAyKcbuqYbShRu1JmQSzVxxzuB+PXX4eGCdLWdy+nHRfcF8mssq+ydFAYxaRMpFAV
-UOU8jHgU4rGrPfhc7qWhBEUu2F5Vj7vaWpSIaMmxZZwCzd26f7c9G6ifqNW9+kgaUEI3lq0C
-j5jawceik/wlRVw0mLc9HncdiykmgxcHqDCQHmUzlvSjnssQzibNBWTMkqiCLQ4zr8hjkeVq
-L2DYGYTdAFYHqCW9fd8ck1rgdlpV5og5gJZQiXTrUuaxmKN1AGT9Dsfy9On5xT7wj4Wu+z5S
-+5j/Gu5C3XUuPefc3/Lb5XJcmSX3PU+YSXn8qECdu+AwdqkV5uJrTOTXTLo/pmSdnpgKFcdd
-o7sz2ojddFpthFnA3dVqMXbJWQ50xkLl4svrx/tqtbj9Z/LlTGQtdRsz9dBB+P5ci3nfCKz4
-OHz+eB/9dGUW9i2W/jpgaz960mFq56PaRycQcgd35EyaDtM7mySZFnY+dMBAv92U60gmAdLk
-Gqn+vptLW/+JkVoDPw666ylNZWTzFZAQ79skxmUbr6g25ECGkwiPGuCiCMtdkquMmyetlJMU
-SUTclURsEOHOM3imak+/R0fP1FMYBS67y/ZzXMp9yaqa3GGyEiupLJJAEtJpCq2w7X/G753l
-NbAOQZuwFrvYTrTdRdZJO7R/qX4OjwuJjLqCng7hgBKhWwuYdYy09U+FtDMMlzCmWZ8oM15Y
-Z4bqp1o3VGshqi0P3JsfGhUbrHIowyZSWqBx8pDgfVS4Rv3i6Xh6BSOikfz7xzzaKQiXDK49
-VM/fwVlxaO8ucp5dMO7WLuIBBEnZmgxh1AqcDWDA4aMTYU1UZ4T12hmaFBPbhASIc8a6R4sy
-8Osg8kQpKup9mRcJzi30Otz/3SRMBxIS66GCUbMpV8oPJFMO1aS2kxjARPGQMjAULVfeisoS
-s/Mnol0SGAuBhXFgCYh2MVHNEbpKC3RzFcgmdHVBVrb7mY5sOvwNjOqqA7pC2xXCLNoBTa4B
-XaM4cvzXAc2vAV1TBMvlNaDbYdDt7IqUbhfja1K6opxu51fotLrBy0mt26HFV6vhZCbTa9RW
-KLwREEEZQ1p9q8mk2+RbwXQwE7NBxHBBLAYRy0HEzSDidhAxGc7MZD5UlItuWW5ztqo4mrIW
-l0iqpYwtop0wSXsT/fZwfDv8Gr08PYMf4Ms8D472oorxuzgha+FilayZBDRhg2vvnoHtV6Um
-tMxem11mhhqRlkJW2s+O6wAE2C50Ih23lpolB6YOjrz4VxNcoVpvCoYiyDI3A8+ZjSGJ8xxL
-+y2w92KbCJ5Yir7CxpkZxNqC13Nkq0Z4CKvHsmj4PpBbdJGUjXl4hc2cgABuNpf2wdZ+mar9
-l1aclpV2n+h8J9r65Fg3bBHGgYqWpFGa84dKrXyMk4SLp426tprkRYcJpQ23FsNKG1qUkIck
-8ZdGsg2l67FDvc/WfyANXS+maSi8zpSEbuv23H8XRnYRGOJRvaTVII5J15yodfk1mLjQN5He
-z1SpdjXmArbG9rEGdlOxYqt+Vb+QMSFtYWikLnbRQdAmYp2KcfagYrBs7eru9XcRP+U5UAJq
-E/LJ7HauSUGgkbg7SJM7/GQGopOCeRBE5iqJ5bwSURKjpiaCpECO7HpEAoWgG+52HQadwqnD
-VVtvG5M1qlA4kNqlyINJWOa3VCtAXli63otpX4PN+GmNiEZ4FQbrwjPACPBYloelpv/JXA/f
-wrxU42u9TjYP49UWFXoc73hENksgTVmOdBiWw60AeajkQxFV4/1q/G2MydR4P3HLSv3/b1O3
-NMuz6NusJ9Mfs3JyFiDGW2dE/T0/Jus83DoXd3v6aKio8nzZzxZqCmSP4HYwUY3ewV8oDs+f
-x9fTX+NdjumRF6Mdr28XgHNfwKF/3fi8WK8wFp7cXb5GqDnq29JvX87nrZQ/FNpHXJ2Z498/
-p/fRM7xJeD+OXg6//hyOl8VEDQZ/UKpbG35KzeBpP1zNtf3QINlS8NTOcUk/0oaIjTOwD+XZ
-uh9YgHO9fnBKMrWC5lg4GgG2+HrxA0OXtb5ocOt4Ml1hxi4NJivta0VbCgd1d2VURo7U9Z/Q
-lzYp5SbKqA/iNLUhn6eXw9vp9Vkb4EVvz9Au4BTpf6+nlxH5+Hh/ftWi8On0ZHaDVjPklU5b
-LH6xiO5Y/7118Ov9+b+j3+8/zGOs9nsBdZWP5L7PUOd6qxFGNLDPknVoYt8zdBuX0qIfZy+F
-w3nyx8s5K90Im5R4a2yvvuOT7zrxGxq+/xw+Tv2C43Q2dWldC+rLa29VQu/DyyQN5xf76HPY
-wlFZah2wIdpJoDdzPA0xAlADgZyZXBAY18QFMZuO8WyJDZn0BgUVqJJ1BS8mU0cRyzXH/J20
-nb9Y2JQcdWt5/fNi2Rydx1nRK2sVVi1WS8fXSVYGCLdpi+B07pMHSX4fM7Hx9jG1Y0gShB3p
-jBFyMQRY4pURRq6hN9Z/fcluN+SReIdPQRKBUU7ZEChk/5AW+b8U8QKjADkP1N5SlPf5UGU0
-kK6uDcnm7z/Hw8eHGuQdQ5JaQCQEIdFuII8Y33Q7dD72HZLyp7cf779H2efvfw/H0frwdjg+
-ndwakEwwtcfkiNuWdui8x5bC213a2R6oEDgXAX+GDkm0U9URGzsyCFTLG6q3FcDlIEvzshjE
-sNw22dU1hS177PBJWJpoJbrsU/pTqcviZacdlmSRtRNI1iW2cwIdwEk9Yr3diAO1ycyRs4mA
-ZYQ3m5n+o+7k9d/j0/Hv6Pj+eXp9MyfmgKmdCdAwGmXUPDfUxkNgrqSyEpgnEJY8i/Y+cULO
-sY1GQNXKg0msG9GJexShlZyMQxZ302KyrKQ7xmzaAd+4rhpZcJ5fW3MNIMBkme5NhhEHhDZ9
-7IJVPUYFworVpli5hFXrR7PxGoJACaZOSfKYEkRgNN5A1Z51YiEq7fu8G9Q9hQHXYsS842lM
-s/4P17KtsXb4AAA=
---------------090406030901050103050409--
+Ram Pai
+System X Device-Driver Enablement Lead
+Linux Technology Center
+Beaverton OR-97006
+503-5783752 t/l 7753752
+linuxram@us.ibm.com
