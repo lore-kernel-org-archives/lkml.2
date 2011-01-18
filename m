@@ -1,210 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752999Ab1ARGE0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 01:04:26 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:52782 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751652Ab1ARGEZ (ORCPT
+	id S1752796Ab1ARGIZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 01:08:25 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50696
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750923Ab1ARGIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 01:04:25 -0500
-Message-ID: <4D352D64.6020302@linux.vnet.ibm.com>
-Date: Tue, 18 Jan 2011 11:34:20 +0530
-From: Ciju Rajan K <ciju@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        lkml <linux-kernel@vger.kernel.org>
-CC: Ciju Rajan K <ciju@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>
-Subject: [PATCH 2/2 v1.0]sched: Updating the sched-stat documentation
-References: <4D341ECD.3020503@linux.vnet.ibm.com> <1295283289.30950.172.camel@laptop> <4D352CA6.7010109@linux.vnet.ibm.com>
-In-Reply-To: <4D352CA6.7010109@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 18 Jan 2011 01:08:24 -0500
+Date: Mon, 17 Jan 2011 22:08:57 -0800 (PST)
+Message-Id: <20110117.220857.104046847.davem@davemloft.net>
+To: rostedt@goodmis.org
+Cc: richm@oldelvet.org.uk, 609371@bugs.debian.org, ben@decadent.org.uk,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, mingo@redhat.com, mathieu.desnoyers@efficios.com
+Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
+ Unknown relocation: 36
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110117.220039.71097651.davem@davemloft.net>
+References: <1295273486.16479.15.camel@gandalf.stny.rr.com>
+	<20110117.213448.226787087.davem@davemloft.net>
+	<20110117.220039.71097651.davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sched: Updating the sched-stat documentation
+From: David Miller <davem@davemloft.net>
+Date: Mon, 17 Jan 2011 22:00:39 -0800 (PST)
 
-Some of the unused fields are removed from /proc/schedstat.
-This is the documentation changes reflecting the same.
+> ftrace: Remove unnecessary alignment tag from ftrace_event_call.
+> 
+> It's completely unnecessary and causes problems on platforms
+> where this tag down-aligns the structure's alignment.
+> 
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+ ...
 
-Signed-off-by: Ciju Rajan K <ciju@linux.vnet.ibm.com>
----
+Ok, unless we can explain why these alignments are needed at all, we
+should kill all of them:
 
-diff -Naurp a/Documentation/scheduler/sched-stats.txt b/Documentation/scheduler/sched-stats.txt
---- a/Documentation/scheduler/sched-stats.txt	2011-01-17 01:07:47.000000000 +0530
-+++ b/Documentation/scheduler/sched-stats.txt	2011-01-17 15:32:05.000000000 +0530
-@@ -26,119 +26,81 @@ Note that any such script will necessari
- reason to change versions is changes in the output format.  For those wishing
- to write their own scripts, the fields are described here.
+--------------------
+tracing: Remove unnecessary __aligned__(4) tag from trace data.
 
-+The first two fields of /proc/schedstat indicates the version (current
-+version is 16) and jiffies values. The following values are from 
-+cpu & domain statistics.
-+
- CPU statistics
- --------------
--cpu<N> 1 2 3 4 5 6 7 8 9 10 11 12
-+The format is like this:
-+
-+cpu<N> 1 2 3 4 5 6 7 8
+It's completely unnecessary and causes problems on platforms
+where this tag down-aligns the structure's alignment.
 
--NOTE: In the sched_yield() statistics, the active queue is considered empty
--    if it has only one process in it, since obviously the process calling
--    sched_yield() is that process.
--
--First four fields are sched_yield() statistics:
--     1) # of times both the active and the expired queue were empty
--     2) # of times just the active queue was empty
--     3) # of times just the expired queue was empty
--     4) # of times sched_yield() was called
--
--Next three are schedule() statistics:
--     5) # of times we switched to the expired queue and reused it
--     6) # of times schedule() was called
--     7) # of times schedule() left the processor idle
--
--Next two are try_to_wake_up() statistics:
--     8) # of times try_to_wake_up() was called
--     9) # of times try_to_wake_up() was called to wake up the local cpu
--
--Next three are statistics describing scheduling latency:
--    10) sum of all time spent running by tasks on this processor (in jiffies)
--    11) sum of all time spent waiting to run by tasks on this processor (in
--        jiffies)
--    12) # of timeslices run on this cpu
-+NOTE: In the sched_yield() statistics, the active queue is considered
-+      empty if it has only one process in it, since obviously the 
-+      process calling sched_yield() is that process.
-+
-+     1) # of times sched_yield() was called on this CPU
-+     2) # of times scheduler runs on this CPU
-+     3) # of times scheduler picks idle task as next task on this CPU
-+     4) # of times try_to_wake_up() is run on this CPU 
-+        (Number of times task wakeup is attempted from this CPU)
-+     5) # of times try_to_wake_up() wakes up a task on the same CPU 
-+        (local wakeup)
-+     6) Time(ns) for which tasks have run on this CPU
-+     7) Time(ns) for which tasks on this CPU's runqueue have waited 
-+        before getting to run on the CPU
-+     8) # of tasks that have run on this CPU
+Signed-off-by: David S. Miller <davem@davemloft.net>
 
-
- Domain statistics
- -----------------
--One of these is produced per domain for each cpu described. (Note that if
--CONFIG_SMP is not defined, *no* domains are utilized and these lines
--will not appear in the output.)
-+One of these is produced per domain for each cpu described. 
-+(Note that if CONFIG_SMP is not defined, *no* domains are utilized
-+ and these lines will not appear in the output.)
-
--domain<N> <cpumask> 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36
-+domain<N> <cpumask> 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
-
- The first field is a bit mask indicating what cpus this domain operates over.
-
--The next 24 are a variety of load_balance() statistics in grouped into types
--of idleness (idle, busy, and newly idle):
-+The next 24 are a variety of load_balance() statistics grouped into
-+types of idleness (idle, busy, and newly idle). The three idle 
-+states are:
-+
-+CPU_NEWLY_IDLE:    Load balancer is being run on a CPU which is 
-+                   about to enter IDLE state
-+CPU_IDLE:          This state is entered after CPU_NEWLY_IDLE 
-+                   state fails to find a new task for this CPU
-+CPU_NOT_IDLE:      Load balancer is being run on a CPU when it is 
-+                   not in IDLE state (busy times)
-+
-+There are eight stats available for each of the three idle states:
-
--     1) # of times in this domain load_balance() was called when the
--        cpu was idle
-+     1) # of times in this domain load_balance() was called
-      2) # of times in this domain load_balance() checked but found
--        the load did not require balancing when the cpu was idle
-+        the load did not require balancing
-      3) # of times in this domain load_balance() tried to move one or
--        more tasks and failed, when the cpu was idle
-+        more tasks and failed
-      4) sum of imbalances discovered (if any) with each call to
--        load_balance() in this domain when the cpu was idle
--     5) # of times in this domain pull_task() was called when the cpu
--        was idle
-+        load_balance() in this domain
-+     5) # of times in this domain pull_task() was called
-      6) # of times in this domain pull_task() was called even though
--        the target task was cache-hot when idle
-+        the target task was cache-hot
-      7) # of times in this domain load_balance() was called but did
--        not find a busier queue while the cpu was idle
--     8) # of times in this domain a busier queue was found while the
--        cpu was idle but no busier group was found
--
--     9) # of times in this domain load_balance() was called when the
--        cpu was busy
--    10) # of times in this domain load_balance() checked but found the
--        load did not require balancing when busy
--    11) # of times in this domain load_balance() tried to move one or
--        more tasks and failed, when the cpu was busy
--    12) sum of imbalances discovered (if any) with each call to
--        load_balance() in this domain when the cpu was busy
--    13) # of times in this domain pull_task() was called when busy
--    14) # of times in this domain pull_task() was called even though the
--        target task was cache-hot when busy
--    15) # of times in this domain load_balance() was called but did not
--        find a busier queue while the cpu was busy
--    16) # of times in this domain a busier queue was found while the cpu
--        was busy but no busier group was found
--
--    17) # of times in this domain load_balance() was called when the
--        cpu was just becoming idle
--    18) # of times in this domain load_balance() checked but found the
--        load did not require balancing when the cpu was just becoming idle
--    19) # of times in this domain load_balance() tried to move one or more
--        tasks and failed, when the cpu was just becoming idle
--    20) sum of imbalances discovered (if any) with each call to
--        load_balance() in this domain when the cpu was just becoming idle
--    21) # of times in this domain pull_task() was called when newly idle
--    22) # of times in this domain pull_task() was called even though the
--        target task was cache-hot when just becoming idle
--    23) # of times in this domain load_balance() was called but did not
--        find a busier queue while the cpu was just becoming idle
--    24) # of times in this domain a busier queue was found while the cpu
--        was just becoming idle but no busier group was found
--
-+        not find a busier queue
-+     8) # of times in this domain a busier queue was found but no 
-+        busier group was found
-+     
-    Next three are active_load_balance() statistics:
-     25) # of times active_load_balance() was called
-     26) # of times active_load_balance() tried to move a task and failed
-     27) # of times active_load_balance() successfully moved a task
-
--   Next three are sched_balance_exec() statistics:
--    28) sbe_cnt is not used
--    29) sbe_balanced is not used
--    30) sbe_pushed is not used
--
--   Next three are sched_balance_fork() statistics:
--    31) sbf_cnt is not used
--    32) sbf_balanced is not used
--    33) sbf_pushed is not used
--
--   Next three are try_to_wake_up() statistics:
--    34) # of times in this domain try_to_wake_up() awoke a task that
-+   Next two are try_to_wake_up() statistics:
-+    28) # of times in this domain try_to_wake_up() awoke a task that
-         last ran on a different cpu in this domain
--    35) # of times in this domain try_to_wake_up() moved a task to the
-+    29) # of times in this domain try_to_wake_up() moved a task to the
-         waking cpu because it was cache-cold on its own cpu anyway
--    36) # of times in this domain try_to_wake_up() started passive balancing
-
- /proc/<pid>/schedstat
- ----------------
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index 320d6c9..8620723 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -94,7 +94,6 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+ #define __branch_check__(x, expect) ({					\
+ 			int ______r;					\
+ 			static struct ftrace_branch_data		\
+-				__attribute__((__aligned__(4)))		\
+ 				__attribute__((section("_ftrace_annotated_branch"))) \
+ 				______f = {				\
+ 				.func = __func__,			\
+@@ -129,7 +128,6 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+ 	({								\
+ 		int ______r;						\
+ 		static struct ftrace_branch_data			\
+-			__attribute__((__aligned__(4)))			\
+ 			__attribute__((section("_ftrace_branch")))	\
+ 			______f = {					\
+ 				.func = __func__,			\
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 18cd068..e23a188 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -125,10 +125,8 @@ extern struct trace_event_functions enter_syscall_print_funcs;
+ extern struct trace_event_functions exit_syscall_print_funcs;
+ 
+ #define SYSCALL_TRACE_ENTER_EVENT(sname)				\
+-	static struct syscall_metadata					\
+-	__attribute__((__aligned__(4))) __syscall_meta_##sname;		\
++	static struct syscall_metadata __syscall_meta_##sname;		\
+ 	static struct ftrace_event_call __used				\
+-	  __attribute__((__aligned__(4)))				\
+ 	  __attribute__((section("_ftrace_events")))			\
+ 	  event_enter_##sname = {					\
+ 		.name                   = "sys_enter"#sname,		\
+@@ -139,10 +137,8 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 	__TRACE_EVENT_FLAGS(enter_##sname, TRACE_EVENT_FL_CAP_ANY)
+ 
+ #define SYSCALL_TRACE_EXIT_EVENT(sname)					\
+-	static struct syscall_metadata					\
+-	__attribute__((__aligned__(4))) __syscall_meta_##sname;		\
++	static struct syscall_metadata __syscall_meta_##sname;		\
+ 	static struct ftrace_event_call __used				\
+-	  __attribute__((__aligned__(4)))				\
+ 	  __attribute__((section("_ftrace_events")))			\
+ 	  event_exit_##sname = {					\
+ 		.name                   = "sys_exit"#sname,		\
+@@ -156,7 +152,6 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 	SYSCALL_TRACE_ENTER_EVENT(sname);			\
+ 	SYSCALL_TRACE_EXIT_EVENT(sname);			\
+ 	static struct syscall_metadata __used			\
+-	  __attribute__((__aligned__(4)))			\
+ 	  __attribute__((section("__syscalls_metadata")))	\
+ 	  __syscall_meta_##sname = {				\
+ 		.name 		= "sys"#sname,			\
+@@ -172,7 +167,6 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 	SYSCALL_TRACE_ENTER_EVENT(_##sname);			\
+ 	SYSCALL_TRACE_EXIT_EVENT(_##sname);			\
+ 	static struct syscall_metadata __used			\
+-	  __attribute__((__aligned__(4)))			\
+ 	  __attribute__((section("__syscalls_metadata")))	\
+ 	  __syscall_meta__##sname = {				\
+ 		.name 		= "sys_"#sname,			\
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index e16610c..bd86d1b 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -68,8 +68,7 @@
+ 
+ #undef DEFINE_EVENT
+ #define DEFINE_EVENT(template, name, proto, args)	\
+-	static struct ftrace_event_call	__used		\
+-	__attribute__((__aligned__(4))) event_##name
++	static struct ftrace_event_call	__used event_##name
+ 
+ #undef DEFINE_EVENT_PRINT
+ #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
+@@ -447,7 +446,6 @@ static inline notrace int ftrace_get_offsets_##call(			\
+  * };
+  *
+  * static struct ftrace_event_call __used
+- * __attribute__((__aligned__(4)))
+  * __attribute__((section("_ftrace_events"))) event_<call> = {
+  *	.name			= "<call>",
+  *	.class			= event_class_<template>,
+@@ -580,7 +578,6 @@ static struct ftrace_event_class __used event_class_##call = {		\
+ #define DEFINE_EVENT(template, call, proto, args)			\
+ 									\
+ static struct ftrace_event_call __used					\
+-__attribute__((__aligned__(4)))						\
+ __attribute__((section("_ftrace_events"))) event_##call = {		\
+ 	.name			= #call,				\
+ 	.class			= &event_class_##template,		\
+@@ -594,7 +591,6 @@ __attribute__((section("_ftrace_events"))) event_##call = {		\
+ static const char print_fmt_##call[] = print;				\
+ 									\
+ static struct ftrace_event_call __used					\
+-__attribute__((__aligned__(4)))						\
+ __attribute__((section("_ftrace_events"))) event_##call = {		\
+ 	.name			= #call,				\
+ 	.class			= &event_class_##template,		\
