@@ -1,53 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751541Ab1ARLhO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 06:37:14 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55257 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750745Ab1ARLhM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 06:37:12 -0500
-Date: Tue, 18 Jan 2011 11:37:10 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>, myungjoo.ham@gmail.com
-Subject: Re: [PATCH v5] MFD MAX8998/LP3974: Support Charger
-Message-ID: <20110118113709.GD26498@opensource.wolfsonmicro.com>
-References: <20110104135651.GD24774@opensource.wolfsonmicro.com>
- <1294982579-10404-1-git-send-email-myungjoo.ham@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294982579-10404-1-git-send-email-myungjoo.ham@samsung.com>
-X-Cookie: You will outgrow your usefulness.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751980Ab1ARLmj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 06:42:39 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:41350 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750745Ab1ARLmh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 06:42:37 -0500
+Subject: Re: [PATCH 3/3] trusted-keys: small cleanup
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: safford@watson.ibm.com, David Safford <safford@us.ibm.com>,
+        jj@chaosbits.net, dhowells@redhat.com, jmorris@namei.org,
+        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1295350109.3426.29.camel@localhost.localdomain>
+References: <201101170041.p0H0ffFE086481@www262.sakura.ne.jp>
+	 <201101170044.p0H0iLQW087457@www262.sakura.ne.jp>
+	 <1295298400.2642.9.camel@localhost.localdomain>
+	 <201101180139.p0I1dh9T066040@www262.sakura.ne.jp>
+	 <1295342793.3426.12.camel@localhost.localdomain>
+	 <201101182003.ACH57348.HOtFMVOLJQSOFF@I-love.SAKURA.ne.jp>
+	 <1295350109.3426.29.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Jan 2011 06:42:28 -0500
+Message-ID: <1295350948.3426.36.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 02:22:59PM +0900, MyungJoo Ham wrote:
-> With the new regulator, "CHARGER", users can control charging
-> current and turn on and off the charger. Note that the charger
-> specification of LP3974 is different from that of MAX8998.
+On Tue, 2011-01-18 at 06:28 -0500, Mimi Zohar wrote:
+> On Tue, 2011-01-18 at 20:03 +0900, Tetsuo Handa wrote:
+> > Mimi Zohar wrote:
+> > > > >       va_end(argp);
+> > > > > -     ret = crypto_shash_final(&sdesc->shash, paramdigest);
+> > > > > +     if (!ret)
+> > > > > +             ret = crypto_shash_final(&sdesc->shash, paramdigest);
+> > > > >       if (!ret)
+> > > 
+> > > Change the second '(!ret)' here, the crypto_shash_file() return code
+> > > test, from '(!ret)' to '(ret < 0)', like the other crypto_shash_file()
+> > > tests.
+> > 
+> > Did you mean changing from
+> > 
+> > 	if (!ret)
+> > 		ret = crypto_shash_final(&sdesc->shash, paramdigest);
+> > 
+> > to
+> > 
+> > 	if (ret < 0)
+> > 		ret = crypto_shash_final(&sdesc->shash, paramdigest);
+> > 
+> > (i.e. invert the condition)?
 > 
-> driver/power/max8998.c supports power supply APIs for
+> Wrong '(!ret)'.  Instead of:
+>         va_end(argp);
+>         if (!ret)
+>                 ret = crypto_shash_final(&sdesc->shash, paramdigest);
+>         if (!ret)
 > 
-> 1. "ONLINE" monitors the charger status, which can be
-> different from the status "CHARGER"; e.g., users allowed the charger
-> to charge, but the MAX8998 chip decided not to do so.
+> do:
+>         va_end(argp);
+>         if (!ret)
+>                 ret = crypto_shash_final(&sdesc->shash, paramdigest);
+>         if (ret < 0)
 > 
-> 2. "PRESENT" monitors the battery status (the existence of the
-> battery).
+> > I'm confused. Would you make the patch by yourself?
 > 
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> It's only for consistency, not that important.
+> 
+> thanks,
+> 
+> Mimi
 
-My major concern here is still that the regulator and power drivers
-aren't connected at all - it feels like either the regulator driver is
-redundant or the power driver ought to be a consumer of the regulator
-driver.
+James, the original patch is fine as is.
+
+thanks,
+
+Mimi
+
+
