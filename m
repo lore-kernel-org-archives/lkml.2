@@ -1,359 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab1ARVnD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 16:43:03 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:55267 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751733Ab1ARVnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 16:43:01 -0500
-Date: Tue, 18 Jan 2011 13:42:53 -0800
-From: Ram Pai <linuxram@us.ibm.com>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, clemens@ladisch.de,
-        Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        peter.henriksson@gmail.com, ebiederm@aristanetworks.com
-Subject: Re: [PATCH 1/1] PCI: allocate essential resources before reserving
- hotplug resources
-Message-ID: <20110118214253.GA10069@ram-laptop>
-Reply-To: Ram Pai <linuxram@us.ibm.com>
-References: <20101006225834.GE2945@ram-laptop>
- <20110111211021.GA26352@ram-laptop>
- <20110114181915.GA7476@ram-laptop>
- <201101181352.08013.bjorn.helgaas@hp.com>
+	id S1752897Ab1ARVnQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 16:43:16 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:47348 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab1ARVnN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 16:43:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201101181352.08013.bjorn.helgaas@hp.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+In-Reply-To: <alpine.LFD.2.00.1101181621140.8580@xanadu.home>
+References: <20110118195933.13011.56098.stgit@localhost6.localdomain6>
+ <20110118202902.13011.68847.stgit@localhost6.localdomain6> <alpine.LFD.2.00.1101181621140.8580@xanadu.home>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 18 Jan 2011 14:42:52 -0700
+X-Google-Sender-Auth: 4PWPqMtH_AdgY24GGc8gp43vcDk
+Message-ID: <AANLkTinLRkqY1Ovf4xbBeYCRfs5fsEG7JKnbE1Z_dd29@mail.gmail.com>
+Subject: Re: [PATCH 1/8] arm/dt: Make __vet_atags also accept a dtb image
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        lkml <linux-kernel@vger.kernel.org>, Olof Johansson <olof@lixom.net>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        John Linn <John.Linn@xilinx.com>,
+        Lennert Buijtenhek <buytenh@wantstofly.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 18, 2011 at 01:52:06PM -0700, Bjorn Helgaas wrote:
-> On Friday, January 14, 2011 11:19:15 am Ram Pai wrote:
-> >     PCI: reserve  additional  resources  for hotplug bridges
-> >     only after all essential resources are allocated.
-> >     
-> >     Linux  tries  to reserve minimal  resources for  hotplug
-> >     bridges.  This  works   fine as long as there are enough
-> >     resources  to  satisfy  all  other  essential   resource
-> >     requirements.  However  if  enough  resources   are  not
-> >     available    to    satisfy  both the essential resources 
-> >     and   the   reservation  for   hotplug  resources,   the
-> >     resource-allocator reports error and returns failure.
-> >     
-> >     This patch distinguishes between essential resources and
-> >     nice-to-have   resources.   Any   failure   to  allocate
-> >     nice-to-have resources are ignored.
-> >     
-> >     This  behavior  can  be  particularly  useful to trigger
-> >     automatic  reallocation, if  the  OS  discovers  genuine
-> >     resource  allocation  conflicts  or  genuine unallocated
-> >     requests caused  by  not-so-smart allocation behavior of 
-> >     the native BIOS.
-> >     
-> >     https://bugzilla.kernel.org/show_bug.cgi?id=15960
-> >     captures  the  details  of  the issue and the motivation
-> >     behind this patch.
-> 
-> Please don't indent and right-justify the changelog.
+Hi Nicolas,
 
-Ooops. I did not see your comments earlier. I just out a patch without
-looking at your comments.
+On Tue, Jan 18, 2011 at 2:26 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> On Tue, 18 Jan 2011, Grant Likely wrote:
+>
+>> The dtb is passed to the kernel via register r2, which is the same
+>> method that is used to pass an atags pointer.  This patch modifies
+>> __vet_atags to not clear r2 when it encounters a dtb image.
+>>
+>> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+>> ---
+>>  arch/arm/kernel/head-common.S |   19 +++++++++++++------
+>>  arch/arm/kernel/head.S        |    8 ++++----
+>>  2 files changed, 17 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/arch/arm/kernel/head-common.S b/arch/arm/kernel/head-common.S
+>> index 8f57515..d9a9105 100644
+>> --- a/arch/arm/kernel/head-common.S
+>> +++ b/arch/arm/kernel/head-common.S
+>> @@ -14,6 +14,7 @@
+>>  #define ATAG_CORE 0x54410001
+>>  #define ATAG_CORE_SIZE ((2*4 + 3*4) >> 2)
+>>  #define ATAG_CORE_SIZE_EMPTY ((2*4) >> 2)
+>> +#define OF_DT_MAGIC 0xedfe0dd0 /* 0xd00dfeed in big-endian */
+>
+> ARM can be big endian too.  Would be nice to make this endian
+> independent, or at least list this limitation in the commit log.
 
-> 
-> This is a PCI-specific issue, so I'm not comfortable adding add_size
-> to struct resource.  That penalizes all resource users while only
-> helping PCI.  Also, the struct resource lives forever, and the
-> add_size information is only useful while we're configuring the
-> bridge.
+How about:
+#ifdef CONFIG_CPU_BIG_ENDIAN
+#define OF_DT_MAGIC 0xd00dfeed
+#else
+#define OF_DT_MAGIC 0xedfe0dd0 /* 0xd00dfeed in big-endian */
+#endif
 
-Any suggestion on how to do this without adding a field to struct resource?
+Or is there a better way for loading and comparing big endian values in ARM?
 
-RP
-> 
-> Bjorn
-> 
-> > Signed-off-by: Ram Pai <linuxram@us.ibm.com>
-> > 
-> > drivers/pci/setup-bus.c |  142 +++++++++++++++++++++++++++++++++++-------------
-> > include/linux/ioport.h  |    1 
-> > 2 files changed, 105 insertions(+), 38 deletions(-)
-> > 
-> > diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-> > index 66cb8f4..76a7fb7 100644
-> > --- a/drivers/pci/setup-bus.c
-> > +++ b/drivers/pci/setup-bus.c
-> > @@ -91,7 +91,26 @@ static void __dev_sort_resources(struct pci_dev *dev,
-> >  	pdev_sort_resources(dev, head);
-> >  }
-> >  
-> > -static void __assign_resources_sorted(struct resource_list *head,
-> > +
-> > +static void adjust_resources_sorted(struct resource_list *head)
-> > +{
-> > +	struct resource *res;
-> > +	struct resource_list *list, *tmp;
-> > +	int idx;
-> > +
-> > +	for (list = head->next; list;) {
-> > +		res = list->res;
-> > +		idx = res - &list->dev->resource[0];
-> > +		if (res->add_size)
-> > +			adjust_resource(res, res->start, 
-> > +				resource_size(res) + res->add_size);
-> > +		tmp = list;
-> > +		list = list->next;
-> > +		kfree(tmp);
-> > +	}
-> > +}
-> > +
-> > +static void assign_requested_resources_sorted(struct resource_list *head,
-> >  				 struct resource_list_x *fail_head)
-> >  {
-> >  	struct resource *res;
-> > @@ -114,14 +133,25 @@ static void __assign_resources_sorted(struct resource_list *head,
-> >  			}
-> >  			res->start = 0;
-> >  			res->end = 0;
-> > +			res->add_size = 0;
-> >  			res->flags = 0;
-> >  		}
-> >  		tmp = list;
-> >  		list = list->next;
-> > -		kfree(tmp);
-> >  	}
-> >  }
-> >  
-> > +static void __assign_resources_sorted(struct resource_list *head,
-> > +				 struct resource_list_x *fail_head)
-> > +{
-> > +	/* Satisfy the must-have resource requests */
-> > +	assign_requested_resources_sorted(head, fail_head);
-> > +
-> > +	/* Try to satisfy any additional nice-to-have resource 
-> > +		requests */
-> > +	adjust_resources_sorted(head);
-> > +}
-> > +
-> >  static void pdev_assign_resources_sorted(struct pci_dev *dev,
-> >  				 struct resource_list_x *fail_head)
-> >  {
-> > @@ -404,15 +434,37 @@ static struct resource *find_free_bus_resource(struct pci_bus *bus, unsigned lon
-> >  	return NULL;
-> >  }
-> >  
-> > +static resource_size_t calculate_iosize(resource_size_t size, 
-> > +		resource_size_t min_size, 
-> > +		resource_size_t size1, 
-> > +		resource_size_t old_size, 
-> > +		resource_size_t align)
-> > +{
-> > +	if (size < min_size)
-> > +		size = min_size;
-> > +	if (old_size == 1 )
-> > +		old_size = 0;
-> > +	/* To be fixed in 2.5: we should have sort of HAVE_ISA
-> > +	   flag in the struct pci_bus. */
-> > +#if defined(CONFIG_ISA) || defined(CONFIG_EISA)
-> > +	size = (size & 0xff) + ((size & ~0xffUL) << 2);
-> > +#endif
-> > +	size = ALIGN(size + size1, align);
-> > +	if (size < old_size)
-> > +		size = old_size;
-> > +	return size;
-> > +}
-> > +
-> >  /* Sizing the IO windows of the PCI-PCI bridge is trivial,
-> >     since these windows have 4K granularity and the IO ranges
-> >     of non-bridge PCI devices are limited to 256 bytes.
-> >     We must be careful with the ISA aliasing though. */
-> > -static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size)
-> > +static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size, 
-> > +			resource_size_t add_size)
-> >  {
-> >  	struct pci_dev *dev;
-> >  	struct resource *b_res = find_free_bus_resource(bus, IORESOURCE_IO);
-> > -	unsigned long size = 0, size1 = 0, old_size;
-> > +	unsigned long size = 0, size1 = 0;
-> >  
-> >  	if (!b_res)
-> >   		return;
-> > @@ -435,20 +487,16 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size)
-> >  				size1 += r_size;
-> >  		}
-> >  	}
-> > -	if (size < min_size)
-> > -		size = min_size;
-> > -	old_size = resource_size(b_res);
-> > -	if (old_size == 1)
-> > -		old_size = 0;
-> > -/* To be fixed in 2.5: we should have sort of HAVE_ISA
-> > -   flag in the struct pci_bus. */
-> > -#if defined(CONFIG_ISA) || defined(CONFIG_EISA)
-> > -	size = (size & 0xff) + ((size & ~0xffUL) << 2);
-> > -#endif
-> > -	size = ALIGN(size + size1, 4096);
-> > -	if (size < old_size)
-> > -		size = old_size;
-> > -	if (!size) {
-> > +
-> > +	size = calculate_iosize(size, min_size, size1, 
-> > +			resource_size(b_res), 4096);
-> > +	if (add_size)
-> > +		size1 = calculate_iosize(size, min_size+add_size, size1, 
-> > +				resource_size(b_res), 4096);
-> > +	else
-> > +		size1  = size;
-> > +
-> > +	if (!size && !size1) {
-> >  		if (b_res->start || b_res->end)
-> >  			dev_info(&bus->self->dev, "disabling bridge window "
-> >  				 "%pR to [bus %02x-%02x] (unused)\n", b_res,
-> > @@ -459,16 +507,35 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size)
-> >  	/* Alignment of the IO window is always 4K */
-> >  	b_res->start = 4096;
-> >  	b_res->end = b_res->start + size - 1;
-> > +	b_res->add_size = size1-size;
-> >  	b_res->flags |= IORESOURCE_STARTALIGN;
-> >  }
-> >  
-> > +
-> > +static resource_size_t calculate_memsize(resource_size_t size, 
-> > +		resource_size_t min_size, 
-> > +		resource_size_t size1, 
-> > +		resource_size_t old_size, 
-> > +		resource_size_t align)
-> > +{
-> > +	if (size < min_size)
-> > +		size = min_size;
-> > +	if (old_size == 1 )
-> > +		old_size = 0;
-> > +	if (size < old_size)
-> > +		size = old_size;
-> > +	size = ALIGN(size + size1, align);
-> > +	return size;
-> > +}
-> > +
-> >  /* Calculate the size of the bus and minimal alignment which
-> >     guarantees that all child resources fit in this size. */
-> >  static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
-> > -			 unsigned long type, resource_size_t min_size)
-> > +			 unsigned long type, resource_size_t min_size, 
-> > +				resource_size_t add_size)
-> >  {
-> >  	struct pci_dev *dev;
-> > -	resource_size_t min_align, align, size, old_size;
-> > +	resource_size_t min_align, align, size, size1;
-> >  	resource_size_t aligns[12];	/* Alignments from 1Mb to 2Gb */
-> >  	int order, max_order;
-> >  	struct resource *b_res = find_free_bus_resource(bus, type);
-> > @@ -516,13 +583,6 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
-> >  			mem64_mask &= r->flags & IORESOURCE_MEM_64;
-> >  		}
-> >  	}
-> > -	if (size < min_size)
-> > -		size = min_size;
-> > -	old_size = resource_size(b_res);
-> > -	if (old_size == 1)
-> > -		old_size = 0;
-> > -	if (size < old_size)
-> > -		size = old_size;
-> >  
-> >  	align = 0;
-> >  	min_align = 0;
-> > @@ -537,8 +597,14 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
-> >  			min_align = align1 >> 1;
-> >  		align += aligns[order];
-> >  	}
-> > -	size = ALIGN(size, min_align);
-> > -	if (!size) {
-> > +
-> > +	size = calculate_memsize(size, min_size, 0, resource_size(b_res), align);
-> > +	if (add_size)
-> > +		size1 = calculate_memsize(size, min_size+add_size, 0, resource_size(b_res), align);
-> > +	else
-> > +		size1  = size;
-> > +
-> > +	if (!size && !size1) {
-> >  		if (b_res->start || b_res->end)
-> >  			dev_info(&bus->self->dev, "disabling bridge window "
-> >  				 "%pR to [bus %02x-%02x] (unused)\n", b_res,
-> > @@ -548,8 +614,8 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
-> >  	}
-> >  	b_res->start = min_align;
-> >  	b_res->end = size + min_align - 1;
-> > -	b_res->flags |= IORESOURCE_STARTALIGN;
-> > -	b_res->flags |= mem64_mask;
-> > +	b_res->add_size = size1 - size;
-> > +	b_res->flags |= IORESOURCE_STARTALIGN | mem64_mask;
-> >  	return 1;
-> >  }
-> >  
-> > @@ -606,7 +672,7 @@ void __ref pci_bus_size_bridges(struct pci_bus *bus)
-> >  {
-> >  	struct pci_dev *dev;
-> >  	unsigned long mask, prefmask;
-> > -	resource_size_t min_mem_size = 0, min_io_size = 0;
-> > +	resource_size_t additional_mem_size = 0, additional_io_size = 0;
-> >  
-> >  	list_for_each_entry(dev, &bus->devices, bus_list) {
-> >  		struct pci_bus *b = dev->subordinate;
-> > @@ -637,11 +703,11 @@ void __ref pci_bus_size_bridges(struct pci_bus *bus)
-> >  	case PCI_CLASS_BRIDGE_PCI:
-> >  		pci_bridge_check_ranges(bus);
-> >  		if (bus->self->is_hotplug_bridge) {
-> > -			min_io_size  = pci_hotplug_io_size;
-> > -			min_mem_size = pci_hotplug_mem_size;
-> > +			additional_io_size  = pci_hotplug_io_size;
-> > +			additional_mem_size = pci_hotplug_mem_size;
-> >  		}
-> >  	default:
-> > -		pbus_size_io(bus, min_io_size);
-> > +		pbus_size_io(bus, 0, additional_io_size);
-> >  		/* If the bridge supports prefetchable range, size it
-> >  		   separately. If it doesn't, or its prefetchable window
-> >  		   has already been allocated by arch code, try
-> > @@ -649,11 +715,11 @@ void __ref pci_bus_size_bridges(struct pci_bus *bus)
-> >  		   resources. */
-> >  		mask = IORESOURCE_MEM;
-> >  		prefmask = IORESOURCE_MEM | IORESOURCE_PREFETCH;
-> > -		if (pbus_size_mem(bus, prefmask, prefmask, min_mem_size))
-> > +		if (pbus_size_mem(bus, prefmask, prefmask, 0, additional_mem_size))
-> >  			mask = prefmask; /* Success, size non-prefetch only. */
-> >  		else
-> > -			min_mem_size += min_mem_size;
-> > -		pbus_size_mem(bus, mask, IORESOURCE_MEM, min_mem_size);
-> > +			additional_mem_size += additional_mem_size;
-> > +		pbus_size_mem(bus, mask, IORESOURCE_MEM, 0, additional_mem_size);
-> >  		break;
-> >  	}
-> >  }
-> > diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-> > index e9bb22c..d00c61c 100644
-> > --- a/include/linux/ioport.h
-> > +++ b/include/linux/ioport.h
-> > @@ -18,6 +18,7 @@
-> >  struct resource {
-> >  	resource_size_t start;
-> >  	resource_size_t end;
-> > +	resource_size_t add_size;
-> >  	const char *name;
-> >  	unsigned long flags;
-> >  	struct resource *parent, *sibling, *child;
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>>  /*
+>>   * Exception handling.  Something went wrong and we can't proceed.  We
+>> @@ -105,22 +106,28 @@ __lookup_machine_type_data:
+>>
+>>  /* Determine validity of the r2 atags pointer.  The heuristic requires
+>>   * that the pointer be aligned, in the first 16k of physical RAM and
+>> - * that the ATAG_CORE marker is first and present.  Future revisions
+>> + * that the ATAG_CORE marker is first and present.  If CONFIG_OF_FLATTREE
+>> + * is selected, then it will also accept a dtb pointer.  Future revisions
+>>   * of this function may be more lenient with the physical address and
+>>   * may also be able to move the ATAGS block if necessary.
+>>   *
+>>   * r8  = machinfo
+>>   *
+>>   * Returns:
+>> - *  r2 either valid atags pointer, or zero
+>> + *  r2 either valid atags pointer, valid dtb pointer, or zero
+>>   *  r5, r6 corrupted
+>>   */
+>>  __vet_atags:
+>>       tst     r2, #0x3                        @ aligned?
+>>       bne     1f
+>>
+>> -     ldr     r5, [r2, #0]                    @ is first tag ATAG_CORE?
+>> -     cmp     r5, #ATAG_CORE_SIZE
+>> +#ifdef CONFIG_OF_FLATTREE
+>> +     ldr     r5, [r2, #0]                    @ is it a DTB?
+>> +     ldr     r6, =OF_DT_MAGIC
+>> +     cmp     r5, r6
+>> +     beq     2f
+>> +#endif
+>> +     cmp     r5, #ATAG_CORE_SIZE             @ is first tag ATAG_CORE?
+>
+> The "ldr r5 ..." is now done only within #ifdef CONFIG_OF_FLATTREE.  So
+> if CONFIG_OF_FLATTREE is undefined then r5 will contain garbage.
+
+Oops, that was a silly oversight.  Fixed now.
+
+g.
+
+>
+>
+> Nicolas
+>
+
+
 
 -- 
-Ram Pai
-System X Device-Driver Enablement Lead
-Linux Technology Center
-Beaverton OR-97006
-503-5783752 t/l 7753752
-linuxram@us.ibm.com
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
