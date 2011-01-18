@@ -1,223 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136Ab1ARVH0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 16:07:26 -0500
-Received: from mail4.comsite.net ([205.238.176.238]:58614 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751947Ab1ARVHZ (ORCPT
+	id S1751903Ab1ARVRV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 16:17:21 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:60931 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056Ab1ARVRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 16:07:25 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=70.249.75.62;
-From: Milton Miller <miltonm@bga.com>
-Subject: [PATCH 1/2] smp_call_function_many SMP race
-To: Anton Blanchard <anton@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, xiaoguangrong@cn.fujitsu.com,
-        mingo@elte.hu, jaxboe@fusionio.com, npiggin@gmail.com,
-        rusty@rustcorp.com.au, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        miltonm@bga.com, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <smp-call-function-peter-reply@mdm.bga.com>
-Message-ID: <smp-call-function-simplified@mdm.bga.com>
-References: <20110112150740.77dde58c@kryten>
-	<1295288253.30950.280.camel@laptop>
-	<smp-call-function-peter-reply@mdm.bga.com>
-Date: Tue, 18 Jan 2011 15:07:25 -0600
-X-Originating-IP: 70.249.75.62
+	Tue, 18 Jan 2011 16:17:20 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 4/4] BKL: move CONFIG_BKL to staging
+Date: Tue, 18 Jan 2011 22:17:02 +0100
+Message-Id: <1295385422-3592-5-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1295385422-3592-1-git-send-email-arnd@arndb.de>
+References: <1295385422-3592-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:qtumuCiYk4g3HpJ7zUC5+XKJ3WKXzPcPC9Uh9f462x0
+ 6OAZiRg63CP0pPW8Nf0FeCj8pAo4nINeZb2Z5Hoi6+w/XDE7/R
+ o7TmBmXzzgAVgfCszPzWlqvp2I39kgtyQ9ORnO879ay7sZb63N
+ XU/wJEnMh6MXhZerayHBth/eY+LmTEjlCJUr4imEYEUIHWiG86
+ KFSupbkRhcTnU35ERKcsQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anton Blanchard <anton@samba.org>
+Instead of moving the actual code to staging for stuff that
+depends on CONFIG_BKL, this moves just the configuration
+option it depends on.
 
-I noticed a failure where we hit the following WARN_ON in
-generic_smp_call_function_interrupt:
+As a consequence, the remaining non-staging drivers that use
+the BKL (i830, appletalk, ipx, x25, adfs, hpfs and ufs)
+implicitly depend on staging until they get fixed.
 
-                if (!cpumask_test_and_clear_cpu(cpu, data->cpumask))
-                        continue;
+This sets 2.6.39 as the arbitrary date when we actually remove
+the option along with its last users.
 
-                data->csd.func(data->csd.info);
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/staging/Kconfig |   10 ++++++++++
+ lib/Kconfig.debug       |    8 --------
+ 2 files changed, 10 insertions(+), 8 deletions(-)
 
-                refs = atomic_dec_return(&data->refs);
-                WARN_ON(refs < 0);      <-------------------------
-
-We atomically tested and cleared our bit in the cpumask, and yet the
-number of cpus left (ie refs) was 0. How can this be?
-
-It turns out commit 54fdade1c3332391948ec43530c02c4794a38172
-(generic-ipi: make struct call_function_data lockless)
-is at fault. It removes locking from smp_call_function_many and in
-doing so creates a rather complicated race.
-
-The problem comes about because:
-
-- The smp_call_function_many interrupt handler walks call_function.queue
-  without any locking.
-- We reuse a percpu data structure in smp_call_function_many.
-- We do not wait for any RCU grace period before starting the next
-  smp_call_function_many.
-
-Imagine a scenario where CPU A does two smp_call_functions back to
-back, and CPU B does an smp_call_function in between. We concentrate on
-how CPU C handles the calls:
-
-
-CPU A            CPU B                  CPU C              CPU D
-
-smp_call_function
-                                        smp_call_function_interrupt
-                                            walks
-					call_function.queue sees
-					data from CPU A on list
-
-                 smp_call_function
-
-                                        smp_call_function_interrupt
-                                            walks
-							
-                                        call_function.queue sees
-                                          (stale) CPU A on list
-							   smp_call_function int
-							   clears last ref on A
-							   list_del_rcu, unlock
-smp_call_function reuses
-percpu *data A
-                                         data->cpumask sees and
-                                         clears bit in cpumask
-                                         might be using old or new fn!
-                                         decrements refs below 0
-
-set data->refs (too late!)
-
-
-The important thing to note is since the interrupt handler walks a
-potentially stale call_function.queue without any locking, then another
-cpu can view the percpu *data structure at any time, even when the
-owner is in the process of initialising it.
-
-The following test case hits the WARN_ON 100% of the time on my PowerPC
-box (having 128 threads does help :)
-
-
-#include <linux/module.h>
-#include <linux/init.h>
-
-#define ITERATIONS 100
-
-static void do_nothing_ipi(void *dummy)
-{
-}
-
-static void do_ipis(struct work_struct *dummy)
-{
-	int i;
-
-	for (i = 0; i < ITERATIONS; i++)
-		smp_call_function(do_nothing_ipi, NULL, 1);
-
-	printk(KERN_DEBUG "cpu %d finished\n", smp_processor_id());
-}
-
-static struct work_struct work[NR_CPUS];
-
-static int __init testcase_init(void)
-{
-	int cpu;
-
-	for_each_online_cpu(cpu) {
-		INIT_WORK(&work[cpu], do_ipis);
-		schedule_work_on(cpu, &work[cpu]);
-	}
-
-	return 0;
-}
-
-static void __exit testcase_exit(void)
-{
-}
-
-module_init(testcase_init)
-module_exit(testcase_exit)
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Anton Blanchard");
-
-
-I tried to fix it by ordering the read and the write of ->cpumask and
-->refs. In doing so I missed a critical case but Paul McKenney was able
-to spot my bug thankfully :) To ensure we arent viewing previous
-iterations the interrupt handler needs to read ->refs then ->cpumask
-then ->refs _again_.
-
-Thanks to Milton Miller and Paul McKenney for helping to debug this
-issue.
-
-[Milton Miller: add WARN_ON and BUG_ON, remove extra read of refs before
-initial read of mask that doesn't help (also noted by Peter Zijlstra),
-adjust comments, hopefully clarify senerio ]
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Revised-by: Milton Miller <miltonm@bga.com> [ removed excess tests ]
-Signed-off-by: Milton Miller <miltonm@bga.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: stable@kernel.org # 2.6.32 and later
-
-Index: common/kernel/smp.c
-===================================================================
---- common.orig/kernel/smp.c	2011-01-17 20:15:54.000000000 -0600
-+++ common/kernel/smp.c	2011-01-17 20:16:18.000000000 -0600
-@@ -194,6 +194,24 @@ void generic_smp_call_function_interrupt
- 	list_for_each_entry_rcu(data, &call_function.queue, csd.list) {
- 		int refs;
+diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+index 5c8fcfc..1327ccc 100644
+--- a/drivers/staging/Kconfig
++++ b/drivers/staging/Kconfig
+@@ -41,6 +41,16 @@ config STAGING_EXCLUDE_BUILD
  
-+		/*
-+		 * Since we walk the list without any locks, we might
-+		 * see an entry that was completed, removed from the
-+		 * list and is in the process of being reused.
-+		 *
-+		 * We must check that the cpu is in the cpumask before
-+		 * checking the refs, and both must be set before
-+		 * executing the callback on this cpu.
-+		 */
-+
-+		if (!cpumask_test_cpu(cpu, data->cpumask))
-+			continue;
-+
-+		smp_rmb();
-+
-+		if (atomic_read(&data->refs) == 0)
-+			continue;
-+
- 		if (!cpumask_test_and_clear_cpu(cpu, data->cpumask))
- 			continue;
+ if !STAGING_EXCLUDE_BUILD
  
-@@ -202,6 +220,8 @@ void generic_smp_call_function_interrupt
- 		refs = atomic_dec_return(&data->refs);
- 		WARN_ON(refs < 0);
- 		if (!refs) {
-+			WARN_ON(!cpumask_empty(data->cpumask));
++config BKL
++	bool "Include drivers that depend on the Big Kernel Lock" if (SMP || PREEMPT)
++	help
++	  This is the traditional lock that is used in old code instead
++	  of proper locking. All drivers that use the BKL should depend
++	  on this symbol.
++	  A small number of drivers still require this. All drivers that
++	  use the BKL should be changed to a better serialisation method
++	  or they will be removed in 2.6.39.
 +
- 			raw_spin_lock(&call_function.lock);
- 			list_del_rcu(&data->csd.list);
- 			raw_spin_unlock(&call_function.lock);
-@@ -453,11 +473,21 @@ void smp_call_function_many(const struct
+ source "drivers/staging/et131x/Kconfig"
  
- 	data = &__get_cpu_var(cfd_data);
- 	csd_lock(&data->csd);
-+	BUG_ON(atomic_read(&data->refs) || !cpumask_empty(data->cpumask));
+ source "drivers/staging/slicoss/Kconfig"
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index f2a399c..4a78f8c 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -470,14 +470,6 @@ config DEBUG_MUTEXES
+ 	 This feature allows mutex semantics violations to be detected and
+ 	 reported.
  
- 	data->csd.func = func;
- 	data->csd.info = info;
- 	cpumask_and(data->cpumask, mask, cpu_online_mask);
- 	cpumask_clear_cpu(this_cpu, data->cpumask);
-+
-+	/*
-+	 * To ensure the interrupt handler gets an complete view
-+	 * we order the cpumask and refs writes and order the read
-+	 * of them in the interrupt handler.  In addition we may
-+	 * only clear our own cpu bit from the mask.
-+	 */
-+	smp_wmb();
-+
- 	atomic_set(&data->refs, cpumask_weight(data->cpumask));
- 
- 	raw_spin_lock_irqsave(&call_function.lock, flags);
+-config BKL
+-	bool "Big Kernel Lock" if (SMP || PREEMPT)
+-	help
+-	  This is the traditional lock that is used in old code instead
+-	  of proper locking. The big kernel lock will go away in 2.6.39,
+-	  so all modules that still depend on it need to be changed or
+-	  they will be removed as well.
+-
+ config DEBUG_LOCK_ALLOC
+ 	bool "Lock debugging: detect incorrect freeing of live locks"
+ 	depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
+-- 
+1.7.1
+
