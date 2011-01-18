@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab1ARHzv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 02:55:51 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:47136 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751947Ab1ARHzt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 02:55:49 -0500
-Date: Tue, 18 Jan 2011 16:54:58 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-Subject: Re: [PATCH v4] dw_mmc: Add Synopsys DesignWare mmc host driver.
-In-reply-to: <AANLkTik7cMwgwXR1zK44HXC+1YtzpU3_zW2GUjcBMi8X@mail.gmail.com>
-To: Will Newton <will.newton@gmail.com>
-Cc: Chris Ball <cjb@laptop.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-mmc@vger.kernel.org, Matt Fleming <matt@console-pimps.org>,
-        linux-arm-kernel@lists.infradead.org
-Message-id: <4D354752.3030401@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7BIT
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
-References: <AANLkTi=0RtvsGX+Q3goL3mdG6oKeNidYtiudTZ8ZTpRP@mail.gmail.com>
- <20101208115510.GD10998@console-pimps.org>
- <AANLkTi=KqOa-MRQiptCtZGvoafRCgULfE3QFs=hmGpdi@mail.gmail.com>
- <AANLkTi=PpTi1_JO9Q=ph7w9Jim8iXMf9LbCfmEkWuo-h@mail.gmail.com>
- <20101209064751.GA21128@void.printf.net>
- <AANLkTimMgrawcndvUTYYjq9BGFqs-sbRsZkwVQ0Uvhvb@mail.gmail.com>
- <20101209160157.GA28586@void.printf.net>
- <AANLkTim3Rj2tTbqvT8nM4L=p=Wx8bdOnGq=EDv+cs02g@mail.gmail.com>
- <20101211192320.GA24430@void.printf.net>
- <AANLkTik7cMwgwXR1zK44HXC+1YtzpU3_zW2GUjcBMi8X@mail.gmail.com>
-X-OriginalArrivalTime: 18 Jan 2011 07:55:48.0026 (UTC)
- FILETIME=[1E2D91A0:01CBB6E5]
+	id S1752868Ab1ARICT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 03:02:19 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:37717 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752446Ab1ARICS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 03:02:18 -0500
+Date: Tue, 18 Jan 2011 09:01:53 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Franck Bui-Huu <vagabon.xyz@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Han Pingtian <phan@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [GIT PULL 0/2] perf/urgent fixes
+Message-ID: <20110118080153.GA18317@elte.hu>
+References: <1295313050-10353-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295313050-10353-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will.
 
-I have some question...i'm testing dw_mmc in our environment.
-but i didn't understand pdata->init(?)...what initialize in there?
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-plz let me know that..
+> Hi Ingo,
+> 
+>         Please consider pulling from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/urgent
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> Arnaldo Carvalho de Melo (2):
+>   perf tools: Fix handling of wildcards in tracepoint event selectors
+>   perf tools: Fix tracepoint id to string perf.data header table
+> 
+>  tools/perf/builtin-record.c    |    2 ++
+>  tools/perf/util/parse-events.c |   31 +------------------------------
+>  2 files changed, 3 insertions(+), 30 deletions(-)
 
-Thanks
-Jaehoon Chung
+Pulled, thanks a lot Arnaldo!
 
-Will Newton wrote:
-
-> +	host->pdev = pdev;
-> +	host->pdata = pdata = pdev->dev.platform_data;
-> +	if (!pdata || !pdata->init) {
-> +		dev_err(&pdev->dev,
-> +			"Platform data must supply init function\n");
-> +		ret = -ENODEV;
-> +		goto err_freehost;
-> +	}
-> +
-> +	if (!pdata->select_slot && pdata->num_slots > 1) {
-> +		dev_err(&pdev->dev,
-> +			"Platform data must supply select_slot function\n");
-> +		ret = -ENODEV;
-> +		goto err_freehost;
-> +	}
-> +
->
+	Ingo
