@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680Ab1ARQjL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 11:39:11 -0500
-Received: from mga02.intel.com ([134.134.136.20]:34610 "EHLO mga02.intel.com"
+	id S1752502Ab1ARQmA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 11:42:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13038 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752168Ab1ARQjI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 11:39:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,339,1291622400"; 
-   d="scan'208";a="594096171"
-From: "Tardy, Pierre" <pierre.tardy@intel.com>
-To: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cjb@laptop.org" <cjb@laptop.org>, "ohad@wizery.com" <ohad@wizery.com>
-Date: Tue, 18 Jan 2011 16:39:02 +0000
-Subject: RE: [PATCH v1 1/3]mmc: implemented runtime pm for mmc host
-Thread-Topic: [PATCH v1 1/3]mmc: implemented runtime pm for mmc host
-Thread-Index: AcuzxUMTTjCRN6kDQo+D/jJpKwzH1gCb6uFAACqFtKAAE6N1oA==
-Message-ID: <8250E4885F9967469CAC3FB5CBA2CE69934E7AAB20@irsmsx501.ger.corp.intel.com>
-References: <20110114082310.GB27523@intel.com>
- <8250E4885F9967469CAC3FB5CBA2CE69934E7AA2FE@irsmsx501.ger.corp.intel.com>
- <5D8008F58939784290FAB48F54975198351D4FA654@shsmsx502.ccr.corp.intel.com>
-In-Reply-To: <5D8008F58939784290FAB48F54975198351D4FA654@shsmsx502.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	id S1750867Ab1ARQl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 11:41:59 -0500
+Date: Tue, 18 Jan 2011 17:41:48 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, mingo@elte.hu,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tracing: remove superfluous sub instructions
+Message-ID: <20110118164148.GD1941@jolsa.brq.redhat.com>
+References: <1295364498-9288-1-git-send-email-jolsa@redhat.com>
+ <20110118155159.GA1791@nowhere>
+ <1295367762.12215.2.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295367762.12215.2.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I'm also worried about this patch not taking in account the 8 clock cycles before
-> > shutting down the clock, contrary to the clock gating fw.
-> > If you power down hc, you will also gate the clock. So the sdio protocol might not be
-> > strictly followed.
-> As mmc spec said, 8 clock cycles is needed. That is right.
-> But I think if we have set the auto suspended delay for host, runtime pm core could make sure host to
-> wait at least the auto suspended delay before shutting down the power of the device. So if the auto
-> suspended delay is longer than 8 clock cycles, the mmc protocol can be followed, right?
-I disagree. You cannot enforce this. It depends on clock speed, that can vary with sdio cards. 
-User can change the autosuspend delay to whatever he wants, it should just change performance, but not functionality.
+On Tue, Jan 18, 2011 at 11:22:42AM -0500, Steven Rostedt wrote:
+> On Tue, 2011-01-18 at 16:52 +0100, Frederic Weisbecker wrote:
+> > On Tue, Jan 18, 2011 at 04:28:18PM +0100, Jiri Olsa wrote:
+> > > hi,
+> > > 
+> > > I think there's no need for substracting MCOUNT_INSN_SIZE from the
+> > > IP parameter before calling the function trace (/graph) handler.
+> > > 
+> > > Maybe I overlooked something, but all the IP usage I saw ended
+> > > up in the kallsyms_lookup function, which does the lookup using the
+> > > functions' start/end boundaries to find the correct symbol for pointer.
+> > > 
+> > > Thus it seems to me there's no point in substracting the
+> > > MCOUNT_INSN_SIZE value from the IP parameter.
+> > > 
+> > > I tested for x86_64 and got proper results, I believe it's
+> > > the same case for x86_32.
+> > > 
+> > > wbr,
+> > > jirka
+> > > 
+> > > 
+> > > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> > 
+> > Well, that sounds right after all. If we are only interested in the
+> > symbol, the instruction that follows "call mcount" is still relevant
+> > as it must belong to the same function.
+> > 
+> > Steve?
+> 
+> NAK, it will break function triggers/probes. The "func:traceon" and
+> "func:traceoff". They compare the ip to the call location of mcount.
+> 
+> -- Steve
+> 
+> 
 
-Why don't you just take my clock gating version?
-Its working well, I'm using this for 2 weeks, and follow the linux-mmc latest improvement.
+ops, missed this one..
 
-Regards,
-Pierre
+would it make sense to update the IP inside the function_trace_probe_call
+function to save one instruction in the entry code used by all? or it's
+not worth it..
 
-
----------------------------------------------------------------------
-Intel Corporation SAS (French simplified joint stock company)
-Registered headquarters: "Les Montalets"- 2, rue de Paris, 
-92196 Meudon Cedex, France
-Registration Number:  302 456 199 R.C.S. NANTERRE
-Capital: 4,572,000 Euros
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-
+jirka
