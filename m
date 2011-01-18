@@ -1,76 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab1ARWmh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 17:42:37 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49544 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751739Ab1ARWmf convert rfc822-to-8bit (ORCPT
+	id S1752677Ab1ARWvV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 17:51:21 -0500
+Received: from mx1.vsecurity.com ([209.67.252.12]:51068 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752099Ab1ARWvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 17:42:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=FCUFtBd6UfI30tYJ+nl12FMZMpzZUhxwa+cAna9HcQwOVEC2meu2J4DoRVK/jFnWkm
-         OCVLUEYtbJot8S6jm8lYulGOImV8LDww3tXMwmpozmyF3o7EmRwrDqXQbRLq+35+WMNq
-         Ezs+sZdRYG7kzKpxwzFgeYRB+5CrrQ7RqiEr8=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=pj-pLYVSrU+6+BtioCWLod2ueZecNaap619fw@mail.gmail.com>
-References: <cover.1290852958.git.npiggin@kernel.dk>
-	<d44ddcf1d1e0813b3ce2b3872c7c702a31b62894.1290852959.git.npiggin@kernel.dk>
-	<AANLkTi=pj-pLYVSrU+6+BtioCWLod2ueZecNaap619fw@mail.gmail.com>
-Date: Wed, 19 Jan 2011 09:42:34 +1100
-Message-ID: <AANLkTik3ScP5rvR2bOXOEEH8SNZGg+xO6Gy32CW3XmU6@mail.gmail.com>
-Subject: Re: [PATCH 17/46] fs: Use rename lock and RCU for multi-step operations
-From: Nick Piggin <npiggin@gmail.com>
-To: Yehuda Sadeh Weinraub <yehudasa@gmail.com>
-Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sage Weil <sage@newdream.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 18 Jan 2011 17:51:19 -0500
+Subject: [PATCH] Switch proc interfaces in kernel/ to %pK
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Jan 2011 17:51:18 -0500
+Message-ID: <1295391078.1831.21.camel@dan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 9:32 AM, Yehuda Sadeh Weinraub
-<yehudasa@gmail.com> wrote:
-> On Sat, Nov 27, 2010 at 1:44 AM, Nick Piggin <npiggin@kernel.dk> wrote:
->> The remaining usages for dcache_lock is to allow atomic, multi-step read-side
->> operations over the directory tree by excluding modifications to the tree.
->> Also, to walk in the leaf->root direction in the tree where we don't have
->> a natural d_lock ordering.
->>
->> This could be accomplished by taking every d_lock, but this would mean a
->> huge number of locks and actually gets very tricky.
->>
->> Solve this instead by using the rename seqlock for multi-step read-side
->> operations, retry in case of a rename so we don't walk up the wrong parent.
->> Concurrent dentry insertions are not serialised against.  Concurrent deletes
->> are tricky when walking up the directory: our parent might have been deleted
->> when dropping locks so also need to check and retry for that.
->>
->> We can also use the rename lock in cases where livelock is a worry (and it
->> is introduced in subsequent patch).
->>
->> Signed-off-by: Nick Piggin <npiggin@kernel.dk>
-> ..
->> @@ -237,6 +238,7 @@ static struct dentry *d_kill(struct dentry *dentry, struct dentry *parent)
->>        __releases(dcache_inode_lock)
->>        __releases(dcache_lock)
->>  {
->> +       dentry->d_parent = NULL;
->>        list_del(&dentry->d_u.d_child);
->>        if (parent)
->>                spin_unlock(&parent->d_lock);
->
-> There's an issue with ceph as it references the
-> dentry->d_parent(->d_inode) at dentry_release(), so setting
-> dentry->d_parent to NULL here doesn't work with ceph. Though there is
-> some workaround for it, we would like to be sure that this one is
-> really required so that we don't exacerbate the ugliness. The
-> workaround is to keep a pointer to the parent inode in the private
-> dentry structure, which will be referenced only at the .release()
-> callback. This is clearly not ideal.
+Switch users of %p in /proc interfaces in kernel/ to %pK, to allow
+configuring the level of exposure of kernel pointers via the
+kptr_restrict sysctl.
 
-Hmm, I'll have to think about it. Probably we can check for
-d_count == 0 rather than parent != NULL I think?
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+---
+ kernel/cgroup.c           |    2 +-
+ kernel/kprobes.c          |    4 ++--
+ kernel/lockdep_proc.c     |   10 +++++-----
+ kernel/time/timer_stats.c |    2 +-
+ 4 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index b24d702..b04951b 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4894,7 +4894,7 @@ static int cgroup_css_links_read(struct cgroup *cont,
+ 		struct css_set *cg = link->cg;
+ 		struct task_struct *task;
+ 		int count = 0;
+-		seq_printf(seq, "css_set %p\n", cg);
++		seq_printf(seq, "css_set %pK\n", cg);
+ 		list_for_each_entry(task, &cg->tasks, cg_list) {
+ 			if (count++ > MAX_TASKS_SHOWN_PER_CSS) {
+ 				seq_puts(seq, "  ...\n");
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 7798181..2437ca4 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -2021,11 +2021,11 @@ static void __kprobes report_probe(struct seq_file *pi, struct kprobe *p,
+ 		kprobe_type = "k";
+ 
+ 	if (sym)
+-		seq_printf(pi, "%p  %s  %s+0x%x  %s ",
++		seq_printf(pi, "%pK  %s  %s+0x%x  %s ",
+ 			p->addr, kprobe_type, sym, offset,
+ 			(modname ? modname : " "));
+ 	else
+-		seq_printf(pi, "%p  %s  %p ",
++		seq_printf(pi, "%pK  %s  %pK ",
+ 			p->addr, kprobe_type, p->addr);
+ 
+ 	if (!pp)
+diff --git a/kernel/lockdep_proc.c b/kernel/lockdep_proc.c
+index 1969d2f..215638d 100644
+--- a/kernel/lockdep_proc.c
++++ b/kernel/lockdep_proc.c
+@@ -65,7 +65,7 @@ static int l_show(struct seq_file *m, void *v)
+ 		return 0;
+ 	}
+ 
+-	seq_printf(m, "%p", class->key);
++	seq_printf(m, "%pK", class->key);
+ #ifdef CONFIG_DEBUG_LOCKDEP
+ 	seq_printf(m, " OPS:%8ld", class->ops);
+ #endif
+@@ -83,7 +83,7 @@ static int l_show(struct seq_file *m, void *v)
+ 
+ 	list_for_each_entry(entry, &class->locks_after, entry) {
+ 		if (entry->distance == 1) {
+-			seq_printf(m, " -> [%p] ", entry->class->key);
++			seq_printf(m, " -> [%pK] ", entry->class->key);
+ 			print_name(m, entry->class);
+ 			seq_puts(m, "\n");
+ 		}
+@@ -152,7 +152,7 @@ static int lc_show(struct seq_file *m, void *v)
+ 		if (!class->key)
+ 			continue;
+ 
+-		seq_printf(m, "[%p] ", class->key);
++		seq_printf(m, "[%pK] ", class->key);
+ 		print_name(m, class);
+ 		seq_puts(m, "\n");
+ 	}
+@@ -502,7 +502,7 @@ static void seq_stats(struct seq_file *m, struct lock_stat_data *data)
+ 		if (!i)
+ 			seq_line(m, '-', 40-namelen, namelen);
+ 
+-		snprintf(ip, sizeof(ip), "[<%p>]",
++		snprintf(ip, sizeof(ip), "[<%pK>]",
+ 				(void *)class->contention_point[i]);
+ 		seq_printf(m, "%40s %14lu %29s %pS\n",
+ 			   name, stats->contention_point[i],
+@@ -517,7 +517,7 @@ static void seq_stats(struct seq_file *m, struct lock_stat_data *data)
+ 		if (!i)
+ 			seq_line(m, '-', 40-namelen, namelen);
+ 
+-		snprintf(ip, sizeof(ip), "[<%p>]",
++		snprintf(ip, sizeof(ip), "[<%pK>]",
+ 				(void *)class->contending_point[i]);
+ 		seq_printf(m, "%40s %14lu %29s %pS\n",
+ 			   name, stats->contending_point[i],
+diff --git a/kernel/time/timer_stats.c b/kernel/time/timer_stats.c
+index 2f3b585..3069d0d 100644
+--- a/kernel/time/timer_stats.c
++++ b/kernel/time/timer_stats.c
+@@ -272,7 +272,7 @@ static void print_name_offset(struct seq_file *m, unsigned long addr)
+ 	char symname[KSYM_NAME_LEN];
+ 
+ 	if (lookup_symbol_name(addr, symname) < 0)
+-		seq_printf(m, "<%p>", (void *)addr);
++		seq_printf(m, "<%pK>", (void *)addr);
+ 	else
+ 		seq_printf(m, "%s", symname);
+ }
+
+
