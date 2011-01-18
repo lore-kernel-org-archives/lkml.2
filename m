@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab1ARQUh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 11:20:37 -0500
-Received: from fw.wantstofly.org ([80.101.37.227]:57138 "EHLO
-	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752245Ab1ARQUg (ORCPT
+	id S1752572Ab1ARQWq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 11:22:46 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:41935 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab1ARQWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 11:20:36 -0500
-Date: Tue, 18 Jan 2011 17:20:34 +0100
-From: Lennert Buijtenhek <buytenh@wantstofly.org>
-To: Eric Miao <eric.y.miao@gmail.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>,
-        Sven Neumann <s.neumann@raumfeld.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Daniel Mack <daniel@caiaq.de>
-Subject: Re: [PATCH] pxa3xx: fix PXA GPIO IRQ handling
-Message-ID: <20110118162034.GM29224@mail.wantstofly.org>
-References: <1295338561.2003.3.camel@sven> <1295338738-4129-1-git-send-email-s.neumann@raumfeld.com> <4D357DC0.2030006@metafoo.de> <AANLkTi=gGDZHukdSuupg22Gb9te+Vk_rsu6-vREeQRVE@mail.gmail.com>
+	Tue, 18 Jan 2011 11:22:45 -0500
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=I98iFNk1EVwA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=WsfaRA9WOQoGbdIM5TwA:9 a=Dgeb5pJwGuZ7ertf20gA:7 a=66UXReAZPk1K1ExzBbBE2UHAHEUA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] tracing: remove superfluous sub instructions
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, mingo@elte.hu, linux-kernel@vger.kernel.org
+In-Reply-To: <20110118155159.GA1791@nowhere>
+References: <1295364498-9288-1-git-send-email-jolsa@redhat.com>
+	 <20110118155159.GA1791@nowhere>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 18 Jan 2011 11:22:42 -0500
+Message-ID: <1295367762.12215.2.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=gGDZHukdSuupg22Gb9te+Vk_rsu6-vREeQRVE@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 18, 2011 at 08:15:22AM -0800, Eric Miao wrote:
-
-> >> Set the "set_wake" field of the irq_chip struct before calling
-> >> set_irq_chip() for all of the IRQs, so that the compat handler
-> >> actually gets installed.
+On Tue, 2011-01-18 at 16:52 +0100, Frederic Weisbecker wrote:
+> On Tue, Jan 18, 2011 at 04:28:18PM +0100, Jiri Olsa wrote:
+> > hi,
+> > 
+> > I think there's no need for substracting MCOUNT_INSN_SIZE from the
+> > IP parameter before calling the function trace (/graph) handler.
+> > 
+> > Maybe I overlooked something, but all the IP usage I saw ended
+> > up in the kallsyms_lookup function, which does the lookup using the
+> > functions' start/end boundaries to find the correct symbol for pointer.
+> > 
+> > Thus it seems to me there's no point in substracting the
+> > MCOUNT_INSN_SIZE value from the IP parameter.
+> > 
+> > I tested for x86_64 and got proper results, I believe it's
+> > the same case for x86_32.
+> > 
+> > wbr,
+> > jirka
+> > 
+> > 
+> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 > 
-> Not really sure if this is necessary. Lennert has done the transition to
-> irq_data to those _set_wake() functions as well, so it should be OK
-> that compat handler doesn't get installed.
+> Well, that sounds right after all. If we are only interested in the
+> symbol, the instruction that follows "call mcount" is still relevant
+> as it must belong to the same function.
+> 
+> Steve?
 
-Yeah, this has been dealt with upstream, and this patch won't apply.
+NAK, it will break function triggers/probes. The "func:traceon" and
+"func:traceoff". They compare the ip to the call location of mcount.
+
+-- Steve
 
 
-> >> diff --git a/arch/arm/mach-pxa/irq.c b/arch/arm/mach-pxa/irq.c
-> >> index 1beb40f..a5b42a7 100644
-> >> --- a/arch/arm/mach-pxa/irq.c
-> >> +++ b/arch/arm/mach-pxa/irq.c
-> >> @@ -111,13 +111,13 @@ static void __init pxa_init_low_gpio_irq(set_wake_t fn)
-> >>       GRER0 &= ~0x3;
-> >>       GEDR0 = 0x3;
-> >>
-> >> +     pxa_low_gpio_chip.set_wake = fn;
-> >> +
-> >>       for (irq = IRQ_GPIO0; irq <= IRQ_GPIO1; irq++) {
-> >>               set_irq_chip(irq, &pxa_low_gpio_chip);
-> >>               set_irq_handler(irq, handle_edge_irq);
-> >>               set_irq_flags(irq, IRQF_VALID);
-> >>       }
-> >> -
-> >> -     pxa_low_gpio_chip.set_wake = fn;
-
-Upstream has:
-
-        pxa_low_gpio_chip.irq_set_wake = fn;
