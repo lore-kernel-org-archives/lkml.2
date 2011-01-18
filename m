@@ -1,39 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753278Ab1ARAll (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 19:41:41 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:65282 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753127Ab1ARAlk (ORCPT
+	id S1753296Ab1ARAqd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 19:46:33 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:46470 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753119Ab1ARAqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 19:41:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:reply-to:organization:user-agent:mime-version
-         :to:subject:references:in-reply-to:content-type
-         :content-transfer-encoding;
-        b=T3V5dPyeV9iuzOIUZ0fMXU+PBDR7tEwKa88jF9yO/ShXZ81M0nagpDcavkdqkjzmJr
-         nYV3agAk+THwxdAS1RSnjE6XxLV0Whkzqogdo5WTCYyeI6WQty1jqSwRWc1MREJyrHxI
-         RYFgBbf8srU5GxWF7MXDPv7jztNNL7iGyxj7M=
-Message-ID: <4D34E1C2.1000602@gmail.com>
-Date: Mon, 17 Jan 2011 16:41:38 -0800
-From: Donna Rigas <donna.rigas@gmail.com>
-Reply-To: donna.rigas@dynonavionics.com
-Organization: Dynon Avionics
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: serial port programming second question (newbie)
-References: <4D34DE89.4030705@gmail.com>
-In-Reply-To: <4D34DE89.4030705@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 17 Jan 2011 19:46:31 -0500
+Subject: Re: [PATCH] configfs: change depends -> select SYSFS
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: James Bottomley <James.Bottomley@suse.de>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Joel Becker <jlbec@evilplan.org>
+In-Reply-To: <4D34DB24.5040800@oracle.com>
+References: <1295125851-25279-1-git-send-email-nab@linux-iscsi.org>
+	 <20110116141105.59e5b3a2@stein>
+	 <1295214807.22813.57.camel@haakon2.linux-iscsi.org>
+	 <20110117000659.57352da7@stein> <1295223733.2998.8.camel@mulgrave.site>
+	 <1295244354.22813.98.camel@haakon2.linux-iscsi.org>
+	 <20110117102420.5a1c1bf0.randy.dunlap@oracle.com>
+	 <1295302216.22813.212.camel@haakon2.linux-iscsi.org>
+	 <4D34DB24.5040800@oracle.com>
+Content-Type: text/plain
+Date: Mon, 17 Jan 2011 16:46:27 -0800
+Message-Id: <1295311587.22813.284.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also, if your call to tcsetattr fails, or if  the ioctl call to
-set the baud rate fails, does it matter if you restore the serial
-port settings or not?
->
+On Mon, 2011-01-17 at 16:13 -0800, Randy Dunlap wrote:
+> On 01/17/11 14:10, Nicholas A. Bellinger wrote:
+> > On Mon, 2011-01-17 at 10:24 -0800, Randy Dunlap wrote:
+> >> On Sun, 16 Jan 2011 22:05:54 -0800 Nicholas A. Bellinger wrote:
+> >>
+> >>> On Sun, 2011-01-16 at 18:22 -0600, James Bottomley wrote:
+> > 
+> > <SNIP>
+> > 
+> >>>> This is what I don't understand.
+> >>>>
+> >>>> Actually I think the whole premise of the patch (to get back to the
+> >>>> original topic) is wrong.
+> >>>>
+> >>>> TARGET_CORE depends on SCSI; SCSI has to have sysfs to survive ... we
+> >>>> just don't work without it yet we neither select nor depend on it.
+> >>>> SYSFS is only deselectable for embedded anyway, so I think the
+> >>>> configuration which generated this whole argument was likely a bogus one
+> >>>> and consequently, none of the patches are needed (or if they are,
+> >>>> they're the tip of the iceberg).
+> >>>>
+> >>>
+> >>> This sounds fine for TARGET_CORE, but would still leave GFS2_FS with an
+> >>> unmet direct dependency according to the original warning above.
+> >>> Unfortuately I do not recall which exactly linux-next build
+> >>> configuration was causing this warning to occur from the original post:
+> >>>
+> >>> http://marc.info/?l=linux-next&m=129355383112997&w=2
+> >>>
+> >>> Any more thoughts here Randy..?
+> >>
+> >>
+> >> I've looked at GFS2 a bit now and I think that the warning is bogus:
+> >>
+> >> kconfig complains with:
+> >> warning: (TARGET_CORE && GFS2_FS) selects CONFIGFS_FS which has unmet direct dependencies (SYSFS)
+> >>
+> >> but the "select" is conditional:
+> >> config GFS2_FS
+> >> 	tristate "GFS2 file system support"
+> >> 	depends on (64BIT || LBDAF)
+> >> 	select DLM if GFS2_FS_LOCKING_DLM
+> >> 	select CONFIGFS_FS if GFS2_FS_LOCKING_DLM
+> >> 	select SYSFS if GFS2_FS_LOCKING_DLM
+> >>
+> >> and the same condition selects both SYSFS and CONFIGFS_FS.  Furthermore, the
+> >> conditional is not true, so neither of them is being selected/enabled.
+> >> Looks like a minor kconfig buglet to me.
+> >>
+> > 
+> > Ok, so Linus has pulled the CONFIGFS_FS -> select SYSFS series and it
+> > looks like this 'select SYSFS ...' bit for GFS2_FS can safely be dropped
+> > now..
+> > 
+> > Care to carry this one via your kbuild tree..?
+> 
+> 
+> Who are you asking?  (I don't have a kbuild tree.)
+> 
+
+Err sorry, I thought you where feeding these types of kbuild/kconfig
+changes into mainline via your own tree.  In that case, here is the
+patch committed into the LIO upstream tree and
+scsi-post-merge-2.6.git/for-linus branch.
+
+Thanks!
+
+>From 5ab4b07c2b516e23cafdc24b06d5cbfd44141ca9 Mon Sep 17 00:00:00 2001
+From: Nicholas Bellinger <nab@linux-iscsi.org>
+Date: Tue, 18 Jan 2011 00:40:31 +0000
+Subject: [PATCH] gfs2: Remove 'select SYSFS ...' from Kconfig
+
+With CONFIGFS_FS now doing 'select SYSFS' by default, the extra
+'select SYSFS if GFS2_FS_LOCKING_DLM' for GFS2_FS is now unnecessary.
+
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ fs/gfs2/Kconfig |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/fs/gfs2/Kconfig b/fs/gfs2/Kconfig
+index c465ae0..ff0a8eb 100644
+--- a/fs/gfs2/Kconfig
++++ b/fs/gfs2/Kconfig
+@@ -3,7 +3,6 @@ config GFS2_FS
+        depends on (64BIT || LBDAF)
+        select DLM if GFS2_FS_LOCKING_DLM
+        select CONFIGFS_FS if GFS2_FS_LOCKING_DLM
+-       select SYSFS if GFS2_FS_LOCKING_DLM
+        select IP_SCTP if DLM_SCTP
+        select FS_POSIX_ACL
+        select CRC32
+-- 
+1.7.3.5
+
+
 
