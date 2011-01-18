@@ -1,111 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052Ab1ARTFT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 14:05:19 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:45533 "EHLO mx2.mail.elte.hu"
+	id S1753196Ab1ARTFp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 14:05:45 -0500
+Received: from hera.kernel.org ([140.211.167.34]:52971 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753021Ab1ARTFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 14:05:16 -0500
-Date: Tue, 18 Jan 2011 20:05:04 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86 fixes
-Message-ID: <20110118190504.GA11059@elte.hu>
+	id S1752838Ab1ARTFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 14:05:42 -0500
+Date: Tue, 18 Jan 2011 19:05:04 GMT
+From: tip-bot for Bharata B Rao <bharata@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        bharata@linux.vnet.ibm.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        bharata@linux.vnet.ibm.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <20110111101257.GF4772@in.ibm.com>
+References: <20110111101257.GF4772@in.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched: Display autogroup names in /proc/sched_debug
+Message-ID: <tip-8ecedd7a06d27a31dbb36fab88e2ba6e6edd43ca@git.kernel.org>
+Git-Commit-ID: 8ecedd7a06d27a31dbb36fab88e2ba6e6edd43ca
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 18 Jan 2011 19:05:04 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Commit-ID:  8ecedd7a06d27a31dbb36fab88e2ba6e6edd43ca
+Gitweb:     http://git.kernel.org/tip/8ecedd7a06d27a31dbb36fab88e2ba6e6edd43ca
+Author:     Bharata B Rao <bharata@linux.vnet.ibm.com>
+AuthorDate: Tue, 11 Jan 2011 15:42:57 +0530
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 18 Jan 2011 15:09:40 +0100
 
-Please pull the latest x86-fixes-for-linus git tree from:
+sched: Display autogroup names in /proc/sched_debug
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fixes-for-linus
+Add autogroup name to cfs_rq and tasks information to /proc/sched_debug.
 
- Thanks,
+Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20110111101257.GF4772@in.ibm.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched_autogroup.c |    5 +++++
+ kernel/sched_debug.c     |    3 +++
+ 2 files changed, 8 insertions(+), 0 deletions(-)
 
-	Ingo
-
------------------->
-Brian Gerst (1):
-      x86: Clear irqstack thread_info
-
-Shaohua Li (1):
-      x86: Make relocatable kernel work with new binutils
-
-
- arch/x86/kernel/irq_32.c      |    7 ++-----
- arch/x86/kernel/vmlinux.lds.S |   11 +++++++++--
- 2 files changed, 11 insertions(+), 7 deletions(-)
-
-diff --git a/arch/x86/kernel/irq_32.c b/arch/x86/kernel/irq_32.c
-index 96656f2..5206bb9 100644
---- a/arch/x86/kernel/irq_32.c
-+++ b/arch/x86/kernel/irq_32.c
-@@ -129,8 +129,7 @@ void __cpuinit irq_ctx_init(int cpu)
- 	irqctx = page_address(alloc_pages_node(cpu_to_node(cpu),
- 					       THREAD_FLAGS,
- 					       THREAD_ORDER));
--	irqctx->tinfo.task		= NULL;
--	irqctx->tinfo.exec_domain	= NULL;
-+	memset(&irqctx->tinfo, 0, sizeof(struct thread_info));
- 	irqctx->tinfo.cpu		= cpu;
- 	irqctx->tinfo.preempt_count	= HARDIRQ_OFFSET;
- 	irqctx->tinfo.addr_limit	= MAKE_MM_SEG(0);
-@@ -140,10 +139,8 @@ void __cpuinit irq_ctx_init(int cpu)
- 	irqctx = page_address(alloc_pages_node(cpu_to_node(cpu),
- 					       THREAD_FLAGS,
- 					       THREAD_ORDER));
--	irqctx->tinfo.task		= NULL;
--	irqctx->tinfo.exec_domain	= NULL;
-+	memset(&irqctx->tinfo, 0, sizeof(struct thread_info));
- 	irqctx->tinfo.cpu		= cpu;
--	irqctx->tinfo.preempt_count	= 0;
- 	irqctx->tinfo.addr_limit	= MAKE_MM_SEG(0);
+diff --git a/kernel/sched_autogroup.c b/kernel/sched_autogroup.c
+index 32a723b..938d52f 100644
+--- a/kernel/sched_autogroup.c
++++ b/kernel/sched_autogroup.c
+@@ -231,6 +231,11 @@ void proc_sched_autogroup_show_task(struct task_struct *p, struct seq_file *m)
+ #ifdef CONFIG_SCHED_DEBUG
+ static inline int autogroup_path(struct task_group *tg, char *buf, int buflen)
+ {
++	int enabled = ACCESS_ONCE(sysctl_sched_autogroup_enabled);
++
++	if (!enabled || !tg->autogroup)
++		return 0;
++
+ 	return snprintf(buf, buflen, "%s-%ld", "/autogroup", tg->autogroup->id);
+ }
+ #endif /* CONFIG_SCHED_DEBUG */
+diff --git a/kernel/sched_debug.c b/kernel/sched_debug.c
+index 4d36f37..e4d3725 100644
+--- a/kernel/sched_debug.c
++++ b/kernel/sched_debug.c
+@@ -93,6 +93,9 @@ static char group_path[PATH_MAX];
  
- 	per_cpu(softirq_ctx, cpu) = irqctx;
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index bf47007..b34ab80 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -34,11 +34,9 @@ OUTPUT_FORMAT(CONFIG_OUTPUT_FORMAT, CONFIG_OUTPUT_FORMAT, CONFIG_OUTPUT_FORMAT)
- #ifdef CONFIG_X86_32
- OUTPUT_ARCH(i386)
- ENTRY(phys_startup_32)
--jiffies = jiffies_64;
- #else
- OUTPUT_ARCH(i386:x86-64)
- ENTRY(phys_startup_64)
--jiffies_64 = jiffies;
- #endif
- 
- #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
-@@ -142,6 +140,15 @@ SECTIONS
- 		CACHELINE_ALIGNED_DATA(L1_CACHE_BYTES)
- 
- 		DATA_DATA
-+		/*
-+		 * Workaround a binutils (2.20.51.0.12 to 2.21.51.0.3) bug.
-+		 * This makes jiffies relocatable in such binutils
-+		 */
-+#ifdef CONFIG_X86_32
-+		jiffies = jiffies_64;
-+#else
-+		jiffies_64 = jiffies;
-+#endif
- 		CONSTRUCTORS
- 
- 		/* rarely changed data like cpu maps */
+ static char *task_group_path(struct task_group *tg)
+ {
++	if (autogroup_path(tg, group_path, PATH_MAX))
++		return group_path;
++
+ 	/*
+ 	 * May be NULL if the underlying cgroup isn't fully-created yet
+ 	 */
