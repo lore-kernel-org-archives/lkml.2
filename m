@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab1ARUW3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 15:22:29 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:62619 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745Ab1ARUW1 (ORCPT
+	id S1753311Ab1ARUXj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 15:23:39 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55673 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab1ARUXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 15:22:27 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=44vUGAvzfu8A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=e6tHPeC81y11zkmXj2oA:9 a=LoaeXjGvLh53rZkO-yEA:7 a=Vnllp0A_kzUuQpLxIxAzkujX8KIA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
- Unknown relocation: 36
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: David Miller <davem@davemloft.net>, richm@oldelvet.org.uk,
-        609371@bugs.debian.org, ben@decadent.org.uk,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, mingo@redhat.com
-In-Reply-To: <20110118201323.GA14930@Krystal>
-References: <1295273486.16479.15.camel@gandalf.stny.rr.com>
-	 <20110117.213448.226787087.davem@davemloft.net>
-	 <20110117.220039.71097651.davem@davemloft.net>
-	 <20110117.220857.104046847.davem@davemloft.net>
-	 <20110118164633.GA12872@Krystal>
-	 <1295372019.12215.30.camel@gandalf.stny.rr.com>
-	 <1295374595.12215.32.camel@gandalf.stny.rr.com>
-	 <1295375178.12215.33.camel@gandalf.stny.rr.com>
-	 <20110118201323.GA14930@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 18 Jan 2011 15:22:24 -0500
-Message-ID: <1295382144.12215.123.camel@gandalf.stny.rr.com>
+	Tue, 18 Jan 2011 15:23:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=eaiu1u+a3rq2sqFYxqo6vxomdL/nezBxFwFCXyOwTe4LuFg5QFvoa3SmnnWk2yAyGW
+         SiQbMKFQwjIPMaQUGPJoeDx1UXMq+DQD1tZoTxrQs/MCyL79boo9Q9TCE0KaGD8Pl6gr
+         NUS3j38xkaw2FiKTZpHPAFeQ0cf9bhR7t3QfQ=
+Subject: Re: [PATCH] af_unix: implement socket filter
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Alban Crequy <alban.crequy@collabora.co.uk>
+Cc: Ian Molton <ian.molton@collabora.co.uk>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        ebiederm@xmission.com, xemul@openvz.org, davidel@xmailserver.org
+In-Reply-To: <20110118175143.3a164669@chocolatine.cbg.collabora.co.uk>
+References: <1295368755-20931-1-git-send-email-ian.molton@collabora.co.uk>
+	 <1295371361.3290.15.camel@edumazet-laptop>
+	 <20110118175143.3a164669@chocolatine.cbg.collabora.co.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Jan 2011 21:19:13 +0100
+Message-ID: <1295381953.3194.1.camel@edumazet-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-18 at 15:13 -0500, Mathieu Desnoyers wrote:
-> * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > On Tue, 2011-01-18 at 13:16 -0500, Steven Rostedt wrote:
-> > > On Tue, 2011-01-18 at 12:33 -0500, Steven Rostedt wrote:
-> > > > On Tue, 2011-01-18 at 11:46 -0500, Mathieu Desnoyers wrote:
-> > > 
-> > > > > Also align TRACE_PRINTKS on 8 bytes to make sure the beginning of the section is
-> > > > > aligned on pointer size.
-> > > > 
-> > > > If I can make it crash without the alignments and this fixes the issue,
-> > > > I'll apply both patches.
-> > > 
-> > > After applying David's patch, I do indeed get a crash. I'll now apply
-> > > yours and see if it fixes the issue.
-> > 
-> > Your patch doesn't seem to fix it either. I'll investigate this further.
-> 
-> I think David's patch missed kernel/trace/trace_export.c
-> 
-> struct ftrace_event_call __used                                         \
-> __attribute__((__aligned__(4)))                                         \
-> __attribute__((section("_ftrace_events"))) event_##call = {             \
-> 
-> and kernel/trace/trace.h:
-> 
-> #define FTRACE_ENTRY(call, struct_name, id, tstruct, print)             \
->         extern struct ftrace_event_call                                 \
->         __attribute__((__aligned__(4))) event_##call;
-> 
-> does it help if you remove these ?
+Le mardi 18 janvier 2011 à 17:51 +0000, Alban Crequy a écrit :
+> Le Tue, 18 Jan 2011 18:22:41 +0100,
+> Eric Dumazet <eric.dumazet@gmail.com> a écrit :
 
-I doubt it, but I'll try it anyway.
+> > Any idea on performance cost adding sk_filter() call ?
+> 
+> Ian will write a performance test and repost the patch with some stats.
+> I don't know about the performance cost.
 
--- Steve
+Dont spend time on this, it was more a question for myself ;)
+
+Cost should be very small, unless complex filter is used, and I have a
+JIT compiler for BPF on x86_64, will post it when net-next-2.6 reopens.
 
 
 
