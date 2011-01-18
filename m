@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744Ab1ARL2i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 06:28:38 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:36703 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131Ab1ARL2g (ORCPT
+	id S1752042Ab1ARL3Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 06:29:16 -0500
+Received: from fnsrvlx3.fnbs.net.my ([202.9.108.191]:50890 "EHLO
+	smtp-gw.fnbs.net.my" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751190Ab1ARL3P convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 06:28:36 -0500
-Subject: Re: [PATCH 3/3] trusted-keys: small cleanup
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: safford@watson.ibm.com, safford@us.ibm.com, jj@chaosbits.net,
-        dhowells@redhat.com, jmorris@namei.org, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <201101182003.ACH57348.HOtFMVOLJQSOFF@I-love.SAKURA.ne.jp>
-References: <201101170041.p0H0ffFE086481@www262.sakura.ne.jp>
-	 <201101170044.p0H0iLQW087457@www262.sakura.ne.jp>
-	 <1295298400.2642.9.camel@localhost.localdomain>
-	 <201101180139.p0I1dh9T066040@www262.sakura.ne.jp>
-	 <1295342793.3426.12.camel@localhost.localdomain>
-	 <201101182003.ACH57348.HOtFMVOLJQSOFF@I-love.SAKURA.ne.jp>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Jan 2011 06:28:29 -0500
-Message-ID: <1295350109.3426.29.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Jan 2011 06:29:15 -0500
+X-Greylist: delayed 2009 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Jan 2011 06:29:15 EST
+From: "British Online Promotion 2011" <bnl-bnl@hotmail.co.uk>
+Subject: Dear: e-Mail Winner
+X-Mailer: v3.1s ( 115.242.52.59 - adli )
+X-X-Originating-IP: 115.242.52.59
+Date: Tue, 18 Jan 2011 18:53:19 +0800
+Message-id: <4d35711f.79.51b.1518195499@seca-dyme.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: 202.9.108.191
+X-SpamDetect: ********************: 20.799999 Content: cid=421(2.5) cid=419(2.5) cid=357(1.5) cid=276(1.5) cid=244(3.0) cid=137(3.0) cid=136(1.5) =15.5, Content Spam match=7.0, From3consonants=0.3, Aspam=-2.0
+X-Aspam: Words 0.0 -pregnant -salesmen -objections -decided -unborn -_____ -amended -sender -boss 
+X-Aspam: External-IP matched 202.9.108 2.0
+X-Aspam: Best match was sample aspam_good\m4166.msg
+X-Aspam: Total 2.0
+X-SpamContent: IsSpam
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-18 at 20:03 +0900, Tetsuo Handa wrote:
-> Mimi Zohar wrote:
-> > > >       va_end(argp);
-> > > > -     ret = crypto_shash_final(&sdesc->shash, paramdigest);
-> > > > +     if (!ret)
-> > > > +             ret = crypto_shash_final(&sdesc->shash, paramdigest);
-> > > >       if (!ret)
-> > 
-> > Change the second '(!ret)' here, the crypto_shash_file() return code
-> > test, from '(!ret)' to '(ret < 0)', like the other crypto_shash_file()
-> > tests.
-> 
-> Did you mean changing from
-> 
-> 	if (!ret)
-> 		ret = crypto_shash_final(&sdesc->shash, paramdigest);
-> 
-> to
-> 
-> 	if (ret < 0)
-> 		ret = crypto_shash_final(&sdesc->shash, paramdigest);
-> 
-> (i.e. invert the condition)?
+British National Lottery Sweepstakes Jackpot® Winner 
+2011
+    Dear: e-Mail Winner,   Winning Notification
 
-Wrong '(!ret)'.  Instead of:
-        va_end(argp);
-        if (!ret)
-                ret = crypto_shash_final(&sdesc->shash, paramdigest);
-        if (!ret)
+Your email address as indicated was drawn and attached to
+Ticket
+no:56475600545188 with Serial  no:2113-05 and drew the lucky
+numbers
+9-21-17-39-23-13(20) which subsequently won you 1,000,000.00
+(One Million
+Great Britain pounds) as one of the 10 jackpot winners in
+this draw.
+contact our fiduciary agent for claims with the contact
+below.
 
-do:
-        va_end(argp);
-        if (!ret)
-                ret = crypto_shash_final(&sdesc->shash, paramdigest);
-        if (ret < 0)
+Agent Name: william Gore.
+Email:bnl-bnl@hotmail.co.uk
 
-> I'm confused. Would you make the patch by yourself?
+Name:.... 
+Address:.
+Country...
+Occupation:....
+PhoneNumber:....
 
-It's only for consistency, not that important.
-
-thanks,
-
-Mimi
-
-
+Sincerely,  
+Mr. Johnson White.
+Copyright © 1991-2011.
