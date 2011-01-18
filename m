@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443Ab1ARUe0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 15:34:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45930 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752780Ab1ARUeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 15:34:25 -0500
-Date: Tue, 18 Jan 2011 21:32:37 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Michal Simek <monstr@monstr.eu>
-Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 13 of 66] export maybe_mkwrite
-Message-ID: <20110118203237.GF9506@random.random>
-References: <patchbomb.1288798055@v2.random>
- <15324c9c30081da3a740.1288798068@v2.random>
- <4D344EAF.1080401@petalogix.com>
- <20110117143345.GQ9506@random.random>
- <4D35A3D6.4070801@monstr.eu>
+	id S1753486Ab1ARUlI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 15:41:08 -0500
+Received: from mail160.messagelabs.com ([216.82.253.99]:30700 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752770Ab1ARUlH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 15:41:07 -0500
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-13.tower-160.messagelabs.com!1295383257!9308898!12
+X-StarScan-Version: 6.2.9; banners=-,-,-
+X-Originating-IP: [216.166.12.31]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: scsi_sysfs.c: make local symbols static
+Date: Tue, 18 Jan 2011 13:40:41 -0700
+User-Agent: KMail/1.9.9
+CC: <linux-scsi@vger.kernel.org>, <James.Bottomley@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <4D35A3D6.4070801@monstr.eu>
+Message-ID: <201101181340.41695.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 18, 2011 at 03:29:42PM +0100, Michal Simek wrote:
-> Of course: Look for example at this page:
-> http://www.monstr.eu/wiki/doku.php?id=log:2011-01-18_11_51_49#linux_next
+The symbols dev_attr_hstate and scsi_shost_attr_group are only used
+locally in this file and should be declared static.
 
-Ok now I see, the problem is the lack of pte_mkwrite with MMU=n.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: James E.J. Bottomley <James.Bottomley@suse.de>
 
-So either we apply your patch or we move the maybe_mkwrite at the top
-of huge_mm.h (before #ifdef CONFIG_TRANSPARENT_HUGEPAGE), it's up to
-you...
+---
+
+diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
+index 490ce21..2e35979 100644
+--- a/drivers/scsi/scsi_sysfs.c
++++ b/drivers/scsi/scsi_sysfs.c
+@@ -197,7 +197,7 @@ show_shost_state(struct device *dev, struct device_attribute *attr, char *buf)
+ }
+ 
+ /* DEVICE_ATTR(state) clashes with dev_attr_state for sdev */
+-struct device_attribute dev_attr_hstate =
++static struct device_attribute dev_attr_hstate =
+ 	__ATTR(state, S_IRUGO | S_IWUSR, show_shost_state, store_shost_state);
+ 
+ static ssize_t
+@@ -275,7 +275,7 @@ static struct attribute *scsi_sysfs_shost_attrs[] = {
+ 	NULL
+ };
+ 
+-struct attribute_group scsi_shost_attr_group = {
++static struct attribute_group scsi_shost_attr_group = {
+ 	.attrs =	scsi_sysfs_shost_attrs,
+ };
+ 
