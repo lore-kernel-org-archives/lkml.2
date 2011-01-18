@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab1ARVRX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 16:17:23 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:61838 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668Ab1ARVRV (ORCPT
+	id S1752926Ab1ARVRf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 16:17:35 -0500
+Received: from mail132.messagelabs.com ([216.82.242.115]:6611 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752446Ab1ARVRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 16:17:21 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 3/4] BKL: mark lock_kernel as deprecated
-Date: Tue, 18 Jan 2011 22:17:01 +0100
-Message-Id: <1295385422-3592-4-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1295385422-3592-1-git-send-email-arnd@arndb.de>
-References: <1295385422-3592-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:IGH9I2Xk9AB/qAh3uis8IgJf9AoXORkvgex6dC7/E9h
- 40JB+pHUztSq/VNBW20mPCBAc9kTKrwdVDNNE/3wnoJSTxbYJ6
- mbTWS0GT65hpWemZ9iYXExJSktqwh+DpBFV6teQ8hbnt+LyP1T
- 4uyLLPpY45RVbvU480HQWloiBH1KWb7dMZ1VGyaLccTIxoNXxR
- +TLA9yynsKCubMcRTiHKA==
+	Tue, 18 Jan 2011 16:17:34 -0500
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-11.tower-132.messagelabs.com!1295385434!11033037!34
+X-StarScan-Version: 6.2.9; banners=-,-,-
+X-Originating-IP: [216.166.12.97]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] fs/notify/notification.c: make subsys_initcall static
+Date: Tue, 18 Jan 2011 14:17:08 -0700
+User-Agent: KMail/1.9.9
+CC: <eparis@redhat.com>, <agruen@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201101181417.08751.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No new code should use the big kernel lock, so
-we should really emit compiler warnings to make
-people building out of mainline code aware of
-this.
+The symbol fsnotify_notification_init is a subsys_initcall and can be declared
+static.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: Andreas Gruenbacher <agruen@suse.de>
+
 ---
- include/linux/smp_lock.h |   23 ++++++-----------------
- 1 files changed, 6 insertions(+), 17 deletions(-)
 
-diff --git a/include/linux/smp_lock.h b/include/linux/smp_lock.h
-index 3a19882..a06eb78 100644
---- a/include/linux/smp_lock.h
-+++ b/include/linux/smp_lock.h
-@@ -30,24 +30,14 @@ extern void __lockfunc
- _unlock_kernel(const char *func, const char *file, int line)
- __releases(kernel_lock);
- 
--#define lock_kernel() do {					\
--	_lock_kernel(__func__, __FILE__, __LINE__);		\
--} while (0)
--
--#define unlock_kernel()	do {					\
--	_unlock_kernel(__func__, __FILE__, __LINE__);		\
--} while (0)
-+static inline void __deprecated lock_kernel(void)
-+{
-+	_lock_kernel(__func__, __FILE__, __LINE__);
-+}
- 
--/*
-- * Various legacy drivers don't really need the BKL in a specific
-- * function, but they *do* need to know that the BKL became available.
-- * This function just avoids wrapping a bunch of lock/unlock pairs
-- * around code which doesn't really need it.
-- */
--static inline void cycle_kernel_lock(void)
-+static inline void __deprecated unlock_kernel(void)
- {
--	lock_kernel();
--	unlock_kernel();
-+	_unlock_kernel(__func__, __FILE__, __LINE__);
+diff --git a/fs/notify/notification.c b/fs/notify/notification.c
+index f39260f..85ae08f 100644
+--- a/fs/notify/notification.c
++++ b/fs/notify/notification.c
+@@ -447,7 +447,7 @@ struct fsnotify_event *fsnotify_create_event(struct inode *to_tell, __u32 mask,
+ 	return event;
  }
  
- #else
-@@ -55,7 +45,6 @@ static inline void cycle_kernel_lock(void)
- #ifdef CONFIG_BKL /* provoke build bug if not set */
- #define lock_kernel()
- #define unlock_kernel()
--#define cycle_kernel_lock()			do { } while(0)
- #endif /* CONFIG_BKL */
- 
- #define release_kernel_lock(task)		do { } while(0)
--- 
-1.7.1
-
+-__init int fsnotify_notification_init(void)
++static __init int fsnotify_notification_init(void)
+ {
+ 	fsnotify_event_cachep = KMEM_CACHE(fsnotify_event, SLAB_PANIC);
+ 	fsnotify_event_holder_cachep = KMEM_CACHE(fsnotify_event_holder, SLAB_PANIC);
