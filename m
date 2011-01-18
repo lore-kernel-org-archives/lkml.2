@@ -1,60 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000Ab1ARUGz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 15:06:55 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:47979 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751961Ab1ARUGy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 15:06:54 -0500
+	id S1753213Ab1ARULV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 15:11:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62169 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752512Ab1ARULT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 15:11:19 -0500
+Date: Tue, 18 Jan 2011 22:10:31 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Jason Wang <jasowang@redhat.com>, kvm@vger.kernel.org,
+        virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vhost: rcu annotation fixup
+Message-ID: <20110118201031.GC18760@redhat.com>
+References: <20110118110845.GA11555@redhat.com>
+ <20110118174834.GF2193@linux.vnet.ibm.com>
+ <20110118175500.GA6935@redhat.com>
+ <20110118190232.GM2193@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <4D35EF64.1040906@xmsnet.nl>
-References: <4D335417.80704@xmsnet.nl>
-	<4D35EF64.1040906@xmsnet.nl>
-Date: Tue, 18 Jan 2011 12:06:53 -0800
-Message-ID: <AANLkTinejKw0pY5HncB2e0ocjqYuCwTBUwd2xkroWu+E@mail.gmail.com>
-Subject: Re: [regression] 2.6.37+ commit 0363466866d9.... breaks tcp ipv6
-From: Jesse Gross <jesse@nicira.com>
-To: Hans de Bruin <jmdebruin@xmsnet.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110118190232.GM2193@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 18, 2011 at 11:52 AM, Hans de Bruin <jmdebruin@xmsnet.nl> wrote:
-> On 01/16/2011 09:24 PM, Hans de Bruin wrote:
->>
->> After last nights compile i lost the possibility to connect to ssh and
->> http over ipv6. The connection stops at syn_sent. connections to my
->> machine end in syn_recv. ping6 still works.
->>
->
-> The bisect ended in:
->
-> 0363466866d901fbc658f4e63dd61e7cc93dd0af is the first bad commit
-> commit 0363466866d901fbc658f4e63dd61e7cc93dd0af
-> Author: Jesse Gross <jesse@nicira.com>
-> Date:   Sun Jan 9 06:23:35 2011 +0000
->
->    net offloading: Convert checksums to use centrally computed features.
->
->    In order to compute the features for other offloads (primarily
->    scatter/gather), we need to first check the ability of the NIC to
->    offload the checksum for the packet.  Since we have already computed
->    this, we can directly use the result instead of figuring it out
->    again.
->
->    Signed-off-by: Jesse Gross <jesse@nicira.com>
->    Signed-off-by: David S. Miller <davem@davemloft.net>
->
->
-> ssh ::1  still works. And since dns still works I guess udp is not affected.
-> My nic is a:
->
-> 09:00.0 Ethernet controller: Broadcom Corporation NetXtreme BCM5752 Gigabit
-> Ethernet PCI Express (rev 02)
+On Tue, Jan 18, 2011 at 11:02:33AM -0800, Paul E. McKenney wrote:
+> On Tue, Jan 18, 2011 at 07:55:00PM +0200, Michael S. Tsirkin wrote:
+> > On Tue, Jan 18, 2011 at 09:48:34AM -0800, Paul E. McKenney wrote:
+> > > On Tue, Jan 18, 2011 at 01:08:45PM +0200, Michael S. Tsirkin wrote:
+> > > > When built with rcu checks enabled, vhost triggers
+> > > > bogus warnings as vhost features are read without
+> > > > dev->mutex sometimes.
+> > > > Fixing it properly is not trivial as vhost.h does not
+> > > > know which lockdep classes it will be used under.
+> > > > Disable the warning by stubbing out the check for now.
+> > > > 
+> > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > > ---
+> > > >  drivers/vhost/vhost.h |    4 +---
+> > > >  1 files changed, 1 insertions(+), 3 deletions(-)
+> > > > 
+> > > > diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+> > > > index 2af44b7..2d03a31 100644
+> > > > --- a/drivers/vhost/vhost.h
+> > > > +++ b/drivers/vhost/vhost.h
+> > > > @@ -173,9 +173,7 @@ static inline int vhost_has_feature(struct vhost_dev *dev, int bit)
+> > > >  {
+> > > >  	unsigned acked_features;
+> > > > 
+> > > > -	acked_features =
+> > > > -		rcu_dereference_index_check(dev->acked_features,
+> > > > -					    lockdep_is_held(&dev->mutex));
+> > > > +	acked_features = rcu_dereference_index_check(dev->acked_features, 1);
+> > > 
+> > > Ouch!!!
+> > > 
+> > > Could you please at least add a comment?
+> > 
+> > Yes, OK.
+> > 
+> > > Alternatively, pass in the lock that is held and check for that?  Given
+> > > that this is a static inline, the compiler should be able to optimize
+> > > the argument away when !PROVE_RCU, correct?
+> > > 
+> > > 							Thanx, Paul
+> > 
+> > Hopefully, yes. We don't always have a lock: the idea was
+> > to create a lockdep for these cases. But we can't pass
+> > the pointer to that ...
+> 
+> I suppose you could pass a pointer to the lockdep map structure.
+> Not sure if this makes sense, but it would handle the situation.
 
-Are you using vlans?  If so, can you please test this patch?
-http://patchwork.ozlabs.org/patch/79264/
+Will it compile with lockdep disabled too? What will the pointer be?
+
+> Alternatively, create a helper function that checks the possibilities
+> and screams if none of them are in effect.
+> 
+> 							Thanx, Paul
+
+The problem here is the callee needs to know about all callers.
+
+> > > >  	return acked_features & (1 << bit);
+> > > >  }
+> > > > 
+> > > > -- 
+> > > > 1.7.3.2.91.g446ac
+> > > > --
+> > > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > > > the body of a message to majordomo@vger.kernel.org
+> > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > > Please read the FAQ at  http://www.tux.org/lkml/
