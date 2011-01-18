@@ -1,112 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968Ab1ARTbC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 14:31:02 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:40029 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572Ab1ARTbA convert rfc822-to-8bit (ORCPT
+	id S1753041Ab1ARTvL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 14:51:11 -0500
+Received: from webmail10.mail.sp.isp-net.nl ([217.149.192.62]:41436 "EHLO
+	webmail10.mail.sp.isp-net.nl" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752272Ab1ARTvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 14:31:00 -0500
-From: "Igor M. Liplianin" <liplianin@me.by>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: [PATCH 2/9 v2] Altera FPGA based CI driver module.
-Date: Tue, 18 Jan 2011 21:23:31 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.37-smp+; KDE/4.4.3; i686; ; )
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <4d20723d.cc7e0e0a.6f59.3762@mx.google.com> <4D333066.3020203@infradead.org>
-In-Reply-To: <4D333066.3020203@infradead.org>
+	Tue, 18 Jan 2011 14:51:10 -0500
+Message-ID: <4D35EF64.1040906@xmsnet.nl>
+Date: Tue, 18 Jan 2011 20:52:04 +0100
+From: Hans de Bruin <jmdebruin@xmsnet.nl>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101125 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201101182123.31987.liplianin@me.by>
+To: LKML <linux-kernel@vger.kernel.org>, jesse@nicira.com
+Subject: [regression] 2.6.37+ commit 0363466866d9.... breaks tcp ipv6
+References: <4D335417.80704@xmsnet.nl>
+In-Reply-To: <4D335417.80704@xmsnet.nl>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Language-Detected: en
+X-Spam-Scanned: InterNLnet Mail Scan System V2.03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В сообщении от 16 января 2011 19:52:38 автор Mauro Carvalho Chehab написал:
-> Em 02-01-2011 10:01, Igor M. Liplianin escreveu:
-> > An Altera FPGA CI module for NetUP Dual DVB-T/C RF CI card.
-> > 
-> > Signed-off-by: Igor M. Liplianin <liplianin@netup.ru>
-> 
-> Igor,
-> 
-> There's something wrong with this patch. I got lots of error after applying
-> it:
-> 
-> drivers/media/video/cx23885/altera-ci.o: In function
-> `netup_ci_read_attribute_mem':
-> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:304:
-> multiple definition of `netup_ci_read_attribute_mem'
-> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
-> a/video/cx23885/cimax2.c:241: first defined here
-> drivers/media/video/cx23885/altera-ci.o: In function `netup_ci_op_cam':
-> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:269:
-> multiple definition of `netup_ci_op_cam'
-> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
-> a/video/cx23885/cimax2.c:171: first defined here
-> drivers/media/video/cx23885/altera-ci.o: In function
-> `netup_ci_slot_shutdown':
-> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:364:
-> multiple definition of `netup_ci_slot_shutdown'
-> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
-> a/video/cx23885/cimax2.c:293: first defined here
-> drivers/media/video/cx23885/altera-ci.o: In function
-> `netup_ci_slot_ts_ctl':
-> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:370:
-> multiple definition of `netup_ci_slot_ts_ctl'
-> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
-> a/video/cx23885/cimax2.c:320: first defined here
-> drivers/media/video/cx23885/altera-ci.o: In function
-> `netup_ci_write_cam_ctl':
-> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:322:
-> multiple definition of `netup_ci_write_cam_ctl'
-> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
-> a/video/cx23885/cimax2.c:259: first defined here
-> drivers/media/video/cx23885/altera-ci.o: In function
-> `netup_ci_read_cam_ctl':
-> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:315:
-> multiple definition of `netup_ci_read_cam_ctl'
-> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
-> a/video/cx23885/cimax2.c:252: first defined here
-> drivers/media/video/cx23885/altera-ci.o: In function
-> `netup_ci_write_attribute_mem':
-> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:310:
-> multiple definition of `netup_ci_write_attribute_mem'
-> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
-> a/video/cx23885/cimax2.c:247: first defined here
-> drivers/media/video/cx23885/altera-ci.o: In function
-> `netup_poll_ci_slot_status':
-> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:448:
-> multiple definition of `netup_poll_ci_slot_status'
-> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
-> a/video/cx23885/cimax2.c:403: first defined here
-> drivers/media/video/cx23885/altera-ci.o: In function
-> `netup_ci_slot_reset':
-> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:327:
-> multiple definition of `netup_ci_slot_reset'
-> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
-> a/video/cx23885/cimax2.c:264: first defined here
-> 
-> 
-> Please fix it and submit a new version. The better is to replace all those
-> new symbols to start with altera_ci.
-I see, allyesconfig...
+On 01/16/2011 09:24 PM, Hans de Bruin wrote:
+> After last nights compile i lost the possibility to connect to ssh and
+> http over ipv6. The connection stops at syn_sent. connections to my
+> machine end in syn_recv. ping6 still works.
+>
 
-> 
-> While here, please, on the first patch, move the Altera FPGA driver to
-> staging, to give people some time do discuss about it.
-It means that cx23885 driver will depend on staging. Is it OK?
+The bisect ended in:
 
-> 
-> PS.: there are a few CodingStyle errors on this patch. Please always review
-> your patches with ./scripts/checkpatch.pl.
-I'll do it.
-> 
-> Thanks!
-> Mauro
+0363466866d901fbc658f4e63dd61e7cc93dd0af is the first bad commit
+commit 0363466866d901fbc658f4e63dd61e7cc93dd0af
+Author: Jesse Gross <jesse@nicira.com>
+Date:   Sun Jan 9 06:23:35 2011 +0000
+
+     net offloading: Convert checksums to use centrally computed features.
+
+     In order to compute the features for other offloads (primarily
+     scatter/gather), we need to first check the ability of the NIC to
+     offload the checksum for the packet.  Since we have already computed
+     this, we can directly use the result instead of figuring it out
+     again.
+
+     Signed-off-by: Jesse Gross <jesse@nicira.com>
+     Signed-off-by: David S. Miller <davem@davemloft.net>
+
+
+ssh ::1  still works. And since dns still works I guess udp is not 
+affected. My nic is a:
+
+09:00.0 Ethernet controller: Broadcom Corporation NetXtreme BCM5752 
+Gigabit Ethernet PCI Express (rev 02)
 
 -- 
-Igor M. Liplianin
-Microsoft Windows Free Zone - Linux used for all Computing Tasks
+Hans
+
