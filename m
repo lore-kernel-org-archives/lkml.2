@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab1ARVRf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 16:17:35 -0500
-Received: from mail132.messagelabs.com ([216.82.242.115]:6611 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446Ab1ARVRe (ORCPT
+	id S1753260Ab1ARVRw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 16:17:52 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:64516 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753185Ab1ARVRv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 16:17:34 -0500
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-11.tower-132.messagelabs.com!1295385434!11033037!34
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.97]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] fs/notify/notification.c: make subsys_initcall static
-Date: Tue, 18 Jan 2011 14:17:08 -0700
-User-Agent: KMail/1.9.9
-CC: <eparis@redhat.com>, <agruen@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201101181417.08751.hartleys@visionengravers.com>
+	Tue, 18 Jan 2011 16:17:51 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 2/4] BKL: disable by default
+Date: Tue, 18 Jan 2011 22:17:00 +0100
+Message-Id: <1295385422-3592-3-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1295385422-3592-1-git-send-email-arnd@arndb.de>
+References: <1295385422-3592-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:u16o65Z/NjdKkc0YCQnYMFM5DUnzGlF7tKMFEXBGQpL
+ IHsNujkSiH2h2D7yoscfAiojQ0oQxCrG4cIrBFoZeJXeUmD1mv
+ m8o8B0Z/CfQ689tY+N58Pm6xkyrI36NllqPyYG6mQd9QQvRCJp
+ b4CE8OUaRJXg3xPZ6uwrY52PA4ObCxV/osByXH0bQ01WQkn7NN
+ /6D7VRdIFa9tpapEpSlcw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The symbol fsnotify_notification_init is a subsys_initcall and can be declared
-static.
+As discussed at the kernel summit, this change disables
+the big kernel lock by default. It is still possible to
+enable it in order to build the modules that use it.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Andreas Gruenbacher <agruen@suse.de>
-
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
+ lib/Kconfig.debug |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/fs/notify/notification.c b/fs/notify/notification.c
-index f39260f..85ae08f 100644
---- a/fs/notify/notification.c
-+++ b/fs/notify/notification.c
-@@ -447,7 +447,7 @@ struct fsnotify_event *fsnotify_create_event(struct inode *to_tell, __u32 mask,
- 	return event;
- }
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 2d05adb..f2a399c 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -472,12 +472,11 @@ config DEBUG_MUTEXES
  
--__init int fsnotify_notification_init(void)
-+static __init int fsnotify_notification_init(void)
- {
- 	fsnotify_event_cachep = KMEM_CACHE(fsnotify_event, SLAB_PANIC);
- 	fsnotify_event_holder_cachep = KMEM_CACHE(fsnotify_event_holder, SLAB_PANIC);
+ config BKL
+ 	bool "Big Kernel Lock" if (SMP || PREEMPT)
+-	default y
+ 	help
+ 	  This is the traditional lock that is used in old code instead
+-	  of proper locking. All drivers that use the BKL should depend
+-	  on this symbol.
+-	  Say Y here unless you are working on removing the BKL.
++	  of proper locking. The big kernel lock will go away in 2.6.39,
++	  so all modules that still depend on it need to be changed or
++	  they will be removed as well.
+ 
+ config DEBUG_LOCK_ALLOC
+ 	bool "Lock debugging: detect incorrect freeing of live locks"
+-- 
+1.7.1
+
