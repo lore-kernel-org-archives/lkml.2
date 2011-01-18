@@ -1,111 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085Ab1ARRfw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 12:35:52 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44428 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752647Ab1ARRfv (ORCPT
+	id S1752055Ab1ARRrg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 12:47:36 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:40535 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032Ab1ARRrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 12:35:51 -0500
-Subject: [GIT PULL] parisc fixes for 2.6.38-rc1
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Parisc List <linux-parisc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
+	Tue, 18 Jan 2011 12:47:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=WyncHkj9MIorQyqV1HvjxyrtbMppDG71gT7/C4IdWFRD81Vtgz94UUAS2IVgcuJdFJ
+         jl72ljtsg/WdCUDYf/Z5/QHnza0FS1ozGYeYBg/VCIiRmyHEngjUjY9jKZG+WES+3N9h
+         tdDjVmHBhBvFAg07owyDUaBKVn++29cj3qhLI=
+Subject: [PATCH] net: filter: dont block softirqs in sk_run_filter()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        ebiederm@xmission.com, xemul@openvz.org, davidel@xmailserver.org,
+        Alban Crequy <alban.crequy@collabora.co.uk>,
+        Ian Molton <ian.molton@collabora.co.uk>
+In-Reply-To: <1295371361.3290.15.camel@edumazet-laptop>
+References: <1295368755-20931-1-git-send-email-ian.molton@collabora.co.uk>
+	 <1295371361.3290.15.camel@edumazet-laptop>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Jan 2011 11:35:48 -0600
-Message-ID: <1295372148.9752.174.camel@mulgrave.site>
+Date: Tue, 18 Jan 2011 18:46:52 +0100
+Message-ID: <1295372812.3290.35.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is just a couple of minor parisc specific fixes.  One for a console
-line wrap issue and the other for the transparent hugepages compile
-failure.  We've run these through our usual build and boot checks.
+Packet filter (BPF) doesnt need to disable softirqs, being fully
+re-entrant and lock-less.
 
-The patches are here:
-
-master.kernel.org:/pub/scm/linux/kernel/git/jejb/parisc-2.6.git#fixes
-
-The short changelog is:
-
-Guy Martin (1):
-      parisc : Remove broken line wrapping handling pdc_iodc_print()
-
-James Bottomley (1):
-      parisc: fix compile breakage caused by inlining maybe_mkwrite
-
-And the diffstat:
-
- arch/parisc/include/asm/pgtable.h |    4 +++-
- arch/parisc/kernel/firmware.c     |   13 +------------
- 2 files changed, 4 insertions(+), 13 deletions(-)
-
-Full diffs are below.
-
-James
-
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 ---
+ include/net/sock.h     |    2 +-
+ net/core/filter.c      |    6 +++---
+ net/packet/af_packet.c |    6 +++---
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/arch/parisc/include/asm/pgtable.h b/arch/parisc/include/asm/pgtable.h
-index 865f37a..6f1f65d 100644
---- a/arch/parisc/include/asm/pgtable.h
-+++ b/arch/parisc/include/asm/pgtable.h
-@@ -10,11 +10,13 @@
-  * we simulate an x86-style page table for the linux mm code
-  */
+diff --git a/include/net/sock.h b/include/net/sock.h
+index d884d26..ba6465b 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1189,7 +1189,7 @@ extern void sk_filter_release_rcu(struct rcu_head *rcu);
+ static inline void sk_filter_release(struct sk_filter *fp)
+ {
+ 	if (atomic_dec_and_test(&fp->refcnt))
+-		call_rcu_bh(&fp->rcu, sk_filter_release_rcu);
++		call_rcu(&fp->rcu, sk_filter_release_rcu);
+ }
  
--#include <linux/mm.h>		/* for vm_area_struct */
- #include <linux/bitops.h>
-+#include <linux/spinlock.h>
- #include <asm/processor.h>
- #include <asm/cache.h>
+ static inline void sk_filter_uncharge(struct sock *sk, struct sk_filter *fp)
+diff --git a/net/core/filter.c b/net/core/filter.c
+index afc5837..232b187 100644
+--- a/net/core/filter.c
++++ b/net/core/filter.c
+@@ -142,14 +142,14 @@ int sk_filter(struct sock *sk, struct sk_buff *skb)
+ 	if (err)
+ 		return err;
  
-+struct vm_area_struct;
-+
- /*
-  * kern_addr_valid(ADDR) tests if ADDR is pointing to valid kernel
-  * memory.  For the return value to be meaningful, ADDR must be >=
-diff --git a/arch/parisc/kernel/firmware.c b/arch/parisc/kernel/firmware.c
-index df971fa..4896ed0 100644
---- a/arch/parisc/kernel/firmware.c
-+++ b/arch/parisc/kernel/firmware.c
-@@ -1126,15 +1126,13 @@ int pdc_iodc_print(const unsigned char *str, unsigned count)
- 	unsigned int i;
- 	unsigned long flags;
+-	rcu_read_lock_bh();
+-	filter = rcu_dereference_bh(sk->sk_filter);
++	rcu_read_lock();
++	filter = rcu_dereference(sk->sk_filter);
+ 	if (filter) {
+ 		unsigned int pkt_len = sk_run_filter(skb, filter->insns);
  
--	for (i = 0; i < count && i < 79;) {
-+	for (i = 0; i < count;) {
- 		switch(str[i]) {
- 		case '\n':
- 			iodc_dbuf[i+0] = '\r';
- 			iodc_dbuf[i+1] = '\n';
- 			i += 2;
- 			goto print;
--		case '\b':	/* BS */
--			i--; /* overwrite last */
- 		default:
- 			iodc_dbuf[i] = str[i];
- 			i++;
-@@ -1142,15 +1140,6 @@ int pdc_iodc_print(const unsigned char *str, unsigned count)
- 		}
+ 		err = pkt_len ? pskb_trim(skb, pkt_len) : -EPERM;
  	}
+-	rcu_read_unlock_bh();
++	rcu_read_unlock();
  
--	/* if we're at the end of line, and not already inserting a newline,
--	 * insert one anyway. iodc console doesn't claim to support >79 char
--	 * lines. don't account for this in the return value.
--	 */
--	if (i == 79 && iodc_dbuf[i-1] != '\n') {
--		iodc_dbuf[i+0] = '\r';
--		iodc_dbuf[i+1] = '\n';
--	}
--
- print:
-         spin_lock_irqsave(&pdc_lock, flags);
-         real32_call(PAGE0->mem_cons.iodc_io,
+ 	return err;
+ }
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index 91cb1d7..c3fc7b7 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -523,11 +523,11 @@ static inline unsigned int run_filter(const struct sk_buff *skb,
+ {
+ 	struct sk_filter *filter;
+ 
+-	rcu_read_lock_bh();
+-	filter = rcu_dereference_bh(sk->sk_filter);
++	rcu_read_lock();
++	filter = rcu_dereference(sk->sk_filter);
+ 	if (filter != NULL)
+ 		res = sk_run_filter(skb, filter->insns);
+-	rcu_read_unlock_bh();
++	rcu_read_unlock();
+ 
+ 	return res;
+ }
 
 
