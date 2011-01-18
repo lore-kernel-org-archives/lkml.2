@@ -1,138 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319Ab1ARIGA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 03:06:00 -0500
-Received: from core.signal11.us ([64.251.29.136]:47857 "EHLO core.signal11.us"
+	id S1753367Ab1ARIGJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 03:06:09 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:33182 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752814Ab1ARIFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 03:05:10 -0500
-From: Alan Ott <alan@signal11.us>
-To: Jiri Kosina <jkosina@suse.cz>, Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        "David S. Miller" <davem@davemloft.net>, Alan Ott <alan@signal11.us>,
-        Michael Poole <mdpoole@troilus.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org
-Cc: Alan Ott <alan@signal11.us>
-Subject: [PATCH v5 1/4] bt hidp: Move hid_add_device() call to after hidp_session() has started.
-Date: Tue, 18 Jan 2011 03:04:37 -0500
-Message-Id: <1295337880-12452-2-git-send-email-alan@signal11.us>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1295337880-12452-1-git-send-email-alan@signal11.us>
-References: <1295337880-12452-1-git-send-email-alan@signal11.us>
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue Jan 18 03:05:09 2011
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4d3549b5166704152116949
+	id S1753151Ab1ARIGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 03:06:05 -0500
+Date: Tue, 18 Jan 2011 09:05:54 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "hpa@zytor.com" <hpa@zytor.com>, "Lu, Hongjiu" <hongjiu.lu@intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>
+Subject: Re: [PATCH]x86: make relocatable kernel work with new binutils
+ -resend
+Message-ID: <20110118080554.GB18317@elte.hu>
+References: <1295232361.1949.675.camel@sli10-conroe>
+ <20110117101756.GB26819@elte.hu>
+ <1295312269.1949.725.camel@sli10-conroe>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295312269.1949.725.camel@sli10-conroe>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the call to hid_add_device() (which calls a device's probe() function)
-to after the kernel_thread() call which starts the hidp_session() thread.
-This ensures the Bluetooth receive socket is fully running by the time a
-device's probe() function is called. This way, a device can communicate
-(send and receive) with the Bluetooth device from its probe() function.
 
-Signed-off-by: Alan Ott <alan@signal11.us>
----
- net/bluetooth/hidp/core.c |   28 ++++++++++++++++++++--------
- net/bluetooth/hidp/hidp.h |    3 +++
- 2 files changed, 23 insertions(+), 8 deletions(-)
+* Shaohua Li <shaohua.li@intel.com> wrote:
 
-diff --git a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
-index 29544c2..67cc4bc 100644
---- a/net/bluetooth/hidp/core.c
-+++ b/net/bluetooth/hidp/core.c
-@@ -563,6 +563,8 @@ static int hidp_session(void *arg)
- 	init_waitqueue_entry(&intr_wait, current);
- 	add_wait_queue(sk_sleep(ctrl_sk), &ctrl_wait);
- 	add_wait_queue(sk_sleep(intr_sk), &intr_wait);
-+	session->waiting_for_startup = 0;
-+	wake_up_interruptible(&session->startup_queue);
- 	while (!atomic_read(&session->terminate)) {
- 		set_current_state(TASK_INTERRUPTIBLE);
- 
-@@ -754,6 +756,8 @@ static struct hid_ll_driver hidp_hid_driver = {
- 	.hidinput_input_event = hidp_hidinput_event,
- };
- 
-+/* This function sets up the hid device. It does not add it
-+   to the HID system. That is done in hidp_add_connection(). */
- static int hidp_setup_hid(struct hidp_session *session,
- 				struct hidp_connadd_req *req)
- {
-@@ -795,16 +799,8 @@ static int hidp_setup_hid(struct hidp_session *session,
- 
- 	hid->hid_output_raw_report = hidp_output_raw_report;
- 
--	err = hid_add_device(hid);
--	if (err < 0)
--		goto failed;
--
- 	return 0;
- 
--failed:
--	hid_destroy_device(hid);
--	session->hid = NULL;
--
- fault:
- 	kfree(session->rd_data);
- 	session->rd_data = NULL;
-@@ -853,6 +849,8 @@ int hidp_add_connection(struct hidp_connadd_req *req, struct socket *ctrl_sock,
- 	skb_queue_head_init(&session->ctrl_transmit);
- 	skb_queue_head_init(&session->intr_transmit);
- 
-+	init_waitqueue_head(&session->startup_queue);
-+	session->waiting_for_startup = 1;
- 	session->flags   = req->flags & (1 << HIDP_BLUETOOTH_VENDOR_ID);
- 	session->idle_to = req->idle_to;
- 
-@@ -875,6 +873,14 @@ int hidp_add_connection(struct hidp_connadd_req *req, struct socket *ctrl_sock,
- 	err = kernel_thread(hidp_session, session, CLONE_KERNEL);
- 	if (err < 0)
- 		goto unlink;
-+	while (session->waiting_for_startup) {
-+		wait_event_interruptible(session->startup_queue,
-+			!session->waiting_for_startup);
-+	}
-+
-+	err = hid_add_device(session->hid);
-+	if (err < 0)
-+		goto err_add_device;
- 
- 	if (session->input) {
- 		hidp_send_ctrl_message(session,
-@@ -888,6 +894,12 @@ int hidp_add_connection(struct hidp_connadd_req *req, struct socket *ctrl_sock,
- 	up_write(&hidp_session_sem);
- 	return 0;
- 
-+err_add_device:
-+	hid_destroy_device(session->hid);
-+	session->hid = NULL;
-+	atomic_inc(&session->terminate);
-+	hidp_schedule(session);
-+
- unlink:
- 	hidp_del_timer(session);
- 
-diff --git a/net/bluetooth/hidp/hidp.h b/net/bluetooth/hidp/hidp.h
-index 8d934a1..2cc35dc 100644
---- a/net/bluetooth/hidp/hidp.h
-+++ b/net/bluetooth/hidp/hidp.h
-@@ -157,6 +157,9 @@ struct hidp_session {
- 	/* Report descriptor */
- 	__u8 *rd_data;
- 	uint rd_size;
-+
-+	wait_queue_head_t startup_queue;
-+	int waiting_for_startup;
- };
- 
- static inline void hidp_schedule(struct hidp_session *session)
--- 
-1.7.0.4
+> On Mon, 2011-01-17 at 18:17 +0800, Ingo Molnar wrote:
+> > * Shaohua Li <shaohua.li@intel.com> wrote:
+> > 
+> > > @@ -142,6 +140,11 @@ SECTIONS
+> > >  		CACHELINE_ALIGNED_DATA(L1_CACHE_BYTES)
+> > >  
+> > >  		DATA_DATA
+> > > +#ifdef CONFIG_X86_32
+> > > +		jiffies = jiffies_64;
+> > > +#else
+> > > +		jiffies_64 = jiffies;
+> > > +#endif
+> > 
+> > I suspect this needs a comment, as to the unsuspecting reader it looks like black 
+> > magic :-)
+>
+> does this one look better?
 
+Yeah, thanks!
 
+	Ingo
