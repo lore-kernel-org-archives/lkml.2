@@ -1,49 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721Ab1ARQhm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 11:37:42 -0500
-Received: from mxs.selfip.ru ([77.221.143.26]:42032 "EHLO mxs.selfmail.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751210Ab1ARQhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 11:37:41 -0500
-X-ACL-SPF: 
-Subject: Re: [ANN] ulatencyd 0.3.1
-From: Vasiliy G Tolstov <v.tolstov@selfip.ru>
-Reply-To: v.tolstov@selfip.ru
-To: Daniel Poelzleithner <poelzi@poelzi.org>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <1295366369.3015.1.camel@mobile>
-References: <4D357204.3090505@poelzi.org>  <1295366369.3015.1.camel@mobile>
+	id S1752808Ab1ARQhv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 11:37:51 -0500
+Received: from casper.infradead.org ([85.118.1.10]:54385 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730Ab1ARQhp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 11:37:45 -0500
+Subject: Re: [RFC][PATCH 17/18] sched: Move the second half of ttwu() to
+ the remote cpu
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        Frank Rowand <frank.rowand@am.sony.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20110107152207.GA16341@redhat.com>
+References: <20110104145929.772813816@chello.nl>
+	 <20110104150103.164045216@chello.nl> <20110105210754.GA2579@redhat.com>
+	 <1294326577.2016.373.camel@laptop>  <20110107152207.GA16341@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Selfip.Ru
-Date: Tue, 18 Jan 2011 19:36:51 +0300
-Message-ID: <1295368611.3015.4.camel@mobile>
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 18 Jan 2011 17:38:08 +0100
+Message-ID: <1295368688.30950.925.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-ACL-DATA: Invalid Message-Id
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-18 at 18:59 +0300, Vasiliy G Tolstov wrote:
-> On Tue, 2011-01-18 at 11:57 +0100, Daniel Poelzleithner wrote:
-> > Hi all,
-> > 
-> > I'm happy to announce the release of ulatencyd 0.3.1
-> mobile build # cmake ../ulatencyd-0.3.1/
-> -- The C compiler identification is unknown
-> CMake Error at /usr/share/cmake/Modules/CMakeCInformation.cmake:37
-> (GET_FILENAME_COMPONENT):
->   get_filename_component called with incorrect number of arguments
-> Call Stack (most recent call first):
->   CMakeLists.txt:2 (project)
+On Fri, 2011-01-07 at 16:22 +0100, Oleg Nesterov wrote:
+
+> Why sched_fork() does set_task_cpu() ? Just curious, it seems
+> that wake_up_new_task() does all we need.
+
+The only reason I can come up with is to properly initialize the
+data-structures before make the thing visible, by the time
+wake_up_new_task() comes along, its already fully visible.
+
+> ttwu_queue_remote() does "struct task_struct *next = NULL".
+> Probably "next = rq->wake_list" makes more sens. Otherwise the
+> first cmpxchg() always fails if rq->wake_list != NULL.
+
+Indeed, I think Yong mentioned the same a while back.. done.
+
+> Doesn't __migrate_task() need pi_lock? Consider:
 > 
+> 1. A task T runs on CPU_0, it does set_current_state(TASK_INTERRUBTIBLE)
 > 
-> CMake Error: your C compiler: "" was not found.   Please set
-> CMAKE_C_COMPILER to a valid compiler path or name.
-> -- Configuring incomplete, errors occurred!
+> 2. some CPU does set_cpus_allowed_ptr(T, new_mask), new_mask doesn't
+>    include CPU_0.
 > 
-my mistake:
-need to add -DCMAKE_C_COMPILER=gcc to cmake
+>    T is running, cpumask_any_and() picks CPU_1, set_cpus_allowed_ptr()
+>    drops pi_lock and rq->lock before stop_one_cpu().
+> 
+> 3. T calls schedule() and becomes deactivated.
+> 
+> 4. CPU_2 does try_to_wake_up(T, TASK_INTERRUPTIBLE), takes pi_lock
+>    and sees on_rq == F.
+>
+> 5. set_cpus_allowed_ptr() resumes and calls stop_one_cpu(cpu => 1).
+> 
+> 6. cpu_stopper_thread() runs on CPU_1 and calls ____migrate_task().
+>    It locks CPU_0 and CPU_1 rq's and checks task_cpu() == src_cpu.
+> 
+> 7. CPU_2 calls select_task_rq(), it returns (to simplify) 2.
+> 
+>    Now try_to_wake_up() does set_task_cpu(T, 2), and calls
+>    ttwu_queue()->ttwu_do_activate()->activate_task().
+> 
+> 8. __migrate_task() on CPU_1 sees p->on_rq and starts the
+>    deactivate/activate dance racing with ttwu_do_activate()
+>    on CPU_2.
+
+Drad, yes I think you're right, now you've got me worried about the
+other migration paths too.. however did you come up with that
+scenario? :-)
+
+A simple fix would be to keep ->pi_lock locked over the call to
+stop_one_cpu() from set_cpus_allowed_ptr().
+
+I think the sched_fair.c load-balance code paths are ok because we only
+find a task to migrate after we've obtained both runqueue locks, so even
+if we migrate current, it cannot schedule (step 3).
+
+I'm not at all sure about the sched_rt load-balance paths, will need to
+twist my head around that..
+
+
+> And a final question. This is really, really minor, but
+> activate_task/deactivate_task are not symmetric, the former
+> always sets p->on_rq. Looks correct, but imho a bit confusing and
+> can complicate the understanding. Since p->on_rq is cleared
+> explicitly by schedule(), perhaps it can be set explicitly to
+> in try_to_wake_up_*. Or, perhaps, activate/deactivate can check
+> ENQUEUE_WAKEUP/DEQUEUE_SLEEP and set/clear p->on_rq. Once again,
+> this is purely cosmetic issue.
+
+Right, only because I didn't want to add conditionals and there's two
+ENQUEUE_WAKEUP sites and didn't want to replicate the assignment. I'll
+fix it up.
+
 
