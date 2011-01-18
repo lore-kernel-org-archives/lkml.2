@@ -1,329 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab1ARUaM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 15:30:12 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:37623 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753387Ab1ARUaF (ORCPT
+	id S1753607Ab1ARUaZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 15:30:25 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34854 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753582Ab1ARUaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 15:30:05 -0500
-Date: Tue, 18 Jan 2011 15:21:35 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless-2.6 2010-01-18
-Message-ID: <20110118202135.GA15402@tuxdriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 18 Jan 2011 15:30:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=mHDmm3RoDmms2aHDTW0eMxdMUDMe63n+tK/fsT9rxmwTBFWVWAZus681MVbnrDJ71s
+         DR7yLvgDVLY+3iBxiAn+oZUkNfdo0FN9KC2vrnLYsdi3RBldB7zNQMAhT7h86BIDx+yo
+         6P0w+i1xnhHVQ+uOWwfpfIf4FdGsDBHL6bMeE=
+Subject: Re: WARNING in module rt2870sta stable kernel 2.6.37
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Giangiacomo Mariotti <gg.mariotti@gmail.com>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, netdev <netdev@vger.kernel.org>
+In-Reply-To: <AANLkTi=HsE+h9GU8rM6zW2BVtoayEGfKOmPCsrrNHiz5@mail.gmail.com>
+References: <AANLkTi=HsE+h9GU8rM6zW2BVtoayEGfKOmPCsrrNHiz5@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Jan 2011 21:30:16 +0100
+Message-ID: <1295382616.3194.10.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+Le mardi 18 janvier 2011 à 21:16 +0100, Giangiacomo Mariotti a écrit :
+> Hi, the following message was logged on a 2.6.37 kernel(it says
+> tainted, but it's actually a micro patch I wrote and applied on top of
+> current 2.6.37 vanilla, patch appended, but it should be irrelevant, I
+> just shut up a bunch of useless debug output for this staging driver):
 
-Here is another batch of fixes intended for 2.6.38.  Included are a
-locking fix, and endian fix, a lockdep fix, an error code fix, a memory
-leak fix, a type fix, and a couple of others.
+Thats a known problem
 
-Please let me know if there are problems!
+Please try following patch
 
-Thanks,
+[PATCH] staging, rt2860: fix panic
 
-John
-
+Its now illegal to call netif_stop_queue() before register_netdev()
+(commit e6484930d7 ("net: allocate tx queues inregister_netdevice")
+    
+Reported-by: Giangiacomo Mariotti <gg.mariotti@gmail.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 ---
+ drivers/staging/rt2860/rt_main_dev.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-The following changes since commit 16c0f9362433a76f01d174bb8b9c87b9a96198ee:
-
-  qeth: l3 hw tx csum circumvent hw bug (2011-01-15 20:45:57 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
-
-Amitkumar Karwar (1):
-      ieee80211: correct IEEE80211_ADDBA_PARAM_BUF_SIZE_MASK macro
-
-Axel Lin (1):
-      iwmc3200wifi: Return proper error for iwm_if_alloc
-
-Bob Copeland (1):
-      ath5k: fix locking in tx_complete_poll_work
-
-Jesper Juhl (1):
-      rt2x00: Don't leak mem in error path of rt2x00lib_request_firmware()
-
-Johannes Berg (1):
-      mac80211: fix lockdep warning
-
-Luciano Coelho (1):
-      mac80211: use maximum number of AMPDU frames as default in BA RX
-
-Luis R. Rodriguez (1):
-      ath9k_hw: ASPM interoperability fix for AR9380/AR9382
-
-Rajkumar Manoharan (2):
-      ath9k_htc: Fix endian issue in tx header
-      ath9k_hw: do PA offset calibration only on longcal interval
-
-Wey-Yi Guy (1):
-      iwlwifi: fix valid chain reading from EEPROM
-
- drivers/net/wireless/ath/ath5k/base.c              |    4 ++++
- drivers/net/wireless/ath/ath9k/ar9002_calib.c      |   10 +++++-----
- .../net/wireless/ath/ath9k/ar9003_2p2_initvals.h   |    2 +-
- drivers/net/wireless/ath/ath9k/ar9003_hw.c         |    4 ++--
- drivers/net/wireless/ath/ath9k/htc.h               |    2 +-
- drivers/net/wireless/ath/ath9k/htc_drv_txrx.c      |    8 +++++---
- drivers/net/wireless/iwlwifi/iwl-agn-eeprom.c      |    2 +-
- drivers/net/wireless/iwmc3200wifi/netdev.c         |    2 ++
- drivers/net/wireless/rt2x00/rt2x00firmware.c       |    1 +
- include/linux/ieee80211.h                          |    2 +-
- net/mac80211/agg-rx.c                              |   11 ++---------
- net/mac80211/main.c                                |   12 +++++++++++-
- 12 files changed, 36 insertions(+), 24 deletions(-)
-
-diff --git a/drivers/net/wireless/ath/ath5k/base.c b/drivers/net/wireless/ath/ath5k/base.c
-index 019a74d..09ae4ef 100644
---- a/drivers/net/wireless/ath/ath5k/base.c
-+++ b/drivers/net/wireless/ath/ath5k/base.c
-@@ -2294,6 +2294,8 @@ ath5k_tx_complete_poll_work(struct work_struct *work)
- 	int i;
- 	bool needreset = false;
+diff --git a/drivers/staging/rt2860/rt_main_dev.c b/drivers/staging/rt2860/rt_main_dev.c
+index 701561d..236dd36 100644
+--- a/drivers/staging/rt2860/rt_main_dev.c
++++ b/drivers/staging/rt2860/rt_main_dev.c
+@@ -484,8 +484,6 @@ struct net_device *RtmpPhyNetDevInit(struct rt_rtmp_adapter *pAd,
+ 	net_dev->ml_priv = (void *)pAd;
+ 	pAd->net_dev = net_dev;
  
-+	mutex_lock(&sc->lock);
-+
- 	for (i = 0; i < ARRAY_SIZE(sc->txqs); i++) {
- 		if (sc->txqs[i].setup) {
- 			txq = &sc->txqs[i];
-@@ -2321,6 +2323,8 @@ ath5k_tx_complete_poll_work(struct work_struct *work)
- 		ath5k_reset(sc, NULL, true);
- 	}
+-	netif_stop_queue(net_dev);
+-
+ 	return net_dev;
  
-+	mutex_unlock(&sc->lock);
-+
- 	ieee80211_queue_delayed_work(sc->hw, &sc->tx_complete_work,
- 		msecs_to_jiffies(ATH5K_TX_COMPLETE_POLL_INT));
  }
-diff --git a/drivers/net/wireless/ath/ath9k/ar9002_calib.c b/drivers/net/wireless/ath/ath9k/ar9002_calib.c
-index ea2e7d7..5e300bd 100644
---- a/drivers/net/wireless/ath/ath9k/ar9002_calib.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9002_calib.c
-@@ -679,10 +679,6 @@ static bool ar9002_hw_calibrate(struct ath_hw *ah,
- 
- 	/* Do NF cal only at longer intervals */
- 	if (longcal || nfcal_pending) {
--		/* Do periodic PAOffset Cal */
--		ar9002_hw_pa_cal(ah, false);
--		ar9002_hw_olc_temp_compensation(ah);
--
- 		/*
- 		 * Get the value from the previous NF cal and update
- 		 * history buffer.
-@@ -697,8 +693,12 @@ static bool ar9002_hw_calibrate(struct ath_hw *ah,
- 			ath9k_hw_loadnf(ah, ah->curchan);
- 		}
- 
--		if (longcal)
-+		if (longcal) {
- 			ath9k_hw_start_nfcal(ah, false);
-+			/* Do periodic PAOffset Cal */
-+			ar9002_hw_pa_cal(ah, false);
-+			ar9002_hw_olc_temp_compensation(ah);
-+		}
- 	}
- 
- 	return iscaldone;
-diff --git a/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h b/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
-index 81f9cf2..9ecca93 100644
---- a/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
-@@ -1842,7 +1842,7 @@ static const u32 ar9300_2p2_soc_preamble[][2] = {
- 
- static const u32 ar9300PciePhy_pll_on_clkreq_disable_L1_2p2[][2] = {
- 	/* Addr      allmodes  */
--	{0x00004040, 0x08212e5e},
-+	{0x00004040, 0x0821265e},
- 	{0x00004040, 0x0008003b},
- 	{0x00004044, 0x00000000},
- };
-diff --git a/drivers/net/wireless/ath/ath9k/ar9003_hw.c b/drivers/net/wireless/ath/ath9k/ar9003_hw.c
-index 6137634..06fb2c8 100644
---- a/drivers/net/wireless/ath/ath9k/ar9003_hw.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_hw.c
-@@ -146,8 +146,8 @@ static void ar9003_hw_init_mode_regs(struct ath_hw *ah)
- 		/* Sleep Setting */
- 
- 		INIT_INI_ARRAY(&ah->iniPcieSerdesLowPower,
--				ar9300PciePhy_clkreq_enable_L1_2p2,
--				ARRAY_SIZE(ar9300PciePhy_clkreq_enable_L1_2p2),
-+				ar9300PciePhy_pll_on_clkreq_disable_L1_2p2,
-+				ARRAY_SIZE(ar9300PciePhy_pll_on_clkreq_disable_L1_2p2),
- 				2);
- 
- 		/* Fast clock modal settings */
-diff --git a/drivers/net/wireless/ath/ath9k/htc.h b/drivers/net/wireless/ath/ath9k/htc.h
-index 1ce506f..780ac5e 100644
---- a/drivers/net/wireless/ath/ath9k/htc.h
-+++ b/drivers/net/wireless/ath/ath9k/htc.h
-@@ -78,7 +78,7 @@ struct tx_frame_hdr {
- 	u8 node_idx;
- 	u8 vif_idx;
- 	u8 tidno;
--	u32 flags; /* ATH9K_HTC_TX_* */
-+	__be32 flags; /* ATH9K_HTC_TX_* */
- 	u8 key_type;
- 	u8 keyix;
- 	u8 reserved[26];
-diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-index 33f3602..7a5ffca 100644
---- a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-@@ -113,6 +113,7 @@ int ath9k_htc_tx_start(struct ath9k_htc_priv *priv, struct sk_buff *skb)
- 
- 	if (ieee80211_is_data(fc)) {
- 		struct tx_frame_hdr tx_hdr;
-+		u32 flags = 0;
- 		u8 *qc;
- 
- 		memset(&tx_hdr, 0, sizeof(struct tx_frame_hdr));
-@@ -136,13 +137,14 @@ int ath9k_htc_tx_start(struct ath9k_htc_priv *priv, struct sk_buff *skb)
- 		/* Check for RTS protection */
- 		if (priv->hw->wiphy->rts_threshold != (u32) -1)
- 			if (skb->len > priv->hw->wiphy->rts_threshold)
--				tx_hdr.flags |= ATH9K_HTC_TX_RTSCTS;
-+				flags |= ATH9K_HTC_TX_RTSCTS;
- 
- 		/* CTS-to-self */
--		if (!(tx_hdr.flags & ATH9K_HTC_TX_RTSCTS) &&
-+		if (!(flags & ATH9K_HTC_TX_RTSCTS) &&
- 		    (priv->op_flags & OP_PROTECT_ENABLE))
--			tx_hdr.flags |= ATH9K_HTC_TX_CTSONLY;
-+			flags |= ATH9K_HTC_TX_CTSONLY;
- 
-+		tx_hdr.flags = cpu_to_be32(flags);
- 		tx_hdr.key_type = ath9k_cmn_get_hw_crypto_keytype(skb);
- 		if (tx_hdr.key_type == ATH9K_KEY_TYPE_CLEAR)
- 			tx_hdr.keyix = (u8) ATH9K_TXKEYIX_INVALID;
-diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-eeprom.c b/drivers/net/wireless/iwlwifi/iwl-agn-eeprom.c
-index 97906dd..14ceb4d 100644
---- a/drivers/net/wireless/iwlwifi/iwl-agn-eeprom.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-eeprom.c
-@@ -168,7 +168,7 @@ int iwl_eeprom_check_sku(struct iwl_priv *priv)
- 		/* not using .cfg overwrite */
- 		radio_cfg = iwl_eeprom_query16(priv, EEPROM_RADIO_CONFIG);
- 		priv->cfg->valid_tx_ant = EEPROM_RF_CFG_TX_ANT_MSK(radio_cfg);
--		priv->cfg->valid_rx_ant = EEPROM_RF_CFG_TX_ANT_MSK(radio_cfg);
-+		priv->cfg->valid_rx_ant = EEPROM_RF_CFG_RX_ANT_MSK(radio_cfg);
- 		if (!priv->cfg->valid_tx_ant || !priv->cfg->valid_rx_ant) {
- 			IWL_ERR(priv, "Invalid chain (0X%x, 0X%x)\n",
- 				priv->cfg->valid_tx_ant,
-diff --git a/drivers/net/wireless/iwmc3200wifi/netdev.c b/drivers/net/wireless/iwmc3200wifi/netdev.c
-index 13a69eb..5091d77 100644
---- a/drivers/net/wireless/iwmc3200wifi/netdev.c
-+++ b/drivers/net/wireless/iwmc3200wifi/netdev.c
-@@ -126,6 +126,7 @@ void *iwm_if_alloc(int sizeof_bus, struct device *dev,
- 	ndev = alloc_netdev_mq(0, "wlan%d", ether_setup, IWM_TX_QUEUES);
- 	if (!ndev) {
- 		dev_err(dev, "no memory for network device instance\n");
-+		ret = -ENOMEM;
- 		goto out_priv;
- 	}
- 
-@@ -138,6 +139,7 @@ void *iwm_if_alloc(int sizeof_bus, struct device *dev,
- 				    GFP_KERNEL);
- 	if (!iwm->umac_profile) {
- 		dev_err(dev, "Couldn't alloc memory for profile\n");
-+		ret = -ENOMEM;
- 		goto out_profile;
- 	}
- 
-diff --git a/drivers/net/wireless/rt2x00/rt2x00firmware.c b/drivers/net/wireless/rt2x00/rt2x00firmware.c
-index f0e1eb7..be0ff78 100644
---- a/drivers/net/wireless/rt2x00/rt2x00firmware.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00firmware.c
-@@ -58,6 +58,7 @@ static int rt2x00lib_request_firmware(struct rt2x00_dev *rt2x00dev)
- 
- 	if (!fw || !fw->size || !fw->data) {
- 		ERROR(rt2x00dev, "Failed to read Firmware.\n");
-+		release_firmware(fw);
- 		return -ENOENT;
- 	}
- 
-diff --git a/include/linux/ieee80211.h b/include/linux/ieee80211.h
-index 6042228..294169e 100644
---- a/include/linux/ieee80211.h
-+++ b/include/linux/ieee80211.h
-@@ -959,7 +959,7 @@ struct ieee80211_ht_info {
- /* block-ack parameters */
- #define IEEE80211_ADDBA_PARAM_POLICY_MASK 0x0002
- #define IEEE80211_ADDBA_PARAM_TID_MASK 0x003C
--#define IEEE80211_ADDBA_PARAM_BUF_SIZE_MASK 0xFFA0
-+#define IEEE80211_ADDBA_PARAM_BUF_SIZE_MASK 0xFFC0
- #define IEEE80211_DELBA_PARAM_TID_MASK 0xF000
- #define IEEE80211_DELBA_PARAM_INITIATOR_MASK 0x0800
- 
-diff --git a/net/mac80211/agg-rx.c b/net/mac80211/agg-rx.c
-index f138b19..227ca82 100644
---- a/net/mac80211/agg-rx.c
-+++ b/net/mac80211/agg-rx.c
-@@ -185,8 +185,6 @@ void ieee80211_process_addba_request(struct ieee80211_local *local,
- 				     struct ieee80211_mgmt *mgmt,
- 				     size_t len)
- {
--	struct ieee80211_hw *hw = &local->hw;
--	struct ieee80211_conf *conf = &hw->conf;
- 	struct tid_ampdu_rx *tid_agg_rx;
- 	u16 capab, tid, timeout, ba_policy, buf_size, start_seq_num, status;
- 	u8 dialog_token;
-@@ -231,13 +229,8 @@ void ieee80211_process_addba_request(struct ieee80211_local *local,
- 		goto end_no_lock;
- 	}
- 	/* determine default buffer size */
--	if (buf_size == 0) {
--		struct ieee80211_supported_band *sband;
--
--		sband = local->hw.wiphy->bands[conf->channel->band];
--		buf_size = IEEE80211_MIN_AMPDU_BUF;
--		buf_size = buf_size << sband->ht_cap.ampdu_factor;
--	}
-+	if (buf_size == 0)
-+		buf_size = IEEE80211_MAX_AMPDU_BUF;
- 
- 
- 	/* examine state machine */
-diff --git a/net/mac80211/main.c b/net/mac80211/main.c
-index 485d36b..a46ff06 100644
---- a/net/mac80211/main.c
-+++ b/net/mac80211/main.c
-@@ -39,6 +39,8 @@ module_param(ieee80211_disable_40mhz_24ghz, bool, 0644);
- MODULE_PARM_DESC(ieee80211_disable_40mhz_24ghz,
- 		 "Disable 40MHz support in the 2.4GHz band");
- 
-+static struct lock_class_key ieee80211_rx_skb_queue_class;
-+
- void ieee80211_configure_filter(struct ieee80211_local *local)
- {
- 	u64 mc;
-@@ -569,7 +571,15 @@ struct ieee80211_hw *ieee80211_alloc_hw(size_t priv_data_len,
- 	spin_lock_init(&local->filter_lock);
- 	spin_lock_init(&local->queue_stop_reason_lock);
- 
--	skb_queue_head_init(&local->rx_skb_queue);
-+	/*
-+	 * The rx_skb_queue is only accessed from tasklets,
-+	 * but other SKB queues are used from within IRQ
-+	 * context. Therefore, this one needs a different
-+	 * locking class so our direct, non-irq-safe use of
-+	 * the queue's lock doesn't throw lockdep warnings.
-+	 */
-+	skb_queue_head_init_class(&local->rx_skb_queue,
-+				  &ieee80211_rx_skb_queue_class);
- 
- 	INIT_DELAYED_WORK(&local->scan_work, ieee80211_scan_work);
- 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+
+
