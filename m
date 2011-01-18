@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428Ab1ARJ0p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 04:26:45 -0500
-Received: from ra.se.axis.com ([195.60.68.13]:52353 "EHLO ra.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753020Ab1ARJ0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 04:26:43 -0500
-Date: Tue, 18 Jan 2011 10:26:39 +0100
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: David Miller <davem@davemloft.net>
-Cc: "brl+ccmadness@pcpool00.mathematik.uni-freiburg.de" 
-	<brl+ccmadness@pcpool00.mathematik.uni-freiburg.de>,
-        "richm@oldelvet.org.uk" <richm@oldelvet.org.uk>,
-        "609371@bugs.debian.org" <609371@bugs.debian.org>,
-        "ben@decadent.org.uk" <ben@decadent.org.uk>,
-        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "jeffm@suse.com" <jeffm@suse.com>
-Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
-	Unknown relocation: 36
-Message-ID: <20110118092638.GJ9874@axis.com>
-References: <20110115.211722.39173519.davem@davemloft.net> <20110116.220755.179947617.davem@davemloft.net> <20110117143954.GA17813@pcpool00.mathematik.uni-freiburg.de> <20110117.212444.193701604.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110117.212444.193701604.davem@davemloft.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753296Ab1ARJaA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 04:30:00 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:59018 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752991Ab1ARJ37 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 04:29:59 -0500
+From: shubhrajyoti@ti.com
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, Shubhrajyoti Datta <shubhrajyoti@ti.com>
+Subject: [PATCH ] bmp085: optimisations
+Date: Tue, 18 Jan 2011 14:59:16 +0530
+Message-Id: <1295342956-5561-1-git-send-email-shubhrajyoti@ti.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 18, 2011 at 06:24:44AM +0100, David Miller wrote:
-> From: "Bernhard R. Link" <brl+ccmadness@pcpool00.mathematik.uni-freiburg.de>
-> Date: Mon, 17 Jan 2011 15:39:54 +0100
-> 
-> > * David Miller <davem@davemloft.net> [110117 07:07]:
-> >> Ugh, and I just noticed that include/linux/klist.h does this fixed
-> >> alignment of "4" too, where is this stuff coming from?  It's
-> >> wrong on 64-bit, at best.  But I can't see the impetus behind doing
-> >> this at all in the first place.
-> > 
-> > Is that actually misaligned? Unless I still mix things up, that is in the
-> > struct thus should be fine (i.e. the "d" case in my example above).
-> 
-> On CRIS, structs naturally align on a byte-boundary only.
-> 
-> However, code using klists encodes a binary state in the lowest bit of
-> klist pointers.  So this assumes that the structures will be at least
-> 2 byte aligned, which will not be true on CRIS.
-> 
-> We have a lot of other code which uses this trick (encoding 1 or 2
-> bits of binary state into the lowest bits of a pointer) so I'm
-> surprised this workaround isn't needed elsewhere for CRIS too.
+From: Shubhrajyoti Datta <shubhrajyoti@ti.com>
 
-Surprisingly, we haven't found any other place where this is an issue
-for CRIS, either the code isn't used on CRIS, or the aligment is
-ensured by some other means (kmalloc for example).
+Free the memory that is used only at init
 
-/^JN - Jesper Nilsson
+Signed-off-by: Shubhrajyoti Datta <shubhrajyoti@ti.com>
+---
+ drivers/misc/bmp085.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/misc/bmp085.c b/drivers/misc/bmp085.c
+index 63ee4c1..cc05e0b 100644
+--- a/drivers/misc/bmp085.c
++++ b/drivers/misc/bmp085.c
+@@ -402,7 +402,7 @@ exit:
+ 	return status;
+ }
+ 
+-static int bmp085_probe(struct i2c_client *client,
++static int __devinit bmp085_probe(struct i2c_client *client,
+ 			 const struct i2c_device_id *id)
+ {
+ 	struct bmp085_data *data;
+@@ -438,7 +438,7 @@ exit:
+ 	return err;
+ }
+ 
+-static int bmp085_remove(struct i2c_client *client)
++static int __devexit bmp085_remove(struct i2c_client *client)
+ {
+ 	sysfs_remove_group(&client->dev.kobj, &bmp085_attr_group);
+ 	kfree(i2c_get_clientdata(client));
+@@ -457,7 +457,7 @@ static struct i2c_driver bmp085_driver = {
+ 	},
+ 	.id_table	= bmp085_id,
+ 	.probe		= bmp085_probe,
+-	.remove		= bmp085_remove,
++	.remove		= __devexit_p(bmp085_remove),
+ 
+ 	.detect		= bmp085_detect,
+ 	.address_list	= normal_i2c
 -- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+1.7.1
+
