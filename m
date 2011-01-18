@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573Ab1ARLYS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 06:24:18 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:44821 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750745Ab1ARLYR (ORCPT
+	id S1751744Ab1ARL2i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 06:28:38 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:36703 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131Ab1ARL2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 06:24:17 -0500
-Message-ID: <4D3578E3.5030700@dsn.okisemi.com>
-Date: Tue, 18 Jan 2011 20:26:27 +0900
-From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: linux-usb <linux-usb@vger.kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>
-CC: LKML <linux-kernel@vger.kernel.org>, "Wang, Qi" <qi.wang@intel.com>,
-        "Wang, Yong Y" <yong.y.wang@intel.com>,
-        Andrew <andrew.chih.howe.khor@intel.com>,
-        Intel OTC <joel.clark@intel.com>,
-        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>
-Subject: [PATCH linux-next] usb: pch_udc: Fix the worning log issue at gadget
- driver remove
-Content-Type: text/plain; charset=ISO-2022-JP
+	Tue, 18 Jan 2011 06:28:36 -0500
+Subject: Re: [PATCH 3/3] trusted-keys: small cleanup
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: safford@watson.ibm.com, safford@us.ibm.com, jj@chaosbits.net,
+        dhowells@redhat.com, jmorris@namei.org, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <201101182003.ACH57348.HOtFMVOLJQSOFF@I-love.SAKURA.ne.jp>
+References: <201101170041.p0H0ffFE086481@www262.sakura.ne.jp>
+	 <201101170044.p0H0iLQW087457@www262.sakura.ne.jp>
+	 <1295298400.2642.9.camel@localhost.localdomain>
+	 <201101180139.p0I1dh9T066040@www262.sakura.ne.jp>
+	 <1295342793.3426.12.camel@localhost.localdomain>
+	 <201101182003.ACH57348.HOtFMVOLJQSOFF@I-love.SAKURA.ne.jp>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Jan 2011 06:28:29 -0500
+Message-ID: <1295350109.3426.29.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When removing a serial gadget driver, the kernel warning message is outputted.
-This patch fixed this issue.
+On Tue, 2011-01-18 at 20:03 +0900, Tetsuo Handa wrote:
+> Mimi Zohar wrote:
+> > > >       va_end(argp);
+> > > > -     ret = crypto_shash_final(&sdesc->shash, paramdigest);
+> > > > +     if (!ret)
+> > > > +             ret = crypto_shash_final(&sdesc->shash, paramdigest);
+> > > >       if (!ret)
+> > 
+> > Change the second '(!ret)' here, the crypto_shash_file() return code
+> > test, from '(!ret)' to '(ret < 0)', like the other crypto_shash_file()
+> > tests.
+> 
+> Did you mean changing from
+> 
+> 	if (!ret)
+> 		ret = crypto_shash_final(&sdesc->shash, paramdigest);
+> 
+> to
+> 
+> 	if (ret < 0)
+> 		ret = crypto_shash_final(&sdesc->shash, paramdigest);
+> 
+> (i.e. invert the condition)?
 
-The pch_udc driver did not have disconnection processing of gadget.
+Wrong '(!ret)'.  Instead of:
+        va_end(argp);
+        if (!ret)
+                ret = crypto_shash_final(&sdesc->shash, paramdigest);
+        if (!ret)
 
-Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
----
- drivers/usb/gadget/pch_udc.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+do:
+        va_end(argp);
+        if (!ret)
+                ret = crypto_shash_final(&sdesc->shash, paramdigest);
+        if (ret < 0)
 
-diff --git a/drivers/usb/gadget/pch_udc.c b/drivers/usb/gadget/pch_udc.c
-index dfe927b..025cf6c 100644
---- a/drivers/usb/gadget/pch_udc.c
-+++ b/drivers/usb/gadget/pch_udc.c
-@@ -2716,7 +2716,8 @@ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
- 
- 	pch_udc_disable_interrupts(dev, UDC_DEVINT_MSK);
- 
--	/* Assues that there are no pending requets with this driver */
-+	/* Assures that there are no pending requests with this driver */
-+	driver->disconnect(&dev->gadget);
- 	driver->unbind(&dev->gadget);
- 	dev->gadget.dev.driver = NULL;
- 	dev->driver = NULL;
--- 
-1.6.2.5
+> I'm confused. Would you make the patch by yourself?
+
+It's only for consistency, not that important.
+
+thanks,
+
+Mimi
+
+
