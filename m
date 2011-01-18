@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab1ART5W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 14:57:22 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:51279 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752891Ab1ART5U (ORCPT
+	id S1753000Ab1ARUGz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 15:06:55 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:47979 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751961Ab1ARUGy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 14:57:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=vFNrs/htWprrLAs42PkD6481Zd8qUcoIQ+FbUa7fsNZc6zMHal51RTmEvl8bqq7e3V
-         jlGUUUMyTGAVH1/3uNlbRcNqEXs/3bYs6VMhwV0fhIKipdit4WyUGOZ120MThTDSIyqQ
-         042A6O0wU+7eh7RR5aAjy8VZkL2SD758ydxxA=
-Date: Tue, 18 Jan 2011 11:57:11 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: David Engraf <david.engraf@sysgo.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] serio: allow registered drivers to get status flag
-Message-ID: <20110118195710.GA27152@core.coreip.homeip.net>
-References: <4D358E31.4080700@sysgo.com>
+	Tue, 18 Jan 2011 15:06:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D358E31.4080700@sysgo.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4D35EF64.1040906@xmsnet.nl>
+References: <4D335417.80704@xmsnet.nl>
+	<4D35EF64.1040906@xmsnet.nl>
+Date: Tue, 18 Jan 2011 12:06:53 -0800
+Message-ID: <AANLkTinejKw0pY5HncB2e0ocjqYuCwTBUwd2xkroWu+E@mail.gmail.com>
+Subject: Re: [regression] 2.6.37+ commit 0363466866d9.... breaks tcp ipv6
+From: Jesse Gross <jesse@nicira.com>
+To: Hans de Bruin <jmdebruin@xmsnet.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 18, 2011 at 01:57:21PM +0100, David Engraf wrote:
-> Parse the status byte information to the registered serio drivers as
-> well as the character bytes.
-> 
-> Signed-off-by: David Engraf <david.engraf@sysgo.com>
-> 
+On Tue, Jan 18, 2011 at 11:52 AM, Hans de Bruin <jmdebruin@xmsnet.nl> wrote:
+> On 01/16/2011 09:24 PM, Hans de Bruin wrote:
+>>
+>> After last nights compile i lost the possibility to connect to ssh and
+>> http over ipv6. The connection stops at syn_sent. connections to my
+>> machine end in syn_recv. ping6 still works.
+>>
+>
+> The bisect ended in:
+>
+> 0363466866d901fbc658f4e63dd61e7cc93dd0af is the first bad commit
+> commit 0363466866d901fbc658f4e63dd61e7cc93dd0af
+> Author: Jesse Gross <jesse@nicira.com>
+> Date:   Sun Jan 9 06:23:35 2011 +0000
+>
+>    net offloading: Convert checksums to use centrally computed features.
+>
+>    In order to compute the features for other offloads (primarily
+>    scatter/gather), we need to first check the ability of the NIC to
+>    offload the checksum for the packet.  Since we have already computed
+>    this, we can directly use the result instead of figuring it out
+>    again.
+>
+>    Signed-off-by: Jesse Gross <jesse@nicira.com>
+>    Signed-off-by: David S. Miller <davem@davemloft.net>
+>
+>
+> ssh ::1  still works. And since dns still works I guess udp is not affected.
+> My nic is a:
+>
+> 09:00.0 Ethernet controller: Broadcom Corporation NetXtreme BCM5752 Gigabit
+> Ethernet PCI Express (rev 02)
 
-> --- linux-2.6.37/drivers/input/serio/serport.c.orig	2011-01-18 12:33:41.421709232 +0100
-> +++ linux-2.6.37/drivers/input/serio/serport.c	2011-01-18 13:33:24.521711214 +0100
-> @@ -116,8 +116,8 @@ static void serport_ldisc_close(struct t
->  
->  /*
->   * serport_ldisc_receive() is called by the low level tty driver when characters
-> - * are ready for us. We forward the characters, one by one to the 'interrupt'
-> - * routine.
-> + * are ready for us. We forward the characters and flags, one by one to the 
-> + * 'interrupt' routine.
->   */
->  
->  static void serport_ldisc_receive(struct tty_struct *tty, const unsigned char *cp, char *fp, int count)
-> @@ -132,7 +132,7 @@ static void serport_ldisc_receive(struct
->  		goto out;
->  
->  	for (i = 0; i < count; i++)
-> -		serio_interrupt(serport->serio, cp[i], 0);
-> +		serio_interrupt(serport->serio, cp[i], fp[i]);
->  
-
-Hi David,
-
-The flags argument that serio_interrupt() accepts not the raw protocol
-data, but sanitized, protocol-independent SERIO_TIMEOUT, SERIO_PARITY
-and SERIO_FRAME bits.
-
-Thanks.
-
--- 
-Dmitry
+Are you using vlans?  If so, can you please test this patch?
+http://patchwork.ozlabs.org/patch/79264/
