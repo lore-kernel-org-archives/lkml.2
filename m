@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab1ARTW2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 14:22:28 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:45718 "EHLO comal.ext.ti.com"
+	id S1753070Ab1ARTWZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 14:22:25 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:45702 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752974Ab1ARTWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 14:22:20 -0500
+	id S1752854Ab1ARTWQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 14:22:16 -0500
 From: Cyril Chemparathy <cyril@ti.com>
 To: davinci-linux-open-source@linux.davincidsp.com,
         spi-devel-general@lists.sourceforge.net, sameo@linux.intel.com,
         rpurdie@rpsys.net, dbrownell@users.sourceforge.net
 Cc: c-park@ti.com, linux-arm-kernel@lists.arm.linux.org.uk,
         linux-kernel@vger.kernel.org, Cyril Chemparathy <cyril@ti.com>
-Subject: [PATCH v8 05/11] davinci: add tnetv107x ssp platform device
-Date: Tue, 18 Jan 2011 14:21:39 -0500
-Message-Id: <1295378505-15221-6-git-send-email-cyril@ti.com>
+Subject: [PATCH v8 04/11] backlight: add support for tps6116x controller
+Date: Tue, 18 Jan 2011 14:21:38 -0500
+Message-Id: <1295378505-15221-5-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1295378505-15221-1-git-send-email-cyril@ti.com>
 References: <1295378505-15221-1-git-send-email-cyril@ti.com>
@@ -22,97 +22,350 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds an SSP platform device definition for the tnetv107x soc family.
-The clock lookup entry has also been updated to match.
+TPS6116x is an EasyScale backlight controller device.  This driver supports
+TPS6116x devices connected on a single GPIO.
 
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 ---
- arch/arm/mach-davinci/devices-tnetv107x.c      |   25 ++++++++++++++++++++++++
- arch/arm/mach-davinci/include/mach/tnetv107x.h |    2 +
- arch/arm/mach-davinci/tnetv107x.c              |    2 +-
- 3 files changed, 28 insertions(+), 1 deletions(-)
+ drivers/video/backlight/Kconfig    |    7 +
+ drivers/video/backlight/Makefile   |    2 +-
+ drivers/video/backlight/tps6116x.c |  299 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 307 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/video/backlight/tps6116x.c
 
-diff --git a/arch/arm/mach-davinci/devices-tnetv107x.c b/arch/arm/mach-davinci/devices-tnetv107x.c
-index 85503de..6162cae 100644
---- a/arch/arm/mach-davinci/devices-tnetv107x.c
-+++ b/arch/arm/mach-davinci/devices-tnetv107x.c
-@@ -35,6 +35,7 @@
- #define TNETV107X_SDIO0_BASE			0x08088700
- #define TNETV107X_SDIO1_BASE			0x08088800
- #define TNETV107X_KEYPAD_BASE			0x08088a00
-+#define TNETV107X_SSP_BASE			0x08088c00
- #define TNETV107X_ASYNC_EMIF_CNTRL_BASE		0x08200000
- #define TNETV107X_ASYNC_EMIF_DATA_CE0_BASE	0x30000000
- #define TNETV107X_ASYNC_EMIF_DATA_CE1_BASE	0x40000000
-@@ -342,6 +343,25 @@ static struct platform_device tsc_device = {
- 	.resource	= tsc_resources,
- };
+diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
+index e54a337..06e868e 100644
+--- a/drivers/video/backlight/Kconfig
++++ b/drivers/video/backlight/Kconfig
+@@ -307,6 +307,13 @@ config BACKLIGHT_PCF50633
+ 	  If you have a backlight driven by a NXP PCF50633 MFD, say Y here to
+ 	  enable its driver.
  
-+static struct resource ssp_resources[] = {
-+	{
-+		.start	= TNETV107X_SSP_BASE,
-+		.end	= TNETV107X_SSP_BASE + 0x1ff,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	{
-+		.start	= IRQ_TNETV107X_SSP,
-+		.flags	= IORESOURCE_IRQ,
-+	},
++config BACKLIGHT_TPS6116X
++	tristate "TPS6116X LCD Backlight"
++	depends on GENERIC_GPIO
++	help
++	  This driver controls the LCD backlight level for EasyScale capable
++	  SSP connected backlight controllers.
++
+ endif # BACKLIGHT_CLASS_DEVICE
+ 
+ endif # BACKLIGHT_LCD_SUPPORT
+diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
+index 44c0f81..5d407c8 100644
+--- a/drivers/video/backlight/Makefile
++++ b/drivers/video/backlight/Makefile
+@@ -35,4 +35,4 @@ obj-$(CONFIG_BACKLIGHT_ADP5520)	+= adp5520_bl.o
+ obj-$(CONFIG_BACKLIGHT_ADP8860)	+= adp8860_bl.o
+ obj-$(CONFIG_BACKLIGHT_88PM860X) += 88pm860x_bl.o
+ obj-$(CONFIG_BACKLIGHT_PCF50633)	+= pcf50633-backlight.o
+-
++obj-$(CONFIG_BACKLIGHT_TPS6116X)+= tps6116x.o
+diff --git a/drivers/video/backlight/tps6116x.c b/drivers/video/backlight/tps6116x.c
+new file mode 100644
+index 0000000..7f846ab
+--- /dev/null
++++ b/drivers/video/backlight/tps6116x.c
+@@ -0,0 +1,299 @@
++/*
++ * TPS6116X LCD Backlight Controller Driver
++ *
++ * Copyright (C) 2010 Texas Instruments
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any kind,
++ * whether express or implied; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/fb.h>
++#include <linux/err.h>
++#include <linux/delay.h>
++#include <linux/gpio.h>
++#include <linux/backlight.h>
++#include <linux/platform_device.h>
++#include <linux/regulator/consumer.h>
++
++#define TPS6116X_MAX_INTENSITY		31
++#define TPS6116X_DEFAULT_INTENSITY	10
++
++/* Easyscale timing w/ margin (usecs) */
++#define T_POWER_SETTLE			2000
++#define T_ES_DELAY			120
++#define T_ES_DETECT			280
++#define T_ES_WINDOW			(1000 - T_ES_DELAY - T_ES_DETECT)
++#define T_START				3
++#define T_EOS				3
++#define T_INACTIVE			3
++#define T_ACTIVE			(3 * T_INACTIVE)
++
++#define CMD_SET				0x72
++
++struct tps6116x {
++	struct ti_ssp_device		*handle;
++	struct device			*dev;
++	int				gpio;
++	struct mutex			lock;
++	int				intensity;
++	struct backlight_properties	props;
++	struct backlight_device		*bl;
++	struct regulator		*regulator;
++	bool				power;
++	bool				suspended;
 +};
 +
-+static struct platform_device ssp_device = {
-+	.name		= "ti-ssp",
-+	.id		= -1,
-+	.num_resources	= ARRAY_SIZE(ssp_resources),
-+	.resource	= ssp_resources,
-+};
++static int __set_power(struct tps6116x *hw, bool power)
++{
++	unsigned long flags;
++	int error;
 +
- void __init tnetv107x_devices_init(struct tnetv107x_device_info *info)
- {
- 	int i, error;
-@@ -380,4 +400,9 @@ void __init tnetv107x_devices_init(struct tnetv107x_device_info *info)
- 		keypad_device.dev.platform_data = info->keypad_config;
- 		platform_device_register(&keypad_device);
- 	}
++	if (power == hw->power)
++		return 0; /* nothing to do */
 +
-+	if (info->ssp_config) {
-+		ssp_device.dev.platform_data = info->ssp_config;
-+		platform_device_register(&ssp_device);
++	/* disabling is simple... choke power */
++	if (!power) {
++		error = regulator_disable(hw->regulator);
++		goto done;
 +	}
- }
-diff --git a/arch/arm/mach-davinci/include/mach/tnetv107x.h b/arch/arm/mach-davinci/include/mach/tnetv107x.h
-index 5a681d8..89c1fdc 100644
---- a/arch/arm/mach-davinci/include/mach/tnetv107x.h
-+++ b/arch/arm/mach-davinci/include/mach/tnetv107x.h
-@@ -34,6 +34,7 @@
- 
- #include <linux/serial_8250.h>
- #include <linux/input/matrix_keypad.h>
-+#include <linux/mfd/ti_ssp.h>
- 
- #include <mach/mmc.h>
- #include <mach/nand.h>
-@@ -44,6 +45,7 @@ struct tnetv107x_device_info {
- 	struct davinci_mmc_config	*mmc_config[2];  /* 2 controllers */
- 	struct davinci_nand_pdata	*nand_config[4]; /* 4 chipsels */
- 	struct matrix_keypad_platform_data *keypad_config;
-+	struct ti_ssp_data		*ssp_config;
- };
- 
- extern struct platform_device tnetv107x_wdt_device;
-diff --git a/arch/arm/mach-davinci/tnetv107x.c b/arch/arm/mach-davinci/tnetv107x.c
-index 6fcdece..1b28fdd 100644
---- a/arch/arm/mach-davinci/tnetv107x.c
-+++ b/arch/arm/mach-davinci/tnetv107x.c
-@@ -278,7 +278,7 @@ static struct clk_lookup clks[] = {
- 	CLK(NULL,		"timer1",		&clk_timer1),
- 	CLK("tnetv107x_wdt.0",	NULL,			&clk_wdt_arm),
- 	CLK(NULL,		"clk_wdt_dsp",		&clk_wdt_dsp),
--	CLK("ti-ssp.0",		NULL,			&clk_ssp),
-+	CLK("ti-ssp",		NULL,			&clk_ssp),
- 	CLK(NULL,		"clk_tdm0",		&clk_tdm0),
- 	CLK(NULL,		"clk_vlynq",		&clk_vlynq),
- 	CLK(NULL,		"clk_mcdma",		&clk_mcdma),
++
++	/* set ctrl pin init state for easyscale detection */
++	gpio_set_value(hw->gpio, 0);
++
++	error = regulator_enable(hw->regulator);
++	if (error < 0)
++		goto done;
++
++	udelay(T_POWER_SETTLE);
++
++	/*
++	 * Now that the controller is powered up, we need to put it into 1-wire
++	 * mode.  This is a timing sensitive operation, hence the irq disable.
++	 * Ideally, this should happen rarely, and mostly at init, so disabling
++	 * interrupts for the duration should not be a problem.
++	 */
++	local_irq_save(flags);
++
++	gpio_set_value(hw->gpio, 1);
++	udelay(T_ES_DELAY);
++	gpio_set_value(hw->gpio, 0);
++	udelay(T_ES_DETECT);
++	gpio_set_value(hw->gpio, 1);
++
++	local_irq_restore(flags);
++
++done:
++	if (error >= 0)
++		hw->power = power;
++
++	return error;
++}
++
++static void __write_byte(struct tps6116x *hw, u8 data)
++{
++	int bit;
++
++	gpio_set_value(hw->gpio, 1);
++	udelay(T_START);
++
++	for (bit = 0; bit < 8; bit++, data <<= 1) {
++		int val = data & 0x80;
++		int t_lo = val ? T_INACTIVE : T_ACTIVE;
++		int t_hi = val ? T_ACTIVE : T_INACTIVE;
++
++		gpio_set_value(hw->gpio, 0);
++		udelay(t_lo);
++		gpio_set_value(hw->gpio, 1);
++		udelay(t_hi);
++	}
++
++	gpio_set_value(hw->gpio, 0);
++	udelay(T_EOS);
++	gpio_set_value(hw->gpio, 1);
++}
++
++static void __set_intensity(struct tps6116x *hw, int intensity)
++{
++	unsigned long flags;
++
++	intensity = clamp(intensity, 0, TPS6116X_MAX_INTENSITY);
++
++	local_irq_save(flags);
++	__write_byte(hw, CMD_SET);
++	__write_byte(hw, intensity);
++	local_irq_restore(flags);
++}
++
++static int set_intensity(struct tps6116x *hw, int intensity)
++{
++	int error = 0;
++
++	if (intensity == hw->intensity)
++		return 0;
++
++	mutex_lock(&hw->lock);
++
++	error = __set_power(hw, intensity ? true : false);
++	if (error < 0)
++		goto error;
++
++	if (intensity > 0)
++		__set_intensity(hw, intensity);
++
++	hw->intensity = intensity;
++error:
++	mutex_unlock(&hw->lock);
++
++	return error;
++}
++
++static int get_brightness(struct backlight_device *bl)
++{
++	struct tps6116x *hw = bl_get_data(bl);
++
++	return hw->intensity;
++}
++
++static int update_status(struct backlight_device *bl)
++{
++	struct tps6116x *hw = bl_get_data(bl);
++	int intensity = bl->props.brightness;
++
++	if (hw->suspended || hw->props.state & BL_CORE_SUSPENDED)
++		intensity = 0;
++	if (bl->props.power != FB_BLANK_UNBLANK)
++		intensity = 0;
++	if (bl->props.fb_blank != FB_BLANK_UNBLANK)
++		intensity = 0;
++
++	return set_intensity(hw, intensity);
++}
++
++static const struct backlight_ops tps6116x_backlight_ops = {
++	.options	= BL_CORE_SUSPENDRESUME,
++	.get_brightness	= get_brightness,
++	.update_status	= update_status,
++};
++
++static int __devinit tps6116x_probe(struct platform_device *pdev)
++{
++	struct tps6116x *hw;
++	struct device *dev = &pdev->dev;
++	struct backlight_properties props;
++	int error;
++
++	hw = kzalloc(sizeof(struct tps6116x), GFP_KERNEL);
++	if (!hw) {
++		dev_err(dev, "cannot allocate driver data\n");
++		return -ENOMEM;
++	}
++	platform_set_drvdata(pdev, hw);
++
++	hw->gpio = (int)dev->platform_data;
++	hw->dev = dev;
++
++	mutex_init(&hw->lock);
++
++	hw->regulator = regulator_get(dev, "vlcd");
++	if (IS_ERR(hw->regulator)) {
++		error = PTR_ERR(hw->regulator);
++		dev_err(dev, "cannot claim regulator\n");
++		goto error_regulator;
++	}
++
++	error = gpio_request_one(hw->gpio, GPIOF_DIR_OUT, dev_name(dev));
++	if (error < 0) {
++		dev_err(dev, "cannot claim gpio\n");
++		goto error_gpio;
++	}
++
++	memset(&props, 0, sizeof(props));
++	props.max_brightness = TPS6116X_MAX_INTENSITY;
++	props.brightness     = TPS6116X_DEFAULT_INTENSITY;
++	props.power          = FB_BLANK_UNBLANK;
++
++	hw->bl = backlight_device_register("tps6116x", hw->dev, hw,
++					   &tps6116x_backlight_ops, &props);
++	if (IS_ERR(hw->bl)) {
++		error = PTR_ERR(hw->bl);
++		dev_err(dev, "backlight registration failed\n");
++		goto error_register;
++	}
++
++	update_status(hw->bl);
++	dev_info(dev, "registered backlight controller\n");
++	return 0;
++
++error_register:
++	gpio_free(hw->gpio);
++error_gpio:
++	regulator_put(hw->regulator);
++error_regulator:
++	kfree(hw);
++	platform_set_drvdata(pdev, NULL);
++	return error;
++}
++
++static int __devexit tps6116x_remove(struct platform_device *pdev)
++{
++	struct tps6116x *hw = platform_get_drvdata(pdev);
++
++	backlight_device_unregister(hw->bl);
++	regulator_disable(hw->regulator);
++	regulator_put(hw->regulator);
++	gpio_free(hw->gpio);
++	kfree(hw);
++	platform_set_drvdata(pdev, NULL);
++	return 0;
++}
++
++static int tps6116x_suspend(struct platform_device *pdev, pm_message_t state)
++{
++	struct tps6116x *hw = platform_get_drvdata(pdev);
++	hw->suspended = true;
++	update_status(hw->bl);
++	return 0;
++}
++
++static int tps6116x_resume(struct platform_device *pdev)
++{
++	struct tps6116x *hw = platform_get_drvdata(pdev);
++	hw->suspended = false;
++	update_status(hw->bl);
++	return 0;
++}
++
++static struct platform_driver tps6116x_driver = {
++	.probe		= tps6116x_probe,
++	.remove		= __devexit_p(tps6116x_remove),
++	.suspend	= tps6116x_suspend,
++	.resume		= tps6116x_resume,
++	.driver		= {
++		.name	= "tps6116x",
++		.owner	= THIS_MODULE,
++	},
++};
++
++static int __init tps6116x_init(void)
++{
++	return platform_driver_register(&tps6116x_driver);
++}
++module_init(tps6116x_init);
++
++static void __exit tps6116x_exit(void)
++{
++	platform_driver_unregister(&tps6116x_driver);
++}
++module_exit(tps6116x_exit);
++
++MODULE_DESCRIPTION("SSP TPS6116X Driver");
++MODULE_AUTHOR("Cyril Chemparathy");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:tps6116x");
 -- 
 1.7.1
 
