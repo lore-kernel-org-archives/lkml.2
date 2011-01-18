@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572Ab1ARR5p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 12:57:45 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:37907 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867Ab1ARR5o convert rfc822-to-8bit (ORCPT
+	id S1753150Ab1ARSEf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 13:04:35 -0500
+Received: from bhuna.collabora.co.uk ([93.93.128.226]:58899 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752042Ab1ARSEe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 12:57:44 -0500
-MIME-Version: 1.0
-Message-ID: <9e7aa896-ed1f-4d50-8227-3a922be39949@default>
-Date: Tue, 18 Jan 2011 09:53:58 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Nitin Gupta <ngupta@vflare.org>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 0/8] zcache: page cache compression support
-References: <1279283870-18549-1-git-send-email-ngupta@vflare.org
- 20110110131626.GA18407@shutemov.name>
-In-Reply-To: <20110110131626.GA18407@shutemov.name>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6539.5000]
-Content-Type: text/plain; charset=us-ascii
+	Tue, 18 Jan 2011 13:04:34 -0500
+X-Greylist: delayed 635 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Jan 2011 13:04:33 EST
+Date: Tue, 18 Jan 2011 17:51:43 +0000
+From: Alban Crequy <alban.crequy@collabora.co.uk>
+To: Eric Dumazet <eric.dumazet@gmail.com>,
+        Ian Molton <ian.molton@collabora.co.uk>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
+        ebiederm@xmission.com, xemul@openvz.org, davidel@xmailserver.org
+Subject: Re: [PATCH] af_unix: implement socket filter
+Message-ID: <20110118175143.3a164669@chocolatine.cbg.collabora.co.uk>
+In-Reply-To: <1295371361.3290.15.camel@edumazet-laptop>
+References: <1295368755-20931-1-git-send-email-ian.molton@collabora.co.uk>
+	<1295371361.3290.15.camel@edumazet-laptop>
+Organization: Collabora
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.23.90; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Kirill A. Shutemov [mailto:kirill@shutemov.name]
-> Sent: Monday, January 10, 2011 6:16 AM
-> To: Nitin Gupta
-> Cc: Pekka Enberg; Hugh Dickins; Andrew Morton; Greg KH; Dan
-> Magenheimer; Rik van Riel; Avi Kivity; Christoph Hellwig; Minchan Kim;
-> Konrad Rzeszutek Wilk; linux-mm; linux-kernel
-> Subject: Re: [PATCH 0/8] zcache: page cache compression support
-> 
-> Hi,
-> 
-> What is status of the patchset?
-> Do you have updated patchset with fixes?
-> 
-> --
->  Kirill A. Shutemov
+Le Tue, 18 Jan 2011 18:22:41 +0100,
+Eric Dumazet <eric.dumazet@gmail.com> a écrit :
 
-I wanted to give Nitin a week to respond, but I guess he
-continues to be offline.
+> Le mardi 18 janvier 2011 à 16:39 +0000, Ian Molton a écrit :
+> > From: Alban Crequy <alban.crequy@collabora.co.uk>
+> > 
+> > Linux Socket Filters can already be successfully attached and
+> > detached on unix sockets with setsockopt(sockfd, SOL_SOCKET,
+> > SO_{ATTACH,DETACH}_FILTER, ....). See:
+> > Documentation/networking/filter.txt
+> > 
+> > But the filter was never used in the unix socket code so it did not
+> > work. This patch uses sk_filter() to filter buffers before delivery.
+> > 
+> > This short program demonstrates the problem on SOCK_DGRAM.
 
-I believe zcache is completely superceded by kztmem.
-Kztmem, like zcache, is dependent on cleancache
-getting merged.
+By the way, the patch implements socket filters on SOCK_DGRAM and
+SOCK_SEQPACKET but not SOCK_STREAM. Socket filters does not make sense
+to me when there is no packet boundaries. But if there is a need for
+it, the code for SOCK_STREAM could be added easily.
 
-Kztmem may supercede zram also although frontswap (which
-kztmem uses for a more dynamic in-memory swap compression)
-and zram have some functional differences that support
-both being merged.
+> Any idea on performance cost adding sk_filter() call ?
 
-For latest kztmem patches and description, see:
+Ian will write a performance test and repost the patch with some stats.
+I don't know about the performance cost.
 
-https://lkml.org/lkml/2011/1/18/170 
+> Hmm, looking at it, I have no idea why sk_filter() needs to block BH.
 
+I don't know neither.
 
-Thanks,
-Dan
+> I'll send a patch to relax this requirement.
+
+Thanks for your review!
+
+Alban
