@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab1ARTHk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 14:07:40 -0500
-Received: from hera.kernel.org ([140.211.167.34]:50259 "EHLO hera.kernel.org"
+	id S1753300Ab1ARTH4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 14:07:56 -0500
+Received: from hera.kernel.org ([140.211.167.34]:50275 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753228Ab1ARTHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 14:07:37 -0500
-Date: Tue, 18 Jan 2011 19:06:59 GMT
+	id S1751530Ab1ARTHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 14:07:55 -0500
+Date: Tue, 18 Jan 2011 19:07:23 GMT
 From: tip-bot for Oleg Nesterov <oleg@redhat.com>
 Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
         hpa@zytor.com, mingo@redhat.com, stern@rowland.harvard.edu,
@@ -18,39 +18,38 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         a.p.zijlstra@chello.nl, fweisbec@gmail.com, roland@redhat.com,
         oleg@redhat.com, tglx@linutronix.de, prasad@linux.vnet.ibm.com,
         mingo@elte.hu
-In-Reply-To: <20110118161008.GB693@redhat.com>
-References: <20110118161008.GB693@redhat.com>
+In-Reply-To: <20110118161032.GC693@redhat.com>
+References: <20110118161032.GC693@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf: Find_get_context: fix the per-cpu-counter check
-Message-ID: <tip-22a4ec729017ba613337a28f306f94ba5023fe2e@git.kernel.org>
-Git-Commit-ID: 22a4ec729017ba613337a28f306f94ba5023fe2e
+Subject: [tip:perf/urgent] perf: Validate cpu early in perf_event_alloc()
+Message-ID: <tip-66832eb4baaaa9abe4c993ddf9113a79e39b9915@git.kernel.org>
+Git-Commit-ID: 66832eb4baaaa9abe4c993ddf9113a79e39b9915
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 18 Jan 2011 19:07:00 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 18 Jan 2011 19:07:23 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  22a4ec729017ba613337a28f306f94ba5023fe2e
-Gitweb:     http://git.kernel.org/tip/22a4ec729017ba613337a28f306f94ba5023fe2e
+Commit-ID:  66832eb4baaaa9abe4c993ddf9113a79e39b9915
+Gitweb:     http://git.kernel.org/tip/66832eb4baaaa9abe4c993ddf9113a79e39b9915
 Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Tue, 18 Jan 2011 17:10:08 +0100
+AuthorDate: Tue, 18 Jan 2011 17:10:32 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
 CommitDate: Tue, 18 Jan 2011 19:34:23 +0100
 
-perf: Find_get_context: fix the per-cpu-counter check
+perf: Validate cpu early in perf_event_alloc()
 
-If task == NULL, find_get_context() should always check that cpu
-is correct.
+Starting from perf_event_alloc()->perf_init_event(), the kernel
+assumes that event->cpu is either -1 or the valid CPU number.
 
-Afaics, the bug was introduced by 38a81da2 "perf events: Clean
-up pid passing", but even before that commit "&& cpu != -1" was
-not exactly right, -ESRCH from find_task_by_vpid() is not
-accurate.
+Change perf_event_alloc() to validate this argument early. This
+also means we can remove the similar check in
+find_get_context().
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -62,22 +61,44 @@ Cc: Prasad <prasad@linux.vnet.ibm.com>
 Cc: Roland McGrath <roland@redhat.com>
 Cc: gregkh@suse.de
 Cc: stable@kernel.org
-LKML-Reference: <20110118161008.GB693@redhat.com>
+LKML-Reference: <20110118161032.GC693@redhat.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/perf_event.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/perf_event.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 76be4c7..a962b19 100644
+index a962b19..67d9bd7 100644
 --- a/kernel/perf_event.c
 +++ b/kernel/perf_event.c
-@@ -2228,7 +2228,7 @@ find_get_context(struct pmu *pmu, struct task_struct *task, int cpu)
- 	unsigned long flags;
- 	int ctxn, err;
- 
--	if (!task && cpu != -1) {
-+	if (!task) {
- 		/* Must be root to operate on a CPU event: */
+@@ -2233,9 +2233,6 @@ find_get_context(struct pmu *pmu, struct task_struct *task, int cpu)
  		if (perf_paranoid_cpu() && !capable(CAP_SYS_ADMIN))
  			return ERR_PTR(-EACCES);
+ 
+-		if (cpu < 0 || cpu >= nr_cpumask_bits)
+-			return ERR_PTR(-EINVAL);
+-
+ 		/*
+ 		 * We could be clever and allow to attach a event to an
+ 		 * offline CPU and activate it when the CPU comes up, but
+@@ -5541,6 +5538,11 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+ 	struct hw_perf_event *hwc;
+ 	long err;
+ 
++	if ((unsigned)cpu >= nr_cpu_ids) {
++		if (!task || cpu != -1)
++			return ERR_PTR(-EINVAL);
++	}
++
+ 	event = kzalloc(sizeof(*event), GFP_KERNEL);
+ 	if (!event)
+ 		return ERR_PTR(-ENOMEM);
+@@ -5589,7 +5591,7 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+ 
+ 	if (!overflow_handler && parent_event)
+ 		overflow_handler = parent_event->overflow_handler;
+-	
++
+ 	event->overflow_handler	= overflow_handler;
+ 
+ 	if (attr->disabled)
