@@ -1,77 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753383Ab1ARU0i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 15:26:38 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:7688 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab1ARU0h convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 15:26:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=eiMCzIGPwnrlADuAtQSjzryFNRLGNsLR9iL0VU25jkBvG+dmGwMk1zogwW1PxU69Ca
-         hnJXTGMmP7uq8E0liwnQ==
+	id S1753392Ab1ARU1d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 15:27:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19649 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753132Ab1ARU1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 15:27:32 -0500
+Date: Tue, 18 Jan 2011 15:27:20 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        Chad Talbott <ctalbott@google.com>, Nauman Rafique <nauman@google.com>,
+        Divyesh Shah <dpshah@google.com>, jmoyer@redhat.com,
+        Shaohua Li <shaohua.li@intel.com>
+Subject: Re: [PATCH 6/6 v3] blkio-cgroup: Document for blkio.use_hierarchy
+ interface
+Message-ID: <20110118202720.GJ27946@redhat.com>
+References: <4D180ECE.4000305@cn.fujitsu.com>
+ <4D185388.4080104@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1295375793.30950.1056.camel@laptop>
-References: <AANLkTinVc=VRo+2=M3x5HEoF__SOJn7kBk7Ek0R94TG9@mail.gmail.com>
-	<1295375793.30950.1056.camel@laptop>
-Date: Tue, 18 Jan 2011 21:26:31 +0100
-Message-ID: <AANLkTikG_Tnh53Cp8fStPBmeuowZgQp8HvMLXZ4kxSbv@mail.gmail.com>
-Subject: Re: [BUG] perf_event: inst_retired:any_p:c=16:i=1 is not equivalent
- to cpu_clk_unhalted:thread_p
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu,
-        Lin Ming <ming.m.lin@intel.com>, Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D185388.4080104@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 18, 2011 at 7:36 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2011-01-18 at 19:05 +0100, Stephane Eranian wrote:
->> Peter,
->>
->> commit 7639dae0ca11038286bbbcda05f2bef601c1eb8d
->> Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> Date:   Tue Dec 14 21:26:40 2010 +0100
->>
->>     perf, x86: Provide a PEBS capable cycle event
->>
->>
->>
->> Even with the transformation cmask=16:invert=1, you are not quite
->> counting the same thing.
->>
->> inst_retired:any_p:c=16:i=1  is different from cpu_clk_unhalted:thread_p
->>
->> Simply because, I think, this form of inst_retired counts in HALTED state.
->
-> Drad it does indeed:
->
-> # perf stat -a -e cycles:p -e cycles sleep 1
->
->  Performance counter stats for 'sleep 1':
->
->        61,634,870 cycles
->        26,703,249 cycles
->
->        1.000860820  seconds time elapsed
->
-What's interesting here is that this cycles:p is not event equal to 1x CPU freq
-given your measuring for 1s. So it must stop counting at some point.
+On Mon, Dec 27, 2010 at 04:51:20PM +0800, Gui Jianfeng wrote:
+> Document for blkio.use_hierarchy interface
+> 
+> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+> ---
+>  Documentation/cgroups/blkio-controller.txt |   70 ++++++++++++++++++++--------
+>  1 files changed, 51 insertions(+), 19 deletions(-)
+> 
+> diff --git a/Documentation/cgroups/blkio-controller.txt b/Documentation/cgroups/blkio-controller.txt
+> index 4ed7b5c..bd01d6c 100644
+> --- a/Documentation/cgroups/blkio-controller.txt
+> +++ b/Documentation/cgroups/blkio-controller.txt
+> @@ -91,30 +91,51 @@ Throttling/Upper Limit policy
+>  
+>  Hierarchical Cgroups
+>  ====================
+> -- Currently none of the IO control policy supports hierarhical groups. But
+> -  cgroup interface does allow creation of hierarhical cgroups and internally
+> -  IO policies treat them as flat hierarchy.
+> +- Cgroup interface allows creation of hierarchical cgroups. Currently,
+> +  internally IO policies are able to treat them as flat hierarchy or
+> +  hierarchical hierarchy.
 
->
->> This automatic transformation would be "okay" in per-thread mode, but
->> not in system-wide mode. It should not be done under the cover. I would
->> rather have this option at the user level.
->
-> Agreed, since its not identical it had best be done in userspace, too
-> bad :/ I'll revert this patch.
->
-Yes, it would have been nice. But if you know what you're doing, this is
-still doable from user space. So I think we are okay.
+Gui, now we have 2 IO policies. Throttling policy still supports only flat
+mode. Can you please make it clear here that CFQ will support both flat
+and hierarhical mode while throttling supports only flat mode as of today.
+
+> Both hierarchical bandwidth division and flat
+> +  bandwidth division are supported. "blkio.use_hierarchy" can be used to
+> +  switch between flat mode and hierarchical mode.
+>  
+> -  So this patch will allow creation of cgroup hierarhcy but at the backend
+> -  everything will be treated as flat. So if somebody created a hierarchy like
+> -  as follows.
+> +  Consider the following CGroup hierarchy:
+>  
+> -			root
+> -			/  \
+> -		     test1 test2
+> -			|
+> -		     test3
+> +			  Root
+> +			/  |   \
+> +		     Grp1  Grp2 tsk1
+> +	            /  \
+> +		 Grp3 tsk2
+>  
+> -  CFQ and throttling will practically treat all groups at same level.
+> +  If blkio.use_hierarchy is disabled in all CGroups, CFQ will practically treat all groups
+> +  at the same level.
+>  
+> -				pivot
+> -			     /  |   \  \
+> -			root  test1 test2  test3
+> +			     Pivot tree
+> +			    /  |   |   \
+> +			Root Grp1 Grp2 Grp3
+> +			 /     |
+> +			tsk1  tsk2
+>  
+> -  Down the line we can implement hierarchical accounting/control support
+> -  and also introduce a new cgroup file "use_hierarchy" which will control
+> -  whether cgroup hierarchy is viewed as flat or hierarchical by the policy..
+> -  This is how memory controller also has implemented the things.
+> +  If blkio.use_hierarchy is enabled in Grp1 and Grp3, CFQ will treat groups and tasks as the
+
+I would think that before this example, we can give one simpler example
+where use_hierarhcy=1 in root cgroup and that would/should lead to all
+children group under root having use_hierarchy=1 set automatically and
+will look as follows.
+
+		     	Pivot tree
+			    |
+		           root
+			 /  |  | 
+	             tsk1   G1 G2 
+			   / \
+			 grp3 tsk2
+
+After this now you can give more complicated example as below where
+use_hierarchy=1 is only set for sub branch of tree and not the whole
+tree.
+
+> +  same view in CGroup hierarchy, it looks as follows.
+> +
+> +
+> +			     Pivot tree
+> +			    /    |    \
+> +			  Root  Grp1  Grp2
+> +			  /     /  \
+> +		       tsk1   Grp3 tsk2
+> +
+> +  Root, Grp1 and Grp2 are treated at the same level under Pivot tree. tsk1 stays under Root.
+> +  Grp3 and tsk2 are treated at the same level under Grp1. Below is the mapping between
+> +  task io priority and io weight:
+> +
+> +	    prio       0    1     2    3    4    5    6     7
+> +	    weight  1000  868   740  612  484  356  228   100
+> +
+> +  Note1: Regardless of the use_hierarchy setting in Root group, Root group is always put onto
+> +  Pivot tree.
+> +
+> +  Note2: Currently, "blkio.use_hierarchy" only effects proportional bandwidth division. For
+> +  Throttling logic, it still continue to treat everything as flat.
+>  
+
+Ok, I see you mentioned throttling flat mode here. I guess it is better
+to clarify it in the beginning itself.
+
+>  Various user visible config options
+>  ===================================
+> @@ -169,6 +190,17 @@ Proportional weight policy files
+>  	  dev     weight
+>  	  8:16    300
+>  
+> +- blkio.use_hierarchy
+> +	- Switch between hierarchical mode and flat mode as stated above.
+> +	  blkio.use_hierarchy == 1 means hierarchical mode is enabled.
+> +	  blkio.use_hierarchy == 0 means flat mode is enabled.
+> +	  You can set this interface only if there isn't any child CGroup under
+> +	  this CGroup. If one CGroup's blkio.use_hierarchy is set, the created
+> +	  children will inherit it. it's not allowed to unset it in children.
+> +	  The default mode in Root CGroup is flat.
+> +	  blkio.use_hierarchy only works for proportional bandwidth division
+> +	  as of today and doesn't have any effect on throttling logic.
+> +
+
+This is good. Makes use_hierarchy behavior for children and subtree very
+clear.
+
+>  - blkio.time
+>  	- disk time allocated to cgroup per device in milliseconds. First
+>  	  two fields specify the major and minor number of the device and
+> -- 
+> 1.6.5.2
+> 
+> 
+> 
+> 
+> 
+> 
