@@ -1,87 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903Ab1ARTBY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 14:01:24 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:49634 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752482Ab1ARTBW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 14:01:22 -0500
-Message-ID: <4D35E378.70300@metafoo.de>
-Date: Tue, 18 Jan 2011 20:01:12 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	id S1752911Ab1ARTCi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 14:02:38 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:51879 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751530Ab1ARTCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 14:02:36 -0500
+Date: Tue, 18 Jan 2011 11:02:33 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>, kvm@vger.kernel.org,
+        virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vhost: rcu annotation fixup
+Message-ID: <20110118190232.GM2193@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110118110845.GA11555@redhat.com>
+ <20110118174834.GF2193@linux.vnet.ibm.com>
+ <20110118175500.GA6935@redhat.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] asm-generic/io.h: Fix io{read,write}{16,32}be for big
- endian systems
-References: <1295374261-19609-1-git-send-email-lars@metafoo.de> <201101181944.07146.arnd@arndb.de>
-In-Reply-To: <201101181944.07146.arnd@arndb.de>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110118175500.GA6935@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 01/18/2011 07:44 PM, Arnd Bergmann wrote:
-> On Tuesday 18 January 2011 19:11:01 Lars-Peter Clausen wrote:
->> Currently io{read,write}{16,32} expand to
->>         *addr = cpu_to_leXX(cpu_to_beXX(val))
->> and
->>         val = beXX_to_cpu(leXX_to_cpu(*addr))
->>
->> While it should rather be:
->>         *addr = cpu_to_be{16,32}(val)
->> and
->>         val = be{16,32}_to_cpu(*addr)
->>
->> The current implementation works on litte-endian targets(where cpu_to_leXX is a
->> noop), but breaks on on big-endian targets, this patch fixes it.
->>
->> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+On Tue, Jan 18, 2011 at 07:55:00PM +0200, Michael S. Tsirkin wrote:
+> On Tue, Jan 18, 2011 at 09:48:34AM -0800, Paul E. McKenney wrote:
+> > On Tue, Jan 18, 2011 at 01:08:45PM +0200, Michael S. Tsirkin wrote:
+> > > When built with rcu checks enabled, vhost triggers
+> > > bogus warnings as vhost features are read without
+> > > dev->mutex sometimes.
+> > > Fixing it properly is not trivial as vhost.h does not
+> > > know which lockdep classes it will be used under.
+> > > Disable the warning by stubbing out the check for now.
+> > > 
+> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > ---
+> > >  drivers/vhost/vhost.h |    4 +---
+> > >  1 files changed, 1 insertions(+), 3 deletions(-)
+> > > 
+> > > diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+> > > index 2af44b7..2d03a31 100644
+> > > --- a/drivers/vhost/vhost.h
+> > > +++ b/drivers/vhost/vhost.h
+> > > @@ -173,9 +173,7 @@ static inline int vhost_has_feature(struct vhost_dev *dev, int bit)
+> > >  {
+> > >  	unsigned acked_features;
+> > > 
+> > > -	acked_features =
+> > > -		rcu_dereference_index_check(dev->acked_features,
+> > > -					    lockdep_is_held(&dev->mutex));
+> > > +	acked_features = rcu_dereference_index_check(dev->acked_features, 1);
+> > 
+> > Ouch!!!
+> > 
+> > Could you please at least add a comment?
 > 
-> The existing code looks broken on big-endian indeed, thanks
-> for the report!
+> Yes, OK.
 > 
-> However, you cannot use __raw_readl in general, because that
-> function knows nothing about the various kinds of I/O accesses
-> (potentially) handled by readl. Think of architectures where
-> readl is not a pointer dereference but something else.
-
-Well, i've though about that as well, but in the current asm-generic/io.h readl is
-unconditionally defined as cpu_to_le32(__raw_readl(addr)) and ioread32 is defined as
-readl.
-
-So unless an arch io.h undefines those macros and redefines them (which none of the
-current archs does, as far as i can see), we are o
-
-If an arch chooses to redefine ioread or readl, it should probably also redefine
-ioread{16,32}be.
-
+> > Alternatively, pass in the lock that is held and check for that?  Given
+> > that this is a static inline, the compiler should be able to optimize
+> > the argument away when !PROVE_RCU, correct?
+> > 
+> > 							Thanx, Paul
 > 
-> The right solution is probably to use swab16/swab32 for the
-> big-endian functions. This also corrects the iowrite functions
-> which really should be using cpu_to_be32 instead of be32_to_cpu
-> (although they are always defined to be the same afaict.
+> Hopefully, yes. We don't always have a lock: the idea was
+> to create a lockdep for these cases. But we can't pass
+> the pointer to that ...
 
-This would first cause a conversion to little-endian, which is a swap() in the
-generic case and then you would call swap() again on the result. Which is basically a
-noop, but I'm not sure if compilers will detect this.
+I suppose you could pass a pointer to the lockdep map structure.
+Not sure if this makes sense, but it would handle the situation.
 
-> 
-> 	Arnd
+Alternatively, create a helper function that checks the possibilities
+and screams if none of them are in effect.
 
-- - Lars
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+							Thanx, Paul
 
-iEYEARECAAYFAk0143gACgkQBX4mSR26RiPJwACgh1KJKR6o5X/kazS34g/stGKq
-OQ4AniZR7SlxTzpJDz7xTvPfeqAqH3S6
-=Q6cD
------END PGP SIGNATURE-----
+> > >  	return acked_features & (1 << bit);
+> > >  }
+> > > 
+> > > -- 
+> > > 1.7.3.2.91.g446ac
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > Please read the FAQ at  http://www.tux.org/lkml/
