@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752422Ab1ARWYW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 17:24:22 -0500
-Received: from cantor.suse.de ([195.135.220.2]:56438 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751733Ab1ARWYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 17:24:21 -0500
-Date: Tue, 18 Jan 2011 23:24:19 +0100
-From: Jan Kara <jack@suse.cz>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Jan Kara <jack@suse.cz>, Simon Xu <xu.simon@oracle.com>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext2: reduce redundant check of '*options'
-Message-ID: <20110118222419.GC5070@quack.suse.cz>
-References: <1294922362-2237-1-git-send-email-xu.simon@oracle.com>
- <20110117170203.GF5294@quack.suse.cz>
- <20110118134345.GC3138@thunk.org>
+	id S1752668Ab1ARWcb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 17:32:31 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33003 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab1ARWc3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 17:32:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=nqo3zCrAppjiLFxlYWa6wf1bH8cC+oPkpYL3lKiP+4XhawEZv+RJktrr/72O2Ht7Am
+         yXR8wH2bsi25JGnCMaZ4OiqitwK++xlLTWaBEpfsf78Jq49N+zV7gJhUFwKvAA4A2MHN
+         jLnJZm+ZELckWr4WSH16ZzdefTKtbjBn4+GqY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110118134345.GC3138@thunk.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <d44ddcf1d1e0813b3ce2b3872c7c702a31b62894.1290852959.git.npiggin@kernel.dk>
+References: <cover.1290852958.git.npiggin@kernel.dk>
+	<d44ddcf1d1e0813b3ce2b3872c7c702a31b62894.1290852959.git.npiggin@kernel.dk>
+Date: Tue, 18 Jan 2011 14:32:27 -0800
+Message-ID: <AANLkTi=pj-pLYVSrU+6+BtioCWLod2ueZecNaap619fw@mail.gmail.com>
+Subject: Re: [PATCH 17/46] fs: Use rename lock and RCU for multi-step operations
+From: Yehuda Sadeh Weinraub <yehudasa@gmail.com>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sage Weil <sage@newdream.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 18-01-11 08:43:45, Ted Ts'o wrote:
-> On Mon, Jan 17, 2011 at 06:02:03PM +0100, Jan Kara wrote:
-> > Seriously, if you want to do some useful fixing then have a look for
-> > example at making ext3/4 (in fact JBD/JBD2) handle transaction allocation
-> > failures gratefully.  Currently we just loop in start_this_handle()
-> > infinitely until we can make the allocation which is a bit dumb. So it
-> > would be good, to make as many places as possible able to handle ENOMEM
-> > from start_this_handle() and propagate the error to user space. In some
-> > cases, it might not be easily possible (e.g. during writeout of dirty
-> > memory, where proper handling needs more thought) but lots of cases
-> > should be rather simple and need just auditing the code paths. Thanks.
-> 
-> Uh, this is actually a rather subtle set of fixes that you are
-> proposing, because it won't be obvious to someone who hasn't paid very
-> careful attention to who calls certain functions (i.e., such as the
-> writepages function), which get propagated to user space, and which
-> will just cause mysterious data corruption of files --- especially
-> since the writeback daemon doesn't check error returns (!!!).  So if
-> someone changed writepages to return ENOMEM, and then said, "How
-> delightful!  My work is done...", it would result in nothing getting
-> back to userspace in most cases, and the writeback code would mark the
-> pages as clean, and on the next reboot, the data would be lost.
-  I agree that the patches will need a careful review because of catches
-like you mention.
+On Sat, Nov 27, 2010 at 1:44 AM, Nick Piggin <npiggin@kernel.dk> wrote:
+> The remaining usages for dcache_lock is to allow atomic, multi-step read-side
+> operations over the directory tree by excluding modifications to the tree.
+> Also, to walk in the leaf->root direction in the tree where we don't have
+> a natural d_lock ordering.
+>
+> This could be accomplished by taking every d_lock, but this would mean a
+> huge number of locks and actually gets very tricky.
+>
+> Solve this instead by using the rename seqlock for multi-step read-side
+> operations, retry in case of a rename so we don't walk up the wrong parent.
+> Concurrent dentry insertions are not serialised against.  Concurrent deletes
+> are tricky when walking up the directory: our parent might have been deleted
+> when dropping locks so also need to check and retry for that.
+>
+> We can also use the rename lock in cases where livelock is a worry (and it
+> is introduced in subsequent patch).
+>
+> Signed-off-by: Nick Piggin <npiggin@kernel.dk>
+..
+> @@ -237,6 +238,7 @@ static struct dentry *d_kill(struct dentry *dentry, struct dentry *parent)
+>        __releases(dcache_inode_lock)
+>        __releases(dcache_lock)
+>  {
+> +       dentry->d_parent = NULL;
+>        list_del(&dentry->d_u.d_child);
+>        if (parent)
+>                spin_unlock(&parent->d_lock);
 
-> So this is *not* a change that I would recommend to people who are
-> just beginning to learn how to program the kernel, and have been
-> taught by some kernel programmers that the best thing to do is to take
-> trivial-style changes and submit them upstream.
- I agree, maybe I've shooted too high (feel free to suggest better topic),
-but we'll see what the guy comes up with. Personally, I find it more useful
-to correct bad patches trying to achieve good things than spending time
-shooting down trivial code rearrangements...
+There's an issue with ceph as it references the
+dentry->d_parent(->d_inode) at dentry_release(), so setting
+dentry->d_parent to NULL here doesn't work with ceph. Though there is
+some workaround for it, we would like to be sure that this one is
+really required so that we don't exacerbate the ugliness. The
+workaround is to keep a pointer to the parent inode in the private
+dentry structure, which will be referenced only at the .release()
+callback. This is clearly not ideal.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Yehuda
