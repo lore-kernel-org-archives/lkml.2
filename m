@@ -1,119 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab1ARWQo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 17:16:44 -0500
-Received: from casper.infradead.org ([85.118.1.10]:45785 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923Ab1ARWQn (ORCPT
+	id S1752212Ab1ARWR2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 17:17:28 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57620 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab1ARWRZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 17:16:43 -0500
-Message-ID: <4D361139.7080101@infradead.org>
-Date: Tue, 18 Jan 2011 20:16:25 -0200
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
+	Tue, 18 Jan 2011 17:17:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=bzhQrHw+8gmfpWNABhr65NIs8F8dhJ+F4SQdPDr4VT1baLHueeovkeBmce6yUbMipQ
+         89TsIKGuNbcwN4BI5PPUWhe64En8CqITYUj0+3ZDz8DVRvt9Mk3ieS3lZivvsUjdVQog
+         39YWjSkOziHo0PsQODhqj1VZQYRD0a+vMTeIY=
 MIME-Version: 1.0
-To: "Igor M. Liplianin" <liplianin@me.by>
-CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/9 v2] Altera FPGA based CI driver module.
-References: <4d20723d.cc7e0e0a.6f59.3762@mx.google.com> <4D333066.3020203@infradead.org> <201101182123.31987.liplianin@me.by>
-In-Reply-To: <201101182123.31987.liplianin@me.by>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20110118190114.GA5070@quack.suse.cz>
+References: <AANLkTimMwZnm3UKvmrPscBeZF77vh1sW0ERO1tuv1oNW@mail.gmail.com>
+	<x494o9bbkqo.fsf@segfault.boston.devel.redhat.com>
+	<AANLkTimuCgn4aHzUJRmQfsXjG_UF-3W8fAWb0Y-sSPsM@mail.gmail.com>
+	<x49tyh7mjr6.fsf@segfault.boston.devel.redhat.com>
+	<AANLkTikgsGHJ+q6=We_zPAivyABq+z2f6Atv6ZScLYOU@mail.gmail.com>
+	<20110118190114.GA5070@quack.suse.cz>
+Date: Wed, 19 Jan 2011 09:17:23 +1100
+Message-ID: <AANLkTin1+B_1CV-weALdS8EYJO60BJd0b7AGWzc0wrWr@mail.gmail.com>
+Subject: Re: [patch] fs: aio fix rcu lookup
+From: Nick Piggin <npiggin@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Jeff Moyer <jmoyer@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 18-01-2011 17:23, Igor M. Liplianin escreveu:
-> Ð’ ÑÐ¾Ð¾Ð±Ñ‰ÐµÐ½Ð¸Ð¸ Ð¾Ñ‚ 16 ÑÐ½Ð²Ð°Ñ€Ñ 2011 19:52:38 Ð°Ð²Ñ‚Ð¾Ñ€ Mauro Carvalho Chehab Ð½Ð°Ð¿Ð¸ÑÐ°Ð»:
->> Em 02-01-2011 10:01, Igor M. Liplianin escreveu:
->>> An Altera FPGA CI module for NetUP Dual DVB-T/C RF CI card.
->>>
->>> Signed-off-by: Igor M. Liplianin <liplianin@netup.ru>
+On Wed, Jan 19, 2011 at 6:01 AM, Jan Kara <jack@suse.cz> wrote:
+>  Hi,
+>
+> On Tue 18-01-11 10:24:24, Nick Piggin wrote:
+>> On Tue, Jan 18, 2011 at 6:07 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
+>> > Nick Piggin <npiggin@gmail.com> writes:
+>> >> Do you agree with the theoretical problem? I didn't try to
+>> >> write a racer to break it yet. Inserting a delay before the
+>> >> get_ioctx might do the trick.
+>> >
+>> > I'm not convinced, no.  The last reference to the kioctx is always the
+>> > process, released in the exit_aio path, or via sys_io_destroy.  In both
+>> > cases, we cancel all aios, then wait for them all to complete before
+>> > dropping the final reference to the context.
 >>
->> Igor,
+>> That wouldn't appear to prevent a concurrent thread from doing an
+>> io operation that requires ioctx lookup, and taking the last reference
+>> after the io_cancel thread drops the ref.
 >>
->> There's something wrong with this patch. I got lots of error after applying
->> it:
+>> > So, while I agree that what you wrote is better, I remain unconvinced of
+>> > it solving a real-world problem.  Feel free to push it in as a cleanup,
+>> > though.
 >>
->> drivers/media/video/cx23885/altera-ci.o: In function
->> `netup_ci_read_attribute_mem':
->> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:304:
->> multiple definition of `netup_ci_read_attribute_mem'
->> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
->> a/video/cx23885/cimax2.c:241: first defined here
->> drivers/media/video/cx23885/altera-ci.o: In function `netup_ci_op_cam':
->> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:269:
->> multiple definition of `netup_ci_op_cam'
->> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
->> a/video/cx23885/cimax2.c:171: first defined here
->> drivers/media/video/cx23885/altera-ci.o: In function
->> `netup_ci_slot_shutdown':
->> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:364:
->> multiple definition of `netup_ci_slot_shutdown'
->> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
->> a/video/cx23885/cimax2.c:293: first defined here
->> drivers/media/video/cx23885/altera-ci.o: In function
->> `netup_ci_slot_ts_ctl':
->> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:370:
->> multiple definition of `netup_ci_slot_ts_ctl'
->> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
->> a/video/cx23885/cimax2.c:320: first defined here
->> drivers/media/video/cx23885/altera-ci.o: In function
->> `netup_ci_write_cam_ctl':
->> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:322:
->> multiple definition of `netup_ci_write_cam_ctl'
->> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
->> a/video/cx23885/cimax2.c:259: first defined here
->> drivers/media/video/cx23885/altera-ci.o: In function
->> `netup_ci_read_cam_ctl':
->> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:315:
->> multiple definition of `netup_ci_read_cam_ctl'
->> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
->> a/video/cx23885/cimax2.c:252: first defined here
->> drivers/media/video/cx23885/altera-ci.o: In function
->> `netup_ci_write_attribute_mem':
->> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:310:
->> multiple definition of `netup_ci_write_attribute_mem'
->> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
->> a/video/cx23885/cimax2.c:247: first defined here
->> drivers/media/video/cx23885/altera-ci.o: In function
->> `netup_poll_ci_slot_status':
->> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:448:
->> multiple definition of `netup_poll_ci_slot_status'
->> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
->> a/video/cx23885/cimax2.c:403: first defined here
->> drivers/media/video/cx23885/altera-ci.o: In function
->> `netup_ci_slot_reset':
->> /home/v4l/v4l/patchwork/drivers/media/video/cx23885/altera-ci.c:327:
->> multiple definition of `netup_ci_slot_reset'
->> drivers/media/video/cx23885/cx23885.o:/home/v4l/v4l/patchwork/drivers/medi
->> a/video/cx23885/cimax2.c:264: first defined here
->>
->>
->> Please fix it and submit a new version. The better is to replace all those
->> new symbols to start with altera_ci.
-> I see, allyesconfig...
+>> Well I think it has to be technically correct first. If there is indeed a
+>> guaranteed ref somehow, it just needs a comment.
+>  Hmm, the code in io_destroy() indeed looks fishy. We delete the ioctx
+> from the hash table and set ioctx->dead which is supposed to stop
+> lookup_ioctx() from finding it (see the !ctx->dead check in
+> lookup_ioctx()). There's even a comment in io_destroy() saying:
+>        /*
+>         * Wake up any waiters.  The setting of ctx->dead must be seen
+>         * by other CPUs at this point.  Right now, we rely on the
+>         * locking done by the above calls to ensure this consistency.
+>         */
+> But since lookup_ioctx() is called without any lock or barrier nothing
+> really seems to prevent the list traversal and ioctx->dead test to happen
+> before io_destroy() and get_ioctx() after io_destroy().
+>
+> But wouldn't the right fix be to call synchronize_rcu() in io_destroy()?
+> Because with your fix we could still return 'dead' ioctx and I don't think
+> we are supposed to do that...
 
-Yes.
+With my fix we won't oops, I was a bit concerned about ->dead,
+yes but I don't know what semantics it is attempted to have there.
 
->>
->> While here, please, on the first patch, move the Altera FPGA driver to
->> staging, to give people some time do discuss about it.
-> It means that cx23885 driver will depend on staging. Is it OK?
+synchronize_rcu() in io_destroy()  does not prevent it from returning
+as soon as lookup_ioctx drops the rcu_read_lock().
 
-The idea is to enable the Altera-dependent part of cx23885 only if compiled.
-There's no need to make the entire cx2388x dependent of Altera driver.
-> 
->>
->> PS.: there are a few CodingStyle errors on this patch. Please always review
->> your patches with ./scripts/checkpatch.pl.
-> I'll do it.
-
-Ok, thanks!
->>
->> Thanks!
->> Mauro
-> 
-
+The dead=1 in io_destroy indeed doesn't guarantee a whole lot.
+Anyone know?
