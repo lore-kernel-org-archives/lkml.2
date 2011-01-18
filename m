@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839Ab1ARTBS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 14:01:18 -0500
-Received: from cantor.suse.de ([195.135.220.2]:50437 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752297Ab1ARTBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 14:01:17 -0500
-Date: Tue, 18 Jan 2011 20:01:14 +0100
-From: Jan Kara <jack@suse.cz>
-To: Nick Piggin <npiggin@gmail.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] fs: aio fix rcu lookup
-Message-ID: <20110118190114.GA5070@quack.suse.cz>
-References: <AANLkTimMwZnm3UKvmrPscBeZF77vh1sW0ERO1tuv1oNW@mail.gmail.com>
- <x494o9bbkqo.fsf@segfault.boston.devel.redhat.com>
- <AANLkTimuCgn4aHzUJRmQfsXjG_UF-3W8fAWb0Y-sSPsM@mail.gmail.com>
- <x49tyh7mjr6.fsf@segfault.boston.devel.redhat.com>
- <AANLkTikgsGHJ+q6=We_zPAivyABq+z2f6Atv6ZScLYOU@mail.gmail.com>
+	id S1752903Ab1ARTBY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 14:01:24 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:49634 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752482Ab1ARTBW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 14:01:22 -0500
+Message-ID: <4D35E378.70300@metafoo.de>
+Date: Tue, 18 Jan 2011 20:01:12 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikgsGHJ+q6=We_zPAivyABq+z2f6Atv6ZScLYOU@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] asm-generic/io.h: Fix io{read,write}{16,32}be for big
+ endian systems
+References: <1295374261-19609-1-git-send-email-lars@metafoo.de> <201101181944.07146.arnd@arndb.de>
+In-Reply-To: <201101181944.07146.arnd@arndb.de>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi,
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-On Tue 18-01-11 10:24:24, Nick Piggin wrote:
-> On Tue, Jan 18, 2011 at 6:07 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
-> > Nick Piggin <npiggin@gmail.com> writes:
-> >> Do you agree with the theoretical problem? I didn't try to
-> >> write a racer to break it yet. Inserting a delay before the
-> >> get_ioctx might do the trick.
-> >
-> > I'm not convinced, no.  The last reference to the kioctx is always the
-> > process, released in the exit_aio path, or via sys_io_destroy.  In both
-> > cases, we cancel all aios, then wait for them all to complete before
-> > dropping the final reference to the context.
+On 01/18/2011 07:44 PM, Arnd Bergmann wrote:
+> On Tuesday 18 January 2011 19:11:01 Lars-Peter Clausen wrote:
+>> Currently io{read,write}{16,32} expand to
+>>         *addr = cpu_to_leXX(cpu_to_beXX(val))
+>> and
+>>         val = beXX_to_cpu(leXX_to_cpu(*addr))
+>>
+>> While it should rather be:
+>>         *addr = cpu_to_be{16,32}(val)
+>> and
+>>         val = be{16,32}_to_cpu(*addr)
+>>
+>> The current implementation works on litte-endian targets(where cpu_to_leXX is a
+>> noop), but breaks on on big-endian targets, this patch fixes it.
+>>
+>> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 > 
-> That wouldn't appear to prevent a concurrent thread from doing an
-> io operation that requires ioctx lookup, and taking the last reference
-> after the io_cancel thread drops the ref.
+> The existing code looks broken on big-endian indeed, thanks
+> for the report!
 > 
-> > So, while I agree that what you wrote is better, I remain unconvinced of
-> > it solving a real-world problem.  Feel free to push it in as a cleanup,
-> > though.
-> 
-> Well I think it has to be technically correct first. If there is indeed a
-> guaranteed ref somehow, it just needs a comment.
-  Hmm, the code in io_destroy() indeed looks fishy. We delete the ioctx
-from the hash table and set ioctx->dead which is supposed to stop
-lookup_ioctx() from finding it (see the !ctx->dead check in
-lookup_ioctx()). There's even a comment in io_destroy() saying:
-        /*
-         * Wake up any waiters.  The setting of ctx->dead must be seen
-         * by other CPUs at this point.  Right now, we rely on the
-         * locking done by the above calls to ensure this consistency.
-         */
-But since lookup_ioctx() is called without any lock or barrier nothing
-really seems to prevent the list traversal and ioctx->dead test to happen
-before io_destroy() and get_ioctx() after io_destroy().
+> However, you cannot use __raw_readl in general, because that
+> function knows nothing about the various kinds of I/O accesses
+> (potentially) handled by readl. Think of architectures where
+> readl is not a pointer dereference but something else.
 
-But wouldn't the right fix be to call synchronize_rcu() in io_destroy()?
-Because with your fix we could still return 'dead' ioctx and I don't think
-we are supposed to do that...
+Well, i've though about that as well, but in the current asm-generic/io.h readl is
+unconditionally defined as cpu_to_le32(__raw_readl(addr)) and ioread32 is defined as
+readl.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+So unless an arch io.h undefines those macros and redefines them (which none of the
+current archs does, as far as i can see), we are o
+
+If an arch chooses to redefine ioread or readl, it should probably also redefine
+ioread{16,32}be.
+
+> 
+> The right solution is probably to use swab16/swab32 for the
+> big-endian functions. This also corrects the iowrite functions
+> which really should be using cpu_to_be32 instead of be32_to_cpu
+> (although they are always defined to be the same afaict.
+
+This would first cause a conversion to little-endian, which is a swap() in the
+generic case and then you would call swap() again on the result. Which is basically a
+noop, but I'm not sure if compilers will detect this.
+
+> 
+> 	Arnd
+
+- - Lars
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk0143gACgkQBX4mSR26RiPJwACgh1KJKR6o5X/kazS34g/stGKq
+OQ4AniZR7SlxTzpJDz7xTvPfeqAqH3S6
+=Q6cD
+-----END PGP SIGNATURE-----
