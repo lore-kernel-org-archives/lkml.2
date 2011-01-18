@@ -1,104 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab1ARQ7f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 11:59:35 -0500
-Received: from bhuna.collabora.co.uk ([93.93.128.226]:35891 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752410Ab1ARQ7d (ORCPT
+	id S1752822Ab1ARRBT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 12:01:19 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:37060 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab1ARRBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 11:59:33 -0500
-X-Greylist: delayed 584 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Jan 2011 11:59:33 EST
-From: Ian Molton <ian.molton@collabora.co.uk>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, davem@davemloft.net, eric.dumazet@gmail.com,
-        ebiederm@xmission.com, xemul@openvz.org, davidel@xmailserver.org,
-        Alban Crequy <alban.crequy@collabora.co.uk>
-Subject: [PATCH] af_unix: implement socket filter
-Date: Tue, 18 Jan 2011 16:39:15 +0000
-Message-Id: <1295368755-20931-1-git-send-email-ian.molton@collabora.co.uk>
-X-Mailer: git-send-email 1.7.2.3
+	Tue, 18 Jan 2011 12:01:18 -0500
+X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=I98iFNk1EVwA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=IU6EI_ANgppSYHbGRbkA:9 a=JluYTsPGgyFOaazmsDh-zoYhleIA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] tracing: remove superfluous sub instructions
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, mingo@elte.hu,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110118164148.GD1941@jolsa.brq.redhat.com>
+References: <1295364498-9288-1-git-send-email-jolsa@redhat.com>
+	 <20110118155159.GA1791@nowhere>
+	 <1295367762.12215.2.camel@gandalf.stny.rr.com>
+	 <20110118164148.GD1941@jolsa.brq.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 18 Jan 2011 12:01:17 -0500
+Message-ID: <1295370077.12215.13.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alban Crequy <alban.crequy@collabora.co.uk>
+On Tue, 2011-01-18 at 17:41 +0100, Jiri Olsa wrote:
 
-Linux Socket Filters can already be successfully attached and detached on unix
-sockets with setsockopt(sockfd, SOL_SOCKET, SO_{ATTACH,DETACH}_FILTER, ...).
-See: Documentation/networking/filter.txt
+> ops, missed this one..
+> 
+> would it make sense to update the IP inside the function_trace_probe_call
+> function to save one instruction in the entry code used by all? or it's
+> not worth it..
 
-But the filter was never used in the unix socket code so it did not work. This
-patch uses sk_filter() to filter buffers before delivery.
+That would require function_trace_probe_call() to handle arch
+dependencies. I would like to keep arch dependent code in the arch
+subsystem when possible.
 
-This short program demonstrates the problem on SOCK_DGRAM.
+This change only saves a subtraction to a register. It only gets called
+if we are tracing functions. This modification is far into the noise
+that is caused by the tracer. I don't think it is worth it as it will
+cause head aches with knowing how to handle the ip from the users of the
+function tracer.
 
-int main(void) {
-  int i, j, ret;
-  int sv[2];
-  struct pollfd fds[2];
-  char *message = "Hello world!";
-  char buffer[64];
-  struct sock_filter ins[32] = {{0,},};
-  struct sock_fprog filter;
+I do plan on making the function tracer a bit more generic for common
+users. I would like to keep the ip at the call site of mcount.
 
-  socketpair(AF_UNIX, SOCK_DGRAM, 0, sv);
+-- Steve
 
-  for (i = 0 ; i < 2 ; i++) {
-    fds[i].fd = sv[i];
-    fds[i].events = POLLIN;
-    fds[i].revents = 0;
-  }
-
-  for(j = 1 ; j < 13 ; j++) {
-
-    /* Set a socket filter to truncate the message */
-    memset(ins, 0, sizeof(ins));
-    ins[0].code = BPF_RET|BPF_K;
-    ins[0].k = j;
-    filter.len = 1;
-    filter.filter = ins;
-    setsockopt(sv[1], SOL_SOCKET, SO_ATTACH_FILTER, &filter, sizeof(filter));
-
-    /* send a message */
-    send(sv[0], message, strlen(message) + 1, 0);
-
-    /* The filter should let the message pass but truncated. */
-    poll(fds, 2, 0);
-
-    /* Receive the truncated message*/
-    ret = recv(sv[1], buffer, 64, 0);
-    printf("received %d bytes, expected %d\n", ret, j);
-  }
-
-    for (i = 0 ; i < 2 ; i++)
-      close(sv[i]);
-
-  return 0;
-}
-
-Signed-off-by: Alban Crequy <alban.crequy@collabora.co.uk>
-Reviewed-by: Ian Molton <ian.molton@collabora.co.uk>
----
- net/unix/af_unix.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
-
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index dd419d2..8d9bbba 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -1475,6 +1475,12 @@ restart:
- 			goto out_free;
- 	}
- 
-+	if (sk_filter(other, skb) < 0) {
-+		/* Toss the packet but do not return any error to the sender */
-+		err = len;
-+		goto out_free;
-+	}
-+
- 	unix_state_lock(other);
- 	err = -EPERM;
- 	if (!unix_may_send(sk, other))
--- 
-1.7.2.3
 
