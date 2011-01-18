@@ -1,147 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab1ARRdm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 12:33:42 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:32914 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502Ab1ARRdl (ORCPT
+	id S1753085Ab1ARRfw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 12:35:52 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44428 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752647Ab1ARRfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 12:33:41 -0500
-X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=44vUGAvzfu8A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=J1Y8HTJGAAAA:8 a=7d_E57ReAAAA:8 a=HAQDL6CtuwapkAvogR8A:9 a=y_xrN5Xi7_3gdGBwGgsA:7 a=AFp9GIey39rrWDkgLLB-aLALzTYA:4 a=PUjeQqilurYA:10 a=4N9Db7Z2_RYA:10 a=D6-X0JM3zdQA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
- Unknown relocation: 36
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: David Miller <davem@davemloft.net>, richm@oldelvet.org.uk,
-        609371@bugs.debian.org, ben@decadent.org.uk,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, mingo@redhat.com
-In-Reply-To: <20110118164633.GA12872@Krystal>
-References: <1295273486.16479.15.camel@gandalf.stny.rr.com>
-	 <20110117.213448.226787087.davem@davemloft.net>
-	 <20110117.220039.71097651.davem@davemloft.net>
-	 <20110117.220857.104046847.davem@davemloft.net>
-	 <20110118164633.GA12872@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 18 Jan 2011 12:33:39 -0500
-Message-ID: <1295372019.12215.30.camel@gandalf.stny.rr.com>
+	Tue, 18 Jan 2011 12:35:51 -0500
+Subject: [GIT PULL] parisc fixes for 2.6.38-rc1
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Parisc List <linux-parisc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Jan 2011 11:35:48 -0600
+Message-ID: <1295372148.9752.174.camel@mulgrave.site>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-18 at 11:46 -0500, Mathieu Desnoyers wrote:
-> * David Miller (davem@davemloft.net) wrote:
-> > From: David Miller <davem@davemloft.net>
-> > Date: Mon, 17 Jan 2011 22:00:39 -0800 (PST)
-> > 
-> > > ftrace: Remove unnecessary alignment tag from ftrace_event_call.
-> > > 
-> > > It's completely unnecessary and causes problems on platforms
-> > > where this tag down-aligns the structure's alignment.
-> > > 
-> > > Signed-off-by: David S. Miller <davem@davemloft.net>
-> >  ...
-> > 
-> > Ok, unless we can explain why these alignments are needed at all, we
-> > should kill all of them:
-> 
-> ftrace: linker script add missing struct align
-> 
-> We should add the missing "STRUCT_ALIGN();" in
-> include/asm-generic/vmlinux.lds.h as a preliminary step to remove the ftrace
-> bogus structure alignments. Moving all STRUCT_ALIGN() for FTRACE_EVENTS()
-> and TRACE_SYSCALLS() into the definitions, so the alignment is only done if
-> these infrastructures are configured in. 
-> 
-> Also align TRACE_PRINTKS on 8 bytes to make sure the beginning of the section is
-> aligned on pointer size.
+This is just a couple of minor parisc specific fixes.  One for a console
+line wrap issue and the other for the transparent hugepages compile
+failure.  We've run these through our usual build and boot checks.
 
-If I can make it crash without the alignments and this fixes the issue,
-I'll apply both patches.
+The patches are here:
 
-Thanks,
+master.kernel.org:/pub/scm/linux/kernel/git/jejb/parisc-2.6.git#fixes
 
--- Steve
+The short changelog is:
 
-> 
-> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> ---
->  include/asm-generic/vmlinux.lds.h |   19 ++++++++++---------
->  1 file changed, 10 insertions(+), 9 deletions(-)
-> 
-> Index: linux-2.6-lttng/include/asm-generic/vmlinux.lds.h
-> ===================================================================
-> --- linux-2.6-lttng.orig/include/asm-generic/vmlinux.lds.h
-> +++ linux-2.6-lttng/include/asm-generic/vmlinux.lds.h
-> @@ -107,7 +107,8 @@
->  #endif
->  
->  #ifdef CONFIG_TRACE_BRANCH_PROFILING
-> -#define LIKELY_PROFILE()	VMLINUX_SYMBOL(__start_annotated_branch_profile) = .; \
-> +#define LIKELY_PROFILE()	STRUCT_ALIGN();					      \
-> +				VMLINUX_SYMBOL(__start_annotated_branch_profile) = .; \
->  				*(_ftrace_annotated_branch)			      \
->  				VMLINUX_SYMBOL(__stop_annotated_branch_profile) = .;
->  #else
-> @@ -115,7 +116,8 @@
->  #endif
->  
->  #ifdef CONFIG_PROFILE_ALL_BRANCHES
-> -#define BRANCH_PROFILE()	VMLINUX_SYMBOL(__start_branch_profile) = .;   \
-> +#define BRANCH_PROFILE()	STRUCT_ALIGN();				      \
-> +				VMLINUX_SYMBOL(__start_branch_profile) = .;   \
->  				*(_ftrace_branch)			      \
->  				VMLINUX_SYMBOL(__stop_branch_profile) = .;
->  #else
-> @@ -123,7 +125,8 @@
->  #endif
->  
->  #ifdef CONFIG_EVENT_TRACING
-> -#define FTRACE_EVENTS()	VMLINUX_SYMBOL(__start_ftrace_events) = .;	\
-> +#define FTRACE_EVENTS()	STRUCT_ALIGN();					\
-> +			VMLINUX_SYMBOL(__start_ftrace_events) = .;	\
->  			*(_ftrace_events)				\
->  			VMLINUX_SYMBOL(__stop_ftrace_events) = .;
->  #else
-> @@ -131,7 +134,8 @@
->  #endif
->  
->  #ifdef CONFIG_TRACING
-> -#define TRACE_PRINTKS() VMLINUX_SYMBOL(__start___trace_bprintk_fmt) = .;      \
-> +#define TRACE_PRINTKS()  . = ALIGN(8);					       \
-> +			 VMLINUX_SYMBOL(__start___trace_bprintk_fmt) = .;      \
->  			 *(__trace_printk_fmt) /* Trace_printk fmt' pointer */ \
->  			 VMLINUX_SYMBOL(__stop___trace_bprintk_fmt) = .;
->  #else
-> @@ -139,7 +143,8 @@
->  #endif
->  
->  #ifdef CONFIG_FTRACE_SYSCALLS
-> -#define TRACE_SYSCALLS() VMLINUX_SYMBOL(__start_syscalls_metadata) = .;	\
-> +#define TRACE_SYSCALLS() STRUCT_ALIGN();				\
-> +			 VMLINUX_SYMBOL(__start_syscalls_metadata) = .;	\
->  			 *(__syscalls_metadata)				\
->  			 VMLINUX_SYMBOL(__stop_syscalls_metadata) = .;
->  #else
-> @@ -169,11 +174,7 @@
->  	LIKELY_PROFILE()		       				\
->  	BRANCH_PROFILE()						\
->  	TRACE_PRINTKS()							\
-> -									\
-> -	STRUCT_ALIGN();							\
->  	FTRACE_EVENTS()							\
-> -									\
-> -	STRUCT_ALIGN();							\
->  	TRACE_SYSCALLS()
->  
->  /*
-> 
-> 
-> 
+Guy Martin (1):
+      parisc : Remove broken line wrapping handling pdc_iodc_print()
+
+James Bottomley (1):
+      parisc: fix compile breakage caused by inlining maybe_mkwrite
+
+And the diffstat:
+
+ arch/parisc/include/asm/pgtable.h |    4 +++-
+ arch/parisc/kernel/firmware.c     |   13 +------------
+ 2 files changed, 4 insertions(+), 13 deletions(-)
+
+Full diffs are below.
+
+James
+
+---
+
+diff --git a/arch/parisc/include/asm/pgtable.h b/arch/parisc/include/asm/pgtable.h
+index 865f37a..6f1f65d 100644
+--- a/arch/parisc/include/asm/pgtable.h
++++ b/arch/parisc/include/asm/pgtable.h
+@@ -10,11 +10,13 @@
+  * we simulate an x86-style page table for the linux mm code
+  */
+ 
+-#include <linux/mm.h>		/* for vm_area_struct */
+ #include <linux/bitops.h>
++#include <linux/spinlock.h>
+ #include <asm/processor.h>
+ #include <asm/cache.h>
+ 
++struct vm_area_struct;
++
+ /*
+  * kern_addr_valid(ADDR) tests if ADDR is pointing to valid kernel
+  * memory.  For the return value to be meaningful, ADDR must be >=
+diff --git a/arch/parisc/kernel/firmware.c b/arch/parisc/kernel/firmware.c
+index df971fa..4896ed0 100644
+--- a/arch/parisc/kernel/firmware.c
++++ b/arch/parisc/kernel/firmware.c
+@@ -1126,15 +1126,13 @@ int pdc_iodc_print(const unsigned char *str, unsigned count)
+ 	unsigned int i;
+ 	unsigned long flags;
+ 
+-	for (i = 0; i < count && i < 79;) {
++	for (i = 0; i < count;) {
+ 		switch(str[i]) {
+ 		case '\n':
+ 			iodc_dbuf[i+0] = '\r';
+ 			iodc_dbuf[i+1] = '\n';
+ 			i += 2;
+ 			goto print;
+-		case '\b':	/* BS */
+-			i--; /* overwrite last */
+ 		default:
+ 			iodc_dbuf[i] = str[i];
+ 			i++;
+@@ -1142,15 +1140,6 @@ int pdc_iodc_print(const unsigned char *str, unsigned count)
+ 		}
+ 	}
+ 
+-	/* if we're at the end of line, and not already inserting a newline,
+-	 * insert one anyway. iodc console doesn't claim to support >79 char
+-	 * lines. don't account for this in the return value.
+-	 */
+-	if (i == 79 && iodc_dbuf[i-1] != '\n') {
+-		iodc_dbuf[i+0] = '\r';
+-		iodc_dbuf[i+1] = '\n';
+-	}
+-
+ print:
+         spin_lock_irqsave(&pdc_lock, flags);
+         real32_call(PAGE0->mem_cons.iodc_io,
 
 
