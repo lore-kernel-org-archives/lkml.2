@@ -1,349 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab1ARVcR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 16:32:17 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:36775 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752078Ab1ARVcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 16:32:15 -0500
-Date: Tue, 18 Jan 2011 13:30:09 -0800
-From: Ram Pai <linuxram@us.ibm.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, clemens@ladisch.de,
-        Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        peter.henriksson@gmail.com, ebiederm@aristanetworks.com
-Subject: [PATCH 1/1 Version 2.0] PCI: allocate essential resources before
- reserving hotplug resources
-Message-ID: <20110118213009.GA9281@ram-laptop>
-Reply-To: Ram Pai <linuxram@us.ibm.com>
-References: <201010081416.57454.bjorn.helgaas@hp.com>
- <20101012070515.GA549@ram-laptop>
- <201010121301.54402.bjorn.helgaas@hp.com>
- <20101018131010.0e4771eb@jbarnes-desktop>
- <20101019171740.GC8437@ram-laptop>
- <20101019112439.53c4901e@jbarnes-desktop>
- <20101022171640.GE24820@ram-laptop>
- <20110107143208.036a3c01@jbarnes-desktop>
- <20110111211021.GA26352@ram-laptop>
- <20110114181915.GA7476@ram-laptop>
+	id S1752651Ab1ARViD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 16:38:03 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:54215 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056Ab1ARVh7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 16:37:59 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Lars-Peter Clausen" <lars@metafoo.de>
+Subject: Re: [PATCH] asm-generic/io.h: Fix io{read,write}{16,32}be for big endian systems
+Date: Tue, 18 Jan 2011 22:37:53 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc8; KDE/4.5.1; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1295374261-19609-1-git-send-email-lars@metafoo.de> <201101182056.35673.arnd@arndb.de> <4D35FE23.1010102@metafoo.de>
+In-Reply-To: <4D35FE23.1010102@metafoo.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110114181915.GA7476@ram-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101182237.53601.arnd@arndb.de>
+X-Provags-ID: V02:K0:b0VLyV+aCk0qILtJV8uT1bbsU5jMT497TGqdb9447B9
+ jrlxhU2MwARRdh1CTLIDZLh5XS3QEFny6k7xEtvDXhJzESA2Ck
+ uOmiXEEsM0fxPY1K9ny/DwX/9KCt7jOoh+5/rJVQjCf/H6eY8A
+ CloNwvE1QUPOcBXy+GyVqCbQfEhqgAqOLjfY2A8UkZC6vOyMrS
+ CuZJ607frQGfOIByO/avw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-        PCI: pre-allocate additional resources to devices
-        only after successful allocation of essential resources.
-    
-        Linux tries to pre-allocate minimal resources to hotplug
-        bridges.  This  works   fine as long as there are enough
-        resources  to  satisfy   all   other   genuine  resource
-        requirements.  However  if  enough  resources   are  not
-        available to   satisfy   any   of   these   nice-to-have
-        pre-allocations, the  resource-allocator reports  errors
-        and returns failure.
-    
-        This patch distinguishes between must-have resource from
-        nice-to-have   resource.   Any    failure   to  allocate
-        nice-to-have resources are ignored.
-    
-        This  behavior  can  be  particularly  useful to trigger
-        automatic  reallocation, if  the  OS  discovers  genuine
-        resource  allocation  conflicts  or  genuine unallocated
-        resource requests caused   by  buggy allocation behavior
-        of the native BIOS/uEFI.
-    
-        https://bugzilla.kernel.org/show_bug.cgi?id=15960
-        captures the movitation behind the patch.
-        This patch is verified to resolve the above bug.
-    
-Signed-off-by: Ram Pai <linuxram@us.ibm.com>
+On Tuesday 18 January 2011 21:54:59 Lars-Peter Clausen wrote:
+> >
+> > Right, but the header file also serves as a template for new architectures
+> > that cannot directly use it. I would prefer not to give a possibly bad example
+> > here, especially when it's in a rarely used function.
+> 
+> Maybe I'm missing something here, but if I have a big-endian architecture isn't
+> ioread{16,32}be what I should use to access iomapped memory?
 
-diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-index 66cb8f4..5b0fb2f 100644
---- a/drivers/pci/setup-bus.c
-+++ b/drivers/pci/setup-bus.c
-@@ -91,7 +91,39 @@ static void __dev_sort_resources(struct pci_dev *dev,
- 	pdev_sort_resources(dev, head);
- }
- 
--static void __assign_resources_sorted(struct resource_list *head,
-+static inline void reset_resource(struct resource *res)
-+{
-+	res->start = 0;
-+	res->end = 0;
-+	res->add_size = 0;
-+	res->flags = 0;
-+}
-+
-+static void adjust_resources_sorted(struct resource_list *head)
-+{
-+	struct resource *res;
-+	struct resource_list *list, *tmp;
-+	int idx;
-+
-+	for (list = head->next; list;) {
-+		res = list->res;
-+		idx = res - &list->dev->resource[0];
-+
-+		if (!resource_size(res) && res->add_size) {
-+			 res->end = res->start + res->add_size - 1;
-+			 if(pci_assign_resource(list->dev, idx))
-+				reset_resource(res);
-+		} else if (res->add_size) {
-+			adjust_resource(res, res->start, 
-+				resource_size(res) + res->add_size);
-+		}
-+		tmp = list;
-+		list = list->next;
-+		kfree(tmp);
-+	}
-+}
-+
-+static void assign_requested_resources_sorted(struct resource_list *head,
- 				 struct resource_list_x *fail_head)
- {
- 	struct resource *res;
-@@ -102,7 +134,7 @@ static void __assign_resources_sorted(struct resource_list *head,
- 		res = list->res;
- 		idx = res - &list->dev->resource[0];
- 
--		if (pci_assign_resource(list->dev, idx)) {
-+		if (resource_size(res) && pci_assign_resource(list->dev, idx)) {
- 			if (fail_head && !pci_is_root_bus(list->dev->bus)) {
- 				/*
- 				 * if the failed res is for ROM BAR, and it will
-@@ -112,16 +144,24 @@ static void __assign_resources_sorted(struct resource_list *head,
- 				      (!(res->flags & IORESOURCE_ROM_ENABLE))))
- 					add_to_failed_list(fail_head, list->dev, res);
- 			}
--			res->start = 0;
--			res->end = 0;
--			res->flags = 0;
-+			reset_resource(res);
- 		}
- 		tmp = list;
- 		list = list->next;
--		kfree(tmp);
- 	}
- }
- 
-+static void __assign_resources_sorted(struct resource_list *head,
-+				 struct resource_list_x *fail_head)
-+{
-+	/* Satisfy the must-have resource requests */
-+	assign_requested_resources_sorted(head, fail_head);
-+
-+	/* Try to satisfy any additional nice-to-have resource 
-+		requests */
-+	adjust_resources_sorted(head);
-+}
-+
- static void pdev_assign_resources_sorted(struct pci_dev *dev,
- 				 struct resource_list_x *fail_head)
- {
-@@ -404,15 +444,37 @@ static struct resource *find_free_bus_resource(struct pci_bus *bus, unsigned lon
- 	return NULL;
- }
- 
-+static resource_size_t calculate_iosize(resource_size_t size, 
-+		resource_size_t min_size, 
-+		resource_size_t size1, 
-+		resource_size_t old_size, 
-+		resource_size_t align)
-+{
-+	if (size < min_size)
-+		size = min_size;
-+	if (old_size == 1 )
-+		old_size = 0;
-+	/* To be fixed in 2.5: we should have sort of HAVE_ISA
-+	   flag in the struct pci_bus. */
-+#if defined(CONFIG_ISA) || defined(CONFIG_EISA)
-+	size = (size & 0xff) + ((size & ~0xffUL) << 2);
-+#endif
-+	size = ALIGN(size + size1, align);
-+	if (size < old_size)
-+		size = old_size;
-+	return size;
-+}
-+
- /* Sizing the IO windows of the PCI-PCI bridge is trivial,
-    since these windows have 4K granularity and the IO ranges
-    of non-bridge PCI devices are limited to 256 bytes.
-    We must be careful with the ISA aliasing though. */
--static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size)
-+static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size, 
-+			resource_size_t add_size)
- {
- 	struct pci_dev *dev;
- 	struct resource *b_res = find_free_bus_resource(bus, IORESOURCE_IO);
--	unsigned long size = 0, size1 = 0, old_size;
-+	unsigned long size = 0, size1 = 0;
- 
- 	if (!b_res)
-  		return;
-@@ -435,20 +497,14 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size)
- 				size1 += r_size;
- 		}
- 	}
--	if (size < min_size)
--		size = min_size;
--	old_size = resource_size(b_res);
--	if (old_size == 1)
--		old_size = 0;
--/* To be fixed in 2.5: we should have sort of HAVE_ISA
--   flag in the struct pci_bus. */
--#if defined(CONFIG_ISA) || defined(CONFIG_EISA)
--	size = (size & 0xff) + ((size & ~0xffUL) << 2);
--#endif
--	size = ALIGN(size + size1, 4096);
--	if (size < old_size)
--		size = old_size;
--	if (!size) {
-+
-+	size = calculate_iosize(size, min_size, size1, 
-+			resource_size(b_res), 4096);
-+	size1 = !add_size? size: 
-+		calculate_iosize(size, min_size+add_size, size1, 
-+			resource_size(b_res), 4096);
-+
-+	if (!size && !size1) {
- 		if (b_res->start || b_res->end)
- 			dev_info(&bus->self->dev, "disabling bridge window "
- 				 "%pR to [bus %02x-%02x] (unused)\n", b_res,
-@@ -459,16 +515,35 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size)
- 	/* Alignment of the IO window is always 4K */
- 	b_res->start = 4096;
- 	b_res->end = b_res->start + size - 1;
-+	b_res->add_size = size1-size;
- 	b_res->flags |= IORESOURCE_STARTALIGN;
- }
- 
-+
-+static resource_size_t calculate_memsize(resource_size_t size, 
-+		resource_size_t min_size, 
-+		resource_size_t size1, 
-+		resource_size_t old_size, 
-+		resource_size_t align)
-+{
-+	if (size < min_size)
-+		size = min_size;
-+	if (old_size == 1 )
-+		old_size = 0;
-+	if (size < old_size)
-+		size = old_size;
-+	size = ALIGN(size + size1, align);
-+	return size;
-+}
-+
- /* Calculate the size of the bus and minimal alignment which
-    guarantees that all child resources fit in this size. */
- static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
--			 unsigned long type, resource_size_t min_size)
-+			 unsigned long type, resource_size_t min_size, 
-+				resource_size_t add_size)
- {
- 	struct pci_dev *dev;
--	resource_size_t min_align, align, size, old_size;
-+	resource_size_t min_align, align, size, size1;
- 	resource_size_t aligns[12];	/* Alignments from 1Mb to 2Gb */
- 	int order, max_order;
- 	struct resource *b_res = find_free_bus_resource(bus, type);
-@@ -516,13 +591,6 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
- 			mem64_mask &= r->flags & IORESOURCE_MEM_64;
- 		}
- 	}
--	if (size < min_size)
--		size = min_size;
--	old_size = resource_size(b_res);
--	if (old_size == 1)
--		old_size = 0;
--	if (size < old_size)
--		size = old_size;
- 
- 	align = 0;
- 	min_align = 0;
-@@ -537,8 +605,13 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
- 			min_align = align1 >> 1;
- 		align += aligns[order];
- 	}
--	size = ALIGN(size, min_align);
--	if (!size) {
-+
-+	size = calculate_memsize(size, min_size, 0, resource_size(b_res), align);
-+	size1 = !add_size ? size : 
-+		calculate_memsize(size, min_size+add_size, 0, 
-+				resource_size(b_res), align);
-+
-+	if (!size && !size1) {
- 		if (b_res->start || b_res->end)
- 			dev_info(&bus->self->dev, "disabling bridge window "
- 				 "%pR to [bus %02x-%02x] (unused)\n", b_res,
-@@ -548,8 +621,8 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
- 	}
- 	b_res->start = min_align;
- 	b_res->end = size + min_align - 1;
--	b_res->flags |= IORESOURCE_STARTALIGN;
--	b_res->flags |= mem64_mask;
-+	b_res->add_size = size1 - size;
-+	b_res->flags |= IORESOURCE_STARTALIGN | mem64_mask;
- 	return 1;
- }
- 
-@@ -606,7 +679,7 @@ void __ref pci_bus_size_bridges(struct pci_bus *bus)
- {
- 	struct pci_dev *dev;
- 	unsigned long mask, prefmask;
--	resource_size_t min_mem_size = 0, min_io_size = 0;
-+	resource_size_t additional_mem_size = 0, additional_io_size = 0;
- 
- 	list_for_each_entry(dev, &bus->devices, bus_list) {
- 		struct pci_bus *b = dev->subordinate;
-@@ -637,11 +710,11 @@ void __ref pci_bus_size_bridges(struct pci_bus *bus)
- 	case PCI_CLASS_BRIDGE_PCI:
- 		pci_bridge_check_ranges(bus);
- 		if (bus->self->is_hotplug_bridge) {
--			min_io_size  = pci_hotplug_io_size;
--			min_mem_size = pci_hotplug_mem_size;
-+			additional_io_size  = pci_hotplug_io_size;
-+			additional_mem_size = pci_hotplug_mem_size;
- 		}
- 	default:
--		pbus_size_io(bus, min_io_size);
-+		pbus_size_io(bus, 0, additional_io_size);
- 		/* If the bridge supports prefetchable range, size it
- 		   separately. If it doesn't, or its prefetchable window
- 		   has already been allocated by arch code, try
-@@ -649,11 +722,11 @@ void __ref pci_bus_size_bridges(struct pci_bus *bus)
- 		   resources. */
- 		mask = IORESOURCE_MEM;
- 		prefmask = IORESOURCE_MEM | IORESOURCE_PREFETCH;
--		if (pbus_size_mem(bus, prefmask, prefmask, min_mem_size))
-+		if (pbus_size_mem(bus, prefmask, prefmask, 0, additional_mem_size))
- 			mask = prefmask; /* Success, size non-prefetch only. */
- 		else
--			min_mem_size += min_mem_size;
--		pbus_size_mem(bus, mask, IORESOURCE_MEM, min_mem_size);
-+			additional_mem_size += additional_mem_size;
-+		pbus_size_mem(bus, mask, IORESOURCE_MEM, 0, additional_mem_size);
- 		break;
- 	}
- }
-diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-index e9bb22c..70b4ae6 100644
---- a/include/linux/ioport.h
-+++ b/include/linux/ioport.h
-@@ -18,6 +18,7 @@
- struct resource {
- 	resource_size_t start;
- 	resource_size_t end;
-+	resource_size_t add_size; /* additional nice-to-have resource */
- 	const char *name;
- 	unsigned long flags;
- 	struct resource *parent, *sibling, *child;
+Most I/O devices are little-endian, even for big-endian machines, and
+should use readl or ioread. If you have big-endian SoC components,
+ioread*be is often the right choice, but that case is rather rare.
+
+Some architectures also define their own I/O accessors for SoC components,
+since those often have other requirements from PCI MMIO areas.
+E.g. on powerpc, the in_be32/in_le32 accessor only works on directly
+mapped MMIO regions and performs no PCI error handling. On ARM, the
+readl_relaxed() accessor does not synchronize with external buses.
+On x86, readl is different from ioread32 in that it cannot work on
+addresses returned from ioport_map.
+I believe some SoCs are even configurable to have little- or big-endian
+I/O, so the accessor does not do byte swapping.
+
+It might be a good idea to make all this a little more structured, but
+it's also fine if you set your own rules for a new architecture when
+it has non-PCI devices that work in other ways.
+
+> >>> The right solution is probably to use swab16/swab32 for the
+> >>> big-endian functions. This also corrects the iowrite functions
+> >>> which really should be using cpu_to_be32 instead of be32_to_cpu
+> >>> (although they are always defined to be the same afaict.
+> >>
+> >> This would first cause a conversion to little-endian, which is a swap() in the
+> >> generic case and then you would call swap() again on the result. Which is basically a
+> >> noop, but I'm not sure if compilers will detect this.
+> >
+> > The overhead of the swab() is certainly dwarfed by the long time spent in
+> > readl().
+> 
+> Well at least the code size overhead is fundamental:
+
+Fair enough. You could of course make it out of line, but then you would
+no longer be able to use the generic implementation of these functions.
+
+> with #define ioread32be(addr) swap32(ioread32(addr)):
+> 
+>   4001a694 <get_cycles>:
+>         addi sp,sp,-16
+>         sw (sp+16),r11
+>         sw (sp+12),r12
+>         sw (sp+8),r13
+>         sw (sp+4),ra
+>         mvhi r2,0x4021
+>         ori r2,r2,0xa100
+>         lw r1,(r2+0)
+>         mvi r2,24
+>         mvhi r13,0xff
+>         lw r12,(r1+0)
+>         mv r1,r12
+>         calli 400f6f9c <__lshrsi3>
+>         mv r11,r1
+>         mvi r2,24
+>         mv r1,r12
+>         calli 400f6f6c <__ashlsi3>
+>         or r11,r11,r1
+>         mvi r2,8
+>         andi r1,r12,0xff00
+> ...
+
+That is indeed huge. Byte swapping is a relatively common operation
+in the kernel, so independent of the solution to this particular
+problem, it will be a good idea to see if you can do a better
+implementation than this, using inline assembly or gcc internal
+helpers.
+
+> So I as someone who implements arch support has two options either redefine
+> ioread32be in the arch io header, or use __raw_readl everywhere to access iomap memory.
+
+__raw_readl is not a good thing to use, because of a number of reasons.
+Please choose one of these four:
+
+* change the common ioread*/iowrite* functions to all be based on
+  the __raw_* I/O versions, not just the big-endian ones. The
+  space overhead you quoted is enough of a justification for that.
+* change asm-generic/io.h so you can override the definitions
+  with architecture specific implementations.
+* use GENERIC_IOMAP.
+* define your own bus-specific accessors that are big-endian and
+  based on __raw_readl/__raw_writel.
+
+	Arnd
