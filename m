@@ -1,69 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab1ARSLP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 13:11:15 -0500
-Received: from smtp-out-138.synserver.de ([212.40.180.138]:1065 "HELO
-	smtp-out-138.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751564Ab1ARSLO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 13:11:14 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 21938
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] asm-generic/io.h: Fix io{read,write}{16,32}be for big endian systems
-Date: Tue, 18 Jan 2011 19:11:01 +0100
-Message-Id: <1295374261-19609-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.3
+	id S1752675Ab1ARSP4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 13:15:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5258 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752133Ab1ARSPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 13:15:55 -0500
+Message-ID: <4D35D8B3.4030308@redhat.com>
+Date: Tue, 18 Jan 2011 19:15:15 +0100
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Chuck Lever <Chuck.Lever@oracle.com>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org
+Subject: Re: NFS OOps  - kernel BUG at fs/nfs/nfs3xdr.c:1338
+References: <4D30D9D6.2080809@redhat.com> <1295048791.20016.15.camel@heimdal.trondhjem.org> <BC9E8816-B395-44C1-ACF8-FEC4E80870C1@oracle.com>
+In-Reply-To: <BC9E8816-B395-44C1-ACF8-FEC4E80870C1@oracle.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently io{read,write}{16,32} expand to
-	*addr = cpu_to_leXX(cpu_to_beXX(val))
-and
-	val = beXX_to_cpu(leXX_to_cpu(*addr))
+On 01/18/2011 04:59 PM, Chuck Lever wrote:
 
-While it should rather be:
-	*addr = cpu_to_be{16,32}(val)
-and
-	val = be{16,32}_to_cpu(*addr)
+>>> [  105.327979] kernel BUG at fs/nfs/nfs3xdr.c:1338!
+> 
+> Milan, I assume the install command is trying to set an ACL on an NFS file.  Can you tell us what the ACL looks like?
 
-The current implementation works on litte-endian targets(where cpu_to_leXX is a
-noop), but breaks on on big-endian targets, this patch fixes it.
+Hi,
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- include/asm-generic/io.h |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+strace returns
+fsetxattr(4, "system.posix_acl_access", "\x02\x00\x00\x00\x01\x00\x06\x00\xff\xff\xff\xff\x04\x00\x00\x00\xff\xff\xff\xff \x00\x00\x00\xff\xff\xff\xff", 28, 0) = -1 EOPNOTSUPP (Operation not supported)
 
-diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
-index 4644c9a..5d93735 100644
---- a/include/asm-generic/io.h
-+++ b/include/asm-generic/io.h
-@@ -244,15 +244,15 @@ static inline void writesb(const void __iomem *addr, const void *buf, int len)
- #ifndef CONFIG_GENERIC_IOMAP
- #define ioread8(addr)		readb(addr)
- #define ioread16(addr)		readw(addr)
--#define ioread16be(addr)	be16_to_cpu(ioread16(addr))
-+#define ioread16be(addr)	be16_to_cpu(__raw_readw(addr))
- #define ioread32(addr)		readl(addr)
--#define ioread32be(addr)	be32_to_cpu(ioread32(addr))
-+#define ioread32be(addr)	be32_to_cpu(__raw_readl(addr))
- 
- #define iowrite8(v, addr)	writeb((v), (addr))
- #define iowrite16(v, addr)	writew((v), (addr))
--#define iowrite16be(v, addr)	iowrite16(be16_to_cpu(v), (addr))
-+#define iowrite16be(v, addr)	__raw_writew(be16_to_cpu(v), (addr))
- #define iowrite32(v, addr)	writel((v), (addr))
--#define iowrite32be(v, addr)	iowrite32(be32_to_cpu(v), (addr))
-+#define iowrite32be(v, addr)	__raw_writel(be32_to_cpu(v), (addr))
- 
- #define ioread8_rep(p, dst, count) \
- 	insb((unsigned long) (p), (dst), (count))
--- 
-1.7.2.3
+and it is reproducible with simple code:
+        int fd = open("x", O_RDWR|O_CREAT, S_IRWXU);
+        fsetxattr(fd, "system.posix_acl_access",
+        "\x02\x00\x00\x00\x01\x00\x06\x00\xff\xff\xff\xff\x04\x00\x00\x00\xff\xff\xff\xff \x00\x00\x00\xff\xff\xff\xff", 28, 0);
 
+Milan
