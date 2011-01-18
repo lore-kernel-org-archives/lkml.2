@@ -1,63 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064Ab1ARVDS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 16:03:18 -0500
-Received: from mail127.messagelabs.com ([216.82.250.115]:37584 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168Ab1ARVDR (ORCPT
+	id S1753010Ab1ARVFl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 16:05:41 -0500
+Received: from mail4.comsite.net ([205.238.176.238]:52427 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751770Ab1ARVFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 16:03:17 -0500
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-6.tower-127.messagelabs.com!1295384591!7385432!32
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.32]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] fs/partitions/check.c: make local symbols static
-Date: Tue, 18 Jan 2011 14:02:42 -0700
-User-Agent: KMail/1.9.9
-CC: <jaxboe@fusionio.com>, <tj@kernel.org>, <davem@davemloft.net>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <adobriyan@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201101181402.42754.hartleys@visionengravers.com>
+	Tue, 18 Jan 2011 16:05:40 -0500
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=70.249.75.62;
+From: Milton Miller <miltonm@bga.com>
+Subject: RE: [PATCH] smp_call_function_many SMP race
+To: Peter Zijlstra <peterz@infradead.org>, Anton Blanchard <anton@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: xiaoguangrong@cn.fujitsu.com, mingo@elte.hu, jaxboe@fusionio.com,
+        npiggin@gmail.com, rusty@rustcorp.com.au, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, miltonm@bga.com,
+        benh@kernel.crashing.org, linux-kernel@vger.kernel.org
+Message-ID: <smp-call-function-peter-reply@mdm.bga.com>
+In-Reply-To: <1295288253.30950.280.camel@laptop>
+References: <20110112150740.77dde58c@kryten>
+	<1295288253.30950.280.camel@laptop>
+Date: Tue, 18 Jan 2011 15:05:39 -0600
+X-Originating-IP: 70.249.75.62
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The symbols part_alignment_offset_show and part_discard_alignment_show
-are only used locally in this file and should be declared static.
+On Mon, 17 Jan 2011 around 19:17:33 +0100, Peter Zijlstra wrote:
+> On Wed, 2011-01-12 at 15:07 +1100, Anton Blanchard wrote:
+> 
+> > I managed to forget all about this bug, probably because of how much it
+> > makes my brain hurt.
+> 
+> Agreed.
+> 
+> 
+> > I tried to fix it by ordering the read and the write of ->cpumask and
+> > ->refs. In doing so I missed a critical case but Paul McKenney was able
+> > to spot my bug thankfully :) To ensure we arent viewing previous
+> > iterations the interrupt handler needs to read ->refs then ->cpumask
+> > then ->refs _again_.
+> 
+> > ---
+> > 
+> > Index: linux-2.6/kernel/smp.c
+> > =====================================================================
+> > --- linux-2.6.orig/kernel/smp.c 2010-12-22 17:19:11.262835785 +1100
+> > +++ linux-2.6/kernel/smp.c      2011-01-12 15:03:08.793324402 +1100
+> > @@ -194,6 +194,31 @@ void generic_smp_call_function_interrupt
+> >         list_for_each_entry_rcu(data, &call_function.queue, csd.list) {
+> >                 int refs;
+> >  
+> > +               /*
+> > +                * Since we walk the list without any locks, we might
+> > +                * see an entry that was completed, removed from the
+> > +                * list and is in the process of being reused.
+> > +                *
+> > +                * Just checking data->refs then data->cpumask is not good
+> > +                * enough because we could see a non zero data->refs from a
+> > +                * previous iteration. We need to check data->refs, then
+> > +                * data->cpumask then data->refs again. Talk about
+> > +                * complicated!
+> > +                */
+> > +
+> > +               if (atomic_read(&data->refs) == 0)
+> > +                       continue;
+> > +
+> 
+> So here we might see the old ref
+> 
+> > +               smp_rmb();
+> > +
+> > +               if (!cpumask_test_cpu(cpu, data->cpumask))
+> > +                       continue;
+> 
+> Here we might see the new cpumask
+> 
+> > +               smp_rmb();
+> > +
+> > +               if (atomic_read(&data->refs) == 0)
+> > +                       continue;
+> > +
+> 
+> But then still see a 0 ref, at which point we skip this entry and rely
+> on the fact that arch_send_call_function_ipi_mask() will simply latch
+> our IPI line and cause a back-to-back IPI such that we can process the
+> data on the second go-round?
+> 
+> >                 if (!cpumask_test_and_clear_cpu(cpu, data->cpumask))
+> >                         continue;
+> 
+> And finally, once we observe a valid ->refs, do we test the ->cpumask
+> again so we cross with the store order (->cpumask first, then ->refs).
+> 
+> > @@ -458,6 +483,14 @@ void smp_call_function_many(const struct
+> >         data->csd.info = info;
+> >         cpumask_and(data->cpumask, mask, cpu_online_mask);
+> >         cpumask_clear_cpu(this_cpu, data->cpumask);
+> > +
+> > +       /*
+> > +        * To ensure the interrupt handler gets an up to date view
+> > +        * we order the cpumask and refs writes and order the
+> > +        * read of them in the interrupt handler.
+> > +        */
+> > +       smp_wmb();
+> > +
+> >         atomic_set(&data->refs, cpumask_weight(data->cpumask));
+> >  
+> >         raw_spin_lock_irqsave(&call_function.lock, flags); 
+> 
+> Read side:			Write side:
+> 
+> list_for_each_rcu()
+>   !->refs, continue		  ->cpumask = 
+> rmb				wmb
+>   !->cpumask, continue		  ->refs = 
+> rmb				wmb
+>   !->refs, continue		  list_add_rcu()
+> mb
+>   !->cpumask, continue
+> 
+> 
+> 
+> Wouldn't something like:
+> 
+> list_for_each_rcu()
+>   !->cpumask, continue		  ->refs =
+> rmb				wmb
+>   !->refs, continue		  ->cpumask =
+> mb				wmb
+>   !->cpumask, continue		  list_add_rcu()
+> 
 
-Signed-off-by: H Hartley sweeten <hsweeten@visionengravers.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Yes, I believe it does.   Paul found the race case after I went home,
+and I found the resulting patch with the extra calls posted the next
+morning.   When I tried to rase the issue, Paul said he wanted me to
+try it on hardware before he did the analysis again.   I finally got a
+machine to do that yesterday afternoon.
 
----
 
-diff --git a/fs/partitions/check.c b/fs/partitions/check.c
-index 9c21119..de5a995 100644
---- a/fs/partitions/check.c
-+++ b/fs/partitions/check.c
-@@ -244,14 +244,14 @@ ssize_t part_ro_show(struct device *dev,
- 	return sprintf(buf, "%d\n", p->policy ? 1 : 0);
- }
- 
--ssize_t part_alignment_offset_show(struct device *dev,
-+static ssize_t part_alignment_offset_show(struct device *dev,
- 				   struct device_attribute *attr, char *buf)
- {
- 	struct hd_struct *p = dev_to_part(dev);
- 	return sprintf(buf, "%llu\n", (unsigned long long)p->alignment_offset);
- }
- 
--ssize_t part_discard_alignment_show(struct device *dev,
-+static ssize_t part_discard_alignment_show(struct device *dev,
- 				   struct device_attribute *attr, char *buf)
- {
- 	struct hd_struct *p = dev_to_part(dev);
+> 
+> Suffice? There we can observe the old ->cpumask, new ->refs and new
+> ->cpumask in crossed order, so we filter out the old, and cross the new,
+> and have one rmb and conditional less.
+> 
+> Or am I totally missing something here,.. like said, this stuff hurts
+> brains.
+> 
+> 
+
+In fact, if we assert that the called function is not allowed to enable
+interrupts, then we can consolidate both writes to be after the function
+is executed instead of doing one atomic read/write before (for the
+cpumask bit) and a second one after (for the ref count).   I ran the 
+timings on Anton's test case on a 4-node 256 thread power7 box.
+
+What follows is the a two patch set.   I am keeping the second
+seperate in case some wiere funtion is enabling interrupts in the
+middle of this.
+
+milton
