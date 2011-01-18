@@ -1,153 +1,584 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753432Ab1ARUzM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 15:55:12 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:56621 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752839Ab1ARUzK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 15:55:10 -0500
-Message-ID: <4D35FE23.1010102@metafoo.de>
-Date: Tue, 18 Jan 2011 21:54:59 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	id S1753468Ab1ARU6v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 15:58:51 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:37718 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753337Ab1ARU6t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 15:58:49 -0500
+Message-ID: <4D35FEF3.4070001@parallels.com>
+Date: Tue, 18 Jan 2011 14:58:27 -0600
+From: Rob Landley <rlandley@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] asm-generic/io.h: Fix io{read,write}{16,32}be for big
- endian systems
-References: <1295374261-19609-1-git-send-email-lars@metafoo.de> <201101181944.07146.arnd@arndb.de> <4D35E378.70300@metafoo.de> <201101182056.35673.arnd@arndb.de>
-In-Reply-To: <201101182056.35673.arnd@arndb.de>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+To: Jesper Juhl <jj@chaosbits.net>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        Tejun Heo <tj@kernel.org>, Don Zickus <dzickus@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Use sed instead of perl to generate x86/kernel/cpu/capflags.c.
+References: <4D334E1E.7090708@parallels.com> <alpine.LNX.2.00.1101162103450.13377@swampdragon.chaosbits.net> <4D335554.7020403@parallels.com> <alpine.LNX.2.00.1101162136360.13377@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1101162136360.13377@swampdragon.chaosbits.net>
+Content-Type: multipart/mixed;
+	boundary="------------070402000802050303040701"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 01/18/2011 08:56 PM, Arnd Bergmann wrote:
-> On Tuesday 18 January 2011 20:01:12 Lars-Peter Clausen wrote:
->> Well, i've though about that as well, but in the current asm-generic/io.h readl is
->> unconditionally defined as cpu_to_le32(__raw_readl(addr)) and ioread32 is defined as
->> readl.
->>
->> So unless an arch io.h undefines those macros and redefines them (which none of the
->> current archs does, as far as i can see), we are o
->>
->> If an arch chooses to redefine ioread or readl, it should probably also redefine
->> ioread{16,32}be.
-> 
-> Right, but the header file also serves as a template for new architectures
-> that cannot directly use it. I would prefer not to give a possibly bad example
-> here, especially when it's in a rarely used function.
-
-Maybe I'm missing something here, but if I have a big-endian architecture isn't
-ioread{16,32}be what I should use to access iomapped memory?
-
->>> The right solution is probably to use swab16/swab32 for the
->>> big-endian functions. This also corrects the iowrite functions
->>> which really should be using cpu_to_be32 instead of be32_to_cpu
->>> (although they are always defined to be the same afaict.
->>
->> This would first cause a conversion to little-endian, which is a swap() in the
->> generic case and then you would call swap() again on the result. Which is basically a
->> noop, but I'm not sure if compilers will detect this.
-> 
-> The overhead of the swab() is certainly dwarfed by the long time spent in
-> readl().
-
-Well at least the code size overhead is fundamental:
-
-I have this simple function:
-
-  cycles_t get_cycles(void)
-  {
-  	return ioread32be(CSR_TIMER_COUNTER(timer));
-  }
-
-which when compiled for the lm32 arch results in the following assembler code
-
-with #define ioread32be(addr) be32_to_cpu(__raw_readl(addr)):
-
-  00000128 <get_cycles>:
-	mvhi r2,0x4021
-	ori r2,r2,0xa100
-	lw r1,(r2+0)
-	lw r1,(r1+0)
-	ret
-
-with #define ioread32be(addr) swap32(ioread32(addr)):
-
-  4001a694 <get_cycles>:
-	addi sp,sp,-16
-	sw (sp+16),r11
-	sw (sp+12),r12
-	sw (sp+8),r13
-	sw (sp+4),ra
-	mvhi r2,0x4021
-	ori r2,r2,0xa100
-	lw r1,(r2+0)
-	mvi r2,24
-	mvhi r13,0xff
-	lw r12,(r1+0)
-	mv r1,r12
-	calli 400f6f9c <__lshrsi3>
-	mv r11,r1
-	mvi r2,24
-	mv r1,r12
-	calli 400f6f6c <__ashlsi3>
-	or r11,r11,r1
-	mvi r2,8
-	andi r1,r12,0xff00
-	calli 400f6f6c <__ashlsi3>
-	or r11,r11,r1
-	mvi r2,8
-	and r1,r12,r13
-	calli 400f6f9c <__lshrsi3>
-	or r11,r11,r1
-	mv r1,r11
-	mvi r2,24
-	calli 400f6f9c <__lshrsi3>
-	mv r12,r1
-	mvi r2,24
-	mv r1,r11
-	calli 400f6f6c <__ashlsi3>
-	or r12,r12,r1
-	mvi r2,8
-	andi r1,r11,0xff00
-	calli 400f6f6c <__ashlsi3>
-	or r12,r12,r1
-	mvi r2,8
-	and r1,r11,r13
-	calli 400f6f9c <__lshrsi3>
-	or r1,r12,r1
-	lw ra,(sp+4)
-	lw r11,(sp+16)
-	lw r12,(sp+12)
-	lw r13,(sp+8)
-	addi sp,sp,16
-	ret
+--------------070402000802050303040701
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 
 
-So I as someone who implements arch support has two options either redefine
-ioread32be in the arch io header, or use __raw_readl everywhere to access iomap memory.
-> 
-> I would prefer to swap twice in this case and let the compiler work it out
-> if possible. The next best alternative would probably be to define both
-> ioread and ioread_be using __raw_readl in combination with a le32_to_cpu
-> or be32_to_cpu.
-> 
-> 	Arnd
+From: Rob Landley <rlandley@parallels.com>
 
-- - Lars
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+Replace perl header file generator with smaller/faster/simpler C version.
 
-iEYEARECAAYFAk01/iMACgkQBX4mSR26RiNRQQCfeS4P27FYN5Sy3oxFqzbjsWAe
-NH8Ani1IDQfLoM4kqpkDXneGkQN4HXqz
-=OQK1
------END PGP SIGNATURE-----
+Signed-off-by: Rob Landley <rlandley@parallels.com>
+---
+
+I ran the attached test script to compare the output of the C program
+with the output of the perl version for every HZ from 1 to 5000 to make
+sure it was producing the same constants.
+
+ kernel/Makefile      |   10 -
+ kernel/mktimeconst.c |  109 +++++++++++
+ kernel/timeconst.pl  |  378 -----------------------------------------
+ 3 files changed, 115 insertions(+), 382 deletions(-)
+
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 5669f71..ba9ce6d 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -133,8 +133,10 @@ $(obj)/config_data.h: $(obj)/config_data.gz FORCE
+ 
+ $(obj)/time.o: $(obj)/timeconst.h
+ 
+-quiet_cmd_timeconst  = TIMEC   $@
+-      cmd_timeconst  = $(PERL) $< $(CONFIG_HZ) > $@
++hostprogs-y	+= mktimeconst
++quiet_cmd_mktimeconst = TIMEC   $@
++	cmd_mktimeconst = $(obj)/mktimeconst $(CONFIG_HZ) $@ || ( rm -f $@ && exit 1 )
++
+ targets += timeconst.h
+-$(obj)/timeconst.h: $(src)/timeconst.pl FORCE
+-	$(call if_changed,timeconst)
++$(obj)/timeconst.h: $(obj)/mktimeconst FORCE
++	$(call if_changed,mktimeconst)
+--- /dev/null	2011-01-13 17:00:36.470564274 -0600
++++ b/kernel/mktimeconst.c	2011-01-16 12:44:04.091168778 -0600
+@@ -0,0 +1,109 @@
++/* Copyright 2010 Parallels Inc, licensed under GPLv2 */
++
++#include <inttypes.h>
++#include <stdio.h>
++#include <stdlib.h>
++
++int main(int argc, char *argv[])
++{
++	uint64_t hz, periods[] = {1000, 1000000};
++	char *names[] = {"MSEC", "USEC"};
++	FILE *file;
++	int i, j;
++
++	if (argc != 3 || (hz = atol(argv[1])) < 1
++	    || !(file = fopen(argv[2], "w")))
++	{
++		fprintf(stderr, "Usage: mktimeconst HZ FILENAME\n\n");
++		fprintf(stderr, "Generate a header file with constants to convert between\n");
++		fprintf(stderr, "decimal HZ timer ticks and milisecond or microsecond delays,\n");
++		fprintf(stderr, "using reciprocal multiplication to avoid 64 bit division.\n");
++		exit(1);
++	}
++
++	fprintf(file,
++		"/* Automatically generated by kernel/mktimeconst */\n"
++		"/* Conversion constants for HZ == %"PRIu64" */\n\n"
++		"#ifndef __KERNEL_TIMECONST_H\n"
++		"#define __KERNEL_TIMECONST_H\n\n"
++		"#include <linux/param.h>\n"
++		"#include <linux/types.h>\n\n"
++		"#if HZ != %"PRIu64"\n"
++		"#error \"kernel/timeconst.h has the wrong HZ value!\"\n"
++		"#endif\n\n", hz, hz);
++
++	/* Repeat for MSEC and USEC */
++
++	for (i = 0; i < 2; i++) {
++		uint64_t gcd, period;
++
++		/* Find greatest common denominator using Euclid's algorithm. */
++
++		gcd = hz;
++		period = periods[i];
++		while (period) {
++			uint64_t temp = gcd % period;
++			gcd = period;
++			period = temp;
++		}
++
++		/* Output both directions (HZ_TO_PERIOD and PERIOD_TO_HZ) */
++
++		for (j = 0; j < 2; j++) {
++			char name[16];
++			uint64_t from = j ? periods[i] : hz;
++			uint64_t to = j ? hz : periods[i];
++			uint64_t mul32 = 0, adj32 = 0, shift = 0;
++
++			sprintf(name, j ? "%s_TO_HZ" : "HZ_TO_%s", names[i]);
++
++			/* Figure out what shift value gives 32 significant
++			   bits of MUL32 data.  (Worst case to=1 from=1000000
++			   uses 52 bits, to<<shift won't overflow 64 bit math.)
++			*/
++
++			for (;;) {
++				mul32 = ((to << shift) + from - 1) / from;
++				if (mul32 >= (1L<<31))
++					break;
++				shift++;
++			}
++
++			/* ADJ32 is is just (((FROM/GCD)-1)<<SHIFT)/(FROM/GCD)
++			   but this can overflow 64 bit math (examples, HZ=24
++			   or HZ=122).  Worst case scenario uses 32+20+20=72
++			   bits.  Workaround: split off bottom 32 bits and
++			   reassemble after calculation (32+64=96 bits). */
++
++			adj32 = from / gcd;
++
++			if (shift > 32) {
++				uint64_t upper, lower;
++
++				upper = (adj32 - 1) << (shift - 32);
++				lower = (upper % adj32) << 32;
++				adj32 = ((upper/adj32) << 32) + (lower/adj32);
++			} else
++				adj32 = ((adj32 - 1) << shift) / adj32;
++
++			/* Emit the constants into the header file. */
++
++			fprintf(file, "#define %s_MUL32\tU64_C(0x%"PRIx64")\n",
++				name, mul32);
++			fprintf(file, "#define %s_ADJ32\tU64_C(0x%"PRIx64")\n",
++				name, adj32);
++			fprintf(file, "#define %s_SHR32\t%"PRIu64"\n",
++				name, shift);
++			fprintf(file, "#define %s_NUM\t\tU64_C(%"PRIu64")\n",
++				name, to/gcd);
++			fprintf(file, "#define %s_DEN\t\tU64_C(%"PRIu64")\n\n",
++				name, from/gcd);
++		}
++	}
++	fprintf(file, "#endif /* __KERNEL_TIMECONST_H */\n");
++
++	/* Notice if the disk fills up. */
++
++	fflush(stdout);
++	return ferror(stdout);
++}
+--- a/kernel/timeconst.pl	2010-12-19 11:33:53.969732934 -0600
++++ /dev/null	2011-01-13 17:00:36.470564274 -0600
+@@ -1,378 +0,0 @@
+-#!/usr/bin/perl
+-# -----------------------------------------------------------------------
+-#
+-#   Copyright 2007-2008 rPath, Inc. - All Rights Reserved
+-#
+-#   This file is part of the Linux kernel, and is made available under
+-#   the terms of the GNU General Public License version 2 or (at your
+-#   option) any later version; incorporated herein by reference.
+-#
+-# -----------------------------------------------------------------------
+-#
+-
+-#
+-# Usage: timeconst.pl HZ > timeconst.h
+-#
+-
+-# Precomputed values for systems without Math::BigInt
+-# Generated by:
+-# timeconst.pl --can 24 32 48 64 100 122 128 200 250 256 300 512 1000 1024 1200
+-%canned_values = (
+-	24 => [
+-		'0xa6aaaaab','0x2aaaaaa',26,
+-		125,3,
+-		'0xc49ba5e4','0x1fbe76c8b4',37,
+-		3,125,
+-		'0xa2c2aaab','0xaaaa',16,
+-		125000,3,
+-		'0xc9539b89','0x7fffbce4217d',47,
+-		3,125000,
+-	], 32 => [
+-		'0xfa000000','0x6000000',27,
+-		125,4,
+-		'0x83126e98','0xfdf3b645a',36,
+-		4,125,
+-		'0xf4240000','0x0',17,
+-		31250,1,
+-		'0x8637bd06','0x3fff79c842fa',46,
+-		1,31250,
+-	], 48 => [
+-		'0xa6aaaaab','0x6aaaaaa',27,
+-		125,6,
+-		'0xc49ba5e4','0xfdf3b645a',36,
+-		6,125,
+-		'0xa2c2aaab','0x15555',17,
+-		62500,3,
+-		'0xc9539b89','0x3fffbce4217d',46,
+-		3,62500,
+-	], 64 => [
+-		'0xfa000000','0xe000000',28,
+-		125,8,
+-		'0x83126e98','0x7ef9db22d',35,
+-		8,125,
+-		'0xf4240000','0x0',18,
+-		15625,1,
+-		'0x8637bd06','0x1fff79c842fa',45,
+-		1,15625,
+-	], 100 => [
+-		'0xa0000000','0x0',28,
+-		10,1,
+-		'0xcccccccd','0x733333333',35,
+-		1,10,
+-		'0x9c400000','0x0',18,
+-		10000,1,
+-		'0xd1b71759','0x1fff2e48e8a7',45,
+-		1,10000,
+-	], 122 => [
+-		'0x8325c53f','0xfbcda3a',28,
+-		500,61,
+-		'0xf9db22d1','0x7fbe76c8b',35,
+-		61,500,
+-		'0x8012e2a0','0x3ef36',18,
+-		500000,61,
+-		'0xffda4053','0x1ffffbce4217',45,
+-		61,500000,
+-	], 128 => [
+-		'0xfa000000','0x1e000000',29,
+-		125,16,
+-		'0x83126e98','0x3f7ced916',34,
+-		16,125,
+-		'0xf4240000','0x40000',19,
+-		15625,2,
+-		'0x8637bd06','0xfffbce4217d',44,
+-		2,15625,
+-	], 200 => [
+-		'0xa0000000','0x0',29,
+-		5,1,
+-		'0xcccccccd','0x333333333',34,
+-		1,5,
+-		'0x9c400000','0x0',19,
+-		5000,1,
+-		'0xd1b71759','0xfff2e48e8a7',44,
+-		1,5000,
+-	], 250 => [
+-		'0x80000000','0x0',29,
+-		4,1,
+-		'0x80000000','0x180000000',33,
+-		1,4,
+-		'0xfa000000','0x0',20,
+-		4000,1,
+-		'0x83126e98','0x7ff7ced9168',43,
+-		1,4000,
+-	], 256 => [
+-		'0xfa000000','0x3e000000',30,
+-		125,32,
+-		'0x83126e98','0x1fbe76c8b',33,
+-		32,125,
+-		'0xf4240000','0xc0000',20,
+-		15625,4,
+-		'0x8637bd06','0x7ffde7210be',43,
+-		4,15625,
+-	], 300 => [
+-		'0xd5555556','0x2aaaaaaa',30,
+-		10,3,
+-		'0x9999999a','0x1cccccccc',33,
+-		3,10,
+-		'0xd0555556','0xaaaaa',20,
+-		10000,3,
+-		'0x9d495183','0x7ffcb923a29',43,
+-		3,10000,
+-	], 512 => [
+-		'0xfa000000','0x7e000000',31,
+-		125,64,
+-		'0x83126e98','0xfdf3b645',32,
+-		64,125,
+-		'0xf4240000','0x1c0000',21,
+-		15625,8,
+-		'0x8637bd06','0x3ffef39085f',42,
+-		8,15625,
+-	], 1000 => [
+-		'0x80000000','0x0',31,
+-		1,1,
+-		'0x80000000','0x0',31,
+-		1,1,
+-		'0xfa000000','0x0',22,
+-		1000,1,
+-		'0x83126e98','0x1ff7ced9168',41,
+-		1,1000,
+-	], 1024 => [
+-		'0xfa000000','0xfe000000',32,
+-		125,128,
+-		'0x83126e98','0x7ef9db22',31,
+-		128,125,
+-		'0xf4240000','0x3c0000',22,
+-		15625,16,
+-		'0x8637bd06','0x1fff79c842f',41,
+-		16,15625,
+-	], 1200 => [
+-		'0xd5555556','0xd5555555',32,
+-		5,6,
+-		'0x9999999a','0x66666666',31,
+-		6,5,
+-		'0xd0555556','0x2aaaaa',22,
+-		2500,3,
+-		'0x9d495183','0x1ffcb923a29',41,
+-		3,2500,
+-	]
+-);
+-
+-$has_bigint = eval 'use Math::BigInt qw(bgcd); 1;';
+-
+-sub bint($)
+-{
+-	my($x) = @_;
+-	return Math::BigInt->new($x);
+-}
+-
+-#
+-# Constants for division by reciprocal multiplication.
+-# (bits, numerator, denominator)
+-#
+-sub fmul($$$)
+-{
+-	my ($b,$n,$d) = @_;
+-
+-	$n = bint($n);
+-	$d = bint($d);
+-
+-	return scalar (($n << $b)+$d-bint(1))/$d;
+-}
+-
+-sub fadj($$$)
+-{
+-	my($b,$n,$d) = @_;
+-
+-	$n = bint($n);
+-	$d = bint($d);
+-
+-	$d = $d/bgcd($n, $d);
+-	return scalar (($d-bint(1)) << $b)/$d;
+-}
+-
+-sub fmuls($$$) {
+-	my($b,$n,$d) = @_;
+-	my($s,$m);
+-	my($thres) = bint(1) << ($b-1);
+-
+-	$n = bint($n);
+-	$d = bint($d);
+-
+-	for ($s = 0; 1; $s++) {
+-		$m = fmul($s,$n,$d);
+-		return $s if ($m >= $thres);
+-	}
+-	return 0;
+-}
+-
+-# Generate a hex value if the result fits in 64 bits;
+-# otherwise skip.
+-sub bignum_hex($) {
+-	my($x) = @_;
+-	my $s = $x->as_hex();
+-
+-	return (length($s) > 18) ? undef : $s;
+-}
+-
+-# Provides mul, adj, and shr factors for a specific
+-# (bit, time, hz) combination
+-sub muladj($$$) {
+-	my($b, $t, $hz) = @_;
+-	my $s = fmuls($b, $t, $hz);
+-	my $m = fmul($s, $t, $hz);
+-	my $a = fadj($s, $t, $hz);
+-	return (bignum_hex($m), bignum_hex($a), $s);
+-}
+-
+-# Provides numerator, denominator values
+-sub numden($$) {
+-	my($n, $d) = @_;
+-	my $g = bgcd($n, $d);
+-	return ($n/$g, $d/$g);
+-}
+-
+-# All values for a specific (time, hz) combo
+-sub conversions($$) {
+-	my ($t, $hz) = @_;
+-	my @val = ();
+-
+-	# HZ_TO_xx
+-	push(@val, muladj(32, $t, $hz));
+-	push(@val, numden($t, $hz));
+-
+-	# xx_TO_HZ
+-	push(@val, muladj(32, $hz, $t));
+-	push(@val, numden($hz, $t));
+-
+-	return @val;
+-}
+-
+-sub compute_values($) {
+-	my($hz) = @_;
+-	my @val = ();
+-	my $s, $m, $a, $g;
+-
+-	if (!$has_bigint) {
+-		die "$0: HZ == $hz not canned and ".
+-		    "Math::BigInt not available\n";
+-	}
+-
+-	# MSEC conversions
+-	push(@val, conversions(1000, $hz));
+-
+-	# USEC conversions
+-	push(@val, conversions(1000000, $hz));
+-
+-	return @val;
+-}
+-
+-sub outputval($$)
+-{
+-	my($name, $val) = @_;
+-	my $csuf;
+-
+-	if (defined($val)) {
+-	    if ($name !~ /SHR/) {
+-		$val = "U64_C($val)";
+-	    }
+-	    printf "#define %-23s %s\n", $name.$csuf, $val.$csuf;
+-	}
+-}
+-
+-sub output($@)
+-{
+-	my($hz, @val) = @_;
+-	my $pfx, $bit, $suf, $s, $m, $a;
+-
+-	print "/* Automatically generated by kernel/timeconst.pl */\n";
+-	print "/* Conversion constants for HZ == $hz */\n";
+-	print "\n";
+-	print "#ifndef KERNEL_TIMECONST_H\n";
+-	print "#define KERNEL_TIMECONST_H\n";
+-	print "\n";
+-
+-	print "#include <linux/param.h>\n";
+-	print "#include <linux/types.h>\n";
+-
+-	print "\n";
+-	print "#if HZ != $hz\n";
+-	print "#error \"kernel/timeconst.h has the wrong HZ value!\"\n";
+-	print "#endif\n";
+-	print "\n";
+-
+-	foreach $pfx ('HZ_TO_MSEC','MSEC_TO_HZ',
+-		      'HZ_TO_USEC','USEC_TO_HZ') {
+-		foreach $bit (32) {
+-			foreach $suf ('MUL', 'ADJ', 'SHR') {
+-				outputval("${pfx}_$suf$bit", shift(@val));
+-			}
+-		}
+-		foreach $suf ('NUM', 'DEN') {
+-			outputval("${pfx}_$suf", shift(@val));
+-		}
+-	}
+-
+-	print "\n";
+-	print "#endif /* KERNEL_TIMECONST_H */\n";
+-}
+-
+-# Pretty-print Perl values
+-sub perlvals(@) {
+-	my $v;
+-	my @l = ();
+-
+-	foreach $v (@_) {
+-		if (!defined($v)) {
+-			push(@l, 'undef');
+-		} elsif ($v =~ /^0x/) {
+-			push(@l, "\'".$v."\'");
+-		} else {
+-			push(@l, $v.'');
+-		}
+-	}
+-	return join(',', @l);
+-}
+-
+-($hz) = @ARGV;
+-
+-# Use this to generate the %canned_values structure
+-if ($hz eq '--can') {
+-	shift(@ARGV);
+-	@hzlist = sort {$a <=> $b} (@ARGV);
+-
+-	print "# Precomputed values for systems without Math::BigInt\n";
+-	print "# Generated by:\n";
+-	print "# timeconst.pl --can ", join(' ', @hzlist), "\n";
+-	print "\%canned_values = (\n";
+-	my $pf = "\t";
+-	foreach $hz (@hzlist) {
+-		my @values = compute_values($hz);
+-		print "$pf$hz => [\n";
+-		while (scalar(@values)) {
+-			my $bit;
+-			foreach $bit (32) {
+-				my $m = shift(@values);
+-				my $a = shift(@values);
+-				my $s = shift(@values);
+-				print "\t\t", perlvals($m,$a,$s), ",\n";
+-			}
+-			my $n = shift(@values);
+-			my $d = shift(@values);
+-			print "\t\t", perlvals($n,$d), ",\n";
+-		}
+-		print "\t]";
+-		$pf = ', ';
+-	}
+-	print "\n);\n";
+-} else {
+-	$hz += 0;			# Force to number
+-	if ($hz < 1) {
+-		die "Usage: $0 HZ\n";
+-	}
+-
+-	@val = @{$canned_values{$hz}};
+-	if (!defined(@val)) {
+-		@val = compute_values($hz);
+-	}
+-	output($hz, @val);
+-}
+-exit 0;
+
+--------------070402000802050303040701
+Content-Type: application/x-sh; name="loopy.sh"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="loopy.sh"
+
+#!/bin/bash
+
+gcc mktimeconst.c || exit 1
+
+X=1
+while [ $X -lt 5000 ]
+do
+  echo $X
+
+  perl ~/linux/linux/kernel/timeconst.pl $X | sed 's/KERNEL_TIMECONST/__KERNEL_TIMECONST/;/Automatically generated/d;/^$/d'> temp.txt
+  ./a.out $X temp2.txt
+  sed -i '/Automatically generated/d;/^$/d' temp2.txt
+
+  diff -uw temp.txt temp2.txt || exit 1
+
+  X=$(($X+1))
+done
+
+--------------070402000802050303040701--
