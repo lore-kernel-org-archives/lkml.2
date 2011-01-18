@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab1ARJZi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 04:25:38 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:50777 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752925Ab1ARJZh (ORCPT
+	id S1753359Ab1ARJ0l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 04:26:41 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:40425 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753020Ab1ARJ0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 04:25:37 -0500
-Date: Tue, 18 Jan 2011 18:23:19 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Ben Herrenchmidt <benh@kernel.crashing.org>,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH 1/2] Add a common struct clk
-Message-ID: <20110118092319.GB18525@linux-sh.org>
-References: <1294199462.347935.472473715866.0.gpush@pororo> <1294199462.348449.192344022926.1.gpush@pororo> <20110111101636.GF26617@pengutronix.de> <201101111827.12291.jeremy.kerr@canonical.com> <20110111112240.GQ12078@pengutronix.de> <20110118084445.GL2122@linux-sh.org> <20110118092128.GO9041@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110118092128.GO9041@pengutronix.de>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	Tue, 18 Jan 2011 04:26:40 -0500
+Subject: Re: [PATCH 3/3] trusted-keys: small cleanup
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Cc: safford@watson.ibm.com, safford@us.ibm.com, jj@chaosbits.net,
+        dhowells@redhat.com, jmorris@namei.org, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <201101180139.p0I1dh9T066040@www262.sakura.ne.jp>
+References: <alpine.LNX.2.00.1101132100190.11347@swampdragon.chaosbits.net>
+	 <1295011682.7804.2.camel@localhost.localdomain>
+	 <201101142245.GGI86457.OQFFFMOtVOHJLS@I-love.SAKURA.ne.jp>
+	 <201101142307.EHC56742.FVtMFHOOFSQJOL@I-love.SAKURA.ne.jp>
+	 <alpine.LNX.2.00.1101161504050.8049@swampdragon.chaosbits.net>
+	 <201101170039.p0H0d1f5085735@www262.sakura.ne.jp>
+	 <201101170041.p0H0ffFE086481@www262.sakura.ne.jp>
+	 <201101170044.p0H0iLQW087457@www262.sakura.ne.jp>
+	 <1295298400.2642.9.camel@localhost.localdomain>
+	 <201101180139.p0I1dh9T066040@www262.sakura.ne.jp>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 Jan 2011 04:26:33 -0500
+Message-ID: <1295342793.3426.12.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 18, 2011 at 10:21:28AM +0100, Sascha Hauer wrote:
-> On Tue, Jan 18, 2011 at 05:44:45PM +0900, Paul Mundt wrote:
-> > Do you guys even bother to grep the kernel for users of the API before
-> > coming up with arbitrary policy?
+On Tue, 2011-01-18 at 10:39 +0900, Tetsuo Handa wrote:
+> Mimi Zohar wrote:
+> > Change the existing '(!ret)' to '(ret < 0)', like the rest of the code?
+> > It's not wrong, but ....
 > 
-> Actually I did bother to grep the kernel and I came up with these
-> results:
-> 
-> drivers/video/omap2/dss/dss.c:219:      dpll4_ck_rate = clk_get_rate(clk_get_parent(dss.dpll4_m4_ck));
-> drivers/video/omap2/dss/dss.c:312:      prate = clk_get_rate(clk_get_parent(dss.dpll4_m4_ck));
-> drivers/video/omap2/dss/dss.c:325:              prate = clk_get_rate(clk_get_parent(dss.dpll4_m4_ck));
-> drivers/video/omap2/dss/dss.c:344:              prate = clk_get_rate(clk_get_parent(dss.dpll4_m4_ck));
-> drivers/video/omap2/dss/dss.c:359:              return clk_get_rate(clk_get_parent(dss.dpll4_m4_ck));
-> drivers/video/sh_mobile_hdmi.c:716:     else if (clk_get_parent(hdmi->hdmi_clk))
-> drivers/video/sh_mobile_hdmi.c:717:             *parent_rate = clk_get_rate(clk_get_parent(hdmi->hdmi_clk));
-> drivers/video/sh_mobile_hdmi.c:1089:    if (parent_rate && clk_get_parent(hdmi->hdmi_clk)) {
-> drivers/video/sh_mobile_hdmi.c:1090:            ret = clk_set_rate(clk_get_parent(hdmi->hdmi_clk), parent_rate);
-> drivers/usb/host/ehci-omap.c:405:                       ret = clk_set_parent(omap->utmi_p1_fck,
-> drivers/usb/host/ehci-omap.c:435:                       ret = clk_set_parent(omap->utmi_p2_fck,
-> 
-Then I recommend you grep harder. There are more drivers than the ones
-that simply live in drivers/.
+> Something like this?
 
-> > There are plenty of cases where clocks are allocated dynamically by
-> > driver code that in turn can be set up as a parent for other dynamically
-> > allocated clocks. This has not a damn thing to do with platform code and
-> > everything to do with the clock circuitry of the device or IP block in
-> > question.
-> 
-> The majority of users do not use clk_{get,set}_parent at all. And it's
-> really questionable whether drivers should know anything about the
-> layout of the clock tree. I'm pretty sure that these are the code pieces
-> where there will be a if_soc_rev(x) around it once the next incarnation
-> of a SoC comes out.
-> 
-It's not questionable in the least, you're simply dealing with cases
-where you personally haven't had a need to do so and are attempting to
-project that as a policy. I'm getting pretty tired of this.
+Actually, I was only asking for a one line change in the patch.
 
-We have many IP blocks that can use external clocks or drive their own
-clock circuitry, in which case the internal clocks are parented by a
-parent clock that is likewise also dynamically created. Your lack of
-imagination is really not my concern, and again, this has nothing to do
-with the SoC.
+> >       va_end(argp);
+> > -     ret = crypto_shash_final(&sdesc->shash, paramdigest);
+> > +     if (!ret)
+> > +             ret = crypto_shash_final(&sdesc->shash, paramdigest);
+> >       if (!ret)
+
+Change the second '(!ret)' here, the crypto_shash_file() return code
+test, from '(!ret)' to '(ret < 0)', like the other crypto_shash_file()
+tests.
+
+Thanks!
+
+Mimi
+
