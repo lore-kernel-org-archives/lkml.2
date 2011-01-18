@@ -1,31 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045Ab1ARRbC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 12:31:02 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:63243 "EHLO
+	id S1753061Ab1ARRdm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 12:33:42 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:32914 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753Ab1ARRbA (ORCPT
+	with ESMTP id S1752502Ab1ARRdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 12:31:00 -0500
-X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=44vUGAvzfu8A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=z535ck_rp2hYom-GMYUA:9 a=xnCV3-hW4E0lKxRtkqYA:7 a=PPYM95O3msjrbAkCPW0uIGdYK0oA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Tue, 18 Jan 2011 12:33:41 -0500
+X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=44vUGAvzfu8A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=J1Y8HTJGAAAA:8 a=7d_E57ReAAAA:8 a=HAQDL6CtuwapkAvogR8A:9 a=y_xrN5Xi7_3gdGBwGgsA:7 a=AFp9GIey39rrWDkgLLB-aLALzTYA:4 a=PUjeQqilurYA:10 a=4N9Db7Z2_RYA:10 a=D6-X0JM3zdQA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
 Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
  Unknown relocation: 36
 From: Steven Rostedt <rostedt@goodmis.org>
-To: David Miller <davem@davemloft.net>
-Cc: richm@oldelvet.org.uk, 609371@bugs.debian.org, ben@decadent.org.uk,
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: David Miller <davem@davemloft.net>, richm@oldelvet.org.uk,
+        609371@bugs.debian.org, ben@decadent.org.uk,
         sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, mingo@redhat.com, Jesper.Nilsson@axis.com,
-        jeffm@suse.com, mathieu.desnoyers@efficios.com
-In-Reply-To: <20110117.223513.183031917.davem@davemloft.net>
-References: <20110116.220755.179947617.davem@davemloft.net>
-	 <1295259761.32152.20.camel@duncow>
-	 <1295273741.16479.19.camel@gandalf.stny.rr.com>
-	 <20110117.223513.183031917.davem@davemloft.net>
+        fweisbec@gmail.com, mingo@redhat.com
+In-Reply-To: <20110118164633.GA12872@Krystal>
+References: <1295273486.16479.15.camel@gandalf.stny.rr.com>
+	 <20110117.213448.226787087.davem@davemloft.net>
+	 <20110117.220039.71097651.davem@davemloft.net>
+	 <20110117.220857.104046847.davem@davemloft.net>
+	 <20110118164633.GA12872@Krystal>
 Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 18 Jan 2011 12:30:56 -0500
-Message-ID: <1295371856.12215.29.camel@gandalf.stny.rr.com>
+Date: Tue, 18 Jan 2011 12:33:39 -0500
+Message-ID: <1295372019.12215.30.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -33,56 +34,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-17 at 22:35 -0800, David Miller wrote:
-> From: Steven Rostedt <rostedt@goodmis.org>
-> Date: Mon, 17 Jan 2011 09:15:41 -0500
-> 
-> > Again, this is to help the linker keep arrays in tacked. Tracepoints are
-> > allocated into the tracepoint section, and then read like an array. If
-> > the linker adds holes as it links sections into one big one, then the
-> > reading of the array breaks.
+On Tue, 2011-01-18 at 11:46 -0500, Mathieu Desnoyers wrote:
+> * David Miller (davem@davemloft.net) wrote:
+> > From: David Miller <davem@davemloft.net>
+> > Date: Mon, 17 Jan 2011 22:00:39 -0800 (PST)
 > > 
-> > We either need to compact it (with the align(4)) which is undesirable,
-> > or add our own holes like the above does.
+> > > ftrace: Remove unnecessary alignment tag from ftrace_event_call.
+> > > 
+> > > It's completely unnecessary and causes problems on platforms
+> > > where this tag down-aligns the structure's alignment.
+> > > 
+> > > Signed-off-by: David S. Miller <davem@davemloft.net>
+> >  ...
+> > 
+> > Ok, unless we can explain why these alignments are needed at all, we
+> > should kill all of them:
 > 
-> Just take away all of the align directives, it should just work.
-
-If that was the case, we would have never added it :-)
-
+> ftrace: linker script add missing struct align
 > 
-> If it doesn't, then we should investigate to find out the real reason
-> why.
-
-OK, we can remove it and I can see what breaks.
-
+> We should add the missing "STRUCT_ALIGN();" in
+> include/asm-generic/vmlinux.lds.h as a preliminary step to remove the ftrace
+> bogus structure alignments. Moving all STRUCT_ALIGN() for FTRACE_EVENTS()
+> and TRACE_SYSCALLS() into the definitions, so the alignment is only done if
+> these infrastructures are configured in. 
 > 
-> The linker has no reason to add holes, and in fact if we are to believe
-> the commit message for 86c38a31aa7f2dd6e74a262710bf8ebf7455acc5
-> ("tracing: Fix ftrace_event_call alignment for use with gcc 4.5"), with
-> gcc-4.x where x < 5, it did work even though some ftrace_event_call
-> declarations lacked the align directive.
-> 
-> If this align thing is so critical, why don't we need it for the
-> exception table entries which live in the "__ex_table" section in the
-> kernel?  It's the same _exact_ kind of thing, and the asm sequence we
-> use to populate it is identical to what GCC emits for the tracing
-> object declarations in question.
+> Also align TRACE_PRINTKS on 8 bytes to make sure the beginning of the section is
+> aligned on pointer size.
 
-But aren't the __ex_table entries just two words? Which would align
-nicely regardless.
+If I can make it crash without the alignments and this fixes the issue,
+I'll apply both patches.
 
-The ftrace_event_call is a relatively large structure, as it may end on
-a 4 byte alignement, the linker may start the next section with more
-space to get it back to a 8 byte alignment. This is assuming that x86_64
-packs the array in 4 bytes.
-
-Hmm, perhaps changing the alignment in vmlinux.lds.h would fix that.
-
-Anyway, I'll revert that commit and see if I can break it again. If so,
-then I'll look for other solutions.
-
-Thanks!
+Thanks,
 
 -- Steve
+
+> 
+> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> ---
+>  include/asm-generic/vmlinux.lds.h |   19 ++++++++++---------
+>  1 file changed, 10 insertions(+), 9 deletions(-)
+> 
+> Index: linux-2.6-lttng/include/asm-generic/vmlinux.lds.h
+> ===================================================================
+> --- linux-2.6-lttng.orig/include/asm-generic/vmlinux.lds.h
+> +++ linux-2.6-lttng/include/asm-generic/vmlinux.lds.h
+> @@ -107,7 +107,8 @@
+>  #endif
+>  
+>  #ifdef CONFIG_TRACE_BRANCH_PROFILING
+> -#define LIKELY_PROFILE()	VMLINUX_SYMBOL(__start_annotated_branch_profile) = .; \
+> +#define LIKELY_PROFILE()	STRUCT_ALIGN();					      \
+> +				VMLINUX_SYMBOL(__start_annotated_branch_profile) = .; \
+>  				*(_ftrace_annotated_branch)			      \
+>  				VMLINUX_SYMBOL(__stop_annotated_branch_profile) = .;
+>  #else
+> @@ -115,7 +116,8 @@
+>  #endif
+>  
+>  #ifdef CONFIG_PROFILE_ALL_BRANCHES
+> -#define BRANCH_PROFILE()	VMLINUX_SYMBOL(__start_branch_profile) = .;   \
+> +#define BRANCH_PROFILE()	STRUCT_ALIGN();				      \
+> +				VMLINUX_SYMBOL(__start_branch_profile) = .;   \
+>  				*(_ftrace_branch)			      \
+>  				VMLINUX_SYMBOL(__stop_branch_profile) = .;
+>  #else
+> @@ -123,7 +125,8 @@
+>  #endif
+>  
+>  #ifdef CONFIG_EVENT_TRACING
+> -#define FTRACE_EVENTS()	VMLINUX_SYMBOL(__start_ftrace_events) = .;	\
+> +#define FTRACE_EVENTS()	STRUCT_ALIGN();					\
+> +			VMLINUX_SYMBOL(__start_ftrace_events) = .;	\
+>  			*(_ftrace_events)				\
+>  			VMLINUX_SYMBOL(__stop_ftrace_events) = .;
+>  #else
+> @@ -131,7 +134,8 @@
+>  #endif
+>  
+>  #ifdef CONFIG_TRACING
+> -#define TRACE_PRINTKS() VMLINUX_SYMBOL(__start___trace_bprintk_fmt) = .;      \
+> +#define TRACE_PRINTKS()  . = ALIGN(8);					       \
+> +			 VMLINUX_SYMBOL(__start___trace_bprintk_fmt) = .;      \
+>  			 *(__trace_printk_fmt) /* Trace_printk fmt' pointer */ \
+>  			 VMLINUX_SYMBOL(__stop___trace_bprintk_fmt) = .;
+>  #else
+> @@ -139,7 +143,8 @@
+>  #endif
+>  
+>  #ifdef CONFIG_FTRACE_SYSCALLS
+> -#define TRACE_SYSCALLS() VMLINUX_SYMBOL(__start_syscalls_metadata) = .;	\
+> +#define TRACE_SYSCALLS() STRUCT_ALIGN();				\
+> +			 VMLINUX_SYMBOL(__start_syscalls_metadata) = .;	\
+>  			 *(__syscalls_metadata)				\
+>  			 VMLINUX_SYMBOL(__stop_syscalls_metadata) = .;
+>  #else
+> @@ -169,11 +174,7 @@
+>  	LIKELY_PROFILE()		       				\
+>  	BRANCH_PROFILE()						\
+>  	TRACE_PRINTKS()							\
+> -									\
+> -	STRUCT_ALIGN();							\
+>  	FTRACE_EVENTS()							\
+> -									\
+> -	STRUCT_ALIGN();							\
+>  	TRACE_SYSCALLS()
+>  
+>  /*
+> 
+> 
+> 
 
 
