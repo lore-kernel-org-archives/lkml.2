@@ -1,123 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab1ARCnC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 Jan 2011 21:43:02 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:39503 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753356Ab1ARCnA (ORCPT
+	id S1753459Ab1ARCov (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 Jan 2011 21:44:51 -0500
+Received: from mail.bluewatersys.com ([202.124.120.130]:6564 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753385Ab1ARCou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 Jan 2011 21:43:00 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 18 Jan 2011 11:36:57 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: [PATCH 1/4] memcg: modify accounting function for supporting THP
- better
-Message-Id: <20110118113657.9bed0165.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110118113528.fd24928f.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110118113528.fd24928f.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 17 Jan 2011 21:44:50 -0500
+Message-ID: <4D34FEAA.3000402@bluewatersys.com>
+Date: Tue, 18 Jan 2011 15:44:58 +1300
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: "Xu, Hong" <Hong.Xu@atmel.com>
+CC: linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, jamie@jamieiles.com,
+        jacmet@sunsite.dk, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [PATCH] MTD: atmel_nand: Add DMA support to access Nandflash
+References: <hong.xu@atmel.com> <1295248809-30334-2-git-send-email-hong.xu@atmel.com> <4D34A37E.1060300@bluewatersys.com> <4D34C5BF.2070107@bluewatersys.com> <4C79549CB6F772498162A641D92D5328D9FE16@penmb01.corp.atmel.com>
+In-Reply-To: <4C79549CB6F772498162A641D92D5328D9FE16@penmb01.corp.atmel.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mem_cgroup_charge_statisics() was designed for charging a page but
-now, we have transparent hugepage. To fix problems (in following patch)
-it's required to change the function to get the number of pages
-as its arguments.
+On 01/18/2011 02:43 PM, Xu, Hong wrote:
+> Hi Ryan,
+>> -----Original Message-----
+>> From: Ryan Mallon [mailto:ryan@bluewatersys.com]
+>> Sent: Tuesday, January 18, 2011 6:42 AM
+>> To: Xu, Hong
+>> Cc: linux-mtd@lists.infradead.org; linux-arm-kernel@lists.infradead.org;
+>> linux-kernel@vger.kernel.org; jamie@jamieiles.com; jacmet@sunsite.dk;
+>> Ferre, Nicolas
+>> Subject: Re: [PATCH] MTD: atmel_nand: Add DMA support to access Nandflash
+>>
+>> root@snapper:~$ dmesg | grep -i dma
+>> [    0.850000] atmel_nand atmel_nand: Failed to request DMA channel
+>> [    0.860000] atmel_nand atmel_nand: No DMA support for NAND access.
+>> [    1.530000] at_hdmac at_hdmac: Atmel AHB DMA Controller ( cpy slave ),
+>> 8 channels
+>>
+>>
+>> It looks like the registration for the DMA controller happens after the
+>> NAND driver probe and so the request is failing. I had a quick look, but
+>> I can't see anything that would change this in more recent kernels. Any
+>> ideas?
+>>
+> You got the point. A [Git Pull] has been sent, see
+> http://article.gmane.org/gmane.linux.kernel/1088240/match=dmaengine+update
+> 
+> In this patch, subsys_initcall will be used so DMA engine will be initialized before NAND driver.
+> Thanks.
 
-The new function gets following as argument.
-  - type of page rather than 'pc'
-  - size of page which is accounted.
+Thanks, that fixed it.
 
-Changelog:
- - use usual variable names for args.
- - removed unnecessary variable.
+I have tried this under 2.6.33 on a custom SAM9G45 based board with a
+512MiB NAND part, with 2kB pages and 128kB blocks using both raw MTD
+access and the YAFFS2 filesystem and it appears to work correctly.
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |   25 ++++++++++++-------------
- 1 file changed, 12 insertions(+), 13 deletions(-)
+Tested-by: Ryan Mallon <ryan@bluewatersys.com>
 
-Index: mmotm-0107/mm/memcontrol.c
-===================================================================
---- mmotm-0107.orig/mm/memcontrol.c
-+++ mmotm-0107/mm/memcontrol.c
-@@ -600,23 +600,22 @@ static void mem_cgroup_swap_statistics(s
- }
- 
- static void mem_cgroup_charge_statistics(struct mem_cgroup *mem,
--					 struct page_cgroup *pc,
--					 bool charge)
-+					 bool file, int nr_pages)
- {
--	int val = (charge) ? 1 : -1;
--
- 	preempt_disable();
- 
--	if (PageCgroupCache(pc))
--		__this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_CACHE], val);
-+	if (file)
-+		__this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_CACHE], nr_pages);
- 	else
--		__this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_RSS], val);
-+		__this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_RSS], nr_pages);
- 
--	if (charge)
-+	/* pagein of a big page is an event. So, ignore page size */
-+	if (nr_pages > 0)
- 		__this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_PGPGIN_COUNT]);
- 	else
- 		__this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_PGPGOUT_COUNT]);
--	__this_cpu_inc(mem->stat->count[MEM_CGROUP_EVENTS]);
-+
-+	__this_cpu_add(mem->stat->count[MEM_CGROUP_EVENTS], nr_pages);
- 
- 	preempt_enable();
- }
-@@ -2115,7 +2114,7 @@ static void ____mem_cgroup_commit_charge
- 		break;
- 	}
- 
--	mem_cgroup_charge_statistics(mem, pc, true);
-+	mem_cgroup_charge_statistics(mem, PageCgroupCache(pc), 1);
- }
- 
- static void __mem_cgroup_commit_charge(struct mem_cgroup *mem,
-@@ -2186,14 +2185,14 @@ static void __mem_cgroup_move_account(st
- 		__this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
- 		preempt_enable();
- 	}
--	mem_cgroup_charge_statistics(from, pc, false);
-+	mem_cgroup_charge_statistics(from, PageCgroupCache(pc), -1);
- 	if (uncharge)
- 		/* This is not "cancel", but cancel_charge does all we need. */
- 		mem_cgroup_cancel_charge(from, PAGE_SIZE);
- 
- 	/* caller should have done css_get */
- 	pc->mem_cgroup = to;
--	mem_cgroup_charge_statistics(to, pc, true);
-+	mem_cgroup_charge_statistics(to, PageCgroupCache(pc), 1);
- 	/*
- 	 * We charges against "to" which may not have any tasks. Then, "to"
- 	 * can be under rmdir(). But in current implementation, caller of
-@@ -2597,7 +2596,7 @@ __mem_cgroup_uncharge_common(struct page
- 	}
- 
- 	for (i = 0; i < count; i++)
--		mem_cgroup_charge_statistics(mem, pc + i, false);
-+		mem_cgroup_charge_statistics(mem, PageCgroupCache(pc), -1);
- 
- 	ClearPageCgroupUsed(pc);
- 	/*
+Can you please update for the changes I suggested.
 
+Thanks,
+~Ryan
+
+-- 
+Bluewater Systems Ltd - ARM Technology Solution Centre
+
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
