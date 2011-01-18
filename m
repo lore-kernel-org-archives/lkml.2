@@ -1,92 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911Ab1ARTCi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 14:02:38 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:51879 "EHLO e4.ny.us.ibm.com"
+	id S1752926Ab1ARTEy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 14:04:54 -0500
+Received: from hera.kernel.org ([140.211.167.34]:52924 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751530Ab1ARTCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 14:02:36 -0500
-Date: Tue, 18 Jan 2011 11:02:33 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>, kvm@vger.kernel.org,
-        virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vhost: rcu annotation fixup
-Message-ID: <20110118190232.GM2193@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110118110845.GA11555@redhat.com>
- <20110118174834.GF2193@linux.vnet.ibm.com>
- <20110118175500.GA6935@redhat.com>
+	id S1751541Ab1ARTEw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 14:04:52 -0500
+Date: Tue, 18 Jan 2011 19:03:53 GMT
+From: tip-bot for Brian Gerst <brgerst@gmail.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        torvalds@linux-foundation.org, arjan@linux.intel.com,
+        brgerst@gmail.com, penberg@kernel.org, tglx@linutronix.de,
+        linux@merz-ka.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        brgerst@gmail.com, arjan@linux.intel.com,
+        torvalds@linux-foundation.org, penberg@kernel.org, tglx@linutronix.de,
+        linux@merz-ka.de, mingo@elte.hu
+In-Reply-To: <AANLkTimyKXfJ1x8tgwrr1hYnNLrPfgE1NTe4z7L6tUDm@mail.gmail.com>
+References: <AANLkTimyKXfJ1x8tgwrr1hYnNLrPfgE1NTe4z7L6tUDm@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: Clear irqstack thread_info
+Message-ID: <tip-7b698ea377e10b074ceef0d79218e6622d618421@git.kernel.org>
+Git-Commit-ID: 7b698ea377e10b074ceef0d79218e6622d618421
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20110118175500.GA6935@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 18 Jan 2011 19:03:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 18, 2011 at 07:55:00PM +0200, Michael S. Tsirkin wrote:
-> On Tue, Jan 18, 2011 at 09:48:34AM -0800, Paul E. McKenney wrote:
-> > On Tue, Jan 18, 2011 at 01:08:45PM +0200, Michael S. Tsirkin wrote:
-> > > When built with rcu checks enabled, vhost triggers
-> > > bogus warnings as vhost features are read without
-> > > dev->mutex sometimes.
-> > > Fixing it properly is not trivial as vhost.h does not
-> > > know which lockdep classes it will be used under.
-> > > Disable the warning by stubbing out the check for now.
-> > > 
-> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > ---
-> > >  drivers/vhost/vhost.h |    4 +---
-> > >  1 files changed, 1 insertions(+), 3 deletions(-)
-> > > 
-> > > diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-> > > index 2af44b7..2d03a31 100644
-> > > --- a/drivers/vhost/vhost.h
-> > > +++ b/drivers/vhost/vhost.h
-> > > @@ -173,9 +173,7 @@ static inline int vhost_has_feature(struct vhost_dev *dev, int bit)
-> > >  {
-> > >  	unsigned acked_features;
-> > > 
-> > > -	acked_features =
-> > > -		rcu_dereference_index_check(dev->acked_features,
-> > > -					    lockdep_is_held(&dev->mutex));
-> > > +	acked_features = rcu_dereference_index_check(dev->acked_features, 1);
-> > 
-> > Ouch!!!
-> > 
-> > Could you please at least add a comment?
-> 
-> Yes, OK.
-> 
-> > Alternatively, pass in the lock that is held and check for that?  Given
-> > that this is a static inline, the compiler should be able to optimize
-> > the argument away when !PROVE_RCU, correct?
-> > 
-> > 							Thanx, Paul
-> 
-> Hopefully, yes. We don't always have a lock: the idea was
-> to create a lockdep for these cases. But we can't pass
-> the pointer to that ...
+Commit-ID:  7b698ea377e10b074ceef0d79218e6622d618421
+Gitweb:     http://git.kernel.org/tip/7b698ea377e10b074ceef0d79218e6622d618421
+Author:     Brian Gerst <brgerst@gmail.com>
+AuthorDate: Mon, 17 Jan 2011 07:32:10 -0500
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 18 Jan 2011 14:58:37 +0100
 
-I suppose you could pass a pointer to the lockdep map structure.
-Not sure if this makes sense, but it would handle the situation.
+x86: Clear irqstack thread_info
 
-Alternatively, create a helper function that checks the possibilities
-and screams if none of them are in effect.
+Mathias Merz reported that v2.6.37 failed to boot on his
+system.
 
-							Thanx, Paul
+Make sure that the thread_info part of the irqstack is
+initialized to zeroes.
 
-> > >  	return acked_features & (1 << bit);
-> > >  }
-> > > 
-> > > -- 
-> > > 1.7.3.2.91.g446ac
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > > the body of a message to majordomo@vger.kernel.org
-> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > Please read the FAQ at  http://www.tux.org/lkml/
+Reported-and-Tested-by: Matthias Merz <linux@merz-ka.de>
+Signed-off-by: Brian Gerst <brgerst@gmail.com>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+LKML-Reference: <AANLkTimyKXfJ1x8tgwrr1hYnNLrPfgE1NTe4z7L6tUDm@mail.gmail.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/irq_32.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/kernel/irq_32.c b/arch/x86/kernel/irq_32.c
+index 96656f2..5206bb9 100644
+--- a/arch/x86/kernel/irq_32.c
++++ b/arch/x86/kernel/irq_32.c
+@@ -129,8 +129,7 @@ void __cpuinit irq_ctx_init(int cpu)
+ 	irqctx = page_address(alloc_pages_node(cpu_to_node(cpu),
+ 					       THREAD_FLAGS,
+ 					       THREAD_ORDER));
+-	irqctx->tinfo.task		= NULL;
+-	irqctx->tinfo.exec_domain	= NULL;
++	memset(&irqctx->tinfo, 0, sizeof(struct thread_info));
+ 	irqctx->tinfo.cpu		= cpu;
+ 	irqctx->tinfo.preempt_count	= HARDIRQ_OFFSET;
+ 	irqctx->tinfo.addr_limit	= MAKE_MM_SEG(0);
+@@ -140,10 +139,8 @@ void __cpuinit irq_ctx_init(int cpu)
+ 	irqctx = page_address(alloc_pages_node(cpu_to_node(cpu),
+ 					       THREAD_FLAGS,
+ 					       THREAD_ORDER));
+-	irqctx->tinfo.task		= NULL;
+-	irqctx->tinfo.exec_domain	= NULL;
++	memset(&irqctx->tinfo, 0, sizeof(struct thread_info));
+ 	irqctx->tinfo.cpu		= cpu;
+-	irqctx->tinfo.preempt_count	= 0;
+ 	irqctx->tinfo.addr_limit	= MAKE_MM_SEG(0);
+ 
+ 	per_cpu(softirq_ctx, cpu) = irqctx;
