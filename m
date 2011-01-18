@@ -1,57 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206Ab1AROiW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 09:38:22 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50938 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750962Ab1AROiV (ORCPT
+	id S1752206Ab1AROnj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 09:43:39 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:5887 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751032Ab1AROni convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 09:38:21 -0500
-Message-ID: <4D35A5D8.8000204@monstr.eu>
-Date: Tue, 18 Jan 2011 15:38:16 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arch/microblaze build failure fixes for 2.6.38
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 18 Jan 2011 09:43:38 -0500
+X-IronPort-AV: E=Sophos;i="4.60,339,1291622400"; 
+   d="scan'208";a="506827862"
+Subject: Re: [PATCH] NFS4: Avoid potential NULL pointer dereference in decode_and_add_ds().
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Andy Adamson <andros@netapp.com>
+In-Reply-To: <alpine.LNX.2.00.1101171940480.27021@swampdragon.chaosbits.net>
+Date: Tue, 18 Jan 2011 09:43:22 -0500
+Cc: Mi Jinlong <mijinlong@cn.fujitsu.com>, linux-nfs@vger.kernel.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-kernel@vger.kernel.org, Fred Isaman <iisaman@netapp.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <2C44474C-1803-4B94-8140-6DF64A87418F@netapp.com>
+References: <alpine.LNX.2.00.1101162145290.13377@swampdragon.chaosbits.net> <4D33B30A.8050507@cn.fujitsu.com> <alpine.LNX.2.00.1101171940480.27021@swampdragon.chaosbits.net>
+To: Jesper Juhl <jj@chaosbits.net>
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-I have fixed two build failures on the latest code.
+On Jan 17, 2011, at 1:41 PM, Jesper Juhl wrote:
 
-Please pull these two patches.
-
-Thanks,
-Michal
-
-
-The following changes since commit 1b59be2a6cdcb5a12e18d8315c07c94a624de48f:
-   Linus Torvalds (1):
-         Merge branch 'slab/urgent' of 
-git://git.kernel.org/.../penberg/slab-2.6
-
-are available in the git repository at:
-
-   git://git.monstr.eu/linux-2.6-microblaze.git next
-
-Michal Simek (2):
-       microblaze: Fix missing pagemap.h
-       microblaze: Fix asm/pgtable.h
-
-  arch/microblaze/include/asm/pgtable.h |    6 ++++--
-  arch/microblaze/include/asm/tlb.h     |    1 +
-  2 files changed, 5 insertions(+), 2 deletions(-)
+> On Mon, 17 Jan 2011, Mi Jinlong wrote:
+> 
+>> 
+>> 
+>> Jesper Juhl:
+>>> strrchr() can return NULL if nothing is found. If this happens we'll 
+>>> dereference a NULL pointer in 
+>>> fs/nfs/nfs4filelayoutdev.c::decode_and_add_ds().
 
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+
+Yes - good catch.
+
+-->Andy
+
+>>> 
+>>> I tried to find some other code that guarantees that this can never 
+>>> happen but I was unsuccessful. So, unless someone else can point to some 
+>>> code that ensures this can never be a problem, I believe this patch is 
+>>> needed.
+>>> 
+>>> While I was changing this code I also noticed that all the dprintk() 
+>>> statements, except one, start with "%s:". The one missing the ":" I added 
+>>> it to.
+>> 
+>>  Maybe another one also should be changed at decode_and_add_ds() at line 243:
+>> 
+>>   243  printk("%s Decoded address and port %s\n", __func__, buf);
+>> 
+> Missed that one. Thanks. 
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+> nfs4filelayoutdev.c |    9 +++++++--
+> 1 file changed, 7 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/nfs/nfs4filelayoutdev.c b/fs/nfs/nfs4filelayoutdev.c
+> index 51fe64a..f5c9b12 100644
+> --- a/fs/nfs/nfs4filelayoutdev.c
+> +++ b/fs/nfs/nfs4filelayoutdev.c
+> @@ -214,7 +214,7 @@ decode_and_add_ds(__be32 **pp, struct inode *inode)
+> 
+> 	/* ipv6 length plus port is legal */
+> 	if (rlen > INET6_ADDRSTRLEN + 8) {
+> -		dprintk("%s Invalid address, length %d\n", __func__,
+> +		dprintk("%s: Invalid address, length %d\n", __func__,
+> 			rlen);
+> 		goto out_err;
+> 	}
+> @@ -225,6 +225,11 @@ decode_and_add_ds(__be32 **pp, struct inode *inode)
+> 	/* replace the port dots with dashes for the in4_pton() delimiter*/
+> 	for (i = 0; i < 2; i++) {
+> 		char *res = strrchr(buf, '.');
+> +		if (!res) {
+> +			dprintk("%s: Failed finding expected dots in port\n",
+> +				__func__);
+> +			goto out_free;
+> +		}
+> 		*res = '-';
+> 	}
+> 
+> @@ -240,7 +245,7 @@ decode_and_add_ds(__be32 **pp, struct inode *inode)
+> 	port = htons((tmp[0] << 8) | (tmp[1]));
+> 
+> 	ds = nfs4_pnfs_ds_add(inode, ip_addr, port);
+> -	dprintk("%s Decoded address and port %s\n", __func__, buf);
+> +	dprintk("%s: Decoded address and port %s\n", __func__, buf);
+> out_free:
+> 	kfree(buf);
+> out_err:
+> 
+> 
+> -- 
+> Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+> Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+> Plain text mails only, please.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
