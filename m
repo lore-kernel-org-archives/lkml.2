@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab1ARUd3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 15:33:29 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:47311 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752780Ab1ARUd1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 15:33:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=qgX8/f1lC0yniNMThx0IWo6q3BJbz5DzTBw59XLxEGXlqGUixljbnhaX7/f12462DS
-         TWhkvv4wuUfdt1Noe+wMMhaaIwi88HOFYxqPNPd4i6WelLVufGdt73EkLoF9rq3RZ2JT
-         5BnTbikMFhfXO2AyYsFdakks8SA51NWC17vEE=
-Subject: Re: WARNING in module rt2870sta stable kernel 2.6.37
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Denis Kirjanov <kirjanov@gmail.com>
-Cc: Giangiacomo Mariotti <gg.mariotti@gmail.com>, Greg KH <gregkh@suse.de>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-In-Reply-To: <AANLkTi=-4k0hbM9gESLBfzJW_reonqX_GMiVzXzRJFqu@mail.gmail.com>
-References: <AANLkTi=HsE+h9GU8rM6zW2BVtoayEGfKOmPCsrrNHiz5@mail.gmail.com>
-	 <AANLkTi=-4k0hbM9gESLBfzJW_reonqX_GMiVzXzRJFqu@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Jan 2011 21:33:23 +0100
-Message-ID: <1295382803.3194.11.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1753443Ab1ARUe0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 15:34:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45930 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752780Ab1ARUeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 15:34:25 -0500
+Date: Tue, 18 Jan 2011 21:32:37 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Michal Simek <monstr@monstr.eu>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 13 of 66] export maybe_mkwrite
+Message-ID: <20110118203237.GF9506@random.random>
+References: <patchbomb.1288798055@v2.random>
+ <15324c9c30081da3a740.1288798068@v2.random>
+ <4D344EAF.1080401@petalogix.com>
+ <20110117143345.GQ9506@random.random>
+ <4D35A3D6.4070801@monstr.eu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D35A3D6.4070801@monstr.eu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 18 janvier 2011 à 23:25 +0300, Denis Kirjanov a écrit :
-> I have sent a patch to fix this problem: https://lkml.org/lkml/2011/1/10/329
-> It also fixes a bug #26472: https://bugzilla.kernel.org/show_bug.cgi?id=26472
+On Tue, Jan 18, 2011 at 03:29:42PM +0100, Michal Simek wrote:
+> Of course: Look for example at this page:
+> http://www.monstr.eu/wiki/doku.php?id=log:2011-01-18_11_51_49#linux_next
 
-OK, next time CC netdev so that we can Ack your patches ;)
+Ok now I see, the problem is the lack of pte_mkwrite with MMU=n.
 
-
-
+So either we apply your patch or we move the maybe_mkwrite at the top
+of huge_mm.h (before #ifdef CONFIG_TRANSPARENT_HUGEPAGE), it's up to
+you...
