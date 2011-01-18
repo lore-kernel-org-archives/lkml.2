@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752356Ab1ARP77 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 10:59:59 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53170 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753Ab1ARP76 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 10:59:58 -0500
-Subject: Re: NFS OOps  - kernel BUG at fs/nfs/nfs3xdr.c:1338
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Chuck Lever <Chuck.Lever@oracle.com>
-In-Reply-To: <1295048791.20016.15.camel@heimdal.trondhjem.org>
-Date: Tue, 18 Jan 2011 10:59:14 -0500
-Cc: Milan Broz <mbroz@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <BC9E8816-B395-44C1-ACF8-FEC4E80870C1@oracle.com>
-References: <4D30D9D6.2080809@redhat.com> <1295048791.20016.15.camel@heimdal.trondhjem.org>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-X-Mailer: Apple Mail (2.1082)
+	id S1752547Ab1ARQBJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 11:01:09 -0500
+Received: from mxs.selfip.ru ([77.221.143.26]:56391 "EHLO mxs.selfmail.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752322Ab1ARQBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 11:01:07 -0500
+X-ACL-SPF: 
+Subject: Re: [ANN] ulatencyd 0.3.1
+From: Vasiliy G Tolstov <v.tolstov@selfip.ru>
+Reply-To: v.tolstov@selfip.ru
+To: Daniel Poelzleithner <poelzi@poelzi.org>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <4D357204.3090505@poelzi.org>
+References: <4D357204.3090505@poelzi.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Selfip.Ru
+Date: Tue, 18 Jan 2011 18:59:29 +0300
+Message-ID: <1295366369.3015.1.camel@mobile>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-ACL-DATA: Invalid Message-Id
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Jan 14, 2011, at 6:46 PM, Trond Myklebust wrote:
-
-> On Sat, 2011-01-15 at 00:18 +0100, Milan Broz wrote: 
->> Hi,
->> 
->> on today Linus' tree I get OOps if using nfs.
->> 
->> server (2.6.36) exports dir:
->> /dir   172.16.1.0/24(rw,async,all_squash,no_subtree_check,anonuid=500,anongid=500)
->> 
->> on client it is mounted  in fstab
->> server:/dir  /mnt/tst  nfs  rw,soft 0 0
->> 
->> and these commands OOpses it (simplified from a configure script):
->> 
->> cd /dir
->> touch x
->> install x y
->> 
->> [  105.327701] ------------[ cut here ]------------
->> [  105.327979] kernel BUG at fs/nfs/nfs3xdr.c:1338!
+On Tue, 2011-01-18 at 11:57 +0100, Daniel Poelzleithner wrote:
+> Hi all,
 > 
-> Chuck, why did you add those BUG_ON()s there? I know that
-> nfsacl_encode() is for some unfathomable reason declared as returning an
-> unsigned integer, but if you look at the actual code, you will see that
-> it returns a number of negative signed error values depending on whether
-> or not allocations succeeded, number of entries is valid, etc...
-> 
-> IOW: negative values are perfectly allowable here, and should simply
-> cause the rpc call to be aborted, not an Oops.
+> I'm happy to announce the release of ulatencyd 0.3.1
+mobile build # cmake ../ulatencyd-0.3.1/
+-- The C compiler identification is unknown
+CMake Error at /usr/share/cmake/Modules/CMakeCInformation.cmake:37
+(GET_FILENAME_COMPONENT):
+  get_filename_component called with incorrect number of arguments
+Call Stack (most recent call first):
+  CMakeLists.txt:2 (project)
 
-XDR encoders no longer return an error code to the generic RPC client code.  The architectural assumption is that the heavy lifting (error checking, resource allocation, etc) is done by the upper layers, and that any problems that occur in the XDR routines are software bugs.  This seems to be the only remaining XDR code that depends on returning an error.  (I recall there may be one spot in the NFSv4 XDR code too).
 
-We should have checked nfsacl_encode() more closely before the recent spate of XDR changes.  However, this bit of layering violation has been a thorn in our side for years.  Perhaps we can use the new xdr_stream scratch buffer to address the allocation failure issues here, and better error checking can be done in the upper layers.
+CMake Error: your C compiler: "" was not found.   Please set
+CMAKE_C_COMPILER to a valid compiler path or name.
+-- Configuring incomplete, errors occurred!
 
-Milan, I assume the install command is trying to set an ACL on an NFS file.  Can you tell us what the ACL looks like?
 
--- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
 
+mobile build # gcc --version
+gcc (Exherbo gcc-4.5.1) 4.5.1
+Copyright (C) 2010 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is
+NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE.
 
 
 
