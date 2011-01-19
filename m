@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab1ASXLJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 18:11:09 -0500
-Received: from mail.perches.com ([173.55.12.10]:3204 "EHLO mail.perches.com"
+	id S1753627Ab1ASXLa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 18:11:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53507 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750844Ab1ASXLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 18:11:07 -0500
-Subject: Re: [PATCH] vsprintf: Neaten %pK kptr_restrict, save a bit of code
- space
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dan Rosenberg <drosenberg@vsecurity.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110119145024.353ef8a1.akpm@linux-foundation.org>
-References: <1294950072.4114.172.camel@Joe-Laptop>
-	 <20110119145024.353ef8a1.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 Jan 2011 15:11:02 -0800
-Message-ID: <1295478662.1952.45.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752294Ab1ASXL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 18:11:28 -0500
+Date: Wed, 19 Jan 2011 15:01:20 -0800
+From: Greg KH <gregkh@suse.de>
+To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
+Cc: Arun Thomas <arun.thomas@gmail.com>, Kulikov Vasiliy <segooon@gmail.com>,
+        Javier Martinez Canillas <martinez.javier@gmail.com>,
+        Gustavo Silva <silvagustavo@users.sourceforge.net>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging/comedi/me4000: fix sparse warning "obsolete
+ struct initializer"
+Message-ID: <20110119230120.GB23564@suse.de>
+References: <1294697236-12016-1-git-send-email-peterhuewe@gmx.de>
+ <201101182249.11127.PeterHuewe@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201101182249.11127.PeterHuewe@gmx.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-19 at 14:50 -0800, Andrew Morton wrote:
-> On Thu, 13 Jan 2011 12:21:12 -0800
-> Joe Perches <joe@perches.com> wrote:
-> > If kptr restrictions are on, just set the passed pointer to NULL.
-> > diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-[]
-> > +		if (!((kptr_restrict == 0) ||
-> > +		      (kptr_restrict == 1 &&
-> > +		       has_capability_noaudit(current, CAP_SYSLOG))))
-> > +			ptr = NULL;
-> > +		break;
-> This hurts my brain.   Does it work?
+On Tue, Jan 18, 2011 at 10:49:10PM +0100, Peter Hüwe wrote:
+> Am Montag 10 Januar 2011, 23:07:16 schrieb Peter Huewe:
+> > This patch fixes the sparse warnings in me4000.c:
+> > me4000.c:122:1: warning: obsolete struct initializer, use C99 syntax
+> > me4000.c:123:1: warning: obsolete struct initializer, use C99 syntax
+> > me4000.c:124:1: warning: obsolete struct initializer, use C99 syntax
+> > me4000.c:125:1: warning: obsolete struct initializer, use C99 syntax
+> > by converting the struct to use C99 syntax
+> > 
+> > Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+>  Ping - any updates on this one?
 
-Some say mentally challenging puzzles help deter/delay
-onset of cognitive decline/Alzheimer's.  See: www.dakim.com
+I have to wait until .38-rc1 before I can look at these.  Now that it is
+out, I hope to get through my huge patch-queue by Friday, before I take
+off on another trip...
 
-A mentally less challenging perhaps cleaner form is:
+Actually, that trip does provide a whole lot of uninterrupted plane
+time, so that might be a bit better place to do this work...
 
-		if (kptr_restrict == 0)
-			break;
-		if (kptr_restrict == 1 &&
-		    has_capability_noaudit(current, CAP_SYSLOG))
-			break;
-		ptr = NULL;
-		break;
+thanks,
 
-Your choice. ;)
-
+greg k-h
