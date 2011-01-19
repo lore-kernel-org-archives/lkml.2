@@ -1,108 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab1ASHVd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 02:21:33 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58488 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300Ab1ASHVb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 02:21:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=r9OrgAIBF0aINjWcYwaro+3WBFAvoYGS7kRvfLm34BvG8yLyClI6EIhh4I/jX2zAQX
-         iDvfvFURVHMXa+E1eeXZ8A2WsZNRkKyk5cB+LgCkqjQ1A5MvWefsaz+3UxwHJmpr9Ahs
-         U+AVtmVdTApTP/LNsBqAgNhBTg1xeH5aboJgU=
-MIME-Version: 1.0
-In-Reply-To: <909.1295419383@jrobl>
-References: <20110113120626.GB30351@opensource.wolfsonmicro.com>
-	<8138.1294924927@jrobl>
-	<676f5c24375e1cc2aa14fe6630ef1324@mail.gmail.com>
-	<8482.1294926315@jrobl>
-	<AANLkTim=VY7+fo6d_nUXVxs+iZ_f79qWu_eYMUjvhVJO@mail.gmail.com>
-	<909.1295419383@jrobl>
-Date: Wed, 19 Jan 2011 18:21:29 +1100
-Message-ID: <AANLkTi=CqLm=33acFV42N8VbNK9=hwXV9iegKn-jjGJS@mail.gmail.com>
-Subject: Re: vfs-scale, general questions (Re: NFS root lockups with -next 20110113)
-From: Nick Piggin <npiggin@gmail.com>
-To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Nick Piggin <npiggin@kernel.dk>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753519Ab1ASHaR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 02:30:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52391 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751332Ab1ASHaQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 02:30:16 -0500
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: WANG Cong <amwang@redhat.com>,
+        Ingo Molnar <mingo@elte.hu> (commit_signer:8/43=19% 
+	,commit_signer:4/26=15%),
+        Andrew Morton <akpm@linux-foundation.org> (commit_signer:7/43=16% 
+	,commit_signer:9/26=35%),
+        Peter Zijlstra <a.p.zijlstra@chello.nl> (commit_signer:5/43=12%),
+        Tejun Heo <tj@kernel.org> (commit_signer:4/43=9%),
+        Arnd Bergmann <arnd@arndb.de> (commit_signer:3/43=7%),
+        James Morris <jmorris@namei.org> (commit_signer:6/26=23%),
+        Kees Cook <kees.cook@canonical.com> (commit_signer:4/26=15%),
+        Namhyung Kim <namhyung@gmail.com> (commit_signer:3/26=12%)
+Subject: [Patch] printk: move some loglevel setup functions to kernel/printk.c
+Date: Wed, 19 Jan 2011 15:29:24 +0800
+Message-Id: <1295422165-22269-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 5:43 PM, J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
->
-> Hi,
->
-> Nick Piggin:
->> Thanks for your help, can you see how I've fixed it in my vfs-scale
->> tree? What do you think?
->
-> Your fix is great. I have no objection at all.
-> Other than the fix, here are more generic questions about vfs-scale work.
-> I am happy if you reply when you have time.
+These parameter setup functions should go to kernel/printk.c,
+and should also be under CONFIG_PRINTK.
 
-Thanks for reviewing.
+Signed-off-by: WANG Cong <amwang@redhat.com>
 
-
-> - getcwd(2) needs d_lock?
->  It acquires rename_lock and then tests whether the pwd is removed by
->  d_unhashed(). If a race condition between vfs_rename_dir() which may
->  unhash/rehash the dentry happens, then getcwd() may return the wrong
->  result due to unprotected d_unhashed() call, I am afraid. rename_lock
->  doesn't help this case.
-
-We have the lock in write mode there, so it should exclude that
-particular race. But I need to take another look at this code I
-think, I'm not sure it's completely right, so I would appreciate reviews.
-
-A while back I had some extra checks in there and would restart
-the entire reverse walk in case of races... but need to think about
-it.
-
-
-> - what is the right order of dget() and mntget()?
->  If I remember correctly, someone said "mntget() first and then
->  dget(). when putting, do in reverse" in the discussion when
->  path_{get,put}() were born. So it is called "the right order" in the
->  commit log.
->  It was many years ago. Is it still true? And should rcu-walk follow it
->  too? The current implementation doesn't seem to care about this order.
-
-Well dget and mntget is not a problem, because we can only do
-mntget while already guaranteeing a reference on the mount, and
-only dget when already guaranteeing a ref on the dentry (and mount).
-
-But dput must happen before mntput so you don't have dentry ref
-without mnt ref. Can you point out where rcu-walk does this wrongly?
-
-
-> - d_move() and rename_lock
->  This may be out of rcu-walk work, but rename_lock in d_move() looks
->  outstanding since it surely kills concurrency. It is a pity that two
->  unrelated but concurrent d_move-s are serialized when we run rename(2)
->  on two different filesystems. Even if all of dentries, parents and
->  hash buckets are different from each other, d_move() never run
->  concurrently.
-
-Yes I have a patch for that. I made a small hash table of rename locks.
-This makes independent same-dir renames scalable. However that was
-not the main motivation of the patch. On a really big POWER7 system,
-the lookup path goes into a strange bimodal behaviour in the presence
-of a relatively small amount of rename activity and sometimes starves
-and throughput crashes. Breaking up rename_lock solves that too.
-
-I'll wait until things settle down a bit more and perhaps have a chance
-to get more numbers before submitting it (although I can show you when
-I get back).
-
-Thanks,
-Nick
+---
+diff --git a/init/main.c b/init/main.c
+index 00799c1..b832b69 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -240,29 +240,6 @@ unsigned long loops_per_jiffy = (1<<12);
+ 
+ EXPORT_SYMBOL(loops_per_jiffy);
+ 
+-static int __init debug_kernel(char *str)
+-{
+-	console_loglevel = 10;
+-	return 0;
+-}
+-
+-static int __init quiet_kernel(char *str)
+-{
+-	console_loglevel = 4;
+-	return 0;
+-}
+-
+-early_param("debug", debug_kernel);
+-early_param("quiet", quiet_kernel);
+-
+-static int __init loglevel(char *str)
+-{
+-	get_option(&str, &console_loglevel);
+-	return 0;
+-}
+-
+-early_param("loglevel", loglevel);
+-
+ /*
+  * Unknown boot options get handed to init, unless they look like
+  * unused parameters (modprobe will find them in /proc/cmdline).
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 53d9a9e..e495a2c 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -467,6 +467,30 @@ static void __call_console_drivers(unsigned start, unsigned end)
+ 	}
+ }
+ 
++static int __init debug_kernel(char *str)
++{
++	console_loglevel = 10;
++	return 0;
++}
++
++early_param("debug", debug_kernel);
++
++static int __init quiet_kernel(char *str)
++{
++	console_loglevel = 4;
++	return 0;
++}
++
++early_param("quiet", quiet_kernel);
++
++static int __init loglevel(char *str)
++{
++	get_option(&str, &console_loglevel);
++	return 0;
++}
++
++early_param("loglevel", loglevel);
++
+ static int __read_mostly ignore_loglevel;
+ 
+ static int __init ignore_loglevel_setup(char *str)
