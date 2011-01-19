@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204Ab1ASAd7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 19:33:59 -0500
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:43613 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683Ab1ASAd6 (ORCPT
+	id S1752397Ab1ASAjt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 19:39:49 -0500
+Received: from gateway01.websitewelcome.com ([67.18.53.19]:33111 "HELO
+	gateway01.websitewelcome.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751446Ab1ASAjr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 19:33:58 -0500
-Date: Wed, 19 Jan 2011 09:27:33 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, minchan.kim@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH v4] mm: add replace_page_cache_page() function
-Message-Id: <20110119092733.4927f935.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20110118152844.88cfdc2c.akpm@linux-foundation.org>
-References: <E1Pf9Zj-0002td-Ct@pomaz-ex.szeredi.hu>
-	<20110118152844.88cfdc2c.akpm@linux-foundation.org>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
+	Tue, 18 Jan 2011 19:39:47 -0500
+X-Greylist: delayed 573 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Jan 2011 19:39:47 EST
+To: linux-kernel@vger.kernel.org
+Subject: Another New Member Makes $7,500 In 1 WEEK!
+From: Tom VanBuren <tom@leadsystem103.info>
+Reply-To: tom@leadsystem103.info
+MIME-Version: 1.0
+X-Mailer: GMailer 1.2
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+Message-Id: <E1PfLw3-0004ca-7u@gator1257.hostgator.com>
+Date: Tue, 18 Jan 2011 18:30:03 -0600
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - gator1257.hostgator.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [1141 32008] / [47 12]
+X-AntiAbuse: Sender Address Domain - leadsystem103.info
+X-Source: /usr/bin/php
+X-Source-Args: php /home/tman103/public_html/jmailer/engine.php 
+X-Source-Dir: leadsystem103.info:/public_html/jmailer
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Jan 2011 15:28:44 -0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
+Hello,
 
-> On Tue, 18 Jan 2011 12:18:11 +0100
-> Miklos Szeredi <miklos@szeredi.hu> wrote:
-> 
-> > +int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
-> > +{
-> > +	int error;
-> > +	struct mem_cgroup *memcg = NULL;
-> 
-> I'm suspecting that the unneeded initialisation was added to suppress a
-> warning?
-> 
-No.
-It's necessary for mem_cgroup_{prepare|end}_migration().
-mem_cgroup_prepare_migration() will return without doing anything in
-"if (mem_cgroup_disabled()" case(iow, "memcg" is not overwritten),
-but mem_cgroup_end_migration() depends on the value of "memcg" to decide
-whether prepare_migration has succeeded or not.
-This may not be a good implementation, but IMHO I'd like to to initialize
-valuable before using it in general.
 
-Thanks,
-Daisuke Nishimura.
+
+Yes It is True!!!
+
+
+
+Would you like a little
+proof that this business works?
+
+
+We show you our automated, turnkey,
+never chase another lead system.
+
+
+One new member just received
+$7,500 using this simple formula.
+$7,500 in just one week!
+
+
+Imagine how much you can earn in a month.
+
+
+"All I did was follow the simple formula" he said!
+
+
+http://www.dailycashatm.com 
+
+
+
+With this system I DO NOT chase
+anybody and you won't have
+to either...
+
+
+Call me with any questions.
+
+
+Sincerely,
+
+
+Tom VanBuren
+
+
+"The Work At Home Expert"
+
+
+
+363 Harbor Ct Holland,MI 49424
+
+
+To be removed just reply with "REMOVE"
+
+
