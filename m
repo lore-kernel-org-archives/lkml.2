@@ -1,45 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465Ab1ASCI1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 21:08:27 -0500
-Received: from www.wytron.com.tw ([211.75.82.101]:34769 "EHLO
-	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444Ab1ASCIZ (ORCPT
+	id S1753360Ab1ASCRr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 21:17:47 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:55704 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752643Ab1ASCRp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 21:08:25 -0500
-Message-ID: <4D36481E.2090708@wytron.com.tw>
-Date: Wed, 19 Jan 2011 10:10:38 +0800
-From: Thomas Chou <thomas@wytron.com.tw>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	Tue, 18 Jan 2011 21:17:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=TuiEinx8C8y6ljwsBP6sFJG83X1NhbWTShZxOxCpXZeTOw2KWEIlWQ9wKBdgmj1yn7
+         0crOnkekUWXsS1P+SrXZGXirhIY0wsQGcxpCLhfR5XSzwQT98U3VK1eMwAizip5MzBgH
+         Lnaq/hMcC35GxjYjeynaivjSnfsrL30sNBizE=
 MIME-Version: 1.0
-To: "W.A. GOOSSENS" <waltergoossens@home.nl>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
-        linux-input@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: Antw:Re: [PATCH] alter_ps2: Add devicetree support
-References: <72c0b97741a709.4d35bf01@home.nl>
-In-Reply-To: <72c0b97741a709.4d35bf01@home.nl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 192.168.1.15
-X-SA-Exim-Mail-From: thomas@wytron.com.tw
-X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
+In-Reply-To: <20110118174826.4c6d47a3.akpm@linux-foundation.org>
+References: <E1Pf9Zj-0002td-Ct@pomaz-ex.szeredi.hu>
+	<20110118152844.88cfdc2c.akpm@linux-foundation.org>
+	<AANLkTimh7jq7HLjfxVX0XKdhOhWEQtDn-faGc+iJ-ykd@mail.gmail.com>
+	<20110118174826.4c6d47a3.akpm@linux-foundation.org>
+Date: Wed, 19 Jan 2011 11:17:45 +0900
+Message-ID: <AANLkTin_LhfABegySQrFxEmMT42xJGgsGR5=CcaOvtHr@mail.gmail.com>
+Subject: Re: [PATCH v4] mm: add replace_page_cache_page() function
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, kamezawa.hiroyu@jp.fujitsu.com,
+        nishimura@mxp.nes.nec.co.jp, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Walter,
+On Wed, Jan 19, 2011 at 10:48 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 19 Jan 2011 10:24:09 +0900 Minchan Kim <minchan.kim@gmail.com> wrote:
+>
+>> >
+>> > This is all pretty ugly and inefficient.
+>> >
+>> > We call __remove_from_page_cache() which does a radix-tree lookup and
+>> > then fiddles a bunch of accounting things.
+>> >
+>> > Then we immediately do the same radix-tree lookup and then undo the
+>> > accounting changes which we just did. __And we do it in an open-coded
+>> > fashion, thus giving the kernel yet another code site where various
+>> > operations need to be kept in sync.
+>> >
+>> > Would it not be better to do a single radix_tree_lookup_slot(),
+>> > overwrite the pointer therein and just leave all the ancilliary
+>> > accounting unaltered?
+>>
+>> I agree single radix_tree_lookup but accounting still is needed since
+>> newpage could be on another zone. What we can remove is just only
+>> mapping->nrpages.
+>
+> Well.  We only need to do inc/dec_zone_state if the zones are
+> different.  Perhaps the zones-equal case is worth optimising for,
+> dunno.
+>
+> Also, the radix_tree_preload() should be unneeded.
 
-On 01/18/2011 11:25 PM, W.A. GOOSSENS wrote:
-> I can however create a "fallback" rule were unkown components are just
-> added with the names the sopcinfo file, but that should not be the
-> default in my opinion since this will very effectively polute the
-> namespace in an uncontrolable way.
+Agree.
+In summary, optimization points are following as.
 
-Great! Do you have proposed name with version for ps2, altera_spi and 
-oc_tiny_spi? Then I can work on driver update. I guess we should ground 
-the version with "1.0" in driver match table.
+1) remove radix_tree_preload
+2) single radix_tree_lookup_slot and replace radix tree slot
+3) page accounting optimization if both pages are in same zone.
 
-Cheers,
-Thomas
+I hope we mm guys optimize the above things with TODO.
+(Except freepage issue I mentioned.)
+So I want Miklos resend the patch with solving freepage issue and NOTE
+of TODO in description or comment.
+
+-- 
+Kind regards,
+Minchan Kim
