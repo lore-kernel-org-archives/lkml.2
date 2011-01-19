@@ -1,112 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab1ASBYM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 20:24:12 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38062 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753109Ab1ASBYK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 20:24:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=rx2E/T+jAF+/wq9Tv57OhA9jF+4xI00nwiLsBn5JMSBYynhVF33bfSKeGtke9ft/M0
-         fBE6/9GRbjgM5pfwDXOpkE+CD+hfJv5PkJS0fz2U1ArrFvREBf5spLbswcqXDhKfwsuJ
-         lJ14884fv3RL8Rv4dHXOBB2BXHGVI6WzzkK88=
+	id S1753275Ab1ASBY4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 20:24:56 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:50405 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753109Ab1ASBYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 20:24:55 -0500
+Message-ID: <4D363D7D.1060705@cn.fujitsu.com>
+Date: Wed, 19 Jan 2011 09:25:17 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-In-Reply-To: <20110118152844.88cfdc2c.akpm@linux-foundation.org>
-References: <E1Pf9Zj-0002td-Ct@pomaz-ex.szeredi.hu>
-	<20110118152844.88cfdc2c.akpm@linux-foundation.org>
-Date: Wed, 19 Jan 2011 10:24:09 +0900
-Message-ID: <AANLkTimh7jq7HLjfxVX0XKdhOhWEQtDn-faGc+iJ-ykd@mail.gmail.com>
-Subject: Re: [PATCH v4] mm: add replace_page_cache_page() function
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, kamezawa.hiroyu@jp.fujitsu.com,
-        nishimura@mxp.nes.nec.co.jp, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Jens Axboe <axboe@kernel.dk>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        Chad Talbott <ctalbott@google.com>, Nauman Rafique <nauman@google.com>,
+        Divyesh Shah <dpshah@google.com>, jmoyer@redhat.com,
+        Shaohua Li <shaohua.li@intel.com>
+Subject: Re: [PATCH 2/6 v3] cfq-iosched: Introduce cfq_entity for CFQ group
+References: <4D180ECE.4000305@cn.fujitsu.com> <4D18536B.9090109@cn.fujitsu.com> <20110118212056.GK27946@redhat.com>
+In-Reply-To: <20110118212056.GK27946@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-01-19 09:24:22,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-01-19 09:24:23,
+	Serialize complete at 2011-01-19 09:24:23
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 8:28 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Tue, 18 Jan 2011 12:18:11 +0100
-> Miklos Szeredi <miklos@szeredi.hu> wrote:
->
->> +int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
->> +{
->> +     int error;
->> +     struct mem_cgroup *memcg = NULL;
->
-> I'm suspecting that the unneeded initialisation was added to suppress a
-> warning?
->
-> I removed it, and didn't get a warning.  I expected to.
->
-> Really, uninitialized_var() is better.  It avoids adding extra code
-> and, unlike "= 0" it is self-documenting.
->
->> +     VM_BUG_ON(!PageLocked(old));
->> +     VM_BUG_ON(!PageLocked(new));
->> +     VM_BUG_ON(new->mapping);
->> +
->> +     /*
->> +      * This is not page migration, but prepare_migration and
->> +      * end_migration does enough work for charge replacement.
->> +      *
->> +      * In the longer term we probably want a specialized function
->> +      * for moving the charge from old to new in a more efficient
->> +      * manner.
->> +      */
->> +     error = mem_cgroup_prepare_migration(old, new, &memcg, gfp_mask);
->> +     if (error)
->> +             return error;
->> +
->> +     error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
->> +     if (!error) {
->> +             struct address_space *mapping = old->mapping;
->> +             pgoff_t offset = old->index;
->> +
->> +             page_cache_get(new);
->> +             new->mapping = mapping;
->> +             new->index = offset;
->> +
->> +             spin_lock_irq(&mapping->tree_lock);
->> +             __remove_from_page_cache(old);
->> +             error = radix_tree_insert(&mapping->page_tree, offset, new);
->> +             BUG_ON(error);
->> +             mapping->nrpages++;
->> +             __inc_zone_page_state(new, NR_FILE_PAGES);
->> +             if (PageSwapBacked(new))
->> +                     __inc_zone_page_state(new, NR_SHMEM);
->> +             spin_unlock_irq(&mapping->tree_lock);
->> +             radix_tree_preload_end();
->> +             page_cache_release(old);
->> +             mem_cgroup_end_migration(memcg, old, new, true);
->
-> This is all pretty ugly and inefficient.
->
-> We call __remove_from_page_cache() which does a radix-tree lookup and
-> then fiddles a bunch of accounting things.
->
-> Then we immediately do the same radix-tree lookup and then undo the
-> accounting changes which we just did.  And we do it in an open-coded
-> fashion, thus giving the kernel yet another code site where various
-> operations need to be kept in sync.
->
-> Would it not be better to do a single radix_tree_lookup_slot(),
-> overwrite the pointer therein and just leave all the ancilliary
-> accounting unaltered?
+Vivek Goyal wrote:
+> On Mon, Dec 27, 2010 at 04:50:51PM +0800, Gui Jianfeng wrote:
+> 
+> [..]
+>> -static struct cfq_group *cfq_rb_first_group(struct cfq_rb_root *root)
+>> +static struct cfq_entity *cfq_rb_first_entity(struct cfq_rb_root *root)
+>>  {
+>>  	if (!root->left)
+>>  		root->left = rb_first(&root->rb);
+>>  
+>>  	if (root->left)
+>> -		return rb_entry_cfqg(root->left);
+>> +		return rb_entry_entity(root->left);
+>>  
+> 
+> Why are we defining cfq_rb_first_entity(). Can't we simply use cfq_rb_first()
+> as introduced in first patch.
 
-I agree single radix_tree_lookup but accounting still is needed since
-newpage could be on another zone. What we can remove is just only
-mapping->nrpages.
+Ok, Will rename it.
 
+Thanks,
+Gui
 
--- 
-Kind regards,
-Minchan Kim
+> 
+> Thanks
+> Vivek
+> 
