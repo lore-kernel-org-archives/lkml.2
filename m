@@ -1,173 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423Ab1ASVtg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 16:49:36 -0500
-Received: from www.tglx.de ([62.245.132.106]:33411 "EHLO www.tglx.de"
+	id S1754680Ab1ASVtu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 16:49:50 -0500
+Received: from www.tglx.de ([62.245.132.106]:33488 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754323Ab1ASVtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 16:49:33 -0500
-Message-Id: <20110119210839.311660167@linutronix.de>
+	id S1754196Ab1ASVtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 16:49:47 -0500
+Message-Id: <20110119210839.993106232@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Wed, 19 Jan 2011 21:48:39 -0000
+Date: Wed, 19 Jan 2011 21:49:26 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Linux-Arch <linux-arch@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
         Hirokazu Takata <takata@linux-m32r.org>,
         Paul Mundt <lethal@linux-sh.org>
-Subject: [patch 10/37] m32r: Convert m32104ut irq chip
+Subject: [patch 23/37] m32r: Convert to generic irq Kconfig
 References: <20110119205258.462759212@linutronix.de>
-Content-Disposition: inline;
- filename=m32r-convert-m32700ut-m32700ut_irq_type.patch
+Content-Disposition: inline; filename=m32r-convert-to-generic-irq-Kconfig
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the irq chips to the new functions and use proper flow
-handlers. handle_level_irq is appropriate.
+Use the generic irq Kconfig. Select GENERIC_HARDIRQS_NO_DEPRECATED as
+we have converted all irq_chip functions.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Hirokazu Takata <takata@linux-m32r.org>
 Cc: Paul Mundt <lethal@linux-sh.org>
 ---
- arch/m32r/platforms/m32700ut/setup.c |   56 ++++++++++++++++-------------------
- 1 file changed, 27 insertions(+), 29 deletions(-)
+ arch/m32r/Kconfig |   11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-Index: linux-2.6/arch/m32r/platforms/m32700ut/setup.c
+Index: linux-2.6/arch/m32r/Kconfig
 ===================================================================
---- linux-2.6.orig/arch/m32r/platforms/m32700ut/setup.c
-+++ linux-2.6/arch/m32r/platforms/m32700ut/setup.c
-@@ -45,39 +45,30 @@ static void enable_m32700ut_irq(unsigned
- 	outl(data, port);
- }
+--- linux-2.6.orig/arch/m32r/Kconfig
++++ linux-2.6/arch/m32r/Kconfig
+@@ -7,6 +7,9 @@ config M32R
+ 	select HAVE_KERNEL_GZIP
+ 	select HAVE_KERNEL_BZIP2
+ 	select HAVE_KERNEL_LZMA
++	select HAVE_GENERIC_HARDIRQS
++	select GENERIC_HARDIRQS_NO_DEPRECATED
++	select GENERIC_IRQ_PROBE
  
--static void mask_and_ack_m32700ut(unsigned int irq)
-+static void mask_m32700ut(struct irq_data *data)
- {
--	disable_m32700ut_irq(irq);
-+	disable_m32700ut_irq(data->irq);
- }
+ config SBUS
+ 	bool
+@@ -19,14 +22,6 @@ config ZONE_DMA
+ 	bool
+ 	default y
  
--static void end_m32700ut_irq(unsigned int irq)
-+static void unmask_m32700ut(struct irq_data *data)
- {
--	enable_m32700ut_irq(irq);
-+	enable_m32700ut_irq(data->irq);
- }
- 
--static unsigned int startup_m32700ut_irq(unsigned int irq)
--{
--	enable_m32700ut_irq(irq);
--	return (0);
--}
+-config GENERIC_HARDIRQS
+-	bool
+-	default y
 -
--static void shutdown_m32700ut_irq(unsigned int irq)
-+static void shutdown_m32700ut(struct irq_data *data)
- {
- 	unsigned long port;
+-config GENERIC_IRQ_PROBE
+-	bool
+-	default y
+-
+ config NO_IOPORT
+ 	def_bool y
  
--	port = irq2port(irq);
-+	port = irq2port(data->irq);
- 	outl(M32R_ICUCR_ILEVEL7, port);
- }
- 
- static struct irq_chip m32700ut_irq_type =
- {
--	.name = "M32700UT-IRQ",
--	.startup = startup_m32700ut_irq,
--	.shutdown = shutdown_m32700ut_irq,
--	.enable = enable_m32700ut_irq,
--	.disable = disable_m32700ut_irq,
--	.ack = mask_and_ack_m32700ut,
--	.end = end_m32700ut_irq
-+	.name		= "M32700UT-IRQ",
-+	.irq_shutdown	= shutdown_m32700ut,
-+	.irq_mask	= mask_m32700ut,
-+	.irq_unmask	= unmask_m32700ut
- };
- 
- /*
-@@ -126,7 +117,7 @@ static void mask_and_ack_m32700ut_pld(un
- static void end_m32700ut_pld_irq(unsigned int irq)
- {
- 	enable_m32700ut_pld_irq(irq);
--	end_m32700ut_irq(M32R_IRQ_INT1);
-+	enable_m32700ut_irq(M32R_IRQ_INT1);
- }
- 
- static unsigned int startup_m32700ut_pld_irq(unsigned int irq)
-@@ -196,7 +187,7 @@ static void mask_and_ack_m32700ut_lanpld
- static void end_m32700ut_lanpld_irq(unsigned int irq)
- {
- 	enable_m32700ut_lanpld_irq(irq);
--	end_m32700ut_irq(M32R_IRQ_INT0);
-+	enable_m32700ut_irq(M32R_IRQ_INT0);
- }
- 
- static unsigned int startup_m32700ut_lanpld_irq(unsigned int irq)
-@@ -265,7 +256,7 @@ static void mask_and_ack_m32700ut_lcdpld
- static void end_m32700ut_lcdpld_irq(unsigned int irq)
- {
- 	enable_m32700ut_lcdpld_irq(irq);
--	end_m32700ut_irq(M32R_IRQ_INT2);
-+	enable_m32700ut_irq(M32R_IRQ_INT2);
- }
- 
- static unsigned int startup_m32700ut_lcdpld_irq(unsigned int irq)
-@@ -305,32 +296,38 @@ void __init init_IRQ(void)
- #endif  /* CONFIG_SMC91X */
- 
- 	/* MFT2 : system timer */
--	set_irq_chip(M32R_IRQ_MFT2, &m32700ut_irq_type);
-+	set_irq_chip_and_handler(M32R_IRQ_MFT2, &m32700ut_irq_type,
-+				 handle_level_irq);
- 	icu_data[M32R_IRQ_MFT2].icucr = M32R_ICUCR_IEN;
- 	disable_m32700ut_irq(M32R_IRQ_MFT2);
- 
- 	/* SIO0 : receive */
--	set_irq_chip(M32R_IRQ_SIO0_R, &m32700ut_irq_type);
-+	set_irq_chip_and_handler(M32R_IRQ_SIO0_R, &m32700ut_irq_type,
-+				 handle_level_irq);
- 	icu_data[M32R_IRQ_SIO0_R].icucr = 0;
- 	disable_m32700ut_irq(M32R_IRQ_SIO0_R);
- 
- 	/* SIO0 : send */
--	set_irq_chip(M32R_IRQ_SIO0_S, &m32700ut_irq_type);
-+	set_irq_chip_and_handler(M32R_IRQ_SIO0_S, &m32700ut_irq_type,
-+				 handle_level_irq);
- 	icu_data[M32R_IRQ_SIO0_S].icucr = 0;
- 	disable_m32700ut_irq(M32R_IRQ_SIO0_S);
- 
- 	/* SIO1 : receive */
--	set_irq_chip(M32R_IRQ_SIO1_R, &m32700ut_irq_type);
-+	set_irq_chip_and_handler(M32R_IRQ_SIO1_R, &m32700ut_irq_type,
-+				 handle_level_irq);
- 	icu_data[M32R_IRQ_SIO1_R].icucr = 0;
- 	disable_m32700ut_irq(M32R_IRQ_SIO1_R);
- 
- 	/* SIO1 : send */
--	set_irq_chip(M32R_IRQ_SIO1_S, &m32700ut_irq_type);
-+	set_irq_chip_and_handler(M32R_IRQ_SIO1_S, &m32700ut_irq_type,
-+				 handle_level_irq);
- 	icu_data[M32R_IRQ_SIO1_S].icucr = 0;
- 	disable_m32700ut_irq(M32R_IRQ_SIO1_S);
- 
- 	/* DMA1 : */
--	set_irq_chip(M32R_IRQ_DMA1, &m32700ut_irq_type);
-+	set_irq_chip_and_handler(M32R_IRQ_DMA1, &m32700ut_irq_type,
-+				 handle_level_irq);
- 	icu_data[M32R_IRQ_DMA1].icucr = 0;
- 	disable_m32700ut_irq(M32R_IRQ_DMA1);
- 
-@@ -393,7 +390,8 @@ void __init init_IRQ(void)
- 	/*
- 	 * INT3# is used for AR
- 	 */
--	set_irq_chip(M32R_IRQ_INT3, &m32700ut_irq_type);
-+	set_irq_chip_and_handler(M32R_IRQ_INT3, &m32700ut_irq_type,
-+				 handle_level_irq);
- 	icu_data[M32R_IRQ_INT3].icucr = M32R_ICUCR_IEN|M32R_ICUCR_ISMOD10;
- 	disable_m32700ut_irq(M32R_IRQ_INT3);
- #endif	/* CONFIG_VIDEO_M32R_AR */
 
 
