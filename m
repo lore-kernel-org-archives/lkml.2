@@ -1,389 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687Ab1ASRmt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 12:42:49 -0500
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:40094 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753455Ab1ASRmr (ORCPT
+	id S1753779Ab1ASRn2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 12:43:28 -0500
+Received: from mms2.broadcom.com ([216.31.210.18]:4268 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752871Ab1ASRn1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 12:42:47 -0500
-From: Kevin Hilman <khilman@ti.com>
-To: rpurdie@rpsys.net, Andrew Morton <akpm@linux-foundation.org>
-Cc: davinci-linux-open-source@linux.davincidsp.com,
-        spi-devel-general@lists.sourceforge.net, sameo@linux.intel.com,
-        dbrownell@users.sourceforge.net,
-        linux-arm-kernel@lists.arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        Cyril Chemparathy <cyril@ti.com>
-Subject: Re: [PATCH v8 04/11] backlight: add support for tps6116x controller
-Organization: Texas Instruments, Inc.
-References: <1295378505-15221-1-git-send-email-cyril@ti.com>
-	<1295378505-15221-5-git-send-email-cyril@ti.com>
-Date: Wed, 19 Jan 2011 09:42:41 -0800
-In-Reply-To: <1295378505-15221-5-git-send-email-cyril@ti.com> (Cyril
-	Chemparathy's message of "Tue, 18 Jan 2011 14:21:38 -0500")
-Message-ID: <871v48vlgu.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Wed, 19 Jan 2011 12:43:27 -0500
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+From: "Arend Van Spriel" <arend@broadcom.com>
+To: "Jon Masters" <jcm@redhat.com>, "Brett Rudley" <brudley@broadcom.com>
+cc: devel <devel@linuxdriverproject.org>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
+Date: Wed, 19 Jan 2011 09:43:18 -0800
+Subject: RE: PROBLEM: brcm80211 unable to survive suspend/resume cycle
+Thread-Topic: PROBLEM: brcm80211 unable to survive suspend/resume cycle
+Thread-Index: Acu3/E/L9VGQ0NG/RQ6Sn0Z2t6BDHQAAKdiP
+Message-ID: <400C43189542CE41BC0A5B252FC90136952F059547@SJEXCHCCR02.corp.ad.broadcom.com>
+References: <1289272437.3916.440.camel@constitution.bos.jonmasters.org>
+ <7A94256FD72B884D9E7C55586C3CBCEE13840C62AA@SJEXCHCCR01.corp.ad.broadcom.com>
+ <1289880279.3916.889.camel@constitution.bos.jonmasters.org>
+ <1293028287.6319.171.camel@constitution.bos.jonmasters.org>,<1295457365.9781.108.camel@constitution.bos.jonmasters.org>
+In-Reply-To: <1295457365.9781.108.camel@constitution.bos.jonmasters.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+X-WSS-ID: 6129FC8D3H04432611-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard,
+Hi Jon,
 
-Cyril Chemparathy <cyril@ti.com> writes:
+I tried to give you a heads up. I submitted the patch last friday to the staging-2.6 repository. Not sure whether it has propagated to the 2.6.3[78] kernels yet.
 
-> TPS6116x is an EasyScale backlight controller device.  This driver supports
-> TPS6116x devices connected on a single GPIO.
+Gr. AvS
+________________________________________
+From: devel-bounces@linuxdriverproject.org [devel-bounces@linuxdriverproject.org] On Behalf Of Jon Masters [jcm@redhat.com]
+Sent: Wednesday, January 19, 2011 6:16 PM
+To: Brett Rudley
+Cc: devel; Linux Kernel Mailing List
+Subject: RE: PROBLEM: brcm80211 unable to survive suspend/resume cycle
+
+On Wed, 2010-12-22 at 09:31 -0500, Jon Masters wrote:
+> On Mon, 2010-11-15 at 23:04 -0500, Jon Masters wrote:
+> > On Tue, 2010-11-09 at 10:02 -0800, Brett Rudley wrote:
+> > > Hey Jon, thanks for the heads up.  I can repro and am looking into it.
+> >
+> > Did you get chance to poke much yet?
 >
-> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+> Any word on this?
 
-Any comments on this driver?
+Any update? I know one of your guys was looking into it?
 
-With your Ack, I'll be happy to merge it via the davinci tree with the
-rest of the series.
+Also, congrats on becoming LF members. That's awesome.
 
-Thanks,
+Jon.
 
-Kevin
 
-> ---
->  drivers/video/backlight/Kconfig    |    7 +
->  drivers/video/backlight/Makefile   |    2 +-
->  drivers/video/backlight/tps6116x.c |  299 ++++++++++++++++++++++++++++++++++++
->  3 files changed, 307 insertions(+), 1 deletions(-)
->  create mode 100644 drivers/video/backlight/tps6116x.c
->
-> diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
-> index e54a337..06e868e 100644
-> --- a/drivers/video/backlight/Kconfig
-> +++ b/drivers/video/backlight/Kconfig
-> @@ -307,6 +307,13 @@ config BACKLIGHT_PCF50633
->  	  If you have a backlight driven by a NXP PCF50633 MFD, say Y here to
->  	  enable its driver.
->  
-> +config BACKLIGHT_TPS6116X
-> +	tristate "TPS6116X LCD Backlight"
-> +	depends on GENERIC_GPIO
-> +	help
-> +	  This driver controls the LCD backlight level for EasyScale capable
-> +	  SSP connected backlight controllers.
-> +
->  endif # BACKLIGHT_CLASS_DEVICE
->  
->  endif # BACKLIGHT_LCD_SUPPORT
-> diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
-> index 44c0f81..5d407c8 100644
-> --- a/drivers/video/backlight/Makefile
-> +++ b/drivers/video/backlight/Makefile
-> @@ -35,4 +35,4 @@ obj-$(CONFIG_BACKLIGHT_ADP5520)	+= adp5520_bl.o
->  obj-$(CONFIG_BACKLIGHT_ADP8860)	+= adp8860_bl.o
->  obj-$(CONFIG_BACKLIGHT_88PM860X) += 88pm860x_bl.o
->  obj-$(CONFIG_BACKLIGHT_PCF50633)	+= pcf50633-backlight.o
-> -
-> +obj-$(CONFIG_BACKLIGHT_TPS6116X)+= tps6116x.o
-> diff --git a/drivers/video/backlight/tps6116x.c b/drivers/video/backlight/tps6116x.c
-> new file mode 100644
-> index 0000000..7f846ab
-> --- /dev/null
-> +++ b/drivers/video/backlight/tps6116x.c
-> @@ -0,0 +1,299 @@
-> +/*
-> + * TPS6116X LCD Backlight Controller Driver
-> + *
-> + * Copyright (C) 2010 Texas Instruments
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License as
-> + * published by the Free Software Foundation version 2.
-> + *
-> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any kind,
-> + * whether express or implied; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + * General Public License for more details.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/fb.h>
-> +#include <linux/err.h>
-> +#include <linux/delay.h>
-> +#include <linux/gpio.h>
-> +#include <linux/backlight.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/regulator/consumer.h>
-> +
-> +#define TPS6116X_MAX_INTENSITY		31
-> +#define TPS6116X_DEFAULT_INTENSITY	10
-> +
-> +/* Easyscale timing w/ margin (usecs) */
-> +#define T_POWER_SETTLE			2000
-> +#define T_ES_DELAY			120
-> +#define T_ES_DETECT			280
-> +#define T_ES_WINDOW			(1000 - T_ES_DELAY - T_ES_DETECT)
-> +#define T_START				3
-> +#define T_EOS				3
-> +#define T_INACTIVE			3
-> +#define T_ACTIVE			(3 * T_INACTIVE)
-> +
-> +#define CMD_SET				0x72
-> +
-> +struct tps6116x {
-> +	struct ti_ssp_device		*handle;
-> +	struct device			*dev;
-> +	int				gpio;
-> +	struct mutex			lock;
-> +	int				intensity;
-> +	struct backlight_properties	props;
-> +	struct backlight_device		*bl;
-> +	struct regulator		*regulator;
-> +	bool				power;
-> +	bool				suspended;
-> +};
-> +
-> +static int __set_power(struct tps6116x *hw, bool power)
-> +{
-> +	unsigned long flags;
-> +	int error;
-> +
-> +	if (power == hw->power)
-> +		return 0; /* nothing to do */
-> +
-> +	/* disabling is simple... choke power */
-> +	if (!power) {
-> +		error = regulator_disable(hw->regulator);
-> +		goto done;
-> +	}
-> +
-> +	/* set ctrl pin init state for easyscale detection */
-> +	gpio_set_value(hw->gpio, 0);
-> +
-> +	error = regulator_enable(hw->regulator);
-> +	if (error < 0)
-> +		goto done;
-> +
-> +	udelay(T_POWER_SETTLE);
-> +
-> +	/*
-> +	 * Now that the controller is powered up, we need to put it into 1-wire
-> +	 * mode.  This is a timing sensitive operation, hence the irq disable.
-> +	 * Ideally, this should happen rarely, and mostly at init, so disabling
-> +	 * interrupts for the duration should not be a problem.
-> +	 */
-> +	local_irq_save(flags);
-> +
-> +	gpio_set_value(hw->gpio, 1);
-> +	udelay(T_ES_DELAY);
-> +	gpio_set_value(hw->gpio, 0);
-> +	udelay(T_ES_DETECT);
-> +	gpio_set_value(hw->gpio, 1);
-> +
-> +	local_irq_restore(flags);
-> +
-> +done:
-> +	if (error >= 0)
-> +		hw->power = power;
-> +
-> +	return error;
-> +}
-> +
-> +static void __write_byte(struct tps6116x *hw, u8 data)
-> +{
-> +	int bit;
-> +
-> +	gpio_set_value(hw->gpio, 1);
-> +	udelay(T_START);
-> +
-> +	for (bit = 0; bit < 8; bit++, data <<= 1) {
-> +		int val = data & 0x80;
-> +		int t_lo = val ? T_INACTIVE : T_ACTIVE;
-> +		int t_hi = val ? T_ACTIVE : T_INACTIVE;
-> +
-> +		gpio_set_value(hw->gpio, 0);
-> +		udelay(t_lo);
-> +		gpio_set_value(hw->gpio, 1);
-> +		udelay(t_hi);
-> +	}
-> +
-> +	gpio_set_value(hw->gpio, 0);
-> +	udelay(T_EOS);
-> +	gpio_set_value(hw->gpio, 1);
-> +}
-> +
-> +static void __set_intensity(struct tps6116x *hw, int intensity)
-> +{
-> +	unsigned long flags;
-> +
-> +	intensity = clamp(intensity, 0, TPS6116X_MAX_INTENSITY);
-> +
-> +	local_irq_save(flags);
-> +	__write_byte(hw, CMD_SET);
-> +	__write_byte(hw, intensity);
-> +	local_irq_restore(flags);
-> +}
-> +
-> +static int set_intensity(struct tps6116x *hw, int intensity)
-> +{
-> +	int error = 0;
-> +
-> +	if (intensity == hw->intensity)
-> +		return 0;
-> +
-> +	mutex_lock(&hw->lock);
-> +
-> +	error = __set_power(hw, intensity ? true : false);
-> +	if (error < 0)
-> +		goto error;
-> +
-> +	if (intensity > 0)
-> +		__set_intensity(hw, intensity);
-> +
-> +	hw->intensity = intensity;
-> +error:
-> +	mutex_unlock(&hw->lock);
-> +
-> +	return error;
-> +}
-> +
-> +static int get_brightness(struct backlight_device *bl)
-> +{
-> +	struct tps6116x *hw = bl_get_data(bl);
-> +
-> +	return hw->intensity;
-> +}
-> +
-> +static int update_status(struct backlight_device *bl)
-> +{
-> +	struct tps6116x *hw = bl_get_data(bl);
-> +	int intensity = bl->props.brightness;
-> +
-> +	if (hw->suspended || hw->props.state & BL_CORE_SUSPENDED)
-> +		intensity = 0;
-> +	if (bl->props.power != FB_BLANK_UNBLANK)
-> +		intensity = 0;
-> +	if (bl->props.fb_blank != FB_BLANK_UNBLANK)
-> +		intensity = 0;
-> +
-> +	return set_intensity(hw, intensity);
-> +}
-> +
-> +static const struct backlight_ops tps6116x_backlight_ops = {
-> +	.options	= BL_CORE_SUSPENDRESUME,
-> +	.get_brightness	= get_brightness,
-> +	.update_status	= update_status,
-> +};
-> +
-> +static int __devinit tps6116x_probe(struct platform_device *pdev)
-> +{
-> +	struct tps6116x *hw;
-> +	struct device *dev = &pdev->dev;
-> +	struct backlight_properties props;
-> +	int error;
-> +
-> +	hw = kzalloc(sizeof(struct tps6116x), GFP_KERNEL);
-> +	if (!hw) {
-> +		dev_err(dev, "cannot allocate driver data\n");
-> +		return -ENOMEM;
-> +	}
-> +	platform_set_drvdata(pdev, hw);
-> +
-> +	hw->gpio = (int)dev->platform_data;
-> +	hw->dev = dev;
-> +
-> +	mutex_init(&hw->lock);
-> +
-> +	hw->regulator = regulator_get(dev, "vlcd");
-> +	if (IS_ERR(hw->regulator)) {
-> +		error = PTR_ERR(hw->regulator);
-> +		dev_err(dev, "cannot claim regulator\n");
-> +		goto error_regulator;
-> +	}
-> +
-> +	error = gpio_request_one(hw->gpio, GPIOF_DIR_OUT, dev_name(dev));
-> +	if (error < 0) {
-> +		dev_err(dev, "cannot claim gpio\n");
-> +		goto error_gpio;
-> +	}
-> +
-> +	memset(&props, 0, sizeof(props));
-> +	props.max_brightness = TPS6116X_MAX_INTENSITY;
-> +	props.brightness     = TPS6116X_DEFAULT_INTENSITY;
-> +	props.power          = FB_BLANK_UNBLANK;
-> +
-> +	hw->bl = backlight_device_register("tps6116x", hw->dev, hw,
-> +					   &tps6116x_backlight_ops, &props);
-> +	if (IS_ERR(hw->bl)) {
-> +		error = PTR_ERR(hw->bl);
-> +		dev_err(dev, "backlight registration failed\n");
-> +		goto error_register;
-> +	}
-> +
-> +	update_status(hw->bl);
-> +	dev_info(dev, "registered backlight controller\n");
-> +	return 0;
-> +
-> +error_register:
-> +	gpio_free(hw->gpio);
-> +error_gpio:
-> +	regulator_put(hw->regulator);
-> +error_regulator:
-> +	kfree(hw);
-> +	platform_set_drvdata(pdev, NULL);
-> +	return error;
-> +}
-> +
-> +static int __devexit tps6116x_remove(struct platform_device *pdev)
-> +{
-> +	struct tps6116x *hw = platform_get_drvdata(pdev);
-> +
-> +	backlight_device_unregister(hw->bl);
-> +	regulator_disable(hw->regulator);
-> +	regulator_put(hw->regulator);
-> +	gpio_free(hw->gpio);
-> +	kfree(hw);
-> +	platform_set_drvdata(pdev, NULL);
-> +	return 0;
-> +}
-> +
-> +static int tps6116x_suspend(struct platform_device *pdev, pm_message_t state)
-> +{
-> +	struct tps6116x *hw = platform_get_drvdata(pdev);
-> +	hw->suspended = true;
-> +	update_status(hw->bl);
-> +	return 0;
-> +}
-> +
-> +static int tps6116x_resume(struct platform_device *pdev)
-> +{
-> +	struct tps6116x *hw = platform_get_drvdata(pdev);
-> +	hw->suspended = false;
-> +	update_status(hw->bl);
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver tps6116x_driver = {
-> +	.probe		= tps6116x_probe,
-> +	.remove		= __devexit_p(tps6116x_remove),
-> +	.suspend	= tps6116x_suspend,
-> +	.resume		= tps6116x_resume,
-> +	.driver		= {
-> +		.name	= "tps6116x",
-> +		.owner	= THIS_MODULE,
-> +	},
-> +};
-> +
-> +static int __init tps6116x_init(void)
-> +{
-> +	return platform_driver_register(&tps6116x_driver);
-> +}
-> +module_init(tps6116x_init);
-> +
-> +static void __exit tps6116x_exit(void)
-> +{
-> +	platform_driver_unregister(&tps6116x_driver);
-> +}
-> +module_exit(tps6116x_exit);
-> +
-> +MODULE_DESCRIPTION("SSP TPS6116X Driver");
-> +MODULE_AUTHOR("Cyril Chemparathy");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:tps6116x");
+_______________________________________________
+devel mailing list
+devel@linuxdriverproject.org
+http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
+
+
