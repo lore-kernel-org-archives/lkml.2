@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab1ASKeD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 05:34:03 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:53568 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332Ab1ASKeC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 05:34:02 -0500
-Subject: Re: netconsole build breakage (Re: [GIT] Networking)
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Joel Becker <jlbec@evilplan.org>
-In-Reply-To: <20110119100824.GD9903@cr0.nay.redhat.com>
-References: <20110114.130323.201674039.davem@davemloft.net>
-	 <20110119095920.GA10543@elte.hu> <20110119100824.GD9903@cr0.nay.redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Date: Wed, 19 Jan 2011 02:33:51 -0800
-Message-Id: <1295433231.21351.17.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 8bit
+	id S1753799Ab1ASKex (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 05:34:53 -0500
+Received: from smtp.nokia.com ([147.243.1.48]:47997 "EHLO mgw-sa02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752903Ab1ASKew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 05:34:52 -0500
+Date: Wed, 19 Jan 2011 12:33:23 +0200
+From: Heikki Krogerus <heikki.krogerus@nokia.com>
+To: Grazvydas Ignotas <notasas@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Felipe Balbi <balbi@ti.com>, Tejun Heo <tj@kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Hema HK <hemahk@ti.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yang Ruirui <ruirui.r.yang@tieto.com>,
+        David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCH] usb otg: use atomic notifier instead of blocking
+ notifier
+Message-ID: <20110119103323.GC4693@hedu-HP-Z800-Workstation>
+References: <20110119092011.GA23624@darkstar>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110119092011.GA23624@darkstar>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-19 at 18:08 +0800, Américo Wang wrote:
-> On Wed, Jan 19, 2011 at 10:59:20AM +0100, Ingo Molnar wrote:
-> >
-> >FYI, there's a .38-rc1 build failure that triggers rather often:
-> >
-> > drivers/built-in.o: In function `drop_netconsole_target':
-> > netconsole.c:(.text+0x130146): undefined reference to `config_item_put'
-> > drivers/built-in.o: In function `write_msg':
-> > netconsole.c:(.text+0x1301aa): undefined reference to `config_item_get'
-> > netconsole.c:(.text+0x130217): undefined reference to `config_item_put'
-> > drivers/built-in.o: In function `netconsole_netdev_event':
-> > netconsole.c:(.text+0x1302ab): undefined reference to `config_item_get'
-> > ...
-> >
-> >Triggered by this configuration:
-> >
-> > CONFIG_CONFIGFS_FS=m
-> > CONFIG_NETCONSOLE=y
-> >
+On Wed, Jan 19, 2011 at 05:20:11PM +0800, ext Yang Ruirui wrote:
+> --- linux-2.6.orig/include/linux/usb/otg.h      2011-01-17 09:39:11.000000000 +0800
+> +++ linux-2.6/include/linux/usb/otg.h   2011-01-19 16:38:06.649546989 +0800
+> @@ -74,7 +74,7 @@ struct otg_transceiver {
+>         void __iomem                    *io_priv;
 > 
-> Should be "depends on CONFIGFS_FS=y".
+>         /* for notification of usb_xceiv_events */
+> -       struct blocking_notifier_head   notifier;
+> +       struct atomic_notifier_head     notifier;
+> 
+>         /* to pass extra port status to the root hub */
+>         u16                     port_status;
+> @@ -234,13 +234,13 @@ otg_start_srp(struct otg_transceiver *ot
+>  static inline int
+>  otg_register_notifier(struct otg_transceiver *otg, struct notifier_block *nb)
+>  {
+> -       return blocking_notifier_chain_register(&otg->notifier, nb);
+> +       return atomic_notifier_chain_register(&otg->notifier, nb);
+>  }
+> 
+>  static inline void
+>  otg_unregister_notifier(struct otg_transceiver *otg, struct notifier_block *nb)
+>  {
+> -       blocking_notifier_chain_unregister(&otg->notifier, nb);
+> +       atomic_notifier_chain_unregister(&otg->notifier, nb);
+>  }
+> 
+>  /* for OTG controller drivers (and maybe other stuff) */
 
-Sorry for breaking this one folks..
+Is drivers/power/twl4030_charger.c ready for atomic notifiers?
 
-Where this was left yesterday was to change NETCONSOLE_DYNAMIC, DLM and
-OCFS2_FS symbols to use 'select configfs' instead of 'depends on SYSFS
-&& CONFIGFS':
-
-http://marc.info/?l=linux-kernel&m=129539400709508&w=2
-
-but unfortuately this did not make it into .38-rc1 in time..
-
-Using 'select CONFIGFS_FS' here for NETCONSOLE_DYNAMIC with the
-following patches should do the trick.
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-linus
-
-Thanks,
-
-Nicholas Bellinger (3):
-  net: Make NETCONSOLE_DYNAMIC use select CONFIGFS_FS
-  dlm: Make DLM use select CONFIGFS_FS
-  ocfs2: Make OCFS2_FS use select CONFIGFS_FS
-
- drivers/net/Kconfig |    3 ++-
- fs/dlm/Kconfig      |    4 ++--
- fs/ocfs2/Kconfig    |    3 ++-
- 3 files changed, 6 insertions(+), 4 deletions(-)
-
+-- 
+heikki
