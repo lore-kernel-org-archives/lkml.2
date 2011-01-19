@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850Ab1ASWVQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 17:21:16 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35725 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754798Ab1ASWVN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 17:21:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <20110119205258.462759212@linutronix.de>
-References: <20110119205258.462759212@linutronix.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 19 Jan 2011 14:13:07 -0800
-Message-ID: <AANLkTineduG23qitc8ggDKShYJi=2vJgXbYJDjLGZKk3@mail.gmail.com>
-Subject: Re: [patch 00/37] genirq: Remove __do_IRQ() and cleanup irq related Kconfigs
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Chen Liqin <liqin.chen@sunplusct.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        David Howells <dhowells@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Ungerer <gerg@uclinux.org>,
-        Hirokazu Takata <takata@linux-m32r.org>, Jeff Dike <jdike@addtoit.com>,
-        Kyle McMartin <kyle@mcmartin.ca>, Michal Simek <monstr@monstr.eu>,
-        Mikael Starvik <starvik@axis.com>, Mike Frysinger <vapier@gentoo.org>,
-        Paul Mundt <lethal@linux-sh.org>, Richard Henderson <rth@twiddle.net>,
-        Tony Luck <tony.luck@intel.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754892Ab1ASWVc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 17:21:32 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54546
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754459Ab1ASWVa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 17:21:30 -0500
+Date: Wed, 19 Jan 2011 14:22:04 -0800 (PST)
+Message-Id: <20110119.142204.124077863.davem@davemloft.net>
+To: mathieu.desnoyers@efficios.com
+Cc: rostedt@goodmis.org, richm@oldelvet.org.uk, 609371@bugs.debian.org,
+        ben@decadent.org.uk, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@redhat.com
+Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
+ Unknown relocation: 36
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110119221538.GB23544@Krystal>
+References: <20110119182052.GB18970@Krystal>
+	<20110119.134428.71569409.davem@davemloft.net>
+	<20110119221538.GB23544@Krystal>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 1:47 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> Now that rc1 is out, I got reliable information about the remaining
-> users of __do_IRQ(), which block the removal:
->
->  arch/cris, arch/h8300, arch/m32r
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Date: Wed, 19 Jan 2011 17:15:38 -0500
 
-I'm certainly ok with this series. It would be good to finally get rid
-of this legacy interface, and there's no longer any reason to hold it
-up. And getting rid of hundreds of lines of code is good too.
+> * David Miller (davem@davemloft.net) wrote:
+>> If plain "__long_aligned" works and, since you're tagging it to the structure
+>> definition, it only specifies a minimum-alignment, then I'm fine with using
+>> that to fix this.
+> 
+> I'd prefer to add the "packed" to ensure that gcc never decides for some odd
+> reason to use an alignment larger than the one we specify in the linker script.
 
-                Linus
+Agreed.
