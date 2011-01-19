@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab1ASMH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 07:07:56 -0500
-Received: from smtp.nokia.com ([147.243.1.48]:43205 "EHLO mgw-sa02.nokia.com"
+	id S1754149Ab1ASMHz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 07:07:55 -0500
+Received: from smtp.nokia.com ([147.243.1.48]:43200 "EHLO mgw-sa02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754034Ab1ASMHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753908Ab1ASMHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Jan 2011 07:07:35 -0500
 From: tapio.vihuri@nokia.com
 To: dmitry.torokhov@gmail.com, peter.ujfalusi@nokia.com
 Cc: randy.dunlap@oracle.com, linux-kernel@vger.kernel.org,
         alsa-devel@alsa-project.org, ilkka.koskinen@nokia.com,
         samu.p.onkalo@nokia.com
-Subject: [PATCH v4 2/3] ECI: introducing ECI controller driver
-Date: Wed, 19 Jan 2011 14:06:55 +0200
-Message-Id: <1295438816-27937-3-git-send-email-tapio.vihuri@nokia.com>
+Subject: [PATCH v4 1/3] ECI: input: introduce ECI accessory input driver
+Date: Wed, 19 Jan 2011 14:06:54 +0200
+Message-Id: <1295438816-27937-2-git-send-email-tapio.vihuri@nokia.com>
 X-Mailer: git-send-email 1.6.5
-In-Reply-To: <1295438816-27937-2-git-send-email-tapio.vihuri@nokia.com>
+In-Reply-To: <1295438816-27937-1-git-send-email-tapio.vihuri@nokia.com>
 References: <1295438816-27937-1-git-send-email-tapio.vihuri@nokia.com>
- <1295438816-27937-2-git-send-email-tapio.vihuri@nokia.com>
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,101 +24,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tapio Vihuri <tapio.vihuri@nokia.com>
 
-ECI controller is kind of bridge between host CPU I2C and ECI accessory
-ECI communication.
+ECI stands for (Enhancement Control Interface).
+
+ECI is better known as Multimedia Headset for Nokia phones.
+If headset has many buttons, like play, vol+, vol- etc. then it is propably
+ECI accessory.
+Among several buttons ECI accessory contains memory for storing several
+parameters.
+
+ECI input driver provides the following features:
+- reading ECI configuration memory
+- ECI buttons as input events
 
 Signed-off-by: Tapio Vihuri <tapio.vihuri@nokia.com>
 ---
- drivers/input/misc/Kconfig         |   41 +++
- drivers/input/misc/Makefile        |    1 +
- drivers/input/misc/eci_at20_ctrl.c |  533 ++++++++++++++++++++++++++++++++++++
- include/linux/input/eci.h          |   24 ++-
- 4 files changed, 598 insertions(+), 1 deletions(-)
- create mode 100644 drivers/input/misc/eci_at20_ctrl.c
+ drivers/input/misc/Kconfig  |   19 +
+ drivers/input/misc/Makefile |    2 +-
+ drivers/input/misc/eci.c    |  946 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/input/eci.h   |  157 +++++++
+ 4 files changed, 1123 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/input/misc/eci.c
+ create mode 100644 include/linux/input/eci.h
 
 diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index 56cdc62..fa64398 100644
+index b0c6772..56cdc62 100644
 --- a/drivers/input/misc/Kconfig
 +++ b/drivers/input/misc/Kconfig
-@@ -114,6 +114,23 @@ config INPUT_APANEL
+@@ -114,6 +114,25 @@ config INPUT_APANEL
  	 To compile this driver as a module, choose M here: the module will
  	 be called apanel.
  
-+menuconfig ECI
-+	bool "ECI support"
++config INPUT_ECI
++	tristate "AV ECI (Enhancement Control Interface) input driver"
++	select INPUT_SPARSEKMAP
 +	help
-+	  ECI (Enhancement Control Interface) accessory support
-+
-+	  The Enhancement Control Interface functionality
++	The Enhancement Control Interface functionality
 +	  ECI is better known as Multimedia Headset for Nokia phones.
 +	  If headset has many buttons, like play, vol+, vol- etc. then
 +	  it is propably ECI accessory.
 +	  Among several buttons ECI accessory contains memory for storing
 +	  several parameters.
 +
-+	  Enable ECI support in terminal so that ECI input driver is able
-+	  to communicate with ECI accessory
-+
-+if ECI
-+
- config INPUT_ECI
- 	tristate "AV ECI (Enhancement Control Interface) input driver"
- 	select INPUT_SPARSEKMAP
-@@ -129,10 +146,34 @@ config INPUT_ECI
- 	  - reading ECI configuration memory
- 	  - ECI buttons as input events
- 
-+	  ECI input driver needs some ECI controller driver, select
-+	  suitable controlelr driver(s) below.
-+
- 	  Say 'y' here to statically link this module into the kernel or 'm'
- 	  to build it as a dynamically loadable module. The module will be
- 	  called eci.ko
- 
-+config ECI_CTRL_DEBUG
-+	bool "ECI controller debug"
-+	depends on INPUT_ECI_AT20
-+	help
-+	  Say Y here to enable debugging messages for ECI controller driver.
-+
-+config INPUT_ECI_AT20
-+	tristate "ECI controller driver"
-+	select INPUT_ECI
-+	depends on X86_MRST && INPUT_MISC
-+	help
-+	  This selects a driver for the ECI controller
-+
-+	  ECI controller is kind of bridge between host CPU I2C and
-+	  ECI accessory ECI communication.
++	  ECI input driver provides the following features:
++	  - reading ECI configuration memory
++	  - ECI buttons as input events
 +
 +	  Say 'y' here to statically link this module into the kernel or 'm'
 +	  to build it as a dynamically loadable module. The module will be
-+	  called eci_at20_ctrl.ko
-+endif # ECI
++	  called eci.ko
 +
  config INPUT_IXP4XX_BEEPER
  	tristate "IXP4XX Beeper support"
  	depends on ARCH_IXP4XX
 diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
-index fa99597..5e3dd7c 100644
+index 9b47971..fa99597 100644
 --- a/drivers/input/misc/Makefile
 +++ b/drivers/input/misc/Makefile
-@@ -24,6 +24,7 @@ obj-$(CONFIG_INPUT_COBALT_BTNS)		+= cobalt_btns.o
+@@ -23,6 +23,7 @@ obj-$(CONFIG_INPUT_CMA3000_I2C)		+= cma3000_d0x_i2c.o
+ obj-$(CONFIG_INPUT_COBALT_BTNS)		+= cobalt_btns.o
  obj-$(CONFIG_INPUT_DM355EVM)		+= dm355evm_keys.o
  obj-$(CONFIG_HP_SDC_RTC)		+= hp_sdc_rtc.o
- obj-$(CONFIG_INPUT_ECI)			+= eci.o
-+obj-$(CONFIG_INPUT_ECI_AT20)		+= eci_at20_ctrl.o
++obj-$(CONFIG_INPUT_ECI)			+= eci.o
  obj-$(CONFIG_INPUT_IXP4XX_BEEPER)	+= ixp4xx-beeper.o
  obj-$(CONFIG_INPUT_KEYSPAN_REMOTE)	+= keyspan_remote.o
  obj-$(CONFIG_INPUT_M68K_BEEP)		+= m68kspkr.o
-diff --git a/drivers/input/misc/eci_at20_ctrl.c b/drivers/input/misc/eci_at20_ctrl.c
+@@ -43,4 +44,3 @@ obj-$(CONFIG_INPUT_UINPUT)		+= uinput.o
+ obj-$(CONFIG_INPUT_WISTRON_BTNS)	+= wistron_btns.o
+ obj-$(CONFIG_INPUT_WM831X_ON)		+= wm831x-on.o
+ obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
+-
+diff --git a/drivers/input/misc/eci.c b/drivers/input/misc/eci.c
 new file mode 100644
-index 0000000..51b1f62
+index 0000000..4ae0509
 --- /dev/null
-+++ b/drivers/input/misc/eci_at20_ctrl.c
-@@ -0,0 +1,533 @@
++++ b/drivers/input/misc/eci.c
+@@ -0,0 +1,946 @@
 +/*
-+ * This file is part of ECI (Enhancement Control Interface) controller
++ * This file is part of ECI (Enhancement Control Interface) accessory input
 + * driver
 + *
 + * Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
@@ -148,86 +129,172 @@ index 0000000..51b1f62
 + * ECI is better known as Multimedia Headset for Nokia phones.
 + * If headset has many buttons, like play, vol+, vol- etc. then it is propably
 + * ECI accessory.
++ * Among several buttons ECI accessory contains memory for storing several
++ * parameters.
 + *
-+ * ECI controller is kind of bridge between host CPU I2C and ECI accessory
-+ * ECI communication.
++ * ECI input driver provides the following features:
++ *  - reading ECI configuration memory
++ *  - ECI buttons as input events
 + */
 +
 +#include <linux/init.h>
 +#include <linux/device.h>
-+#include <linux/gpio.h>
++#include <linux/platform_device.h>
 +#include <linux/interrupt.h>
 +#include <linux/slab.h>
 +#include <linux/i2c.h>
-+#include <linux/delay.h>
 +#include <linux/debugfs.h>
++
++#include <linux/input.h>
++#include <linux/input/sparse-keymap.h>
 +#include <linux/input/eci.h>
 +
-+#define DRIVER_NAME	"eci_ctrl"
++#define ECI_DRIVERNAME	"ECI_accessory"
 +
-+#define ECIBUS_STATUS_DATA_READY	0x01
-+#define ECIBUS_STATUS_ACCESSORY_INT	0x02
++#define ECI_WAIT_SEND_BUTTON		5	/* ms */
++#define ECI_WAIT_BUS_SETTLE		40	/* ms */
++#define ECI_TRY_GET_MEMORY		2000	/* ms */
++#define ECI_TRY_INIT_IO			200	/* ms */
++#define ECI_TRY_SET_MIC			200	/* ms */
++#define ECI_KEY_REPEAT_INTERVAL		400	/* ms */
 +
-+#define ECIBUS_WAIT_IRQ		100	/* msec */
-+#define ECI_RST_MIN		62
-+#define ECI_RST_WAIT		10	/* msec */
++#define ECI_EKEY_BLOCK_ID			0xb3
++#define ECI_ENHANCEMENT_FEATURE_BLOCK_ID	0x02
 +
-+#if defined(CONFIG_ECI_CTRL_DEBUG)
-+#define DEBUG
-+#endif
-+
-+struct eci_ctrl_data {
-+	struct device		*dev;
-+	struct eci_cb		*eci_callback;
-+	int			eci_ctrl_rst_gpio;
-+	int			eci_ctrl_sw_ctrl_gpio;
-+	int			eci_ctrl_int_gpio;
-+	wait_queue_head_t	wait;
-+	bool			wait_eci_buttons;
-+	bool			wait_data;
++/* Map ECI inputs to events */
++static const struct key_entry eci_keymap[] = {
++	{ KE_KEY, 0x00, { KEY_UNKNOWN } }, /* No feature */
++	{ KE_KEY, 0x01, { KEY_UNKNOWN } }, /* Ignition Sense */
++	{ KE_KEY, 0x02, { KEY_UNKNOWN } }, /* Car-Kit Handset Hook */
++	{ KE_KEY, 0x03, { KEY_BATTERY } }, /* Power Supply/Car Battery Det  */
++	{ KE_KEY, 0x06, { KEY_AUDIO } },   /* External audio In */
++	{ KE_KEY, 0x07, { KEY_PHONE } },   /* Send, End, and Voice Recogn */
++	{ KE_VSW, 0x08, { .sw = { SW_HEADPHONE_INSERT} } }, /* Headphone plug */
++	{ KE_KEY, 0x0a, { KEY_UNKNOWN } },    /* Device Power Request */
++	{ KE_KEY, 0x0b, { KEY_VOLUMEUP } },   /* Volume Up */
++	{ KE_KEY, 0x0c, { KEY_VOLUMEDOWN } }, /* Volume Down */
++	{ KE_KEY, 0x0d, { KEY_PLAYPAUSE } },  /* Play / Pause */
++	{ KE_KEY, 0x0e, { KEY_STOP } },       /* Stop */
++	{ KE_KEY, 0x0f, { KEY_FORWARD } }, /* Next/Fast Fward/Autosearch up */
++	{ KE_KEY, 0x10, { KEY_REWIND } },  /* Prev/Rewind/Autosearch down */
++	{ KE_KEY, 0x11, { KEY_UNKNOWN } }, /* Push to Talk over Cellular */
++	{ KE_KEY, 0x14, { KEY_UNKNOWN } }, /* Synchronization Button */
++	{ KE_KEY, 0x15, { KEY_RADIO } },   /* Music/Radio/Off Selector */
++	{ KE_KEY, 0x16, { KEY_UNKNOWN } }, /* Redial */
++	{ KE_KEY, 0x17, { KEY_UNKNOWN } }, /* Left Soft Key */
++	{ KE_KEY, 0x18, { KEY_UNKNOWN } }, /* Right Soft key */
++	{ KE_KEY, 0x19, { KEY_SEND } },    /* Send key */
++	{ KE_KEY, 0x1a, { KEY_END } },     /* End key */
++	{ KE_KEY, 0x1b, { KEY_UNKNOWN } }, /* Middle Soft key */
++	{ KE_KEY, 0x1c, { KEY_UP } },      /* UP key/joystick direction */
++	{ KE_KEY, 0x1d, { KEY_DOWN } },    /* DOWN key/joystick direction */
++	{ KE_KEY, 0x1e, { KEY_RIGHT } },   /* RIGHT key/joystick direction */
++	{ KE_KEY, 0x1f, { KEY_LEFT } },    /* LEFT key/joystick direction */
++	{ KE_KEY, 0x20, { KEY_UNKNOWN } }, /* Symbian Application key */
++	{ KE_KEY, 0x21, { KEY_UNKNOWN } }, /* Terminal Applicat Ctrl Input */
++	{ KE_KEY, 0x23, { KEY_UNKNOWN } }, /* USB Class Switching */
++	{ KE_KEY, 0x24, { KEY_MUTE } },    /* Mute */
++	{ KE_END, 0 },
 +};
 +
-+static struct eci_ctrl_data *the_ed;
++#define ECI_KEY_MAX	0x24
++
++/* ECI accessory register's bits */
++#define ECI_MIC_AUTO	0x00
++#define ECI_MIC_OFF	0x5a
++#define ECI_MIC_ON	0xff
++
++#define ECI_INT_ENABLE		1
++#define ECI_INT_DELAY_ENABLE	(1<<1)
++#define ECI_INT_LEN_76MS	0
++#define ECI_INT_LEN_82MS	(1<<5)
++#define ECI_INT_LEN_37MS	(2<<5)
++#define ECI_INT_LEN_19MS	(3<<5)
++#define ECI_INT_LEN_10MS	(4<<5)
++#define ECI_INT_LEN_5MS		(5<<5)
++#define ECI_INT_LEN_2MS		(6<<5)
++#define ECI_INT_LEN_120US	(7<<5)
++
++struct eci_mem_block {
++	u8 id;
++	u8 len;
++	u16 size;
++};
++
++static struct eci_cb eci_callback;
++static struct audio_hsmic_event hsmic_event;
++
++static struct eci_data *the_eci;
++
++static void eci_accessory_event(int event, void *priv);
 +
 +#ifdef CONFIG_DEBUG_FS
-+static int eci_ctrl_read_reg(u8 reg);
-+static int eci_ctrl_write_reg(u8 reg, u8 param);
++static void eci_hsmic_event(void *priv, bool on);
 +
-+static struct dentry *eci_ctrl_debugfs_dir;
++static struct dentry *eci_debugfs_dir;
 +
-+static ssize_t reset_read(struct file *file, char __user *user_buf,
++static ssize_t mic_read(struct file *file, char __user *user_buf,
 +		size_t count, loff_t *ppos)
 +{
-+	struct eci_ctrl_data *ed = file->private_data;
-+	char buf[80];
++	/* Assosiated in default_open() */
++	struct eci_data *eci = file->private_data;
++	char buf[80], *state;
 +	int len = 0;
 +	int ret;
 +
++	/* Do not run twice */
 +	if (*ppos == 0) {
-+		ret = !!gpio_get_value(ed->eci_ctrl_rst_gpio);
-+		len = snprintf(buf, sizeof(buf), "%d\n", ret);
++		ret = eci->eci_hw_ops->acc_read_reg(ECICMD_MIC_CTRL, buf, 1);
++		if (ret)
++			return ret;
++
++		eci->mic_state = buf[0];
++		switch (eci->mic_state) {
++		case ECI_MIC_AUTO:
++			state = "auto";
++			break;
++		case ECI_MIC_OFF:
++			state = "off";
++			break;
++		case ECI_MIC_ON:
++			state = "on";
++			break;
++		default:
++			state = "unknown";
++			break;
++		}
++
++		len = snprintf(buf, sizeof(buf), "microphone %s\n", state);
 +	}
++
 +	ret = simple_read_from_buffer(user_buf, count, ppos, buf, len);
 +
 +	return ret;
 +}
 +
-+static ssize_t reset_write(struct file *file, const char __user *user_buf,
++static ssize_t mic_write(struct file *file, const char __user *user_buf,
 +		size_t count, loff_t *ppos)
 +{
 +	/* Assosiated in default_open() */
-+	struct eci_ctrl_data *ed = file->private_data;
-+	char buf[32];
++	struct eci_data *eci = file->private_data;
++	char buf[80];
 +	int buf_size;
 +
-+	buf_size = min(count, (sizeof(buf)-1));
++	buf_size = min(count, (sizeof(buf) - 1));
 +	if (copy_from_user(buf, user_buf, buf_size))
 +		return -EFAULT;
 +
-+	if (!memcmp(buf, "0", 1))
-+		gpio_set_value(ed->eci_ctrl_rst_gpio, 0);
-+	else if (!memcmp(buf, "1", 1))
-+		gpio_set_value(ed->eci_ctrl_rst_gpio, 1);
++	if (!memcmp(buf, "auto", 4))
++		eci_hsmic_event(eci, true);
++	else if (!memcmp(buf, "off", 3))
++		eci_hsmic_event(eci, false);
++	else if (!memcmp(buf, "on", 2)) {
++		eci->mic_state = ECI_MIC_ON;
++		if (eci->eci_hw_ops->acc_write_reg(ECICMD_MIC_CTRL,
++					eci->mic_state))
++			dev_err(eci->dev,
++				"Unable to control headset microphone\n");
++	}
 +
 +	return count;
 +}
@@ -241,463 +308,906 @@ index 0000000..51b1f62
 +	return 0;
 +}
 +
-+static const struct file_operations reset_fops = {
++static const struct file_operations mic_fops = {
 +	.open		= default_open,
-+	.read		= reset_read,
-+	.write		= reset_write,
++	.read		= mic_read,
++	.write		= mic_write,
 +};
 +
-+static void eci_ctrl_uninitialize_debugfs(void)
++static void eci_uninitialize_debugfs(void)
 +{
-+	if (eci_ctrl_debugfs_dir)
-+		debugfs_remove_recursive(eci_ctrl_debugfs_dir);
++	if (eci_debugfs_dir)
++		debugfs_remove_recursive(eci_debugfs_dir);
 +}
 +
-+static long eci_ctrl_initialize_debugfs(struct eci_ctrl_data *ed)
++static long eci_initialize_debugfs(struct eci_data *eci)
 +{
 +	void *ok;
 +
-+	/* /sys/kernel/debug/eci_ctrl */
-+	eci_ctrl_debugfs_dir = debugfs_create_dir(ed->dev->driver->name, NULL);
-+	if (!eci_ctrl_debugfs_dir)
++	/* /sys/kernel/debug/ECI_accessory */
++	eci_debugfs_dir = debugfs_create_dir(eci->dev->driver->name, NULL);
++	if (!eci_debugfs_dir)
 +		return -ENOENT;
 +
-+	/* Struct ed assosiated to inode->i_private */
-+	ok = debugfs_create_file("reset", S_IRUGO | S_IWUSR,
-+			eci_ctrl_debugfs_dir, ed, &reset_fops);
++	/* Struct eci assosiated to inode->i_private */
++	ok = debugfs_create_file("mic", S_IRUGO | S_IWUSR,
++			eci_debugfs_dir, eci, &mic_fops);
 +	if (!ok)
 +		goto fail;
 +
 +	return 0;
 +fail:
-+	eci_ctrl_uninitialize_debugfs();
++	eci_uninitialize_debugfs();
 +	return -ENOENT;
 +}
 +#else
-+#define eci_ctrl_initialize_debugfs(ed)	1
-+#define eci_ctrl_uninitialize_debugfs()
++static inline long eci_initialize_debugfs(struct eci_data *eci)
++{
++	return 0;
++}
++
++static void eci_uninitialize_debugfs(void) {}
 +#endif
 +
-+/* For eci_ctrl controller internal registers */
-+static int eci_ctrl_read_reg(u8 reg)
++/* Returns size of accessory memory or error */
++static int eci_get_ekey(struct eci_data *eci, int *key)
 +{
-+	struct i2c_client *client = to_i2c_client(the_ed->dev);
++	u8 buf[4];
++	struct eci_mem_block *ekey = (void *)buf;
++	int ret;
 +
-+	if (reg <= ECICMD_RESERVED)
-+		return -EINVAL;
++	/* Read always four bytes */
++	ret = eci->eci_hw_ops->acc_read_direct(0, buf);
 +
-+	return i2c_smbus_read_byte_data(client, reg);
-+}
++	if (ret)
++		return ret;
 +
-+static int eci_ctrl_write_reg(u8 reg, u8 param)
-+{
-+	struct i2c_client *client = to_i2c_client(the_ed->dev);
++	if (ekey->id != ECI_EKEY_BLOCK_ID)
++		return -ENODEV;
 +
-+	if (reg <= ECICMD_RESERVED)
-+		return -EINVAL;
-+
-+	return i2c_smbus_write_byte_data(client, reg, param);
-+}
-+
-+/* Reset and learn ECI accessory, ie. get speed */
-+static int eci_acc_reset(void)
-+{
-+	s32 ret;
-+
-+	eci_ctrl_write_reg(ECIREG_RST_LEARN, 0);
-+
-+	msleep(ECI_RST_WAIT);
-+
-+	ret = eci_ctrl_read_reg(ECIREG_RST_LEARN);
-+	if (ret < ECI_RST_MIN)
-+		return -EIO;
++	*key = cpu_to_be16(ekey->size);
 +
 +	return 0;
 +}
-+/* Read always four bytes, as stated in ECI specification */
-+static int eci_acc_read_direct(u8 addr, char *buf)
++
++static ssize_t show_eci_memory(struct device *dev,
++		struct device_attribute *attr, char *buf)
 +{
-+	s32 ret;
-+	int i;
++	if (!the_eci->mem_ok)
++		return -ENXIO;
 +
-+	/* Initiate ECI accessory memory read */
-+	the_ed->wait_data = false;
-+	if (!eci_ctrl_write_reg(ECIREG_READ_COUNT, 4))
-+		if (eci_ctrl_write_reg(ECIREG_READ_DIRECT, addr))
-+			return -EIO;
++	memcpy(buf, the_eci->memory, the_eci->mem_size);
 +
-+	if (!wait_event_timeout(the_ed->wait, the_ed->wait_data == true,
-+				msecs_to_jiffies(ECIBUS_WAIT_IRQ)))
-+		return -EIO;
-+
-+	for (i = 0; i < 4; i++) {
-+		ret = eci_ctrl_read_reg(ECIREG_READ_DIRECT + i);
-+		if (ret < 0)
-+			return ret;
-+		buf[i] = ret;
-+		usleep_range(2000, 10000);
-+	}
-+	return 0;
++	return the_eci->mem_size;
 +}
 +
-+/* Trigger ECI accessory register data write (from accessory) */
-+static int eci_fire_acc_read_reg(u8 reg, int count)
++static ssize_t show_cable_plugged(struct device *dev,
++		struct device_attribute *attr, char *buf)
 +{
-+	struct i2c_client *client = to_i2c_client(the_ed->dev);
++	struct eci_data *eci = dev_get_drvdata(dev);
 +
-+	if (!eci_ctrl_write_reg(ECIREG_READ_COUNT, count))
-+		return i2c_smbus_read_byte_data(client, reg);
++	return snprintf(buf, sizeof(buf), "%d\n", eci->plugged);
++}
++
++static ssize_t store_cable_plugged(struct device *dev,
++		struct device_attribute *attr,
++		const char *buf, size_t len)
++{
++	struct eci_data *eci = dev_get_drvdata(dev);
++	long unsigned int tmp;
++
++	if (strict_strtoul(buf, 0, &tmp))
++		return -EINVAL;
++
++	eci->plugged = !!tmp;
++	if (eci->plugged)
++		eci_accessory_event(ECI_EVENT_PLUG_IN, eci);
 +	else
-+		return -EIO;
++		eci_accessory_event(ECI_EVENT_PLUG_OUT, eci);
++
++	return len;
 +}
 +
-+/* For ECI accessory internal registers */
-+static int eci_acc_read_reg(u8 reg, u8 *buf, int count)
-+{
-+	s32 ret;
-+	int i;
++static DEVICE_ATTR(memory, S_IRUGO, show_eci_memory, NULL);
++static DEVICE_ATTR(cable, S_IRUGO | S_IWUSR , show_cable_plugged,
++		store_cable_plugged);
 +
-+	if (reg > ECICMD_RESERVED)
-+		return -EINVAL;
++static struct attribute *eci_attributes[] = {
++	&dev_attr_memory.attr,
++	&dev_attr_cable.attr,
++	NULL
++};
 +
-+	the_ed->wait_data = false;
-+	if (eci_fire_acc_read_reg(reg, count))
-+		return -EIO;
++static struct attribute_group eci_attr_group = {
++	.attrs = eci_attributes
++};
 +
-+	if (!wait_event_timeout(the_ed->wait, the_ed->wait_data == true,
-+				msecs_to_jiffies(ECIBUS_WAIT_IRQ)))
-+		return -EIO;
-+
-+	for (i = 0; i < count; i++) {
-+		ret = eci_ctrl_read_reg(ECIREG_READ_DIRECT + i);
-+		if (ret < 0)
-+			return ret;
-+
-+		buf[i] = ret;
-+	}
-+
-+	return 0;
-+}
-+
-+/* ECI accessory register write */
-+static int eci_acc_write_reg(u8 reg, u8 param)
-+{
-+	struct i2c_client *client = to_i2c_client(the_ed->dev);
-+
-+	if (reg > ECICMD_RESERVED)
-+		return -EINVAL;
-+
-+	return i2c_smbus_write_byte_data(client, reg, param);
-+}
-+
-+
-+/*
-+ * Struct eci_data is ECI input driver (dealing ECI accessories) data.
-+ * Struct eci_ctrl_data is this driver data, dealing just ECI communication.
-+ * Global eci_register() pairs structs so that we can call ECI input driver
-+ * event function with eci_data
-+ */
-+static void eci_ctrl_emit_buttons(struct eci_ctrl_data *ed, bool force_up)
-+{
-+	struct eci_data *eci = ed->eci_callback->priv;
-+	struct eci_buttons_data *b = &eci->buttons_data;
-+
-+	if (force_up)
-+		b->buttons = b->buttons_up_mask;
-+
-+	ed->eci_callback->event(ECI_EVENT_BUTTON, eci);
-+}
-+
-+static void eci_ctrl_get_buttons(u8 *buf, u8 count)
++/* Read ECI device memory into buffer */
++static int eci_get_memory(struct eci_data *eci, int *restart)
 +{
 +	int i, ret;
 +
-+	if (count > 4) {
-+		dev_err(the_ed->dev, "Maximum four bytes allowed\n");
-+		return;
++	for (i = *restart; i < eci->mem_size; i += 4) {
++		ret = eci->eci_hw_ops->acc_read_direct(i, eci->memory + i);
++		*restart = i;
++		if (ret)
++			return ret;
 +	}
 +
-+	for (i = 0; i <= count; i++) {
-+		ret = eci_ctrl_read_reg(ECIREG_READ_DIRECT + i);
-+		buf[i] = ret;
-+	}
++	return ret;
 +}
 +
-+static irqreturn_t eci_ctrl_irq_handler(int irq, void *_ed)
++/*
++ * This should be really init_features, but most oftens these are just buttons
++ */
++static int eci_init_buttons(struct eci_data *eci)
 +{
-+	struct eci_ctrl_data *ed = _ed;
-+	struct eci_data *eci = ed->eci_callback->priv;
-+	struct eci_buttons_data *b = &eci->buttons_data;
-+	int status;
-+	char buf[4];
-+
-+	/* Clears eci_ctrl DATA interrupt */
-+	status = eci_ctrl_read_reg(ECIREG_STATUS);
-+
-+	if (status & ECIBUS_STATUS_DATA_READY) {
-+		/*
-+		 * Buttons are special case as we want be fast with them
-+		 * and this way we cope with nested button and data interrupts
-+		 * The number of bytes needed to read is parsed in ECI
-+		 * input driver, based on data in ECI accessory.
-+		 * Maximum four bytes.
-+		 */
-+		if (ed->wait_eci_buttons) {
-+			eci_ctrl_get_buttons(buf, eci->port_reg_count);
-+			b->buttons = cpu_to_le32(*(u32 *)buf);
-+			eci_ctrl_emit_buttons(ed, ECI_REAL_BUTTONS);
-+			ed->wait_eci_buttons = false;
-+		}
-+		/* Complete ECI data reading */
-+		ed->wait_data = true;
-+		wake_up(&ed->wait);
-+	}
-+
-+	/* Accessory interrupt, ie. button pressed */
-+	if (status & ECIBUS_STATUS_ACCESSORY_INT) {
-+		if (eci->mem_ok) {
-+			eci_fire_acc_read_reg(ECICMD_PORT_DATA_0, 2);
-+			ed->wait_eci_buttons = true;
-+		}
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static struct eci_hw_ops eci_ctrl_hw_ops = {
-+	.acc_reset              = eci_acc_reset,
-+	.acc_read_direct        = eci_acc_read_direct,
-+	.acc_read_reg           = eci_acc_read_reg,
-+	.acc_write_reg          = eci_acc_write_reg,
-+};
-+
-+static struct eci_ctrl_data *eci_ctrl_probe(struct device *dev)
-+{
-+	struct eci_ctrl_data *ed;
-+	struct eci_ctrl_platform_data *pdata = dev->platform_data;
++	struct enchancement_features_fixed *eff = eci->e_features_fix;
++	u8 n, mireg;
 +	int ret;
++	u8 buf[4];
 +
-+	if (!pdata) {
-+		dev_err(dev, "platform_data not available\n");
-+		return ERR_PTR(-EINVAL);
-+	}
++	n = eff->number_of_features;
 +
-+	ed = kzalloc(sizeof(*ed), GFP_KERNEL);
-+	if (!ed)
-+		return ERR_PTR(-ENOMEM);
++	if (n > ECI_MAX_FEATURE_COUNT)
++		return -EINVAL;
 +
-+	ed->dev = dev;
-+	ed->eci_ctrl_rst_gpio = pdata->eci_ctrl_rst_gpio;
-+	ed->eci_ctrl_sw_ctrl_gpio = pdata->eci_ctrl_sw_ctrl_gpio;
-+	ed->eci_ctrl_int_gpio = pdata->eci_ctrl_int_gpio;
-+
-+	if (ed->eci_ctrl_rst_gpio == 0 || ed->eci_ctrl_sw_ctrl_gpio == 0 ||
-+			ed->eci_ctrl_int_gpio == 0) {
-+		ret = -ENXIO;
-+		goto gpio_err;
-+	}
-+
-+	the_ed = ed;
-+
-+	ret = eci_ctrl_initialize_debugfs(ed);
++	ret = eci->eci_hw_ops->acc_write_reg(ECICMD_MIC_CTRL, ECI_MIC_OFF);
 +	if (ret)
-+		dev_err(dev, "could not create debugfs entries\n");
++		return ret;
 +
-+	ret = gpio_request(ed->eci_ctrl_rst_gpio, "ECI_RSTn");
-+	if (ret) {
-+		dev_err(dev, "could not request ECI_RSTn gpio %d\n",
-+				ed->eci_ctrl_rst_gpio);
-+		goto rst_gpio_err;
-+	}
++	ret = eci->eci_hw_ops->acc_read_reg(ECICMD_MASTER_INT_REG, buf, 1);
++	if (ret)
++		return ret;
 +
-+	gpio_direction_output(ed->eci_ctrl_rst_gpio, 0);
-+	gpio_set_value(ed->eci_ctrl_rst_gpio, 1);
++	mireg = buf[0];
++	mireg &= ~ECI_INT_ENABLE;
++	mireg |= ECI_INT_LEN_120US | ECI_INT_DELAY_ENABLE;
 +
-+	ret = gpio_request(ed->eci_ctrl_sw_ctrl_gpio, "ECI_SW_CTRL");
-+	if (ret) {
-+		dev_err(dev, "could not request ECI_SW_CTRL gpio %d\n",
-+				ed->eci_ctrl_sw_ctrl_gpio);
-+		goto sw_ctrl_gpio_err;
-+	}
++	ret = eci->eci_hw_ops->acc_write_reg(ECICMD_MASTER_INT_REG, mireg);
++	if (ret)
++		return ret;
 +
-+	gpio_direction_input(ed->eci_ctrl_sw_ctrl_gpio);
++	msleep(ECI_WAIT_BUS_SETTLE);
++	mireg |= ECI_INT_ENABLE;
++	ret = eci->eci_hw_ops->acc_write_reg(ECICMD_MASTER_INT_REG, mireg);
++	if (ret)
++		return ret;
 +
-+	ret = gpio_request(ed->eci_ctrl_int_gpio, "ECI_INT");
-+	if (ret) {
-+		dev_err(dev, "could not request ECI_INT gpio %d\n",
-+				ed->eci_ctrl_int_gpio);
-+		goto int_gpio_err;
-+	}
++	msleep(ECI_WAIT_BUS_SETTLE);
 +
-+	gpio_direction_input(ed->eci_ctrl_int_gpio);
-+
-+	ret = request_threaded_irq(gpio_to_irq(ed->eci_ctrl_int_gpio), NULL,
-+			eci_ctrl_irq_handler, IRQF_TRIGGER_RISING,
-+			"ECI_INT", ed);
-+	if (ret) {
-+		dev_err(dev, "could not request irq %d\n",
-+				gpio_to_irq(ed->eci_ctrl_int_gpio));
-+		goto int_irq_err;
-+	}
-+
-+	/* Register itself to the ECI accessory driver */
-+	ed->eci_callback = eci_register(&eci_ctrl_hw_ops);
-+	if (IS_ERR(ed->eci_callback)) {
-+		ret = PTR_ERR(ed->eci_callback);
-+		goto eci_register_err;
-+	}
-+
-+	init_waitqueue_head(&ed->wait);
-+
-+	return ed;
-+
-+eci_register_err:
-+	free_irq(gpio_to_irq(ed->eci_ctrl_int_gpio), ed);
-+int_irq_err:
-+	gpio_free(ed->eci_ctrl_int_gpio);
-+int_gpio_err:
-+	gpio_free(ed->eci_ctrl_sw_ctrl_gpio);
-+sw_ctrl_gpio_err:
-+	gpio_set_value(ed->eci_ctrl_rst_gpio, 0);
-+	gpio_free(ed->eci_ctrl_rst_gpio);
-+rst_gpio_err:
-+	eci_ctrl_uninitialize_debugfs();
-+gpio_err:
-+	kfree(ed);
-+
-+	return ERR_PTR(ret);
++	return ret;
 +}
 +
-+static int __devinit eci_ctrl_i2c_probe(struct i2c_client *client,
-+					const struct i2c_device_id *id)
++/* Find "enchangement features" block from buffer */
++static int eci_get_enchancement_features(struct eci_data *eci)
 +{
-+	struct eci_ctrl_data *ed;
++	u8 *mem = (void *)eci->memory;
++	struct eci_mem_block *b = (void *)mem;
++	struct eci_mem_block *mem_end = (void *)(eci->memory + eci->mem_size);
 +
-+	if (!i2c_check_functionality(client->adapter,
-+				     I2C_FUNC_SMBUS_BYTE_DATA)) {
-+		dev_err(&client->dev, "SMBUS byte data not supported\n");
-+		return -EIO;
-+	}
++	if (b->id != ECI_EKEY_BLOCK_ID)
++		return -ENODEV;
 +
-+	ed = eci_ctrl_probe(&client->dev);
++	do {
++		dev_dbg(eci->dev, "skip BLOCK 0x%02x, LEN 0x%02x\n",
++				b->id, b->len);
++		if (!b->len)
++			return -EINVAL;
 +
-+	if (IS_ERR(ed))
-+		return PTR_ERR(ed);
++		mem += b->len;
++		b = (void *)mem;
++		eci->e_features_fix = (void *)b;
++		dev_dbg(eci->dev, "found BLOCK 0x%02x, LEN 0x%02x\n",
++				b->id, b->len);
++		if (b->id == ECI_ENHANCEMENT_FEATURE_BLOCK_ID)
++			return 0;
++	} while (b < mem_end);
 +
-+	i2c_set_clientdata(client, ed);
++	return -ENFILE;
++}
++
++/*
++ * Find out ECI features.
++ * All ECI memory block parsing are done here, be carefull as
++ * pointers to memory tend to go wrong easily.
++ * ECI "Enhancement Features block has variable size, so we try to
++ * catch pointers out of block due memory reading errors etc.
++ *
++ * I/O support field is not implemented.
++ * Data direction field is not implemented, nor writing to the ECI I/O
++ */
++static int eci_parse_enchancement_features(struct eci_data *eci)
++{
++	struct enchancement_features_fixed *eff = eci->e_features_fix;
++	struct enchancement_features_variable *efv = &eci->e_features_var;
++	int i;
++	u8 n, k;
++	void *mem_end = (void *)((u8 *)eff + eff->length);
++
++	dev_dbg(eci->dev, "block id 0x%02x length 0x%02x connector "
++			"configuration 0x%02x\n", eff->block_id, eff->length,
++			eff->connector_conf);
++	n = eff->number_of_features;
++	dev_dbg(eci->dev, "number of features %d\n", n);
++
++	if (n > ECI_MAX_FEATURE_COUNT)
++		return -EINVAL;
++
++	k = DIV_ROUND_UP(n, 8);
++	dev_dbg(eci->dev, "I/O support bytes count %d\n", k);
++
++	efv->io_support = &eff->number_of_features + 1;
++	/* efv->io_functionality[0] is not used! pins are in 1..31 range */
++	efv->io_functionality = efv->io_support + k - 1;
++	efv->active_state = efv->io_functionality + n + 1;
++
++	if ((void *)&efv->active_state[k] > mem_end)
++		return -EINVAL;
++
++	/* Last part of block */
++	for (i = 0; i < k; i++)
++		dev_dbg(eci->dev, "active_state[%d] 0x%02x\n", i,
++				efv->active_state[i]);
++
++	eci->buttons_data.buttons_up_mask =
++		~(u32)(cpu_to_le32(*(u32 *)efv->active_state));
++
++	/*
++	 * ECI accessory responces as many bytes needed for used I/O pins
++	 * up to four bytes, when lines 24..31 are used
++	 * all tested ECI accessories how ever return two data bytes
++	 * event though there are less than eight I/O pins
++	 *
++	 * so we get alway reading error if there are less than eight I/Os
++	 * meanwhile just use this kludge, FIXME
++	 */
++	k = DIV_ROUND_UP(n + 1, 8);
++	if (k > 4)
++		return -EINVAL;
++
++	if (k == 1)
++		k = 2;
++	eci->port_reg_count = k;
 +
 +	return 0;
 +}
 +
-+static int __exit eci_ctrl_remove(struct i2c_client *client)
++static int eci_init_accessory(struct eci_data *eci)
 +{
-+	struct eci_ctrl_data *ed = i2c_get_clientdata(client);
++	int ret, key = 0, restart = 0;
++	unsigned long future;
 +
-+	gpio_set_value(ed->eci_ctrl_rst_gpio, 0);
-+	gpio_free(ed->eci_ctrl_rst_gpio);
++	eci->mem_ok = false;
 +
-+	gpio_free(ed->eci_ctrl_sw_ctrl_gpio);
++	if (!eci->eci_hw_ops)
++		return -ENXIO;
 +
-+	free_irq(gpio_to_irq(ed->eci_ctrl_int_gpio), ed);
-+	gpio_free(ed->eci_ctrl_int_gpio);
++	ret = eci->eci_hw_ops->acc_reset();
++	if (ret)
++		return ret;
 +
-+	eci_ctrl_uninitialize_debugfs();
++	msleep(ECI_WAIT_BUS_SETTLE);
 +
-+	kfree(ed);
++	ret = eci->eci_hw_ops->acc_write_reg(ECICMD_MIC_CTRL, ECI_MIC_OFF);
++	if (ret)
++		return ret;
++
++	/* Get ECI ekey block to determine memory size */
++	future = jiffies + msecs_to_jiffies(ECI_TRY_GET_MEMORY);
++	do {
++		ret = eci_get_ekey(eci, &key);
++		if (time_is_before_jiffies(future))
++			break;
++	} while (ret);
++
++	if (ret)
++		return ret;
++
++	eci->mem_size = key;
++	if (eci->mem_size > ECI_MAX_MEM_SIZE)
++		return -EINVAL;
++
++	/* Get ECI memory */
++	future = jiffies + msecs_to_jiffies(ECI_TRY_GET_MEMORY);
++	do {
++		ret = eci_get_memory(eci, &restart);
++		if (time_is_before_jiffies(future))
++			break;
++	} while (ret);
++
++	if (ret)
++		return ret;
++
++	if (eci_get_enchancement_features(eci))
++		return -EIO;
++
++	if (eci_parse_enchancement_features(eci))
++		return -EIO;
++
++	/*
++	 * Now that enchancement features table has been parsed,
++	 * we can configure ECI buttons.
++	 */
++	msleep(ECI_WAIT_BUS_SETTLE);
++	future = jiffies + msecs_to_jiffies(ECI_TRY_INIT_IO);
++	do {
++		ret = eci_init_buttons(eci);
++		if (time_is_before_jiffies(future))
++			break;
++	} while (ret);
++
++	if (ret)
++		return ret;
++
++	eci->mem_ok = true;
++	msleep(ECI_WAIT_BUS_SETTLE);
++
++	if (eci->eci_hw_ops->acc_write_reg(ECICMD_MIC_CTRL, eci->mic_state))
++		dev_err(eci->dev, "Unable to control headset microphone\n");
++
++	return 0;
++}
++
++static int init_accessory_input(struct eci_data *eci)
++{
++	int err;
++	struct key_entry *key = (struct key_entry *)eci_keymap;
++
++	eci->acc_input = input_allocate_device();
++	if (!eci->acc_input) {
++		dev_err(eci->dev, "Error allocating input device: %d\n",
++				__LINE__);
++		return -ENOMEM;
++	}
++
++	eci->acc_input->name = "ECI Accessory";
++
++	for (; key->type != KE_END; key++) {
++		switch (key->type) {
++		case KE_KEY:
++			__set_bit(key->keycode, eci->acc_input->keybit);
++			break;
++		case KE_SW:
++		case KE_VSW:
++			__set_bit(key->keycode, eci->acc_input->swbit);
++			break;
++		}
++	}
++
++	__set_bit(EV_KEY, eci->acc_input->evbit);
++	__set_bit(EV_SW, eci->acc_input->evbit);
++	__set_bit(EV_REP, eci->acc_input->evbit);
++
++	err = sparse_keymap_setup(eci->acc_input, eci_keymap, NULL);
++	if (err)
++		goto err_free_dev;
++
++	err = input_register_device(eci->acc_input);
++	if (err) {
++		dev_err(eci->dev, "Error registering input device: %d\n",
++				__LINE__);
++		goto err_free_keymap;
++	}
++
++	/* Must set after input_register_device() to take effect */
++	eci->acc_input->rep[REP_PERIOD] = ECI_KEY_REPEAT_INTERVAL;
++
++	return 0;
++
++err_free_keymap:
++	sparse_keymap_free(eci->acc_input);
++err_free_dev:
++	input_free_device(eci->acc_input);
++	return err;
++}
++
++static void remove_accessory_input(struct eci_data *eci)
++{
++	input_unregister_device(eci->acc_input);
++}
++
++/* Press/release ccessory button(s) */
++static int eci_get_button(struct eci_data *eci)
++{
++	struct enchancement_features_fixed *eff = eci->e_features_fix;
++	struct eci_buttons_data *b = &eci->buttons_data;
++
++	if (!eci->mem_ok)
++		return -ENXIO;
++
++	if (((b->buttons & 0x0000ffff) == 0) && (eff->number_of_features > 2)) {
++		dev_err(eci->dev, "ECI report all buttons down, rejected %d\n",
++			       __LINE__);
++		return -EINVAL;
++	}
++
++	if (b->windex < ECI_BUTTON_BUF_SIZE) {
++		if (b->buttons_buf[b->windex] == 0)
++			b->buttons_buf[b->windex] = b->buttons;
++		else
++			dev_err(eci->dev, "ECI button queue owerflow %d\n",
++			       __LINE__);
++	}
++	b->windex++;
++	if (b->windex == ECI_BUTTON_BUF_SIZE)
++		b->windex = 0;
++
++	return 0;
++}
++
++/* Intended to use ONLY inside eci_parse_button() ! */
++#define ACTIVE_STATE(x) (u32)(cpu_to_le32(*(u32 *)efv->active_state) & BIT(x-1))
++#define BUTTON_STATE(x) ((buttons & BIT(x))>>1)
++
++static int eci_parse_button(struct eci_data *eci, u32 buttons)
++{
++	int pin, state;
++	u8 n, io_fun;
++	struct enchancement_features_variable *efv = &eci->e_features_var;
++	struct enchancement_features_fixed *eff = eci->e_features_fix;
++
++	if (!eci->mem_ok)
++		return -ENXIO;
++
++	n = eff->number_of_features;
++
++	for (pin = 1; pin <= n; pin++) {
++		io_fun = efv->io_functionality[pin] & ~BIT(7);
++		if (io_fun > ECI_KEY_MAX)
++			break;
++		state = (BUTTON_STATE(pin) == ACTIVE_STATE(pin));
++		if (state)
++			dev_dbg(eci->dev, "I/O functionality 0x%02x\n", io_fun);
++
++		sparse_keymap_report_event(eci->acc_input, io_fun, state,
++				false);
++	}
++	input_sync(eci->acc_input);
++
++	return 0;
++}
++
++static int eci_send_button(struct eci_data *eci)
++{
++	int i;
++	struct enchancement_features_fixed *eff = eci->e_features_fix;
++	struct eci_buttons_data *b = &eci->buttons_data;
++	u8 n;
++
++	if (!eci->mem_ok)
++		return -ENXIO;
++
++	n = eff->number_of_features;
++
++	if (n > ECI_MAX_FEATURE_COUNT)
++		return -EINVAL;
++
++	/* Let input system take care multiple key events */
++	for (i = 0; i < ECI_BUTTON_BUF_SIZE; i++) {
++		if (b->buttons_buf[b->rindex] == 0)
++			break;
++
++		if (eci_parse_button(eci, b->buttons_buf[b->rindex]))
++			return -ENXIO;
++
++		b->buttons_buf[b->rindex] = 0;
++		b->rindex++;
++		if (b->rindex == ECI_BUTTON_BUF_SIZE)
++			b->rindex = 0;
++	}
++
++	return 0;
++}
++
++/*
++ * Other driver(s) can call this after registering themselves using
++ * eci_register()
++ */
++static void eci_accessory_event(int event, void *priv)
++{
++	struct eci_data *eci = priv;
++	struct eci_buttons_data *b = &eci->buttons_data;
++	int delay = 0;
++	int ret = 0;
++
++	eci->event = event;
++	switch (event) {
++	case ECI_EVENT_IS_ECI:
++		eci->is_eci = true;
++		ret = eci->eci_hw_ops->acc_reset();
++		if (ret)
++			eci->is_eci = false;
++		break;
++	case ECI_EVENT_PLUG_IN:
++		eci->first_event = true;
++		ret = eci_init_accessory(eci);
++		if (ret < 0)
++			ret = eci_init_accessory(eci);
++		if (ret) {
++			dev_err(eci->dev, "Accessory init %s%s%s%sat: %d\n",
++					ret & ACI_COMMERR ? "COMMERR " : "",
++					ret & ACI_FRAERR ? "FRAERR " : "",
++					ret & ACI_RESERR ? "RESERR " : "",
++					ret & ACI_COLL ? "COLLERR " : "",
++					__LINE__);
++			break;
++		}
++		break;
++	case ECI_EVENT_PLUG_OUT:
++		eci->mem_ok = false;
++		break;
++	case ECI_EVENT_BUTTON:
++		/*
++		 * First event might not be valid due plug insertion
++		 * so we filter it out if it seems garbage
++		 */
++		if (eci->first_event) {
++			eci->first_event = false;
++			if ((b->buttons & 0xff) == 0)
++				break;
++		}
++		eci_get_button(eci);
++		delay = msecs_to_jiffies(ECI_WAIT_SEND_BUTTON);
++		schedule_delayed_work(&eci->eci_ws, delay);
++		break;
++	default:
++		dev_err(eci->dev, "unknown event %d: %d\n", event, __LINE__);
++		break;
++	}
++
++	return;
++}
++
++static void eci_hsmic_event(void *priv, bool on)
++{
++	struct eci_data *eci = priv;
++	unsigned long future;
++	int ret;
++
++	if (!eci)
++		return;
++
++	if (on)
++		eci->mic_state = ECI_MIC_AUTO;
++	else
++		eci->mic_state = ECI_MIC_OFF;
++
++	future = jiffies + msecs_to_jiffies(ECI_TRY_SET_MIC);
++	do {
++		ret = eci->eci_hw_ops->acc_write_reg(ECICMD_MIC_CTRL,
++				eci->mic_state);
++		if (time_is_before_jiffies(future))
++			break;
++	} while (ret);
++
++	if (ret)
++		dev_err(eci->dev, "Unable to control headset microphone\n");
++}
++
++/* General work func (eci_ws) for several tasks */
++static void eci_work(struct work_struct *ws)
++{
++	struct eci_data *eci;
++	int ret;
++
++	eci = container_of((struct delayed_work *)ws, struct eci_data,
++			eci_ws);
++
++	ret = eci_send_button(eci);
++	if (ret)
++		dev_err(eci->dev, "Error sending event: %d\n", __LINE__);
++}
++
++struct eci_cb *eci_register(struct eci_hw_ops *eci_ops)
++{
++	if (!the_eci)
++		return ERR_PTR(-EBUSY);
++
++	if (!eci_ops || !eci_ops->acc_read_direct ||
++			!eci_ops->acc_read_reg || !eci_ops->acc_write_reg ||
++			!eci_ops->acc_reset)
++		return ERR_PTR(-EINVAL);
++
++	the_eci->eci_hw_ops = eci_ops;
++
++	return &eci_callback;
++}
++EXPORT_SYMBOL(eci_register);
++
++static int __init eci_probe(struct platform_device *pdev)
++{
++	struct eci_data *eci;
++	struct eci_platform_data *pdata = pdev->dev.platform_data;
++	int ret;
++
++	eci = kzalloc(sizeof(*eci), GFP_KERNEL);
++	if (!eci)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, eci);
++	eci->dev = &pdev->dev;
++
++	the_eci = eci;
++
++	eci_callback.event              = eci_accessory_event;
++	eci_callback.priv               = eci;
++
++	ret = sysfs_create_group(&pdev->dev.kobj, &eci_attr_group);
++	if (ret) {
++		dev_err(eci->dev, "could not create sysfs entries: %d\n",
++				__LINE__);
++		goto err_sysfs;
++	}
++
++	ret = eci_initialize_debugfs(eci);
++	if (ret)
++		dev_err(eci->dev, "could not create debugfs entries: %d\n",
++				__LINE__);
++
++	ret = init_accessory_input(eci);
++	if (ret) {
++		dev_err(eci->dev, "ERROR initializing accessory input: %d\n",
++				__LINE__);
++		goto err_input;
++	}
++
++	/*
++	 * If platform machine has audio driver providing
++	 * register_hsmic_event_cb, we should give accessory microphone control,
++	 * ie. eci_hsmic_event to it.
++	 * This way audio driver get control to ECI accessory microphone and
++	 * we can save power
++	 */
++	if (pdata) {
++		if (pdata->register_hsmic_event_cb) {
++			hsmic_event.private	= eci;
++			hsmic_event.event	= eci_hsmic_event;
++			pdata->register_hsmic_event_cb(&hsmic_event);
++		}
++	}
++
++	init_waitqueue_head(&eci->wait);
++	INIT_DELAYED_WORK(&eci->eci_ws, eci_work);
++
++	eci->mem_ok = false;
++	/*
++	 * By default ECI driver leaves microphone off, to save power.
++	 * Audio driver can set microphone on by using
++	 * hsmic_event.event
++	 */
++	eci->mic_state = ECI_MIC_OFF;
++
++	/* Init buttons_data indexes and buffer */
++	memset(&eci->buttons_data, 0, sizeof(struct eci_buttons_data));
++	eci->buttons_data.buttons = 0xffffffff;
++
++	return 0;
++
++err_input:
++	eci_uninitialize_debugfs();
++	sysfs_remove_group(&pdev->dev.kobj, &eci_attr_group);
++
++err_sysfs:
++	kfree(eci);
++
++	return ret;
++}
++
++static int __exit eci_remove(struct platform_device *pdev)
++{
++	struct eci_data *eci = platform_get_drvdata(pdev);
++	struct eci_platform_data *pdata = pdev->dev.platform_data;
++
++	pdata->register_hsmic_event_cb(NULL);
++	cancel_delayed_work_sync(&eci->eci_ws);
++	eci_uninitialize_debugfs();
++	sysfs_remove_group(&pdev->dev.kobj, &eci_attr_group);
++	remove_accessory_input(eci);
++	kfree(eci);
 +
 +	return 0;
 +}
 +
 +#ifdef	CONFIG_PM
 +
-+static int eci_ctrl_suspend(struct i2c_client *client, pm_message_t message)
++static int eci_suspend(struct platform_device *pdev, pm_message_t mesg)
 +{
 +	return -ENOSYS;
 +}
 +#else
-+#define	eci_ctrl_suspend	NULL
++#define	eci_suspend	NULL
 +#endif
 +
-+static const struct i2c_device_id eci_id[] = {
-+	{ DRIVER_NAME, 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, eci_id);
-+
-+static struct i2c_driver eci_i2c_driver = {
-+	.driver = {
-+		.name	= DRIVER_NAME,
++static struct platform_driver eci_driver = {
++	.probe		= eci_probe,
++	.remove		= __exit_p(eci_remove),
++	.suspend	= eci_suspend,
++	.driver		= {
++		.name	= ECI_DRIVERNAME,
 +		.owner	= THIS_MODULE,
 +	},
-+	.probe		= eci_ctrl_i2c_probe,
-+	.remove		= __exit_p(eci_ctrl_remove),
-+	.suspend	= eci_ctrl_suspend,
-+	.id_table	= eci_id,
 +};
 +
-+static int __init eci_ctrl_init(void)
++static int __init eci_init(void)
 +{
-+	return i2c_add_driver(&eci_i2c_driver);
++	return platform_driver_register(&eci_driver);
 +}
-+module_init(eci_ctrl_init);
++device_initcall(eci_init);
 +
-+static void __exit eci_ctrl_exit(void)
++static void __exit eci_exit(void)
 +{
-+	i2c_del_driver(&eci_i2c_driver);
++	platform_driver_unregister(&eci_driver);
 +}
-+module_exit(eci_ctrl_exit);
++module_exit(eci_exit);
 +
-+MODULE_DESCRIPTION("ECI accessory controller driver");
++MODULE_ALIAS("platform:" ECI_DRIVERNAME);
 +MODULE_AUTHOR("Nokia Corporation");
-+MODULE_ALIAS("i2c:eci_at20_ctrl");
++MODULE_DESCRIPTION("ECI accessory driver");
 +MODULE_LICENSE("GPL");
 diff --git a/include/linux/input/eci.h b/include/linux/input/eci.h
-index 0e22404..868d2fb 100644
---- a/include/linux/input/eci.h
+new file mode 100644
+index 0000000..0e22404
+--- /dev/null
 +++ b/include/linux/input/eci.h
-@@ -1,7 +1,7 @@
- /*
-  * This file is part of ECI (Enhancement Control Interface) driver
-  *
-- * Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
-+ * Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-  *
-  * Contact: Tapio Vihuri <tapio.vihuri@nokia.com>
-  *
-@@ -35,6 +35,21 @@
- #define ECI_REAL_BUTTONS	0
- #define ECI_FORCE_BUTTONS_UP	1
- 
+@@ -0,0 +1,157 @@
 +/*
-+ * VPROG2CNT - VPROG2 Control Register
-+ * 2.5V | normal | normal
-+ * 10   | 111    | 111
-+ * 2.5V | off    | off
-+ * 10   | 100    | 100
++ * This file is part of ECI (Enhancement Control Interface) driver
++ *
++ * Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
++ *
++ * Contact: Tapio Vihuri <tapio.vihuri@nokia.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
++ * 02110-1301 USA
++ *
 + */
-+#define AvP_MSIC_VPROG2		0xd7
-+#define AvP_MSIC_VPROG2_2V5_ON	0xbf
-+#define AvP_MSIC_VPROG2_2V5_OFF 0xa4
++#ifndef __ECI_H__
++#define __ECI_H__
 +
-+#define GPIO_ECI_RSTn		126	/* GP_CORE_030 + 96 */
-+#define GPIO_ECI_SW_CTRL	178	/* GP_CORE_082 + 96 */
-+#define GPIO_ECI_INT		16	/* GP_AON_016 */
++#define ECI_MAX_MEM_SIZE	0x7c
++#define ECI_BUTTON_BUF_SIZE	32
++#define ECI_MAX_FEATURE_COUNT	31
 +
- /* fixed in ECI HW, do not change */
- enum {
- 	ECICMD_HWID,
-@@ -154,4 +169,11 @@ struct eci_data {
- };
- 
- struct eci_cb *eci_register(struct eci_hw_ops *eci_ops);
++#define ACI_COMMERR	0x010
++#define ACI_FRAERR	0x020
++#define ACI_RESERR	0x040
++#define ACI_COLL	0x080
 +
-+/* eci controller data */
-+struct eci_ctrl_platform_data {
-+	int		eci_ctrl_rst_gpio;
-+	int		eci_ctrl_sw_ctrl_gpio;
-+	int		eci_ctrl_int_gpio;
++#define ECI_REAL_BUTTONS	0
++#define ECI_FORCE_BUTTONS_UP	1
++
++/* fixed in ECI HW, do not change */
++enum {
++	ECICMD_HWID,
++	ECICMD_SWID,
++	ECICMD_ECI_BUS_SPEED,
++	ECICMD_MIC_CTRL,
++	ECICMD_MASTER_INT_REG,
++	ECICMD_HW_CONF_MEM_ACCESS,
++	ECICMD_EXTENDED_MEM_ACCESS,
++	ECICMD_INDIRECT_MEM_ACCESS,
++	ECICMD_PORT_DATA_0,
++	ECICMD_PORT_DATA_1,
++	ECICMD_PORT_DATA_2,
++	ECICMD_PORT_DATA_3,
++	ECICMD_LATCHED_PORT_DATA_0,
++	ECICMD_LATCHED_PORT_DATA_1,
++	ECICMD_LATCHED_PORT_DATA_2,
++	ECICMD_LATCHED_PORT_DATA_3,
++	ECICMD_DATA_DIR_0,
++	ECICMD_DATA_DIR_1,
++	ECICMD_DATA_DIR_2,
++	ECICMD_DATA_DIR_3,
++	ECICMD_INT_CONFIG_0_LOW,
++	ECICMD_INT_CONFIG_0_HIGH,
++	ECICMD_INT_CONFIG_1_LOW,
++	ECICMD_INT_CONFIG_1_HIGH,
++	ECICMD_INT_CONFIG_2_LOW,
++	ECICMD_INT_CONFIG_2_HIGH,
++	ECICMD_INT_CONFIG_3_LOW,
++	ECICMD_INT_CONFIG_3_HIGH,
++	/*
++	 * 0x1c - 0x2f reserved for future
++	 * 0x30 - 0x3d reserved
++	 */
++	ECICMD_EEPROM_LOCK = 0x3e,
++	ECICMD_RESERVED,	/* 0x3f */
++	ECIREG_STATUS,		/* 0x40 */
++	ECIREG_READ_COUNT,	/* 0x41 */
++	ECIREG_BUF_COUNT,	/* 0x42 */
++	ECIREG_RST_LEARN,	/* 0x43 */
++	/* 0x44 - 0xdf as data buffer */
++	ECIREG_READ_DIRECT,	/* 0x44 */
++	ECIREG_HW_ID = 0xe0,	/* 0xe0 */
++	ECIREG_FW_ID,		/* 0xe1 */
++	ECIREG_TEST_IN,		/* 0xe2 */
++	ECIREG_TEST_OUT,	/* 0xe3 */
 +};
- #endif
++
++enum {
++	ECI_EVENT_IS_ECI,
++	ECI_EVENT_PLUG_IN,
++	ECI_EVENT_PLUG_OUT,
++	ECI_EVENT_BUTTON,
++	ECI_EVENT_NO,
++};
++
++struct eci_hw_ops {
++	int (*acc_reset)(void);
++	int (*acc_read_direct)(u8 addr, char *buf);
++	int (*acc_read_reg)(u8 reg, u8 *buf, int count);
++	int (*acc_write_reg)(u8 reg, u8 param);
++};
++
++struct eci_cb {
++	void *priv;
++	void (*event)(int event, void *priv);
++};
++
++struct audio_hsmic_event {
++	void *private;
++	void (*event)(void *priv, bool on);
++};
++
++struct eci_platform_data {
++	void (*register_hsmic_event_cb)(struct audio_hsmic_event *);
++};
++
++struct enchancement_features_fixed {
++	u8	block_id;
++	u8	length;
++	u8	connector_conf;
++	u8	number_of_features;
++};
++
++struct enchancement_features_variable {
++	u8	*io_support;
++	u8	*io_functionality;
++	u8	*active_state;
++};
++
++struct eci_buttons_data {
++	u32	buttons;
++	int	windex;
++	int	rindex;
++	u32	buttons_up_mask;
++	u32	buttons_buf[ECI_BUTTON_BUF_SIZE];
++};
++
++struct eci_data {
++	struct device				*dev;
++	struct delayed_work			eci_ws;
++	wait_queue_head_t			 wait;
++	struct input_dev			*acc_input;
++	int					event;
++	bool					first_event;
++	bool					mem_ok;
++	u16					mem_size;
++	u8					memory[ECI_MAX_MEM_SIZE];
++	struct enchancement_features_fixed	*e_features_fix;
++	struct enchancement_features_variable	e_features_var;
++	u8					port_reg_count;
++	struct eci_buttons_data			buttons_data;
++	struct eci_hw_ops			*eci_hw_ops;
++	u8					mic_state;
++	u8					plugged;
++	bool					is_eci;
++};
++
++struct eci_cb *eci_register(struct eci_hw_ops *eci_ops);
++#endif
 -- 
 1.6.5
 
