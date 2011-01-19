@@ -1,81 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559Ab1ASHUN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 02:20:13 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:53903
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753479Ab1ASHUL (ORCPT
+	id S1753577Ab1ASHVd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 02:21:33 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58488 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753300Ab1ASHVb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 02:20:11 -0500
-Date: Tue, 18 Jan 2011 23:20:45 -0800 (PST)
-Message-Id: <20110118.232045.58440904.davem@davemloft.net>
-To: mathieu.desnoyers@efficios.com
-Cc: rostedt@goodmis.org, richm@oldelvet.org.uk, 609371@bugs.debian.org,
-        ben@decadent.org.uk, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@redhat.com
-Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
- Unknown relocation: 36
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110118.223247.241909079.davem@davemloft.net>
-References: <1295382144.12215.123.camel@gandalf.stny.rr.com>
-	<20110119050844.GA8776@Krystal>
-	<20110118.223247.241909079.davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Jan 2011 02:21:31 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=r9OrgAIBF0aINjWcYwaro+3WBFAvoYGS7kRvfLm34BvG8yLyClI6EIhh4I/jX2zAQX
+         iDvfvFURVHMXa+E1eeXZ8A2WsZNRkKyk5cB+LgCkqjQ1A5MvWefsaz+3UxwHJmpr9Ahs
+         U+AVtmVdTApTP/LNsBqAgNhBTg1xeH5aboJgU=
+MIME-Version: 1.0
+In-Reply-To: <909.1295419383@jrobl>
+References: <20110113120626.GB30351@opensource.wolfsonmicro.com>
+	<8138.1294924927@jrobl>
+	<676f5c24375e1cc2aa14fe6630ef1324@mail.gmail.com>
+	<8482.1294926315@jrobl>
+	<AANLkTim=VY7+fo6d_nUXVxs+iZ_f79qWu_eYMUjvhVJO@mail.gmail.com>
+	<909.1295419383@jrobl>
+Date: Wed, 19 Jan 2011 18:21:29 +1100
+Message-ID: <AANLkTi=CqLm=33acFV42N8VbNK9=hwXV9iegKn-jjGJS@mail.gmail.com>
+Subject: Re: vfs-scale, general questions (Re: NFS root lockups with -next 20110113)
+From: Nick Piggin <npiggin@gmail.com>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Nick Piggin <npiggin@kernel.dk>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Tue, 18 Jan 2011 22:32:47 -0800 (PST)
+On Wed, Jan 19, 2011 at 5:43 PM, J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
+>
+> Hi,
+>
+> Nick Piggin:
+>> Thanks for your help, can you see how I've fixed it in my vfs-scale
+>> tree? What do you think?
+>
+> Your fix is great. I have no objection at all.
+> Other than the fix, here are more generic questions about vfs-scale work.
+> I am happy if you reply when you have time.
 
-> As far as GCC can see, the object is static and also not part of an
-> array or any other C construct for which things like this could matter
-> as long as the alignment it chooses meets the minimum alignment
-> requirements of the ABI.
-> 
-> So it doesn't let us do this trick where we put the individual event
-> markers into a special section, yet mark it __used and static, then
-> later access them as if they were part of a globally visible array.
-> 
-> If you look these static objects, they are emitted with a leading
-> ".align 32" directive.  This is what screws everything up.
-> 
-> When the linker sees this, it aligns the start of every individual
-> "_ftrace_events" section, and that's where the "gaps" come from and
-> the crashes.
+Thanks for reviewing.
 
-I've come up with one possible way to deal with this.
 
-Put pointers to the trace objects into the special section, and
-interate over those instead.
+> - getcwd(2) needs d_lock?
+>  It acquires rename_lock and then tests whether the pwd is removed by
+>  d_unhashed(). If a race condition between vfs_rename_dir() which may
+>  unhash/rehash the dentry happens, then getcwd() may return the wrong
+>  result due to unprotected d_unhashed() call, I am afraid. rename_lock
+>  doesn't help this case.
 
-I was wondering why this x86-64 weird alignment behavior doesn't bite
-us for our init funcs.  And the reason is that all of these weird
-alignment cases only trigger for aggregates (ie. structs and unions).
+We have the lock in write mode there, so it should exclude that
+particular race. But I need to take another look at this code I
+think, I'm not sure it's completely right, so I would appreciate reviews.
 
-So we could do:
+A while back I had some extra checks in there and would restart
+the entire reverse walk in case of races... but need to think about
+it.
 
-	static struct ftace_event_call foo_event = { ... };
-	static struct ftrace_event_call * __used
-		__attribute__((section("_ftrace_event_ptrs")))
-		foo_event_ptr = &foo_event;
 
-and
+> - what is the right order of dget() and mntget()?
+>  If I remember correctly, someone said "mntget() first and then
+>  dget(). when putting, do in reverse" in the discussion when
+>  path_{get,put}() were born. So it is called "the right order" in the
+>  commit log.
+>  It was many years ago. Is it still true? And should rcu-walk follow it
+>  too? The current implementation doesn't seem to care about this order.
 
-	extern struct ftrace_event_call *__start_ftrace_event_ptrs[];
-	extern struct ftrace_event_call *__end_ftrace_event_ptrs[];
+Well dget and mntget is not a problem, because we can only do
+mntget while already guaranteeing a reference on the mount, and
+only dget when already guaranteeing a ref on the dentry (and mount).
 
-	struct ftrace_event_call **p = __start_ftrace_event_ptrs;
-	while (p < &__end_ftrace_event_ptrs[0]) {
-		struct ftrace_event_call *event = *p++;
+But dput must happen before mntput so you don't have dentry ref
+without mnt ref. Can you point out where rcu-walk does this wrongly?
 
-		__trace_add_event_call(event, ...);
-	}
 
-you get the idea.
+> - d_move() and rename_lock
+>  This may be out of rcu-walk work, but rename_lock in d_move() looks
+>  outstanding since it surely kills concurrency. It is a pity that two
+>  unrelated but concurrent d_move-s are serialized when we run rename(2)
+>  on two different filesystems. Even if all of dentries, parents and
+>  hash buckets are different from each other, d_move() never run
+>  concurrently.
 
-And we could mark this entire point section as "initdata" and thus
-free'able after bootup and post module load.
+Yes I have a patch for that. I made a small hash table of rename locks.
+This makes independent same-dir renames scalable. However that was
+not the main motivation of the patch. On a really big POWER7 system,
+the lookup path goes into a strange bimodal behaviour in the presence
+of a relatively small amount of rename activity and sometimes starves
+and throughput crashes. Breaking up rename_lock solves that too.
+
+I'll wait until things settle down a bit more and perhaps have a chance
+to get more numbers before submitting it (although I can show you when
+I get back).
+
+Thanks,
+Nick
