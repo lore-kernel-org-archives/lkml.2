@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752870Ab1ASNL6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 08:11:58 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:57533 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab1ASNL5 convert rfc822-to-8bit (ORCPT
+	id S1753136Ab1ASNNX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 08:13:23 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:65318 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752410Ab1ASNNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 08:11:57 -0500
-Subject: Re: percpu related boot crash on x86 (was: Linux 2.6.38-rc1)
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+	Wed, 19 Jan 2011 08:13:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=jRkE+WjNAEf8f9djbGrTEcfhjh54krZj4grgDNLqUt6BbMri6yJ/tOAcTrJ8burokM
+         71QzCKyzlwTj9khJaPpQp2QLJzlZjvVe/3k+QOZ48mimDUStQXZTuyqBRY4P42QR8gr6
+         8hB+gBdq4PI6WGDwnuYSCowVHDf4hIpddl4iw=
+Date: Wed, 19 Jan 2011 14:13:29 +0100
+From: Tejun Heo <tj@kernel.org>
 To: Pekka Enberg <penberg@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>,
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Pekka Enberg <penberg@cs.helsinki.fi>
-In-Reply-To: <AANLkTi=gxMkzO63RAWiuFt9vp57dvi4d=TaT=NmuvyY2@mail.gmail.com>
+Subject: Re: percpu related boot crash on x86 (was: Linux 2.6.38-rc1)
+Message-ID: <20110119131329.GB14096@mtj.dyndns.org>
 References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
-	 <20110119120200.GA1057@elte.hu> <1295441307.28776.15.camel@laptop>
-	 <AANLkTi=gxMkzO63RAWiuFt9vp57dvi4d=TaT=NmuvyY2@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 19 Jan 2011 14:12:02 +0100
-Message-ID: <1295442722.28776.20.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+ <20110119120200.GA1057@elte.hu>
+ <1295441307.28776.15.camel@laptop>
+ <AANLkTi=gxMkzO63RAWiuFt9vp57dvi4d=TaT=NmuvyY2@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=gxMkzO63RAWiuFt9vp57dvi4d=TaT=NmuvyY2@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-19 at 14:56 +0200, Pekka Enberg wrote:
-> 
-> On Wed, Jan 19, 2011 at 2:48 PM, Peter Zijlstra
-> <a.p.zijlstra@chello.nl> wrote:
-> >  start_kernel()
-> >   local_irq_disable()
-> >   ...
-> >   early_irq_init()
-> >     alloc_desc()
-> >       alloc_percpu()
-> >         __alloc_percpu()
-> >           pcpu_alloc()
-> >             pcpu_extend_area_map()
-> >               pcpu_mem_free()
-> >                 vfree()
-> >                   __vunmap()
-> >                     remove_vm_area()
-> >                       free_unmap_vmap_area()
-> >                         vmap_debug_free_range()
-> > #ifdef CONFIG_DEBUG_PAGEALLOC
-> >                           flush_tlb_kernel_range()
-> >                             flush_tlb_all()
-> >                               on_each_cpu()
-> >                                 smp_call_function()
-> >                                   WARN_ON_ONCE(irqs_disabled()....);
-> >
-> >
-> > Not quite sure that to do about that though..
-> 
-> Is vmalloc() and vfree() supposed to work with interrupts disabled? 
+Hello,
 
-I'm not sure about vmalloc(), but vfree() has been known to not work
-with IRQs disabled for a long long while.
+On Wed, Jan 19, 2011 at 02:56:23PM +0200, Pekka Enberg wrote:
+> Is vmalloc() and vfree() supposed to work with interrupts disabled? I
+> always thought they weren't which would mean something in
+> pcpu_mem_alloc() needs changing...
 
-Looking at the code neither can work, since vmalloc() can end up calling
-vfree(), what's curious though is that all the BUG_ON()s in there are on
-in_interrupt() instead of for irqs_disabled().
+They aren't but percpu allocator doesn't call them with interrupts
+disabled normally.  It only happens during early boot before it's
+enabled for the first time but this is an allowed exception.  We'll
+probably need to update the WARN_ON to consider the rare call path.
+It also looks like something in that path is turning off/on IRQ
+instead of saving/restoring it, so that probably needs to be changed
+too but both aren't really critical.
 
-> I always thought they weren't which would mean something in
-> pcpu_mem_alloc() needs changing... 
+I think the real problem is a lot of unsigned int percpu allocations
+added by 6c9ae009 (irq: use per_cpu kstat_irqs).  percpu allocator
+should be able to cope but it assumes that it would always be able to
+allocate contiguous allocation map using vmalloc and that might be
+failing, although I cannot readily see how or why that would happen
+frequently on a 64bit machine.
 
-Is alloc_percpu() supposed to work from atomic context?
+Thanks.
+
+-- 
+tejun
