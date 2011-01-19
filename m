@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab1ASWRp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 17:17:45 -0500
-Received: from www.tglx.de ([62.245.132.106]:43010 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753834Ab1ASWRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 17:17:43 -0500
-Date: Wed, 19 Jan 2011 23:16:55 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-cc: LKML <linux-kernel@vger.kernel.org>,
+	id S1754784Ab1ASWSe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 17:18:34 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:37065 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753834Ab1ASWSc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 17:18:32 -0500
+Date: Wed, 19 Jan 2011 17:18:28 -0500
+From: Kyle McMartin <kyle@mcmartin.ca>
+To: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
         Linux-Arch <linux-arch@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Kyle McMartin <kyle@mcmartin.ca>
-Subject: Re: [patch 32/37] parisc: Use generic irq Kconfig
-In-Reply-To: <1295474722.10978.43.camel@mulgrave.site>
-Message-ID: <alpine.LFD.2.00.1101192314090.3211@localhost6.localdomain6>
-References: <20110119205258.462759212@linutronix.de>  <20110119210840.424269590@linutronix.de> <1295474722.10978.43.camel@mulgrave.site>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Chen Liqin <liqin.chen@sunplusct.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        David Howells <dhowells@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Ungerer <gerg@uclinux.org>,
+        Hirokazu Takata <takata@linux-m32r.org>, Jeff Dike <jdike@addtoit.com>,
+        Michal Simek <monstr@monstr.eu>, Mikael Starvik <starvik@axis.com>,
+        Mike Frysinger <vapier@gentoo.org>, Paul Mundt <lethal@linux-sh.org>,
+        Richard Henderson <rth@twiddle.net>, Tony Luck <tony.luck@intel.com>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>
+Subject: Re: [patch 00/37] genirq: Remove __do_IRQ() and cleanup irq related
+ Kconfigs
+Message-ID: <20110119221828.GD27353@bombadil.infradead.org>
+References: <20110119205258.462759212@linutronix.de>
+ <AANLkTineduG23qitc8ggDKShYJi=2vJgXbYJDjLGZKk3@mail.gmail.com>
+ <20110119221706.GC27353@bombadil.infradead.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110119221706.GC27353@bombadil.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Jan 2011, James Bottomley wrote:
-
-> On Wed, 2011-01-19 at 21:49 +0000, Thomas Gleixner wrote:
-> > plain text document attachment (parisc-use-generic-irq-Kconfig.patch)
-> > No functional change.
+On Wed, Jan 19, 2011 at 05:17:06PM -0500, Kyle McMartin wrote:
+> I submitted series to clean these 3 up as well (but only got a response
+> from the cris folks...) If the other 2 are effectively unmaintained,
+> should I just submit the clean ups to you? (I think there were some
+> build fixes as well, will have to check.)
 > 
-> Not quite true ... you take out GENERIC_HARDIRQS but select
-> HAVE_GENERIC_HARDIRQS ... is that right?
 
-HAVE_GENERIC_HARDIRQS enables the Kconfig file in kernel/irq/
- 
-> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: Kyle McMartin <kyle@mcmartin.ca>
-> 
-> Plus, it doesn't apply:
-> 
-> Hunk #1 FAILED at 12.
-> Hunk #2 FAILED at 65.
-> 2 out of 2 hunks FAILED -- saving rejects to file
-> arch/parisc/Kconfig.rej
-> 
-> It looks like it was made before we did our generic irq conversion in
-> the 2.6.36 merge window.
+Nevermind, just saw the rest of the series on linux-arch.
 
-You meant 38 window :) Patch is against 38-rc1 but depends on [patch
-24/37] genirq: Remove __do_IRQ in this very same series.
-
-Thanks,
-
-	tglx
+--Kyle
