@@ -1,131 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867Ab1ASQDi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 11:03:38 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:50266 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752109Ab1ASQDg convert rfc822-to-8bit (ORCPT
+	id S1753895Ab1ASQK5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 11:10:57 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:42022 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab1ASQKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 11:03:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=DH6JHjbvRGAPVF4te5xe/cF5X4Gf26grnOrqFByVhYGWFDKxezoEZJFonXGQofuA+q
-         m/T+vU3AbhVRAdkv3qDNcRvamZ2CGydc5xz783s4YVH8bwWCqYB26dHxVNjQpDVGghrW
-         gql2B1d0TTIM4NIHrxRNxh5npMCDzMVAHpIaY=
+	Wed, 19 Jan 2011 11:10:55 -0500
+Message-ID: <4D370CE6.3000505@oracle.com>
+Date: Wed, 19 Jan 2011 08:10:14 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-In-Reply-To: <20110119132123.GC4246@quack.suse.cz>
-References: <AANLkTimMwZnm3UKvmrPscBeZF77vh1sW0ERO1tuv1oNW@mail.gmail.com>
-	<x494o9bbkqo.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTimuCgn4aHzUJRmQfsXjG_UF-3W8fAWb0Y-sSPsM@mail.gmail.com>
-	<x49tyh7mjr6.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTikgsGHJ+q6=We_zPAivyABq+z2f6Atv6ZScLYOU@mail.gmail.com>
-	<20110118190114.GA5070@quack.suse.cz>
-	<AANLkTin1+B_1CV-weALdS8EYJO60BJd0b7AGWzc0wrWr@mail.gmail.com>
-	<20110118235236.GA14087@quack.suse.cz>
-	<AANLkTikvCkMDM9+i=44eEkX094=ZHpnQaN+541pm1icK@mail.gmail.com>
-	<20110119132123.GC4246@quack.suse.cz>
-Date: Thu, 20 Jan 2011 03:03:23 +1100
-Message-ID: <AANLkTi=Z0eyXBkWL6YYdUVzA16hs=WjC7u=wfEHzAozC@mail.gmail.com>
-Subject: Re: [patch] fs: aio fix rcu lookup
-From: Nick Piggin <npiggin@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Jeff Moyer <jmoyer@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Rusty Russell <rusty@rustcorp.com.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for January 18 (__modver_version_show)
+References: <20110118122139.6c2a6f2f.sfr@canb.auug.org.au>	<20110118091749.ac5823df.randy.dunlap@oracle.com> <20110119160951.2a14d0a0.sfr@canb.auug.org.au>
+In-Reply-To: <20110119160951.2a14d0a0.sfr@canb.auug.org.au>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 12:21 AM, Jan Kara <jack@suse.cz> wrote:
-> On Wed 19-01-11 11:20:45, Nick Piggin wrote:
->> On Wed, Jan 19, 2011 at 10:52 AM, Jan Kara <jack@suse.cz> wrote:
->> > On Wed 19-01-11 09:17:23, Nick Piggin wrote:
->> >> On Wed, Jan 19, 2011 at 6:01 AM, Jan Kara <jack@suse.cz> wrote:
->> >> > On Tue 18-01-11 10:24:24, Nick Piggin wrote:
->> >> >> On Tue, Jan 18, 2011 at 6:07 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
->> >> >> > Nick Piggin <npiggin@gmail.com> writes:
->> >> >> >> Do you agree with the theoretical problem? I didn't try to
->> >> >> >> write a racer to break it yet. Inserting a delay before the
->> >> >> >> get_ioctx might do the trick.
->> >> >> >
->> >> >> > I'm not convinced, no.  The last reference to the kioctx is always the
->> >> >> > process, released in the exit_aio path, or via sys_io_destroy.  In both
->> >> >> > cases, we cancel all aios, then wait for them all to complete before
->> >> >> > dropping the final reference to the context.
->> >> >>
->> >> >> That wouldn't appear to prevent a concurrent thread from doing an
->> >> >> io operation that requires ioctx lookup, and taking the last reference
->> >> >> after the io_cancel thread drops the ref.
->> >> >>
->> >> >> > So, while I agree that what you wrote is better, I remain unconvinced of
->> >> >> > it solving a real-world problem.  Feel free to push it in as a cleanup,
->> >> >> > though.
->> >> >>
->> >> >> Well I think it has to be technically correct first. If there is indeed a
->> >> >> guaranteed ref somehow, it just needs a comment.
->> >> >  Hmm, the code in io_destroy() indeed looks fishy. We delete the ioctx
->> >> > from the hash table and set ioctx->dead which is supposed to stop
->> >> > lookup_ioctx() from finding it (see the !ctx->dead check in
->> >> > lookup_ioctx()). There's even a comment in io_destroy() saying:
->> >> >        /*
->> >> >         * Wake up any waiters.  The setting of ctx->dead must be seen
->> >> >         * by other CPUs at this point.  Right now, we rely on the
->> >> >         * locking done by the above calls to ensure this consistency.
->> >> >         */
->> >> > But since lookup_ioctx() is called without any lock or barrier nothing
->> >> > really seems to prevent the list traversal and ioctx->dead test to happen
->> >> > before io_destroy() and get_ioctx() after io_destroy().
->> >> >
->> >> > But wouldn't the right fix be to call synchronize_rcu() in io_destroy()?
->> >> > Because with your fix we could still return 'dead' ioctx and I don't think
->> >> > we are supposed to do that...
->> >>
->> >> With my fix we won't oops, I was a bit concerned about ->dead,
->> >> yes but I don't know what semantics it is attempted to have there.
->> >  But wouldn't it do something bad if the memory gets reallocated for
->> > something else and set to non-zero? E.g. memory corruption?
+On 01/18/11 21:09, Stephen Rothwell wrote:
+> Hi Randy,
+> 
+> On Tue, 18 Jan 2011 09:17:49 -0800 Randy Dunlap <randy.dunlap@oracle.com> wrote:
 >>
->> I don't see how it would with my patch.
->  Ah, you are right. Since the whole structure gets freed only after the RCU
-> period expires, we are guaranteed to see 0 in ctx->users until we drop
-> rcu_read_lock. Maybe a comment like the above would be useful at the place
-> where you use try_get_ioctx() but your patch works.
->
->> >> synchronize_rcu() in io_destroy()  does not prevent it from returning
->> >> as soon as lookup_ioctx drops the rcu_read_lock().
->> >  Yes, exactly. So references obtained before synchronize_rcu() would be
->> > completely fine and valid references and there would be no references after
->> > synchronize_rcu() because they'd see 'dead' set. But looking at the code
->> > again it still would not be enough because we could still race with
->> > io_submit_one() adding new IO to the ioctx which will be freed just after
->> > put_ioctx() in do_io_submit().
->> >
->> > The patch below implements what I have in mind - it should be probably
->> > split into two but I'd like to hear comments on that before doing these
->> > cosmetic touches ;)
+>> I'm seeing this on several builds (i386 and x86_64):
 >>
->> Well this seems to solve it too, but it is 2 problems here. It is changing
->> the semantics of io_destroy which requires the big synchronize_rcu()
->> hammer.
+>> lib/built-in.o:(__modver+0x8): undefined reference to `__modver_version_show'
+>> lib/built-in.o:(__modver+0x2c): undefined reference to `__modver_version_show'
 >>
->> But I don't believe that's necessarily desirable, or required. In fact it is
->> explicitly not reuired because it only says that it _may_ cancel outstanding
->> requests.
->  Well, we are not required to cancel all the outstanding AIO because of the
-> API requirement, that's granted. But we must do it because of the way how
-> the code is written. Outstanding IO requests reference ioctx but they are
-> not counted in ctx->users but in ctx->reqs_active. So the code relies on
-> the fact that the reference held by the hash table protects ctx from being
-> freed and io_destroy() waits for requests before dropping the last
-> reference to ctx. But there's the second race I describe making it possible
-> for new IO to be created after io_destroy() has waited for all IO to
-> finish...
+>> It looks like the compiler or linker is dropping that function from the
+>> build since it cannot see any references to it...
+>> At least __modver_version_show is not in the kernel/params.o file.
+> 
+> Do these builds have CONFIG_SYSFS set?
+> 
 
-Yes there is that race too I agree. I just didn't follow through the code far
-enough to see it was a problem -- I thought it was by design.
+Yes, they all do (50 random builds have CONFIG_SYSFS=y).
 
-I'd like to solve it without synchronize_rcu() though.
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
