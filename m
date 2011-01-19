@@ -1,95 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab1ASK5h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 05:57:37 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52397 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753366Ab1ASK5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 05:57:35 -0500
-Date: Wed, 19 Jan 2011 11:57:08 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Joel Becker <jlbec@evilplan.org>
-Subject: Re: netconsole build breakage (Re: [GIT] Networking)
-Message-ID: <20110119105708.GA16722@elte.hu>
-References: <20110114.130323.201674039.davem@davemloft.net>
- <20110119095920.GA10543@elte.hu>
- <20110119100824.GD9903@cr0.nay.redhat.com>
- <1295433231.21351.17.camel@haakon2.linux-iscsi.org>
+	id S1754046Ab1ASLIa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 06:08:30 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:32828 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753650Ab1ASLI2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 06:08:28 -0500
+Date: Wed, 19 Jan 2011 11:07:54 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Hans Ulli Kroll <ulli.kroll@googlemail.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com
+Subject: Re: [PATCH 0/2] ARM: Gemini: add RTC support for Gemini SoC
+Message-ID: <20110119110754.GB31652@n2100.arm.linux.org.uk>
+References: <1292339307-14336-1-git-send-email-ulli.kroll@googlemail.com> <20110107093155.GN31708@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1295433231.21351.17.camel@haakon2.linux-iscsi.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110107093155.GN31708@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 07, 2011 at 09:31:55AM +0000, Russell King - ARM Linux wrote:
+> On Tue, Dec 14, 2010 at 04:08:25PM +0100, Hans Ulli Kroll wrote:
+> > This patch adds the driver for the rtc chip on the Gemini SoC
+> 
+> I'll take patch 2, but not patch 1.  There is no requirement for patch 1
+> to come via my tree - it can be handled by the RTC people.
+> 
+> My tree is not for random driver code being merged into mainline just
+> because it's used on some ARM platform somewhere.
+> 
+> (I'm making this request as a result of feedback from Linus on last nights
+> merge of the ARM tree.)
 
-* Nicholas A. Bellinger <nab@linux-iscsi.org> wrote:
-
-> On Wed, 2011-01-19 at 18:08 +0800, Américo Wang wrote:
-> > On Wed, Jan 19, 2011 at 10:59:20AM +0100, Ingo Molnar wrote:
-> > >
-> > >FYI, there's a .38-rc1 build failure that triggers rather often:
-> > >
-> > > drivers/built-in.o: In function `drop_netconsole_target':
-> > > netconsole.c:(.text+0x130146): undefined reference to `config_item_put'
-> > > drivers/built-in.o: In function `write_msg':
-> > > netconsole.c:(.text+0x1301aa): undefined reference to `config_item_get'
-> > > netconsole.c:(.text+0x130217): undefined reference to `config_item_put'
-> > > drivers/built-in.o: In function `netconsole_netdev_event':
-> > > netconsole.c:(.text+0x1302ab): undefined reference to `config_item_get'
-> > > ...
-> > >
-> > >Triggered by this configuration:
-> > >
-> > > CONFIG_CONFIGFS_FS=m
-> > > CONFIG_NETCONSOLE=y
-> > >
-> > 
-> > Should be "depends on CONFIGFS_FS=y".
-> 
-> Sorry for breaking this one folks..
-> 
-> Where this was left yesterday was to change NETCONSOLE_DYNAMIC, DLM and
-> OCFS2_FS symbols to use 'select configfs' instead of 'depends on SYSFS
-> && CONFIGFS':
-> 
-> http://marc.info/?l=linux-kernel&m=129539400709508&w=2
-> 
-> but unfortuately this did not make it into .38-rc1 in time..
-> 
-> Using 'select CONFIGFS_FS' here for NETCONSOLE_DYNAMIC with the
-> following patches should do the trick.
-> 
->    git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-linus
-> 
-> Thanks,
-> 
-> Nicholas Bellinger (3):
->   net: Make NETCONSOLE_DYNAMIC use select CONFIGFS_FS
->   dlm: Make DLM use select CONFIGFS_FS
->   ocfs2: Make OCFS2_FS use select CONFIGFS_FS
-> 
->  drivers/net/Kconfig |    3 ++-
-
-Yeah, using select CONFIGFS_FS (and removing the SYSFS and CONFIGFS_FS dependencies) 
-is the correct and clean solution here.
-
-Thanks,
-
-	Ingo
+What's the status of patch 1 wrt the RTC folk?
