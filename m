@@ -1,126 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab1ASNIM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 08:08:12 -0500
-Received: from smtp.nokia.com ([147.243.128.24]:61876 "EHLO mgw-da01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754335Ab1ASNIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 08:08:10 -0500
-Subject: Re: Bug in scheduler when using rt_mutex
-From: Onkalo Samu <samu.p.onkalo@nokia.com>
-Reply-To: samu.p.onkalo@nokia.com
-To: ext Peter Zijlstra <peterz@infradead.org>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, mingo@elte.hu,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        tglx <tglx@linutronix.de>
-In-Reply-To: <1295441881.11678.41.camel@kolo>
-References: <1295275365.12840.13.camel@kolo>
-	 <1295280032.30950.128.camel@laptop> <1295339012.11678.35.camel@kolo>
-	 <AANLkTikXf-OMEBx-UZktxooOs+YqUkSE9doyEZopjzOx@mail.gmail.com>
-	 <1295357746.30950.681.camel@laptop>
-	 <AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
-	 <1295430276.30950.1414.camel@laptop>  <1295433498.30950.1482.camel@laptop>
-	 <1295436632.30950.1542.camel@laptop>  <1295441881.11678.41.camel@kolo>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Nokia Oyj
-Date: Wed, 19 Jan 2011 15:13:19 +0200
-Message-ID: <1295442799.11678.43.camel@kolo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Nokia-AV: Clean
+	id S1754401Ab1ASNKS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 08:10:18 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:50344 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754382Ab1ASNKQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 08:10:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=Z22ZbrLUs2n1SzkYTbyFr4dDCEiwKv1aIEqS8Gxsdf40Bng8z8Nl5d4CESJuFX+c06
+         VgJNWnWwtr/8VhE5VunE/9506e4vruiDCSEhWa226YNXCOs0b9qxvtL5C5DMQDYUguSW
+         DZEhaKLx9ZCKZj48eka7bDzmrcQndQ9sclTko=
+Date: Wed, 19 Jan 2011 16:10:10 +0300
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Patrick Boettcher <patrick.boettcher@dibcom.fr>,
+        Olivier Grenie <olivier.grenie@dibcom.fr>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [BUG] media: dvb: dib9000: buggy locking
+Message-ID: <20110119131010.GA10321@albatros>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-19 at 14:58 +0200, Onkalo Samu wrote:
-> On Wed, 2011-01-19 at 12:30 +0100, ext Peter Zijlstra wrote:
-> > On Wed, 2011-01-19 at 11:38 +0100, Peter Zijlstra wrote:
-> > 
-> > > Hrm, I think the to bit is not needed with the from thing in place, the
-> > > enqueue from _setprio will already have added min_vruntime
-> > 
-> > 
-> > Would lead to something like this:
-> > 
-> 
-> Doesn't work in my case.
+Hi,
 
-When the task is sleeping rt_mutex_setprio
-doesn't call check_class_changed since the task is not 
-in queue at that moment I think.
+I've noticed that locking in drivers/media/dvb/frontends/dib9000.c is
+not correct:
 
-> 
-> > ---
-> > Index: linux-2.6/kernel/sched.c
-> > ===================================================================
-> > --- linux-2.6.orig/kernel/sched.c
-> > +++ linux-2.6/kernel/sched.c
-> > @@ -8108,6 +8108,8 @@ EXPORT_SYMBOL(__might_sleep);
-> >  #ifdef CONFIG_MAGIC_SYSRQ
-> >  static void normalize_task(struct rq *rq, struct task_struct *p)
-> >  {
-> > +	struct sched_class *prev_class = p->sched_class;
-> > +	int old_prio = p->prio;
-> >  	int on_rq;
-> >  
-> >  	on_rq = p->se.on_rq;
-> > @@ -8118,6 +8120,8 @@ static void normalize_task(struct rq *rq
-> >  		activate_task(rq, p, 0);
-> >  		resched_task(rq->curr);
-> >  	}
-> > +
-> > +	check_class_changed(rq, p, prev_class, old_prio, task_current(rq, p));
-> >  }
-> >  
-> >  void normalize_rt_tasks(void)
-> > Index: linux-2.6/kernel/sched_fair.c
-> > ===================================================================
-> > --- linux-2.6.orig/kernel/sched_fair.c
-> > +++ linux-2.6/kernel/sched_fair.c
-> > @@ -4066,11 +4066,30 @@ static void prio_changed_fair(struct rq
-> >  		check_preempt_curr(rq, p, 0);
-> >  }
-> >  
-> > +static void
-> > +switched_from_fair(struct rq *rq, struct task_struct *p, int running)
-> > +{
-> > +	struct sched_entity *se = &p->se;
-> > +	struct cfs_rq *cfs_rq = cfs_rq_of(se);
-> > +
-> > +	/*
-> > +	 * Ensure the task's vruntime is normalized, so that when its
-> > +	 * switched back to the fair class the enqueue_entity(.flags=0) will
-> > +	 * do the right thing.
-> > +	 *
-> > +	 * If it was on_rq, then the dequeue_entity(.flags=0) will already
-> > +	 * have normalized the vruntime, if it was !on_rq, then only when
-> > +	 * the task is sleeping will it still have non-normalized vruntime.
-> > +	 */
-> > +	if (!se->on_rq && p->state != TASK_RUNNING)
-> > +		se->vruntime -= cfs_rq->min_vruntime;
-> > +}
-> > +
-> >  /*
-> >   * We switched to the sched_fair class.
-> >   */
-> > -static void switched_to_fair(struct rq *rq, struct task_struct *p,
-> > -			     int running)
-> > +static void
-> > +switched_to_fair(struct rq *rq, struct task_struct *p, int running)
-> >  {
-> >  	/*
-> >  	 * We were most likely switched from sched_rt, so
-> > @@ -4163,6 +4182,7 @@ static const struct sched_class fair_sch
-> >  	.task_fork		= task_fork_fair,
-> >  
-> >  	.prio_changed		= prio_changed_fair,
-> > +	.switched_from		= switched_from_fair,
-> >  	.switched_to		= switched_to_fair,
-> >  
-> >  	.get_rr_interval	= get_rr_interval_fair,
-> > 
-> 
-> 
+static int dib9000_fw_get_channel(...)
+{
+    ...
+	DibAcquireLock(&state->platform.risc.mem_mbx_lock);
+    ...
+
+error:
+	DibReleaseLock(&state->platform.risc.mem_mbx_lock);
+	return ret;
+}
+
+#define DibAcquireLock(lock) do { if (mutex_lock_interruptible(lock) < 0) dprintk("could not get the lock"); } while (0)
+#define DibReleaseLock(lock) mutex_unlock(lock)
 
 
+1) If mutex is not hold, then the critical section is not protected.
+
+2) If mutex was not hold, then the code tries to release not holded
+mutex.
+
+
+This locking "style" is used all over the driver.
+
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
