@@ -1,256 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874Ab1ASJ1g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 04:27:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24972 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753305Ab1ASJ1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 04:27:34 -0500
-From: Amerigo Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: WANG Cong <amwang@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Rakib Mullick <rakib.mullick@gmail.com>,
-        David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Akinobu Mita <akinobu.mita@gmail.com>
-Subject: [Patch] smp: move smp setup functions to kernel/smp.c
-Date: Wed, 19 Jan 2011 17:26:15 +0800
-Message-Id: <1295429183-9397-1-git-send-email-amwang@redhat.com>
+	id S1753597Ab1ASJcD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 04:32:03 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48279 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753069Ab1ASJcB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 04:32:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=lc3WK8GTLX7CwLgLsvhL5jlnz+BY9rPWHeVXYBD8Q7VPvM28Yi9rH4D8hckg+337AV
+         r7IW+OlhroF1cUZxW/EXB+nVT5thzaboWNir+Lb+ewWth5ywT5OTjaG2h/vYCmw6CxPu
+         bUOJB62fdmJFld2uSNfDaqQ1/Pml/YupFz+EI=
+MIME-Version: 1.0
+In-Reply-To: <1295426461-12459-1-git-send-email-weber@corscience.de>
+References: <1295426461-12459-1-git-send-email-weber@corscience.de>
+From: Govindraj <govindraj.ti@gmail.com>
+Date: Wed, 19 Jan 2011 15:01:39 +0530
+Message-ID: <AANLkTin0-joNuqxqL79j0wqPk_A5mtAgzEY=X=PeH=+C@mail.gmail.com>
+Subject: Re: [PATCHv2] OMAP: Enable Magic SysRq on serial console ttyOx
+To: Thomas Weber <weber@corscience.de>
+Cc: linux-omap@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        "Govindraj.R" <govindraj.raja@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrei Emeltchenko <andrei.emeltchenko@nokia.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves setup_nr_cpu_ids(), smp_init() and some other
-SMP boot parameter setup functions from init/main.c to kenrel/smp.c,
-saves some #ifdef CONFIG_SMP.
+On Wed, Jan 19, 2011 at 2:11 PM, Thomas Weber <weber@corscience.de> wrote:
+> Magic SysRq key is not working for OMAP on new serial
+> console ttyOx because SUPPORT_SYSRQ is not defined
+> for omap-serial.
+>
+> This patch defines SUPPORT_SYSRQ in omap-serial and
+> enables handling of Magic SysRq character.
+>
+> Signed-off-by: Thomas Weber <weber@corscience.de>
 
-Compile tested.
+Looks fine to me.
 
-Signed-off-by: WANG Cong <amwang@redhat.com>
+Acked-by: Govindraj.R <govindraj.raja@ti.com>
 
----
- include/linux/smp.h |    2 +
- init/main.c         |   90 +--------------------------------------------------
- kernel/smp.c        |   81 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 84 insertions(+), 89 deletions(-)
-
-diff --git a/include/linux/smp.h b/include/linux/smp.h
-index 6dc95ca..48159dd 100644
---- a/include/linux/smp.h
-+++ b/include/linux/smp.h
-@@ -114,6 +114,8 @@ int on_each_cpu(smp_call_func_t func, void *info, int wait);
- void smp_prepare_boot_cpu(void);
- 
- extern unsigned int setup_max_cpus;
-+extern void __init setup_nr_cpu_ids(void);
-+extern void __init smp_init(void);
- 
- #else /* !SMP */
- 
-diff --git a/init/main.c b/init/main.c
-index 00799c1..35d6ce6 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -120,63 +120,6 @@ static char *static_command_line;
- static char *execute_command;
- static char *ramdisk_execute_command;
- 
--#ifdef CONFIG_SMP
--/* Setup configured maximum number of CPUs to activate */
--unsigned int setup_max_cpus = NR_CPUS;
--EXPORT_SYMBOL(setup_max_cpus);
--
--
--/*
-- * Setup routine for controlling SMP activation
-- *
-- * Command-line option of "nosmp" or "maxcpus=0" will disable SMP
-- * activation entirely (the MPS table probe still happens, though).
-- *
-- * Command-line option of "maxcpus=<NUM>", where <NUM> is an integer
-- * greater than 0, limits the maximum number of CPUs activated in
-- * SMP mode to <NUM>.
-- */
--
--void __weak arch_disable_smp_support(void) { }
--
--static int __init nosmp(char *str)
--{
--	setup_max_cpus = 0;
--	arch_disable_smp_support();
--
--	return 0;
--}
--
--early_param("nosmp", nosmp);
--
--/* this is hard limit */
--static int __init nrcpus(char *str)
--{
--	int nr_cpus;
--
--	get_option(&str, &nr_cpus);
--	if (nr_cpus > 0 && nr_cpus < nr_cpu_ids)
--		nr_cpu_ids = nr_cpus;
--
--	return 0;
--}
--
--early_param("nr_cpus", nrcpus);
--
--static int __init maxcpus(char *str)
--{
--	get_option(&str, &setup_max_cpus);
--	if (setup_max_cpus == 0)
--		arch_disable_smp_support();
--
--	return 0;
--}
--
--early_param("maxcpus", maxcpus);
--#else
--static const unsigned int setup_max_cpus = NR_CPUS;
--#endif
--
- /*
-  * If set, this is an indication to the drivers that reset the underlying
-  * device before going ahead with the initialization otherwise driver might
-@@ -353,7 +296,7 @@ static int __init rdinit_setup(char *str)
- __setup("rdinit=", rdinit_setup);
- 
- #ifndef CONFIG_SMP
--
-+static const unsigned int setup_max_cpus = NR_CPUS;
- #ifdef CONFIG_X86_LOCAL_APIC
- static void __init smp_init(void)
- {
-@@ -365,37 +308,6 @@ static void __init smp_init(void)
- 
- static inline void setup_nr_cpu_ids(void) { }
- static inline void smp_prepare_cpus(unsigned int maxcpus) { }
--
--#else
--
--/* Setup number of possible processor ids */
--int nr_cpu_ids __read_mostly = NR_CPUS;
--EXPORT_SYMBOL(nr_cpu_ids);
--
--/* An arch may set nr_cpu_ids earlier if needed, so this would be redundant */
--static void __init setup_nr_cpu_ids(void)
--{
--	nr_cpu_ids = find_last_bit(cpumask_bits(cpu_possible_mask),NR_CPUS) + 1;
--}
--
--/* Called by boot processor to activate the rest. */
--static void __init smp_init(void)
--{
--	unsigned int cpu;
--
--	/* FIXME: This should be done in userspace --RR */
--	for_each_present_cpu(cpu) {
--		if (num_online_cpus() >= setup_max_cpus)
--			break;
--		if (!cpu_online(cpu))
--			cpu_up(cpu);
--	}
--
--	/* Any cleanup work */
--	printk(KERN_INFO "Brought up %ld CPUs\n", (long)num_online_cpus());
--	smp_cpus_done(setup_max_cpus);
--}
--
- #endif
- 
- /*
-diff --git a/kernel/smp.c b/kernel/smp.c
-index 4ec30e0..d645a71 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -532,6 +532,87 @@ void ipi_call_unlock_irq(void)
- }
- #endif /* USE_GENERIC_SMP_HELPERS */
- 
-+/* Setup configured maximum number of CPUs to activate */
-+unsigned int setup_max_cpus = NR_CPUS;
-+EXPORT_SYMBOL(setup_max_cpus);
-+
-+
-+/*
-+ * Setup routine for controlling SMP activation
-+ *
-+ * Command-line option of "nosmp" or "maxcpus=0" will disable SMP
-+ * activation entirely (the MPS table probe still happens, though).
-+ *
-+ * Command-line option of "maxcpus=<NUM>", where <NUM> is an integer
-+ * greater than 0, limits the maximum number of CPUs activated in
-+ * SMP mode to <NUM>.
-+ */
-+
-+void __weak arch_disable_smp_support(void) { }
-+
-+static int __init nosmp(char *str)
-+{
-+	setup_max_cpus = 0;
-+	arch_disable_smp_support();
-+
-+	return 0;
-+}
-+
-+early_param("nosmp", nosmp);
-+
-+/* this is hard limit */
-+static int __init nrcpus(char *str)
-+{
-+	int nr_cpus;
-+
-+	get_option(&str, &nr_cpus);
-+	if (nr_cpus > 0 && nr_cpus < nr_cpu_ids)
-+		nr_cpu_ids = nr_cpus;
-+
-+	return 0;
-+}
-+
-+early_param("nr_cpus", nrcpus);
-+
-+static int __init maxcpus(char *str)
-+{
-+	get_option(&str, &setup_max_cpus);
-+	if (setup_max_cpus == 0)
-+		arch_disable_smp_support();
-+
-+	return 0;
-+}
-+
-+early_param("maxcpus", maxcpus);
-+
-+/* Setup number of possible processor ids */
-+int nr_cpu_ids __read_mostly = NR_CPUS;
-+EXPORT_SYMBOL(nr_cpu_ids);
-+
-+/* An arch may set nr_cpu_ids earlier if needed, so this would be redundant */
-+void __init setup_nr_cpu_ids(void)
-+{
-+	nr_cpu_ids = find_last_bit(cpumask_bits(cpu_possible_mask),NR_CPUS) + 1;
-+}
-+
-+/* Called by boot processor to activate the rest. */
-+void __init smp_init(void)
-+{
-+	unsigned int cpu;
-+
-+	/* FIXME: This should be done in userspace --RR */
-+	for_each_present_cpu(cpu) {
-+		if (num_online_cpus() >= setup_max_cpus)
-+			break;
-+		if (!cpu_online(cpu))
-+			cpu_up(cpu);
-+	}
-+
-+	/* Any cleanup work */
-+	printk(KERN_INFO "Brought up %ld CPUs\n", (long)num_online_cpus());
-+	smp_cpus_done(setup_max_cpus);
-+}
-+
- /*
-  * Call a function on all processors
-  */
+> ---
+> Changes from v1: Changed comment
+>
+>  drivers/serial/omap-serial.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/serial/omap-serial.c b/drivers/serial/omap-serial.c
+> index 1201eff..907be9b 100644
+> --- a/drivers/serial/omap-serial.c
+> +++ b/drivers/serial/omap-serial.c
+> @@ -20,6 +20,10 @@
+>  * this driver as required for the omap-platform.
+>  */
+>
+> +#if defined(CONFIG_SERIAL_OMAP_CONSOLE) && defined(CONFIG_MAGIC_SYSRQ)
+> +#define SUPPORT_SYSRQ
+> +#endif
+> +
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+>  #include <linux/console.h>
+> --
+> 1.7.4.rc2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
