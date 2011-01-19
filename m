@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476Ab1ASQom (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 11:44:42 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:48090 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753839Ab1ASQok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 11:44:40 -0500
-Date: Wed, 19 Jan 2011 22:14:33 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Eric Dumazet <dada1@cosmosbay.com>, Jan Beulich <JBeulich@novell.com>,
-        Avi Kivity <avi@redhat.com>, Xen-devel <xen-devel@lists.xensource.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        kvm@vger.kernel.org, suzuki@in.ibm.com
-Subject: Re: [PATCH 00/14] PV ticket locks without expanding spinlock
-Message-ID: <20110119164432.GA30669@linux.vnet.ibm.com>
-Reply-To: vatsa@linux.vnet.ibm.com
-References: <cover.1289940821.git.jeremy.fitzhardinge@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1289940821.git.jeremy.fitzhardinge@citrix.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1754570Ab1ASQpz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 11:45:55 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:33155 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753839Ab1ASQpy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 11:45:54 -0500
+X-Authenticated: #4630777
+X-Provags-ID: V01U2FsdGVkX1/R8tIGHy7REv77Nvtldp4DDWUcbHZLuhiiKEo4b8
+	R1zMMkMEkiVIZi
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+To: eparis@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [PATCH 0/14] fsnotify: simplify locking
+Date: Wed, 19 Jan 2011 17:42:03 +0100
+Message-Id: <1295455337-20219-1-git-send-email-LinoSanfilippo@gmx.de>
+X-Mailer: git-send-email 1.7.1
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 01:08:31PM -0800, Jeremy Fitzhardinge wrote:
-> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> 
-> Hi all,
-> 
-> This is a revised version of the pvticket lock series.
+This patchset simplifies some of the locking that is needed to handle the addition and 
+removal of marks from groups and vfs objects (inodes, mounts). It applies against
+commit ef9bf3b7144bee6ce1da5616015cabc8771206af of branch 
+'origin/for-next' from git.infradead.org/users/eparis/notify.git
 
-The 3-patch series to follow this email extends KVM-hypervisor and Linux guest 
-running on KVM-hypervisor to support pv-ticket spinlocks.
 
-Two hypercalls are being introduced in KVM hypervisor, one that allows a
-vcpu (spinning on a lock) to block and another that allows a vcpu to kick
-another out of blocking state.
+The recent locking order used in fsnotify is 
 
-Patches are against 2.6.37 mainline kernel. I also don't yet have numbers 
-at this time to show benefit of pv-ticketlocks - I would think the benefit
-should be similar across hypervisors (Xen and KVM in this case).
+mark->lock
+group->mark_lock
+inode->i_lock
 
-- vatsa
+The problem is that we cant use the group->mark_lock to synchronize addition and 
+removal of marks to/from a group, so we have to use an additional mutex, namely the 
+group->mutex, for this purpose. 
+We also need a dedicated kernel thread for mark destruction since we cant call 
+synchronize() for the mark_srcu with a spinlock held (at least i assume that this 
+is the main reason this thread exists).
+
+The main goal of these patches is to change the locking order to 
+
+group->mark_lock
+inode->i_lock
+mark->lock
+
+and by this simplify the concerning code:
+- use the group->mark_lock for group list iteration and addition/removal of marks
+- call synchronize() for mark_srcu as soon as a mark is removed from its 
+  fsobject and thus avoid the need for the "fsnotify_mark" thread
+- avoid temporary lists for mark traversal 
+
+ 
+
