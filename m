@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754611Ab1ASQdb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 11:33:31 -0500
-Received: from lo.gmane.org ([80.91.229.12]:47226 "EHLO lo.gmane.org"
+	id S1754144Ab1ASQld (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 11:41:33 -0500
+Received: from mail.perches.com ([173.55.12.10]:3196 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754437Ab1ASQda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 11:33:30 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: walt <w41ter@gmail.com>
-Subject: Re: 2.6.37-08009-ge6f597a "feels" slow - rhythmbox skips audio
-Date: Wed, 19 Jan 2011 08:33:07 -0800
-Message-ID: <ih73o4$gnf$1@dough.gmane.org>
-References: <1295395790.3327.9.camel@localhost.localdomain>
+	id S1752802Ab1ASQlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 11:41:32 -0500
+Subject: Re: [PATCH v2] net: add Faraday FTMAC100 10/100 Ethernet driver
+From: Joe Perches <joe@perches.com>
+To: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ratbert@faraday-tech.com, bhutchings@solarflare.com,
+        eric.dumazet@gmail.com, dilinger@queued.net
+In-Reply-To: <AANLkTi=nJxwR89CF3i0+L6+yM4Bg_PN8PQByTAHP2nPM@mail.gmail.com>
+References: <1294919372-1904-1-git-send-email-ratbert.chuang@gmail.com>
+	 <1295256060-2091-1-git-send-email-ratbert.chuang@gmail.com>
+	 <1295284788.21277.65.camel@Joe-Laptop>
+	 <AANLkTi=nJxwR89CF3i0+L6+yM4Bg_PN8PQByTAHP2nPM@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 19 Jan 2011 08:41:30 -0800
+Message-ID: <1295455290.1952.22.camel@Joe-Laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8; format=flowed
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: adsl-69-234-177-217.dsl.irvnca.pacbell.net
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:2.0b10pre) Gecko/20110117 Thunderbird/3.3a2
-In-Reply-To: <1295395790.3327.9.camel@localhost.localdomain>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2011 04:09 PM, Thomas Meyer wrote:
-> hi,
->
-> kernel version 2.6.37-08009-ge6f597a "feels" slow and background audio
-> skips/stalls when performing some cpu (and/or io?) intensive tasks like
-> a kernel compile or grepping for a string in the kernel source or
-> upgrading the system via yum upgrade.
->
-> I didn't see this behaviour with 2.6.37 (and previous versions) on my UP
-> system.
+On Wed, 2011-01-19 at 17:40 +0800, Po-Yu Chuang wrote:
+> On Tue, Jan 18, 2011 at 1:19 AM, Joe Perches <joe@perches.com> wrote:
+> > on split long line indentation style
+> > and long function declarations.
+[]
+> > Most of drivers/net uses an alignment to open parenthesis
+> > using maximal tabs and minimal necessary spaces instead of
+> > an extra tabstop.
+[]
+> Well, TBH, I don't like this style because if I changed the
+> function name, the indentation might need to be adjusted.
 
-I see the same on my UP machine (but not SMP) when using the new
-SCHED_AUTOGROUP feature.  Do you have that enabled?
+No worries.  That could happen using either style.
+
+There's no required style so you can use what you are
+most comfortable doing.  It's not a big deal at all.
+
+> Even worse, I got an infeasible case :-(
+> 
+> static struct ftmac100_rxdes *ftmac100_rx_locate_first_segment(
+> 							       struct ftmac100 *priv)
+> 
+> I know my function names are quite long, but I like them to be descriptive.
+> Do you really insist on it?
+
+Here's a common alternative style for this case:
+
+static struct ftmac100_rxdes *
+ftmac100_rx_locate_first_segment(struct ftmac100 *priv)
 
 
