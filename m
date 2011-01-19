@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755049Ab1ASWdn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 17:33:43 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:49510 "EHLO
+	id S1755010Ab1ASWem (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 17:34:42 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:49522 "EHLO
 	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754767Ab1ASWdm (ORCPT
+	by vger.kernel.org with ESMTP id S1754469Ab1ASWel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 17:33:42 -0500
-Date: Wed, 19 Jan 2011 17:33:39 -0500
+	Wed, 19 Jan 2011 17:34:41 -0500
+Date: Wed, 19 Jan 2011 17:34:40 -0500
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: David Miller <davem@davemloft.net>
-Cc: rostedt@goodmis.org, richm@oldelvet.org.uk, 609371@bugs.debian.org,
-        ben@decadent.org.uk, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@redhat.com
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, David Miller <davem@davemloft.net>,
+        richm@oldelvet.org.uk, 609371@bugs.debian.org, ben@decadent.org.uk,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, mingo@redhat.com
 Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
 	Unknown relocation: 36
-Message-ID: <20110119223339.GD23544@Krystal>
-References: <20110119153326.GC11022@Krystal> <20110119.134047.232915743.davem@davemloft.net> <20110119221327.GA23544@Krystal> <20110119.142137.184823805.davem@davemloft.net>
+Message-ID: <20110119223440.GE23544@Krystal>
+References: <20110118.223247.241909079.davem@davemloft.net> <20110118.232045.58440904.davem@davemloft.net> <20110119153326.GC11022@Krystal> <20110119.134047.232915743.davem@davemloft.net> <1295474423.12215.1612.camel@gandalf.stny.rr.com> <20110119222144.GC23544@Krystal> <20110119223234.GA20218@merkur.ravnborg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110119.142137.184823805.davem@davemloft.net>
+In-Reply-To: <20110119223234.GA20218@merkur.ravnborg.org>
 X-Editor: vi
 X-Info: http://www.efficios.com
 X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 17:22:06 up 57 days,  3:25,  4 users,  load average: 0.00, 0.00,
-	0.00
+X-Uptime: 17:34:17 up 57 days,  3:37,  4 users,  load average: 0.02, 0.04,
+	0.01
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* David Miller (davem@davemloft.net) wrote:
-> From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> Date: Wed, 19 Jan 2011 17:13:27 -0500
+* Sam Ravnborg (sam@ravnborg.org) wrote:
+> > 
+> > I still wonder how a 32-bit system can generate an unaligned access trap for an
+> > access to a 64-bit variable aligned on 32-bit, given that there is, by
+> > definition, no 64-bit memory accesses available on the architecture ?
 > 
-> > Hrm, I'd like to see what kind of ill-conceived 32-bit architecture would
-> > generate a unaligned access for a 32-bit aligned u64. Do you have examples in
-> > mind ? By definition, the memory accesses should be at most 32-bit, no ? AFAIK,
-> > gcc treats u64 as two distinct reads on all 32-bit architectures.
+> From the SPARC V8 manual (this is the 32 bit version of SPARC):
 > 
-> Sparc 32-bit has 64-bit loads and stores, GCC uses them because the ABI
-> specifies that every structure is at least 8 byte aligned.
-
-Ah, that's the answer I was looking for, thanks!
-
+>     Load/Store Instructions
 > 
-> > gcc on my sparc64 box (32-bit userland) disagrees with you here ;) Using
-> > gcc (Debian 4.3.3-14) 4.3.3, here is a demonstration that, indeed, "packed"
-> > generates aweful code, but that "packed, aligned(4 or 8)" generates pretty
-> > decent code:
+>     ...
+>     Integer load and store instructions support byte (8-bit), halfword (16-bit), word
+>     (32-bit), and doubleword (64-bit) accesses.
+>     ...
 > 
-> Amazing, if this works then do it.
+>     Alignment Restrictions
 > 
-> But please document this fully with comments and such :-)
+>     Halfword accesses must be aligned on a 2-byte boundary, word accesses (which
+>     include instruction fetches) must be aligned on a 4-byte boundary, and doubleword
+>     accesses must be aligned on an 8-byte boundary. An improperly aligned
+>     address causes a load or store instruction to generate a mem_address_not_aligned
+>     trap.
 
-I will, I will! ;)
-
-So I guess we go for the following. Is it verbose enough ?
-
-/*
- * __u64_packed_aligned:
- *
- * Forces gcc to use the u64 type alignment, up-aligning or down-aligning the
- * target type if necessary. The memory accesses to the target structure are
- * efficient (does not require bytewise memory accesses) and the atomic pointer
- * update guarantees required by RCU are kept. u64 is considered as the largest
- * type that can generate a trap for unaligned accesses (u64 on sparc32 needs to
- * be aligned on 64-bit).
- *
- * Specifying both "packed" and "aligned" generates decent code (without the
- * bytewise memory accesses generated by simply using "packed"), and forces
- * gcc to down-align the structure alignment to the alignment of a u64 type.
- *
- * This alignment should be used for both structure definitions and declarations
- * (as *both* the type and variable attribute) when using the "section"
- * attribute to generate arrays of structures.
- */
-#define __u64_packed_aligned \
-        __attribute__((__packed__, __aligned__(__alignof__(long long))))
-
-Thanks,
+Ah! There is always an odd case ;) Thanks!
 
 Mathieu
+
 
 -- 
 Mathieu Desnoyers
