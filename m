@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab1ASKf6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 05:35:58 -0500
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:58486 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752593Ab1ASKf4 (ORCPT
+	id S1753901Ab1ASKiI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 05:38:08 -0500
+Received: from casper.infradead.org ([85.118.1.10]:60841 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752903Ab1ASKiG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 05:35:56 -0500
-X-Greylist: delayed 1874 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Jan 2011 05:35:56 EST
-Message-ID: <4D36B729.4040609@stericsson.com>
-Date: Wed, 19 Jan 2011 11:04:25 +0100
-From: Linus Walleij <linus.walleij@stericsson.com>
-Organization: ST-Ericsson SA
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the rr tree
-References: <20110119154210.435453e4.sfr@canb.auug.org.au>
-In-Reply-To: <20110119154210.435453e4.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Jan 2011 05:38:06 -0500
+Subject: Re: Bug in scheduler when using rt_mutex
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: samu.p.onkalo@nokia.com, mingo@elte.hu,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        tglx <tglx@linutronix.de>
+In-Reply-To: <1295430276.30950.1414.camel@laptop>
+References: <1295275365.12840.13.camel@kolo>
+	 <1295280032.30950.128.camel@laptop> <1295339012.11678.35.camel@kolo>
+	 <AANLkTikXf-OMEBx-UZktxooOs+YqUkSE9doyEZopjzOx@mail.gmail.com>
+	 <1295357746.30950.681.camel@laptop>
+	 <AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
+	 <1295430276.30950.1414.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 19 Jan 2011 11:38:18 +0100
+Message-ID: <1295433498.30950.1482.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2011 05:42 AM, Stephen Rothwell wrote:
-> Presumably caused by commit b64781e8e2b0f480affb170460cbfb3b11fa9e5d
-> ("param: add null statement to compiled-in module params").  I wonder how
-> many more build errors this change may provoke.  Please try to find them
-> and fix them before adding this change, thanks.
->    
+On Wed, 2011-01-19 at 10:44 +0100, Peter Zijlstra wrote:
+> +static void
+> +switched_from_fair(struct rq *rq, struct task_struct *p, int running)
+> +{
+> +       struct sched_entity *se = &p->se;
+> +       struct cfs_rq *cfs_rq = cfs_rq_of(se);
+> +
+> +       if (!se->on_rq && p->state != TASK_RUNNING)
+> +               se->vruntime -= cfs_rq->min_vruntime;
+> +}
+> +
+>  /*
+>   * We switched to the sched_fair class.
+>   */
+> -static void switched_to_fair(struct rq *rq, struct task_struct *p,
+> -                            int running)
+> +static void
+> +switched_to_fair(struct rq *rq, struct task_struct *p, int running)
+>  {
+> +       struct sched_entity *se = &p->se;
+> +       struct cfs_rq *cfs_rq = cfs_rq_of(se);
+> +
+> +       if (se->on_rq && cfs_rq->curr != se)
+> +               __dequeue_entity(cfs_rq, se);
+> +
+> +       se->vruntimea += cfs_rq->min_vruntime;
+> +
+> +       if (se->on_rq && cfs_rq->curr != se)
+> +               __enqueue_entity(cfs_rq, se);
+> +
+>         /*
+>          * We were most likely switched from sched_rt, so
+>          * kick off the schedule if running, otherwise just see 
 
-It can provoke if I'm not mistaken, one more error. So two in total.
-
-grep -r -E '^MODULE_.*\(.*\) *[^;]* *$' .
-Yields a lot of false positives (enhancements welcome) that sifts down
-to these two:
-
-./net/dsa/dsa.c:MODULE_AUTHOR("Lennert Buytenhek <buytenh@wantstofly.org>")
-./drivers/net/arm/ks8695net.c:MODULE_AUTHOR("Simtec Electronics")
-
-I'll send patches for these two, so Rusty can apply them on
-top of his next branch and be done with it.
-
-> I used the version of the rr tree from next-20110118 for today.
->    
-
-Couldn't find any more violators in the next tree.
-
-There shouldn't be many: any file that is built as modules with
-allmod will result in compile error even without this patch, the two above
-must already be broken with allmodconfig, presumably they are
-used in archs that do not enable loadable modules, so they don't
-see the problem.
-
-Yours,
-Linus Walleij
+Hrm, I think the to bit is not needed with the from thing in place, the
+enqueue from _setprio will already have added min_vruntime
