@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073Ab1ASA6c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 19:58:32 -0500
-Received: from mms2.broadcom.com ([216.31.210.18]:3966 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751984Ab1ASA6a convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 19:58:30 -0500
-X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
-From: "Jian Peng" <jipeng@broadcom.com>
-To: "Jeff Garzik" <jgarzik@pobox.com>
-cc: "Tejun Heo" <tj@kernel.org>, "Robert Hancock" <hancockrwd@gmail.com>,
+	id S1753129Ab1ASA7q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 19:59:46 -0500
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:47764 "HELO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752871Ab1ASA7o convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 19:59:44 -0500
+From: Philip Rakity <prakity@marvell.com>
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+CC: Kyungmin Park <kmpark@infradead.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ide <linux-ide@vger.kernel.org>
-Date: Tue, 18 Jan 2011 16:58:10 -0800
-Subject: RE: questions regarding possible violation of AHCI spec in AHCI
- driver
-Thread-Topic: questions regarding possible violation of AHCI spec in
- AHCI driver
-Thread-Index: Acu3cw1ZQEatH4a4Tq+DzMhYSsstDwAAJJ2w
-Message-ID: <E18F441196CA634DB8E1F1C56A50A874319FF4358E@IRVEXCHCCR01.corp.ad.broadcom.com>
-References: <4CFF58D2.4040006@kernel.org>
- <E18F441196CA634DB8E1F1C56A50A874319FA38C43@IRVEXCHCCR01.corp.ad.broadcom.com>
- <4CFFCD56.6050608@kernel.org>
- <E18F441196CA634DB8E1F1C56A50A874319FA7E36E@IRVEXCHCCR01.corp.ad.broadcom.com>
- <4CFFD3EB.10800@kernel.org>
- <E18F441196CA634DB8E1F1C56A50A874319FA7E36F@IRVEXCHCCR01.corp.ad.broadcom.com>
- <4CFFE29C.7080205@kernel.org>
- <E18F441196CA634DB8E1F1C56A50A874319FA38CD3@IRVEXCHCCR01.corp.ad.broadcom.com>
- <4D000C8B.5040904@kernel.org>
- <E18F441196CA634DB8E1F1C56A50A874319FD72B23@IRVEXCHCCR01.corp.ad.broadcom.com>,<20110111182323.GG15933@htj.dyndns.org>
- <E18F441196CA634DB8E1F1C56A50A874319FA7E37B@IRVEXCHCCR01.corp.ad.broadcom.com>
- <4D36358E.40106@pobox.com>
-In-Reply-To: <4D36358E.40106@pobox.com>
+        "andrew.chih.howe.khor@intel.com" <andrew.chih.howe.khor@intel.com>,
+        "kok.howg.ewe@intel.com" <kok.howg.ewe@intel.com>
+Date: Tue, 18 Jan 2011 16:59:32 -0800
+Subject: Re: A MMC card transfer issue
+Thread-Topic: A MMC card transfer issue
+Thread-Index: Acu3dCPDM6dAbBM5Qe2TooXimIk+mg==
+Message-ID: <190C6814-8150-491F-AB90-05A93B347246@marvell.com>
+References: <4CD8DE9C.4040505@dsn.okisemi.com>
+ <AANLkTimfnj8GcSwmALjaZUBsiq6ssaVuzVZZsZHRYmiX@mail.gmail.com>
+ <001701cb814c$71926bf0$66f8800a@maildom.okisemi.com>
+ <001201cb90f4$4be8f790$66f8800a@maildom.okisemi.com>
+ <2D50F985-2383-4406-8514-DFE462A5F546@marvell.com>
+ <4D2E0464ABB54FFF9C10583336E27879@hacdom.okisemi.com>
+In-Reply-To: <4D2E0464ABB54FFF9C10583336E27879@hacdom.okisemi.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 acceptlanguage: en-US
-MIME-Version: 1.0
-X-WSS-ID: 6128E8F03H04005380-01-01
-Content-Type: text/plain;
- charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry that I switched to other tasks recently, and will report the testing results within this week.
-Any suggestion on how to test the code path affected by this patch, AFAIK, bootup and hotplug will use this path, What else?
 
-Thanks,
-Jian
+I just looked in the 2.6.37 code and the fix is not there.  It is in the 2.6.37 linus  tree.  
 
------Original Message-----
-From: Jeff Garzik [mailto:jgpobox@gmail.com] On Behalf Of Jeff Garzik
-Sent: Tuesday, January 18, 2011 4:51 PM
-To: Jian Peng
-Cc: Tejun Heo; Robert Hancock; linux-kernel@vger.kernel.org; ide
-Subject: Re: questions regarding possible violation of AHCI spec in AHCI driver
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=drivers/mmc/core/mmc.c;h=16006ef153fe081c2f0f0a09cd4443ce7f3c49a1;hb=a25cecce88194b2edf38b8c3b1665e9318eb2d22
 
-On 01/11/2011 01:55 PM, Jian Peng wrote:
-> Here is new patch based on your suggestion (against 2.6.37 release)
-[...]
-> I will test host controller made by other vendors and report issues soon.
+Chris Ball who maintains this should know when it will be pushed upwards.
 
-Any updates?
+Philip 
+On Jan 18, 2011, at 4:36 PM, Tomoya MORINAGA wrote:
 
-	Jeff
-
-
-
-
+> Hi Philip,
+>  
+> On Wednesday, December 01, 2010 10:31 AM, Philip Rakity wrote:
+> > Thanks very much, I'll plan on sending this to Linus tomorrow, along
+> > with the rest of my .37 queue, unless there are any more review
+> > comments from anyone.
+>  
+> We tried to use the MMC card like the following on kernel-2.6.37.
+>  
+> On Tuesday, November 09, 2010 2:40 PM, Tomoya MORINAGA wrote:
+> > I am facing the issue about some MMC cards on Intel EG20T PCH 
+> > (Platform Controller Hub).
+> > The linux version is 2.6.36.
+> > I can not transfer data the MMC cards (e.g. Transcned MMC card).
+> > The card is 1 bit bus width. And the card is according to MMC 
+> > specification V3.x.
+> > And the EG20T has a 4 bit bus width capability Linux MMC 
+> > standard driver decides the card bus width as 4 bit, if the 
+> > MMC specification version is larger than or equal to V4.0 like below.
+>  
+> However it seems the issue remains to be seen.
+> Have you fixed the MMC unrecognized issue in kernel-2.6.37?
+>  
+> Thanks,
+> -----------------------------------------
+> Tomoya MORINAGA
+> OKI SEMICONDUCTOR CO., LTD.
 
