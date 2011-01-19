@@ -1,100 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199Ab1ASCei (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 21:34:38 -0500
-Received: from amavis-outgoing2.knology.net ([24.214.64.231]:46888 "EHLO
-	amavis-outgoing2.knology.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751813Ab1ASCeh (ORCPT
+	id S1752365Ab1ASCjA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 21:39:00 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39988 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab1ASCi7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 21:34:37 -0500
-Subject: Re: [PATCH v3]  fs/direct-io.c: don't try to allocate more than
- BIO_MAX_PAGES in a bio
-From: David Dillow <dillowda@ornl.gov>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jeff Moyer <jmoyer@redhat.com>,
+	Tue, 18 Jan 2011 21:38:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=AoBkTtJV3rN69YwPg0lNYCRQIKBzSu6oyTVoMbaqOG+urt9I+aNezHqVG0bkxCGWg4
+         26krucQR02ynljJiToMe2OW5VEGCACNBM9Ng8EQ3LDyzEQuRL9s3Eq/EPY2S96S8Ub/1
+         aPwnWJCJ1cY2RvBiQ3eirjFh8PKPrN1F788zw=
+MIME-Version: 1.0
+In-Reply-To: <1295357746.30950.681.camel@laptop>
+References: <1295275365.12840.13.camel@kolo>
+	<1295280032.30950.128.camel@laptop>
+	<1295339012.11678.35.camel@kolo>
+	<AANLkTikXf-OMEBx-UZktxooOs+YqUkSE9doyEZopjzOx@mail.gmail.com>
+	<1295357746.30950.681.camel@laptop>
+Date: Wed, 19 Jan 2011 10:38:57 +0800
+Message-ID: <AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
+Subject: Re: Bug in scheduler when using rt_mutex
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: samu.p.onkalo@nokia.com, mingo@elte.hu,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-In-Reply-To: <20110118165359.09023fe9.akpm@linux-foundation.org>
-References: <1294977946.21790.20.camel@obelisk.thedillows.org>
-	 <x498vynbl4e.fsf@segfault.boston.devel.redhat.com>
-	 <1295023584.24487.16.camel@lap75545.ornl.gov>
-	 <x49y66jmljv.fsf@segfault.boston.devel.redhat.com>
-	 <1295319627.3051.89.camel@obelisk.thedillows.org>
-	 <20110118165359.09023fe9.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 Jan 2011 21:34:30 -0500
-Message-ID: <1295404470.5233.31.camel@obelisk.thedillows.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+        tglx <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-18 at 16:53 -0800, Andrew Morton wrote:
-> On Mon, 17 Jan 2011 22:00:27 -0500
-> David Dillow <dillowda@ornl.gov> wrote:
-> 
-> > When using devices that support max_segments > BIO_MAX_PAGES (256),
-> > direct IO tries to allocate a bio with more pages than allowed, which
-> > leads to an oops in dio_bio_alloc(). Clamp the request to the supported
-> > maximum, and change dio_bio_alloc() to reflect that bio_alloc() will
-> > always return a bio when called with __GFP_WAIT and a valid number of
-> > vectors.
-> 
-> Which device driver triggers this condition?
+On Tue, Jan 18, 2011 at 9:35 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> Subject: sched: Fix switch_to_fair()
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Date: Mon Jan 17 17:03:27 CET 2011
+>
+> When a task is placed back into fair_sched_class, we must update its
+> placement, since we don't know how long its been gone, hence its
+> vruntime is stale and cannot be trusted.
+>
+> There is also a case where it was moved from fair_sched_class when it
+> was in a blocked state and moved back while it is running, this causes
+> an imbalance between DEQUEUE_SLEEP/DEQUEUE_WAKEUP for the fair class
+> and leaves vruntime way out there (due to the min_vruntime
+> adjustment).
+>
+> Also update sysrq-n to call the ->switch_{to,from} methods.
+>
+> Reported-by: Onkalo Samu <samu.p.onkalo@nokia.com>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+>  kernel/sched.c      |    4 ++++
+>  kernel/sched_fair.c |   16 ++++++++++++++++
+>  2 files changed, 20 insertions(+)
+>
+> Index: linux-2.6/kernel/sched_fair.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/sched_fair.c
+> +++ linux-2.6/kernel/sched_fair.c
+> @@ -4075,6 +4075,22 @@ static void prio_changed_fair(struct rq
+>  static void switched_to_fair(struct rq *rq, struct task_struct *p,
+>                             int running)
+>  {
+> +       struct sched_entity *se = &p->se;
+> +       struct cfs_rq *cfs_rq = cfs_rq_of(se);
+> +
+> +       if (se->on_rq && cfs_rq->curr != se)
 
-I found it with the changes I've been making to the SRP driver to
-support much larger IOs; this is not upstream yet.
+(cfs_rq->curr != se) equals to (!running), no?
 
-> > Also added cc to stable, as this has been a longstanding item.
-> 
-> Well.  -stable only needs the patch if the driver which triggers the
-> problem is also there.  But we don't know what driver that is, yet???
+> +               __dequeue_entity(cfs_rq, se);
+> +
+> +       /*
+> +        * se->vruntime can be completely out there, there is no telling
+> +        * how long this task was !fair and on what CPU if any it became
+> +        * !fair. Therefore, reset it to a known, reasonable value.
+> +        */
+> +       se->vruntime = cfs_rq->min_vruntime;
 
-Good point.
+But this is not fair for !SLEEP task.
+You know se->vruntime -= cfs_rq->min_vruntime for !SLEEP task,
+then after it go through sched_fair-->sched_rt-->sched_fair by some
+means, current cfs_rq->min_vruntime is added back.
 
-Any driver that supports a sg_tablesize of more than 256 has the
-potential for problems. A quick search of the tree indicates that the
-following set their initial sg_tablesize to SCSI_MAX_SG_CHAIN_SEGMENTS
-(2048), though they may be saved by a separate bug I found -- and sent a
-patch to the list -- that incorrectly causes that define to take the
-value 128. 
+But here se is putted before where it should be. Is this what we want?
 
-./drivers/usb/storage/scsiglue.c
-./drivers/scsi/arm/powertec.c
-./drivers/scsi/arm/eesox.c
-./drivers/scsi/arm/cumana_2.c
-./drivers/ata/pata_icside.c
+Thanks,
+Yong
 
-CCISS looks to pull the config from the hardware and has a case for more
-than 512 entries, so maybe on that one. AACRAID has cases above 256, and
-also seems to calculate the setting in some instances as well. FNIC uses
-1024.
-
-> > +	/*
-> > +	 * bio_alloc() is guaranteed to return a bio when called with
-> > +	 * __GFP_WAIT and we request a valid number of vectors.
-> > +	 */
-> >  	bio = bio_alloc(GFP_KERNEL, nr_vecs);
-> > +	BUG_ON(!bio);
-> 
-> This BUG_ON() is pretty pointless,
-> 
-> >  	bio->bi_bdev = bdev;
-> 
-> because the next statement will reliably oops, providing us with the
-> same information.
-
-Fair enough, though I'd argue -- weakly -- that BUG_ON gives a pointer
-to the source. I had to dig through the assembly and figure out that
-this function was inlined, but I'd agree that it wasn't too hard and
-it'd be nice to avoid the conditional on a hot path.
-
-I'll reroll it, or you can drop the BUG_ON, either way is fine by me.
 -- 
-Dave Dillow
-National Center for Computational Science
-Oak Ridge National Laboratory
-(865) 241-6602 office
-
+Only stand for myself
