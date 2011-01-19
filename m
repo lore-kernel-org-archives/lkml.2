@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053Ab1ASKIi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 05:08:38 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:60992 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753644Ab1ASKIf (ORCPT
+	id S1754015Ab1ASKLR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 05:11:17 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52422 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752651Ab1ASKLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 05:08:35 -0500
+	Wed, 19 Jan 2011 05:11:15 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=tQ1L8NzUAWmOeUhwicaURJ2nXKIh4IPIJiemjja1o/LbgW1oVLGEAKtDneIwJazNfd
-         XsSZV5LrEuR1kA31RpSVm4YBQybnTAFg+hqdosBYM7dwjQwLtjyjSInFNtYeCtyKIz6d
-         WpIwq/IQNNx3XPCjJ0UFbYTI3cIazB4eCgBzw=
-Date: Wed, 19 Jan 2011 18:08:24 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: David Miller <davem@davemloft.net>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: netconsole build breakage (Re: [GIT] Networking)
-Message-ID: <20110119100824.GD9903@cr0.nay.redhat.com>
-References: <20110114.130323.201674039.davem@davemloft.net>
- <20110119095920.GA10543@elte.hu>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=G290hhLOFllLlw9YCOgqvpniEBFIVJLHEvDg6QP1iQTDY5+Bsx2k/foX6WPkElMA65
+         EOhh+RyywC3HeGZ5T67SxgRgYZoe7uM/b+S7uj2oZ2Woltu5t4OWIR7OhKWZWGdl3rMq
+         MHUn+Mm4D2rmUn+NkVHyyRB9SanHtv4WZfkD8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110119095920.GA10543@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1295430682.4685.1.camel@jlt3.sipsolutions.net>
+References: <AANLkTi=DLpfpLYAftktUKa5grNyTeT0-reyjEsrr-NwR@mail.gmail.com>
+	<1295430682.4685.1.camel@jlt3.sipsolutions.net>
+Date: Wed, 19 Jan 2011 17:11:14 +0700
+Message-ID: <AANLkTimdBRXebouUbnrXhUczqgeadAR=kHrrhB5MksP=@mail.gmail.com>
+Subject: Re: [2.6.38-rc1] iwlagn lock misuse...
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Reinette Chatre <reinette.chatre@intel.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        linux-wireless@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 10:59:20AM +0100, Ingo Molnar wrote:
->
->FYI, there's a .38-rc1 build failure that triggers rather often:
->
-> drivers/built-in.o: In function `drop_netconsole_target':
-> netconsole.c:(.text+0x130146): undefined reference to `config_item_put'
-> drivers/built-in.o: In function `write_msg':
-> netconsole.c:(.text+0x1301aa): undefined reference to `config_item_get'
-> netconsole.c:(.text+0x130217): undefined reference to `config_item_put'
-> drivers/built-in.o: In function `netconsole_netdev_event':
-> netconsole.c:(.text+0x1302ab): undefined reference to `config_item_get'
-> ...
->
->Triggered by this configuration:
->
-> CONFIG_CONFIGFS_FS=m
-> CONFIG_NETCONSOLE=y
->
+Hi Johannes,
 
-Should be "depends on CONFIGFS_FS=y".
+On 19 January 2011 16:51, Johannes Berg <johannes@sipsolutions.net> wrote:
+> On Wed, 2011-01-19 at 16:44 +0700, Daniel J Blueman wrote:
+>> Booting an instrumented 2.6.38-rc1 kernel with an Intel WiFi Link 5300
+>> card and associating with an access point, I see a lockdep warning
+>> [attached].
+>>
+>> This is essentially (struct iwl_priv)->lock being taken with
+>> interrupts disabled in iwl-agn-ict.c:152 [1] and the same lock taken
+>> with interrupts enabled in rx.c:2476 [2] (confirmed via disassembly).
+>>
+>> It feels like this would have been introduced in this commit:
+>> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=6e8cc38d5b05bb812f89a35bd9bf52405e67d0df
+>
+> I think you're running into a lockdep false positive, it's not actually
+> the same lock and lockdep confuses a few skb queue locks. Please apply
+> this patch
+> http://git.kernel.org/?p=linux/kernel/git/linville/wireless-testing.git;a=commitdiff;h=53c16b8e752e8e58f4313f1155f3afadf78311bb
+> and see if the problem persists.
+
+Good move; it addresses the false-positive. I hope it can hit 2.6.38-rc2.
+
+Thanks,
+  Daniel
+-- 
+Daniel J Blueman
