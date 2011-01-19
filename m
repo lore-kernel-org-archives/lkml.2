@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab1ASBY4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 20:24:56 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:50405 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753109Ab1ASBYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 20:24:55 -0500
-Message-ID: <4D363D7D.1060705@cn.fujitsu.com>
-Date: Wed, 19 Jan 2011 09:25:17 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1753281Ab1ASB2a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 20:28:30 -0500
+Received: from claw.goop.org ([74.207.240.146]:53357 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753109Ab1ASB23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 20:28:29 -0500
+Message-ID: <4D363E39.2050100@goop.org>
+Date: Tue, 18 Jan 2011 17:28:25 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        Chad Talbott <ctalbott@google.com>, Nauman Rafique <nauman@google.com>,
-        Divyesh Shah <dpshah@google.com>, jmoyer@redhat.com,
-        Shaohua Li <shaohua.li@intel.com>
-Subject: Re: [PATCH 2/6 v3] cfq-iosched: Introduce cfq_entity for CFQ group
-References: <4D180ECE.4000305@cn.fujitsu.com> <4D18536B.9090109@cn.fujitsu.com> <20110118212056.GK27946@redhat.com>
-In-Reply-To: <20110118212056.GK27946@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-19 09:24:22,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-19 09:24:23,
-	Serialize complete at 2011-01-19 09:24:23
+To: vatsa@linux.vnet.ibm.com
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@suse.de>, Peter Zijlstra <peterz@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>, Avi Kivity <avi@redhat.com>,
+        Xen-devel <xen-devel@lists.xensource.com>, suzuki@in.ibm.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH RFC 09/12] xen/pvticketlock: Xen implementation for PV
+ ticket locks
+References: <cover.1279328276.git.jeremy.fitzhardinge@citrix.com> <32e63cc978ec4b3f36c7f641ce48b3d86aed22ed.1279328276.git.jeremy.fitzhardinge@citrix.com> <20100926113910.GA6719@linux.vnet.ibm.com> <4C9FCA8F.4070802@goop.org> <20110118162717.GA18234@linux.vnet.ibm.com>
+In-Reply-To: <20110118162717.GA18234@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Mon, Dec 27, 2010 at 04:50:51PM +0800, Gui Jianfeng wrote:
-> 
-> [..]
->> -static struct cfq_group *cfq_rb_first_group(struct cfq_rb_root *root)
->> +static struct cfq_entity *cfq_rb_first_entity(struct cfq_rb_root *root)
->>  {
->>  	if (!root->left)
->>  		root->left = rb_first(&root->rb);
->>  
->>  	if (root->left)
->> -		return rb_entry_cfqg(root->left);
->> +		return rb_entry_entity(root->left);
->>  
-> 
-> Why are we defining cfq_rb_first_entity(). Can't we simply use cfq_rb_first()
-> as introduced in first patch.
+On 01/18/2011 08:27 AM, Srivatsa Vaddagiri wrote:
+>> No, interrupts are disabled while waiting to take the lock, so it isn't
+>> possible for an interrupt to come in.
+> Where are we disabling interrupts? Is it in xen_poll_irq()?
 
-Ok, Will rename it.
+No, they're already disabled in the generic spinlock code. 
+arch_spin_lock_flags() can re-enable them if it wants.
 
-Thanks,
-Gui
+>>  With the old-style locks it was
+>> reasonable to leave interrupts enabled while spinning, but with ticket
+>> locks it isn't.
+>>
+>> (I haven some prototype patches to implement nested spinning of ticket
+>> locks,
+> Hmm ..where is nested spinning allowed/possible? Process context will
+> disable interrupts/bh from wanting the same (spin-)lock it is trying to
+> acquire?
 
-> 
-> Thanks
-> Vivek
-> 
+If you're in an interrupt-enabled context at the time you're taking an
+interrupt-safe spinlock (ie, using spin_lock_irq[save]), then it is (in
+principle) valid to leave interrupts enabled until you actually acquire
+the lock (obv you must avoid any window with the lock acquired and
+interrupts enabled).
+
+We did this with the old-style locks (both native and pv) - it seems
+like it should be especially useful for interrupt latency if we end up
+waiting for the lock a long time.  However, it can't be done with ticket
+locks.  I also have no idea how often we ended up being able to it in
+practice anyway.
+
+    J
