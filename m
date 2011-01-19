@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754634Ab1ASPJe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 10:09:34 -0500
-Received: from mx4.wp.pl ([212.77.101.8]:35701 "EHLO mx4.wp.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753957Ab1ASPJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 10:09:33 -0500
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Jan 2011 10:09:33 EST
-Message-ID: <4D36FCFD.9030700@wp.pl>
-Date: Wed, 19 Jan 2011 16:02:21 +0100
-From: Bushman <buszu1@wp.pl>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1754667Ab1ASPKI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 10:10:08 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:36878 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753957Ab1ASPKG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 10:10:06 -0500
+Date: Wed, 19 Jan 2011 10:10:04 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: David Miller <davem@davemloft.net>
+Cc: rostedt@goodmis.org, richm@oldelvet.org.uk, 609371@bugs.debian.org,
+        ben@decadent.org.uk, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@redhat.com
+Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
+	Unknown relocation: 36
+Message-ID: <20110119151004.GA11022@Krystal>
+References: <20110118201323.GA14930@Krystal> <1295382144.12215.123.camel@gandalf.stny.rr.com> <20110119050844.GA8776@Krystal> <20110118.211639.68142725.davem@davemloft.net>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: PROBLEM: Bluetooth USB dongle dies often when using BT mouse.
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-WP-AV: skaner antywirusowy poczty Wirtualnej Polski S. A.
-X-WP-SPAM: NO 0000000 [cROE]                               
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110118.211639.68142725.davem@davemloft.net>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 10:05:27 up 56 days, 20:08,  5 users,  load average: 0.02, 0.08,
+	0.07
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1) The USB bluetooth dongle dies every few seconds/minutes when using BT 
-mouse.
+* David Miller (davem@davemloft.net) wrote:
+> From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Date: Wed, 19 Jan 2011 00:08:45 -0500
+> 
+> > The following works fine for me now. Comments are welcome.
+> 
+> Thanks for doing this work Mathieu.
+> 
+> > - No aligned() type attribute nor variable attribute. I get a crash on x86_64
+> >   (NULL pointer exception when executing __trace_add_event_call, the 5th call).
+> >   __alignof__(struct ftrace_event_call) is worth 8.
+> 
+> This is really bizarre.  Does it only happen on x86_64?
 
-1.1) Table of contents:
-1)     One line summary of the problem:
-1.1)     This TOC
-2)     Full description of the problem/report:
-3)     Keywords (i.e., modules, networking, kernel):
-4)     Kernel version (from /proc/version):
-5)     Output of Oops.. message N/A?
-6)    A small shell script or example program which triggers the problem N/A
-7)     Environment
-7.1)     Software
-7.2)     Processor information (from /proc/cpuinfo):
-7.3)     Module information (from /proc/modules):
-7.4)     Loaded driver and hardware information (/proc/ioports, /proc/iomem)
-7.5)     PCI information ('lspci -vvv' as root)
-7.6)     SCSI information N/A
-7.7)    Other information that might be relevant to the problem: dmesg 
-output, usbmon debug output, lsusb
+Sadly, my ppc32 test machine is currently broken, so I could not check on other
+than x86 archs.
 
-2) When i'm using bluetooth mouse my bluetooth dongle dies every few 
-minutes taking the mouse down on the way. The dongle does not crash when 
-idle, when using for file transfer or internet connectivity. I'm using 
-"Blueman Device Manager 1.21" for configuring the mouse. The bluetooth 
-dongle is branded "Manta" and the mouse is Esperanza model EM117. The 
-mouse AND the bluetooth dongle were tested on other machines running 
-various versions of Windows and Ubuntu 10.10. Under the Windows OS the 
-problem does not exist. Under other Ubuntu OS the problems is exactly 
-the same.
+> I'm wondering if GCC does something bizarre like work with different
+> default alignments based upon the section or something like that.
+> 
+> If so, maybe adding the section attribute to the array definition will
+> "fix" things?
 
-If that's not a problem, please include me to CC in replies to this 
-problem since i'm not subscribing the mailing list and it is the only 
-problem i'm dealing with at the moment. Thanks in advance.
+Well, I thought about it in my sleep, and it looks like gcc is within its rights
+to align these statically declared structures on a larger alignment: gcc has no
+clue that we're going to do tricks with the linker to access the structures as
+an array, so aligning on a larger alignment *should* be fine for the compiler,
+but we suffer because we're doing something non-standard.
 
-3) Keywords: Bluetooth, USB, Mouse.
+> 
+> > On 32-bit architectures, we really want a aligned(4), and on 64-bit
+> > architectures, aligned(8). Represent this by creating:
+> > 
+> > #define __long_aligned __attribute__((__aligned__(__alignof__(long))))
+> 
+> Do any of these datastructures have, or will have, "u64" or "long
+> long" types in them?  If so, then we will need to use "8"
+> unconditionally or "__alignof__(long long)".
 
-4) Kernel version: Linux version 2.6.32-27-generic (buildd@roseapple) 
-(gcc version 4.4.3 (Ubuntu 4.4.3-4ubuntu5) ) #49-Ubuntu SMP Wed Dec 1 
-23:52:12 UTC 2010
+If my memory serves me correctly, I think "long long" is aligned on 4 bytes on
+ppc32, but on 8 bytes on x86_32 (yeah, that's weird). How about we create a
+#define __long_long_aligned __attribute__((__aligned__(__alignof__(long long))))
 
-5) Output of Oops:
-N/A (Oops? o_O)
+?
 
-6) A small shell script or example program which triggers the problem
-N/A
+Thanks,
 
-7) Enviroment: Acer Extensa 5200 running Ubuntu 10.04 LTS
-Due to the large amount of information provided in this section it is 
-available at http://www.bushman.pl/attachments/enviroment.txt
+Mathieu
 
-Regards,
-Wojciech "Bushman" Nycz
+> 
+> I'll see if I can work out why using no align directive explodes
+> on x86-64.
 
-PS: please add me to CC when replying to this email, thank you.
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
