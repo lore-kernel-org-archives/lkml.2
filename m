@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766Ab1ASITo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 03:19:44 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:56697 "EHLO
+	id S1753650Ab1ASITe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 03:19:34 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:50300 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753659Ab1ASITl (ORCPT
+	with ESMTP id S1753465Ab1ASITd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 03:19:41 -0500
+	Wed, 19 Jan 2011 03:19:33 -0500
 From: Thomas Weber <weber@corscience.de>
 To: linux-omap@vger.kernel.org
-Cc: Thomas Weber <weber@corscience.de>, Tony Lindgren <tony@atomide.com>,
+Cc: Daniel Morsing <daniel.morsing@gmail.com>,
+        Tony Lindgren <tony@atomide.com>,
         Russell King <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Daniel Morsing <daniel.morsing@gmail.com>, charu@ti.com,
-        sshtylyov@mvista.com
-Subject: [PATCHv4 0/4] omap3: Devkit8000: misc fixes
-Date: Wed, 19 Jan 2011 09:19:22 +0100
-Message-Id: <1295425166-25540-1-git-send-email-weber@corscience.de>
+        Thomas Weber <weber@corscience.de>, charu@ti.com, sshtylyov@mvista.com
+Subject: [PATCHv4 2/4] OMAP3: Devkit8000: Fix tps65930 pullup/pulldown configuration
+Date: Wed, 19 Jan 2011 09:19:24 +0100
+Message-Id: <1295425166-25540-3-git-send-email-weber@corscience.de>
 X-Mailer: git-send-email 1.7.4.rc2
-X-Provags-ID: V02:K0:Loos+2SlwTZGJXR2pE4e1t9oiMdgX6n50pzaR53g58s
- 1KnBuxHT5WTyiZGhJj2Cz021fxT4ZYUh++EUd2v5WIFdyPgrMb
- Mb81iIQtm7y/Q8FaK1u3AJHCRjEp8aGRs/2/9tF1uc4Y//plLc
- woDiZSYAvZ/+PtwrYAcbwFi3R+5mUIYleF+BZMJLUFx6mw4tku
- 2xKknlcniESxaxaPMJo7g==
+In-Reply-To: <1295425166-25540-1-git-send-email-weber@corscience.de>
+References: <1295425166-25540-1-git-send-email-weber@corscience.de>
+X-Provags-ID: V02:K0:W99kUhE7PXs8DLploId0JQEjpCczTPJV9gr4mjeRIkE
+ B9wtYXSvVheC+zpETG2nkCHTYjVxBkNDjnygJW78crlKFHA7i3
+ HUn0sXGV275LQM21xhdtbrmgevf7fBGJr1aMwNLypaMIEv1T20
+ 5dcLE2E+UU/PBv+t1MvdzEAuP433ZShRFh6AL9enwybnxJ0ytO
+ xO4JMjYl5Ga7HPuwc7pHA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is a set of misc fixes for the devkit8000.
+From: Daniel Morsing <daniel.morsing@gmail.com>
 
-The only really notable one is the lcd enable gpio fix. It gets rid
-of some nasty low level twl4030 calls and replaces them with generic gpio
-calls. It also fixes a bug where the screen would not turn off when
-blanking.
+gpio7 on the tps65930 is used as an output on the devkit8000 and
+gpio1 is not connected. Remove gpio7 and change gpio1 to pulldown
 
-Changes from v1: 
-	Pull the indention fix into "Change lcd power pin".
-	Change the pin for lcd pwren.
-	Fix the pullup/pulldown configuration after lcd prwen correction.
+Signed-off-by: Daniel Morsing <daniel.morsing@gmail.com>
+---
+ arch/arm/mach-omap2/board-devkit8000.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-Changes from v2:
-	Better comment for removing low level functions used for twl4030 gpio
-	Fix indention => indentation in comment
-
-Changed from v3:
-	Use return value of gpio_request.
-	Fix indentation of one curly brace.
-
-Daniel Morsing (1):
-  OMAP3: Devkit8000: Fix tps65930 pullup/pulldown configuration
-
-Thomas Weber (3):
-  OMAP3: Devkit8000: Change lcd power pin
-  OMAP3: Devkit8000: Check return value of gpio_request
-  OMAP3: Devkit8000: Fix indentation
-
- arch/arm/mach-omap2/board-devkit8000.c |   28 ++++++++++++++++++----------
- 1 files changed, 18 insertions(+), 10 deletions(-)
-
+diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
+index 719f4e5..9fb416b 100644
+--- a/arch/arm/mach-omap2/board-devkit8000.c
++++ b/arch/arm/mach-omap2/board-devkit8000.c
+@@ -262,8 +262,7 @@ static struct twl4030_gpio_platform_data devkit8000_gpio_data = {
+ 	.irq_base	= TWL4030_GPIO_IRQ_BASE,
+ 	.irq_end	= TWL4030_GPIO_IRQ_END,
+ 	.use_leds	= true,
+-	.pullups	= BIT(1),
+-	.pulldowns	= BIT(2) | BIT(6) | BIT(7) | BIT(8) | BIT(13)
++	.pulldowns	= BIT(1) | BIT(2) | BIT(6) | BIT(8) | BIT(13)
+ 				| BIT(15) | BIT(16) | BIT(17),
+ 	.setup		= devkit8000_twl_gpio_setup,
+ };
 -- 
 1.7.4.rc2
 
