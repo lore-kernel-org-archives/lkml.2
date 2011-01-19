@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863Ab1ASJMa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 04:12:30 -0500
-Received: from ebb06.tieto.com ([131.207.168.38]:63403 "EHLO ebb06.tieto.com"
+	id S1753839Ab1ASJOx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 04:14:53 -0500
+Received: from ebb05.tieto.com ([131.207.168.36]:44899 "EHLO ebb05.tieto.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753672Ab1ASJM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 04:12:27 -0500
-X-AuditID: 83cfa826-b7bdbae000001a50-22-4d36aaf9956f
-Date: Wed, 19 Jan 2011 17:20:11 +0800
+	id S1752686Ab1ASJOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 04:14:51 -0500
+X-AuditID: 83cfa824-b7b13ae000000ee5-bd-4d36ab894243
+Date: Wed, 19 Jan 2011 17:22:35 +0800
 From: Yang Ruirui <ruirui.r.yang@tieto.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>,
         Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>,
         Linus Walleij <linus.walleij@stericsson.com>,
-        Felipe Balbi <felipe.balbi@nokia.com>,
         Heikki Krogerus <ext-heikki.krogerus@nokia.com>,
         Tejun Heo <tj@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
         Hema HK <hemahk@ti.com>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
 Subject: [PATCH] usb otg: use atomic notifier instead of blocking notifier
-Message-ID: <20110119092011.GA23624@darkstar>
+Message-ID: <20110119092235.GA23629@darkstar>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
