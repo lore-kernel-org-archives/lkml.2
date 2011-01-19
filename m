@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab1ASSHj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 13:07:39 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45913 "EHLO
+	id S1754083Ab1ASSNo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 13:13:44 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:61020 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753231Ab1ASSHi (ORCPT
+	with ESMTP id S1751210Ab1ASSNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 13:07:38 -0500
-X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=jbLP0KXJcOz0BbRaUrEA:9 a=TjtZIcRDpScOVP2it_G184gpHXwA:4 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Wed, 19 Jan 2011 13:13:44 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=44vUGAvzfu8A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=7iJcpLsfajWkzCKs_9cA:9 a=KwbGS7bugUhUTjueG5YA:7 a=WG76R1CvTPdDgQFjTumcEWSMacoA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Date: Wed, 19 Jan 2011 13:07:35 -0500
+Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
+ Unknown relocation: 36
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: nobody <darwinskernel@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.38-rc1
-Message-ID: <20110119180735.GA9752@home.goodmis.org>
-References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
- <AANLkTimp0UcWi68N5Jv_hUww9PhGVgCzY0qYLETc8Dj_@mail.gmail.com>
- <1161CC5A-C8CA-477E-B2CE-7870F8E634EE@gmail.com>
- <AANLkTin+Div6HoAJdFOfqRFSMyxqx7ft7mcteXomaV_Y@mail.gmail.com>
- <20110119051049.GA2536@WALL-E>
- <AANLkTikdCek7DGN885Cjuo1nkswe_Y8KG6Knn8XknzsF@mail.gmail.com>
- <AANLkTikV6=FCQ+-Z=fAi8SH90M-izCUEBisinqGwo=DU@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikV6=FCQ+-Z=fAi8SH90M-izCUEBisinqGwo=DU@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: David Miller <davem@davemloft.net>, richm@oldelvet.org.uk,
+        609371@bugs.debian.org, ben@decadent.org.uk,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, mingo@redhat.com
+In-Reply-To: <20110119161534.GB15031@Krystal>
+References: <1295382144.12215.123.camel@gandalf.stny.rr.com>
+	 <20110119050844.GA8776@Krystal>
+	 <20110118.223247.241909079.davem@davemloft.net>
+	 <20110118.232045.58440904.davem@davemloft.net>
+	 <1295451961.12215.1291.camel@gandalf.stny.rr.com>
+	 <20110119161534.GB15031@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 19 Jan 2011 13:13:42 -0500
+Message-ID: <1295460822.12215.1389.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 18, 2011 at 09:56:38PM -0800, Linus Torvalds wrote:
+On Wed, 2011-01-19 at 11:15 -0500, Mathieu Desnoyers wrote:
+> * Steven Rostedt (rostedt@goodmis.org) wrote:
+> > After applying David's "remove align" patch, I got it to boot on x86_64
+> > with the following two patches. I thought just adding the "align" to the
+> > structure declaration would work, but it still failed on the syscall for
+> > init_module. By removing the double "declaration" of event_exit_##sname,
+> > removed this problem.
+> > 
+> > I'll test this on x86 32bit and PPC 64. If it works there, I'll push all
+> > of them out for 38. Should these go to 37 stable too?
 > 
-> Btw, what may confuse you a bit is that the on-disk representation of
-> the newly received pack ends up being about 69MB, ie the 21MiB of
-> network traffic almost tripled in size as a result of that "resolving
-> deltas" thing. That's because git pack-files are designed to always be
-> stand-alone, so on disk, the pack-file will always contain the base
-> objects needed to expand all the deltas.
+> Please hold before adding these patches into git. They don't seem to address the
+> underlying problem correctly. See the latest exchanges between David Miller and
+> myself for more info.
+> 
+> We need to come up with something better than "it boots" as an explanation for
+> the fix.
 
-When I first started using git (2006?) I was recommended to use "-k"
-when doing a fetch or pull. I don't even remember why it was
-recommended. I still do it, but is it necessary?
-
-All the help says is:
-
-       -k, --keep
-                  Keep downloaded pack.
+Yes, I agree that we should solve this issue correctly. But if there is
+a work around to the problem, we could implement that if the real
+solution is not in our grasp yet.
 
 -- Steve
+
 
