@@ -1,90 +1,747 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab1ASMkx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 07:40:53 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:32861 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752700Ab1ASMkw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 07:40:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=MiPHVUp/DVNss+PwtVQY3bVEvJAjyUoRV1tnCRcUNjMhoTuE7skzk+Kg598gJ+4Eak
-         FQsI6tDI9gPNJA3ZHEIH52PUZSCJwDtrigsiE3MhZwH3iTVT5RMM6d4h5qkbCMyE/3o9
-         DvU7mxmH6feJV9NIbgsvl510a584TaWHs72a8=
-Date: Wed, 19 Jan 2011 14:40:47 +0200
-From: Ilya Dryomov <idryomov@gmail.com>
-To: linux-mm@kvack.org
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org, idryomov@gmail.com
-Subject: [BUG] BUG: unable to handle kernel paging request at fffba000
-Message-ID: <20110119124047.GA30274@kwango.lan.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754230Ab1ASMmw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 07:42:52 -0500
+Received: from smtp.nokia.com ([147.243.1.48]:59892 "EHLO mgw-sa02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752527Ab1ASMmv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 07:42:51 -0500
+Subject: Checkpatch problem with Kconfig help symbol ?
+From: Tapio Vihuri <tapio.vihuri@nokia.com>
+Reply-To: tapio.vihuri@nokia.com
+To: Andy Whitcroft <apw@canonical.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Nokia Oyj
+Date: Wed, 19 Jan 2011 14:42:48 +0200
+Message-ID: <1295440968.2276.46.camel@dell>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi
 
-I just built a fresh 38-rc1 kernel with transparent huge page support
-built-in (TRANSPARENT_HUGEPAGE=y) and it failed to boot with the
-following bug.  However after the reboot everything went fine.  It turns
-out it only happens when fsck checks one or more filesystems before they
-are mounted.
+Is this false positive ?
 
-It's easily reproducable it with touch /forcefsck and reboot on one of
-my 32-bit machines.  Haven't tried it on others yet.
+WARNING: please write a paragraph that describes the config symbol fully
+#60: FILE: drivers/input/misc/Kconfig:159:
++       help
 
-Thanks,
 
-		Ilya
+Interesting enough, also:
 
-Checking file systems...fsck from util-linux-ng 2.17.2
-/dev/mapper/vg_zmb-lv_home: 235/2992416 files (0.4% non-contiguous),
-2461505/11968512 blocks
-/dev/mapper/vg_zmb-lv_tmp: 13/62464 files (0.0% non-contiguous), 8334/249856
-blocks
-/dev/mapper/vg_zmb-lv_usr: 24821/187680 files (0.2% non-contiguous),
-152556/749568 blocks
-/dev/mapper/vg_zmb-lv_var: 2871/375360 files (1.1% non-contiguous),
-222844/1499136 blocks
-[   13.716535] BUG: unable to handle kernel paging request at fffba000
-[   13.717402] IP: [<c1149f3d>] khugepaged+0x9dd/0xd00
-[   13.717402] *pde = 017da067 *pte = 00000000 
-[   13.717402] Oops: 0000 [#1] PREEMPT SMP 
-[   13.717402] last sysfs file: /sys/devices/virtual/net/lo/operstate
-[   13.717402] Modules linked in:
-[   13.717402] 
-[   13.717402] Pid: 582, comm: khugepaged Not tainted 2.6.38-rc1-testbox2 #7
-EP35-DS3/EP35-DS3
-[   13.717402] EIP: 0060:[<c1149f3d>] EFLAGS: 00010287 CPU: 0
-[   13.717402] EIP is at khugepaged+0x9dd/0xd00
-[   13.717402] EAX: 00000000 EBX: f307ef68 ECX: fffba000 EDX: fffbb000
-[   13.717402] ESI: f77eb4c0 EDI: f77d5000 EBP: f4731f9c ESP: f4731f1c
-[   13.885304]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-[   13.885304] Process khugepaged (pid: 582, ti=f4730000 task=f51a1f80
-task.ti=f4730000)
-[   13.885304] Stack:
-[   13.885304]  00000000 f51a1f80 b7000000 f51a1f80 df826067 00000001 fffbb000
-00000292
-[   13.885304]  f307ef68 efe8bb70 f307ef68 f77d5000 f3874570 fffba000 00002000
-f307ef68
-[   13.885304]  f3874534 00000000 00000004 f3874500 f51a1f80 f77d5000 f07a7000
-00000001
-[   13.885304] Call Trace:
-[   13.885304]  [<c10948c0>] ? autoremove_wake_function+0x0/0x40
-[   13.885304]  [<c1149560>] ? khugepaged+0x0/0xd00
-[   13.885304]  [<c1094474>] kthread+0x74/0x80
-[   13.885304]  [<c1094400>] ? kthread+0x0/0x80
-[   13.885304]  [<c103977a>] kernel_thread_helper+0x6/0x10
-[   13.885304] Code: 1d 00 89 d8 e8 15 75 f1 ff 8b 7d bc 8b 07 ff 80 a0 01 00 00
-83 45 ac 20 83 45 b4 04 8b 55 98 39 55 b4 0f 83 35 02 00 00 8b 4d b4 <8b> 19 85
-db 74 bb c1 eb 0c c1 e3 05 03 1d 00 20 d8 c1 89 d8 e8 
-[   13.885304] EIP: [<c1149f3d>] khugepaged+0x9dd/0xd00 SS:ESP 0068:f4731f1c
-[   13.885304] CR2: 00000000fffba000
-[   13.885304] ---[ end trace 7890962500b65912 ]---
+./scripts/checkpatch.pl --file drivers/input/misc/Kconfig
+WARNING: please write a paragraph that describes the config symbol fully
+#430: FILE: input/misc/Kconfig:430:
++       help
+
+
+But this is different line.
+
+Kernel was linux-2.6.37-rc8 at:
+a25cecc Merge branch 'next' of git://git.monstr.eu/linux-2.6-microblaze
+
+
+
+
+Below is the patch:
+
+>From 2a76d8865858b0a70d7748b6fcbab66126918eef Mon Sep 17 00:00:00 2001
+From: Tapio Vihuri <tapio.vihuri@nokia.com>
+Date: Tue, 18 Jan 2011 16:15:44 +0200
+Subject: [PATCH v4 2/3] ECI: introducing ECI controller driver
+
+ECI controller is kind of bridge between host CPU I2C and ECI accessory
+ECI communication.
+
+Signed-off-by: Tapio Vihuri <tapio.vihuri@nokia.com>
+---
+ drivers/input/misc/Kconfig         |   41 +++
+ drivers/input/misc/Makefile        |    1 +
+ drivers/input/misc/eci_at20_ctrl.c |  533
+++++++++++++++++++++++++++++++++++++
+ include/linux/input/eci.h          |   24 ++-
+ 4 files changed, 598 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/input/misc/eci_at20_ctrl.c
+
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 56cdc62..fa64398 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -114,6 +114,23 @@ config INPUT_APANEL
+ 	 To compile this driver as a module, choose M here: the module will
+ 	 be called apanel.
+ 
++menuconfig ECI
++	bool "ECI support"
++	help
++	  ECI (Enhancement Control Interface) accessory support
++
++	  The Enhancement Control Interface functionality
++	  ECI is better known as Multimedia Headset for Nokia phones.
++	  If headset has many buttons, like play, vol+, vol- etc. then
++	  it is propably ECI accessory.
++	  Among several buttons ECI accessory contains memory for storing
++	  several parameters.
++
++	  Enable ECI support in terminal so that ECI input driver is able
++	  to communicate with ECI accessory
++
++if ECI
++
+ config INPUT_ECI
+ 	tristate "AV ECI (Enhancement Control Interface) input driver"
+ 	select INPUT_SPARSEKMAP
+@@ -129,10 +146,34 @@ config INPUT_ECI
+ 	  - reading ECI configuration memory
+ 	  - ECI buttons as input events
+ 
++	  ECI input driver needs some ECI controller driver, select
++	  suitable controlelr driver(s) below.
++
+ 	  Say 'y' here to statically link this module into the kernel or 'm'
+ 	  to build it as a dynamically loadable module. The module will be
+ 	  called eci.ko
+ 
++config ECI_CTRL_DEBUG
++	bool "ECI controller debug"
++	depends on INPUT_ECI_AT20
++	help
++	  Say Y here to enable debugging messages for ECI controller driver.
++
++config INPUT_ECI_AT20
++	tristate "ECI controller driver"
++	select INPUT_ECI
++	depends on X86_MRST && INPUT_MISC
++	help
++	  This selects a driver for the ECI controller
++
++	  ECI controller is kind of bridge between host CPU I2C and
++	  ECI accessory ECI communication.
++
++	  Say 'y' here to statically link this module into the kernel or 'm'
++	  to build it as a dynamically loadable module. The module will be
++	  called eci_at20_ctrl.ko
++endif # ECI
++
+ config INPUT_IXP4XX_BEEPER
+ 	tristate "IXP4XX Beeper support"
+ 	depends on ARCH_IXP4XX
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index fa99597..5e3dd7c 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -24,6 +24,7 @@ obj-$(CONFIG_INPUT_COBALT_BTNS)		+= cobalt_btns.o
+ obj-$(CONFIG_INPUT_DM355EVM)		+= dm355evm_keys.o
+ obj-$(CONFIG_HP_SDC_RTC)		+= hp_sdc_rtc.o
+ obj-$(CONFIG_INPUT_ECI)			+= eci.o
++obj-$(CONFIG_INPUT_ECI_AT20)		+= eci_at20_ctrl.o
+ obj-$(CONFIG_INPUT_IXP4XX_BEEPER)	+= ixp4xx-beeper.o
+ obj-$(CONFIG_INPUT_KEYSPAN_REMOTE)	+= keyspan_remote.o
+ obj-$(CONFIG_INPUT_M68K_BEEP)		+= m68kspkr.o
+diff --git a/drivers/input/misc/eci_at20_ctrl.c
+b/drivers/input/misc/eci_at20_ctrl.c
+new file mode 100644
+index 0000000..51b1f62
+--- /dev/null
++++ b/drivers/input/misc/eci_at20_ctrl.c
+@@ -0,0 +1,533 @@
++/*
++ * This file is part of ECI (Enhancement Control Interface) controller
++ * driver
++ *
++ * Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
++ *
++ * Contact: Tapio Vihuri <tapio.vihuri@nokia.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
++ * 02110-1301 USA
++ *
++ */
++
++/*
++ * ECI stands for (Enhancement Control Interface).
++ *
++ * ECI is better known as Multimedia Headset for Nokia phones.
++ * If headset has many buttons, like play, vol+, vol- etc. then it is
+propably
++ * ECI accessory.
++ *
++ * ECI controller is kind of bridge between host CPU I2C and ECI
+accessory
++ * ECI communication.
++ */
++
++#include <linux/init.h>
++#include <linux/device.h>
++#include <linux/gpio.h>
++#include <linux/interrupt.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/delay.h>
++#include <linux/debugfs.h>
++#include <linux/input/eci.h>
++
++#define DRIVER_NAME	"eci_ctrl"
++
++#define ECIBUS_STATUS_DATA_READY	0x01
++#define ECIBUS_STATUS_ACCESSORY_INT	0x02
++
++#define ECIBUS_WAIT_IRQ		100	/* msec */
++#define ECI_RST_MIN		62
++#define ECI_RST_WAIT		10	/* msec */
++
++#if defined(CONFIG_ECI_CTRL_DEBUG)
++#define DEBUG
++#endif
++
++struct eci_ctrl_data {
++	struct device		*dev;
++	struct eci_cb		*eci_callback;
++	int			eci_ctrl_rst_gpio;
++	int			eci_ctrl_sw_ctrl_gpio;
++	int			eci_ctrl_int_gpio;
++	wait_queue_head_t	wait;
++	bool			wait_eci_buttons;
++	bool			wait_data;
++};
++
++static struct eci_ctrl_data *the_ed;
++
++#ifdef CONFIG_DEBUG_FS
++static int eci_ctrl_read_reg(u8 reg);
++static int eci_ctrl_write_reg(u8 reg, u8 param);
++
++static struct dentry *eci_ctrl_debugfs_dir;
++
++static ssize_t reset_read(struct file *file, char __user *user_buf,
++		size_t count, loff_t *ppos)
++{
++	struct eci_ctrl_data *ed = file->private_data;
++	char buf[80];
++	int len = 0;
++	int ret;
++
++	if (*ppos == 0) {
++		ret = !!gpio_get_value(ed->eci_ctrl_rst_gpio);
++		len = snprintf(buf, sizeof(buf), "%d\n", ret);
++	}
++	ret = simple_read_from_buffer(user_buf, count, ppos, buf, len);
++
++	return ret;
++}
++
++static ssize_t reset_write(struct file *file, const char __user
+*user_buf,
++		size_t count, loff_t *ppos)
++{
++	/* Assosiated in default_open() */
++	struct eci_ctrl_data *ed = file->private_data;
++	char buf[32];
++	int buf_size;
++
++	buf_size = min(count, (sizeof(buf)-1));
++	if (copy_from_user(buf, user_buf, buf_size))
++		return -EFAULT;
++
++	if (!memcmp(buf, "0", 1))
++		gpio_set_value(ed->eci_ctrl_rst_gpio, 0);
++	else if (!memcmp(buf, "1", 1))
++		gpio_set_value(ed->eci_ctrl_rst_gpio, 1);
++
++	return count;
++}
++
++static int default_open(struct inode *inode, struct file *file)
++{
++	/* Assosiated in debugfs_create_file() */
++	if (inode->i_private)
++		file->private_data = inode->i_private;
++
++	return 0;
++}
++
++static const struct file_operations reset_fops = {
++	.open		= default_open,
++	.read		= reset_read,
++	.write		= reset_write,
++};
++
++static void eci_ctrl_uninitialize_debugfs(void)
++{
++	if (eci_ctrl_debugfs_dir)
++		debugfs_remove_recursive(eci_ctrl_debugfs_dir);
++}
++
++static long eci_ctrl_initialize_debugfs(struct eci_ctrl_data *ed)
++{
++	void *ok;
++
++	/* /sys/kernel/debug/eci_ctrl */
++	eci_ctrl_debugfs_dir = debugfs_create_dir(ed->dev->driver->name,
+NULL);
++	if (!eci_ctrl_debugfs_dir)
++		return -ENOENT;
++
++	/* Struct ed assosiated to inode->i_private */
++	ok = debugfs_create_file("reset", S_IRUGO | S_IWUSR,
++			eci_ctrl_debugfs_dir, ed, &reset_fops);
++	if (!ok)
++		goto fail;
++
++	return 0;
++fail:
++	eci_ctrl_uninitialize_debugfs();
++	return -ENOENT;
++}
++#else
++#define eci_ctrl_initialize_debugfs(ed)	1
++#define eci_ctrl_uninitialize_debugfs()
++#endif
++
++/* For eci_ctrl controller internal registers */
++static int eci_ctrl_read_reg(u8 reg)
++{
++	struct i2c_client *client = to_i2c_client(the_ed->dev);
++
++	if (reg <= ECICMD_RESERVED)
++		return -EINVAL;
++
++	return i2c_smbus_read_byte_data(client, reg);
++}
++
++static int eci_ctrl_write_reg(u8 reg, u8 param)
++{
++	struct i2c_client *client = to_i2c_client(the_ed->dev);
++
++	if (reg <= ECICMD_RESERVED)
++		return -EINVAL;
++
++	return i2c_smbus_write_byte_data(client, reg, param);
++}
++
++/* Reset and learn ECI accessory, ie. get speed */
++static int eci_acc_reset(void)
++{
++	s32 ret;
++
++	eci_ctrl_write_reg(ECIREG_RST_LEARN, 0);
++
++	msleep(ECI_RST_WAIT);
++
++	ret = eci_ctrl_read_reg(ECIREG_RST_LEARN);
++	if (ret < ECI_RST_MIN)
++		return -EIO;
++
++	return 0;
++}
++/* Read always four bytes, as stated in ECI specification */
++static int eci_acc_read_direct(u8 addr, char *buf)
++{
++	s32 ret;
++	int i;
++
++	/* Initiate ECI accessory memory read */
++	the_ed->wait_data = false;
++	if (!eci_ctrl_write_reg(ECIREG_READ_COUNT, 4))
++		if (eci_ctrl_write_reg(ECIREG_READ_DIRECT, addr))
++			return -EIO;
++
++	if (!wait_event_timeout(the_ed->wait, the_ed->wait_data == true,
++				msecs_to_jiffies(ECIBUS_WAIT_IRQ)))
++		return -EIO;
++
++	for (i = 0; i < 4; i++) {
++		ret = eci_ctrl_read_reg(ECIREG_READ_DIRECT + i);
++		if (ret < 0)
++			return ret;
++		buf[i] = ret;
++		usleep_range(2000, 10000);
++	}
++	return 0;
++}
++
++/* Trigger ECI accessory register data write (from accessory) */
++static int eci_fire_acc_read_reg(u8 reg, int count)
++{
++	struct i2c_client *client = to_i2c_client(the_ed->dev);
++
++	if (!eci_ctrl_write_reg(ECIREG_READ_COUNT, count))
++		return i2c_smbus_read_byte_data(client, reg);
++	else
++		return -EIO;
++}
++
++/* For ECI accessory internal registers */
++static int eci_acc_read_reg(u8 reg, u8 *buf, int count)
++{
++	s32 ret;
++	int i;
++
++	if (reg > ECICMD_RESERVED)
++		return -EINVAL;
++
++	the_ed->wait_data = false;
++	if (eci_fire_acc_read_reg(reg, count))
++		return -EIO;
++
++	if (!wait_event_timeout(the_ed->wait, the_ed->wait_data == true,
++				msecs_to_jiffies(ECIBUS_WAIT_IRQ)))
++		return -EIO;
++
++	for (i = 0; i < count; i++) {
++		ret = eci_ctrl_read_reg(ECIREG_READ_DIRECT + i);
++		if (ret < 0)
++			return ret;
++
++		buf[i] = ret;
++	}
++
++	return 0;
++}
++
++/* ECI accessory register write */
++static int eci_acc_write_reg(u8 reg, u8 param)
++{
++	struct i2c_client *client = to_i2c_client(the_ed->dev);
++
++	if (reg > ECICMD_RESERVED)
++		return -EINVAL;
++
++	return i2c_smbus_write_byte_data(client, reg, param);
++}
++
++
++/*
++ * Struct eci_data is ECI input driver (dealing ECI accessories) data.
++ * Struct eci_ctrl_data is this driver data, dealing just ECI
+communication.
++ * Global eci_register() pairs structs so that we can call ECI input
+driver
++ * event function with eci_data
++ */
++static void eci_ctrl_emit_buttons(struct eci_ctrl_data *ed, bool
+force_up)
++{
++	struct eci_data *eci = ed->eci_callback->priv;
++	struct eci_buttons_data *b = &eci->buttons_data;
++
++	if (force_up)
++		b->buttons = b->buttons_up_mask;
++
++	ed->eci_callback->event(ECI_EVENT_BUTTON, eci);
++}
++
++static void eci_ctrl_get_buttons(u8 *buf, u8 count)
++{
++	int i, ret;
++
++	if (count > 4) {
++		dev_err(the_ed->dev, "Maximum four bytes allowed\n");
++		return;
++	}
++
++	for (i = 0; i <= count; i++) {
++		ret = eci_ctrl_read_reg(ECIREG_READ_DIRECT + i);
++		buf[i] = ret;
++	}
++}
++
++static irqreturn_t eci_ctrl_irq_handler(int irq, void *_ed)
++{
++	struct eci_ctrl_data *ed = _ed;
++	struct eci_data *eci = ed->eci_callback->priv;
++	struct eci_buttons_data *b = &eci->buttons_data;
++	int status;
++	char buf[4];
++
++	/* Clears eci_ctrl DATA interrupt */
++	status = eci_ctrl_read_reg(ECIREG_STATUS);
++
++	if (status & ECIBUS_STATUS_DATA_READY) {
++		/*
++		 * Buttons are special case as we want be fast with them
++		 * and this way we cope with nested button and data interrupts
++		 * The number of bytes needed to read is parsed in ECI
++		 * input driver, based on data in ECI accessory.
++		 * Maximum four bytes.
++		 */
++		if (ed->wait_eci_buttons) {
++			eci_ctrl_get_buttons(buf, eci->port_reg_count);
++			b->buttons = cpu_to_le32(*(u32 *)buf);
++			eci_ctrl_emit_buttons(ed, ECI_REAL_BUTTONS);
++			ed->wait_eci_buttons = false;
++		}
++		/* Complete ECI data reading */
++		ed->wait_data = true;
++		wake_up(&ed->wait);
++	}
++
++	/* Accessory interrupt, ie. button pressed */
++	if (status & ECIBUS_STATUS_ACCESSORY_INT) {
++		if (eci->mem_ok) {
++			eci_fire_acc_read_reg(ECICMD_PORT_DATA_0, 2);
++			ed->wait_eci_buttons = true;
++		}
++	}
++
++	return IRQ_HANDLED;
++}
++
++static struct eci_hw_ops eci_ctrl_hw_ops = {
++	.acc_reset              = eci_acc_reset,
++	.acc_read_direct        = eci_acc_read_direct,
++	.acc_read_reg           = eci_acc_read_reg,
++	.acc_write_reg          = eci_acc_write_reg,
++};
++
++static struct eci_ctrl_data *eci_ctrl_probe(struct device *dev)
++{
++	struct eci_ctrl_data *ed;
++	struct eci_ctrl_platform_data *pdata = dev->platform_data;
++	int ret;
++
++	if (!pdata) {
++		dev_err(dev, "platform_data not available\n");
++		return ERR_PTR(-EINVAL);
++	}
++
++	ed = kzalloc(sizeof(*ed), GFP_KERNEL);
++	if (!ed)
++		return ERR_PTR(-ENOMEM);
++
++	ed->dev = dev;
++	ed->eci_ctrl_rst_gpio = pdata->eci_ctrl_rst_gpio;
++	ed->eci_ctrl_sw_ctrl_gpio = pdata->eci_ctrl_sw_ctrl_gpio;
++	ed->eci_ctrl_int_gpio = pdata->eci_ctrl_int_gpio;
++
++	if (ed->eci_ctrl_rst_gpio == 0 || ed->eci_ctrl_sw_ctrl_gpio == 0 ||
++			ed->eci_ctrl_int_gpio == 0) {
++		ret = -ENXIO;
++		goto gpio_err;
++	}
++
++	the_ed = ed;
++
++	ret = eci_ctrl_initialize_debugfs(ed);
++	if (ret)
++		dev_err(dev, "could not create debugfs entries\n");
++
++	ret = gpio_request(ed->eci_ctrl_rst_gpio, "ECI_RSTn");
++	if (ret) {
++		dev_err(dev, "could not request ECI_RSTn gpio %d\n",
++				ed->eci_ctrl_rst_gpio);
++		goto rst_gpio_err;
++	}
++
++	gpio_direction_output(ed->eci_ctrl_rst_gpio, 0);
++	gpio_set_value(ed->eci_ctrl_rst_gpio, 1);
++
++	ret = gpio_request(ed->eci_ctrl_sw_ctrl_gpio, "ECI_SW_CTRL");
++	if (ret) {
++		dev_err(dev, "could not request ECI_SW_CTRL gpio %d\n",
++				ed->eci_ctrl_sw_ctrl_gpio);
++		goto sw_ctrl_gpio_err;
++	}
++
++	gpio_direction_input(ed->eci_ctrl_sw_ctrl_gpio);
++
++	ret = gpio_request(ed->eci_ctrl_int_gpio, "ECI_INT");
++	if (ret) {
++		dev_err(dev, "could not request ECI_INT gpio %d\n",
++				ed->eci_ctrl_int_gpio);
++		goto int_gpio_err;
++	}
++
++	gpio_direction_input(ed->eci_ctrl_int_gpio);
++
++	ret = request_threaded_irq(gpio_to_irq(ed->eci_ctrl_int_gpio), NULL,
++			eci_ctrl_irq_handler, IRQF_TRIGGER_RISING,
++			"ECI_INT", ed);
++	if (ret) {
++		dev_err(dev, "could not request irq %d\n",
++				gpio_to_irq(ed->eci_ctrl_int_gpio));
++		goto int_irq_err;
++	}
++
++	/* Register itself to the ECI accessory driver */
++	ed->eci_callback = eci_register(&eci_ctrl_hw_ops);
++	if (IS_ERR(ed->eci_callback)) {
++		ret = PTR_ERR(ed->eci_callback);
++		goto eci_register_err;
++	}
++
++	init_waitqueue_head(&ed->wait);
++
++	return ed;
++
++eci_register_err:
++	free_irq(gpio_to_irq(ed->eci_ctrl_int_gpio), ed);
++int_irq_err:
++	gpio_free(ed->eci_ctrl_int_gpio);
++int_gpio_err:
++	gpio_free(ed->eci_ctrl_sw_ctrl_gpio);
++sw_ctrl_gpio_err:
++	gpio_set_value(ed->eci_ctrl_rst_gpio, 0);
++	gpio_free(ed->eci_ctrl_rst_gpio);
++rst_gpio_err:
++	eci_ctrl_uninitialize_debugfs();
++gpio_err:
++	kfree(ed);
++
++	return ERR_PTR(ret);
++}
++
++static int __devinit eci_ctrl_i2c_probe(struct i2c_client *client,
++					const struct i2c_device_id *id)
++{
++	struct eci_ctrl_data *ed;
++
++	if (!i2c_check_functionality(client->adapter,
++				     I2C_FUNC_SMBUS_BYTE_DATA)) {
++		dev_err(&client->dev, "SMBUS byte data not supported\n");
++		return -EIO;
++	}
++
++	ed = eci_ctrl_probe(&client->dev);
++
++	if (IS_ERR(ed))
++		return PTR_ERR(ed);
++
++	i2c_set_clientdata(client, ed);
++
++	return 0;
++}
++
++static int __exit eci_ctrl_remove(struct i2c_client *client)
++{
++	struct eci_ctrl_data *ed = i2c_get_clientdata(client);
++
++	gpio_set_value(ed->eci_ctrl_rst_gpio, 0);
++	gpio_free(ed->eci_ctrl_rst_gpio);
++
++	gpio_free(ed->eci_ctrl_sw_ctrl_gpio);
++
++	free_irq(gpio_to_irq(ed->eci_ctrl_int_gpio), ed);
++	gpio_free(ed->eci_ctrl_int_gpio);
++
++	eci_ctrl_uninitialize_debugfs();
++
++	kfree(ed);
++
++	return 0;
++}
++
++#ifdef	CONFIG_PM
++
++static int eci_ctrl_suspend(struct i2c_client *client, pm_message_t
+message)
++{
++	return -ENOSYS;
++}
++#else
++#define	eci_ctrl_suspend	NULL
++#endif
++
++static const struct i2c_device_id eci_id[] = {
++	{ DRIVER_NAME, 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, eci_id);
++
++static struct i2c_driver eci_i2c_driver = {
++	.driver = {
++		.name	= DRIVER_NAME,
++		.owner	= THIS_MODULE,
++	},
++	.probe		= eci_ctrl_i2c_probe,
++	.remove		= __exit_p(eci_ctrl_remove),
++	.suspend	= eci_ctrl_suspend,
++	.id_table	= eci_id,
++};
++
++static int __init eci_ctrl_init(void)
++{
++	return i2c_add_driver(&eci_i2c_driver);
++}
++module_init(eci_ctrl_init);
++
++static void __exit eci_ctrl_exit(void)
++{
++	i2c_del_driver(&eci_i2c_driver);
++}
++module_exit(eci_ctrl_exit);
++
++MODULE_DESCRIPTION("ECI accessory controller driver");
++MODULE_AUTHOR("Nokia Corporation");
++MODULE_ALIAS("i2c:eci_at20_ctrl");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/input/eci.h b/include/linux/input/eci.h
+index 0e22404..868d2fb 100644
+--- a/include/linux/input/eci.h
++++ b/include/linux/input/eci.h
+@@ -1,7 +1,7 @@
+ /*
+  * This file is part of ECI (Enhancement Control Interface) driver
+  *
+- * Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
++ * Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
+  *
+  * Contact: Tapio Vihuri <tapio.vihuri@nokia.com>
+  *
+@@ -35,6 +35,21 @@
+ #define ECI_REAL_BUTTONS	0
+ #define ECI_FORCE_BUTTONS_UP	1
+ 
++/*
++ * VPROG2CNT - VPROG2 Control Register
++ * 2.5V | normal | normal
++ * 10   | 111    | 111
++ * 2.5V | off    | off
++ * 10   | 100    | 100
++ */
++#define AvP_MSIC_VPROG2		0xd7
++#define AvP_MSIC_VPROG2_2V5_ON	0xbf
++#define AvP_MSIC_VPROG2_2V5_OFF 0xa4
++
++#define GPIO_ECI_RSTn		126	/* GP_CORE_030 + 96 */
++#define GPIO_ECI_SW_CTRL	178	/* GP_CORE_082 + 96 */
++#define GPIO_ECI_INT		16	/* GP_AON_016 */
++
+ /* fixed in ECI HW, do not change */
+ enum {
+ 	ECICMD_HWID,
+@@ -154,4 +169,11 @@ struct eci_data {
+ };
+ 
+ struct eci_cb *eci_register(struct eci_hw_ops *eci_ops);
++
++/* eci controller data */
++struct eci_ctrl_platform_data {
++	int		eci_ctrl_rst_gpio;
++	int		eci_ctrl_sw_ctrl_gpio;
++	int		eci_ctrl_int_gpio;
++};
+ #endif
+-- 
+1.6.5
+
+
+BR,
+Tapio
+
