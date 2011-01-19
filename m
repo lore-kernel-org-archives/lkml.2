@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892Ab1ASSWB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 13:22:01 -0500
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:50956 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751904Ab1ASSWA (ORCPT
+	id S1752721Ab1ASS0b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 13:26:31 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:58763 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752070Ab1ASS0a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 13:22:00 -0500
-Date: Wed, 19 Jan 2011 13:21:42 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] BKL: move CONFIG_BKL to staging
-Message-ID: <20110119182142.GA3620@elliptictech.com>
-References: <1295385422-3592-1-git-send-email-arnd@arndb.de>
- <1295385422-3592-5-git-send-email-arnd@arndb.de>
- <20110119154419.GA21411@elliptictech.com>
- <201101191717.58277.arnd@arndb.de>
+	Wed, 19 Jan 2011 13:26:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201101191717.58277.arnd@arndb.de>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [134.191.244.34]
+In-Reply-To: <1294138788-10307-1-git-send-email-pavan_savoy@ti.com>
+References: <1294138788-10307-1-git-send-email-pavan_savoy@ti.com>
+Date: Wed, 19 Jan 2011 23:56:29 +0530
+Message-ID: <AANLkTinPC-i2xi9pCQ-RzGWuwZ5uTM3NXG7y6gwTnPYv@mail.gmail.com>
+Subject: Re: [RFC 0/2] remove BT references from TI_ST
+From: Pavan Savoy <pavan_savoy@sify.com>
+To: padovan@profusion.mobi, marcel@holtmann.org
+Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        Pavan Savoy <pavan_savoy@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-01-19 17:17 +0100, Arnd Bergmann wrote:
-> On Wednesday 19 January 2011, Nick Bowler wrote:
-> > I think this patch is not very nice.  It will cause working kernel
-> > configurations to turn into broken kernel configurations when the user
-> > does 'make oldconfig', with no warning.
-> > 
-> > These drivers that use the BKL work fine.  Removing working features
-> > with no adequate replacement available seems like a serious regression
-> > to me.
-> 
-> I wouldn't call it a serious regression since the code is still there
-> and both the symptom and the solution are rather obvious.
+Gustavo,
 
-Well, the code wouldn't still be there if they're removed in 2.6.39 as
-stated in your patch description.  While it may be obvious to people
-like you and me who know what the BKL is, I don't it's obvious to
-everyone that the cause of "my system doesn't boot anymore" is "oh,
-someone moved a dependency of a driver I've been using without issue for
-the past 5 years to staging!"
-
-> What's more important is to make any people still relying on the code
-> aware that it's going away unless someone fixes it, so they have the
-> chance to send patches or pay someone to fix it for them.
-
-Shouldn't the onus for fixing *working* drivers (or encouraging others
-to fix them) lie with the person(s) who are so keen to kill off features
-that they use?
-
-Surely we don't need to break oldconfig just to raise awareness that
-these drivers use deprecated features?
-
-> The remaining drivers that are still relying on the BKL are very
-> rarely used and for the less obscure ones (ufs, ipx and x.25), people
-> have volunteered to fix them (though I have seen no proper patches
-> for these yet).
+On Tue, Jan 4, 2011 at 4:29 PM,  <pavan_savoy@ti.com> wrote:
+> From: Pavan Savoy <pavan_savoy@ti.com>
 >
-> For the rest, I suppose if nobody complains, they can actually go
-> away, according to the logic that if nobody is using them, they most
-> likely are broken anyway and more a security risk than they are worth.
+> Gustavo,
+>
+> Based on your comments, that the underlying shared transport driver
+> for btwilink driver made use of the BT references to peek into the packets
+> I have modified the TI_ST.
 
-Notwithstanding any of the above, one release cycle hardly seems like
-enough time to infer from "nobody complained" that "not a single person
-uses this driver."  Surely people concerned with security issues in code
-that they don't use can just... not enable it?  Nobody's forcing anyone
-to use these drivers.
+Since there lacks a generic way to parse the packets coming in from the
+UART into BT, FM or GPS, we have to look into the data to fragment assembled
+data or assemble fragmented data.
 
-Neither the BKL nor any of these drivers are even mentioned in the
-feature removal schedule yet.
+Please have a look, Please suggest whether something like this is required,
+If not, please also suggest, if including BT headers is a problem ?
 
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Because I just include the BT headers and don't have a build
+dependency as such on
+BT/HCI and don't use any functions from hci_core in my shared transport driver.
+
+> For this reason, Now the above lying protocol drivers like BT, FM and GPS
+> would send details about their packet types and header information which
+> would assist shared transport driver to parse the data.
+>
+> Gustavo, please also notice the change in btwilink driver in and around,
+> st_register and suggest if something like this is OK.
+> btwilink can also be modified to send in all the packet specific data
+> in one shot, if that is preferred.
+>
+> Please review and provide comments..
+>
+> Note:
+> If this is alright, I will send out a modified patch with updated
+> subject to lkml/Greg for linux-next.
+>
+> Thanks & Regards,
+> Pavan Savoy.
+>
+> Pavan Savoy (2):
+>  drivers:misc:ti-st: change protocol parse logic
+>  Bluetooth: btwilink driver
+>
+>  drivers/bluetooth/Kconfig    |   10 +
+>  drivers/bluetooth/Makefile   |    1 +
+>  drivers/bluetooth/btwilink.c |  397 ++++++++++++++++++++++++++++++++++++++++++
+>  drivers/misc/ti-st/st_core.c |  355 ++++++++++++--------------------------
+>  drivers/misc/ti-st/st_kim.c  |   56 +++---
+>  include/linux/ti_wilink_st.h |   40 +++--
+>  6 files changed, 575 insertions(+), 284 deletions(-)
+>  create mode 100644 drivers/bluetooth/btwilink.c
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bluetooth" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
