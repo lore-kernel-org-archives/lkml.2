@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803Ab1ASJBH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 04:01:07 -0500
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:55232 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753069Ab1ASJBF (ORCPT
+	id S1753820Ab1ASJE6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 04:04:58 -0500
+Received: from mga11.intel.com ([192.55.52.93]:60754 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753069Ab1ASJE4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 04:01:05 -0500
-Date: Wed, 19 Jan 2011 14:30:12 +0530
-From: "G, Manjunath Kondaiah" <manjugk@ti.com>
-To: Thomas Weber <weber@corscience.de>
-Cc: linux-omap@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Daniel Morsing <daniel.morsing@gmail.com>, charu@ti.com,
-        sshtylyov@mvista.com
-Subject: Re: [PATCHv4 3/4] OMAP3: Devkit8000: Check return value of
- gpio_request
-Message-ID: <20110119090011.GD6197@m-desktop>
-References: <1295425166-25540-1-git-send-email-weber@corscience.de>
- <1295425166-25540-4-git-send-email-weber@corscience.de>
+	Wed, 19 Jan 2011 04:04:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,343,1291622400"; 
+   d="scan'208";a="878812648"
+From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
+To: "Tardy, Pierre" <pierre.tardy@intel.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cjb@laptop.org" <cjb@laptop.org>, "ohad@wizery.com" <ohad@wizery.com>
+Date: Wed, 19 Jan 2011 17:04:18 +0800
+Subject: RE: [PATCH v1 1/3]mmc: implemented runtime pm for mmc host
+Thread-Topic: [PATCH v1 1/3]mmc: implemented runtime pm for mmc host
+Thread-Index: AcuzxUMTTjCRN6kDQo+D/jJpKwzH1gCb6uFAACqFtKAAE6N1oAAicLyw
+Message-ID: <5D8008F58939784290FAB48F5497519835247E72AD@shsmsx502.ccr.corp.intel.com>
+References: <20110114082310.GB27523@intel.com>
+ <8250E4885F9967469CAC3FB5CBA2CE69934E7AA2FE@irsmsx501.ger.corp.intel.com>
+ <5D8008F58939784290FAB48F54975198351D4FA654@shsmsx502.ccr.corp.intel.com>
+ <8250E4885F9967469CAC3FB5CBA2CE69934E7AAB20@irsmsx501.ger.corp.intel.com>
+In-Reply-To: <8250E4885F9967469CAC3FB5CBA2CE69934E7AAB20@irsmsx501.ger.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295425166-25540-4-git-send-email-weber@corscience.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 09:19:25AM +0100, Thomas Weber wrote:
-> The return value of gpio_request is ignored.
-> This patch adds the check of the return value of gpio_request.
-> 
-> Signed-off-by: Thomas Weber <weber@corscience.de>
-> ---
->  arch/arm/mach-omap2/board-devkit8000.c |   16 ++++++++++++++--
->  1 files changed, 14 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
-> index 9fb416b..4ddd81c 100644
-> --- a/arch/arm/mach-omap2/board-devkit8000.c
-> +++ b/arch/arm/mach-omap2/board-devkit8000.c
-> @@ -234,6 +234,8 @@ static struct gpio_led gpio_leds[];
->  static int devkit8000_twl_gpio_setup(struct device *dev,
->  		unsigned gpio, unsigned ngpio)
->  {
-> +	int ret;
-> +
->  	omap_mux_init_gpio(29, OMAP_PIN_INPUT);
->  	/* gpio + 0 is "mmc0_cd" (input/IRQ) */
->  	mmc[0].gpio_cd = gpio + 0;
-> @@ -244,13 +246,23 @@ static int devkit8000_twl_gpio_setup(struct device *dev,
->  
->  	/* TWL4030_GPIO_MAX + 0 is "LCD_PWREN" (out, active high) */
->  	devkit8000_lcd_device.reset_gpio = gpio + TWL4030_GPIO_MAX + 0;
-> -	gpio_request(devkit8000_lcd_device.reset_gpio, "LCD_PWREN");
-> +	ret = gpio_request(devkit8000_lcd_device.reset_gpio, "LCD_PWREN");
-> +	if (ret < 0) {
-> +		printk(KERN_ERR "Failed to request GPIO for LCD_PWRN\n");
-> +		return ret;
-> +	}
-> +
->  	/* Disable until needed */
->  	gpio_direction_output(devkit8000_lcd_device.reset_gpio, 0);
->  
->  	/* gpio + 7 is "DVI_PD" (out, active low) */
->  	devkit8000_dvi_device.reset_gpio = gpio + 7;
-> -	gpio_request(devkit8000_dvi_device.reset_gpio, "DVI PowerDown");
-> +	ret = gpio_request(devkit8000_dvi_device.reset_gpio, "DVI PowerDown");
-> +	if (ret < 0) {
-> +		printk(KERN_ERR "Failed to request GPIO for DVI PowerDown\n");
-> +		return ret;
-> +	}
+Hi Pierre,
+I think the runtime pm should not have any dependency with clock gating. Even the MMC driver won't clock gate SD/MMC card, host controller should still enter runtime suspend state, right?
+So if auto suspended delay could be changed by user, then we can use pm_suspend_schedule to specify the latency which is longer than 8 clock cycle.
 
-Nak. Why you want this change as seperate patch? Merge this with 1/4
-
--Manjunath
-[...]
+Thanks
+Chuanxiao
+> -----Original Message-----
+> From: Tardy, Pierre
+> Sent: Wednesday, January 19, 2011 12:39 AM
+> To: Dong, Chuanxiao; linux-mmc@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org; cjb@laptop.org; ohad@wizery.com
+> Subject: RE: [PATCH v1 1/3]mmc: implemented runtime pm for mmc host
+> 
+> > > I'm also worried about this patch not taking in account the 8 clock cycles before
+> > > shutting down the clock, contrary to the clock gating fw.
+> > > If you power down hc, you will also gate the clock. So the sdio protocol might not
+> be
+> > > strictly followed.
+> > As mmc spec said, 8 clock cycles is needed. That is right.
+> > But I think if we have set the auto suspended delay for host, runtime pm core
+> could make sure host to
+> > wait at least the auto suspended delay before shutting down the power of the
+> device. So if the auto
+> > suspended delay is longer than 8 clock cycles, the mmc protocol can be followed,
+> right?
+> I disagree. You cannot enforce this. It depends on clock speed, that can vary with
+> sdio cards.
+> User can change the autosuspend delay to whatever he wants, it should just
+> change performance, but not functionality.
+> 
+> Why don't you just take my clock gating version?
+> Its working well, I'm using this for 2 weeks, and follow the linux-mmc latest
+> improvement.
+> 
+> Regards,
+> Pierre
+> 
 
