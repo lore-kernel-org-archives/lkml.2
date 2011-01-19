@@ -1,124 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754390Ab1ASNV1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 08:21:27 -0500
-Received: from cantor.suse.de ([195.135.220.2]:50672 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752826Ab1ASNVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 08:21:25 -0500
-Date: Wed, 19 Jan 2011 14:21:23 +0100
-From: Jan Kara <jack@suse.cz>
-To: Nick Piggin <npiggin@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Jeff Moyer <jmoyer@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] fs: aio fix rcu lookup
-Message-ID: <20110119132123.GC4246@quack.suse.cz>
-References: <AANLkTimMwZnm3UKvmrPscBeZF77vh1sW0ERO1tuv1oNW@mail.gmail.com>
- <x494o9bbkqo.fsf@segfault.boston.devel.redhat.com>
- <AANLkTimuCgn4aHzUJRmQfsXjG_UF-3W8fAWb0Y-sSPsM@mail.gmail.com>
- <x49tyh7mjr6.fsf@segfault.boston.devel.redhat.com>
- <AANLkTikgsGHJ+q6=We_zPAivyABq+z2f6Atv6ZScLYOU@mail.gmail.com>
- <20110118190114.GA5070@quack.suse.cz>
- <AANLkTin1+B_1CV-weALdS8EYJO60BJd0b7AGWzc0wrWr@mail.gmail.com>
- <20110118235236.GA14087@quack.suse.cz>
- <AANLkTikvCkMDM9+i=44eEkX094=ZHpnQaN+541pm1icK@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikvCkMDM9+i=44eEkX094=ZHpnQaN+541pm1icK@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754434Ab1ASNaL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 08:30:11 -0500
+Received: from casper.infradead.org ([85.118.1.10]:42165 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754435Ab1ASNaK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 08:30:10 -0500
+Subject: Re: Bug in scheduler when using rt_mutex
+From: Peter Zijlstra <peterz@infradead.org>
+To: samu.p.onkalo@nokia.com
+Cc: Yong Zhang <yong.zhang0@gmail.com>, mingo@elte.hu,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        tglx <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <1295442799.11678.43.camel@kolo>
+References: <1295275365.12840.13.camel@kolo>
+	 <1295280032.30950.128.camel@laptop> <1295339012.11678.35.camel@kolo>
+	 <AANLkTikXf-OMEBx-UZktxooOs+YqUkSE9doyEZopjzOx@mail.gmail.com>
+	 <1295357746.30950.681.camel@laptop>
+	 <AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
+	 <1295430276.30950.1414.camel@laptop>  <1295433498.30950.1482.camel@laptop>
+	 <1295436632.30950.1542.camel@laptop>  <1295441881.11678.41.camel@kolo>
+	 <1295442799.11678.43.camel@kolo>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 19 Jan 2011 14:30:22 +0100
+Message-ID: <1295443822.28776.23.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 19-01-11 11:20:45, Nick Piggin wrote:
-> On Wed, Jan 19, 2011 at 10:52 AM, Jan Kara <jack@suse.cz> wrote:
-> > On Wed 19-01-11 09:17:23, Nick Piggin wrote:
-> >> On Wed, Jan 19, 2011 at 6:01 AM, Jan Kara <jack@suse.cz> wrote:
-> >> > On Tue 18-01-11 10:24:24, Nick Piggin wrote:
-> >> >> On Tue, Jan 18, 2011 at 6:07 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
-> >> >> > Nick Piggin <npiggin@gmail.com> writes:
-> >> >> >> Do you agree with the theoretical problem? I didn't try to
-> >> >> >> write a racer to break it yet. Inserting a delay before the
-> >> >> >> get_ioctx might do the trick.
-> >> >> >
-> >> >> > I'm not convinced, no.  The last reference to the kioctx is always the
-> >> >> > process, released in the exit_aio path, or via sys_io_destroy.  In both
-> >> >> > cases, we cancel all aios, then wait for them all to complete before
-> >> >> > dropping the final reference to the context.
-> >> >>
-> >> >> That wouldn't appear to prevent a concurrent thread from doing an
-> >> >> io operation that requires ioctx lookup, and taking the last reference
-> >> >> after the io_cancel thread drops the ref.
-> >> >>
-> >> >> > So, while I agree that what you wrote is better, I remain unconvinced of
-> >> >> > it solving a real-world problem.  Feel free to push it in as a cleanup,
-> >> >> > though.
-> >> >>
-> >> >> Well I think it has to be technically correct first. If there is indeed a
-> >> >> guaranteed ref somehow, it just needs a comment.
-> >> >  Hmm, the code in io_destroy() indeed looks fishy. We delete the ioctx
-> >> > from the hash table and set ioctx->dead which is supposed to stop
-> >> > lookup_ioctx() from finding it (see the !ctx->dead check in
-> >> > lookup_ioctx()). There's even a comment in io_destroy() saying:
-> >> >        /*
-> >> >         * Wake up any waiters.  The setting of ctx->dead must be seen
-> >> >         * by other CPUs at this point.  Right now, we rely on the
-> >> >         * locking done by the above calls to ensure this consistency.
-> >> >         */
-> >> > But since lookup_ioctx() is called without any lock or barrier nothing
-> >> > really seems to prevent the list traversal and ioctx->dead test to happen
-> >> > before io_destroy() and get_ioctx() after io_destroy().
-> >> >
-> >> > But wouldn't the right fix be to call synchronize_rcu() in io_destroy()?
-> >> > Because with your fix we could still return 'dead' ioctx and I don't think
-> >> > we are supposed to do that...
-> >>
-> >> With my fix we won't oops, I was a bit concerned about ->dead,
-> >> yes but I don't know what semantics it is attempted to have there.
-> >  But wouldn't it do something bad if the memory gets reallocated for
-> > something else and set to non-zero? E.g. memory corruption?
+On Wed, 2011-01-19 at 15:13 +0200, Onkalo Samu wrote:
 > 
-> I don't see how it would with my patch.
-  Ah, you are right. Since the whole structure gets freed only after the RCU
-period expires, we are guaranteed to see 0 in ctx->users until we drop
-rcu_read_lock. Maybe a comment like the above would be useful at the place
-where you use try_get_ioctx() but your patch works.
+> When the task is sleeping rt_mutex_setprio
+> doesn't call check_class_changed since the task is not 
+> in queue at that moment I think. 
 
-> >> synchronize_rcu() in io_destroy()  does not prevent it from returning
-> >> as soon as lookup_ioctx drops the rcu_read_lock().
-> >  Yes, exactly. So references obtained before synchronize_rcu() would be
-> > completely fine and valid references and there would be no references after
-> > synchronize_rcu() because they'd see 'dead' set. But looking at the code
-> > again it still would not be enough because we could still race with
-> > io_submit_one() adding new IO to the ioctx which will be freed just after
-> > put_ioctx() in do_io_submit().
-> >
-> > The patch below implements what I have in mind - it should be probably
-> > split into two but I'd like to hear comments on that before doing these
-> > cosmetic touches ;)
-> 
-> Well this seems to solve it too, but it is 2 problems here. It is changing
-> the semantics of io_destroy which requires the big synchronize_rcu()
-> hammer.
-> 
-> But I don't believe that's necessarily desirable, or required. In fact it is
-> explicitly not reuired because it only says that it _may_ cancel outstanding
-> requests.
-  Well, we are not required to cancel all the outstanding AIO because of the
-API requirement, that's granted. But we must do it because of the way how
-the code is written. Outstanding IO requests reference ioctx but they are
-not counted in ctx->users but in ctx->reqs_active. So the code relies on
-the fact that the reference held by the hash table protects ctx from being
-freed and io_destroy() waits for requests before dropping the last
-reference to ctx. But there's the second race I describe making it possible
-for new IO to be created after io_destroy() has waited for all IO to
-finish...
+Ah, indeed, more changes then..
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+(I think we can also remove the prio_changed_idle thing, since I think
+we killed that hotplug usage)
+
+---
+Index: linux-2.6/kernel/sched.c
+===================================================================
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -2025,14 +2025,14 @@ inline int task_curr(const struct task_s
+ 
+ static inline void check_class_changed(struct rq *rq, struct task_struct *p,
+ 				       const struct sched_class *prev_class,
+-				       int oldprio, int running)
++				       int oldprio)
+ {
+ 	if (prev_class != p->sched_class) {
+ 		if (prev_class->switched_from)
+-			prev_class->switched_from(rq, p, running);
+-		p->sched_class->switched_to(rq, p, running);
+-	} else
+-		p->sched_class->prio_changed(rq, p, oldprio, running);
++			prev_class->switched_from(rq, p);
++		p->sched_class->switched_to(rq, p);
++	} else if (oldprio != p->prio)
++		p->sched_class->prio_changed(rq, p, oldprio);
+ }
+ 
+ static void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags)
+@@ -4570,11 +4570,10 @@ void rt_mutex_setprio(struct task_struct
+ 
+ 	if (running)
+ 		p->sched_class->set_curr_task(rq);
+-	if (on_rq) {
++	if (on_rq)
+ 		enqueue_task(rq, p, oldprio < prio ? ENQUEUE_HEAD : 0);
+ 
+-		check_class_changed(rq, p, prev_class, oldprio, running);
+-	}
++	check_class_changed(rq, p, prev_class, oldprio);
+ 	task_rq_unlock(rq, &flags);
+ }
+ 
+@@ -4902,11 +4901,10 @@ static int __sched_setscheduler(struct t
+ 
+ 	if (running)
+ 		p->sched_class->set_curr_task(rq);
+-	if (on_rq) {
++	if (on_rq)
+ 		activate_task(rq, p, 0);
+ 
+-		check_class_changed(rq, p, prev_class, oldprio, running);
+-	}
++	check_class_changed(rq, p, prev_class, oldprio);
+ 	__task_rq_unlock(rq);
+ 	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+ 
+@@ -8109,6 +8107,8 @@ EXPORT_SYMBOL(__might_sleep);
+ #ifdef CONFIG_MAGIC_SYSRQ
+ static void normalize_task(struct rq *rq, struct task_struct *p)
+ {
++	struct sched_class *prev_class = p->sched_class;
++	int old_prio = p->prio;
+ 	int on_rq;
+ 
+ 	on_rq = p->se.on_rq;
+@@ -8119,6 +8119,8 @@ static void normalize_task(struct rq *rq
+ 		activate_task(rq, p, 0);
+ 		resched_task(rq->curr);
+ 	}
++
++	check_class_changed(rq, p, prev_class, old_prio);
+ }
+ 
+ void normalize_rt_tasks(void)
+Index: linux-2.6/kernel/sched_fair.c
+===================================================================
+--- linux-2.6.orig/kernel/sched_fair.c
++++ linux-2.6/kernel/sched_fair.c
+@@ -4054,33 +4054,56 @@ static void task_fork_fair(struct task_s
+  * Priority of the task has changed. Check to see if we preempt
+  * the current task.
+  */
+-static void prio_changed_fair(struct rq *rq, struct task_struct *p,
+-			      int oldprio, int running)
++static void
++prio_changed_fair(struct rq *rq, struct task_struct *p, int oldprio)
+ {
++	if (!p->se.on_rq)
++		return;
++
+ 	/*
+ 	 * Reschedule if we are currently running on this runqueue and
+ 	 * our priority decreased, or if we are not currently running on
+ 	 * this runqueue and our priority is higher than the current's
+ 	 */
+-	if (running) {
++	if (rq->curr == p) {
+ 		if (p->prio > oldprio)
+ 			resched_task(rq->curr);
+ 	} else
+ 		check_preempt_curr(rq, p, 0);
+ }
+ 
++static void switched_from_fair(struct rq *rq, struct task_struct *p)
++{
++	struct sched_entity *se = &p->se;
++	struct cfs_rq *cfs_rq = cfs_rq_of(se);
++
++	/*
++	 * Ensure the task's vruntime is normalized, so that when its
++	 * switched back to the fair class the enqueue_entity(.flags=0) will
++	 * do the right thing.
++	 *
++	 * If it was on_rq, then the dequeue_entity(.flags=0) will already
++	 * have normalized the vruntime, if it was !on_rq, then only when
++	 * the task is sleeping will it still have non-normalized vruntime.
++	 */
++	if (!se->on_rq && p->state != TASK_RUNNING)
++		se->vruntime -= cfs_rq->min_vruntime;
++}
++
+ /*
+  * We switched to the sched_fair class.
+  */
+-static void switched_to_fair(struct rq *rq, struct task_struct *p,
+-			     int running)
++static void switched_to_fair(struct rq *rq, struct task_struct *p)
+ {
++	if (!p->se.on_rq)
++		return;
++
+ 	/*
+ 	 * We were most likely switched from sched_rt, so
+ 	 * kick off the schedule if running, otherwise just see
+ 	 * if we can still preempt the current task.
+ 	 */
+-	if (running)
++	if (rq->curr == p)
+ 		resched_task(rq->curr);
+ 	else
+ 		check_preempt_curr(rq, p, 0);
+@@ -4166,6 +4189,7 @@ static const struct sched_class fair_sch
+ 	.task_fork		= task_fork_fair,
+ 
+ 	.prio_changed		= prio_changed_fair,
++	.switched_from		= switched_from_fair,
+ 	.switched_to		= switched_to_fair,
+ 
+ 	.get_rr_interval	= get_rr_interval_fair,
+Index: linux-2.6/include/linux/sched.h
+===================================================================
+--- linux-2.6.orig/include/linux/sched.h
++++ linux-2.6/include/linux/sched.h
+@@ -1084,12 +1084,10 @@ struct sched_class {
+ 	void (*task_tick) (struct rq *rq, struct task_struct *p, int queued);
+ 	void (*task_fork) (struct task_struct *p);
+ 
+-	void (*switched_from) (struct rq *this_rq, struct task_struct *task,
+-			       int running);
+-	void (*switched_to) (struct rq *this_rq, struct task_struct *task,
+-			     int running);
++	void (*switched_from) (struct rq *this_rq, struct task_struct *task);
++	void (*switched_to) (struct rq *this_rq, struct task_struct *task);
+ 	void (*prio_changed) (struct rq *this_rq, struct task_struct *task,
+-			     int oldprio, int running);
++			     int oldprio);
+ 
+ 	unsigned int (*get_rr_interval) (struct rq *rq,
+ 					 struct task_struct *task);
+Index: linux-2.6/kernel/sched_idletask.c
+===================================================================
+--- linux-2.6.orig/kernel/sched_idletask.c
++++ linux-2.6/kernel/sched_idletask.c
+@@ -52,8 +52,7 @@ static void set_curr_task_idle(struct rq
+ {
+ }
+ 
+-static void switched_to_idle(struct rq *rq, struct task_struct *p,
+-			     int running)
++static void switched_to_idle(struct rq *rq, struct task_struct *p)
+ {
+ 	/* Can this actually happen?? */
+ 	if (running)
+@@ -62,8 +61,8 @@ static void switched_to_idle(struct rq *
+ 		check_preempt_curr(rq, p, 0);
+ }
+ 
+-static void prio_changed_idle(struct rq *rq, struct task_struct *p,
+-			      int oldprio, int running)
++static void
++prio_changed_idle(struct rq *rq, struct task_struct *p, int oldprio)
+ {
+ 	/* This can happen for hot plug CPUS */
+ 
+Index: linux-2.6/kernel/sched_rt.c
+===================================================================
+--- linux-2.6.orig/kernel/sched_rt.c
++++ linux-2.6/kernel/sched_rt.c
+@@ -1595,8 +1595,7 @@ static void rq_offline_rt(struct rq *rq)
+  * When switch from the rt queue, we bring ourselves to a position
+  * that we might want to pull RT tasks from other runqueues.
+  */
+-static void switched_from_rt(struct rq *rq, struct task_struct *p,
+-			   int running)
++static void switched_from_rt(struct rq *rq, struct task_struct *p)
+ {
+ 	/*
+ 	 * If there are other RT tasks then we will reschedule
+@@ -1605,7 +1604,7 @@ static void switched_from_rt(struct rq *
+ 	 * we may need to handle the pulling of RT tasks
+ 	 * now.
+ 	 */
+-	if (!rq->rt.rt_nr_running)
++	if (p->se.on_rq && !rq->rt.rt_nr_running)
+ 		pull_rt_task(rq);
+ }
+ 
+@@ -1624,8 +1623,7 @@ static inline void init_sched_rt_class(v
+  * with RT tasks. In this case we try to push them off to
+  * other runqueues.
+  */
+-static void switched_to_rt(struct rq *rq, struct task_struct *p,
+-			   int running)
++static void switched_to_rt(struct rq *rq, struct task_struct *p)
+ {
+ 	int check_resched = 1;
+ 
+@@ -1636,7 +1634,7 @@ static void switched_to_rt(struct rq *rq
+ 	 * If that current running task is also an RT task
+ 	 * then see if we can move to another run queue.
+ 	 */
+-	if (!running) {
++	if (p->se.on_rq && rq->curr != p) {
+ #ifdef CONFIG_SMP
+ 		if (rq->rt.overloaded && push_rt_task(rq) &&
+ 		    /* Don't resched if we changed runqueues */
+@@ -1652,10 +1650,13 @@ static void switched_to_rt(struct rq *rq
+  * Priority of the task has changed. This may cause
+  * us to initiate a push or pull.
+  */
+-static void prio_changed_rt(struct rq *rq, struct task_struct *p,
+-			    int oldprio, int running)
++static void
++prio_changed_rt(struct rq *rq, struct task_struct *p, int oldprio)
+ {
+-	if (running) {
++	if (!p->se.on_rq)
++		return;
++
++	if (rq->curr == p) {
+ #ifdef CONFIG_SMP
+ 		/*
+ 		 * If our priority decreases while running, we
+Index: linux-2.6/kernel/sched_stoptask.c
+===================================================================
+--- linux-2.6.orig/kernel/sched_stoptask.c
++++ linux-2.6/kernel/sched_stoptask.c
+@@ -59,14 +59,13 @@ static void set_curr_task_stop(struct rq
+ {
+ }
+ 
+-static void switched_to_stop(struct rq *rq, struct task_struct *p,
+-			     int running)
++static void switched_to_stop(struct rq *rq, struct task_struct *p)
+ {
+ 	BUG(); /* its impossible to change to this class */
+ }
+ 
+-static void prio_changed_stop(struct rq *rq, struct task_struct *p,
+-			      int oldprio, int running)
++static void
++prio_changed_stop(struct rq *rq, struct task_struct *p, int oldprio)
+ {
+ 	BUG(); /* how!?, what priority? */
+ }
+
