@@ -1,209 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab1ASTBu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 14:01:50 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52740 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753057Ab1ASTBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 14:01:49 -0500
-Date: Wed, 19 Jan 2011 20:01:33 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [GIT PULL] x86 fixes
-Message-ID: <20110119190133.GA13222@elte.hu>
+	id S1753397Ab1ASTCC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 14:02:02 -0500
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:5981 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753350Ab1ASTB7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 14:01:59 -0500
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Anisse Astier <anisse@astier.eu>
+Subject: Re: [PATCH RFC] dmi-scan: Use little-endian for the first 3 fields of the UUID.
+Date: Wed, 19 Jan 2011 12:01:02 -0700
+User-Agent: KMail/1.13.2 (Linux/2.6.32-26-generic; KDE/4.4.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Pascal VITOUX <pascal@substantiel.fr>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Jean Delvare <khali@linux-fr.org>
+References: <20110119185411.49668f81@destiny.ordissimo>
+In-Reply-To: <20110119185411.49668f81@destiny.ordissimo>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101191201.03971.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Wednesday, January 19, 2011 10:54:11 am Anisse Astier wrote:
+> 
+> From: Pascal VITOUX <pascal@substantiel.fr>
+> 
+>  - Get SMBIOS version.
+>  - Byte-swap the first 3 fields of the UUID (DMI type 1) as off SMBIOS
+>    version 2.6.
+> 
+> This patch is an adaptation of Jean Delvare patches for dmidecode
+> rev1.100, rev1.01 and rev1.119.
+> http://cvs.savannah.gnu.org/viewvc/dmidecode/dmidecode.c?root=dmidecode&view=log
+> 
+> It is intended to get the same uuid from dmidecode tool as from sysfs kernel
+> tree, more compliant with SMBIOS specification.
+> Therefore this patch will have the kernel return a different UUID if you
+> are using a recent BIOS implementing SMBIOS >= 2.6.
 
-Please pull the latest x86-fixes-for-linus git tree from:
+It seems like a good idea to have /sys/class/dmi/id/product_uuid
+match what dmidecode reports.  Does dmidecode use the same algorithm
+(testing dmi_ver against 0x0206)?
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fixes-for-linus
+It'd be nice to mention that /sys/... filename explicitly in the
+changelog, and maybe even include an example from a system where
+they previously did not match, and now do.
 
- Thanks,
+I don't have an opinion on the SMBIOS version stuff, but that looks
+like it should be split into a separate patch.
 
-	Ingo
+Bjorn
 
------------------->
-Ingo Molnar (1):
-      Revert "x86: Make relocatable kernel work with new binutils"
-
-Jan Beulich (1):
-      x86: Unify "numa=" command line option handling
-
-
- arch/x86/include/asm/numa_32.h |    2 ++
- arch/x86/include/asm/numa_64.h |    1 +
- arch/x86/kernel/vmlinux.lds.S  |   11 ++---------
- arch/x86/mm/numa.c             |   22 ++++++++++++++++++++++
- arch/x86/mm/numa_64.c          |   24 +++++-------------------
- arch/x86/mm/srat_32.c          |    1 -
- 6 files changed, 32 insertions(+), 29 deletions(-)
-
-diff --git a/arch/x86/include/asm/numa_32.h b/arch/x86/include/asm/numa_32.h
-index a372290..b0ef2b4 100644
---- a/arch/x86/include/asm/numa_32.h
-+++ b/arch/x86/include/asm/numa_32.h
-@@ -1,6 +1,8 @@
- #ifndef _ASM_X86_NUMA_32_H
- #define _ASM_X86_NUMA_32_H
- 
-+extern int numa_off;
-+
- extern int pxm_to_nid(int pxm);
- extern void numa_remove_cpu(int cpu);
- 
-diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
-index 5ae8728..0493be3 100644
---- a/arch/x86/include/asm/numa_64.h
-+++ b/arch/x86/include/asm/numa_64.h
-@@ -40,6 +40,7 @@ extern void __cpuinit numa_remove_cpu(int cpu);
- #ifdef CONFIG_NUMA_EMU
- #define FAKE_NODE_MIN_SIZE	((u64)32 << 20)
- #define FAKE_NODE_MIN_HASH_MASK	(~(FAKE_NODE_MIN_SIZE - 1UL))
-+void numa_emu_cmdline(char *);
- #endif /* CONFIG_NUMA_EMU */
- #else
- static inline void init_cpu_to_node(void)		{ }
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index b34ab80..bf47007 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -34,9 +34,11 @@ OUTPUT_FORMAT(CONFIG_OUTPUT_FORMAT, CONFIG_OUTPUT_FORMAT, CONFIG_OUTPUT_FORMAT)
- #ifdef CONFIG_X86_32
- OUTPUT_ARCH(i386)
- ENTRY(phys_startup_32)
-+jiffies = jiffies_64;
- #else
- OUTPUT_ARCH(i386:x86-64)
- ENTRY(phys_startup_64)
-+jiffies_64 = jiffies;
- #endif
- 
- #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
-@@ -140,15 +142,6 @@ SECTIONS
- 		CACHELINE_ALIGNED_DATA(L1_CACHE_BYTES)
- 
- 		DATA_DATA
--		/*
--		 * Workaround a binutils (2.20.51.0.12 to 2.21.51.0.3) bug.
--		 * This makes jiffies relocatable in such binutils
--		 */
--#ifdef CONFIG_X86_32
--		jiffies = jiffies_64;
--#else
--		jiffies_64 = jiffies;
--#endif
- 		CONSTRUCTORS
- 
- 		/* rarely changed data like cpu maps */
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 787c52c..ebf6d78 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -2,6 +2,28 @@
- #include <linux/topology.h>
- #include <linux/module.h>
- #include <linux/bootmem.h>
-+#include <asm/numa.h>
-+#include <asm/acpi.h>
-+
-+int __initdata numa_off;
-+
-+static __init int numa_setup(char *opt)
-+{
-+	if (!opt)
-+		return -EINVAL;
-+	if (!strncmp(opt, "off", 3))
-+		numa_off = 1;
-+#ifdef CONFIG_NUMA_EMU
-+	if (!strncmp(opt, "fake=", 5))
-+		numa_emu_cmdline(opt + 5);
-+#endif
-+#ifdef CONFIG_ACPI_NUMA
-+	if (!strncmp(opt, "noacpi", 6))
-+		acpi_numa = -1;
-+#endif
-+	return 0;
-+}
-+early_param("numa", numa_setup);
- 
- /*
-  * Which logical CPUs are on which nodes
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 1e72102..95ea155 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -30,7 +30,6 @@ s16 apicid_to_node[MAX_LOCAL_APIC] __cpuinitdata = {
- 	[0 ... MAX_LOCAL_APIC-1] = NUMA_NO_NODE
- };
- 
--int numa_off __initdata;
- static unsigned long __initdata nodemap_addr;
- static unsigned long __initdata nodemap_size;
- 
-@@ -263,6 +262,11 @@ static struct bootnode nodes[MAX_NUMNODES] __initdata;
- static struct bootnode physnodes[MAX_NUMNODES] __cpuinitdata;
- static char *cmdline __initdata;
- 
-+void __init numa_emu_cmdline(char *str)
-+{
-+	cmdline = str;
-+}
-+
- static int __init setup_physnodes(unsigned long start, unsigned long end,
- 					int acpi, int amd)
- {
-@@ -670,24 +674,6 @@ unsigned long __init numa_free_all_bootmem(void)
- 	return pages;
- }
- 
--static __init int numa_setup(char *opt)
--{
--	if (!opt)
--		return -EINVAL;
--	if (!strncmp(opt, "off", 3))
--		numa_off = 1;
--#ifdef CONFIG_NUMA_EMU
--	if (!strncmp(opt, "fake=", 5))
--		cmdline = opt + 5;
--#endif
--#ifdef CONFIG_ACPI_NUMA
--	if (!strncmp(opt, "noacpi", 6))
--		acpi_numa = -1;
--#endif
--	return 0;
--}
--early_param("numa", numa_setup);
--
- #ifdef CONFIG_NUMA
- 
- static __init int find_near_online_node(int node)
-diff --git a/arch/x86/mm/srat_32.c b/arch/x86/mm/srat_32.c
-index f164345..ae96e7b 100644
---- a/arch/x86/mm/srat_32.c
-+++ b/arch/x86/mm/srat_32.c
-@@ -59,7 +59,6 @@ static struct node_memory_chunk_s __initdata node_memory_chunk[MAXCHUNKS];
- static int __initdata num_memory_chunks; /* total number of memory chunks */
- static u8 __initdata apicid_to_pxm[MAX_APICID];
- 
--int numa_off __initdata;
- int acpi_numa __initdata;
- 
- static __init void bad_srat(void)
+> Signed-off-by: Pascal VITOUX <pascal@substantiel.fr>
+> Signed-off-by: Anisse Astier <anisse@astier.eu>
+> ---
+> Hi,
+> 
+> I'd like to get some feedback on this patch. It doesn't modify the
+> API/ABI, but modifies the value returned by kernel on a given hardware,
+> so it could potentially break a (very) badly written app.
+> 
+> Disclaimer: Although I've applied my Signed-off-by, Pascal and I work for
+> the same company.
+> 
+> Regards,
+> Anisse
+> 
+> ---
+>  drivers/firmware/dmi_scan.c |   36 ++++++++++++++++++++++++++++++++++--
+>  1 files changed, 34 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
+> index e28e41668..b6278a7 100644
+> --- a/drivers/firmware/dmi_scan.c
+> +++ b/drivers/firmware/dmi_scan.c
+> @@ -99,6 +99,7 @@ static void dmi_table(u8 *buf, int len, int num,
+>  static u32 dmi_base;
+>  static u16 dmi_len;
+>  static u16 dmi_num;
+> +static u16 dmi_ver;
+>  
+>  static int __init dmi_walk_early(void (*decode)(const struct dmi_header *,
+>  		void *))
+> @@ -169,7 +170,18 @@ static void __init dmi_save_uuid(const struct dmi_header *dm, int slot, int inde
+>  	if (!s)
+>  		return;
+>  
+> -	sprintf(s, "%pUB", d);
+> +	/*
+> +	 * As off version 2.6 of the SMBIOS specification, the first 3
+> +	 * fields of the UUID are supposed to be encoded on little-endian.
+> +	 * The specification says that this is the defacto standard,
+> +	 * however I've seen systems following RFC 4122 instead and use
+> +	 * network byte order, so I am reluctant to apply the byte-swapping
+> +	 * for older versions.
+> +	 */
+> +	if (dmi_ver >= 0x0206)
+> +		sprintf(s, "%pUL", d);
+> +	else
+> +		sprintf(s, "%pUB", d);
+>  
+>          dmi_ident[slot] = s;
+>  }
+> @@ -400,9 +412,29 @@ static int __init dmi_present(const char __iomem *p)
+>  		dmi_base = (buf[11] << 24) | (buf[10] << 16) |
+>  			(buf[9] << 8) | buf[8];
+>  
+> +		/* SMBIOS version */
+> +		dmi_ver = (*(u8 *)(p - 0x10 + 0x06) << 8) +
+> +			*(u8 *)(p - 0x10 + 0x07);
+> +
+> +		/* Some BIOS report weird SMBIOS version, fix that up */
+> +		switch (dmi_ver) {
+> +		case 0x021F:
+> +			printk(KERN_INFO "SMBIOS version fixup (2.%d -> 2.%d).\n",
+> +			       31, 3);
+> +			dmi_ver = 0x0203;
+> +			break;
+> +		case 0x0233:
+> +			printk(KERN_INFO "SMBIOS version fixup (2.%d -> 2.%d).\n",
+> +			       51, 6);
+> +			dmi_ver = 0x0206;
+> +			break;
+> +		}
+> +		printk(KERN_INFO "SMBIOS version %d.%d.\n", dmi_ver >> 8,
+> +		       dmi_ver & 0xFF);
+> +
+>  		/*
+>  		 * DMI version 0.0 means that the real version is taken from
+> -		 * the SMBIOS version, which we don't know at this point.
+> +		 * the SMBIOS version.
+>  		 */
+>  		if (buf[14] != 0)
+>  			printk(KERN_INFO "DMI %d.%d present.\n",
+> 
