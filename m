@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab1ASCIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 21:08:21 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47599 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753423Ab1ASCIU (ORCPT
+	id S1753465Ab1ASCI1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 21:08:27 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:34769 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753444Ab1ASCIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 21:08:20 -0500
+	Tue, 18 Jan 2011 21:08:25 -0500
+Message-ID: <4D36481E.2090708@wytron.com.tw>
+Date: Wed, 19 Jan 2011 10:10:38 +0800
+From: Thomas Chou <thomas@wytron.com.tw>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
-References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 18 Jan 2011 18:07:55 -0800
-Message-ID: <AANLkTimp0UcWi68N5Jv_hUww9PhGVgCzY0qYLETc8Dj_@mail.gmail.com>
-Subject: Re: Linux 2.6.38-rc1
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "W.A. GOOSSENS" <waltergoossens@home.nl>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
+        linux-input@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: Antw:Re: [PATCH] alter_ps2: Add devicetree support
+References: <72c0b97741a709.4d35bf01@home.nl>
+In-Reply-To: <72c0b97741a709.4d35bf01@home.nl>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.1.15
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 18, 2011 at 3:54 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> It's been two weeks, and the merge window for 2.6.38 is thus closed.
+Hi Walter,
 
-Oh, and it looks like mirroring from master.kernel.org is being very
-slow, possibly at least partly because the conversion to
-xv-compression seems to be going on (who knows - there's obviously a
-script going over all the public files recompressing them from gz to
-xz, but it may be some kind of dry-run and not final).
+On 01/18/2011 11:25 PM, W.A. GOOSSENS wrote:
+> I can however create a "fallback" rule were unkown components are just
+> added with the names the sopcinfo file, but that should not be the
+> default in my opinion since this will very effectively polute the
+> namespace in an uncontrolable way.
 
-And I may also have managed to hit the weekly rsync "check
-_everything_" window too. So rsync likely isn't just checking and
-syncing new files, but checksumming every single file that gets
-mirrored out and re-verifying it.
+Great! Do you have proposed name with version for ps2, altera_spi and 
+oc_tiny_spi? Then I can work on driver update. I guess we should ground 
+the version with "1.0" in driver match table.
 
-End result: it looks like git.kernel.org and the ftp mirrors are going
-to take hours to update. So if you don't see 2.6.38-rc1 yet, and you
-don't have an account on kernel.org and can fetch it directly from
-master, don't worry. It will mirror out eventually, but it's going to
-take some time.
-
-Sit back, relax, and sip some foofy drink. It will all work out in the end.
-
-              Linus
+Cheers,
+Thomas
