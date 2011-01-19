@@ -1,110 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751980Ab1ASAUt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 19:20:49 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:55287 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131Ab1ASAUr convert rfc822-to-8bit (ORCPT
+	id S1752389Ab1ASAWa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 19:22:30 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:51586 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131Ab1ASAW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 19:20:47 -0500
+	Tue, 18 Jan 2011 19:22:27 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=WB1+1uf+ZqocaDhAjt3Nff6K8cc1F8YZAtkwFyiW+mhd2BsXDXCjJcBLWFzQkQDJXb
-         RXa37RbhhYVxTdGr0zwQFZHQTn9Mx9ktc5tIaQEdp8ENrUr6ro85jWKSbSjsqiun53uy
-         TcRgsyAYeU3irTZZKf7SP/7/omyN2VBX3VWf4=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=YaDCjHeDDQWIIF54Hls+FJjRPDJyn4gQLBDkW58rY2ajI630OHIu0wWyr/m57LFnPX
+         IoTU4+Rp8iMizSto1UQ4voMrgGCXWv1UVZUj5hEozTH59ezcVVNAKoIXfgZvLT5qiDH6
+         637uJUQXVW9U+DMQEgOiZkJWInk7yKieQrOdM=
+Message-ID: <4D362DD2.8070606@gmail.com>
+Date: Tue, 18 Jan 2011 18:18:26 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110118235236.GA14087@quack.suse.cz>
-References: <AANLkTimMwZnm3UKvmrPscBeZF77vh1sW0ERO1tuv1oNW@mail.gmail.com>
-	<x494o9bbkqo.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTimuCgn4aHzUJRmQfsXjG_UF-3W8fAWb0Y-sSPsM@mail.gmail.com>
-	<x49tyh7mjr6.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTikgsGHJ+q6=We_zPAivyABq+z2f6Atv6ZScLYOU@mail.gmail.com>
-	<20110118190114.GA5070@quack.suse.cz>
-	<AANLkTin1+B_1CV-weALdS8EYJO60BJd0b7AGWzc0wrWr@mail.gmail.com>
-	<20110118235236.GA14087@quack.suse.cz>
-Date: Wed, 19 Jan 2011 11:20:45 +1100
-Message-ID: <AANLkTikvCkMDM9+i=44eEkX094=ZHpnQaN+541pm1icK@mail.gmail.com>
-Subject: Re: [patch] fs: aio fix rcu lookup
-From: Nick Piggin <npiggin@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Jeff Moyer <jmoyer@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Dmitry <dmonakhov@openvz.org>
+CC: John Tyree <johntyree@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Eric Sandeen <sandeen@redhat.com>, Jiaying Zhang <jiayingz@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        ide <linux-ide@vger.kernel.org>
+Subject: Re: PROBLEM: Disk continually remounts and hardlocks the entire system
+ if running on battery.
+References: <AANLkTi=_GSgFpsidp35-RDT3i6zhimXtyR=d6UtFmfMe@mail.gmail.com> <87ipxlj1vd.fsf@dmon-lp.sw.ru>
+In-Reply-To: <87ipxlj1vd.fsf@dmon-lp.sw.ru>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 10:52 AM, Jan Kara <jack@suse.cz> wrote:
-> On Wed 19-01-11 09:17:23, Nick Piggin wrote:
->> On Wed, Jan 19, 2011 at 6:01 AM, Jan Kara <jack@suse.cz> wrote:
->> > On Tue 18-01-11 10:24:24, Nick Piggin wrote:
->> >> On Tue, Jan 18, 2011 at 6:07 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
->> >> > Nick Piggin <npiggin@gmail.com> writes:
->> >> >> Do you agree with the theoretical problem? I didn't try to
->> >> >> write a racer to break it yet. Inserting a delay before the
->> >> >> get_ioctx might do the trick.
->> >> >
->> >> > I'm not convinced, no.  The last reference to the kioctx is always the
->> >> > process, released in the exit_aio path, or via sys_io_destroy.  In both
->> >> > cases, we cancel all aios, then wait for them all to complete before
->> >> > dropping the final reference to the context.
->> >>
->> >> That wouldn't appear to prevent a concurrent thread from doing an
->> >> io operation that requires ioctx lookup, and taking the last reference
->> >> after the io_cancel thread drops the ref.
->> >>
->> >> > So, while I agree that what you wrote is better, I remain unconvinced of
->> >> > it solving a real-world problem.  Feel free to push it in as a cleanup,
->> >> > though.
->> >>
->> >> Well I think it has to be technically correct first. If there is indeed a
->> >> guaranteed ref somehow, it just needs a comment.
->> >  Hmm, the code in io_destroy() indeed looks fishy. We delete the ioctx
->> > from the hash table and set ioctx->dead which is supposed to stop
->> > lookup_ioctx() from finding it (see the !ctx->dead check in
->> > lookup_ioctx()). There's even a comment in io_destroy() saying:
->> >        /*
->> >         * Wake up any waiters.  The setting of ctx->dead must be seen
->> >         * by other CPUs at this point.  Right now, we rely on the
->> >         * locking done by the above calls to ensure this consistency.
->> >         */
->> > But since lookup_ioctx() is called without any lock or barrier nothing
->> > really seems to prevent the list traversal and ioctx->dead test to happen
->> > before io_destroy() and get_ioctx() after io_destroy().
->> >
->> > But wouldn't the right fix be to call synchronize_rcu() in io_destroy()?
->> > Because with your fix we could still return 'dead' ioctx and I don't think
->> > we are supposed to do that...
+(CCing linux-ide)
+
+On 01/18/2011 04:14 PM, Dmitry wrote:
+> On Tue, 18 Jan 2011 22:46:34 +0100, John Tyree<johntyree@gmail.com>  wrote:
+>> [1.] Disk continually remounts and hardlocks the entire system if running on
+>> battery.
 >>
->> With my fix we won't oops, I was a bit concerned about ->dead,
->> yes but I don't know what semantics it is attempted to have there.
->  But wouldn't it do something bad if the memory gets reallocated for
-> something else and set to non-zero? E.g. memory corruption?
+>> [2.] When I unplug the power cord from laptop, the harddrive immediately
+>> stops spinning and nothing happens for up to ten seconds or more. During
+>> this
+>> time, absolutely nothing works except the mouse moving around in X.
+>> Applications do not redraw their guis, Can't launch anything or close
+>> anything. Just have to wait until it remounts and I hear the drive spin up.
+>> At that time, everything snaps back to life as if nothing has happened.
+>>
+>> dmesg shows the following:
+> oh, just look at ata errors, definitely this is not fs's problem,
+> it's looks like your disk is dieing, Your options:
+> 1) plug/unplug sata cable :), in my experience this is the root of cause
+>     in 50% of cases.
+> 2) smart ctl logs
+>>
+>> [28687.441335] ata1.00: configured for UDMA/33
+>> [28687.441345] ata1: EH complete
+>> [28687.443153] sd 0:0:0:0: [sda] Write cache: disabled, read cache: enabled,
+>> doesn't support DPO or FUA
+>> [28688.563053] EXT4-fs (sda5): re-mounted. Opts: commit=600
+>> [28688.570501] EXT4-fs (dm-0): re-mounted. Opts: commit=600
+>> [28727.760100] ata1.00: exception Emask 0x0 SAct 0x0 SErr 0x110000 action
+>> 0x6 frozen
+>> [28727.760115] ata1: SError: { PHYRdyChg Dispar }
+>> [28727.760126] ata1.00: failed command: WRITE DMA EXT
+>> [28727.760144] ata1.00: cmd 35/00:08:5d:8b:e1/00:00:17:00:00/e0 tag 0 dma
+>> 4096 out
+>> [28727.760148]          res 40/00:f4:00:00:00/00:00:00:00:00/40 Emask 0x4
+>> (timeout)
+>> [28727.760156] ata1.00: status: { DRDY }
+>> [28727.760170] ata1: hard resetting link
+>> [28728.066096] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+>> [28728.067819] ata1.00: configured for UDMA/33
+>> [28728.068309] ata1.00: device reported invalid CHS sector 0
+>> [28728.068337] ata1: EH complete
+>> [28730.395512] ata1.00: configured for UDMA/33
+>> [28730.395520] ata1: EH complete
+>> [28730.430938] sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled,
+>> doesn't support DPO or FUA
+>> [28730.953631] EXT4-fs (sda5): re-mounted. Opts: commit=0
+>> [28730.958914] EXT4-fs (dm-0): re-mounted. Opts: commit=0
+>>
+>> This happens everytime the power is unplugged and continutes to happen, with
+>> the harddrive spinning up and working for about 10 seconds before it happens
+>> again. When the power is plugged back in, everything goes right back to
+>> normal. This started with vanilla 2.6.37 from linus's git. I thought it
+>> might
+>> have something to do with laptop-mode, but disabling it did not change
+>> anything.
 
-I don't see how it would with my patch.
-
-
->> synchronize_rcu() in io_destroy()  does not prevent it from returning
->> as soon as lookup_ioctx drops the rcu_read_lock().
->  Yes, exactly. So references obtained before synchronize_rcu() would be
-> completely fine and valid references and there would be no references after
-> synchronize_rcu() because they'd see 'dead' set. But looking at the code
-> again it still would not be enough because we could still race with
-> io_submit_one() adding new IO to the ioctx which will be freed just after
-> put_ioctx() in do_io_submit().
->
-> The patch below implements what I have in mind - it should be probably
-> split into two but I'd like to hear comments on that before doing these
-> cosmetic touches ;)
-
-Well this seems to solve it too, but it is 2 problems here. It is changing
-the semantics of io_destroy which requires the big synchronize_rcu()
-hammer.
-
-But I don't believe that's necessarily desirable, or required. In fact it is
-explicitly not reuired because it only says that it _may_ cancel outstanding
-requests.
+Hmm, it seems like there's some kind of glitch happening on the SATA 
+link. In this case it looks like PHY ready change event(s) happened. I 
+would tend to suspect this being some kind of hardware problem. Are you 
+sure this doesn't occur on older kernels?
