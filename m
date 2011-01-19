@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153Ab1ASPpm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 10:45:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8577 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751102Ab1ASPpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 10:45:41 -0500
-Date: Wed, 19 Jan 2011 16:37:46 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prasad <prasad@linux.vnet.ibm.com>, Roland McGrath <roland@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Q: perf_event && task->ptrace_bps[]
-Message-ID: <20110119153746.GA32563@redhat.com>
-References: <20101108145647.GA3426@redhat.com> <20110117203459.GA32700@redhat.com> <20110118184234.GA1808@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110118184234.GA1808@nowhere>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752273Ab1ASPqH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 10:46:07 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:60400 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751668Ab1ASPqE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 10:46:04 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=44vUGAvzfu8A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=a5GEMpU4B_xSjz_rPp0A:9 a=-QfksepMsKhnUdp3wBYA:7 a=z5t0zjHgpyR9LOnzSd5i3iZ0SW0A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
+ Unknown relocation: 36
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Miller <davem@davemloft.net>
+Cc: mathieu.desnoyers@efficios.com, richm@oldelvet.org.uk,
+        609371@bugs.debian.org, ben@decadent.org.uk,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, mingo@redhat.com
+In-Reply-To: <20110118.232045.58440904.davem@davemloft.net>
+References: <1295382144.12215.123.camel@gandalf.stny.rr.com>
+	 <20110119050844.GA8776@Krystal>
+	 <20110118.223247.241909079.davem@davemloft.net>
+	 <20110118.232045.58440904.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 19 Jan 2011 10:46:00 -0500
+Message-ID: <1295451961.12215.1291.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18, Frederic Weisbecker wrote:
->
-> On Mon, Jan 17, 2011 at 09:34:59PM +0100, Oleg Nesterov wrote:
-> >
-> > Any idea how to fix this cleanly? May be we can reuse perf_event_mutex,
-> > but this looks soooo ugly. And do_exit()->flush_ptrace_hw_breakpoint()
-> > has the strange "FIXME:" comment which doesn't help me to understand
-> > what can we do.
->
-> Yeah forget about the FIXME, it's a stale thing I need to remove.
+After applying David's "remove align" patch, I got it to boot on x86_64
+with the following two patches. I thought just adding the "align" to the
+structure declaration would work, but it still failed on the syscall for
+init_module. By removing the double "declaration" of event_exit_##sname,
+removed this problem.
 
-OK, good.
+I'll test this on x86 32bit and PPC 64. If it works there, I'll push all
+of them out for 38. Should these go to 37 stable too?
 
-> > Probably the best fix is to change this code so that the tracer owns
-> > ->ptrace_bps[], not the tracee. But this is not trivial, and needs a
-> > lot of changes in ptrace code.
->
-> How much complicated would it be?
+-- Steve
 
-The problem is, ptrace_detach/release_task can't sleep currently.
-The necessary changes are nasty.
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index cacc27a..0e3bce6 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -142,8 +142,6 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ #define SYSCALL_TRACE_EXIT_EVENT(sname)					\
+ 	static struct syscall_metadata					\
+ 	__attribute__((__aligned__(4))) __syscall_meta_##sname;		\
+-	static struct ftrace_event_call					\
+-	__attribute__((__aligned__(4))) event_exit_##sname;		\
+ 	static struct ftrace_event_call __used				\
+ 	  __attribute__((__aligned__(4)))				\
+ 	  __attribute__((section("_ftrace_events")))			\
 
-> Because I see three solutions to solve this:
->
-> - Have a mutex inside thread->ptrace_bps. The contention must be
-> rare and only concern ptrace and tracee exit. That's the simplest.
 
-I think we can reuse perf_event_mutex for this. Not very good too,
-but simple. But this depends on what can we do under this mutex...
+Index: linux-trace.git/include/linux/ftrace_event.h
+===================================================================
+--- linux-trace.git.orig/include/linux/ftrace_event.h
++++ linux-trace.git/include/linux/ftrace_event.h
+@@ -194,7 +194,7 @@ struct ftrace_event_call {
+ 	int				perf_refcount;
+ 	struct hlist_head __percpu	*perf_events;
+ #endif
+-};
++} __attribute__((__aligned__(32)));
+ 
+ #define PERF_MAX_TRACE_SIZE	2048
+ 
 
-I am going to report a couple more bugs (at least, it looks like
-a bug when I am trying to understand the code ;), probably they
-should be fixed first.
-
-Oleg.
 
