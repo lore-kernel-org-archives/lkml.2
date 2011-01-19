@@ -1,88 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973Ab1ASPaW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 10:30:22 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:51736 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752049Ab1ASPaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 10:30:21 -0500
-X-Greylist: delayed 2060 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Jan 2011 10:30:21 EST
-Date: Wed, 19 Jan 2011 15:56:20 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Earl Chew <echew@ixiacom.com>
-Cc: linux-kernel@vger.kernel.org, "Hans J. Koch" <hjk@linutronix.de>,
-        Greg Kroah-Hartman <greg@kroah.com>
-Subject: Re: RFC: UIO  null parent for __uio_register_device and
- uio_device_name()
-Message-ID: <20110119145619.GA17399@local>
-References: <4D366104.1000400@ixiacom.com>
+	id S1754009Ab1ASPbO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 10:31:14 -0500
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:36184 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752049Ab1ASPbM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 10:31:12 -0500
+Date: Wed, 19 Jan 2011 17:30:57 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Yang Ruirui <ruirui.r.yang@tieto.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Felipe Balbi <felipe.balbi@nokia.com>,
+        Heikki Krogerus <ext-heikki.krogerus@nokia.com>,
+        Tejun Heo <tj@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Hema HK <hemahk@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb otg: use atomic notifier instead of blocking
+ notifier
+Message-ID: <20110119153057.GB3552@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <20110119092011.GA23624@darkstar>
+ <AANLkTinNVJXjL9a=Jmp34ktT7OLkGKzpm79j605vvCWe@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4D366104.1000400@ixiacom.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinNVJXjL9a=Jmp34ktT7OLkGKzpm79j605vvCWe@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 18, 2011 at 07:56:52PM -0800, Earl Chew wrote:
-> Hans,
+Hi,
 
-Hi Earl,
-
+On Wed, Jan 19, 2011 at 11:18:49PM +0800, Ming Lei wrote:
+> 2011/1/19 Yang Ruirui <ruirui.r.yang@tieto.com>:
+> > [   28.990997] [<c00326a0>] (unwind_backtrace+0x0/0xec) from [<c007a39c>] (print_usage_bug+0x170/0x1b4)
+> > [   29.007293] [<c007a39c>] (print_usage_bug+0x170/0x1b4) from [<c007a738>] (mark_lock+0x358/0x628)
+> > [   29.019836] [<c007a738>] (mark_lock+0x358/0x628) from [<c007c118>] (__lock_acquire+0x554/0x1730)
+> > [   29.032409] [<c007c118>] (__lock_acquire+0x554/0x1730) from [<c007d354>] (lock_acquire+0x60/0x74)
+> > [   29.045166] [<c007d354>] (lock_acquire+0x60/0x74) from [<c037e6d8>] (down_read+0x48/0x5c)
+> > [   29.057250] [<c037e6d8>] (down_read+0x48/0x5c) from [<c0070770>] (__blocking_notifier_call_chain+0x2c/0x5c)
+> > [   29.074920] [<c0070770>] (__blocking_notifier_call_chain+0x2c/0x5c) from [<c00707b4>] (blocking_notifier_call_chain+0x14/0x18)
+> > [   29.094573] [<c00707b4>] (blocking_notifier_call_chain+0x14/0x18) from [<c02784d8>] (musb_gadget_vbus_draw+0x38/0x60)
 > 
-> I had a two UIO changes queued up from earlier which I
-> forgot to ask you about.
+> I am a little confused, why is blocking_notifier_call_chain called from
+> musb_gadget_vbus_draw?  See source code of musb_gadget_vbus_draw:
 > 
-> Would you consider these changes for inclusion in the mainline ?
+> 1587 static int musb_gadget_vbus_draw(struct usb_gadget *gadget, unsigned mA)
+> 1588 {
+> 1589     struct musb *musb = gadget_to_musb(gadget);
+> 1590
+> 1591     if (!musb->xceiv->set_power)
+> 1592         return -EOPNOTSUPP;
+> 1593     return otg_set_power(musb->xceiv, mA);
+> 1594 }
+
+that's easy to guess since commit log says it's a problem on Meego
+kernel.
+
+> Are you sure the issue can be reproduced in 2.6.37 or -next tree?
 > 
-> 
-> o Allow a null parent during uio_register_device. We've had
->   situations where there was no convenient parent. We could
->   concoct a parent, but it seemed to make sense to allow
->   for a null.
+> In mainline code(2.6.37), blocking_notifier_call_chain is only called in
+> threaded irq handler of otg driver wrt. musb driver, so seems enough.
 
-Hmm. I saw many UIO drivers over the years but we never had that
-problem. In the probe() function of your UIO driver you get a
-suitable device as parameter. Why don't you just use it?
+true, but seems like Nokia is using to notify gadget states, which makes
+a lot of sense when you start thinking about things such as battery
+charging.
 
-> 
-> o Introduce uio_device_name() to allow callers to query for the
->   name of the created uio device. Without this, there doesn't seem
->   to be a straightforward way for a client to figure out the name of the
->   device.
-
-Yes, we intentionally defined struct uio_device in uio.c and not in
-a header file to prevent driver authors from using it ;-)
-
-> 
-> --- /tmp/uio.c.orig     2011-01-18 17:38:17.157452875 -0800
-> +++ /tmp/uio.c  2011-01-18 19:46:48.367453578 -0800
-> @@ -808,6 +808,18 @@
->  }
-> 
->  /**
-> + * uio_device_name - obtain the name of the registered device
-> + * @info:      UIO device capabilities
-> + *
-> + * returns name of device.
-> + */
-> +const char *uio_device_name(struct uio_info *info)
-> +{
-> +       return dev_name(info->uio_dev->dev);
-
-No NULL checks? Note that info->uio_dev can be NULL if uio_register_device()
-failed...
-
-> +}
-> +EXPORT_SYMBOL_GPL(uio_device_name);
-
-The function above returns strings like "uio0", "uio1", and so on. What's
-the value of that? To identify a certain driver or distinguish several
-instances of it, the "name" member of struct uio_info should be used.
-
-But maybe I just miss the point. What's your use case?
-
-Thanks,
-Hans
-
+-- 
+balbi
