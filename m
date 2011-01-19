@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab1ASWDD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 17:03:03 -0500
-Received: from zfrontend2.aha.ru ([195.2.83.148]:45401 "EHLO aha.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753508Ab1ASWDB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 17:03:01 -0500
-From: "werner" <w.landgraf@ru.ru>
-Subject: 
-To: aarcange@redhat.com, bp@amd64.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org
-X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
-Date: Wed, 19 Jan 2011 18:02:56 -0400
-Message-ID: <web-442704529@zbackend1.aha.ru>
+	id S1753993Ab1ASWFW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 17:05:22 -0500
+Received: from tundra.namei.org ([65.99.196.166]:43647 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753643Ab1ASWFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 17:05:19 -0500
+Date: Thu, 20 Jan 2011 09:04:47 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] Security subsystem bugfixes for 2.6.38
+Message-ID: <alpine.LRH.2.00.1101200902400.5588@tundra.namei.org>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; format="flowed"
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+Please pull the following bugfixes for the trusted keys code.
 
-Only for your information, after the crash report, I 
-recompiled the kernel with switching off HUGEPAGE, and 
-then it runs normally.  This means, that the problem 
-really was caused by khugepaged, not by any other change 
-from 2.6.37 to 2.6.38-rc1 .  Below I dont give the whole 
-configure file, but only that part where is the difference 
-(the line marked as comment)
+The following changes since commit c56eb8fb6dccb83d9fe62fd4dc00c834de9bc470:
+  Linus Torvalds (1):
+        Linux 2.6.38-rc1
 
-I didnt yet try any patch.
+are available in the git repository at:
 
-wl
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6 for-linus
+
+Mimi Zohar (1):
+      trusted-keys: free memory bugfix
+
+Tetsuo Handa (3):
+      trusted-keys: another free memory bugfix
+      trusted-keys: check for NULL before using it
+      trusted-keys: avoid scattring va_end()
+
+ security/keys/trusted_defined.c |   51 +++++++++++++++++++++-----------------
+ 1 files changed, 28 insertions(+), 23 deletions(-)
 
 
-  ...
-CONFIG_DEFAULT_MMAP_MIN_ADDR=65536
-CONFIG_ARCH_SUPPORTS_MEMORY_FAILURE=y
-CONFIG_MEMORY_FAILURE=y
-# CONFIG_TRANSPARENT_HUGEPAGE is not set
-CONFIG_HIGHPTE=y
-CONFIG_X86_CHECK_BIOS_CORRUPTION=y
-CONFIG_X86_BOOTPARAM_MEMORY_CORRUPTION_CHECK=y
-CONFIG_X86_RESERVE_LOW=64
----
-Professional hosting for everyone - http://www.host.ru
+-- 
+James Morris
+<jmorris@namei.org>
