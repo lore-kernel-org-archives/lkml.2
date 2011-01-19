@@ -1,82 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752400Ab1ASFP4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 00:15:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19746 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751040Ab1ASFPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 00:15:54 -0500
-From: Amerigo Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: WANG Cong <amwang@redhat.com>,
-        Randy Dunlap <rdunlap@xenotime.net> (maintainer:DOCUMENTATION),
-        Len Brown <len.brown@intel.com> (supporter:SUSPEND TO RAM),
-        Pavel Machek <pavel@ucw.cz> (supporter:SUSPEND TO RAM),
-        "Rafael J. Wysocki" <rjw@sisk.pl> (supporter:SUSPEND TO RAM),
-        Thomas Gleixner <tglx@linutronix.de> (maintainer:X86
-	ARCHITECTURE...),
-        Ingo Molnar <mingo@redhat.com> (maintainer:X86 ARCHITECTURE...),
-        "H. Peter Anvin" <hpa@zytor.com> (maintainer:X86 ARCHITECTURE...),
-        x86@kernel.org (maintainer:X86 ARCHITECTURE...),
-        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
-        linux-pm@lists.linux-foundation.org (open list:SUSPEND TO RAM)
-Subject: [Patch] acpi: remove acpi_sleep=s4_nonvs
-Date: Wed, 19 Jan 2011 13:14:06 +0800
-Message-Id: <1295414046-14257-1-git-send-email-amwang@redhat.com>
+	id S1752956Ab1ASFQH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 00:16:07 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:47489
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752566Ab1ASFQG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 00:16:06 -0500
+Date: Tue, 18 Jan 2011 21:16:39 -0800 (PST)
+Message-Id: <20110118.211639.68142725.davem@davemloft.net>
+To: mathieu.desnoyers@efficios.com
+Cc: rostedt@goodmis.org, richm@oldelvet.org.uk, 609371@bugs.debian.org,
+        ben@decadent.org.uk, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@redhat.com
+Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
+ Unknown relocation: 36
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110119050844.GA8776@Krystal>
+References: <20110118201323.GA14930@Krystal>
+	<1295382144.12215.123.camel@gandalf.stny.rr.com>
+	<20110119050844.GA8776@Krystal>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-acpi_sleep=s4_nonvs is superseded by acpi_sleep=nonvs.
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Date: Wed, 19 Jan 2011 00:08:45 -0500
 
-Signed-off-by: WANG Cong <amwang@redhat.com>
+> The following works fine for me now. Comments are welcome.
 
----
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index 8c594c4..247582c 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -521,14 +521,6 @@ Who:	Thomas Gleixner <tglx@linutronix.de>
- 
- ----------------------------
- 
--What:	The acpi_sleep=s4_nonvs command line option
--When:	2.6.37
--Files:	arch/x86/kernel/acpi/sleep.c
--Why:	superseded by acpi_sleep=nonvs
--Who:	Rafael J. Wysocki <rjw@sisk.pl>
--
------------------------------
--
- What: 	PCI DMA unmap state API
- When:	August 2012
- Why:	PCI DMA unmap state API (include/linux/pci-dma.h) was replaced
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index b72e071..64d907d 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -240,7 +240,7 @@ and is between 256 and 4096 characters. It is defined in the file
- 
- 	acpi_sleep=	[HW,ACPI] Sleep options
- 			Format: { s3_bios, s3_mode, s3_beep, s4_nohwsig,
--				  old_ordering, s4_nonvs, sci_force_enable }
-+				  old_ordering, nonvs, sci_force_enable }
- 			See Documentation/power/video.txt for information on
- 			s3_bios and s3_mode.
- 			s3_beep is for debugging; it makes the PC's speaker beep
-diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
-index 69fd72a..bb9f327 100644
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -162,11 +162,6 @@ static int __init acpi_sleep_setup(char *str)
- #ifdef CONFIG_HIBERNATION
- 		if (strncmp(str, "s4_nohwsig", 10) == 0)
- 			acpi_no_s4_hw_signature();
--		if (strncmp(str, "s4_nonvs", 8) == 0) {
--			pr_warning("ACPI: acpi_sleep=s4_nonvs is deprecated, "
--					"please use acpi_sleep=nonvs instead");
--			acpi_nvs_nosave();
--		}
- #endif
- 		if (strncmp(str, "nonvs", 5) == 0)
- 			acpi_nvs_nosave();
+Thanks for doing this work Mathieu.
+
+> - No aligned() type attribute nor variable attribute. I get a crash on x86_64
+>   (NULL pointer exception when executing __trace_add_event_call, the 5th call).
+>   __alignof__(struct ftrace_event_call) is worth 8.
+
+This is really bizarre.  Does it only happen on x86_64?
+
+I'm wondering if GCC does something bizarre like work with different
+default alignments based upon the section or something like that.
+
+If so, maybe adding the section attribute to the array definition will
+"fix" things?
+
+> On 32-bit architectures, we really want a aligned(4), and on 64-bit
+> architectures, aligned(8). Represent this by creating:
+> 
+> #define __long_aligned __attribute__((__aligned__(__alignof__(long))))
+
+Do any of these datastructures have, or will have, "u64" or "long
+long" types in them?  If so, then we will need to use "8"
+unconditionally or "__alignof__(long long)".
+
+I'll see if I can work out why using no align directive explodes
+on x86-64.
