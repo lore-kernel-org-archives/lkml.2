@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906Ab1ASDNi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 22:13:38 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:47150 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820Ab1ASDNh (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 18 Jan 2011 22:13:37 -0500
-Date: Tue, 18 Jan 2011 22:12:40 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build failure in Linus' tree
-Message-ID: <20110119031240.GA22583@dumpdata.com>
-References: <20110115104004.64335bc5.sfr@canb.auug.org.au>
+	id S1753123Ab1ASDZD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 22:25:03 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:50942 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752619Ab1ASDZB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 22:25:01 -0500
+Date: Wed, 19 Jan 2011 14:24:49 +1100
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm/i915: Correctly test for an initialised ring for
+	dri1
+Message-ID: <20110119032449.GA20598@gondor.apana.org.au>
+References: <20110118115701.GA11952@gondor.apana.org.au> <1295371449-22979-1-git-send-email-chris@chris-wilson.co.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110115104004.64335bc5.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1295371449-22979-1-git-send-email-chris@chris-wilson.co.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 15, 2011 at 10:40:04AM +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> While building Linus' tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> ERROR: "arbitrary_virt_to_machine" [drivers/xen/xen-gntdev.ko] undefined!
-> 
-> Caused by commit ba5d1012292403c8037adf4a54c4ec50dfe846c4 ("xen/gntdev:
-> stop using "token" argument").
-> 
-> I have applied this patch for today:
-
-Ok. Thanks for spotting that. I stuck it in my tree along with some other
-patches for rc1.
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Sat, 15 Jan 2011 10:36:26 +1100
-> Subject: [PATCH] xen: export arbitrary_virt_to_machine
-> 
-> fixes build error:
-> 
-> ERROR: "arbitrary_virt_to_machine" [drivers/xen/xen-gntdev.ko] undefined!
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  arch/x86/xen/mmu.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> index 7575e55..5e92b61 100644
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -201,6 +201,7 @@ xmaddr_t arbitrary_virt_to_machine(void *vaddr)
->  	offset = address & ~PAGE_MASK;
->  	return XMADDR(((phys_addr_t)pte_mfn(*pte) << PAGE_SHIFT) + offset);
->  }
-> +EXPORT_SYMBOL_GPL(arbitrary_virt_to_machine);
+On Tue, Jan 18, 2011 at 05:24:09PM +0000, Chris Wilson wrote:
+>
+> diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
+> index 46d649b..19a58bd 100644
+> --- a/drivers/gpu/drm/i915/i915_irq.c
+> +++ b/drivers/gpu/drm/i915/i915_irq.c
+> @@ -1302,12 +1302,12 @@ int i915_irq_emit(struct drm_device *dev, void *data,
+>  	drm_i915_irq_emit_t *emit = data;
+>  	int result;
 >  
->  void make_lowmem_page_readonly(void *vaddr)
->  {
-> -- 
-> 1.7.2.3
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-next" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> -	if (!dev_priv || !LP_RING(dev_priv)->virtual_start) {
+> +	if (!dev_priv || !LP_RING(dev_priv)->obj) {
+>  		DRM_ERROR("called with no initialization\n");
+>  		return -EINVAL;
+>  	}
+>  
+> -	RING_LOCK_TEST_WITH_RETURN(dev, file_priv);
+> +	LOCK_TEST_WITH_RETURN(dev, file_priv);
+
+While this would surely fix the crash here, this appears to take
+away existing functionality with KMS off.
+
+We usually don't require people to upgrade user-space along
+with the kernel in order to preserve existing functionality.
+Do different rules apply in the DRM area?
+
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
