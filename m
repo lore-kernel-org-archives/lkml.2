@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083Ab1ASSNo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 13:13:44 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:61020 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab1ASSNo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 13:13:44 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=44vUGAvzfu8A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=7iJcpLsfajWkzCKs_9cA:9 a=KwbGS7bugUhUTjueG5YA:7 a=WG76R1CvTPdDgQFjTumcEWSMacoA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
- Unknown relocation: 36
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: David Miller <davem@davemloft.net>, richm@oldelvet.org.uk,
-        609371@bugs.debian.org, ben@decadent.org.uk,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, mingo@redhat.com
-In-Reply-To: <20110119161534.GB15031@Krystal>
-References: <1295382144.12215.123.camel@gandalf.stny.rr.com>
-	 <20110119050844.GA8776@Krystal>
-	 <20110118.223247.241909079.davem@davemloft.net>
-	 <20110118.232045.58440904.davem@davemloft.net>
-	 <1295451961.12215.1291.camel@gandalf.stny.rr.com>
-	 <20110119161534.GB15031@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 19 Jan 2011 13:13:42 -0500
-Message-ID: <1295460822.12215.1389.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752294Ab1ASSP2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 13:15:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15364 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751412Ab1ASSPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 13:15:25 -0500
+Date: Wed, 19 Jan 2011 16:13:47 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 1/3] KVM: fix rcu usage warning in
+ kvm_arch_vcpu_ioctl_set_sregs()
+Message-ID: <20110119181347.GA13142@amt.cnet>
+References: <4D2D5AA6.9080804@cn.fujitsu.com>
+ <4D3673A7.4090402@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D3673A7.4090402@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-19 at 11:15 -0500, Mathieu Desnoyers wrote:
-> * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > After applying David's "remove align" patch, I got it to boot on x86_64
-> > with the following two patches. I thought just adding the "align" to the
-> > structure declaration would work, but it still failed on the syscall for
-> > init_module. By removing the double "declaration" of event_exit_##sname,
-> > removed this problem.
+On Wed, Jan 19, 2011 at 01:16:23PM +0800, Xiao Guangrong wrote:
+> On 01/12/2011 03:39 PM, Xiao Guangrong wrote:
+> > Fix:
 > > 
-> > I'll test this on x86 32bit and PPC 64. If it works there, I'll push all
-> > of them out for 38. Should these go to 37 stable too?
+> > [ 1001.499596] ===================================================
+> > [ 1001.499599] [ INFO: suspicious rcu_dereference_check() usage. ]
+> > [ 1001.499601] ---------------------------------------------------
+> > [ 1001.499604] include/linux/kvm_host.h:301 invoked rcu_dereference_check() without protection!
+> > 	......
+> > [ 1001.499636] Pid: 6035, comm: qemu-system-x86 Not tainted 2.6.37-rc6+ #62
+> > [ 1001.499638] Call Trace:
+> > [ 1001.499644]  [] lockdep_rcu_dereference+0x9d/0xa5
+> > [ 1001.499653]  [] gfn_to_memslot+0x8d/0xc8 [kvm]
+> > [ 1001.499661]  [] gfn_to_hva+0x16/0x3f [kvm]
+> > [ 1001.499669]  [] kvm_read_guest_page+0x1e/0x5e [kvm]
+> > [ 1001.499681]  [] kvm_read_guest_page_mmu+0x53/0x5e [kvm]
+> > [ 1001.499699]  [] load_pdptrs+0x3f/0x9c [kvm]
+> > [ 1001.499705]  [] ? vmx_set_cr0+0x507/0x517 [kvm_intel]
+> > [ 1001.499717]  [] kvm_arch_vcpu_ioctl_set_sregs+0x1f3/0x3c0 [kvm]
+> > [ 1001.499727]  [] kvm_vcpu_ioctl+0x6a5/0xbc5 [kvm]
+> > 
+> > Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 > 
-> Please hold before adding these patches into git. They don't seem to address the
-> underlying problem correctly. See the latest exchanges between David Miller and
-> myself for more info.
-> 
-> We need to come up with something better than "it boots" as an explanation for
-> the fix.
+> Ping ...?
 
-Yes, I agree that we should solve this issue correctly. But if there is
-a work around to the problem, we could implement that if the real
-solution is not in our grasp yet.
-
--- Steve
-
+Applied this fix. For the make_all_cpus_request optimization, can you
+show numbers with this new version? Because now there is LOCK# similarly
+to the spinlock.
 
