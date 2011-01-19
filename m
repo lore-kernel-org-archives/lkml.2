@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab1ASXgA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 18:36:00 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:1138 "EHLO mms1.broadcom.com"
+	id S1754142Ab1ASXhS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 18:37:18 -0500
+Received: from mms1.broadcom.com ([216.31.210.17]:1531 "EHLO mms1.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751485Ab1ASXf6 convert rfc822-to-8bit (ORCPT
+	id S1751485Ab1ASXhQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 18:35:58 -0500
+	Wed, 19 Jan 2011 18:37:16 -0500
 X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
 From: "Jian Peng" <jipeng@broadcom.com>
 To: "Jeff Garzik" <jgarzik@pobox.com>
 cc: "Tejun Heo" <tj@kernel.org>, "Robert Hancock" <hancockrwd@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         ide <linux-ide@vger.kernel.org>
-Date: Wed, 19 Jan 2011 15:35:47 -0800
+Date: Wed, 19 Jan 2011 15:37:05 -0800
 Subject: RE: questions regarding possible violation of AHCI spec in AHCI
  driver
 Thread-Topic: questions regarding possible violation of AHCI spec in
  AHCI driver
-Thread-Index: Acu3cw1ZQEatH4a4Tq+DzMhYSsstDwAvPmJw
-Message-ID: <E18F441196CA634DB8E1F1C56A50A874319FF438B5@IRVEXCHCCR01.corp.ad.broadcom.com>
+Thread-Index: Acu3cw1ZQEatH4a4Tq+DzMhYSsstDwAvqFhw
+Message-ID: <E18F441196CA634DB8E1F1C56A50A874319FF438B6@IRVEXCHCCR01.corp.ad.broadcom.com>
 References: <4CFF58D2.4040006@kernel.org>
  <E18F441196CA634DB8E1F1C56A50A874319FA38C43@IRVEXCHCCR01.corp.ad.broadcom.com>
  <4CFFCD56.6050608@kernel.org>
@@ -39,13 +39,15 @@ X-MS-Has-Attach:
 X-MS-TNEF-Correlator: 
 acceptlanguage: en-US
 MIME-Version: 1.0
-X-WSS-ID: 6129AA263P059944547-01-01
+X-WSS-ID: 6129AA733P059944865-01-01
 Content-Type: text/plain;
  charset=us-ascii
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+Resent it since mailbox crashed last time
 
 Hi, Jeff,
 
