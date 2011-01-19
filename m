@@ -1,180 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922Ab1ASJet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 04:34:49 -0500
-Received: from hera.kernel.org ([140.211.167.34]:36888 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753887Ab1ASJer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 04:34:47 -0500
-Date: Wed, 19 Jan 2011 09:34:21 GMT
-From: tip-bot for Jan Beulich <JBeulich@novell.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        jbeulich@novell.com, JBeulich@novell.com, tj@kernel.org,
-        tglx@linutronix.de, trenn@suse.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jbeulich@novell.com, JBeulich@novell.com, tj@kernel.org,
-        tglx@linutronix.de, trenn@suse.de, mingo@elte.hu
-In-Reply-To: <4D36B581020000780002D0FF@vpn.id2.novell.com>
-References: <4D36B581020000780002D0FF@vpn.id2.novell.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Unify "numa=" command line option handling
-Message-ID: <tip-9032160275ba018003ff390835ff8ed2b5b788b8@git.kernel.org>
-Git-Commit-ID: 9032160275ba018003ff390835ff8ed2b5b788b8
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753867Ab1ASJkb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 04:40:31 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63249 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753519Ab1ASJk3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 04:40:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=FA7k4dVnJBIafziMAcJmHNIeND7rZki5gFWBoTxAd7eoHETr757yBOl3779lvagFn1
+         QqpruDKhFTDJX32STx7i9D59Z0D8am3598mZWFlaZbOeD/BZSQYdC0oNiWA1UKTO3NWW
+         EnsgbOyB0DSPgzKsaAe8niBnj+IInmN2gtLwM=
 MIME-Version: 1.0
+In-Reply-To: <1295284788.21277.65.camel@Joe-Laptop>
+References: <1294919372-1904-1-git-send-email-ratbert.chuang@gmail.com>
+ <1295256060-2091-1-git-send-email-ratbert.chuang@gmail.com> <1295284788.21277.65.camel@Joe-Laptop>
+From: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Date: Wed, 19 Jan 2011 17:40:07 +0800
+Message-ID: <AANLkTi=nJxwR89CF3i0+L6+yM4Bg_PN8PQByTAHP2nPM@mail.gmail.com>
+Subject: Re: [PATCH v2] net: add Faraday FTMAC100 10/100 Ethernet driver
+To: Joe Perches <joe@perches.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ratbert@faraday-tech.com, bhutchings@solarflare.com,
+        eric.dumazet@gmail.com, dilinger@queued.net
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 19 Jan 2011 09:34:22 +0000 (UTC)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9032160275ba018003ff390835ff8ed2b5b788b8
-Gitweb:     http://git.kernel.org/tip/9032160275ba018003ff390835ff8ed2b5b788b8
-Author:     Jan Beulich <JBeulich@novell.com>
-AuthorDate: Wed, 19 Jan 2011 08:57:21 +0000
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 19 Jan 2011 10:25:18 +0100
+Dear Joe,
 
-x86: Unify "numa=" command line option handling
+On Tue, Jan 18, 2011 at 1:19 AM, Joe Perches <joe@perches.com> wrote:
+> On Mon, 2011-01-17 at 17:21 +0800, Po-Yu Chuang wrote:
+>
+>> + * priveate data
+>
+> private
 
-In order to be able to suppress the use of SRAT tables that
-32-bit Linux can't deal with (in one case known to lead to a
-non-bootable system, unless disabling ACPI altogether), move the
-"numa=" option handling to common code.
+Fixed.
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Reviewed-by: Thomas Renninger <trenn@suse.de>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Thomas Renninger <trenn@suse.de>
-LKML-Reference: <4D36B581020000780002D0FF@vpn.id2.novell.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/numa_32.h |    2 ++
- arch/x86/include/asm/numa_64.h |    1 +
- arch/x86/mm/numa.c             |   22 ++++++++++++++++++++++
- arch/x86/mm/numa_64.c          |   24 +++++-------------------
- arch/x86/mm/srat_32.c          |    1 -
- 5 files changed, 30 insertions(+), 20 deletions(-)
+>> +static void ftmac100_enable_all_int(struct ftmac100 *priv)
+>> +{
+>> +     unsigned int imr;
+>> +
+>> +     imr = FTMAC100_INT_RPKT_FINISH | FTMAC100_INT_NORXBUF
+>> +          | FTMAC100_INT_XPKT_OK | FTMAC100_INT_XPKT_LOST
+>> +          | FTMAC100_INT_RPKT_LOST | FTMAC100_INT_AHB_ERR
+>> +          | FTMAC100_INT_PHYSTS_CHG;
+>
+> This could be a #define.
 
-diff --git a/arch/x86/include/asm/numa_32.h b/arch/x86/include/asm/numa_32.h
-index a372290..b0ef2b4 100644
---- a/arch/x86/include/asm/numa_32.h
-+++ b/arch/x86/include/asm/numa_32.h
-@@ -1,6 +1,8 @@
- #ifndef _ASM_X86_NUMA_32_H
- #define _ASM_X86_NUMA_32_H
- 
-+extern int numa_off;
-+
- extern int pxm_to_nid(int pxm);
- extern void numa_remove_cpu(int cpu);
- 
-diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
-index 5ae8728..0493be3 100644
---- a/arch/x86/include/asm/numa_64.h
-+++ b/arch/x86/include/asm/numa_64.h
-@@ -40,6 +40,7 @@ extern void __cpuinit numa_remove_cpu(int cpu);
- #ifdef CONFIG_NUMA_EMU
- #define FAKE_NODE_MIN_SIZE	((u64)32 << 20)
- #define FAKE_NODE_MIN_HASH_MASK	(~(FAKE_NODE_MIN_SIZE - 1UL))
-+void numa_emu_cmdline(char *);
- #endif /* CONFIG_NUMA_EMU */
- #else
- static inline void init_cpu_to_node(void)		{ }
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 787c52c..ebf6d78 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -2,6 +2,28 @@
- #include <linux/topology.h>
- #include <linux/module.h>
- #include <linux/bootmem.h>
-+#include <asm/numa.h>
-+#include <asm/acpi.h>
-+
-+int __initdata numa_off;
-+
-+static __init int numa_setup(char *opt)
-+{
-+	if (!opt)
-+		return -EINVAL;
-+	if (!strncmp(opt, "off", 3))
-+		numa_off = 1;
-+#ifdef CONFIG_NUMA_EMU
-+	if (!strncmp(opt, "fake=", 5))
-+		numa_emu_cmdline(opt + 5);
-+#endif
-+#ifdef CONFIG_ACPI_NUMA
-+	if (!strncmp(opt, "noacpi", 6))
-+		acpi_numa = -1;
-+#endif
-+	return 0;
-+}
-+early_param("numa", numa_setup);
- 
- /*
-  * Which logical CPUs are on which nodes
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 1e72102..95ea155 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -30,7 +30,6 @@ s16 apicid_to_node[MAX_LOCAL_APIC] __cpuinitdata = {
- 	[0 ... MAX_LOCAL_APIC-1] = NUMA_NO_NODE
- };
- 
--int numa_off __initdata;
- static unsigned long __initdata nodemap_addr;
- static unsigned long __initdata nodemap_size;
- 
-@@ -263,6 +262,11 @@ static struct bootnode nodes[MAX_NUMNODES] __initdata;
- static struct bootnode physnodes[MAX_NUMNODES] __cpuinitdata;
- static char *cmdline __initdata;
- 
-+void __init numa_emu_cmdline(char *str)
-+{
-+	cmdline = str;
-+}
-+
- static int __init setup_physnodes(unsigned long start, unsigned long end,
- 					int acpi, int amd)
- {
-@@ -670,24 +674,6 @@ unsigned long __init numa_free_all_bootmem(void)
- 	return pages;
- }
- 
--static __init int numa_setup(char *opt)
--{
--	if (!opt)
--		return -EINVAL;
--	if (!strncmp(opt, "off", 3))
--		numa_off = 1;
--#ifdef CONFIG_NUMA_EMU
--	if (!strncmp(opt, "fake=", 5))
--		cmdline = opt + 5;
--#endif
--#ifdef CONFIG_ACPI_NUMA
--	if (!strncmp(opt, "noacpi", 6))
--		acpi_numa = -1;
--#endif
--	return 0;
--}
--early_param("numa", numa_setup);
--
- #ifdef CONFIG_NUMA
- 
- static __init int find_near_online_node(int node)
-diff --git a/arch/x86/mm/srat_32.c b/arch/x86/mm/srat_32.c
-index f164345..ae96e7b 100644
---- a/arch/x86/mm/srat_32.c
-+++ b/arch/x86/mm/srat_32.c
-@@ -59,7 +59,6 @@ static struct node_memory_chunk_s __initdata node_memory_chunk[MAXCHUNKS];
- static int __initdata num_memory_chunks; /* total number of memory chunks */
- static u8 __initdata apicid_to_pxm[MAX_APICID];
- 
--int numa_off __initdata;
- int acpi_numa __initdata;
- 
- static __init void bad_srat(void)
+OK, done.
+
+>> +     maccr = FTMAC100_MACCR_XMT_EN |
+>> +             FTMAC100_MACCR_RCV_EN |
+>> +             FTMAC100_MACCR_XDMA_EN |
+>> +             FTMAC100_MACCR_RDMA_EN |
+>> +             FTMAC100_MACCR_CRC_APD |
+>> +             FTMAC100_MACCR_FULLDUP |
+>> +             FTMAC100_MACCR_RX_RUNT |
+>> +             FTMAC100_MACCR_RX_BROADPKT;
+>
+> Here too.
+
+OK, done.
+
+>> +static int ftmac100_rx_packet_error(struct ftmac100 *priv,
+>> +             struct ftmac100_rxdes *rxdes)
+> []
+>> +     if (unlikely(ftmac100_rxdes_frame_too_long(rxdes))) {
+>> +             if (net_ratelimit())
+>> +                     netdev_info(netdev, "rx frame too long\n");
+>> +
+>> +             netdev->stats.rx_length_errors++;
+>> +             error = 1;
+>> +     }
+>> +
+>> +     if (unlikely(ftmac100_rxdes_runt(rxdes))) {
+>
+> else if ?
+
+OK, fixed.
+
+>> +static int ftmac100_rx_packet(struct ftmac100 *priv, int *processed)
+>> +{
+>> +     struct net_device *netdev = priv->netdev;
+>> +     struct ftmac100_rxdes *rxdes;
+>> +     struct sk_buff *skb;
+>> +     int length;
+>> +     int copied = 0;
+>> +     int done = 0;
+>
+> You could use bool/true/false here for copied and done
+> and all the other uses of an int for a logical bool.
+
+OK, fixed.
+
+>> +static void ftmac100_txdes_set_dma_own(struct ftmac100_txdes *txdes)
+>> +{
+>> +     /*
+>> +      * Make sure dma own bit will not be set before any other
+>> +      * descriptor fiels.
+>
+> field/fields
+
+Fixed.
+
+>> +static int ftmac100_mdio_read(struct net_device *netdev, int phy_id, int reg)
+>> +{
+>> +     struct ftmac100 *priv = netdev_priv(netdev);
+>> +     int phycr;
+>> +     int i;
+>> +
+>> +     phycr = FTMAC100_PHYCR_PHYAD(phy_id) |
+>> +             FTMAC100_PHYCR_REGAD(reg) |
+>> +             FTMAC100_PHYCR_MIIRD;
+>> +
+>> +     iowrite32(phycr, priv->base + FTMAC100_OFFSET_PHYCR);
+>> +     for (i = 0; i < 10; i++) {
+>> +             phycr = ioread32(priv->base + FTMAC100_OFFSET_PHYCR);
+>> +
+>> +             if ((phycr & FTMAC100_PHYCR_MIIRD) == 0)
+>> +                     return phycr & FTMAC100_PHYCR_MIIRDATA;
+>> +
+>> +             usleep_range(100, 1000);
+>> +     }
+>> +
+>> +     netdev_err(netdev, "mdio read timed out\n");
+>> +     return 0xffff;
+>
+> 0xffff is a rather odd return, perhaps a #define?
+
+After a little digging in drivers/net/mii.c, it seems that mii lib does not
+check return value if it is error. So I guess I should return 0 if error.
+
+>> +/******************************************************************************
+>> + * initialization / finalization
+>> + *****************************************************************************/
+>> +static int __init ftmac100_init(void)
+>> +{
+>> +     printk(KERN_INFO "Loading " DRV_NAME ": version " DRV_VERSION " ...\n");
+>
+> You could use
+> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> before any #include and
+>        pr_info("Loading version " DRV_VERSION " ...\n");
+
+OK
+
+> One last comment on split long line indentation style
+> and long function declarations.
+>
+> There's no required style so you can use what you are
+> most comfortable doing.
+>
+> Most of drivers/net uses an alignment to open parenthesis
+> using maximal tabs and minimal necessary spaces instead of
+> an extra tabstop.
+>
+> Like:
+>
+> static int some_long_function(type var1, type var2...
+>                              type varN)
+> and
+>        some_long_function(var1, var2, ...
+>                           varN);
+>
+> not
+> static int some_long_function(type var1, type var2...
+>                                type varN)
+> and
+>        some_long_function(var1, var2, ...
+>                                varN);
+
+Well, TBH, I don't like this style because if I changed the
+function name, the indentation might need to be adjusted.
+
+Even worse, I got an infeasible case :-(
+
+static struct ftmac100_rxdes *ftmac100_rx_locate_first_segment(
+							       struct ftmac100 *priv)
+
+I know my function names are quite long, but I like them to be descriptive.
+Do you really insist on it?
+
+Thanks,
+Po-Yu Chuang
