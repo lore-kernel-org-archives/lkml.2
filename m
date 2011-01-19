@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769Ab1ASS3p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 13:29:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54352 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752074Ab1ASS3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 13:29:44 -0500
-Date: Wed, 19 Jan 2011 19:21:41 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Alan Stern <stern@rowland.harvard.edu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prasad <prasad@linux.vnet.ibm.com>, Roland McGrath <roland@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/2] Was: Q: sys_perf_event_open() && PF_EXITING
-Message-ID: <20110119182141.GA12183@redhat.com>
-References: <20101108145647.GA3426@redhat.com> <20101108145725.GA3434@redhat.com>
+	id S1753072Ab1ASS36 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 13:29:58 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:49360 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752921Ab1ASS34 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 13:29:56 -0500
+Date: Wed, 19 Jan 2011 23:59:41 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Eric Dumazet <dada1@cosmosbay.com>, Jan Beulich <JBeulich@novell.com>,
+        Avi Kivity <avi@redhat.com>, Xen-devel <xen-devel@lists.xensource.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        kvm@vger.kernel.org, suzuki@in.ibm.com
+Subject: Re: [PATCH 2/3] kvm hypervisor : Add hypercalls to support
+ pv-ticketlock
+Message-ID: <20110119182940.GA7235@linux.vnet.ibm.com>
+Reply-To: vatsa@linux.vnet.ibm.com
+References: <cover.1289940821.git.jeremy.fitzhardinge@citrix.com>
+ <20110119164432.GA30669@linux.vnet.ibm.com>
+ <20110119171239.GB726@linux.vnet.ibm.com>
+ <1295457672.28776.144.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101108145725.GA3434@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1295457672.28776.144.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08, Oleg Nesterov wrote:
->
-> I am puzzled by PF_EXITING check in find_lively_task_by_vpid().
->
-> How can it help? The task can call do_exit() right after the check.
->
-> And why do we need it? The comment only says "Can't attach events to
-> a dying task". Maybe it tries protect sys_perf_event_open() against
-> perf_event_exit_task_context(), but it can't.
+On Wed, Jan 19, 2011 at 06:21:12PM +0100, Peter Zijlstra wrote:
+> I didn't really read the patch, and I totally forgot everything from
+> when I looked at the Xen series, but does the Xen/KVM hypercall
+> interface for this include the vcpu to await the kick from?
 
-Yes.
+No not yet, for reasons you mention below.
 
-Please see 1/2. Well, I can't say I really like the idea to reuse
-task->perf_event_mutex, but I do not see a better fix.
+> My guess is not, since the ticket locks used don't know who the owner
+> is, which is of course, sad. There are FIFO spinlock implementations
+> that can do this though.. although I think they all have a bigger memory
+> footprint.
+> 
+> The reason for wanting this should be clear I guess, it allows PI.
 
-Also, I have no idea how can I actually test the changes in the code
-I can hardly understand, please review.
+Yeah - that would be good to experiment with.
 
-Also. I believe there are more problems in perf_install_event(), but
-I need to recheck.
-
-> Hmm. jump_label_inc/dec looks obviously racy too. Say, free_event() races
-> with perf_event_alloc(). There is a window between atomic_xxx() and
-> jump_label_update(), afaics it is possible to call jump_label_disable()
-> when perf_task_events/perf_swevent_enabled != 0.
-
-Another issue...
-
-Oleg.
-
+- vatsa
