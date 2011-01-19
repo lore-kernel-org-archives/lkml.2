@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114Ab1ASWgO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 17:36:14 -0500
-Received: from mga11.intel.com ([192.55.52.93]:4557 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755087Ab1ASWgM convert rfc822-to-8bit (ORCPT
+	id S1755148Ab1ASWgY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 17:36:24 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:36501 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755134Ab1ASWgX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 17:36:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,346,1291622400"; 
-   d="scan'208";a="879066295"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
-CC: Linux-Arch <linux-arch@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
-Date: Wed, 19 Jan 2011 14:36:01 -0800
-Subject: RE: [patch 28/37] ia64: Use generic irq Kconfig
-Thread-Topic: [patch 28/37] ia64: Use generic irq Kconfig
-Thread-Index: Acu4ItQF749FC7o4QU2W8c8HD1ON8QABkwjA
-Message-ID: <987664A83D2D224EAE907B061CE93D53019420E2CC@orsmsx505.amr.corp.intel.com>
-References: <20110119205258.462759212@linutronix.de>
- <20110119210840.241519669@linutronix.de>
-In-Reply-To: <20110119210840.241519669@linutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 19 Jan 2011 17:36:23 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6231"; a="71145525"
+X-Hashcash: 1:20:110119:torvalds@linux-foundation.org::xP/+jW6RaQdMXn4d:000000000000000000000000000000001OC8
+X-Hashcash: 1:20:110119:linux-arm-msm@vger.kernel.org::WlOucNAErkyVhjdD:000000000000000000000000000000000O4a
+X-Hashcash: 1:20:110119:linux-kernel@vger.kernel.org::3Gj3ulqNYgpi90GP:0000000000000000000000000000000006ERY
+X-Hashcash: 1:20:110119:linux-arm-kernel@lists.infradead.org::Frb2v/aanKN5+3IO:00000000000000000000000000sfl
+X-Hashcash: 1:20:110119:sboyd@codeaurora.org::r2+IxrhlUQvd2qiq:000000000000000000000000000000000000000006Qmg
+From: David Brown <davidb@codeaurora.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: [GIT PULL for 38-rc2] msm: initdata fix
+Date: Wed, 19 Jan 2011 14:36:22 -0800
+Message-ID: <8ya8vygo715.fsf@huya.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> No functional change.
+I seem to have missed this fix for the rc1.  Without it, access to
+/sys entries for the ethernet access freed memory.
 
-Acked-by: Tony Luck <tony.luck@intel.com>
+Thanks,
+David
 
+The following changes since commit c56eb8fb6dccb83d9fe62fd4dc00c834de9bc470:
+
+  Linux 2.6.38-rc1 (2011-01-18 15:14:02 -0800)
+
+are available in the git repository at:
+  git://codeaurora.org/quic/kernel/davidb/linux-msm.git for-38-rc2
+
+Stephen Boyd (1):
+      msm: qsd8x50: Platform data isn't init data
+
+ arch/arm/mach-msm/board-qsd8x50.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
