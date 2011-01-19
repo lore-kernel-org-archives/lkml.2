@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382Ab1ASQBO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 11:01:14 -0500
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:42458 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752131Ab1ASQBM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 11:01:12 -0500
-X-Greylist: delayed 19229 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Jan 2011 11:01:12 EST
-Date: Wed, 19 Jan 2011 18:01:02 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: balbi@ti.com, Yang Ruirui <ruirui.r.yang@tieto.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Felipe Balbi <felipe.balbi@nokia.com>,
-        Heikki Krogerus <ext-heikki.krogerus@nokia.com>,
-        Tejun Heo <tj@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Hema HK <hemahk@ti.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb otg: use atomic notifier instead of blocking
- notifier
-Message-ID: <20110119160102.GA4629@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <20110119092011.GA23624@darkstar>
- <AANLkTinNVJXjL9a=Jmp34ktT7OLkGKzpm79j605vvCWe@mail.gmail.com>
- <20110119153057.GB3552@legolas.emea.dhcp.ti.com>
- <AANLkTinV4afVtBfrRoW_UgLyvHpANZWp4P_yzah=WYUc@mail.gmail.com>
+	id S1753785Ab1ASQBj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 11:01:39 -0500
+Received: from mail.sf-mail.de ([62.27.20.61]:50207 "EHLO mail.sf-mail.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752669Ab1ASQBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 11:01:38 -0500
+From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+To: Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCH] Add forward declaration of struct device
+Date: Wed, 19 Jan 2011 17:01:21 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.7-desktop; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>
+References: <201012201723.30133.eike-kernel@sf-tec.de> <alpine.LNX.2.00.1101191556190.26685@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1101191556190.26685@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinV4afVtBfrRoW_UgLyvHpANZWp4P_yzah=WYUc@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: multipart/signed;
+  boundary="nextPart8757051.f41mmEFpMG";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101191701.29931.eike-kernel@sf-tec.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 11:38:44PM +0800, Ming Lei wrote:
-> Hi,
-> 
-> 2011/1/19 Felipe Balbi <balbi@ti.com>:
-> 
-> > that's easy to guess since commit log says it's a problem on Meego
-> > kernel.
-> 
-> OK, it is a specific issue on Meego kernel, so it is better to add
-> "Meego " in the patch title.
-> 
-> >
-> >> Are you sure the issue can be reproduced in 2.6.37 or -next tree?
-> >>
-> >> In mainline code(2.6.37), blocking_notifier_call_chain is only called in
-> >> threaded irq handler of otg driver wrt. musb driver, so seems enough.
-> >
-> > true, but seems like Nokia is using to notify gadget states, which makes
-> > a lot of sense when you start thinking about things such as battery
-> > charging.
-> 
-> Please go ahead to submit and merge it into mainline first if it makes
-> sense, :-)
+--nextPart8757051.f41mmEFpMG
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-isn't it what his patch is already intending to do ? Or do you want them
-to send the initial buggy version and only afterwards send the bugfix ?
-A bit weird decision wouldn't that be ?
+Am Mittwoch 19 Januar 2011, 15:56:47 schrieb Jiri Kosina:
+> On Mon, 20 Dec 2010, Rolf Eike Beer wrote:
+> > This fixes this warning when including linux/dmapool.h first:
+> >=20
+> > warning: =E2=80=98struct device=E2=80=99 declared inside parameter list
+> > warning: its scope is only this definition or declaration, which is
+> > probably not what you want
+>=20
+> In what situation do you see this warning? (the one you have posted
+> doesn't show the filename that is being compiled).
 
--- 
-balbi
+Nothing (yet) in tree.
+
+Eike
+
+--nextPart8757051.f41mmEFpMG
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.15 (GNU/Linux)
+
+iEYEABECAAYFAk03CtkACgkQXKSJPmm5/E5dCACfQ4NCf+O8bNAKDoMexRrywcdV
+c84AnRJgF2b2L7AgH41rTE5rfizqfyo9
+=wHha
+-----END PGP SIGNATURE-----
+
+--nextPart8757051.f41mmEFpMG--
