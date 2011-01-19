@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123Ab1ASMKu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 07:10:50 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:57049 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753878Ab1ASMKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 07:10:49 -0500
-Date: Wed, 19 Jan 2011 13:10:43 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/4] memcg: fix USED bit handling at uncharge in THP
-Message-ID: <20110119121043.GB2232@cmpxchg.org>
-References: <20110118113528.fd24928f.kamezawa.hiroyu@jp.fujitsu.com>
- <20110118114049.5ffdf5da.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1754144Ab1ASMPZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 07:15:25 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:53734 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754100Ab1ASMPY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 07:15:24 -0500
+Message-ID: <4D36D594.3010909@ru.mvista.com>
+Date: Wed, 19 Jan 2011 15:14:12 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110118114049.5ffdf5da.kamezawa.hiroyu@jp.fujitsu.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        John Linn <John.Linn@xilinx.com>,
+        Lennert Buijtenhek <buytenh@wantstofly.org>
+Subject: Re: [PATCH 8/8] arm/dt: Basic tegra devicetree support
+References: <20110118195933.13011.56098.stgit@localhost6.localdomain6> <20110118202938.13011.35918.stgit@localhost6.localdomain6>
+In-Reply-To: <20110118202938.13011.35918.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello KAMEZAWA-san,
+Hello.
 
-On Tue, Jan 18, 2011 at 11:40:49AM +0900, KAMEZAWA Hiroyuki wrote:
-> +void mem_cgroup_split_huge_fixup(struct page *head, struct page *tail)
-> +{
-> +	struct page_cgroup *head_pc = lookup_page_cgroup(head);
-> +	struct page_cgroup *tail_pc = lookup_page_cgroup(tail);
-> +	unsigned long flags;
-> +
-> +	/*
-> +	 * We have no races witch charge/uncharge but will have races with
-> +	 * page state accounting.
-> +	 */
-> +	move_lock_page_cgroup(head_pc, &flags);
-> +
-> +	tail_pc->mem_cgroup = head_pc->mem_cgroup;
-> +	smp_wmb(); /* see __commit_charge() */
+On 18-01-2011 23:29, Grant Likely wrote:
 
-I thought the barriers were needed because charging does not hold the
-lru lock.  But here we do, and all the 'lockless' read-sides do so as
-well.  Am I missing something or can this barrier be removed?
+> This patch adds adds
 
-	Hannes
+    One word is enough. :-)
+
+> very basic support for booting versatile with a
+> device tree.  It simply allows the existing machine_descs to match
+> against the tegra compatible values so that the kernel can boot.
+> Kernel parameters and the initrd pointer is read out of the tree
+> instead of atags.
+
+> This is not complete device tree support.  This change will be
+> reverted when a new machine_desc is added that can populate the
+> versatile device registrations directly from data in the tree instead
+> of using hard coded data.  That change will be made in a future patch.
+
+> Signed-off-by: Grant Likely<grant.likely@secretlab.ca>
+
+WBR, Sergei
