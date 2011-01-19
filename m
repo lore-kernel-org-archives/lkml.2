@@ -1,217 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754641Ab1ASQwE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 11:52:04 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:43110 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752108Ab1ASQwC (ORCPT
+	id S1753867Ab1ASQyR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 11:54:17 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:49380 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752108Ab1ASQyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 11:52:02 -0500
-Date: Wed, 19 Jan 2011 11:51:59 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Greg KH <gregkh@suse.de>
-cc: Larry.Finger@lwfinger.net, Ben Hutchings <ben@decadent.org.uk>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        <stable@kernel.org>
-Subject: Re: [Stable-review] [39/45] OHCI: work around for nVidia shutdown
- problem
-In-Reply-To: <20101122175523.GA18867@suse.de>
-Message-ID: <Pine.LNX.4.44L0.1101061531330.4414-100000@iolanthe.rowland.org>
+	Wed, 19 Jan 2011 11:54:16 -0500
+X-Authenticated: #4630777
+X-Provags-ID: V01U2FsdGVkX19hXb40DTlhCZD0IrRnR7kmw6o44TY37BjjsqNMB8
+	6TE6a/VtdJTUm2
+Date: Wed, 19 Jan 2011 17:51:05 +0100
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+To: eparis@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [PATCH 11/14] fsnotify: dont use a free_list to remove marks in
+	clear_marks_by_group_flags()
+Message-ID: <20110119165105.GB20335@lsanfilippo.unix.rd.tt.avira.com>
+Reply-To: 1295455337-20219-1-git-send-email-LinoSanfilippo@gmx.de
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Nov 2010, Greg KH wrote:
 
-> On Sat, Nov 20, 2010 at 11:51:39AM -0500, Alan Stern wrote:
-> > On Sat, 20 Nov 2010, Ben Hutchings wrote:
-...
-> > > This last bit seems like a major change in behaviour, and this commit
-> > > has only just gone into the 2.6.37 cycle.  How thoroughly has this been
-> > > tested on other OHCI controllers?  Wouldn't it make more sense to use
-> > > the same quirk condition?
-> > 
-> > Ben is right; let's hold off on putting this patch into any of the 
-> > stable kernels.  There has been a bug report submitted against it, 
-> > Bugzilla #22562.
-> 
-> Good point, I'll go drop it.
-> 
-> Alan, when it all gets worked out, care to resend it to
-> stable@kernel.org?
+Dont use a to use a temporary "free_list" in clear_mark_by_group_flags() any more,
+since it is now possible to remove a mark while a spinlock is held.  
 
-Okay, I'm resending it now that 2.6.37 has been out for a couple of
-weeks.  The Bugzilla report has been resolved; apparently the problem
-was a hardware issue in one particular computer and not a fault of the
-patch.  Go ahead and add this to the stable kernels.
-
-
---------------------------------------------------------------------------
-
-From: Alan Stern <stern@rowland.harvard.edu>
-
-commit 3df7169e73fc1d71a39cffeacc969f6840cdf52b upstream.
-
-This patch (as1417) fixes a problem affecting some (or all) nVidia
-chipsets.  When the computer is shut down, the OHCI controllers
-continue to power the USB buses and evidently they drive a Reset
-signal out all their ports.  This prevents attached devices from going
-to low power.  Mouse LEDs stay on, for example, which is disconcerting
-for users and a drain on laptop batteries.
-
-The fix involves leaving each OHCI controller in the OPERATIONAL state
-during system shutdown rather than putting it in the RESET state.
-Although this nominally means the controller is running, in fact it's
-not doing very much since all the schedules are all disabled.  However
-there is ongoing DMA to the Host Controller Communications Area, so
-the patch also disables the bus-master capability of all PCI USB
-controllers after the shutdown routine runs.
-
-The fix is applied only to nVidia-based PCI OHCI controllers, so it
-shouldn't cause problems on systems using other hardware.  As an added
-safety measure, in case the kernel encounters one of these running
-controllers during boot, the patch changes quirk_usb_handoff_ohci()
-(which runs early on during PCI discovery) to reset the controller
-before anything bad can happen.
-
-Reported-by: Pali Rohár <pali.rohar@gmail.com>
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: David Brownell <david-b@pacbell.net>
-Tested-by: Pali Rohár <pali.rohar@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
 ---
- drivers/usb/core/hcd-pci.c    |    4 +++-
- drivers/usb/host/ohci-hcd.c   |    9 ++++++++-
- drivers/usb/host/ohci-pci.c   |   18 ++++++++++++++++++
- drivers/usb/host/ohci.h       |    1 +
- drivers/usb/host/pci-quirks.c |   18 +++++++++++-------
- 5 files changed, 41 insertions(+), 9 deletions(-)
+ fs/notify/mark.c |   14 +++-----------
+ 1 files changed, 3 insertions(+), 11 deletions(-)
 
---- a/drivers/usb/core/hcd-pci.c
-+++ b/drivers/usb/core/hcd-pci.c
-@@ -329,8 +329,10 @@ void usb_hcd_pci_shutdown(struct pci_dev
- 		return;
+diff --git a/fs/notify/mark.c b/fs/notify/mark.c
+index 87d78b9..2827867 100644
+--- a/fs/notify/mark.c
++++ b/fs/notify/mark.c
+@@ -204,24 +204,16 @@ void fsnotify_clear_marks_by_group_flags(struct fsnotify_group *group,
+ 					 unsigned int flags)
+ {
+ 	struct fsnotify_mark *lmark, *mark;
+-	LIST_HEAD(free_list);
  
- 	if (test_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags) &&
--			hcd->driver->shutdown)
-+			hcd->driver->shutdown) {
- 		hcd->driver->shutdown(hcd);
-+		pci_disable_device(dev);
-+	}
- }
- EXPORT_SYMBOL_GPL(usb_hcd_pci_shutdown);
- 
---- a/drivers/usb/host/ohci-hcd.c
-+++ b/drivers/usb/host/ohci-hcd.c
-@@ -398,7 +398,14 @@ ohci_shutdown (struct usb_hcd *hcd)
- 
- 	ohci = hcd_to_ohci (hcd);
- 	ohci_writel (ohci, OHCI_INTR_MIE, &ohci->regs->intrdisable);
--	ohci_usb_reset (ohci);
-+	ohci->hc_control = ohci_readl(ohci, &ohci->regs->control);
-+
-+	/* If the SHUTDOWN quirk is set, don't put the controller in RESET */
-+	ohci->hc_control &= (ohci->flags & OHCI_QUIRK_SHUTDOWN ?
-+			OHCI_CTRL_RWC | OHCI_CTRL_HCFS :
-+			OHCI_CTRL_RWC);
-+	ohci_writel(ohci, ohci->hc_control, &ohci->regs->control);
-+
- 	/* flush the writes */
- 	(void) ohci_readl (ohci, &ohci->regs->control);
- }
---- a/drivers/usb/host/ohci-pci.c
-+++ b/drivers/usb/host/ohci-pci.c
-@@ -201,6 +201,20 @@ static int ohci_quirk_amd700(struct usb_
- 	return 0;
+ 	spin_lock(&group->mark_lock);
+ 	list_for_each_entry_safe(mark, lmark, &group->marks_list, g_list) {
+-		if (mark->flags & flags) {
+-			list_add(&mark->free_g_list, &free_list);
+-			list_del_init(&mark->g_list);
+-			fsnotify_get_mark(mark);
+-		}
++		if (mark->flags & flags)
++			fsnotify_remove_mark_locked(mark);
+ 	}
+ 	spin_unlock(&group->mark_lock);
+-
+-	list_for_each_entry_safe(mark, lmark, &free_list, free_g_list) {
+-		fsnotify_destroy_mark(mark);
+-		fsnotify_put_mark(mark);
+-	}
  }
  
-+/* nVidia controllers continue to drive Reset signalling on the bus
-+ * even after system shutdown, wasting power.  This flag tells the
-+ * shutdown routine to leave the controller OPERATIONAL instead of RESET.
-+ */
-+static int ohci_quirk_nvidia_shutdown(struct usb_hcd *hcd)
-+{
-+	struct ohci_hcd	*ohci = hcd_to_ohci(hcd);
-+
-+	ohci->flags |= OHCI_QUIRK_SHUTDOWN;
-+	ohci_dbg(ohci, "enabled nVidia shutdown quirk\n");
-+
-+	return 0;
-+}
 +
  /*
-  * The hardware normally enables the A-link power management feature, which
-  * lets the system lower the power consumption in idle states.
-@@ -332,6 +346,10 @@ static const struct pci_device_id ohci_p
- 		PCI_DEVICE(PCI_VENDOR_ID_ATI, 0x4399),
- 		.driver_data = (unsigned long)ohci_quirk_amd700,
- 	},
-+	{
-+		PCI_DEVICE(PCI_VENDOR_ID_NVIDIA, PCI_ANY_ID),
-+		.driver_data = (unsigned long) ohci_quirk_nvidia_shutdown,
-+	},
- 
- 	/* FIXME for some of the early AMD 760 southbridges, OHCI
- 	 * won't work at all.  blacklist them.
---- a/drivers/usb/host/ohci.h
-+++ b/drivers/usb/host/ohci.h
-@@ -403,6 +403,7 @@ struct ohci_hcd {
- #define	OHCI_QUIRK_HUB_POWER	0x100			/* distrust firmware power/oc setup */
- #define	OHCI_QUIRK_AMD_ISO	0x200			/* ISO transfers*/
- #define	OHCI_QUIRK_AMD_PREFETCH	0x400			/* pre-fetch for ISO transfer */
-+#define	OHCI_QUIRK_SHUTDOWN	0x800			/* nVidia power bug */
- 	// there are also chip quirks/bugs in init logic
- 
- 	struct work_struct	nec_work;	/* Worker for NEC quirk */
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -169,6 +169,7 @@ static int __devinit mmio_resource_enabl
- static void __devinit quirk_usb_handoff_ohci(struct pci_dev *pdev)
- {
- 	void __iomem *base;
-+	u32 control;
- 
- 	if (!mmio_resource_enabled(pdev, 0))
- 		return;
-@@ -177,10 +178,14 @@ static void __devinit quirk_usb_handoff_
- 	if (base == NULL)
- 		return;
- 
-+	control = readl(base + OHCI_CONTROL);
-+
- /* On PA-RISC, PDC can leave IR set incorrectly; ignore it there. */
--#ifndef __hppa__
--{
--	u32 control = readl(base + OHCI_CONTROL);
-+#ifdef __hppa__
-+#define	OHCI_CTRL_MASK		(OHCI_CTRL_RWC | OHCI_CTRL_IR)
-+#else
-+#define	OHCI_CTRL_MASK		OHCI_CTRL_RWC
-+
- 	if (control & OHCI_CTRL_IR) {
- 		int wait_time = 500; /* arbitrary; 5 seconds */
- 		writel(OHCI_INTR_OC, base + OHCI_INTRENABLE);
-@@ -194,13 +199,12 @@ static void __devinit quirk_usb_handoff_
- 			dev_warn(&pdev->dev, "OHCI: BIOS handoff failed"
- 					" (BIOS bug?) %08x\n",
- 					readl(base + OHCI_CONTROL));
--
--		/* reset controller, preserving RWC */
--		writel(control & OHCI_CTRL_RWC, base + OHCI_CONTROL);
- 	}
--}
- #endif
- 
-+	/* reset controller, preserving RWC (and possibly IR) */
-+	writel(control & OHCI_CTRL_MASK, base + OHCI_CONTROL);
-+
- 	/*
- 	 * disable interrupts
- 	 */
-
+  * Given a group, destroy all of the marks associated with that group.
+  */
+-- 
+1.5.6.5
 
