@@ -1,59 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab1ASQSI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 11:18:08 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:63874 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754036Ab1ASQSG (ORCPT
+	id S1754297Ab1ASQSp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 11:18:45 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:56573 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754236Ab1ASQSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 11:18:06 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nick Bowler <nbowler@elliptictech.com>
-Subject: Re: [PATCH 4/4] BKL: move CONFIG_BKL to staging
-Date: Wed, 19 Jan 2011 17:17:58 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <1295385422-3592-1-git-send-email-arnd@arndb.de> <1295385422-3592-5-git-send-email-arnd@arndb.de> <20110119154419.GA21411@elliptictech.com>
-In-Reply-To: <20110119154419.GA21411@elliptictech.com>
+	Wed, 19 Jan 2011 11:18:43 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: LKLM <linux-kernel@vger.kernel.org>, xemul@openvz.org,
+        David Miller <davem@davemloft.net>,
+        "Sakkinen Jarkko.2 \(EXT-Tieto\/Tampere\)" 
+	<ext-jarkko.2.sakkinen@nokia.com>,
+        Janne Karhunen <Janne.Karhunen@nokia.com>,
+        "Reshetova Elena \(Nokia-D\/Helsinki\)" <elena.reshetova@nokia.com>,
+        netdev@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>
+References: <4D3466BD.10500@schaufler-ca.com>
+	<m1k4i1igzh.fsf@fess.ebiederm.org> <4D36FBDB.5050401@schaufler-ca.com>
+Date: Wed, 19 Jan 2011 08:18:34 -0800
+In-Reply-To: <4D36FBDB.5050401@schaufler-ca.com> (Casey Schaufler's message of
+	"Wed, 19 Jan 2011 06:57:31 -0800")
+Message-ID: <m1lj2g7tph.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101191717.58277.arnd@arndb.de>
-X-Provags-ID: V02:K0:kVj5DgVJ2ZddQCtOclopTpxEwZ3FEc7Mvn0N1Ne6N4g
- g4bkJMDMQ6w3l4xp8aWUV6dqWpB2Fqse21+Xh6ZDqJmDm8pVVp
- wr1q1HHMv3JthCQKg1ctCeKus68Zo3SE/jUWr9GydsucbANTJh
- 6VQDoXHzfHa+IS3352k5F2kWOR/GhAGFIA9f/SPSt6Gf7isXGB
- tg1BfbBGD57Q6nJ91HfNQ==
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19PTwRKFn+Fswqd/gtL25jcrU1hxFCQRVQ=
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_04 obfuscated drug references
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Casey Schaufler <casey@schaufler-ca.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] scm: provide full privilege set via SCM_PRIVILEGE
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 19 January 2011, Nick Bowler wrote:
-> I think this patch is not very nice.  It will cause working kernel
-> configurations to turn into broken kernel configurations when the user
-> does 'make oldconfig', with no warning.
-> 
-> These drivers that use the BKL work fine.  Removing working features
-> with no adequate replacement available seems like a serious regression
-> to me.
+Casey Schaufler <casey@schaufler-ca.com> writes:
 
-I wouldn't call it a serious regression since the code is still there
-and both the symptom and the solution are rather obvious. What's more
-important is to make any people still relying on the code aware that
-it's going away unless someone fixes it, so they have the chance to
-send patches or pay someone to fix it for them.
+> On 1/18/2011 9:45 PM, Eric W. Biederman wrote:
+>> Casey Schaufler <casey@schaufler-ca.com> writes:
+>>
+>>> Subject: [PATCH] scm: provide full privilege set via SCM_PRIVILEGE
+>>>
+>>> The SCM mechanism currently provides interfaces for delivering
+>>> the uid/gid and the "security context" (LSM information) of the
+>>> peer on a UDS socket. All of the security credential information
+>>> is available, but there is no interface available to obtain it.
+>>> Further, the existing interfaces require that the user chose
+>>> between the uid/gid and the context as the existing interfaces
+>>> are exclusive.
+>>>
+>>> This patch introduces an additional interface that provides
+>>> a complete set of security information from the peer credential.
+>>> No additional work is required to provide the information
+>>> internally, it is all being passed, just not exposed.
+>> In ascii text?
+>
+> As is commonly done in /proc interfaces.
+>
+>> A bitmap in hex?
+>
+> As is done in /proc/<pid>/status. I seriously doubt
+> that anyone would want the kernel doing the capability
+> set to text conversion.
 
-The remaining drivers that are still relying on the BKL are very
-rarely used and for the less obscure ones (ufs, ipx and x.25), people
-have volunteered to fix them (though I have seen no proper patches
-for these yet). For the rest, I suppose if nobody complains, they
-can actually go away, according to the logic that if nobody is using
-them, they most likely are broken anyway and more a security risk than
-they are worth.
+But when you have a perfectly good binary interface when reducing the
+encoding efficiency for effectively no gain.
 
-Anyway, it seems that you're lucky this time, because I managed to miss
-the merge window by being away from my test box for the most part of it.
+>> Maybe it is just me, but this seems harder to deal with than
+>> if the data had been transferred in binary.
+>
+> There are a couple of issues with passing a binary structure
+> in the modern cred case. First is the capability set, which
+> has been proven to grow over time. Sure, it took a while to
+> get past 32 bits, and hopefully will never go beyond 64, but
+> given the long term problems caused by 16 bit uids (some of
+> us still remember) I would hate to get bitten by this in my
+> old age. Second is the LSM specific security context, which
+> may not be there at all and if it is the size will depend on
+> the LSM in use.
 
-	Arnd
+Sure but you have to use an interface that properly handles variable
+length binary data, to get to the string.  It feels like you are
+violating the even more classic one value per file rule.
+
+Maybe I am missing something but is there any reason you can't have
+multiple cmsg types?  
+
+> There are classic C language techniques for dealing with
+> both of these issues, and I've used them enough times to
+> want to avoid them where possible. This is the same logic
+> that the aforementioned /proc interface implementers have
+> been using for some time. And while there are problems
+> with formatting, passing and parsing a string they pale
+> in comparison to maintaining multiple versions of kernel
+> interface structures that are themselves variable depending
+> on the kernel configuration.
+
+If you are worrying about variable size structures that vary
+depending on kernel configuration I pretty certain you are doing
+it wrong.
+
+The use of sprintf (not snprintf) and the crazy size computation needed
+for your string also worries me.  That part of the implementation
+appears to be just asking for trouble.
+
+Having a giant function like your scm_passpriv inline in
+include/net/scm.h also seems very questionable.
+
+I think there is a real impedance mismatch here between the interface
+you are using and the way you are returning the data.
+
+There is a show stopper bug.  You don't translate uid/gid in the
+receivers user namespace so passing a message between two processes in
+different user namespaces can pass deceptive credentials. Given that the
+reason we have the struct cred on unix domain sockets in the first place
+is that we handled the user namespace conversion issues so we could
+cross namespaces without security issues not handling that case in a new
+scm cred is just inexcusable.
+
+On that note Serge and I are slowly working to get credentials to be
+namespace local as well, so shortly the credentials will also need to be
+translated as well as just uid's and gid's.
+
+The scm->secid is if I understand correctly a per packet label.  Is that
+what you want here?  I thought you were interested in the information
+off of struct cred.
+
+In principle returning all of the credential should be fine.  In
+practice I think this patch has a lot of poorly thought through details
+that will be a nightmare to maintain in practice.
+
+Eric
+
+
+>>> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
+>>> ---
+>>>
+>>>  include/asm-generic/socket.h |    1 +
+>>>  include/linux/net.h          |    1 +
+>>>  include/linux/socket.h       |    1 +
+>>>  include/net/scm.h            |   80 +++++++++++++++++++++++++++++++++++++++++-
+>>>  net/core/sock.c              |   11 ++++++
+>>>  5 files changed, 93 insertions(+), 1 deletions(-)
+>>> diff --git a/include/asm-generic/socket.h b/include/asm-generic/socket.h
+>>> index 9a6115e..7aa8e84 100644
+>>> --- a/include/asm-generic/socket.h
+>>> +++ b/include/asm-generic/socket.h
+>>> @@ -64,4 +64,5 @@
+>>>  #define SO_DOMAIN		39
+>>>  
+>>>  #define SO_RXQ_OVFL             40
+>>> +#define SO_PASSPRIV		41
+>>>  #endif /* __ASM_GENERIC_SOCKET_H */
+>>> diff --git a/include/linux/net.h b/include/linux/net.h
+>>> index 16faa13..159a929 100644
+>>> --- a/include/linux/net.h
+>>> +++ b/include/linux/net.h
+>>> @@ -71,6 +71,7 @@ struct net;
+>>>  #define SOCK_NOSPACE		2
+>>>  #define SOCK_PASSCRED		3
+>>>  #define SOCK_PASSSEC		4
+>>> +#define SOCK_PASSPRIV		5
+>>>  
+>>>  #ifndef ARCH_HAS_SOCKET_TYPES
+>>>  /**
+>>> diff --git a/include/linux/socket.h b/include/linux/socket.h
+>>> index 86b652f..e9cfd68 100644
+>>> --- a/include/linux/socket.h
+>>> +++ b/include/linux/socket.h
+>>> @@ -147,6 +147,7 @@ static inline struct cmsghdr * cmsg_nxthdr (struct msghdr *__msg, struct cmsghdr
+>>>  #define	SCM_RIGHTS	0x01		/* rw: access rights (array of int) */
+>>>  #define SCM_CREDENTIALS 0x02		/* rw: struct ucred		*/
+>>>  #define SCM_SECURITY	0x03		/* rw: security label		*/
+>>> +#define SCM_PRIVILEGES  0x04		/* rw: privilege set		*/
+>>>  
+>>>  struct ucred {
+>>>  	__u32	pid;
+>>> diff --git a/include/net/scm.h b/include/net/scm.h
+>>> index 3165650..4b8db21 100644
+>>> --- a/include/net/scm.h
+>>> +++ b/include/net/scm.h
+>>> @@ -101,6 +101,83 @@ static inline void scm_passec(struct socket *sock, struct msghdr *msg, struct sc
+>>>  { }
+>>>  #endif /* CONFIG_SECURITY_NETWORK */
+>>>  
+>>> +static __inline__ void scm_passpriv(struct socket *sock, struct msghdr *msg,
+>>> +				struct scm_cookie *scm)
+>>> +{
+>>> +	const struct cred *credp = scm->cred;
+>>> +	const struct group_info *gip;
+>>> +	char *result;
+>>> +	char *cp;
+>>> +	int i;
+>>> +#ifdef CONFIG_SECURITY_NETWORK
+>>> +	char *secdata;
+>>> +	u32 seclen;
+>>> +	int err;
+>>> +#endif /* CONFIG_SECURITY_NETWORK */
+>>> +
+>>> +	if (!test_bit(SOCK_PASSPRIV, &sock->flags))
+>>> +		return;
+>>> +
+>>> +	gip = credp->group_info;
+>>> +
+>>> +	/*
+>>> +	 * uid + euid + gid + egid + group-list + capabilities
+>>> +	 *     + "uid=" + "euid=" + "gid=" + "egid=" + "grps="
+>>> +	 *     + "cap-e=" + "cap-p=" + "cap-i="
+>>> +	 * 10  + 10   + 10  + 10   + (ngrps * 10) + ecap + pcap + icap
+>>> +	 *     + 4 + 5 + 4 + 5 + 5 + 6 + 6 + 6
+>>> +	 */
+>>> +	i = ((4 + gip->ngroups) * 11) + (3 * (_KERNEL_CAPABILITY_U32S * 8 + 1))
+>>> +		+ 41;
+>>> +
+>>> +#ifdef CONFIG_SECURITY_NETWORK
+>>> +	err = security_secid_to_secctx(scm->secid, &secdata, &seclen);
+>>> +	if (!err)
+>>> +		/*
+>>> +		 * " context="
+>>> +		 */
+>>> +		i += seclen + 10;
+>>> +#endif /* CONFIG_SECURITY_NETWORK */
+>>> +
+>>> +	result = kzalloc(i, GFP_KERNEL);
+>>> +	if (result == NULL)
+>>> +		return;
+>>> +
+>>> +	cp = result + sprintf(result, "euid=%d uid=%d egid=%d gid=%d",
+>>> +				credp->euid, credp->uid,
+>>> +				credp->egid, credp->gid);
+>>> +
+>>> +	if (gip != NULL && gip->ngroups > 0) {
+>>> +		cp += sprintf(cp, " grps=%d", GROUP_AT(gip, 0));
+>>> +		for (i = 1 ; i < gip->ngroups; i++)
+>>> +			cp += sprintf(cp, ",%d", GROUP_AT(gip, i));
+>>> +	}
+>>> +
+>>> +	cp += sprintf(cp, " cap-e=");
+>>> +	CAP_FOR_EACH_U32(i)
+>>> +		cp += sprintf(cp, "%08x", credp->cap_effective.cap[i]);
+>>> +	cp += sprintf(cp, " cap-p=");
+>>> +	CAP_FOR_EACH_U32(i)
+>>> +		cp += sprintf(cp, "%08x", credp->cap_permitted.cap[i]);
+>>> +	cp += sprintf(cp, " cap-i=");
+>>> +	CAP_FOR_EACH_U32(i)
+>>> +		cp += sprintf(cp, "%08x", credp->cap_inheritable.cap[i]);
+>>> +
+>>> +#ifdef CONFIG_SECURITY_NETWORK
+>>> +	cp += sprintf(cp, " context=");
+>>> +	strncpy(cp, secdata, seclen);
+>>> +	cp += seclen;
+>>> +	*cp = '\0';
+>>> +
+>>> +	security_release_secctx(secdata, seclen);
+>>> +#endif /* CONFIG_SECURITY_NETWORK */
+>>> +
+>>> +	put_cmsg(msg, SOL_SOCKET, SCM_PRIVILEGES, strlen(result)+1, result);
+>>> +
+>>> +	kfree(result);
+>>> +}
+>>> +
+>>> +
+>>>  static __inline__ void scm_recv(struct socket *sock, struct msghdr *msg,
+>>>  				struct scm_cookie *scm, int flags)
+>>>  {
+>>> @@ -114,6 +191,8 @@ static __inline__ void scm_recv(struct socket *sock, struct msghdr *msg,
+>>>  	if (test_bit(SOCK_PASSCRED, &sock->flags))
+>>>  		put_cmsg(msg, SOL_SOCKET, SCM_CREDENTIALS, sizeof(scm->creds), &scm->creds);
+>>>  
+>>> +	scm_passpriv(sock, msg, scm);
+>>> +
+>>>  	scm_destroy_cred(scm);
+>>>  
+>>>  	scm_passec(sock, msg, scm);
+>>> @@ -124,6 +203,5 @@ static __inline__ void scm_recv(struct socket *sock, struct msghdr *msg,
+>>>  	scm_detach_fds(msg, scm);
+>>>  }
+>>>  
+>>> -
+>>>  #endif /* __LINUX_NET_SCM_H */
+>>>  
+>>> diff --git a/net/core/sock.c b/net/core/sock.c
+>>> index fb60801..f134126 100644
+>>> --- a/net/core/sock.c
+>>> +++ b/net/core/sock.c
+>>> @@ -725,6 +725,13 @@ set_rcvbuf:
+>>>  		else
+>>>  			clear_bit(SOCK_PASSSEC, &sock->flags);
+>>>  		break;
+>>> +
+>>> +	case SO_PASSPRIV:
+>>> +		if (valbool)
+>>> +			set_bit(SOCK_PASSPRIV, &sock->flags);
+>>> +		else
+>>> +			clear_bit(SOCK_PASSPRIV, &sock->flags);
+>>> +		break;
+>>>  	case SO_MARK:
+>>>  		if (!capable(CAP_NET_ADMIN))
+>>>  			ret = -EPERM;
+>>> @@ -950,6 +957,10 @@ int sock_getsockopt(struct socket *sock, int level, int optname,
+>>>  		v.val = test_bit(SOCK_PASSSEC, &sock->flags) ? 1 : 0;
+>>>  		break;
+>>>  
+>>> +	case SO_PASSPRIV:
+>>> +		v.val = test_bit(SOCK_PASSPRIV, &sock->flags) ? 1 : 0;
+>>> +		break;
+>>> +
+>>>  	case SO_PEERSEC:
+>>>  		return security_socket_getpeersec_stream(sock, optval, optlen, len);
+>>>  
+>>
