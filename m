@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab1ASMHi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 07:07:38 -0500
-Received: from smtp.nokia.com ([147.243.1.48]:43208 "EHLO mgw-sa02.nokia.com"
+	id S1754113Ab1ASMHh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 07:07:37 -0500
+Received: from smtp.nokia.com ([147.243.1.48]:43202 "EHLO mgw-sa02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754051Ab1ASMHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754005Ab1ASMHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Jan 2011 07:07:35 -0500
 From: tapio.vihuri@nokia.com
 To: dmitry.torokhov@gmail.com, peter.ujfalusi@nokia.com
 Cc: randy.dunlap@oracle.com, linux-kernel@vger.kernel.org,
         alsa-devel@alsa-project.org, ilkka.koskinen@nokia.com,
         samu.p.onkalo@nokia.com
-Subject: [PATCH v4 0/3] input: Add support for ECI (multimedia) accessories
-Date: Wed, 19 Jan 2011 14:06:53 +0200
-Message-Id: <1295438816-27937-1-git-send-email-tapio.vihuri@nokia.com>
+Subject: [PATCH v4 3/3] ECI: adding platform data for ECI driver
+Date: Wed, 19 Jan 2011 14:06:56 +0200
+Message-Id: <1295438816-27937-4-git-send-email-tapio.vihuri@nokia.com>
 X-Mailer: git-send-email 1.6.5
+In-Reply-To: <1295438816-27937-3-git-send-email-tapio.vihuri@nokia.com>
+References: <1295438816-27937-1-git-send-email-tapio.vihuri@nokia.com>
+ <1295438816-27937-2-git-send-email-tapio.vihuri@nokia.com>
+ <1295438816-27937-3-git-send-email-tapio.vihuri@nokia.com>
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,103 +26,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tapio Vihuri <tapio.vihuri@nokia.com>
 
-Thank you for comments.
+Gives platform data for ECI accessory input driver and
+ECI controller driver.
 
-ECI input driver changes:
+Signed-off-by: Tapio Vihuri <tapio.vihuri@nokia.com>
+---
+ arch/x86/platform/mrst/mrst.c |   49 +++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 49 insertions(+), 0 deletions(-)
 
-- Use driver name in debugfs
-- reject accessory stating more than maximum 31 buttons
-- clean out couple comments
-
-ECI controller driver changes:
-
-- name change, from ecibus to eci_xxx_ctrl
-- location change, from drivers/ecibus to drivers/input/misc
-- major rework from platform driver to i2c-driver
-- removed mrst platform dependency
-
-Checkpatch warn about Kconfig, but I think it is false positive, and I will
-report it to the maintainer.
-
-Platform code changes:
-
-- medfield_ prefix changed to mrst_
-- added ECI controller needed power control
-- remover ECI controller platform driver stuff
-- added i2c stuff for ECI controller driver
-
-Created against linux-2.6.37-rc8 at:
-a25cecc Merge branch 'next' of git://git.monstr.eu/linux-2.6-microblaze
-
---- v3 message ---
-
-Thank you for comments.
-
-ECI input driver changes:
-
-- Makefile and Kconfig sorted alphabetically
-- using sparse keymap library, much cleaner solution
-- correct string aligment with 80 column
-- debugfs initialization fix
-- sysfs cable entry using just 0/1
-- using cheaper __set_bit
-- insane comments fixed
-- remove unneeded misc device
-
-Created against linux-2.6.37-rc8 at:
-989d873 Merge master.kernel.org:/home/rmk/linux-2.6-arm
-
---- v2 message ---
-
-Thank you for comments.
-
-In series two there Kconfig dependency problem fixed, preventing compilation
-if X86_MRST (Intel Moorestown) or INPUT_MISC is not selected.
-
-Also created against linux-2.6.37-rc8
-
---- v1 message ---
-
-Hi all
-
-This patch set introduce Multimedia Headset Accessory support for
-Nokia phones. Technically those are known as ECI (Enhancement Control Interface)
-	
-If headset has many buttons, like play, vol+, vol- etc. then it is propably ECI
-accessory.
-
-Among several buttons ECI accessories contains memory for storing several
-parameters.
-
-This ECI input driver provides the following features:
- - reading ECI configuration memory
- - ECI buttons as input events
-
-Drive is constructed as follows:
- - ECI accessory input driver deals with headset accessory
- - ECI bus control driver deals the HW transfering data to/from headset
- - platform data match used HW
-
-In the future accessory detection logic will be added using ALSA jack reporting.
-
-Created against linux-2.6.37-rc6
-
-Please review.
-
-
-Tapio Vihuri (3):
-  ECI: input: introduce ECI accessory input driver
-  ECI: introducing ECI controller driver
-  ECI: adding platform data for ECI driver
-
- arch/x86/platform/mrst/mrst.c      |   49 ++
- drivers/input/misc/Kconfig         |   60 +++
- drivers/input/misc/Makefile        |    3 +-
- drivers/input/misc/eci.c           |  946 ++++++++++++++++++++++++++++++++++++
- drivers/input/misc/eci_at20_ctrl.c |  533 ++++++++++++++++++++
- include/linux/input/eci.h          |  179 +++++++
- 6 files changed, 1769 insertions(+), 1 deletions(-)
- create mode 100644 drivers/input/misc/eci.c
- create mode 100644 drivers/input/misc/eci_at20_ctrl.c
- create mode 100644 include/linux/input/eci.h
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+index ea6529e..ac2533f 100644
+--- a/arch/x86/platform/mrst/mrst.c
++++ b/arch/x86/platform/mrst/mrst.c
+@@ -24,6 +24,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/irq.h>
+ #include <linux/module.h>
++#include <linux/input/eci.h>
+ 
+ #include <asm/setup.h>
+ #include <asm/mpspec_def.h>
+@@ -478,6 +479,16 @@ static void __init *no_platform_data(void *info)
+ 	return NULL;
+ }
+ 
++static void *eci_ctrl_platform_data_init(void *info)
++{
++	static struct eci_ctrl_platform_data mrst_eci_ctrl_data = {
++		.eci_ctrl_rst_gpio = GPIO_ECI_RSTn,
++		.eci_ctrl_sw_ctrl_gpio = GPIO_ECI_SW_CTRL,
++		.eci_ctrl_int_gpio = GPIO_ECI_INT,
++	};
++	return &mrst_eci_ctrl_data;
++}
++
+ static const struct devs_id __initconst device_ids[] = {
+ 	{"pmic_gpio", SFI_DEV_TYPE_SPI, 1, &pmic_gpio_platform_data},
+ 	{"spi_max3111", SFI_DEV_TYPE_SPI, 0, &max3111_platform_data},
+@@ -487,6 +498,7 @@ static const struct devs_id __initconst device_ids[] = {
+ 	{"i2c_accel", SFI_DEV_TYPE_I2C, 0, &lis331dl_platform_data},
+ 	{"pmic_audio", SFI_DEV_TYPE_IPC, 1, &no_platform_data},
+ 	{"msic_audio", SFI_DEV_TYPE_IPC, 1, &no_platform_data},
++	{"eci_ctrl", SFI_DEV_TYPE_I2C, 0, &eci_ctrl_platform_data_init},
+ 	{},
+ };
+ 
+@@ -807,3 +819,40 @@ static int __init pb_keys_init(void)
+ 	return 0;
+ }
+ late_initcall(pb_keys_init);
++
++/*
++ * This is just example, should be used in platform audio driver
++ * hsmic_event->event(hsmic_event->private, true)
++ */
++static void mrst_register_hsmic_event_cb(struct audio_hsmic_event *event)
++{
++	struct audio_hsmic_event *hsmic_event;
++
++	hsmic_event = event;
++}
++
++static struct eci_platform_data mrst_eci_data = {
++	.register_hsmic_event_cb	= mrst_register_hsmic_event_cb,
++};
++
++static struct platform_device mrst_eci_device = {
++	.name	= "ECI_accessory",
++	.dev	= {
++		.platform_data = &mrst_eci_data,
++	},
++};
++
++static int __init mrst_eci_init(void)
++{
++	int retval;
++
++	retval = platform_device_register(&mrst_eci_device);
++	if (retval < 0)
++		return retval;
++
++	/* Turn on vprog2 */
++	intel_scu_ipc_iowrite8(AvP_MSIC_VPROG2, AvP_MSIC_VPROG2_2V5_ON);
++
++	return retval;
++}
++device_initcall(mrst_eci_init);
+-- 
+1.6.5
 
