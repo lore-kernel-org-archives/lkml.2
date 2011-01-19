@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535Ab1ASHTu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 02:19:50 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:33775 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753305Ab1ASHTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 02:19:49 -0500
-Date: Wed, 19 Jan 2011 08:19:44 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Joerg Roedel <joerg.roedel@amd.com>, Greg KH <greg@kroah.com>,
-        Borislav Petkov <bp@amd64.org>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, Borislav Petkov <borislav.petkov@amd.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 1/3] x86-32: Separate 1:1 pagetables from swapper_pg_dir
-Message-ID: <20110119071944.GD13799@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-	Joerg Roedel <joerg.roedel@amd.com>, Greg KH <greg@kroah.com>,
-	Borislav Petkov <bp@amd64.org>, linux-kernel@vger.kernel.org,
-	stable@kernel.org, Borislav Petkov <borislav.petkov@amd.com>,
-	"H. Peter Anvin" <hpa@zytor.com>
-References: <20101022162038.GA10343@kroah.com>
- <1289483775-17632-2-git-send-email-joerg.roedel@amd.com>
- <20110119003908.GB7609@dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110119003908.GB7609@dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753559Ab1ASHUN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 02:20:13 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:53903
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753479Ab1ASHUL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 02:20:11 -0500
+Date: Tue, 18 Jan 2011 23:20:45 -0800 (PST)
+Message-Id: <20110118.232045.58440904.davem@davemloft.net>
+To: mathieu.desnoyers@efficios.com
+Cc: rostedt@goodmis.org, richm@oldelvet.org.uk, 609371@bugs.debian.org,
+        ben@decadent.org.uk, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@redhat.com
+Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
+ Unknown relocation: 36
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110118.223247.241909079.davem@davemloft.net>
+References: <1295382144.12215.123.camel@gandalf.stny.rr.com>
+	<20110119050844.GA8776@Krystal>
+	<20110118.223247.241909079.davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 18, 2011 at 07:39:08PM -0500, Konrad Rzeszutek Wilk wrote:
-> On Thu, Nov 11, 2010 at 02:56:13PM +0100, Joerg Roedel wrote:
+From: David Miller <davem@davemloft.net>
+Date: Tue, 18 Jan 2011 22:32:47 -0800 (PST)
 
-[..]
-
-> > -v2: switch to swapper_pg_dir right after entering start_secondary() so
-> > that we are able to access percpu data which might not be mapped in the
-> > trampoline page table.
+> As far as GCC can see, the object is static and also not part of an
+> array or any other C construct for which things like this could matter
+> as long as the alignment it chooses meets the minimum alignment
+> requirements of the ABI.
 > 
-> You also might want to look at the regression this patch caused when it
-> was introduced. Mainly this fix:
-> 805e3f495057aa5307ad4e3d6dc7073d4733c691
+> So it doesn't let us do this trick where we put the individual event
+> markers into a special section, yet mark it __used and static, then
+> later access them as if they were part of a globally visible array.
+> 
+> If you look these static objects, they are emitted with a leading
+> ".align 32" directive.  This is what screws everything up.
+> 
+> When the linker sees this, it aligns the start of every individual
+> "_ftrace_events" section, and that's where the "gaps" come from and
+> the crashes.
 
-I think you mean the regression _this_
-b40827fa7268fda8a62490728a61c2856f33830b patch caused, which is not in
--stable anyway.
+I've come up with one possible way to deal with this.
 
--- 
-Regards/Gruss,
-    Boris.
+Put pointers to the trace objects into the special section, and
+interate over those instead.
+
+I was wondering why this x86-64 weird alignment behavior doesn't bite
+us for our init funcs.  And the reason is that all of these weird
+alignment cases only trigger for aggregates (ie. structs and unions).
+
+So we could do:
+
+	static struct ftace_event_call foo_event = { ... };
+	static struct ftrace_event_call * __used
+		__attribute__((section("_ftrace_event_ptrs")))
+		foo_event_ptr = &foo_event;
+
+and
+
+	extern struct ftrace_event_call *__start_ftrace_event_ptrs[];
+	extern struct ftrace_event_call *__end_ftrace_event_ptrs[];
+
+	struct ftrace_event_call **p = __start_ftrace_event_ptrs;
+	while (p < &__end_ftrace_event_ptrs[0]) {
+		struct ftrace_event_call *event = *p++;
+
+		__trace_add_event_call(event, ...);
+	}
+
+you get the idea.
+
+And we could mark this entire point section as "initdata" and thus
+free'able after bootup and post module load.
