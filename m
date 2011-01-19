@@ -1,141 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab1ASQCy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 11:02:54 -0500
-Received: from mga11.intel.com ([192.55.52.93]:49071 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752411Ab1ASQCw convert rfc822-to-8bit (ORCPT
+	id S1753867Ab1ASQDi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 11:03:38 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:50266 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752109Ab1ASQDg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 11:02:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,345,1291622400"; 
-   d="scan'208";a="878937591"
-From: "Struk, Tadeusz" <tadeusz.struk@intel.com>
-To: Jesper Juhl <jj@chaosbits.net>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "Hoban, Adrian" <adrian.hoban@intel.com>,
-        "Paoloni, Gabriele" <gabriele.paoloni@intel.com>,
-        "O Mahony, Aidan" <aidan.o.mahony@intel.com>
-Date: Wed, 19 Jan 2011 16:02:46 +0000
-Subject: RE: [PATCH] rfc4106, Intel, AES-NI: Don't leak memory in
- rfc4106_set_hash_subkey().
-Thread-Topic: [PATCH] rfc4106, Intel, AES-NI: Don't leak memory in
- rfc4106_set_hash_subkey().
-Thread-Index: Acu1ixwl2NePExY1ROuehvw1T8vI3ACZpL9g
-Message-ID: <24483BA4C9F69C43A7379639D35543D7C5398DB6@irsmsx502.ger.corp.intel.com>
-References: <alpine.LNX.2.00.1101161527440.8049@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1101161527440.8049@swampdragon.chaosbits.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 19 Jan 2011 11:03:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=DH6JHjbvRGAPVF4te5xe/cF5X4Gf26grnOrqFByVhYGWFDKxezoEZJFonXGQofuA+q
+         m/T+vU3AbhVRAdkv3qDNcRvamZ2CGydc5xz783s4YVH8bwWCqYB26dHxVNjQpDVGghrW
+         gql2B1d0TTIM4NIHrxRNxh5npMCDzMVAHpIaY=
 MIME-Version: 1.0
+In-Reply-To: <20110119132123.GC4246@quack.suse.cz>
+References: <AANLkTimMwZnm3UKvmrPscBeZF77vh1sW0ERO1tuv1oNW@mail.gmail.com>
+	<x494o9bbkqo.fsf@segfault.boston.devel.redhat.com>
+	<AANLkTimuCgn4aHzUJRmQfsXjG_UF-3W8fAWb0Y-sSPsM@mail.gmail.com>
+	<x49tyh7mjr6.fsf@segfault.boston.devel.redhat.com>
+	<AANLkTikgsGHJ+q6=We_zPAivyABq+z2f6Atv6ZScLYOU@mail.gmail.com>
+	<20110118190114.GA5070@quack.suse.cz>
+	<AANLkTin1+B_1CV-weALdS8EYJO60BJd0b7AGWzc0wrWr@mail.gmail.com>
+	<20110118235236.GA14087@quack.suse.cz>
+	<AANLkTikvCkMDM9+i=44eEkX094=ZHpnQaN+541pm1icK@mail.gmail.com>
+	<20110119132123.GC4246@quack.suse.cz>
+Date: Thu, 20 Jan 2011 03:03:23 +1100
+Message-ID: <AANLkTi=Z0eyXBkWL6YYdUVzA16hs=WjC7u=wfEHzAozC@mail.gmail.com>
+Subject: Re: [patch] fs: aio fix rcu lookup
+From: Nick Piggin <npiggin@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Jeff Moyer <jmoyer@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jesper,
-We have tested your changes and all is fine.
-Thank you for identifying this issue.
-Regards,
-Tadeusz
+On Thu, Jan 20, 2011 at 12:21 AM, Jan Kara <jack@suse.cz> wrote:
+> On Wed 19-01-11 11:20:45, Nick Piggin wrote:
+>> On Wed, Jan 19, 2011 at 10:52 AM, Jan Kara <jack@suse.cz> wrote:
+>> > On Wed 19-01-11 09:17:23, Nick Piggin wrote:
+>> >> On Wed, Jan 19, 2011 at 6:01 AM, Jan Kara <jack@suse.cz> wrote:
+>> >> > On Tue 18-01-11 10:24:24, Nick Piggin wrote:
+>> >> >> On Tue, Jan 18, 2011 at 6:07 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
+>> >> >> > Nick Piggin <npiggin@gmail.com> writes:
+>> >> >> >> Do you agree with the theoretical problem? I didn't try to
+>> >> >> >> write a racer to break it yet. Inserting a delay before the
+>> >> >> >> get_ioctx might do the trick.
+>> >> >> >
+>> >> >> > I'm not convinced, no.  The last reference to the kioctx is always the
+>> >> >> > process, released in the exit_aio path, or via sys_io_destroy.  In both
+>> >> >> > cases, we cancel all aios, then wait for them all to complete before
+>> >> >> > dropping the final reference to the context.
+>> >> >>
+>> >> >> That wouldn't appear to prevent a concurrent thread from doing an
+>> >> >> io operation that requires ioctx lookup, and taking the last reference
+>> >> >> after the io_cancel thread drops the ref.
+>> >> >>
+>> >> >> > So, while I agree that what you wrote is better, I remain unconvinced of
+>> >> >> > it solving a real-world problem.  Feel free to push it in as a cleanup,
+>> >> >> > though.
+>> >> >>
+>> >> >> Well I think it has to be technically correct first. If there is indeed a
+>> >> >> guaranteed ref somehow, it just needs a comment.
+>> >> >  Hmm, the code in io_destroy() indeed looks fishy. We delete the ioctx
+>> >> > from the hash table and set ioctx->dead which is supposed to stop
+>> >> > lookup_ioctx() from finding it (see the !ctx->dead check in
+>> >> > lookup_ioctx()). There's even a comment in io_destroy() saying:
+>> >> >        /*
+>> >> >         * Wake up any waiters.  The setting of ctx->dead must be seen
+>> >> >         * by other CPUs at this point.  Right now, we rely on the
+>> >> >         * locking done by the above calls to ensure this consistency.
+>> >> >         */
+>> >> > But since lookup_ioctx() is called without any lock or barrier nothing
+>> >> > really seems to prevent the list traversal and ioctx->dead test to happen
+>> >> > before io_destroy() and get_ioctx() after io_destroy().
+>> >> >
+>> >> > But wouldn't the right fix be to call synchronize_rcu() in io_destroy()?
+>> >> > Because with your fix we could still return 'dead' ioctx and I don't think
+>> >> > we are supposed to do that...
+>> >>
+>> >> With my fix we won't oops, I was a bit concerned about ->dead,
+>> >> yes but I don't know what semantics it is attempted to have there.
+>> >  But wouldn't it do something bad if the memory gets reallocated for
+>> > something else and set to non-zero? E.g. memory corruption?
+>>
+>> I don't see how it would with my patch.
+>  Ah, you are right. Since the whole structure gets freed only after the RCU
+> period expires, we are guaranteed to see 0 in ctx->users until we drop
+> rcu_read_lock. Maybe a comment like the above would be useful at the place
+> where you use try_get_ioctx() but your patch works.
+>
+>> >> synchronize_rcu() in io_destroy()  does not prevent it from returning
+>> >> as soon as lookup_ioctx drops the rcu_read_lock().
+>> >  Yes, exactly. So references obtained before synchronize_rcu() would be
+>> > completely fine and valid references and there would be no references after
+>> > synchronize_rcu() because they'd see 'dead' set. But looking at the code
+>> > again it still would not be enough because we could still race with
+>> > io_submit_one() adding new IO to the ioctx which will be freed just after
+>> > put_ioctx() in do_io_submit().
+>> >
+>> > The patch below implements what I have in mind - it should be probably
+>> > split into two but I'd like to hear comments on that before doing these
+>> > cosmetic touches ;)
+>>
+>> Well this seems to solve it too, but it is 2 problems here. It is changing
+>> the semantics of io_destroy which requires the big synchronize_rcu()
+>> hammer.
+>>
+>> But I don't believe that's necessarily desirable, or required. In fact it is
+>> explicitly not reuired because it only says that it _may_ cancel outstanding
+>> requests.
+>  Well, we are not required to cancel all the outstanding AIO because of the
+> API requirement, that's granted. But we must do it because of the way how
+> the code is written. Outstanding IO requests reference ioctx but they are
+> not counted in ctx->users but in ctx->reqs_active. So the code relies on
+> the fact that the reference held by the hash table protects ctx from being
+> freed and io_destroy() waits for requests before dropping the last
+> reference to ctx. But there's the second race I describe making it possible
+> for new IO to be created after io_destroy() has waited for all IO to
+> finish...
 
------Original Message-----
-From: Jesper Juhl [mailto:jj@chaosbits.net] 
-Sent: Sunday, January 16, 2011 2:39 PM
-To: linux-crypto@vger.kernel.org
-Cc: Struk, Tadeusz; linux-kernel@vger.kernel.org; x86@kernel.org; H. Peter Anvin; Ingo Molnar; Thomas Gleixner; David S. Miller; Herbert Xu; Huang, Ying; Hoban, Adrian; Paoloni, Gabriele; O Mahony, Aidan
-Subject: [PATCH] rfc4106, Intel, AES-NI: Don't leak memory in rfc4106_set_hash_subkey().
+Yes there is that race too I agree. I just didn't follow through the code far
+enough to see it was a problem -- I thought it was by design.
 
-There's a small memory leak in 
-arch/x86/crypto/aesni-intel_glue.c::rfc4106_set_hash_subkey(). If the call 
-to kmalloc() fails and returns NULL then the memory allocated previously 
-by ablkcipher_request_alloc() is not freed when we leave the function.
-
-I could have just added a call to ablkcipher_request_free() before we 
-return -ENOMEM, but that started to look too much like the code we 
-already had at the end of the function, so I chose instead to rework the 
-code a bit so that there are now a few labels at the end that we goto when 
-various allocations fail, so we don't have to repeat the same blocks of 
-code (this also reduces the object code size slightly).
-
-Please review and consider merging.
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- aesni-intel_glue.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
-
-  compile tested only.
-
-diff --git a/arch/x86/crypto/aesni-intel_glue.c b/arch/x86/crypto/aesni-intel_glue.c
-index e1e60c7..e013552 100644
---- a/arch/x86/crypto/aesni-intel_glue.c
-+++ b/arch/x86/crypto/aesni-intel_glue.c
-@@ -873,21 +873,19 @@ rfc4106_set_hash_subkey(u8 *hash_subkey, const u8 *key, unsigned int key_len)
- 	crypto_ablkcipher_clear_flags(ctr_tfm, ~0);
- 
- 	ret = crypto_ablkcipher_setkey(ctr_tfm, key, key_len);
--	if (ret) {
--		crypto_free_ablkcipher(ctr_tfm);
--		return ret;
--	}
-+	if (ret)
-+		goto out;
- 
- 	req = ablkcipher_request_alloc(ctr_tfm, GFP_KERNEL);
- 	if (!req) {
--		crypto_free_ablkcipher(ctr_tfm);
--		return -EINVAL;
-+		ret = -EINVAL;
-+		goto out_free_ablkcipher;
- 	}
- 
- 	req_data = kmalloc(sizeof(*req_data), GFP_KERNEL);
- 	if (!req_data) {
--		crypto_free_ablkcipher(ctr_tfm);
--		return -ENOMEM;
-+		ret = -ENOMEM;
-+		goto out_free_request;
- 	}
- 	memset(req_data->iv, 0, sizeof(req_data->iv));
- 
-@@ -913,9 +911,12 @@ rfc4106_set_hash_subkey(u8 *hash_subkey, const u8 *key, unsigned int key_len)
- 		if (!ret)
- 			ret = req_data->result.err;
- 	}
-+out_free_request:
- 	ablkcipher_request_free(req);
- 	kfree(req_data);
-+out_free_ablkcipher:
- 	crypto_free_ablkcipher(ctr_tfm);
-+out:
- 	return ret;
- }
- 
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
---------------------------------------------------------------
-Intel Shannon Limited
-Registered in Ireland
-Registered Office: Collinstown Industrial Park, Leixlip, County Kildare
-Registered Number: 308263
-Business address: Dromore House, East Park, Shannon, Co. Clare
-
-This e-mail and any attachments may contain confidential material for the sole use of the intended recipient(s). Any review or distribution by others is strictly prohibited. If you are not the intended recipient, please contact the sender and delete all copies.
-
-
+I'd like to solve it without synchronize_rcu() though.
