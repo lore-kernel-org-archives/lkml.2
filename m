@@ -1,88 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142Ab1ASVSN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 16:18:13 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:44232 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753174Ab1ASVSM (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Wed, 19 Jan 2011 16:18:12 -0500
-Date: Wed, 19 Jan 2011 16:14:32 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Kees Cook <kees.cook@canonical.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        keir.fraser@eu.citrix.com, castet.matthieu@free.fr
-Cc: mingo@redhat.com, hpa@zytor.com, sliakh.lkml@gmail.com, jmorris@namei.org,
-        linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
-        torvalds@linux-foundation.org, ak@muc.de, davej@redhat.com,
-        jiang@cs.ncsu.edu, arjan@infradead.org, tglx@linutronix.de,
-        sfr@canb.auug.org.au, mingo@elte.hu,
-        Stefan Bader <stefan.bader@canonical.com>
-Subject: Re: [tip:x86/security] x86: Add NX protection for kernel data
-Message-ID: <20110119211432.GA20535@dumpdata.com>
-References: <4CE2F82E.60601@free.fr>
- <tip-5bd5a452662bc37c54fb6828db1a3faf87e6511c@git.kernel.org>
- <20110111233135.GL4979@outflux.net>
- <20110114201530.GA14339@dumpdata.com>
+	id S1753132Ab1ASVUF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 16:20:05 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:57163 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752332Ab1ASVUC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 16:20:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=W+wmAm0zaLmym86GUVuH2eV4lEd9oyY7Pluyyk7dPhYF6HDNCZVrTKKsE1cWC6/iyX
+         baCnANz4uv87jZ8mPtPIirxYrmUhGm2+GWMRglOFM8ymiGRotH0JLXZ4g15/uA938oM4
+         Jxc5PD87vrRGOEfT5MUM4JuziJyYU/WaLDpVk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110114201530.GA14339@dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <x49wrm0bo7g.fsf@segfault.boston.devel.redhat.com>
+References: <AANLkTimMwZnm3UKvmrPscBeZF77vh1sW0ERO1tuv1oNW@mail.gmail.com>
+	<x494o9bbkqo.fsf@segfault.boston.devel.redhat.com>
+	<AANLkTimuCgn4aHzUJRmQfsXjG_UF-3W8fAWb0Y-sSPsM@mail.gmail.com>
+	<x49tyh7mjr6.fsf@segfault.boston.devel.redhat.com>
+	<AANLkTikgsGHJ+q6=We_zPAivyABq+z2f6Atv6ZScLYOU@mail.gmail.com>
+	<20110118190114.GA5070@quack.suse.cz>
+	<AANLkTin1+B_1CV-weALdS8EYJO60BJd0b7AGWzc0wrWr@mail.gmail.com>
+	<20110118235236.GA14087@quack.suse.cz>
+	<AANLkTikvCkMDM9+i=44eEkX094=ZHpnQaN+541pm1icK@mail.gmail.com>
+	<20110119132123.GC4246@quack.suse.cz>
+	<x49ei88d7vl.fsf@segfault.boston.devel.redhat.com>
+	<x49aaiwd6cs.fsf@segfault.boston.devel.redhat.com>
+	<AANLkTiniSG3tfXx1iUtzf53sSsr=R6pmvmWrSV8FiYE9@mail.gmail.com>
+	<x491v48d47d.fsf@segfault.boston.devel.redhat.com>
+	<AANLkTi=ChBc3+o_GcdKKn4HZykNkQ70mxPLu9HYDfeFj@mail.gmail.com>
+	<x49wrm0bo7g.fsf@segfault.boston.devel.redhat.com>
+Date: Thu, 20 Jan 2011 08:20:00 +1100
+Message-ID: <AANLkTikTJ-eCR2M73=G4q=0AAsb9aVosrFdwP+uY7enB@mail.gmail.com>
+Subject: Re: [patch] fs: aio fix rcu lookup
+From: Nick Piggin <npiggin@gmail.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 03:15:30PM -0500, Konrad Rzeszutek Wilk wrote:
-> On Tue, Jan 11, 2011 at 03:31:35PM -0800, Kees Cook wrote:
-> > On Thu, Nov 18, 2010 at 02:08:22PM +0000, tip-bot for Matthieu Castet wrote:
-> > > Commit-ID:  5bd5a452662bc37c54fb6828db1a3faf87e6511c
-> > > Gitweb:     http://git.kernel.org/tip/5bd5a452662bc37c54fb6828db1a3faf87e6511c
-> > > Author:     Matthieu Castet <castet.matthieu@free.fr>
-> > > AuthorDate: Tue, 16 Nov 2010 22:31:26 +0100
-> > > Committer:  Ingo Molnar <mingo@elte.hu>
-> > > CommitDate: Thu, 18 Nov 2010 12:52:04 +0100
-> > > 
-> > > x86: Add NX protection for kernel data
-> > 
-> > [I'd sent this in reply to the wrong patch before, resending now...]
-> > 
-> > Hi,
-> > 
-> > I was just shown this[1] on Xen from an Ubuntu bug report[2].
-> > 
-> > [    1.230382] NX-protecting the kernel data: 3884k
-> > [    1.231002] BUG: unable to handle kernel paging request at c1782ae0
-> > ...
-> > [    1.231145] Call Trace:
-> > [    1.231152]  [<c0138481>] ? __change_page_attr+0x2c1/0x370
-> > [    1.231161]  [<c02163a1>] ? __purge_vmap_area_lazy+0xc1/0x180
-> > [    1.231169]  [<c013857c>] ? __change_page_attr_set_clr+0x4c/0xb0
-> > [    1.231176]  [<c0138838>] ? change_page_attr_set_clr+0x128/0x300
-> > [    1.231183]  [<c010798e>] ? __raw_callee_save_xen_restore_fl+0x6/0x8
-> > [    1.231192]  [<c0159ca1>] ? vprintk+0x171/0x3f0
-> > [    1.231198]  [<c0138bdf>] ? set_memory_nx+0x5f/0x70
-> 
-> If you run it with Xen debugging enabled:
-> 
-> [    7.753329] NX-protecting the kernel data: 2400k
-> (XEN) mm.c:2389:d0 Bad type (saw 3c000003 != exp 70000000) for mfn 1355a5 (pfn 15a5)
-> (XEN) mm.c:889:d0 Error getting mfn 1355a5 (pfn 15a5) from L1 entry 80000001355a5063 for l1e_owner=0, pg_owner=0
-> (XEN) mm.c:4958:d0 ptwr_emulate: could not get_page_from_l1e()
-> [    7.759087] BUG: unable to handle kernel paging request at c82a4d28
-> [    7.759087] IP: [<c100608c>] xen_set_pte_atomic+0x21/0x2f
-> [    7.759087] *pdpt = 0000000001663001 *pde = 00000000082db067 *pte = 80000000082a4061 
-> .. and same stack trace.
-> 
-> > 
-> > 
-> > Does Xen have different size page table allocations or something weird?
-> 
-> The same page size. Not sure actually why it is being triggered. Let me copy
-> Keir on this. Keir, the region that is being marked as _NX is .bss one and
+On Thu, Jan 20, 2011 at 8:03 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
+> Nick Piggin <npiggin@gmail.com> writes:
+>
+>> On Thu, Jan 20, 2011 at 7:32 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
+>>> Nick Piggin <npiggin@gmail.com> writes:
+>>>
+>>>> On Thu, Jan 20, 2011 at 6:46 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
+>>>>> Jeff Moyer <jmoyer@redhat.com> writes:
+>>>>>
+>>>>>> Jan Kara <jack@suse.cz> writes:
+>>>>>>
+>>>>>>>  But there's the second race I describe making it possible
+>>>>>>> for new IO to be created after io_destroy() has waited for all IO to
+>>>>>>> finish...
+>>>>>>
+>>>>>> Can't that be solved by introducing memory barriers around the accesses
+>>>>>> to ->dead?
+>>>>>
+>>>>> Upon further consideration, I don't think so.
+>>>>>
+>>>>> Given the options, I think adding the synchronize rcu to the io_destroy
+>>>>> path is the best way forward.  You're already waiting for a bunch of
+>>>>> queued I/O to finish, so there is no guarantee that you're going to
+>>>>> finish that call quickly.
+>>>>
+>>>> I think synchronize_rcu() is not something to sprinkle around outside
+>>>> very slow paths. It can be done without synchronize_rcu.
+>>>
+>>> I'm not sure I understand what you're saying.  Do you mean to imply that
+>>> io_destroy is not a very slow path?  Because it is.  I prefer a solution
+>>> that doesn't re-architecht things in order to solve a theoretical issue
+>>> that's never been observed.
+>>
+>> Even something that happens once per process lifetime, like in fork/exit
+>> is not necessarily suitable for RCU.
+>
+> Now you've really lost me.  ;-)  Processes which utilize the in-kernel
+> aio interface typically create an ioctx at process startup, use that for
+> submitting all of their io, then destroy it on exit.  Think of a
+> database.  Every time you call io_submit, you're doing a lookup of the
+> ioctx.
+>
+>> I don't know exactly how all programs use io_destroy -- of the small
+>> number that do, probably an even smaller number would care here. But I
+>> don't think it simplifies things enough to use synchronize_rcu for it.
+>
+> Above it sounded like you didn't think AIO should be using RCU at all.
 
-Um, it actually is from _etext -> __init_end + HPAGE_SIZE.
+synchronize_rcu of course, not RCU (typo).
 
-instrumenting the code a bit shows that setting of RW+NX from _etext throgh
-__init_end works just fine. It just when you start at the PFN _past_ the
-__init_end it dies. Any ideas? 
+> Here it sounds like you are just against synchronize_rcu.  Which is it?
+> And if the latter, then please tell me in what cases you feel one would
+> be justified in calling synchronize_rcu.  For now, I simply disagree
+> with you.  As I said before, you're already potentially waiting for disk
+> I/O to complete.  It doesn't get much worse than that for latency.
 
+I think synchronize_rcu should firstly not be used unless it gives a good
+simplification, or speedup in fastpath.
+
+When that is satified, then it is a question of exactly what kind of slow
+path it should be used in. I don't think it should be used in process-
+synchronous code (eg syscalls) except for error cases, resource
+exhaustion, management syscalls (like module unload).
+
+For example "it's waiting for IO anyway" is not a good reason, IMO.
+Firstly because it may not be waiting for a 10ms disk IO, it may be
+waiting for anything up to an in-RAM device. Secondly because it
+could be quite slow depending on the RCU model used.
