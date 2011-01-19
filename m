@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab1ASTwF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 14:52:05 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:20174 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753128Ab1ASTwE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 14:52:04 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6231"; a="70906936"
-From: David Brown <davidb@codeaurora.org>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: Stepan Moskovchenko <stepanm@codeaurora.org>,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, rlove@google.com
-Subject: Re: [PATCH 2/2] serial: msm: Add support for UARTDM cores
-In-Reply-To: <20110119173739.GE3341@pulham.picochip.com> (Jamie Iles's message
-	of "Wed, 19 Jan 2011 17:37:39 +0000")
-References: <1295407585-18386-1-git-send-email-stepanm@codeaurora.org>
-	<20110119082534.GA9569@gallagher> <8yaaaiwsstw.fsf@huya.qualcomm.com>
-	<20110119173739.GE3341@pulham.picochip.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-X-Hashcash: 1:20:110119:linux-arm-msm@vger.kernel.org::Zwum6LJJRkpl5Pgc:000000000000000000000000000000000hbh
-X-Hashcash: 1:20:110119:stepanm@codeaurora.org::NNQJj2Tfgqmetv+7:0000000000000000000000000000000000000001msD
-X-Hashcash: 1:20:110119:rlove@google.com::T5nTPg5MymBvqcNN:00qJz
-X-Hashcash: 1:20:110119:linux-arm-kernel@lists.infradead.org::DKdPhxUCMrgz7nh9:00000000000000000000000002iwt
-X-Hashcash: 1:20:110119:jamie@jamieiles.com::YIKWDujxQ258ieov:0000000000000000000000000000000000000000007t20
-X-Hashcash: 1:20:110119:linux-kernel@vger.kernel.org::dioTsCYWRKA7mS9P:000000000000000000000000000000000DVBS
-Date: Wed, 19 Jan 2011 11:52:02 -0800
-Message-ID: <8ya7he0r7rx.fsf@huya.qualcomm.com>
+	id S1752205Ab1AST4b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 14:56:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45451 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752671Ab1AST43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 14:56:29 -0500
+Date: Wed, 19 Jan 2011 20:55:46 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: werner <w.landgraf@ru.ru>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: 2.6.38-rc1 problems with khugepaged
+Message-ID: <20110119195546.GJ9506@random.random>
+References: <web-442414153@zbackend1.aha.ru>
+ <20110119155954.GA2272@kryptos.osrc.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110119155954.GA2272@kryptos.osrc.amd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19 2011, Jamie Iles wrote:
+On Wed, Jan 19, 2011 at 04:59:54PM +0100, Borislav Petkov wrote:
+> Adding some more parties to CC.
 
-> On Wed, Jan 19, 2011 at 09:31:55AM -0800, David Brown wrote:
->> I'm not sure what would be a better name for the flag, though.  The
->> block is called UARTDM.
->
-> Ok, it was mainly out of curiosity.  I guess it could be 'use_dma' or 
-> perhaps a comment to explain what DM is but my curiosity is now 
-> satisfied ;-)
+Thanks for adding me to CC.
 
-I think use_dma would probably be even more confusing, since it isn't
-using dma.
+Werner, could you send me the vmlinux (or bzImage) of the exact kernel
+that crashed (don't rebuild), otherwise I don't know where it
+crashed...
 
-It's a flag indicating if the device has the capability of doing dma.
-It's really a block version indicator, except that the blocks weren't
-given different versions, but instead given a name based on the DMA.
-
-I wonder if is_dma_capable would be better.
-
-David
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Crash on booting sounds like it's very reproducible, that's great so
+we fix it immediately (maybe it's related to highpte or some other
+.config difference that wasn't exercised). Probably 32bit THP got 0.1%
+of the testing that 64bit version had... (if I don't get a
+vmlinux/bzImage of the kernel that crashed soon, I'll try to reproduce
+on a VM with the .config attached, I've no host with 32bit userland
+anymore..).
