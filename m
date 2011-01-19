@@ -1,79 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753597Ab1ASJcD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 04:32:03 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48279 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753069Ab1ASJcB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 04:32:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=lc3WK8GTLX7CwLgLsvhL5jlnz+BY9rPWHeVXYBD8Q7VPvM28Yi9rH4D8hckg+337AV
-         r7IW+OlhroF1cUZxW/EXB+nVT5thzaboWNir+Lb+ewWth5ywT5OTjaG2h/vYCmw6CxPu
-         bUOJB62fdmJFld2uSNfDaqQ1/Pml/YupFz+EI=
+	id S1753676Ab1ASJeh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 04:34:37 -0500
+Received: from hera.kernel.org ([140.211.167.34]:36881 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753519Ab1ASJeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 04:34:36 -0500
+Date: Wed, 19 Jan 2011 09:33:59 GMT
+From: tip-bot for Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        sam@ravnborg.org, hongjiu.lu@intel.com, shaohua.li@intel.com,
+        markus@trippelsdorf.de, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        sam@ravnborg.org, hongjiu.lu@intel.com, shaohua.li@intel.com,
+        markus@trippelsdorf.de, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <4D36A759.60704@intel.com>
+References: <4D36A759.60704@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] Revert "x86: Make relocatable kernel work with new binutils"
+Message-ID: <tip-6b35eb9ddcddde7b510726de03fae071178f1ec4@git.kernel.org>
+Git-Commit-ID: 6b35eb9ddcddde7b510726de03fae071178f1ec4
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1295426461-12459-1-git-send-email-weber@corscience.de>
-References: <1295426461-12459-1-git-send-email-weber@corscience.de>
-From: Govindraj <govindraj.ti@gmail.com>
-Date: Wed, 19 Jan 2011 15:01:39 +0530
-Message-ID: <AANLkTin0-joNuqxqL79j0wqPk_A5mtAgzEY=X=PeH=+C@mail.gmail.com>
-Subject: Re: [PATCHv2] OMAP: Enable Magic SysRq on serial console ttyOx
-To: Thomas Weber <weber@corscience.de>
-Cc: linux-omap@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        "Govindraj.R" <govindraj.raja@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrei Emeltchenko <andrei.emeltchenko@nokia.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 19 Jan 2011 09:34:00 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 2:11 PM, Thomas Weber <weber@corscience.de> wrote:
-> Magic SysRq key is not working for OMAP on new serial
-> console ttyOx because SUPPORT_SYSRQ is not defined
-> for omap-serial.
->
-> This patch defines SUPPORT_SYSRQ in omap-serial and
-> enables handling of Magic SysRq character.
->
-> Signed-off-by: Thomas Weber <weber@corscience.de>
+Commit-ID:  6b35eb9ddcddde7b510726de03fae071178f1ec4
+Gitweb:     http://git.kernel.org/tip/6b35eb9ddcddde7b510726de03fae071178f1ec4
+Author:     Ingo Molnar <mingo@elte.hu>
+AuthorDate: Wed, 19 Jan 2011 10:09:42 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 19 Jan 2011 10:09:42 +0100
 
-Looks fine to me.
+Revert "x86: Make relocatable kernel work with new binutils"
 
-Acked-by: Govindraj.R <govindraj.raja@ti.com>
+This reverts commit 86b1e8dd83cb ("x86: Make relocatable kernel work with
+new binutils").
 
-> ---
-> Changes from v1: Changed comment
->
->  drivers/serial/omap-serial.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/serial/omap-serial.c b/drivers/serial/omap-serial.c
-> index 1201eff..907be9b 100644
-> --- a/drivers/serial/omap-serial.c
-> +++ b/drivers/serial/omap-serial.c
-> @@ -20,6 +20,10 @@
->  * this driver as required for the omap-platform.
->  */
->
-> +#if defined(CONFIG_SERIAL_OMAP_CONSOLE) && defined(CONFIG_MAGIC_SYSRQ)
-> +#define SUPPORT_SYSRQ
-> +#endif
-> +
->  #include <linux/module.h>
->  #include <linux/init.h>
->  #include <linux/console.h>
-> --
-> 1.7.4.rc2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Markus Trippelsdorf reported a boot failure caused by this patch.
+
+The real solution to the original patch will likely involve an
+arch-generic solution to define an overlaid jiffies_64 and jiffies
+variables.
+
+Until that's done and tested on all architectures revert this commit to
+solve the regression.
+
+Reported-and-bisected-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Acked-by: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Shaohua Li <shaohua.li@intel.com>
+Cc: "Lu, Hongjiu" <hongjiu.lu@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Sam Ravnborg <sam@ravnborg.org>
+LKML-Reference: <4D36A759.60704@intel.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/vmlinux.lds.S |   11 ++---------
+ 1 files changed, 2 insertions(+), 9 deletions(-)
+
+diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
+index b34ab80..bf47007 100644
+--- a/arch/x86/kernel/vmlinux.lds.S
++++ b/arch/x86/kernel/vmlinux.lds.S
+@@ -34,9 +34,11 @@ OUTPUT_FORMAT(CONFIG_OUTPUT_FORMAT, CONFIG_OUTPUT_FORMAT, CONFIG_OUTPUT_FORMAT)
+ #ifdef CONFIG_X86_32
+ OUTPUT_ARCH(i386)
+ ENTRY(phys_startup_32)
++jiffies = jiffies_64;
+ #else
+ OUTPUT_ARCH(i386:x86-64)
+ ENTRY(phys_startup_64)
++jiffies_64 = jiffies;
+ #endif
+ 
+ #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
+@@ -140,15 +142,6 @@ SECTIONS
+ 		CACHELINE_ALIGNED_DATA(L1_CACHE_BYTES)
+ 
+ 		DATA_DATA
+-		/*
+-		 * Workaround a binutils (2.20.51.0.12 to 2.21.51.0.3) bug.
+-		 * This makes jiffies relocatable in such binutils
+-		 */
+-#ifdef CONFIG_X86_32
+-		jiffies = jiffies_64;
+-#else
+-		jiffies_64 = jiffies;
+-#endif
+ 		CONSTRUCTORS
+ 
+ 		/* rarely changed data like cpu maps */
