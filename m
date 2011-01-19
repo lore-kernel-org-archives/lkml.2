@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab1ASEbD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 23:31:03 -0500
-Received: from kroah.org ([198.145.64.141]:58137 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751487Ab1ASEbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 23:31:00 -0500
-Date: Tue, 18 Jan 2011 20:31:27 -0800
-From: Greg KH <greg@kroah.com>
-To: Sutharsan Ramamoorthy <sutharsan.ramamoorthy@yahoo.com>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        david.cross@cypress.com, srmt@cypress.com
-Subject: Re: [PATCH] Westbridge software module, fixes errors reported by
- checkpatch.pl
-Message-ID: <20110119043127.GC25787@kroah.com>
-References: <792204.57037.qm@web121606.mail.ne1.yahoo.com>
+	id S1753337Ab1ASEfs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 23:35:48 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:38997 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752358Ab1ASEfr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 23:35:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=tvQBy1Cd3PTr3s+kR1tb3PNTKIJhhpMQl7+N+0S07BfIhBhcGIPFCSozJFDtXCxJsZ
+         sugvIzd6JqnEY4p3gg57RC+taX0So3Zjz6rw3In3KkG8YXLHmJdHimHl35w9F1d0XDnO
+         r0kzrrQI4D8t4FPF4V8LaMIsz1zWWOYNiJuQM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <792204.57037.qm@web121606.mail.ne1.yahoo.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1295408637.8017.56.camel@marge.simson.net>
+References: <1295275365.12840.13.camel@kolo>
+	<1295280032.30950.128.camel@laptop>
+	<1295339012.11678.35.camel@kolo>
+	<AANLkTikXf-OMEBx-UZktxooOs+YqUkSE9doyEZopjzOx@mail.gmail.com>
+	<1295357746.30950.681.camel@laptop>
+	<AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
+	<1295408637.8017.56.camel@marge.simson.net>
+Date: Wed, 19 Jan 2011 12:35:45 +0800
+Message-ID: <AANLkTineieNdiKduDHQ-J+Xv6Pq9O0pTZraBJEw=p5e7@mail.gmail.com>
+Subject: Re: Bug in scheduler when using rt_mutex
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, samu.p.onkalo@nokia.com,
+        mingo@elte.hu,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        tglx <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 17, 2011 at 03:59:09PM -0800, Sutharsan Ramamoorthy wrote:
-> From: Sutharsan Ramamoorthy <srmt@cypress.com>
-> 
-> This patch fixes errors in westbridge device controller driver in the 
-> staging tree reported by checkpatch.pl. File containing EXPORT_SYMBOL() 
-> macros for all the API's exported by the westbridge software has been 
-> removed. EXPORT_SYMBOL() macro's are added after the functions being 
-> exported. This patch also fixes some function prototype definitions and 
-> removes new typdefs.
+On Wed, Jan 19, 2011 at 11:43 AM, Mike Galbraith <efault@gmx.de> wrote:
+>> (cfs_rq->curr != se) equals to (!running), no?
+>
+> No, running is task_of(se) == rq->curr. Â Another class or fair group
+> task may be rq_of(cfs_rq)->curr
 
-Care to split this into two patches?  Every patch should only do one
-thing at a time.
+If task_of(se) != rq->curr, as you said it maybe on another class or
+fair group; then for its fair group, cfs_rq->curr == NULL.
+cfs_rq->curr != se is always true.
 
-> +struct cyasdevice {
->          /* Handle to the Antioch device */
->          cy_as_device_handle            dev_handle;
->          /* Handle to the HAL */
->          cy_as_hal_device_tag            hal_tag;
->          spinlock_t      common_lock;
->          unsigned long flags;
-> -} cyasdevice;
-> +} ;
+Thanks,
+Yong
 
-What's with the extra space here?
-
-thanks,
-
-greg k-h
+-- 
+Only stand for myself
