@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784Ab1ASWSe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 17:18:34 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:37065 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753834Ab1ASWSc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 17:18:32 -0500
-Date: Wed, 19 Jan 2011 17:18:28 -0500
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Chen Liqin <liqin.chen@sunplusct.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        David Howells <dhowells@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Ungerer <gerg@uclinux.org>,
-        Hirokazu Takata <takata@linux-m32r.org>, Jeff Dike <jdike@addtoit.com>,
-        Michal Simek <monstr@monstr.eu>, Mikael Starvik <starvik@axis.com>,
-        Mike Frysinger <vapier@gentoo.org>, Paul Mundt <lethal@linux-sh.org>,
-        Richard Henderson <rth@twiddle.net>, Tony Luck <tony.luck@intel.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>
-Subject: Re: [patch 00/37] genirq: Remove __do_IRQ() and cleanup irq related
- Kconfigs
-Message-ID: <20110119221828.GD27353@bombadil.infradead.org>
-References: <20110119205258.462759212@linutronix.de>
- <AANLkTineduG23qitc8ggDKShYJi=2vJgXbYJDjLGZKk3@mail.gmail.com>
- <20110119221706.GC27353@bombadil.infradead.org>
+	id S1754820Ab1ASWTR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 17:19:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55065 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753834Ab1ASWTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 17:19:16 -0500
+Date: Wed, 19 Jan 2011 23:19:09 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Ilya Dryomov <idryomov@gmail.com>
+Cc: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [BUG] BUG: unable to handle kernel paging request at fffba000
+Message-ID: <20110119221909.GO9506@random.random>
+References: <20110119124047.GA30274@kwango.lan.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110119221706.GC27353@bombadil.infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110119124047.GA30274@kwango.lan.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 05:17:06PM -0500, Kyle McMartin wrote:
-> I submitted series to clean these 3 up as well (but only got a response
-> from the cris folks...) If the other 2 are effectively unmaintained,
-> should I just submit the clean ups to you? (I think there were some
-> build fixes as well, will have to check.)
-> 
+Hello Ilya,
 
-Nevermind, just saw the rest of the series on linux-arch.
+thanks for sending me the gdb info too.
 
---Kyle
+can you test this fix? Thanks a lot! (it only affected x86 32bit
+builds with highpte enabled)
+
+====
+Subject: fix pte_unmap in khugepaged for highpte x86_32
+
+From: Andrea Arcangeli <aarcange@redhat.com>
+
+__collapse_huge_page_copy is still dereferencing the pte passed as parameter so
+we must pte_unmap after __collapse_huge_page_copy returns, not before.
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 004c9c2..c4f634b 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1837,9 +1837,9 @@ static void collapse_huge_page(struct mm_struct *mm,
+ 	spin_lock(ptl);
+ 	isolated = __collapse_huge_page_isolate(vma, address, pte);
+ 	spin_unlock(ptl);
+-	pte_unmap(pte);
+ 
+ 	if (unlikely(!isolated)) {
++		pte_unmap(pte);
+ 		spin_lock(&mm->page_table_lock);
+ 		BUG_ON(!pmd_none(*pmd));
+ 		set_pmd_at(mm, address, pmd, _pmd);
+@@ -1856,6 +1856,7 @@ static void collapse_huge_page(struct mm_struct *mm,
+ 	anon_vma_unlock(vma->anon_vma);
+ 
+ 	__collapse_huge_page_copy(pte, new_page, vma, address, ptl);
++	pte_unmap(pte);
+ 	__SetPageUptodate(new_page);
+ 	pgtable = pmd_pgtable(_pmd);
+ 	VM_BUG_ON(page_count(pgtable) != 1);
+
+
