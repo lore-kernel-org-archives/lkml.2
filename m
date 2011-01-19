@@ -1,118 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754421Ab1ASNHh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 08:07:37 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60551 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754399Ab1ASNHg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 08:07:36 -0500
-Date: Wed, 19 Jan 2011 14:07:30 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Greg KH <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        Haiyang Zhang <haiyangz@microsoft.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging/hv/osd: don't reimplement ALIGN macro
-Message-ID: <20110119130729.GO10686@pengutronix.de>
-References: <1295365151-9527-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <20110119053715.GA26304@suse.de>
- <20110119085456.GI10686@pengutronix.de>
- <4D36DC8D.50705@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4D36DC8D.50705@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1754448Ab1ASNIM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 08:08:12 -0500
+Received: from smtp.nokia.com ([147.243.128.24]:61876 "EHLO mgw-da01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754335Ab1ASNIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 08:08:10 -0500
+Subject: Re: Bug in scheduler when using rt_mutex
+From: Onkalo Samu <samu.p.onkalo@nokia.com>
+Reply-To: samu.p.onkalo@nokia.com
+To: ext Peter Zijlstra <peterz@infradead.org>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, mingo@elte.hu,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        tglx <tglx@linutronix.de>
+In-Reply-To: <1295441881.11678.41.camel@kolo>
+References: <1295275365.12840.13.camel@kolo>
+	 <1295280032.30950.128.camel@laptop> <1295339012.11678.35.camel@kolo>
+	 <AANLkTikXf-OMEBx-UZktxooOs+YqUkSE9doyEZopjzOx@mail.gmail.com>
+	 <1295357746.30950.681.camel@laptop>
+	 <AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
+	 <1295430276.30950.1414.camel@laptop>  <1295433498.30950.1482.camel@laptop>
+	 <1295436632.30950.1542.camel@laptop>  <1295441881.11678.41.camel@kolo>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Nokia Oyj
+Date: Wed, 19 Jan 2011 15:13:19 +0200
+Message-ID: <1295442799.11678.43.camel@kolo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jiri,
-
-On Wed, Jan 19, 2011 at 01:43:57PM +0100, Jiri Slaby wrote:
-> On 01/19/2011 09:54 AM, Uwe Kleine-König wrote:
-> > On Tue, Jan 18, 2011 at 09:37:15PM -0800, Greg KH wrote:
-> >> On Tue, Jan 18, 2011 at 04:39:11PM +0100, Uwe Kleine-König wrote:
-> >>> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> >>> ---
-> >>>  drivers/staging/hv/osd.h |    5 ++---
-> >>>  1 files changed, 2 insertions(+), 3 deletions(-)
-> >>>
-> >>> diff --git a/drivers/staging/hv/osd.h b/drivers/staging/hv/osd.h
-> >>> index ce064e8..61ae54c 100644
-> >>> --- a/drivers/staging/hv/osd.h
-> >>> +++ b/drivers/staging/hv/osd.h
-> >>> @@ -28,10 +28,9 @@
-> >>>  #include <linux/workqueue.h>
-> >>>  
-> >>>  /* Defines */
-> >>> -#define ALIGN_UP(value, align)	(((value) & (align-1)) ?		\
-> >>> -				 (((value) + (align-1)) & ~(align-1)) :	\
-> >>> -				 (value))
-> >>> +#define ALIGN_UP(value, align)		ALIGN((value), (align))
-> >>
-> >> How about dropping ALIGN_UP entirely and just using the built-in ALIGN()
-> >> macro instead?
-> > Can do.
+On Wed, 2011-01-19 at 14:58 +0200, Onkalo Samu wrote:
+> On Wed, 2011-01-19 at 12:30 +0100, ext Peter Zijlstra wrote:
+> > On Wed, 2011-01-19 at 11:38 +0100, Peter Zijlstra wrote:
 > > 
-> >>>  #define ALIGN_DOWN(value, align)	((value) & ~(align-1))
-> >>
-> >> Any chance to get rid of this as well with the ALIGN() macro, or is that
-> >> really not possible?
-> > it would be
+> > > Hrm, I think the to bit is not needed with the from thing in place, the
+> > > enqueue from _setprio will already have added min_vruntime
 > > 
-> > 	#define ALIGN_DOWN(value, align) ALIGN((value) - (align) + 1, (align))
 > > 
-> > I think, but as it's only used once it might be easier to just use ALIGN
-> > there, too.
+> > Would lead to something like this:
 > > 
-> > BTW, it's used as follows:
-> > 
-> > 	#define NUM_PAGES_SPANNED(addr, len)    ((ALIGN(addr+len, PAGE_SIZE) - \
-> > 						 ALIGN_DOWN(addr, PAGE_SIZE)) >>  \
-> > 						 PAGE_SHIFT)
 > 
-> (DIV_ROUND_UP(addr+len, PAGE_SIZE) - ((addr) >> PAGE_SHIFT)))
+> Doesn't work in my case.
+
+When the task is sleeping rt_mutex_setprio
+doesn't call check_class_changed since the task is not 
+in queue at that moment I think.
+
 > 
-> or maybe better
-> 
-> (PAGE_ALIGN(addr+len) >> PAGE_SHIFT - ((addr) >> PAGE_SHIFT))
-> 
-> > I wonder if there is already a function yielding this value?
-> > Wouldn't
+> > ---
+> > Index: linux-2.6/kernel/sched.c
+> > ===================================================================
+> > --- linux-2.6.orig/kernel/sched.c
+> > +++ linux-2.6/kernel/sched.c
+> > @@ -8108,6 +8108,8 @@ EXPORT_SYMBOL(__might_sleep);
+> >  #ifdef CONFIG_MAGIC_SYSRQ
+> >  static void normalize_task(struct rq *rq, struct task_struct *p)
+> >  {
+> > +	struct sched_class *prev_class = p->sched_class;
+> > +	int old_prio = p->prio;
+> >  	int on_rq;
+> >  
+> >  	on_rq = p->se.on_rq;
+> > @@ -8118,6 +8120,8 @@ static void normalize_task(struct rq *rq
+> >  		activate_task(rq, p, 0);
+> >  		resched_task(rq->curr);
+> >  	}
+> > +
+> > +	check_class_changed(rq, p, prev_class, old_prio, task_current(rq, p));
+> >  }
+> >  
+> >  void normalize_rt_tasks(void)
+> > Index: linux-2.6/kernel/sched_fair.c
+> > ===================================================================
+> > --- linux-2.6.orig/kernel/sched_fair.c
+> > +++ linux-2.6/kernel/sched_fair.c
+> > @@ -4066,11 +4066,30 @@ static void prio_changed_fair(struct rq
+> >  		check_preempt_curr(rq, p, 0);
+> >  }
+> >  
+> > +static void
+> > +switched_from_fair(struct rq *rq, struct task_struct *p, int running)
+> > +{
+> > +	struct sched_entity *se = &p->se;
+> > +	struct cfs_rq *cfs_rq = cfs_rq_of(se);
+> > +
+> > +	/*
+> > +	 * Ensure the task's vruntime is normalized, so that when its
+> > +	 * switched back to the fair class the enqueue_entity(.flags=0) will
+> > +	 * do the right thing.
+> > +	 *
+> > +	 * If it was on_rq, then the dequeue_entity(.flags=0) will already
+> > +	 * have normalized the vruntime, if it was !on_rq, then only when
+> > +	 * the task is sleeping will it still have non-normalized vruntime.
+> > +	 */
+> > +	if (!se->on_rq && p->state != TASK_RUNNING)
+> > +		se->vruntime -= cfs_rq->min_vruntime;
+> > +}
+> > +
+> >  /*
+> >   * We switched to the sched_fair class.
+> >   */
+> > -static void switched_to_fair(struct rq *rq, struct task_struct *p,
+> > -			     int running)
+> > +static void
+> > +switched_to_fair(struct rq *rq, struct task_struct *p, int running)
+> >  {
+> >  	/*
+> >  	 * We were most likely switched from sched_rt, so
+> > @@ -4163,6 +4182,7 @@ static const struct sched_class fair_sch
+> >  	.task_fork		= task_fork_fair,
+> >  
+> >  	.prio_changed		= prio_changed_fair,
+> > +	.switched_from		= switched_from_fair,
+> >  	.switched_to		= switched_to_fair,
+> >  
+> >  	.get_rr_interval	= get_rr_interval_fair,
 > > 
-> > 	((addr + len) >> PAGE_SHIFT) - (addr >> PAGE_SHIFT) + 1
 > 
-> No, this won't work (it's not equivalent).
-Ah, this fails if addr + len is page aligned.
+> 
 
-	((addr + len - 1) >> PAGE_SHIFT) - (addr >> PAGE_SHIFT) + 1
 
-would work, but I like
-
-	(PAGE_ALIGN(addr+len) >> PAGE_SHIFT - ((addr) >> PAGE_SHIFT))
-
-better.  (In fact these two are equivalent:
-
-	PAGE_ALIGN(addr+len) >> PAGE_SHIFT =
-	__ALIGN_KERNEL(addr+len, PAGE_SIZE) >> PAGE_SHIFT =
-	__ALIGN_KERNEL_MASK(addr+len, PAGE_SIZE - 1) >> PAGE_SHIFT =
-	((addr + len + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1)) >> PAGE_SHIFT =
-	(addr + len + PAGE_SIZE - 1) >> PAGE_SHIFT =
-	(addr + len - 1) >> PAGE_SHIFT + 1
-
-Greg: should I send an updated patch or do you modify NUM_PAGES_SPANNED
-accordingly?
-
-Thanks
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
