@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148Ab1ASWgY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 17:36:24 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:36501 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755134Ab1ASWgX (ORCPT
+	id S1753870Ab1ASWuY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 17:50:24 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52290 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab1ASWuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 17:36:23 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6231"; a="71145525"
-X-Hashcash: 1:20:110119:torvalds@linux-foundation.org::xP/+jW6RaQdMXn4d:000000000000000000000000000000001OC8
-X-Hashcash: 1:20:110119:linux-arm-msm@vger.kernel.org::WlOucNAErkyVhjdD:000000000000000000000000000000000O4a
-X-Hashcash: 1:20:110119:linux-kernel@vger.kernel.org::3Gj3ulqNYgpi90GP:0000000000000000000000000000000006ERY
-X-Hashcash: 1:20:110119:linux-arm-kernel@lists.infradead.org::Frb2v/aanKN5+3IO:00000000000000000000000000sfl
-X-Hashcash: 1:20:110119:sboyd@codeaurora.org::r2+IxrhlUQvd2qiq:000000000000000000000000000000000000000006Qmg
-From: David Brown <davidb@codeaurora.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: [GIT PULL for 38-rc2] msm: initdata fix
-Date: Wed, 19 Jan 2011 14:36:22 -0800
-Message-ID: <8ya8vygo715.fsf@huya.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Wed, 19 Jan 2011 17:50:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=qrzA6FYe4N/kIU2CCix06bjyqxUZjxoNToVOfujKKCfP4yTdlAgm67B31M3MxGj3cZ
+         3oUo6vZd7WGqAaOBubIpEaYPI/FwZNPHxnijVER3FO7x+xvas1hjZVt0Pi4TR5/+h8uE
+         7caQ0u47aHIMk42xbQkLuqPB9Sz6nB7XPAtZA=
+Date: Thu, 20 Jan 2011 00:49:50 +0200
+From: Ilya Dryomov <idryomov@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, idryomov@gmail.com
+Subject: Re: [BUG] BUG: unable to handle kernel paging request at fffba000
+Message-ID: <20110119224950.GA3429@kwango.lan.net>
+References: <20110119124047.GA30274@kwango.lan.net> <20110119221909.GO9506@random.random>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110119221909.GO9506@random.random>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I seem to have missed this fix for the rc1.  Without it, access to
-/sys entries for the ethernet access freed memory.
+On Wed, Jan 19, 2011 at 11:19:09PM +0100, Andrea Arcangeli wrote:
+> Hello Ilya,
+> 
+> thanks for sending me the gdb info too.
+> 
+> can you test this fix? Thanks a lot! (it only affected x86 32bit
+> builds with highpte enabled)
+> 
+> ====
+> Subject: fix pte_unmap in khugepaged for highpte x86_32
+> 
+> From: Andrea Arcangeli <aarcange@redhat.com>
+> 
+> __collapse_huge_page_copy is still dereferencing the pte passed as parameter so
+> we must pte_unmap after __collapse_huge_page_copy returns, not before.
+> 
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 
-Thanks,
-David
+It fixes the above problem for me.  Thanks a lot Andrea.
 
-The following changes since commit c56eb8fb6dccb83d9fe62fd4dc00c834de9bc470:
-
-  Linux 2.6.38-rc1 (2011-01-18 15:14:02 -0800)
-
-are available in the git repository at:
-  git://codeaurora.org/quic/kernel/davidb/linux-msm.git for-38-rc2
-
-Stephen Boyd (1):
-      msm: qsd8x50: Platform data isn't init data
-
- arch/arm/mach-msm/board-qsd8x50.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> ---
+> 
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index 004c9c2..c4f634b 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -1837,9 +1837,9 @@ static void collapse_huge_page(struct mm_struct *mm,
+>  	spin_lock(ptl);
+>  	isolated = __collapse_huge_page_isolate(vma, address, pte);
+>  	spin_unlock(ptl);
+> -	pte_unmap(pte);
+>  
+>  	if (unlikely(!isolated)) {
+> +		pte_unmap(pte);
+>  		spin_lock(&mm->page_table_lock);
+>  		BUG_ON(!pmd_none(*pmd));
+>  		set_pmd_at(mm, address, pmd, _pmd);
+> @@ -1856,6 +1856,7 @@ static void collapse_huge_page(struct mm_struct *mm,
+>  	anon_vma_unlock(vma->anon_vma);
+>  
+>  	__collapse_huge_page_copy(pte, new_page, vma, address, ptl);
+> +	pte_unmap(pte);
+>  	__SetPageUptodate(new_page);
+>  	pgtable = pmd_pgtable(_pmd);
+>  	VM_BUG_ON(page_count(pgtable) != 1);
+> 
