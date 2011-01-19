@@ -1,104 +1,316 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344Ab1ASEmU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 23:42:20 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:52835 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751770Ab1ASEmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 23:42:19 -0500
-Date: Wed, 19 Jan 2011 15:42:10 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: linux-next: build failure after merge of the rr tree
-Message-Id: <20110119154210.435453e4.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__19_Jan_2011_15_42_10_+1100_o8NOkkl5.=gUXM_p"
+	id S1753284Ab1ASExg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 23:53:36 -0500
+Received: from vms173007pub.verizon.net ([206.46.173.7]:64137 "EHLO
+	vms173007pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752457Ab1ASExe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 23:53:34 -0500
+Date: Tue, 18 Jan 2011 23:53:11 -0500 (EST)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] ACPICA patches for 2.6.38-merge
+Message-id: <alpine.LFD.2.02.1101182351190.14668@x980>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__19_Jan_2011_15_42_10_+1100_o8NOkkl5.=gUXM_p
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Linus,
 
-Hi Rusty,
+please pull from: 
 
-After merging the rr tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git acpica
 
-net/dsa/dsa.c:432: error: two or more data types in declaration specifiers
+bug fixes, annual copyright update.
 
-Lines 431-433 of that file are:
+This will update the files shown below.
 
-MODULE_AUTHOR("Lennert Buytenhek <buytenh@wantstofly.org>")
-MODULE_DESCRIPTION("Driver for Distributed Switch Architecture switch chips=
-");
-MODULE_LICENSE("GPL");
+thanks!
 
-Presumably caused by commit b64781e8e2b0f480affb170460cbfb3b11fa9e5d
-("param: add null statement to compiled-in module params").  I wonder how
-many more build errors this change may provoke.  Please try to find them
-and fix them before adding this change, thanks.
+Len Brown
+Intel Open Source Technology Center
 
-I used the version of the rr tree from next-20110118 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
-P.S. (some of these may just be in linux-next)
-$ git grep '^[ 	]*MODULE_.*)[ 	]*$'
-drivers/media/dvb/dvb-core/dvbdev.h:	MODULE_PARM_DESC(adapter_nr, "DVB adap=
-ter numbers")
-drivers/net/arm/ks8695net.c:MODULE_AUTHOR("Simtec Electronics")
-drivers/platform/x86/thinkpad_acpi.c:	MODULE_ALIAS("dmi:bvnIBM:bvr" __type =
-"ET??WW*")
-drivers/usb/atm/xusbatm.c:	MODULE_PARM_DESC(name, desc)
-drivers/usb/gadget/f_mass_storage.c:	MODULE_PARM_DESC(prefix ## name, desc)
-drivers/usb/gadget/f_mass_storage.c:	MODULE_PARM_DESC(prefix ## name, desc)
-include/linux/blkdev.h:	MODULE_ALIAS("block-major-" __stringify(major) "-" =
-__stringify(minor))
-include/linux/blkdev.h:	MODULE_ALIAS("block-major-" __stringify(major) "-*")
-include/linux/device.h:	MODULE_ALIAS("char-major-" __stringify(major) "-" _=
-_stringify(minor))
-include/linux/device.h:	MODULE_ALIAS("char-major-" __stringify(major) "-*")
-include/linux/isapnp.h:		MODULE_GENERIC_TABLE(isapnp_card, name)
-include/linux/module.h:  MODULE_GENERIC_TABLE(type##_device,name)
-include/linux/net.h:	MODULE_ALIAS("net-pf-" __stringify(proto))
-include/linux/net.h:	MODULE_ALIAS("net-pf-" __stringify(pf) "-proto-" __str=
-ingify(proto))
-include/linux/netfilter/nfnetlink.h:	MODULE_ALIAS("nfnetlink-subsys-" __str=
-ingify(subsys))
-include/linux/tty_ldisc.h:	MODULE_ALIAS("tty-ldisc-" __stringify(ldisc))
-include/net/netfilter/nf_conntrack.h:        MODULE_ALIAS("nfct-helper-" he=
-lper)
-include/net/xfrm.h:	MODULE_ALIAS("xfrm-mode-" __stringify(family) "-" __str=
-ingify(encap))
-include/net/xfrm.h:	MODULE_ALIAS("xfrm-type-" __stringify(family) "-" __str=
-ingify(proto))
-include/scsi/scsi_device.h:	MODULE_ALIAS("scsi:t-" __stringify(type) "*")
-include/sound/minors.h:	MODULE_ALIAS("sound-service-?-" __stringify(type))
-net/dsa/dsa.c:MODULE_AUTHOR("Lennert Buytenhek <buytenh@wantstofly.org>")
+ps. individual patches are available on linux-acpi@vger.kernel.org
+and a consolidated plain patch is available here:
+http://ftp.kernel.org/pub/linux/kernel/people/lenb/acpi/patches/2.6.37/acpi-acpica-20110112-2.6.37.diff.gz
 
---Signature=_Wed__19_Jan_2011_15_42_10_+1100_o8NOkkl5.=gUXM_p
-Content-Type: application/pgp-signature
+ drivers/acpi/acpica/accommon.h  |    2 +-
+ drivers/acpi/acpica/acconfig.h  |    2 +-
+ drivers/acpi/acpica/acdebug.h   |    2 +-
+ drivers/acpi/acpica/acdispat.h  |    2 +-
+ drivers/acpi/acpica/acevents.h  |    2 +-
+ drivers/acpi/acpica/acglobal.h  |    2 +-
+ drivers/acpi/acpica/achware.h   |    2 +-
+ drivers/acpi/acpica/acinterp.h  |    2 +-
+ drivers/acpi/acpica/aclocal.h   |    2 +-
+ drivers/acpi/acpica/acmacros.h  |    2 +-
+ drivers/acpi/acpica/acnamesp.h  |    2 +-
+ drivers/acpi/acpica/acobject.h  |   16 +++++++---
+ drivers/acpi/acpica/acopcode.h  |    2 +-
+ drivers/acpi/acpica/acparser.h  |    2 +-
+ drivers/acpi/acpica/acpredef.h  |    2 +-
+ drivers/acpi/acpica/acresrc.h   |    2 +-
+ drivers/acpi/acpica/acstruct.h  |    2 +-
+ drivers/acpi/acpica/actables.h  |    2 +-
+ drivers/acpi/acpica/acutils.h   |    2 +-
+ drivers/acpi/acpica/amlcode.h   |   10 +-----
+ drivers/acpi/acpica/amlresrc.h  |    2 +-
+ drivers/acpi/acpica/dsfield.c   |    2 +-
+ drivers/acpi/acpica/dsinit.c    |    2 +-
+ drivers/acpi/acpica/dsmethod.c  |   64 +++++++++++++++++++++++++++++----------
+ drivers/acpi/acpica/dsmthdat.c  |    2 +-
+ drivers/acpi/acpica/dsobject.c  |    2 +-
+ drivers/acpi/acpica/dsopcode.c  |    2 +-
+ drivers/acpi/acpica/dsutils.c   |    2 +-
+ drivers/acpi/acpica/dswexec.c   |    2 +-
+ drivers/acpi/acpica/dswload.c   |    2 +-
+ drivers/acpi/acpica/dswscope.c  |    2 +-
+ drivers/acpi/acpica/dswstate.c  |    2 +-
+ drivers/acpi/acpica/evevent.c   |    2 +-
+ drivers/acpi/acpica/evgpe.c     |    4 ++-
+ drivers/acpi/acpica/evgpeblk.c  |    2 +-
+ drivers/acpi/acpica/evgpeinit.c |    2 +-
+ drivers/acpi/acpica/evgpeutil.c |    2 +-
+ drivers/acpi/acpica/evmisc.c    |    2 +-
+ drivers/acpi/acpica/evregion.c  |    2 +-
+ drivers/acpi/acpica/evrgnini.c  |    6 ++--
+ drivers/acpi/acpica/evsci.c     |    2 +-
+ drivers/acpi/acpica/evxface.c   |    2 +-
+ drivers/acpi/acpica/evxfevnt.c  |    2 +-
+ drivers/acpi/acpica/evxfgpe.c   |    2 +-
+ drivers/acpi/acpica/evxfregn.c  |    2 +-
+ drivers/acpi/acpica/exconfig.c  |    2 +-
+ drivers/acpi/acpica/exconvrt.c  |    2 +-
+ drivers/acpi/acpica/excreate.c  |   10 +++---
+ drivers/acpi/acpica/exdebug.c   |    2 +-
+ drivers/acpi/acpica/exdump.c    |    4 +-
+ drivers/acpi/acpica/exfield.c   |    2 +-
+ drivers/acpi/acpica/exfldio.c   |    2 +-
+ drivers/acpi/acpica/exmisc.c    |    2 +-
+ drivers/acpi/acpica/exmutex.c   |    2 +-
+ drivers/acpi/acpica/exnames.c   |    2 +-
+ drivers/acpi/acpica/exoparg1.c  |    2 +-
+ drivers/acpi/acpica/exoparg2.c  |    2 +-
+ drivers/acpi/acpica/exoparg3.c  |    2 +-
+ drivers/acpi/acpica/exoparg6.c  |    2 +-
+ drivers/acpi/acpica/exprep.c    |    2 +-
+ drivers/acpi/acpica/exregion.c  |    2 +-
+ drivers/acpi/acpica/exresnte.c  |    2 +-
+ drivers/acpi/acpica/exresolv.c  |    2 +-
+ drivers/acpi/acpica/exresop.c   |    2 +-
+ drivers/acpi/acpica/exstore.c   |    2 +-
+ drivers/acpi/acpica/exstoren.c  |    2 +-
+ drivers/acpi/acpica/exstorob.c  |    2 +-
+ drivers/acpi/acpica/exsystem.c  |    2 +-
+ drivers/acpi/acpica/exutils.c   |    2 +-
+ drivers/acpi/acpica/hwacpi.c    |    2 +-
+ drivers/acpi/acpica/hwgpe.c     |    2 +-
+ drivers/acpi/acpica/hwpci.c     |    2 +-
+ drivers/acpi/acpica/hwregs.c    |    2 +-
+ drivers/acpi/acpica/hwsleep.c   |    2 +-
+ drivers/acpi/acpica/hwtimer.c   |    2 +-
+ drivers/acpi/acpica/hwvalid.c   |    2 +-
+ drivers/acpi/acpica/hwxface.c   |    2 +-
+ drivers/acpi/acpica/nsaccess.c  |    8 ++--
+ drivers/acpi/acpica/nsalloc.c   |   15 +++++++--
+ drivers/acpi/acpica/nsdump.c    |   17 ++++++++++-
+ drivers/acpi/acpica/nsdumpdv.c  |    2 +-
+ drivers/acpi/acpica/nseval.c    |    4 +-
+ drivers/acpi/acpica/nsinit.c    |    2 +-
+ drivers/acpi/acpica/nsload.c    |    2 +-
+ drivers/acpi/acpica/nsnames.c   |    2 +-
+ drivers/acpi/acpica/nsobject.c  |    2 +-
+ drivers/acpi/acpica/nsparse.c   |    2 +-
+ drivers/acpi/acpica/nspredef.c  |    2 +-
+ drivers/acpi/acpica/nsrepair.c  |    2 +-
+ drivers/acpi/acpica/nsrepair2.c |    2 +-
+ drivers/acpi/acpica/nssearch.c  |    2 +-
+ drivers/acpi/acpica/nsutils.c   |    2 +-
+ drivers/acpi/acpica/nswalk.c    |    2 +-
+ drivers/acpi/acpica/nsxfeval.c  |    2 +-
+ drivers/acpi/acpica/nsxfname.c  |    7 ++--
+ drivers/acpi/acpica/nsxfobj.c   |    2 +-
+ drivers/acpi/acpica/psargs.c    |    2 +-
+ drivers/acpi/acpica/psloop.c    |    4 +-
+ drivers/acpi/acpica/psopcode.c  |    2 +-
+ drivers/acpi/acpica/psparse.c   |   27 +++++-----------
+ drivers/acpi/acpica/psscope.c   |    2 +-
+ drivers/acpi/acpica/pstree.c    |    2 +-
+ drivers/acpi/acpica/psutils.c   |    2 +-
+ drivers/acpi/acpica/pswalk.c    |    2 +-
+ drivers/acpi/acpica/psxface.c   |    9 ++---
+ drivers/acpi/acpica/rsaddr.c    |    2 +-
+ drivers/acpi/acpica/rscalc.c    |    2 +-
+ drivers/acpi/acpica/rscreate.c  |    2 +-
+ drivers/acpi/acpica/rsdump.c    |    2 +-
+ drivers/acpi/acpica/rsinfo.c    |    2 +-
+ drivers/acpi/acpica/rsio.c      |    2 +-
+ drivers/acpi/acpica/rsirq.c     |    2 +-
+ drivers/acpi/acpica/rslist.c    |    2 +-
+ drivers/acpi/acpica/rsmemory.c  |    2 +-
+ drivers/acpi/acpica/rsmisc.c    |    2 +-
+ drivers/acpi/acpica/rsutils.c   |    2 +-
+ drivers/acpi/acpica/rsxface.c   |    2 +-
+ drivers/acpi/acpica/tbfadt.c    |    2 +-
+ drivers/acpi/acpica/tbfind.c    |    2 +-
+ drivers/acpi/acpica/tbinstal.c  |    2 +-
+ drivers/acpi/acpica/tbutils.c   |    2 +-
+ drivers/acpi/acpica/tbxface.c   |    2 +-
+ drivers/acpi/acpica/tbxfroot.c  |    2 +-
+ drivers/acpi/acpica/utalloc.c   |    2 +-
+ drivers/acpi/acpica/utcopy.c    |    2 +-
+ drivers/acpi/acpica/utdebug.c   |    2 +-
+ drivers/acpi/acpica/utdelete.c  |    2 +-
+ drivers/acpi/acpica/uteval.c    |    2 +-
+ drivers/acpi/acpica/utglobal.c  |    2 +-
+ drivers/acpi/acpica/utids.c     |    2 +-
+ drivers/acpi/acpica/utinit.c    |    2 +-
+ drivers/acpi/acpica/utlock.c    |    2 +-
+ drivers/acpi/acpica/utmath.c    |    2 +-
+ drivers/acpi/acpica/utmisc.c    |    2 +-
+ drivers/acpi/acpica/utmutex.c   |    2 +-
+ drivers/acpi/acpica/utobject.c  |    2 +-
+ drivers/acpi/acpica/utosi.c     |    2 +-
+ drivers/acpi/acpica/utresrc.c   |    2 +-
+ drivers/acpi/acpica/utstate.c   |    2 +-
+ drivers/acpi/acpica/utxface.c   |    2 +-
+ drivers/acpi/acpica/utxferror.c |    2 +-
+ include/acpi/acexcep.h          |    2 +-
+ include/acpi/acnames.h          |    2 +-
+ include/acpi/acoutput.h         |    2 +-
+ include/acpi/acpi.h             |    2 +-
+ include/acpi/acpiosxf.h         |    2 +-
+ include/acpi/acpixf.h           |    4 +-
+ include/acpi/acrestyp.h         |    2 +-
+ include/acpi/actbl.h            |    2 +-
+ include/acpi/actbl1.h           |    2 +-
+ include/acpi/actbl2.h           |    2 +-
+ include/acpi/actypes.h          |    2 +-
+ include/acpi/platform/acenv.h   |    2 +-
+ include/acpi/platform/acgcc.h   |    2 +-
+ include/acpi/platform/aclinux.h |    2 +-
+ 155 files changed, 267 insertions(+), 220 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+through these commits:
 
-iQEcBAEBAgAGBQJNNmuiAAoJEDMEi1NhKgbsX/UH/2qb+RibPMc0wxnyV8p8y0g0
-+r6gyc+ln7yEjXnZstO1CfkRfzRrxxo7FJE6nNROvaxcK72/vSqfKaDQeIdvefId
-8sYlCuPmBMdO2gjqUuGDq/HwJzaOAJf6R3ZhJtFSatwhwvvDHrdPcguZcGzARd9l
-bKUSIJczQf/+Zz0rxUAPo+kQJUTUmdNQgyufnXb3f72l35hGihT8cvJQv6O5Xe52
-hD0FNVquEo0Syhpe/U6A5YkNeqR/hZP4Dbw0c7phq1RWylKJBxxHk+tHzzAbZg7A
-omt6n61bWF8OS5Mc5DwnWEbnQC89oXMUnsNahgp10viiURGmTFMy3F6dUi8DNO8=
-=gHsY
------END PGP SIGNATURE-----
+Bob Moore (3):
+      ACPICA: Debugger: Lock namespace for duration of a namespace dump
+      ACPICA: Update all ACPICA copyrights and signons to 2011
+      ACPICA: Update version to 20110112
 
---Signature=_Wed__19_Jan_2011_15_42_10_+1100_o8NOkkl5.=gUXM_p--
+Dana Myers (1):
+      ACPICA: Fix namespace race condition
+
+Jesper Juhl (1):
+      ACPICA: Fix memory leak in acpi_ev_asynch_execute_gpe_method().
+
+Lin Ming (1):
+      ACPICA: Fix issues/fault with automatic "serialized" method support
+
+with this log:
+
+commit 8d5f0a647395c1323787df675d2805cad54fc89f
+Author: Bob Moore <robert.moore@intel.com>
+Date:   Mon Jan 17 10:31:08 2011 +0800
+
+    ACPICA: Update version to 20110112
+    
+    Version 20110112.
+    
+    Signed-off-by: Bob Moore <robert.moore@intel.com>
+    Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit b4e104eaeb8cd4329a23e0e4ebf166681b1d182d
+Author: Bob Moore <robert.moore@intel.com>
+Date:   Mon Jan 17 11:05:40 2011 +0800
+
+    ACPICA: Update all ACPICA copyrights and signons to 2011
+    
+    Signed-off-by: Bob Moore <robert.moore@intel.com>
+    Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 262948428878fb340127faca1791acb17146122e
+Author: Lin Ming <ming.m.lin@intel.com>
+Date:   Wed Jan 12 09:19:43 2011 +0800
+
+    ACPICA: Fix issues/fault with automatic "serialized" method support
+    
+    History: This support changes a method to "serialized" on the fly if the
+    method generates an AE_ALREADY_EXISTS error, indicating the possibility
+    that it cannot handle reentrancy.
+    
+    This fix repairs a couple of issues seen in the field, especially on
+    machines with many cores.
+    
+    1) Delete method children only upon the exit of the last thread, so
+    as to not delete objects out from under running threads.
+    
+    2) Set the "serialized" bit for the method only upon the exit of the
+    last thread, so as to not cause deadlock when running threads attempt
+    to exit.
+    
+    3) Cleanup the use of the AML "MethodFlags" and internal method flags
+    so that there is no longer any confustion between the two.
+    
+    Reported-by: Dana Myers <dana.myers@oracle.com>
+    Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+    Signed-off-by: Bob Moore <robert.moore@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 672af843abfc9a41c7ec792722e04b6c68a3cfea
+Author: Bob Moore <robert.moore@intel.com>
+Date:   Wed Jan 12 09:13:31 2011 +0800
+
+    ACPICA: Debugger: Lock namespace for duration of a namespace dump
+    
+    Prevents issues if the namespace is changing underneath the
+    debugger.  Especially temporary nodes, since the debugger displays
+    these also.
+    
+    Signed-off-by: Bob Moore <robert.moore@intel.com>
+    Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+    Reviewed-by: Rafael Wysocki <rjw@sisk.pl>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 5d3131f5b0ae6303d042fd91ed9147ad4ae4bf6d
+Author: Dana Myers <dana.myers@oracle.com>
+Date:   Wed Jan 12 09:09:31 2011 +0800
+
+    ACPICA: Fix namespace race condition
+    
+    Fixes a race condition between method execution and namespace
+    walks that can possibly fault. Problem was apparently introduced
+    in version 20100528 as a result of a performance optimization
+    that reduces the number of namespace walks upon method exit
+    by using the delete_namespace_subtree function instead of the
+    delete_namespace_by_owner function used previously. Bug is in
+    the delete_namespace_subtree function.
+    
+    Signed-off-by: Dana Myers <dana.myers@oracle.com>
+    Signed-off-by: Bob Moore <robert.moore@intel.com>
+    Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+    Reviewed-by: Rafael Wysocki <rjw@sisk.pl>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit be33b76a974cdb4ceadc1a12fb79cc97bcfeea37
+Author: Jesper Juhl <jj@chaosbits.net>
+Date:   Sun Jan 16 20:37:52 2011 +0100
+
+    ACPICA: Fix memory leak in acpi_ev_asynch_execute_gpe_method().
+    
+    We will leak the memory allocated to 'local_gpe_event_info' if
+    'acpi_ut_acquire_mutex()' fails or if 'acpi_ev_valid_gpe_event()' fails in
+    drivers/acpi/acpica/evgpe.c::acpi_ev_asynch_execute_gpe_method().
+    
+    Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+    Reviewed-by: Rafael Wysocki <rjw@sisk.pl>
+    Signed-off-by: Len Brown <len.brown@intel.com>
