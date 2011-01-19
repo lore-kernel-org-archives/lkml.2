@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296Ab1ASGql (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 01:46:41 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:7964 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980Ab1ASGqk (ORCPT
+	id S1752926Ab1ASGxN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 01:53:13 -0500
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:52315 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752012Ab1ASGxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 01:46:40 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6230"; a="71051047"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] sched: Notify hrtimer users of switches to NOHZ mode
-Date: Tue, 18 Jan 2011 22:46:34 -0800
-Message-Id: <1295419594-13085-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.4.rc2.3.g60a2e
+	Wed, 19 Jan 2011 01:53:10 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
+	h=Received:Message-ID:Date:From:User-Agent:MIME-Version:To:Subject:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Fn6V64hzg+r4dB5LW11VNagIYNIYHAGOaGNzoNfTkrx3bqHRmsEeYn6v9u/YT8mO25LKi0TNP0apGTMV/2HUpeab+iDJNShch/Ep9EYZf+twpNP8/O5omHTdK3fz9IKD;
+Message-ID: <4D368A70.5030103@tao.ma>
+Date: Wed, 19 Jan 2011 14:53:36 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: npiggin@gmail.com, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Theodore Tso <tytso@mit.edu>
+Subject: 38-rc1: umount+rmmod cause ext4 error.
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 114.251.86.0 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When NOHZ=y and high res timers are disabled (via cmdline or
-Kconfig) tick_nohz_switch_to_nohz() will notify the user about
-switching into NOHZ mode. Nothing is printed for the case where
-HIGH_RES_TIMERS=y. Fix this for the HIGH_RES_TIMERS=y case by
-duplicating the printk from the low res NOHZ path in the high res
-NOHZ path.
+Hi Nick and Ted,
+	I ran some very basic test with 38-rc1 and my box run into error with 
+the message like:
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
+slab error in kmem_cache_destroy(): cache `ext4_inode_cache': Can't free 
+all objects
+Pid: 4395, comm: rmmod Not tainted 2.6.38-rc1 #1
+Call Trace:
+  [<ffffffff820d61dc>] ? kmem_cache_destroy+0x83/0xc7
+  [<ffffffffa0574025>] ? destroy_inodecache+0x15/0x17 [ext4]
+  [<ffffffffa05923d1>] ? ext4_exit_fs+0x109/0x143 [ext4]
+  [<ffffffff8203d194>] ? put_online_cpus+0x56/0x58
+  [<ffffffff8206735a>] ? module_refcount+0x85/0x9d
+  [<ffffffff82067b22>] ? sys_delete_module+0x1b5/0x218
+  [<ffffffff82074fc3>] ? audit_syscall_entry+0x187/0x1ba
+  [<ffffffff82002a6b>] ? system_call_fastpath+0x16/0x1b
+SLAB: cache with size 888 has lost its name
+SLAB: cache with size 888 has lost its name
+SLAB: cache with size 888 has lost its name
+SLAB: cache with size 888 has lost its name
 
-This confused me since I was thinking 'dmesg | grep -i NOHZ' would
-tell me if NOHZ was enabled, but if I have hrtimers there is
-nothing. If we don't do this we should probably remove the original
-printk.
+The reproduce process is simple:just rmmod ext4 immediately after umount 
+an ext4 volume.
 
- kernel/time/tick-sched.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+I have done some very simple investigation and it seems that with Nick's 
+new ext4_i_callback, even after we do ext4_destroy_inode, it isn't 
+freed. So after we destroy the ext_inode_cache, and when freeing the 
+inode, it errors. Hope it helps. If you have any fixes, I can test it.
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 3e216e0..6c012c5 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -795,8 +795,11 @@ void tick_setup_sched_timer(void)
- 	}
- 
- #ifdef CONFIG_NO_HZ
--	if (tick_nohz_enabled)
-+	if (tick_nohz_enabled) {
- 		ts->nohz_mode = NOHZ_MODE_HIGHRES;
-+		pr_info("Switched to NOHz mode on CPU #%d\n",
-+				smp_processor_id());
-+	}
- #endif
- }
- #endif /* HIGH_RES_TIMERS */
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Regards,
+Tao
