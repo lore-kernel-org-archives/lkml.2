@@ -1,107 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214Ab1ASQPe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 11:15:34 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:61441 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245Ab1ASQPc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 11:15:32 -0500
+	id S1754314Ab1ASQQX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 11:16:23 -0500
+Received: from cantor.suse.de ([195.135.220.2]:56496 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754113Ab1ASQQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 11:16:22 -0500
+Date: Wed, 19 Jan 2011 17:16:17 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Chris Wilson <chris@chris-wilson.co.uk>, David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: drm:i915_report_and_clear_eir -- *ERROR* EIR stuck: 0x00000010,
+ masking
+Message-ID: <alpine.LNX.2.00.1101191709260.29002@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110114183816.GB1288@mcarlson.broadcom.com>
-References: <20101215081606.18e12fc9@xenia.leun.net>
-	<AANLkTi=hGRW+DwoKQzxPAZao6-y_tvn6nNXS-tj_-Y6T@mail.gmail.com>
-	<20110107032459.GA17959@mcarlson.broadcom.com>
-	<AANLkTi=N6jFE7T1=W-WLo_eHYWeE=oB6n8C8zPGoBNQF@mail.gmail.com>
-	<20110113012157.GA28147@mcarlson.broadcom.com>
-	<AANLkTimz3Mw5itChtTgHTeGT4seJauy3+FVrpEJn1iez@mail.gmail.com>
-	<20110113205056.GA29254@mcarlson.broadcom.com>
-	<AANLkTimQ1T0erugwK17o0zuSwxVh-Ro4yCsBpOqCykyr@mail.gmail.com>
-	<20110114011533.GA29723@mcarlson.broadcom.com>
-	<AANLkTi=Z4mtV5SUqORivPKPxEGddsmQQ2sVdkeOAogeY@mail.gmail.com>
-	<20110114183816.GB1288@mcarlson.broadcom.com>
-Date: Wed, 19 Jan 2011 08:15:31 -0800
-Message-ID: <AANLkTink=6oLA5zkmjrOvFk9Ze3i=m8_T-dQio_y2uvQ@mail.gmail.com>
-Subject: Re: [PATCH 2.6.36] vlan: Avoid hwaccel vlan packets when vid not used
-From: Jesse Gross <jesse@nicira.com>
-To: Matt Carlson <mcarlson@broadcom.com>
-Cc: Michael Leun <lkml20101129@newton.leun.net>,
-        Michael Chan <mchan@broadcom.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        Ben Greear <greearb@candelatech.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 14, 2011 at 10:38 AM, Matt Carlson <mcarlson@broadcom.com> wrote:
->> >> > In the meantime, I think what we have should go upstream. ?Just to be
->> >> > absolutely clear though, your position is that VLAN tags should always
->> >> > be stripped?
->> >>
->> >> That's what the other converted drivers do by default (though most of
->> >> them also provide an ethtool set_flags() method to change this). ?It's
->> >> generally the most efficient and is now safe to do in all cases. ?It's
->> >> also the consistent with what was happening before, since stripping
->> >> was enabled when a vlan device was configured. ?So, yes, normally I
->> >> think stripping should be enabled.
->> >>
->> >> I assumed that disabling stripping in most situations was just an
->> >> oversight. ?Was there a reason why you feel it is better not to use
->> >> it?
->> >
->> > Actually, the tg3 driver was trying to disable VLAN tag stripping
->> > when possible. ?I believe this was primarily to support the raw packet
->> > interface.
->>
->> Hmm, is this really true?
->>
->>         if (!tp->vlgrp &&
->>             !(tp->tg3_flags & TG3_FLAG_ENABLE_ASF))
->>                 rx_mode |= RX_MODE_KEEP_VLAN_TAG;
->>
->> So if a vlan device is registered or ASF is enabled we will use
->> stripping.  That seems like it is using stripping in the common case
->> when vlans are used.
->
-> Right.
->
->> Before 2.6.37 it was only possible to deliver stripped tags if a vlan
->> group was configured.  This means that if ASF was enabled and forced
->> stripping but no group was configured we would lose the tag.  In this
->> situation tg3 manually reinserts the tags so raw packet capture will
->> see them, as you say.
->
-> Right.  VLAN tagged frames can still arrive if CONFIG_VLAN_8021Q or
-> CONFIG_VLAN_8021Q_MODULE is not set.  That's why the driver was trying
-> to keep them inline.  To eliminate the unnecessary overhead of
-> reinjecting the VLAN tag.
+Hi,
 
-OK, I understand now why you are saying that the driver was trying to
-keep stripping disabled.  I was thinking about having vlan groups
-configured as the common case for receiving vlans and therefore the
-case to optimize.
+I am getting this during boot with current Linus' tree on x200s thinkpad:
 
->
->> However, in the current tree this limitation no
->> longer exists and it is always possible to deliver stripped tags to
->> the networking core, which should do the right thing in all
->> situations.
->
-> Yes.  Even though the stack is capable of reinjecting the VLAN tag,
-> doesn't it make sense to avoid that if we knew they would never be
-> needed out-of-packet?
+[    8.312007] [drm:i915_report_and_clear_eir] *ERROR* EIR stuck: 0x00000010, masking
 
-Maybe in theory but a relatively small optimization to the raw packet
-interface doesn't seem terribly important to me.  After all of the
-drivers have been converted to the new vlan interfaces I'll be
-removing the ndo_vlan_rx_register() function from net_device_ops, so
-the driver won't actually know how the vlan tag will be used.  The
-impetus for this is that there were quite a few bugs and inconsistent
-behavior in drivers around stripping logic.  Therefore, by moving all
-of this into the networking core we can reduce code and get consistent
-behavior, which is more important than a corner case optimization.
+head -39 /sys/kernel/debug/dri/64/i915_error_state shows:
+
+Time: 1295452835 s 347238 us
+PCI ID: 0x2a42
+EIR: 0x00000010
+PGTBL_ER: 0x00000001
+Render command stream:
+  ACTHD: 0x00534024
+  IPEIR: 0x00000000
+  IPEHR: 0x02000000
+  INSTDONE: 0xffffffff
+  INSTDONE1: 0xbfbbffff
+  INSTPS: 0x8001e025
+  INSTPM: 0x00000000
+  seqno: 0x00000000
+  fence[0] = 00000000
+  fence[1] = 00000000
+  fence[2] = 00000000
+  fence[3] = 00000000
+  fence[4] = 00000000
+  fence[5] = 00000000
+  fence[6] = 00000000
+  fence[7] = 00000000
+  fence[8] = 00000000
+  fence[9] = 00000000
+  fence[10] = 00000000
+  fence[11] = 00000000
+  fence[12] = 00000000
+  fence[13] = 00000000
+  fence[14] = 00000000
+  fence[15] = 00000000
+Active [3]:
+  00534000    16384 0009 0000 00000001 dirty render uncached
+  00042000  5185536 0043 0000 00000001 P render uncached (name: 1)
+  00538000 20971520 0002 0000 00000002 P X dirty render uncached
+Pinned [4]:
+  00000000     4096 0001 0001 00000000 P snooped
+  00001000   131072 0001 0001 00000000 P uncached
+  00021000     4096 0001 0001 00000000 P snooped
+  00022000   131072 0001 0001 00000000 P uncached
+
+Apart from the error in the kernel buffer, graphics seems to work 
+normally.
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
