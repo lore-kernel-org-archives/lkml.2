@@ -1,63 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab1ASMEo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 07:04:44 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:42233 "EHLO mx3.mail.elte.hu"
+	id S1754131Ab1ASMHi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 07:07:38 -0500
+Received: from smtp.nokia.com ([147.243.1.48]:43208 "EHLO mgw-sa02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753908Ab1ASMEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 07:04:42 -0500
-Date: Wed, 19 Jan 2011 13:04:12 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, tglx <tglx@linutronix.de>
-Subject: Re: [PATCH] sched: Notify hrtimer users of switches to NOHZ mode
-Message-ID: <20110119120412.GA3527@elte.hu>
-References: <1295419594-13085-1-git-send-email-sboyd@codeaurora.org>
- <1295437420.28776.4.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295437420.28776.4.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754051Ab1ASMHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 07:07:35 -0500
+From: tapio.vihuri@nokia.com
+To: dmitry.torokhov@gmail.com, peter.ujfalusi@nokia.com
+Cc: randy.dunlap@oracle.com, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, ilkka.koskinen@nokia.com,
+        samu.p.onkalo@nokia.com
+Subject: [PATCH v4 0/3] input: Add support for ECI (multimedia) accessories
+Date: Wed, 19 Jan 2011 14:06:53 +0200
+Message-Id: <1295438816-27937-1-git-send-email-tapio.vihuri@nokia.com>
+X-Mailer: git-send-email 1.6.5
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Tapio Vihuri <tapio.vihuri@nokia.com>
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+Thank you for comments.
 
-> On Tue, 2011-01-18 at 22:46 -0800, Stephen Boyd wrote:
-> > When NOHZ=y and high res timers are disabled (via cmdline or
-> > Kconfig) tick_nohz_switch_to_nohz() will notify the user about
-> > switching into NOHZ mode. Nothing is printed for the case where
-> > HIGH_RES_TIMERS=y. Fix this for the HIGH_RES_TIMERS=y case by
-> > duplicating the printk from the low res NOHZ path in the high res
-> > NOHZ path.
-> > 
-> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> > ---
-> > 
-> > This confused me since I was thinking 'dmesg | grep -i NOHZ' would
-> > tell me if NOHZ was enabled, but if I have hrtimers there is
-> > nothing. If we don't do this we should probably remove the original
-> > printk.
-> 
-> I'm not quite sure we want _more_ dmesg chatter, [...]
+ECI input driver changes:
 
-Well, we used to have bugs in the past where the system locked up after changing the 
-main hrtimer mode, so the messages are useful.
+- Use driver name in debugfs
+- reject accessory stating more than maximum 31 buttons
+- clean out couple comments
 
-This patch completes the messages in that sense and makes them consistent. If we 
-want to remove them altogether that would be another patch.
+ECI controller driver changes:
 
-Thanks,
+- name change, from ecibus to eci_xxx_ctrl
+- location change, from drivers/ecibus to drivers/input/misc
+- major rework from platform driver to i2c-driver
+- removed mrst platform dependency
 
-	Ingo
+Checkpatch warn about Kconfig, but I think it is false positive, and I will
+report it to the maintainer.
+
+Platform code changes:
+
+- medfield_ prefix changed to mrst_
+- added ECI controller needed power control
+- remover ECI controller platform driver stuff
+- added i2c stuff for ECI controller driver
+
+Created against linux-2.6.37-rc8 at:
+a25cecc Merge branch 'next' of git://git.monstr.eu/linux-2.6-microblaze
+
+--- v3 message ---
+
+Thank you for comments.
+
+ECI input driver changes:
+
+- Makefile and Kconfig sorted alphabetically
+- using sparse keymap library, much cleaner solution
+- correct string aligment with 80 column
+- debugfs initialization fix
+- sysfs cable entry using just 0/1
+- using cheaper __set_bit
+- insane comments fixed
+- remove unneeded misc device
+
+Created against linux-2.6.37-rc8 at:
+989d873 Merge master.kernel.org:/home/rmk/linux-2.6-arm
+
+--- v2 message ---
+
+Thank you for comments.
+
+In series two there Kconfig dependency problem fixed, preventing compilation
+if X86_MRST (Intel Moorestown) or INPUT_MISC is not selected.
+
+Also created against linux-2.6.37-rc8
+
+--- v1 message ---
+
+Hi all
+
+This patch set introduce Multimedia Headset Accessory support for
+Nokia phones. Technically those are known as ECI (Enhancement Control Interface)
+	
+If headset has many buttons, like play, vol+, vol- etc. then it is propably ECI
+accessory.
+
+Among several buttons ECI accessories contains memory for storing several
+parameters.
+
+This ECI input driver provides the following features:
+ - reading ECI configuration memory
+ - ECI buttons as input events
+
+Drive is constructed as follows:
+ - ECI accessory input driver deals with headset accessory
+ - ECI bus control driver deals the HW transfering data to/from headset
+ - platform data match used HW
+
+In the future accessory detection logic will be added using ALSA jack reporting.
+
+Created against linux-2.6.37-rc6
+
+Please review.
+
+
+Tapio Vihuri (3):
+  ECI: input: introduce ECI accessory input driver
+  ECI: introducing ECI controller driver
+  ECI: adding platform data for ECI driver
+
+ arch/x86/platform/mrst/mrst.c      |   49 ++
+ drivers/input/misc/Kconfig         |   60 +++
+ drivers/input/misc/Makefile        |    3 +-
+ drivers/input/misc/eci.c           |  946 ++++++++++++++++++++++++++++++++++++
+ drivers/input/misc/eci_at20_ctrl.c |  533 ++++++++++++++++++++
+ include/linux/input/eci.h          |  179 +++++++
+ 6 files changed, 1769 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/input/misc/eci.c
+ create mode 100644 drivers/input/misc/eci_at20_ctrl.c
+ create mode 100644 include/linux/input/eci.h
+
