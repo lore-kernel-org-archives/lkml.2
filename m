@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751607Ab1ASFJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 00:09:58 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:59387 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750712Ab1ASFJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 00:09:57 -0500
-Date: Wed, 19 Jan 2011 16:09:51 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for January 18 (__modver_version_show)
-Message-Id: <20110119160951.2a14d0a0.sfr@canb.auug.org.au>
-In-Reply-To: <20110118091749.ac5823df.randy.dunlap@oracle.com>
-References: <20110118122139.6c2a6f2f.sfr@canb.auug.org.au>
-	<20110118091749.ac5823df.randy.dunlap@oracle.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__19_Jan_2011_16_09_51_+1100_Quqw1Uz9UoGNtGS0"
+	id S1752148Ab1ASFK6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 00:10:58 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:39983 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935Ab1ASFK5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 00:10:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=WIv4k7vRh1hnxg8nd7VH6DHqgYKn12gamYZQYQ5Yzuq0VTXC48uEYHEOOnxE6JxQ9J
+         52ZogNgDy8M2iMNSSz37AnGIE2WpnaQg0ZtElWeKCtv/HmQAKQ8Kk5Zu77Ej4THd9cqe
+         jvjNJVjJG/IShyJvMcjAjhxzpFHinQ851sews=
+Date: Wed, 19 Jan 2011 00:10:49 -0500
+From: nobody <darwinskernel@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 2.6.38-rc1
+Message-ID: <20110119051049.GA2536@WALL-E>
+References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
+ <AANLkTimp0UcWi68N5Jv_hUww9PhGVgCzY0qYLETc8Dj_@mail.gmail.com>
+ <1161CC5A-C8CA-477E-B2CE-7870F8E634EE@gmail.com>
+ <AANLkTin+Div6HoAJdFOfqRFSMyxqx7ft7mcteXomaV_Y@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTin+Div6HoAJdFOfqRFSMyxqx7ft7mcteXomaV_Y@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__19_Jan_2011_16_09_51_+1100_Quqw1Uz9UoGNtGS0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Randy,
+> But you can get git, and do
+> 
+>    git shortlog v2.6.37..v2.6.38-rc1
+> 
+> to get the shortlog. Or you can download the whole changelog from
+> kernel.org next to the kernel sources. The git approach is better,
+> because you can ask for the log for just specific files or
+> subdirectories that you are interested in, which turns the flood into
+> something much more manageable.
 
-On Tue, 18 Jan 2011 09:17:49 -0800 Randy Dunlap <randy.dunlap@oracle.com> w=
-rote:
->
-> I'm seeing this on several builds (i386 and x86_64):
->=20
-> lib/built-in.o:(__modver+0x8): undefined reference to `__modver_version_s=
-how'
-> lib/built-in.o:(__modver+0x2c): undefined reference to `__modver_version_=
-show'
->=20
-> It looks like the compiler or linker is dropping that function from the
-> build since it cannot see any references to it...
-> At least __modver_version_show is not in the kernel/params.o file.
+i wish i could do that for everything. i am pulling up to 500MiB every
+-rc cycle and mostly codes for hardwares i don't have. not just that
+sometimes changes to even pertain to my machine (so no, `git clone
+--depth 1' is not what i have in mind).
+it would be nice to have a module or a script for git that would work
+with kconfig. so instead of pull-config-compile, one would
+config-pull-compile. (ok some initial pull for kconfig stuff first but that
+would be all). 
+i asked this from folks at #git channel and they suggested, because
+of the way git works, "git thinks in terms of trees not directories", i
+should ask you to see if it's doable?
+needless to say that this should also help with the load on kernel.org as
+well, since i imagine people that pull from git to compile their own
+kernel by definition don't need everything.
 
-Do these builds have CONFIG_SYSFS set?
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__19_Jan_2011_16_09_51_+1100_Quqw1Uz9UoGNtGS0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNNnIfAAoJEDMEi1NhKgbscfwH+wVVDnvmi6zPZYGJPR90oDm8
-yRDZFikgUrN3/OA5slDl4XLooz+pSrKCVsbytc2eFKBPrWCWCzldOFJTlnihiF0r
-T1JdC4vRZgaoQxjlJaKl9JkSW+AKNgDX48SLSHJJ9803Sitisy9byqK8LeFLTEfC
-meRrJq2pItZXqayL33wA+PnHVnOlDDLyeWSKfZPgASya1XV0cxC+kgjA4+tmWhiG
-k2USwjF03Leef72kVLPp25jrcO4bYojS2OUoWYTNZ2B0I2NAb5BXwqy1jWE1AWPd
-Kpl8Px5fbvmVpeCajEnYCljnTehrC6/cO3+PeqnDULeSxrjupmralYm4V20Ye54=
-=AiqY
------END PGP SIGNATURE-----
-
---Signature=_Wed__19_Jan_2011_16_09_51_+1100_Quqw1Uz9UoGNtGS0--
+regards,
