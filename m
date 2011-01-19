@@ -1,717 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab1ASUZd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 15:25:33 -0500
-Received: from mail.bluewatersys.com ([202.124.120.130]:19716 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752421Ab1ASUZc (ORCPT
+	id S1754305Ab1ASU0E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 15:26:04 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:5080 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753822Ab1ASUZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 15:25:32 -0500
-Message-ID: <4D3748C5.4070600@bluewatersys.com>
-Date: Thu, 20 Jan 2011 09:25:41 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Charles Manning <cdhmanning@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 01/10] Add yaffs2 file system: Allocation, block handling
- and bitmapping code
-References: <1294974369-31647-1-git-send-email-cdhmanning@gmail.com> <1294974369-31647-2-git-send-email-cdhmanning@gmail.com>
-In-Reply-To: <1294974369-31647-2-git-send-email-cdhmanning@gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Jan 2011 15:25:58 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6231"; a="70910651"
+From: David Brown <davidb@codeaurora.org>
+To: linux-arm-msm@vger.kernel.org
+Cc: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2 03/11] msm: Generalize QGIC registers
+Date: Wed, 19 Jan 2011 12:25:39 -0800
+Message-Id: <1295468747-22796-4-git-send-email-davidb@codeaurora.org>
+X-Mailer: git-send-email 1.7.4.rc2
+In-Reply-To: <1295468747-22796-1-git-send-email-davidb@codeaurora.org>
+References: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org>
+ <1295468747-22796-1-git-send-email-davidb@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2011 04:06 PM, Charles Manning wrote:
-> Signed-off-by: Charles Manning <cdhmanning@gmail.com>
+The QGIC registers are mapped to the same virtual addresses across
+targets, only the physical address changes.  Move the BASE address out
+of target-specific files, and add a SOC name to the base addresses.
 
-Hi Charles,
+Signed-off-by: David Brown <davidb@codeaurora.org>
+---
+ arch/arm/mach-msm/include/mach/msm_iomap-8x60.h |   10 ++++------
+ arch/arm/mach-msm/include/mach/msm_iomap.h      |    2 ++
+ arch/arm/mach-msm/io.c                          |    4 ++--
+ 3 files changed, 8 insertions(+), 8 deletions(-)
 
-A few comments below.
-
-~Ryan
-
-> ---
->  fs/yaffs2/yaffs_allocator.c    |  387 ++++++++++++++++++++++++++++++++++++++++
->  fs/yaffs2/yaffs_allocator.h    |   30 +++
->  fs/yaffs2/yaffs_bitmap.c       |   97 ++++++++++
->  fs/yaffs2/yaffs_bitmap.h       |   33 ++++
->  fs/yaffs2/yaffs_getblockinfo.h |   35 ++++
->  5 files changed, 582 insertions(+), 0 deletions(-)
->  create mode 100644 fs/yaffs2/yaffs_allocator.c
->  create mode 100644 fs/yaffs2/yaffs_allocator.h
->  create mode 100644 fs/yaffs2/yaffs_bitmap.c
->  create mode 100644 fs/yaffs2/yaffs_bitmap.h
->  create mode 100644 fs/yaffs2/yaffs_getblockinfo.h
-> 
-> diff --git a/fs/yaffs2/yaffs_allocator.c b/fs/yaffs2/yaffs_allocator.c
-> new file mode 100644
-> index 0000000..59cce04
-> --- /dev/null
-> +++ b/fs/yaffs2/yaffs_allocator.c
-> @@ -0,0 +1,387 @@
-> +/*
-> + * YAFFS: Yet Another Flash File System. A NAND-flash specific file system.
-> + *
-> + * Copyright (C) 2002-2010 Aleph One Ltd.
-> + *   for Toby Churchill Ltd and Brightstar Engineering
-> + *
-> + * Created by Charles Manning <charles@aleph1.co.uk>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include "yaffs_allocator.h"
-> +#include "yaffs_guts.h"
-> +#include "yaffs_trace.h"
-> +#include "yportenv.h"
-> +
-> +#ifdef CONFIG_YAFFS_KMALLOC_ALLOCATOR
-
-I still don't understand what this is for. It's not in Kconfig. If it is
-a debugging feature then there should be a comment to that effect.
-
-Also, if you do want to keep the two alternative versions of the code
-here, it may be better to put them in separate files and use Makefile
-rules to include the correct one.
-
-> +/* This is an alternative debug allocator. Don't use for production code. */
-> +
-> +void yaffs_deinit_raw_tnodes_and_objs(struct yaffs_dev *dev)
-
-You can use the __always_unused attribute instead of the self
-assignments. Do you actually get warnings without the assignment?
-
-> +{
-> +	dev = dev;
-> +}
-> +
-> +void yaffs_init_raw_tnodes_and_objs(struct yaffs_dev *dev)
-> +{
-> +	dev = dev;
-> +}
-> +
-> +struct yaffs_tnode *yaffs_alloc_raw_tnode(struct yaffs_dev *dev)
-> +{
-> +	return kmalloc(dev->tnode_size, GFP_NOFS);
-> +}
-> +
-> +void yaffs_free_raw_tnode(struct yaffs_dev *dev, struct yaffs_tnode *tn)
-> +{
-> +	dev = dev;
-> +	kfree(tn);
-> +}
-> +
-> +void yaffs_init_raw_objs(struct yaffs_dev *dev)
-> +{
-> +	dev = dev;
-> +}
-> +
-> +void yaffs_deinit_raw_objs(struct yaffs_dev *dev)
-> +{
-> +	dev = dev;
-> +}
-> +
-> +struct yaffs_obj *yaffs_alloc_raw_obj(struct yaffs_dev *dev)
-> +{
-> +	dev = dev;
-> +	return kmalloc(sizeof(struct yaffs_obj));
-> +}
-> +
-> +void yaffs_free_raw_obj(struct yaffs_dev *dev, struct yaffs_obj *obj)
-> +{
-> +
-> +	dev = dev;
-> +	kfree(obj);
-> +}
-> +
-> +#else
-> +
-> +struct yaffs_tnode_list {
-> +	struct yaffs_tnode_list *next;
-> +	struct yaffs_tnode *tnodes;
-> +};
-> +
-> +struct yaffs_obj_list {
-> +	struct yaffs_obj_list *next;
-> +	struct yaffs_obj *objects;
-> +};
-> +
-> +struct yaffs_allocator {
-> +	int n_tnodes_created;
-> +	struct yaffs_tnode *free_tnodes;
-> +	int n_free_tnodes;
-> +	struct yaffs_tnode_list *alloc_tnode_list;
-> +
-> +	int n_obj_created;
-> +	struct yaffs_obj *free_objs;
-> +	int n_free_objects;
-> +
-> +	struct yaffs_obj_list *allocated_obj_list;
-> +};
-> +
-> +static void yaffs_deinit_raw_tnodes(struct yaffs_dev *dev)
-> +{
-> +	struct yaffs_allocator *allocator =
-> +	    (struct yaffs_allocator *)dev->allocator;
-
-yaffs_dev->allocator is type void *. Is this necessary? It looks like it
-is always used as struct yaffs_allocator, so would be better to change
-the type and remove all of the casting.
-
-> +	struct yaffs_tnode_list *tmp;
-> +
-> +	if (!allocator) {
-> +		YBUG();
-> +		return;
-> +	}
-
-You don't need this bug, the dereference of allocator below will oops
-with all the same information as bug.
-
-> +	while (allocator->alloc_tnode_list) {
-> +		tmp = allocator->alloc_tnode_list->next;
-> +
-> +		kfree(allocator->alloc_tnode_list->tnodes);
-> +		kfree(allocator->alloc_tnode_list);
-> +		allocator->alloc_tnode_list = tmp;
-> +	}
-> +
-> +	allocator->free_tnodes = NULL;
-> +	allocator->n_free_tnodes = 0;
-> +	allocator->n_tnodes_created = 0;
-> +}
-> +
-> +static void yaffs_init_raw_tnodes(struct yaffs_dev *dev)
-> +{
-> +	struct yaffs_allocator *allocator = dev->allocator;
-> +
-> +	if (allocator) {
-> +		allocator->alloc_tnode_list = NULL;
-> +		allocator->free_tnodes = NULL;
-> +		allocator->n_free_tnodes = 0;
-> +		allocator->n_tnodes_created = 0;
-> +	} else {
-> +		YBUG();
-> +	}
-
-Again, you don't need the explicit bug. Just dereference allocator and
-you will oops if it is null. There are several other places where bug
-can be removed also.
-
-> +}
-> +
-> +static int yaffs_create_tnodes(struct yaffs_dev *dev, int n_tnodes)
-> +{
-> +	struct yaffs_allocator *allocator =
-> +	    (struct yaffs_allocator *)dev->allocator;
-> +	int i;
-> +	struct yaffs_tnode *new_tnodes;
-> +	u8 *mem;
-> +	struct yaffs_tnode *curr;
-> +	struct yaffs_tnode *next;
-> +	struct yaffs_tnode_list *tnl;
-> +
-> +	if (!allocator) {
-> +		YBUG();
-> +		return YAFFS_FAIL;
-> +	}
-> +
-> +	if (n_tnodes < 1)
-> +		return YAFFS_OK;
-> +
-> +	/* make these things */
-> +	new_tnodes = kmalloc(n_tnodes * dev->tnode_size, GFP_NOFS);
-> +	mem = (u8 *) new_tnodes;
-> +
-> +	if (!new_tnodes) {
-> +		yaffs_trace(YAFFS_TRACE_ERROR,
-> +			"yaffs: Could not allocate Tnodes");
-> +		return YAFFS_FAIL;
-> +	}
-> +
-> +	/* New hookup for wide tnodes */
-> +	for (i = 0; i < n_tnodes - 1; i++) {
-> +		curr = (struct yaffs_tnode *)&mem[i * dev->tnode_size];
-> +		next = (struct yaffs_tnode *)&mem[(i + 1) * dev->tnode_size];
-
-mem is declared u8 * but is being used as type (struct yaffs_tnode *). I
-realise that pointer addition won't work correctly because you use
-dev->tnode_size rather than sizeof(struct yaffs_tnode), but is there a
-cleaner way to do this without the casting?
-
-> +		curr->internal[0] = next;
-> +	}
-> +
-> +	curr = (struct yaffs_tnode *)&mem[(n_tnodes - 1) * dev->tnode_size];
-> +	curr->internal[0] = allocator->free_tnodes;
-> +	allocator->free_tnodes = (struct yaffs_tnode *)mem;
-> +
-> +	allocator->n_free_tnodes += n_tnodes;
-> +	allocator->n_tnodes_created += n_tnodes;
-> +
-> +	/* Now add this bunch of tnodes to a list for freeing up.
-> +	 * NB If we can't add this to the management list it isn't fatal
-> +	 * but it just means we can't free this bunch of tnodes later.
-> +	 */
-> +	tnl = kmalloc(sizeof(struct yaffs_tnode_list), GFP_NOFS);
-> +	if (!tnl) {
-> +		yaffs_trace(YAFFS_TRACE_ERROR,
-> +			"Could not add tnodes to management list");
-
-Should new_nodes be freed here?
-
-> +		return YAFFS_FAIL;
-> +	} else {
-> +		tnl->tnodes = new_tnodes;
-> +		tnl->next = allocator->alloc_tnode_list;
-> +		allocator->alloc_tnode_list = tnl;
-> +	}
-> +
-> +	yaffs_trace(YAFFS_TRACE_ALLOCATE, "Tnodes added");
-> +
-> +	return YAFFS_OK;
-> +}
-> +
-> +struct yaffs_tnode *yaffs_alloc_raw_tnode(struct yaffs_dev *dev)
-> +{
-> +	struct yaffs_allocator *allocator =
-> +	    (struct yaffs_allocator *)dev->allocator;
-> +	struct yaffs_tnode *tn = NULL;
-> +
-> +	if (!allocator) {
-> +		YBUG();
-> +		return NULL;
-> +	}
-> +
-> +	/* If there are none left make more */
-> +	if (!allocator->free_tnodes)
-> +		yaffs_create_tnodes(dev, YAFFS_ALLOCATION_NTNODES);
-> +
-> +	if (allocator->free_tnodes) {
-> +		tn = allocator->free_tnodes;
-> +		allocator->free_tnodes = allocator->free_tnodes->internal[0];
-> +		allocator->n_free_tnodes--;
-> +	}
-> +
-> +	return tn;
-> +}
-> +
-> +/* FreeTnode frees up a tnode and puts it back on the free list */
-> +void yaffs_free_raw_tnode(struct yaffs_dev *dev, struct yaffs_tnode *tn)
-> +{
-> +	struct yaffs_allocator *allocator = dev->allocator;
-> +
-> +	if (!allocator) {
-> +		YBUG();
-> +		return;
-> +	}
-> +	if (tn) {
-> +		tn->internal[0] = allocator->free_tnodes;
-> +		allocator->free_tnodes = tn;
-> +		allocator->n_free_tnodes++;
-> +	}
-> +	dev->checkpoint_blocks_required = 0;	/* force recalculation */
-> +}
-> +
-> +static void yaffs_init_raw_objs(struct yaffs_dev *dev)
-> +{
-> +	struct yaffs_allocator *allocator = dev->allocator;
-> +
-> +	if (allocator) {
-> +		allocator->allocated_obj_list = NULL;
-> +		allocator->free_objs = NULL;
-> +		allocator->n_free_objects = 0;
-> +	} else {
-> +		YBUG();
-> +	}
-> +}
-> +
-> +static void yaffs_deinit_raw_objs(struct yaffs_dev *dev)
-> +{
-> +	struct yaffs_allocator *allocator = dev->allocator;
-> +	struct yaffs_obj_list *tmp;
-> +
-> +	if (!allocator) {
-> +		YBUG();
-> +		return;
-> +	}
-> +
-> +	while (allocator->allocated_obj_list) {
-> +		tmp = allocator->allocated_obj_list->next;
-> +		kfree(allocator->allocated_obj_list->objects);
-> +		kfree(allocator->allocated_obj_list);
-> +
-> +		allocator->allocated_obj_list = tmp;
-> +	}
-> +
-> +	allocator->free_objs = NULL;
-> +	allocator->n_free_objects = 0;
-> +	allocator->n_obj_created = 0;
-> +}
-> +
-> +static int yaffs_create_free_objs(struct yaffs_dev *dev, int n_obj)
-> +{
-> +	struct yaffs_allocator *allocator = dev->allocator;
-> +	int i;
-> +	struct yaffs_obj *new_objs;
-> +	struct yaffs_obj_list *list;
-> +
-> +	if (!allocator) {
-> +		YBUG();
-> +		return YAFFS_FAIL;
-> +	}
-> +
-> +	if (n_obj < 1)
-> +		return YAFFS_OK;
-> +
-> +	/* make these things */
-> +	new_objs = kmalloc(n_obj * sizeof(struct yaffs_obj), GFP_NOFS);
-> +	list = kmalloc(sizeof(struct yaffs_obj_list), GFP_NOFS);
-> +
-> +	if (!new_objs || !list) {
-> +		kfree(new_objs);
-> +		new_objs = NULL;
-> +		kfree(list);
-> +		list = NULL;
-
-You don't need to set new_objs and list to NULL here.
-
-> +		yaffs_trace(YAFFS_TRACE_ALLOCATE,
-> +			"Could not allocate more objects");
-> +		return YAFFS_FAIL;
-> +	}
-> +
-> +	/* Hook them into the free list */
-> +	for (i = 0; i < n_obj - 1; i++) {
-> +		new_objs[i].siblings.next =
-> +		    (struct list_head *)(&new_objs[i + 1]);
-
-This cast looks like you are doing something with odd with list_head.
-
-> +	}
-> +
-> +	new_objs[n_obj - 1].siblings.next = (void *)allocator->free_objs;
-
-You shouldn't need the void * cast here.
-
-> +	allocator->free_objs = new_objs;
-> +	allocator->n_free_objects += n_obj;
-> +	allocator->n_obj_created += n_obj;
-> +
-> +	/* Now add this bunch of Objects to a list for freeing up. */
-> +
-> +	list->objects = new_objs;
-> +	list->next = allocator->allocated_obj_list;
-> +	allocator->allocated_obj_list = list;
-> +
-> +	return YAFFS_OK;
-> +}
-> +
-> +struct yaffs_obj *yaffs_alloc_raw_obj(struct yaffs_dev *dev)
-> +{
-> +	struct yaffs_obj *obj = NULL;
-> +	struct yaffs_allocator *allocator = dev->allocator;
-> +
-> +	if (!allocator) {
-> +		YBUG();
-> +		return obj;
-> +	}
-> +
-> +	/* If there are none left make more */
-> +	if (!allocator->free_objs)
-> +		yaffs_create_free_objs(dev, YAFFS_ALLOCATION_NOBJECTS);
-> +
-> +	if (allocator->free_objs) {
-> +		obj = allocator->free_objs;
-> +		allocator->free_objs =
-> +		    (struct yaffs_obj *)(allocator->free_objs->siblings.next);
-> +		allocator->n_free_objects--;
-> +	}
-> +
-> +	return obj;
-> +}
-> +
-> +void yaffs_free_raw_obj(struct yaffs_dev *dev, struct yaffs_obj *obj)
-> +{
-> +
-> +	struct yaffs_allocator *allocator = dev->allocator;
-> +
-> +	if (!allocator)
-> +		YBUG();
-> +	else {
-> +		/* Link into the free list. */
-> +		obj->siblings.next = (struct list_head *)(allocator->free_objs);
-
-More list_head weirdness.
-
-> +		allocator->free_objs = obj;
-> +		allocator->n_free_objects++;
-> +	}
-> +}
-> +
-> +void yaffs_deinit_raw_tnodes_and_objs(struct yaffs_dev *dev)
-> +{
-> +	if (dev->allocator) {
-> +		yaffs_deinit_raw_tnodes(dev);
-> +		yaffs_deinit_raw_objs(dev);
-> +
-> +		kfree(dev->allocator);
-> +		dev->allocator = NULL;
-> +	} else {
-> +		YBUG();
-> +	}
-> +}
-> +
-> +void yaffs_init_raw_tnodes_and_objs(struct yaffs_dev *dev)
-> +{
-> +	struct yaffs_allocator *allocator;
-> +
-> +	if (!dev->allocator) {
-> +		allocator = kmalloc(sizeof(struct yaffs_allocator), GFP_NOFS);
-> +		if (allocator) {
-> +			dev->allocator = allocator;
-> +			yaffs_init_raw_tnodes(dev);
-> +			yaffs_init_raw_objs(dev);
-> +		}
-> +	} else {
-> +		YBUG();
-> +	}
-> +}
-> +
-> +#endif
-> diff --git a/fs/yaffs2/yaffs_allocator.h b/fs/yaffs2/yaffs_allocator.h
-> new file mode 100644
-> index 0000000..4d5f2ae
-> --- /dev/null
-> +++ b/fs/yaffs2/yaffs_allocator.h
-> @@ -0,0 +1,30 @@
-> +/*
-> + * YAFFS: Yet another Flash File System . A NAND-flash specific file system.
-> + *
-> + * Copyright (C) 2002-2010 Aleph One Ltd.
-> + *   for Toby Churchill Ltd and Brightstar Engineering
-> + *
-> + * Created by Charles Manning <charles@aleph1.co.uk>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU Lesser General Public License version 2.1 as
-> + * published by the Free Software Foundation.
-> + *
-> + * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
-> + */
-> +
-> +#ifndef __YAFFS_ALLOCATOR_H__
-> +#define __YAFFS_ALLOCATOR_H__
-> +
-> +#include "yaffs_guts.h"
-> +
-> +void yaffs_init_raw_tnodes_and_objs(struct yaffs_dev *dev);
-> +void yaffs_deinit_raw_tnodes_and_objs(struct yaffs_dev *dev);
-> +
-> +struct yaffs_tnode *yaffs_alloc_raw_tnode(struct yaffs_dev *dev);
-> +void yaffs_free_raw_tnode(struct yaffs_dev *dev, struct yaffs_tnode *tn);
-> +
-> +struct yaffs_obj *yaffs_alloc_raw_obj(struct yaffs_dev *dev);
-> +void yaffs_free_raw_obj(struct yaffs_dev *dev, struct yaffs_obj *obj);
-> +
-> +#endif
-> diff --git a/fs/yaffs2/yaffs_bitmap.c b/fs/yaffs2/yaffs_bitmap.c
-> new file mode 100644
-> index 0000000..dc673e8
-> --- /dev/null
-> +++ b/fs/yaffs2/yaffs_bitmap.c
-> @@ -0,0 +1,97 @@
-> +/*
-> + * YAFFS: Yet Another Flash File System. A NAND-flash specific file system.
-> + *
-> + * Copyright (C) 2002-2010 Aleph One Ltd.
-> + *   for Toby Churchill Ltd and Brightstar Engineering
-> + *
-> + * Created by Charles Manning <charles@aleph1.co.uk>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include "yaffs_bitmap.h"
-> +#include "yaffs_trace.h"
-> +/*
-> + * Chunk bitmap manipulations
-> + */
-> +
-> +static inline u8 *yaffs_block_bits(struct yaffs_dev *dev, int blk)
-> +{
-> +	if (blk < dev->internal_start_block || blk > dev->internal_end_block) {
-> +		yaffs_trace(YAFFS_TRACE_ERROR,
-> +			"BlockBits block %d is not valid",
-> +			blk);
-> +		YBUG();
-> +	}
-> +	return dev->chunk_bits +
-> +	    (dev->chunk_bit_stride * (blk - dev->internal_start_block));
-> +}
-> +
-> +void yaffs_verify_chunk_bit_id(struct yaffs_dev *dev, int blk, int chunk)
-> +{
-> +	if (blk < dev->internal_start_block || blk > dev->internal_end_block ||
-> +	    chunk < 0 || chunk >= dev->param.chunks_per_block) {
-> +		yaffs_trace(YAFFS_TRACE_ERROR,
-> +			"Chunk Id (%d:%d) invalid",
-> +			blk, chunk);
-> +		YBUG();
-> +	}
-> +}
-> +
-> +void yaffs_clear_chunk_bits(struct yaffs_dev *dev, int blk)
-> +{
-> +	u8 *blk_bits = yaffs_block_bits(dev, blk);
-> +
-> +	memset(blk_bits, 0, dev->chunk_bit_stride);
-> +}
-> +
-> +void yaffs_clear_chunk_bit(struct yaffs_dev *dev, int blk, int chunk)
-> +{
-> +	u8 *blk_bits = yaffs_block_bits(dev, blk);
-> +
-> +	yaffs_verify_chunk_bit_id(dev, blk, chunk);
-> +	blk_bits[chunk / 8] &= ~(1 << (chunk & 7));
-> +}
-> +
-> +void yaffs_set_chunk_bit(struct yaffs_dev *dev, int blk, int chunk)
-> +{
-> +	u8 *blk_bits = yaffs_block_bits(dev, blk);
-> +
-> +	yaffs_verify_chunk_bit_id(dev, blk, chunk);
-> +	blk_bits[chunk / 8] |= (1 << (chunk & 7));
-> +}
-> +
-> +int yaffs_check_chunk_bit(struct yaffs_dev *dev, int blk, int chunk)
-> +{
-> +	u8 *blk_bits = yaffs_block_bits(dev, blk);
-> +
-> +	yaffs_verify_chunk_bit_id(dev, blk, chunk);
-> +	return (blk_bits[chunk / 8] & (1 << (chunk & 7))) ? 1 : 0;
-> +}
-> +
-> +int yaffs_still_some_chunks(struct yaffs_dev *dev, int blk)
-> +{
-> +	u8 *blk_bits = yaffs_block_bits(dev, blk);
-> +	int i;
-> +
-> +	for (i = 0; i < dev->chunk_bit_stride; i++) {
-> +		if (*blk_bits)
-> +			return 1;
-> +		blk_bits++;
-> +	}
-> +	return 0;
-> +}
-> +
-> +int yaffs_count_chunk_bits(struct yaffs_dev *dev, int blk)
-> +{
-> +	u8 *blk_bits = yaffs_block_bits(dev, blk);
-> +	int i;
-> +	int n = 0;
-> +
-> +	for (i = 0; i < dev->chunk_bit_stride; i++, blk_bits++)
-> +		n += hweight8(*blk_bits);
-> +
-> +	return n;
-> +}
-> diff --git a/fs/yaffs2/yaffs_bitmap.h b/fs/yaffs2/yaffs_bitmap.h
-> new file mode 100644
-> index 0000000..cf9ea58
-> --- /dev/null
-> +++ b/fs/yaffs2/yaffs_bitmap.h
-> @@ -0,0 +1,33 @@
-> +/*
-> + * YAFFS: Yet another Flash File System . A NAND-flash specific file system.
-> + *
-> + * Copyright (C) 2002-2010 Aleph One Ltd.
-> + *   for Toby Churchill Ltd and Brightstar Engineering
-> + *
-> + * Created by Charles Manning <charles@aleph1.co.uk>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU Lesser General Public License version 2.1 as
-> + * published by the Free Software Foundation.
-> + *
-> + * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
-> + */
-> +
-> +/*
-> + * Chunk bitmap manipulations
-> + */
-> +
-> +#ifndef __YAFFS_BITMAP_H__
-> +#define __YAFFS_BITMAP_H__
-> +
-> +#include "yaffs_guts.h"
-> +
-> +void yaffs_verify_chunk_bit_id(struct yaffs_dev *dev, int blk, int chunk);
-> +void yaffs_clear_chunk_bits(struct yaffs_dev *dev, int blk);
-> +void yaffs_clear_chunk_bit(struct yaffs_dev *dev, int blk, int chunk);
-> +void yaffs_set_chunk_bit(struct yaffs_dev *dev, int blk, int chunk);
-> +int yaffs_check_chunk_bit(struct yaffs_dev *dev, int blk, int chunk);
-> +int yaffs_still_some_chunks(struct yaffs_dev *dev, int blk);
-> +int yaffs_count_chunk_bits(struct yaffs_dev *dev, int blk);
-> +
-> +#endif
-> diff --git a/fs/yaffs2/yaffs_getblockinfo.h b/fs/yaffs2/yaffs_getblockinfo.h
-> new file mode 100644
-> index 0000000..d87acbd
-> --- /dev/null
-> +++ b/fs/yaffs2/yaffs_getblockinfo.h
-> @@ -0,0 +1,35 @@
-> +/*
-> + * YAFFS: Yet another Flash File System . A NAND-flash specific file system.
-> + *
-> + * Copyright (C) 2002-2010 Aleph One Ltd.
-> + *   for Toby Churchill Ltd and Brightstar Engineering
-> + *
-> + * Created by Charles Manning <charles@aleph1.co.uk>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU Lesser General Public License version 2.1 as
-> + * published by the Free Software Foundation.
-> + *
-> + * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
-> + */
-> +
-> +#ifndef __YAFFS_GETBLOCKINFO_H__
-> +#define __YAFFS_GETBLOCKINFO_H__
-> +
-> +#include "yaffs_guts.h"
-> +#include "yaffs_trace.h"
-> +
-> +/* Function to manipulate block info */
-> +static inline struct yaffs_block_info *yaffs_get_block_info(struct yaffs_dev
-> +							      *dev, int blk)
-> +{
-> +	if (blk < dev->internal_start_block || blk > dev->internal_end_block) {
-> +		yaffs_trace(YAFFS_TRACE_ERROR,
-> +			"**>> yaffs: get_block_info block %d is not valid",
-> +			blk);
-> +		YBUG();
-> +	}
-> +	return &dev->block_info[blk - dev->internal_start_block];
-> +}
-> +
-> +#endif
-
-
+diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
+index d5482d6..5bd18db 100644
+--- a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
++++ b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
+@@ -35,13 +35,11 @@
+  *
+  */
+ 
+-#define MSM_QGIC_DIST_BASE	IOMEM(0xF0000000)
+-#define MSM_QGIC_DIST_PHYS	0x02080000
+-#define MSM_QGIC_DIST_SIZE	SZ_4K
++#define MSM8X60_QGIC_DIST_PHYS	0x02080000
++#define MSM8X60_QGIC_DIST_SIZE	SZ_4K
+ 
+-#define MSM_QGIC_CPU_BASE	IOMEM(0xF0001000)
+-#define MSM_QGIC_CPU_PHYS	0x02081000
+-#define MSM_QGIC_CPU_SIZE	SZ_4K
++#define MSM8X60_QGIC_CPU_PHYS	0x02081000
++#define MSM8X60_QGIC_CPU_SIZE	SZ_4K
+ 
+ #define MSM_ACC_BASE		IOMEM(0xF0002000)
+ #define MSM_ACC_PHYS		0x02001000
+diff --git a/arch/arm/mach-msm/include/mach/msm_iomap.h b/arch/arm/mach-msm/include/mach/msm_iomap.h
+index 0243bd0..bb42de3 100644
+--- a/arch/arm/mach-msm/include/mach/msm_iomap.h
++++ b/arch/arm/mach-msm/include/mach/msm_iomap.h
+@@ -55,6 +55,8 @@
+ 
+ /* Virtual addressses shared across all MSM targets. */
+ #define MSM_CSR_BASE		IOMEM(0xE0001000)
++#define MSM_QGIC_DIST_BASE	IOMEM(0xF0000000)
++#define MSM_QGIC_CPU_BASE	IOMEM(0xF0001000)
+ #define MSM_TMR_BASE		IOMEM(0xF0200000)
+ #define MSM_TMR0_BASE		IOMEM(0xF0201000)
+ 
+diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
+index 47d699f..5dd0d1b9 100644
+--- a/arch/arm/mach-msm/io.c
++++ b/arch/arm/mach-msm/io.c
+@@ -103,8 +103,8 @@ void __init msm_map_qsd8x50_io(void)
+ 
+ #ifdef CONFIG_ARCH_MSM8X60
+ static struct map_desc msm8x60_io_desc[] __initdata = {
+-	MSM_DEVICE(QGIC_DIST),
+-	MSM_DEVICE(QGIC_CPU),
++	MSM_CHIP_DEVICE(QGIC_DIST, MSM8X60),
++	MSM_CHIP_DEVICE(QGIC_CPU, MSM8X60),
+ 	MSM_CHIP_DEVICE(TMR, MSM8X60),
+ 	MSM_CHIP_DEVICE(TMR0, MSM8X60),
+ 	MSM_DEVICE(ACC),
 -- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
