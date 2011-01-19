@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab1ASRb5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 12:31:57 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:23707 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753373Ab1ASRbz (ORCPT
+	id S1753618Ab1ASReH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 12:34:07 -0500
+Received: from exprod7og110.obsmtp.com ([64.18.2.173]:42930 "EHLO
+	exprod7og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753405Ab1ASReF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 12:31:55 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6231"; a="71110599"
-From: David Brown <davidb@codeaurora.org>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: Stepan Moskovchenko <stepanm@codeaurora.org>,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, rlove@google.com
-Subject: Re: [PATCH 2/2] serial: msm: Add support for UARTDM cores
-In-Reply-To: <20110119082534.GA9569@gallagher> (Jamie Iles's message of "Wed,
-	19 Jan 2011 08:25:34 +0000")
-References: <1295407585-18386-1-git-send-email-stepanm@codeaurora.org>
-	<20110119082534.GA9569@gallagher>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-X-Hashcash: 1:20:110119:linux-kernel@vger.kernel.org::CBP5fsJa0S9O0BXw:0000000000000000000000000000000001aIJ
-X-Hashcash: 1:20:110119:stepanm@codeaurora.org::P9ZQxynOFCtjAJ5V:0000000000000000000000000000000000000004KrT
-X-Hashcash: 1:20:110119:jamie@jamieiles.com::xfaFDl7zbFz6Twnj:000000000000000000000000000000000000000000B0Xj
-X-Hashcash: 1:20:110119:linux-arm-msm@vger.kernel.org::F9ChyC4/CxMfVxdJ:00000000000000000000000000000000DUOf
-X-Hashcash: 1:20:110119:linux-arm-kernel@lists.infradead.org::gF6Qx4kP9wAjd/N2:0000000000000000000000000A2LO
-X-Hashcash: 1:20:110119:rlove@google.com::cVvGX2UEtG8UsBmu:0CtKp
-Date: Wed, 19 Jan 2011 09:31:55 -0800
-Message-ID: <8yaaaiwsstw.fsf@huya.qualcomm.com>
+	Wed, 19 Jan 2011 12:34:05 -0500
+Message-ID: <4D37207F.5070809@genband.com>
+Date: Wed, 19 Jan 2011 11:33:51 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Martin Volf <martin.volf.42@gmail.com>
+CC: netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: tool to send unsolicited neighbour advertisements?
+References: <4D35FB33.1080305@genband.com> <AANLkTi=g-tSrLMmu4JuuKrze4SJD67CSmbS3aONBw7wV@mail.gmail.com>
+In-Reply-To: <AANLkTi=g-tSrLMmu4JuuKrze4SJD67CSmbS3aONBw7wV@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 19 Jan 2011 17:33:53.0004 (UTC) FILETIME=[0A72F2C0:01CBB7FF]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-17904.000
+X-TM-AS-Result: No--14.610000-5.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19 2011, Jamie Iles wrote:
+On 01/19/2011 03:42 AM, Martin Volf wrote:
+> On 18 January 2011 21:42, Chris Friesen <chris.friesen@genband.com> wrote:
+>> We're transitioning stuff to IPv6 and I've been trying (without much
+>> luck) to find a standard tool for sending out unsolicited neighbour
+>> advertisements for failover purposes.
+>> Is there such a thing?  In ipv4 arping works fine.
+> 
+> Hello,
+> 
+> probably http://www.remlab.net/ndisc6/
 
->> @@ -38,9 +40,20 @@ struct msm_port {
->>  	struct uart_port	uart;
->>  	char			name[16];
->>  	struct clk		*clk;
->> +	struct clk		*pclk;
->>  	unsigned int		imr;
->> +	unsigned int            *gsbi_base;
->> +	int			is_dm;
->> +	unsigned int		old_snap_state;
->>  };
->
-> Out of interest, what does .is_dm mean?  Is that obvious to someone who 
-> knows about msm?
+The ndisc6 tool appears to do neighbour discovery, but doesn't have any
+options that I could see to send unsolicited neighbour advertisements.
 
-It would be clear to people rather familiar with the chip, but I agree
-it's probably not that clear of a name.
+There are various blackhat-type tools to do this, but I haven't been
+able to find a real ipv6 replacement for arping.
 
-We have two UART blocks we use in the MSMs, the older one, supported by
-this driver before this change, and a newer one that was designed to
-work with our DMA engine (known as the Data Mover, or dm).  This newer
-UART can be used in a somewhat compatible manner when being used for
-serial-port type operations.
-
-I'm not sure what would be a better name for the flag, though.  The
-block is called UARTDM.
-
-David
+Chris
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Chris Friesen
+Software Developer
+GENBAND
+chris.friesen@genband.com
+www.genband.com
