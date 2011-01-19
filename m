@@ -1,54 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089Ab1ASQOM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 11:14:12 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:27000 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753988Ab1ASQOJ (ORCPT
+	id S1754171Ab1ASQO6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 11:14:58 -0500
+Received: from pfepa.post.tele.dk ([195.41.46.235]:33676 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753988Ab1ASQO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 11:14:09 -0500
-Message-ID: <4D370D63.5070503@oracle.com>
-Date: Wed, 19 Jan 2011 08:12:19 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Wed, 19 Jan 2011 11:14:57 -0500
+Date: Wed, 19 Jan 2011 17:14:55 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: David Miller <davem@davemloft.net>, rostedt@goodmis.org,
+        richm@oldelvet.org.uk, 609371@bugs.debian.org, ben@decadent.org.uk,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, mingo@redhat.com
+Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
+	Unknown relocation: 36
+Message-ID: <20110119161455.GA18503@merkur.ravnborg.org>
+References: <20110118201323.GA14930@Krystal> <1295382144.12215.123.camel@gandalf.stny.rr.com> <20110119050844.GA8776@Krystal> <20110118.211639.68142725.davem@davemloft.net> <20110119151004.GA11022@Krystal>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Rusty Russell <rusty@rustcorp.com.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for January 18 (__modver_version_show)
-References: <20110118122139.6c2a6f2f.sfr@canb.auug.org.au>	<20110118091749.ac5823df.randy.dunlap@oracle.com> <20110119160951.2a14d0a0.sfr@canb.auug.org.au> <4D370CE6.3000505@oracle.com>
-In-Reply-To: <4D370CE6.3000505@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110119151004.GA11022@Krystal>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/11 08:10, Randy Dunlap wrote:
-> On 01/18/11 21:09, Stephen Rothwell wrote:
->> Hi Randy,
->>
->> On Tue, 18 Jan 2011 09:17:49 -0800 Randy Dunlap <randy.dunlap@oracle.com> wrote:
->>>
->>> I'm seeing this on several builds (i386 and x86_64):
->>>
->>> lib/built-in.o:(__modver+0x8): undefined reference to `__modver_version_show'
->>> lib/built-in.o:(__modver+0x2c): undefined reference to `__modver_version_show'
->>>
->>> It looks like the compiler or linker is dropping that function from the
->>> build since it cannot see any references to it...
->>> At least __modver_version_show is not in the kernel/params.o file.
->>
->> Do these builds have CONFIG_SYSFS set?
->>
 > 
-> Yes, they all do (50 random builds have CONFIG_SYSFS=y).
+> If my memory serves me correctly, I think "long long" is aligned on 4 bytes on
+> ppc32, but on 8 bytes on x86_32 (yeah, that's weird). How about we create a
+> #define __long_long_aligned __attribute__((__aligned__(__alignof__(long long))))
 
-Gawd, what bad grepping this morning.
+#define __u64_aligned __attribute__((__aligned__(__alignof__(long long))))
 
-You hit the nail.  They do not have SYSFS enabled.
+A bit shorter but maybe less obvious.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+	Sam
