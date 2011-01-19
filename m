@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527Ab1ASSU5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 13:20:57 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:40194 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751904Ab1ASSUz (ORCPT
+	id S1752892Ab1ASSWB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 13:22:01 -0500
+Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:50956 "EHLO
+	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751904Ab1ASSWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 13:20:55 -0500
-Date: Wed, 19 Jan 2011 13:20:53 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Miller <davem@davemloft.net>, richm@oldelvet.org.uk,
-        609371@bugs.debian.org, ben@decadent.org.uk,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, mingo@redhat.com
-Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
-	Unknown relocation: 36
-Message-ID: <20110119182052.GB18970@Krystal>
-References: <1295382144.12215.123.camel@gandalf.stny.rr.com> <20110119050844.GA8776@Krystal> <20110118.223247.241909079.davem@davemloft.net> <20110118.232045.58440904.davem@davemloft.net> <1295451961.12215.1291.camel@gandalf.stny.rr.com> <20110119161534.GB15031@Krystal> <1295460822.12215.1389.camel@gandalf.stny.rr.com>
+	Wed, 19 Jan 2011 13:22:00 -0500
+Date: Wed, 19 Jan 2011 13:21:42 -0500
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] BKL: move CONFIG_BKL to staging
+Message-ID: <20110119182142.GA3620@elliptictech.com>
+References: <1295385422-3592-1-git-send-email-arnd@arndb.de>
+ <1295385422-3592-5-git-send-email-arnd@arndb.de>
+ <20110119154419.GA21411@elliptictech.com>
+ <201101191717.58277.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1295460822.12215.1389.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 13:15:54 up 56 days, 23:18,  4 users,  load average: 0.02, 0.02,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <201101191717.58277.arnd@arndb.de>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Wed, 2011-01-19 at 11:15 -0500, Mathieu Desnoyers wrote:
-> > * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > > After applying David's "remove align" patch, I got it to boot on x86_64
-> > > with the following two patches. I thought just adding the "align" to the
-> > > structure declaration would work, but it still failed on the syscall for
-> > > init_module. By removing the double "declaration" of event_exit_##sname,
-> > > removed this problem.
-> > > 
-> > > I'll test this on x86 32bit and PPC 64. If it works there, I'll push all
-> > > of them out for 38. Should these go to 37 stable too?
+On 2011-01-19 17:17 +0100, Arnd Bergmann wrote:
+> On Wednesday 19 January 2011, Nick Bowler wrote:
+> > I think this patch is not very nice.  It will cause working kernel
+> > configurations to turn into broken kernel configurations when the user
+> > does 'make oldconfig', with no warning.
 > > 
-> > Please hold before adding these patches into git. They don't seem to address the
-> > underlying problem correctly. See the latest exchanges between David Miller and
-> > myself for more info.
-> > 
-> > We need to come up with something better than "it boots" as an explanation for
-> > the fix.
+> > These drivers that use the BKL work fine.  Removing working features
+> > with no adequate replacement available seems like a serious regression
+> > to me.
 > 
-> Yes, I agree that we should solve this issue correctly. But if there is
-> a work around to the problem, we could implement that if the real
-> solution is not in our grasp yet.
+> I wouldn't call it a serious regression since the code is still there
+> and both the symptom and the solution are rather obvious.
 
-A known working workaround (used in tracepoints for a few years) is to align the
-type declaration on 32 bytes. It wastes space, but works. With this solution,
-you should remove all the per-variable alignment attributes.
+Well, the code wouldn't still be there if they're removed in 2.6.39 as
+stated in your patch description.  While it may be obvious to people
+like you and me who know what the BKL is, I don't it's obvious to
+everyone that the cause of "my system doesn't boot anymore" is "oh,
+someone moved a dependency of a driver I've been using without issue for
+the past 5 years to staging!"
 
-Now what I'm discussing with David Miller is if creating a
+> What's more important is to make any people still relying on the code
+> aware that it's going away unless someone fixes it, so they have the
+> chance to send patches or pay someone to fix it for them.
 
-  __long_packed_aligned
+Shouldn't the onus for fixing *working* drivers (or encouraging others
+to fix them) lie with the person(s) who are so keen to kill off features
+that they use?
 
-and using it for *both* type and variable alignment would be more palatable (it
-also works, and is more compact).
+Surely we don't need to break oldconfig just to raise awareness that
+these drivers use deprecated features?
 
-David proposed a solution with an array of pointers (extra indirection) which I
-don't really like for 3 reasons I exposed in my reply to him.
+> The remaining drivers that are still relying on the BKL are very
+> rarely used and for the less obscure ones (ufs, ipx and x.25), people
+> have volunteered to fix them (though I have seen no proper patches
+> for these yet).
+>
+> For the rest, I suppose if nobody complains, they can actually go
+> away, according to the logic that if nobody is using them, they most
+> likely are broken anyway and more a security risk than they are worth.
 
-So it's not that the solution is not in our grasp yet, it's more that we have to
-choose the right one.
+Notwithstanding any of the above, one release cycle hardly seems like
+enough time to infer from "nobody complained" that "not a single person
+uses this driver."  Surely people concerned with security issues in code
+that they don't use can just... not enable it?  Nobody's forcing anyone
+to use these drivers.
 
-Thanks,
-
-Mathieu
+Neither the BKL nor any of these drivers are even mentioned in the
+feature removal schedule yet.
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
