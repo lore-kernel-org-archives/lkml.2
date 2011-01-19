@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239Ab1ASDmM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 22:42:12 -0500
-Received: from www.wytron.com.tw ([211.75.82.101]:44119 "EHLO
-	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752643Ab1ASDmL (ORCPT
+	id S1753269Ab1ASDma (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 22:42:30 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:52304 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753207Ab1ASDm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 22:42:11 -0500
-From: Thomas Chou <thomas@wytron.com.tw>
-To: Artem Bityutskiy <dedekind1@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-mtd@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Thomas Chou <thomas@wytron.com.tw>
-Subject: [PATCH] mtd/of: allow MTD_OF_PARTS and MTD_PHYSMAP_OF config to others
-Date: Wed, 19 Jan 2011 11:43:59 +0800
-Message-Id: <1295408639-14742-1-git-send-email-thomas@wytron.com.tw>
-X-Mailer: git-send-email 1.7.3.4
-X-SA-Exim-Connect-IP: 192.168.1.15
-X-SA-Exim-Mail-From: thomas@wytron.com.tw
-X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
+	Tue, 18 Jan 2011 22:42:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=cc:message-id:from:to:in-reply-to:content-type
+         :content-transfer-encoding:mime-version:subject:date:references
+         :x-mailer;
+        b=T9FiyTlNRVehPrbf20F3/8q4bdhDzWiJPV9pYMqRq39gBvoqOIa603n1ABUss49/dp
+         HCppq8Y3iyovnrISyQzYdacy6zplutMuEGBN5E1xbJdNbaAu56Nx2kNtRBSBCPWy5W/v
+         umdqVfQEx8cjKjW08cbkfL3VM6pC5oViPRx/E=
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-Id: <1161CC5A-C8CA-477E-B2CE-7870F8E634EE@gmail.com>
+From: Justin Mattock <justinmattock@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <AANLkTimp0UcWi68N5Jv_hUww9PhGVgCzY0qYLETc8Dj_@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII; format=flowed; delsp=yes
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0 (Apple Message framework v936)
+Subject: Re: Linux 2.6.38-rc1
+Date: Tue, 18 Jan 2011 19:42:22 -0800
+References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com> <AANLkTimp0UcWi68N5Jv_hUww9PhGVgCzY0qYLETc8Dj_@mail.gmail.com>
+X-Mailer: Apple Mail (2.936)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As devicetree support is added to more arch, these config should
-be allowed to other arch.
 
-Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
----
- drivers/mtd/Kconfig      |    2 +-
- drivers/mtd/maps/Kconfig |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+On Jan 18, 2011, at 6:07 PM, Linus Torvalds wrote:
 
-diff --git a/drivers/mtd/Kconfig b/drivers/mtd/Kconfig
-index 1e2cbf5..b1f7689 100644
---- a/drivers/mtd/Kconfig
-+++ b/drivers/mtd/Kconfig
-@@ -159,7 +159,7 @@ config MTD_AFS_PARTS
- 
- config MTD_OF_PARTS
- 	tristate "Flash partition map based on OF description"
--	depends on (MICROBLAZE || PPC_OF) && MTD_PARTITIONS
-+	depends on OF && MTD_PARTITIONS
- 	help
- 	  This provides a partition parsing function which derives
- 	  the partition map from the children of the flash node,
-diff --git a/drivers/mtd/maps/Kconfig b/drivers/mtd/maps/Kconfig
-index a0dd7bb..5d37d31 100644
---- a/drivers/mtd/maps/Kconfig
-+++ b/drivers/mtd/maps/Kconfig
-@@ -72,7 +72,7 @@ config MTD_PHYSMAP_BANKWIDTH
- 
- config MTD_PHYSMAP_OF
- 	tristate "Flash device in physical memory map based on OF description"
--	depends on (MICROBLAZE || PPC_OF) && (MTD_CFI || MTD_JEDECPROBE || MTD_ROM)
-+	depends on OF && (MTD_CFI || MTD_JEDECPROBE || MTD_ROM)
- 	help
- 	  This provides a 'mapping' driver which allows the NOR Flash and
- 	  ROM driver code to communicate with chips which are mapped
--- 
-1.7.3.4
+> On Tue, Jan 18, 2011 at 3:54 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> It's been two weeks, and the merge window for 2.6.38 is thus closed.
+>
+> Oh, and it looks like mirroring from master.kernel.org is being very
+> slow, possibly at least partly because the conversion to
+> xv-compression seems to be going on (who knows - there's obviously a
+> script going over all the public files recompressing them from gz to
+> xz, but it may be some kind of dry-run and not final).
+>
+> And I may also have managed to hit the weekly rsync "check
+> _everything_" window too. So rsync likely isn't just checking and
+> syncing new files, but checksumming every single file that gets
+> mirrored out and re-verifying it.
+>
+> End result: it looks like git.kernel.org and the ftp mirrors are going
+> to take hours to update. So if you don't see 2.6.38-rc1 yet, and you
+> don't have an account on kernel.org and can fetch it directly from
+> master, don't worry. It will mirror out eventually, but it's going to
+> take some time.
+>
+> Sit back, relax, and sip some foofy drink. It will all work out in  
+> the end.
+>
+>              Linus
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux- 
+> kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
+
+
+wheres the changelog? (gotta narcissistically check to see if I made  
+it in)..
+
+Justin P. Mattock
