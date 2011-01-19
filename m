@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437Ab1ASPxn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 10:53:43 -0500
-Received: from daytona.panasas.com ([67.152.220.89]:48180 "EHLO
-	daytona.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751973Ab1ASPxm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 10:53:42 -0500
-Message-ID: <4D370902.2020501@panasas.com>
-Date: Wed, 19 Jan 2011 17:53:38 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1752748Ab1ASPzE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 10:55:04 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31088 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752106Ab1ASPzD (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 19 Jan 2011 10:55:03 -0500
+Date: Wed, 19 Jan 2011 10:52:35 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Borislav Petkov <bp@alien8.de>, Joerg Roedel <joerg.roedel@amd.com>,
+        Greg KH <greg@kroah.com>, Borislav Petkov <bp@amd64.org>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/3] x86-32: Separate 1:1 pagetables from swapper_pg_dir
+Message-ID: <20110119155235.GA26134@dumpdata.com>
+References: <20101022162038.GA10343@kroah.com>
+ <1289483775-17632-2-git-send-email-joerg.roedel@amd.com>
+ <20110119003908.GB7609@dumpdata.com>
+ <20110119071944.GD13799@liondog.tnic>
 MIME-Version: 1.0
-To: David Dillow <dillowda@ornl.gov>
-CC: Andrew Morton <akpm@linux-foundation.org>, Jeff Moyer <jmoyer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH v3]  fs/direct-io.c: don't try to allocate more than BIO_MAX_PAGES
- in a bio
-References: <1294977946.21790.20.camel@obelisk.thedillows.org>	 <x498vynbl4e.fsf@segfault.boston.devel.redhat.com>	 <1295023584.24487.16.camel@lap75545.ornl.gov>	 <x49y66jmljv.fsf@segfault.boston.devel.redhat.com>	 <1295319627.3051.89.camel@obelisk.thedillows.org>	 <20110118165359.09023fe9.akpm@linux-foundation.org> <1295404470.5233.31.camel@obelisk.thedillows.org>
-In-Reply-To: <1295404470.5233.31.camel@obelisk.thedillows.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Jan 2011 15:53:41.0661 (UTC) FILETIME=[0B68CCD0:01CBB7F1]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110119071944.GD13799@liondog.tnic>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2011 04:34 AM, David Dillow wrote:
-> On Tue, 2011-01-18 at 16:53 -0800, Andrew Morton wrote:
->>
->> Well.  -stable only needs the patch if the driver which triggers the
->> problem is also there.  But we don't know what driver that is, yet???
+On Wed, Jan 19, 2011 at 08:19:44AM +0100, Borislav Petkov wrote:
+> On Tue, Jan 18, 2011 at 07:39:08PM -0500, Konrad Rzeszutek Wilk wrote:
+> > On Thu, Nov 11, 2010 at 02:56:13PM +0100, Joerg Roedel wrote:
 > 
-> Good point.
+> [..]
 > 
-> Any driver that supports a sg_tablesize of more than 256 has the
-> potential for problems. A quick search of the tree indicates that the
-> following set their initial sg_tablesize to SCSI_MAX_SG_CHAIN_SEGMENTS
-> (2048), though they may be saved by a separate bug I found -- and sent a
-> patch to the list -- that incorrectly causes that define to take the
-> value 128. 
+> > > -v2: switch to swapper_pg_dir right after entering start_secondary() so
+> > > that we are able to access percpu data which might not be mapped in the
+> > > trampoline page table.
+> > 
+> > You also might want to look at the regression this patch caused when it
+> > was introduced. Mainly this fix:
+> > 805e3f495057aa5307ad4e3d6dc7073d4733c691
 > 
-> ./drivers/usb/storage/scsiglue.c
-> ./drivers/scsi/arm/powertec.c
-> ./drivers/scsi/arm/eesox.c
-> ./drivers/scsi/arm/cumana_2.c
-> ./drivers/ata/pata_icside.c
-> 
-<snip>
+> I think you mean the regression _this_
+> b40827fa7268fda8a62490728a61c2856f33830b patch caused, which is not in
+> -stable anyway.
 
-iscsi has it on 2048 since ever
-
-Boaz
+Duh. Saw 'initial_page_table' and immediately jumped to conclusions.
+Thank you for clarifying.
