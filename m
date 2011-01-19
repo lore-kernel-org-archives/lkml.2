@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab1ASGh1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 01:37:27 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:46245 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751955Ab1ASGh0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 01:37:26 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18Id/UkHg0Ih/hF+nJqTwkIXp3SzWaFphnMVz6bjh
-	Z/LPEezYvi9n/l
-Subject: Re: Bug in scheduler when using rt_mutex
-From: Mike Galbraith <efault@gmx.de>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, samu.p.onkalo@nokia.com,
-        mingo@elte.hu,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        tglx <tglx@linutronix.de>
-In-Reply-To: <AANLkTinfGL3=8LKTx3gCg_V9DfXi44E2PxPd-vQVfALU@mail.gmail.com>
-References: <1295275365.12840.13.camel@kolo>
-	 <1295280032.30950.128.camel@laptop> <1295339012.11678.35.camel@kolo>
-	 <AANLkTikXf-OMEBx-UZktxooOs+YqUkSE9doyEZopjzOx@mail.gmail.com>
-	 <1295357746.30950.681.camel@laptop>
-	 <AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
-	 <1295408637.8017.56.camel@marge.simson.net>
-	 <AANLkTineieNdiKduDHQ-J+Xv6Pq9O0pTZraBJEw=p5e7@mail.gmail.com>
-	 <1295415657.8017.113.camel@marge.simson.net>
-	 <AANLkTinfGL3=8LKTx3gCg_V9DfXi44E2PxPd-vQVfALU@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 Jan 2011 07:37:21 +0100
-Message-ID: <1295419041.8017.120.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1753239Ab1ASGhf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 01:37:35 -0500
+Received: from outbound.icp-qv1-irony-out6.iinet.net.au ([203.59.1.109]:61686
+	"EHLO outbound.icp-qv1-irony-out6.iinet.net.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752937Ab1ASGha convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 01:37:30 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApEBAAMTNk18q2m+/2dsb2JhbAAM5lSFUASFLIkx
+X-IronPort-AV: E=Sophos;i="4.60,342,1291564800"; 
+   d="scan'208";a="194133631"
+Subject: Re: GPIO: Handling multiple lines at once
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Ben Nizette <bn@niasdigital.com>
+In-Reply-To: <4D35BCA1.1050002@antcom.de>
+Date: Wed, 19 Jan 2011 17:28:11 +1100
+Cc: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A507C485-12D7-4ADE-8337-B0F868D6D512@niasdigital.com>
+References: <4D35BCA1.1050002@antcom.de>
+To: Roland Stigge <stigge@antcom.de>
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-19 at 14:09 +0800, Yong Zhang wrote:
-> On Wed, Jan 19, 2011 at 1:40 PM, Mike Galbraith <efault@gmx.de> wrote:
-> > On Wed, 2011-01-19 at 12:35 +0800, Yong Zhang wrote:
-> >
-> >> cfs_rq->curr != se is always true.
-> >
-> > If that were always true, we'd illegally enqueue a running task.
+
+On 19/01/2011, at 3:15 AM, Roland Stigge wrote:
+
+> Hi,
 > 
-> I'm sorry that I'm not express myself correctly.
-
-Human communication methods are all buggy as hell :)
-
-> The conclusion of (cfs_rq->curr != se is always true) is not
-> self-contained. IOW, it's based on one condition which is
-> (task_of(se) != rq->curr). So what I want to say is:
-> task_of(se) != rq->curr    ==>   cfs_rq_of(se)->curr != se
-> So,
->          !running                   ==>   cfs_rq_of(se)->curr != se
+> in the standard gpio interface (see Documentation/gpio.txt), we have an
+> interface to manipulate single GPIO lines.
 > 
-> Is this more clear?
+> Several drivers are implementing an interface for devices that can
+> handle multiple lines at once. E.g. Maxim MAX7301
+> (drivers/gpio/max7301.c). There, you can get/set/configure 8 bits at
+> once which is really helpful if you are handling 8 bit data as
+> bytes/characters via the lines.
+> 
+> Is there an appropriate interface for this case that I'm somehow missing
+> from the docs and the code?
 
-Yeah.
+Such code isn't upstream, no.
 
-	-Mike
+> 
+> Or do I need to create it myself?
+> 
+> Or is this a use case not considered "GPIO" at all?
+
+It's a use case considered less useful than the single-pin case and much much harder to get right.  Search the archives for examples of previous attempts to add this functionality and their failings, if you feel you can correct them please give it a shot!
+
+	--Ben.
+
+> 
+> Please CC me.
+> 
+> Thanks in advance!
+> 
+> Roland
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
