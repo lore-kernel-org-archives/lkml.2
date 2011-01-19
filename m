@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab1ASTHK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 14:07:10 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52653 "EHLO mail.zytor.com"
+	id S1753400Ab1ASTK1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 14:10:27 -0500
+Received: from hera.kernel.org ([140.211.167.34]:34609 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752896Ab1ASTHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 14:07:09 -0500
-Message-ID: <4D3735A2.2090806@zytor.com>
-Date: Wed, 19 Jan 2011 11:04:02 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1751332Ab1ASTKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 14:10:25 -0500
+Date: Wed, 19 Jan 2011 19:09:52 GMT
+From: tip-bot for Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, sboyd@codeaurora.org,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, sboyd@codeaurora.org,
+        mingo@elte.hu
+In-Reply-To: <1295419594-13085-1-git-send-email-sboyd@codeaurora.org>
+References: <1295419594-13085-1-git-send-email-sboyd@codeaurora.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/urgent] hrtimers: Notify hrtimer users of switches to NOHZ mode
+Message-ID: <tip-2d0640b47da74cff7c11642c798d40de861ed524@git.kernel.org>
+Git-Commit-ID: 2d0640b47da74cff7c11642c798d40de861ed524
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: Matthieu CASTET <castet.matthieu@free.fr>, Lin Ming <ming.m.lin@intel.com>,
-        Oliver Neukum <oneukum@suse.de>, rjw@sisk.pl,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        Michal Marek <mmarek@suse.cz>, Yinghai Lu <yinghai@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Borislav Petkov <bp@alien8.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>,
-        Xuxian Jiang <jiang@cs.ncsu.edu>, Dave Airlie <airlied@redhat.com>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [REGRESSION] S3 resume on SandyBridge doesn't work with NX protection
- (5bd5a45)
-References: <20110119173710.GA1331@suse.de>
-In-Reply-To: <20110119173710.GA1331@suse.de>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 19 Jan 2011 19:09:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2011 09:37 AM, Matthias Hopf wrote:
-> Git commit 5bd5a45 in Linus' tree "x86: Add NX protection for kernel data"
-> apparently breaks resume on SandyBridge machines. This is supposed to be
-> fixed with commit 691513f "x86: Resume trampoline must be executable",
-> but even git master (v2.6.38-rc1) shows the same symptoms.
-> 
-> After suspend to S3, the machine doesn't resume upon wakeup, but boots
-> normally instead. Reverting git commits 691513f, 84e1c6b, and especially
-> 5bd5a45 (trivial except for a single hunk) makes resume work again.
-> 
-> lspci -vvv output is attached.
-> 
-> (for internal reference: machine NUE874)
-> 
+Commit-ID:  2d0640b47da74cff7c11642c798d40de861ed524
+Gitweb:     http://git.kernel.org/tip/2d0640b47da74cff7c11642c798d40de861ed524
+Author:     Stephen Boyd <sboyd@codeaurora.org>
+AuthorDate: Tue, 18 Jan 2011 22:46:34 -0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 19 Jan 2011 20:08:15 +0100
 
-"Sandy Bridge machines" is not likely to be descriptive.  This is much
-more likely to be related to a specific motherboard.
+hrtimers: Notify hrtimer users of switches to NOHZ mode
 
-	-hpa
+When NOHZ=y and high res timers are disabled (via cmdline or
+Kconfig) tick_nohz_switch_to_nohz() will notify the user about
+switching into NOHZ mode. Nothing is printed for the case where
+HIGH_RES_TIMERS=y. Fix this for the HIGH_RES_TIMERS=y case by
+duplicating the printk from the low res NOHZ path in the high
+res NOHZ path.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+This confused me since I was thinking 'dmesg | grep -i NOHZ' would
+tell me if NOHZ was enabled, but if I have hrtimers there is
+nothing.
 
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1295419594-13085-1-git-send-email-sboyd@codeaurora.org>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/time/tick-sched.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 3e216e0..c55ea24 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -642,8 +642,7 @@ static void tick_nohz_switch_to_nohz(void)
+ 	}
+ 	local_irq_enable();
+ 
+-	printk(KERN_INFO "Switched to NOHz mode on CPU #%d\n",
+-	       smp_processor_id());
++	printk(KERN_INFO "Switched to NOHz mode on CPU #%d\n", smp_processor_id());
+ }
+ 
+ /*
+@@ -795,8 +794,10 @@ void tick_setup_sched_timer(void)
+ 	}
+ 
+ #ifdef CONFIG_NO_HZ
+-	if (tick_nohz_enabled)
++	if (tick_nohz_enabled) {
+ 		ts->nohz_mode = NOHZ_MODE_HIGHRES;
++		printk(KERN_INFO "Switched to NOHz mode on CPU #%d\n", smp_processor_id());
++	}
+ #endif
+ }
+ #endif /* HIGH_RES_TIMERS */
