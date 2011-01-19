@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748Ab1ASPzE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 10:55:04 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31088 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752106Ab1ASPzD (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Wed, 19 Jan 2011 10:55:03 -0500
-Date: Wed, 19 Jan 2011 10:52:35 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Borislav Petkov <bp@alien8.de>, Joerg Roedel <joerg.roedel@amd.com>,
-        Greg KH <greg@kroah.com>, Borislav Petkov <bp@amd64.org>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 1/3] x86-32: Separate 1:1 pagetables from swapper_pg_dir
-Message-ID: <20110119155235.GA26134@dumpdata.com>
-References: <20101022162038.GA10343@kroah.com>
- <1289483775-17632-2-git-send-email-joerg.roedel@amd.com>
- <20110119003908.GB7609@dumpdata.com>
- <20110119071944.GD13799@liondog.tnic>
+	id S1752974Ab1ASP4A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 10:56:00 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:50730 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752106Ab1ASPz7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 10:55:59 -0500
+Message-ID: <4D37098A.8010706@linux.vnet.ibm.com>
+Date: Wed, 19 Jan 2011 21:25:54 +0530
+From: Ciju Rajan K <ciju@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110119071944.GD13799@liondog.tnic>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH 0/2 v1.0]sched: updating /proc/schedstat
+References: <4D341ECD.3020503@linux.vnet.ibm.com> <1295283289.30950.172.camel@laptop> <4D352CA6.7010109@linux.vnet.ibm.com> <4D35416C.7020706@jp.fujitsu.com> <4D35462B.8010304@linux.vnet.ibm.com> <4D3687C1.4000909@jp.fujitsu.com>
+In-Reply-To: <4D3687C1.4000909@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 08:19:44AM +0100, Borislav Petkov wrote:
-> On Tue, Jan 18, 2011 at 07:39:08PM -0500, Konrad Rzeszutek Wilk wrote:
-> > On Thu, Nov 11, 2010 at 02:56:13PM +0100, Joerg Roedel wrote:
-> 
-> [..]
-> 
-> > > -v2: switch to swapper_pg_dir right after entering start_secondary() so
-> > > that we are able to access percpu data which might not be mapped in the
-> > > trampoline page table.
-> > 
-> > You also might want to look at the regression this patch caused when it
-> > was introduced. Mainly this fix:
-> > 805e3f495057aa5307ad4e3d6dc7073d4733c691
-> 
-> I think you mean the regression _this_
-> b40827fa7268fda8a62490728a61c2856f33830b patch caused, which is not in
-> -stable anyway.
 
-Duh. Saw 'initial_page_table' and immediately jumped to conclusions.
-Thank you for clarifying.
+>>
+>> This patch set removes only those fields which are currently not in use.
+>> If you observe the fields of /proc/schedstat the following fields are not
+>> being updated.
+> 
+> Ah... I misunderstood the meaning of `unused' and complained based on too
+> old kernel's source. Sorry.> 
+
+> I confirmed that these fields are actually not treated by upstream kernel
+> at all. So I think it's OK if any userland tools are updated synchronized
+> with this change.
+
+Thanks for verifying it.
+
+ Does its benefit is more than its cost? In my
+> understanding, its benefit is improving readability and reducing some memory
+> footprint, and its cost is changing all userspace tools referring /proc/schedstat.
+
+In my opinion we should go ahead with updating /proc/schedstat. 
+As I mentioned earlier, we can have an updated script for 
+http://eaglet.rain.com/rick/linux/schedstat/ 
+
+> 
+> # Unfortunately I don't know how much it costs.
+
+The changes required in the userspace would be very small. 
+Its just a matter of re-ordering the values. I also can't think
+of much complicated scenario than this.
+
+-Ciju
+> 
