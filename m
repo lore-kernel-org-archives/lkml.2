@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab1ATCkr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 21:40:47 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55827 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753331Ab1ATCkp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 21:40:45 -0500
+	id S1754899Ab1ATCla (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 21:41:30 -0500
+Received: from ozlabs.org ([203.10.76.45]:49704 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753331Ab1ATCl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 21:41:27 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: linux-next: Tree for January 18 (__modver_version_show)
+Date: Thu, 20 Jan 2011 08:48:24 +1030
+User-Agent: KMail/1.13.5 (Linux/2.6.35-24-generic; KDE/4.5.1; i686; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Dmitry Torokhov <dtor@vmware.com>
+References: <20110118122139.6c2a6f2f.sfr@canb.auug.org.au> <4D370CE6.3000505@oracle.com> <4D370D63.5070503@oracle.com>
+In-Reply-To: <4D370D63.5070503@oracle.com>
 MIME-Version: 1.0
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 19 Jan 2011 18:39:54 -0800
-Message-ID: <AANLkTimOkFckq+r4cD-PSzc_RNs+HJL5CcEM-3Yh+dF6@mail.gmail.com>
-Subject: more intel drm issues (was Re: [git pull] drm intel only fixes)
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Dave Airlie <airlied@linux.ie>,
-        linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101200848.25141.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, so I have a new issue that I'm currently bisecting but that people
-may be able to figure out even befor emy bisect finishes.
+On Thu, 20 Jan 2011 02:42:19 am Randy Dunlap wrote:
+> >> On Tue, 18 Jan 2011 09:17:49 -0800 Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> >>>
+> >>> I'm seeing this on several builds (i386 and x86_64):
+> >>>
+> >>> lib/built-in.o:(__modver+0x8): undefined reference to `__modver_version_show'
+> >>> lib/built-in.o:(__modver+0x2c): undefined reference to `__modver_version_show'
+...
+> You hit the nail.  They do not have SYSFS enabled.
 
-On my slow Atom netbook (that I'm planning on using as my traveling
-companion for LCA), suspend-to-RAM takes a long time with current git.
-It's quite noticeable - it used to be pretty much instant, now it
-takes three seconds. And it's all i915 graphics (although I haven't
-bisected it down fully, I've bisected it down to the drm merge).
+Thanks, does this fix it?
 
-In the good case (like plain 2.6.37), a suspend event will look
-something like this:
+Thanks,
+Rusty.
 
-   ...
-   PM: suspend of devices complete after 147.646 msecs
-   ...
+module: fix linker error for MODULE_VERSION when !MODULE and CONFIG_SYSFS=n
 
-but the i915 driver at some point made it take 3s:
+lib/built-in.o:(__modver+0x8): undefined reference to `__modver_version_show'
+lib/built-in.o:(__modver+0x2c): undefined reference to `__modver_version_show'
 
-  ...
-  PM: suspend of devices complete after 3059.656 msecs
-  ...
+Simplest to just not emit anything: if they've disabled SYSFS they probably
+want the smallest kernel possible.
 
-which is definitely long enough to be worth fixing.
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 
-Maybe the person responsible will go "oh, that's obviously due to
-xyz", and just fix it. But I'll continue to bisect in case nobody
-steps up to admit to wasting time..
-
-                    Linus
+diff --git a/include/linux/module.h b/include/linux/module.h
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -168,7 +168,7 @@ extern struct module __this_module;
+   local headers in "srcversion".
+ */
+ 
+-#ifdef MODULE
++#if defined(MODULE) || !defined(CONFIG_SYSFS)
+ #define MODULE_VERSION(_version) MODULE_INFO(version, _version)
+ #else
+ #define MODULE_VERSION(_version)					\
