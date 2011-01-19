@@ -1,129 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818Ab1ASRyg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 12:54:36 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60497 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753208Ab1ASRye convert rfc822-to-8bit (ORCPT
+	id S1754028Ab1ASSHj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 13:07:39 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45913 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753231Ab1ASSHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 12:54:34 -0500
-Date: Wed, 19 Jan 2011 18:54:11 +0100
-From: Anisse Astier <anisse@astier.eu>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pascal VITOUX <pascal@substantiel.fr>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [PATCH RFC] dmi-scan: Use little-endian for the first 3 fields of
- the UUID.
-Message-ID: <20110119185411.49668f81@destiny.ordissimo>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 19 Jan 2011 13:07:38 -0500
+X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=jbLP0KXJcOz0BbRaUrEA:9 a=TjtZIcRDpScOVP2it_G184gpHXwA:4 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Wed, 19 Jan 2011 13:07:35 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: nobody <darwinskernel@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 2.6.38-rc1
+Message-ID: <20110119180735.GA9752@home.goodmis.org>
+References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
+ <AANLkTimp0UcWi68N5Jv_hUww9PhGVgCzY0qYLETc8Dj_@mail.gmail.com>
+ <1161CC5A-C8CA-477E-B2CE-7870F8E634EE@gmail.com>
+ <AANLkTin+Div6HoAJdFOfqRFSMyxqx7ft7mcteXomaV_Y@mail.gmail.com>
+ <20110119051049.GA2536@WALL-E>
+ <AANLkTikdCek7DGN885Cjuo1nkswe_Y8KG6Knn8XknzsF@mail.gmail.com>
+ <AANLkTikV6=FCQ+-Z=fAi8SH90M-izCUEBisinqGwo=DU@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikV6=FCQ+-Z=fAi8SH90M-izCUEBisinqGwo=DU@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 18, 2011 at 09:56:38PM -0800, Linus Torvalds wrote:
+> 
+> Btw, what may confuse you a bit is that the on-disk representation of
+> the newly received pack ends up being about 69MB, ie the 21MiB of
+> network traffic almost tripled in size as a result of that "resolving
+> deltas" thing. That's because git pack-files are designed to always be
+> stand-alone, so on disk, the pack-file will always contain the base
+> objects needed to expand all the deltas.
 
-From: Pascal VITOUX <pascal@substantiel.fr>
+When I first started using git (2006?) I was recommended to use "-k"
+when doing a fetch or pull. I don't even remember why it was
+recommended. I still do it, but is it necessary?
 
- - Get SMBIOS version.
- - Byte-swap the first 3 fields of the UUID (DMI type 1) as off SMBIOS
-   version 2.6.
+All the help says is:
 
-This patch is an adaptation of Jean Delvare patches for dmidecode
-rev1.100, rev1.01 and rev1.119.
-http://cvs.savannah.gnu.org/viewvc/dmidecode/dmidecode.c?root=dmidecode&view=log
+       -k, --keep
+                  Keep downloaded pack.
 
-It is intended to get the same uuid from dmidecode tool as from sysfs kernel
-tree, more compliant with SMBIOS specification.
-Therefore this patch will have the kernel return a different UUID if you
-are using a recent BIOS implementing SMBIOS >= 2.6.
-
-Signed-off-by: Pascal VITOUX <pascal@substantiel.fr>
-Signed-off-by: Anisse Astier <anisse@astier.eu>
----
-Hi,
-
-I'd like to get some feedback on this patch. It doesn't modify the
-API/ABI, but modifies the value returned by kernel on a given hardware,
-so it could potentially break a (very) badly written app.
-
-Disclaimer: Although I've applied my Signed-off-by, Pascal and I work for
-the same company.
-
-Regards,
-Anisse
-
----
- drivers/firmware/dmi_scan.c |   36 ++++++++++++++++++++++++++++++++++--
- 1 files changed, 34 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-index e28e41668..b6278a7 100644
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -99,6 +99,7 @@ static void dmi_table(u8 *buf, int len, int num,
- static u32 dmi_base;
- static u16 dmi_len;
- static u16 dmi_num;
-+static u16 dmi_ver;
- 
- static int __init dmi_walk_early(void (*decode)(const struct dmi_header *,
- 		void *))
-@@ -169,7 +170,18 @@ static void __init dmi_save_uuid(const struct dmi_header *dm, int slot, int inde
- 	if (!s)
- 		return;
- 
--	sprintf(s, "%pUB", d);
-+	/*
-+	 * As off version 2.6 of the SMBIOS specification, the first 3
-+	 * fields of the UUID are supposed to be encoded on little-endian.
-+	 * The specification says that this is the defacto standard,
-+	 * however I've seen systems following RFC 4122 instead and use
-+	 * network byte order, so I am reluctant to apply the byte-swapping
-+	 * for older versions.
-+	 */
-+	if (dmi_ver >= 0x0206)
-+		sprintf(s, "%pUL", d);
-+	else
-+		sprintf(s, "%pUB", d);
- 
-         dmi_ident[slot] = s;
- }
-@@ -400,9 +412,29 @@ static int __init dmi_present(const char __iomem *p)
- 		dmi_base = (buf[11] << 24) | (buf[10] << 16) |
- 			(buf[9] << 8) | buf[8];
- 
-+		/* SMBIOS version */
-+		dmi_ver = (*(u8 *)(p - 0x10 + 0x06) << 8) +
-+			*(u8 *)(p - 0x10 + 0x07);
-+
-+		/* Some BIOS report weird SMBIOS version, fix that up */
-+		switch (dmi_ver) {
-+		case 0x021F:
-+			printk(KERN_INFO "SMBIOS version fixup (2.%d -> 2.%d).\n",
-+			       31, 3);
-+			dmi_ver = 0x0203;
-+			break;
-+		case 0x0233:
-+			printk(KERN_INFO "SMBIOS version fixup (2.%d -> 2.%d).\n",
-+			       51, 6);
-+			dmi_ver = 0x0206;
-+			break;
-+		}
-+		printk(KERN_INFO "SMBIOS version %d.%d.\n", dmi_ver >> 8,
-+		       dmi_ver & 0xFF);
-+
- 		/*
- 		 * DMI version 0.0 means that the real version is taken from
--		 * the SMBIOS version, which we don't know at this point.
-+		 * the SMBIOS version.
- 		 */
- 		if (buf[14] != 0)
- 			printk(KERN_INFO "DMI %d.%d present.\n",
--- 
-1.7.3.2
+-- Steve
 
