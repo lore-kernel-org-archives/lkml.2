@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464Ab1ASOcV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 09:32:21 -0500
-Received: from thunk.org ([69.25.196.29]:38704 "EHLO thunker.thunk.org"
+	id S1754525Ab1ASOiV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 09:38:21 -0500
+Received: from cantor.suse.de ([195.135.220.2]:53769 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754188Ab1ASOcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 09:32:20 -0500
-Date: Wed, 19 Jan 2011 09:32:14 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: "Alex,Shi" <alex.shi@intel.com>
-Cc: czoccolo@gmail.com, vgoyal@redhat.com, jaxboe@fusionio.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Li, Shaohua" <shaohua.li@intel.com>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-Subject: Re: [performance bug] kernel building regression on 64 LCPUs
- machine
-Message-ID: <20110119143214.GA3043@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, "Alex,Shi" <alex.shi@intel.com>,
-	czoccolo@gmail.com, vgoyal@redhat.com, jaxboe@fusionio.com,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"Li, Shaohua" <shaohua.li@intel.com>,
-	"Chen, Tim C" <tim.c.chen@intel.com>
-References: <1295402148.4773.143.camel@debian>
+	id S1754185Ab1ASOiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 09:38:20 -0500
+Date: Wed, 19 Jan 2011 15:38:18 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 1/7] dma/shdma.c Typo change desciptor to descriptor.
+In-Reply-To: <1293817097-7945-1-git-send-email-justinmattock@gmail.com>
+Message-ID: <alpine.LNX.2.00.1101191537280.26685@pobox.suse.cz>
+References: <1293817097-7945-1-git-send-email-justinmattock@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295402148.4773.143.camel@debian>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 09:55:48AM +0800, Alex,Shi wrote:
-> Shaohua and I tested kernel building performance on latest kernel. and
-> found it is drop about 15% on our 64 LCPUs NHM-EX machine on ext4 file
-> system. 
+On Fri, 31 Dec 2010, Justin P. Mattock wrote:
 
-What kerenl version were you comparing against?  And what were you
-using to benchmark this performance drop?  I'm curious what your
-workload was; I'm guesisng it was some kind of mixed read/write
-workload?  Were there any fsync()'s involved?
+> Below is a patch, that changes a typo from "desciptor" to "descriptor".
+> Let me know if I missed anything.
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> 
+> ---
+>  drivers/dma/shdma.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/dma/shdma.c b/drivers/dma/shdma.c
+> index 85ffd5e..72d25d9 100644
+> --- a/drivers/dma/shdma.c
+> +++ b/drivers/dma/shdma.c
+> @@ -740,7 +740,7 @@ static void sh_chan_xfer_ld_queue(struct sh_dmae_chan *sh_chan)
+>  		return;
+>  	}
+>  
+> -	/* Find the first not transferred desciptor */
+> +	/* Find the first not transferred descriptor */
+>  	list_for_each_entry(desc, &sh_chan->ld_queue, node)
+>  		if (desc->mark == DESC_SUBMITTED) {
+>  			dev_dbg(sh_chan->dev, "Queue #%d to %d: %u@%x -> %x\n",
 
-Thanks, regards,
+I have folded the whole series into one patch and applied, thanks.
 
-						- Ted
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
