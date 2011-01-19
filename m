@@ -1,103 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071Ab1ASWcl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 17:32:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25117 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754710Ab1ASWck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 17:32:40 -0500
-From: Eric Paris <eparis@redhat.com>
-Subject: [PATCH] kexec: include sysctl to disable
-To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Cc: ebiederm@xmission.com
-Date: Wed, 19 Jan 2011 17:26:30 -0500
-Message-ID: <20110119222630.6755.63928.stgit@paris.rdu.redhat.com>
-User-Agent: StGIT/0.14.3
+	id S1755049Ab1ASWdn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 17:33:43 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:49510 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754767Ab1ASWdm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 17:33:42 -0500
+Date: Wed, 19 Jan 2011 17:33:39 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: David Miller <davem@davemloft.net>
+Cc: rostedt@goodmis.org, richm@oldelvet.org.uk, 609371@bugs.debian.org,
+        ben@decadent.org.uk, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@redhat.com
+Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
+	Unknown relocation: 36
+Message-ID: <20110119223339.GD23544@Krystal>
+References: <20110119153326.GC11022@Krystal> <20110119.134047.232915743.davem@davemloft.net> <20110119221327.GA23544@Krystal> <20110119.142137.184823805.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110119.142137.184823805.davem@davemloft.net>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 17:22:06 up 57 days,  3:25,  4 users,  load average: 0.00, 0.00,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-much like /proc/sys/kernel/modules_disable is used to disable module
-loading, /proc/sys/kernel/kexec_disable is used to disable kexec code
-loading.  It would still be possible to use kexec -l to load a kernel, set
-the tunable to 1 so the kernel waiting to boot couldn't change, and then
-launch the kernel at a later time (through kexec -e or through a crash)
+* David Miller (davem@davemloft.net) wrote:
+> From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Date: Wed, 19 Jan 2011 17:13:27 -0500
+> 
+> > Hrm, I'd like to see what kind of ill-conceived 32-bit architecture would
+> > generate a unaligned access for a 32-bit aligned u64. Do you have examples in
+> > mind ? By definition, the memory accesses should be at most 32-bit, no ? AFAIK,
+> > gcc treats u64 as two distinct reads on all 32-bit architectures.
+> 
+> Sparc 32-bit has 64-bit loads and stores, GCC uses them because the ABI
+> specifies that every structure is at least 8 byte aligned.
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
----
+Ah, that's the answer I was looking for, thanks!
 
- include/linux/kexec.h |    2 ++
- kernel/kexec.c        |    4 ++++
- kernel/sysctl.c       |   13 +++++++++++++
- 3 files changed, 19 insertions(+), 0 deletions(-)
+> 
+> > gcc on my sparc64 box (32-bit userland) disagrees with you here ;) Using
+> > gcc (Debian 4.3.3-14) 4.3.3, here is a demonstration that, indeed, "packed"
+> > generates aweful code, but that "packed, aligned(4 or 8)" generates pretty
+> > decent code:
+> 
+> Amazing, if this works then do it.
+> 
+> But please document this fully with comments and such :-)
 
-diff --git a/include/linux/kexec.h b/include/linux/kexec.h
-index 03e8e8d..fd8b2b8 100644
---- a/include/linux/kexec.h
-+++ b/include/linux/kexec.h
-@@ -195,6 +195,8 @@ extern struct kimage *kexec_crash_image;
- #define VMCOREINFO_NOTE_SIZE       (KEXEC_NOTE_HEAD_BYTES*2 + VMCOREINFO_BYTES \
- 				    + VMCOREINFO_NOTE_NAME_BYTES)
- 
-+extern int kexec_load_disabled;
-+
- /* Location of a reserved region to hold the crash kernel.
-  */
- extern struct resource crashk_res;
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 213ce69..5aff5cd 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -48,6 +48,7 @@ static unsigned char vmcoreinfo_data[VMCOREINFO_BYTES];
- u32 vmcoreinfo_note[VMCOREINFO_NOTE_SIZE/4];
- size_t vmcoreinfo_size;
- size_t vmcoreinfo_max_size = sizeof(vmcoreinfo_data);
-+int kexec_load_disabled;
- 
- /* Location of the reserved area for the crash kernel */
- struct resource crashk_res = {
-@@ -949,6 +950,9 @@ SYSCALL_DEFINE4(kexec_load, unsigned long, entry, unsigned long, nr_segments,
- 	    !capable(CAP_SYS_MODULE))
- 		return -EPERM;
- 
-+	if (kexec_load_disabled)
-+		return -EPERM;
-+
- 	/*
- 	 * Verify we have a legal set of flags
- 	 * This leaves us room for future extensions.
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 0e1ac51..1fdc973 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -55,6 +55,7 @@
- #include <linux/kprobes.h>
- #include <linux/pipe_fs_i.h>
- #include <linux/oom.h>
-+#include <linux/kexec.h>
- 
- #include <asm/uaccess.h>
- #include <asm/processor.h>
-@@ -569,6 +570,18 @@ static struct ctl_table kern_table[] = {
- 		.extra2		= &one,
- 	},
- #endif
-+#ifdef CONFIG_KEXEC
-+	{
-+		.procname	= "kexec_load_disabled",
-+		.data		= &kexec_load_disabled,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		/* only handle a transition from default "0" to "1" */
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &one,
-+		.extra2		= &one,
-+	},
-+#endif
- #ifdef CONFIG_HOTPLUG
- 	{
- 		.procname	= "hotplug",
+I will, I will! ;)
 
+So I guess we go for the following. Is it verbose enough ?
+
+/*
+ * __u64_packed_aligned:
+ *
+ * Forces gcc to use the u64 type alignment, up-aligning or down-aligning the
+ * target type if necessary. The memory accesses to the target structure are
+ * efficient (does not require bytewise memory accesses) and the atomic pointer
+ * update guarantees required by RCU are kept. u64 is considered as the largest
+ * type that can generate a trap for unaligned accesses (u64 on sparc32 needs to
+ * be aligned on 64-bit).
+ *
+ * Specifying both "packed" and "aligned" generates decent code (without the
+ * bytewise memory accesses generated by simply using "packed"), and forces
+ * gcc to down-align the structure alignment to the alignment of a u64 type.
+ *
+ * This alignment should be used for both structure definitions and declarations
+ * (as *both* the type and variable attribute) when using the "section"
+ * attribute to generate arrays of structures.
+ */
+#define __u64_packed_aligned \
+        __attribute__((__packed__, __aligned__(__alignof__(long long))))
+
+Thanks,
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
