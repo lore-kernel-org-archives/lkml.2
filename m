@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269Ab1ASDma (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 22:42:30 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:52304 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753207Ab1ASDm2 (ORCPT
+	id S1753054Ab1ASDoD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 22:44:03 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:47356 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752643Ab1ASDoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 22:42:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=cc:message-id:from:to:in-reply-to:content-type
-         :content-transfer-encoding:mime-version:subject:date:references
-         :x-mailer;
-        b=T9FiyTlNRVehPrbf20F3/8q4bdhDzWiJPV9pYMqRq39gBvoqOIa603n1ABUss49/dp
-         HCppq8Y3iyovnrISyQzYdacy6zplutMuEGBN5E1xbJdNbaAu56Nx2kNtRBSBCPWy5W/v
-         umdqVfQEx8cjKjW08cbkfL3VM6pC5oViPRx/E=
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-Id: <1161CC5A-C8CA-477E-B2CE-7870F8E634EE@gmail.com>
-From: Justin Mattock <justinmattock@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <AANLkTimp0UcWi68N5Jv_hUww9PhGVgCzY0qYLETc8Dj_@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII; format=flowed; delsp=yes
+	Tue, 18 Jan 2011 22:44:01 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/+SDQwKuH+kH5HJJ6hTzpTHZXFFhyZZVwwNYLgEd
+	i73iUhH4XgQtxd
+Subject: Re: Bug in scheduler when using rt_mutex
+From: Mike Galbraith <efault@gmx.de>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, samu.p.onkalo@nokia.com,
+        mingo@elte.hu,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        tglx <tglx@linutronix.de>
+In-Reply-To: <AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
+References: <1295275365.12840.13.camel@kolo>
+	 <1295280032.30950.128.camel@laptop> <1295339012.11678.35.camel@kolo>
+	 <AANLkTikXf-OMEBx-UZktxooOs+YqUkSE9doyEZopjzOx@mail.gmail.com>
+	 <1295357746.30950.681.camel@laptop>
+	 <AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 19 Jan 2011 04:43:57 +0100
+Message-ID: <1295408637.8017.56.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0 (Apple Message framework v936)
-Subject: Re: Linux 2.6.38-rc1
-Date: Tue, 18 Jan 2011 19:42:22 -0800
-References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com> <AANLkTimp0UcWi68N5Jv_hUww9PhGVgCzY0qYLETc8Dj_@mail.gmail.com>
-X-Mailer: Apple Mail (2.936)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-01-19 at 10:38 +0800, Yong Zhang wrote:
 
-On Jan 18, 2011, at 6:07 PM, Linus Torvalds wrote:
+> > Index: linux-2.6/kernel/sched_fair.c
+> > ===================================================================
+> > --- linux-2.6.orig/kernel/sched_fair.c
+> > +++ linux-2.6/kernel/sched_fair.c
+> > @@ -4075,6 +4075,22 @@ static void prio_changed_fair(struct rq
+> >  static void switched_to_fair(struct rq *rq, struct task_struct *p,
+> >                             int running)
+> >  {
+> > +       struct sched_entity *se = &p->se;
+> > +       struct cfs_rq *cfs_rq = cfs_rq_of(se);
+> > +
+> > +       if (se->on_rq && cfs_rq->curr != se)
+> 
+> (cfs_rq->curr != se) equals to (!running), no?
 
-> On Tue, Jan 18, 2011 at 3:54 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> It's been two weeks, and the merge window for 2.6.38 is thus closed.
->
-> Oh, and it looks like mirroring from master.kernel.org is being very
-> slow, possibly at least partly because the conversion to
-> xv-compression seems to be going on (who knows - there's obviously a
-> script going over all the public files recompressing them from gz to
-> xz, but it may be some kind of dry-run and not final).
->
-> And I may also have managed to hit the weekly rsync "check
-> _everything_" window too. So rsync likely isn't just checking and
-> syncing new files, but checksumming every single file that gets
-> mirrored out and re-verifying it.
->
-> End result: it looks like git.kernel.org and the ftp mirrors are going
-> to take hours to update. So if you don't see 2.6.38-rc1 yet, and you
-> don't have an account on kernel.org and can fetch it directly from
-> master, don't worry. It will mirror out eventually, but it's going to
-> take some time.
->
-> Sit back, relax, and sip some foofy drink. It will all work out in  
-> the end.
->
->              Linus
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux- 
-> kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+No, running is task_of(se) == rq->curr.  Another class or fair group
+task may be rq_of(cfs_rq)->curr
 
+> > +               __dequeue_entity(cfs_rq, se);
+> > +
+> > +       /*
+> > +        * se->vruntime can be completely out there, there is no telling
+> > +        * how long this task was !fair and on what CPU if any it became
+> > +        * !fair. Therefore, reset it to a known, reasonable value.
+> > +        */
+> > +       se->vruntime = cfs_rq->min_vruntime;
+> 
+> But this is not fair for !SLEEP task.
+> You know se->vruntime -= cfs_rq->min_vruntime for !SLEEP task,
+> then after it go through sched_fair-->sched_rt-->sched_fair by some
+> means, current cfs_rq->min_vruntime is added back.
 
+It drops lag for all, positive or negative.
 
-wheres the changelog? (gotta narcissistically check to see if I made  
-it in)..
+> But here se is putted before where it should be. Is this what we want?
 
-Justin P. Mattock
+It may move forward or backward.  If transitions can happen at high
+frequency it could be a problem, otherwise, it's a cornercase blip.
+
+An alternative is to leave lag alone. and normalize sleepers, but that's
+(did that) considerably more intrusive.
+
+	-Mike
+
