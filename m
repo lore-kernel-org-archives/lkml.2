@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901Ab1ASKiI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 05:38:08 -0500
-Received: from casper.infradead.org ([85.118.1.10]:60841 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752903Ab1ASKiG convert rfc822-to-8bit (ORCPT
+	id S1753577Ab1ASKrB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 05:47:01 -0500
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:37981 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750984Ab1ASKrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 05:38:06 -0500
-Subject: Re: Bug in scheduler when using rt_mutex
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: samu.p.onkalo@nokia.com, mingo@elte.hu,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        tglx <tglx@linutronix.de>
-In-Reply-To: <1295430276.30950.1414.camel@laptop>
-References: <1295275365.12840.13.camel@kolo>
-	 <1295280032.30950.128.camel@laptop> <1295339012.11678.35.camel@kolo>
-	 <AANLkTikXf-OMEBx-UZktxooOs+YqUkSE9doyEZopjzOx@mail.gmail.com>
-	 <1295357746.30950.681.camel@laptop>
-	 <AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
-	 <1295430276.30950.1414.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 19 Jan 2011 11:38:18 +0100
-Message-ID: <1295433498.30950.1482.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 19 Jan 2011 05:47:00 -0500
+Date: Wed, 19 Jan 2011 12:40:32 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Yang Ruirui <ruirui.r.yang@tieto.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Felipe Balbi <felipe.balbi@nokia.com>,
+        Heikki Krogerus <ext-heikki.krogerus@nokia.com>,
+        Tejun Heo <tj@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Hema HK <hemahk@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb otg: use atomic notifier instead of blocking
+ notifier
+Message-ID: <20110119104032.GJ2505@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <20110119092011.GA23624@darkstar>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110119092011.GA23624@darkstar>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-19 at 10:44 +0100, Peter Zijlstra wrote:
-> +static void
-> +switched_from_fair(struct rq *rq, struct task_struct *p, int running)
-> +{
-> +       struct sched_entity *se = &p->se;
-> +       struct cfs_rq *cfs_rq = cfs_rq_of(se);
-> +
-> +       if (!se->on_rq && p->state != TASK_RUNNING)
-> +               se->vruntime -= cfs_rq->min_vruntime;
-> +}
-> +
->  /*
->   * We switched to the sched_fair class.
->   */
-> -static void switched_to_fair(struct rq *rq, struct task_struct *p,
-> -                            int running)
-> +static void
-> +switched_to_fair(struct rq *rq, struct task_struct *p, int running)
->  {
-> +       struct sched_entity *se = &p->se;
-> +       struct cfs_rq *cfs_rq = cfs_rq_of(se);
-> +
-> +       if (se->on_rq && cfs_rq->curr != se)
-> +               __dequeue_entity(cfs_rq, se);
-> +
-> +       se->vruntimea += cfs_rq->min_vruntime;
-> +
-> +       if (se->on_rq && cfs_rq->curr != se)
-> +               __enqueue_entity(cfs_rq, se);
-> +
->         /*
->          * We were most likely switched from sched_rt, so
->          * kick off the schedule if running, otherwise just see 
+hi,
 
-Hrm, I think the to bit is not needed with the from thing in place, the
-enqueue from _setprio will already have added min_vruntime
+On Wed, Jan 19, 2011 at 05:20:11PM +0800, Yang Ruirui wrote:
+> 
+> following bug happens with meego 2.6.35 kernel on nokia n900:
+
+<snip>
+
+> Actually the blocking notifier chain runs in process context, so not fit for use here.
+> 
+> For mainline kernel there's such issue as well.
+> Here fix this problem by changing to use atomic_notifier.
+> 
+> Signed-off-by: Yang Ruirui <ruirui.r.yang@tieto.com>
+> ---
+>  drivers/usb/otg/ab8500-usb.c  |    6 +++---
+>  drivers/usb/otg/twl4030-usb.c |    6 +++---
+>  drivers/usb/otg/twl6030-usb.c |    6 +++---
+
+you're missing the other transceivers:
+drivers/usb/otg/langwell_otg.c
+drivers/usb/otg/msm72k_otg.c
+drivers/usb/otg/gpio_vbus.c
+drivers/usb/otg/nop-usb-xceiv.c
+drivers/usb/otg/ulpi.c
+drivers/usb/otg/isp1301_omap.c
+
+-- 
+balbi
