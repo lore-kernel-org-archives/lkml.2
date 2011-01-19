@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab1ASWFW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 17:05:22 -0500
-Received: from tundra.namei.org ([65.99.196.166]:43647 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753643Ab1ASWFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 17:05:19 -0500
-Date: Thu, 20 Jan 2011 09:04:47 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] Security subsystem bugfixes for 2.6.38
-Message-ID: <alpine.LRH.2.00.1101200902400.5588@tundra.namei.org>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754156Ab1ASWF1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 17:05:27 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:47579 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754046Ab1ASWFZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 17:05:25 -0500
+Subject: Re: [patch 32/37] parisc: Use generic irq Kconfig
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Kyle McMartin <kyle@mcmartin.ca>
+In-Reply-To: <20110119210840.424269590@linutronix.de>
+References: <20110119205258.462759212@linutronix.de>
+	 <20110119210840.424269590@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 19 Jan 2011 16:05:22 -0600
+Message-ID: <1295474722.10978.43.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull the following bugfixes for the trusted keys code.
+On Wed, 2011-01-19 at 21:49 +0000, Thomas Gleixner wrote:
+> plain text document attachment (parisc-use-generic-irq-Kconfig.patch)
+> No functional change.
 
-The following changes since commit c56eb8fb6dccb83d9fe62fd4dc00c834de9bc470:
-  Linus Torvalds (1):
-        Linux 2.6.38-rc1
+Not quite true ... you take out GENERIC_HARDIRQS but select
+HAVE_GENERIC_HARDIRQS ... is that right?
 
-are available in the git repository at:
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Kyle McMartin <kyle@mcmartin.ca>
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6 for-linus
+Plus, it doesn't apply:
 
-Mimi Zohar (1):
-      trusted-keys: free memory bugfix
+Hunk #1 FAILED at 12.
+Hunk #2 FAILED at 65.
+2 out of 2 hunks FAILED -- saving rejects to file
+arch/parisc/Kconfig.rej
 
-Tetsuo Handa (3):
-      trusted-keys: another free memory bugfix
-      trusted-keys: check for NULL before using it
-      trusted-keys: avoid scattring va_end()
+It looks like it was made before we did our generic irq conversion in
+the 2.6.36 merge window.
 
- security/keys/trusted_defined.c |   51 +++++++++++++++++++++-----------------
- 1 files changed, 28 insertions(+), 23 deletions(-)
+James
 
 
--- 
-James Morris
-<jmorris@namei.org>
