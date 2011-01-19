@@ -1,43 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab1ASTTE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 14:19:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46942 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754602Ab1ASTTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 14:19:02 -0500
-Subject: Re: [RESEND][RFC][PATCH] fsnotify: track all events on filesystem
-From: Eric Paris <eparis@redhat.com>
-To: Jakob Goldbach <jakob.goldbach@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 19 Jan 2011 14:18:55 -0500
-In-Reply-To: <20100713153626.EB8B140434E@localdomain.local>
-References: <20100713153626.EB8B140434E@localdomain.local>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1295464736.21577.23.camel@localhost.localdomain>
-Mime-Version: 1.0
+	id S1754682Ab1ASTT3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 14:19:29 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42179 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754646Ab1ASTTZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 14:19:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=NG4ohmxJFo3Okx/visX8u/uJFkLHWNXRclxmdD5s5guU8NGs49SbD1K0sBUpuIoK/D
+         bnwhhNCLCJfvNwzwvRySgw0kX6cSmXmM7LvQBoky0Om202BC/rNjZBw1zZELO8LG0j1k
+         sQr7P8dByqO9bmCYfnCsT0hm20r+JiiZ2E/ew=
+Date: Wed, 19 Jan 2011 21:19:24 +0200
+From: Ilya Dryomov <idryomov@gmail.com>
+To: linux-btrfs@vger.kernel.org
+Cc: Josef Bacik <josef@redhat.com>, Chris Mason <chris.mason@oracle.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Btrfs: use checksums_len instead of first_page_offset
+Message-ID: <20110119191924.GC1358@kwango.lan.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-13 at 17:36 +0200, Jakob Goldbach wrote:
-> (Resending, this time with fsnotify maintainer cc'ed)
-> 
-> This patch allows notification groups to get events on the entire filesystem,
-> not just on registered inodes.
-> 
-> I want to use it for a notification group that tracks all changes to the 
-> filesystem in order to do faster backups.
-> 
-> Is this a good or bad idea? 
-> 
-> /Jakob
+Minimizes the number of (sizeof(u32) * num_checksums) we have to do,
+removes now useless first_page_offset variable.
 
-This mail (like many notification e-mails) was eaten by my spam filter.
-I hope you've gotten an answer by now, but I'll respond 6 months late.
-We allow you to do something very similar, by listening to events on
-mount points.  Hopefully that meets your needs.....
+Signed-off-by: Ilya Dryomov <idryomov@gmail.com>
+---
+ fs/btrfs/free-space-cache.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
--Eric
+diff --git a/fs/btrfs/free-space-cache.c b/fs/btrfs/free-space-cache.c
+index ee0af41..46f7541 100644
+--- a/fs/btrfs/free-space-cache.c
++++ b/fs/btrfs/free-space-cache.c
+@@ -224,7 +224,7 @@ int load_free_space_cache(struct btrfs_fs_info *fs_info,
+ 	u64 generation;
+ 	u32 cur_crc;
+ 	pgoff_t index = 0;
+-	unsigned long first_page_offset;
++	unsigned long checksums_len;
+ 	int num_checksums;
+ 	int ret = 0;
+ 
+@@ -298,8 +298,8 @@ int load_free_space_cache(struct btrfs_fs_info *fs_info,
+ 
+ 	/* Setup everything for doing checksumming */
+ 	num_checksums = i_size_read(inode) / PAGE_CACHE_SIZE;
+-	first_page_offset = (sizeof(u32) * num_checksums) + sizeof(u64);
+-	disk_crcs = kzalloc(sizeof(u32) * num_checksums, GFP_NOFS);
++	checksums_len = sizeof(u32) * num_checksums;
++	disk_crcs = kzalloc(checksums_len, GFP_NOFS);
+ 	if (!disk_crcs)
+ 		goto out;
+ 
+@@ -321,7 +321,7 @@ int load_free_space_cache(struct btrfs_fs_info *fs_info,
+ 			break;
+ 
+ 		if (index == 0) {
+-			start_offset = first_page_offset;
++			start_offset = checksums_len + sizeof(u64);
+ 			offset = start_offset;
+ 		}
+ 
+@@ -349,8 +349,8 @@ int load_free_space_cache(struct btrfs_fs_info *fs_info,
+ 		if (index == 0) {
+ 			u64 *gen;
+ 
+-			memcpy(disk_crcs, addr, sizeof(u32) * num_checksums);
+-			gen = addr + (sizeof(u32) * num_checksums);
++			memcpy(disk_crcs, addr, checksums_len);
++			gen = addr + checksums_len;
+ 			if (*gen != BTRFS_I(inode)->generation) {
+ 				printk(KERN_ERR "btrfs: space cache generation"
+ 				       " (%llu) does not match inode (%llu) "
+-- 
+1.7.2.3
 
