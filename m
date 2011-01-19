@@ -1,109 +1,357 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268Ab1ASM4Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 07:56:25 -0500
-Received: from mail-yi0-f42.google.com ([209.85.218.42]:41698 "EHLO
-	mail-yi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752530Ab1ASM4Y convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 07:56:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=EHD+NbEeq4ccj+PL+pRmjE2IPudXVwMWBEOfnryyEh1+eUcvEDduC+W9fe5jIeD9pd
-         MLKqi87fFKwKxCW5dwB5Enu0GXuggs1AWTICNSXLZ6lZ4SOwAQSHI7kaAXBT7sLVA6T/
-         i1tUDGFKdOAsm0KKQyPMinyOPOmpEw0UtZ5GY=
+	id S1754350Ab1ASM4f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 07:56:35 -0500
+Received: from cantor.suse.de ([195.135.220.2]:49954 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754307Ab1ASM4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 07:56:33 -0500
+Date: Wed, 19 Jan 2011 13:56:30 +0100
+From: Jan Kara <jack@suse.cz>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: "Shi, Alex" <alex.shi@intel.com>, jack@suse.cz, tytso@mit.edu,
+        "czoccolo@gmail.com" <czoccolo@gmail.com>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>,
+        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>
+Subject: Re: [performance bug] kernel building regression on 64 LCPUs
+ machine
+Message-ID: <20110119125630.GB4246@quack.suse.cz>
+References: <1295402148.4773.143.camel@debian>
+ <1295402606.1949.871.camel@sli10-conroe>
 MIME-Version: 1.0
-In-Reply-To: <1295441307.28776.15.camel@laptop>
-References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
-	<20110119120200.GA1057@elte.hu>
-	<1295441307.28776.15.camel@laptop>
-Date: Wed, 19 Jan 2011 14:56:23 +0200
-X-Google-Sender-Auth: Q4bSus55M6lnvSKCkYh8-XZU_LA
-Message-ID: <AANLkTi=gxMkzO63RAWiuFt9vp57dvi4d=TaT=NmuvyY2@mail.gmail.com>
-Subject: Re: percpu related boot crash on x86 (was: Linux 2.6.38-rc1)
-From: Pekka Enberg <penberg@kernel.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295402606.1949.871.camel@sli10-conroe>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-19 at 13:02 +0100, Ingo Molnar wrote:
->> There's a rather frequent, percpu related boot crash that I can see with .38-rc1:
->>
->> [    0.000000] NR_IRQS:4352
->> [    0.000000] ------------[ cut here ]------------
->> [    0.000000] WARNING: at kernel/smp.c:433 smp_call_function_many+0x90/0x209()
->> [    0.000000] Hardware name: System Product Name
->> [    0.000000] Modules linked in:
->> [    0.000000] Pid: 0, comm: swapper Not tainted 2.6.38-rc1 #86551
->> [    0.000000] Call Trace:
->> [    0.000000]  [<ffffffff8103f544>] ? warn_slowpath_common+0x85/0x9d
->> [    0.000000]  [<ffffffff81027218>] ? do_flush_tlb_all+0x0/0x4d
->> [    0.000000]  [<ffffffff81027218>] ? do_flush_tlb_all+0x0/0x4d
->> [    0.000000]  [<ffffffff8103f576>] ? warn_slowpath_null+0x1a/0x1c
->> [    0.000000]  [<ffffffff810760df>] ? smp_call_function_many+0x90/0x209
->> [    0.000000]  [<ffffffff810cc7ca>] ? pcpu_mem_alloc+0x65/0x67
->> [    0.000000]  [<ffffffff81027218>] ? do_flush_tlb_all+0x0/0x4d
->> [    0.000000]  [<ffffffff8107627a>] ? smp_call_function+0x22/0x26
->> [    0.000000]  [<ffffffff81076299>] ? on_each_cpu+0x1b/0x39
->> [    0.000000]  [<ffffffff810274e6>] ? flush_tlb_all+0x1c/0x1e
->> [    0.000000]  [<ffffffff810dc7d7>] ? remove_vm_area+0x71/0x96
->> [    0.000000]  [<ffffffff810dc868>] ? __vunmap+0x3f/0xcf
->> [    0.000000]  [<ffffffff810dc9db>] ? vfree+0x2c/0x2e
->> [    0.000000]  [<ffffffff810ccca6>] ? pcpu_mem_free+0x1e/0x20
->> [    0.000000]  [<ffffffff810ccd75>] ? pcpu_extend_area_map+0x9a/0xb6
->> [    0.000000]  [<ffffffff810cd452>] ? pcpu_alloc+0x17e/0x916
->> [    0.000000]  [<ffffffff8106bb00>] ? trace_hardirqs_off+0xd/0xf
->> [    0.000000]  [<ffffffff810e5bed>] ? kmem_cache_alloc_trace+0xab/0x120
->> [    0.000000]  [<ffffffff810cdbfa>] ? __alloc_percpu+0x10/0x12
->> [    0.000000]  [<ffffffff8180afd4>] ? early_irq_init+0xb2/0x13d
->> [    0.000000]  [<ffffffff817f4a06>] ? start_kernel+0x1fa/0x3a4
->> [    0.000000]  [<ffffffff817f42a6>] ? x86_64_start_reservations+0xb6/0xba
->> [    0.000000]  [<ffffffff817f43a1>] ? x86_64_start_kernel+0xf7/0xfe
->> [    0.000000] ---[ end trace 4eaa2a86a8e2da22 ]---
->> [    0.000000] ------------[ cut here ]------------
->
-> You config had CONFIG_FRAME_POINTER=y, still its all '?', did out
-> backtrace code go funny in the head?
+On Wed 19-01-11 10:03:26, Shaohua Li wrote:
+> add Jan and Theodore to the loop.
+  Thanks.
 
-On Wed, Jan 19, 2011 at 2:48 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->  start_kernel()
->   local_irq_disable()
->   ...
->   early_irq_init()
->     alloc_desc()
->       alloc_percpu()
->         __alloc_percpu()
->           pcpu_alloc()
->             pcpu_extend_area_map()
->               pcpu_mem_free()
->                 vfree()
->                   __vunmap()
->                     remove_vm_area()
->                       free_unmap_vmap_area()
->                         vmap_debug_free_range()
-> #ifdef CONFIG_DEBUG_PAGEALLOC
->                           flush_tlb_kernel_range()
->                             flush_tlb_all()
->                               on_each_cpu()
->                                 smp_call_function()
->                                   WARN_ON_ONCE(irqs_disabled()....);
->
->
-> Not quite sure that to do about that though..
+> On Wed, 2011-01-19 at 09:55 +0800, Shi, Alex wrote:
+> > Shaohua and I tested kernel building performance on latest kernel. and
+> > found it is drop about 15% on our 64 LCPUs NHM-EX machine on ext4 file
+> > system. We find this performance dropping is due to commit
+> > 749ef9f8423054e326f. If we revert this patch or just change the
+> > WRITE_SYNC back to WRITE in jbd2/commit.c file. the performance can be
+> > recovered. 
+> > 
+> > iostat report show with the commit, read request merge number increased
+> > and write request merge dropped. The total request size increased and
+> > queue length dropped. So we tested another patch: only change WRITE_SYNC
+> > to WRITE_SYNC_PLUG in jbd2/commit.c, but nothing effected.
+> since WRITE_SYNC_PLUG doesn't work, this isn't a simple no-write-merge issue.
+> 
+> > we didn't test deadline IO mode, just test cfq. seems insert write
+> > request into sync queue effect much read performance, but we don't know
+> > details. What's your comments of this? 
+  Indeed it seems that the optimization of the case where we wait for the
+transaction is negatively impacting the performance when we are not. Does
+patch below help for your load? It refines the logic when WRITE_SYNC
+is needed (of course, we should also test whether the patch works for fsync
+heavy loads as well).
+  The patch is mostly a proof of concept and only lightly tested so be
+careful...
 
-Is vmalloc() and vfree() supposed to work with interrupts disabled? I
-always thought they weren't which would mean something in
-pcpu_mem_alloc() needs changing...
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
+---
+
+>From 6060f56ac919ac6b146057787af219bbf2503ea0 Mon Sep 17 00:00:00 2001
+From: Jan Kara <jack@suse.cz>
+Date: Wed, 19 Jan 2011 13:45:04 +0100
+Subject: [PATCH] jbd2: Refine commit writeout logic
+
+Currently we write out all journal buffers in WRITE_SYNC mode. This improves
+performance for fsync heavy workloads but hinders performance when writes
+are mostly asynchronous. So add possibility for callers starting a transaction
+commit to specify whether they are going to wait for the commit and submit
+journal writes in WRITE_SYNC mode only in that case.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/ext4/fsync.c       |    2 +-
+ fs/ext4/super.c       |    2 +-
+ fs/jbd2/checkpoint.c  |    2 +-
+ fs/jbd2/commit.c      |    4 ++--
+ fs/jbd2/journal.c     |   19 ++++++++++---------
+ fs/jbd2/transaction.c |   13 ++++++-------
+ fs/ocfs2/aops.c       |    2 +-
+ fs/ocfs2/super.c      |    2 +-
+ include/linux/jbd2.h  |   18 ++++++++++--------
+ 9 files changed, 33 insertions(+), 31 deletions(-)
+
+diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
+index 7829b28..19434da 100644
+--- a/fs/ext4/fsync.c
++++ b/fs/ext4/fsync.c
+@@ -198,7 +198,7 @@ int ext4_sync_file(struct file *file, int datasync)
+ 		return ext4_force_commit(inode->i_sb);
+ 
+ 	commit_tid = datasync ? ei->i_datasync_tid : ei->i_sync_tid;
+-	if (jbd2_log_start_commit(journal, commit_tid)) {
++	if (jbd2_log_start_commit(journal, commit_tid, true)) {
+ 		/*
+ 		 * When the journal is on a different device than the
+ 		 * fs data disk, we need to issue the barrier in
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 0f10ccd..eee8486 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -4121,7 +4121,7 @@ static int ext4_sync_fs(struct super_block *sb, int wait)
+ 
+ 	trace_ext4_sync_fs(sb, wait);
+ 	flush_workqueue(sbi->dio_unwritten_wq);
+-	if (jbd2_journal_start_commit(sbi->s_journal, &target)) {
++	if (jbd2_journal_start_commit(sbi->s_journal, &target, true)) {
+ 		if (wait)
+ 			jbd2_log_wait_commit(sbi->s_journal, target);
+ 	}
+diff --git a/fs/jbd2/checkpoint.c b/fs/jbd2/checkpoint.c
+index 6a79fd0..3436d53 100644
+--- a/fs/jbd2/checkpoint.c
++++ b/fs/jbd2/checkpoint.c
+@@ -309,7 +309,7 @@ static int __process_buffer(journal_t *journal, struct journal_head *jh,
+ 			       "Waiting for Godot: block %llu\n",
+ 			       journal->j_devname,
+ 			       (unsigned long long) bh->b_blocknr);
+-		jbd2_log_start_commit(journal, tid);
++		jbd2_log_start_commit(journal, tid, true);
+ 		jbd2_log_wait_commit(journal, tid);
+ 		ret = 1;
+ 	} else if (!buffer_dirty(bh)) {
+diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
+index f3ad159..19973eb 100644
+--- a/fs/jbd2/commit.c
++++ b/fs/jbd2/commit.c
+@@ -329,7 +329,7 @@ void jbd2_journal_commit_transaction(journal_t *journal)
+ 	int tag_bytes = journal_tag_bytes(journal);
+ 	struct buffer_head *cbh = NULL; /* For transactional checksums */
+ 	__u32 crc32_sum = ~0;
+-	int write_op = WRITE_SYNC;
++	int write_op = WRITE;
+ 
+ 	/*
+ 	 * First job: lock down the current transaction and wait for
+@@ -368,7 +368,7 @@ void jbd2_journal_commit_transaction(journal_t *journal)
+ 	 * we unplug the device. We don't do explicit unplugging in here,
+ 	 * instead we rely on sync_buffer() doing the unplug for us.
+ 	 */
+-	if (commit_transaction->t_synchronous_commit)
++	if (tid_geq(journal->j_commit_waited, commit_transaction->t_tid))
+ 		write_op = WRITE_SYNC_PLUG;
+ 	trace_jbd2_commit_locking(journal, commit_transaction);
+ 	stats.run.rs_wait = commit_transaction->t_max_wait;
+diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+index 9e46869..e278fa2 100644
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -475,7 +475,7 @@ int __jbd2_log_space_left(journal_t *journal)
+ /*
+  * Called under j_state_lock.  Returns true if a transaction commit was started.
+  */
+-int __jbd2_log_start_commit(journal_t *journal, tid_t target)
++int __jbd2_log_start_commit(journal_t *journal, tid_t target, bool will_wait)
+ {
+ 	/*
+ 	 * Are we already doing a recent enough commit?
+@@ -485,7 +485,8 @@ int __jbd2_log_start_commit(journal_t *journal, tid_t target)
+ 		 * We want a new commit: OK, mark the request and wakeup the
+ 		 * commit thread.  We do _not_ do the commit ourselves.
+ 		 */
+-
++		if (will_wait && !tid_geq(journal->j_commit_waited, target))
++			journal->j_commit_waited = target;
+ 		journal->j_commit_request = target;
+ 		jbd_debug(1, "JBD: requesting commit %d/%d\n",
+ 			  journal->j_commit_request,
+@@ -496,12 +497,12 @@ int __jbd2_log_start_commit(journal_t *journal, tid_t target)
+ 	return 0;
+ }
+ 
+-int jbd2_log_start_commit(journal_t *journal, tid_t tid)
++int jbd2_log_start_commit(journal_t *journal, tid_t tid, bool will_wait)
+ {
+ 	int ret;
+ 
+ 	write_lock(&journal->j_state_lock);
+-	ret = __jbd2_log_start_commit(journal, tid);
++	ret = __jbd2_log_start_commit(journal, tid, will_wait);
+ 	write_unlock(&journal->j_state_lock);
+ 	return ret;
+ }
+@@ -524,7 +525,7 @@ int jbd2_journal_force_commit_nested(journal_t *journal)
+ 	read_lock(&journal->j_state_lock);
+ 	if (journal->j_running_transaction && !current->journal_info) {
+ 		transaction = journal->j_running_transaction;
+-		__jbd2_log_start_commit(journal, transaction->t_tid);
++		__jbd2_log_start_commit(journal, transaction->t_tid, true);
+ 	} else if (journal->j_committing_transaction)
+ 		transaction = journal->j_committing_transaction;
+ 
+@@ -544,7 +545,7 @@ int jbd2_journal_force_commit_nested(journal_t *journal)
+  * if a transaction is going to be committed (or is currently already
+  * committing), and fills its tid in at *ptid
+  */
+-int jbd2_journal_start_commit(journal_t *journal, tid_t *ptid)
++int jbd2_journal_start_commit(journal_t *journal, tid_t *ptid, bool will_wait)
+ {
+ 	int ret = 0;
+ 
+@@ -552,7 +553,7 @@ int jbd2_journal_start_commit(journal_t *journal, tid_t *ptid)
+ 	if (journal->j_running_transaction) {
+ 		tid_t tid = journal->j_running_transaction->t_tid;
+ 
+-		__jbd2_log_start_commit(journal, tid);
++		__jbd2_log_start_commit(journal, tid, will_wait);
+ 		/* There's a running transaction and we've just made sure
+ 		 * it's commit has been scheduled. */
+ 		if (ptid)
+@@ -1559,7 +1560,7 @@ int jbd2_journal_flush(journal_t *journal)
+ 	/* Force everything buffered to the log... */
+ 	if (journal->j_running_transaction) {
+ 		transaction = journal->j_running_transaction;
+-		__jbd2_log_start_commit(journal, transaction->t_tid);
++		__jbd2_log_start_commit(journal, transaction->t_tid, true);
+ 	} else if (journal->j_committing_transaction)
+ 		transaction = journal->j_committing_transaction;
+ 
+@@ -1675,7 +1676,7 @@ void __jbd2_journal_abort_hard(journal_t *journal)
+ 	journal->j_flags |= JBD2_ABORT;
+ 	transaction = journal->j_running_transaction;
+ 	if (transaction)
+-		__jbd2_log_start_commit(journal, transaction->t_tid);
++		__jbd2_log_start_commit(journal, transaction->t_tid, false);
+ 	write_unlock(&journal->j_state_lock);
+ }
+ 
+diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
+index 3948932..3d5215e 100644
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -222,7 +222,7 @@ repeat:
+ 		atomic_sub(nblocks, &transaction->t_outstanding_credits);
+ 		prepare_to_wait(&journal->j_wait_transaction_locked, &wait,
+ 				TASK_UNINTERRUPTIBLE);
+-		__jbd2_log_start_commit(journal, transaction->t_tid);
++		__jbd2_log_start_commit(journal, transaction->t_tid, false);
+ 		read_unlock(&journal->j_state_lock);
+ 		schedule();
+ 		finish_wait(&journal->j_wait_transaction_locked, &wait);
+@@ -465,7 +465,7 @@ int jbd2__journal_restart(handle_t *handle, int nblocks, int gfp_mask)
+ 	spin_unlock(&transaction->t_handle_lock);
+ 
+ 	jbd_debug(2, "restarting handle %p\n", handle);
+-	__jbd2_log_start_commit(journal, transaction->t_tid);
++	__jbd2_log_start_commit(journal, transaction->t_tid, false);
+ 	read_unlock(&journal->j_state_lock);
+ 
+ 	lock_map_release(&handle->h_lockdep_map);
+@@ -1361,8 +1361,6 @@ int jbd2_journal_stop(handle_t *handle)
+ 		}
+ 	}
+ 
+-	if (handle->h_sync)
+-		transaction->t_synchronous_commit = 1;
+ 	current->journal_info = NULL;
+ 	atomic_sub(handle->h_buffer_credits,
+ 		   &transaction->t_outstanding_credits);
+@@ -1383,15 +1381,16 @@ int jbd2_journal_stop(handle_t *handle)
+ 
+ 		jbd_debug(2, "transaction too old, requesting commit for "
+ 					"handle %p\n", handle);
+-		/* This is non-blocking */
+-		jbd2_log_start_commit(journal, transaction->t_tid);
+-
+ 		/*
+ 		 * Special case: JBD2_SYNC synchronous updates require us
+ 		 * to wait for the commit to complete.
+ 		 */
+ 		if (handle->h_sync && !(current->flags & PF_MEMALLOC))
+ 			wait_for_commit = 1;
++
++		/* This is non-blocking */
++		jbd2_log_start_commit(journal, transaction->t_tid,
++				      wait_for_commit);
+ 	}
+ 
+ 	/*
+diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
+index 1fbb0e2..d493f32 100644
+--- a/fs/ocfs2/aops.c
++++ b/fs/ocfs2/aops.c
+@@ -1659,7 +1659,7 @@ static int ocfs2_try_to_free_truncate_log(struct ocfs2_super *osb,
+ 		goto out;
+ 	}
+ 
+-	if (jbd2_journal_start_commit(osb->journal->j_journal, &target)) {
++	if (jbd2_journal_start_commit(osb->journal->j_journal, &target, true)) {
+ 		jbd2_log_wait_commit(osb->journal->j_journal, target);
+ 		ret = 1;
+ 	}
+diff --git a/fs/ocfs2/super.c b/fs/ocfs2/super.c
+index 31c3ffd..aab448c 100644
+--- a/fs/ocfs2/super.c
++++ b/fs/ocfs2/super.c
+@@ -414,7 +414,7 @@ static int ocfs2_sync_fs(struct super_block *sb, int wait)
+ 	}
+ 
+ 	if (jbd2_journal_start_commit(OCFS2_SB(sb)->journal->j_journal,
+-				      &target)) {
++				      &target, wait)) {
+ 		if (wait)
+ 			jbd2_log_wait_commit(OCFS2_SB(sb)->journal->j_journal,
+ 					     target);
+diff --git a/include/linux/jbd2.h b/include/linux/jbd2.h
+index 27e79c2..46aaf45 100644
+--- a/include/linux/jbd2.h
++++ b/include/linux/jbd2.h
+@@ -631,11 +631,6 @@ struct transaction_s
+ 	 */
+ 	atomic_t		t_handle_count;
+ 
+-	/*
+-	 * This transaction is being forced and some process is
+-	 * waiting for it to finish.
+-	 */
+-	unsigned int t_synchronous_commit:1;
+ 	unsigned int t_flushed_data_blocks:1;
+ 
+ 	/*
+@@ -900,6 +895,13 @@ struct journal_s
+ 	tid_t			j_commit_request;
+ 
+ 	/*
++	 * Sequence number of the most recent transaction someone is waiting
++	 * for to commit.
++	 * [j_state_lock]
++	 */
++	tid_t			j_commit_waited;
++
++	/*
+ 	 * Journal uuid: identifies the object (filesystem, LVM volume etc)
+ 	 * backed by this journal.  This will eventually be replaced by an array
+ 	 * of uuids, allowing us to index multiple devices within a single
+@@ -1200,9 +1202,9 @@ extern void	jbd2_journal_switch_revoke_table(journal_t *journal);
+  */
+ 
+ int __jbd2_log_space_left(journal_t *); /* Called with journal locked */
+-int jbd2_log_start_commit(journal_t *journal, tid_t tid);
+-int __jbd2_log_start_commit(journal_t *journal, tid_t tid);
+-int jbd2_journal_start_commit(journal_t *journal, tid_t *tid);
++int jbd2_log_start_commit(journal_t *journal, tid_t tid, bool will_wait);
++int __jbd2_log_start_commit(journal_t *journal, tid_t tid, bool will_wait);
++int jbd2_journal_start_commit(journal_t *journal, tid_t *tid, bool will_wait);
+ int jbd2_journal_force_commit_nested(journal_t *journal);
+ int jbd2_log_wait_commit(journal_t *journal, tid_t tid);
+ int jbd2_log_do_checkpoint(journal_t *journal);
+-- 
+1.7.1
+
