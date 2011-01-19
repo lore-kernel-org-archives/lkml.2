@@ -1,99 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811Ab1ASI6p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 03:58:45 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:42785 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752593Ab1ASI6o (ORCPT
+	id S1753803Ab1ASJBH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 04:01:07 -0500
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:55232 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753069Ab1ASJBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 03:58:44 -0500
-Date: Wed, 19 Jan 2011 00:58:25 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, "Theodore Ts'o" <tytso@mit.edu>,
-        Neil Brown <neilb@suse.de>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        Jan Kara <jack@suse.cz>, Mike Snitzer <snitzer@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <cmm@us.ibm.com>,
-        linux-ext4@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Josef Bacik <josef@redhat.com>
-Subject: Re: [PATCH v7.1] block: Coordinate flush requests
-Message-ID: <20110119085825.GG27381@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110113025646.GB27381@tux1.beaverton.ibm.com> <20110113104240.GA30719@htj.dyndns.org> <20110113185946.GD27381@tux1.beaverton.ibm.com> <20110115133344.GB27123@htj.dyndns.org>
+	Wed, 19 Jan 2011 04:01:05 -0500
+Date: Wed, 19 Jan 2011 14:30:12 +0530
+From: "G, Manjunath Kondaiah" <manjugk@ti.com>
+To: Thomas Weber <weber@corscience.de>
+Cc: linux-omap@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Daniel Morsing <daniel.morsing@gmail.com>, charu@ti.com,
+        sshtylyov@mvista.com
+Subject: Re: [PATCHv4 3/4] OMAP3: Devkit8000: Check return value of
+ gpio_request
+Message-ID: <20110119090011.GD6197@m-desktop>
+References: <1295425166-25540-1-git-send-email-weber@corscience.de>
+ <1295425166-25540-4-git-send-email-weber@corscience.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110115133344.GB27123@htj.dyndns.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1295425166-25540-4-git-send-email-weber@corscience.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 15, 2011 at 02:33:44PM +0100, Tejun Heo wrote:
-> Hello,
+On Wed, Jan 19, 2011 at 09:19:25AM +0100, Thomas Weber wrote:
+> The return value of gpio_request is ignored.
+> This patch adds the check of the return value of gpio_request.
 > 
-> On Thu, Jan 13, 2011 at 10:59:46AM -0800, Darrick J. Wong wrote:
-> > > But wouldn't it be better to implement this directly in the flush
-> > > machinary instead of as blkdev_issue_flush() wrapper?  We have all the
-> > > information at the request queue level so we can easily detect whether
-> > > flushes can be merged or not and whether something is issued by
-> > > blkdev_issue_flush() or by directly submitting bio wouldn't matter at
-> > > all.  Am I missing something?
-> > 
-> > Could you clarify where exactly you meant by "in the flush
-> > machinery"?  I think what you're suggesting is that
-> > blk_flush_complete_seq could scan the pending flush list to find a
-> > run of consecutive pure flush requests, submit the last one, and set
-> > things up so that during the completion of the flush, all the
-> > requests in that run are returned with the real flush's return code.
+> Signed-off-by: Thomas Weber <weber@corscience.de>
+> ---
+>  arch/arm/mach-omap2/board-devkit8000.c |   16 ++++++++++++++--
+>  1 files changed, 14 insertions(+), 2 deletions(-)
 > 
-> Yeah, something along that line.
-> 
-> > If that's what you meant, then yes, it could be done that way.
-> > However, I have a few reasons for choosing the blkdev_issue_flush
-> > approach.  First, as far as I could tell in the kernel, all the code
-> > paths that involve upper layers issuing pure flushes go through
-> > blkdev_issue_flush, so it seems like a convenient place to capture
-> > all the incoming pure flushes.
-> 
-> That means it _can_ be done there but doesn't mean it's the best spot.
-> 
-> > Other parts of the kernel issue writes with the flush flag set, but
-> > we want those to go through the regular queuing mechanisms anyway.
-> > Second, with the proposed patch, any upper-layer code that has a
-> > requirement for a pure flush to be issued without coordination can
-> > do so by submitting the bio directly (or blkdev_issue_flush_now can
-> > be exported).
-> 
-> I don't think anyone would need such capability but even if someone
-> does that should be implemented as a separate explicit
-> DONT_MERGE_THIS_FLUSH flag, not by exploting subtle inconsistencies on
-> the wrapper interface.
-> 
-> > Third, baking the coordination into the flush machinery makes that
-> > machinery more complicated to understand and maintain.
-> 
-> And the third point is completely nuts.  That's like saying putting
-> things related together makes the concentrated code more complex, so
-> let's scatter things all over the place.  No, it's not making the code
-> more complex.  It's putting the complexity where it belongs.  It
-> decreases maintenance overhead by increasing consistency.  Not only
-> that it even results in visibly more consistent and sane _behavior_
-> and the said complex machinary is less than 300 lines long.
-> 
-> > So in short, I went with the blkdev_issue_flush approach because the
-> > code is easier to understand, and it's not losing any pure flushes
-> > despite casting a narrower net.
-> 
-> No, not at all.  You're adding an unobvious logic into a wrapper
-> interface creating incosistent behavior and creating artificial
-> distinctions between pure and non-pure flushes and flushes issued by
-> bio and the wrapper interface.  Come on.  Think about it again.  You
-> can't be seriously standing by the above rationales.
+> diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
+> index 9fb416b..4ddd81c 100644
+> --- a/arch/arm/mach-omap2/board-devkit8000.c
+> +++ b/arch/arm/mach-omap2/board-devkit8000.c
+> @@ -234,6 +234,8 @@ static struct gpio_led gpio_leds[];
+>  static int devkit8000_twl_gpio_setup(struct device *dev,
+>  		unsigned gpio, unsigned ngpio)
+>  {
+> +	int ret;
+> +
+>  	omap_mux_init_gpio(29, OMAP_PIN_INPUT);
+>  	/* gpio + 0 is "mmc0_cd" (input/IRQ) */
+>  	mmc[0].gpio_cd = gpio + 0;
+> @@ -244,13 +246,23 @@ static int devkit8000_twl_gpio_setup(struct device *dev,
+>  
+>  	/* TWL4030_GPIO_MAX + 0 is "LCD_PWREN" (out, active high) */
+>  	devkit8000_lcd_device.reset_gpio = gpio + TWL4030_GPIO_MAX + 0;
+> -	gpio_request(devkit8000_lcd_device.reset_gpio, "LCD_PWREN");
+> +	ret = gpio_request(devkit8000_lcd_device.reset_gpio, "LCD_PWREN");
+> +	if (ret < 0) {
+> +		printk(KERN_ERR "Failed to request GPIO for LCD_PWRN\n");
+> +		return ret;
+> +	}
+> +
+>  	/* Disable until needed */
+>  	gpio_direction_output(devkit8000_lcd_device.reset_gpio, 0);
+>  
+>  	/* gpio + 7 is "DVI_PD" (out, active low) */
+>  	devkit8000_dvi_device.reset_gpio = gpio + 7;
+> -	gpio_request(devkit8000_dvi_device.reset_gpio, "DVI PowerDown");
+> +	ret = gpio_request(devkit8000_dvi_device.reset_gpio, "DVI PowerDown");
+> +	if (ret < 0) {
+> +		printk(KERN_ERR "Failed to request GPIO for DVI PowerDown\n");
+> +		return ret;
+> +	}
 
-Since you're the primary author of that file anyway, I'll defer to your
-experience.  I can squeeze in a few test runs of whatever patches you propose
-to the mailing list.
+Nak. Why you want this change as seperate patch? Merge this with 1/4
 
---D
+-Manjunath
+[...]
+
