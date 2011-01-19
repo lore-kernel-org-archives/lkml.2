@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab1ASBaB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 20:30:01 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:36635 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753312Ab1ASBaA (ORCPT
+	id S1753317Ab1ASBeN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 20:34:13 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:39146 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753240Ab1ASBeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 20:30:00 -0500
-X-AuditID: b753bd60-9f090ba000000ca4-e6-4d363e946d37
-Message-ID: <4D363E92.2020602@hitachi.com>
-Date: Wed, 19 Jan 2011 10:29:54 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Tue, 18 Jan 2011 20:34:12 -0500
+Message-ID: <4D36400D.6000202@wytron.com.tw>
+Date: Wed, 19 Jan 2011 09:36:13 +0800
+From: Thomas Chou <thomas@wytron.com.tw>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Switch proc interfaces in kernel/ to %pK
-References: <1295391078.1831.21.camel@dan>
-In-Reply-To: <1295391078.1831.21.camel@dan>
-Content-Type: text/plain; charset=UTF-8
+To: Sinan Akman <sinan@writeme.com>
+CC: David Brownell <dbrownell@users.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        nios2-dev@sopc.et.ntust.edu.tw, Mike Frysinger <vapier@gentoo.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net
+Subject: Re: [PATCH v3] spi: New driver for Altera SPI
+References: <AANLkTi=D4Rcxbei2oo+EHc6X1O-2Oo+VWHAasK_JLj5W@mail.gmail.com> <1295247869-4968-1-git-send-email-thomas@wytron.com.tw> <4D33EF7C.7030005@writeme.com>
+In-Reply-To: <4D33EF7C.7030005@writeme.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEA
+X-SA-Exim-Connect-IP: 192.168.1.15
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/01/19 7:51), Dan Rosenberg wrote:
-> Switch users of %p in /proc interfaces in kernel/ to %pK, to allow
-> configuring the level of exposure of kernel pointers via the
-> kptr_restrict sysctl.
+On 01/17/2011 03:27 PM, Sinan Akman wrote:
+>> + if (hw->irq >= 0) {
+>> + init_completion(&hw->done);
+>
+> I think you init this twice, once in altera_spi_probe
+> below as well.
 
-This report_probe interface is at /sys/kernel/debug/kprobes/list.
-Is that policy applied to debugfs interface (for debug) too?
-# in that case, you might update ftrace and perf tracing interfaces...
+I will remove this one, too. Thank you again.
 
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index 7798181..2437ca4 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -2021,11 +2021,11 @@ static void __kprobes report_probe(struct seq_file *pi, struct kprobe *p,
->  		kprobe_type = "k";
->  
->  	if (sym)
-> -		seq_printf(pi, "%p  %s  %s+0x%x  %s ",
-> +		seq_printf(pi, "%pK  %s  %s+0x%x  %s ",
->  			p->addr, kprobe_type, sym, offset,
->  			(modname ? modname : " "));
->  	else
-> -		seq_printf(pi, "%p  %s  %p ",
-> +		seq_printf(pi, "%pK  %s  %pK ",
->  			p->addr, kprobe_type, p->addr);
->  
->  	if (!pp)
-
-
--- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+- Thomas
