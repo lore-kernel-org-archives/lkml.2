@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956Ab1ASFQH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 00:16:07 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:47489
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752566Ab1ASFQG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 00:16:06 -0500
-Date: Tue, 18 Jan 2011 21:16:39 -0800 (PST)
-Message-Id: <20110118.211639.68142725.davem@davemloft.net>
-To: mathieu.desnoyers@efficios.com
-Cc: rostedt@goodmis.org, richm@oldelvet.org.uk, 609371@bugs.debian.org,
-        ben@decadent.org.uk, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@redhat.com
-Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
- Unknown relocation: 36
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110119050844.GA8776@Krystal>
-References: <20110118201323.GA14930@Krystal>
-	<1295382144.12215.123.camel@gandalf.stny.rr.com>
-	<20110119050844.GA8776@Krystal>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1753129Ab1ASFQX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 00:16:23 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:52448 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751997Ab1ASFQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 00:16:21 -0500
+Message-ID: <4D3673A7.4090402@cn.fujitsu.com>
+Date: Wed, 19 Jan 2011 13:16:23 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 1/3] KVM: fix rcu usage warning in kvm_arch_vcpu_ioctl_set_sregs()
+References: <4D2D5AA6.9080804@cn.fujitsu.com>
+In-Reply-To: <4D2D5AA6.9080804@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-01-19 13:15:46,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-01-19 13:15:47,
+	Serialize complete at 2011-01-19 13:15:47
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Date: Wed, 19 Jan 2011 00:08:45 -0500
-
-> The following works fine for me now. Comments are welcome.
-
-Thanks for doing this work Mathieu.
-
-> - No aligned() type attribute nor variable attribute. I get a crash on x86_64
->   (NULL pointer exception when executing __trace_add_event_call, the 5th call).
->   __alignof__(struct ftrace_event_call) is worth 8.
-
-This is really bizarre.  Does it only happen on x86_64?
-
-I'm wondering if GCC does something bizarre like work with different
-default alignments based upon the section or something like that.
-
-If so, maybe adding the section attribute to the array definition will
-"fix" things?
-
-> On 32-bit architectures, we really want a aligned(4), and on 64-bit
-> architectures, aligned(8). Represent this by creating:
+On 01/12/2011 03:39 PM, Xiao Guangrong wrote:
+> Fix:
 > 
-> #define __long_aligned __attribute__((__aligned__(__alignof__(long))))
+> [ 1001.499596] ===================================================
+> [ 1001.499599] [ INFO: suspicious rcu_dereference_check() usage. ]
+> [ 1001.499601] ---------------------------------------------------
+> [ 1001.499604] include/linux/kvm_host.h:301 invoked rcu_dereference_check() without protection!
+> 	......
+> [ 1001.499636] Pid: 6035, comm: qemu-system-x86 Not tainted 2.6.37-rc6+ #62
+> [ 1001.499638] Call Trace:
+> [ 1001.499644]  [] lockdep_rcu_dereference+0x9d/0xa5
+> [ 1001.499653]  [] gfn_to_memslot+0x8d/0xc8 [kvm]
+> [ 1001.499661]  [] gfn_to_hva+0x16/0x3f [kvm]
+> [ 1001.499669]  [] kvm_read_guest_page+0x1e/0x5e [kvm]
+> [ 1001.499681]  [] kvm_read_guest_page_mmu+0x53/0x5e [kvm]
+> [ 1001.499699]  [] load_pdptrs+0x3f/0x9c [kvm]
+> [ 1001.499705]  [] ? vmx_set_cr0+0x507/0x517 [kvm_intel]
+> [ 1001.499717]  [] kvm_arch_vcpu_ioctl_set_sregs+0x1f3/0x3c0 [kvm]
+> [ 1001.499727]  [] kvm_vcpu_ioctl+0x6a5/0xbc5 [kvm]
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 
-Do any of these datastructures have, or will have, "u64" or "long
-long" types in them?  If so, then we will need to use "8"
-unconditionally or "__alignof__(long long)".
-
-I'll see if I can work out why using no align directive explodes
-on x86-64.
+Ping ...?
