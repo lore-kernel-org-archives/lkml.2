@@ -1,91 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab1ASI56 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 03:57:58 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37039 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753615Ab1ASI55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 03:57:57 -0500
-Message-ID: <4D36A759.60704@intel.com>
-Date: Wed, 19 Jan 2011 00:56:57 -0800
-From: "H. Peter Anvin" <h.peter.anvin@intel.com>
-Organization: Intel Corporation
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1753811Ab1ASI6p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 03:58:45 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:42785 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752593Ab1ASI6o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 03:58:44 -0500
+Date: Wed, 19 Jan 2011 00:58:25 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, "Theodore Ts'o" <tytso@mit.edu>,
+        Neil Brown <neilb@suse.de>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        Jan Kara <jack@suse.cz>, Mike Snitzer <snitzer@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <cmm@us.ibm.com>,
+        linux-ext4@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Josef Bacik <josef@redhat.com>
+Subject: Re: [PATCH v7.1] block: Coordinate flush requests
+Message-ID: <20110119085825.GG27381@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110113025646.GB27381@tux1.beaverton.ibm.com> <20110113104240.GA30719@htj.dyndns.org> <20110113185946.GD27381@tux1.beaverton.ibm.com> <20110115133344.GB27123@htj.dyndns.org>
 MIME-Version: 1.0
-To: Shaohua Li <shaohua.li@intel.com>
-CC: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        "Lu, Hongjiu" <hongjiu.lu@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: Linux 2.6.38-rc1 doesn't boot
-References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>	 <20110119073905.GA1652@gentoo.trippels.de>	 <20110119074902.GA1670@gentoo.trippels.de> <1295424766.1949.879.camel@sli10-conroe>
-In-Reply-To: <1295424766.1949.879.camel@sli10-conroe>
-Content-Type: multipart/mixed;
- boundary="------------070705050300040201040108"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110115133344.GB27123@htj.dyndns.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070705050300040201040108
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-
-On 01/19/2011 12:12 AM, Shaohua Li wrote:
-> On Wed, 2011-01-19 at 15:49 +0800, Markus Trippelsdorf wrote:
->> On 2011.01.19 at 08:39 +0100, Markus Trippelsdorf wrote:
->>> On 2011.01.18 at 15:54 -0800, Linus Torvalds wrote:
->>>>
->>>> And as usual, report any regressions to the lists and the appropriate
->>>> authorities.
->>>
->>> Unfortunately 2.6.38-rc1 doesn't even boot on my machine (amd64).
->>> This is caused by 86b1e8dd83cbb0f:
->>>     x86: Make relocatable kernel work with new binutils
->>>
->>> Reverting the commit solves the problem.
->>
->> I'm running the latest binutils:
->> GNU ld (Linux/GNU Binutils) 2.21.51.0.5.20110104
-> Hmm, reproduce it here with binutils-2.21.51.0.6-20110118
-> but not with GNU ld (GNU Binutils for Ubuntu) 2.20.51-system.20100908
-> I got this in system.map: ffffffff03514880 D jiffies_64, which looks
-> wrong.
-> looks binutils changed something again.
-> Have no idea, CC Lu Hongjiu.
+On Sat, Jan 15, 2011 at 02:33:44PM +0100, Tejun Heo wrote:
+> Hello,
 > 
+> On Thu, Jan 13, 2011 at 10:59:46AM -0800, Darrick J. Wong wrote:
+> > > But wouldn't it be better to implement this directly in the flush
+> > > machinary instead of as blkdev_issue_flush() wrapper?  We have all the
+> > > information at the request queue level so we can easily detect whether
+> > > flushes can be merged or not and whether something is issued by
+> > > blkdev_issue_flush() or by directly submitting bio wouldn't matter at
+> > > all.  Am I missing something?
+> > 
+> > Could you clarify where exactly you meant by "in the flush
+> > machinery"?  I think what you're suggesting is that
+> > blk_flush_complete_seq could scan the pending flush list to find a
+> > run of consecutive pure flush requests, submit the last one, and set
+> > things up so that during the completion of the flush, all the
+> > requests in that run are returned with the real flush's return code.
+> 
+> Yeah, something along that line.
+> 
+> > If that's what you meant, then yes, it could be done that way.
+> > However, I have a few reasons for choosing the blkdev_issue_flush
+> > approach.  First, as far as I could tell in the kernel, all the code
+> > paths that involve upper layers issuing pure flushes go through
+> > blkdev_issue_flush, so it seems like a convenient place to capture
+> > all the incoming pure flushes.
+> 
+> That means it _can_ be done there but doesn't mean it's the best spot.
+> 
+> > Other parts of the kernel issue writes with the flush flag set, but
+> > we want those to go through the regular queuing mechanisms anyway.
+> > Second, with the proposed patch, any upper-layer code that has a
+> > requirement for a pure flush to be issued without coordination can
+> > do so by submitting the bio directly (or blkdev_issue_flush_now can
+> > be exported).
+> 
+> I don't think anyone would need such capability but even if someone
+> does that should be implemented as a separate explicit
+> DONT_MERGE_THIS_FLUSH flag, not by exploting subtle inconsistencies on
+> the wrapper interface.
+> 
+> > Third, baking the coordination into the flush machinery makes that
+> > machinery more complicated to understand and maintain.
+> 
+> And the third point is completely nuts.  That's like saying putting
+> things related together makes the concentrated code more complex, so
+> let's scatter things all over the place.  No, it's not making the code
+> more complex.  It's putting the complexity where it belongs.  It
+> decreases maintenance overhead by increasing consistency.  Not only
+> that it even results in visibly more consistent and sane _behavior_
+> and the said complex machinary is less than 300 lines long.
+> 
+> > So in short, I went with the blkdev_issue_flush approach because the
+> > code is easier to understand, and it's not losing any pure flushes
+> > despite casting a narrower net.
+> 
+> No, not at all.  You're adding an unobvious logic into a wrapper
+> interface creating incosistent behavior and creating artificial
+> distinctions between pure and non-pure flushes and flushes issued by
+> bio and the wrapper interface.  Come on.  Think about it again.  You
+> can't be seriously standing by the above rationales.
 
-Either way... the whole jiffies vs jiffies_64 thing is kind of
-ridiculous.  We should be able to do it in a completely
-architecture-generic way by either making it a union(!) (with "jiffies"
-and "jiffies_64" presumably would be #defines, or we do a global replace
-across the tree), moving the variable declaration itself to a .S file
-(which would only have data components and therefore would be
-arch-generic) or doing something like the attached (untested since it is
-1 am here) patch.
+Since you're the primary author of that file anyway, I'll defer to your
+experience.  I can squeeze in a few test runs of whatever patches you propose
+to the mailing list.
 
-This should let us get rid of the hacks in *all* the architectures, not
-just x86.
-
-	-hpa
-
---------------070705050300040201040108
-Content-Type: text/plain;
- name="diff"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="diff"
-
-ZGlmZiAtLWdpdCBhL2tlcm5lbC90aW1lci5jIGIva2VybmVsL3RpbWVyLmMKaW5kZXggNDNj
-YTk5My4uY2I0ZGI0NyAxMDA2NDQKLS0tIGEva2VybmVsL3RpbWVyLmMKKysrIGIva2VybmVs
-L3RpbWVyLmMKQEAgLTQxLDYgKzQxLDcgQEAKICNpbmNsdWRlIDxsaW51eC9zY2hlZC5oPgog
-I2luY2x1ZGUgPGxpbnV4L3NsYWIuaD4KIAorI2luY2x1ZGUgPGFzbS9ieXRlb3JkZXIuaD4K
-ICNpbmNsdWRlIDxhc20vdWFjY2Vzcy5oPgogI2luY2x1ZGUgPGFzbS91bmlzdGQuaD4KICNp
-bmNsdWRlIDxhc20vZGl2NjQuaD4KQEAgLTU0LDYgKzU1LDEyIEBAIHU2NCBqaWZmaWVzXzY0
-IF9fY2FjaGVsaW5lX2FsaWduZWRfaW5fc21wID0gSU5JVElBTF9KSUZGSUVTOwogCiBFWFBP
-UlRfU1lNQk9MKGppZmZpZXNfNjQpOwogCisjaWYgZGVmaW5lZChfX0xJVFRMRV9FTkRJQU4p
-IHx8IChCSVRTX1BFUl9MT05HID49IDY0KQorYXNtKCJqaWZmaWVzID0gamlmZmllc182NCIp
-OworI2Vsc2UKK2FzbSgiamlmZmllcyA9IGppZmZpZXNfNjQgKyA0Iik7CisjZW5kaWYKKwog
-LyoKICAqIHBlci1DUFUgdGltZXIgdmVjdG9yIGRlZmluaXRpb25zOgogICovCg==
---------------070705050300040201040108--
+--D
