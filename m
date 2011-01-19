@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab1ASRh4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 12:37:56 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47658 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752742Ab1ASRhy (ORCPT
+	id S1753807Ab1ASRiN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 12:38:13 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:49297 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752128Ab1ASRiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 12:37:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:cc:content-type;
-        b=oA9vDBctzO7LFnDMWPsyKjQ8qG5RHO9bvmDi0or3OXtS+b5UiFd04pe1LDycpQF+8Q
-         IVS2EwrSbC6ToYOYz9/6eYWjJPb9qJatH9Db1QulfYZCF9L6djEc0R6G4Pun/XPecLsJ
-         x8mcne129MhlZQwnYMgpK5i9JLDQjkiyFCdqk=
+	Wed, 19 Jan 2011 12:38:11 -0500
+Date: Wed, 19 Jan 2011 17:37:39 +0000
+From: Jamie Iles <jamie@jamieiles.com>
+To: David Brown <davidb@codeaurora.org>
+Cc: Jamie Iles <jamie@jamieiles.com>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, rlove@google.com
+Subject: Re: [PATCH 2/2] serial: msm: Add support for UARTDM cores
+Message-ID: <20110119173739.GE3341@pulham.picochip.com>
+References: <1295407585-18386-1-git-send-email-stepanm@codeaurora.org>
+ <20110119082534.GA9569@gallagher>
+ <8yaaaiwsstw.fsf@huya.qualcomm.com>
 MIME-Version: 1.0
-Date: Wed, 19 Jan 2011 17:36:57 +0000
-X-Google-Sender-Auth: y9YVebyE_j1irbnpt-fj4MTt3ss
-Message-ID: <AANLkTim3ByCpF6SrvwZcSt_WL4gEJw-df_vZa+g0gEtX@mail.gmail.com>
-Subject: Re: Linux 2.6.38-rc1 -- early boot hangs (x86: Make relocatable
- kernel work with new binutils)
-From: Andy Whitcroft <apw@canonical.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8yaaaiwsstw.fsf@huya.qualcomm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems that the commit below is triggering early boot hangs for me,
-with CONFIG_RELOCATABLE=y:
+On Wed, Jan 19, 2011 at 09:31:55AM -0800, David Brown wrote:
+> On Wed, Jan 19 2011, Jamie Iles wrote:
+> 
+> >> @@ -38,9 +40,20 @@ struct msm_port {
+> >>  	struct uart_port	uart;
+> >>  	char			name[16];
+> >>  	struct clk		*clk;
+> >> +	struct clk		*pclk;
+> >>  	unsigned int		imr;
+> >> +	unsigned int            *gsbi_base;
+> >> +	int			is_dm;
+> >> +	unsigned int		old_snap_state;
+> >>  };
+> >
+> > Out of interest, what does .is_dm mean?  Is that obvious to someone who 
+> > knows about msm?
+> 
+> It would be clear to people rather familiar with the chip, but I agree
+> it's probably not that clear of a name.
+> 
+> We have two UART blocks we use in the MSMs, the older one, supported by
+> this driver before this change, and a newer one that was designed to
+> work with our DMA engine (known as the Data Mover, or dm).  This newer
+> UART can be used in a somewhat compatible manner when being used for
+> serial-port type operations.
+> 
+> I'm not sure what would be a better name for the flag, though.  The
+> block is called UARTDM.
 
-  commit 86b1e8dd83cbb0fcbf3d61d2b461df8be1f528cf
-  Author: Shaohua Li <shaohua.li@intel.com>
-  Date:   Tue Jan 18 08:57:49 2011 +0800
+Ok, it was mainly out of curiosity.  I guess it could be 'use_dma' or 
+perhaps a comment to explain what DM is but my curiosity is now 
+satisfied ;-)
 
-    x86: Make relocatable kernel work with new binutils
-
-    The CONFIG_RELOCATABLE=y option is broken with new binutils, which will make
-    boot panic.
-
-Reverting that one commit sorts things out.
-
--apw
+Jamie
