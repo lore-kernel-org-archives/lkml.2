@@ -1,147 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753967Ab1ASJoK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 04:44:10 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:47963 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753940Ab1ASJoF convert rfc822-to-8bit (ORCPT
+	id S1753959Ab1ASJry (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 04:47:54 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33455 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753804Ab1ASJrx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 04:44:05 -0500
-Subject: Re: Bug in scheduler when using rt_mutex
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: samu.p.onkalo@nokia.com, mingo@elte.hu,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        tglx <tglx@linutronix.de>
-In-Reply-To: <AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
-References: <1295275365.12840.13.camel@kolo>
-	 <1295280032.30950.128.camel@laptop> <1295339012.11678.35.camel@kolo>
-	 <AANLkTikXf-OMEBx-UZktxooOs+YqUkSE9doyEZopjzOx@mail.gmail.com>
-	 <1295357746.30950.681.camel@laptop>
-	 <AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 19 Jan 2011 10:44:36 +0100
-Message-ID: <1295430276.30950.1414.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 19 Jan 2011 04:47:53 -0500
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Richard Purdie <rpurdie@rpsys.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] leds: make *struct gpio_led_platform_data.leds const
+Date: Wed, 19 Jan 2011 10:47:46 +0100
+Message-Id: <1295430466-3250-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-19 at 10:38 +0800, Yong Zhang wrote:
-> > Index: linux-2.6/kernel/sched_fair.c
-> > ===================================================================
-> > --- linux-2.6.orig/kernel/sched_fair.c
-> > +++ linux-2.6/kernel/sched_fair.c
-> > @@ -4075,6 +4075,22 @@ static void prio_changed_fair(struct rq
-> >  static void switched_to_fair(struct rq *rq, struct task_struct *p,
-> >                             int running)
-> >  {
-> > +       struct sched_entity *se = &p->se;
-> > +       struct cfs_rq *cfs_rq = cfs_rq_of(se);
-> > +
-> > +       if (se->on_rq && cfs_rq->curr != se)
-> 
-> (cfs_rq->curr != se) equals to (!running), no?
+... and fix a typo.
 
-more or less, the idea is that we only call __{dequeue,enqueue}_entity()
-when the task is actually in the tree and current is not.
-
-> > +               __dequeue_entity(cfs_rq, se);
-> > +
-> > +       /*
-> > +        * se->vruntime can be completely out there, there is no telling
-> > +        * how long this task was !fair and on what CPU if any it became
-> > +        * !fair. Therefore, reset it to a known, reasonable value.
-> > +        */
-> > +       se->vruntime = cfs_rq->min_vruntime;
-> 
-> But this is not fair for !SLEEP task.
-> You know se->vruntime -= cfs_rq->min_vruntime for !SLEEP task,
-> then after it go through sched_fair-->sched_rt-->sched_fair by some
-> means, current cfs_rq->min_vruntime is added back.
-> 
-> But here se is putted before where it should be. Is this what we want?
-
-well, its more or less screwy anyway, since we don't know for how long
-the task was !fair and what cpu it came from etc..
-
-But I guess you're right, we should at least pretend the whole
-min_vruntime thing is the 0-lag point (its not) and preserve 'lag' like
-we do for migrations... Something like the below.. except I've got a
-massive head ache and I'm not at all sure I got the switched_from_fair()
-bit right.
-
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
-Index: linux-2.6/kernel/sched.c
-===================================================================
---- linux-2.6.orig/kernel/sched.c
-+++ linux-2.6/kernel/sched.c
-@@ -8108,6 +8108,8 @@ EXPORT_SYMBOL(__might_sleep);
- #ifdef CONFIG_MAGIC_SYSRQ
- static void normalize_task(struct rq *rq, struct task_struct *p)
- {
-+	struct sched_class *prev_class = p->sched_class;
-+	int old_prio = p->prio;
- 	int on_rq;
+ drivers/leds/leds-net5501.c |    2 +-
+ include/linux/leds.h        |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/leds/leds-net5501.c b/drivers/leds/leds-net5501.c
+index 1739557..7e764b8 100644
+--- a/drivers/leds/leds-net5501.c
++++ b/drivers/leds/leds-net5501.c
+@@ -19,7 +19,7 @@
  
- 	on_rq = p->se.on_rq;
-@@ -8118,6 +8120,8 @@ static void normalize_task(struct rq *rq
- 		activate_task(rq, p, 0);
- 		resched_task(rq->curr);
- 	}
-+
-+	check_class_changed(rq, p, prev_class, old_prio, task_current(rq, p));
- }
+ #include <asm/geode.h>
  
- void normalize_rt_tasks(void)
-Index: linux-2.6/kernel/sched_fair.c
-===================================================================
---- linux-2.6.orig/kernel/sched_fair.c
-+++ linux-2.6/kernel/sched_fair.c
-@@ -4066,12 +4066,33 @@ static void prio_changed_fair(struct rq
- 		check_preempt_curr(rq, p, 0);
- }
+-static struct gpio_led net5501_leds[] = {
++static const struct gpio_led net5501_leds[] = {
+ 	{
+ 		.name = "error",
+ 		.gpio = 6,
+diff --git a/include/linux/leds.h b/include/linux/leds.h
+index 0f19df9..383811d 100644
+--- a/include/linux/leds.h
++++ b/include/linux/leds.h
+@@ -194,11 +194,11 @@ struct gpio_led {
  
-+static void
-+switched_from_fair(struct rq *rq, struct task_struct *p, int running)
-+{
-+	struct sched_entity *se = &p->se;
-+	struct cfs_rq *cfs_rq = cfs_rq_of(se);
-+
-+	if (!se->on_rq && p->state != TASK_RUNNING)
-+		se->vruntime -= cfs_rq->min_vruntime;
-+}
-+
- /*
-  * We switched to the sched_fair class.
-  */
--static void switched_to_fair(struct rq *rq, struct task_struct *p,
--			     int running)
-+static void
-+switched_to_fair(struct rq *rq, struct task_struct *p, int running)
- {
-+	struct sched_entity *se = &p->se;
-+	struct cfs_rq *cfs_rq = cfs_rq_of(se);
-+
-+	if (se->on_rq && cfs_rq->curr != se)
-+		__dequeue_entity(cfs_rq, se);
-+
-+	se->vruntimea += cfs_rq->min_vruntime;
-+
-+	if (se->on_rq && cfs_rq->curr != se)
-+		__enqueue_entity(cfs_rq, se);
-+
- 	/*
- 	 * We were most likely switched from sched_rt, so
- 	 * kick off the schedule if running, otherwise just see
-@@ -4163,6 +4184,7 @@ static const struct sched_class fair_sch
- 	.task_fork		= task_fork_fair,
+ struct gpio_led_platform_data {
+ 	int 		num_leds;
+-	struct gpio_led *leds;
++	const struct gpio_led *leds;
  
- 	.prio_changed		= prio_changed_fair,
-+	.switched_from		= switched_from_fair,
- 	.switched_to		= switched_to_fair,
- 
- 	.get_rr_interval	= get_rr_interval_fair,
+ #define GPIO_LED_NO_BLINK_LOW	0	/* No blink GPIO state low */
+ #define GPIO_LED_NO_BLINK_HIGH	1	/* No blink GPIO state high */
+-#define GPIO_LED_BLINK		2	/* Plase, blink */
++#define GPIO_LED_BLINK		2	/* Please, blink */
+ 	int		(*gpio_blink_set)(unsigned gpio, int state,
+ 					unsigned long *delay_on,
+ 					unsigned long *delay_off);
+-- 
+1.7.2.3
 
