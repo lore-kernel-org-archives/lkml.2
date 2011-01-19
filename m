@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974Ab1ASP4A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 10:56:00 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:50730 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752106Ab1ASPz7 (ORCPT
+	id S1753440Ab1ASP4Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 10:56:16 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33006 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753173Ab1ASP4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 10:55:59 -0500
-Message-ID: <4D37098A.8010706@linux.vnet.ibm.com>
-Date: Wed, 19 Jan 2011 21:25:54 +0530
-From: Ciju Rajan K <ciju@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH 0/2 v1.0]sched: updating /proc/schedstat
-References: <4D341ECD.3020503@linux.vnet.ibm.com> <1295283289.30950.172.camel@laptop> <4D352CA6.7010109@linux.vnet.ibm.com> <4D35416C.7020706@jp.fujitsu.com> <4D35462B.8010304@linux.vnet.ibm.com> <4D3687C1.4000909@jp.fujitsu.com>
-In-Reply-To: <4D3687C1.4000909@jp.fujitsu.com>
+	Wed, 19 Jan 2011 10:56:13 -0500
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+From: Chris Mason <chris.mason@oracle.com>
+To: Josef Bacik <josef@redhat.com>
+Cc: Liuwenyi <qingshenlwy@gmail.com>, strongzgy <strongzgy@gmail.com>,
+        onlyflyer <onlyflyer@gmail.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, ak <ak@linux.intel.com>,
+        akpm <akpm@linux-foundation.org>, miaox <miaox@cn.fujitsu.com>,
+        Yang Ruirui <ruirui.r.yang@tieto.com>,
+        meego-kernel <meego-kernel@meego.com>
+Subject: Re: [PATCH] Avoid a NULL pointer in btrfs
+In-reply-to: <20110119141334.GA2544@localhost.localdomain>
+References: <4D36F04D.70505@gmail.com> <20110119141334.GA2544@localhost.localdomain>
+Date: Wed, 19 Jan 2011 10:52:16 -0500
+Message-Id: <1295452288-sup-8924@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
->>
->> This patch set removes only those fields which are currently not in use.
->> If you observe the fields of /proc/schedstat the following fields are not
->> being updated.
+Excerpts from Josef Bacik's message of 2011-01-19 09:14:02 -0500:
+> On Wed, Jan 19, 2011 at 10:08:13PM +0800, Liuwenyi wrote:
+> > In Yang Ruirui's mail, the btrfs will create a oops. This is caused by a
+> > null pointer in test_range_bit() while lock the spinlock.
+> > 
+> > So, It is necessary to add a pointer check into test_range_bit()
+> > 
 > 
-> Ah... I misunderstood the meaning of `unused' and complained based on too
-> old kernel's source. Sorry.> 
-
-> I confirmed that these fields are actually not treated by upstream kernel
-> at all. So I think it's OK if any userland tools are updated synchronized
-> with this change.
-
-Thanks for verifying it.
-
- Does its benefit is more than its cost? In my
-> understanding, its benefit is improving readability and reducing some memory
-> footprint, and its cost is changing all userspace tools referring /proc/schedstat.
-
-In my opinion we should go ahead with updating /proc/schedstat. 
-As I mentioned earlier, we can have an updated script for 
-http://eaglet.rain.com/rick/linux/schedstat/ 
-
 > 
-> # Unfortunately I don't know how much it costs.
+> NAK, the tree shouldn't be null coming into this function, something else is
+> going wrong.  What oops is this?  Thanks,
 
-The changes required in the userspace would be very small. 
-Its just a matter of re-ordering the values. I also can't think
-of much complicated scenario than this.
+What was your metadata blocksize for this oops?  This call should never
+happen.
 
--Ciju
-> 
+I think there is a larger problem, probably in the IO error handling
+code since the trace had io errors beforehand.
+
+-chris
