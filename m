@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab1ASA4J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 19:56:09 -0500
-Received: from exprod7og105.obsmtp.com ([64.18.2.163]:51170 "EHLO
-	exprod7og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752548Ab1ASA4H (ORCPT
+	id S1753073Ab1ASA6c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 19:58:32 -0500
+Received: from mms2.broadcom.com ([216.31.210.18]:3966 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751984Ab1ASA6a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 19:56:07 -0500
-X-Greylist: delayed 15172 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 Jan 2011 19:56:07 EST
-Message-ID: <4D35FB33.1080305@genband.com>
-Date: Tue, 18 Jan 2011 14:42:27 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	Tue, 18 Jan 2011 19:58:30 -0500
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+From: "Jian Peng" <jipeng@broadcom.com>
+To: "Jeff Garzik" <jgarzik@pobox.com>
+cc: "Tejun Heo" <tj@kernel.org>, "Robert Hancock" <hancockrwd@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ide <linux-ide@vger.kernel.org>
+Date: Tue, 18 Jan 2011 16:58:10 -0800
+Subject: RE: questions regarding possible violation of AHCI spec in AHCI
+ driver
+Thread-Topic: questions regarding possible violation of AHCI spec in
+ AHCI driver
+Thread-Index: Acu3cw1ZQEatH4a4Tq+DzMhYSsstDwAAJJ2w
+Message-ID: <E18F441196CA634DB8E1F1C56A50A874319FF4358E@IRVEXCHCCR01.corp.ad.broadcom.com>
+References: <4CFF58D2.4040006@kernel.org>
+ <E18F441196CA634DB8E1F1C56A50A874319FA38C43@IRVEXCHCCR01.corp.ad.broadcom.com>
+ <4CFFCD56.6050608@kernel.org>
+ <E18F441196CA634DB8E1F1C56A50A874319FA7E36E@IRVEXCHCCR01.corp.ad.broadcom.com>
+ <4CFFD3EB.10800@kernel.org>
+ <E18F441196CA634DB8E1F1C56A50A874319FA7E36F@IRVEXCHCCR01.corp.ad.broadcom.com>
+ <4CFFE29C.7080205@kernel.org>
+ <E18F441196CA634DB8E1F1C56A50A874319FA38CD3@IRVEXCHCCR01.corp.ad.broadcom.com>
+ <4D000C8B.5040904@kernel.org>
+ <E18F441196CA634DB8E1F1C56A50A874319FD72B23@IRVEXCHCCR01.corp.ad.broadcom.com>,<20110111182323.GG15933@htj.dyndns.org>
+ <E18F441196CA634DB8E1F1C56A50A874319FA7E37B@IRVEXCHCCR01.corp.ad.broadcom.com>
+ <4D36358E.40106@pobox.com>
+In-Reply-To: <4D36358E.40106@pobox.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-To: netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: tool to send unsolicited neighbour advertisements?
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Jan 2011 20:42:29.0836 (UTC) FILETIME=[3964B8C0:01CBB750]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-17902.001
-X-TM-AS-Result: No--9.290300-5.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+X-WSS-ID: 6128E8F03H04005380-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hi,
-
-We're transitioning stuff to IPv6 and I've been trying (without much
-luck) to find a standard tool for sending out unsolicited neighbour
-advertisements for failover purposes.
-
-Is there such a thing?  In ipv4 arping works fine.
+Sorry that I switched to other tasks recently, and will report the testing results within this week.
+Any suggestion on how to test the code path affected by this patch, AFAIK, bootup and hotplug will use this path, What else?
 
 Thanks,
-Chris
+Jian
 
--- 
-Chris Friesen
-Software Developer
-GENBAND
-chris.friesen@genband.com
-www.genband.com
+-----Original Message-----
+From: Jeff Garzik [mailto:jgpobox@gmail.com] On Behalf Of Jeff Garzik
+Sent: Tuesday, January 18, 2011 4:51 PM
+To: Jian Peng
+Cc: Tejun Heo; Robert Hancock; linux-kernel@vger.kernel.org; ide
+Subject: Re: questions regarding possible violation of AHCI spec in AHCI driver
+
+On 01/11/2011 01:55 PM, Jian Peng wrote:
+> Here is new patch based on your suggestion (against 2.6.37 release)
+[...]
+> I will test host controller made by other vendors and report issues soon.
+
+Any updates?
+
+	Jeff
+
+
+
+
+
