@@ -1,148 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab1ASHPx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 02:15:53 -0500
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:60791 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752906Ab1ASHPw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 02:15:52 -0500
-From: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
-To: <linus.walleij@stericsson.com>, <rpurdie@rpsys.net>
-Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <shreshthakumar.sahu@stericsson.com>
-Subject: [PATCH 2/2] u5500: Add lm3530 ALS platform data
-Date: Wed, 19 Jan 2011 12:26:15 +0530
-Message-ID: <1295420175-22332-2-git-send-email-shreshthakumar.sahu@stericsson.com>
-X-Mailer: git-send-email 1.7.2.dirty
-In-Reply-To: <1295420175-22332-1-git-send-email-shreshthakumar.sahu@stericsson.com>
-References: <1295420175-22332-1-git-send-email-shreshthakumar.sahu@stericsson.com>
+	id S1753516Ab1ASHT2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 02:19:28 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:43851 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753305Ab1ASHT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 02:19:27 -0500
+Date: Wed, 19 Jan 2011 08:19:17 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        samu.p.onkalo@nokia.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        tglx <tglx@linutronix.de>
+Subject: Re: Bug in scheduler when using rt_mutex
+Message-ID: <20110119071917.GA26086@elte.hu>
+References: <1295280032.30950.128.camel@laptop>
+ <1295339012.11678.35.camel@kolo>
+ <AANLkTikXf-OMEBx-UZktxooOs+YqUkSE9doyEZopjzOx@mail.gmail.com>
+ <1295357746.30950.681.camel@laptop>
+ <AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
+ <1295408637.8017.56.camel@marge.simson.net>
+ <AANLkTineieNdiKduDHQ-J+Xv6Pq9O0pTZraBJEw=p5e7@mail.gmail.com>
+ <1295415657.8017.113.camel@marge.simson.net>
+ <AANLkTinfGL3=8LKTx3gCg_V9DfXi44E2PxPd-vQVfALU@mail.gmail.com>
+ <1295419041.8017.120.camel@marge.simson.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295419041.8017.120.camel@marge.simson.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
 
-platform data for simple backlight driver for LM3530
-in the u5500 platform
+* Mike Galbraith <efault@gmx.de> wrote:
 
-Signed-off-by: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
----
- arch/arm/mach-ux500/board-u5500.c |   82 ++++++++++++++++++++++++++++++++++++-
- 1 files changed, 81 insertions(+), 1 deletions(-)
+> On Wed, 2011-01-19 at 14:09 +0800, Yong Zhang wrote:
+> > On Wed, Jan 19, 2011 at 1:40 PM, Mike Galbraith <efault@gmx.de> wrote:
+> > > On Wed, 2011-01-19 at 12:35 +0800, Yong Zhang wrote:
+> > >
+> > >> cfs_rq->curr != se is always true.
+> > >
+> > > If that were always true, we'd illegally enqueue a running task.
+> > 
+> > I'm sorry that I'm not express myself correctly.
+> 
+> Human communication methods are all buggy as hell :)
 
-diff --git a/arch/arm/mach-ux500/board-u5500.c b/arch/arm/mach-ux500/board-u5500.c
-index 39d370c..37d70c9 100644
---- a/arch/arm/mach-ux500/board-u5500.c
-+++ b/arch/arm/mach-ux500/board-u5500.c
-@@ -10,16 +10,95 @@
- #include <linux/amba/bus.h>
- #include <linux/gpio.h>
- #include <linux/irq.h>
-+#include <linux/i2c.h>
- 
- #include <asm/mach/arch.h>
- #include <asm/mach-types.h>
- 
-+#include <plat/pincfg.h>
-+#include <plat/i2c.h>
-+
- #include <mach/hardware.h>
- #include <mach/devices.h>
- #include <mach/setup.h>
- 
-+#include "pins-db5500.h"
- #include "devices-db5500.h"
-+#include <linux/led-lm3530.h>
-+
-+/*
-+ * GPIO
-+ */
-+
-+static pin_cfg_t u5500_pins[] = {
-+	/* I2C */
-+	GPIO218_I2C2_SCL        | PIN_INPUT_PULLUP,
-+	GPIO219_I2C2_SDA        | PIN_INPUT_PULLUP,
-+
-+	/* DISPLAY_ENABLE */
-+	GPIO226_GPIO        | PIN_OUTPUT_LOW,
-+
-+	/* Backlight Enbale */
-+	GPIO224_GPIO        | PIN_OUTPUT_HIGH,
-+};
-+/*
-+ * I2C
-+ */
-+
-+#define U5500_I2C_CONTROLLER(id, _slsu, _tft, _rft, clk, _sm) \
-+static struct nmk_i2c_controller u5500_i2c##id##_data = { \
-+	/*				\
-+	 * slave data setup time, which is	\
-+	 * 250 ns,100ns,10ns which is 14,6,2	\
-+	 * respectively for a 48 Mhz	\
-+	 * i2c clock			\
-+	 */				\
-+	.slsu		= _slsu,	\
-+	/* Tx FIFO threshold */		\
-+	.tft		= _tft,		\
-+	/* Rx FIFO threshold */		\
-+	.rft		= _rft,		\
-+	/* std. mode operation */	\
-+	.clk_freq	= clk,		\
-+	.sm		= _sm,		\
-+}
-+/*
-+ * The board uses TODO <3> i2c controllers, initialize all of
-+ * them with slave data setup time of 250 ns,
-+ * Tx & Rx FIFO threshold values as 1 and standard
-+ * mode of operation
-+ */
-+
-+U5500_I2C_CONTROLLER(2,	0xe, 1, 1, 400000, I2C_FREQ_MODE_FAST);
-+
-+static struct lm3530_platform_data u5500_als_platform_data = {
-+	.mode = LM3530_BL_MODE_MANUAL,
-+	.als_input_mode = LM3530_INPUT_ALS1,
-+	.max_current = LM3530_FS_CURR_26mA,
-+	.pwm_pol_hi = true,
-+	.als_avrg_time = LM3530_ALS_AVRG_TIME_512ms,
-+	.brt_ramp_law = 1,      /* Linear */
-+	.brt_ramp_fall = LM3530_RAMP_TIME_1ms,
-+	.brt_ramp_rise = LM3530_RAMP_TIME_1ms,
-+	.als1_resistor_sel = LM3530_ALS_IMPD_2_27kOhm,
-+	.als2_resistor_sel = LM3530_ALS_IMPD_2_27kOhm,
-+	.brt_val = 0x7F,        /* Max brightness */
-+};
- 
-+
-+static struct i2c_board_info __initdata u5500_i2c2_devices[] = {
-+	{
-+		/* Backlight */
-+		I2C_BOARD_INFO("lm3530-led", 0x36),
-+		.platform_data = &u5500_als_platform_data,
-+	},
-+};
-+
-+static void __init u5500_i2c_init(void)
-+{
-+	db5500_add_i2c2(&u5500_i2c2_data);
-+	i2c_register_board_info(2, ARRAY_AND_SIZE(u5500_i2c2_devices));
-+}
- static void __init u5500_uart_init(void)
- {
- 	db5500_add_uart0();
-@@ -30,7 +109,8 @@ static void __init u5500_uart_init(void)
- static void __init u5500_init_machine(void)
- {
- 	u5500_init_devices();
--
-+	nmk_config_pins(u5500_pins, ARRAY_SIZE(u5500_pins));
-+	u5500_i2c_init();
- 	u5500_sdi_init();
- 	u5500_uart_init();
- }
--- 
-1.7.2.dirty
+Not to mention that they are slow, inefficient and ambiguous.
 
+But wht did you expect? The original authors of the code are long gone and 
+maintenance is done by newcomers who are patching the code bit by bit. What
+you get from such a development model is pretty predictable: ~1 billion years
+old spaghetti DNA that no-one truly understands.
+
+	Ingo
