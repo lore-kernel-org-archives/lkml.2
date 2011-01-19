@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab1ASOXR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 09:23:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37750 "EHLO mx2.suse.de"
+	id S1754126Ab1ASOZW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 09:25:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37783 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752994Ab1ASOXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 09:23:16 -0500
-Date: Wed, 19 Jan 2011 15:23:15 +0100 (CET)
+	id S1753296Ab1ASOZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 09:25:21 -0500
+Date: Wed, 19 Jan 2011 15:25:19 +0100 (CET)
 From: Jiri Kosina <jkosina@suse.cz>
 To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        David Airlie <airlied@linux.ie>
-Subject: Re: [PATCH 03/17][trivial] GPU DRM: Remove unnecessary casts of void
- ptr returning alloc function return values
-In-Reply-To: <alpine.LNX.2.00.1011082314420.23697@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1101191522570.26685@pobox.suse.cz>
-References: <alpine.LNX.2.00.1011082314420.23697@swampdragon.chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 05/17][trivial] drivers/message/, i2o: Remove unnecessary
+ casts of void ptr returning alloc function return values
+In-Reply-To: <alpine.LNX.2.00.1011082323470.23697@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1101191524580.26685@pobox.suse.cz>
+References: <alpine.LNX.2.00.1011082323470.23697@swampdragon.chaosbits.net>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -25,41 +24,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, 9 Nov 2010, Jesper Juhl wrote:
 
-> Hi,
-> 
 > The [vk][cmz]alloc(_node) family of functions return void pointers which
 > it's completely unnecessary/pointless to cast to other pointer types since
 > that happens implicitly.
 > 
-> This patch removes such casts from drivers/gpu/drm/
+> This patch removes such casts from drivers/message/
 > 
 > 
 > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 > ---
->  drm_sman.c |    4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
+>  i2o_config.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 > 
-> diff --git a/drivers/gpu/drm/drm_sman.c b/drivers/gpu/drm/drm_sman.c
-> index 463aed9..3466458 100644
-> --- a/drivers/gpu/drm/drm_sman.c
-> +++ b/drivers/gpu/drm/drm_sman.c
-> @@ -59,9 +59,7 @@ drm_sman_init(struct drm_sman * sman, unsigned int num_managers,
->  {
->  	int ret = 0;
+> diff --git a/drivers/message/i2o/i2o_config.c b/drivers/message/i2o/i2o_config.c
+> index 7d3cc57..098de2b 100644
+> --- a/drivers/message/i2o/i2o_config.c
+> +++ b/drivers/message/i2o/i2o_config.c
+> @@ -1044,8 +1044,7 @@ static long i2o_cfg_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 >  
-> -	sman->mm = (struct drm_sman_mm *) kcalloc(num_managers,
-> -						  sizeof(*sman->mm),
-> -						  GFP_KERNEL);
-> +	sman->mm = kcalloc(num_managers, sizeof(*sman->mm), GFP_KERNEL);
->  	if (!sman->mm) {
->  		ret = -ENOMEM;
->  		goto out;
-> 
+>  static int cfg_open(struct inode *inode, struct file *file)
+>  {
+> -	struct i2o_cfg_info *tmp =
+> -	    (struct i2o_cfg_info *)kmalloc(sizeof(struct i2o_cfg_info),
+> +	struct i2o_cfg_info *tmp = kmalloc(sizeof(struct i2o_cfg_info),
+>  					   GFP_KERNEL);
+>  	unsigned long flags;
 
-Doesn't seem to be present in linux-next as of today, applied to trivial 
-queue.
-
-Thanks,
+Not present in linux-next as of today. Applied, thanks Jesper.
 
 -- 
 Jiri Kosina
