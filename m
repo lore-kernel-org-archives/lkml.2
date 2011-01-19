@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab1ASWTR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 17:19:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55065 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753834Ab1ASWTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 17:19:16 -0500
-Date: Wed, 19 Jan 2011 23:19:09 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Ilya Dryomov <idryomov@gmail.com>
-Cc: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG] BUG: unable to handle kernel paging request at fffba000
-Message-ID: <20110119221909.GO9506@random.random>
-References: <20110119124047.GA30274@kwango.lan.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110119124047.GA30274@kwango.lan.net>
+	id S1754664Ab1ASWVF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 17:21:05 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54533
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754459Ab1ASWVD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 17:21:03 -0500
+Date: Wed, 19 Jan 2011 14:21:37 -0800 (PST)
+Message-Id: <20110119.142137.184823805.davem@davemloft.net>
+To: mathieu.desnoyers@efficios.com
+Cc: rostedt@goodmis.org, richm@oldelvet.org.uk, 609371@bugs.debian.org,
+        ben@decadent.org.uk, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@redhat.com
+Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
+ Unknown relocation: 36
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110119221327.GA23544@Krystal>
+References: <20110119153326.GC11022@Krystal>
+	<20110119.134047.232915743.davem@davemloft.net>
+	<20110119221327.GA23544@Krystal>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Ilya,
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Date: Wed, 19 Jan 2011 17:13:27 -0500
 
-thanks for sending me the gdb info too.
+> Hrm, I'd like to see what kind of ill-conceived 32-bit architecture would
+> generate a unaligned access for a 32-bit aligned u64. Do you have examples in
+> mind ? By definition, the memory accesses should be at most 32-bit, no ? AFAIK,
+> gcc treats u64 as two distinct reads on all 32-bit architectures.
 
-can you test this fix? Thanks a lot! (it only affected x86 32bit
-builds with highpte enabled)
+Sparc 32-bit has 64-bit loads and stores, GCC uses them because the ABI
+specifies that every structure is at least 8 byte aligned.
 
-====
-Subject: fix pte_unmap in khugepaged for highpte x86_32
+> gcc on my sparc64 box (32-bit userland) disagrees with you here ;) Using
+> gcc (Debian 4.3.3-14) 4.3.3, here is a demonstration that, indeed, "packed"
+> generates aweful code, but that "packed, aligned(4 or 8)" generates pretty
+> decent code:
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+Amazing, if this works then do it.
 
-__collapse_huge_page_copy is still dereferencing the pte passed as parameter so
-we must pte_unmap after __collapse_huge_page_copy returns, not before.
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
-
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 004c9c2..c4f634b 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1837,9 +1837,9 @@ static void collapse_huge_page(struct mm_struct *mm,
- 	spin_lock(ptl);
- 	isolated = __collapse_huge_page_isolate(vma, address, pte);
- 	spin_unlock(ptl);
--	pte_unmap(pte);
- 
- 	if (unlikely(!isolated)) {
-+		pte_unmap(pte);
- 		spin_lock(&mm->page_table_lock);
- 		BUG_ON(!pmd_none(*pmd));
- 		set_pmd_at(mm, address, pmd, _pmd);
-@@ -1856,6 +1856,7 @@ static void collapse_huge_page(struct mm_struct *mm,
- 	anon_vma_unlock(vma->anon_vma);
- 
- 	__collapse_huge_page_copy(pte, new_page, vma, address, ptl);
-+	pte_unmap(pte);
- 	__SetPageUptodate(new_page);
- 	pgtable = pmd_pgtable(_pmd);
- 	VM_BUG_ON(page_count(pgtable) != 1);
-
-
+But please document this fully with comments and such :-)
