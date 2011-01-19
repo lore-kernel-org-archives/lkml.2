@@ -1,40 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab1ASOO0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 09:14:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38494 "EHLO mx1.redhat.com"
+	id S1754038Ab1ASOXR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 09:23:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37750 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753059Ab1ASOOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 09:14:24 -0500
-Date: Wed, 19 Jan 2011 09:14:02 -0500
-From: Josef Bacik <josef@redhat.com>
-To: Liuwenyi <qingshenlwy@gmail.com>
-Cc: strongzgy@gmail.com, onlyflyer@gmail.com, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ak@linux.intel.com,
-        akpm@linux-foundation.org, miaox@cn.fujitsu.com, josef@redhat.com,
-        chris.mason@oracle.com, Yang Ruirui <ruirui.r.yang@tieto.com>,
-        meego-kernel@meego.com
-Subject: Re: [PATCH] Avoid a NULL pointer in btrfs
-Message-ID: <20110119141334.GA2544@localhost.localdomain>
-References: <4D36F04D.70505@gmail.com>
+	id S1752994Ab1ASOXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 09:23:16 -0500
+Date: Wed, 19 Jan 2011 15:23:15 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        David Airlie <airlied@linux.ie>
+Subject: Re: [PATCH 03/17][trivial] GPU DRM: Remove unnecessary casts of void
+ ptr returning alloc function return values
+In-Reply-To: <alpine.LNX.2.00.1011082314420.23697@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1101191522570.26685@pobox.suse.cz>
+References: <alpine.LNX.2.00.1011082314420.23697@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D36F04D.70505@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 10:08:13PM +0800, Liuwenyi wrote:
-> In Yang Ruirui's mail, the btrfs will create a oops. This is caused by a
-> null pointer in test_range_bit() while lock the spinlock.
+On Tue, 9 Nov 2010, Jesper Juhl wrote:
+
+> Hi,
 > 
-> So, It is necessary to add a pointer check into test_range_bit()
+> The [vk][cmz]alloc(_node) family of functions return void pointers which
+> it's completely unnecessary/pointless to cast to other pointer types since
+> that happens implicitly.
+> 
+> This patch removes such casts from drivers/gpu/drm/
+> 
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  drm_sman.c |    4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/drm_sman.c b/drivers/gpu/drm/drm_sman.c
+> index 463aed9..3466458 100644
+> --- a/drivers/gpu/drm/drm_sman.c
+> +++ b/drivers/gpu/drm/drm_sman.c
+> @@ -59,9 +59,7 @@ drm_sman_init(struct drm_sman * sman, unsigned int num_managers,
+>  {
+>  	int ret = 0;
+>  
+> -	sman->mm = (struct drm_sman_mm *) kcalloc(num_managers,
+> -						  sizeof(*sman->mm),
+> -						  GFP_KERNEL);
+> +	sman->mm = kcalloc(num_managers, sizeof(*sman->mm), GFP_KERNEL);
+>  	if (!sman->mm) {
+>  		ret = -ENOMEM;
+>  		goto out;
 > 
 
+Doesn't seem to be present in linux-next as of today, applied to trivial 
+queue.
 
-NAK, the tree shouldn't be null coming into this function, something else is
-going wrong.  What oops is this?  Thanks,
+Thanks,
 
-Josef
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
