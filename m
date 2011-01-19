@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab1ASJv2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 04:51:28 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:55424 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753644Ab1ASJv1 (ORCPT
+	id S1753991Ab1ASJwG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 04:52:06 -0500
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:38715 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753943Ab1ASJwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 04:51:27 -0500
-Subject: Re: [2.6.38-rc1] iwlagn lock misuse...
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Daniel J Blueman <daniel.blueman@gmail.com>
-Cc: Reinette Chatre <reinette.chatre@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        linux-wireless@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTi=DLpfpLYAftktUKa5grNyTeT0-reyjEsrr-NwR@mail.gmail.com>
-References: <AANLkTi=DLpfpLYAftktUKa5grNyTeT0-reyjEsrr-NwR@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 Jan 2011 10:51:22 +0100
-Message-ID: <1295430682.4685.1.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Jan 2011 04:52:04 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Date: Wed, 19 Jan 2011 09:52:02 +0000
+From: Tony Finch <dot@dotat.at>
+X-X-Sender: fanf2@hermes-1.csi.cam.ac.uk
+To: =?ISO-8859-15?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>, Tony Finch <dot@dotat.at>
+Subject: Re: [PATCH] unifdef: update to upstream version 2.5
+In-Reply-To: <20110119043605.GA9903@cr0.nay.redhat.com>
+Message-ID: <alpine.LSU.2.00.1101190951250.5244@hermes-1.csi.cam.ac.uk>
+References: <E1PfI64-00041z-0d@hermes-1.csi.cam.ac.uk> <20110119043605.GA9903@cr0.nay.redhat.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="1870869256-1836968921-1295430722=:5244"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-19 at 16:44 +0700, Daniel J Blueman wrote:
-> Booting an instrumented 2.6.38-rc1 kernel with an Intel WiFi Link 5300
-> card and associating with an access point, I see a lockdep warning
-> [attached].
-> 
-> This is essentially (struct iwl_priv)->lock being taken with
-> interrupts disabled in iwl-agn-ict.c:152 [1] and the same lock taken
-> with interrupts enabled in rx.c:2476 [2] (confirmed via disassembly).
-> 
-> It feels like this would have been introduced in this commit:
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=6e8cc38d5b05bb812f89a35bd9bf52405e67d0df
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-I think you're running into a lockdep false positive, it's not actually
-the same lock and lockdep confuses a few skb queue locks. Please apply
-this patch
-http://git.kernel.org/?p=linux/kernel/git/linville/wireless-testing.git;a=commitdiff;h=53c16b8e752e8e58f4313f1155f3afadf78311bb
-and see if the problem persists.
+--1870869256-1836968921-1295430722=:5244
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-johannes
+On Wed, 19 Jan 2011, Am=E9rico Wang wrote:
+>
+> Could you split the patch? It is hard for review.
 
+I could but I didn't do that last time, which was a rather more
+substantial update.
+
+Tony.
+--=20
+f.anthony.n.finch  <dot@dotat.at>  http://dotat.at/
+HUMBER THAMES DOVER WIGHT PORTLAND: NORTH BACKING WEST OR NORTHWEST, 5 TO 7=
+,
+DECREASING 4 OR 5, OCCASIONALLY 6 LATER IN HUMBER AND THAMES. MODERATE OR
+ROUGH. RAIN THEN FAIR. GOOD.
+--1870869256-1836968921-1295430722=:5244--
