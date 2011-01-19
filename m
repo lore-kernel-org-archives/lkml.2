@@ -1,187 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254Ab1ASBUA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Jan 2011 20:20:00 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:56309 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751903Ab1ASBT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Jan 2011 20:19:59 -0500
-Message-ID: <4D363C54.90403@cn.fujitsu.com>
-Date: Wed, 19 Jan 2011 09:20:20 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1753263Ab1ASBYM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Jan 2011 20:24:12 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38062 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753109Ab1ASBYK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Jan 2011 20:24:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=rx2E/T+jAF+/wq9Tv57OhA9jF+4xI00nwiLsBn5JMSBYynhVF33bfSKeGtke9ft/M0
+         fBE6/9GRbjgM5pfwDXOpkE+CD+hfJv5PkJS0fz2U1ArrFvREBf5spLbswcqXDhKfwsuJ
+         lJ14884fv3RL8Rv4dHXOBB2BXHGVI6WzzkK88=
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        Chad Talbott <ctalbott@google.com>, Nauman Rafique <nauman@google.com>,
-        Divyesh Shah <dpshah@google.com>, jmoyer@redhat.com,
-        Shaohua Li <shaohua.li@intel.com>
-Subject: Re: [PATCH 6/6 v3] blkio-cgroup: Document for blkio.use_hierarchy
- interface
-References: <4D180ECE.4000305@cn.fujitsu.com> <4D185388.4080104@cn.fujitsu.com> <20110118202720.GJ27946@redhat.com>
-In-Reply-To: <20110118202720.GJ27946@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-19 09:19:26,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-19 09:19:26,
-	Serialize complete at 2011-01-19 09:19:26
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110118152844.88cfdc2c.akpm@linux-foundation.org>
+References: <E1Pf9Zj-0002td-Ct@pomaz-ex.szeredi.hu>
+	<20110118152844.88cfdc2c.akpm@linux-foundation.org>
+Date: Wed, 19 Jan 2011 10:24:09 +0900
+Message-ID: <AANLkTimh7jq7HLjfxVX0XKdhOhWEQtDn-faGc+iJ-ykd@mail.gmail.com>
+Subject: Re: [PATCH v4] mm: add replace_page_cache_page() function
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, kamezawa.hiroyu@jp.fujitsu.com,
+        nishimura@mxp.nes.nec.co.jp, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Mon, Dec 27, 2010 at 04:51:20PM +0800, Gui Jianfeng wrote:
->> Document for blkio.use_hierarchy interface
->>
->> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
->> ---
->>  Documentation/cgroups/blkio-controller.txt |   70 ++++++++++++++++++++--------
->>  1 files changed, 51 insertions(+), 19 deletions(-)
->>
->> diff --git a/Documentation/cgroups/blkio-controller.txt b/Documentation/cgroups/blkio-controller.txt
->> index 4ed7b5c..bd01d6c 100644
->> --- a/Documentation/cgroups/blkio-controller.txt
->> +++ b/Documentation/cgroups/blkio-controller.txt
->> @@ -91,30 +91,51 @@ Throttling/Upper Limit policy
->>  
->>  Hierarchical Cgroups
->>  ====================
->> -- Currently none of the IO control policy supports hierarhical groups. But
->> -  cgroup interface does allow creation of hierarhical cgroups and internally
->> -  IO policies treat them as flat hierarchy.
->> +- Cgroup interface allows creation of hierarchical cgroups. Currently,
->> +  internally IO policies are able to treat them as flat hierarchy or
->> +  hierarchical hierarchy.
-> 
-> Gui, now we have 2 IO policies. Throttling policy still supports only flat
-> mode. Can you please make it clear here that CFQ will support both flat
-> and hierarhical mode while throttling supports only flat mode as of today.
-> 
->> Both hierarchical bandwidth division and flat
->> +  bandwidth division are supported. "blkio.use_hierarchy" can be used to
->> +  switch between flat mode and hierarchical mode.
->>  
->> -  So this patch will allow creation of cgroup hierarhcy but at the backend
->> -  everything will be treated as flat. So if somebody created a hierarchy like
->> -  as follows.
->> +  Consider the following CGroup hierarchy:
->>  
->> -			root
->> -			/  \
->> -		     test1 test2
->> -			|
->> -		     test3
->> +			  Root
->> +			/  |   \
->> +		     Grp1  Grp2 tsk1
->> +	            /  \
->> +		 Grp3 tsk2
->>  
->> -  CFQ and throttling will practically treat all groups at same level.
->> +  If blkio.use_hierarchy is disabled in all CGroups, CFQ will practically treat all groups
->> +  at the same level.
->>  
->> -				pivot
->> -			     /  |   \  \
->> -			root  test1 test2  test3
->> +			     Pivot tree
->> +			    /  |   |   \
->> +			Root Grp1 Grp2 Grp3
->> +			 /     |
->> +			tsk1  tsk2
->>  
->> -  Down the line we can implement hierarchical accounting/control support
->> -  and also introduce a new cgroup file "use_hierarchy" which will control
->> -  whether cgroup hierarchy is viewed as flat or hierarchical by the policy..
->> -  This is how memory controller also has implemented the things.
->> +  If blkio.use_hierarchy is enabled in Grp1 and Grp3, CFQ will treat groups and tasks as the
-> 
-> I would think that before this example, we can give one simpler example
-> where use_hierarhcy=1 in root cgroup and that would/should lead to all
-> children group under root having use_hierarchy=1 set automatically and
-> will look as follows.
-> 
-> 		     	Pivot tree
-> 			    |
-> 		           root
-> 			 /  |  | 
-> 	             tsk1   G1 G2 
-> 			   / \
-> 			 grp3 tsk2
-> 
-> After this now you can give more complicated example as below where
-> use_hierarchy=1 is only set for sub branch of tree and not the whole
-> tree.
+On Wed, Jan 19, 2011 at 8:28 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Tue, 18 Jan 2011 12:18:11 +0100
+> Miklos Szeredi <miklos@szeredi.hu> wrote:
+>
+>> +int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
+>> +{
+>> +     int error;
+>> +     struct mem_cgroup *memcg = NULL;
+>
+> I'm suspecting that the unneeded initialisation was added to suppress a
+> warning?
+>
+> I removed it, and didn't get a warning.  I expected to.
+>
+> Really, uninitialized_var() is better.  It avoids adding extra code
+> and, unlike "= 0" it is self-documenting.
+>
+>> +     VM_BUG_ON(!PageLocked(old));
+>> +     VM_BUG_ON(!PageLocked(new));
+>> +     VM_BUG_ON(new->mapping);
+>> +
+>> +     /*
+>> +      * This is not page migration, but prepare_migration and
+>> +      * end_migration does enough work for charge replacement.
+>> +      *
+>> +      * In the longer term we probably want a specialized function
+>> +      * for moving the charge from old to new in a more efficient
+>> +      * manner.
+>> +      */
+>> +     error = mem_cgroup_prepare_migration(old, new, &memcg, gfp_mask);
+>> +     if (error)
+>> +             return error;
+>> +
+>> +     error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
+>> +     if (!error) {
+>> +             struct address_space *mapping = old->mapping;
+>> +             pgoff_t offset = old->index;
+>> +
+>> +             page_cache_get(new);
+>> +             new->mapping = mapping;
+>> +             new->index = offset;
+>> +
+>> +             spin_lock_irq(&mapping->tree_lock);
+>> +             __remove_from_page_cache(old);
+>> +             error = radix_tree_insert(&mapping->page_tree, offset, new);
+>> +             BUG_ON(error);
+>> +             mapping->nrpages++;
+>> +             __inc_zone_page_state(new, NR_FILE_PAGES);
+>> +             if (PageSwapBacked(new))
+>> +                     __inc_zone_page_state(new, NR_SHMEM);
+>> +             spin_unlock_irq(&mapping->tree_lock);
+>> +             radix_tree_preload_end();
+>> +             page_cache_release(old);
+>> +             mem_cgroup_end_migration(memcg, old, new, true);
+>
+> This is all pretty ugly and inefficient.
+>
+> We call __remove_from_page_cache() which does a radix-tree lookup and
+> then fiddles a bunch of accounting things.
+>
+> Then we immediately do the same radix-tree lookup and then undo the
+> accounting changes which we just did.  And we do it in an open-coded
+> fashion, thus giving the kernel yet another code site where various
+> operations need to be kept in sync.
+>
+> Would it not be better to do a single radix_tree_lookup_slot(),
+> overwrite the pointer therein and just leave all the ancilliary
+> accounting unaltered?
 
-Sure.
+I agree single radix_tree_lookup but accounting still is needed since
+newpage could be on another zone. What we can remove is just only
+mapping->nrpages.
 
-> 
->> +  same view in CGroup hierarchy, it looks as follows.
->> +
->> +
->> +			     Pivot tree
->> +			    /    |    \
->> +			  Root  Grp1  Grp2
->> +			  /     /  \
->> +		       tsk1   Grp3 tsk2
->> +
->> +  Root, Grp1 and Grp2 are treated at the same level under Pivot tree. tsk1 stays under Root.
->> +  Grp3 and tsk2 are treated at the same level under Grp1. Below is the mapping between
->> +  task io priority and io weight:
->> +
->> +	    prio       0    1     2    3    4    5    6     7
->> +	    weight  1000  868   740  612  484  356  228   100
->> +
->> +  Note1: Regardless of the use_hierarchy setting in Root group, Root group is always put onto
->> +  Pivot tree.
->> +
->> +  Note2: Currently, "blkio.use_hierarchy" only effects proportional bandwidth division. For
->> +  Throttling logic, it still continue to treat everything as flat.
->>  
-> 
-> Ok, I see you mentioned throttling flat mode here. I guess it is better
-> to clarify it in the beginning itself.
 
-Ok
-
-Thanks,
-Gui
-
-> 
->>  Various user visible config options
->>  ===================================
->> @@ -169,6 +190,17 @@ Proportional weight policy files
->>  	  dev     weight
->>  	  8:16    300
->>  
->> +- blkio.use_hierarchy
->> +	- Switch between hierarchical mode and flat mode as stated above.
->> +	  blkio.use_hierarchy == 1 means hierarchical mode is enabled.
->> +	  blkio.use_hierarchy == 0 means flat mode is enabled.
->> +	  You can set this interface only if there isn't any child CGroup under
->> +	  this CGroup. If one CGroup's blkio.use_hierarchy is set, the created
->> +	  children will inherit it. it's not allowed to unset it in children.
->> +	  The default mode in Root CGroup is flat.
->> +	  blkio.use_hierarchy only works for proportional bandwidth division
->> +	  as of today and doesn't have any effect on throttling logic.
->> +
-> 
-> This is good. Makes use_hierarchy behavior for children and subtree very
-> clear.
-> 
->>  - blkio.time
->>  	- disk time allocated to cgroup per device in milliseconds. First
->>  	  two fields specify the major and minor number of the device and
->> -- 
->> 1.6.5.2
->>
->>
->>
->>
->>
->>
-> 
+-- 
+Kind regards,
+Minchan Kim
