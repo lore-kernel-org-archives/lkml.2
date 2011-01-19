@@ -1,102 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab1ASPel (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 10:34:41 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53734 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753411Ab1ASPej (ORCPT
+	id S1754144Ab1ASPjN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 10:39:13 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:47054 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867Ab1ASPjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 10:34:39 -0500
+	Wed, 19 Jan 2011 10:39:12 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=fy+Chz+f98gSZXg/m4Eb7SMJHIWBxzqb8J/cIFls6MiURWMt/RT35a+B/Qsgi6QSjn
-         HfNwq/7m+uEX5bH5rWHjPXzfa/ZVVImZp4iUR8qAGWJn0lnujp5MCxpU5uJtSVgL5MaU
-         +NIbimGjpK1kKOiqL69+lDsZ11G8C53qL8u3M=
-Date: Wed, 19 Jan 2011 17:34:36 +0200
-From: Ilya Dryomov <idryomov@gmail.com>
-To: linux-btrfs@vger.kernel.org
-Cc: Josef Bacik <josef@redhat.com>, Chris Mason <chris.mason@oracle.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Btrfs: remove unneeded allocation in
-	load_free_space_cache()
-Message-ID: <20110119153436.GA1358@kwango.lan.net>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=jHv/P/q/Q/xqUUzxc4ds6gAk1JHaVsHqiyj8KKhSCUYBbK4ANxMi1ZYIcgTpdb4Vj6
+         oslEeFrmEAoPbIfoIX7izuGdZBxng9tNuSsGFflEKJoKPzMXt33GVCn3ZgBrUdffl86o
+         tt4hxIBRhn5uoDUZ8enAqmaGqWa3/04jlUIKI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110119153057.GB3552@legolas.emea.dhcp.ti.com>
+References: <20110119092011.GA23624@darkstar>
+	<AANLkTinNVJXjL9a=Jmp34ktT7OLkGKzpm79j605vvCWe@mail.gmail.com>
+	<20110119153057.GB3552@legolas.emea.dhcp.ti.com>
+Date: Wed, 19 Jan 2011 23:38:44 +0800
+Message-ID: <AANLkTinV4afVtBfrRoW_UgLyvHpANZWp4P_yzah=WYUc@mail.gmail.com>
+Subject: Re: [PATCH] usb otg: use atomic notifier instead of blocking notifier
+From: Ming Lei <tom.leiming@gmail.com>
+To: balbi@ti.com
+Cc: Yang Ruirui <ruirui.r.yang@tieto.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Felipe Balbi <felipe.balbi@nokia.com>,
+        Heikki Krogerus <ext-heikki.krogerus@nokia.com>,
+        Tejun Heo <tj@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Hema HK <hemahk@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The checksums array is unused, remove it.  We only need disk_crcs array
-to verify checksums.
+Hi,
 
-There is no need to allocate first_page_offset bytes for disk_crcs
-array.  It's enough to allocate num_checksums bytes because disk_crcs
-only holds checksums while gen pointer is computed and used
-independently.
+2011/1/19 Felipe Balbi <balbi@ti.com>:
 
-cur_crc is initialized later in the code.  Don't initialize it in a
-declaration.
+> that's easy to guess since commit log says it's a problem on Meego
+> kernel.
 
-Signed-off-by: Ilya Dryomov <idryomov@gmail.com>
----
- fs/btrfs/free-space-cache.c |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
+OK, it is a specific issue on Meego kernel, so it is better to add
+"Meego " in the patch title.
 
-diff --git a/fs/btrfs/free-space-cache.c b/fs/btrfs/free-space-cache.c
-index 60d6842..258e45d 100644
---- a/fs/btrfs/free-space-cache.c
-+++ b/fs/btrfs/free-space-cache.c
-@@ -215,14 +215,14 @@ int load_free_space_cache(struct btrfs_fs_info *fs_info,
- 	struct extent_buffer *leaf;
- 	struct page *page;
- 	struct btrfs_path *path;
--	u32 *checksums = NULL, *crc;
-+	u32 *crc = NULL;
- 	char *disk_crcs = NULL;
- 	struct btrfs_key key;
- 	struct list_head bitmaps;
- 	u64 num_entries;
- 	u64 num_bitmaps;
- 	u64 generation;
--	u32 cur_crc = ~(u32)0;
-+	u32 cur_crc;
- 	pgoff_t index = 0;
- 	unsigned long first_page_offset;
- 	int num_checksums;
-@@ -298,11 +298,8 @@ int load_free_space_cache(struct btrfs_fs_info *fs_info,
- 
- 	/* Setup everything for doing checksumming */
- 	num_checksums = i_size_read(inode) / PAGE_CACHE_SIZE;
--	checksums = crc = kzalloc(sizeof(u32) * num_checksums, GFP_NOFS);
--	if (!checksums)
--		goto out;
- 	first_page_offset = (sizeof(u32) * num_checksums) + sizeof(u64);
--	disk_crcs = kzalloc(first_page_offset, GFP_NOFS);
-+	disk_crcs = kzalloc(num_checksums, GFP_NOFS);
- 	if (!disk_crcs)
- 		goto out;
- 
-@@ -352,7 +349,7 @@ int load_free_space_cache(struct btrfs_fs_info *fs_info,
- 		if (index == 0) {
- 			u64 *gen;
- 
--			memcpy(disk_crcs, addr, first_page_offset);
-+			memcpy(disk_crcs, addr, num_checksums);
- 			gen = addr + (sizeof(u32) * num_checksums);
- 			if (*gen != BTRFS_I(inode)->generation) {
- 				printk(KERN_ERR "btrfs: space cache generation"
-@@ -467,7 +464,6 @@ next:
- 
- 	ret = 1;
- out:
--	kfree(checksums);
- 	kfree(disk_crcs);
- 	iput(inode);
- 	return ret;
+>
+>> Are you sure the issue can be reproduced in 2.6.37 or -next tree?
+>>
+>> In mainline code(2.6.37), blocking_notifier_call_chain is only called in
+>> threaded irq handler of otg driver wrt. musb driver, so seems enough.
+>
+> true, but seems like Nokia is using to notify gadget states, which makes
+> a lot of sense when you start thinking about things such as battery
+> charging.
+
+Please go ahead to submit and merge it into mainline first if it makes
+sense, :-)
+
+thanks,
 -- 
-1.7.2.3
-
+Lei Ming
