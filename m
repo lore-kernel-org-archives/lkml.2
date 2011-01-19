@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab1ASW0n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 17:26:43 -0500
-Received: from www.tglx.de ([62.245.132.106]:37001 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752615Ab1ASW0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 17:26:41 -0500
-Date: Wed, 19 Jan 2011 23:25:32 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Chen Liqin <liqin.chen@sunplusct.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        David Howells <dhowells@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Ungerer <gerg@uclinux.org>,
-        Hirokazu Takata <takata@linux-m32r.org>, Jeff Dike <jdike@addtoit.com>,
-        Kyle McMartin <kyle@mcmartin.ca>, Michal Simek <monstr@monstr.eu>,
-        Mikael Starvik <starvik@axis.com>, Mike Frysinger <vapier@gentoo.org>,
-        Paul Mundt <lethal@linux-sh.org>, Richard Henderson <rth@twiddle.net>,
-        Tony Luck <tony.luck@intel.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>
-Subject: Re: [patch 00/37] genirq: Remove __do_IRQ() and cleanup irq related
- Kconfigs
-In-Reply-To: <AANLkTineduG23qitc8ggDKShYJi=2vJgXbYJDjLGZKk3@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1101192323190.3211@localhost6.localdomain6>
-References: <20110119205258.462759212@linutronix.de> <AANLkTineduG23qitc8ggDKShYJi=2vJgXbYJDjLGZKk3@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754942Ab1ASW11 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 17:27:27 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:59572 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753700Ab1ASW1Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 17:27:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=J+b2K6oFeLcZ5sZf9zmomgnEcL3tReWTIxsIc1zU6fCIECbhFdvQIp5t1INzJ9UD3H
+         mwdGxizTgyZxxHhkvYVKgFaifbt9xZcZrKsyOUu2G925F/+J7ohuPTrl3ck4QFVVY3ad
+         rnqPG45juy1fHy6sMbuc/5p0vElZ9SmIqKVmc=
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-1342830710-1295475934=:3211"
+In-Reply-To: <AANLkTik3ScP5rvR2bOXOEEH8SNZGg+xO6Gy32CW3XmU6@mail.gmail.com>
+References: <cover.1290852958.git.npiggin@kernel.dk>
+	<d44ddcf1d1e0813b3ce2b3872c7c702a31b62894.1290852959.git.npiggin@kernel.dk>
+	<AANLkTi=pj-pLYVSrU+6+BtioCWLod2ueZecNaap619fw@mail.gmail.com>
+	<AANLkTik3ScP5rvR2bOXOEEH8SNZGg+xO6Gy32CW3XmU6@mail.gmail.com>
+Date: Wed, 19 Jan 2011 14:27:24 -0800
+Message-ID: <AANLkTinVP=OuJ-3u9pHdDuuKJoVrP4Unr5Dx1x=qHtXC@mail.gmail.com>
+Subject: Re: [PATCH 17/46] fs: Use rename lock and RCU for multi-step operations
+From: Yehuda Sadeh Weinraub <yehudasa@gmail.com>
+To: Nick Piggin <npiggin@gmail.com>
+Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sage Weil <sage@newdream.net>,
+        ceph-devel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Tue, Jan 18, 2011 at 2:42 PM, Nick Piggin <npiggin@gmail.com> wrote:
+> On Wed, Jan 19, 2011 at 9:32 AM, Yehuda Sadeh Weinraub
 
----1463795968-1342830710-1295475934=:3211
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+>> There's an issue with ceph as it references the
+>> dentry->d_parent(->d_inode) at dentry_release(), so setting
+>> dentry->d_parent to NULL here doesn't work with ceph. Though there is
+>> some workaround for it, we would like to be sure that this one is
+>> really required so that we don't exacerbate the ugliness. The
+>> workaround is to keep a pointer to the parent inode in the private
+>> dentry structure, which will be referenced only at the .release()
+>> callback. This is clearly not ideal.
+>
+> Hmm, I'll have to think about it. Probably we can check for
+> d_count == 0 rather than parent != NULL I think?
+>
 
-On Wed, 19 Jan 2011, Linus Torvalds wrote:
-
-> On Wed, Jan 19, 2011 at 1:47 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > Now that rc1 is out, I got reliable information about the remaining
-> > users of __do_IRQ(), which block the removal:
-> >
-> >  arch/cris, arch/h8300, arch/m32r
-> 
-> I'm certainly ok with this series. It would be good to finally get rid
-> of this legacy interface, and there's no longer any reason to hold it
-> up. And getting rid of hundreds of lines of code is good too.
-
-Will wait a day for desperate screams, then collect the incoming acks
-and push it into git for your consumption.
+That'll solve ceph's problem, don't know about how'd affect other
+stuff. We'll need to know whether this is the solution, or whether
+we'd need to introduce some other band aid fix.
 
 Thanks,
-
-	tglx
----1463795968-1342830710-1295475934=:3211--
+Yehuda
