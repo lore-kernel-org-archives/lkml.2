@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab1ASFXe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 00:23:34 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:33076 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751Ab1ASFXc (ORCPT
+	id S1752548Ab1ASFc4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 00:32:56 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34617
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750879Ab1ASFcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 00:23:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=bUQMKQJB4cEkyG/0RbYfyMmSCiCPAZaqotvtassiSCoOT8EPCEL81tm42KttNpk9tG
-         KJ99eZrHYAem8OkBJkp9D1ZNEo4LHrLwbnWpLODmS4/zxLtrmTzlq9Gql0g1YErzDMJi
-         2wZc/jUhDth9Wi2cVKlYozgaSfAK4FCTJblEc=
-Date: Tue, 18 Jan 2011 21:23:24 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Rakesh Iyer <riyer@nvidia.com>
-Cc: "tsoni@codeaurora.org" <tsoni@codeaurora.org>,
-        "pavel@ucw.cz" <pavel@ucw.cz>,
-        "shubhrajyoti@ti.com" <shubhrajyoti@ti.com>,
-        "ccross@android.com" <ccross@android.com>,
-        "konkers@android.com" <konkers@android.com>,
-        "olof@lixom.net" <olof@lixom.net>, Andrew Chew <AChew@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: Re: [PATCH v5] input: tegra-kbc - Add tegra keyboard driver
-Message-ID: <20110119052324.GA27751@core.coreip.homeip.net>
-References: <1294943248-18631-1-git-send-email-riyer@nvidia.com>
- <20110118051216.GD23851@core.coreip.homeip.net>
- <1FC56210173BB445BD77F608D6FB8D03165A00807E@HQMAIL03.nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1FC56210173BB445BD77F608D6FB8D03165A00807E@HQMAIL03.nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 19 Jan 2011 00:32:55 -0500
+Date: Tue, 18 Jan 2011 21:33:27 -0800 (PST)
+Message-Id: <20110118.213327.27785301.davem@davemloft.net>
+To: ian.molton@collabora.co.uk
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com, ebiederm@xmission.com, xemul@openvz.org,
+        davidel@xmailserver.org, alban.crequy@collabora.co.uk
+Subject: Re: [PATCH] af_unix: implement socket filter
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1295368755-20931-1-git-send-email-ian.molton@collabora.co.uk>
+References: <1295368755-20931-1-git-send-email-ian.molton@collabora.co.uk>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 18, 2011 at 07:28:29PM -0800, Rakesh Iyer wrote:
-> Sorry for the late response as I was not working on it on Monday.
+From: Ian Molton <ian.molton@collabora.co.uk>
+Date: Tue, 18 Jan 2011 16:39:15 +0000
+
+> From: Alban Crequy <alban.crequy@collabora.co.uk>
 > 
-> The patch as is did not work. I am debugging this currently.
-
-Sorry about that. If you describe the effects you are seeing I might try
-to think where I messed up.
-
+> Linux Socket Filters can already be successfully attached and detached on unix
+> sockets with setsockopt(sockfd, SOL_SOCKET, SO_{ATTACH,DETACH}_FILTER, ...).
+> See: Documentation/networking/filter.txt
 > 
-> Once I find a fix, can I resend all the driver code as one patch file?
-> I will include your 2nd patch in it as well.
-
-Sure.
-
+> But the filter was never used in the unix socket code so it did not work. This
+> patch uses sk_filter() to filter buffers before delivery.
 > 
-> Secondly, the driver is a platform driver for Tegra platforms. The
-> platform code needs some of the #defines to be present in kbc.h, so
-> you will see some of the defines moved back to kbc.h from tegra-kbc.c
-> 
+> This short program demonstrates the problem on SOCK_DGRAM.
+...
+> Signed-off-by: Alban Crequy <alban.crequy@collabora.co.uk>
+> Reviewed-by: Ian Molton <ian.molton@collabora.co.uk>
 
-I only moved KBC_MAX_COL, KBC_MAX_ROW and KBC_MAX_KEY since they are
-not needed in keymaps expressed via struct matrix_keypad_data. But if
-they are needed for something else that's fine.
-
--- 
-Dmitry
+Applied.
