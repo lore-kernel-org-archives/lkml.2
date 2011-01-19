@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870Ab1ASWuY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 17:50:24 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52290 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab1ASWuX (ORCPT
+	id S1754372Ab1ASWua (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 17:50:30 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54165 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753977Ab1ASWu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 17:50:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=qrzA6FYe4N/kIU2CCix06bjyqxUZjxoNToVOfujKKCfP4yTdlAgm67B31M3MxGj3cZ
-         3oUo6vZd7WGqAaOBubIpEaYPI/FwZNPHxnijVER3FO7x+xvas1hjZVt0Pi4TR5/+h8uE
-         7caQ0u47aHIMk42xbQkLuqPB9Sz6nB7XPAtZA=
-Date: Thu, 20 Jan 2011 00:49:50 +0200
-From: Ilya Dryomov <idryomov@gmail.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org, idryomov@gmail.com
-Subject: Re: [BUG] BUG: unable to handle kernel paging request at fffba000
-Message-ID: <20110119224950.GA3429@kwango.lan.net>
-References: <20110119124047.GA30274@kwango.lan.net> <20110119221909.GO9506@random.random>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110119221909.GO9506@random.random>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 19 Jan 2011 17:50:27 -0500
+Date: Wed, 19 Jan 2011 14:50:24 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: Dan Rosenberg <drosenberg@vsecurity.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vsprintf: Neaten %pK kptr_restrict, save a bit of code
+ space
+Message-Id: <20110119145024.353ef8a1.akpm@linux-foundation.org>
+In-Reply-To: <1294950072.4114.172.camel@Joe-Laptop>
+References: <1294950072.4114.172.camel@Joe-Laptop>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 11:19:09PM +0100, Andrea Arcangeli wrote:
-> Hello Ilya,
-> 
-> thanks for sending me the gdb info too.
-> 
-> can you test this fix? Thanks a lot! (it only affected x86 32bit
-> builds with highpte enabled)
-> 
-> ====
-> Subject: fix pte_unmap in khugepaged for highpte x86_32
-> 
-> From: Andrea Arcangeli <aarcange@redhat.com>
-> 
-> __collapse_huge_page_copy is still dereferencing the pte passed as parameter so
-> we must pte_unmap after __collapse_huge_page_copy returns, not before.
-> 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+On Thu, 13 Jan 2011 12:21:12 -0800
+Joe Perches <joe@perches.com> wrote:
 
-It fixes the above problem for me.  Thanks a lot Andrea.
-
+> If kptr restrictions are on, just set the passed pointer to NULL.
+> 
+> $ size lib/vsprintf.o.*
+>    text	   data	    bss	    dec	    hex	filename
+>    8247	      4	      2	   8253	   203d	lib/vsprintf.o.new
+>    8282	      4	      2	   8288	   2060	lib/vsprintf.o.old
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> 
 > ---
 > 
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 004c9c2..c4f634b 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -1837,9 +1837,9 @@ static void collapse_huge_page(struct mm_struct *mm,
->  	spin_lock(ptl);
->  	isolated = __collapse_huge_page_isolate(vma, address, pte);
->  	spin_unlock(ptl);
-> -	pte_unmap(pte);
->  
->  	if (unlikely(!isolated)) {
-> +		pte_unmap(pte);
->  		spin_lock(&mm->page_table_lock);
->  		BUG_ON(!pmd_none(*pmd));
->  		set_pmd_at(mm, address, pmd, _pmd);
-> @@ -1856,6 +1856,7 @@ static void collapse_huge_page(struct mm_struct *mm,
->  	anon_vma_unlock(vma->anon_vma);
->  
->  	__collapse_huge_page_copy(pte, new_page, vma, address, ptl);
-> +	pte_unmap(pte);
->  	__SetPageUptodate(new_page);
->  	pgtable = pmd_pgtable(_pmd);
->  	VM_BUG_ON(page_count(pgtable) != 1);
+>  lib/vsprintf.c |   14 +++++---------
+>  1 files changed, 5 insertions(+), 9 deletions(-)
 > 
+> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+> index d3023df..070d134 100644
+> --- a/lib/vsprintf.c
+> +++ b/lib/vsprintf.c
+> @@ -1047,16 +1047,12 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+>  			if (spec.field_width == -1)
+>  				spec.field_width = 2 * sizeof(void *);
+>  			return string(buf, end, "pK-error", spec);
+> -		} else if ((kptr_restrict == 0) ||
+> -			 (kptr_restrict == 1 &&
+> -			  has_capability_noaudit(current, CAP_SYSLOG)))
+> -			break;
+> -
+> -		if (spec.field_width == -1) {
+> -			spec.field_width = 2 * sizeof(void *);
+> -			spec.flags |= ZEROPAD;
+>  		}
+> -		return number(buf, end, 0, spec);
+> +		if (!((kptr_restrict == 0) ||
+> +		      (kptr_restrict == 1 &&
+> +		       has_capability_noaudit(current, CAP_SYSLOG))))
+> +			ptr = NULL;
+> +		break;
+>  	}
+>  	spec.flags |= SMALL;
+>  	if (spec.field_width == -1) {
+
+This hurts my brain.   Does it work?
