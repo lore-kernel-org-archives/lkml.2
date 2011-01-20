@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477Ab1ATHnR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 02:43:17 -0500
-Received: from mga11.intel.com ([192.55.52.93]:63760 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753076Ab1ATHnP convert rfc822-to-8bit (ORCPT
+	id S1754375Ab1ATHpN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 02:45:13 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:64019 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753404Ab1ATHpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 02:43:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,349,1291622400"; 
-   d="scan'208";a="649107114"
-From: "Wu, Hao" <hao.wu@intel.com>
-To: Yang Ruirui <ruirui.r.yang@tieto.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
-        "Du, Alek" <alek.du@intel.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 20 Jan 2011 15:42:44 +0800
-Subject: RE: [PATCH v2] usb langwell otg: use notifier chain of struct
- otg_transceiver
-Thread-Topic: [PATCH v2] usb langwell otg: use notifier chain of struct
- otg_transceiver
-Thread-Index: Acu4b1SapiET6wX5TWiDxov/IzyFjQABI7tQ
-Message-ID: <D5AB6E638E5A3E4B8F4406B113A5A19A31C3E9E2@shsmsx501.ccr.corp.intel.com>
-References: <20110120070513.GA24956@darkstar>
-In-Reply-To: <20110120070513.GA24956@darkstar>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 Jan 2011 02:45:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=C2nsQfsRXx1+nWxvBcJYR7X1gcxfIyvo8dVaoPFI/nS6cOinVJLh8yAPHkTVMNfLQY
+         hJ20tktGWFZTzggrkmJjTFdn2HR1sjDW8yoc9rhgdGniEWuqmp66JeO/rlDRb6kg9otH
+         6Ac75mW/6rcn7EMZ/gu7mCtFpiU6MUnFJ1NOw=
+Date: Wed, 19 Jan 2011 23:45:03 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Azael Avalos <coproscefalo@gmail.com>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH] toshiba_acpi: Additional TOS1900 devices support
+Message-ID: <20110120074503.GD30522@core.coreip.homeip.net>
+References: <AANLkTi=fjL0yxXWrDddafdBs7biJ326sXjaagTseVEVg@mail.gmail.com>
+ <20110117190849.GB27245@core.coreip.homeip.net>
+ <AANLkTindwH2X79vZTBHU04oomxqV=RchRVEwrDEcntVX@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTindwH2X79vZTBHU04oomxqV=RchRVEwrDEcntVX@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 03:05:13PM +0800, Yang Ruirui wrote:
-> Use notifier chain in otg_transceiver instead of own notifier chain.
->
-> This patch depends on another patch which change otg_transceiver
->notifier chain to atomic one, please see:
->https://lkml.org/lkml/2011/1/19/72
+On Wed, Jan 19, 2011 at 02:05:10PM -0700, Azael Avalos wrote:
+> 
+> Some TOS1900 devices send keycodes via KBD, a filter was added
+> along with a cleanup made by Matthew Garrett, also functions
+> and registers were added for the Toshiba Software
+> Configuration Interface (SCI) used by Illumination.
+> Bumping its version to 0.20
+> 
+> Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
 
-Looks good to me, no need to keep its own atomic notifier chain if struct otg_transceiver has one.
+Input parts look good to me.
 
->Signed-off-by: Yang Ruirui <ruirui.r.yang@tieto.com>
->Reviewed-by: Felipe Balbi <balbi@ti.com>
+Acked-by: Dmitry Torokhov <dtor@mail.ru>
 
-Thanks
-Hao
+Thanks.
+
+-- 
+Dmitry
