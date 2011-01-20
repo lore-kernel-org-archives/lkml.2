@@ -1,73 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab1ATRKr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 12:10:47 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:40375 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471Ab1ATRKq (ORCPT
+	id S1752700Ab1ATRMc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 12:12:32 -0500
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:20308 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752343Ab1ATRMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 12:10:46 -0500
-Date: Thu, 20 Jan 2011 18:02:38 +0100
-From: Anisse Astier <anisse@astier.eu>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Pascal VITOUX <pascal@substantiel.fr>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH RFC] dmi-scan: Use little-endian for the first 3 fields
- of the UUID.
-Message-ID: <20110120180238.36b8e335@destiny.ordissimo>
-In-Reply-To: <201101191201.03971.bjorn.helgaas@hp.com>
-References: <20110119185411.49668f81@destiny.ordissimo>
-	<201101191201.03971.bjorn.helgaas@hp.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Jan 2011 12:12:31 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: EjlpOeIVM1mNQcPWGqellHnq6_Ae6sa7mmDFY5DWg3s._F0
+ mpEtPJhD4O5kJW9LtNOLBrZJ6vbAVOHYqW.kbWHnTm6Rkg6X6GF.T6IQxnCw
+ VP.dAHKXuJ8l7ShWI9Ti21cL4IyNZ1a6IDN2m4pFdlLhzlktOgGS6tIXCCaj
+ w4FpdjPR0fPpcDsVZGr2_ZJhw7yg8oejUE9bFKgJ6ThjBXK4OlRMFTxtIcnz
+ wylwmiX1GsN_PcEDakqS2BDDbv5VZ_TE2oVPf3umcE9Qdpj8I223LtGZAG1T
+ KB_ps6xl6qsOe8KZX98YVMktSS25.hWEE2FP6xqCKu8QyZGU-
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 20 Jan 2011 11:12:26 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Sandeen <sandeen@redhat.com>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Slab allocators: Remove support for kmem_cache_name()
+In-Reply-To: <4D3863C5.8020200@redhat.com>
+Message-ID: <alpine.DEB.2.00.1101201111060.10695@router.home>
+References: <4D3854AE.8060803@redhat.com> <alpine.DEB.2.00.1101200950040.10695@router.home> <4D385BFF.7060707@redhat.com> <alpine.DEB.2.00.1101201007260.10695@router.home> <4D3863C5.8020200@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 20 Jan 2011, Eric Sandeen wrote:
 
-Hi Bjorn,
+> On 1/20/11 10:07 AM, Christoph Lameter wrote:
+> > On Thu, 20 Jan 2011, Eric Sandeen wrote:
+> >
+> >> I did send a patch yesterday to stop the evil-ness ;)
+> >
+> > Can you give me an URL to that patch? CC me next time.
+>
+> Sure, sorry, didn't think of it, was in "ext4-is-broken" mode.
+>
+> Rather than fix up accounting I just made ext4 allocate the
+> slab with a static name like everyone else.
+>
+> http://marc.info/?l=linux-ext4&m=129546975702198&w=2
 
-On Wed, 19 Jan 2011 12:01:02 -0700, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote :
 
-> On Wednesday, January 19, 2011 10:54:11 am Anisse Astier wrote:
-> > 
-> > From: Pascal VITOUX <pascal@substantiel.fr>
-> > 
-> >  - Get SMBIOS version.
-> >  - Byte-swap the first 3 fields of the UUID (DMI type 1) as off SMBIOS
-> >    version 2.6.
-> > 
-> > This patch is an adaptation of Jean Delvare patches for dmidecode
-> > rev1.100, rev1.01 and rev1.119.
-> > http://cvs.savannah.gnu.org/viewvc/dmidecode/dmidecode.c?root=dmidecode&view=log
-> > 
-> > It is intended to get the same uuid from dmidecode tool as from sysfs kernel
-> > tree, more compliant with SMBIOS specification.
-> > Therefore this patch will have the kernel return a different UUID if you
-> > are using a recent BIOS implementing SMBIOS >= 2.6.
-> 
-> It seems like a good idea to have /sys/class/dmi/id/product_uuid
-> match what dmidecode reports.  Does dmidecode use the same algorithm
-> (testing dmi_ver against 0x0206)?
-Yes, it does.
+Subject: Slab allocators: Remove support for kmem_cache_name()
 
-> 
-> It'd be nice to mention that /sys/... filename explicitly in the
-> changelog, and maybe even include an example from a system where
-> they previously did not match, and now do.
-Indeed.
+The last user was ext4 and Eric Sandeen removed the call in a recent patch.
 
-> 
-> I don't have an opinion on the SMBIOS version stuff, but that looks
-> like it should be split into a separate patch.
-It seems it's wrong anyway and will need more patch splitting (see Jean
-Delvare's email).
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Thanks for the review,
+---
+ include/linux/slab.h |    1 -
+ mm/slab.c            |    8 --------
+ mm/slob.c            |    6 ------
+ mm/slub.c            |    6 ------
+ 4 files changed, 21 deletions(-)
 
-Anisse
+Index: linux-2.6/include/linux/slab.h
+===================================================================
+--- linux-2.6.orig/include/linux/slab.h	2011-01-20 11:07:51.000000000 -0600
++++ linux-2.6/include/linux/slab.h	2011-01-20 11:08:00.000000000 -0600
+@@ -105,7 +105,6 @@ void kmem_cache_destroy(struct kmem_cach
+ int kmem_cache_shrink(struct kmem_cache *);
+ void kmem_cache_free(struct kmem_cache *, void *);
+ unsigned int kmem_cache_size(struct kmem_cache *);
+-const char *kmem_cache_name(struct kmem_cache *);
 
+ /*
+  * Please use this macro to create slab caches. Simply specify the
+Index: linux-2.6/mm/slab.c
+===================================================================
+--- linux-2.6.orig/mm/slab.c	2011-01-20 11:08:12.000000000 -0600
++++ linux-2.6/mm/slab.c	2011-01-20 11:08:47.000000000 -0600
+@@ -2147,8 +2147,6 @@ static int __init_refok setup_cpu_cache(
+  *
+  * @name must be valid until the cache is destroyed. This implies that
+  * the module calling this has to destroy the cache before getting unloaded.
+- * Note that kmem_cache_name() is not guaranteed to return the same pointer,
+- * therefore applications must manage it themselves.
+  *
+  * The flags are
+  *
+@@ -3840,12 +3838,6 @@ unsigned int kmem_cache_size(struct kmem
+ }
+ EXPORT_SYMBOL(kmem_cache_size);
+
+-const char *kmem_cache_name(struct kmem_cache *cachep)
+-{
+-	return cachep->name;
+-}
+-EXPORT_SYMBOL_GPL(kmem_cache_name);
+-
+ /*
+  * This initializes kmem_list3 or resizes various caches for all nodes.
+  */
+Index: linux-2.6/mm/slob.c
+===================================================================
+--- linux-2.6.orig/mm/slob.c	2011-01-20 11:08:50.000000000 -0600
++++ linux-2.6/mm/slob.c	2011-01-20 11:08:57.000000000 -0600
+@@ -666,12 +666,6 @@ unsigned int kmem_cache_size(struct kmem
+ }
+ EXPORT_SYMBOL(kmem_cache_size);
+
+-const char *kmem_cache_name(struct kmem_cache *c)
+-{
+-	return c->name;
+-}
+-EXPORT_SYMBOL(kmem_cache_name);
+-
+ int kmem_cache_shrink(struct kmem_cache *d)
+ {
+ 	return 0;
+Index: linux-2.6/mm/slub.c
+===================================================================
+--- linux-2.6.orig/mm/slub.c	2011-01-20 11:08:59.000000000 -0600
++++ linux-2.6/mm/slub.c	2011-01-20 11:09:05.000000000 -0600
+@@ -2399,12 +2399,6 @@ unsigned int kmem_cache_size(struct kmem
+ }
+ EXPORT_SYMBOL(kmem_cache_size);
+
+-const char *kmem_cache_name(struct kmem_cache *s)
+-{
+-	return s->name;
+-}
+-EXPORT_SYMBOL(kmem_cache_name);
+-
+ static void list_slab_objects(struct kmem_cache *s, struct page *page,
+ 							const char *text)
+ {
