@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885Ab1ATPRF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 10:17:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35125 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755760Ab1ATPRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 10:17:04 -0500
-Date: Thu, 20 Jan 2011 10:16:56 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: "Shi, Alex" <alex.shi@intel.com>, jack@suse.cz, tytso@mit.edu,
-        "czoccolo@gmail.com" <czoccolo@gmail.com>,
-        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-Subject: Re: [performance bug] kernel building regression on 64 LCPUs machine
-Message-ID: <20110120151656.GC18875@redhat.com>
-References: <1295402148.4773.143.camel@debian>
- <1295402606.1949.871.camel@sli10-conroe>
+	id S1755892Ab1ATPYH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 10:24:07 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59532 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755760Ab1ATPYG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 10:24:06 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=peCD/i6RBEXqDDsLZ7CZL3igMfnld7uuh/Lj8mIrf9iTakL+Mu5RSYtzgZayWpJ6wu
+         xAvtqMEooD5PuRQ8x25KL6HrfuN7GWfAc8SDb49DLwYUTyx8BnB6A0rmGFwc6j9Q6+LR
+         ZGVvSBgDyHhjR1qRzDsx31FadK/WEets/Cing=
+Message-ID: <4D38538E.9070104@gmail.com>
+Date: Thu, 20 Jan 2011 16:23:58 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295402606.1949.871.camel@sli10-conroe>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@suse.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: Resume hangs [was: mmotm 2010-12-02-16-34 uploaded]
+References: <201012030107.oB317ZSW019223@imap1.linux-foundation.org> <201012132210.51325.rjw@suse.com> <4D07EAE5.6050803@gmail.com> <201012142322.36053.rjw@suse.com> <4D25CF4A.9090202@gmail.com>
+In-Reply-To: <4D25CF4A.9090202@gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 10:03:26AM +0800, Shaohua Li wrote:
-> add Jan and Theodore to the loop.
+On 01/06/2011 03:18 PM, Jiri Slaby wrote:
+> On 12/14/2010 11:22 PM, Rafael J. Wysocki wrote:
+>> On Tuesday, December 14, 2010, Jiri Slaby wrote:
+>>> On 12/13/2010 10:10 PM, Rafael J. Wysocki wrote:
+>>>> On Monday, December 13, 2010, Jiri Slaby wrote:
+>>>>> On 12/05/2010 02:08 PM, Rafael J. Wysocki wrote:
+>>>>>> On Sunday, December 05, 2010, Jiri Slaby wrote:
+>>>>>>> On 12/03/2010 01:34 AM, akpm@linux-foundation.org wrote:
+>>>>>>>> The mm-of-the-moment snapshot 2010-12-02-16-34 has been uploaded to
+>>>>>>>
+>>>>>>> Hi, this kernel regresses with respect to resume. It doesn't wake up,
+>>>>>>> the screen is black with blinking cursor at position [1, 1].
+>>>>>>> 2010-11-23-16-12 seemed to be OK. In this one it is 100% reproducible so
+>>>>>>> far.
+>>>>>>>
+>>>>>>> I'm using pm-suspend, any ideas what to test before I start to find the
+>>>>>>> reason on my own?
+>>>>>>
+>>>>>> Please try the pm_test tests for core, processors and devices, eg.:
+>>>>>
+>>>>> Hmm, I haven't seen the issues since then. So it had to be some kind of
+>>>>> coincidence -- I see the issue occasionally for some time already. Now
+>>>>> it triggered twice in a row after I updated the kernel.
+>>>>
+>>>> Hmm.  What hardware is that?
+>>>
+>>> What exactly do you want to know about it? It's some specific intel
+>>> desktop machine, 3 years old, 2 intel cores, 6G of mem, 2 sata disks in
+>>> raid, dvb-t usb receiver (af9015), usb keyboard and mouse.
+>>
+>> I'm seeing pretty much the same symptoms on quite different hardware, except
+>> for one thing: USB keyboard and mouse.
+>>
+>> Have you checked if writing 0 to /sys/power/pm_async helps?
 > 
-> On Wed, 2011-01-19 at 09:55 +0800, Shi, Alex wrote:
-> > Shaohua and I tested kernel building performance on latest kernel. and
-> > found it is drop about 15% on our 64 LCPUs NHM-EX machine on ext4 file
-> > system. We find this performance dropping is due to commit
-> > 749ef9f8423054e326f. If we revert this patch or just change the
-> > WRITE_SYNC back to WRITE in jbd2/commit.c file. the performance can be
-> > recovered. 
-> > 
-> > iostat report show with the commit, read request merge number increased
-> > and write request merge dropped. The total request size increased and
-> > queue length dropped. So we tested another patch: only change WRITE_SYNC
-> > to WRITE_SYNC_PLUG in jbd2/commit.c, but nothing effected.
-> since WRITE_SYNC_PLUG doesn't work, this isn't a simple no-write-merge issue.
-> 
+> It's very hard to reproduce (it happens once a week or two), so I can't
+> say yet. As it happened yesterday again, going to test it from now on.
 
-Yep, it does sound like reduce write merging. But moving journal commits
-back to WRITE, then fsync performance will drop as there will be idling
-introduced between fsync thread and journalling thread. So that does
-not sound like a good idea either.
+Ok, I haven't seen the issue with 0 in /sys/power/pm_async for two weeks
+now (I added it to boot.local). I would say it's related to that...
 
-Secondly, in presence of mixed workload (some other sync read happening)
-WRITES can get less bandwidth and sync workload much more. So by 
-marking journal commits as WRITES you might increase the delay there
-in completion in presence of other sync workload.
-
-So Jan Kara's approach makes sense that if somebody is waiting on
-commit then make it WRITE_SYNC otherwise make it WRITE. Not sure why
-did it not work for you. Is it possible to run some traces and do
-more debugging that figure out what's happening.
-
-Thanks
-Vivek
+regards,
+-- 
+js
