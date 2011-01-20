@@ -1,216 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755023Ab1ATD3c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 22:29:32 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:55453 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754957Ab1ATD3b convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 22:29:31 -0500
-Date: Wed, 19 Jan 2011 22:29:28 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: LKML <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [patch 1/3] introduce __u64_packed_aligned, __u64_aligned and
-	U64_ALIGN() for structure alignment in custom sections
-Message-ID: <20110120032928.GA26165@Krystal>
-References: <20110120031729.055590217@efficios.com> <20110120032556.830942589@efficios.com>
+	id S1755058Ab1ATDcK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 22:32:10 -0500
+Received: from mga01.intel.com ([192.55.52.88]:1247 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754963Ab1ATDcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 22:32:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,347,1291622400"; 
+   d="scan'208";a="649043437"
+From: "Lu, Hongjiu" <hongjiu.lu@intel.com>
+To: "Li, Shaohua" <shaohua.li@intel.com>, Ingo Molnar <mingo@elte.hu>
+CC: "Anvin, H Peter" <h.peter.anvin@intel.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Sam Ravnborg <sam@ravnborg.org>
+Date: Wed, 19 Jan 2011 19:32:05 -0800
+Subject: RE: Linux 2.6.38-rc1 doesn't boot
+Thread-Topic: Linux 2.6.38-rc1 doesn't boot
+Thread-Index: Acu4RuIYFWDQG8F2QQOrWbth7x4UrwAC59fg
+Message-ID: <9DA5872FEF993D41B7173F58FCF6BE940570CEFA@orsmsx504.amr.corp.intel.com>
+References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
+	 <20110119073905.GA1652@gentoo.trippels.de>
+	 <20110119074902.GA1670@gentoo.trippels.de>
+	 <1295424766.1949.879.camel@sli10-conroe> <4D36A759.60704@intel.com>
+	 <20110119090904.GA4927@elte.hu> <1295489286.1949.882.camel@sli10-conroe>
+In-Reply-To: <1295489286.1949.882.camel@sli10-conroe>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20110120032556.830942589@efficios.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 22:28:20 up 57 days,  8:31,  4 users,  load average: 0.04, 0.06,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p0K3WKGL003019
 
-* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> Problem description:
 > 
+> On Wed, 2011-01-19 at 17:09 +0800, Ingo Molnar wrote:
+> > * H. Peter Anvin <h.peter.anvin@intel.com> wrote:
+> >
+> > > On 01/19/2011 12:12 AM, Shaohua Li wrote:
+> > > > On Wed, 2011-01-19 at 15:49 +0800, Markus Trippelsdorf wrote:
+> > > >> On 2011.01.19 at 08:39 +0100, Markus Trippelsdorf wrote:
+> > > >>> On 2011.01.18 at 15:54 -0800, Linus Torvalds wrote:
+> > > >>>>
+> > > >>>> And as usual, report any regressions to the lists and the
+> appropriate
+> > > >>>> authorities.
+> > > >>>
+> > > >>> Unfortunately 2.6.38-rc1 doesn't even boot on my machine
+> (amd64).
+> > > >>> This is caused by 86b1e8dd83cbb0f:
+> > > >>>     x86: Make relocatable kernel work with new binutils
+> > > >>>
+> > > >>> Reverting the commit solves the problem.
+> > > >>
+> > > >> I'm running the latest binutils:
+> > > >> GNU ld (Linux/GNU Binutils) 2.21.51.0.5.20110104
+> > > > Hmm, reproduce it here with binutils-2.21.51.0.6-20110118
+> > > > but not with GNU ld (GNU Binutils for Ubuntu) 2.20.51-
+> system.20100908
+> > > > I got this in system.map: ffffffff03514880 D jiffies_64, which
+> looks
+> > > > wrong.
+> > > > looks binutils changed something again.
+> > > > Have no idea, CC Lu Hongjiu.
+> > > >
+> > >
+> > > Either way... the whole jiffies vs jiffies_64 thing is kind of
+> > > ridiculous.  We should be able to do it in a completely
+> > > architecture-generic way by either making it a union(!) (with
+> "jiffies"
+> > > and "jiffies_64" presumably would be #defines, or we do a global
+> replace
+> > > across the tree), moving the variable declaration itself to a .S
+> file
+> > > (which would only have data components and therefore would be
+> > > arch-generic) or doing something like the attached (untested since
+> it is
+> > > 1 am here) patch.
+> > >
+> > > This should let us get rid of the hacks in *all* the architectures,
+> not
+> > > just x86.
+> >
+> > Ok - until it's resolved i'll queue up a revert - a known build
+> failure is preferred
+> > to a boot regression.
+> it's not a build failure, without it, my i386 kernel can't boot
+> actually.
 
-Argh, Nack-for-myself for the whole patchset. A missing quilt refresh messed up
-my patches. Sorry about that, will repost shortly.
+Kernel build script should check known broken linkers
+and refuse to use it.
 
-Mathieu
 
-> gcc happily align on 32-byte structures defined statically. Ftrace trace events
-> and Tracepoints both statically define structures into custom sections (using
-> the "section" attribute), to then assign these to symbols with the linker
-> scripts to iterate the these sections as an array.
-> 
-> However, gcc uses different alignments for these structures when they are
-> defined statically than when they are globally visible and/or in an array.
-> Therefore iteration on these arrays sees "holes" of padding. gcc is within its
-> rights to increase the alignment of the statically defined structures because,
-> normally, there should be no other accesses to them than in the local object. We
-> are actually iterating on the generated structures as if they were an array
-> without letting gcc knowing anything about it.
-> 
-> This patch introduces __u64_packed_aligned and __u64_aligned to force gcc to use
-> the u64 type alignment, up-aligning or down-aligning the target type if
-> necessary. The memory accesses to the target structure are efficient (does not
-> require bytewise memory accesses) and the atomic pointer update guarantees
-> required by RCU are kept. u64 is considered as the largest type that can
-> generate a trap for unaligned accesses (u64 on sparc32 needs to be aligned on
-> 64-bit).
-> 
-> Specifying both "packed" and "aligned" generates decent code (without the
-> bytewise memory accesses generated by simply using "packed"), and forces
-> gcc to down-align the structure alignment to the alignment of a u64 type. This
-> down-alignment provided by "packed" guarantees that the structure alignment
-> for the type declaration will match the alignment of the custom structure, and
-> won't be larger than the alignment of the start of the custom section in the
-> linker script.
-> 
-> This alignment should be used for both structure definitions and declarations
-> (as *both* the type and variable attribute) when using the "section"
-> attribute to generate arrays of structures.  Declarations should use the
-> __u64_packed_aligned macro.  Definitions should use the __u64_aligned macro. We
-> cannot have one single macro for both, because the use of __u64_packed_aligned
-> with variable definitions causes "warning: â€˜__packed__â€™ attribute ignored"
-> messages. This is understandable because the "aligned" variable attribute
-> enforces a strict alignment (compared to the "aligned" type attribute which only
-> specifies a minimum alignment, hence requiring the "packed" attribute too). This
-> is explained by the gcc Variable Attributes documentation: "When used as part of
-> a typedef, the aligned attribute can both increase and decrease alignment, and
-> specifying the packed attribute will generate a warning." The type attribute
-> takes care of appropriately iterating on the extern array, therefore, no
-> variable attribute needs to be applied to the extern array definition.
-> 
-> Also introduce the linker script U64_ALIGN() macro for specification of custom
-> section alignment that matches that of __u64_packed_aligned and __u64_aligned.
-> 
-> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> CC: David Miller <davem@davemloft.net>
-> CC: Steven Rostedt <rostedt@goodmis.org>
-> CC: Frederic Weisbecker <fweisbec@gmail.com>
-> CC: Ingo Molnar <mingo@elte.hu>
-> ---
->  include/asm-generic/vmlinux.lds.h |    6 +++
->  include/linux/align-section.h     |   62 ++++++++++++++++++++++++++++++++++++++
->  include/linux/compiler.h          |   14 ++++++++
->  3 files changed, 82 insertions(+)
-> 
-> Index: linux-2.6-lttng/include/linux/compiler.h
-> ===================================================================
-> --- linux-2.6-lttng.orig/include/linux/compiler.h
-> +++ linux-2.6-lttng/include/linux/compiler.h
-> @@ -57,6 +57,20 @@ extern void __chk_io_ptr(const volatile
->  # include <linux/compiler-intel.h>
->  #endif
->  
-> +#include <linux/align-section.h>
-> +
-> +/*
-> + * Use as variable attribute for custom section structure definition.
-> + * It should also be applied to any static or extern definition of the
-> + * structure that would override the definition to which the "section"
-> + * attribute is applied, e.g.
-> + *
-> + * extern struct __u64_aligned custom;
-> + * struct custom  __u64_aligned __attribute__((section("__custom")) identifier;
-> + */
-> +#define __u64_aligned \
-> +	__attribute__((__aligned__(__alignof__(long long))))
-> +
->  /*
->   * Generic compiler-dependent macros required for kernel
->   * build go below this comment. Actual compiler/compiler version
-> Index: linux-2.6-lttng/include/asm-generic/vmlinux.lds.h
-> ===================================================================
-> --- linux-2.6-lttng.orig/include/asm-generic/vmlinux.lds.h
-> +++ linux-2.6-lttng/include/asm-generic/vmlinux.lds.h
-> @@ -69,6 +69,12 @@
->   */
->  #define STRUCT_ALIGN() . = ALIGN(32)
->  
-> +/*
-> + * Align to a 8 byte boundary. For use with custom section made from structures
-> + * declared with __u64_packed_aligned and defined with __u64_aligned.
-> + */
-> +#define U64_ALIGN() . = ALIGN(8)
-> +
->  /* The actual configuration determine if the init/exit sections
->   * are handled as text/data or they can be discarded (which
->   * often happens at runtime)
-> Index: linux-2.6-lttng/include/linux/align-section.h
-> ===================================================================
-> --- /dev/null
-> +++ linux-2.6-lttng/include/linux/align-section.h
-> @@ -0,0 +1,62 @@
-> +#ifndef _LINUX_ALIGN_SECTION_H
-> +#define _LINUX_ALIGN_SECTION_H
-> +
-> +/*
-> + * __u64_packed_aligned and __u64_aligned:
-> + *
-> + * __u64_aligned should be used as type attribute for structure definitions, and
-> + * __u64_packed_aligned as type attribute for structure declaration when using
-> + * the "section" attribute to generate arrays of structures. U64_ALIGN() must be
-> + * used prior to these section definitions in the linker script.
-> + *
-> + * It forces the compiler to use the u64 type alignment, up-aligning or
-> + * down-aligning the target type if necessary. The memory accesses to the target
-> + * structure are efficient (does not require bytewise memory accesses) and the
-> + * atomic pointer update guarantees required by RCU are kept. u64 is considered
-> + * as the largest type that can generate a trap for unaligned accesses (u64 on
-> + * sparc32 needs to be aligned on 64-bit).
-> + *
-> + * Specifying both "packed" and "aligned" generates decent code (without the
-> + * bytewise memory accesses generated by simply using "packed"), and forces
-> + * gcc to down-align the structure alignment to the alignment of a u64 type.
-> + */
-> +
-> +/*
-> + * Use __u64_packed_aligned as type attribute for custom section structure
-> + * declaration, e.g.
-> + *
-> + * struct custom {
-> + *         unsigned long field;
-> + *         ...
-> + * } __u64_packed_aligned;
-> + *
-> + * The array can then be defined with:
-> + *
-> + * extern struct custom __start___custom[];
-> + * extern struct custom __stop___custom[];
-> + *
-> + * With linking performed by the linker script:
-> + *
-> + * U64_ALIGN();
-> + * VMLINUX_SYMBOL(__start___custom) = .;
-> + * *(__custom)
-> + * VMLINUX_SYMBOL(__stop___custom) = .;
-> + */
-> +
-> +#define __u64_packed_aligned \
-> +	__attribute__((__packed__, __aligned__(__alignof__(long long))))
-> +
-> +/*
-> + * Use __u64_aligned as variable attribute for custom section structure
-> + * definition.  It should also be applied to any static or extern definition of
-> + * the structure that would override the definition to which the "section"
-> + * attribute is applied, e.g.
-> + *
-> + * extern struct __u64_aligned custom;
-> + * struct custom  __u64_aligned __attribute__((section("__custom")) identifier;
-> + */
-> +
-> +#define __u64_aligned \
-> +	__attribute__((__aligned__(__alignof__(long long))))
-> +
-> +#endif /* _LINUX_ALIGN_SECTION_H */
-> 
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+H.J.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
