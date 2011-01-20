@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551Ab1ATMlN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 07:41:13 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:43764 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933Ab1ATMlK (ORCPT
+	id S1755590Ab1ATMlZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 07:41:25 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:35372 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755560Ab1ATMlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 07:41:10 -0500
-Date: Thu, 20 Jan 2011 07:40:43 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: akpm@linux-foundation.org, hughd@google.com, gurudas.pai@oracle.com,
-        lkml20101129@newton.leun.net, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: prevent concurrent unmap_mapping_range() on the same
- inode
-Message-ID: <20110120124043.GA4347@infradead.org>
-References: <E1PftfG-0007w1-Ek@pomaz-ex.szeredi.hu>
+	Thu, 20 Jan 2011 07:41:24 -0500
+Message-ID: <4D382DFA.8050806@oracle.com>
+Date: Thu, 20 Jan 2011 18:13:38 +0530
+From: Gurudas Pai <gurudas.pai@oracle.com>
+User-Agent: Thunderbird 2.0.0.5 (X11/20070719)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1PftfG-0007w1-Ek@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: hughd@google.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] kernel BUG at mm/truncate.c:479! on 2.6.37-rc8
+References: <4D1AD935.1020504@oracle.com> <alpine.LSU.2.00.1012291137080.6381@sister.anvils> <4D1C2E86.9000004@oracle.com> <4D37DAD7.3050100@oracle.com> <E1Pfsfh-0007iL-6X@pomaz-ex.szeredi.hu>
+In-Reply-To: <E1Pfsfh-0007iL-6X@pomaz-ex.szeredi.hu>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 01:30:58PM +0100, Miklos Szeredi wrote:
-> From: Miklos Szeredi <mszeredi@suse.cz>
+Miklos Szeredi wrote:
+> On Thu, 20 Jan 2011, Gurudas Pai wrote:
+>> Hi Hugh,
+>>
+>> Gurudas Pai wrote:
+>>>>> With 2.6.37-rc8 , run a fio test over nfs, with following jobfile, 
+>>>>> and we
+>>>>> hit kernel bug.
+>>>> Have you tried the same test on earlier releases?
+>>>> I think the bug is old, yet only recently reported.
+>>> I tried with 2.6.36.2 , even there it is panicing.
+>>>
+>>>
+>>>> This NFS-triggered kernel BUG at mm/truncate.c:479 sounds very like
+>>>> the FUSE-triggered kernel BUG at mm/truncate.c:475 on 2.6.36.1 for
+>>>> which Miklos posted a patch on 14 December.  Please give his patch
+>>>> (below) a try and let us know if it fixes the issue for you - thanks.
+>>> Issue fixed with the patch, Thanks :)
+>> Is this patch included in mainline ?
 > 
-> Running a fuse filesystem with multiple open()'s in parallel can
-> trigger a "kernel BUG at mm/truncate.c:475"
-> 
-> The reason is, unmap_mapping_range() is not prepared for more than
-> one concurrent invocation per inode.  For example:
-> 
->   thread1: going through a big range, stops in the middle of a vma and
->      stores the restart address in vm_truncate_count.
-> 
->   thread2: comes in with a small (e.g. single page) unmap request on
->      the same vma, somewhere before restart_address, finds that the
->      vma was already unmapped up to the restart address and happily
->      returns without doing anything.
-> 
-> Another scenario would be two big unmap requests, both having to
-> restart the unmapping and each one setting vm_truncate_count to its
-> own value.  This could go on forever without any of them being able to
-> finish.
-> 
-> Truncate and hole punching already serialize with i_mutex.  Other
-> callers of unmap_mapping_range() do not, and it's difficult to get
-> i_mutex protection for all callers.  In particular ->d_revalidate(),
-> which calls invalidate_inode_pages2_range() in fuse, may be called
-> with or without i_mutex.
+> Apparently not.  I'll update the patch and send it to Andrew shorty.
 
+Thanks Miklos. Please let me know if further testing is required, happy 
+to test.
 
-Which I think is mostly a fuse problem.  I really hate bloating the
-generic inode (into which the address_space is embedded) with another
-mutex for deficits in rather special case filesystems. 
-
+Thanks,
+-Guru
