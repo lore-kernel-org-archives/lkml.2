@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab1ATLQy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 06:16:54 -0500
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:55588 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753626Ab1ATLQw (ORCPT
+	id S1755449Ab1ATLSO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 06:18:14 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:58402 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752916Ab1ATLSN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 06:16:52 -0500
-Date: Thu, 20 Jan 2011 13:16:45 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: John Ogness <john.ogness@linutronix.de>
-Cc: paul@pwsan.com, tony@atomide.com, r-woodruff2@ti.com,
-        linux-kernel@vger.kernel.org,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] omap2: fix DPLL_FREQSEL calculation
-Message-ID: <20110120111645.GB2223@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <87ei8726wf.fsf@vostro.fn.ogness.net>
+	Thu, 20 Jan 2011 06:18:13 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=yGi9NFOoyXppTkznz50eJBOry1DkuIdnLZ1jF9aPG2Stc+iCzrjq8bgHbTSjXRGTQJ
+         QxdD3BJz94bXS8OlLmYwtzM+i5ppy0zLHxtrqvRuahfYynTMPK4Be6rl3oWi5qOOOPlZ
+         OkOdLsB9QJx6JFf9VMoFKp5a4pYqgtY0QzGlM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ei8726wf.fsf@vostro.fn.ogness.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1295520247.28776.152.camel@laptop>
+References: <1295245019-7816-1-git-send-email-ying.huang@intel.com>
+	<20110119135546.bb7e8f62.akpm@linux-foundation.org>
+	<1295484358.15213.25.camel@yhuang-dev>
+	<20110119165247.cca2f434.akpm@linux-foundation.org>
+	<1295520247.28776.152.camel@laptop>
+Date: Thu, 20 Jan 2011 19:18:12 +0800
+Message-ID: <AANLkTimR6xd1PxCP6jmuNwFkANrGPdTf2wpiGsBXGpKx@mail.gmail.com>
+Subject: Re: [PATCH -v10 0/4] Lock-less list
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Huang Ying <ying.huang@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Chris Mason <chris.mason@oracle.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jan 20, 2011 at 6:44 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2011-01-19 at 16:52 -0800, Andrew Morton wrote:
+>> On Thu, 20 Jan 2011 08:45:58 +0800
+>> Huang Ying <ying.huang@intel.com> wrote:
+>>
+>> > On Thu, 2011-01-20 at 05:55 +0800, Andrew Morton wrote:
+>> > > I'm trying to remember why we're talking about this.
+>> > >
+>> > > You had an ACPI-based "hardware error reporting" thing.  And that
+>> > > required an nmi-context memory allocator.  And that required a
+>> > > "lockless" list implementation.
+>> > >
+>> > > Yes?
+>> >
+>> > Yes.  But the "lockless" list implementation is general, it can be used
+>> > by other part of kernel too,  such as irq_work and xlist in
+>> > net/rds/xlist.h in the patchset.
+>>
+>> Well.  Lots of things are general but that doesn't mean we toss them
+>> into the kernel when we already have plenty of infrastructure to handle
+>> that sort of thing.
+>>
+>> otoh, hoisting xlist.h out of net/rds and making it generally available
+>> is a good thing.
+>>
+>> otooh, net/rds/ probably didn't need xlist at all and could have used
+>> existing general code.
+>>
+>> So...  I'd say that unless and until the NMI-context allocator is
+>> merged, the case for merging the lockless list code is a bit marginal?
+>> Or have you identified other code sites which could use llist and which
+>> would gain some benefit from migrating?
+>
+> In fact, I have a patch ready and waiting to revert the whole irq_work
+> stuff, that too seems to be a superfluous generalization.
 
-On Thu, Jan 20, 2011 at 11:42:24AM +0100, John Ogness wrote:
-> This patch fixes the calculation of the internal frequency. The value
-> of "n" is one less than the actual divider. 0 is a valid value.
-> 
-> An example where the internal frequency is calculated correctly can be
-> found here: clkt_dpll.c:_dpll_test_fint()
-> 
-> This patch is against linux-next-20110120.
-> 
-> Signed-off-by: John Ogness <john.ogness@linutronix.de>
+What do you plan to replace irq_work?  I plan to use it in APEI NMI
+handler and MCE handler.
 
-scripts/get_maintainer.pl would've helped you getting a better Cc list.
-I'm adding linux-omap and lakml
-
-> ---
->  arch/arm/mach-omap2/dpll3xxx.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- a/arch/arm/mach-omap2/dpll3xxx.c	2011-01-20 11:20:41.706860086 +0100
-> +++ b/arch/arm/mach-omap2/dpll3xxx.c	2011-01-20 11:21:27.966860086 +0100
-> @@ -93,7 +93,7 @@ static u16 _omap3_dpll_compute_freqsel(s
->  	unsigned long fint;
->  	u16 f = 0;
->  
-> -	fint = clk->dpll_data->clk_ref->rate / n;
-> +	fint = clk->dpll_data->clk_ref->rate / (n + 1);
->  
->  	pr_debug("clock: fint is %lu\n", fint);
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-balbi
+Best Regards,
+Huang Ying
