@@ -1,69 +1,354 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755750Ab1ATOOl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 09:14:41 -0500
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:54360 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755561Ab1ATOOk (ORCPT
+	id S1755760Ab1ATOWS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 09:22:18 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:32968 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755613Ab1ATOWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 09:14:40 -0500
-To: Christoph Hellwig <hch@infradead.org>
-CC: miklos@szeredi.hu, akpm@linux-foundation.org, hughd@google.com,
-        gurudas.pai@oracle.com, lkml20101129@newton.leun.net,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-reply-to: <20110120124043.GA4347@infradead.org> (message from Christoph
-	Hellwig on Thu, 20 Jan 2011 07:40:43 -0500)
-Subject: Re: [PATCH] mm: prevent concurrent unmap_mapping_range() on the same
- inode
-References: <E1PftfG-0007w1-Ek@pomaz-ex.szeredi.hu> <20110120124043.GA4347@infradead.org>
-Message-Id: <E1PfvGx-00086O-IA@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 20 Jan 2011 15:13:59 +0100
+	Thu, 20 Jan 2011 09:22:17 -0500
+X-AuditID: b753bd60-9ed53ba00000044b-82-4d3845165af0
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [PATCH -perf/perf/core v2 1/3] perf: Add strfilter for general
+	purpose string filter
+To: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Franck Bui-Huu <fbuihuu@gmail.com>, linux-kernel@vger.kernel.org,
+        2nddept-manager@sdl.hitachi.co.jp,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 20 Jan 2011 23:15:30 +0900
+Message-ID: <20110120141530.25915.12673.stgit@ltc236.sdl.hitachi.co.jp>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jan 2011, Christoph Hellwig wrote:
-> On Thu, Jan 20, 2011 at 01:30:58PM +0100, Miklos Szeredi wrote:
-> > From: Miklos Szeredi <mszeredi@suse.cz>
-> > 
-> > Running a fuse filesystem with multiple open()'s in parallel can
-> > trigger a "kernel BUG at mm/truncate.c:475"
-> > 
-> > The reason is, unmap_mapping_range() is not prepared for more than
-> > one concurrent invocation per inode.  For example:
-> > 
-> >   thread1: going through a big range, stops in the middle of a vma and
-> >      stores the restart address in vm_truncate_count.
-> > 
-> >   thread2: comes in with a small (e.g. single page) unmap request on
-> >      the same vma, somewhere before restart_address, finds that the
-> >      vma was already unmapped up to the restart address and happily
-> >      returns without doing anything.
-> > 
-> > Another scenario would be two big unmap requests, both having to
-> > restart the unmapping and each one setting vm_truncate_count to its
-> > own value.  This could go on forever without any of them being able to
-> > finish.
-> > 
-> > Truncate and hole punching already serialize with i_mutex.  Other
-> > callers of unmap_mapping_range() do not, and it's difficult to get
-> > i_mutex protection for all callers.  In particular ->d_revalidate(),
-> > which calls invalidate_inode_pages2_range() in fuse, may be called
-> > with or without i_mutex.
-> 
-> 
-> Which I think is mostly a fuse problem.  I really hate bloating the
-> generic inode (into which the address_space is embedded) with another
-> mutex for deficits in rather special case filesystems. 
+Add strfilter for general purpose string filter.
+Every filter rules are descrived by glob matching pattern
+and '!' prefix which means Logical NOT.
+A strfilter consists of those filter rules connected
+with '&' and '|'. A set of rules can be folded by using
+'(' and ')'. It also accepts spaces around rules and those
+operators.
 
-As Hugh pointed out unmap_mapping_range() has grown a varied set of
-callers, which are difficult to fix up wrt i_mutex.  Fuse was just an
-example.
+Format:
+<rule> ::= <glob-exp> | "!" <rule> | <rule> <op> <rule> | "(" <rule> ")"
+<op> ::= "&" | "|"
 
-I don't like the bloat either, but this is the best I could come up
-with for fixing this problem generally.  If you have a better idea,
-please share it.
+e.g.
+ "(add* | del*) & *timer" filter rules pass strings which
+ start with add or del and end with timer.
 
-Thanks,
-Miklos
+This will be used by perf probe --filter.
+
+Changes in V2:
+ - Fix to check result of strdup() and strfilter__alloc().
+ - Encapsulate and simplify interfaces as like as regex(3).
+
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org
+---
+
+ tools/perf/Makefile         |    2 
+ tools/perf/util/strfilter.c |  200 +++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/strfilter.h |   49 +++++++++++
+ 3 files changed, 251 insertions(+), 0 deletions(-)
+ create mode 100644 tools/perf/util/strfilter.c
+ create mode 100644 tools/perf/util/strfilter.h
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index cc714af..b41c6d5 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -412,6 +412,7 @@ LIB_H += util/help.h
+ LIB_H += util/session.h
+ LIB_H += util/strbuf.h
+ LIB_H += util/strlist.h
++LIB_H += util/strfilter.h
+ LIB_H += util/svghelper.h
+ LIB_H += util/run-command.h
+ LIB_H += util/sigchain.h
+@@ -452,6 +453,7 @@ LIB_OBJS += $(OUTPUT)util/quote.o
+ LIB_OBJS += $(OUTPUT)util/strbuf.o
+ LIB_OBJS += $(OUTPUT)util/string.o
+ LIB_OBJS += $(OUTPUT)util/strlist.o
++LIB_OBJS += $(OUTPUT)util/strfilter.o
+ LIB_OBJS += $(OUTPUT)util/usage.o
+ LIB_OBJS += $(OUTPUT)util/wrapper.o
+ LIB_OBJS += $(OUTPUT)util/sigchain.o
+diff --git a/tools/perf/util/strfilter.c b/tools/perf/util/strfilter.c
+new file mode 100644
+index 0000000..4064b7d
+--- /dev/null
++++ b/tools/perf/util/strfilter.c
+@@ -0,0 +1,200 @@
++#include <ctype.h>
++#include "util.h"
++#include "string.h"
++#include "strfilter.h"
++
++/* Operators */
++static const char *OP_and	= "&";	/* Logical AND */
++static const char *OP_or	= "|";	/* Logical OR */
++static const char *OP_not	= "!";	/* Logical NOT */
++
++#define is_operator(c)	((c) == '|' || (c) == '&' || (c) == '!')
++#define is_separator(c)	(is_operator(c) || (c) == '(' || (c) == ')')
++
++static void strfilter_node__delete(struct strfilter_node *self)
++{
++	if (self) {
++		if (self->p && !is_operator(*self->p))
++			free((char *)self->p);
++		strfilter_node__delete(self->l);
++		strfilter_node__delete(self->r);
++		free(self);
++	}
++}
++
++void strfilter__delete(struct strfilter *self)
++{
++	if (self) {
++		strfilter_node__delete(self->root);
++		free(self);
++	}
++}
++
++static const char *get_token(const char *s, const char **e)
++{
++	const char *p;
++
++	while (isspace(*s))	/* Skip spaces */
++		s++;
++
++	if (*s == '\0') {
++		p = s;
++		goto end;
++	}
++
++	p = s + 1;
++	if (!is_separator(*s)) {
++		/* End search */
++retry:
++		while (*p && !is_separator(*p) && !isspace(*p))
++			p++;
++		/* Escape and special case: '!' is also used in glob pattern */
++		if (*(p - 1) == '\\' || (*p == '!' && *(p - 1) == '[')) {
++			p++;
++			goto retry;
++		}
++	}
++end:
++	*e = p;
++	return s;
++}
++
++static struct strfilter_node *strfilter_node__alloc(const char *op,
++						    struct strfilter_node *l,
++						    struct strfilter_node *r)
++{
++	struct strfilter_node *ret = zalloc(sizeof(struct strfilter_node));
++
++	if (ret) {
++		ret->p = op;
++		ret->l = l;
++		ret->r = r;
++	}
++
++	return ret;
++}
++
++static struct strfilter_node *strfilter_node__new(const char *s,
++						  const char **ep)
++{
++	struct strfilter_node root, *cur, *last_op;
++	const char *e;
++
++	if (!s)
++		return NULL;
++
++	memset(&root, 0, sizeof(root));
++	last_op = cur = &root;
++
++	s = get_token(s, &e);
++	while (*s != '\0' && *s != ')') {
++		switch (*s) {
++		case '&':	/* Exchg last OP->r with AND */
++			if (!cur->r || !last_op->r)
++				goto error;
++			cur = strfilter_node__alloc(OP_and, last_op->r, NULL);
++			if (!cur)
++				goto nomem;
++			last_op->r = cur;
++			last_op = cur;
++			break;
++		case '|':	/* Exchg the root with OR */
++			if (!cur->r || !root.r)
++				goto error;
++			cur = strfilter_node__alloc(OP_or, root.r, NULL);
++			if (!cur)
++				goto nomem;
++			root.r = cur;
++			last_op = cur;
++			break;
++		case '!':	/* Add NOT as a leaf node */
++			if (cur->r)
++				goto error;
++			cur->r = strfilter_node__alloc(OP_not, NULL, NULL);
++			if (!cur->r)
++				goto nomem;
++			cur = cur->r;
++			break;
++		case '(':	/* Recursively parses inside the parenthesis */
++			if (cur->r)
++				goto error;
++			cur->r = strfilter_node__new(s + 1, &s);
++			if (!s)
++				goto nomem;
++			if (!cur->r || *s != ')')
++				goto error;
++			e = s + 1;
++			break;
++		default:
++			if (cur->r)
++				goto error;
++			cur->r = strfilter_node__alloc(NULL, NULL, NULL);
++			if (!cur->r)
++				goto nomem;
++			cur->r->p = strndup(s, e - s);
++			if (!cur->r->p)
++				goto nomem;
++		}
++		s = get_token(e, &e);
++	}
++	if (!cur->r)
++		goto error;
++	*ep = s;
++	return root.r;
++nomem:
++	s = NULL;
++error:
++	*ep = s;
++	strfilter_node__delete(root.r);
++	return NULL;
++}
++
++/*
++ * Parse filter rule and return new strfilter.
++ * Return NULL if fail, and *ep == NULL if memory allocation failed.
++ */
++struct strfilter *strfilter__new(const char *rules, const char **err)
++{
++	struct strfilter *ret = zalloc(sizeof(struct strfilter));
++	const char *ep = NULL;
++
++	if (ret)
++		ret->root = strfilter_node__new(rules, &ep);
++
++	if (!ret || !ret->root || *ep != '\0') {
++		if (err)
++			*err = ep;
++		strfilter__delete(ret);
++		ret = NULL;
++	}
++
++	return ret;
++}
++
++static bool strfilter_node__compare(struct strfilter_node *self,
++				    const char *str)
++{
++	if (!self || !self->p)
++		return false;
++
++	switch (*self->p) {
++	case '|':	/* OR */
++		return strfilter_node__compare(self->l, str) ||
++			strfilter_node__compare(self->r, str);
++	case '&':	/* AND */
++		return strfilter_node__compare(self->l, str) &&
++			strfilter_node__compare(self->r, str);
++	case '!':	/* NOT */
++		return !strfilter_node__compare(self->r, str);
++	default:
++		return strglobmatch(str, self->p);
++	}
++}
++
++/* Return true if STR matches the filter rules */
++bool strfilter__compare(struct strfilter *self, const char *str)
++{
++	if (!self)
++		return false;
++	return strfilter_node__compare(self->root, str);
++}
+diff --git a/tools/perf/util/strfilter.h b/tools/perf/util/strfilter.h
+new file mode 100644
+index 0000000..7647337
+--- /dev/null
++++ b/tools/perf/util/strfilter.h
+@@ -0,0 +1,49 @@
++#ifndef __PERF_STRFILTER_H
++#define __PERF_STRFILTER_H
++/* General purpose glob matching filter */
++
++#include <linux/list.h>
++#include <stdbool.h>
++
++/* A node of string filter */
++struct strfilter_node {
++	struct strfilter_node *l;	/* Tree left branche (for &,|) */
++	struct strfilter_node *r;	/* Tree right branche (for !,&,|) */
++	const char *p;		/* Operator or rule */
++};
++
++/* String filter */
++struct strfilter {
++	struct strfilter_node *root;
++};
++
++/**
++ * strfilter__new - Create a new string filter
++ * @rules: Filter rule, which is a combination of glob expressions.
++ * @err: Pointer which points an error detected on @rules
++ *
++ * Parse @rules and return new strfilter. Return NULL if an error detected.
++ * In that case, *@err will indicate where it is detected, and *@err is NULL
++ * if a memory allocation is failed.
++ */
++struct strfilter *strfilter__new(const char *rules, const char **err);
++
++/**
++ * strfilter__compare - compare given string and a string filter
++ * @self: String filter
++ * @str: target string
++ *
++ * Compare @str and @self. Return true if the str match the rule
++ */
++bool strfilter__compare(struct strfilter *self, const char *str);
++
++/**
++ * strfilter__delete - delete a string filter
++ * @self: String filter to delete
++ *
++ * Delete @self.
++ */
++void strfilter__delete(struct strfilter *self);
++
++#endif
++
+
