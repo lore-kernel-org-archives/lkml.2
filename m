@@ -1,158 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab1ATKEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 05:04:43 -0500
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:60198 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755317Ab1ATKEl (ORCPT
+	id S1755365Ab1ATKGd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 05:06:33 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:65390 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755334Ab1ATKG3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 05:04:41 -0500
-From: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
-To: Richard Purdie <richard.purdie@linuxfoundation.org>
-Cc: Linus WALLEIJ <linus.walleij@stericsson.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 20 Jan 2011 11:03:29 +0100
-Subject: RE: [PATCH 1/2] leds: add driver for LM3530 ALS
-Thread-Topic: [PATCH 1/2] leds: add driver for LM3530 ALS
-Thread-Index: Acu34qXTczXLMvB2R6iGUOawY7B1fwAph31Q
-Message-ID: <2E48302EED53D048A7BA72B0A307FB51172F55C632@EXDCVYMBSTM005.EQ1STM.local>
-References: <1295420175-22332-1-git-send-email-shreshthakumar.sahu@stericsson.com>
- <1295446213.14388.21898.camel@rex>
-In-Reply-To: <1295446213.14388.21898.camel@rex>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Thu, 20 Jan 2011 05:06:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=NOwnBPaChoodV7kEYVFlWZzk2nWysYbK+RzR7n62tOXxKGMzeyWGrEzR3/Xza4bv3K
+         vpTd+k7Ju7I8fwPGwYggmAQrBAXheyrYZ3VyUfN2Fz6xuD6Dh1iyLCSDthBMyOLxLuAP
+         9yF5CirnurpP4YfsFkK91HluDXZ9txZMdLEdc=
 MIME-Version: 1.0
+In-Reply-To: <1294367707-2593-6-git-send-email-ddaney@caviumnetworks.com>
+References: <1294367707-2593-1-git-send-email-ddaney@caviumnetworks.com>
+	<1294367707-2593-6-git-send-email-ddaney@caviumnetworks.com>
+Date: Thu, 20 Jan 2011 18:06:28 +0800
+Message-ID: <AANLkTi=8NndFv6czWy1q_iDvJRHhCYYu06fhyBL9ByE=@mail.gmail.com>
+Subject: Re: [PATCH 5/6] MIPS: perf: Add support for 64-bit perf counters.
+From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p0KA4qZW004421
+
+2011/1/7 David Daney <ddaney@caviumnetworks.com>:
+> @@ -294,14 +519,29 @@ static void mipspmu_read(struct perf_event *event)
+>
+>  static void mipspmu_enable(struct pmu *pmu)
+>  {
+> -       if (mipspmu)
+> -               mipspmu->start();
+> +#ifdef CONFIG_MIPS_MT_SMP
+> +       write_unlock(&pmuint_rwlock);
+> +#endif
+> +       resume_local_counters();
+>  }
+
+When working with CONFIG_MIPS_MT_SMP, the compiler says 'pmuint_rwlock
+undeclared' because of its improper place of definition.
 
 
-
-[...]
-> +	ret = i2c_smbus_write_byte_data(client,
-> +			LM3530_GEN_CONFIG, gen_config);
-> +	if (ret)
-> +		return ret;
-> +	ret = i2c_smbus_write_byte_data(client,
-> +			LM3530_ALS_CONFIG, als_config);
-> +	if (ret)
-> +		return ret;
-> +	ret = i2c_smbus_write_byte_data(client,
-> +			LM3530_BRT_RAMP_RATE, brt_ramp);
-> +	if (ret)
-> +		return ret;
-> +	ret = i2c_smbus_write_byte_data(client,
-> +			LM3530_ALS_IMP_SELECT, als_imp_sel);
-> +	if (ret)
-> +		return ret;
-> +	ret = i2c_smbus_write_byte_data(client,
-> +			LM3530_BRT_CTRL_REG, brightness);
-> +	if (ret)
-> +		return ret;
-> +	ret = i2c_smbus_write_byte_data(client,
-> +			LM3530_ALS_ZB0_REG, LM3530_DEF_ZB_0);
-> +	if (ret)
-> +		return ret;
-> +	ret = i2c_smbus_write_byte_data(client,
-> +			LM3530_ALS_ZB1_REG, LM3530_DEF_ZB_1);
-> +	if (ret)
-> +		return ret;
-> +	ret = i2c_smbus_write_byte_data(client,
-> +			LM3530_ALS_ZB2_REG, LM3530_DEF_ZB_2);
-> +	if (ret)
-> +		return ret;
-> +	ret = i2c_smbus_write_byte_data(client,
-> +			LM3530_ALS_ZB3_REG, LM3530_DEF_ZB_3);
-> +	if (ret)
-> +		return ret;
-> +	ret = i2c_smbus_write_byte_data(client,
-> +			LM3530_ALS_Z0T_REG, LM3530_DEF_ZT_0);
-> +	if (ret)
-> +		return ret;
-> +	ret = i2c_smbus_write_byte_data(client,
-> +			LM3530_ALS_Z1T_REG, LM3530_DEF_ZT_1);
-> +	if (ret)
-> +		return ret;
-> +	ret = i2c_smbus_write_byte_data(client,
-> +			LM3530_ALS_Z2T_REG, LM3530_DEF_ZT_2);
-> +	if (ret)
-> +		return ret;
-> +	ret = i2c_smbus_write_byte_data(client,
-> +			LM3530_ALS_Z3T_REG, LM3530_DEF_ZT_3);
-> +	if (ret)
-> +		return ret;
-> +	ret = i2c_smbus_write_byte_data(client,
-> +			LM3530_ALS_Z4T_REG, LM3530_DEF_ZT_4);
-> +	if (ret)
-> +		return ret;
+> @@ -1550,10 +1462,30 @@ init_hw_perf_events(void)
+>                return -ENODEV;
+>        }
+>
+> -       if (mipspmu)
+> -               pr_cont("%s PMU enabled, %d counters available to each "
+> -                       "CPU, irq %d%s\n", mipspmu->name, counters, irq,
+> -                       irq < 0 ? " (share with timer interrupt)" : "");
+> +       mipspmu.num_counters = counters;
+> +       mipspmu.irq = irq;
 > +
-> +	return ret;
-
-I can't help wonder if a table of values iterated over would look a
-little neater here. The last if is harmless but pointless too.
-
-[Shreshtha Kumar SAHU] done
-
-> +static ssize_t lm3530_mode_set(struct device *dev, struct device_attribute
-> +				   *attr, const char *buf, size_t size)
-> +{
-> +	int err;
-> +	struct i2c_client *client = container_of(
-> +					dev->parent, struct i2c_client, dev);
-> +	struct lm3530_data *drvdata = i2c_get_clientdata(client);
-> +	unsigned long mode;
+> +       if (read_c0_perfctrl0() & M_PERFCTL_WIDE) {
+> +               mipspmu.max_period = (1ULL << 63) - 1;
+> +               mipspmu.valid_count = (1ULL << 63) - 1;
+> +               mipspmu.overflow = 1ULL << 63;
+> +               mipspmu.read_counter = mipsxx_pmu_read_counter_64;
+> +               mipspmu.write_counter = mipsxx_pmu_write_counter_64;
+> +               counter_bits = 64;
+> +       } else {
+> +               mipspmu.max_period = (1ULL << 32) - 1;
+> +               mipspmu.valid_count = (1ULL << 31) - 1;
+> +               mipspmu.overflow = 1ULL << 31;
+> +               mipspmu.read_counter = mipsxx_pmu_read_counter;
+> +               mipspmu.write_counter = mipsxx_pmu_write_counter;
+> +               counter_bits = 32;
+> +       }
 > +
-> +	err = strict_strtoul(buf, 10, &mode);
-> +	if (err < 0)
-> +		return -EINVAL;
+> +       on_each_cpu(reset_counters, (void *)(long)counters, 1);
 > +
-> +	if (mode == LM3530_BL_MODE_MANUAL)
-> +		drvdata->mode = LM3530_BL_MODE_MANUAL;
-> +	else if (mode == LM3530_BL_MODE_ALS)
-> +		drvdata->mode = LM3530_BL_MODE_ALS;
-> +	else if (mode == LM3530_BL_MODE_PWM) {
-> +		dev_err(dev, "PWM mode not supported\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	err = lm3530_init_registers(drvdata);
-> +	if (err) {
-> +		dev_err(dev, "Setting %s Mode failed :%d\n", buf, err);
-> +		return err;
-> +	}
-> +
-> +	return sizeof(drvdata->mode);
-> +}
-> +
-> +static DEVICE_ATTR(mode, 0644, NULL, lm3530_mode_set);
+> +       pr_cont("%s PMU enabled, %d %d-bit counters available to each "
+> +               "CPU, irq %d%s\n", mipspmu.name, counters, counter_bits, irq,
+> +               irq < 0 ? " (share with timer interrupt)" : "");
+>
+>        perf_pmu_register(&pmu);
+>
 
-So you poke random values of 0, 1, 2 into sysfs? I suspect that breaks
-sysfs guidelines and these should be meaningful values like "pwm", "als"
-and "led". The enum is ok within the kernel but not for exposure outside
-of it. 
-
-[Shreshtha Kumar SAHU] done
-
-Also, calling out PWM specifically as not supported seems like the wrong
-approach 
-[Shreshtha Kumar SAHU] I will add support for PWM soon.
-
-and I'm curious what happens if I poke 4 in there.
-[Shreshtha Kumar SAHU] rectified with implementation of meaningful input
-values
+perf_pmu_register(&pmu) should be now changed to perf_pmu_register(&pmu,
+"cpu", PERF_TYPE_RAW).
 
 
-The rest looked ok at a quick glance.
-
-Cheers,
-
-Richard
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Deng-Cheng
