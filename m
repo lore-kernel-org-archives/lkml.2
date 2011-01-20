@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab1ATQR1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 11:17:27 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:43317 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751739Ab1ATQRY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 11:17:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=h8agzsm4NfoG5AtpXvtUWMOVMBcBrasjXxQ+0WXQThzRGZtNf83JlyrTpQ8YQx+ZYy
-         waU/g1kiXMT8fldxM4WJSjQNl0ACUwfvt3MDAdP7LaJyK9ayyUTMoMd/JYTiwIGenJhw
-         gFgDlBnpTKcak0kjE2DMuMBC6VDtnnt6MOpzE=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: [PATCH 2/3] migration: Fix page corruption during hugepage migration
-Date: Fri, 21 Jan 2011 01:17:06 +0900
-Message-Id: <ffab7f865b626cc7c62d18c612700b86ff53391c.1295539829.git.minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <f60d811fd1abcb68d40ac19af35881d700a97cd2.1295539829.git.minchan.kim@gmail.com>
-References: <f60d811fd1abcb68d40ac19af35881d700a97cd2.1295539829.git.minchan.kim@gmail.com>
-In-Reply-To: <f60d811fd1abcb68d40ac19af35881d700a97cd2.1295539829.git.minchan.kim@gmail.com>
-References: <f60d811fd1abcb68d40ac19af35881d700a97cd2.1295539829.git.minchan.kim@gmail.com>
+	id S1750968Ab1ATQ3i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 11:29:38 -0500
+Received: from dsl78-143-211-26.in-addr.fast.co.uk ([78.143.211.26]:46496 "EHLO
+	ben-laptop" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750712Ab1ATQ3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 11:29:37 -0500
+Message-ID: <4D3862DB.5000708@fluff.org>
+Date: Thu, 20 Jan 2011 16:29:15 +0000
+From: Ben Dooks <ben-linux@fluff.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Paul Mundt <lethal@linux-sh.org>
+CC: Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Uwe Kleine-K??nig <u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Locking in the clk API
+References: <201101111016.42819.jeremy.kerr@canonical.com> <20110111031552.GJ3760@linux-sh.org>
+In-Reply-To: <20110111031552.GJ3760@linux-sh.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If migrate_huge_page by memory-failure fails , it calls put_page in itself
-to decrease page reference and caller of migrate_huge_page also calls
-putback_lru_pages. It can do double free of page so it can make page
-corruption on page holder.
+On 11/01/11 03:15, Paul Mundt wrote:
+> On Tue, Jan 11, 2011 at 10:16:42AM +0800, Jeremy Kerr wrote:
+>> * clk_enable: may sleep
+>>
+>> * clk_disable: may not sleep, but it's possible to make the global
+>>   clk_disable() atomic and defer the actual disable (clk->ops.disable()) to a
+>>   non-atomic context.
+>>
+>> * clk_get_rate: may not sleep
+>>
+>> * clk_set_rate: may sleep
+>>
+>> As we build up our requirements, we can adjust as suitable.
+>>
+> This looks like a complete disaster, and is also completely inconsistent
+> with how the API is being used by the vast majority of users today. You
+> have an API that can or can not sleep with no indication as to which is
+> which based off of the API naming, which is just asking for trouble.
+> 
+> As it is today, most users expect that these are all usable from atomic
+> context, and as far as I can tell the only special case you have are for
+> some crap busses with insane latencies. In this case you should simply
+> pile on _cansleep() versions of the API and make it apparent that those
+> drivers are the special cases, not the other way around.
 
-In addtion, clean of pages on caller is consistent behavior with
-migrate_pages by cf608ac19c95804dc2df43b1f4f9e0.
+The trouble is not with the drivers, is the fact there could be a clock
+tree where, say the closest to the driver is easy to control but the
+base of the tree may be a PLL which requires time to settle.
 
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
----
- mm/memory-failure.c |    5 ++++-
- mm/migrate.c        |    4 ----
- 2 files changed, 4 insertions(+), 5 deletions(-)
+Now, there's a lot of work in the 'embedded' space where the focus is on
+the power consumption, so powering down PLLs when they are not needed is
+a good thing to have/
 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 75398b0..237aaa4 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1295,7 +1295,10 @@ static int soft_offline_huge_page(struct page *page, int flags)
- 	ret = migrate_huge_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL, 0,
- 				true);
- 	if (ret) {
--		putback_lru_pages(&pagelist);
-+		struct page *page1, *page2;
-+		list_for_each_entry_safe(page1, page2, &pagelist, lru)
-+			put_page(page1);
-+
- 		pr_debug("soft offline: %#lx: migration failed %d, type %lx\n",
- 			 pfn, ret, page->flags);
- 		if (ret > 0)
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 7d34237..3a6d4fd 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -980,10 +980,6 @@ int migrate_huge_pages(struct list_head *from,
- 	}
- 	rc = 0;
- out:
--
--	list_for_each_entry_safe(page, page2, from, lru)
--		put_page(page);
--
- 	if (rc)
- 		return rc;
- 
--- 
-1.7.0.4
+> Having half of the API sleepable and the other not with no indication of
+> which is which simply makes it completely unusable and error prone for
+> both atomic and non-atomic contexts.
 
+I really don't like the fact that people are doing these things in
+atomic contexts, and I think we should apply some pressure to move
+the atomic caller cases to use systems where they can sleep such as
+using threaded-irq handlers (they work very nicely)
