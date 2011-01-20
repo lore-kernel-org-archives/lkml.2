@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab1ATB6x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 20:58:53 -0500
-Received: from ebb05.tieto.com ([131.207.168.36]:53937 "EHLO ebb05.tieto.com"
+	id S1754803Ab1ATCBe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 21:01:34 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:42635 "EHLO mail.vyatta.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753400Ab1ATB6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 20:58:52 -0500
-X-AuditID: 83cfa824-b7b13ae000000ee5-13-4d3796da8f90
-Date: Thu, 20 Jan 2011 10:06:38 +0800
-From: Yang Ruirui <ruirui.r.yang@tieto.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Yang Ruirui R <ruirui.r.yang@tietoenator.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Felipe Balbi <felipe.balbi@nokia.com>,
-        Heikki Krogerus <ext-heikki.krogerus@nokia.com>,
-        Tejun Heo <tj@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Hema HK <hemahk@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+	id S1753400Ab1ATCBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 21:01:33 -0500
+Date: Wed, 19 Jan 2011 18:01:31 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Pekka Enberg <penberg@kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Tejun Heo <tj@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb otg: use atomic notifier instead of blocking notifier
-Message-ID: <20110120020638.GA24396@darkstar>
-References: <20110119092011.GA23624@darkstar>
- <20110119104032.GJ2505@legolas.emea.dhcp.ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110119104032.GJ2505@legolas.emea.dhcp.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Subject: Re: [GIT PULL] block driver updates for 2.6.38
+Message-ID: <20110119180131.088a7994@nehalam>
+In-Reply-To: <AANLkTimZWMJQfc6E-ke+SbpaTeG9UKA--g=qFQa+11aW@mail.gmail.com>
+References: <4D2F03F2.4000707@fusionio.com>
+	<AANLkTi=t9FQaUhnXCk51bjZO82F8OGDDd9H5HyMPRPQd@mail.gmail.com>
+	<4D2F51B5.6060105@fusionio.com>
+	<AANLkTi=PDEyJNN3aKhHWzCKrTfzib-VCdvgD7auoWuzD@mail.gmail.com>
+	<20110113141957.1eaf4940@nehalam>
+	<AANLkTikdULkbB83Us_zXivv8Y5FGdHrixUXRiitacaSh@mail.gmail.com>
+	<20110113161115.1d564448@nehalam>
+	<AANLkTimZWMJQfc6E-ke+SbpaTeG9UKA--g=qFQa+11aW@mail.gmail.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 12:40:32PM +0200, Felipe Balbi wrote:
-> hi,
-> 
-> On Wed, Jan 19, 2011 at 05:20:11PM +0800, Yang Ruirui wrote:
-> > 
-> > following bug happens with meego 2.6.35 kernel on nokia n900:
-> 
-> <snip>
-> 
-> > Actually the blocking notifier chain runs in process context, so not fit for use here.
-> > 
-> > For mainline kernel there's such issue as well.
-> > Here fix this problem by changing to use atomic_notifier.
-> > 
-> > Signed-off-by: Yang Ruirui <ruirui.r.yang@tieto.com>
-> > ---
-> >  drivers/usb/otg/ab8500-usb.c  |    6 +++---
-> >  drivers/usb/otg/twl4030-usb.c |    6 +++---
-> >  drivers/usb/otg/twl6030-usb.c |    6 +++---
-> 
-> you're missing the other transceivers:
-> drivers/usb/otg/langwell_otg.c
-> drivers/usb/otg/msm72k_otg.c
-> drivers/usb/otg/gpio_vbus.c
-> drivers/usb/otg/nop-usb-xceiv.c
-> drivers/usb/otg/ulpi.c
-> drivers/usb/otg/isp1301_omap.c
+On Thu, 13 Jan 2011 17:03:21 -0800
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Hi, thanks
-
-Actually I does not found where notifiers are used in these files except
-langwell_otg
-
-For langwell_otg.c there's a wrapper struct named "intel mid_otg_xceiv"
-in include/linux/usb/intel_mid_otg.h, it use an atomic notifier for
-interrupt context.
-
-So I think we'd better write another patch to make it use general
-otg_transceiver for notifier or just keep current code. What's your opinion?
-
+> On Thu, Jan 13, 2011 at 4:11 PM, Stephen Hemminger
+> <shemminger@vyatta.com> wrote:
+> >
+> > It appears to be a different problem (not HPET MSI). Not sure what
+> > is causing it, but even 2.6.35 can't format a floppy without error.
 > 
-> -- 
-> balbi
+> Do you actually know that the hardware is good (ie does _any_ version
+> of Linux work)?
+> 
+> Floppy disks and drives have not been known for their robustness, and
+> most of them tend to be pretty old by now.
+> 
+> Dang, I think I should just try to go to Fry's and see if I can find a
+> floppy drive somewhere. Not that I even know if my motherboards
+> necessarily even have the _pins_ to connect it any more.
+
+I could not find a working floppy in 4 machines (even Windows).
+
+There is always USB floppy but it is not the same.
