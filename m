@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226Ab1ATFbU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 00:31:20 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41336 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461Ab1ATFbT convert rfc822-to-8bit (ORCPT
+	id S1755235Ab1ATFcR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 00:32:17 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43243 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753343Ab1ATFcO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 00:31:19 -0500
+	Thu, 20 Jan 2011 00:32:14 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=dtkZcDGxfNsDz0DibuDmg1m0U44rM/qNlh6Dm5Jaz4eYmZtu/JlGuGFs3nA/CYFYI1
-         8uxlY4I9ZW4IWGvNAzTUWvlmm6OtqqaR2RCOXOQUC0wAyyxwiMTxDLuJvl+ufZ1kHB4i
-         d0+g9WZXM2b9FTkn9L4fBPEndP+5L1uecxtuI=
+        b=VY4B1a3Ughnpt13EkymZb0WUuF12gbxWZdfa5soUj6kDQu40qvYCRCfdx80EgMfkAd
+         01CJAoVqTB1CUGJh4Lw/W/DXdQHdDvYIJVtpEbItifB5JcOsBpCkw/isXjSE7MeUGHL3
+         5LdLkFodRwS1dCqETDhd7JeJnnJGJArMqYEMo=
 MIME-Version: 1.0
-In-Reply-To: <1295455290.1952.22.camel@Joe-Laptop>
-References: <1294919372-1904-1-git-send-email-ratbert.chuang@gmail.com>
- <1295256060-2091-1-git-send-email-ratbert.chuang@gmail.com>
- <1295284788.21277.65.camel@Joe-Laptop> <AANLkTi=nJxwR89CF3i0+L6+yM4Bg_PN8PQByTAHP2nPM@mail.gmail.com>
- <1295455290.1952.22.camel@Joe-Laptop>
-From: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Date: Thu, 20 Jan 2011 13:30:57 +0800
-Message-ID: <AANLkTi=NU=ANUDGGdiCL+AP696nF1kXwPHOPZPrCti2u@mail.gmail.com>
-Subject: Re: [PATCH v2] net: add Faraday FTMAC100 10/100 Ethernet driver
-To: Joe Perches <joe@perches.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ratbert@faraday-tech.com, bhutchings@solarflare.com,
-        eric.dumazet@gmail.com, dilinger@queued.net
+In-Reply-To: <AANLkTin62OMHm7haO5EHJY4-ngaTkUdg=t058LhknA0D@mail.gmail.com>
+References: <1295275365.12840.13.camel@kolo>
+	<1295280032.30950.128.camel@laptop>
+	<1295339012.11678.35.camel@kolo>
+	<AANLkTikXf-OMEBx-UZktxooOs+YqUkSE9doyEZopjzOx@mail.gmail.com>
+	<1295357746.30950.681.camel@laptop>
+	<AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
+	<1295430276.30950.1414.camel@laptop>
+	<1295433498.30950.1482.camel@laptop>
+	<1295436632.30950.1542.camel@laptop>
+	<1295441881.11678.41.camel@kolo>
+	<1295442799.11678.43.camel@kolo>
+	<1295443822.28776.23.camel@laptop>
+	<AANLkTinQ4sczEwZYCk1_tLmeJyjyXj4TVoSZbjg+KiRq@mail.gmail.com>
+	<AANLkTin62OMHm7haO5EHJY4-ngaTkUdg=t058LhknA0D@mail.gmail.com>
+Date: Thu, 20 Jan 2011 13:32:12 +0800
+Message-ID: <AANLkTikOoC_ESZSmbDrrnQa3MLr3xT-qFOWU433PrEVa@mail.gmail.com>
+Subject: Re: Bug in scheduler when using rt_mutex
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: samu.p.onkalo@nokia.com, mingo@elte.hu,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        tglx <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Joe,
-
-On Thu, Jan 20, 2011 at 12:41 AM, Joe Perches <joe@perches.com> wrote:
-> On Wed, 2011-01-19 at 17:40 +0800, Po-Yu Chuang wrote:
->> Well, TBH, I don't like this style because if I changed the
->> function name, the indentation might need to be adjusted.
->
-> No worries.  That could happen using either style.
->
-> There's no required style so you can use what you are
-> most comfortable doing.  It's not a big deal at all.
->
->> Even worse, I got an infeasible case :-(
+On Thu, Jan 20, 2011 at 12:27 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
+> on Thu, Jan 20, 2011 at 12:18 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
+>> On Wed, Jan 19, 2011 at 9:30 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>> +static void switched_from_fair(struct rq *rq, struct task_struct *p)
+>>> +{
+>>> +       struct sched_entity *se = &p->se;
+>>> +       struct cfs_rq *cfs_rq = cfs_rq_of(se);
+>>> +
+>>> +       /*
+>>> +        * Ensure the task's vruntime is normalized, so that when its
+>>> +        * switched back to the fair class the enqueue_entity(.flags=0) will
+>>> +        * do the right thing.
+>>> +        *
+>>> +        * If it was on_rq, then the dequeue_entity(.flags=0) will already
+>>> +        * have normalized the vruntime, if it was !on_rq, then only when
+>>> +        * the task is sleeping will it still have non-normalized vruntime.
+>>> +        */
+>>> +       if (!se->on_rq && p->state != TASK_RUNNING)
+>>> +               se->vruntime -= cfs_rq->min_vruntime;
 >>
->> static struct ftmac100_rxdes *ftmac100_rx_locate_first_segment(
->>                                                              struct ftmac100 *priv)
->>
->> I know my function names are quite long, but I like them to be descriptive.
->> Do you really insist on it?
+>> Here it's possible that se->vruntime is little than cfs_rq->min_vruntime.
 >
-> Here's a common alternative style for this case:
->
-> static struct ftmac100_rxdes *
-> ftmac100_rx_locate_first_segment(struct ftmac100 *priv)
+> Maybe we can:
+>                       place_entity(cfs_rq, se, 0);
+>                       se->vruntime -= cfs_rq->min_vruntime;
 
-OK, I see.
-
-One more question: how to deal with this? Add a local variable for the
-2nd argument?
-
-	ftmac100_set_receive_ring_base(priv,
-				       priv->descs_dma_addr + offsetof(struct ftmac100_descs, rxdes));
-
-best regards,
-Po-Yu Chuang
+Hmmm, this doesn't make sense since we don't know how long the task
+will sleep after we do this.
