@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab1ATIqX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 03:46:23 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:57086 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753118Ab1ATIqV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 03:46:21 -0500
-Message-ID: <4D37F654.70405@corscience.de>
-Date: Thu, 20 Jan 2011 09:46:12 +0100
-From: Thomas Weber <weber@corscience.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101220 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-CC: linux-omap@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Daniel Morsing <daniel.morsing@gmail.com>, charu@ti.com
-Subject: Re: [PATCHv4 3/4] OMAP3: Devkit8000: Check return value of gpio_request
-References: <1295425166-25540-1-git-send-email-weber@corscience.de> <1295425166-25540-4-git-send-email-weber@corscience.de> <4D36D7DC.4020705@ru.mvista.com>
-In-Reply-To: <4D36D7DC.4020705@ru.mvista.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755204Ab1ATIqi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 03:46:38 -0500
+Received: from mail.perches.com ([173.55.12.10]:3213 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754906Ab1ATIqg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 03:46:36 -0500
+Subject: Re: [PATCH v2] net: add Faraday FTMAC100 10/100 Ethernet driver
+From: Joe Perches <joe@perches.com>
+To: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ratbert@faraday-tech.com, bhutchings@solarflare.com,
+        eric.dumazet@gmail.com, dilinger@queued.net
+In-Reply-To: <AANLkTi=NU=ANUDGGdiCL+AP696nF1kXwPHOPZPrCti2u@mail.gmail.com>
+References: <1294919372-1904-1-git-send-email-ratbert.chuang@gmail.com>
+	 <1295256060-2091-1-git-send-email-ratbert.chuang@gmail.com>
+	 <1295284788.21277.65.camel@Joe-Laptop>
+	 <AANLkTi=nJxwR89CF3i0+L6+yM4Bg_PN8PQByTAHP2nPM@mail.gmail.com>
+	 <1295455290.1952.22.camel@Joe-Laptop>
+	 <AANLkTi=NU=ANUDGGdiCL+AP696nF1kXwPHOPZPrCti2u@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 Jan 2011 00:46:34 -0800
+Message-ID: <1295513194.1952.96.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:pA2QS4HCwpVtIZfrQjZueIVMDccunIyrSxLLl0HW0+q
- 5zIB22IWgRzOrbGfg6FJAY35SpqQCtHWA3KdCzRMlzcxm6VOZ/
- DVF7WksbM+TxDnFeaZFOHWlaa95kGv+Uxy8BPE67d+xeOuT3aw
- moLPXDGxD3+SlGadnXpKAVB757fXEeB5hYMPRvfM9PpIQAvOnS
- 9bWAJrPLYyCTjn03f2D5w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-Am 19.01.2011 13:23, schrieb Sergei Shtylyov:
-> Hello.
->
-> On 19-01-2011 11:19, Thomas Weber wrote:
->
->> The return value of gpio_request is ignored.
->> This patch adds the check of the return value of gpio_request.
->
->> Signed-off-by: Thomas Weber<weber@corscience.de>
->> ---
->>   arch/arm/mach-omap2/board-devkit8000.c |   16 ++++++++++++++--
->>   1 files changed, 14 insertions(+), 2 deletions(-)
->
->> diff --git a/arch/arm/mach-omap2/board-devkit8000.c
->> b/arch/arm/mach-omap2/board-devkit8000.c
->> index 9fb416b..4ddd81c 100644
->> --- a/arch/arm/mach-omap2/board-devkit8000.c
->> +++ b/arch/arm/mach-omap2/board-devkit8000.c
-> [...]
->> @@ -244,13 +246,23 @@ static int devkit8000_twl_gpio_setup(struct
->> device *dev,
->>
->>       /* TWL4030_GPIO_MAX + 0 is "LCD_PWREN" (out, active high) */
->>       devkit8000_lcd_device.reset_gpio = gpio + TWL4030_GPIO_MAX + 0;
->> -    gpio_request(devkit8000_lcd_device.reset_gpio, "LCD_PWREN");
->> +    ret = gpio_request(devkit8000_lcd_device.reset_gpio, "LCD_PWREN");
->> +    if (ret < 0) {
->> +        printk(KERN_ERR "Failed to request GPIO for LCD_PWRN\n");
->> +        return ret;
->> +    }
->> +
->>       /* Disable until needed */
->>       gpio_direction_output(devkit8000_lcd_device.reset_gpio, 0);
->>
->>       /* gpio + 7 is "DVI_PD" (out, active low) */
->>       devkit8000_dvi_device.reset_gpio = gpio + 7;
->> -    gpio_request(devkit8000_dvi_device.reset_gpio, "DVI PowerDown");
->> +    ret = gpio_request(devkit8000_dvi_device.reset_gpio, "DVI
->> PowerDown");
->> +    if (ret < 0) {
->> +        printk(KERN_ERR "Failed to request GPIO for DVI PowerDown\n");
->
->    You forgot to call:
->
->         gpio_free(devkit8000_lcd_device.reset_gpio);
->
-Couldn't I use lcd without dvi?
-And shouldn't the gpio then be set to -EINVAL for the gpio_is_valid()
-check in enable_lcd()/disable_lcd() and enable_dvi()/disable_dvi()?
+On Thu, 2011-01-20 at 13:30 +0800, Po-Yu Chuang wrote:
+> One more question: how to deal with this? Add a local variable for the
+> 2nd argument?
+> 
+> 	ftmac100_set_receive_ring_base(priv,
+> 				       priv->descs_dma_addr + offsetof(struct ftmac100_descs, rxdes));
 
-Thomas
->> +        return ret;
->> +    }
->> +
->>       /* Disable until needed */
->>       gpio_direction_output(devkit8000_dvi_device.reset_gpio, 0);
->
-> WBR, Sergei
-> -- 
->
+That's one way, another is:
+
+	ftmac100_set_receive_ring_base(priv,
+ 				       priv->descs_dma_addr +
+				       offsetof(struct ftmac100_descs, rxdes));
+
+Another would be to change set_receive_ring_base to
+just pass priv and determine the dma address there:
+
+static void ftmac100_set_receive_ring_base(struct ftmac100 *priv)
+{
+	dma_addr_t addr;
+
+	addr = priv->descs_dma_addr + offsetof(struct ftmac100_descs, rxdes);
+	iowrite32(addr, priv->base + FTMAC100_OFFSET_RXR_BADR);
+}
+...
+	ftmac100_set_receive_ring_base(priv);
+
+Another is not to be overly adherent to 80 columns.
+
+Pick one that suits you.
+
+You chose to use a lot of single use, single line
+functions with descriptive names that use iowrite32 or
+return some flag.  I probably would have just used
+iowrite32 or tested the flag directly, but that's your
+choice and it's perfectly fine.
+
+There are a lot of coding choices that are readable and
+good.  There isn't and shouldn't be some mandate for some
+specific code appearance before inclusion or acceptance.
+
+checkpatch is just a style guide.  Ignore it and ignore
+me when you feel it's appropriate.  I won't mind.
+
+cheers, Joe
 
