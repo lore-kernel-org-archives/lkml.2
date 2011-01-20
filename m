@@ -1,104 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab1ATPlv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 10:41:51 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:54309 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755548Ab1ATPlt (ORCPT
+	id S1755939Ab1ATPmV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 10:42:21 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:52519 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755898Ab1ATPmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 10:41:49 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=WiVLZs9re64jvEk2YtodyxdvzoNM0v1DHFOyEDTNSBRT6woWw9LogSIDBIVewK4h2I
-         az7FPlJSjUTX0WioUcmEISo583miwPHpVzSlah4fmCfuzKUduGU2UIWM7gNsA0MevFBB
-         AapTqT4Av90aM+tQ3KdgHgxk9M6jiYNVYIxPk=
-Subject: Re: [PATCH v3] net: add Faraday FTMAC100 10/100 Ethernet driver
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhutchings@solarflare.com, joe@perches.com, dilinger@queued.net,
-        Po-Yu Chuang <ratbert@faraday-tech.com>
-In-Reply-To: <1295537418-2057-1-git-send-email-ratbert.chuang@gmail.com>
-References: <1295256060-2091-1-git-send-email-ratbert.chuang@gmail.com>
-	 <1295537418-2057-1-git-send-email-ratbert.chuang@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 Jan 2011 16:41:45 +0100
-Message-ID: <1295538105.2825.308.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 20 Jan 2011 10:42:19 -0500
+From: Thomas Weber <weber@corscience.de>
+To: linux-omap@vger.kernel.org
+Cc: Thomas Weber <weber@corscience.de>,
+        Tony Lindgren <tony@atomide.com> (maintainer:OMAP SUPPORT),
+        Russell King <linux@arm.linux.org.uk> (maintainer:ARM PORT),
+        linux-arm-kernel@lists.infradead.org (open list:ARM PORT),
+        linux-kernel@vger.kernel.org (open list),
+        Daniel Morsing <daniel.morsing@gmail.com>, charu@ti.com,
+        sshtylyov@mvista.com, manjugk@ti.com
+Subject: [PATCHv5] OMAP3: Devkit8000: Change lcd power pin
+Date: Thu, 20 Jan 2011 16:41:48 +0100
+Message-Id: <1295538108-26451-1-git-send-email-weber@corscience.de>
+X-Mailer: git-send-email 1.7.4.rc2
+X-Provags-ID: V02:K0:g+xTwATRCviBMGNwciFGgXxMxcK5/4LI3ZaiF15O3ri
+ GfEpGKGNQSWGpHhLgcxStdVZP7EwPrSxqZdY12Ia4Z6c93QDXL
+ xuII/Cz3Sur4soEfjI5IuhF/vfRAtTSyPfguJFr1/yWQ1xGWgB
+ iCtK5mP9KZ3qDqhgHjJpc4fPO9TMdByuxoAj2Zb2k38M/Hm/Zd
+ SyuVhejWWtJPcBSDkJiWA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 20 janvier 2011 à 23:30 +0800, Po-Yu Chuang a écrit :
+This patch fixes a wrongly used lcd enable pin.
 
-> +static bool ftmac100_tx_complete_packet(struct ftmac100 *priv)
-> +{
-> +	struct net_device *netdev = priv->netdev;
-> +	struct ftmac100_txdes *txdes;
-> +	struct sk_buff *skb;
-> +	dma_addr_t map;
-> +
-> +	if (priv->tx_pending == 0)
-> +		return false;
-> +
-> +	txdes = ftmac100_current_clean_txdes(priv);
-> +
-> +	if (ftmac100_txdes_owned_by_dma(txdes))
-> +		return false;
-> +
-> +	skb = ftmac100_txdes_get_skb(txdes);
-> +	map = ftmac100_txdes_get_dma_addr(txdes);
-> +
-> +	if (unlikely(ftmac100_txdes_excessive_collision(txdes) ||
-> +		     ftmac100_txdes_late_collision(txdes))) {
-> +		/*
-> +		 * packet transmitted to ethernet lost due to late collision
-> +		 * or excessive collision
-> +		 */
-> +		netdev->stats.tx_aborted_errors++;
-> +	} else {
-> +		netdev->stats.tx_packets++;
-> +		netdev->stats.tx_bytes += skb->len;
-> +	}
-> +
-> +	dma_unmap_single(priv->dev, map, skb_headlen(skb), DMA_TO_DEVICE);
-> +
-> +	dev_kfree_skb_irq(skb);
-> +
-> +	ftmac100_txdes_reset(txdes);
-> +
-> +	ftmac100_tx_clean_pointer_advance(priv);
-> +
-> +	priv->tx_pending--;
-> +	netif_wake_queue(netdev);
-> +
-> +	return true;
-> +}
-> +
-> +static void ftmac100_tx_complete(struct ftmac100 *priv)
-> +{
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&priv->tx_lock, flags);
-> +	while (ftmac100_tx_complete_packet(priv))
-> +		;
-> +	spin_unlock_irqrestore(&priv->tx_lock, flags);
-> +}
-> +
+The Devkit8000 uses twl4030_ledA configured as output gpio only for
+the lcd enable line. twl4030_gpio.1 is used through the generic
+gpio functions while ledA is used via low level twl4030 calls.
 
-I dont understand why you still block hard IRQS, after full NAPI
-conversion.
+This patch removes the low level calls and use the generic gpio functions
+for initialization and use of ledA. This patch also fixes a bug where the
+lcd would not power down when blanking.
 
-Now you run from NAPI, and softirq handler, are you sure you still need
-to block hard IRQ and tx_lock ?
+Further this patch fixes an indentation issue. The comment line uses
+eight whitespace and is replaced with a hard tab.
 
-It seems to me ftmac100_xmit() could only block softirqs (but they
-already are blocked by caller), so you could use spin_lock() from
-ftmac100_xmit()
+gpio_request + gpio_direction_output are replaced with gpio_request_one.
+The return value of gpio_request_one is used to set the value of the
+gpio to -EINVAL when unsuccessful, so that gpio_is_valid can detect the
+unsuccessful request. But already successful requested gpios are not freed.
 
+Reported-by: Daniel Morsing <daniel.morsing@gmail.com>
+Signed-off-by: Thomas Weber <weber@corscience.de>
+---
+Changes from v4:
+	Merge of two patches
+	Use of gpio_request_one instead of gpio_request + gpio_direction_output
+Changes from v3:
+	Use return value of gpio_request
+Changes from v2:
+	Fix indention => indentation
+	Better comment for removing low level functions used for twl4030 gpio
+Changes from v1:
+	Pull the indentation fix into this patch
+	Change the pin for lcd pwren	
+	
+ arch/arm/mach-omap2/board-devkit8000.c |   27 ++++++++++++++++-----------
+ 1 files changed, 16 insertions(+), 11 deletions(-)
 
+diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
+index a5eb955..e4c12fe 100644
+--- a/arch/arm/mach-omap2/board-devkit8000.c
++++ b/arch/arm/mach-omap2/board-devkit8000.c
+@@ -115,9 +115,6 @@ static struct omap2_hsmmc_info mmc[] = {
+ 
+ static int devkit8000_panel_enable_lcd(struct omap_dss_device *dssdev)
+ {
+-	twl_i2c_write_u8(TWL4030_MODULE_GPIO, 0x80, REG_GPIODATADIR1);
+-	twl_i2c_write_u8(TWL4030_MODULE_LED, 0x0, 0x0);
+-
+ 	if (gpio_is_valid(dssdev->reset_gpio))
+ 		gpio_set_value_cansleep(dssdev->reset_gpio, 1);
+ 	return 0;
+@@ -247,6 +244,8 @@ static struct gpio_led gpio_leds[];
+ static int devkit8000_twl_gpio_setup(struct device *dev,
+ 		unsigned gpio, unsigned ngpio)
+ {
++	int ret;
++
+ 	omap_mux_init_gpio(29, OMAP_PIN_INPUT);
+ 	/* gpio + 0 is "mmc0_cd" (input/IRQ) */
+ 	mmc[0].gpio_cd = gpio + 0;
+@@ -255,17 +254,23 @@ static int devkit8000_twl_gpio_setup(struct device *dev,
+ 	/* TWL4030_GPIO_MAX + 1 == ledB, PMU_STAT (out, active low LED) */
+ 	gpio_leds[2].gpio = gpio + TWL4030_GPIO_MAX + 1;
+ 
+-        /* gpio + 1 is "LCD_PWREN" (out, active high) */
+-	devkit8000_lcd_device.reset_gpio = gpio + 1;
+-	gpio_request(devkit8000_lcd_device.reset_gpio, "LCD_PWREN");
+-	/* Disable until needed */
+-	gpio_direction_output(devkit8000_lcd_device.reset_gpio, 0);
++	/* TWL4030_GPIO_MAX + 0 is "LCD_PWREN" (out, active high) */
++	devkit8000_lcd_device.reset_gpio = gpio + TWL4030_GPIO_MAX + 0;
++	ret = gpio_request_one(devkit8000_lcd_device.reset_gpio,
++			GPIOF_DIR_OUT | GPIOF_INIT_LOW, "LCD_PWREN");
++	if (ret < 0) {
++		devkit8000_lcd_device.reset_gpio = -EINVAL;
++		printk(KERN_ERR "Failed to request GPIO for LCD_PWRN\n");
++	}
+ 
+ 	/* gpio + 7 is "DVI_PD" (out, active low) */
+ 	devkit8000_dvi_device.reset_gpio = gpio + 7;
+-	gpio_request(devkit8000_dvi_device.reset_gpio, "DVI PowerDown");
+-	/* Disable until needed */
+-	gpio_direction_output(devkit8000_dvi_device.reset_gpio, 0);
++	ret = gpio_request_one(devkit8000_dvi_device.reset_gpio,
++			GPIOF_DIR_OUT | GPIOF_INIT_LOW, "DVI PowerDown");
++	if (ret < 0) {
++		devkit8000_dvi_device.reset_gpio = -EINVAL;
++		printk(KERN_ERR "Failed to request GPIO for DVI PowerDown\n");
++	}
+ 
+ 	return 0;
+ }
+-- 
+1.7.4.rc2
 
