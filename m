@@ -1,55 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056Ab1ATIYU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 03:24:20 -0500
-Received: from karen.lavabit.com ([72.249.41.33]:48130 "EHLO karen.lavabit.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753845Ab1ATIYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 03:24:19 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=lavabit; d=lavabit.com;
-  b=FfLYbR8Fo/cfiIcSTsyCgoo6GrClLkH6lz6P6lxf9/2uavFR/xbp0Wf0IYWWuCRDwvnrj03bjfIPUurVHwxMENW//9vIdeXFTyOSwnRQerXsL5nripA1nh7rTgyTGZ8Wz9w25+WSKiu6cDsexlGGqNBw9OkBrESQl++UItZyXg0=;
-  h=Message-ID:Date:Subject:From:To:User-Agent:MIME-Version:Content-Type:Content-Transfer-Encoding;
-Message-ID: <42804.86.19.224.122.1295511859.squirrel@lavabit.com>
-Date: Thu, 20 Jan 2011 03:24:19 -0500 (EST)
-Subject: Rail Model font for coders
-From: hare_krsna_hare_krsna_krsna_krsna_hare_hare_hare_rama_hare_rama_rama_rama_hare_hare@lavabit.com
-To: linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.13
+	id S1755144Ab1ATIZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 03:25:56 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:63083 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753845Ab1ATIZy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 03:25:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
+Date: Thu, 20 Jan 2011 09:25:54 +0100
+Message-ID: <AANLkTinNoYbDe5huY4_Q6YidbWxqXqVWbVP2_7o-=P3W@mail.gmail.com>
+Subject: [PATCH V2] tracing, perf : add cpu hotplug trace events
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
+        fweisbec@gmail.com, rostedt@goodmis.org, amit.kucheria@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a font for coders called Rail Model, please include it with Linux
-distributions:
+Please find below a new proposal for adding trace events for cpu hotplug.
+The goal is to measure the latency of each part (kernel, architecture)
+and also to trace the cpu hotplug activity with other power events. I
+have tested these traces events on an arm platform.
 
-http://code.google.com/p/railmodel/downloads/detail?name=RailModelFont.zip&can=2&q=
+Changes since previous version:
+-Use cpu_hotplug for trace name
+-Define traces for kernel core and arch parts only
+-Use DECLARE_EVENT_CLASS and DEFINE_EVENT
+-Use proper indentation
 
-Copyright: Copyright (c) 2010, Copyright (c) Holder for the commissioned
-(Unicode 0915) devanagri glyph design as the new 11th english and european
-glyph and the cancellation of the previous k / K is (His Divine Grace)
-Prabhupada, Founder Acharya & Permanent Sole Initiator of the Panca Tattva
-/ Caitanya Mahaprabhu / Vaisnava Movement, the permanent person not the
-estate, state, representative/s or representative organisation/s etc. All
-Rights Reserved. (full and also other copyright information at
-accompanying font files)
+Subject: [PATCH] cpu hotplug tracepoint
 
-Description: November 20 2010 (Hrant H Papazian) Version 1.1 Ð k/K
-(Unicode glyphs /006B and /004B) exchanged through Unicode glyph / uni0915
-Ð released as
+this patch adds new events for cpu hotplug tracing
+ * plug/unplug sequence
+ * core and architecture latency measurements
 
-N: Hrant H Papazian
-E: hpapazian.....
-W: http://www.themicrofoundry.com
-D: Designer Ð Unicode glyph /uni0915 upper and lower case
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.com>
+---
+ include/trace/events/cpu_hotplug.h |  117 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 117 insertions(+), 0 deletions(-)
+ create mode 100644 include/trace/events/cpu_hotplug.h
 
-
-
-Best,
-
-
-Mee&#2325;u  Meeku
-
-
+diff --git a/include/trace/events/cpu_hotplug.h
+b/include/trace/events/cpu_hotplug.h
+new file mode 100644
+index 0000000..efccc70
+--- /dev/null
++++ b/include/trace/events/cpu_hotplug.h
+@@ -0,0 +1,117 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM cpu_hotplug
++
++#if !defined(_TRACE_CPU_HOTPLUG_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_CPU_HOTPLUG_H
++
++#include <linux/tracepoint.h>
++
++DECLARE_EVENT_CLASS(cpu_hotplug,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid),
++
++	TP_STRUCT__entry(
++		__field(	unsigned int,	cpuid	)
++	),
++
++	TP_fast_assign(
++		__entry->cpuid = cpuid;
++	),
++
++	TP_printk("cpuid=%u", __entry->cpuid)
++);
++
++/* Core function of cpu hotplug */
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_down_start,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_down_end,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_up_start,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_up_end,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++/* Architecture function for cpu hotplug */
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_disable_start,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_disable_end,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_die_start,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_die_end,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_wait_die_start,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_wait_die_end,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_up_start,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_up_end,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++#endif /* _TRACE_CPU_HOTPLUG_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+-- 
+1.7.1
