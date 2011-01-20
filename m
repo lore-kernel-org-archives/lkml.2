@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373Ab1ATKnp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 05:43:45 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:46693 "EHLO
+	id S1755387Ab1ATKrZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 05:47:25 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:57132 "EHLO
 	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071Ab1ATKnn convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752071Ab1ATKrX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 05:43:43 -0500
-Subject: Re: [PATCH -v10 0/4] Lock-less list
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Huang Ying <ying.huang@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
+	Thu, 20 Jan 2011 05:47:23 -0500
+Subject: Re: percpu related boot crash on x86
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Chris Mason <chris.mason@oracle.com>
-In-Reply-To: <20110119165247.cca2f434.akpm@linux-foundation.org>
-References: <1295245019-7816-1-git-send-email-ying.huang@intel.com>
-	 <20110119135546.bb7e8f62.akpm@linux-foundation.org>
-	 <1295484358.15213.25.camel@yhuang-dev>
-	 <20110119165247.cca2f434.akpm@linux-foundation.org>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <4D37F2C9.8000906@kernel.org>
+References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
+	 <20110119120200.GA1057@elte.hu> <1295441307.28776.15.camel@laptop>
+	 <AANLkTi=gxMkzO63RAWiuFt9vp57dvi4d=TaT=NmuvyY2@mail.gmail.com>
+	 <20110119131329.GB14096@mtj.dyndns.org> <20110119205353.GA14810@elte.hu>
+	 <20110119231116.GA3896@elte.hu>  <4D37F2C9.8000906@kernel.org>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Thu, 20 Jan 2011 11:44:07 +0100
-Message-ID: <1295520247.28776.152.camel@laptop>
+Date: Thu, 20 Jan 2011 11:47:47 +0100
+Message-ID: <1295520467.28776.153.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-19 at 16:52 -0800, Andrew Morton wrote:
-> On Thu, 20 Jan 2011 08:45:58 +0800
-> Huang Ying <ying.huang@intel.com> wrote:
+On Thu, 2011-01-20 at 10:31 +0200, Pekka Enberg wrote:
+>    if (!irqs_disabled())
 > 
-> > On Thu, 2011-01-20 at 05:55 +0800, Andrew Morton wrote:
-> > > I'm trying to remember why we're talking about this.
-> > > 
-> > > You had an ACPI-based "hardware error reporting" thing.  And that
-> > > required an nmi-context memory allocator.  And that required a
-> > > "lockless" list implementation.
-> > > 
-> > > Yes?
-> > 
-> > Yes.  But the "lockless" list implementation is general, it can be used
-> > by other part of kernel too,  such as irq_work and xlist in
-> > net/rds/xlist.h in the patchset.
-> 
-> Well.  Lots of things are general but that doesn't mean we toss them
-> into the kernel when we already have plenty of infrastructure to handle
-> that sort of thing.
-> 
-> otoh, hoisting xlist.h out of net/rds and making it generally available
-> is a good thing.
-> 
-> otooh, net/rds/ probably didn't need xlist at all and could have used
-> existing general code.
-> 
-> So...  I'd say that unless and until the NMI-context allocator is
-> merged, the case for merging the lockless list code is a bit marginal? 
-> Or have you identified other code sites which could use llist and which
-> would gain some benefit from migrating?
+> guard around the debugging code to make vfree() always work with IRQs 
+> disabled. 
 
-In fact, I have a patch ready and waiting to revert the whole irq_work
-stuff, that too seems to be a superfluous generalization.
+That won't be sufficient, __purge_vmap_area_lazy() needs to call
+flush_tlb_kernel_range() occasionally.
+
+There really is a good reason vmalloc()/vfree() don't work with
+interrupts disabled.
+
+
