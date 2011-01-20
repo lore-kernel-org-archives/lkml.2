@@ -1,97 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab1ATG51 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 01:57:27 -0500
-Received: from ebb06.tieto.com ([131.207.168.38]:49064 "EHLO ebb06.tieto.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754876Ab1ATG50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 01:57:26 -0500
-X-AuditID: 83cfa826-b7bdbae000001a50-a9-4d37dcd42b39
-Date: Thu, 20 Jan 2011 15:05:13 +0800
-From: Yang Ruirui <ruirui.r.yang@tieto.com>
-To: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Hao Wu <hao.wu@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Alek Du <alek.du@intel.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] usb langwell otg: use notifier chain of struct
- otg_transceiver
-Message-ID: <20110120070513.GA24956@darkstar>
+	id S1755230Ab1ATG6E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 01:58:04 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56843 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755033Ab1ATG6B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 01:58:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=ChjYu1LYN4oE+QZxna0gB0eS0xK1e8QFmsAY5VBScj57ASdo01YwBi7jphO+WL6ViC
+         uAQqn+BvwTLx+RMpplyquxh/wX/Wf30OMQuOsV7SHgwdGjH+auGZzfCTU/CUR4S77H7j
+         dMQMXP3eXMeZ6Y9f58f0sYVmF5ElMRyreNq5I=
+Message-ID: <4D37DCFE.3080004@gmail.com>
+Date: Thu, 20 Jan 2011 07:58:06 +0100
+From: Thomas Weber <thomas.weber.linux@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101220 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Govindraj <govindraj.ti@gmail.com>
+CC: Thomas Weber <weber@corscience.de>,
+        "G, Manjunath Kondaiah" <manjugk@ti.com>, linux-omap@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>,
+        "Govindraj.R" <govindraj.raja@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrei Emeltchenko <andrei.emeltchenko@nokia.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] OMAP: Enable Magic SysRq on serial console ttyOx
+References: <1295426461-12459-1-git-send-email-weber@corscience.de> <AANLkTin0-joNuqxqL79j0wqPk_A5mtAgzEY=X=PeH=+C@mail.gmail.com> <20110119130049.GB9365@m-desktop> <4D36E7CC.5090303@corscience.de> <AANLkTikjdukQ+kUUR7N11rZ5b=Xd=xLb0-chMrbp5BQ6@mail.gmail.com>
+In-Reply-To: <AANLkTikjdukQ+kUUR7N11rZ5b=Xd=xLb0-chMrbp5BQ6@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use notifier chain in otg_transceiver instead of own notifier chain.
+Am 19.01.2011 14:58, schrieb Govindraj:
+> On Wed, Jan 19, 2011 at 7:01 PM, Thomas Weber <weber@corscience.de> wrote:
+>> Am 19.01.2011 14:00, schrieb G, Manjunath Kondaiah:
+>>> On Wed, Jan 19, 2011 at 03:01:39PM +0530, Govindraj wrote:
+>>>> On Wed, Jan 19, 2011 at 2:11 PM, Thomas Weber <weber@corscience.de> wrote:
+>>>>> Magic SysRq key is not working for OMAP on new serial
+>>>>> console ttyOx because SUPPORT_SYSRQ is not defined
+>>>>> for omap-serial.
+>>>>>
+>>>>> This patch defines SUPPORT_SYSRQ in omap-serial and
+>>>>> enables handling of Magic SysRq character.
+>>>>>
+>>>>> Signed-off-by: Thomas Weber <weber@corscience.de>
+>>>>
+>>>> Looks fine to me.
+>>>>
+>>>> Acked-by: Govindraj.R <govindraj.raja@ti.com>
+>>> I tried to use SysRq key on minicom after applying this patch, it looks
+>>> like it is not triggering sysrq event.
+>>>
+>>> Am I missing anything?
+>>>
+>>> -Manjunath
+>>> --
+>> Hello Manjunath,
+>>
+>> Do you have CONFIG_MAGIC_SYSRQ enabled?
+>> Magic SysRq key in Kernel Hacking
+>>
+>> I tested it on Devkit8000 (beagle board clone).
+>>
+> 
+> re-setting lsr_break_flag to 0 in receive chars is causing issues
+> in getting sysrq key break sequence on omap-serial.c
+> 
+> Manju,
+> 
+> can you try this change on your environment.
+> With below change works for me on 3430SDP/4430SDP.
+> key sequence I checked.
+> [alt + b + t]  => shows trace of tasks running.
+> [alt + b + b] => system reboot.
+> 
+> 
+> diff --git a/drivers/serial/omap-serial.c b/drivers/serial/omap-serial.c
+> index 1201eff..6df623e 100644
+> --- a/drivers/serial/omap-serial.c
+> +++ b/drivers/serial/omap-serial.c
+> @@ -20,6 +20,10 @@
+>   * this driver as required for the omap-platform.
+>   */
+> 
+> +#if defined(CONFIG_SERIAL_OMAP_CONSOLE) && defined(CONFIG_MAGIC_SYSRQ)
+> +#define SUPPORT_SYSRQ
+> +#endif
+> +
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+>  #include <linux/console.h>
+> @@ -190,7 +194,6 @@ static inline void receive_chars(struct
+> uart_omap_port *up, int *status)
+>                         if (up->port.line == up->port.cons->index) {
+>                                 /* Recover the break flag from console xmit */
+>                                 lsr |= up->lsr_break_flag;
+> -                               up->lsr_break_flag = 0;
+>                         }
+>  #endif
+>                         if (lsr & UART_LSR_BI)
+> 
+> 
+> --
+> Thanks,
+> Govindraj.R
+> --
 
-This patch depends on another patch which change otg_transceiver
-notifier chain to atomic one, please see:
-https://lkml.org/lkml/2011/1/19/72
+Hello,
 
-Signed-off-by: Yang Ruirui <ruirui.r.yang@tieto.com>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
----
- drivers/usb/otg/langwell_otg.c    |    7 +++----
- include/linux/usb/intel_mid_otg.h |   17 -----------------
- 2 files changed, 3 insertions(+), 21 deletions(-)
+both version works for me.
 
---- linux-2.6.orig/drivers/usb/otg/langwell_otg.c	2010-12-15 15:43:36.000000000 +0800
-+++ linux-2.6/drivers/usb/otg/langwell_otg.c	2011-01-20 13:33:28.346040564 +0800
-@@ -2124,12 +2124,11 @@ static int langwell_otg_probe(struct pci
- 	}
- 
- 	init_timer(&lnw->hsm_timer);
--	ATOMIC_INIT_NOTIFIER_HEAD(&lnw->iotg.iotg_notifier);
-+	ATOMIC_INIT_NOTIFIER_HEAD(&lnw->iotg.otg.notifier);
- 
- 	lnw->iotg_notifier.notifier_call = langwell_otg_iotg_notify;
- 
--	retval = intel_mid_otg_register_notifier(&lnw->iotg,
--						&lnw->iotg_notifier);
-+	retval = otg_register_notifier(&lnw->iotg.otg, &lnw->iotg_notifier);
- 	if (retval) {
- 		dev_dbg(lnw->dev, "Failed to register notifier\n");
- 		goto err;
-@@ -2187,7 +2186,7 @@ static void langwell_otg_remove(struct p
- 		flush_workqueue(lnw->qwork);
- 		destroy_workqueue(lnw->qwork);
- 	}
--	intel_mid_otg_unregister_notifier(&lnw->iotg, &lnw->iotg_notifier);
-+	otg_unregister_notifier(&lnw->iotg.otg, &lnw->iotg_notifier);
- 	langwell_otg_free_timers();
- 
- 	/* disable OTGSC interrupt as OTGSC doesn't change in reset */
---- linux-2.6.orig/include/linux/usb/intel_mid_otg.h	2010-12-15 15:43:38.000000000 +0800
-+++ linux-2.6/include/linux/usb/intel_mid_otg.h	2011-01-20 13:23:48.809375229 +0800
-@@ -117,9 +117,6 @@ struct intel_mid_otg_xceiv {
- 	/* ops to access ulpi */
- 	struct iotg_ulpi_access_ops	ulpi_ops;
- 
--	/* atomic notifier for interrupt context */
--	struct atomic_notifier_head	iotg_notifier;
--
- 	/* start/stop USB Host function */
- 	int	(*start_host)(struct intel_mid_otg_xceiv *iotg);
- 	int	(*stop_host)(struct intel_mid_otg_xceiv *iotg);
-@@ -163,18 +160,4 @@ struct intel_mid_otg_xceiv *otg_to_mid_x
- #define MID_OTG_NOTIFY_CLIENTADD	0x0009
- #define MID_OTG_NOTIFY_CLIENTREMOVE	0x000a
- 
--static inline int
--intel_mid_otg_register_notifier(struct intel_mid_otg_xceiv *iotg,
--				struct notifier_block *nb)
--{
--	return atomic_notifier_chain_register(&iotg->iotg_notifier, nb);
--}
--
--static inline void
--intel_mid_otg_unregister_notifier(struct intel_mid_otg_xceiv *iotg,
--				struct notifier_block *nb)
--{
--	atomic_notifier_chain_unregister(&iotg->iotg_notifier, nb);
--}
--
- #endif /* __INTEL_MID_OTG_H */
+Thomas
+
