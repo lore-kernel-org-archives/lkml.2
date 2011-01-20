@@ -1,323 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab1ATFwB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 00:52:01 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:43547 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755100Ab1ATFv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 00:51:57 -0500
-Date: Thu, 20 Jan 2011 16:51:48 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for January 20
-Message-Id: <20110120165148.2853e1cd.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__20_Jan_2011_16_51_48_+1100_n+m/hg_A_g0eDGeZ"
+	id S1755273Ab1ATFz0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 00:55:26 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:36466 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755239Ab1ATFzZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 00:55:25 -0500
+Date: Thu, 20 Jan 2011 00:55:23 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Chris Mason <chris.mason@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH -v10 0/4] Lock-less list
+Message-ID: <20110120055523.GA27974@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295245019-7816-1-git-send-email-ying.huang@intel.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 00:28:46 up 57 days, 10:31,  1 user,  load average: 0.05, 0.01,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__20_Jan_2011_16_51_48_+1100_n+m/hg_A_g0eDGeZ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Huang,
 
-Hi all,
+I just found out about your lockless linked-list implementation, it looks
+interesting. Paul McKenney and myself have created a similar implementation for
+userspace within the Userspace RCU project, you might want to have a look (it's
+LGPLv2.1).
 
-Changes since 20110119:
+One point about semantic: a singly-linked list for which you can either delete
+the first element or all the elements should probably be called a stack ? I'm
+therefore going to refer to "push/pop" in this email rather than "add/delete".
 
-Dropped tree: xen
+We've got two linked-list stack implementations in the userspace RCU tree:
 
-Changed tree: gcl-current -> 52xx-and-virtex-current
+One has wait-free push, and blocking pop. Useful if you can afford to block when
+you pop from the list. There is no restriction on the number of concurrent
+push/pop to/from the list. The code is at:
 
-New trees: devicetree-current and spi-current
+http://git.lttng.org/?p=userspace-rcu.git;a=blob;f=urcu/wfstack-static.h
 
-The m68knommu tree lost its conflict.
+The other has lock-free push and pop, no restriction on the number of concurrent
+push/pop, but uses a clever trick that ensures that the cmpxchg loop will never
+see a re-used pointer by using a RCU read-side to protect from memory reclaim.
+It therefore requires that the memory used for the list must only be freed after
+a RCU grace period. The code is at:
 
-The rr tree lost its build failure.
+http://git.lttng.org/?p=userspace-rcu.git;a=blob;f=urcu/rculfstack-static.h
 
-The voltage tree lost its conflict.
+We could probably extend this to allow popping all stack entries in one go, but
+I haven't given it much thought. 
 
-The swiotlb-xen tree lost its conflict.
+We also have queue implementations (enqueue at head, dequeue at tail). The first
+has wait-free enqueue/blocking dequeue and the second has lock-free
+enqueue/dequeue. We use the wait-free enqueue/blocking dequeue queue to push
+RCU callbacks when call_rcu() is executed from real-time threads, and we then
+dequeue the callbacks to execute with a blocking thread. The lock-free
+enqueue/dequeue queue also needs a reference count on the "dummy" node it keeps
+in addition to use RCU to delay memory reclamation (see comments in the code).
 
-----------------------------------------------------------------------------
+wait-free enqueue/blocking dequeue:
 
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
+http://git.lttng.org/?p=userspace-rcu.git;a=blob;f=urcu/wfqueue-static.h
 
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
+lock-free enqueue/dequeue (beware, the refcounting makes the API less elegant
+than the other implementations):
 
-Below is a summary of the state of the merge.
+http://git.lttng.org/?p=userspace-rcu.git;a=blob;f=urcu/rculfqueue-static.h
 
-We are up to 186 trees (counting Linus' and 28 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
+Hoping this might be helpful to you,
 
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
+Mathieu
 
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging 52xx-and-virtex-current/powerpc/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/rc-fixes
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging devicetree-current/devicetree/merge
-Merging spi-current/spi/merge
-Merging arm/devel
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging linux-spec/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-CONFLICT (content): Merge conflict in arch/arm/mach-tegra/timer.c
-Merging ux500-core/ux500-core
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/for-next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/powerpc/next
-Merging galak/next
-Merging s390/features
-Merging sh/sh-latest
-Merging rmobile/rmobile-latest
-Merging sparc/master
-Merging tile/master
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging vfs-scale/vfs-scale-working
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-CONFLICT (rename/rename): Rename "arch/arm/mach-pxa/include/mach/pxa2xx_spi=
-.h"->"arch/arm/mach-s5pv310/include/mach/dma.h" in branch "HEAD" rename "ar=
-ch/arm/mach-pxa/include/mach/pxa2xx_spi.h"->"include/linux/spi/pxa2xx_spi.h=
-" in "bjdooks-i2c/next-i2c"
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/devices.c
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/poodle.c
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/pxa27x.c
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/pxa3xx.c
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/trizeps4.c
-CONFLICT (content): Merge conflict in arch/arm/mach-pxa/z2.c
-$ git rm -f arch/arm/mach-pxa/include/mach/pxa2xx_spi.h
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-Merging wireless/master
-Merging bluetooth/master
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging sound-asoc/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-Merging input-mt/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging selinux/master
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging suspend/linux-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging catalin/for-next
-Merging alacrity/linux-next
-CONFLICT (content): Merge conflict in drivers/Makefile
-CONFLICT (content): Merge conflict in include/linux/Kbuild
-CONFLICT (content): Merge conflict in lib/Kconfig
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/devicetree/next
-Merging spi/spi/next
-Merging tip/auto-latest
-Merging rcu/rcu/next
-Merging oprofile/for-next
-Merging swiotlb-xen/master
-Merging xen-pvhvm/linux-next
-CONFLICT (content): Merge conflict in arch/x86/include/asm/xen/page.h
-Merging edac-amd/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-Merging usb/usb-next
-Merging staging/staging-next
-Merging slabh/slabh
-Merging bkl-trivial/trivial
-Merging bkl-llseek/llseek
-Merging bkl-vfs/vfs
-Merging bkl-config/config
-CONFLICT (content): Merge conflict in arch/powerpc/kernel/setup_64.c
-CONFLICT (delete/modify): drivers/staging/stradis/Kconfig deleted in HEAD a=
-nd modified in bkl-config/config. Version bkl-config/config of drivers/stag=
-ing/stradis/Kconfig left in tree.
-CONFLICT (content): Merge conflict in fs/nfsd/nfs4state.c
-CONFLICT (content): Merge conflict in include/linux/hardirq.h
-CONFLICT (content): Merge conflict in include/linux/smp_lock.h
-$ git rm -f drivers/staging/stradis/Kconfig
-Merging irqflags/master
-Merging cleancache/linux-next
-CONFLICT (content): Merge conflict in fs/ocfs2/super.c
-CONFLICT (content): Merge conflict in fs/super.c
-CONFLICT (content): Merge conflict in include/linux/fs.h
-CONFLICT (content): Merge conflict in mm/Kconfig
-Merging scsi-post-merge/merge-base:master
-$ git checkout scsi-post-merge/master
-
---Signature=_Thu__20_Jan_2011_16_51_48_+1100_n+m/hg_A_g0eDGeZ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNN810AAoJEDMEi1NhKgbsaecH/RH7mtyxNf3NeJAhvV4I/PK/
-4fCwmdh63ssQpW/7sERHpVx/33M8JkxyWteP6SzKVX3PHJJVRhv/jCWio0UFdLfv
-lnhiN1GXgwadSpU1TTv/CIpqYKm62WOHTjD++PtBdMDHe+dH0483nb9RLncT9CIt
-fXfBge8iGju3q2hA75bTYB5xQXcl3p+N2ZKO4fUXsaJnag/AmTsuc3IBcVlZ4qrW
-yFan3LxceZ44nwCqpra2maFSpF5vKDZ1wfYUgtI+EktWP75H2P2rOJ2bVVAMJ49K
-kESpU8XSOMtUCRr/WBPXNjoq5cn4swE6TsSXgN9LCIUg8VmrAsFn6X47f97dYmg=
-=T5fS
------END PGP SIGNATURE-----
-
---Signature=_Thu__20_Jan_2011_16_51_48_+1100_n+m/hg_A_g0eDGeZ--
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
