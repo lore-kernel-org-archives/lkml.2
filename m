@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab1ATMPP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 07:15:15 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:55350 "EHLO mx2.mail.elte.hu"
+	id S1755506Ab1ATMR6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 07:17:58 -0500
+Received: from smtp.nokia.com ([147.243.1.48]:45911 "EHLO mgw-sa02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755430Ab1ATMPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 07:15:13 -0500
-Date: Thu, 20 Jan 2011 13:14:55 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: huang ying <huang.ying.caritas@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Huang Ying <ying.huang@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH -v10 0/4] Lock-less list
-Message-ID: <20110120121455.GA7680@elte.hu>
-References: <1295245019-7816-1-git-send-email-ying.huang@intel.com>
- <20110119135546.bb7e8f62.akpm@linux-foundation.org>
- <1295484358.15213.25.camel@yhuang-dev>
- <20110119165247.cca2f434.akpm@linux-foundation.org>
- <1295520247.28776.152.camel@laptop>
- <AANLkTimR6xd1PxCP6jmuNwFkANrGPdTf2wpiGsBXGpKx@mail.gmail.com>
- <1295522876.28776.158.camel@laptop>
- <AANLkTin3_NuGG_E0Juy7=1Q7PcMJ6id1ZU-Gngfp_=dg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTin3_NuGG_E0Juy7=1Q7PcMJ6id1ZU-Gngfp_=dg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1755455Ab1ATMR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 07:17:56 -0500
+Subject: Re: [alsa-devel] [PATCH v4 1/3] ECI: input: introduce ECI
+ accessory input driver
+From: Tapio Vihuri <tapio.vihuri@nokia.com>
+Reply-To: tapio.vihuri@nokia.com
+To: ext Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: randy.dunlap@oracle.com, alsa-devel@alsa-project.org,
+        samu.p.onkalo@nokia.com, peter.ujfalusi@nokia.com,
+        linux-kernel@vger.kernel.org, ilkka.koskinen@nokia.com
+In-Reply-To: <20110120081117.GB2498@core.coreip.homeip.net>
+References: <1295438816-27937-1-git-send-email-tapio.vihuri@nokia.com>
+	 <1295438816-27937-2-git-send-email-tapio.vihuri@nokia.com>
+	 <20110119174412.GB29107@core.coreip.homeip.net>
+	 <1295510248.26257.7.camel@dell>
+	 <20110120081117.GB2498@core.coreip.homeip.net>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Nokia Oyj
+Date: Thu, 20 Jan 2011 14:17:33 +0200
+Message-ID: <1295525853.26257.21.camel@dell>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* huang ying <huang.ying.caritas@gmail.com> wrote:
-
-> > But will all that stuff be accepted? Please stop sending infrastructure bits and 
-> > focus on your larger RAS picture, once you have consensus on that from all 
-> > parties involved, then, and only then, does it make sense to submit everything, 
-> > including infrastructure.
+On Thu, 2011-01-20 at 00:11 -0800, ext Dmitry Torokhov wrote:
+> > How about KE_VSW case ? Shouldn't it be in the sparse_keymap_setup
+> {}
+> > also ?
+> > 
 > 
-> I am not sending hardware error reporting infrastructure.  As far as I know, Linus 
-> and Andrew suggest to use printk for hardware error reporting.  And now, I just 
-> try to write APEI driver and reporting hardware error with printk.  Is it 
-> acceptable?  Do you have some other idea about hardware error reporting?
+> Indeed. Does the patch below fix it?
+> 
 
-Erm, how could you possible have missed the perf based RAS daemon work of Boris, 
-which we've pointed out about half a dozen times already?
+Hi.
 
-It's somewhat annoying that you simply ignore repeated feedback and feign ignorance. 
-Reminds me of someone :-)
+Yes it does, thank you.
 
-	Ingo
+Patch working (as it obviously should) OK in my environment, so
+
+
+> Thanks.
+> 
+> -- 
+> Dmitry
+> 
+> Input: sparse-keymap - fix KEY_VSW handling in sparse_keymap_setup
+> 
+> From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> 
+> We were forgetting to set up device capabilities for KEY_VSW entries.
+> 
+> Reported-by: Tapio Vihuri <tapio.vihuri@nokia.com> 
+> Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+
+Tested-by: Tapio Vihuri <tapio.vihuri@nokia.com> 
+
+> ---
+> 
+>  drivers/input/sparse-keymap.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> 
+> diff --git a/drivers/input/sparse-keymap.c
+> b/drivers/input/sparse-keymap.c
+> index a29a7812..7729e54 100644
+> --- a/drivers/input/sparse-keymap.c
+> +++ b/drivers/input/sparse-keymap.c
+> @@ -201,6 +201,7 @@ int sparse_keymap_setup(struct input_dev *dev,
+>                         break;
+>  
+>                 case KE_SW:
+> +               case KE_VSW:
+>                         __set_bit(EV_SW, dev->evbit);
+>                         __set_bit(entry->sw.code, dev->swbit);
+>                         break;
+> _______________________________________________
+> Alsa-devel mailing list
+> Alsa-devel@alsa-project.org
+> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel 
+-- 
+Tapsa
+050 4876788
+
