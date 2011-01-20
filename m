@@ -1,58 +1,565 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481Ab1ATQxY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 11:53:24 -0500
-Received: from dsl78-143-211-26.in-addr.fast.co.uk ([78.143.211.26]:50016 "EHLO
-	ben-laptop" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752039Ab1ATQxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 11:53:23 -0500
-Message-ID: <4D38687A.6040307@fluff.org>
-Date: Thu, 20 Jan 2011 16:53:14 +0000
-From: Ben Dooks <ben-linux@fluff.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1752369Ab1ATQyi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 11:54:38 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:39056 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088Ab1ATQyh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 11:54:37 -0500
+Date: Thu, 20 Jan 2011 09:54:30 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Thomas Chou <thomas@wytron.com.tw>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
+        devicetree-discuss@lists.ozlabs.org,
+        spi-devel-general@lists.sourceforge.net,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [PATCH v2] spi: add OpenCores tiny SPI driver
+Message-ID: <20110120165430.GA24445@angua.secretlab.ca>
+References: <1294800109-31603-1-git-send-email-thomas@wytron.com.tw>
+ <1295249542-26743-1-git-send-email-thomas@wytron.com.tw>
 MIME-Version: 1.0
-To: Paul Mundt <lethal@linux-sh.org>
-CC: Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-sh@vger.kernel.org, Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Locking in the clk API
-References: <201101111016.42819.jeremy.kerr@canonical.com>	<201101111744.59712.jeremy.kerr@canonical.com>	<20110111101314.GA774@linux-sh.org>	<201101111830.18597.jeremy.kerr@canonical.com> <20110111121816.GB774@linux-sh.org>
-In-Reply-To: <20110111121816.GB774@linux-sh.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295249542-26743-1-git-send-email-thomas@wytron.com.tw>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/11 12:18, Paul Mundt wrote:
-> On Tue, Jan 11, 2011 at 06:30:18PM +0800, Jeremy Kerr wrote:
->> Hi Paul,
->>
->>> No, the sleeping clock case is and always will be a corner case, and I
->>> have no interest in pretending otherwise. On SH we have hundreds of
->>> clocks that are all usable in the atomic context and perhaps less than a
->>> dozen that aren't (and even in those cases much of the PLL negotiation is
->>> handled in hardware so there's never any visibility for the lock-down
->>> from the software side, other architectures also have similar behaviour).
->>
->> I'm not too worried about the corner-cases on the *implementation* side, more 
->> the corner-cases on the API side: are we seeing more users of the API that 
->> require an atomic clock, or more that don't care?
->>
-> Again, you are approaching it from the angle that an atomic clock is a
-> special requirement rather than the default behaviour. Sleeping for
-> lookup, addition, and deletion are all quite acceptable, but
-> enable/disable pairs have always been intended to be usable from atomic
-> context. Anyone that doesn't count on that fact is either dealing with
-> special case clocks (PLLs, root clocks, etc.) or simply hasn't bothered
-> implementing any sort of fine grained runtime power management for their
-> platform.
+On Mon, Jan 17, 2011 at 03:32:22PM +0800, Thomas Chou wrote:
+> This patch adds support of OpenCores tiny SPI driver.
+> 
+> http://opencores.org/project,tiny_spi
+> 
+> Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
+> ---
+> v2 minor cleanup, same as Grant suggest for spi_altera.
+> 
+>  drivers/spi/Kconfig             |    6 +
+>  drivers/spi/Makefile            |    1 +
+>  drivers/spi/oc_tiny_spi.c       |  422 +++++++++++++++++++++++++++++++++++++++
 
-No, the API has always been defined to ensure clk_enable() returns once
-a clock is running and usable, so if the case where there are PLLs in
-the way is inconvenient to you, then sorry but they exist already.
+Rename files to spi_oc_tiny.c
+
+>  include/linux/spi/oc_tiny_spi.h |   14 ++
+>  4 files changed, 443 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/spi/oc_tiny_spi.c
+>  create mode 100644 include/linux/spi/oc_tiny_spi.h
+> 
+> diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+> index c58d81b..46a2ddc 100644
+> --- a/drivers/spi/Kconfig
+> +++ b/drivers/spi/Kconfig
+> @@ -227,6 +227,12 @@ config SPI_FSL_ESPI
+>  	  From MPC8536, 85xx platform uses the controller, and all P10xx,
+>  	  P20xx, P30xx,P40xx, P50xx uses this controller.
+>  
+> +config SPI_OC_TINY_SPI
+> +	tristate "OpenCores tiny SPI"
+> +	select SPI_BITBANG
+> +	help
+> +	  This is the driver for OpenCores tiny SPI master controller.
+> +
+>  config SPI_OMAP_UWIRE
+>  	tristate "OMAP1 MicroWire"
+>  	depends on ARCH_OMAP1
+> diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
+> index 10e516a..6a2ae28 100644
+> --- a/drivers/spi/Makefile
+> +++ b/drivers/spi/Makefile
+> @@ -25,6 +25,7 @@ obj-$(CONFIG_SPI_GPIO)			+= spi_gpio.o
+>  obj-$(CONFIG_SPI_IMX)			+= spi_imx.o
+>  obj-$(CONFIG_SPI_LM70_LLP)		+= spi_lm70llp.o
+>  obj-$(CONFIG_SPI_PXA2XX)		+= pxa2xx_spi.o
+> +obj-$(CONFIG_SPI_OC_TINY_SPI)		+= oc_tiny_spi.o
+>  obj-$(CONFIG_SPI_OMAP_UWIRE)		+= omap_uwire.o
+>  obj-$(CONFIG_SPI_OMAP24XX)		+= omap2_mcspi.o
+>  obj-$(CONFIG_SPI_OMAP_100K)		+= omap_spi_100k.o
+> diff --git a/drivers/spi/oc_tiny_spi.c b/drivers/spi/oc_tiny_spi.c
+> new file mode 100644
+> index 0000000..ead7a09
+> --- /dev/null
+> +++ b/drivers/spi/oc_tiny_spi.c
+> @@ -0,0 +1,422 @@
+> +/*
+> + * OpenCores tiny SPI master driver
+> + *
+> + * http://opencores.org/project,tiny_spi
+> + *
+> + * Copyright (C) 2011 Thomas Chou <thomas@wytron.com.tw>
+> + *
+> + * Based on spi_s3c24xx.c, which is:
+> + * Copyright (c) 2006 Ben Dooks
+> + * Copyright (c) 2006 Simtec Electronics
+> + *	Ben Dooks <ben@simtec.co.uk>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/init.h>
+> +#include <linux/spinlock.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/delay.h>
+> +#include <linux/errno.h>
+> +#include <linux/err.h>
+> +#include <linux/clk.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/spi/spi.h>
+> +#include <linux/spi/spi_bitbang.h>
+> +#include <linux/spi/oc_tiny_spi.h>
+> +#include <linux/io.h>
+> +#include <linux/gpio.h>
+> +#include <linux/of.h>
+> +
+> +#define DRV_NAME "oc_tiny_spi"
+> +
+> +#define TINY_SPI_RXDATA 0
+> +#define TINY_SPI_TXDATA 4
+> +#define TINY_SPI_STATUS 8
+> +#define TINY_SPI_CONTROL 12
+> +#define TINY_SPI_BAUD 16
+> +
+> +#define TINY_SPI_STATUS_TXE 0x1
+> +#define TINY_SPI_STATUS_TXR 0x2
+> +
+> +struct tiny_spi {
+> +	/* bitbang has to be first */
+> +	struct spi_bitbang bitbang;
+> +	struct completion done;
+> +
+> +	void __iomem *base;
+> +	int irq;
+> +	unsigned int freq;
+> +	unsigned int baudwidth;
+> +	unsigned int baud;
+> +	unsigned int speed_hz;
+> +	unsigned int mode;
+> +	unsigned int len;
+> +	unsigned int txc, rxc;
+> +	const u8 *txp;
+> +	u8 *rxp;
+> +};
+> +
+> +static inline struct tiny_spi *tiny_spi_to_hw(struct spi_device *sdev)
+> +{
+> +	return spi_master_get_devdata(sdev->master);
+> +}
+> +
+> +static unsigned int tiny_spi_baud(struct spi_device *spi, unsigned int hz)
+> +{
+> +	struct tiny_spi *hw = tiny_spi_to_hw(spi);
+> +
+> +	return min(DIV_ROUND_UP(hw->freq, hz * 2), (1U << hw->baudwidth)) - 1;
+> +}
+> +
+> +static void tiny_spi_chipselect(struct spi_device *spi, int is_active)
+> +{
+> +	gpio_set_value(spi->chip_select,
+> +		       (spi->mode & SPI_CS_HIGH) ? is_active : !is_active);
+> +}
+> +
+> +static int tiny_spi_setup_transfer(struct spi_device *spi,
+> +				   struct spi_transfer *t)
+> +{
+> +	struct tiny_spi *hw = tiny_spi_to_hw(spi);
+> +	unsigned int baud = hw->baud;
+> +
+> +	if (t) {
+> +		if (t->speed_hz && t->speed_hz != hw->speed_hz)
+> +			baud = tiny_spi_baud(spi, t->speed_hz);
+> +	}
+> +	writel(baud, hw->base + TINY_SPI_BAUD);
+> +	writel(hw->mode, hw->base + TINY_SPI_CONTROL);
+> +	return 0;
+> +}
+> +
+> +static int tiny_spi_setup(struct spi_device *spi)
+> +{
+> +	struct tiny_spi *hw = tiny_spi_to_hw(spi);
+> +
+> +	if (spi->max_speed_hz != hw->speed_hz) {
+> +		hw->speed_hz = spi->max_speed_hz;
+> +		hw->baud = tiny_spi_baud(spi, hw->speed_hz);
+> +	}
+> +	hw->mode = spi->mode & (SPI_CPOL | SPI_CPHA);
+> +	return 0;
+> +}
+> +
+> +#ifndef CONFIG_TINY_SPI_IDLE_VAL
+> +# define CONFIG_TINY_SPI_IDLE_VAL 0x00
+> +#endif
+
+Do you really want this as a Kconfig symbol?  Looks like something
+that should be configured in pdata or the device tree.
+
+> +
+> +static int tiny_spi_txrx_bufs(struct spi_device *spi, struct spi_transfer *t)
+> +{
+> +	struct tiny_spi *hw = tiny_spi_to_hw(spi);
+> +	const u8 *txp = t->tx_buf;
+> +	u8 *rxp = t->rx_buf;
+> +	unsigned int i;
+> +
+> +	if (hw->irq >= 0) {
+> +		/* use intrrupt driven data transfer */
+> +		hw->len = t->len;
+> +		hw->txp = t->tx_buf;
+> +		hw->rxp = t->rx_buf;
+> +		hw->txc = 0;
+> +		hw->rxc = 0;
+> +		init_completion(&hw->done);
+> +
+> +		/* send the first byte */
+> +		if (t->len > 1) {
+> +			writeb(hw->txp ? *hw->txp++ : CONFIG_TINY_SPI_IDLE_VAL,
+> +			       hw->base + TINY_SPI_TXDATA);
+> +			hw->txc++;
+> +			writeb(hw->txp ? *hw->txp++ : CONFIG_TINY_SPI_IDLE_VAL,
+> +			       hw->base + TINY_SPI_TXDATA);
+> +			hw->txc++;
+> +			writeb(TINY_SPI_STATUS_TXR, hw->base + TINY_SPI_STATUS);
+> +		} else {
+> +			writeb(hw->txp ? *hw->txp++ : CONFIG_TINY_SPI_IDLE_VAL,
+> +			       hw->base + TINY_SPI_TXDATA);
+> +			hw->txc++;
+> +			writeb(TINY_SPI_STATUS_TXE, hw->base + TINY_SPI_STATUS);
+> +		}
+> +
+> +		wait_for_completion(&hw->done);
+> +	} else if (txp && rxp) {
+> +		/* we need to tighten the transfer loop */
+> +		writeb(*txp++, hw->base + TINY_SPI_TXDATA);
+> +		if (t->len > 1) {
+> +			writeb(*txp++, hw->base + TINY_SPI_TXDATA);
+> +			for (i = 2; i < t->len; i++) {
+> +				u8 rx, tx = *txp++;
+> +				while (!(readb(hw->base + TINY_SPI_STATUS) &
+> +					 TINY_SPI_STATUS_TXR))
+> +					cpu_relax();
+> +				rx = readb(hw->base + TINY_SPI_TXDATA);
+> +				writeb(tx, hw->base + TINY_SPI_TXDATA);
+> +				*rxp++ = rx;
+> +			}
+> +			while (!(readb(hw->base + TINY_SPI_STATUS) &
+> +				 TINY_SPI_STATUS_TXR))
+> +				cpu_relax();
+> +			*rxp++ = readb(hw->base + TINY_SPI_TXDATA);
+> +		}
+> +		while (!(readb(hw->base + TINY_SPI_STATUS) &
+> +			 TINY_SPI_STATUS_TXE))
+> +			cpu_relax();
+> +		*rxp++ = readb(hw->base + TINY_SPI_RXDATA);
+> +	} else if (rxp) {
+> +		writeb(CONFIG_TINY_SPI_IDLE_VAL, hw->base + TINY_SPI_TXDATA);
+> +		if (t->len > 1) {
+> +			writeb(CONFIG_TINY_SPI_IDLE_VAL,
+> +			       hw->base + TINY_SPI_TXDATA);
+> +			for (i = 2; i < t->len; i++) {
+> +				u8 rx;
+> +				while (!(readb(hw->base + TINY_SPI_STATUS) &
+> +					 TINY_SPI_STATUS_TXR))
+> +					cpu_relax();
+> +				rx = readb(hw->base + TINY_SPI_TXDATA);
+> +				writeb(CONFIG_TINY_SPI_IDLE_VAL,
+> +				       hw->base + TINY_SPI_TXDATA);
+> +				*rxp++ = rx;
+> +			}
+> +			while (!(readb(hw->base + TINY_SPI_STATUS) &
+> +				 TINY_SPI_STATUS_TXR))
+> +				cpu_relax();
+> +			*rxp++ = readb(hw->base + TINY_SPI_TXDATA);
+> +		}
+> +		while (!(readb(hw->base + TINY_SPI_STATUS) &
+> +			 TINY_SPI_STATUS_TXE))
+> +			cpu_relax();
+> +		*rxp++ = readb(hw->base + TINY_SPI_RXDATA);
+> +	} else if (txp) {
+> +		writeb(*txp++, hw->base + TINY_SPI_TXDATA);
+> +		if (t->len > 1) {
+> +			writeb(*txp++, hw->base + TINY_SPI_TXDATA);
+> +			for (i = 2; i < t->len; i++) {
+> +				u8 tx = *txp++;
+> +				while (!(readb(hw->base + TINY_SPI_STATUS) &
+> +					 TINY_SPI_STATUS_TXR))
+> +					cpu_relax();
+> +				writeb(tx, hw->base + TINY_SPI_TXDATA);
+> +			}
+> +		}
+> +		while (!(readb(hw->base + TINY_SPI_STATUS) &
+> +			 TINY_SPI_STATUS_TXE))
+> +			cpu_relax();
+> +	} else {
+> +		writeb(CONFIG_TINY_SPI_IDLE_VAL, hw->base + TINY_SPI_TXDATA);
+> +		if (t->len > 1) {
+> +			writeb(CONFIG_TINY_SPI_IDLE_VAL,
+> +			       hw->base + TINY_SPI_TXDATA);
+> +			for (i = 2; i < t->len; i++) {
+> +				while (!(readb(hw->base + TINY_SPI_STATUS) &
+> +					 TINY_SPI_STATUS_TXR))
+> +					cpu_relax();
+> +				writeb(CONFIG_TINY_SPI_IDLE_VAL,
+> +				       hw->base + TINY_SPI_TXDATA);
+> +			}
+> +		}
+> +		while (!(readb(hw->base + TINY_SPI_STATUS) &
+> +			 TINY_SPI_STATUS_TXE))
+> +			cpu_relax();
+> +	}
+> +	return t->len;
+> +}
+
+I see a bunch of while loops in this function with no exit condition
+if something goes badly with the hardware.  Also, this driver is going
+to chew up *a lot* of cpu cycles when not using irqs.  Consider
+putting the polled work into a tasklet instead of blindly spinning.
+It will actually make the driver simpler because the irq and non-irq
+cases become very similar.
+
+> +
+> +static irqreturn_t tiny_spi_irq(int irq, void *dev)
+> +{
+> +	struct tiny_spi *hw = dev;
+> +
+> +	writeb(0, hw->base + TINY_SPI_STATUS);
+> +	if (hw->rxc + 1 == hw->len) {
+> +		if (hw->rxp)
+> +			*hw->rxp++ = readb(hw->base + TINY_SPI_RXDATA);
+> +		hw->rxc++;
+> +		complete(&hw->done);
+> +	} else {
+> +		if (hw->rxp)
+> +			*hw->rxp++ = readb(hw->base + TINY_SPI_TXDATA);
+> +		hw->rxc++;
+> +		if (hw->txc < hw->len) {
+> +			writeb(hw->txp ? *hw->txp++ : CONFIG_TINY_SPI_IDLE_VAL,
+> +			       hw->base + TINY_SPI_TXDATA);
+> +			hw->txc++;
+> +			writeb(TINY_SPI_STATUS_TXR,
+> +			       hw->base + TINY_SPI_STATUS);
+> +		} else {
+> +			writeb(TINY_SPI_STATUS_TXE,
+> +			       hw->base + TINY_SPI_STATUS);
+> +		}
+> +	}
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +#ifdef CONFIG_OF
+> +static int __devinit tiny_spi_of_probe(struct platform_device *pdev,
+> +				       struct tiny_spi *hw)
+> +{
+> +	const __be32 *val;
+> +
+> +	hw->bitbang.master->dev.of_node = pdev->dev.of_node;
+> +	val = of_get_property(pdev->dev.of_node, "baud-width", NULL);
+
+'baud-width'?
+
+These properties need to be documented.  See below.
+
+> +	if (val)
+> +		hw->baudwidth = be32_to_cpup(val);
+> +	val = of_get_property(pdev->dev.of_node, "clock-frequency", NULL);
+> +	if (val)
+> +		hw->freq = be32_to_cpup(val);
+> +	return 0;
+> +}
+> +#else
+> +static int __devinit tiny_spi_of_probe(struct platform_device *pdev,
+> +				       struct tiny_spi *hw)
+> +{
+> +	return 0;
+> +}
+> +#endif
+> +
+> +static int __devinit tiny_spi_probe(struct platform_device *pdev)
+> +{
+> +	struct tiny_spi_platform_data *platp = pdev->dev.platform_data;
+> +	struct tiny_spi *hw;
+> +	struct spi_master *master;
+> +	struct resource *res;
+> +	int err = 0;
+> +
+> +	master = spi_alloc_master(&pdev->dev, sizeof(struct tiny_spi));
+> +	if (master == NULL) {
+> +		dev_err(&pdev->dev, "No memory for spi_master\n");
+> +		err = -ENOMEM;
+> +		goto err_no_mem;
+> +	}
+> +
+> +	/* setup the master state. */
+> +	master->bus_num = pdev->id;
+> +	master->num_chipselect = 255;
+> +	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH;
+> +	master->setup = tiny_spi_setup;
+> +
+> +	hw = spi_master_get_devdata(master);
+> +	platform_set_drvdata(pdev, hw);
+> +
+> +	/* setup the state for the bitbang driver */
+> +	hw->bitbang.master = spi_master_get(master);
+> +	if (hw->bitbang.master == NULL) {
+> +		dev_err(&pdev->dev, "Cannot get device\n");
+> +		err = -ENODEV;
+> +		goto err_no_dev;
+> +	}
+> +	hw->bitbang.setup_transfer = tiny_spi_setup_transfer;
+> +	hw->bitbang.chipselect = tiny_spi_chipselect;
+> +	hw->bitbang.txrx_bufs = tiny_spi_txrx_bufs;
+> +
+> +	/* find and map our resources */
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (res == NULL) {
+> +		dev_err(&pdev->dev, "Cannot get IORESOURCE_MEM\n");
+> +		err = -ENOENT;
+> +		goto err_no_iores;
+> +	}
+> +	hw->base = ioremap(res->start, (res->end - res->start) + 1);
+> +	if (hw->base == 0) {
+> +		dev_err(&pdev->dev, "Cannot map IO\n");
+> +		err = -ENXIO;
+> +		goto err_no_iomap;
+> +	}
+> +	/* irq is optional */
+> +	hw->irq = platform_get_irq(pdev, 0);
+> +	if (hw->irq >= 0) {
+> +		init_completion(&hw->done);
+> +		err = request_irq(hw->irq, tiny_spi_irq, 0, pdev->name, hw);
+> +		if (err) {
+> +			dev_err(&pdev->dev, "Cannot claim IRQ\n");
+> +			goto err_no_irq;
+> +		}
+> +	}
+> +	/* find platform data */
+> +	if (platp) {
+> +		hw->freq = platp->freq;
+> +		hw->baudwidth = platp->baudwidth;
+> +	} else {
+> +		err = tiny_spi_of_probe(pdev, hw);
+> +		if (err)
+> +			goto err_no_of;
+> +	}
+> +
+> +	/* register our spi controller */
+> +	err = spi_bitbang_start(&hw->bitbang);
+> +	if (err) {
+> +		dev_err(&pdev->dev, "Failed to register SPI master\n");
+> +		goto err_register;
+> +	}
+> +	dev_info(&pdev->dev, "base %p, irq %d\n", hw->base, hw->irq);
+> +
+> +	return 0;
+> +
+> +err_register:
+> +err_no_of:
+> +	if (hw->irq >= 0)
+> +		free_irq(hw->irq, hw);
+> +err_no_irq:
+> +	iounmap(hw->base);
+> +err_no_iomap:
+> +err_no_iores:
+> +	spi_master_put(master);
+> +err_no_mem:
+> +err_no_dev:
+> +	return err;
+> +}
+> +
+> +static int __devexit tiny_spi_remove(struct platform_device *dev)
+> +{
+> +	struct tiny_spi *hw = platform_get_drvdata(dev);
+> +	struct spi_master *master = hw->bitbang.master;
+> +
+> +	spi_bitbang_stop(&hw->bitbang);
+> +
+> +	if (hw->irq >= 0)
+> +		free_irq(hw->irq, hw);
+> +	iounmap(hw->base);
+> +
+> +	platform_set_drvdata(dev, NULL);
+> +	spi_master_put(master);
+> +	return 0;
+> +}
+> +
+> +#ifdef CONFIG_OF
+> +static struct of_device_id oc_tiny_spi_match[] = {
+> +	{
+> +		.compatible = "opencores,oc_tiny_spi",
+
+If this is a soft core, then there should be a version number of some
+sort on the compatible value.  Also, please use dash '-' instead of
+underscore '_' in compatible values.  Also, for all of these new
+bindings, they need to be documented.  Please add documentation to
+Documentation/powerpc/dts-bindings (yes, I know, this is not
+for powerpc, but that is the established directory.  I'll move it to a
+better location soon).
+
+Finally, one nitpick.  For conciseness, most of_device_id tables are
+written in the form:
+
+static struct of_device_id oc_tiny_spi_match[] = {
+	{ .compatible = "opencores,oc_tiny_spi", }, },
+	{},
+}
+
+> +MODULE_DEVICE_TABLE(of, oc_tiny_spi_match);
+> +#endif
+> +
+> +static struct platform_driver tiny_spidrv = {
+> +	.remove = __devexit_p(tiny_spi_remove),
+> +	.driver = {
+> +		.name = DRV_NAME,
+> +		.owner = THIS_MODULE,
+> +		.pm = NULL,
+> +#ifdef CONFIG_OF
+> +		.of_match_table = oc_tiny_spi_match,
+> +#endif
+> +	},
+> +};
+> +
+> +static int __init tiny_spi_init(void)
+> +{
+> +	return platform_driver_probe(&tiny_spidrv, tiny_spi_probe);
+> +}
+> +module_init(tiny_spi_init);
+
+Please use platform_driver_register, and put your probe function into
+the platform_driver structure.
+
+> +
+> +static void __exit tiny_spi_exit(void)
+> +{
+> +	platform_driver_unregister(&tiny_spidrv);
+> +}
+> +module_exit(tiny_spi_exit);
+> +
+> +MODULE_DESCRIPTION("OpenCores tiny SPI driver");
+> +MODULE_AUTHOR("Thomas Chou <thomas@wytron.com.tw>");
+> +MODULE_LICENSE("GPL");
+> +MODULE_ALIAS("platform:" DRV_NAME);
+> diff --git a/include/linux/spi/oc_tiny_spi.h b/include/linux/spi/oc_tiny_spi.h
+> new file mode 100644
+> index 0000000..83de49d
+> --- /dev/null
+> +++ b/include/linux/spi/oc_tiny_spi.h
+> @@ -0,0 +1,14 @@
+> +#ifndef _LINUX_SPI_OC_TINY_SPI_H
+> +#define _LINUX_SPI_OC_TINY_SPI_H
+> +
+> +/**
+> + * struct tiny_spi_platform_data - platform data of the OpenCores tiny SPI
+> + * @freq:	input clock freq to the core.
+> + * @baudwidth:	baud rate divider width of the core.
+> + */
+> +struct tiny_spi_platform_data {
+> +	uint freq;
+> +	uint baudwidth;
+> +};
+> +
+> +#endif /* _LINUX_SPI_OC_TINY_SPI_H */
+> -- 
+> 1.7.3.4
+> 
