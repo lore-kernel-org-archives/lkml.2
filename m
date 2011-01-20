@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab1ATLXe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 06:23:34 -0500
-Received: from casper.infradead.org ([85.118.1.10]:57891 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752916Ab1ATLX3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 06:23:29 -0500
-Subject: Re: [PATCH 1/2] lockdep: move early boot local IRQ enable/disable
- status to init/main.c
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Tejun Heo <tj@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>,
+	id S1755359Ab1ATLZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 06:25:57 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:41210 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755153Ab1ATLZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 06:25:56 -0500
+Date: Thu, 20 Jan 2011 12:25:41 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: "Anvin, H Peter" <h.peter.anvin@intel.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        "Lu, Hongjiu" <hongjiu.lu@intel.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-In-Reply-To: <20110120111149.GD6036@htj.dyndns.org>
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: Linux 2.6.38-rc1 doesn't boot
+Message-ID: <20110120112541.GA23661@elte.hu>
 References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
-	 <20110119120200.GA1057@elte.hu> <20110120110635.GB6036@htj.dyndns.org>
-	 <20110120111149.GD6036@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 20 Jan 2011 12:23:51 +0100
-Message-ID: <1295522631.28776.155.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+ <20110119073905.GA1652@gentoo.trippels.de>
+ <20110119074902.GA1670@gentoo.trippels.de>
+ <1295424766.1949.879.camel@sli10-conroe>
+ <4D36A759.60704@intel.com>
+ <20110119090904.GA4927@elte.hu>
+ <1295489286.1949.882.camel@sli10-conroe>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295489286.1949.882.camel@sli10-conroe>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-20 at 12:11 +0100, Tejun Heo wrote:
-> Hello, guys.
-> 
-> These two patches remove both warnings.  The first warning was
-> completely spurious.  The second lockdep one was triggered by
-> on_each_cpu() enabling local IRQ too early.
-> 
-> I don't think percpu allocator itself malfunctioned.  There was no
-> allocation failure.  It whines when percpu allocation fails but didn't
-> in the log.  Other than calling vfree() early triggering the above
-> condition, it worked okay.
-> 
-> So, it's either the early enabling of local IRQ by on_each_cpu()
-> breaking something in the IRQ subsystem or something different.  Ingo,
-> can you please see whether these two patches cure the panic too?
 
-Why not use something like: system_state != SYSTEM_RUNNING ?
+* Shaohua Li <shaohua.li@intel.com> wrote:
+
+> it's not a build failure, without it, my i386 kernel can't boot
+> actually.
+
+Please try hpa's patch in this thread on top of very latest (today's) -git or latest 
+-tip:
+
+   http://people.redhat.com/mingo/tip.git/README
+
+Does that result in a booting system? That way we can avoid most of the linker 
+script madness.
+
+Thanks,
+
+	Ingo
