@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242Ab1ATE7E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 23:59:04 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48079 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755100Ab1ATE7C (ORCPT
+	id S1755299Ab1ATE7f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 23:59:35 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:44793 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755225Ab1ATE7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 23:59:02 -0500
-Subject: Re: [patch 32/37] parisc: Use generic irq Kconfig
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Kyle McMartin <kyle@mcmartin.ca>
-In-Reply-To: <alpine.LFD.2.00.1101192314090.3211@localhost6.localdomain6>
-References: <20110119205258.462759212@linutronix.de>
-	 <20110119210840.424269590@linutronix.de>
-	 <1295474722.10978.43.camel@mulgrave.site>
-	 <alpine.LFD.2.00.1101192314090.3211@localhost6.localdomain6>
+	Wed, 19 Jan 2011 23:59:33 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+6Wm5EOXi6huIkcIPUnnLXXyVxQgPQT65QHW4TKr
+	VQbLUKkTUV4PFt
+Subject: Re: Bug in scheduler when using rt_mutex
+From: Mike Galbraith <efault@gmx.de>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, samu.p.onkalo@nokia.com,
+        mingo@elte.hu,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        tglx <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <AANLkTinQ4sczEwZYCk1_tLmeJyjyXj4TVoSZbjg+KiRq@mail.gmail.com>
+References: <1295275365.12840.13.camel@kolo>
+	 <1295280032.30950.128.camel@laptop> <1295339012.11678.35.camel@kolo>
+	 <AANLkTikXf-OMEBx-UZktxooOs+YqUkSE9doyEZopjzOx@mail.gmail.com>
+	 <1295357746.30950.681.camel@laptop>
+	 <AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
+	 <1295430276.30950.1414.camel@laptop> <1295433498.30950.1482.camel@laptop>
+	 <1295436632.30950.1542.camel@laptop> <1295441881.11678.41.camel@kolo>
+	 <1295442799.11678.43.camel@kolo> <1295443822.28776.23.camel@laptop>
+	 <AANLkTinQ4sczEwZYCk1_tLmeJyjyXj4TVoSZbjg+KiRq@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 Jan 2011 22:58:58 -0600
-Message-ID: <1295499538.12205.670.camel@mulgrave.site>
+Date: Thu, 20 Jan 2011 05:59:28 +0100
+Message-ID: <1295499568.8027.30.camel@marge.simson.net>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-19 at 23:16 +0100, Thomas Gleixner wrote:
-> On Wed, 19 Jan 2011, James Bottomley wrote:
+On Thu, 2011-01-20 at 12:18 +0800, Yong Zhang wrote:
+> On Wed, Jan 19, 2011 at 9:30 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > +static void switched_from_fair(struct rq *rq, struct task_struct *p)
+> > +{
+> > +       struct sched_entity *se = &p->se;
+> > +       struct cfs_rq *cfs_rq = cfs_rq_of(se);
+> > +
+> > +       /*
+> > +        * Ensure the task's vruntime is normalized, so that when its
+> > +        * switched back to the fair class the enqueue_entity(.flags=0) will
+> > +        * do the right thing.
+> > +        *
+> > +        * If it was on_rq, then the dequeue_entity(.flags=0) will already
+> > +        * have normalized the vruntime, if it was !on_rq, then only when
+> > +        * the task is sleeping will it still have non-normalized vruntime.
+> > +        */
+> > +       if (!se->on_rq && p->state != TASK_RUNNING)
+> > +               se->vruntime -= cfs_rq->min_vruntime;
 > 
-> > On Wed, 2011-01-19 at 21:49 +0000, Thomas Gleixner wrote:
-> > > plain text document attachment (parisc-use-generic-irq-Kconfig.patch)
-> > > No functional change.
-> > 
-> > Not quite true ... you take out GENERIC_HARDIRQS but select
-> > HAVE_GENERIC_HARDIRQS ... is that right?
-> 
-> HAVE_GENERIC_HARDIRQS enables the Kconfig file in kernel/irq/
+> Here it's possible that se->vruntime is little than cfs_rq->min_vruntime.
 
-Ah, OK, thanks.
+The idea of normalizing is to preserve the offset, so the task can be
+enqueued at this same offset, regardless of movement.
 
-> > > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> > > Cc: Kyle McMartin <kyle@mcmartin.ca>
-> > 
-> > Plus, it doesn't apply:
-> > 
-> > Hunk #1 FAILED at 12.
-> > Hunk #2 FAILED at 65.
-> > 2 out of 2 hunks FAILED -- saving rejects to file
-> > arch/parisc/Kconfig.rej
-> > 
-> > It looks like it was made before we did our generic irq conversion in
-> > the 2.6.36 merge window.
-> 
-> You meant 38 window :)
+For sleepers, we can't usually do this until enqueue time, lest their
+sleep time be unaccountable.  Here, we have to normalize, so the task's
+sleep stops from the vantage point of fair_class upon class exit, and
+either resumes where it left off upon re-entry, or the task is enqueued
+at it's last offset as usual for runnable tasks.
 
-No ... it went in when Kyle was maintainer ... so that's at least 37 or
-before.
-
->  Patch is against 38-rc1 but depends on [patch
-> 24/37] genirq: Remove __do_IRQ in this very same series.
-
-Ah, great ... missed that one.  With this it all seems to work, so you
-can add my ack to the parisc piece.
-
-James
-
+	-Mike
 
