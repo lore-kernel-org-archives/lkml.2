@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab1ATHWb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 02:22:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34015 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752406Ab1ATHWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 02:22:30 -0500
-Message-ID: <4D37E452.7030404@suse.de>
-Date: Thu, 20 Jan 2011 08:29:22 +0100
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
+	id S1753874Ab1ATH36 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 02:29:58 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:65029 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088Ab1ATH34 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 02:29:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=JC1ll4m3c5IP2P9HwIcU3+ctw35tijA/t74rQniAyM9Nd2pG+cbNZjqvYpjAUh+kir
+         vAvWTtHPM1CppL7brMJKyLHu88vxWNUjcN9BmZaRSYzq4Ek6MII2CRj4OaC3niDVvtPc
+         dwHCCxPkCNBerYFjfMWYLYoXHcYoMgmSMx2hU=
+Date: Wed, 19 Jan 2011 23:29:48 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Trilok Soni <tsoni@codeaurora.org>
+Cc: riyer@nvidia.com, pavel@ucw.cz, shubhrajyoti@ti.com, ccross@android.com,
+        konkers@android.com, olof@lixom.net, achew@nvidia.com,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH v7] input: tegra-kbc - Add tegra keyboard driver
+Message-ID: <20110120072948.GA30522@core.coreip.homeip.net>
+References: <1295485917-21278-1-git-send-email-riyer@nvidia.com>
+ <4D37E265.9060304@codeaurora.org>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, osst-users@lists.sourceforge.net,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>
-Subject: Re: [PATCH 08/17][trivial] scsi: Remove unnecessary casts of void
- ptr returning alloc function return values
-References: <alpine.LNX.2.00.1011082334400.23697@swampdragon.chaosbits.net> <alpine.LNX.2.00.1101191526410.26685@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1101191526410.26685@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D37E265.9060304@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2011 03:27 PM, Jiri Kosina wrote:
-> On Tue, 9 Nov 2010, Jesper Juhl wrote:
+On Thu, Jan 20, 2011 at 12:51:09PM +0530, Trilok Soni wrote:
+> Hi Rakesh,
 > 
->> Hi,
->>
->> The [vk][cmz]alloc(_node) family of functions return void pointers which
->> it's completely unnecessary/pointless to cast to other pointer types since
->> that happens implicitly.
->>
->> This patch removes such casts from drivers/scsi/
->>
->>
->> Signed-off-by: Jesper Juhl <jj@chaosbits.net>\
-Acked-by: Hannes Reinecke <hare@suse.de>
+> On 1/20/2011 6:41 AM, riyer@nvidia.com wrote:
+> > From: Rakesh Iyer <riyer@nvidia.com>
+> > 
+> > This patch adds support for the internal matrix keyboard controller for
+> > Nvidia Tegra platforms.
+> > 
+> > Signed-off-by: Rakesh Iyer <riyer@nvidia.com>
+> > ---
+> > Fixed the stupid loop variable change.
+> > Fixed some code styling problems reported by checkpatch.pl.
+> > 
+> 
+> Thanks a ton for creating quick revisions :)
+> 
+> >  arch/arm/mach-tegra/include/mach/kbc.h |   61 +++
+> >  drivers/input/keyboard/Kconfig         |   10 +
+> >  drivers/input/keyboard/Makefile        |    1 +
+> >  drivers/input/keyboard/tegra-kbc.c     |  727 ++++++++++++++++++++++++++++++++
+> >  4 files changed, 799 insertions(+), 0 deletions(-)
+> >  create mode 100644 arch/arm/mach-tegra/include/mach/kbc.h
+> >  create mode 100644 drivers/input/keyboard/tegra-kbc.c
+> > 
+> > diff --git a/arch/arm/mach-tegra/include/mach/kbc.h b/arch/arm/mach-tegra/include/mach/kbc.h
+> > new file mode 100644
+> > index 0000000..60d646c
+> > --- /dev/null
+> > +++ b/arch/arm/mach-tegra/include/mach/kbc.h
+> > @@ -0,0 +1,61 @@
+> > +/*
+> > + * Platform definitions for tegra-kbc keyboard input driver
+> > + *
+> > + * Copyright (c) 2010, NVIDIA Corporation.
+> 
+> Wearing my legal hat. You might want to do 2010-2011 ?
 
-Cheers,
+OK, Rakesh, if you want copyright adjusted please shout and I can fix it
+up locally.
 
-Hannes
+Trilok, I understand you are happy, right? Can I put you down as
+reviewed-by?
+
+Thanks.
+
 -- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: Markus Rex, HRB 16746 (AG Nürnberg)
+Dmitry
