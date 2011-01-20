@@ -1,38 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab1ATLfR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 06:35:17 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:52814 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755056Ab1ATLfO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 06:35:14 -0500
-Date: Thu, 20 Jan 2011 22:35:04 +1100
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/i915: Dont kick-off hangcheck after a DRI interrupt
-Message-ID: <20110120113504.GA4737@gondor.apana.org.au>
-References: <20110120070508.GA2345@gondor.apana.org.au> <1295517361-15825-1-git-send-email-chris@chris-wilson.co.uk> <20110120101010.GA4299@gondor.apana.org.au> <0d30dc$kqbkiv@orsmga001.jf.intel.com>
+	id S1755476Ab1ATLf5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 06:35:57 -0500
+Received: from shutemov.name ([188.40.19.243]:43024 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755056Ab1ATLfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 06:35:53 -0500
+Date: Thu, 20 Jan 2011 13:35:52 +0200
+From: "Kirill A. Shutemov" <kas@openvz.org>
+To: Rob Landley <rlandley@parallels.com>
+Cc: "Kirill A. Shutemov" <kas@openvz.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        containers@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 00/16] make rpc_pipefs be mountable multiple time
+Message-ID: <20110120113552.GB24349@shutemov.name>
+References: <1295012954-7769-1-git-send-email-kas@openvz.org>
+ <4D343658.1020205@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <0d30dc$kqbkiv@orsmga001.jf.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4D343658.1020205@parallels.com>
+User-Agent: Mutt/1.5.20 (2010-08-04)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 11:00:25AM +0000, Chris Wilson wrote:
->
-> Except that i915_hangcheck_elapsed should not be called from DRI code
-> paths, the whole error recovery code only works with GEM (we can't recover
-> the hardware if it is being poked directly by "userspace").
+On Mon, Jan 17, 2011 at 06:30:16AM -0600, Rob Landley wrote:
+> On 01/14/2011 07:48 AM, Kirill A. Shutemov wrote:
+> > Prepare nfs/sunrpc stack to use multiple instances of rpc_pipefs.
+> > Only for client for now.
+> 
+> Ok, Google is being really unhelpful here.
 
-Oh I see what you mean.  Yes that should do the trick.
+It's better if you read the code. :)
+> 
+> What is rpc_pipefs for?  What uses it, and to do what exactly?  Is it
+> used by nfs server code, or by the client code, or both?  Is it a way
+> for userspace to talk to the kernel, or for the kernel to talk to
+> itself?  Is it used at mount time, or during filesystem operation?
 
-Thanks!
+Ok, It try to answer. Please correct me, if I'm wrong.
+
+rpc_pipefs is a userland/kernel interface (I don't see kernel-kernel
+usecases, but it's possible, I guess).
+There is client dir (nfs/clntX) in rpc_pipefs for every sunrpc client.
+Both client and server (see fs/nfsd/nfs4callback.c) can create sunrpc
+client. So we rpc_pipefs on both side.
+rpc_pipefs uses not only on mount time. See old idmapper, for example.
+
+> I'm interested in giving this patch series a much more thorough review,
+> but I can't figure out what the subsystem it's modifying actually _is_.
+> 
+> (Maybe this is something to do with filesystems/nfs/rpc-cache.txt?)
+> 
+> Rob
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+ Kirill A. Shutemov
