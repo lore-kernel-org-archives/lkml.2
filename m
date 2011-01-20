@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab1ATU0B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 15:26:01 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:55103 "EHLO e9.ny.us.ibm.com"
+	id S1754656Ab1ATUac (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 15:30:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60410 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754402Ab1ATU0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 15:26:00 -0500
-Subject: sshd issues with 2.6.38-rc1
-From: john stultz <johnstul@us.ibm.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: apw@canonical.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 Jan 2011 12:20:42 -0800
-Message-ID: <1295554842.2998.79.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1753404Ab1ATUab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 15:30:31 -0500
+Date: Thu, 20 Jan 2011 21:30:30 +0100
+From: Jan Kara <jack@suse.cz>
+To: Davidlohr Bueso <dave@gnu.org>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] quota: return -ENOMEM when memory allocation fails
+Message-ID: <20110120203030.GC19797@quack.suse.cz>
+References: <1295548325.2089.12.camel@offworld>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295548325.2089.12.camel@offworld>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just an FYI: I'm having problems sshing to a machine I just updated to
-2.6.38-rc1. The machine is running Ubuntu 10.10, and and 2.6.37 with the
-same config doesn't seem to have a problem.
+On Thu 20-01-11 15:32:05, Davidlohr Bueso wrote:
+> From: Davidlohr Bueso <dave@gnu.org>
+  Thanks. Applied.
 
-The box is always pingable. But when I ssh in from a client, it just
-hangs before authenticating. 
+								Honza
 
-In the dmesg, on both kernels, I see:
-sshd (1852): /proc/1852/oom_adj is deprecated, please
-use /proc/1852/oom_score_adj instead.
-
-Using ssh -vvv I get all the way to:
-
-debug1: SSH2_MSG_NEWKEYS received
-debug1: Roaming not allowed by server
-debug1: SSH2_MSG_SERVICE_REQUEST sent
-debug2: service_accept: ssh-userauth
-debug1: SSH2_MSG_SERVICE_ACCEPT received
-debug2: key: <blah blah>
-
-With ps, I see:
-root  ...  Ss ...  sshd: [accepted]
-sshd  ...  S  ...  sshd: [net]
-
-
-Anyone have a clue? Otherwise I'll try bisecting it down.
-
-thanks
--john
-
-
+> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+> ---
+>  fs/quota/quota_v2.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/quota/quota_v2.c b/fs/quota/quota_v2.c
+> index 65444d2..f1ab360 100644
+> --- a/fs/quota/quota_v2.c
+> +++ b/fs/quota/quota_v2.c
+> @@ -112,7 +112,7 @@ static int v2_read_file_info(struct super_block *sb, int type)
+>  	if (!info->dqi_priv) {
+>  		printk(KERN_WARNING
+>  		       "Not enough memory for quota information structure.\n");
+> -		return -1;
+> +		return -ENOMEM;
+>  	}
+>  	qinfo = info->dqi_priv;
+>  	if (version == 0) {
+> -- 
+> 1.7.1
+> 
+> 
+> 
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
