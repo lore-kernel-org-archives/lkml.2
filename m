@@ -1,171 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab1ATO26 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 09:28:58 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:40927 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755484Ab1ATO24 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 09:28:56 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=SnJI+uue3EttLtp6OZlBHjeTUzdSe0gNegPq6J0fMYItcZOIJ0lVkznXaVTZo351nD
-         ehpsvMUu14jSK7YtRLJfXd8y4ezWcC7OP3dFXufyY52pmNkyQogl+/SzfmXLyo/IqDww
-         +d62uTQ8HnAN/Q1t+nXthRRL70VvvNRlgLBUM=
-Date: Thu, 20 Jan 2011 23:28:44 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KyongHo Cho <pullip.cho@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>, Ilho Lee <ilho215.lee@samsung.com>,
-        KeyYoung Park <keyyoung.park@samsung.com>
-Subject: Re: [PATCH] ARM: mm: Regarding section when dealing with meminfo
-Message-ID: <20110120142844.GA28358@barrios-desktop>
-References: <1295516739-9839-1-git-send-email-pullip.cho@samsung.com>
+	id S1755724Ab1ATOaS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 09:30:18 -0500
+Received: from www.tglx.de ([62.245.132.106]:43490 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755484Ab1ATOaP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 09:30:15 -0500
+To: balbi@ti.com
+Cc: paul@pwsan.com, tony@atomide.com, r-woodruff2@ti.com,
+        linux-kernel@vger.kernel.org,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v2] omap2: fix DPLL_FREQSEL calculation
+From: John Ogness <john.ogness@linutronix.de>
+References: <87ei8726wf.fsf@vostro.fn.ogness.net>
+	<20110120111645.GB2223@legolas.emea.dhcp.ti.com>
+Date: Thu, 20 Jan 2011 15:29:50 +0100
+In-Reply-To: <20110120111645.GB2223@legolas.emea.dhcp.ti.com> (Felipe Balbi's message of "Thu\, 20 Jan 2011 13\:16\:45 +0200")
+Message-ID: <8739on1wdd.fsf_-_@vostro.fn.ogness.net>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295516739-9839-1-git-send-email-pullip.cho@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 06:45:39PM +0900, KyongHo Cho wrote:
-> Sparsemem allows that a bank of memory spans over several adjacent
-> sections if the start address and the end address of the bank
-> belong to different sections.
-> When gathering statictics of physical memory in mem_init() and
-> show_mem(), this possiblity was not considered.
+On 2011-01-20, Felipe Balbi <balbi@ti.com> wrote:
+> scripts/get_maintainer.pl would've helped you getting a better Cc
+> list. I'm adding linux-omap and lakml
 
-Please write down the result if we doesn't consider this patch.
-I can understand what happens but for making good description and review,
-merging easily, it would be better to write down the result without 
-the patch explicitly.
+Thanks.
 
-> 
-> This patch guarantees that simple increasing the pointer to page
-> descriptors does not exceed the boundary of a section.
-> 
-> Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
-> ---
->  arch/arm/mm/init.c |   74 +++++++++++++++++++++++++++++++++++----------------
->  1 files changed, 51 insertions(+), 23 deletions(-)
-> 
-> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-> index 57c4c5c..6ccecbe 100644
-> --- a/arch/arm/mm/init.c
-> +++ b/arch/arm/mm/init.c
-> @@ -93,24 +93,38 @@ void show_mem(void)
->  
->  		pfn1 = bank_pfn_start(bank);
->  		pfn2 = bank_pfn_end(bank);
-> -
-> +#ifndef CONFIG_SPARSEMEM
->  		page = pfn_to_page(pfn1);
->  		end  = pfn_to_page(pfn2 - 1) + 1;
-> -
-> +#else
-> +		pfn2--;
->  		do {
-> -			total++;
-> -			if (PageReserved(page))
-> -				reserved++;
-> -			else if (PageSwapCache(page))
-> -				cached++;
-> -			else if (PageSlab(page))
-> -				slab++;
-> -			else if (!page_count(page))
-> -				free++;
-> -			else
-> -				shared += page_count(page) - 1;
-> -			page++;
-> -		} while (page < end);
-> +			page = pfn_to_page(pfn1);
-> +			if (pfn_to_section_nr(pfn1) < pfn_to_section_nr(pfn2)) {
-> +				pfn1 += PAGES_PER_SECTION;
-> +				pfn1 &= PAGE_SECTION_MASK;
-> +			} else {
-> +				pfn1 = pfn2;
-> +			}
-> +			end = pfn_to_page(pfn1) + 1;
-> +#endif
-> +			do {
-> +				total++;
-> +				if (PageReserved(page))
-> +					reserved++;
-> +				else if (PageSwapCache(page))
-> +					cached++;
-> +				else if (PageSlab(page))
-> +					slab++;
-> +				else if (!page_count(page))
-> +					free++;
-> +				else
-> +					shared += page_count(page) - 1;
-> +				page++;
-> +			} while (page < end);
-> +#ifdef CONFIG_SPARSEMEM
-> +		} while (pfn1 < pfn2);
-> +#endif
->  	}
->  
->  	printk("%d pages of RAM\n", total);
-> @@ -470,17 +484,31 @@ void __init mem_init(void)
->  
->  		pfn1 = bank_pfn_start(bank);
->  		pfn2 = bank_pfn_end(bank);
-> -
-> +#ifndef CONFIG_SPARSEMEM
->  		page = pfn_to_page(pfn1);
->  		end  = pfn_to_page(pfn2 - 1) + 1;
-> -
-> +#else
-> +		pfn2--;
->  		do {
-> -			if (PageReserved(page))
-> -				reserved_pages++;
-> -			else if (!page_count(page))
-> -				free_pages++;
-> -			page++;
-> -		} while (page < end);
-> +			page = pfn_to_page(pfn1);
-> +			if (pfn_to_section_nr(pfn1) < pfn_to_section_nr(pfn2)) {
-> +				pfn1 += PAGES_PER_SECTION;
-> +				pfn1 &= PAGE_SECTION_MASK;
-> +			} else {
-> +				pfn1 = pfn2;
-> +			}
-> +			end = pfn_to_page(pfn1) + 1;
-> +#endif
-> +			do {
-> +				if (PageReserved(page))
-> +					reserved_pages++;
-> +				else if (!page_count(page))
-> +					free_pages++;
-> +				page++;
-> +			} while (page < end);
-> +#ifdef CONFIG_SPARSEMEM
-> +		} while (pfn1 < pfn2);
-> +#endif
->  	}
+After investigating the issue further it seems that I had it
+backwards. The value of "n" is the value to divide by, not the value
+that goes in the register. This means that it is _dpll_test_fint()
+that is doing it incorrectly. Here is a new version of the patch to
+fix the right function.
 
-Hmm.. new ifndef magic makes code readability bad.
-Couldn't we do it by simple pfn iterator not page and pfn_valid check?
 
->  
->  	/*
-> -- 
-> 1.6.2.5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom policy in Canada: sign http://dissolvethecrtc.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
--- 
-Kind regards,
-Minchan Kim
+This patch fixes the calculation of the internal frequency. The value
+of "n" is the actual divider to use.
+
+This patch is against linux-next-20110120.
+
+Signed-off-by: John Ogness <john.ogness@linutronix.de>
+---
+ arch/arm/mach-omap2/clkt_dpll.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-omap2/clkt_dpll.c b/arch/arm/mach-omap2/clkt_dpll.c
+index 337392c..acb7ae5 100644
+--- a/arch/arm/mach-omap2/clkt_dpll.c
++++ b/arch/arm/mach-omap2/clkt_dpll.c
+@@ -77,7 +77,7 @@ static int _dpll_test_fint(struct clk *clk, u8 n)
+ 	dd = clk->dpll_data;
+ 
+ 	/* DPLL divider must result in a valid jitter correction val */
+-	fint = clk->parent->rate / (n + 1);
++	fint = clk->parent->rate / n;
+ 	if (fint < DPLL_FINT_BAND1_MIN) {
+ 
+ 		pr_debug("rejecting n=%d due to Fint failure, "
