@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760Ab1ATOqN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 09:46:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16413 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755677Ab1ATOqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 09:46:11 -0500
-Date: Thu, 20 Jan 2011 15:46:03 +0100
-From: Michal Schmidt <mschmidt@redhat.com>
-To: jmorris@namei.org
-Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        eparis@redhat.com
-Subject: Re: [PATCH] TPM: Long default timeout fix
-Message-ID: <20110120154603.2bdf5d9b@alice>
-In-Reply-To: <1289596730-28966-1-git-send-email-srajiv@linux.vnet.ibm.com>
-References: <1289596730-28966-1-git-send-email-srajiv@linux.vnet.ibm.com>
-Organization: Red Hat Czech
+	id S1755828Ab1ATOqW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 09:46:22 -0500
+Received: from hapkido.dreamhost.com ([66.33.216.122]:57781 "EHLO
+	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755793Ab1ATOqU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 09:46:20 -0500
+Subject: [PATCH] input: trackpoint: return proper error value
+From: Davidlohr Bueso <dave@gnu.org>
+To: Dmitry Torokhov <dtor@mail.ru>, LKML <linux-kernel@vger.kernel.org>
+Cc: linux-serial@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 Jan 2011 11:45:30 -0300
+Message-ID: <1295534730.2089.1.camel@offworld>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James,
+From: Davidlohr Bueso <dave@gnu.org>
 
-what is the status of this patch from Rajiv? It has been in Fedora
-kernels for some time, but I do not see it applied upstream:
+If sysfs_create_group() returns an error, we should return it in trackpoint_detect(), instead of -1.
 
-On Fri, 12 Nov 2010 19:18:50 -0200 Rajiv Andrade wrote:
-> If duration variable value is 0 at this point, it's because
-> chip->vendor.duration wasn't filled by tpm_get_timeouts() yet.
-> This patch sets then the lowest timeout just to give enough
-> time for tpm_get_timeouts() to further succeed.
-> 
-> This fix avoids long boot times in case another entity attempts
-> to send commands to the TPM when the TPM isn't accessible.
-> 
-> Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-> ---
->  drivers/char/tpm/tpm.c |   10 ++++++----
->  1 files changed, 6 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-> index 7c41335..5635ac0 100644
-> --- a/drivers/char/tpm/tpm.c
-> +++ b/drivers/char/tpm/tpm.c
-> @@ -364,12 +364,14 @@ unsigned long tpm_calc_ordinal_duration(struct
-> tpm_chip *chip, tpm_protected_ordinal_duration[ordinal &
->  						   TPM_PROTECTED_ORDINAL_MASK];
->  
-> -	if (duration_idx != TPM_UNDEFINED)
-> +	if (duration_idx != TPM_UNDEFINED) {
->  		duration = chip->vendor.duration[duration_idx];
-> -	if (duration <= 0)
-> +		/* if duration is 0, it's because
-> chip->vendor.duration wasn't */
-> +		/* filled yet, so we set the lowest timeout just to
-> give enough */
-> +		/* time for tpm_get_timeouts() to succeed */
-> +		return (duration <= 0 ? HZ : duration);
-> +	} else 
->  		return 2 * 60 * HZ;
-> -	else
-> -		return duration;
->  }
->  EXPORT_SYMBOL_GPL(tpm_calc_ordinal_duration);
->  
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+---
+ drivers/input/mouse/trackpoint.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/input/mouse/trackpoint.c b/drivers/input/mouse/trackpoint.c
+index 54b2fa8..e8b7c3f 100644
+--- a/drivers/input/mouse/trackpoint.c
++++ b/drivers/input/mouse/trackpoint.c
+@@ -324,7 +324,7 @@ int trackpoint_detect(struct psmouse *psmouse, bool set_properties)
+ 			error);
+ 		kfree(psmouse->private);
+ 		psmouse->private = NULL;
+-		return -1;
++		return error;
+ 	}
+ 
+ 	printk(KERN_INFO "IBM TrackPoint firmware: 0x%02x, buttons: %d/%d\n",
+-- 
+1.7.1
+
+
+
