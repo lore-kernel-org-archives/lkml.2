@@ -1,35 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453Ab1ATLPs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 06:15:48 -0500
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:59960 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753626Ab1ATLPr (ORCPT
+	id S1755440Ab1ATLQy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 06:16:54 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:55588 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753626Ab1ATLQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 06:15:47 -0500
-To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-CC: npiggin@gmail.com, npiggin@kernel.dk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-In-reply-to: <13379.1295514315@jrobl> (hooanon05@yahoo.co.jp)
-Subject: Re: vfs-scale, general questions
-References: <20110113120626.GB30351@opensource.wolfsonmicro.com> <8138.1294924927@jrobl> <676f5c24375e1cc2aa14fe6630ef1324@mail.gmail.com> <8482.1294926315@jrobl> <AANLkTim=VY7+fo6d_nUXVxs+iZ_f79qWu_eYMUjvhVJO@mail.gmail.com> <909.1295419383@jrobl> <AANLkTi=CqLm=33acFV42N8VbNK9=hwXV9iegKn-jjGJS@mail.gmail.com> <13379.1295514315@jrobl>
-Message-Id: <E1PfsUI-0007gV-Gw@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 20 Jan 2011 12:15:34 +0100
+	Thu, 20 Jan 2011 06:16:52 -0500
+Date: Thu, 20 Jan 2011 13:16:45 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: John Ogness <john.ogness@linutronix.de>
+Cc: paul@pwsan.com, tony@atomide.com, r-woodruff2@ti.com,
+        linux-kernel@vger.kernel.org,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] omap2: fix DPLL_FREQSEL calculation
+Message-ID: <20110120111645.GB2223@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <87ei8726wf.fsf@vostro.fn.ogness.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ei8726wf.fsf@vostro.fn.ogness.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jan 2011, J. R. Okajima wrote:
-> You might think about the race around d_move, but what I meant is the
-> race between d_unlinked and unhash/rehash.
+Hi,
+
+On Thu, Jan 20, 2011 at 11:42:24AM +0100, John Ogness wrote:
+> This patch fixes the calculation of the internal frequency. The value
+> of "n" is one less than the actual divider. 0 is a valid value.
 > 
-> - getcwd return -ENOENT when pwd is unhashed.
-> - vfs_rename_dir()
->   + makes the existing target unhashed.
+> An example where the internal frequency is calculated correctly can be
+> found here: clkt_dpll.c:_dpll_test_fint()
+> 
+> This patch is against linux-next-20110120.
+> 
+> Signed-off-by: John Ogness <john.ogness@linutronix.de>
 
-No it doesn't.  dentry_unhash() doesn't drop the dentry from the hash
-unless it has no other references, cwd being one such ref.
+scripts/get_maintainer.pl would've helped you getting a better Cc list.
+I'm adding linux-omap and lakml
 
-Thanks,
-Miklos
+> ---
+>  arch/arm/mach-omap2/dpll3xxx.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- a/arch/arm/mach-omap2/dpll3xxx.c	2011-01-20 11:20:41.706860086 +0100
+> +++ b/arch/arm/mach-omap2/dpll3xxx.c	2011-01-20 11:21:27.966860086 +0100
+> @@ -93,7 +93,7 @@ static u16 _omap3_dpll_compute_freqsel(s
+>  	unsigned long fint;
+>  	u16 f = 0;
+>  
+> -	fint = clk->dpll_data->clk_ref->rate / n;
+> +	fint = clk->dpll_data->clk_ref->rate / (n + 1);
+>  
+>  	pr_debug("clock: fint is %lu\n", fint);
+>  
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+balbi
