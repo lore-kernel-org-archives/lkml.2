@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677Ab1ATRCi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 12:02:38 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:60574 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421Ab1ATRCh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 12:02:37 -0500
-X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=chl3Z4zJB8kA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=EqTSviML6F0DabhKoVcA:9 a=j5I5MW-zCdVE7WjAJMba_yBC3EQA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [BUG] khugepaged crashes on x86_32
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <20110120165734.GI21494@random.random>
-References: <1295542013.12215.2755.camel@gandalf.stny.rr.com>
-	 <1295542365.12215.2762.camel@gandalf.stny.rr.com>
-	 <20110120165734.GI21494@random.random>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 20 Jan 2011 12:02:35 -0500
-Message-ID: <1295542955.12215.2773.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752726Ab1ATRDF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 12:03:05 -0500
+Received: from dsl78-143-211-26.in-addr.fast.co.uk ([78.143.211.26]:45165 "EHLO
+	ben-laptop" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752240Ab1ATRDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 12:03:02 -0500
+Message-ID: <4D386ABF.9060908@fluff.org>
+Date: Thu, 20 Jan 2011 17:02:55 +0000
+From: Ben Dooks <ben-linux@fluff.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Richard Zhao <linuxzsc@gmail.com>
+CC: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-sh <linux-sh@vger.kernel.org>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: Locking in the clk API
+References: <201101111016.42819.jeremy.kerr@canonical.com>	<20110111091607.GI12552@n2100.arm.linux.org.uk>	<201101111744.59712.jeremy.kerr@canonical.com>	<20110111103929.GN24920@pengutronix.de> <AANLkTinHL9X_bqMPR=W8Va01O4xngUnpGCkCiE3xEdiQ@mail.gmail.com>
+In-Reply-To: <AANLkTinHL9X_bqMPR=W8Va01O4xngUnpGCkCiE3xEdiQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-20 at 17:57 +0100, Andrea Arcangeli wrote:
-> Hi Steven,
-> 
-> On Thu, Jan 20, 2011 at 11:52:45AM -0500, Steven Rostedt wrote:
-> > On Thu, 2011-01-20 at 11:46 -0500, Steven Rostedt wrote:
-> > 
-> > > I hit this bug with both v2.6.38-rc1 and with
-> > > 
-> > > HEAD == 12fcdba1b7ae8b25696433f420b775aeb556d89b
-> > 
-> > Note, this is not fully reproducible at every boot. To test manually, I
-> > had to boot up a couple of times to trigger it. But it never took more
-> > than 5 boots to do so. I test by just booting up and shutting down, it
-> > may trigger with some use as well, but I did not try that.
-> 
-> There was a highpte mistake in khugepaged that only affected 32bit
-> with HIGHPTE enabled so it wasn't noticed yet. Fix pointed out by
-> Minchan is queued in -mm (Johannes's submit).
+On 11/01/11 11:15, Richard Zhao wrote:
+> 2011/1/11 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
 
-Thanks for the update :-)
+[snip]
 
-I'll apply this patch and run it through the tests again.
+> A well running board will not enable/disable PLLs frequently. It don't
+> make sense. PLLs are normally disabled on request to enter low power
+> mode, rather not because all their child clocks are disabled.   So we
+> don't have to consider the time here.
 
--- Steve
+I'd rather see that if all child clocks are disabled the PLL is
+powered down then. It means PLLs _could_ be left running even
+when power-down mode is selected because the system still thinks
+that a peripheral is using them.
 
-
+If you want to make it so that each low-power mode has to work
+out what PLLs need to be disabled and then re-enabled makes me
+want to be sick. Hiding this stuff behind specific implementations
+is a recipe for disaster.
