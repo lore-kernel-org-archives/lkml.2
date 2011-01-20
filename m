@@ -1,127 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab1ATJFz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 04:05:55 -0500
-Received: from mail.sysgo.com ([195.145.229.155]:45657 "EHLO mail.sysgo.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755238Ab1ATJFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 04:05:53 -0500
-Message-ID: <4D37FAEF.8080504@sysgo.com>
-Date: Thu, 20 Jan 2011 10:05:51 +0100
-From: David Engraf <david.engraf@sysgo.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1755254Ab1ATJHW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 04:07:22 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:46988 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754813Ab1ATJHT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 04:07:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=I6Fu8IuSYSYys6CLH7Mh0YtLIRG7IfF30eMwVzpvLCJqhJ5Qm9oW8OdOMDG2aF1egy
+         SYFM5GTiBJUicQCsxJocmNkH8e3p5o3NA4hQR3v9/RqV/8J5wwRVc50B+n3jyA10jN3X
+         +olWWIy4nKVeo/vR2KD0/cBrlvyJQYxx315Zs=
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] serio: allow registered drivers to get status flag
-References: <4D358E31.4080700@sysgo.com> <20110118195710.GA27152@core.coreip.homeip.net>
-In-Reply-To: <20110118195710.GA27152@core.coreip.homeip.net>
-Content-Type: multipart/mixed;
- boundary="------------030903060408030906070601"
+In-Reply-To: <1295512625.8027.88.camel@marge.simson.net>
+References: <1295275365.12840.13.camel@kolo>
+	<1295280032.30950.128.camel@laptop>
+	<1295339012.11678.35.camel@kolo>
+	<AANLkTikXf-OMEBx-UZktxooOs+YqUkSE9doyEZopjzOx@mail.gmail.com>
+	<1295357746.30950.681.camel@laptop>
+	<AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
+	<1295430276.30950.1414.camel@laptop>
+	<1295433498.30950.1482.camel@laptop>
+	<1295436632.30950.1542.camel@laptop>
+	<1295441881.11678.41.camel@kolo>
+	<1295442799.11678.43.camel@kolo>
+	<1295443822.28776.23.camel@laptop>
+	<AANLkTinQ4sczEwZYCk1_tLmeJyjyXj4TVoSZbjg+KiRq@mail.gmail.com>
+	<1295499568.8027.30.camel@marge.simson.net>
+	<AANLkTikEwgMzco2fHT668Mg3fC-T3EBMUgQQqW-Ojj-Y@mail.gmail.com>
+	<1295503938.8027.59.camel@marge.simson.net>
+	<AANLkTi=7YyA-e8HAq+C_prK2EaZKcaTfzDJvmO3e3W=B@mail.gmail.com>
+	<1295512625.8027.88.camel@marge.simson.net>
+Date: Thu, 20 Jan 2011 17:07:17 +0800
+Message-ID: <AANLkTi=WhLy=4MNdm-HaOUOmbKXsNSJojnzqRTYp6qop@mail.gmail.com>
+Subject: Re: Bug in scheduler when using rt_mutex
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, samu.p.onkalo@nokia.com,
+        mingo@elte.hu,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        tglx <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------030903060408030906070601
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-
-Am 18.01.2011 20:57, schrieb Dmitry Torokhov:
-> On Tue, Jan 18, 2011 at 01:57:21PM +0100, David Engraf wrote:
->> Parse the status byte information to the registered serio drivers as
->> well as the character bytes.
+On Thu, Jan 20, 2011 at 4:37 PM, Mike Galbraith <efault@gmx.de> wrote:
+> On Thu, 2011-01-20 at 15:06 +0800, Yong Zhang wrote:
+>> On Thu, Jan 20, 2011 at 2:12 PM, Mike Galbraith <efault@gmx.de> wrote:
+>> > If the task returns as a sleeper, place entity() will be called when it
+>> > is awakened, so it's sleep credit will be clipped as usual.  So vruntime
+>> > can be much less than min_vruntime at class exit time, and it doesn't
+>> > matter, clipping on wakeup after re-entry takes care of it.. if that's
+>> > what you were thinking about.
 >>
->> Signed-off-by: David Engraf<david.engraf@sysgo.com>
+>> For a sleep task which stay in sched_fair before it's waked:
+>> try_to_wake_up()
+>>   ttwu_activate()
+>>     activate_task()
+>>       enqueue_task_fair()
+>>         enqueue_entity()
+>>           place_entity()        <== clip vruntime
 >>
+>> For a sleep task which promote to sched_rt when it's sleep:
+>> rt_mutex_setprio()
+>>   check_class_changed()
+>>     switch_from_fair()       <== vruntime -= min_vruntime
+>>       try_to_wake_up()
+>>         ...run then stay on rq
+>>         rt_mutex_setprio()
+>>           enqueue_task_fair()     <==vruntime += min_vruntime
+>>
+>> The difference is that in the second case, place_entity() is not
+>> called, but wrt sched_fair, the task is a WAKEUP task.
+>> Then we place this task in sched_fair before where it should be.
 >
->> --- linux-2.6.37/drivers/input/serio/serport.c.orig	2011-01-18 12:33:41.421709232 +0100
->> +++ linux-2.6.37/drivers/input/serio/serport.c	2011-01-18 13:33:24.521711214 +0100
->> @@ -116,8 +116,8 @@ static void serport_ldisc_close(struct t
->>
->>   /*
->>    * serport_ldisc_receive() is called by the low level tty driver when characters
->> - * are ready for us. We forward the characters, one by one to the 'interrupt'
->> - * routine.
->> + * are ready for us. We forward the characters and flags, one by one to the
->> + * 'interrupt' routine.
->>    */
->>
->>   static void serport_ldisc_receive(struct tty_struct *tty, const unsigned char *cp, char *fp, int count)
->> @@ -132,7 +132,7 @@ static void serport_ldisc_receive(struct
->>   		goto out;
->>
->>   	for (i = 0; i<  count; i++)
->> -		serio_interrupt(serport->serio, cp[i], 0);
->> +		serio_interrupt(serport->serio, cp[i], fp[i]);
->>
->
-> Hi David,
->
-> The flags argument that serio_interrupt() accepts not the raw protocol
-> data, but sanitized, protocol-independent SERIO_TIMEOUT, SERIO_PARITY
-> and SERIO_FRAME bits.
->
-> Thanks.
->
+> D'oh.  You're right, he needs to be clipped before he leaves.
 
-Hi Dmitry,
+Exactly we should clip it when it comes back, because it still could
+sleep for some time after it leaves ;)
 
-I've updated the patch so that the raw protocol is converted to the 
-SERIO_ bits. The raw protocol can parse only one flag, so I don't need 
-to store multiple SERIO_ bits in the character flag variable.
+Thanks,
+Yong
 
-Thanks
-- David
-
-
-Signed-off-by: David Engraf<david.engraf@sysgo.com>
-
-
---------------030903060408030906070601
-Content-Type: text/x-diff;
- name="serport_parse_flags.diff"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="serport_parse_flags.diff"
-
---- linux-2.6.37/drivers/input/serio/serport.c.orig	2011-01-18 12:33:41.421709232 +0100
-+++ linux-2.6.37/drivers/input/serio/serport.c	2011-01-20 09:55:53.849550065 +0100
-@@ -116,14 +116,15 @@ static void serport_ldisc_close(struct t
- 
- /*
-  * serport_ldisc_receive() is called by the low level tty driver when characters
-- * are ready for us. We forward the characters, one by one to the 'interrupt'
-- * routine.
-+ * are ready for us. We forward the characters and flags, one by one to the 
-+ * 'interrupt' routine.
-  */
- 
- static void serport_ldisc_receive(struct tty_struct *tty, const unsigned char *cp, char *fp, int count)
- {
- 	struct serport *serport = (struct serport*) tty->disc_data;
- 	unsigned long flags;
-+	unsigned int ch_flags;
- 	int i;
- 
- 	spin_lock_irqsave(&serport->lock, flags);
-@@ -131,8 +132,15 @@ static void serport_ldisc_receive(struct
- 	if (!test_bit(SERPORT_ACTIVE, &serport->flags))
- 		goto out;
- 
--	for (i = 0; i < count; i++)
--		serio_interrupt(serport->serio, cp[i], 0);
-+	for (i = 0; i < count; i++) {
-+		ch_flags = 0;
-+		if (fp[i] == TTY_FRAME)
-+			ch_flags = SERIO_FRAME;
-+		else if (fp[i] == TTY_PARITY)
-+			ch_flags = SERIO_PARITY;
-+
-+		serio_interrupt(serport->serio, cp[i], ch_flags);
-+	}
- 
- out:
- 	spin_unlock_irqrestore(&serport->lock, flags);
-
---------------030903060408030906070601--
+-- 
+Only stand for myself
