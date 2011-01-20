@@ -1,72 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755698Ab1ATVky (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 16:40:54 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:34840 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755458Ab1ATVkw (ORCPT
+	id S1755629Ab1ATVmn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 16:42:43 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:9670 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755267Ab1ATVmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 16:40:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=vYXCsS0Mv+4uxiWUzg0h2YS3j8EkPspP2cTWhOhw1cQ3sTRGAcGhtKvRLB4qm/EbF/
-         IwiBknCw5sEbfjk7LLDSNfvoAZVJvngkLw5sALOJ7iqGHJPOixErASNvSFDa3DVi/jHp
-         sugFre28RHgTbqBM5JaXVwCC/RpoGo9dqN6Rw=
-Subject: Re: [GIT] Networking
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTin32jUnBtHF-EAkSMnFQM6cTbn-G3NZQJ3xjTWU@mail.gmail.com>
-References: <20110119.180418.216749267.davem@davemloft.net>
-	 <AANLkTin32jUnBtHF-EAkSMnFQM6cTbn-G3NZQJ3xjTWU@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 Jan 2011 22:40:46 +0100
-Message-ID: <1295559646.2613.35.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 20 Jan 2011 16:42:39 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 20 Jan 2011 13:31:24 -0800
+From: Robert Morell <rmorell@nvidia.com>
+To: David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Benoit Goby <benoit@android.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
+        Oliver Neukum <oliver@neukum.org>
+Cc: Olof Johansson <olof@lixom.net>, Erik Gilling <konkers@android.com>,
+        Colin Cross <ccross@android.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Robert Morell <rmorell@nvidia.com>
+Subject: [PATCH 2/2] USB: ehci: tegra: Align DMA transfers to 32 bytes
+Date: Thu, 20 Jan 2011 13:41:55 -0800
+Message-Id: <1295559715-14264-3-git-send-email-rmorell@nvidia.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1294356045-1018-1-git-send-email-rmorell@nvidia.com>
+References: <1294356045-1018-1-git-send-email-rmorell@nvidia.com>
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 20 janvier 2011 à 13:12 -0800, Linus Torvalds a écrit :
+The Tegra2 USB controller doesn't properly deal with misaligned DMA
+buffers, causing corruption.  This is especially prevalent with USB
+network adapters, where skbuff alignment is often in the middle of a
+4-byte dword.
 
+To avoid this, allocate a temporary buffer for the DMA if the provided
+buffer isn't sufficiently aligned.
 
+Signed-off-by: Robert Morell <rmorell@nvidia.com>
+---
+ drivers/usb/host/ehci-tegra.c |   92 +++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 92 insertions(+), 0 deletions(-)
 
->   ...
->   read(3, 0x9806500, 4096)                = -1 EAGAIN (Resource
-> temporarily unavailable)
->   poll([{fd=4, events=POLLIN}, {fd=3, events=POLLIN}, {fd=12,
-> events=POLLIN|POLLPRI}, {fd=14, events=POLLIN|POLLPRI}, {fd=9,
-> events=POLLIN|POLLPRI}, {fd=10, events=POLLIN|POLLPRI}, {fd=15,
-> events=POLLIN}, {fd=16, events=POLLIN}, {fd=17, events=0}, {fd=19,
-> events=POLLIN}], 10, -1) = ? ERESTART_RESTARTBLOCK (To be restarted)
->   restart_syscall(
-> 
-
-Hmm, poll() here on fd=3 only asks events=POLLIN
-
-> and that's it - it's now hung. So why did it work when I straced it
-> while hung? And why is it doing that ERESTART_RESTARTBLOCK in the
-> first place, I'm not seeing any signals there?
-> 
-> So I tried sending it a useless signal, which will re-animate the
-> strace, and now I get:
-> 
->   restart_syscall(<... resuming interrupted call ...>) = 1
->   --- SIGWINCH (Window changed) @ 0 (0) ---
->   poll([{fd=3, events=POLLIN|POLLOUT}], 1, -1) = 1 ([{fd=3, revents=POLLOUT}])
-> 
-
-Then here ask for fd=3 both POLLIN and POLLOUT :
-kernel answers : OK for POLLOUT (not POLLIN), so previous poll() call
-was OK to be blocked after all...
-
-So I'm wondering if it could be a userland bug, that triggers with
-recent kernel changes.
-
-
+diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+index 2341904..7cdfc65 100644
+--- a/drivers/usb/host/ehci-tegra.c
++++ b/drivers/usb/host/ehci-tegra.c
+@@ -32,6 +32,8 @@
+ #define TEGRA_USB_USBMODE_HOST			(3 << 0)
+ #define TEGRA_USB_PORTSC1_PTC(x)		(((x) & 0xf) << 16)
+ 
++#define TEGRA_USB_DMA_ALIGN 32
++
+ struct tegra_ehci_context {
+ 	bool valid;
+ 	u32 command;
+@@ -461,6 +463,94 @@ static int tegra_ehci_bus_resume(struct usb_hcd *hcd)
+ }
+ #endif
+ 
++struct temp_buffer {
++	void *kmalloc_ptr;
++	void *old_xfer_buffer;
++	u8 data[0];
++};
++
++static void free_temp_buffer(struct urb *urb, int status)
++{
++	enum dma_data_direction dir;
++	struct temp_buffer *temp;
++
++	if (!(urb->transfer_flags & URB_ALIGNED_TEMP_BUFFER))
++		return;
++
++	dir = usb_urb_dir_in(urb) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
++
++	temp = container_of(urb->transfer_buffer, struct temp_buffer,
++			    data);
++
++	if (dir == DMA_FROM_DEVICE && !status)
++		memcpy(temp->old_xfer_buffer, temp->data,
++		       urb->transfer_buffer_length);
++	urb->transfer_buffer = temp->old_xfer_buffer;
++	kfree(temp->kmalloc_ptr);
++
++	urb->transfer_flags &= ~URB_ALIGNED_TEMP_BUFFER;
++}
++
++static int alloc_temp_buffer(struct urb *urb, gfp_t mem_flags)
++{
++	enum dma_data_direction dir;
++	struct temp_buffer *temp, *kmalloc_ptr;
++	size_t kmalloc_size;
++	void *data;
++
++	if (urb->num_sgs || urb->sg ||
++	    urb->transfer_buffer_length == 0 ||
++	    !((uintptr_t)urb->transfer_buffer & (TEGRA_USB_DMA_ALIGN - 1)))
++		return 0;
++
++	dir = usb_urb_dir_in(urb) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
++
++	/* Allocate a buffer with enough padding for alignment */
++	kmalloc_size = urb->transfer_buffer_length +
++		sizeof(struct temp_buffer) + TEGRA_USB_DMA_ALIGN - 1;
++
++	kmalloc_ptr = kmalloc(kmalloc_size, mem_flags);
++	if (!kmalloc_ptr)
++		return -ENOMEM;
++
++	/* Position our struct temp_buffer such that data is aligned */
++	temp = PTR_ALIGN(kmalloc_ptr + 1, TEGRA_USB_DMA_ALIGN) - 1;
++
++	temp->kmalloc_ptr = kmalloc_ptr;
++	temp->old_xfer_buffer = urb->transfer_buffer;
++	if (dir == DMA_TO_DEVICE)
++		memcpy(temp->data, urb->transfer_buffer,
++		       urb->transfer_buffer_length);
++	urb->transfer_buffer = temp->data;
++
++	urb->transfer_flags |= URB_ALIGNED_TEMP_BUFFER;
++
++	return 0;
++}
++
++static int tegra_ehci_map_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
++				      gfp_t mem_flags)
++{
++	int ret;
++
++	ret = alloc_temp_buffer(urb, mem_flags);
++	if (ret)
++		return ret;
++
++	ret = map_urb_for_dma(hcd, urb, mem_flags);
++	if (ret)
++		free_temp_buffer(urb, ret);
++
++	return ret;
++}
++
++static void tegra_ehci_unmap_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
++					 int status)
++{
++	unmap_urb_for_dma(hcd, urb);
++	free_temp_buffer(urb, status);
++}
++
+ static const struct hc_driver tegra_ehci_hc_driver = {
+ 	.description		= hcd_name,
+ 	.product_desc		= "Tegra EHCI Host Controller",
+@@ -476,6 +566,8 @@ static const struct hc_driver tegra_ehci_hc_driver = {
+ 	.shutdown		= tegra_ehci_shutdown,
+ 	.urb_enqueue		= ehci_urb_enqueue,
+ 	.urb_dequeue		= ehci_urb_dequeue,
++	.map_urb_for_dma	= tegra_ehci_map_urb_for_dma,
++	.unmap_urb_for_dma	= tegra_ehci_unmap_urb_for_dma,
+ 	.endpoint_disable	= ehci_endpoint_disable,
+ 	.endpoint_reset		= ehci_endpoint_reset,
+ 	.get_frame_number	= ehci_get_frame,
+-- 
+1.7.3.4
 
