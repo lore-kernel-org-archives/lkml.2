@@ -1,84 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab1ATRhi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 12:37:38 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37481 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab1ATRhh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 12:37:37 -0500
-MIME-Version: 1.0
-X-Originating-IP: [172.22.72.244]
-In-Reply-To: <1294370641-6791-1-git-send-email-olof@lixom.net>
-References: <1294370641-6791-1-git-send-email-olof@lixom.net>
-Date: Thu, 20 Jan 2011 09:37:24 -0800
-Message-ID: <AANLkTi=E1_Ur6GmwBRnjGRBpmSup4_1_k35ZKvBRcFtv@mail.gmail.com>
-Subject: Re: [PATCH] tpm: fix panic caused by "tpm: Autodetect itpm devices"
-From: Olof Johansson <olof@lixom.net>
-To: linux-kernel@vger.kernel.org
-Cc: Debora Velarde <debora@linux.vnet.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>,
-        tpmdd-devel@lists.sourceforge.net, James Morris <jmorris@namei.org>,
-        Olof Johansson <olof@lixom.net>, Matthew Garrett <mjg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753253Ab1ATRiM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 12:38:12 -0500
+Received: from mga09.intel.com ([134.134.136.24]:25777 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753194Ab1ATRiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 12:38:11 -0500
+Message-Id: <0d30dc$kqf9gp@orsmga001.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,352,1291622400"; 
+   d="scan'208";a="698852902"
+Date: Thu, 20 Jan 2011 17:38:06 +0000
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: more intel drm issues (was Re: [git pull] drm intel only fixes)
+Cc: Jeff Chua <jeff.chua.linux@gmail.com>, Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Dave Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+References: <AANLkTimOkFckq+r4cD-PSzc_RNs+HJL5CcEM-3Yh+dF6@mail.gmail.com> <AANLkTin98pf1d29AtT7RwjGBeR=m4rBp7Ks6vvmz18vf@mail.gmail.com> <AANLkTi=s9ZMdUe2bsK2OA5rJBej=R8CaJyE+kT3Fd5wG@mail.gmail.com> <849307$b7q280@azsmga001.ch.intel.com> <AANLkTi=AEhztUp30A0o5YxHCqqLg38+f5s+mXfbZTX8Y@mail.gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <AANLkTi=AEhztUp30A0o5YxHCqqLg38+f5s+mXfbZTX8Y@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Are all TPM maintainers MIA? This is a trivial patch that fixes a
-panic, and it was a late-added regression in 2.6.37.
+On Thu, 20 Jan 2011 08:07:02 -0800, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Thu, Jan 20, 2011 at 2:25 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> >
+> > Right, the autoreported HEAD may have been already reset to 0 and so hit
+> > the wraparound bug which caused it to exit early without actually
+> > quiescing the ringbuffer.
+> 
+> Yeah, that would explain the issue.
+> 
+> > Another possibility is that I added a 3s timeout waiting for a request if
+> > IRQs were suspended:
+> 
+> No, if IRQ's are actually suspended here, then that codepath is
+> totally buggy and would blow up (msleep() doesn't work, and jiffies
+> wouldn't advance on UP). So that's not it.
+> 
+> > Both of those I think are symptoms of another problem, that perhaps during
+> > suspend we are shutting down parts of the chip before idling?
+> 
+> That could be, but looking at the code, one thing strikes me: the
+> _normal_ case (of just waiting for "enough space" in the ring buffer)
+> doesn't need to use the exact case, but the "wait for ring buffer to
+> be totally empty" does.
+> 
+> Which means that the use of the "fast-but-inaccurate" 'head' sounds
+> wrong for the "wait for idle" case.
+> 
+> So can you explain the difference between
+> 
+>    intel_read_status_page(ring, 4);
+> 
+> vs
+> 
+>    I915_READ_HEAD(ring);
 
+For I915_READ_HEAD, we need to wake up the GT power well, perform an
+uncached read from the register, and then power down. This takes on the
+order of a 100 microseconds (less if the GT is already powered up, etc).
 
--Olof
+Instead a read from the status page is from cached memory. The caveat here
+is that value is only updated by the gfx engine when its HEAD crosses
+every 64k boundary. So quite rarely.
 
-On Thu, Jan 6, 2011 at 7:24 PM, Olof Johansson <olof@lixom.net> wrote:
-> commit 3f0d3d016d89a5efb8b926d4707eb21fa13f3d27 adds a check for
-> PNP device id to the common tpm_tis_init() function, which in some
-> cases (force=1) will be called without the device being a member of
-> a pnp_dev. Oopsing and panics ensue.
->
-> Move the test up to before the call to tpm_tis_init(), since it
-> just modifies a global variable anyway.
->
-> Signed-off-by: Olof Johansson <olof@lixom.net>
-> Cc: Matthew Garrett <mjg@redhat.com>
-> Cc: stable@kernel.org [2.6.37+]
-> ---
->  drivers/char/tpm/tpm_tis.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-> index c17a305..dd21df5 100644
-> --- a/drivers/char/tpm/tpm_tis.c
-> +++ b/drivers/char/tpm/tpm_tis.c
-> @@ -493,9 +493,6 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
->                 "1.2 TPM (device-id 0x%X, rev-id %d)\n",
->                 vendor >> 16, ioread8(chip->vendor.iobase + TPM_RID(0)));
->
-> -       if (is_itpm(to_pnp_dev(dev)))
-> -               itpm = 1;
-> -
->        if (itpm)
->                dev_info(dev, "Intel iTPM workaround enabled\n");
->
-> @@ -637,6 +634,9 @@ static int __devinit tpm_tis_pnp_init(struct pnp_dev *pnp_dev,
->        else
->                interrupts = 0;
->
-> +       if (is_itpm(pnp_dev))
-> +               itpm = 1;
-> +
->        return tpm_tis_init(&pnp_dev->dev, start, len, irq);
->  }
->
-> --
-> 1.7.3.GIT
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> because from looking at the code, I get the notion that
+> "intel_read_status_page()" may not be exact. But what happens if that
+> inexact value matches our cached ring->actual_head, so we never even
+> try to read the exact case? Does it _stay_ inexact for arbitrarily
+> long times? If so, we might wait for the ring to empty forever (well,
+> until the timeout - the behavior I see), even though the ring really
+> _is_ empty. No?
+
+Ah. Your analysis is spot on and this will cause a hang whilst polling if
+we enter the loop with the last known head the same as the reported value.
+ 
+> Also, isn't that "head < ring->actual_head" buggy? What about the
+> overflow case? Not that we care, because afaik, 'actual_head' is not
+> actually used anywhere, so it should be called 'pointless_head'?
+
+This is the one case that I think is handled correctly, ignoring all the
+other bugs.
+-Chris
+
+-- 
+Chris Wilson, Intel Open Source Technology Centre
