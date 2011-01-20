@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab1ATMAM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 07:00:12 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:56266 "EHLO mx3.mail.elte.hu"
+	id S1755484Ab1ATMA3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 07:00:29 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:59686 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755255Ab1ATMAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 07:00:09 -0500
-Date: Thu, 20 Jan 2011 13:00:01 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1755462Ab1ATMA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 07:00:28 -0500
+Date: Thu, 20 Jan 2011 17:29:58 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 1/2] lockdep: move early boot local IRQ enable/disable
- status to init/main.c
-Message-ID: <20110120120001.GA32671@elte.hu>
-References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
- <20110119120200.GA1057@elte.hu>
- <20110120110635.GB6036@htj.dyndns.org>
- <20110120111149.GD6036@htj.dyndns.org>
+        Nick Piggin <npiggin@kernel.dk>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Eric Dumazet <dada1@cosmosbay.com>, Jan Beulich <JBeulich@novell.com>,
+        Avi Kivity <avi@redhat.com>, Xen-devel <xen-devel@lists.xensource.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        kvm@vger.kernel.org, suzuki@in.ibm.com
+Subject: Re: [PATCH 2/3] kvm hypervisor : Add hypercalls to support
+ pv-ticketlock
+Message-ID: <20110120115958.GB11177@linux.vnet.ibm.com>
+Reply-To: vatsa@linux.vnet.ibm.com
+References: <cover.1289940821.git.jeremy.fitzhardinge@citrix.com>
+ <20110119164432.GA30669@linux.vnet.ibm.com>
+ <20110119171239.GB726@linux.vnet.ibm.com>
+ <1295457672.28776.144.camel@laptop>
+ <4D373340.60608@goop.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110120111149.GD6036@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4D373340.60608@goop.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 19, 2011 at 10:53:52AM -0800, Jeremy Fitzhardinge wrote:
+> > I didn't really read the patch, and I totally forgot everything from
+> > when I looked at the Xen series, but does the Xen/KVM hypercall
+> > interface for this include the vcpu to await the kick from?
+> >
+> > My guess is not, since the ticket locks used don't know who the owner
+> > is, which is of course, sad. There are FIFO spinlock implementations
+> > that can do this though.. although I think they all have a bigger memory
+> > footprint.
+> 
+> At least in the Xen code, a current owner isn't very useful, because we
+> need the current owner to kick the *next* owner to life at release time,
+> which we can't do without some structure recording which ticket belongs
+> to which cpu.
 
-* Tejun Heo <tj@kernel.org> wrote:
+If we had a yield-to [1] sort of interface _and_ information on which vcpu
+owns a lock, then lock-spinners can yield-to the owning vcpu, while the
+unlocking vcpu can yield-to the next-vcpu-in-waiting. The key here is not to
+sleep when waiting for locks (as implemented by current patch-series, which can 
+put other VMs at an advantage by giving them more time than they are entitled 
+to) and also to ensure that lock-owner as well as the next-in-line lock-owner 
+are not unduly made to wait for cpu. 
 
-> So, it's either the early enabling of local IRQ by on_each_cpu()
-> breaking something in the IRQ subsystem or something different.  Ingo,
-> can you please see whether these two patches cure the panic too?
+Is there a way we can dynamically expand the size of lock only upon contention
+to include additional information like owning vcpu? Have the lock point to a
+per-cpu area upon contention where additional details can be stored perhaps?
 
-They seem to help with the MAXSMP config that crashed yesterday.
+1. https://lkml.org/lkml/2011/1/14/44
 
-I'll be able to do more testing and see whether the bug is really fixed once the 
-modular kernel build failure is fixed.
-
-Thanks,
-
-	Ingo
+- vatsa
