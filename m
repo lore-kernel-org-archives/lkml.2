@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683Ab1ATLjy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 06:39:54 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:60072 "EHLO ogre.sisk.pl"
+	id S1755579Ab1ATLjK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 06:39:10 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:60059 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755605Ab1ATLjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 06:39:15 -0500
+	id S1755056Ab1ATLjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 06:39:07 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Len Brown <lenb@kernel.org>
-Subject: [PATCH 11/11] ACPI / PM: Make NVS save/restore code use slightly less memory
-Date: Thu, 20 Jan 2011 12:37:34 +0100
+Subject: [PATCH 6/11] ACPI: Avoid walking the list of iomaps in osl.c twice in a row
+Date: Thu, 20 Jan 2011 12:32:41 +0100
 User-Agent: KMail/1.13.5 (Linux/2.6.38-rc1+; KDE/4.4.4; x86_64; ; )
 Cc: Jeff Chua <jeff.chua.linux@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
         ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
@@ -21,118 +21,95 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101201237.34551.rjw@sisk.pl>
+Message-Id: <201101201232.41628.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Remove the unnecessary field phys_start from struct nvs_page and
-rework the code in nvs.c to reflect that change.
+Make acpi_os_unmap_generic_address() use acpi_map_lookup() to find
+the desired iomap and drop the reference to it directly (and
+eventually remove it if necessary) instead of calling
+acpi_os_unmap_memory(), which requires us to walk the list of ACPI
+iomaps twice in a row (first, to get the virtual address associated
+with the iomap and second, to get the iomap itself).
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/acpi/nvs.c |   45 ++++++++++++++++++++++++++++-----------------
- 1 file changed, 28 insertions(+), 17 deletions(-)
+ drivers/acpi/osl.c |   33 ++++++++++++++++++++-------------
+ 1 file changed, 20 insertions(+), 13 deletions(-)
 
-Index: linux-2.6/drivers/acpi/nvs.c
+Index: linux-2.6/drivers/acpi/osl.c
 ===================================================================
---- linux-2.6.orig/drivers/acpi/nvs.c
-+++ linux-2.6/drivers/acpi/nvs.c
-@@ -22,7 +22,6 @@
-  */
- 
- struct nvs_page {
--	unsigned long phys_start;
- 	unsigned int size;
- 	void *kaddr;
- 	void *data;
-@@ -31,6 +30,8 @@ struct nvs_page {
- };
- 
- static LIST_HEAD(nvs_list);
-+static unsigned long nvs_start;
-+static unsigned int nvs_offset;
- 
- /**
-  *	suspend_nvs_register - register platform NVS memory region to save
-@@ -44,25 +45,28 @@ static LIST_HEAD(nvs_list);
- int suspend_nvs_register(unsigned long start, unsigned long size)
- {
- 	struct nvs_page *entry, *next;
-+	unsigned int offset;
- 
-+	nvs_start = round_down(start, PAGE_SIZE);
-+	nvs_offset = start - nvs_start;
-+	offset = nvs_offset;
- 	while (size > 0) {
--		unsigned int nr_bytes;
-+		unsigned int nr_bytes = PAGE_SIZE - offset;
- 
- 		entry = kzalloc(sizeof(struct nvs_page), GFP_KERNEL);
- 		if (!entry)
--			goto Error;
-+			goto err_out;
- 
- 		list_add_tail(&entry->node, &nvs_list);
--		entry->phys_start = start;
--		nr_bytes = PAGE_SIZE - (start & ~PAGE_MASK);
- 		entry->size = (size < nr_bytes) ? size : nr_bytes;
- 
- 		start += entry->size;
- 		size -= entry->size;
-+		offset -= offset;
- 	}
- 	return 0;
- 
-- Error:
-+ err_out:
- 	list_for_each_entry_safe(entry, next, &nvs_list, node) {
- 		list_del(&entry->node);
- 		kfree(entry);
-@@ -117,25 +121,32 @@ int suspend_nvs_alloc(void)
- int suspend_nvs_save(void)
- {
- 	struct nvs_page *entry;
-+	unsigned long page_addr = nvs_start;
-+	unsigned int offset = nvs_offset;
- 
- 	printk(KERN_INFO "PM: Saving platform NVS memory\n");
- 
--	list_for_each_entry(entry, &nvs_list, node)
--		if (entry->data) {
--			unsigned long phys = entry->phys_start;
--			unsigned int size = entry->size;
-+	list_for_each_entry(entry, &nvs_list, node) {
-+		unsigned long phys = page_addr + offset;
-+		unsigned int size = entry->size;
- 
--			entry->kaddr = acpi_os_get_iomem(phys, size);
--			if (!entry->kaddr) {
--				entry->kaddr = acpi_os_ioremap(phys, size);
--				entry->unmap = true;
--			}
-+		if (!entry->data)
-+			return -ENOMEM;
-+
-+		entry->kaddr = acpi_os_get_iomem(phys, size);
-+		if (!entry->kaddr) {
-+			entry->kaddr = acpi_os_ioremap(phys, size);
- 			if (!entry->kaddr) {
- 				suspend_nvs_free();
--				return -ENOMEM;
-+				return -EIO;
- 			}
--			memcpy(entry->data, entry->kaddr, entry->size);
-+			entry->unmap = true;
- 		}
-+		memcpy(entry->data, entry->kaddr, entry->size);
-+
-+		page_addr += PAGE_SIZE;
-+		offset -= offset;
-+	}
- 
- 	return 0;
+--- linux-2.6.orig/drivers/acpi/osl.c
++++ linux-2.6/drivers/acpi/osl.c
+@@ -358,6 +358,13 @@ static void acpi_kref_del_iomap(struct k
+ 	list_del_rcu(&map->list);
  }
+ 
++static void acpi_os_remove_map(struct acpi_ioremap *map)
++{
++	synchronize_rcu();
++	iounmap(map->virt);
++	kfree(map);
++}
++
+ void __ref acpi_os_unmap_memory(void __iomem *virt, acpi_size size)
+ {
+ 	struct acpi_ioremap *map;
+@@ -372,20 +379,14 @@ void __ref acpi_os_unmap_memory(void __i
+ 	map = acpi_map_lookup_virt(virt, size);
+ 	if (!map) {
+ 		mutex_unlock(&acpi_ioremap_lock);
+-		printk(KERN_ERR PREFIX "%s: bad address %p\n", __func__, virt);
+-		dump_stack();
++		WARN(true, PREFIX "%s: bad address %p\n", __func__, virt);
+ 		return;
+ 	}
+-
+ 	del = kref_put(&map->ref, acpi_kref_del_iomap);
+ 	mutex_unlock(&acpi_ioremap_lock);
+ 
+-	if (!del)
+-		return;
+-
+-	synchronize_rcu();
+-	iounmap(map->virt);
+-	kfree(map);
++	if (del)
++		acpi_os_remove_map(map);
+ }
+ EXPORT_SYMBOL_GPL(acpi_os_unmap_memory);
+ 
+@@ -414,8 +415,8 @@ static int acpi_os_map_generic_address(s
+ 
+ static void acpi_os_unmap_generic_address(struct acpi_generic_address *addr)
+ {
+-	void __iomem *virt;
+-	acpi_size size = addr->bit_width / 8;
++	struct acpi_ioremap *map;
++	int del;
+ 
+ 	if (addr->space_id != ACPI_ADR_SPACE_SYSTEM_MEMORY)
+ 		return;
+@@ -424,10 +425,16 @@ static void acpi_os_unmap_generic_addres
+ 		return;
+ 
+ 	mutex_lock(&acpi_ioremap_lock);
+-	virt = acpi_map_vaddr_lookup(addr->address, size);
++	map = acpi_map_lookup(addr->address, addr->bit_width / 8);
++	if (!map) {
++		mutex_unlock(&acpi_ioremap_lock);
++		return;
++	}
++	del = kref_put(&map->ref, acpi_kref_del_iomap);
+ 	mutex_unlock(&acpi_ioremap_lock);
+ 
+-	acpi_os_unmap_memory(virt, size);
++	if (del)
++		acpi_os_remove_map(map);
+ }
+ 
+ #ifdef ACPI_FUTURE_USAGE
 
