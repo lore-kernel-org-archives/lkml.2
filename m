@@ -1,93 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179Ab1ATBfo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 20:35:44 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:61232 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782Ab1ATBfn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 20:35:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=QXmRZ2K6FrLjz4Hv5TyeCW5LXTnhrIX1kE4ePnQnDnF1Yhxg/bFboYHNIZUIwJK24O
-         R1iedNQ7wsJuQVco6tAo2f15hMW8Y40VsFWLm7/ojHZ5gsTabYNxqj9pBhv1H+uVRNFc
-         jE6jDvtaHOe+YsShqj2sybCpdN/20saD6r09s=
+	id S1754129Ab1ATBoo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 20:44:44 -0500
+Received: from mga03.intel.com ([143.182.124.21]:48949 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753141Ab1ATBom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 20:44:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,347,1291622400"; 
+   d="scan'208";a="377125248"
+Date: Thu, 20 Jan 2011 09:44:58 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "alan@linux.intel.com" <alan@linux.intel.com>
+Subject: Re: [PATCH] console: prevent registered consoles from dumping old
+ kernel message over again
+Message-ID: <20110120094458.144708e0@feng-i7>
+In-Reply-To: <20110119161135.aee848bb.akpm@linux-foundation.org>
+References: <1294814926-1460-1-git-send-email-feng.tang@intel.com>
+	<20110119161135.aee848bb.akpm@linux-foundation.org>
+Organization: intel
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.0; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Date: Thu, 20 Jan 2011 09:35:42 +0800
-Message-ID: <AANLkTikp0=w7k+PsUCQVQwxnZMLsp3F7a3rEDQAas20G@mail.gmail.com>
-Subject: CIFS related seg fault (v2.6.37)
-From: Peter Teoh <htmldeveloper@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Filed a bug today:
+On Thu, 20 Jan 2011 08:11:35 +0800
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-https://bugzilla.kernel.org/show_bug.cgi?id=27082
+> On Wed, 12 Jan 2011 14:48:46 +0800
+> Feng Tang <feng.tang@intel.com> wrote:
+> 
+> > For a platform with many consoles like:
+> >  "console=tty1 console=ttyMFD2 console=ttyS0 earlyprintk=mrst"
+> > 
+> > Each time when the non "selected_console" (tty1 and ttyMFD2 here)
+> > get registered, the existing kernel message will be printed out on
+> > registered consoles again, the "mrst" early console will get some
+> > same message for 3 times, and "tty1" will get some for twice.
+> > 
+> > So try to temporarily disable registered console's printing when
+> > dump the existing kernel messages to the new console.
+> > 
+> > Signed-off-by: Feng Tang <feng.tang@intel.com>
+> > ---
+> >  kernel/printk.c |   13 +++++++++++++
+> >  1 files changed, 13 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/kernel/printk.c b/kernel/printk.c
+> > index f64b899..ba7186b 100644
+> > --- a/kernel/printk.c
+> > +++ b/kernel/printk.c
+> > @@ -1245,6 +1245,7 @@ void register_console(struct console *newcon)
+> >  	int i;
+> >  	unsigned long flags;
+> >  	struct console *bcon = NULL;
+> > +	struct console *con;
+> >  
+> >  	/*
+> >  	 * before we register a new CON_BOOT console, make sure we
+> > don't @@ -1357,8 +1358,20 @@ void register_console(struct console
+> > *newcon) spin_lock_irqsave(&logbuf_lock, flags);
+> >  		con_start = log_start;
+> >  		spin_unlock_irqrestore(&logbuf_lock, flags);
+> > +
+> > +		/*
+> > +		 * Disable the existing consoles temporarily to
+> > prevent it from
+> > +		 * printing out kernel log again.
+> > +		 */
+> > +		for_each_console(con)
+> > +			if (con != newcon)
+> > +				con->flags &= ~CON_ENABLED;
+> 
+> Is it racy?  If some CPU does an unrelated printk in the middle of all
+> this, might that get lost?  Perhaps not, given the way we pass the
+> start/end indexes into log_buf[].
 
-Version of kernel (linus git tree synced):   v2.6.37-3737-g0c21e3a
+The printk message should be ok, as they will fall into the log_buf[] anyway.
 
-Output of dmesg summarized here:
+> 
+> >  	}
+> >  	release_console_sem();
+> > +
+> > +	for_each_console(con)
+> > +		con->flags |= CON_ENABLED;
+> 
+> If a console previously had CON_ENABLED unset, this will bogusly set
+> it.  That will (at least) defeat the intent of a previous
+> console_stop().
+> 
+> How's about something like this?
 
-[ 7273.369563] ------------[ cut here ]------------
-[ 7273.369575] kernel BUG at fs/dcache.c:1358!
-[ 7273.369582] invalid opcode: 0000 [#1] SMP
-[ 7273.369590] last sysfs file:
-/sys/devices/pci0000:00/0000:00:1c.1/0000:03:00.0/ieee80211/phy0/rfkill0/state
-[ 7273.369598] Modules linked in: nls_cp437 cifs vga16fb vgastate
-isofs udf crc_itu_t usbhid i915 binfmt_misc drm_kms_helper drm
-i2c_algo_bit ppdev bridge stp bnep kvm_intel kvm xfs exportfs lp
-parport snd_hda_codec_conexant arc4 snd_hda_intel snd_hda_codec iwlagn
-snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_dummy pcmcia iwlcore
-snd_seq_oss snd_seq_midi video thinkpad_acpi mac80211 snd_rawmidi
-tpm_tis yenta_socket pcmcia_rsrc pcmcia_core tpm tpm_bios nvram
-psmouse snd_seq_midi_event intel_agp intel_gtt output serio_raw
-snd_seq snd_timer snd_seq_device cfg80211 agpgart iTCO_wdt
-iTCO_vendor_support snd pcspkr soundcore snd_page_alloc reiserfs
-e1000e
-[ 7273.369732]
-[ 7273.369740] Pid: 12963, comm: unzip Not tainted 2.6.37+ #4 7440A82/7440A82
-[ 7273.369748] EIP: 0060:[<c021e902>] EFLAGS: 00210286 CPU: 1
-[ 7273.369763] EIP is at d_set_d_op+0x52/0x60
-[ 7273.369769] EAX: f4ada400 EBX: 00000000 ECX: fcdfc5c0 EDX: fcdfc5c0
-[ 7273.369775] ESI: cff344ac EDI: f2263a00 EBP: f10c7dbc ESP: f10c7dbc
-[ 7273.369782]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-[ 7273.369790] Process unzip (pid: 12963, ti=f10c6000 task=ce833f20
-task.ti=f10c6000)
-[ 7273.369795] Stack:
-[ 7273.369799]  f10c7e64 fcde60ed f4540a00 00000109 f10c7e56 f10c7e56
-f10c7e50 f22a9380
-[ 7273.369816]  fce2ffe0 00000000 f10c7e56 000081a4 f4ada400 e4f1a62c
-00000109 c0000000
-[ 7273.369833]  f4540e00 f21ca000 f2263a00 f450a480 f22a9380 00000005
-00000080 e4f1a62c
-[ 7273.369849] Call Trace:
-[ 7273.369870]  [<fcde60ed>] cifs_create+0x59d/0x800 [cifs]
-[ 7273.369882]  [<c0216165>] ? generic_permission+0x25/0xc0
-[ 7273.369895]  [<fcdd41b0>] ? cifs_permission+0x0/0x70 [cifs]
-[ 7273.369907]  [<fcdd41f6>] ? cifs_permission+0x46/0x70 [cifs]
-[ 7273.369919]  [<c0301940>] ? security_inode_permission+0x20/0x30
-[ 7273.369929]  [<c0217202>] vfs_create+0x92/0xb0
-[ 7273.369937]  [<c0218710>] do_last+0x240/0x2c0
-[ 7273.369946]  [<c021a7a6>] do_filp_open+0x366/0x670
-[ 7273.369959]  [<c020b14d>] do_sys_open+0x6d/0x110
-[ 7273.369968]  [<c020b25e>] sys_open+0x2e/0x40
-[ 7273.369976]  [<c010301c>] sysenter_do_call+0x12/0x28
-[ 7273.369981] Code: 10 00 00 8b 4a 08 85 c9 74 06 81 08 00 20 00 00
-8b 0a 85 c9 74 06 81 08 00 40 00 00 8b 52 0c 85 d2 74 06 81 08 00 80
-00 00 5d c3 <0f> 0b eb fe 66 90 0f 0b eb fe 8d 74 26 00 55 89 e5 53 3e
-8d 74
-[ 7273.370075] EIP: [<c021e902>] d_set_d_op+0x52/0x60 SS:ESP 0068:f10c7dbc
+Yes, it makes sense, I should add some check. And this new
+"exclusive_console" should be better as its name shows what it is for.
 
-Further info is in the bugzilla site.
+Thanks,
+Feng
 
-Thanks.
-
---
-Regards,
-Peter Teoh
+> 
+> --- a/kernel/printk.c~a
+> +++ a/kernel/printk.c
+> @@ -113,6 +113,11 @@ static unsigned con_start;	/* Index into
+>  static unsigned log_end;	/* Index into log_buf:
+> most-recently-written-char + 1 */ 
+>  /*
+> + * If exclusive_console is non-NULL then only this console is to be
+> printed to.
+> + */
+> +static struct console *exclusive_console;
+> +
+> +/*
+>   *	Array of consoles built from command line options
+> (console=) */
+>  struct console_cmdline
+> @@ -460,6 +465,8 @@ static void __call_console_drivers(unsig
+>  	struct console *con;
+>  
+>  	for_each_console(con) {
+> +		if (exclusive_console && con != exclusive_console)
+> +			continue;
+>  		if ((con->flags & CON_ENABLED) && con->write &&
+>  				(cpu_online(smp_processor_id()) ||
+>  				(con->flags & CON_ANYTIME)))
+> @@ -1358,8 +1365,15 @@ void register_console(struct console *ne
+>  		spin_lock_irqsave(&logbuf_lock, flags);
+>  		con_start = log_start;
+>  		spin_unlock_irqrestore(&logbuf_lock, flags);
+> +		/*
+> +		 * We're about to replay the log buffer.  Only do
+> this to the
+> +		 * just-registered console to avoid excessive
+> message spam to
+> +		 * the already-registered consoles.
+> +		 */
+> +		exclusive_console = newcon;
+>  	}
+>  	release_console_sem();
+> +	exclusive_console = NULL;
+>  	console_sysfs_notify();
+>  
+>  	/*
+> _
+> 
