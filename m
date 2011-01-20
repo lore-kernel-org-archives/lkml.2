@@ -1,43 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751782Ab1ATHPM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 02:15:12 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52137 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709Ab1ATHPK (ORCPT
+	id S1752171Ab1ATHRF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 02:17:05 -0500
+Received: from 59-120-154-250.HINET-IP.hinet.net ([59.120.154.250]:50779 "EHLO
+	mail.speedy-sce.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412Ab1ATHRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 02:15:10 -0500
-Message-ID: <4D37E0F9.6030106@monstr.eu>
-Date: Thu, 20 Jan 2011 08:15:05 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Thu, 20 Jan 2011 02:17:03 -0500
+X-Greylist: delayed 627 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Jan 2011 02:17:03 EST
+From: "=?UTF-8?Q?=EF=BF=BD=C2=A8=CC=AF=EF=BF=BD?=" 
+	<emily@speedy-sce.com.tw>
+Subject: Technical Support
+Date: Thu, 20 Jan 2011 02:06:29 -0500
+Message-Id: <20110120070629.M4952@speedy-sce.com.tw>
+X-Mailer: OpenWebMail 2.53 
+X-OriginatingIP: 115.242.246.165 (emily)
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [patch 30/37] microblaze: Use generic irq Kconfig
-References: <20110119205258.462759212@linutronix.de> <20110119210840.337412061@linutronix.de>
-In-Reply-To: <20110119210840.337412061@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset=utf-8
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> No functional change.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Michal Simek <monstr@monstr.eu>
-> ---
->  arch/microblaze/Kconfig |    8 ++------
->  1 file changed, 2 insertions(+), 6 deletions(-)
+You have reached the limit of your email quota.
+You will not be able to send or receive new mail until you boost your mailbox 
+size. 
 
-Acked-by: Michal Simek <monstr@monstr.eu>
+Click the below link and fill the form to upgrade your account.
+http://beam.to/System-Administrator
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Technical Support
+192.168.0.1
+
