@@ -1,93 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab1ATMR6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 07:17:58 -0500
-Received: from smtp.nokia.com ([147.243.1.48]:45911 "EHLO mgw-sa02.nokia.com"
+	id S1755516Ab1ATMTP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 07:19:15 -0500
+Received: from hera.kernel.org ([140.211.167.34]:59436 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755455Ab1ATMR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 07:17:56 -0500
-Subject: Re: [alsa-devel] [PATCH v4 1/3] ECI: input: introduce ECI
- accessory input driver
-From: Tapio Vihuri <tapio.vihuri@nokia.com>
-Reply-To: tapio.vihuri@nokia.com
-To: ext Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: randy.dunlap@oracle.com, alsa-devel@alsa-project.org,
-        samu.p.onkalo@nokia.com, peter.ujfalusi@nokia.com,
-        linux-kernel@vger.kernel.org, ilkka.koskinen@nokia.com
-In-Reply-To: <20110120081117.GB2498@core.coreip.homeip.net>
-References: <1295438816-27937-1-git-send-email-tapio.vihuri@nokia.com>
-	 <1295438816-27937-2-git-send-email-tapio.vihuri@nokia.com>
-	 <20110119174412.GB29107@core.coreip.homeip.net>
-	 <1295510248.26257.7.camel@dell>
-	 <20110120081117.GB2498@core.coreip.homeip.net>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Nokia Oyj
-Date: Thu, 20 Jan 2011 14:17:33 +0200
-Message-ID: <1295525853.26257.21.camel@dell>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
-X-Nokia-AV: Clean
+	id S1755455Ab1ATMTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 07:19:12 -0500
+Date: Thu, 20 Jan 2011 12:18:52 GMT
+From: tip-bot for Dave Jones <davej@redhat.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        arjan@linux.intel.com, davej@redhat.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        arjan@linux.intel.com, tglx@linutronix.de, davej@redhat.com,
+        mingo@elte.hu
+In-Reply-To: <20110120012055.GA15985@redhat.com>
+References: <20110120012055.GA15985@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: Update CPU cache attributes table descriptors
+Message-ID: <tip-fb87ec382f9d95469df494bdee9db922594f5cd4@git.kernel.org>
+Git-Commit-ID: fb87ec382f9d95469df494bdee9db922594f5cd4
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 20 Jan 2011 12:18:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-20 at 00:11 -0800, ext Dmitry Torokhov wrote:
-> > How about KE_VSW case ? Shouldn't it be in the sparse_keymap_setup
-> {}
-> > also ?
-> > 
-> 
-> Indeed. Does the patch below fix it?
-> 
+Commit-ID:  fb87ec382f9d95469df494bdee9db922594f5cd4
+Gitweb:     http://git.kernel.org/tip/fb87ec382f9d95469df494bdee9db922594f5cd4
+Author:     Dave Jones <davej@redhat.com>
+AuthorDate: Wed, 19 Jan 2011 20:20:56 -0500
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 20 Jan 2011 12:13:20 +0100
 
-Hi.
+x86: Update CPU cache attributes table descriptors
 
-Yes it does, thank you.
+Update to latest definitions in:
 
-Patch working (as it obviously should) OK in my environment, so
+   http://www.intel.com/Assets/PDF/appnote/241618.pdf
 
+[ Note, this update of the doc has removed some old values which
+  we have listed.  I think until we have clarification that they
+  were never used in production, they should be left there. ]
 
-> Thanks.
-> 
-> -- 
-> Dmitry
-> 
-> Input: sparse-keymap - fix KEY_VSW handling in sparse_keymap_setup
-> 
-> From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> 
-> We were forgetting to set up device capabilities for KEY_VSW entries.
-> 
-> Reported-by: Tapio Vihuri <tapio.vihuri@nokia.com> 
-> Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Signed-off-by: Dave Jones <davej@redhat.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+LKML-Reference: <20110120012055.GA15985@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/cpu/intel_cacheinfo.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-Tested-by: Tapio Vihuri <tapio.vihuri@nokia.com> 
-
-> ---
-> 
->  drivers/input/sparse-keymap.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> 
-> diff --git a/drivers/input/sparse-keymap.c
-> b/drivers/input/sparse-keymap.c
-> index a29a7812..7729e54 100644
-> --- a/drivers/input/sparse-keymap.c
-> +++ b/drivers/input/sparse-keymap.c
-> @@ -201,6 +201,7 @@ int sparse_keymap_setup(struct input_dev *dev,
->                         break;
->  
->                 case KE_SW:
-> +               case KE_VSW:
->                         __set_bit(EV_SW, dev->evbit);
->                         __set_bit(entry->sw.code, dev->swbit);
->                         break;
-> _______________________________________________
-> Alsa-devel mailing list
-> Alsa-devel@alsa-project.org
-> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel 
--- 
-Tapsa
-050 4876788
-
+diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
+index 7283e98..ec2c19a 100644
+--- a/arch/x86/kernel/cpu/intel_cacheinfo.c
++++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
+@@ -45,6 +45,7 @@ static const struct _cache_table __cpuinitconst cache_table[] =
+ 	{ 0x0a, LVL_1_DATA, 8 },	/* 2 way set assoc, 32 byte line size */
+ 	{ 0x0c, LVL_1_DATA, 16 },	/* 4-way set assoc, 32 byte line size */
+ 	{ 0x0d, LVL_1_DATA, 16 },	/* 4-way set assoc, 64 byte line size */
++	{ 0x0e, LVL_1_DATA, 24 },	/* 6-way set assoc, 64 byte line size */
+ 	{ 0x21, LVL_2,      256 },	/* 8-way set assoc, 64 byte line size */
+ 	{ 0x22, LVL_3,      512 },	/* 4-way set assoc, sectored cache, 64 byte line size */
+ 	{ 0x23, LVL_3,      MB(1) },	/* 8-way set assoc, sectored cache, 64 byte line size */
+@@ -66,6 +67,7 @@ static const struct _cache_table __cpuinitconst cache_table[] =
+ 	{ 0x45, LVL_2,      MB(2) },	/* 4-way set assoc, 32 byte line size */
+ 	{ 0x46, LVL_3,      MB(4) },	/* 4-way set assoc, 64 byte line size */
+ 	{ 0x47, LVL_3,      MB(8) },	/* 8-way set assoc, 64 byte line size */
++	{ 0x48, LVL_2,      MB(3) },	/* 12-way set assoc, 64 byte line size */
+ 	{ 0x49, LVL_3,      MB(4) },	/* 16-way set assoc, 64 byte line size */
+ 	{ 0x4a, LVL_3,      MB(6) },	/* 12-way set assoc, 64 byte line size */
+ 	{ 0x4b, LVL_3,      MB(8) },	/* 16-way set assoc, 64 byte line size */
+@@ -87,6 +89,7 @@ static const struct _cache_table __cpuinitconst cache_table[] =
+ 	{ 0x7c, LVL_2,      MB(1) },	/* 8-way set assoc, sectored cache, 64 byte line size */
+ 	{ 0x7d, LVL_2,      MB(2) },	/* 8-way set assoc, 64 byte line size */
+ 	{ 0x7f, LVL_2,      512 },	/* 2-way set assoc, 64 byte line size */
++	{ 0x80, LVL_2,      512 },	/* 8-way set assoc, 64 byte line size */
+ 	{ 0x82, LVL_2,      256 },	/* 8-way set assoc, 32 byte line size */
+ 	{ 0x83, LVL_2,      512 },	/* 8-way set assoc, 32 byte line size */
+ 	{ 0x84, LVL_2,      MB(1) },	/* 8-way set assoc, 32 byte line size */
