@@ -1,56 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab1ATJv6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 04:51:58 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:43050 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755242Ab1ATJvz convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:13:1>);
-	Thu, 20 Jan 2011 04:51:55 -0500
-Message-Id: <4D3813E5020000780002D5FA@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 20 Jan 2011 09:52:21 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Jeremy Fitzhardinge" <jeremy@goop.org>
-Cc: "Jeremy Fitzhardinge" <jeremy.fitzhardinge@citrix.com>,
-        "Eric Dumazet" <dada1@cosmosbay.com>, <xiyou.wangcong@gmail.com>,
-        <suzuki@in.ibm.com>, "Peter Zijlstra" <peterz@infradead.org>,
-        "Nick Piggin" <npiggin@kernel.dk>, <vatsa@linux.vnet.ibm.com>,
-        "Linux Virtualization" <virtualization@lists.linux-foundation.org>,
-        "Xen-devel" <xen-devel@lists.xensource.com>,
-        "Mathieu Desnoyers" <mathieu.desnoyers@polymtl.ca>,
-        "Avi Kivity" <avi@redhat.com>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 13/14] x86/ticketlock: add slowpath logic
-References: <cover.1289940821.git.jeremy.fitzhardinge@citrix.com>
- <97ed99ae9160bdb6477284b333bd6708fb7a19cb.1289940821.git.jeremy.fitzhardinge@citrix.com>
- <20110117152222.GA19233@linux.vnet.ibm.com> <4D372DEA.1060004@goop.org>
- <20110119183914.GB7235@linux.vnet.ibm.com> <4D37338E.8030509@goop.org>
-In-Reply-To: <4D37338E.8030509@goop.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1755322Ab1ATJ4P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 04:56:15 -0500
+Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:55130
+	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755286Ab1ATJ4M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 04:56:12 -0500
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [PATCH] drm/i915: Don't kick-off hangcheck after a DRI interrupt
+Date: Thu, 20 Jan 2011 09:56:01 +0000
+Message-Id: <1295517361-15825-1-git-send-email-chris@chris-wilson.co.uk>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <20110120070508.GA2345@gondor.apana.org.au>
+References: <20110120070508.GA2345@gondor.apana.org.au>
+X-Originating-IP: 78.156.66.37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 19.01.11 at 19:55, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
-> On 01/19/2011 10:39 AM, Srivatsa Vaddagiri wrote:
->> I have tested quite extensively with booting a 16-vcpu guest (on a 16-pcpu 
-> host)
->> and running kernel compine (with 32-threads). Without this patch, I had
->> difficulty booting/shutting-down successfully (it would hang mid-way).
-> 
-> Sounds good.  But I like to test with "make -j 100-200" to really give
-> things a workout.
+Hangcheck is only used by GEM and just OOPSes with incomplete DRI
+configuration:
 
-Hmm, in my experience, heavily over-committing CPUs (e.g. a
-domain with double or more the vCPU-s that the system has
-pCPU-s, or the pCPU-s the domain is allowed to run on) is a
-much better test for eventual problems in the spin lock code
-paths.
+BUG: unable to handle kernel paging request at fffffffffffffff0
+IP: [<ffffffffa041ee76>] i915_hangcheck_elapsed+0x96/0x270 [i915]
+PGD 13d1067 PUD 13d2067 PMD 0
+Oops: 0000 [#1] PREEMPT SMP
+last sysfs file: /sys/class/net/lo/operstate
+CPU 2
+Modules linked in: snd_pcm_oss snd_mixer_oss vmnet parport_pc parport
+vmblock vmci vmmon i915 drm_kms_helper drm fb fbdev i2c_algo_bit
+cfbcopyarea video backlight output cfbimgblt cfbfillrect autofs4 ipv6
+nfs lockd fscache nfs_acl auth_rpcgss sunrpc coretemp hwmon_vid mo]
 
-Jan
+Pid: 0, comm: kworker/0:1 Not tainted 2.6.36.2 #5 P5KPL-CM/System
+Product Name
+RIP: 0010:[<ffffffffa041ee76>]  [<ffffffffa041ee76>]
+i915_hangcheck_elapsed+0x96/0x270 [i915]
+RSP: 0000:ffff880001703e40  EFLAGS: 00010217
+RAX: 0000000000000000 RBX: ffff880117071800 RCX: ffff880118f7c400
+RDX: 000000007dffffc0 RSI: ffff880118f7c028 RDI: ffff880117071800
+RBP: ffff880001703e70 R08: ffff88000170d460 R09: ffff880001712620
+R10: 0000000000000000 R11: 0000000000000001 R12: ffff880118f7c000
+R13: ffff880117071800 R14: 0000000000000000 R15: 000000000e41e9d8
+FS:  0000000000000000(0000) GS:ffff880001700000(0000)
+knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: fffffffffffffff0 CR3: 00000000d83df000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process kworker/0:1 (pid: 0, threadinfo ffff88011b6b2000, task
+ffff88011b67d5c0)
+Stack:
+ 7dffffc000012600 ffff880117071800 ffff88011b6ac000 0000000000000102
+<0> ffff880001703eb0 ffffffffa041ede0 ffff880001703ef0 ffffffff81046fad
+<0> ffff88011b6b3fd8 ffff88011b6b3fd8 ffff88011b6adc20 ffff88011b6ad820
+Call Trace:
+ <IRQ>
+ [<ffffffffa041ede0>] ? i915_hangcheck_elapsed+0x0/0x270 [i915]
+ [<ffffffff81046fad>] run_timer_softirq+0x13d/0x260
+ [<ffffffff81063657>] ? clockevents_program_event+0x57/0xa0
+ [<ffffffff81041c76>] __do_softirq+0xa6/0x130
+ [<ffffffff810032cc>] call_softirq+0x1c/0x30
+ [<ffffffff81005375>] do_softirq+0x55/0x90
+ [<ffffffff8104190d>] irq_exit+0x8d/0xb0
+ [<ffffffff8101de8c>] smp_apic_timer_interrupt+0x6c/0xa0
+ [<ffffffff81002d93>] apic_timer_interrupt+0x13/0x20
+ <EOI>
+ [<ffffffff8100b139>] ? mwait_idle+0x79/0x90
+ [<ffffffff81001610>] ? enter_idle+0x20/0x30
+ [<ffffffff81001689>] cpu_idle+0x69/0xc0
+ [<ffffffff812cb19c>] start_secondary+0x183/0x1e7
+Code: 8d 84 24 18 01 00 00 49 39 84 24 18 01 00 00 0f 84 cf 00 00 00 49
+8b 85 68 03 00 00 49 8d 74 24 28 48 8b 80 20 01 00 00 4c 89 ef <8b> 58
+f0 e8 42 5e 00 00 89 de 89 c7 e8 29 5e 00 00 84 c0 0f 85
+RIP  [<ffffffffa041ee76>] i915_hangcheck_elapsed+0x96/0x270 [i915]
+ RSP <ffff880001703e40>
+CR2: fffffffffffffff0
+---[ end trace a327d5ceef537f9e ]---
+
+Reported-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+---
+ drivers/gpu/drm/i915/i915_irq.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
+index 46d649b..39ce40d 100644
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -348,8 +348,12 @@ static void notify_ring(struct drm_device *dev,
+ 			struct intel_ring_buffer *ring)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+-	u32 seqno = ring->get_seqno(ring);
++	u32 seqno;
++
++	if (ring->obj == NULL)
++		return;
+ 
++	seqno = ring->get_seqno(ring);
+ 	trace_i915_gem_request_complete(dev, seqno);
+ 
+ 	ring->irq_seqno = seqno;
+-- 
+1.7.2.3
 
