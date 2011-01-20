@@ -1,144 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774Ab1ATUcO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 15:32:14 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:41781 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753006Ab1ATUcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 15:32:12 -0500
-Message-ID: <4D389BC0.8080900@free.fr>
-Date: Thu, 20 Jan 2011 21:32:00 +0100
-From: matthieu castet <castet.matthieu@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.8.1.23) Gecko/20090823 SeaMonkey/1.1.18
-MIME-Version: 1.0
-To: Xiaotian Feng <xtfeng@gmail.com>
-CC: Valdis.Kletnieks@vt.edu, Ingo Molnar <mingo@elte.hu>,
-        Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
-        Arjan van de Ven <arjan@infradead.org>,
-        James Morris <jmorris@namei.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 3/3 V13] RO/NX protection for loadable kernel
-References: <4CE2F914.9070106@free.fr>	<24422.1290656467@localhost>	<20101126182355.62615dff@mat-laptop>	<20101208221951.GO5750@outflux.net>	<20101211001857.4c5e0794@mat-laptop>	<20101222124019.GG10809@elte.hu>	<34428.1293053719@localhost> <AANLkTin55DXcQnK3NY7y-v8TXj5w-XT2rTJo9p90tj4g@mail.gmail.com>
-In-Reply-To: <AANLkTin55DXcQnK3NY7y-v8TXj5w-XT2rTJo9p90tj4g@mail.gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------050706020502070606060903"
+	id S1754784Ab1ATUdU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 15:33:20 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:20889 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754686Ab1ATUdT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 15:33:19 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6232"; a="71062568"
+From: Daniel Walker <dwalker@codeaurora.org>
+To: linux-arm-msm@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        davidb@codeaurora.org, Daniel Walker <dwalker@codeaurora.org>
+Subject: [PATCH 0/7] Nexus One Support
+Date: Thu, 20 Jan 2011 12:32:38 -0800
+Message-Id: <1295555565-21563-1-git-send-email-dwalker@codeaurora.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------050706020502070606060903
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+This series adds basic Nexus One support which includes a booting
+kernel, and functional MMC .
 
-Xiaotian Feng a écrit :
-> On Thu, Dec 23, 2010 at 5:35 AM,  <Valdis.Kletnieks@vt.edu> wrote:
->> On Wed, 22 Dec 2010 13:40:19 +0100, Ingo Molnar said:
->>> * mat <castet.matthieu@free.fr> wrote:
->>>
->>>> Le Wed, 8 Dec 2010 14:19:51 -0800,
->>>> Kees Cook <kees.cook@canonical.com> a écrit :
->>>>
->>>>> On Fri, Nov 26, 2010 at 06:23:55PM +0100, mat wrote:
->>>>>> could you try the attached patch ?
->>>>>>
->>>>>> on module load, we sort the __jump_table section. So we should make
->>>>>> it writable.
->>>>>>
->>>>>>
->>>>>> Matthieu
->>>>>> diff --git a/arch/x86/include/asm/jump_label.h
->>>>>> b/arch/x86/include/asm/jump_label.h index f52d42e..574dbc2 100644
->>>>>> --- a/arch/x86/include/asm/jump_label.h
->>>>>> +++ b/arch/x86/include/asm/jump_label.h
->>>>>> @@ -14,7 +14,7 @@
->>>>>>         do
->>>>>> {                                                       \ asm
->>>>>> goto("1:"                                       \
->>>>>> JUMP_LABEL_INITIAL_NOP                  \
->>>>>> -                       ".pushsection __jump_table,  \"a\" \n\t"\
->>>>>> +                       ".pushsection __jump_table,  \"aw\" \n\t"\
->>>>>>                         _ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
->>>>>>                         ".popsection \n\t"                      \
->>>>>>                         : :  "i" (key) :  : label);
->>>>>> \
->>>>> Acked-by: Kees Cook <kees.cook@canonical.com>
->>>>>
->>>>> Can this please get committed to tip?
->>>> I think it is not need anymore with  Steven Rostedt patch [1]
->>>>
->>>> Matthieu
->>>>
->>>> [1]
->>>>>> Here we set the text read only before we call the notifiers. The
->>>>>> function tracer changes the calls to mcount into nops via a notifier
->>>>>> call so this must be done after the module notifiers.
->>> What's the status of this bug?
->>>
->>> If we still need the patch then please submit it standalone with a proper subject
->>> line, with acks/signoffs added, etc.
->> Steve Rostedt's patch that moves the setting of the page permissions seems to
->> make this patch no longer necessary.  I tripped over this same issue, but the
->> version in the latest -mmotm does not need it, as it includes Steve's fix.
->>
-> 
-> I'm facing a boot failure (panic'ed on remove_jump_label_module_init)
-> on 2.6.37 (latest commit 3c0cb7c), which is 100% reproducible.
-> With this patch applied, I can boot my machine successfully, so I do
-> think this patch is needed.
-> 
-Could you confirm that this patch fix the problem ?
+Most people won't be able to use this yet unfortunately because
+you need a serial cable to get any output. However, it's a start.
 
+Brian Swetland (1):
+  [ARM] msm: qsd8k memory base is at 0x20000000
 
-Matthieu
+Daniel Walker (6):
+  msm: qsd8x50: add uart platform data
+  msm: qsd8x50: add acpuclock code
+  msm: mahimahi: add mahimahi board file
+  msm: mahimahi: add in mmc support code
+  msm: mahimahi: add gpio pin muxing code
+  msm: mahimahi: initialize mmc at start up
 
---------------050706020502070606060903
-Content-Type: text/x-diff;
- name="0001-Fix-jump-table-in-module-init-section.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline;
- filename="0001-Fix-jump-table-in-module-init-section.patch"
+ arch/arm/mach-msm/Kconfig              |    8 +-
+ arch/arm/mach-msm/Makefile             |    5 +-
+ arch/arm/mach-msm/Makefile.boot        |    5 +
+ arch/arm/mach-msm/acpuclock-qsd8x50.c  |  457 ++++++++++++++++++++++++++++++++
+ arch/arm/mach-msm/board-mahimahi-mmc.c |  238 +++++++++++++++++
+ arch/arm/mach-msm/board-mahimahi.c     |   52 +++-
+ arch/arm/mach-msm/board-mahimahi.h     |  147 ++++++++++
+ arch/arm/mach-msm/devices-qsd8x50.c    |   42 +++
+ arch/arm/mach-msm/include/mach/board.h |    1 +
+ 9 files changed, 942 insertions(+), 13 deletions(-)
+ create mode 100644 arch/arm/mach-msm/acpuclock-qsd8x50.c
+ create mode 100644 arch/arm/mach-msm/board-mahimahi-mmc.c
+ create mode 100644 arch/arm/mach-msm/board-mahimahi.h
 
->From 0eeba453aaba0ebff86f0a7ad9bfb8afbde0c0dc Mon Sep 17 00:00:00 2001
-From: Matthieu CASTET <castet.matthieu@free.fr>
-Date: Thu, 20 Jan 2011 21:25:03 +0100
-Subject: [PATCH] Fix jump table in module init section
-
-If we use jump table in module init, there are marked
-as removed in __jump_table section after init is done.
-
-But we already applied ro permissions on the module, so
-we can't modify a read only section (crash in
-remove_jump_label_module_init).
-
-Make the __jump_table section rw.
-
-Signed-off-by: Matthieu CASTET <castet.matthieu@free.fr>
----
- arch/x86/include/asm/jump_label.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
-index f52d42e..574dbc2 100644
---- a/arch/x86/include/asm/jump_label.h
-+++ b/arch/x86/include/asm/jump_label.h
-@@ -14,7 +14,7 @@
- 	do {							\
- 		asm goto("1:"					\
- 			JUMP_LABEL_INITIAL_NOP			\
--			".pushsection __jump_table,  \"a\" \n\t"\
-+			".pushsection __jump_table,  \"aw\" \n\t"\
- 			_ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
- 			".popsection \n\t"			\
- 			: :  "i" (key) :  : label);		\
 -- 
-1.7.2.3
-
-
---------------050706020502070606060903--
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
