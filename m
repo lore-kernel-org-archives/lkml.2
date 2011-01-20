@@ -1,221 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755828Ab1ATOWe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 09:22:34 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:33474 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755808Ab1ATOWb (ORCPT
+	id S1755651Ab1ATO26 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 09:28:58 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:40927 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755484Ab1ATO24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 09:22:31 -0500
-X-AuditID: b753bd60-a1894ba000000ca4-bb-4d3845226b4e
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -perf/perf/core v2 3/3] perf probe: Add filters support for
-	available functions
-To: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Franck Bui-Huu <fbuihuu@gmail.com>, linux-kernel@vger.kernel.org,
-        2nddept-manager@sdl.hitachi.co.jp,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 20 Jan 2011 23:15:45 +0900
-Message-ID: <20110120141545.25915.85930.stgit@ltc236.sdl.hitachi.co.jp>
-In-Reply-To: <20110120141530.25915.12673.stgit@ltc236.sdl.hitachi.co.jp>
-References: <20110120141530.25915.12673.stgit@ltc236.sdl.hitachi.co.jp>
-User-Agent: StGIT/0.14.3
+	Thu, 20 Jan 2011 09:28:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=SnJI+uue3EttLtp6OZlBHjeTUzdSe0gNegPq6J0fMYItcZOIJ0lVkznXaVTZo351nD
+         ehpsvMUu14jSK7YtRLJfXd8y4ezWcC7OP3dFXufyY52pmNkyQogl+/SzfmXLyo/IqDww
+         +d62uTQ8HnAN/Q1t+nXthRRL70VvvNRlgLBUM=
+Date: Thu, 20 Jan 2011 23:28:44 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KyongHo Cho <pullip.cho@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>, Ilho Lee <ilho215.lee@samsung.com>,
+        KeyYoung Park <keyyoung.park@samsung.com>
+Subject: Re: [PATCH] ARM: mm: Regarding section when dealing with meminfo
+Message-ID: <20110120142844.GA28358@barrios-desktop>
+References: <1295516739-9839-1-git-send-email-pullip.cho@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295516739-9839-1-git-send-email-pullip.cho@samsung.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add filters support for available function list.
-Default filter is "!_*" for filtering out local-purpose
-symbols.
+On Thu, Jan 20, 2011 at 06:45:39PM +0900, KyongHo Cho wrote:
+> Sparsemem allows that a bank of memory spans over several adjacent
+> sections if the start address and the end address of the bank
+> belong to different sections.
+> When gathering statictics of physical memory in mem_init() and
+> show_mem(), this possiblity was not considered.
 
-e.g.)
- # perf probe --filter="add*" -F
-add_disk
-add_disk_randomness
-add_input_randomness
-add_interrupt_randomness
-add_memory
-add_page_to_unevictable_list
-add_page_wait_queue
-...
+Please write down the result if we doesn't consider this patch.
+I can understand what happens but for making good description and review,
+merging easily, it would be better to write down the result without 
+the patch explicitly.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Chase Douglas <chase.douglas@canonical.com>
-Cc: linux-kernel@vger.kernel.org
----
+> 
+> This patch guarantees that simple increasing the pointer to page
+> descriptors does not exceed the boundary of a section.
+> 
+> Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
+> ---
+>  arch/arm/mm/init.c |   74 +++++++++++++++++++++++++++++++++++----------------
+>  1 files changed, 51 insertions(+), 23 deletions(-)
+> 
+> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+> index 57c4c5c..6ccecbe 100644
+> --- a/arch/arm/mm/init.c
+> +++ b/arch/arm/mm/init.c
+> @@ -93,24 +93,38 @@ void show_mem(void)
+>  
+>  		pfn1 = bank_pfn_start(bank);
+>  		pfn2 = bank_pfn_end(bank);
+> -
+> +#ifndef CONFIG_SPARSEMEM
+>  		page = pfn_to_page(pfn1);
+>  		end  = pfn_to_page(pfn2 - 1) + 1;
+> -
+> +#else
+> +		pfn2--;
+>  		do {
+> -			total++;
+> -			if (PageReserved(page))
+> -				reserved++;
+> -			else if (PageSwapCache(page))
+> -				cached++;
+> -			else if (PageSlab(page))
+> -				slab++;
+> -			else if (!page_count(page))
+> -				free++;
+> -			else
+> -				shared += page_count(page) - 1;
+> -			page++;
+> -		} while (page < end);
+> +			page = pfn_to_page(pfn1);
+> +			if (pfn_to_section_nr(pfn1) < pfn_to_section_nr(pfn2)) {
+> +				pfn1 += PAGES_PER_SECTION;
+> +				pfn1 &= PAGE_SECTION_MASK;
+> +			} else {
+> +				pfn1 = pfn2;
+> +			}
+> +			end = pfn_to_page(pfn1) + 1;
+> +#endif
+> +			do {
+> +				total++;
+> +				if (PageReserved(page))
+> +					reserved++;
+> +				else if (PageSwapCache(page))
+> +					cached++;
+> +				else if (PageSlab(page))
+> +					slab++;
+> +				else if (!page_count(page))
+> +					free++;
+> +				else
+> +					shared += page_count(page) - 1;
+> +				page++;
+> +			} while (page < end);
+> +#ifdef CONFIG_SPARSEMEM
+> +		} while (pfn1 < pfn2);
+> +#endif
+>  	}
+>  
+>  	printk("%d pages of RAM\n", total);
+> @@ -470,17 +484,31 @@ void __init mem_init(void)
+>  
+>  		pfn1 = bank_pfn_start(bank);
+>  		pfn2 = bank_pfn_end(bank);
+> -
+> +#ifndef CONFIG_SPARSEMEM
+>  		page = pfn_to_page(pfn1);
+>  		end  = pfn_to_page(pfn2 - 1) + 1;
+> -
+> +#else
+> +		pfn2--;
+>  		do {
+> -			if (PageReserved(page))
+> -				reserved_pages++;
+> -			else if (!page_count(page))
+> -				free_pages++;
+> -			page++;
+> -		} while (page < end);
+> +			page = pfn_to_page(pfn1);
+> +			if (pfn_to_section_nr(pfn1) < pfn_to_section_nr(pfn2)) {
+> +				pfn1 += PAGES_PER_SECTION;
+> +				pfn1 &= PAGE_SECTION_MASK;
+> +			} else {
+> +				pfn1 = pfn2;
+> +			}
+> +			end = pfn_to_page(pfn1) + 1;
+> +#endif
+> +			do {
+> +				if (PageReserved(page))
+> +					reserved_pages++;
+> +				else if (!page_count(page))
+> +					free_pages++;
+> +				page++;
+> +			} while (page < end);
+> +#ifdef CONFIG_SPARSEMEM
+> +		} while (pfn1 < pfn2);
+> +#endif
+>  	}
 
- tools/perf/Documentation/perf-probe.txt |    9 +++++----
- tools/perf/builtin-probe.c              |   19 +++++++++++++------
- tools/perf/util/probe-event.c           |   23 +++++++++++++----------
- tools/perf/util/probe-event.h           |    2 +-
- 4 files changed, 32 insertions(+), 21 deletions(-)
+Hmm.. new ifndef magic makes code readability bad.
+Couldn't we do it by simple pfn iterator not page and pfn_valid check?
 
-diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
-index c3189de..4df425a 100644
---- a/tools/perf/Documentation/perf-probe.txt
-+++ b/tools/perf/Documentation/perf-probe.txt
-@@ -78,9 +78,10 @@ OPTIONS
- 	Show available functions in given module or kernel.
- 
- --filter=FILTER::
--	(Only for --vars) Set filter for variables. FILTER is a combination of
--	glob pattern, see FILTER PATTERN for detail.
--	Default FILTER is "!__k???tab_* & !__crc_*".
-+	(Only for --vars and --funcs) Set filter for variables. FILTER is a
-+	combination of glob pattern, see FILTER PATTERN for detail.
-+	Default FILTER is "!__k???tab_* & !__crc_*" for --vars, and "!_*"
-+	for --funcs.
- 	If several filters are specified, only the last filter is valid.
- 
- -f::
-@@ -147,7 +148,7 @@ This provides some sort of flexibility and robustness to probe point definitions
- 
- FILTER PATTERN
- --------------
-- The filter pattern is glob matching pattern(s) to filter variables.
-+ The filter pattern is glob matching pattern(s) to filter variables or functions.
-  In addition, you can use "!" for specifying filter-out rule. You also can give several rules combined with "&" or "|", and fold those rules as one rule by using "(" ")".
- 
- e.g.
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index abb423e..fcde003 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -45,6 +45,7 @@
- #include "util/probe-event.h"
- 
- #define DEFAULT_VAR_FILTER "!__k???tab_* & !__crc_*"
-+#define DEFAULT_FUNC_FILTER "!_*"
- #define MAX_PATH_LEN 256
- 
- /* Session management structure */
-@@ -159,6 +160,7 @@ static int opt_show_vars(const struct option *opt __used,
- 
- 	return ret;
- }
-+#endif
- 
- static int opt_set_filter(const struct option *opt __used,
- 			  const char *str, int unset __used)
-@@ -180,7 +182,6 @@ static int opt_set_filter(const struct option *opt __used,
- 
- 	return 0;
- }
--#endif
- 
- static const char * const probe_usage[] = {
- 	"perf probe [<options>] 'PROBEDEF' ['PROBEDEF' ...]",
-@@ -236,10 +237,6 @@ static const struct option options[] = {
- 		     "Show accessible variables on PROBEDEF", opt_show_vars),
- 	OPT_BOOLEAN('\0', "externs", &params.show_ext_vars,
- 		    "Show external variables too (with --vars only)"),
--	OPT_CALLBACK('\0', "filter", NULL,
--		     "[!]FILTER", "Set a variable filter (with --vars only)\n"
--		     "\t\t\t(default: \"" DEFAULT_VAR_FILTER "\")",
--		     opt_set_filter),
- 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
- 		   "file", "vmlinux pathname"),
- 	OPT_STRING('s', "source", &symbol_conf.source_prefix,
-@@ -252,6 +249,11 @@ static const struct option options[] = {
- 		 "Set how many probe points can be found for a probe."),
- 	OPT_BOOLEAN('F', "funcs", &params.show_funcs,
- 		    "Show potential probe-able functions."),
-+	OPT_CALLBACK('\0', "filter", NULL,
-+		     "[!]FILTER", "Set a filter (with --vars/funcs only)\n"
-+		     "\t\t\t(default: \"" DEFAULT_VAR_FILTER "\" for --vars,\n"
-+		     "\t\t\t \"" DEFAULT_FUNC_FILTER "\" for --funcs)",
-+		     opt_set_filter),
- 	OPT_END()
- };
- 
-@@ -322,7 +324,12 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 			pr_err("  Error: Don't use --funcs with --vars.\n");
- 			usage_with_options(probe_usage, options);
- 		}
--		ret = show_available_funcs(params.target_module);
-+		if (!params.filter)
-+			params.filter = strfilter__new(DEFAULT_FUNC_FILTER,
-+						       NULL);
-+		ret = show_available_funcs(params.target_module,
-+					   params.filter);
-+		strfilter__delete(params.filter);
- 		if (ret < 0)
- 			pr_err("  Error: Failed to show functions."
- 			       " (%d)\n", ret);
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 2346506..27b8b3c 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -1951,21 +1951,23 @@ int del_perf_probe_events(struct strlist *dellist)
- 
- 	return ret;
- }
-+/* TODO: don't use a global variable for filter ... */
-+static struct strfilter *available_func_filter;
- 
- /*
-- * If a symbol corresponds to a function with global binding return 0.
-- * For all others return 1.
-+ * If a symbol corresponds to a function with global binding and
-+ * matches filter return 0. For all others return 1.
-  */
--static int filter_non_global_functions(struct map *map __unused,
--					struct symbol *sym)
-+static int filter_available_functions(struct map *map __unused,
-+				      struct symbol *sym)
- {
--	if (sym->binding != STB_GLOBAL)
--		return 1;
--
--	return 0;
-+	if (sym->binding == STB_GLOBAL &&
-+	    strfilter__compare(available_func_filter, sym->name))
-+		return 0;
-+	return 1;
- }
- 
--int show_available_funcs(const char *module)
-+int show_available_funcs(const char *module, struct strfilter *_filter)
- {
- 	struct map *map;
- 	int ret;
-@@ -1981,7 +1983,8 @@ int show_available_funcs(const char *module)
- 		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
- 		return -EINVAL;
- 	}
--	if (map__load(map, filter_non_global_functions)) {
-+	available_func_filter = _filter;
-+	if (map__load(map, filter_available_functions)) {
- 		pr_err("Failed to load map.\n");
- 		return -EINVAL;
- 	}
-diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
-index 4e80b2b..3434fc9 100644
---- a/tools/perf/util/probe-event.h
-+++ b/tools/perf/util/probe-event.h
-@@ -128,7 +128,7 @@ extern int show_line_range(struct line_range *lr, const char *module);
- extern int show_available_vars(struct perf_probe_event *pevs, int npevs,
- 			       int max_probe_points, const char *module,
- 			       struct strfilter *filter, bool externs);
--extern int show_available_funcs(const char *module);
-+extern int show_available_funcs(const char *module, struct strfilter *filter);
- 
- 
- /* Maximum index number of event-name postfix */
+>  
+>  	/*
+> -- 
+> 1.6.2.5
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom policy in Canada: sign http://dissolvethecrtc.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
+-- 
+Kind regards,
+Minchan Kim
