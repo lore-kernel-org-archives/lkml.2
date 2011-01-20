@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab1ATR70 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 12:59:26 -0500
-Received: from mga03.intel.com ([143.182.124.21]:22518 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753317Ab1ATR7Y convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 12:59:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,352,1291622400"; 
-   d="scan'208";a="377491634"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@alien8.de>,
-        huang ying <huang.ying.caritas@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>,
-        Mike Waychison <mikew@google.com>
-Date: Thu, 20 Jan 2011 09:59:21 -0800
-Subject: RE: [PATCH -v10 0/4] Lock-less list
-Thread-Topic: [PATCH -v10 0/4] Lock-less list
-Thread-Index: Acu4rCU6S1e2Fl5fQwytu+qwYy5I1gAHcoIg
-Message-ID: <987664A83D2D224EAE907B061CE93D530194258DAE@orsmsx505.amr.corp.intel.com>
-References: <1295484358.15213.25.camel@yhuang-dev>
- <20110119165247.cca2f434.akpm@linux-foundation.org>
- <1295520247.28776.152.camel@laptop>
- <AANLkTimR6xd1PxCP6jmuNwFkANrGPdTf2wpiGsBXGpKx@mail.gmail.com>
- <1295522876.28776.158.camel@laptop>
- <AANLkTin3_NuGG_E0Juy7=1Q7PcMJ6id1ZU-Gngfp_=dg@mail.gmail.com>
- <20110120121455.GA7680@elte.hu>
- <AANLkTikv3h_QoHs4uj6CNJdC7tb_-e0osKa47KWEJvFV@mail.gmail.com>
- <20110120130625.GA14436@elte.hu> <20110120133621.GA314@a1.tnic>
- <20110120141143.GA17272@elte.hu>
-In-Reply-To: <20110120141143.GA17272@elte.hu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753563Ab1ATR7f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 12:59:35 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53888 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753502Ab1ATR7e convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 12:59:34 -0500
 MIME-Version: 1.0
+In-Reply-To: <4D387109.9020207@t-online.de>
+References: <4D387109.9020207@t-online.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 20 Jan 2011 09:58:42 -0800
+Message-ID: <AANLkTi=GjnyE1_RosS_L_sn=QCTDSgO7v9EL+1bpJTu7@mail.gmail.com>
+Subject: Re: [BUG] 2.6.38-rc1-git1: hard lockup related to i915 / automated
+ cgroup scheduling
+To: Knut Petersen <Knut_Petersen@t-online.de>
+Cc: airlied@linux.ie, jesse.barnes@intel.com, linux-kernel@vger.kernel.org,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > True story. And yet google folk still do that, unfortunately:
-> > https://lkml.org/lkml/2011/1/10/419
+On Thu, Jan 20, 2011 at 9:29 AM, Knut Petersen
+<Knut_Petersen@t-online.de> wrote:
+> Kernel 2.6.38-rc1 and -git1 will lock my AOpen i915GMm-HFS
+> at the end of  KDE startup if automatic process group scheduling
+> is actived in kernel config. A hard reset is necessary.
+> Without automatic process group scheduling everything is ok.
+
+Interesting. Most likely timing-related, but maybe there's some actual
+memory corruption. Adding the scheduler guys just in case.
+
+It might be interesting to see if enabling SLUB debugging makes any
+difference. Interesting for two reasons:
+
+ - it may just make the problem go away because it changes timings
+radically enough (which is the bad case, since that doesn't really
+help us very much)
+
+ - maybe it's not timing-related, and instead shows some slab misuse
+and corruption that explains the problem.
+
+I dunno.
+
+> Reproducibility of bug: 100 %
+> System: AOpen i915GMm-Hfs, 2GB, Pentium M
+> Distribution: openSuSE 11.3
 >
-> I wouldn't worry about that too much - such uses are extremely isolated.
+> cu,
+>  Knut
+>
+> Jan 20 17:57:07 golem kernel: [   58.087054] ------------[ cut here ]------------
+> Jan 20 17:57:07 golem kernel: [   58.087117] kernel BUG at drivers/gpu/drm/i915/i915_gem.c:3254!
 
-Google is just one user - but they have (so I hear) a large number
-of machines.
+Grr. Hate people who do BUG_ON() calls that kill the machine and make
+things harder to debug.
 
-I would hazard a guess that there are other users that feel the
-same way - i.e. users with a large number of machines that move
-onto new kernel versions from time to time.
+What happens if you replace that
 
-These users want a stable kernel->user ABI - and Google has stated
-quite clearly that "printk" doesn't meet their need.  I think that
-they would be happy with some other stable solution than mcelog,
-but we might as well ask for their input before imposing something
-on them.
+  BUG_ON(obj->pin_count == DRM_I915_GEM_OBJECT_MAX_PIN_COUNT);
 
-Mike: would you like to join the conversation on how to report
-errors - or nominate someone else to represent the Google point
-of view?
+with a
 
--Tony
+  if (WARN_ON_ONCE(obj->pin_count == DRM_I915_GEM_OBJECT_MAX_PIN_COUNT))
+    return -ENOMEM;
 
+or similar? Does it limp along? I'm not suggesting that as a fix
+(obviously), but I do think that we have way too many BUG_ON's, and
+too few people thinking about "how can I make the machine possibly
+limp on so that the oops is easier to see and report"
 
+                     Linus
