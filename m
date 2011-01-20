@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755523Ab1ATMsJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 07:48:09 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:42699 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933Ab1ATMsH (ORCPT
+	id S1755536Ab1ATMt0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 07:49:26 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:37952 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752933Ab1ATMtY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 07:48:07 -0500
-Date: Thu, 20 Jan 2011 07:47:30 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/8] zcache: page cache compression support
-Message-ID: <20110120124730.GA7284@infradead.org>
-References: <1279283870-18549-1-git-send-email-ngupta@vflare.org20110110131626.GA18407@shutemov.name>
- <9e7aa896-ed1f-4d50-8227-3a922be39949@default>
- <4D382B99.7070005@vflare.org>
+	Thu, 20 Jan 2011 07:49:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=pUrQbOlGUS1bxiHojZtXIVLv7sL1k5uFAD7DSzFNG6HZXCpPXFZrUR4WiE9Qr0L3Xw
+         TYKywpXdj2nM/zhjTOTF7foUBeEHp198pB/R21IjZVwYqK0xppcYc7df5HbPj8RkWWnl
+         E/tDqGslSNgVd/e6ZnmQ3a1ldrz36deC9Mucw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D382B99.7070005@vflare.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20110120121455.GA7680@elte.hu>
+References: <1295245019-7816-1-git-send-email-ying.huang@intel.com>
+	<20110119135546.bb7e8f62.akpm@linux-foundation.org>
+	<1295484358.15213.25.camel@yhuang-dev>
+	<20110119165247.cca2f434.akpm@linux-foundation.org>
+	<1295520247.28776.152.camel@laptop>
+	<AANLkTimR6xd1PxCP6jmuNwFkANrGPdTf2wpiGsBXGpKx@mail.gmail.com>
+	<1295522876.28776.158.camel@laptop>
+	<AANLkTin3_NuGG_E0Juy7=1Q7PcMJ6id1ZU-Gngfp_=dg@mail.gmail.com>
+	<20110120121455.GA7680@elte.hu>
+Date: Thu, 20 Jan 2011 20:49:23 +0800
+Message-ID: <AANLkTikv3h_QoHs4uj6CNJdC7tb_-e0osKa47KWEJvFV@mail.gmail.com>
+Subject: Re: [PATCH -v10 0/4] Lock-less list
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Huang Ying <ying.huang@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 07:33:29AM -0500, Nitin Gupta wrote:
-> I just started looking into kztmem (weird name!) but on
-> the high level it seems so much similar to zcache with some
-> dynamic resizing added (callback for shrinker interface).
-> 
-> Now, I'll try rebuilding zcache according to new cleancache
-> API as provided by these set of patches. This will help refresh
-> whatever issues I was having back then with pagecache
-> compression and maybe pick useful bits/directions from
-> new kztmem work.
+On Thu, Jan 20, 2011 at 8:14 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * huang ying <huang.ying.caritas@gmail.com> wrote:
+>
+>> > But will all that stuff be accepted? Please stop sending infrastructure bits and
+>> > focus on your larger RAS picture, once you have consensus on that from all
+>> > parties involved, then, and only then, does it make sense to submit everything,
+>> > including infrastructure.
+>>
+>> I am not sending hardware error reporting infrastructure.  As far as I know, Linus
+>> and Andrew suggest to use printk for hardware error reporting.  And now, I just
+>> try to write APEI driver and reporting hardware error with printk.  Is it
+>> acceptable?  Do you have some other idea about hardware error reporting?
+>
+> Erm, how could you possible have missed the perf based RAS daemon work of Boris,
+> which we've pointed out about half a dozen times already?
 
-Yes, we shouldn't have two drivers doing almost the same in the
-tree.  Also adding core hooks for staging drivers really is against
-the idea of staging of having a separate crap tree.  So it would be
-good to get zcache into a state where we can merge it into the
-proper tree first.  And then we can discuss if adding an abstraction
-layer between it and the core VM really makes sense, and if it does
-how.   But I'm pretty sure there's now need for multiple layers of
-abstraction for something that's relatively core VM functionality.
+Even if there is some other hardware error reporting infrastructure
+such as perf based, I think we still need printk too. After all, as
+Linus pointed out, printk is the most popular error reporting
+mechanism so far. Do you think so?
 
-E.g. the abstraction should involve because of it's users, not the
-compressed caching code should involve because it's needed to present
-a user for otherwise useless code.
+Best Regards,
+Huang Ying
