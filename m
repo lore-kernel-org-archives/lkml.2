@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab1ATP1R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 10:27:17 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:39544 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755711Ab1ATP1Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 10:27:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=cDLZsSElPGwjR61kXDet2yURz4A1vaqz2kxoRZ/ANkRKvtjc0/5pbm7TJUiFuq3CCE
-         8t4CCIccM+evrA1W6f/mPIHiECYcgnERaiO5tAYiqQOQ4IJly8lR/n/FJua8Cr2SwUi5
-         AYXPnlc2V8KPzHrRSGLxoCxr6/YFEWVTvRSRY=
-Date: Thu, 20 Jan 2011 17:18:22 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>,
-        Philipp Reisner <philipp.reisner@linbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lars Ellenberg <lars.ellenberg@linbit.com>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] loop: queue_lock NULL pointer derefence in
- blk_throtl_exit (v2)
-Message-ID: <20110120151738.GA4665@swordfish.minsk.epam.com>
-References: <20110114192532.GA4274@swordfish>
- <20110120113211.GB16184@redhat.com>
- <20110120125849.GA4172@swordfish>
- <20110120143546.GA18875@redhat.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HG+GLK89HZ1zG0kk"
-Content-Disposition: inline
-In-Reply-To: <20110120143546.GA18875@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755847Ab1ATPaD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 10:30:03 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:57430 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755728Ab1ATPaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 10:30:01 -0500
+Subject: Re: flex_array related problems on selinux policy loading
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+In-Reply-To: <20110120122659.GD4639@secunet.com>
+References: <20110120122659.GD4639@secunet.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Thu, 20 Jan 2011 07:28:50 -0800
+Message-ID: <1295537330.9039.583.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2011-01-20 at 13:26 +0100, Steffen Klassert wrote:
+> flex_array_alloc allocates the basic struct flex_array regardless whether
+> total_nr_elements or element_size is zero. Then flex_array_prealloc
+> fails with -ENOSPC if total_nr_elements is zero or it hits a division by
+> zero if element_size is zero.
+> 
+> This patch changes the behaviour on zero size allocations to the same
+> as kmalloc, we return ZERO_SIZE_PTR in this case. All flex_array handlers
+> test for ZERO_SIZE_PTR and return an appropriate value to the caller.
 
---HG+GLK89HZ1zG0kk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Some of this seems pretty sane, at least to make it more of a drop-in
+for kmalloc().
 
-On (01/20/11 09:35), Vivek Goyal wrote:
-> Hi Sergey,
->
+...
+> @@ -187,6 +195,9 @@ int flex_array_put(struct flex_array *fa, unsigned int element_nr, void *src,
+>  	struct flex_array_part *part;
+>  	void *dst;
+> 
+> +	if (unlikely(ZERO_OR_NULL_PTR(fa)))
+> +		return 0;
 
-Hi Vivek,
+I think it's OK to add these for the array alloc and free cases.  But,
+it's really dangerous to do it for put.  It has the potential to
+silently throw away data and then be really confusing to debug when you
+can't get it back later.
 
-> Can we expand a little bit on comment that why do we need to have
-> q->queue_lock initialized here now. Basically in the past nobody tried
-> to take q->queue_lock in blk_cleanup_queue() path hence things just
-> worked. Now blk throttling code is new and it takes q->queue_lock hence we
-> run into issues. This could be true for some other future code too.
->=20
-> Secondly currently blk throttle code seems to be the only user dependent
-> on this lock initialization. So it might make sense to move this code
-> closer to the actual call and blk_release_queue() might be even better
-> place to do it atleast for now.
->=20
+This can only make sense if you have a zero-byte element.  However, this
+would also just return if you happened to try and insert data in to a
+zero-length array.  That's a bug we need to catch.  Note that
+kmem_cache_create() doesn't let you create caches for zero-byte objects.
 
-I'm afraid it's not safe to move NULL-check-and-fix out from blk_cleanup_qu=
-eue,=20
-since we're performing elevator_exit(q->elevator) call, which may depend on=
-=20
-q->queue_lock. For example, (./cfq-iosched.c: .elevator_exit_fn =3D cfq_exi=
-t_queue)
-cfq_exit_queue uses q->queue_lock.
+> @@ -215,6 +226,9 @@ int flex_array_clear(struct flex_array *fa, unsigned int element_nr)
+>  	struct flex_array_part *part;
+>  	void *dst;
+> 
+> +	if (unlikely(ZERO_OR_NULL_PTR(fa)))
+> +		return 0;
 
+I tend to think about the flex_array itself as being more like a
+kmem_cache than anything else.  So, all of the operations on the array
+itself, like shrinking and growing are probably OK.
 
-	Sergey
+Can you also pull the unlikely()s?  
 
---HG+GLK89HZ1zG0kk
-Content-Type: application/pgp-signature
+-- Dave
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iJwEAQECAAYFAk04Uj4ACgkQfKHnntdSXjSsPwP/WpK329hy5zOoivCoh5tgR/ZW
-0LZkXh5VhjdO3R1o3B2+bo4FOM/rSk8sO30UUDu02VYffQ0R94Ddqu4G/2rGgFnU
-qz4HGXNcyIY25fsfBMIALHNxBgPToyVV1Q401D1KwtEtKi2e+Dy50P98gVmrJLXP
-lTOEEEPN8xFvc/IAma0=
-=K/qK
------END PGP SIGNATURE-----
-
---HG+GLK89HZ1zG0kk--
