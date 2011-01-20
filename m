@@ -1,122 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755398Ab1ATWn6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 17:43:58 -0500
-Received: from imx9.toshiba.co.jp ([202.33.96.51]:42229 "EHLO
-	imx9.toshiba.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323Ab1ATWn4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 17:43:56 -0500
-X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Jan 2011 17:43:56 EST
-Subject: [PATCH] it87_wdt: Add support for IT8721F watchdog
-Date: Fri, 21 Jan 2011 07:37:51 +0900
+	id S1755587Ab1ATWui (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 17:50:38 -0500
+Received: from borg.medozas.de ([188.40.89.202]:45045 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753523Ab1ATWuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 17:50:37 -0500
+Date: Thu, 20 Jan 2011 23:50:36 +0100 (CET)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Jan Kara <jack@suse.cz>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <jens.axboe@oracle.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, stable@kernel.org,
+        gregkh@suse.de
+Subject: Re: Sync writeback still broken
+In-Reply-To: <alpine.LNX.2.01.1011052302400.17206@obet.zrqbmnf.qr>
+Message-ID: <alpine.LNX.2.01.1101202344170.26671@obet.zrqbmnf.qr>
+References: <20100212091609.GB1025@kernel.dk> <alpine.LFD.2.00.1002120722270.7792@localhost.localdomain> <alpine.LSU.2.01.1002131356250.20838@obet.zrqbmnf.qr> <20100215144938.GD3434@quack.suse.cz> <alpine.LSU.2.01.1002151629380.27775@obet.zrqbmnf.qr>
+ <alpine.LSU.2.01.1006271842220.1495@obet.zrqbmnf.qr> <alpine.LNX.2.01.1010250115360.16022@obet.zrqbmnf.qr> <20101031122437.GA6296@quack.suse.cz> <20101031224012.GB13207@quack.suse.cz> <20101105213324.GA25520@quack.suse.cz>
+ <alpine.LNX.2.01.1011052302400.17206@obet.zrqbmnf.qr>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-2022-jp"
-Content-Transfer-Encoding: 7bit
-Message-ID: <C726904B48DD7B4386BEA4D639541F2502B254A8@JPDC-ML-212.jpn.toshiba-dpg.local>
-Content-class: urn:content-classes:message
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Thread-Topic: [PATCH] it87_wdt: Add support for IT8721F watchdog
-Thread-Index: Acu48qvJUs7MYI4rQ+eQHWdffDyNtg==
-From: "tomita, haruo" <haruo.tomita@toshiba.co.jp>
-To: <wim@iguana.be>
-Cc: <linux-watchdog@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 20 Jan 2011 22:37:52.0345 (UTC) FILETIME=[AC5B4490:01CBB8F2]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wim,
 
-This simple patch adds support for a watchdog in IT8721F Super IO
-chip to it87_wdt driver.
-This new chips differ from the older IT87xxxF chips 
-in the following ways:
+On Friday 2010-11-05 23:03, Jan Engelhardt wrote:
+>On Friday 2010-11-05 22:33, Jan Kara wrote:
+>>  OK, so at Kernel Summit we agreed to fix the issue as I originally wanted
+>>by patches
+>>http://marc.info/?l=linux-fsdevel&m=128861735213143&w=2
+>>and
+>>http://marc.info/?l=linux-fsdevel&m=128861734813131&w=2
+>>
+>>  I needed one more patch to resolve the issue (attached) which I've just
+>>posted for review and possible inclusion.
+>
+>If you have a branch that has all three and is easy to fetch, I'll
+>get on it right away.
 
-* WDT_GAMEPORT is not in IT8721F.
-* WDT_PWROK is not in IT8721F.
+I tested these now [2.6.37-rc1+yourpatches].
 
-Please apply this patch to your git.
+Within the last 13 days of uptime, the following messages have
+accumulated, however the machine is still alive, so I guess it's
+fine. (I see Andrew merged the patches already, so if it becomes
+a problem again I will notice it within the next kernel releases.)
 
-Regards,
-Haruo
 
-diff -urpN a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
---- a/drivers/watchdog/Kconfig  2011-01-19 08:04:54.176307715 +0900
-+++ b/drivers/watchdog/Kconfig  2011-01-19 08:11:37.363616718 +0900
-@@ -580,7 +580,7 @@ config IT87_WDT
-        depends on X86 && EXPERIMENTAL
-        ---help---
-          This is the driver for the hardware watchdog on the ITE IT8702,
--         IT8712, IT8716, IT8718, IT8720, IT8726, IT8712 Super I/O chips.
-+         IT8712, IT8716, IT8718, IT8720, IT8721, IT8726 Super I/O chips.
-          This watchdog simply watches your kernel to make sure it doesn't
-          freeze, and if it does, it reboots your computer after a certain
-          amount of time.
-diff -urpN a/drivers/watchdog/it87_wdt.c b/drivers/watchdog/it87_wdt.c
---- a/drivers/watchdog/it87_wdt.c       2011-01-05 09:50:19.000000000 +0900
-+++ b/drivers/watchdog/it87_wdt.c       2011-01-19 08:11:37.364617177 +0900
-@@ -12,7 +12,7 @@
-  *                 http://www.ite.com.tw/
-  *
-  *     Support of the watchdog timers, which are available on
-- *     IT8702, IT8712, IT8716, IT8718, IT8720 and IT8726.
-+ *     IT8702, IT8712, IT8716, IT8718, IT8720, IT8721 and IT8726.
-  *
-  *     This program is free software; you can redistribute it and/or
-  *     modify it under the terms of the GNU General Public License
-@@ -45,7 +45,7 @@
-
- #include <asm/system.h>
-
--#define WATCHDOG_VERSION       "1.13"
-+#define WATCHDOG_VERSION       "1.13.1"
- #define WATCHDOG_NAME          "IT87 WDT"
- #define PFX                    WATCHDOG_NAME ": "
- #define DRIVER_VERSION         WATCHDOG_NAME " driver, v" WATCHDOG_VERSION "\n"
-@@ -82,6 +82,7 @@
- #define IT8716_ID      0x8716
- #define IT8718_ID      0x8718
- #define IT8720_ID      0x8720
-+#define        IT8721_ID       0x8721
- #define IT8726_ID      0x8726  /* the data sheet suggest wrongly 0x8716 */
-
- /* GPIO Configuration Registers LDN=0x07 */
-@@ -94,7 +95,7 @@
- #define WDT_CIRINT     0x80
- #define WDT_MOUSEINT   0x40
- #define WDT_KYBINT     0x20
--#define WDT_GAMEPORT   0x10 /* not in it8718, it8720 */
-+#define WDT_GAMEPORT   0x10 /* not in it8718, it8720, it8721 */
- #define WDT_FORCE      0x02
- #define WDT_ZERO       0x01
-
-@@ -102,7 +103,7 @@
- #define WDT_TOV1       0x80
- #define WDT_KRST       0x40
- #define WDT_TOVE       0x20
--#define WDT_PWROK      0x10
-+#define WDT_PWROK      0x10 /* not in it8721 */
- #define WDT_INT_MASK   0x0f
-
- /* CIR Configuration Register LDN=0x0a */
-@@ -215,7 +216,9 @@ static inline void superio_outw(int val,
- /* Internal function, should be called after superio_select(GPIO) */
- static void wdt_update_timeout(void)
- {
--       unsigned char cfg = WDT_KRST | WDT_PWROK;
-+       u16 chip_type =  superio_inw(CHIPID);
-+       unsigned char cfg =
-+               (chip_type == IT8721_ID) ? WDT_KRST: WDT_KRST | WDT_PWROK;
-        int tm = timeout;
-
-        if (testmode)
-@@ -581,6 +584,7 @@ static int __init it87_wdt_init(void)
-                break;
-        case IT8718_ID:
-        case IT8720_ID:
-+       case IT8721_ID:
-                max_units = 65535;
-                try_gameport = 0;
-                break;
+INFO: task flush-259:0:324 blocked for more than 120
+seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+message.
+flush-259:0   D 00000000005a3d38     0   324      2 0x18000000000
+Call Trace: 
+ [00000000005a39c4] do_get_write_access+0x244/0x480
+ [00000000005a3d38] jbd2_journal_get_write_access+0x18/0x40
+ [0000000000591278] __ext4_journal_get_write_access+0x18/0x60
+ [0000000000572a94] ext4_reserve_inode_write+0x54/0xa0
+ [0000000000572afc] ext4_mark_inode_dirty+0x1c/0x1e0
+ [000000000058ba98] ext4_ext_insert_extent+0x718/0x17a0
+ [000000000058f2d4] ext4_ext_map_blocks+0x9f4/0x12c0
+ [00000000005742f4] ext4_map_blocks+0x1b4/0x240
+ [0000000000576864] mpage_da_map_and_submit+0x84/0x420
+ [0000000000576f5c] write_cache_pages_da+0x27c/0x3e0
+ [00000000005772f8] ext4_da_writepages+0x238/0x4a0
+ [00000000004cc7a4] do_writepages+0x24/0x60
+ [0000000000525264] writeback_single_inode+0x84/0x240
+ [00000000005258d8] writeback_sb_inodes+0x98/0x140
+ [0000000000525f44] writeback_inodes_wb+0xc4/0x180
+ [0000000000526294] wb_writeback+0x294/0x300
+INFO: task jbd2/sda2-8:327 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+message.
+jbd2/sda2-8   D 000000000052ce28     0   327      2 0x58000000000
+Call Trace: 
+ [00000000007880d4] io_schedule+0x54/0xc0
+ [000000000052ce28] sync_buffer+0x48/0x60
+ [000000000078895c] __wait_on_bit+0x7c/0xe0
+ [0000000000788a04] out_of_line_wait_on_bit+0x44/0x60
+ [00000000005a4e10] jbd2_journal_commit_transaction+0x850/0x1280
+ [00000000005a87bc] kjournald2+0x9c/0x1c0
+ [0000000000482b84] kthread+0x64/0x80
+ [000000000042b790] kernel_thread+0x30/0x60
+ [0000000000482e84] kthreadd+0xe4/0x160
+INFO: task lighttpd:3260 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+message.
+lighttpd      D 000000000052ce28     0  3260      1 0x410051101000080
+Call Trace: 
+ [00000000007880d4] io_schedule+0x54/0xc0
+ [000000000052ce28] sync_buffer+0x48/0x60
+ [000000000078895c] __wait_on_bit+0x7c/0xe0
+ [0000000000788a04] out_of_line_wait_on_bit+0x44/0x60
+ [000000000057ba44] ext4_find_entry+0x3c4/0x520
+ [000000000057c7c8] ext4_lookup+0x28/0x180
+ [000000000050e5a0] d_alloc_and_lookup+0x40/0x80
+ [000000000050e6dc] do_lookup+0xfc/0x160
+ [0000000000510578] link_path_walk+0x6b8/0xb00
+ [0000000000510aa8] path_walk+0x28/0xa0
+ [0000000000510b64] do_path_lookup+0x44/0xa0
+ [0000000000510f6c] user_path_at+0x2c/0x80
+ [00000000005090c8] vfs_fstatat+0x28/0x80
+ [000000000044390c] compat_sys_stat64+0xc/0x40
+ [0000000000406114] linux_sparc_syscall32+0x34/0x40
+INFO: task rsync:2451 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+message.
+rsync         D 00000000005a3d38     0  2451   2445 0x410061101000080
+Call Trace: 
+ [00000000005a39c4] do_get_write_access+0x244/0x480
+ [00000000005a3d38] jbd2_journal_get_write_access+0x18/0x40
+ [0000000000591278] __ext4_journal_get_write_access+0x18/0x60
+ [0000000000572a94] ext4_reserve_inode_write+0x54/0xa0
+ [0000000000572afc] ext4_mark_inode_dirty+0x1c/0x1e0
+ [0000000000577844] ext4_dirty_inode+0x24/0x40
+ [0000000000525b60] __mark_inode_dirty+0x20/0x200
+ [0000000000519d84] file_update_time+0xc4/0x140
+ [00000000004c43f4] __generic_file_aio_write+0x1f4/0x3a0
+ [00000000004c45d4] generic_file_aio_write+0x34/0xc0
+ [0000000000504338] do_sync_write+0x78/0xc0
+ [00000000005049a8] vfs_write+0x68/0x140
+ [0000000000504c4c] SyS_write+0x2c/0x60
+ [0000000000406114] linux_sparc_syscall32+0x34/0x40
+INFO: task cron:4376 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+message.
+cron          D 00000000004c33f8     0  4376   3244 0x210021101000080
+Call Trace: 
+ [00000000007880d4] io_schedule+0x54/0xc0
+ [00000000004c33f8] sync_page+0x58/0x80
+ [0000000000788808] __wait_on_bit_lock+0x68/0xe0
+ [00000000004c3360] __lock_page+0x40/0x60
+ [00000000004c4eac] __lock_page_or_retry+0x4c/0x60
+ [00000000004c5108] filemap_fault+0x248/0x3c0
+ [00000000004dca90] __do_fault+0x30/0x480
+ [00000000004df27c] handle_mm_fault+0x13c/0x9a0
+ [000000000044de4c] do_sparc64_fault+0x32c/0x7c0
+ [00000000004079a8] sparc64_realfault_common+0x10/0x20
+INFO: task cron:4377 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+message.
+cron          D 00000000004c33f8     0  4377   3244 0x210021101000080
+Call Trace: 
+ [00000000007880d4] io_schedule+0x54/0xc0
+ [00000000004c33f8] sync_page+0x58/0x80
+ [0000000000788808] __wait_on_bit_lock+0x68/0xe0
+ [00000000004c3360] __lock_page+0x40/0x60
+ [00000000004c4eac] __lock_page_or_retry+0x4c/0x60
+ [00000000004c5108] filemap_fault+0x248/0x3c0
+ [00000000004dca90] __do_fault+0x30/0x480
+ [00000000004df27c] handle_mm_fault+0x13c/0x9a0
+ [000000000044de4c] do_sparc64_fault+0x32c/0x7c0
+ [00000000004079a8] sparc64_realfault_common+0x10/0x20
+INFO: task cron:4378 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
+message.
+cron          D 00000000004c33f8     0  4378   3244 0x210021101000080
+Call Trace: 
+ [00000000007880d4] io_schedule+0x54/0xc0
+ [00000000004c33f8] sync_page+0x58/0x80
+ [0000000000788808] __wait_on_bit_lock+0x68/0xe0
+ [00000000004c3360] __lock_page+0x40/0x60
+ [00000000004c4eac] __lock_page_or_retry+0x4c/0x60
+ [00000000004c5108] filemap_fault+0x248/0x3c0
+ [00000000004dca90] __do_fault+0x30/0x480
+ [00000000004df27c] handle_mm_fault+0x13c/0x9a0
+ [000000000044de4c] do_sparc64_fault+0x32c/0x7c0
+ [00000000004079a8] sparc64_realfault_common+0x10/0x20
