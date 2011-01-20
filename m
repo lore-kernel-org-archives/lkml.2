@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754881Ab1ATChO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 21:37:14 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:40746 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753466Ab1ATChM convert rfc822-to-8bit (ORCPT
+	id S1754885Ab1ATCiS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 21:38:18 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:10850 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753466Ab1ATCiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 21:37:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=t+aFhs1CcyokgMQmLkxKdEdujyRz0RObTdoshSXeF+m3KmvmcAsR76hLtHwAZwMGM3
-         Q+YngGj4BkAguLn+BD3993y5YbB83fhLOeQo8W/4s9je+UIaNKhSC2Nk8LRAvSW4rzTN
-         G493VAA4HfYeeyAAZL3ncFxbPX5mMTC6V7LYw=
+	Wed, 19 Jan 2011 21:38:15 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6231"; a="70954458"
+Message-ID: <4D37A016.8060902@codeaurora.org>
+Date: Wed, 19 Jan 2011 18:38:14 -0800
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110119163758.bb43d4ff.akpm@linux-foundation.org>
-References: <1294810891-23348-1-git-send-email-vapier@gentoo.org> <20110119163758.bb43d4ff.akpm@linux-foundation.org>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Wed, 19 Jan 2011 21:36:51 -0500
-X-Google-Sender-Auth: vsAu1cVw_Wz4vq24iCL3cnI1vCY
-Message-ID: <AANLkTinCqNTsy2qo4HHe8pc3=OZ1N3xtEwhXF_PyE3ux@mail.gmail.com>
-Subject: Re: [Device-drivers-devel] [PATCH] sigma-firmware: loader for Analog
- Devices' SigmaStudio
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, device-drivers-devel@blackfin.uclinux.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Jamie Iles <jamie@jamieiles.com>, linux-arm-msm@vger.kernel.org,
+        davidb@codeaurora.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, rlove@google.com
+Subject: Re: [PATCH 2/2] serial: msm: Add support for UARTDM cores
+References: <1295407585-18386-1-git-send-email-stepanm@codeaurora.org> <20110119082534.GA9569@gallagher> <4D3760DD.1010609@codeaurora.org> <20110119222407.GD6335@n2100.arm.linux.org.uk>
+In-Reply-To: <20110119222407.GD6335@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 19:37, Andrew Morton wrote:
-> On Wed, 12 Jan 2011 00:41:31 -0500 Mike Frysinger wrote:
-> The newly-added code has no callsites.  What are we to make of this?
-
-the ASoC drivers have already been submitted and are going through the process
-
->> diff --git a/drivers/firmware/Kconfig b/drivers/firmware/Kconfig
->> index e8b6a13..8f4f7b2 100644
->> --- a/drivers/firmware/Kconfig
->> +++ b/drivers/firmware/Kconfig
->> @@ -134,4 +134,16 @@ config ISCSI_IBFT
->>         detect iSCSI boot parameters dynamically during system boot, say Y.
->>         Otherwise, say N.
->>
->> +config SIGMA
->> +     tristate "SigmaStudio firmware loader"
->> +     depends on I2C
+On 1/19/2011 2:24 PM, Russell King - ARM Linux wrote:
+> On Wed, Jan 19, 2011 at 02:08:29PM -0800, Stepan Moskovchenko wrote:
+>>>> +		/* Mask conditions we're ignorning. */
+>>>> +		sr&= port->read_status_mask;
+>>>> +		if (sr&   UART_SR_RX_BREAK)
+>>>> +			flag = TTY_BREAK;
+>>>> +		else if (sr&   UART_SR_PAR_FRAME_ERR)
+>>>> +			flag = TTY_FRAME;
+>>> It doesn't look like the flag is used anywhere after it has been
+>>> assigned.
+>> An artifact of an old driver. Removed.
+> But still required to support proper error signalling.
 >
-> The dependence on just I2C looks odd.  What's the rationale here?
 
-the code clearly calls i2c_master_send
+On second thought, from poking around the kernel some more, I believe 
+the following should be a better approach:
+         if (sr & UART_SR_RX_BREAK) {
+             tty_insert_flip_char(tty, 0, TTY_BREAK);
+         } else if (sr & UART_SR_PAR_FRAME_ERR) {
+             tty_insert_flip_char(tty, 0, TTY_FRAME);
+         }
 
->> +int process_sigma_actions(struct i2c_client *client, struct sigma_firmware *ssfw)
->
-> Global scope appears to be unnecessary.
+Russell, what do you think? Shall I make the change in v2?
 
-idea originally was to let people process things more directly, but
-there hasnt been a need so far.  so localizing them until someone
-needs them is probably fine.
+Thanks
+Steve
 
->> +     pr_debug("%s: crc=%x\n", __func__, crc32(0, fw->data, fw->size));
->
-> The code calculates and prints the crc but doesn't actually check it
-> against anything.  What's up with that?
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-it's supposed to abort.  guess we forgot to.
-
->> +static inline u32 sigma_action_len(struct sigma_action *sa)
->> +{
->> +     return (sa->len_hi << 16) | sa->len;
->> +}
->> +
->> +static inline size_t sigma_action_size(struct sigma_action *sa, u32 payload_len)
->> +{
->> +     return sizeof(*sa) + payload_len + (payload_len % 2);
->> +}
->
-> Did these two functions need to be in a header?  If they're only ever
-> used in sigma.c then they should be located in that file.
-
-part of the original idea of allowing the callers to process things
-more directly if necessary.  should be harmless to leave it here.
--mike
