@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412Ab1ATLLz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 06:11:55 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48470 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752872Ab1ATLLy (ORCPT
+	id S1755443Ab1ATLMy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 06:12:54 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46498 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755260Ab1ATLMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 06:11:54 -0500
+	Thu, 20 Jan 2011 06:12:52 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=i8qwhb0lLWtVseVMBzr2TzuO7SA2+3jI8T0DdqTq5fAOw6LbT9faHkAJVy5CZ8c8wE
-         mwyp7KRX1/1JovHNKQ7fgJwFFhdzgCYQE3IJMpBRbksJqaxohUiW4ktHdi0CVAD1WnJ+
-         u0hdiocKmQGrDPrDWZLzsC6NeP+Il6DaCdV7U=
-Date: Thu, 20 Jan 2011 12:11:49 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=SExkOeXaavNaDVC6gVizj8/5zo7KD9nWRSFvZM4glUWi1hHdl3v0lZHz2HLB/+eSU1
+         UBL7Wc/dEV+6wgbkmi22tRPihzg3ct90OIKZqKRUBirgoubLra+4YpjNGvF97BjANjEb
+         +Sy19wSMCZXR1POiMNAlslancp09RbKlga4m8=
+Subject: Re: percpu related boot crash on x86
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 1/2] lockdep: move early boot local IRQ enable/disable
- status to init/main.c
-Message-ID: <20110120111149.GD6036@htj.dyndns.org>
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1295520467.28776.153.camel@laptop>
 References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
- <20110119120200.GA1057@elte.hu>
- <20110120110635.GB6036@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110120110635.GB6036@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	 <20110119120200.GA1057@elte.hu> <1295441307.28776.15.camel@laptop>
+	 <AANLkTi=gxMkzO63RAWiuFt9vp57dvi4d=TaT=NmuvyY2@mail.gmail.com>
+	 <20110119131329.GB14096@mtj.dyndns.org> <20110119205353.GA14810@elte.hu>
+	 <20110119231116.GA3896@elte.hu>  <4D37F2C9.8000906@kernel.org>
+	 <1295520467.28776.153.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 Jan 2011 12:12:47 +0100
+Message-ID: <1295521967.2825.15.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
+Le jeudi 20 janvier 2011 à 11:47 +0100, Peter Zijlstra a écrit :
+> On Thu, 2011-01-20 at 10:31 +0200, Pekka Enberg wrote:
+> >    if (!irqs_disabled())
+> > 
+> > guard around the debugging code to make vfree() always work with IRQs 
+> > disabled. 
+> 
+> That won't be sufficient, __purge_vmap_area_lazy() needs to call
+> flush_tlb_kernel_range() occasionally.
+> 
+> There really is a good reason vmalloc()/vfree() don't work with
+> interrupts disabled.
+> 
 
-These two patches remove both warnings.  The first warning was
-completely spurious.  The second lockdep one was triggered by
-on_each_cpu() enabling local IRQ too early.
+Hmm, I would try to increase PERCPU_DYNAMIC_RESERVE, or pcpu_mem_alloc()
+could try to use kzalloc() even for allocations bigger than one PAGE,
+and fallback to vzalloc().
 
-I don't think percpu allocator itself malfunctioned.  There was no
-allocation failure.  It whines when percpu allocation fails but didn't
-in the log.  Other than calling vfree() early triggering the above
-condition, it worked okay.
+We have more alloc_percpu() uses, we also should try to use first chunk
+if possible.
 
-So, it's either the early enabling of local IRQ by on_each_cpu()
-breaking something in the IRQ subsystem or something different.  Ingo,
-can you please see whether these two patches cure the panic too?
 
-Thanks.
 
--- 
-tejun
