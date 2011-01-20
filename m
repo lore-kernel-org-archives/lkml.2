@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755639Ab1ATLjU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 06:39:20 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:60072 "EHLO ogre.sisk.pl"
+	id S1755655Ab1ATLjY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 06:39:24 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:60075 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755593Ab1ATLjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 06:39:13 -0500
+	id S1755601Ab1ATLjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 06:39:14 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Len Brown <lenb@kernel.org>
-Subject: [PATCH 10/11] ACPI / PM: Use existing ACPI iomaps for NVS save/restore
-Date: Thu, 20 Jan 2011 12:36:36 +0100
+Subject: [PATCH 9/11] ACPI: Introduce acpi_os_get_iomem()
+Date: Thu, 20 Jan 2011 12:35:46 +0100
 User-Agent: KMail/1.13.5 (Linux/2.6.38-rc1+; KDE/4.4.4; x86_64; ; )
 Cc: Jeff Chua <jeff.chua.linux@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
         ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
@@ -21,74 +21,58 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101201236.37192.rjw@sisk.pl>
+Message-Id: <201101201235.46222.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Modify the NVS save/restore code to use acpi_os_get_iomem() and
-acpi_os_unmap_memory() to acquire and release references to ACPI
-iomaps, respectively.  If there's no ACPI iomap corresponding to the
-given NVS page, acpi_os_ioremap() is used to map that page and
-iounmap() is used to unmap it during resume.  [If the page is not
-present in the ACPI iomaps already, it doesn't make sense to add its
-mapping to the list of ACPI iomaps, because it's going to be thrown
-away during the subsequent resume anyway.]
-
-Testing on my HP nx6325 shows that approx. 90% of the NVS pages
-have already been mapped by ACPI before suspend and are present in
-the ACPI iomaps, so this change appears to be the right thing to do
-in general.
+Introduce function acpi_os_get_iomem() that may be used by its callers
+to get a reference to an ACPI iomap.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/acpi/nvs.c |   19 ++++++++++++++++---
- 1 file changed, 16 insertions(+), 3 deletions(-)
+ drivers/acpi/osl.c      |   16 ++++++++++++++++
+ include/linux/acpi_io.h |    2 ++
+ 2 files changed, 18 insertions(+)
 
-Index: linux-2.6/drivers/acpi/nvs.c
+Index: linux-2.6/drivers/acpi/osl.c
 ===================================================================
---- linux-2.6.orig/drivers/acpi/nvs.c
-+++ linux-2.6/drivers/acpi/nvs.c
-@@ -26,6 +26,7 @@ struct nvs_page {
- 	unsigned int size;
- 	void *kaddr;
- 	void *data;
-+	bool unmap;
- 	struct list_head node;
- };
+--- linux-2.6.orig/drivers/acpi/osl.c
++++ linux-2.6/drivers/acpi/osl.c
+@@ -285,6 +285,22 @@ acpi_map_vaddr_lookup(acpi_physical_addr
+ 	return NULL;
+ }
  
-@@ -81,7 +82,13 @@ void suspend_nvs_free(void)
- 			free_page((unsigned long)entry->data);
- 			entry->data = NULL;
- 			if (entry->kaddr) {
--				iounmap(entry->kaddr);
-+				if (entry->unmap) {
-+					iounmap(entry->kaddr);
-+					entry->unmap = false;
-+				} else {
-+					acpi_os_unmap_memory(entry->kaddr,
-+							     entry->size);
-+				}
- 				entry->kaddr = NULL;
- 			}
- 		}
-@@ -115,8 +122,14 @@ int suspend_nvs_save(void)
- 
- 	list_for_each_entry(entry, &nvs_list, node)
- 		if (entry->data) {
--			entry->kaddr = acpi_os_ioremap(entry->phys_start,
--						    entry->size);
-+			unsigned long phys = entry->phys_start;
-+			unsigned int size = entry->size;
++void __iomem *acpi_os_get_iomem(acpi_physical_address phys, unsigned int size)
++{
++	struct acpi_ioremap *map;
++	void __iomem *virt = NULL;
 +
-+			entry->kaddr = acpi_os_get_iomem(phys, size);
-+			if (!entry->kaddr) {
-+				entry->kaddr = acpi_os_ioremap(phys, size);
-+				entry->unmap = true;
-+			}
- 			if (!entry->kaddr) {
- 				suspend_nvs_free();
- 				return -ENOMEM;
++	mutex_lock(&acpi_ioremap_lock);
++	map = acpi_map_lookup(phys, size);
++	if (map) {
++		virt = map->virt + (phys - map->phys);
++		map->refcount++;
++	}
++	mutex_unlock(&acpi_ioremap_lock);
++	return virt;
++}
++EXPORT_SYMBOL_GPL(acpi_os_get_iomem);
++
+ /* Must be called with 'acpi_ioremap_lock' or RCU read lock held. */
+ static struct acpi_ioremap *
+ acpi_map_lookup_virt(void __iomem *virt, acpi_size size)
+Index: linux-2.6/include/linux/acpi_io.h
+===================================================================
+--- linux-2.6.orig/include/linux/acpi_io.h
++++ linux-2.6/include/linux/acpi_io.h
+@@ -10,4 +10,6 @@ static inline void __iomem *acpi_os_iore
+        return ioremap_cache(phys, size);
+ }
+ 
++void __iomem *acpi_os_get_iomem(acpi_physical_address phys, unsigned int size);
++
+ #endif
 
