@@ -1,77 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab1ATFJp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 00:09:45 -0500
-Received: from mga11.intel.com ([192.55.52.93]:38985 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751053Ab1ATFJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 00:09:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,348,1291622400"; 
-   d="scan'208";a="649067080"
-Subject: Re: section mismatch in intel_idle
-From: Shaohua Li <shaohua.li@intel.com>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: "Brown, Len" <len.brown@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110120005329.24119041@stein>
-References: <20110120005329.24119041@stein>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 Jan 2011 13:09:34 +0800
-Message-ID: <1295500174.1949.911.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753691Ab1ATFSs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 00:18:48 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54638 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725Ab1ATFSq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 00:18:46 -0500
+Date: Thu, 20 Jan 2011 05:18:43 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Suresh Jayaraman <sjayaraman@suse.de>
+Cc: Steve French <smfrench@gmail.com>, Peter Teoh <htmldeveloper@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-cifs@vger.kernel.org,
+        Jeff Layton <jlayton@redhat.com>
+Subject: Re: CIFS related seg fault (v2.6.37)
+Message-ID: <20110120051843.GO22723@ZenIV.linux.org.uk>
+References: <AANLkTikp0=w7k+PsUCQVQwxnZMLsp3F7a3rEDQAas20G@mail.gmail.com>
+ <4D37BDE4.1000104@suse.de>
+ <AANLkTin7jRk6S2XWcRineCtazQb3rgYsBPakV513Ph9n@mail.gmail.com>
+ <4D37C1AE.7040100@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D37C1AE.7040100@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-20 at 07:53 +0800, Stefan Richter wrote:
-> Hi,
+On Thu, Jan 20, 2011 at 10:31:34AM +0530, Suresh Jayaraman wrote:
+
+> Sorry it was not a VFS fix but a fix from Al Viro that fixed this
+> problem. IIUC, the commit has made it to cifs-2.6.git but not upstream.
 > 
-> this just showed up in 2.6.38-rc1:
+> commit 1c929cfe6d8f2087a337a868fbf6c38d56bb4889
+> Author: Al Viro <viro@zeniv.linux.org.uk>
+> Date:   Sat Dec 18 11:43:51 2010 -0500
 > 
-> WARNING: drivers/idle/built-in.o(.text+0x112): Section mismatch in reference from the function intel_idle_probe() to the variable .cpuinit.data:setup_broadcast_notifier
-> The function intel_idle_probe() references
-> the variable __cpuinitdata setup_broadcast_notifier.
-> This is often because intel_idle_probe lacks a __cpuinitdata 
-> annotation or the annotation of setup_broadcast_notifier is wrong.
-> 
-> WARNING: drivers/idle/built-in.o(.exit.text+0x2d): Section mismatch in reference from the function intel_idle_exit() to the variable .cpuinit.data:setup_broadcast_notifier
-> The function __exit intel_idle_exit() references
-> a variable __cpuinitdata setup_broadcast_notifier.
-> This is often seen when error handling in the exit function
-> uses functionality in the init path.
-> The fix is often to remove the __cpuinitdata annotation of
-> setup_broadcast_notifier so it may be used outside an init section.
-Len, please add this to your tree.
+>     switch cifs
 
-Fix annotation warning.
-
-Reported-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index 7acb32e..6a0ff5d 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -263,7 +263,7 @@ static void __setup_broadcast_timer(void *arg)
- 	clockevents_notify(reason, &cpu);
- }
- 
--static int __cpuinit setup_broadcast_cpuhp_notify(struct notifier_block *n,
-+static int setup_broadcast_cpuhp_notify(struct notifier_block *n,
- 		unsigned long action, void *hcpu)
- {
- 	int hotcpu = (unsigned long)hcpu;
-@@ -281,7 +281,7 @@ static int __cpuinit setup_broadcast_cpuhp_notify(struct notifier_block *n,
- 	return NOTIFY_OK;
- }
- 
--static struct notifier_block __cpuinitdata setup_broadcast_notifier = {
-+static struct notifier_block setup_broadcast_notifier = {
- 	.notifier_call = setup_broadcast_cpuhp_notify,
- };
- 
-
-
+It is in the mainline.  And there's no way anybody could've seen such
+trace on .37 or earlier, since d_set_d_op() didn't exist before that.
