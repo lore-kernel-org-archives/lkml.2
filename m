@@ -1,41 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab1ATVLX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 16:11:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1028 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753753Ab1ATVLW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 16:11:22 -0500
-Message-ID: <4D38A4F5.8070904@redhat.com>
-Date: Thu, 20 Jan 2011 22:11:17 +0100
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
+	id S1754652Ab1ATVOP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 16:14:15 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56723 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753882Ab1ATVOO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 16:14:14 -0500
 MIME-Version: 1.0
-To: Chuck Lever <chuck.lever@oracle.com>
-CC: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: [PATCH] NFS: Fix "kernel BUG at fs/nfs/nfs3xdr.c:1338!"
-References: <20110120191639.3122.24837.stgit@matisse.1015granger.net>
-In-Reply-To: <20110120191639.3122.24837.stgit@matisse.1015granger.net>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110119.180418.216749267.davem@davemloft.net>
+References: <20110119.180418.216749267.davem@davemloft.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 20 Jan 2011 13:12:52 -0800
+Message-ID: <AANLkTin32jUnBtHF-EAkSMnFQM6cTbn-G3NZQJ3xjTWU@mail.gmail.com>
+Subject: Re: [GIT] Networking
+To: David Miller <davem@davemloft.net>
+Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2011 08:18 PM, Chuck Lever wrote:
-> Milan Broz <mbroz@redhat.com> reports:
+On Wed, Jan 19, 2011 at 6:04 PM, David Miller <davem@davemloft.net> wrote:
+>
+> 1) Revert a netlink flag sanity check that is causing regressions in
+>   existing applications.
+...
 
->> [  105.327979] kernel BUG at fs/nfs/nfs3xdr.c:1338!
+This is a long-shot, but I thought I'd ask before I start trying to
+bisect the fourth independent suspend/resume related issue in this
+merge window..
 
-> 
-> nfs3_xdr_enc_setacl3args() is not properly setting up the target
-> buffer before nfsacl_encode() attempts to encode the ACL.
-> 
-> Introduced by commit d9c407b1 "NFS: Introduce new-style XDR encoding
-> functions for NFSv3."
+When I suspend/resume while logged in by closing the lid on my laptop
+on FC14, it causes the gnome-screensaver-dialog to start up. So far so
+fine, that's what I want, and it all works fin in 2.6.37.
 
-Yes, patch fixes the problem for me.
+But in current -git (and in -rc8, so it's not changed by your latest
+pull request), gnome-screensaver-dialog gets stuck after I type in my
+password, making the box basically useless.
 
-Thanks,
-Milan
+So I straced it over the network, and if I attach _when_ it is already
+stuck, it immediately becomes unstuck.  But if I attach to it before
+typing my password, I can see the hang in strace, and it looks like
+this:
+
+  ...
+  read(3, 0x9806500, 4096)                = -1 EAGAIN (Resource
+temporarily unavailable)
+  poll([{fd=4, events=POLLIN}, {fd=3, events=POLLIN}, {fd=12,
+events=POLLIN|POLLPRI}, {fd=14, events=POLLIN|POLLPRI}, {fd=9,
+events=POLLIN|POLLPRI}, {fd=10, events=POLLIN|POLLPRI}, {fd=15,
+events=POLLIN}, {fd=16, events=POLLIN}, {fd=17, events=0}, {fd=19,
+events=POLLIN}], 10, -1) = ? ERESTART_RESTARTBLOCK (To be restarted)
+  restart_syscall(
+
+and that's it - it's now hung. So why did it work when I straced it
+while hung? And why is it doing that ERESTART_RESTARTBLOCK in the
+first place, I'm not seeing any signals there?
+
+So I tried sending it a useless signal, which will re-animate the
+strace, and now I get:
+
+  restart_syscall(<... resuming interrupted call ...>) = 1
+  --- SIGWINCH (Window changed) @ 0 (0) ---
+  poll([{fd=3, events=POLLIN|POLLOUT}], 1, -1) = 1 ([{fd=3, revents=POLLOUT}])
+
+Whee. That signal got it started again, and the poll finished immediately.
+
+And how/why did the input to the poll apparently change? That looks
+suspicious too. Might be some odd strace artifact, but whatever.
+
+So I'm contacting you because that fd=3 is a socket (I didn't check
+details), and because anything I find in the git logs that discusses
+"poll" seems to be network-related. So I'm wondering it this rings any
+bells, because bisecting this is going to be painful as hell (since I
+have to carefully work around all the _other_ problems I've bisected
+on that machine while doing so).
+
+                           Linus
