@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab1ATR1i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 12:27:38 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:55439 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753130Ab1ATR1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 12:27:37 -0500
-Subject: Re: [PATCH] ARM: mm: Regarding section when dealing with meminfo
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: KyongHo Cho <pullip.cho@samsung.com>, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Ilho Lee <ilho215.lee@samsung.com>,
-        KeyYoung Park <keyyoung.park@samsung.com>
-In-Reply-To: <20110120142844.GA28358@barrios-desktop>
-References: <1295516739-9839-1-git-send-email-pullip.cho@samsung.com>
-	 <20110120142844.GA28358@barrios-desktop>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Thu, 20 Jan 2011 09:25:13 -0800
-Message-ID: <1295544313.9039.618.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1752946Ab1ATRab (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 12:30:31 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:59300 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421Ab1ATRaa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 12:30:30 -0500
+Date: Thu, 20 Jan 2011 12:30:29 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Torben Hohn <torbenh@gmx.de>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@tglx.de>
+Subject: Re: [PATCH] RFC: abstract access to xtime_lock into a set of inline
+ functions
+Message-ID: <20110120173029.GA26121@infradead.org>
+References: <1295543648-13788-1-git-send-email-torbenh@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295543648-13788-1-git-send-email-torbenh@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-20 at 23:28 +0900, Minchan Kim wrote:
-> On Thu, Jan 20, 2011 at 06:45:39PM +0900, KyongHo Cho wrote:
-> > Sparsemem allows that a bank of memory spans over several adjacent
-> > sections if the start address and the end address of the bank
-> > belong to different sections.
-> > When gathering statictics of physical memory in mem_init() and
-> > show_mem(), this possiblity was not considered.
+On Thu, Jan 20, 2011 at 06:14:08PM +0100, Torben Hohn wrote:
+> the -rt patches change the xtime_lock to a raw_seqlock_t
+> so a pretty huge portion of the patch deals with changing
+> the locking functions.
 > 
-> Please write down the result if we doesn't consider this patch.
-> I can understand what happens but for making good description and review,
-> merging easily, it would be better to write down the result without 
-> the patch explicitly. 
+> this commit uses inline functions, to hide the type
+> of the lock.
 
-You'll oops.  __section_mem_map_addr() in:
+That's not how kernel code usually works.
 
-> #define __pfn_to_page(pfn)                              \
-> ({      unsigned long __pfn = (pfn);                    \
->         struct mem_section *__sec = __pfn_to_section(__pfn);    \
->         __section_mem_map_addr(__sec) + __pfn;          \
-> })
+> -	write_seqlock(&xtime_lock);
+> +	xtime_write_seqlock();
+>  	do_timer(1);
+> -	write_sequnlock(&xtime_lock);
+> +	xtime_write_sequnlock();
 
-will return NULL, you'll add some fuzz on to it with __pfn, then you'll
-oops when the arm show_mem() does PageReserved() and dereferences
-page->flags.
-
-Ether that, or with the sparsemem vmemmap variant, you'll get a
-valid-looking pointer with no backing memory, and oops as well.
-
--- Dave
+However there's a pretty clear pattern of taking xtime_lock, calling
+do_timer and then releasing.  A useful thing you could do is to rename
+do_timer to do_timer_locked and make do_timer take and release
+xtime_lock in one place.
 
