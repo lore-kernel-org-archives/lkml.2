@@ -1,93 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab1ATKGd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 05:06:33 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:65390 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755334Ab1ATKG3 convert rfc822-to-8bit (ORCPT
+	id S1755368Ab1ATKHe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 05:07:34 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:50488 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755324Ab1ATKHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 05:06:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=NOwnBPaChoodV7kEYVFlWZzk2nWysYbK+RzR7n62tOXxKGMzeyWGrEzR3/Xza4bv3K
-         vpTd+k7Ju7I8fwPGwYggmAQrBAXheyrYZ3VyUfN2Fz6xuD6Dh1iyLCSDthBMyOLxLuAP
-         9yF5CirnurpP4YfsFkK91HluDXZ9txZMdLEdc=
-MIME-Version: 1.0
-In-Reply-To: <1294367707-2593-6-git-send-email-ddaney@caviumnetworks.com>
-References: <1294367707-2593-1-git-send-email-ddaney@caviumnetworks.com>
-	<1294367707-2593-6-git-send-email-ddaney@caviumnetworks.com>
-Date: Thu, 20 Jan 2011 18:06:28 +0800
-Message-ID: <AANLkTi=8NndFv6czWy1q_iDvJRHhCYYu06fhyBL9ByE=@mail.gmail.com>
-Subject: Re: [PATCH 5/6] MIPS: perf: Add support for 64-bit perf counters.
-From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 Jan 2011 05:07:32 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19gA0Z4KcJg+wAEMCAPhWl/+xh29b6XRETr3uysqu
+	ycYUy5b9gDSMuZ
+Subject: Re: Bug in scheduler when using rt_mutex
+From: Mike Galbraith <efault@gmx.de>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, samu.p.onkalo@nokia.com,
+        mingo@elte.hu,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        tglx <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <AANLkTi=WhLy=4MNdm-HaOUOmbKXsNSJojnzqRTYp6qop@mail.gmail.com>
+References: <1295275365.12840.13.camel@kolo>
+	 <1295280032.30950.128.camel@laptop> <1295339012.11678.35.camel@kolo>
+	 <AANLkTikXf-OMEBx-UZktxooOs+YqUkSE9doyEZopjzOx@mail.gmail.com>
+	 <1295357746.30950.681.camel@laptop>
+	 <AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
+	 <1295430276.30950.1414.camel@laptop> <1295433498.30950.1482.camel@laptop>
+	 <1295436632.30950.1542.camel@laptop> <1295441881.11678.41.camel@kolo>
+	 <1295442799.11678.43.camel@kolo> <1295443822.28776.23.camel@laptop>
+	 <AANLkTinQ4sczEwZYCk1_tLmeJyjyXj4TVoSZbjg+KiRq@mail.gmail.com>
+	 <1295499568.8027.30.camel@marge.simson.net>
+	 <AANLkTikEwgMzco2fHT668Mg3fC-T3EBMUgQQqW-Ojj-Y@mail.gmail.com>
+	 <1295503938.8027.59.camel@marge.simson.net>
+	 <AANLkTi=7YyA-e8HAq+C_prK2EaZKcaTfzDJvmO3e3W=B@mail.gmail.com>
+	 <1295512625.8027.88.camel@marge.simson.net>
+	 <AANLkTi=WhLy=4MNdm-HaOUOmbKXsNSJojnzqRTYp6qop@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 Jan 2011 11:07:27 +0100
+Message-ID: <1295518047.8027.104.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/1/7 David Daney <ddaney@caviumnetworks.com>:
-> @@ -294,14 +519,29 @@ static void mipspmu_read(struct perf_event *event)
->
->  static void mipspmu_enable(struct pmu *pmu)
->  {
-> -       if (mipspmu)
-> -               mipspmu->start();
-> +#ifdef CONFIG_MIPS_MT_SMP
-> +       write_unlock(&pmuint_rwlock);
-> +#endif
-> +       resume_local_counters();
->  }
+On Thu, 2011-01-20 at 17:07 +0800, Yong Zhang wrote:
+> On Thu, Jan 20, 2011 at 4:37 PM, Mike Galbraith <efault@gmx.de> wrote:
+> > On Thu, 2011-01-20 at 15:06 +0800, Yong Zhang wrote:
+> >> On Thu, Jan 20, 2011 at 2:12 PM, Mike Galbraith <efault@gmx.de> wrote:
+> >> > If the task returns as a sleeper, place entity() will be called when it
+> >> > is awakened, so it's sleep credit will be clipped as usual.  So vruntime
+> >> > can be much less than min_vruntime at class exit time, and it doesn't
+> >> > matter, clipping on wakeup after re-entry takes care of it.. if that's
+> >> > what you were thinking about.
+> >>
+> >> For a sleep task which stay in sched_fair before it's waked:
+> >> try_to_wake_up()
+> >>   ttwu_activate()
+> >>     activate_task()
+> >>       enqueue_task_fair()
+> >>         enqueue_entity()
+> >>           place_entity()        <== clip vruntime
+> >>
+> >> For a sleep task which promote to sched_rt when it's sleep:
+> >> rt_mutex_setprio()
+> >>   check_class_changed()
+> >>     switch_from_fair()       <== vruntime -= min_vruntime
+> >>       try_to_wake_up()
+> >>         ...run then stay on rq
+> >>         rt_mutex_setprio()
+> >>           enqueue_task_fair()     <==vruntime += min_vruntime
+> >>
+> >> The difference is that in the second case, place_entity() is not
+> >> called, but wrt sched_fair, the task is a WAKEUP task.
+> >> Then we place this task in sched_fair before where it should be.
+> >
+> > D'oh.  You're right, he needs to be clipped before he leaves.
+> 
+> Exactly we should clip it when it comes back, because it still could
+> sleep for some time after it leaves ;)
 
-When working with CONFIG_MIPS_MT_SMP, the compiler says 'pmuint_rwlock
-undeclared' because of its improper place of definition.
+That's ok, we don't and aren't supposed to care what happens while he's
+gone.  But we do have to make sure that vruntime is sane either when he
+leaves, or when he comes back.  Seems to me the easiest is clip when he
+leaves to cover him having slept a long time before leaving, then coming
+back on us as a runner.  If he comes back as a sleeper, he'll be clipped
+again anyway, so all is well.
 
+sched_fork() should probably zero child's vruntime too, so non-fair
+children can't enter fair_class with some bogus lag they never had.
 
-> @@ -1550,10 +1462,30 @@ init_hw_perf_events(void)
->                return -ENODEV;
->        }
->
-> -       if (mipspmu)
-> -               pr_cont("%s PMU enabled, %d counters available to each "
-> -                       "CPU, irq %d%s\n", mipspmu->name, counters, irq,
-> -                       irq < 0 ? " (share with timer interrupt)" : "");
-> +       mipspmu.num_counters = counters;
-> +       mipspmu.irq = irq;
-> +
-> +       if (read_c0_perfctrl0() & M_PERFCTL_WIDE) {
-> +               mipspmu.max_period = (1ULL << 63) - 1;
-> +               mipspmu.valid_count = (1ULL << 63) - 1;
-> +               mipspmu.overflow = 1ULL << 63;
-> +               mipspmu.read_counter = mipsxx_pmu_read_counter_64;
-> +               mipspmu.write_counter = mipsxx_pmu_write_counter_64;
-> +               counter_bits = 64;
-> +       } else {
-> +               mipspmu.max_period = (1ULL << 32) - 1;
-> +               mipspmu.valid_count = (1ULL << 31) - 1;
-> +               mipspmu.overflow = 1ULL << 31;
-> +               mipspmu.read_counter = mipsxx_pmu_read_counter;
-> +               mipspmu.write_counter = mipsxx_pmu_write_counter;
-> +               counter_bits = 32;
-> +       }
-> +
-> +       on_each_cpu(reset_counters, (void *)(long)counters, 1);
-> +
-> +       pr_cont("%s PMU enabled, %d %d-bit counters available to each "
-> +               "CPU, irq %d%s\n", mipspmu.name, counters, counter_bits, irq,
-> +               irq < 0 ? " (share with timer interrupt)" : "");
->
->        perf_pmu_register(&pmu);
->
+	-Mike
 
-perf_pmu_register(&pmu) should be now changed to perf_pmu_register(&pmu,
-"cpu", PERF_TYPE_RAW).
-
-
-Deng-Cheng
