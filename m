@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760Ab1ATOWS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 09:22:18 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:32968 "EHLO
+	id S1755806Ab1ATOW2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 09:22:28 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:32983 "EHLO
 	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755613Ab1ATOWR (ORCPT
+	with ESMTP id S1755770Ab1ATOWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 09:22:17 -0500
-X-AuditID: b753bd60-9ed53ba00000044b-82-4d3845165af0
+	Thu, 20 Jan 2011 09:22:23 -0500
+X-AuditID: b753bd60-a5e01ba000007012-52-4d38451bc3f5
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -perf/perf/core v2 1/3] perf: Add strfilter for general
-	purpose string filter
+Subject: [PATCH -perf/perf/core v2 2/3] perf probe: Add variable filter support
 To: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>
 Cc: Steven Rostedt <rostedt@goodmis.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
@@ -20,9 +19,12 @@ Cc: Steven Rostedt <rostedt@goodmis.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Chase Douglas <chase.douglas@canonical.com>,
         linux-kernel@vger.kernel.org
-Date: Thu, 20 Jan 2011 23:15:30 +0900
-Message-ID: <20110120141530.25915.12673.stgit@ltc236.sdl.hitachi.co.jp>
+Date: Thu, 20 Jan 2011 23:15:39 +0900
+Message-ID: <20110120141539.25915.43401.stgit@ltc236.sdl.hitachi.co.jp>
+In-Reply-To: <20110120141530.25915.12673.stgit@ltc236.sdl.hitachi.co.jp>
+References: <20110120141530.25915.12673.stgit@ltc236.sdl.hitachi.co.jp>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -33,322 +35,294 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add strfilter for general purpose string filter.
-Every filter rules are descrived by glob matching pattern
-and '!' prefix which means Logical NOT.
-A strfilter consists of those filter rules connected
-with '&' and '|'. A set of rules can be folded by using
-'(' and ')'. It also accepts spaces around rules and those
-operators.
+Add filters support for available variable list.
+Default filter is "!__k???tab_*&!__crc_*" for
+filtering out automatically generated symbols.
 
-Format:
-<rule> ::= <glob-exp> | "!" <rule> | <rule> <op> <rule> | "(" <rule> ")"
-<op> ::= "&" | "|"
+The format of filter rule is "[!]GLOBPATTERN", so
+you can use wild cards. If the filter rule starts with
+'!', matched variables are filter out.
 
-e.g.
- "(add* | del*) & *timer" filter rules pass strings which
- start with add or del and end with timer.
-
-This will be used by perf probe --filter.
-
-Changes in V2:
- - Fix to check result of strdup() and strfilter__alloc().
- - Encapsulate and simplify interfaces as like as regex(3).
+e.g.)
+ # perf probe -V schedule --externs --filter=cpu*
+Available variables at schedule
+        @<schedule+0>
+                cpumask_var_t   cpu_callout_mask
+                cpumask_var_t   cpu_core_map
+                cpumask_var_t   cpu_isolated_map
+                cpumask_var_t   cpu_sibling_map
+                int     cpu_number
+                long unsigned int*      cpu_bit_bitmap
+		...
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Chase Douglas <chase.douglas@canonical.com>
 Cc: linux-kernel@vger.kernel.org
 ---
 
- tools/perf/Makefile         |    2 
- tools/perf/util/strfilter.c |  200 +++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/strfilter.h |   49 +++++++++++
- 3 files changed, 251 insertions(+), 0 deletions(-)
- create mode 100644 tools/perf/util/strfilter.c
- create mode 100644 tools/perf/util/strfilter.h
+ tools/perf/Documentation/perf-probe.txt |   14 ++++++
+ tools/perf/builtin-probe.c              |   34 ++++++++++++++++
+ tools/perf/util/probe-event.c           |   67 +++++++++++++++++++------------
+ tools/perf/util/probe-event.h           |    3 +
+ 4 files changed, 91 insertions(+), 27 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index cc714af..b41c6d5 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -412,6 +412,7 @@ LIB_H += util/help.h
- LIB_H += util/session.h
- LIB_H += util/strbuf.h
- LIB_H += util/strlist.h
-+LIB_H += util/strfilter.h
- LIB_H += util/svghelper.h
- LIB_H += util/run-command.h
- LIB_H += util/sigchain.h
-@@ -452,6 +453,7 @@ LIB_OBJS += $(OUTPUT)util/quote.o
- LIB_OBJS += $(OUTPUT)util/strbuf.o
- LIB_OBJS += $(OUTPUT)util/string.o
- LIB_OBJS += $(OUTPUT)util/strlist.o
-+LIB_OBJS += $(OUTPUT)util/strfilter.o
- LIB_OBJS += $(OUTPUT)util/usage.o
- LIB_OBJS += $(OUTPUT)util/wrapper.o
- LIB_OBJS += $(OUTPUT)util/sigchain.o
-diff --git a/tools/perf/util/strfilter.c b/tools/perf/util/strfilter.c
-new file mode 100644
-index 0000000..4064b7d
---- /dev/null
-+++ b/tools/perf/util/strfilter.c
-@@ -0,0 +1,200 @@
-+#include <ctype.h>
-+#include "util.h"
-+#include "string.h"
-+#include "strfilter.h"
+diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
+index fcc51fe..c3189de 100644
+--- a/tools/perf/Documentation/perf-probe.txt
++++ b/tools/perf/Documentation/perf-probe.txt
+@@ -77,6 +77,12 @@ OPTIONS
+ --funcs::
+ 	Show available functions in given module or kernel.
+ 
++--filter=FILTER::
++	(Only for --vars) Set filter for variables. FILTER is a combination of
++	glob pattern, see FILTER PATTERN for detail.
++	Default FILTER is "!__k???tab_* & !__crc_*".
++	If several filters are specified, only the last filter is valid.
 +
-+/* Operators */
-+static const char *OP_and	= "&";	/* Logical AND */
-+static const char *OP_or	= "|";	/* Logical OR */
-+static const char *OP_not	= "!";	/* Logical NOT */
+ -f::
+ --force::
+ 	Forcibly add events with existing name.
+@@ -139,6 +145,14 @@ e.g.
+ 
+ This provides some sort of flexibility and robustness to probe point definitions against minor code changes. For example, actual 10th line of schedule() can be moved easily by modifying schedule(), but the same line matching 'rq=cpu_rq*' may still exist in the function.)
+ 
++FILTER PATTERN
++--------------
++ The filter pattern is glob matching pattern(s) to filter variables.
++ In addition, you can use "!" for specifying filter-out rule. You also can give several rules combined with "&" or "|", and fold those rules as one rule by using "(" ")".
 +
-+#define is_operator(c)	((c) == '|' || (c) == '&' || (c) == '!')
-+#define is_separator(c)	(is_operator(c) || (c) == '(' || (c) == ')')
++e.g.
++ With --filter "foo* | bar*", perf probe -V shows variables which start with "foo" or "bar".
++ With --filter "!foo* & *bar", perf probe -V shows variables which don't start with "foo" and end with "bar", like "fizzbar". But "foobar" is filtered out.
+ 
+ EXAMPLES
+ --------
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 6cf708a..abb423e 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -36,6 +36,7 @@
+ #include "builtin.h"
+ #include "util/util.h"
+ #include "util/strlist.h"
++#include "util/strfilter.h"
+ #include "util/symbol.h"
+ #include "util/debug.h"
+ #include "util/debugfs.h"
+@@ -43,6 +44,7 @@
+ #include "util/probe-finder.h"
+ #include "util/probe-event.h"
+ 
++#define DEFAULT_VAR_FILTER "!__k???tab_* & !__crc_*"
+ #define MAX_PATH_LEN 256
+ 
+ /* Session management structure */
+@@ -60,6 +62,7 @@ static struct {
+ 	struct line_range line_range;
+ 	const char *target_module;
+ 	int max_probe_points;
++	struct strfilter *filter;
+ } params;
+ 
+ /* Parse an event definition. Note that any error must die. */
+@@ -156,6 +159,27 @@ static int opt_show_vars(const struct option *opt __used,
+ 
+ 	return ret;
+ }
 +
-+static void strfilter_node__delete(struct strfilter_node *self)
++static int opt_set_filter(const struct option *opt __used,
++			  const char *str, int unset __used)
 +{
-+	if (self) {
-+		if (self->p && !is_operator(*self->p))
-+			free((char *)self->p);
-+		strfilter_node__delete(self->l);
-+		strfilter_node__delete(self->r);
-+		free(self);
++	const char *err;
++
++	if (str) {
++		pr_debug2("Set filter: %s\n", str);
++		if (params.filter)
++			strfilter__delete(params.filter);
++		params.filter = strfilter__new(str, &err);
++		if (!params.filter) {
++			pr_err("Filter parse error at %ld.\n", err - str + 1);
++			pr_err("Source: \"%s\"\n", str);
++			pr_err("         %*c\n", (int)(err - str + 1), '^');
++			return -EINVAL;
++		}
 +	}
++
++	return 0;
 +}
+ #endif
+ 
+ static const char * const probe_usage[] = {
+@@ -212,6 +236,10 @@ static const struct option options[] = {
+ 		     "Show accessible variables on PROBEDEF", opt_show_vars),
+ 	OPT_BOOLEAN('\0', "externs", &params.show_ext_vars,
+ 		    "Show external variables too (with --vars only)"),
++	OPT_CALLBACK('\0', "filter", NULL,
++		     "[!]FILTER", "Set a variable filter (with --vars only)\n"
++		     "\t\t\t(default: \"" DEFAULT_VAR_FILTER "\")",
++		     opt_set_filter),
+ 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
+ 		   "file", "vmlinux pathname"),
+ 	OPT_STRING('s', "source", &symbol_conf.source_prefix,
+@@ -324,10 +352,16 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
+ 			       " --add/--del.\n");
+ 			usage_with_options(probe_usage, options);
+ 		}
++		if (!params.filter)
++			params.filter = strfilter__new(DEFAULT_VAR_FILTER,
++						       NULL);
 +
-+void strfilter__delete(struct strfilter *self)
-+{
-+	if (self) {
-+		strfilter_node__delete(self->root);
-+		free(self);
-+	}
-+}
-+
-+static const char *get_token(const char *s, const char **e)
-+{
-+	const char *p;
-+
-+	while (isspace(*s))	/* Skip spaces */
-+		s++;
-+
-+	if (*s == '\0') {
-+		p = s;
+ 		ret = show_available_vars(params.events, params.nevents,
+ 					  params.max_probe_points,
+ 					  params.target_module,
++					  params.filter,
+ 					  params.show_ext_vars);
++		strfilter__delete(params.filter);
+ 		if (ret < 0)
+ 			pr_err("  Error: Failed to show vars. (%d)\n", ret);
+ 		return ret;
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 1a93756..2346506 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -31,6 +31,7 @@
+ #include <string.h>
+ #include <stdarg.h>
+ #include <limits.h>
++#include <elf.h>		/* For STB_GLOBAL */
+ 
+ #undef _GNU_SOURCE
+ #include "util.h"
+@@ -450,12 +451,14 @@ end:
+ }
+ 
+ static int show_available_vars_at(int fd, struct perf_probe_event *pev,
+-				  int max_vls, bool externs)
++				  int max_vls, struct strfilter *_filter,
++				  bool externs)
+ {
+ 	char *buf;
+-	int ret, i;
++	int ret, i, nvars;
+ 	struct str_node *node;
+ 	struct variable_list *vls = NULL, *vl;
++	const char *var;
+ 
+ 	buf = synthesize_perf_probe_point(&pev->point);
+ 	if (!buf)
+@@ -463,36 +466,45 @@ static int show_available_vars_at(int fd, struct perf_probe_event *pev,
+ 	pr_debug("Searching variables at %s\n", buf);
+ 
+ 	ret = find_available_vars_at(fd, pev, &vls, max_vls, externs);
+-	if (ret > 0) {
+-		/* Some variables were found */
+-		fprintf(stdout, "Available variables at %s\n", buf);
+-		for (i = 0; i < ret; i++) {
+-			vl = &vls[i];
+-			/*
+-			 * A probe point might be converted to
+-			 * several trace points.
+-			 */
+-			fprintf(stdout, "\t@<%s+%lu>\n", vl->point.symbol,
+-				vl->point.offset);
+-			free(vl->point.symbol);
+-			if (vl->vars) {
+-				strlist__for_each(node, vl->vars)
++	if (ret <= 0) {
++		pr_err("Failed to find variables at %s (%d)\n", buf, ret);
 +		goto end;
 +	}
-+
-+	p = s + 1;
-+	if (!is_separator(*s)) {
-+		/* End search */
-+retry:
-+		while (*p && !is_separator(*p) && !isspace(*p))
-+			p++;
-+		/* Escape and special case: '!' is also used in glob pattern */
-+		if (*(p - 1) == '\\' || (*p == '!' && *(p - 1) == '[')) {
-+			p++;
-+			goto retry;
-+		}
++	/* Some variables are found */
++	fprintf(stdout, "Available variables at %s\n", buf);
++	for (i = 0; i < ret; i++) {
++		vl = &vls[i];
++		/*
++		 * A probe point might be converted to
++		 * several trace points.
++		 */
++		fprintf(stdout, "\t@<%s+%lu>\n", vl->point.symbol,
++			vl->point.offset);
++		free(vl->point.symbol);
++		nvars = 0;
++		if (vl->vars) {
++			strlist__for_each(node, vl->vars) {
++				var = strchr(node->s, '\t') + 1;
++				if (strfilter__compare(_filter, var)) {
+ 					fprintf(stdout, "\t\t%s\n", node->s);
+-				strlist__delete(vl->vars);
+-			} else
+-				fprintf(stdout, "(No variables)\n");
++					nvars++;
++				}
++			}
++			strlist__delete(vl->vars);
+ 		}
+-		free(vls);
+-	} else
+-		pr_err("Failed to find variables at %s (%d)\n", buf, ret);
+-
++		if (nvars == 0)
++			fprintf(stdout, "\t\t(No matched variables)\n");
 +	}
++	free(vls);
 +end:
-+	*e = p;
-+	return s;
-+}
-+
-+static struct strfilter_node *strfilter_node__alloc(const char *op,
-+						    struct strfilter_node *l,
-+						    struct strfilter_node *r)
-+{
-+	struct strfilter_node *ret = zalloc(sizeof(struct strfilter_node));
-+
-+	if (ret) {
-+		ret->p = op;
-+		ret->l = l;
-+		ret->r = r;
-+	}
-+
-+	return ret;
-+}
-+
-+static struct strfilter_node *strfilter_node__new(const char *s,
-+						  const char **ep)
-+{
-+	struct strfilter_node root, *cur, *last_op;
-+	const char *e;
-+
-+	if (!s)
-+		return NULL;
-+
-+	memset(&root, 0, sizeof(root));
-+	last_op = cur = &root;
-+
-+	s = get_token(s, &e);
-+	while (*s != '\0' && *s != ')') {
-+		switch (*s) {
-+		case '&':	/* Exchg last OP->r with AND */
-+			if (!cur->r || !last_op->r)
-+				goto error;
-+			cur = strfilter_node__alloc(OP_and, last_op->r, NULL);
-+			if (!cur)
-+				goto nomem;
-+			last_op->r = cur;
-+			last_op = cur;
-+			break;
-+		case '|':	/* Exchg the root with OR */
-+			if (!cur->r || !root.r)
-+				goto error;
-+			cur = strfilter_node__alloc(OP_or, root.r, NULL);
-+			if (!cur)
-+				goto nomem;
-+			root.r = cur;
-+			last_op = cur;
-+			break;
-+		case '!':	/* Add NOT as a leaf node */
-+			if (cur->r)
-+				goto error;
-+			cur->r = strfilter_node__alloc(OP_not, NULL, NULL);
-+			if (!cur->r)
-+				goto nomem;
-+			cur = cur->r;
-+			break;
-+		case '(':	/* Recursively parses inside the parenthesis */
-+			if (cur->r)
-+				goto error;
-+			cur->r = strfilter_node__new(s + 1, &s);
-+			if (!s)
-+				goto nomem;
-+			if (!cur->r || *s != ')')
-+				goto error;
-+			e = s + 1;
-+			break;
-+		default:
-+			if (cur->r)
-+				goto error;
-+			cur->r = strfilter_node__alloc(NULL, NULL, NULL);
-+			if (!cur->r)
-+				goto nomem;
-+			cur->r->p = strndup(s, e - s);
-+			if (!cur->r->p)
-+				goto nomem;
-+		}
-+		s = get_token(e, &e);
-+	}
-+	if (!cur->r)
-+		goto error;
-+	*ep = s;
-+	return root.r;
-+nomem:
-+	s = NULL;
-+error:
-+	*ep = s;
-+	strfilter_node__delete(root.r);
-+	return NULL;
-+}
-+
-+/*
-+ * Parse filter rule and return new strfilter.
-+ * Return NULL if fail, and *ep == NULL if memory allocation failed.
-+ */
-+struct strfilter *strfilter__new(const char *rules, const char **err)
-+{
-+	struct strfilter *ret = zalloc(sizeof(struct strfilter));
-+	const char *ep = NULL;
-+
-+	if (ret)
-+		ret->root = strfilter_node__new(rules, &ep);
-+
-+	if (!ret || !ret->root || *ep != '\0') {
-+		if (err)
-+			*err = ep;
-+		strfilter__delete(ret);
-+		ret = NULL;
-+	}
-+
-+	return ret;
-+}
-+
-+static bool strfilter_node__compare(struct strfilter_node *self,
-+				    const char *str)
-+{
-+	if (!self || !self->p)
-+		return false;
-+
-+	switch (*self->p) {
-+	case '|':	/* OR */
-+		return strfilter_node__compare(self->l, str) ||
-+			strfilter_node__compare(self->r, str);
-+	case '&':	/* AND */
-+		return strfilter_node__compare(self->l, str) &&
-+			strfilter_node__compare(self->r, str);
-+	case '!':	/* NOT */
-+		return !strfilter_node__compare(self->r, str);
-+	default:
-+		return strglobmatch(str, self->p);
-+	}
-+}
-+
-+/* Return true if STR matches the filter rules */
-+bool strfilter__compare(struct strfilter *self, const char *str)
-+{
-+	if (!self)
-+		return false;
-+	return strfilter_node__compare(self->root, str);
-+}
-diff --git a/tools/perf/util/strfilter.h b/tools/perf/util/strfilter.h
-new file mode 100644
-index 0000000..7647337
---- /dev/null
-+++ b/tools/perf/util/strfilter.h
-@@ -0,0 +1,49 @@
-+#ifndef __PERF_STRFILTER_H
-+#define __PERF_STRFILTER_H
-+/* General purpose glob matching filter */
-+
-+#include <linux/list.h>
-+#include <stdbool.h>
-+
-+/* A node of string filter */
-+struct strfilter_node {
-+	struct strfilter_node *l;	/* Tree left branche (for &,|) */
-+	struct strfilter_node *r;	/* Tree right branche (for !,&,|) */
-+	const char *p;		/* Operator or rule */
-+};
-+
-+/* String filter */
-+struct strfilter {
-+	struct strfilter_node *root;
-+};
-+
-+/**
-+ * strfilter__new - Create a new string filter
-+ * @rules: Filter rule, which is a combination of glob expressions.
-+ * @err: Pointer which points an error detected on @rules
-+ *
-+ * Parse @rules and return new strfilter. Return NULL if an error detected.
-+ * In that case, *@err will indicate where it is detected, and *@err is NULL
-+ * if a memory allocation is failed.
-+ */
-+struct strfilter *strfilter__new(const char *rules, const char **err);
-+
-+/**
-+ * strfilter__compare - compare given string and a string filter
-+ * @self: String filter
-+ * @str: target string
-+ *
-+ * Compare @str and @self. Return true if the str match the rule
-+ */
-+bool strfilter__compare(struct strfilter *self, const char *str);
-+
-+/**
-+ * strfilter__delete - delete a string filter
-+ * @self: String filter to delete
-+ *
-+ * Delete @self.
-+ */
-+void strfilter__delete(struct strfilter *self);
-+
-+#endif
-+
+ 	free(buf);
+ 	return ret;
+ }
+ 
+ /* Show available variables on given probe point */
+ int show_available_vars(struct perf_probe_event *pevs, int npevs,
+-			int max_vls, const char *module, bool externs)
++			int max_vls, const char *module,
++			struct strfilter *_filter, bool externs)
+ {
+ 	int i, fd, ret = 0;
+ 
+@@ -509,7 +521,8 @@ int show_available_vars(struct perf_probe_event *pevs, int npevs,
+ 	setup_pager();
+ 
+ 	for (i = 0; i < npevs && ret >= 0; i++)
+-		ret = show_available_vars_at(fd, &pevs[i], max_vls, externs);
++		ret = show_available_vars_at(fd, &pevs[i], max_vls, _filter,
++					     externs);
+ 
+ 	close(fd);
+ 	return ret;
+@@ -555,7 +568,9 @@ int show_line_range(struct line_range *lr __unused, const char *module __unused)
+ 
+ int show_available_vars(struct perf_probe_event *pevs __unused,
+ 			int npevs __unused, int max_vls __unused,
+-			const char *module __unused, bool externs __unused)
++			const char *module __unused,
++			struct strfilter *filter __unused,
++			bool externs __unused)
+ {
+ 	pr_warning("Debuginfo-analysis is not supported.\n");
+ 	return -ENOSYS;
+diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
+index 1fb4f18..4e80b2b 100644
+--- a/tools/perf/util/probe-event.h
++++ b/tools/perf/util/probe-event.h
+@@ -3,6 +3,7 @@
+ 
+ #include <stdbool.h>
+ #include "strlist.h"
++#include "strfilter.h"
+ 
+ extern bool probe_event_dry_run;
+ 
+@@ -126,7 +127,7 @@ extern int show_perf_probe_events(void);
+ extern int show_line_range(struct line_range *lr, const char *module);
+ extern int show_available_vars(struct perf_probe_event *pevs, int npevs,
+ 			       int max_probe_points, const char *module,
+-			       bool externs);
++			       struct strfilter *filter, bool externs);
+ extern int show_available_funcs(const char *module);
+ 
+ 
 
