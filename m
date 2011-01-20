@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab1ATCMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 21:12:09 -0500
-Received: from mga03.intel.com ([143.182.124.21]:26372 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752993Ab1ATCMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 21:12:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,347,1291622400"; 
-   d="scan'208";a="377139115"
-Subject: Re: [performance bug] kernel building regression on 64 LCPUs
- machine
-From: Shaohua Li <shaohua.li@intel.com>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: "Shi, Alex" <alex.shi@intel.com>,
-        "czoccolo@gmail.com" <czoccolo@gmail.com>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>,
-        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-In-Reply-To: <20110119143214.GA3043@thunk.org>
-References: <1295402148.4773.143.camel@debian>
-	 <20110119143214.GA3043@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 Jan 2011 10:12:04 +0800
-Message-ID: <1295489524.1949.884.camel@sli10-conroe>
+	id S1754873Ab1ATCNM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 21:13:12 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57274 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753400Ab1ATCNK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 21:13:10 -0500
+Date: Wed, 19 Jan 2011 18:12:13 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rpurdie@rpsys.net,
+        Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+        Michel =?ISO-8859-1?Q?D=E4nzer?= <daenzer@vmware.com>
+Subject: Re: [PATCH 3/5] radeon: Expose backlight class device for legacy
+ LVDS encoder
+Message-Id: <20110119181213.8e301c33.akpm@linux-foundation.org>
+In-Reply-To: <1295033065-13450-3-git-send-email-mjg@redhat.com>
+References: <1295033065-13450-1-git-send-email-mjg@redhat.com>
+	<1295033065-13450-3-git-send-email-mjg@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-19 at 22:32 +0800, Ted Ts'o wrote:
-> On Wed, Jan 19, 2011 at 09:55:48AM +0800, Alex,Shi wrote:
-> > Shaohua and I tested kernel building performance on latest kernel. and
-> > found it is drop about 15% on our 64 LCPUs NHM-EX machine on ext4 file
-> > system. 
+On Fri, 14 Jan 2011 14:24:23 -0500
+Matthew Garrett <mjg@redhat.com> wrote:
+
+> From: Michel D__nzer <michel@daenzer.net>
 > 
-> What kerenl version were you comparing against?  And what were you
-> using to benchmark this performance drop?  I'm curious what your
-> workload was; I'm guesisng it was some kind of mixed read/write
-> workload?  Were there any fsync()'s involved?
-2.6.36 vs 2.6.37. this exists in 2.6.37-rc1. it's a kbuild, no a mixed
-read/write workload. kbuild hasn't fsync involved
+> Allows e.g. power management daemons to control the backlight level. Inspired
+> by the corresponding code in radeonfb.
+> 
+> (Updated to add backlight type and make the connector the parent device - mjg)
+> 
 
-Thanks,
-Shaohua
+x86_64 allmodconfig:
 
+drivers/gpu/drm/radeon/radeon_legacy_encoders.c: In function 'radeon_legacy_lvds_update':
+drivers/gpu/drm/radeon/radeon_legacy_encoders.c:64: error: 'struct radeon_encoder_atom_dig' has no member named 'bl_dev'
+drivers/gpu/drm/radeon/radeon_legacy_encoders.c:65: error: 'struct radeon_encoder_atom_dig' has no member named 'backlight_level'
+drivers/gpu/drm/radeon/radeon_legacy_encoders.c:69: error: 'struct radeon_encoder_lvds' has no member named 'bl_dev'
+drivers/gpu/drm/radeon/radeon_legacy_encoders.c:70: error: 'struct radeon_encoder_lvds' has no member named 'backlight_level'
+drivers/gpu/drm/radeon/radeon_legacy_encoders.c: In function 'radeon_legacy_lvds_dpms':
+drivers/gpu/drm/radeon/radeon_legacy_encoders.c:144: error: 'struct radeon_encoder_atom_dig' has no member named 'dpms_mode'
+drivers/gpu/drm/radeon/radeon_legacy_encoders.c:147: error: 'struct radeon_encoder_lvds' has no member named 'dpms_mode'
 
