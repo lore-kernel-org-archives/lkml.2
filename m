@@ -1,112 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab1ATJ4P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 04:56:15 -0500
-Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:55130
-	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755286Ab1ATJ4M (ORCPT
+	id S1755326Ab1ATJ7y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 04:59:54 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:33864 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755301Ab1ATJ7v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 04:56:12 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [PATCH] drm/i915: Don't kick-off hangcheck after a DRI interrupt
-Date: Thu, 20 Jan 2011 09:56:01 +0000
-Message-Id: <1295517361-15825-1-git-send-email-chris@chris-wilson.co.uk>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <20110120070508.GA2345@gondor.apana.org.au>
-References: <20110120070508.GA2345@gondor.apana.org.au>
-X-Originating-IP: 78.156.66.37
+	Thu, 20 Jan 2011 04:59:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=DraEUoHw7A9yDxuG3dmXXzXRYAUHGsE61btY0Z8DmEEFySsGPIK1TI6mQ0oDO67aws
+         sufeH/3YgZhYo5SZj/TJwWVSMEA+WoYKnHey9qi0w1rt414NKZxL4OQw7g+2VW2E6VPI
+         DEeAFF5A5DssVql4GsJiRFuat2e+Ffm8q257s=
+MIME-Version: 1.0
+In-Reply-To: <1294367707-2593-1-git-send-email-ddaney@caviumnetworks.com>
+References: <1294367707-2593-1-git-send-email-ddaney@caviumnetworks.com>
+Date: Thu, 20 Jan 2011 17:59:49 +0800
+Message-ID: <AANLkTimZKz_Epg8DOvwkWWcS0viUa2V2TygUS80osEwh@mail.gmail.com>
+Subject: Re: [PATCH 0/6] MIPS: perf: Make perf work for 64-bit/Octeon counters.
+From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hangcheck is only used by GEM and just OOPSes with incomplete DRI
-configuration:
+Hi, David
 
-BUG: unable to handle kernel paging request at fffffffffffffff0
-IP: [<ffffffffa041ee76>] i915_hangcheck_elapsed+0x96/0x270 [i915]
-PGD 13d1067 PUD 13d2067 PMD 0
-Oops: 0000 [#1] PREEMPT SMP
-last sysfs file: /sys/class/net/lo/operstate
-CPU 2
-Modules linked in: snd_pcm_oss snd_mixer_oss vmnet parport_pc parport
-vmblock vmci vmmon i915 drm_kms_helper drm fb fbdev i2c_algo_bit
-cfbcopyarea video backlight output cfbimgblt cfbfillrect autofs4 ipv6
-nfs lockd fscache nfs_acl auth_rpcgss sunrpc coretemp hwmon_vid mo]
 
-Pid: 0, comm: kworker/0:1 Not tainted 2.6.36.2 #5 P5KPL-CM/System
-Product Name
-RIP: 0010:[<ffffffffa041ee76>]  [<ffffffffa041ee76>]
-i915_hangcheck_elapsed+0x96/0x270 [i915]
-RSP: 0000:ffff880001703e40  EFLAGS: 00010217
-RAX: 0000000000000000 RBX: ffff880117071800 RCX: ffff880118f7c400
-RDX: 000000007dffffc0 RSI: ffff880118f7c028 RDI: ffff880117071800
-RBP: ffff880001703e70 R08: ffff88000170d460 R09: ffff880001712620
-R10: 0000000000000000 R11: 0000000000000001 R12: ffff880118f7c000
-R13: ffff880117071800 R14: 0000000000000000 R15: 000000000e41e9d8
-FS:  0000000000000000(0000) GS:ffff880001700000(0000)
-knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: fffffffffffffff0 CR3: 00000000d83df000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process kworker/0:1 (pid: 0, threadinfo ffff88011b6b2000, task
-ffff88011b67d5c0)
-Stack:
- 7dffffc000012600 ffff880117071800 ffff88011b6ac000 0000000000000102
-<0> ffff880001703eb0 ffffffffa041ede0 ffff880001703ef0 ffffffff81046fad
-<0> ffff88011b6b3fd8 ffff88011b6b3fd8 ffff88011b6adc20 ffff88011b6ad820
-Call Trace:
- <IRQ>
- [<ffffffffa041ede0>] ? i915_hangcheck_elapsed+0x0/0x270 [i915]
- [<ffffffff81046fad>] run_timer_softirq+0x13d/0x260
- [<ffffffff81063657>] ? clockevents_program_event+0x57/0xa0
- [<ffffffff81041c76>] __do_softirq+0xa6/0x130
- [<ffffffff810032cc>] call_softirq+0x1c/0x30
- [<ffffffff81005375>] do_softirq+0x55/0x90
- [<ffffffff8104190d>] irq_exit+0x8d/0xb0
- [<ffffffff8101de8c>] smp_apic_timer_interrupt+0x6c/0xa0
- [<ffffffff81002d93>] apic_timer_interrupt+0x13/0x20
- <EOI>
- [<ffffffff8100b139>] ? mwait_idle+0x79/0x90
- [<ffffffff81001610>] ? enter_idle+0x20/0x30
- [<ffffffff81001689>] cpu_idle+0x69/0xc0
- [<ffffffff812cb19c>] start_secondary+0x183/0x1e7
-Code: 8d 84 24 18 01 00 00 49 39 84 24 18 01 00 00 0f 84 cf 00 00 00 49
-8b 85 68 03 00 00 49 8d 74 24 28 48 8b 80 20 01 00 00 4c 89 ef <8b> 58
-f0 e8 42 5e 00 00 89 de 89 c7 e8 29 5e 00 00 84 c0 0f 85
-RIP  [<ffffffffa041ee76>] i915_hangcheck_elapsed+0x96/0x270 [i915]
- RSP <ffff880001703e40>
-CR2: fffffffffffffff0
----[ end trace a327d5ceef537f9e ]---
+Today I did a quick test against your patch set on my MIPS32 Malta board.
+After fixing a small compiling issue (see my comment for patch #5), I
+successfully built the kernel based on my previous mainline-sync changes.
+And when doing the test, I was using the an previously compiled 'perf'
+tool, because the latest perf tool needs arch specific DWARF register
+mapping definitions (and currently we have not yet submitted this patch).
 
-Reported-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
----
- drivers/gpu/drm/i915/i915_irq.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+And here's the test result:
 
-diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
-index 46d649b..39ce40d 100644
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -348,8 +348,12 @@ static void notify_ring(struct drm_device *dev,
- 			struct intel_ring_buffer *ring)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
--	u32 seqno = ring->get_seqno(ring);
-+	u32 seqno;
-+
-+	if (ring->obj == NULL)
-+		return;
- 
-+	seqno = ring->get_seqno(ring);
- 	trace_i915_gem_request_complete(dev, seqno);
- 
- 	ring->irq_seqno = seqno;
--- 
-1.7.2.3
+# When this patch set is built in, the simple 'perf stat' command takes
+very long time (182 seconds for the ls command). See following:
 
+-sh-4.0# perf stat -e cycles -e instructions ls /
+bin   dev  home  lost+found  opt   root  share  tmp    usr
+boot  etc  lib   mnt         proc  sbin  sys    trans  var
+
+ Performance counter stats for 'ls /':
+
+         2825998290  cycles
+         2148970283  instructions             #      0.760 IPC
+
+      181.901999444  seconds time elapsed
+
+# When this patch is NOT used, namely, only the mainline-sync changes are
+built in, the time looks reasonable:
+
+-sh-4.0# perf stat -e cycles -e instructions ls /
+bin   dev  home  lost+found  opt   root  share  tmp    usr
+boot  etc  lib   mnt         proc  sbin  sys    trans  var
+
+ Performance counter stats for 'ls /':
+
+            2051461  cycles
+            1041512  instructions             #      0.508 IPC
+
+        0.046426513  seconds time elapsed
+
+I noticed that you changed quite a lot of original logics in MIPS
+Perf-events, including the deletion of the 'msbs' member in the struct
+cpu_hw_events. Honestly speaking, I have not yet taken a careful look into
+the patch set to find out how you deal with the MIPS specific 0x80000000
+counter overflow (certainly, the value is for MIPS32), instead of
+0xffffffff. But maybe this code logic could be related to the test result.
+
+
+Deng-Cheng
+
+
+2011/1/7 David Daney <ddaney@caviumnetworks.com>:
+> The existing MIPS perf hardware counter support only handles 32-bit
+> wide counters.  Some CPUs (like Octeon) have the 64-bit wide variety.
+> This patch set allows perf to work on Octeon, and I hope not break
+> existing systems.  I have not tested it on non-Octeon systems, so it
+> would be good if someone could test that.
+>
+> Summary of the patches:
+>
+> 1) Fix faulty Octeon interrupt controller code.
+>
+> 2) Add some register definitions.
+>
+> 3,4) Clean up existing code.
+>
+> 5) 64-bit perf counter support.
+>
+> 6) Octeon perf event bindings.
+>
+> Patch 4/6 is the biggest and has the highest chance of having broken
+> something.
+>
+> This patch set depends on a couple of others that have previously been
+> sent to Ralf:
+>
+> http://patchwork.linux-mips.org/patch/1927/
+> http://patchwork.linux-mips.org/patch/1850/
+> http://patchwork.linux-mips.org/patch/1851/
+> http://patchwork.linux-mips.org/patch/1852/
+> http://patchwork.linux-mips.org/patch/1853/
+> http://patchwork.linux-mips.org/patch/1854/
+>
+> David Daney (6):
+>  MIPS: Octeon: Enable per-CPU IRQs on all CPUs.
+>  MIPS: Add accessor macros for 64-bit performance counter registers.
+>  MIPS: perf: Cleanup formatting in arch/mips/kernel/perf_event.c
+>  MIPS: perf: Reorganize contents of perf support files.
+>  MIPS: perf: Add support for 64-bit perf counters.
+>  MIPS: perf: Add Octeon support for hardware perf.
+>
+>  arch/mips/Kconfig                    |    2 +-
+>  arch/mips/cavium-octeon/octeon-irq.c |   30 +-
+>  arch/mips/cavium-octeon/smp.c        |   10 +
+>  arch/mips/include/asm/mipsregs.h     |    8 +
+>  arch/mips/kernel/Makefile            |    5 +-
+>  arch/mips/kernel/perf_event.c        |  521 +--------------
+>  arch/mips/kernel/perf_event_mipsxx.c | 1265 +++++++++++++++++++++++++---------
+>  7 files changed, 977 insertions(+), 864 deletions(-)
+>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+> --
+> 1.7.2.3
+>
+>
