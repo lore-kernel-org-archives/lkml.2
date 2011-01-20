@@ -1,143 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab1ATBMy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 20:12:54 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51164 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752799Ab1ATBMx (ORCPT
+	id S1754662Ab1ATBNF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 20:13:05 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:55231 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754090Ab1ATBND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 20:12:53 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 20 Jan 2011 10:06:54 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch rfc] memcg: correctly order reading PCG_USED and
- pc->mem_cgroup
-Message-Id: <20110120100654.a90d9cc6.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110119120319.GA2232@cmpxchg.org>
-References: <20110119120319.GA2232@cmpxchg.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Jan 2011 20:13:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=YEWoWYvC7opTbcTuuoEKYhR1bQBJ0MQg0Pdede36hWjZtGdziS24WkXdyNoGCKkBn7
+         PwcE63Pi9/sfpQH/9yJwc5QbvNzIPERJGOo+SsMQnu/z/zZZF+lLFt+embGc9shAHSSo
+         lHzja5kHGdnTFNQLiZiQ55160sHtRbj7x96OI=
+Date: Wed, 19 Jan 2011 17:12:54 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for January 18 (__modver_version_show)
+Message-ID: <20110120011254.GA14742@core.coreip.homeip.net>
+References: <20110118122139.6c2a6f2f.sfr@canb.auug.org.au>
+ <20110118091749.ac5823df.randy.dunlap@oracle.com>
+ <20110119160951.2a14d0a0.sfr@canb.auug.org.au>
+ <4D370CE6.3000505@oracle.com>
+ <4D370D63.5070503@oracle.com>
+ <20110120003808.GA14292@core.coreip.homeip.net>
+ <4D37890A.5000005@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D37890A.5000005@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Jan 2011 13:03:19 +0100
-Johannes Weiner <hannes@cmpxchg.org> wrote:
-
-> The placement of the read-side barrier is confused: the writer first
-> sets pc->mem_cgroup, then PCG_USED.  The read-side barrier has to be
-> between testing PCG_USED and reading pc->mem_cgroup.
+On Wed, Jan 19, 2011 at 04:59:54PM -0800, Randy Dunlap wrote:
+> On 01/19/11 16:38, Dmitry Torokhov wrote:
+> > On Wed, Jan 19, 2011 at 08:12:19AM -0800, Randy Dunlap wrote:
+> >> On 01/19/11 08:10, Randy Dunlap wrote:
+> >>> On 01/18/11 21:09, Stephen Rothwell wrote:
+> >>>> Hi Randy,
+> >>>>
+> >>>> On Tue, 18 Jan 2011 09:17:49 -0800 Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> >>>>>
+> >>>>> I'm seeing this on several builds (i386 and x86_64):
+> >>>>>
+> >>>>> lib/built-in.o:(__modver+0x8): undefined reference to `__modver_version_show'
+> >>>>> lib/built-in.o:(__modver+0x2c): undefined reference to `__modver_version_show'
+> >>>>>
+> >>>>> It looks like the compiler or linker is dropping that function from the
+> >>>>> build since it cannot see any references to it...
+> >>>>> At least __modver_version_show is not in the kernel/params.o file.
+> >>>>
+> >>>> Do these builds have CONFIG_SYSFS set?
+> >>>>
+> >>>
+> >>> Yes, they all do (50 random builds have CONFIG_SYSFS=y).
+> >>
+> >> Gawd, what bad grepping this morning.
+> >>
+> >> You hit the nail.  They do not have SYSFS enabled.
+> >>
+> > 
+> > Argh, this one is my fault, the following should fix it.
+> > 
 > 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  mm/memcontrol.c |   27 +++++++++------------------
->  1 files changed, 9 insertions(+), 18 deletions(-)
-> 
-> I am a bit dumbfounded as to why this has never had any impact.  I see
-> two scenarios where charging can race with LRU operations:
-> 
-> One is shmem pages on swapoff.  They are on the LRU when charged as
-> page cache, which could race with isolation/putback.  This seems
-> sufficiently rare.
-> 
-> The other case is a swap cache page being charged while somebody else
-> had it isolated.  mem_cgroup_lru_del_before_commit_swapcache() would
-> see the page isolated and skip it.  The commit then has to race with
-> putback, which could see PCG_USED but not pc->mem_cgroup, and crash
-> with a NULL pointer dereference.  This does sound a bit more likely.
-> 
-> Any idea?  Am I missing something?
-> 
-
-I think troubles happen only when PCG_USED bit was found but pc->mem_cgroup
-is NULL. Hmm.
-
-  set pc->mem_cgroup
-  write_barrier
-  set USED bit.
-
-  read_barrier
-  check USED bit
-  access pc->mem_cgroup
-
-So, is there a case which only USED bit can be seen ?
-Anyway, your patch is right.
-
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 5b562b3..db76ef7 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -836,13 +836,12 @@ void mem_cgroup_rotate_lru_list(struct page *page, enum lru_list lru)
->  		return;
->  
->  	pc = lookup_page_cgroup(page);
-> -	/*
-> -	 * Used bit is set without atomic ops but after smp_wmb().
-> -	 * For making pc->mem_cgroup visible, insert smp_rmb() here.
-> -	 */
-> -	smp_rmb();
->  	/* unused or root page is not rotated. */
-> -	if (!PageCgroupUsed(pc) || mem_cgroup_is_root(pc->mem_cgroup))
-> +	if (!PageCgroupUsed(pc))
-> +		return;
-> +	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
-> +	smp_rmb();
-> +	if (mem_cgroup_is_root(pc->mem_cgroup))
->  		return;
->  	mz = page_cgroup_zoneinfo(pc);
->  	list_move(&pc->lru, &mz->lists[lru]);
-> @@ -857,14 +856,10 @@ void mem_cgroup_add_lru_list(struct page *page, enum lru_list lru)
->  		return;
->  	pc = lookup_page_cgroup(page);
->  	VM_BUG_ON(PageCgroupAcctLRU(pc));
-> -	/*
-> -	 * Used bit is set without atomic ops but after smp_wmb().
-> -	 * For making pc->mem_cgroup visible, insert smp_rmb() here.
-> -	 */
-> -	smp_rmb();
->  	if (!PageCgroupUsed(pc))
->  		return;
-> -
-> +	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
-> +	smp_rmb();
->  	mz = page_cgroup_zoneinfo(pc);
->  	/* huge page split is done under lru_lock. so, we have no races. */
->  	MEM_CGROUP_ZSTAT(mz, lru) += 1 << compound_order(page);
-> @@ -1031,14 +1026,10 @@ mem_cgroup_get_reclaim_stat_from_page(struct page *page)
->  		return NULL;
->  
->  	pc = lookup_page_cgroup(page);
-> -	/*
-> -	 * Used bit is set without atomic ops but after smp_wmb().
-> -	 * For making pc->mem_cgroup visible, insert smp_rmb() here.
-> -	 */
-> -	smp_rmb();
->  	if (!PageCgroupUsed(pc))
->  		return NULL;
-> -
-> +	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
-> +	smp_rmb();
->  	mz = page_cgroup_zoneinfo(pc);
->  	if (!mz)
->  		return NULL;
-> -- 
-> 1.7.3.4
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom policy in Canada: sign http://dissolvethecrtc.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 > 
 
+Great!
+
+Hopefully Rusty will be able to fold it in the original change so it
+won't break bisects.
+
+-- 
+Dmitry
