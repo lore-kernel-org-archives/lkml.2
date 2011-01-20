@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690Ab1ATStW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 13:49:22 -0500
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:25848 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753260Ab1ATStV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 13:49:21 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: ac1AbAYVM1l2p2129CMATX9YkcM_QJWZDcLYKURvRcRWGj1
- Xl7YD916KXMnWil4IRhG4RZR7zZS2Rq9Wgk4c3DwwVvnJ0w3qGFFOV708W6T
- RkFsrsfEJNbjnaR6NGbESVjx2crDuTFLUApCDu32tUP63YBIkPy5l_A_UNeY
- 6RZp9EhIpczb_yrwBbSUazeO4t8f6FXO1k2EH.qUz5HmwVdfhHZ5TxZ3svDg
- n8XMC7mK3FFQK3K8SG80PGwvqWiOXrZsY162SWC9rdvL8t7ZUEw9veNkvhns
- lWOpsUp5mvdjVRaVUGhfFFEurw80HtUqexToXac5PSdWRgCs-
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 20 Jan 2011 12:49:15 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Andrea Arcangeli <aarcange@redhat.com>
-cc: Minchan Kim <minchan.kim@gmail.com>,
+	id S1753813Ab1ATSta (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 13:49:30 -0500
+Received: from cantor.suse.de ([195.135.220.2]:44980 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753740Ab1ATSt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 13:49:29 -0500
+Date: Thu, 20 Jan 2011 10:48:38 -0800
+From: Greg KH <gregkh@suse.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 1/3] When migrate_pages returns 0, all pages must have
- been released
-In-Reply-To: <20110120182444.GA9506@random.random>
-Message-ID: <alpine.DEB.2.00.1101201233001.20633@router.home>
-References: <f60d811fd1abcb68d40ac19af35881d700a97cd2.1295539829.git.minchan.kim@gmail.com> <alpine.DEB.2.00.1101201130100.10695@router.home> <20110120182444.GA9506@random.random>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PATCH] TTY/serial driver movement for .38
+Message-ID: <20110120184838.GA31717@suse.de>
+References: <20110120174910.GA30124@kroah.com>
+ <201101201932.51560.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201101201932.51560.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jan 2011, Andrea Arcangeli wrote:
+On Thu, Jan 20, 2011 at 07:32:51PM +0100, Arnd Bergmann wrote:
+> On Thursday 20 January 2011 18:49:10 Greg KH wrote:
+> > As mentioned before in previous TTY git pull for .38, here's the big
+> > movement of the serial drivers into the drivers/tty/ subdirectory that
+> > needed to wait until after .38-rc1 was out.
+> > 
+> > It merely moves the hvc drivers to drivers/tty/hvc/ and the
+> > drivers/serial/ directory to drivers/tty/serial/ and fixes up the
+> > MAINTAINERS file to point to the proper locations of the files now that
+> > they have been moved.
+> 
+> Hi Greg,
+> 
+> Thanks for following up on this!
+> 
+> I noticed that this moves the majority of all the tty drivers, but not
+> the serial drivers from the drivers/char directory as my original patch
+> series did. Is that something you still plan to do, or would you like
+> me to respin that part of my patches for the next merge window?
 
-> Hello,
->
-> On Thu, Jan 20, 2011 at 11:30:35AM -0600, Christoph Lameter wrote:
-> > On Fri, 21 Jan 2011, Minchan Kim wrote:
-> >
-> > > diff --git a/mm/migrate.c b/mm/migrate.c
-> > > index 46fe8cc..7d34237 100644
-> > > --- a/mm/migrate.c
-> > > +++ b/mm/migrate.c
-> > > @@ -772,6 +772,7 @@ uncharge:
-> > >  unlock:
-> > >  	unlock_page(page);
-> > >
-> > > +move_newpage:
-> > >  	if (rc != -EAGAIN) {
-> > >   		/*
-> > >   		 * A page that has been migrated has all references
-> > > @@ -785,8 +786,6 @@ unlock:
-> > >  		putback_lru_page(page);
-> > >  	}
-> > >
-> > > -move_newpage:
-> > > -
-> > >  	/*
-> > >  	 * Move the new page to the LRU. If migration was not successful
-> > >  	 * then this will free the page.
-> > >
-> >
-> > What does this do? Not covered by the description.
->
-> It makes a difference for the two goto move_newpage, when rc =
-> 0. Otherwise the function will return 0, despite
-> putback_lru_page(page) wasn't called (and the caller of migrate_pages
-> won't call putback_lru_pages if migrate_pages returned 0).
+I was going to do that for the next set of patches, for .39.  I will be
+moving some of the drivers into the staging tree as well, as was
+discussed.  I figured it was better to move things slower, making merges
+from other trees easier, than to do it in all one big jump.
 
-Think about the difference:
+I still have your original patch series here which is what I am working
+off of, so don't worry, it's not forgotten :)
 
-Moving the move_newpage will now cause another removal and freeing of the
-page if rc != -EAGAIN.
+thanks,
 
-The first goto move_newpage (because page count is 1) will now mean that
-the page is freed twice. One because of the rc != EAGAIN branch and then
-another time by the following putback_lru_page().
-
-
+greg k-h
