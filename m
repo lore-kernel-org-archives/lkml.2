@@ -1,46 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab1ATKBm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 05:01:42 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50528 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110Ab1ATKBk convert rfc822-to-8bit (ORCPT
+	id S1755348Ab1ATKEI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 05:04:08 -0500
+Received: from ganesha.gnumonks.org ([213.95.27.120]:35346 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755317Ab1ATKEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 05:01:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=i1C3edNnGzFaNPL95lcpt36UfwAmoVRwk2JiB8JbSmRbRyS/cpCqDUO38NKV3wzGpt
-         2WzhfM4onnCQ0z3LC6rmp8Fr39QgiLthuDCRjL8+4eOPE1IE1sRK5efP6Fb9rZUf6jbg
-         tfDbUuxslTmOOM6WlXbmeF2s4KZxcl5DxyHFY=
-MIME-Version: 1.0
-In-Reply-To: <1294367707-2593-5-git-send-email-ddaney@caviumnetworks.com>
-References: <1294367707-2593-1-git-send-email-ddaney@caviumnetworks.com>
-	<1294367707-2593-5-git-send-email-ddaney@caviumnetworks.com>
-Date: Thu, 20 Jan 2011 18:01:38 +0800
-Message-ID: <AANLkTi=5+QxOipaTycLBuLUHr7iOGCe0nfG9mQsKADoj@mail.gmail.com>
-Subject: Re: [PATCH 4/6] MIPS: perf: Reorganize contents of perf support files.
-From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Dezhong Diao <dediao@cisco.com>, Gabor Juhos <juhosg@openwrt.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 Jan 2011 05:04:05 -0500
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>, Ilho Lee <ilho215.lee@samsung.com>,
+        KeyYoung Park <keyyoung.park@samsung.com>,
+        KyongHo Cho <pullip.cho@samsung.com>
+Subject: [PATCH] ARM: mm: Regarding section when dealing with meminfo
+Date: Thu, 20 Jan 2011 18:45:39 +0900
+Message-Id: <1295516739-9839-1-git-send-email-pullip.cho@samsung.com>
+X-Mailer: git-send-email 1.6.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/1/7 David Daney <ddaney@caviumnetworks.com>:
-> @@ -1034,5 +1560,3 @@ init_hw_perf_events(void)
->        return 0;
->  }
->  arch_initcall(init_hw_perf_events);
-> -
-> -#endif /* defined(CONFIG_CPU_MIPS32)... */
+Sparsemem allows that a bank of memory spans over several adjacent
+sections if the start address and the end address of the bank
+belong to different sections.
+When gathering statictics of physical memory in mem_init() and
+show_mem(), this possiblity was not considered.
 
-arch_initcall should be now early_initcall.
+This patch guarantees that simple increasing the pointer to page
+descriptors does not exceed the boundary of a section.
+
+Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
+---
+ arch/arm/mm/init.c |   74 +++++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 51 insertions(+), 23 deletions(-)
+
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index 57c4c5c..6ccecbe 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -93,24 +93,38 @@ void show_mem(void)
+ 
+ 		pfn1 = bank_pfn_start(bank);
+ 		pfn2 = bank_pfn_end(bank);
+-
++#ifndef CONFIG_SPARSEMEM
+ 		page = pfn_to_page(pfn1);
+ 		end  = pfn_to_page(pfn2 - 1) + 1;
+-
++#else
++		pfn2--;
+ 		do {
+-			total++;
+-			if (PageReserved(page))
+-				reserved++;
+-			else if (PageSwapCache(page))
+-				cached++;
+-			else if (PageSlab(page))
+-				slab++;
+-			else if (!page_count(page))
+-				free++;
+-			else
+-				shared += page_count(page) - 1;
+-			page++;
+-		} while (page < end);
++			page = pfn_to_page(pfn1);
++			if (pfn_to_section_nr(pfn1) < pfn_to_section_nr(pfn2)) {
++				pfn1 += PAGES_PER_SECTION;
++				pfn1 &= PAGE_SECTION_MASK;
++			} else {
++				pfn1 = pfn2;
++			}
++			end = pfn_to_page(pfn1) + 1;
++#endif
++			do {
++				total++;
++				if (PageReserved(page))
++					reserved++;
++				else if (PageSwapCache(page))
++					cached++;
++				else if (PageSlab(page))
++					slab++;
++				else if (!page_count(page))
++					free++;
++				else
++					shared += page_count(page) - 1;
++				page++;
++			} while (page < end);
++#ifdef CONFIG_SPARSEMEM
++		} while (pfn1 < pfn2);
++#endif
+ 	}
+ 
+ 	printk("%d pages of RAM\n", total);
+@@ -470,17 +484,31 @@ void __init mem_init(void)
+ 
+ 		pfn1 = bank_pfn_start(bank);
+ 		pfn2 = bank_pfn_end(bank);
+-
++#ifndef CONFIG_SPARSEMEM
+ 		page = pfn_to_page(pfn1);
+ 		end  = pfn_to_page(pfn2 - 1) + 1;
+-
++#else
++		pfn2--;
+ 		do {
+-			if (PageReserved(page))
+-				reserved_pages++;
+-			else if (!page_count(page))
+-				free_pages++;
+-			page++;
+-		} while (page < end);
++			page = pfn_to_page(pfn1);
++			if (pfn_to_section_nr(pfn1) < pfn_to_section_nr(pfn2)) {
++				pfn1 += PAGES_PER_SECTION;
++				pfn1 &= PAGE_SECTION_MASK;
++			} else {
++				pfn1 = pfn2;
++			}
++			end = pfn_to_page(pfn1) + 1;
++#endif
++			do {
++				if (PageReserved(page))
++					reserved_pages++;
++				else if (!page_count(page))
++					free_pages++;
++				page++;
++			} while (page < end);
++#ifdef CONFIG_SPARSEMEM
++		} while (pfn1 < pfn2);
++#endif
+ 	}
+ 
+ 	/*
+-- 
+1.6.2.5
+
