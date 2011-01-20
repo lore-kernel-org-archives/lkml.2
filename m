@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755170Ab1ATGzd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 01:55:33 -0500
-Received: from mga11.intel.com ([192.55.52.93]:9776 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755103Ab1ATGzb convert rfc822-to-8bit (ORCPT
+	id S1755128Ab1ATG4x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 01:56:53 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54619 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754414Ab1ATG4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 01:55:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,349,1291622400"; 
-   d="scan'208";a="649096086"
-From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
-To: Chris Ball <cjb@laptop.org>
-CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Date: Thu, 20 Jan 2011 14:55:27 +0800
-Subject: RE: [PATCH v2 1/1]mmc: implemented eMMC4.4 enhanced area feature
-Thread-Topic: [PATCH v2 1/1]mmc: implemented eMMC4.4 enhanced area feature
-Thread-Index: Acu4ajsrOkUt9FFqROis/vGzfx7gdAABHU9A
-Message-ID: <5D8008F58939784290FAB48F54975198352A15C006@shsmsx502.ccr.corp.intel.com>
-References: <20110113125727.GA20452@intel.com>
- <20110120032519.GA4827@void.printf.net>
- <5D8008F58939784290FAB48F54975198352A15BFC0@shsmsx502.ccr.corp.intel.com>
- <20110120062103.GB5732@void.printf.net>
-In-Reply-To: <20110120062103.GB5732@void.printf.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 Jan 2011 01:56:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=HB/GcFk9E5IhEsKAbeQvSASUT+ptA3yxmbS0BrAOY1VLc6oTt///PIAbvrFij4MtlG
+         rd7/BwuS5uxiV51FDpxiY+6auUg+tFcctVvWbW9H4wK8AfM65VNr0dJYo+auDH1+tM8X
+         1Z+osP3fYTv3QQw3d4UvKmvAvqVRMvgA2Z3s8=
+Message-ID: <4D37DCB7.9010505@gmail.com>
+Date: Thu, 20 Jan 2011 07:56:55 +0100
+From: Thomas Weber <thomas.weber.linux@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101220 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
+To: Tony Lindgren <tony@atomide.com>
+CC: Thomas Weber <weber@corscience.de>, linux-omap@vger.kernel.org,
+        Daniel Morsing <daniel.morsing@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        charu@ti.com, sshtylyov@mvista.com
+Subject: Re: [PATCHv4 2/4] OMAP3: Devkit8000: Fix tps65930 pullup/pulldown
+ configuration
+References: <1295425166-25540-1-git-send-email-weber@corscience.de> <1295425166-25540-3-git-send-email-weber@corscience.de> <20110119222126.GI4957@atomide.com>
+In-Reply-To: <20110119222126.GI4957@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+Am 19.01.2011 23:21, schrieb Tony Lindgren:
+> * Thomas Weber <weber@corscience.de> [110119 00:18]:
+>> From: Daniel Morsing <daniel.morsing@gmail.com>
+>>
+>> gpio7 on the tps65930 is used as an output on the devkit8000 and
+>> gpio1 is not connected. Remove gpio7 and change gpio1 to pulldown
+>>
+>> Signed-off-by: Daniel Morsing <daniel.morsing@gmail.com>
 > 
-> On Thu, Jan 20, 2011 at 02:08:04PM +0800, Dong, Chuanxiao wrote:
-> > > I think these should probably be printed in decimal instead of hex.
+> I'll queue only this fix for now, looks like the other still need
+> minor changes.
 > 
-> (Will assume you agree with this, let me know if not.)
-Agree with this. Sorry for missing it.
+> Tony
+> --
 
-> 
-> > > Hm, this way the sysfs files will show up regardless of whether we have
-> > > an eMMC device or an SD card, which is very confusing.  Can you not check
-> > > whether enhanced_area_en == 1 before create these files?
-> > >
-> > SD card will not use this code when initializing. So I think these files only are
-> created for eMMC card. If the eMMC card doesn't support enhanced area, can we
-> use the same way like below scenario, exporting some value like -EINVAL to user?
-> What do you think?
-> 
-> Oh, makes sense -- I agree, let's just use -EINVAL, and update the sysfs
-> ABI doc to mention that.  Thanks!
-Cool! I will fix these and then resubmit the new patch. :)
-
-Thanks
-Chuanxiao
+Thanks.
