@@ -1,119 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab1ATG6E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 01:58:04 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56843 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755033Ab1ATG6B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 01:58:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=ChjYu1LYN4oE+QZxna0gB0eS0xK1e8QFmsAY5VBScj57ASdo01YwBi7jphO+WL6ViC
-         uAQqn+BvwTLx+RMpplyquxh/wX/Wf30OMQuOsV7SHgwdGjH+auGZzfCTU/CUR4S77H7j
-         dMQMXP3eXMeZ6Y9f58f0sYVmF5ElMRyreNq5I=
-Message-ID: <4D37DCFE.3080004@gmail.com>
-Date: Thu, 20 Jan 2011 07:58:06 +0100
-From: Thomas Weber <thomas.weber.linux@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101220 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Govindraj <govindraj.ti@gmail.com>
-CC: Thomas Weber <weber@corscience.de>,
-        "G, Manjunath Kondaiah" <manjugk@ti.com>, linux-omap@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>,
-        "Govindraj.R" <govindraj.raja@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrei Emeltchenko <andrei.emeltchenko@nokia.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2] OMAP: Enable Magic SysRq on serial console ttyOx
-References: <1295426461-12459-1-git-send-email-weber@corscience.de> <AANLkTin0-joNuqxqL79j0wqPk_A5mtAgzEY=X=PeH=+C@mail.gmail.com> <20110119130049.GB9365@m-desktop> <4D36E7CC.5090303@corscience.de> <AANLkTikjdukQ+kUUR7N11rZ5b=Xd=xLb0-chMrbp5BQ6@mail.gmail.com>
-In-Reply-To: <AANLkTikjdukQ+kUUR7N11rZ5b=Xd=xLb0-chMrbp5BQ6@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755197Ab1ATHBV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 02:01:21 -0500
+Received: from smtp.nokia.com ([147.243.1.47]:38685 "EHLO mgw-sa01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751516Ab1ATHBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 02:01:20 -0500
+Subject: Re: Bug in scheduler when using rt_mutex
+From: Onkalo Samu <samu.p.onkalo@nokia.com>
+Reply-To: samu.p.onkalo@nokia.com
+To: ext Peter Zijlstra <peterz@infradead.org>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, mingo@elte.hu,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        tglx <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <1295443822.28776.23.camel@laptop>
+References: <1295275365.12840.13.camel@kolo>
+	 <1295280032.30950.128.camel@laptop> <1295339012.11678.35.camel@kolo>
+	 <AANLkTikXf-OMEBx-UZktxooOs+YqUkSE9doyEZopjzOx@mail.gmail.com>
+	 <1295357746.30950.681.camel@laptop>
+	 <AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
+	 <1295430276.30950.1414.camel@laptop>  <1295433498.30950.1482.camel@laptop>
+	 <1295436632.30950.1542.camel@laptop>  <1295441881.11678.41.camel@kolo>
+	 <1295442799.11678.43.camel@kolo>  <1295443822.28776.23.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Nokia Oyj
+Date: Thu, 20 Jan 2011 09:07:00 +0200
+Message-ID: <1295507220.11678.45.camel@kolo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 19.01.2011 14:58, schrieb Govindraj:
-> On Wed, Jan 19, 2011 at 7:01 PM, Thomas Weber <weber@corscience.de> wrote:
->> Am 19.01.2011 14:00, schrieb G, Manjunath Kondaiah:
->>> On Wed, Jan 19, 2011 at 03:01:39PM +0530, Govindraj wrote:
->>>> On Wed, Jan 19, 2011 at 2:11 PM, Thomas Weber <weber@corscience.de> wrote:
->>>>> Magic SysRq key is not working for OMAP on new serial
->>>>> console ttyOx because SUPPORT_SYSRQ is not defined
->>>>> for omap-serial.
->>>>>
->>>>> This patch defines SUPPORT_SYSRQ in omap-serial and
->>>>> enables handling of Magic SysRq character.
->>>>>
->>>>> Signed-off-by: Thomas Weber <weber@corscience.de>
->>>>
->>>> Looks fine to me.
->>>>
->>>> Acked-by: Govindraj.R <govindraj.raja@ti.com>
->>> I tried to use SysRq key on minicom after applying this patch, it looks
->>> like it is not triggering sysrq event.
->>>
->>> Am I missing anything?
->>>
->>> -Manjunath
->>> --
->> Hello Manjunath,
->>
->> Do you have CONFIG_MAGIC_SYSRQ enabled?
->> Magic SysRq key in Kernel Hacking
->>
->> I tested it on Devkit8000 (beagle board clone).
->>
+On Wed, 2011-01-19 at 14:30 +0100, ext Peter Zijlstra wrote:
+> On Wed, 2011-01-19 at 15:13 +0200, Onkalo Samu wrote:
+> > 
+> > When the task is sleeping rt_mutex_setprio
+> > doesn't call check_class_changed since the task is not 
+> > in queue at that moment I think. 
 > 
-> re-setting lsr_break_flag to 0 in receive chars is causing issues
-> in getting sysrq key break sequence on omap-serial.c
+> Ah, indeed, more changes then..
 > 
-> Manju,
+> (I think we can also remove the prio_changed_idle thing, since I think
+> we killed that hotplug usage)
+
+Doesn't compile because kernel/sched_idletask.c
+functions still use "running" parameter which was removed.
+
 > 
-> can you try this change on your environment.
-> With below change works for me on 3430SDP/4430SDP.
-> key sequence I checked.
-> [alt + b + t]  => shows trace of tasks running.
-> [alt + b + b] => system reboot.
+
 > 
-> 
-> diff --git a/drivers/serial/omap-serial.c b/drivers/serial/omap-serial.c
-> index 1201eff..6df623e 100644
-> --- a/drivers/serial/omap-serial.c
-> +++ b/drivers/serial/omap-serial.c
-> @@ -20,6 +20,10 @@
->   * this driver as required for the omap-platform.
->   */
-> 
-> +#if defined(CONFIG_SERIAL_OMAP_CONSOLE) && defined(CONFIG_MAGIC_SYSRQ)
-> +#define SUPPORT_SYSRQ
-> +#endif
+> ---
+> Index: linux-2.6/kernel/sched.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/sched.c
+> +++ linux-2.6/kernel/sched.c
+> @@ -2025,14 +2025,14 @@ inline int task_curr(const struct task_s
+>  
+>  static inline void check_class_changed(struct rq *rq, struct task_struct *p,
+>  				       const struct sched_class *prev_class,
+> -				       int oldprio, int running)
+> +				       int oldprio)
+>  {
+>  	if (prev_class != p->sched_class) {
+>  		if (prev_class->switched_from)
+> -			prev_class->switched_from(rq, p, running);
+> -		p->sched_class->switched_to(rq, p, running);
+> -	} else
+> -		p->sched_class->prio_changed(rq, p, oldprio, running);
+> +			prev_class->switched_from(rq, p);
+> +		p->sched_class->switched_to(rq, p);
+> +	} else if (oldprio != p->prio)
+> +		p->sched_class->prio_changed(rq, p, oldprio);
+>  }
+>  
+>  static void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags)
+> @@ -4570,11 +4570,10 @@ void rt_mutex_setprio(struct task_struct
+>  
+>  	if (running)
+>  		p->sched_class->set_curr_task(rq);
+> -	if (on_rq) {
+> +	if (on_rq)
+>  		enqueue_task(rq, p, oldprio < prio ? ENQUEUE_HEAD : 0);
+>  
+> -		check_class_changed(rq, p, prev_class, oldprio, running);
+> -	}
+> +	check_class_changed(rq, p, prev_class, oldprio);
+>  	task_rq_unlock(rq, &flags);
+>  }
+>  
+> @@ -4902,11 +4901,10 @@ static int __sched_setscheduler(struct t
+>  
+>  	if (running)
+>  		p->sched_class->set_curr_task(rq);
+> -	if (on_rq) {
+> +	if (on_rq)
+>  		activate_task(rq, p, 0);
+>  
+> -		check_class_changed(rq, p, prev_class, oldprio, running);
+> -	}
+> +	check_class_changed(rq, p, prev_class, oldprio);
+>  	__task_rq_unlock(rq);
+>  	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+>  
+> @@ -8109,6 +8107,8 @@ EXPORT_SYMBOL(__might_sleep);
+>  #ifdef CONFIG_MAGIC_SYSRQ
+>  static void normalize_task(struct rq *rq, struct task_struct *p)
+>  {
+> +	struct sched_class *prev_class = p->sched_class;
+> +	int old_prio = p->prio;
+>  	int on_rq;
+>  
+>  	on_rq = p->se.on_rq;
+> @@ -8119,6 +8119,8 @@ static void normalize_task(struct rq *rq
+>  		activate_task(rq, p, 0);
+>  		resched_task(rq->curr);
+>  	}
 > +
->  #include <linux/module.h>
->  #include <linux/init.h>
->  #include <linux/console.h>
-> @@ -190,7 +194,6 @@ static inline void receive_chars(struct
-> uart_omap_port *up, int *status)
->                         if (up->port.line == up->port.cons->index) {
->                                 /* Recover the break flag from console xmit */
->                                 lsr |= up->lsr_break_flag;
-> -                               up->lsr_break_flag = 0;
->                         }
->  #endif
->                         if (lsr & UART_LSR_BI)
+> +	check_class_changed(rq, p, prev_class, old_prio);
+>  }
+>  
+>  void normalize_rt_tasks(void)
+> Index: linux-2.6/kernel/sched_fair.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/sched_fair.c
+> +++ linux-2.6/kernel/sched_fair.c
+> @@ -4054,33 +4054,56 @@ static void task_fork_fair(struct task_s
+>   * Priority of the task has changed. Check to see if we preempt
+>   * the current task.
+>   */
+> -static void prio_changed_fair(struct rq *rq, struct task_struct *p,
+> -			      int oldprio, int running)
+> +static void
+> +prio_changed_fair(struct rq *rq, struct task_struct *p, int oldprio)
+>  {
+> +	if (!p->se.on_rq)
+> +		return;
+> +
+>  	/*
+>  	 * Reschedule if we are currently running on this runqueue and
+>  	 * our priority decreased, or if we are not currently running on
+>  	 * this runqueue and our priority is higher than the current's
+>  	 */
+> -	if (running) {
+> +	if (rq->curr == p) {
+>  		if (p->prio > oldprio)
+>  			resched_task(rq->curr);
+>  	} else
+>  		check_preempt_curr(rq, p, 0);
+>  }
+>  
+> +static void switched_from_fair(struct rq *rq, struct task_struct *p)
+> +{
+> +	struct sched_entity *se = &p->se;
+> +	struct cfs_rq *cfs_rq = cfs_rq_of(se);
+> +
+> +	/*
+> +	 * Ensure the task's vruntime is normalized, so that when its
+> +	 * switched back to the fair class the enqueue_entity(.flags=0) will
+> +	 * do the right thing.
+> +	 *
+> +	 * If it was on_rq, then the dequeue_entity(.flags=0) will already
+> +	 * have normalized the vruntime, if it was !on_rq, then only when
+> +	 * the task is sleeping will it still have non-normalized vruntime.
+> +	 */
+> +	if (!se->on_rq && p->state != TASK_RUNNING)
+> +		se->vruntime -= cfs_rq->min_vruntime;
+> +}
+> +
+>  /*
+>   * We switched to the sched_fair class.
+>   */
+> -static void switched_to_fair(struct rq *rq, struct task_struct *p,
+> -			     int running)
+> +static void switched_to_fair(struct rq *rq, struct task_struct *p)
+>  {
+> +	if (!p->se.on_rq)
+> +		return;
+> +
+>  	/*
+>  	 * We were most likely switched from sched_rt, so
+>  	 * kick off the schedule if running, otherwise just see
+>  	 * if we can still preempt the current task.
+>  	 */
+> -	if (running)
+> +	if (rq->curr == p)
+>  		resched_task(rq->curr);
+>  	else
+>  		check_preempt_curr(rq, p, 0);
+> @@ -4166,6 +4189,7 @@ static const struct sched_class fair_sch
+>  	.task_fork		= task_fork_fair,
+>  
+>  	.prio_changed		= prio_changed_fair,
+> +	.switched_from		= switched_from_fair,
+>  	.switched_to		= switched_to_fair,
+>  
+>  	.get_rr_interval	= get_rr_interval_fair,
+> Index: linux-2.6/include/linux/sched.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/sched.h
+> +++ linux-2.6/include/linux/sched.h
+> @@ -1084,12 +1084,10 @@ struct sched_class {
+>  	void (*task_tick) (struct rq *rq, struct task_struct *p, int queued);
+>  	void (*task_fork) (struct task_struct *p);
+>  
+> -	void (*switched_from) (struct rq *this_rq, struct task_struct *task,
+> -			       int running);
+> -	void (*switched_to) (struct rq *this_rq, struct task_struct *task,
+> -			     int running);
+> +	void (*switched_from) (struct rq *this_rq, struct task_struct *task);
+> +	void (*switched_to) (struct rq *this_rq, struct task_struct *task);
+>  	void (*prio_changed) (struct rq *this_rq, struct task_struct *task,
+> -			     int oldprio, int running);
+> +			     int oldprio);
+>  
+>  	unsigned int (*get_rr_interval) (struct rq *rq,
+>  					 struct task_struct *task);
+> Index: linux-2.6/kernel/sched_idletask.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/sched_idletask.c
+> +++ linux-2.6/kernel/sched_idletask.c
+> @@ -52,8 +52,7 @@ static void set_curr_task_idle(struct rq
+>  {
+>  }
+>  
+> -static void switched_to_idle(struct rq *rq, struct task_struct *p,
+> -			     int running)
+> +static void switched_to_idle(struct rq *rq, struct task_struct *p)
+>  {
+>  	/* Can this actually happen?? */
+>  	if (running)
+> @@ -62,8 +61,8 @@ static void switched_to_idle(struct rq *
+>  		check_preempt_curr(rq, p, 0);
+>  }
+>  
+> -static void prio_changed_idle(struct rq *rq, struct task_struct *p,
+> -			      int oldprio, int running)
+> +static void
+> +prio_changed_idle(struct rq *rq, struct task_struct *p, int oldprio)
+>  {
+>  	/* This can happen for hot plug CPUS */
+>  
+> Index: linux-2.6/kernel/sched_rt.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/sched_rt.c
+> +++ linux-2.6/kernel/sched_rt.c
+> @@ -1595,8 +1595,7 @@ static void rq_offline_rt(struct rq *rq)
+>   * When switch from the rt queue, we bring ourselves to a position
+>   * that we might want to pull RT tasks from other runqueues.
+>   */
+> -static void switched_from_rt(struct rq *rq, struct task_struct *p,
+> -			   int running)
+> +static void switched_from_rt(struct rq *rq, struct task_struct *p)
+>  {
+>  	/*
+>  	 * If there are other RT tasks then we will reschedule
+> @@ -1605,7 +1604,7 @@ static void switched_from_rt(struct rq *
+>  	 * we may need to handle the pulling of RT tasks
+>  	 * now.
+>  	 */
+> -	if (!rq->rt.rt_nr_running)
+> +	if (p->se.on_rq && !rq->rt.rt_nr_running)
+>  		pull_rt_task(rq);
+>  }
+>  
+> @@ -1624,8 +1623,7 @@ static inline void init_sched_rt_class(v
+>   * with RT tasks. In this case we try to push them off to
+>   * other runqueues.
+>   */
+> -static void switched_to_rt(struct rq *rq, struct task_struct *p,
+> -			   int running)
+> +static void switched_to_rt(struct rq *rq, struct task_struct *p)
+>  {
+>  	int check_resched = 1;
+>  
+> @@ -1636,7 +1634,7 @@ static void switched_to_rt(struct rq *rq
+>  	 * If that current running task is also an RT task
+>  	 * then see if we can move to another run queue.
+>  	 */
+> -	if (!running) {
+> +	if (p->se.on_rq && rq->curr != p) {
+>  #ifdef CONFIG_SMP
+>  		if (rq->rt.overloaded && push_rt_task(rq) &&
+>  		    /* Don't resched if we changed runqueues */
+> @@ -1652,10 +1650,13 @@ static void switched_to_rt(struct rq *rq
+>   * Priority of the task has changed. This may cause
+>   * us to initiate a push or pull.
+>   */
+> -static void prio_changed_rt(struct rq *rq, struct task_struct *p,
+> -			    int oldprio, int running)
+> +static void
+> +prio_changed_rt(struct rq *rq, struct task_struct *p, int oldprio)
+>  {
+> -	if (running) {
+> +	if (!p->se.on_rq)
+> +		return;
+> +
+> +	if (rq->curr == p) {
+>  #ifdef CONFIG_SMP
+>  		/*
+>  		 * If our priority decreases while running, we
+> Index: linux-2.6/kernel/sched_stoptask.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/sched_stoptask.c
+> +++ linux-2.6/kernel/sched_stoptask.c
+> @@ -59,14 +59,13 @@ static void set_curr_task_stop(struct rq
+>  {
+>  }
+>  
+> -static void switched_to_stop(struct rq *rq, struct task_struct *p,
+> -			     int running)
+> +static void switched_to_stop(struct rq *rq, struct task_struct *p)
+>  {
+>  	BUG(); /* its impossible to change to this class */
+>  }
+>  
+> -static void prio_changed_stop(struct rq *rq, struct task_struct *p,
+> -			      int oldprio, int running)
+> +static void
+> +prio_changed_stop(struct rq *rq, struct task_struct *p, int oldprio)
+>  {
+>  	BUG(); /* how!?, what priority? */
+>  }
 > 
-> 
-> --
-> Thanks,
-> Govindraj.R
-> --
 
-Hello,
-
-both version works for me.
-
-Thomas
 
