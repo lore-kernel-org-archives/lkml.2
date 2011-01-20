@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab1ATLho (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 06:37:44 -0500
-Received: from casper.infradead.org ([85.118.1.10]:55100 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755153Ab1ATLhm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 06:37:42 -0500
-Subject: Re: [PATCH 1/2] lockdep: move early boot local IRQ enable/disable
- status to init/main.c
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Tejun Heo <tj@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-In-Reply-To: <20110120112606.GF6036@htj.dyndns.org>
-References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
-	 <20110119120200.GA1057@elte.hu> <20110120110635.GB6036@htj.dyndns.org>
-	 <20110120111149.GD6036@htj.dyndns.org> <1295522631.28776.155.camel@laptop>
-	 <20110120112606.GF6036@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 20 Jan 2011 12:38:12 +0100
-Message-ID: <1295523492.28776.165.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755510Ab1ATLim (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 06:38:42 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:60034 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755056Ab1ATLij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 06:38:39 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Len Brown <lenb@kernel.org>
+Subject: [PATCH 2/11] ACPI / PM: Call suspend_nvs_free() earlier during resume
+Date: Thu, 20 Jan 2011 12:28:57 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc1+; KDE/4.4.4; x86_64; ; )
+Cc: Jeff Chua <jeff.chua.linux@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+References: <201101201226.41021.rjw@sisk.pl>
+In-Reply-To: <201101201226.41021.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101201228.57812.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-20 at 12:26 +0100, Tejun Heo wrote:
-> On Thu, Jan 20, 2011 at 12:23:51PM +0100, Peter Zijlstra wrote:
-> > On Thu, 2011-01-20 at 12:11 +0100, Tejun Heo wrote:
-> > > Hello, guys.
-> > > 
-> > > These two patches remove both warnings.  The first warning was
-> > > completely spurious.  The second lockdep one was triggered by
-> > > on_each_cpu() enabling local IRQ too early.
-> > > 
-> > > I don't think percpu allocator itself malfunctioned.  There was no
-> > > allocation failure.  It whines when percpu allocation fails but didn't
-> > > in the log.  Other than calling vfree() early triggering the above
-> > > condition, it worked okay.
-> > > 
-> > > So, it's either the early enabling of local IRQ by on_each_cpu()
-> > > breaking something in the IRQ subsystem or something different.  Ingo,
-> > > can you please see whether these two patches cure the panic too?
-> > 
-> > Why not use something like: system_state != SYSTEM_RUNNING ?
-> 
-> Cuz, it's finer grained than that.  We can add a SYSTEM_* flag but I
-> wasn't sure whether that would be just creating more noise.  If we try
-> to consolidate these things, we probably should consider
-> oops_in_progress too.  It probably is a good idea but let's first fix
-> the problem at hand.
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Right, no problem with that, I was just wondering why you'd add an extra
-variable instead of using the system states.
+It turns out that some device drivers map pages from the ACPI NVS
+region during resume using ioremap(), which conflicts with the
+ioremap_cache() used for mapping those pages by the NVS save/restore
+code in nvs.c.
+
+Make the NVS pages mapped by the code in nvs.c be unmapped before
+device drivers' resume routines run.
+
+Tested-by: Jeff Chua <jeff.chua.linux@gmail.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/acpi/sleep.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6/drivers/acpi/sleep.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/sleep.c
++++ linux-2.6/drivers/acpi/sleep.c
+@@ -166,6 +166,7 @@ static void acpi_pm_finish(void)
+ 	u32 acpi_state = acpi_target_sleep_state;
+ 
+ 	acpi_ec_unblock_transactions();
++	suspend_nvs_free();
+ 
+ 	if (acpi_state == ACPI_STATE_S0)
+ 		return;
+@@ -186,7 +187,6 @@ static void acpi_pm_finish(void)
+  */
+ static void acpi_pm_end(void)
+ {
+-	suspend_nvs_free();
+ 	/*
+ 	 * This is necessary in case acpi_pm_finish() is not called during a
+ 	 * failing transition to a sleep state.
+
