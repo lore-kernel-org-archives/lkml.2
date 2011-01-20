@@ -1,91 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253Ab1ATRiM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 12:38:12 -0500
-Received: from mga09.intel.com ([134.134.136.24]:25777 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753194Ab1ATRiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 12:38:11 -0500
-Message-Id: <0d30dc$kqf9gp@orsmga001.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,352,1291622400"; 
-   d="scan'208";a="698852902"
-Date: Thu, 20 Jan 2011 17:38:06 +0000
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: more intel drm issues (was Re: [git pull] drm intel only fixes)
-Cc: Jeff Chua <jeff.chua.linux@gmail.com>, Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Dave Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-References: <AANLkTimOkFckq+r4cD-PSzc_RNs+HJL5CcEM-3Yh+dF6@mail.gmail.com> <AANLkTin98pf1d29AtT7RwjGBeR=m4rBp7Ks6vvmz18vf@mail.gmail.com> <AANLkTi=s9ZMdUe2bsK2OA5rJBej=R8CaJyE+kT3Fd5wG@mail.gmail.com> <849307$b7q280@azsmga001.ch.intel.com> <AANLkTi=AEhztUp30A0o5YxHCqqLg38+f5s+mXfbZTX8Y@mail.gmail.com>
+	id S1753235Ab1ATRle (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 12:41:34 -0500
+Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:57864
+	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750762Ab1ATRld (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 12:41:33 -0500
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
 From: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Dave Airlie <airlied@linux.ie>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [PATCH] drm/i915/ringbuffer: Fix use of stale HEAD position whilst polling for space
+Date: Thu, 20 Jan 2011 17:41:19 +0000
+Message-Id: <1295545279-21335-1-git-send-email-chris@chris-wilson.co.uk>
+X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <AANLkTi=AEhztUp30A0o5YxHCqqLg38+f5s+mXfbZTX8Y@mail.gmail.com>
+References: <AANLkTi=AEhztUp30A0o5YxHCqqLg38+f5s+mXfbZTX8Y@mail.gmail.com>
+X-To-Not-Matched: true
+X-Originating-IP: 78.156.66.37
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jan 2011 08:07:02 -0800, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> On Thu, Jan 20, 2011 at 2:25 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> >
-> > Right, the autoreported HEAD may have been already reset to 0 and so hit
-> > the wraparound bug which caused it to exit early without actually
-> > quiescing the ringbuffer.
-> 
-> Yeah, that would explain the issue.
-> 
-> > Another possibility is that I added a 3s timeout waiting for a request if
-> > IRQs were suspended:
-> 
-> No, if IRQ's are actually suspended here, then that codepath is
-> totally buggy and would blow up (msleep() doesn't work, and jiffies
-> wouldn't advance on UP). So that's not it.
-> 
-> > Both of those I think are symptoms of another problem, that perhaps during
-> > suspend we are shutting down parts of the chip before idling?
-> 
-> That could be, but looking at the code, one thing strikes me: the
-> _normal_ case (of just waiting for "enough space" in the ring buffer)
-> doesn't need to use the exact case, but the "wait for ring buffer to
-> be totally empty" does.
-> 
-> Which means that the use of the "fast-but-inaccurate" 'head' sounds
-> wrong for the "wait for idle" case.
-> 
-> So can you explain the difference between
-> 
->    intel_read_status_page(ring, 4);
-> 
-> vs
-> 
->    I915_READ_HEAD(ring);
+During suspend, Linus found that his machine would hang for 3 seconds,
+and identified that intel_ring_buffer_wait() was the culprit:
 
-For I915_READ_HEAD, we need to wake up the GT power well, perform an
-uncached read from the register, and then power down. This takes on the
-order of a 100 microseconds (less if the GT is already powered up, etc).
+"Because from looking at the code, I get the notion that
+"intel_read_status_page()" may not be exact. But what happens if that
+inexact value matches our cached ring->actual_head, so we never even
+try to read the exact case? Does it _stay_ inexact for arbitrarily
+long times? If so, we might wait for the ring to empty forever (well,
+until the timeout - the behavior I see), even though the ring really
+_is_ empty."
 
-Instead a read from the status page is from cached memory. The caveat here
-is that value is only updated by the gfx engine when its HEAD crosses
-every 64k boundary. So quite rarely.
+As the reported HEAD position is only updated every time it crosses a
+64k boundary, whilst draining the ring it is indeed likely to remain one
+value. If that value matches the last known HEAD position, we never read
+the true value from the register and so trigger a timeout.
 
-> because from looking at the code, I get the notion that
-> "intel_read_status_page()" may not be exact. But what happens if that
-> inexact value matches our cached ring->actual_head, so we never even
-> try to read the exact case? Does it _stay_ inexact for arbitrarily
-> long times? If so, we might wait for the ring to empty forever (well,
-> until the timeout - the behavior I see), even though the ring really
-> _is_ empty. No?
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+---
+ drivers/gpu/drm/i915/intel_ringbuffer.c |   40 ++++++++++++++++++------------
+ drivers/gpu/drm/i915/intel_ringbuffer.h |    1 -
+ 2 files changed, 24 insertions(+), 17 deletions(-)
 
-Ah. Your analysis is spot on and this will cause a hang whilst polling if
-we enter the loop with the last known head the same as the reported value.
+diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
+index 51fbc5e..6218fa9 100644
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -34,6 +34,14 @@
+ #include "i915_trace.h"
+ #include "intel_drv.h"
  
-> Also, isn't that "head < ring->actual_head" buggy? What about the
-> overflow case? Not that we care, because afaik, 'actual_head' is not
-> actually used anywhere, so it should be called 'pointless_head'?
-
-This is the one case that I think is handled correctly, ignoring all the
-other bugs.
--Chris
-
++static inline int ring_space(struct intel_ring_buffer *ring)
++{
++	int space = (ring->head & HEAD_ADDR) - (ring->tail + 8);
++	if (space < 0)
++		space += ring->size;
++	return space;
++}
++
+ static u32 i915_gem_get_seqno(struct drm_device *dev)
+ {
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+@@ -204,11 +212,9 @@ static int init_ring_common(struct intel_ring_buffer *ring)
+ 	if (!drm_core_check_feature(ring->dev, DRIVER_MODESET))
+ 		i915_kernel_lost_context(ring->dev);
+ 	else {
+-		ring->head = I915_READ_HEAD(ring) & HEAD_ADDR;
++		ring->head = I915_READ_HEAD(ring);
+ 		ring->tail = I915_READ_TAIL(ring) & TAIL_ADDR;
+-		ring->space = ring->head - (ring->tail + 8);
+-		if (ring->space < 0)
+-			ring->space += ring->size;
++		ring->space = ring_space(ring);
+ 	}
+ 
+ 	return 0;
+@@ -921,7 +927,7 @@ static int intel_wrap_ring_buffer(struct intel_ring_buffer *ring)
+ 	}
+ 
+ 	ring->tail = 0;
+-	ring->space = ring->head - 8;
++	ring->space = ring_space(ring);
+ 
+ 	return 0;
+ }
+@@ -933,20 +939,22 @@ int intel_wait_ring_buffer(struct intel_ring_buffer *ring, int n)
+ 	unsigned long end;
+ 	u32 head;
+ 
++	/* If the reported head position has wrapped or hasn't advanced,
++	 * fallback to the slow and accurate path.
++	 */
++	head = intel_read_status_page(ring, 4);
++	if (head > ring->head) {
++		ring->head = head;
++		ring->space = ring_space(ring);
++		if (ring->space >= n)
++			return 0;
++	}
++
+ 	trace_i915_ring_wait_begin (dev);
+ 	end = jiffies + 3 * HZ;
+ 	do {
+-		/* If the reported head position has wrapped or hasn't advanced,
+-		 * fallback to the slow and accurate path.
+-		 */
+-		head = intel_read_status_page(ring, 4);
+-		if (head < ring->actual_head)
+-			head = I915_READ_HEAD(ring);
+-		ring->actual_head = head;
+-		ring->head = head & HEAD_ADDR;
+-		ring->space = ring->head - (ring->tail + 8);
+-		if (ring->space < 0)
+-			ring->space += ring->size;
++		ring->head = I915_READ_HEAD(ring);
++		ring->space = ring_space(ring);
+ 		if (ring->space >= n) {
+ 			trace_i915_ring_wait_end(dev);
+ 			return 0;
+diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.h b/drivers/gpu/drm/i915/intel_ringbuffer.h
+index 61d5220..6d6fde8 100644
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.h
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.h
+@@ -47,7 +47,6 @@ struct  intel_ring_buffer {
+ 	struct		drm_device *dev;
+ 	struct		drm_i915_gem_object *obj;
+ 
+-	u32		actual_head;
+ 	u32		head;
+ 	u32		tail;
+ 	int		space;
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+1.7.2.3
+
