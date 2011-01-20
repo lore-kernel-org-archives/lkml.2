@@ -1,300 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312Ab1ATLp1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 06:45:27 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:62739 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754941Ab1ATLpZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 06:45:25 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6231"; a="71221291"
-From: Maya Erez <merez@codeaurora.org>
-To: linux-usb@vger.kernel.org
-Cc: linux-arm-msm@vger.kernel.org, Maya Erez <merez@codeaurora.org>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [RFC/PATCH v4] usb: Add streams support to the gadget framework.
-Date: Thu, 20 Jan 2011 13:45:13 +0200
-Message-Id: <1295523914-20056-1-git-send-email-merez@codeaurora.org>
-X-Mailer: git-send-email 1.7.3.3
+	id S1755369Ab1ATLre (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 06:47:34 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:34116 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754941Ab1ATLrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 06:47:33 -0500
+Date: Thu, 20 Jan 2011 12:47:19 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Denis Kirjanov <dkirjanov@kernel.org>
+Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
+        acme@ghostprotocols.net
+Subject: Re: [PATCH] perftools: Fix build error
+Message-ID: <20110120114719.GD23661@elte.hu>
+References: <20110120093246.GA8031@hera.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110120093246.GA8031@hera.kernel.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the capability to search for an EP with a required
-number of streams.
-Keep the stream ID for each usb_request.
 
-Signed-off-by: Maya Erez <merez@codeaurora.org>
+* Denis Kirjanov <dkirjanov@kernel.org> wrote:
 
-diff --git a/drivers/usb/gadget/epautoconf.c b/drivers/usb/gadget/epautoconf.c
-index 8a83248..e0b0c67 100644
---- a/drivers/usb/gadget/epautoconf.c
-+++ b/drivers/usb/gadget/epautoconf.c
-@@ -63,13 +63,16 @@ static int
- ep_matches (
- 	struct usb_gadget		*gadget,
- 	struct usb_ep			*ep,
--	struct usb_endpoint_descriptor	*desc
-+	struct usb_endpoint_descriptor	*desc,
-+	struct usb_ss_ep_comp_descriptor *ep_comp
- )
- {
- 	u8		type;
- 	const char	*tmp;
- 	u16		max;
+> Fix perftools build error (ppc64 box) with PERF_VERSION = 2.6.38.rc1.47.g12fcdb
+> CC builtin-top.o
+> cc1: warnings being treated as errors
+> builtin-top.c: In function 'print_sym_table':
+> builtin-top.c:540: error: format '%Ld' expects type 'long long int', but argument 2 has type '__u64'
+> 
+> Signed-off-by: Denis Kirjanov <dkirjanov@kernel.org>
+> ---
+>  tools/perf/builtin-top.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+> index 05344c6..8202a2e 100644
+> --- a/tools/perf/builtin-top.c
+> +++ b/tools/perf/builtin-top.c
+> @@ -537,7 +537,7 @@ static void print_sym_table(void)
+>  	if (nr_counters == 1 || !display_weighted) {
+>  		struct perf_evsel *first;
+>  		first = list_entry(evsel_list.next, struct perf_evsel, node);
+> -		printf("%Ld", first->attr.sample_period);
+> +		printf("%Ld", (unsigned long long)first->attr.sample_period);
 
-+	int		num_req_streams = 0;
-+
- 	/* endpoint already claimed? */
- 	if (NULL != ep->driver_data)
- 		return 0;
-@@ -128,6 +131,23 @@ ep_matches (
- 		}
- 	}
+Wouldnt %Lu solve this in a cleaner way?
 
-+
-+	/*
-+	 * Get the number of required streams from the EP companion
-+	 * descriptor and see if the EP matches it
-+	 */
-+	if (usb_endpoint_xfer_bulk(desc)) {
-+		if (ep_comp) {
-+			num_req_streams = ep_comp->bmAttributes & 0x1f;
-+			if (num_req_streams > ep->num_supported_strms)
-+				return 0;
-+			/* Update the ep_comp descriptor if needed */
-+			if (num_req_streams != ep->num_supported_strms)
-+				ep_comp->bmAttributes = ep->num_supported_strms;
-+		}
-+
-+	}
-+
- 	/* endpoint maxpacket size is an input parameter, except for bulk
- 	 * where it's an output parameter representing the full speed limit.
- 	 * the usb spec fixes high speed bulk maxpacket at 512 bytes.
-@@ -200,38 +220,56 @@ find_ep (struct usb_gadget *gadget, const char *name)
- }
+Thanks,
 
- /**
-- * usb_ep_autoconfig - choose an endpoint matching the descriptor
-+ * usb_ep_autoconfig_ss() - choose an endpoint matching the ep
-+ * descriptor and ep companion descriptor
-  * @gadget: The device to which the endpoint must belong.
-  * @desc: Endpoint descriptor, with endpoint direction and transfer mode
-- *	initialized.  For periodic transfers, the maximum packet
-- *	size must also be initialized.  This is modified on success.
-+ *    initialized.  For periodic transfers, the maximum packet
-+ *    size must also be initialized.  This is modified on
-+ *    success.
-+ * @ep_comp: Endpoint companion descriptor, with the required
-+ *    number of streams. Will be modified when the chosen EP
-+ *    supports a different number of streams.
-  *
-- * By choosing an endpoint to use with the specified descriptor, this
-- * routine simplifies writing gadget drivers that work with multiple
-- * USB device controllers.  The endpoint would be passed later to
-- * usb_ep_enable(), along with some descriptor.
-+ * This routine replaces the usb_ep_autoconfig when needed
-+ * superspeed enhancments. If such enhancemnets are required,
-+ * the FD should call usb_ep_autoconfig_ss directly and provide
-+ * the additional ep_comp parameter.
-+ *
-+ * By choosing an endpoint to use with the specified descriptor,
-+ * this routine simplifies writing gadget drivers that work with
-+ * multiple USB device controllers.  The endpoint would be
-+ * passed later to usb_ep_enable(), along with some descriptor.
-  *
-  * That second descriptor won't always be the same as the first one.
-  * For example, isochronous endpoints can be autoconfigured for high
-  * bandwidth, and then used in several lower bandwidth altsettings.
-  * Also, high and full speed descriptors will be different.
-  *
-- * Be sure to examine and test the results of autoconfiguration on your
-- * hardware.  This code may not make the best choices about how to use the
-- * USB controller, and it can't know all the restrictions that may apply.
-- * Some combinations of driver and hardware won't be able to autoconfigure.
-+ * To allow controller special algorithms, we added a new gadget
-+ * op for assigning an ep.
-+ *
-+ * Be sure to examine and test the results of autoconfiguration
-+ * on your hardware.  This code may not make the best choices
-+ * about how to use the USB controller, and it can't know all
-+ * the restrictions that may apply. Some combinations of driver
-+ * and hardware won't be able to autoconfigure.
-  *
-  * On success, this returns an un-claimed usb_ep, and modifies the endpoint
-  * descriptor bEndpointAddress.  For bulk endpoints, the wMaxPacket value
-- * is initialized as if the endpoint were used at full speed.  To prevent
-- * the endpoint from being returned by a later autoconfig call, claim it
-- * by assigning ep->driver_data to some non-null value.
-+ * is initialized as if the endpoint were used at full speed and
-+ * the bmAttribute field in the ep companion descriptor is
-+ * updated with the assigned number of streams if it is
-+ * different from the original value. To prevent the endpoint
-+ * from being returned by a later autoconfig call, claim it by
-+ * assigning ep->driver_data to some non-null value.
-  *
-  * On failure, this returns a null endpoint descriptor.
-  */
--struct usb_ep *usb_ep_autoconfig (
-+struct usb_ep *usb_ep_autoconfig_ss(
- 	struct usb_gadget		*gadget,
--	struct usb_endpoint_descriptor	*desc
-+	struct usb_endpoint_descriptor	*desc,
-+	struct usb_ss_ep_comp_descriptor *ep_comp
- )
- {
- 	struct usb_ep	*ep;
-@@ -245,23 +283,24 @@ struct usb_ep *usb_ep_autoconfig (
- 	if (gadget_is_net2280 (gadget) && type == USB_ENDPOINT_XFER_INT) {
- 		/* ep-e, ep-f are PIO with only 64 byte fifos */
- 		ep = find_ep (gadget, "ep-e");
--		if (ep && ep_matches (gadget, ep, desc))
-+		if (ep && ep_matches(gadget, ep, desc, ep_comp))
- 			return ep;
- 		ep = find_ep (gadget, "ep-f");
--		if (ep && ep_matches (gadget, ep, desc))
-+		if (ep && ep_matches(gadget, ep, desc, ep_comp))
- 			return ep;
-
- 	} else if (gadget_is_goku (gadget)) {
- 		if (USB_ENDPOINT_XFER_INT == type) {
- 			/* single buffering is enough */
--			ep = find_ep (gadget, "ep3-bulk");
--			if (ep && ep_matches (gadget, ep, desc))
-+			ep = find_ep(gadget, "ep3-bulk");
-+			if (ep && ep_matches(gadget, ep, desc, ep_comp))
- 				return ep;
- 		} else if (USB_ENDPOINT_XFER_BULK == type
- 				&& (USB_DIR_IN & desc->bEndpointAddress)) {
- 			/* DMA may be available */
--			ep = find_ep (gadget, "ep2-bulk");
--			if (ep && ep_matches (gadget, ep, desc))
-+			ep = find_ep(gadget, "ep2-bulk");
-+			if (ep && ep_matches(gadget, ep, desc,
-+					      ep_comp))
- 				return ep;
- 		}
-
-@@ -280,14 +319,14 @@ struct usb_ep *usb_ep_autoconfig (
- 				ep = find_ep(gadget, "ep2out");
- 		} else
- 			ep = NULL;
--		if (ep && ep_matches (gadget, ep, desc))
-+		if (ep && ep_matches(gadget, ep, desc, ep_comp))
- 			return ep;
- #endif
- 	}
-
- 	/* Second, look at endpoints until an unclaimed one looks usable */
- 	list_for_each_entry (ep, &gadget->ep_list, ep_list) {
--		if (ep_matches (gadget, ep, desc))
-+		if (ep_matches(gadget, ep, desc, ep_comp))
- 			return ep;
- 	}
-
-@@ -296,6 +335,46 @@ struct usb_ep *usb_ep_autoconfig (
- }
-
- /**
-+ * usb_ep_autoconfig() - choose an endpoint matching the
-+ * descriptor
-+ * @gadget: The device to which the endpoint must belong.
-+ * @desc: Endpoint descriptor, with endpoint direction and transfer mode
-+ *	initialized.  For periodic transfers, the maximum packet
-+ *	size must also be initialized.  This is modified on success.
-+ *
-+ * By choosing an endpoint to use with the specified descriptor, this
-+ * routine simplifies writing gadget drivers that work with multiple
-+ * USB device controllers.  The endpoint would be passed later to
-+ * usb_ep_enable(), along with some descriptor.
-+ *
-+ * That second descriptor won't always be the same as the first one.
-+ * For example, isochronous endpoints can be autoconfigured for high
-+ * bandwidth, and then used in several lower bandwidth altsettings.
-+ * Also, high and full speed descriptors will be different.
-+ *
-+ * Be sure to examine and test the results of autoconfiguration on your
-+ * hardware.  This code may not make the best choices about how to use the
-+ * USB controller, and it can't know all the restrictions that may apply.
-+ * Some combinations of driver and hardware won't be able to autoconfigure.
-+ *
-+ * On success, this returns an un-claimed usb_ep, and modifies the endpoint
-+ * descriptor bEndpointAddress.  For bulk endpoints, the wMaxPacket value
-+ * is initialized as if the endpoint were used at full speed.  To prevent
-+ * the endpoint from being returned by a later autoconfig call, claim it
-+ * by assigning ep->driver_data to some non-null value.
-+ *
-+ * On failure, this returns a null endpoint descriptor.
-+ */
-+struct usb_ep *usb_ep_autoconfig(
-+	struct usb_gadget		*gadget,
-+	struct usb_endpoint_descriptor	*desc
-+)
-+{
-+	return usb_ep_autoconfig_ss(gadget, desc, NULL);
-+}
-+
-+
-+/**
-  * usb_ep_autoconfig_reset - reset endpoint autoconfig state
-  * @gadget: device for which autoconfig state will be reset
-  *
-diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-index 006412c..b7654f5 100644
---- a/include/linux/usb/gadget.h
-+++ b/include/linux/usb/gadget.h
-@@ -34,6 +34,8 @@ struct usb_ep;
-  *     by adding a zero length packet as needed;
-  * @short_not_ok: When reading data, makes short packets be
-  *     treated as errors (queue stops advancing till cleanup).
-+ * @reserved: reserved bits
-+ * @stream_id: the stream id
-  * @complete: Function called when request completes, so this request and
-  *	its buffer may be re-used.  The function will always be called with
-  *	interrupts disabled, and it must not sleep.
-@@ -84,6 +86,9 @@ struct usb_request {
- 	unsigned		no_interrupt:1;
- 	unsigned		zero:1;
- 	unsigned		short_not_ok:1;
-+	unsigned		reserved:13;
-+
-+	unsigned		stream_id:16;
-
- 	void			(*complete)(struct usb_ep *ep,
- 					struct usb_request *req);
-@@ -133,6 +138,8 @@ struct usb_ep_ops {
-  *      the endpoint descriptor used to configure the endpoint.
-  * @driver_data:for use by the gadget driver.  all other fields are
-  *	read-only to gadget drivers.
-+ * @num_supported_strms:The number of maximum streams supported
-+ *	by this EP
-  *
-  * the bus controller driver lists all the general purpose endpoints in
-  * gadget->ep_list.  the control endpoint (gadget->ep0) is not in that list,
-@@ -145,6 +152,7 @@ struct usb_ep {
- 	const struct usb_ep_ops	*ops;
- 	struct list_head	ep_list;
- 	unsigned		maxpacket:16;
-+	int			num_supported_strms;
- };
-
- /*-------------------------------------------------------------------------*/
-@@ -892,6 +900,11 @@ static inline void usb_free_descriptors(struct usb_descriptor_header **v)
- extern struct usb_ep *usb_ep_autoconfig(struct usb_gadget *,
- 			struct usb_endpoint_descriptor *) __devinit;
-
-+
-+extern struct usb_ep *usb_ep_autoconfig_ss(struct usb_gadget *,
-+			struct usb_endpoint_descriptor *,
-+			struct usb_ss_ep_comp_descriptor *) __devinit;
-+
- extern void usb_ep_autoconfig_reset(struct usb_gadget *) __devinit;
-
- #endif /* __LINUX_USB_GADGET_H */
---
-1.7.0.4
---
-Seny by a Consultant for Qualcomm innovation center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
-
+	Ingo
