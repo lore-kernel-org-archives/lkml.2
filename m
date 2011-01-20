@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753617Ab1ATSsq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 13:48:46 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:44476 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab1ATSsp (ORCPT
+	id S1753690Ab1ATStW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 13:49:22 -0500
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:25848 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753260Ab1ATStV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 13:48:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=SSOW4b5imrmIn5EqtiqXSE1vwREOXnHHNevFyKruekJGybXKolkUhclq2AwlGyuMKP
-         Fj9typ3gmtnNqb8p90zro4M687CfraO+MgyEyebLz3M58hlPkKJ8ixzDlqwgwL30kp7+
-         mB9zGTBOPTeNys3UHfELEUu1hDuVKtWCRWxO4=
+	Thu, 20 Jan 2011 13:49:21 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: ac1AbAYVM1l2p2129CMATX9YkcM_QJWZDcLYKURvRcRWGj1
+ Xl7YD916KXMnWil4IRhG4RZR7zZS2Rq9Wgk4c3DwwVvnJ0w3qGFFOV708W6T
+ RkFsrsfEJNbjnaR6NGbESVjx2crDuTFLUApCDu32tUP63YBIkPy5l_A_UNeY
+ 6RZp9EhIpczb_yrwBbSUazeO4t8f6FXO1k2EH.qUz5HmwVdfhHZ5TxZ3svDg
+ n8XMC7mK3FFQK3K8SG80PGwvqWiOXrZsY162SWC9rdvL8t7ZUEw9veNkvhns
+ lWOpsUp5mvdjVRaVUGhfFFEurw80HtUqexToXac5PSdWRgCs-
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 20 Jan 2011 12:49:15 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Andrea Arcangeli <aarcange@redhat.com>
+cc: Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH 1/3] When migrate_pages returns 0, all pages must have
+ been released
+In-Reply-To: <20110120182444.GA9506@random.random>
+Message-ID: <alpine.DEB.2.00.1101201233001.20633@router.home>
+References: <f60d811fd1abcb68d40ac19af35881d700a97cd2.1295539829.git.minchan.kim@gmail.com> <alpine.DEB.2.00.1101201130100.10695@router.home> <20110120182444.GA9506@random.random>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1295387347.20633.3.camel@bender>
-References: <1295338561.2003.3.camel@sven> <1295338738-4129-1-git-send-email-s.neumann@raumfeld.com>
- <4D357DC0.2030006@metafoo.de> <AANLkTi=gGDZHukdSuupg22Gb9te+Vk_rsu6-vREeQRVE@mail.gmail.com>
- <1295387347.20633.3.camel@bender>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Thu, 20 Jan 2011 13:48:24 -0500
-Message-ID: <AANLkTi=2Tx7M4=wF7GkQZLFe5=JLGv2G7roavKroWZ78@mail.gmail.com>
-Subject: Re: [PATCH] pxa3xx: fix PXA GPIO IRQ handling
-To: Sven Neumann <s.neumann@raumfeld.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>,
-        Lennert Buijtenhek <buytenh@wantstofly.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Daniel Mack <daniel@caiaq.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 18, 2011 at 4:49 PM, Sven Neumann <s.neumann@raumfeld.com> wrote:
-> On Tue, 2011-01-18 at 08:15 -0800, Eric Miao wrote:
->> On Tue, Jan 18, 2011 at 3:47 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
->> > On 01/18/2011 09:18 AM, Sven Neumann wrote:
->> >> From: Lars-Peter Clausen <lars@metafoo.de>
->> >>
->> >> Set the "set_wake" field of the irq_chip struct before calling
->> >> set_irq_chip() for all of the IRQs, so that the compat handler
->> >> actually gets installed.
->>
->> Not really sure if this is necessary. Lennert has done the transition to
->> irq_data to those _set_wake() functions as well, so it should be OK
->> that compat handler doesn't get installed.
->>
->> Now I'm not against moving this above, just wondering if there were
->> any consequences/errors coming out?
->
-> Well, our PXA300 device doesn't power up again when it should resume
-> from suspend. Fine with me if this has been fixed upstream,
+On Thu, 20 Jan 2011, Andrea Arcangeli wrote:
 
-Yeah, that's true. Mind re-post with your SOB?
+> Hello,
+>
+> On Thu, Jan 20, 2011 at 11:30:35AM -0600, Christoph Lameter wrote:
+> > On Fri, 21 Jan 2011, Minchan Kim wrote:
+> >
+> > > diff --git a/mm/migrate.c b/mm/migrate.c
+> > > index 46fe8cc..7d34237 100644
+> > > --- a/mm/migrate.c
+> > > +++ b/mm/migrate.c
+> > > @@ -772,6 +772,7 @@ uncharge:
+> > >  unlock:
+> > >  	unlock_page(page);
+> > >
+> > > +move_newpage:
+> > >  	if (rc != -EAGAIN) {
+> > >   		/*
+> > >   		 * A page that has been migrated has all references
+> > > @@ -785,8 +786,6 @@ unlock:
+> > >  		putback_lru_page(page);
+> > >  	}
+> > >
+> > > -move_newpage:
+> > > -
+> > >  	/*
+> > >  	 * Move the new page to the LRU. If migration was not successful
+> > >  	 * then this will free the page.
+> > >
+> >
+> > What does this do? Not covered by the description.
+>
+> It makes a difference for the two goto move_newpage, when rc =
+> 0. Otherwise the function will return 0, despite
+> putback_lru_page(page) wasn't called (and the caller of migrate_pages
+> won't call putback_lru_pages if migrate_pages returned 0).
 
-> but I would
-> still like to get this patch into 2.6.37. I'll try to test upstream as
-> soon as Linus releases 2.6.38-rc1...
->
->
-> Sven
->
->
->
+Think about the difference:
+
+Moving the move_newpage will now cause another removal and freeing of the
+page if rc != -EAGAIN.
+
+The first goto move_newpage (because page count is 1) will now mean that
+the page is freed twice. One because of the rc != EAGAIN branch and then
+another time by the following putback_lru_page().
+
+
