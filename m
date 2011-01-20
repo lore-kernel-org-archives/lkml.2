@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab1ATT7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 14:59:36 -0500
-Received: from claw.goop.org ([74.207.240.146]:37868 "EHLO claw.goop.org"
+	id S1754188Ab1ATUCU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 15:02:20 -0500
+Received: from kroah.org ([198.145.64.141]:47303 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754104Ab1ATT7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 14:59:34 -0500
-Message-ID: <4D38941F.9070101@goop.org>
-Date: Thu, 20 Jan 2011 11:59:27 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1752245Ab1ATUCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 15:02:18 -0500
+Date: Thu, 20 Jan 2011 11:52:54 -0800
+From: Greg KH <greg@kroah.com>
+To: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        Felipe Contreras <felipe.contreras@nokia.com>
+Subject: Re: [PATCH 2/2] staging: tidspbridge: replace mbox callback with
+ notifier_call
+Message-ID: <20110120195254.GA1730@kroah.com>
+References: <1294983293-10177-1-git-send-email-omar.ramirez@ti.com>
+ <1294983293-10177-3-git-send-email-omar.ramirez@ti.com>
+ <AANLkTinG5tQJ=aFHJDcLJnWX7RF3Jjru_pUqXXn4=wue@mail.gmail.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Daniel De Graaf <dgdegra@tycho.nsa.gov>
-Subject: [GIT PULL] xen: xenbus driver fixes
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinG5tQJ=aFHJDcLJnWX7RF3Jjru_pUqXXn4=wue@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Jan 14, 2011 at 04:53:25PM -0600, Ramirez Luna, Omar wrote:
+> On Thu, Jan 13, 2011 at 11:34 PM, Omar Ramirez Luna <omar.ramirez@ti.com> wrote:
+> > Lately, mailbox callbacks have been replaced by notifier block
+> > call chains, this needs to be changed in the users of mailbox,
+> > otherwise compilation will break due to missing parameters.
+> 
+> Please hold on applying this patch, it is not right as io_mbx_msg
+> differs on what a notifier_call parameters and type should be.
 
-Here's a handful of little bugfixes for the xenbus driver which were
-overlooked in the last merge window.  They've been floating around in
-linux-next and xen.git master for ages.
+Ok, I'll just queue up the 1st patch in this series.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git xen/xenbus
-
-Daniel De Graaf (3):
-      xenbus: add missing wakeup in concurrent read/write
-      xenbus: avoid zero returns from read()
-      xenbus: Fix memory leak on release
-
-Diego Ongaro (1):
-      xenbus: allow any xenbus command over /proc/xen/xenbus
-
-Jeremy Fitzhardinge (1):
-      xenfs/xenbus: report partial reads/writes correctly
-
- drivers/xen/xenfs/xenbus.c |   31 +++++++++++++------------------
- 1 files changed, 13 insertions(+), 18 deletions(-)
-
-Thanks,
-	J
-
+greg k-h
