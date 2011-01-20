@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943Ab1ATQLR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 11:11:17 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51284 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755920Ab1ATQLM (ORCPT
+	id S1755960Ab1ATQLb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 11:11:31 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62794 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753962Ab1ATQL3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 11:11:12 -0500
+	Thu, 20 Jan 2011 11:11:29 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=uISS0xmG/zPTWAi+D8zSAOkFBx5xoBe4dh3g0XUowo9+SAq4D0GHkMj86GBf4EqY+E
-         31tpGEW4PGyndfQA4P8xFvyd7Cd6EljEx42omilN1g8ozGueJaGPVFxGt05sVW6UV5tq
-         lsIegzX1NgKwUOpmXpk4prlEPceKEM7Nn24Ms=
-Date: Thu, 20 Jan 2011 17:11:06 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
-        rostedt@goodmis.org, amit.kucheria@linaro.org
-Subject: Re: [PATCH V2] tracing, perf : add cpu hotplug trace events
-Message-ID: <20110120161101.GA17218@nowhere>
-References: <AANLkTinNoYbDe5huY4_Q6YidbWxqXqVWbVP2_7o-=P3W@mail.gmail.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=P/u8BezXXylbBMTv1pjRZGp2sOuj3SbTgLAG1Mkbuvq1sQ+ccKFd/X1J6ETjVMgfo1
+         AvyNgcswQgwy3JVZj+89yfjGvgvlmDnyGk4TzXabqkqumN3QJvrlap/J6B4CJOlI51u7
+         OO47B7V47F/MWj5hYisxCirq7lP/BaevDrwSo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinNoYbDe5huY4_Q6YidbWxqXqVWbVP2_7o-=P3W@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201101201226.41021.rjw@sisk.pl>
+References: <201101201226.41021.rjw@sisk.pl>
+Date: Fri, 21 Jan 2011 00:06:55 +0800
+Message-ID: <AANLkTikVRHfu2KhH4yi2VerkRXBdCODedCDORmpEzRXO@mail.gmail.com>
+Subject: Re: [PATCH 0/11] ACPI: Fixes and cleanups related to iomaps management
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 09:25:54AM +0100, Vincent Guittot wrote:
-> Please find below a new proposal for adding trace events for cpu hotplug.
-> The goal is to measure the latency of each part (kernel, architecture)
-> and also to trace the cpu hotplug activity with other power events. I
-> have tested these traces events on an arm platform.
-> 
-> Changes since previous version:
-> -Use cpu_hotplug for trace name
-> -Define traces for kernel core and arch parts only
-> -Use DECLARE_EVENT_CLASS and DEFINE_EVENT
-> -Use proper indentation
-> 
-> Subject: [PATCH] cpu hotplug tracepoint
-> 
-> this patch adds new events for cpu hotplug tracing
->  * plug/unplug sequence
->  * core and architecture latency measurements
-> 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.com>
-> ---
->  include/trace/events/cpu_hotplug.h |  117 ++++++++++++++++++++++++++++++++++++
+On Thu, Jan 20, 2011 at 7:26 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
 
-Note we can't apply new tracepoints if they are not inserted in the code.
+> [10/11] - Make the NVS code use existing iomaps if possible.
 
-> +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_wait_die_start,
-> +
-> +	TP_PROTO(unsigned int cpuid),
-> +
-> +	TP_ARGS(cpuid)
-> +);
-> +
-> +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_wait_die_end,
-> +
-> +	TP_PROTO(unsigned int cpuid),
-> +
-> +	TP_ARGS(cpuid)
-> +);
+Seems ok.
 
-What is wait die, compared to die for example?
+> [11/11] - (cleanup) Remove an unnecessary field from struct nvs_page.
 
-We need those tracepoints to be applied to get that reviewable in practice.
+This seems to have an issue. Notebook tries to suspend ... then resume
+immediately.
 
-Thanks.
+> The patches have been tested on HP nx6325, Toshiba Portege R500 and Acer
+> Ferrari One without causing any visible problems to happen.  Also Jeff has
+> tested [1/11] and [2/11] and he reports that they fix the synchronize_rcu()
+> problem for him.  [Jeff, can you test the whole series, please, and see if
+> it doesn't introduce any new issues, [10/11] in particular?]
+
+So, everything seems ok except 11/11.
+
+
+Jeff.
