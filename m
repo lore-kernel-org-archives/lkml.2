@@ -1,58 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708Ab1ATHRx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 02:17:53 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:49075 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412Ab1ATHRw convert rfc822-to-8bit (ORCPT
+	id S1753230Ab1ATHVT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 02:21:19 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:37074 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721Ab1ATHVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 02:17:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=n93/ZNfA5E81WXQu5F9REqvPIw0QlIu9rf/VYnk07jQdeV+eyw2KEOuO39uEcbk2Pn
-         5dM6vJ2QR4Ir+8zUiK3fmbiqzUE1QZ7lt/aWw/foYfnufk5TJ2zTTOK/zsODwlWr9Fc/
-         dQkroif4Oiv463HepI0tFPjPr9VhMYmV2S1W8=
+	Thu, 20 Jan 2011 02:21:17 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6231"; a="71197564"
+Message-ID: <4D37E265.9060304@codeaurora.org>
+Date: Thu, 20 Jan 2011 12:51:09 +0530
+From: Trilok Soni <tsoni@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110120041412.GA5274@void.printf.net>
-References: <cover.1294588491.git.tardyp@gmail.com>
-	<cb471b35d320b96a9d143103fd9e9b76f8998470.1294588491.git.tardyp@gmail.com>
-	<20110120041412.GA5274@void.printf.net>
-Date: Thu, 20 Jan 2011 08:17:51 +0100
-Message-ID: <AANLkTingXmestJGOpi0A0eywz63iKA0q=S1FFb8-q4OO@mail.gmail.com>
-Subject: Re: [PATCH 3/3] mmc: remove anti clock gating quirk for wl1271
-From: Pierre Tardy <tardyp@gmail.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pierre Tardy <pierre.tardy@intel.com>
+To: riyer@nvidia.com
+CC: dmitry.torokhov@gmail.com, pavel@ucw.cz, shubhrajyoti@ti.com,
+        ccross@android.com, konkers@android.com, olof@lixom.net,
+        achew@nvidia.com, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH v7] input: tegra-kbc - Add tegra keyboard driver
+References: <1295485917-21278-1-git-send-email-riyer@nvidia.com>
+In-Reply-To: <1295485917-21278-1-git-send-email-riyer@nvidia.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> This adds a defined-but-not-used warning.  The MMC tree doesn't
-> currently generate any warnings, so it would be good to avoid adding new
-> ones, though I understand why it might make sense in this case.
-Yes, this is supposed to be used by future user patches.
+Hi Rakesh,
 
-Do you suggest to add __attribute__ ((unused)), or we just completly
-remove those and will add them whenever we have user?
+On 1/20/2011 6:41 AM, riyer@nvidia.com wrote:
+> From: Rakesh Iyer <riyer@nvidia.com>
+> 
+> This patch adds support for the internal matrix keyboard controller for
+> Nvidia Tegra platforms.
+> 
+> Signed-off-by: Rakesh Iyer <riyer@nvidia.com>
+> ---
+> Fixed the stupid loop variable change.
+> Fixed some code styling problems reported by checkpatch.pl.
+> 
 
->>  static const struct mmc_fixup mmc_fixup_methods[] = {
->>       { SDIO_ANY_ID, SDIO_ANY_ID,
->>               add_quirk_for_sdio_devices, MMC_QUIRK_BROKEN_CLK_GATING }
->> +     { SDIO_VENDOR_ID_TI, SDIO_DEVICE_ID_TI_WL1271,
->> +             remove_quirk_hook, MMC_QUIRK_BROKEN_CLK_GATING },
->>       { 0 }
->>  };
->>
->
-> This doesn't compile, missing a comma.  Was it tested?
-Hum, I must have screwed up with patch version.
-I'm using this every day,,,
+Thanks a ton for creating quick revisions :)
 
-Regards,
-Pierre
+>  arch/arm/mach-tegra/include/mach/kbc.h |   61 +++
+>  drivers/input/keyboard/Kconfig         |   10 +
+>  drivers/input/keyboard/Makefile        |    1 +
+>  drivers/input/keyboard/tegra-kbc.c     |  727 ++++++++++++++++++++++++++++++++
+>  4 files changed, 799 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/arm/mach-tegra/include/mach/kbc.h
+>  create mode 100644 drivers/input/keyboard/tegra-kbc.c
+> 
+> diff --git a/arch/arm/mach-tegra/include/mach/kbc.h b/arch/arm/mach-tegra/include/mach/kbc.h
+> new file mode 100644
+> index 0000000..60d646c
+> --- /dev/null
+> +++ b/arch/arm/mach-tegra/include/mach/kbc.h
+> @@ -0,0 +1,61 @@
+> +/*
+> + * Platform definitions for tegra-kbc keyboard input driver
+> + *
+> + * Copyright (c) 2010, NVIDIA Corporation.
+
+Wearing my legal hat. You might want to do 2010-2011 ?
+
+> diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
+> index 9cc488d..8be47da 100644
+> --- a/drivers/input/keyboard/Kconfig
+> +++ b/drivers/input/keyboard/Kconfig
+> @@ -327,6 +327,16 @@ config KEYBOARD_NEWTON
+>  	  To compile this driver as a module, choose M here: the
+>  	  module will be called newtonkbd.
+>  
+> +config KEYBOARD_TEGRA
+> +	tristate "NVIDIA Tegra internal matrix keyboard controller support"
+> +	depends on ARCH_TEGRA
+> +	help
+> +	  Say Y here if you want to use a matrix keyboard connected directly
+> +	  to the internal keyboard controller on Tegra SoCs.
+> +
+> +	  To compile this driver as a module, choose M here: the
+> +	  module will be called tegra-kbc.
+> +
+>  config KEYBOARD_OPENCORES
+>  	tristate "OpenCores Keyboard Controller"
+>  	help
+> diff --git a/drivers/input/keyboard/Makefile b/drivers/input/keyboard/Makefile
+> index 504b591..ac0dcb9 100644
+> --- a/drivers/input/keyboard/Makefile
+> +++ b/drivers/input/keyboard/Makefile
+> @@ -38,6 +38,7 @@ obj-$(CONFIG_KEYBOARD_SH_KEYSC)		+= sh_keysc.o
+>  obj-$(CONFIG_KEYBOARD_STMPE)		+= stmpe-keypad.o
+>  obj-$(CONFIG_KEYBOARD_STOWAWAY)		+= stowaway.o
+>  obj-$(CONFIG_KEYBOARD_SUNKBD)		+= sunkbd.o
+> +obj-$(CONFIG_KEYBOARD_TEGRA)		+= tegra-kbc.o
+>  obj-$(CONFIG_KEYBOARD_TWL4030)		+= twl4030_keypad.o
+>  obj-$(CONFIG_KEYBOARD_XTKBD)		+= xtkbd.o
+>  obj-$(CONFIG_KEYBOARD_W90P910)		+= w90p910_keypad.o
+> diff --git a/drivers/input/keyboard/tegra-kbc.c b/drivers/input/keyboard/tegra-kbc.c
+> new file mode 100644
+> index 0000000..33ac315
+> --- /dev/null
+> +++ b/drivers/input/keyboard/tegra-kbc.c
+> @@ -0,0 +1,727 @@
+> +/*
+> + * Keyboard class input driver for the NVIDIA Tegra SoC internal matrix
+> + * keyboard controller
+> + *
+> + * Copyright (c) 2009-2010, NVIDIA Corporation.
+
+2009-2011
+
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along
+> + * with this program; if not, write to the Free Software Foundation, Inc.,
+> + * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+> + */
+
+---Trilok Soni
+
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
