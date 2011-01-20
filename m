@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab1ATGMY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 01:12:24 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:47906 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752239Ab1ATGMW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 01:12:22 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18ZGd1288EZ6d0kJldFZRZiNMm+Zs66aLRlS6DO9U
-	NUmmZXGeo5kBuO
-Subject: Re: Bug in scheduler when using rt_mutex
-From: Mike Galbraith <efault@gmx.de>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, samu.p.onkalo@nokia.com,
-        mingo@elte.hu,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        tglx <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <AANLkTikEwgMzco2fHT668Mg3fC-T3EBMUgQQqW-Ojj-Y@mail.gmail.com>
-References: <1295275365.12840.13.camel@kolo>
-	 <1295280032.30950.128.camel@laptop> <1295339012.11678.35.camel@kolo>
-	 <AANLkTikXf-OMEBx-UZktxooOs+YqUkSE9doyEZopjzOx@mail.gmail.com>
-	 <1295357746.30950.681.camel@laptop>
-	 <AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
-	 <1295430276.30950.1414.camel@laptop> <1295433498.30950.1482.camel@laptop>
-	 <1295436632.30950.1542.camel@laptop> <1295441881.11678.41.camel@kolo>
-	 <1295442799.11678.43.camel@kolo> <1295443822.28776.23.camel@laptop>
-	 <AANLkTinQ4sczEwZYCk1_tLmeJyjyXj4TVoSZbjg+KiRq@mail.gmail.com>
-	 <1295499568.8027.30.camel@marge.simson.net>
-	 <AANLkTikEwgMzco2fHT668Mg3fC-T3EBMUgQQqW-Ojj-Y@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 Jan 2011 07:12:18 +0100
-Message-ID: <1295503938.8027.59.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	id S1755311Ab1ATGN0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 01:13:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3730 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752239Ab1ATGNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 01:13:24 -0500
+Message-ID: <4D37D18D.9060402@redhat.com>
+Date: Thu, 20 Jan 2011 07:09:17 +0100
+From: "Fabio M. Di Nitto" <fdinitto@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "Fabio M. Di Nitto" <fabbione@fabbione.net>,
+        Randy Dunlap <rdunlap@xenotime.net>, James Morris <jmorris@namei.org>,
+        Kees Cook <kees.cook@canonical.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@gmail.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Daid Miller <davem@davemloft.net>
+Subject: Re: [PATCH] console: allow to retain boot console via boot option
+ keep_bootcon
+References: <1294821624-24544-1-git-send-email-fabbione@fabbione.net> <20110119161918.1f827080.akpm@linux-foundation.org>
+In-Reply-To: <20110119161918.1f827080.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-20 at 13:30 +0800, Yong Zhang wrote:
-> On Thu, Jan 20, 2011 at 12:59 PM, Mike Galbraith <efault@gmx.de> wrote:
-> > or the task is enqueued
-> > at it's last offset as usual for runnable tasks.
+On 01/20/2011 01:19 AM, Andrew Morton wrote:
+> On Wed, 12 Jan 2011 09:40:24 +0100
+> "Fabio M. Di Nitto" <fabbione@fabbione.net> wrote:
 > 
-> But shouldn't we task the tasks as WAKEUP, through the task has been
-> waked on other sched_class?
+>> From: Fabio M. Di Nitto <fdinitto@redhat.com>
+>>
+>> On some architectures, the boot process involves de-registering the boot
+>> console (early boot), initialize drivers and then re-register the console.
+>>
+>> This mechanism introduces a window in which no printk can happen on the console
+>> and messages are buffered and then printed once the new console is available.
+>>
+>> If a kernel crashes during this window, all it's left on the boot console
+>> is "console [foo] enabled, bootconsole disabled" making debug of the crash
+>> rather 'interesting'.
+>>
+>> By adding "keep_bootcon" option, do not unregister the boot console, that
+>> will allow to printk everything that is happening up to the crash.
+>>
+>> The option is clearly meant only for debugging purposes as it introduces lots
+>> of duplicated info printed on console, but will make bug report from users
+>> easier as it doesn't require a kernel build just to figure out where we crash.
+>>
+> 
+> I don't get it, as usual.
 
-We don't need to play any games with it afaiks, just normalize it, and
-the rest is taken care of automatically.
- 
-> IOW, I wonder if we should play with place_entity() at some point.
+It might just be my itaglish explanation :)
 
-If the task returns as a sleeper, place entity() will be called when it
-is awakened, so it's sleep credit will be clipped as usual.  So vruntime
-can be much less than min_vruntime at class exit time, and it doesn't
-matter, clipping on wakeup after re-entry takes care of it.. if that's
-what you were thinking about.
+> 
+> The architecture does
+> 
+> a) deregister boot console
+> b) initialize drivers
+> c) register console
+> 
+> and the patch basically disables step a).
 
-	-Mike
+Yes that is correct.
 
+> 
+> But if we can do that without screwing things up, why not simply change
+> the architecture to not deregister the boot console until after
+> initializing the drivers?
+
+I am not entirely sure if this is possible (or even worth it since this
+is a pure debugging option) and what kind of effects it might have on
+the boot output (in terms of duplicated entries on the output that might
+or might not make it more difficult to read). I am happy to investigate
+that and come back to you soon.
+
+Thanks for taking your time to review this patch.
+
+Fabio
