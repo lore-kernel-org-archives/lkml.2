@@ -1,104 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195Ab1ATUei (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 15:34:38 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:31447 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754799Ab1ATUdW (ORCPT
+	id S1754245Ab1ATUkG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 15:40:06 -0500
+Received: from exprod7og108.obsmtp.com ([64.18.2.169]:60184 "EHLO
+	exprod7og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753343Ab1ATUkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 15:33:22 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6232"; a="71278392"
-From: Daniel Walker <dwalker@codeaurora.org>
-To: linux-arm-msm@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        davidb@codeaurora.org, Daniel Walker <dwalker@codeaurora.org>
-Subject: [PATCH 1/7] msm: qsd8x50: add uart platform data
-Date: Thu, 20 Jan 2011 12:32:39 -0800
-Message-Id: <1295555565-21563-2-git-send-email-dwalker@codeaurora.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1295555565-21563-1-git-send-email-dwalker@codeaurora.org>
-References: <1295555565-21563-1-git-send-email-dwalker@codeaurora.org>
+	Thu, 20 Jan 2011 15:40:04 -0500
+Message-ID: <4D389D8B.7010301@genband.com>
+Date: Thu, 20 Jan 2011 14:39:39 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: why does /proc/sys/fs/file-nr not match total of /proc/<pid>/fd entries?
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Jan 2011 20:39:41.0588 (UTC) FILETIME=[29EF9D40:01CBB8E2]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-17906.001
+X-TM-AS-Result: No--9.556100-5.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This enables the uart for QSD8x50.
 
-Signed-off-by: Daniel Walker <dwalker@codeaurora.org>
----
- arch/arm/mach-msm/devices-qsd8x50.c |   42 +++++++++++++++++++++++++++++++++++
- 1 files changed, 42 insertions(+), 0 deletions(-)
+Someone asked me a question that I couldn't answer, so I'm passing it on
+to you.
 
-diff --git a/arch/arm/mach-msm/devices-qsd8x50.c b/arch/arm/mach-msm/devices-qsd8x50.c
-index b1a8f0f..24b2051 100644
---- a/arch/arm/mach-msm/devices-qsd8x50.c
-+++ b/arch/arm/mach-msm/devices-qsd8x50.c
-@@ -28,6 +28,32 @@
- 
- #include <mach/mmc.h>
- 
-+static struct resource resources_uart1[] = {
-+	{
-+		.start	= INT_UART1,
-+		.end	= INT_UART1,
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+	{
-+		.start	= MSM_UART1_PHYS,
-+		.end	= MSM_UART1_PHYS + MSM_UART1_SIZE - 1,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+};
-+
-+static struct resource resources_uart2[] = {
-+	{
-+		.start	= INT_UART2,
-+		.end	= INT_UART2,
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+	{
-+		.start	= MSM_UART2_PHYS,
-+		.end	= MSM_UART2_PHYS + MSM_UART2_SIZE - 1,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+};
-+
- static struct resource resources_uart3[] = {
- 	{
- 		.start	= INT_UART3,
-@@ -41,6 +67,20 @@ static struct resource resources_uart3[] = {
- 	},
- };
- 
-+struct platform_device msm_device_uart1 = {
-+	.name	= "msm_serial",
-+	.id	= 0,
-+	.num_resources	= ARRAY_SIZE(resources_uart1),
-+	.resource	= resources_uart1,
-+};
-+
-+struct platform_device msm_device_uart2 = {
-+	.name	= "msm_serial",
-+	.id	= 1,
-+	.num_resources	= ARRAY_SIZE(resources_uart2),
-+	.resource	= resources_uart2,
-+};
-+
- struct platform_device msm_device_uart3 = {
- 	.name	= "msm_serial",
- 	.id	= 2,
-@@ -345,6 +385,8 @@ struct clk msm_clocks_8x50[] = {
- 	CLK_PCOM("tsif_ref_clk",	TSIF_REF_CLK,	NULL, 0),
- 	CLK_PCOM("tv_dac_clk",	TV_DAC_CLK,	NULL, 0),
- 	CLK_PCOM("tv_enc_clk",	TV_ENC_CLK,	NULL, 0),
-+	CLK_PCOM("uart_clk",	UART1_CLK,	&msm_device_uart1.dev, OFF),
-+	CLK_PCOM("uart_clk",	UART2_CLK,	&msm_device_uart2.dev, OFF),
- 	CLK_PCOM("uart_clk",	UART3_CLK,	&msm_device_uart3.dev, OFF),
- 	CLK_PCOM("usb_hs_clk",	USB_HS_CLK,	NULL, OFF),
- 	CLK_PCOM("usb_hs_pclk",	USB_HS_P_CLK,	NULL, OFF),
--- 
-1.7.0.4
+Why do the values in /proc/sys/fs/file-nr not match up with the value
+given by "ls -al /proc/[0-9]*/fd/ | grep '>' | wc -l" ?
+
+
+For instance, on my desktop /proc/sys/fs/file-nr gives "9728    0
+306699" but the other command gives "2894".
+
+
+Where is the discrepancy coming from?
+
+Thanks,
+Chris
 
 -- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Chris Friesen
+Software Developer
+GENBAND
+chris.friesen@genband.com
+www.genband.com
