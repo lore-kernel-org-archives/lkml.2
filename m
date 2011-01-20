@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab1ATKmZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 05:42:25 -0500
-Received: from www.tglx.de ([62.245.132.106]:55358 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752071Ab1ATKmY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 05:42:24 -0500
-To: paul@pwsan.com
-Cc: tony@atomide.com
-Cc: r-woodruff2@ti.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] omap2: fix DPLL_FREQSEL calculation
-From: John Ogness <john.ogness@linutronix.de>
-Date: Thu, 20 Jan 2011 11:42:24 +0100
-Message-ID: <87ei8726wf.fsf@vostro.fn.ogness.net>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755373Ab1ATKnp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 05:43:45 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:46693 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab1ATKnn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 05:43:43 -0500
+Subject: Re: [PATCH -v10 0/4] Lock-less list
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Huang Ying <ying.huang@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Chris Mason <chris.mason@oracle.com>
+In-Reply-To: <20110119165247.cca2f434.akpm@linux-foundation.org>
+References: <1295245019-7816-1-git-send-email-ying.huang@intel.com>
+	 <20110119135546.bb7e8f62.akpm@linux-foundation.org>
+	 <1295484358.15213.25.camel@yhuang-dev>
+	 <20110119165247.cca2f434.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 20 Jan 2011 11:44:07 +0100
+Message-ID: <1295520247.28776.152.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 2011-01-19 at 16:52 -0800, Andrew Morton wrote:
+> On Thu, 20 Jan 2011 08:45:58 +0800
+> Huang Ying <ying.huang@intel.com> wrote:
+> 
+> > On Thu, 2011-01-20 at 05:55 +0800, Andrew Morton wrote:
+> > > I'm trying to remember why we're talking about this.
+> > > 
+> > > You had an ACPI-based "hardware error reporting" thing.  And that
+> > > required an nmi-context memory allocator.  And that required a
+> > > "lockless" list implementation.
+> > > 
+> > > Yes?
+> > 
+> > Yes.  But the "lockless" list implementation is general, it can be used
+> > by other part of kernel too,  such as irq_work and xlist in
+> > net/rds/xlist.h in the patchset.
+> 
+> Well.  Lots of things are general but that doesn't mean we toss them
+> into the kernel when we already have plenty of infrastructure to handle
+> that sort of thing.
+> 
+> otoh, hoisting xlist.h out of net/rds and making it generally available
+> is a good thing.
+> 
+> otooh, net/rds/ probably didn't need xlist at all and could have used
+> existing general code.
+> 
+> So...  I'd say that unless and until the NMI-context allocator is
+> merged, the case for merging the lockless list code is a bit marginal? 
+> Or have you identified other code sites which could use llist and which
+> would gain some benefit from migrating?
 
-This patch fixes the calculation of the internal frequency. The value
-of "n" is one less than the actual divider. 0 is a valid value.
-
-An example where the internal frequency is calculated correctly can be
-found here: clkt_dpll.c:_dpll_test_fint()
-
-This patch is against linux-next-20110120.
-
-Signed-off-by: John Ogness <john.ogness@linutronix.de>
----
- arch/arm/mach-omap2/dpll3xxx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/arch/arm/mach-omap2/dpll3xxx.c	2011-01-20 11:20:41.706860086 +0100
-+++ b/arch/arm/mach-omap2/dpll3xxx.c	2011-01-20 11:21:27.966860086 +0100
-@@ -93,7 +93,7 @@ static u16 _omap3_dpll_compute_freqsel(s
- 	unsigned long fint;
- 	u16 f = 0;
- 
--	fint = clk->dpll_data->clk_ref->rate / n;
-+	fint = clk->dpll_data->clk_ref->rate / (n + 1);
- 
- 	pr_debug("clock: fint is %lu\n", fint);
- 
+In fact, I have a patch ready and waiting to revert the whole irq_work
+stuff, that too seems to be a superfluous generalization.
