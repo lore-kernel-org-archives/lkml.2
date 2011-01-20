@@ -1,94 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab1ATONg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 09:13:36 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:33946 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755691Ab1ATONe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 09:13:34 -0500
-Date: Thu, 20 Jan 2011 15:11:43 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@alien8.de>, huang ying <huang.ying.caritas@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Huang Ying <ying.huang@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH -v10 0/4] Lock-less list
-Message-ID: <20110120141143.GA17272@elte.hu>
-References: <1295484358.15213.25.camel@yhuang-dev>
- <20110119165247.cca2f434.akpm@linux-foundation.org>
- <1295520247.28776.152.camel@laptop>
- <AANLkTimR6xd1PxCP6jmuNwFkANrGPdTf2wpiGsBXGpKx@mail.gmail.com>
- <1295522876.28776.158.camel@laptop>
- <AANLkTin3_NuGG_E0Juy7=1Q7PcMJ6id1ZU-Gngfp_=dg@mail.gmail.com>
- <20110120121455.GA7680@elte.hu>
- <AANLkTikv3h_QoHs4uj6CNJdC7tb_-e0osKa47KWEJvFV@mail.gmail.com>
- <20110120130625.GA14436@elte.hu>
- <20110120133621.GA314@a1.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110120133621.GA314@a1.tnic>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1755750Ab1ATOOl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 09:14:41 -0500
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:54360 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755561Ab1ATOOk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 09:14:40 -0500
+To: Christoph Hellwig <hch@infradead.org>
+CC: miklos@szeredi.hu, akpm@linux-foundation.org, hughd@google.com,
+        gurudas.pai@oracle.com, lkml20101129@newton.leun.net,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-reply-to: <20110120124043.GA4347@infradead.org> (message from Christoph
+	Hellwig on Thu, 20 Jan 2011 07:40:43 -0500)
+Subject: Re: [PATCH] mm: prevent concurrent unmap_mapping_range() on the same
+ inode
+References: <E1PftfG-0007w1-Ek@pomaz-ex.szeredi.hu> <20110120124043.GA4347@infradead.org>
+Message-Id: <E1PfvGx-00086O-IA@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Thu, 20 Jan 2011 15:13:59 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Borislav Petkov <bp@alien8.de> wrote:
-
-> + Tony.
+On Thu, 20 Jan 2011, Christoph Hellwig wrote:
+> On Thu, Jan 20, 2011 at 01:30:58PM +0100, Miklos Szeredi wrote:
+> > From: Miklos Szeredi <mszeredi@suse.cz>
+> > 
+> > Running a fuse filesystem with multiple open()'s in parallel can
+> > trigger a "kernel BUG at mm/truncate.c:475"
+> > 
+> > The reason is, unmap_mapping_range() is not prepared for more than
+> > one concurrent invocation per inode.  For example:
+> > 
+> >   thread1: going through a big range, stops in the middle of a vma and
+> >      stores the restart address in vm_truncate_count.
+> > 
+> >   thread2: comes in with a small (e.g. single page) unmap request on
+> >      the same vma, somewhere before restart_address, finds that the
+> >      vma was already unmapped up to the restart address and happily
+> >      returns without doing anything.
+> > 
+> > Another scenario would be two big unmap requests, both having to
+> > restart the unmapping and each one setting vm_truncate_count to its
+> > own value.  This could go on forever without any of them being able to
+> > finish.
+> > 
+> > Truncate and hole punching already serialize with i_mutex.  Other
+> > callers of unmap_mapping_range() do not, and it's difficult to get
+> > i_mutex protection for all callers.  In particular ->d_revalidate(),
+> > which calls invalidate_inode_pages2_range() in fuse, may be called
+> > with or without i_mutex.
 > 
-> On Thu, Jan 20, 2011 at 02:06:25PM +0100, Ingo Molnar wrote:
-> > 
-> > * huang ying <huang.ying.caritas@gmail.com> wrote:
-> > 
-> > > On Thu, Jan 20, 2011 at 8:14 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> > > >
-> > > > * huang ying <huang.ying.caritas@gmail.com> wrote:
-> > > >
-> > > >> > But will all that stuff be accepted? Please stop sending infrastructure bits and
-> > > >> > focus on your larger RAS picture, once you have consensus on that from all
-> > > >> > parties involved, then, and only then, does it make sense to submit everything,
-> > > >> > including infrastructure.
-> > > >>
-> > > >> I am not sending hardware error reporting infrastructure.  As far as I know, Linus
-> > > >> and Andrew suggest to use printk for hardware error reporting.  And now, I just
-> > > >> try to write APEI driver and reporting hardware error with printk.  Is it
-> > > >> acceptable?  Do you have some other idea about hardware error reporting?
-> > > >
-> > > > Erm, how could you possible have missed the perf based RAS daemon work of Boris,
-> > > > which we've pointed out about half a dozen times already?
-> > > 
-> > > Even if there is some other hardware error reporting infrastructure
-> > > such as perf based, I think we still need printk too. After all, as
-> > > Linus pointed out, printk is the most popular error reporting
-> > > mechanism so far. Do you think so?
-> > 
-> > Of course, that's why the upstream EDAC code uses printk too. In fact it does all 
-> > sorts of in-kernel decoding to make the printk output more useful - the /dev/mcelog 
-> > method of pushing all decoding to user-space is fundamentally flawed.
 > 
-> True story. And yet google folk still do that, unfortunately:
-> https://lkml.org/lkml/2011/1/10/419
+> Which I think is mostly a fuse problem.  I really hate bloating the
+> generic inode (into which the address_space is embedded) with another
+> mutex for deficits in rather special case filesystems. 
 
-I wouldnt worry about that too much - such uses are extremely isolated.
+As Hugh pointed out unmap_mapping_range() has grown a varied set of
+callers, which are difficult to fix up wrt i_mutex.  Fuse was just an
+example.
 
-If we give RAS functionality that gives the limited capabilities of /dev/mcelog and 
-much more then the migration path is clear towards the superior solution.
+I don't like the bloat either, but this is the best I could come up
+with for fixing this problem generally.  If you have a better idea,
+please share it.
 
 Thanks,
-
-	Ingo
+Miklos
