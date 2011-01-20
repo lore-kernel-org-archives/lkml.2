@@ -1,201 +1,328 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab1ATUX1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 15:23:27 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:58033 "EHLO smtp6-g21.free.fr"
+	id S1754648Ab1ATUYR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 15:24:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52957 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754513Ab1ATUXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 15:23:21 -0500
-Message-ID: <4D3899AB.60207@free.fr>
-Date: Thu, 20 Jan 2011 21:23:07 +0100
-From: matthieu castet <castet.matthieu@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.8.1.23) Gecko/20090823 SeaMonkey/1.1.18
+	id S1754328Ab1ATUYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 15:24:13 -0500
+Message-ID: <4D3899C7.1070805@redhat.com>
+Date: Thu, 20 Jan 2011 18:23:35 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        Kees Cook <kees.cook@canonical.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "keir.fraser@eu.citrix.com" <keir.fraser@eu.citrix.com>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "sliakh.lkml@gmail.com" <sliakh.lkml@gmail.com>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "ak@muc.de" <ak@muc.de>, "davej@redhat.com" <davej@redhat.com>,
-        "jiang@cs.ncsu.edu" <jiang@cs.ncsu.edu>,
-        "arjan@infradead.org" <arjan@infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        Stefan Bader <stefan.bader@canonical.com>
-Subject: Re: [tip:x86/security] x86: Add NX protection for kernel data
-References: <4CE2F82E.60601@free.fr> <tip-5bd5a452662bc37c54fb6828db1a3faf87e6511c@git.kernel.org> <20110111233135.GL4979@outflux.net> <20110114201530.GA14339@dumpdata.com> <20110119211432.GA20535@dumpdata.com> <20110119235957.6ea35dc8@mat-laptop> <20110119233824.GA2869@dumpdata.com> <1295522306.4d381a02b1e10@imp.free.fr> <20110120150618.GC5092@dumpdata.com> <1295537856.14780.54.camel@zakaz.uk.xensource.com> <20110120190531.GA9687@dumpdata.com>
-In-Reply-To: <20110120190531.GA9687@dumpdata.com>
-Content-Type: multipart/mixed;
- boundary="------------060207050508080407040706"
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL for 2.6.38-rc2] V4L/DVB fixes
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060207050508080407040706
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Hi Linus,
 
-Konrad Rzeszutek Wilk a Ècrit :
-> On Thu, Jan 20, 2011 at 03:37:36PM +0000, Ian Campbell wrote:
->> On Thu, 2011-01-20 at 15:06 +0000, Konrad Rzeszutek Wilk wrote:
->>> On Thu, Jan 20, 2011 at 12:18:26PM +0100, castet.matthieu@free.fr wrote:
->>>> Quoting Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>:
->>>>
->>>>> On Wed, Jan 19, 2011 at 11:59:57PM +0100, matthieu castet wrote:
->>>>>> Le Wed, 19 Jan 2011 16:14:32 -0500,
->>>>>> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> a Ècrit :
->>>>>>>>> I was just shown this[1] on Xen from an Ubuntu bug report[2].
->>>>>>>>>
->>>>>>>>> [    1.230382] NX-protecting the kernel data: 3884k
->>>>>>>>> [    1.231002] BUG: unable to handle kernel paging request at
->>>>>>>>> c1782ae0 ...
->>>>>>>>> [    1.231145] Call Trace:
->>>>>>>>> [    1.231152]  [<c0138481>] ? __change_page_attr+0x2c1/0x370
->>>>>>>>> [    1.231161]  [<c02163a1>] ? __purge_vmap_area_lazy+0xc1/0x180
->>>>>>>>> [    1.231169]  [<c013857c>] ?
->>>>>>>>> __change_page_attr_set_clr+0x4c/0xb0 [    1.231176]
->>>>>>>>> [<c0138838>] ? change_page_attr_set_clr+0x128/0x300
->>>>>>>>> [    1.231183]  [<c010798e>] ?
->>>>>>>>> __raw_callee_save_xen_restore_fl+0x6/0x8 [    1.231192]
->>>>>>>>> [<c0159ca1>] ? vprintk+0x171/0x3f0 [    1.231198]  [<c0138bdf>] ?
->>>>>>>>> set_memory_nx+0x5f/0x70
->>>>>>>> If you run it with Xen debugging enabled:
->>>>>>>>
->>>>>>>> [    7.753329] NX-protecting the kernel data: 2400k
->>>>>>>> (XEN) mm.c:2389:d0 Bad type (saw 3c000003 != exp 70000000) for mfn
->>>>>> this happen if (x & (PGT_type_mask|PGT_pae_xen_l2)) != type)
->>>>>>
->>>>>> but
->>>>>> #define PGT_type_mask       (7U<<29) /* Bits 29-31. */
->>>>>> #define _PGT_pae_xen_l2     26
->>>>>> #define PGT_pae_xen_l2      (1U<<_PGT_pae_xen_l2)
->>>>>>
->>>>>> but (exp type = 0x70000000) & (PGT_type_mask|PGT_pae_xen_l2) =
->>>>>> 0x60000000
->>>>>>
->>>>>> So the exp type look strange.
->>>>>> #define _PGT_pinned         28
->>>>>> #define PGT_pinned          (1U<<_PGT_pinned)
->>>>>>
->>>>>>>> 1355a5 (pfn 15a5) (XEN) mm.c:889:d0 Error getting mfn 1355a5 (pfn
->>>>>>>> 15a5) from L1 entry 80000001355a5063 for l1e_owner=0, pg_owner=0
->>>>>>>> (XEN) mm.c:4958:d0 ptwr_emulate: could not get_page_from_l1e()
->>>>>>>> [    7.759087] BUG: unable to handle kernel paging request at
->>>>>>>> c82a4d28 [    7.759087] IP: [<c100608c>]
->>>>>>>> xen_set_pte_atomic+0x21/0x2f [    7.759087] *pdpt =
->>>>>>>> 0000000001663001 *pde = 00000000082db067 *pte = 80000000082a4061 ..
->>>>>>>> and same stack trace.
->>>>>>>>
->>>>>>>>>
->>>>>>>>> Does Xen have different size page table allocations or something
->>>>>>>>> weird?
->>>>>>>> The same page size. Not sure actually why it is being triggered.
->>>>>>>> Let me copy Keir on this. Keir, the region that is being marked as
->>>>>>>> _NX is .bss one and
->>>>>>> _past_ the __init_end it dies. Any ideas?
->>>>>>>
->>>>>> Does this happen if you add ". = ALIGN(HPAGE_SIZE);" before bss section
->>>>>> in arch/x86/kernel/vmlinux.lds.S ?
->>>>> Like this?
->>>> Yes
->>>>> yeeeey...That made it boot.
->>>>>
->>>>>> What's the output of kernel_page_tables debugfs ?
->>>>> Shees.. I get
->>>>>
->>>>> [   73.723105] BUG: unable to handle kernel paging request at 15555000
->>>> [...]
->>>>> with the patch and if I revert 5bd5a452662bc37c54fb6828db1a3faf87e6511c..
->>>>>
->>>>> That looks to be another bug to hunt down.
->>>>>
->>>> No that the same bug : that the root cause.
->>>>
->>>> For some reason with xen, accessing some page tables (bss and after) make the
->>>> system crash.
->>> I think I know the failure in the first case - the swapper_pg_dir is marked as _RO
->>> and you are not suppose to make it _RW (unless you first do a bit of dance and switch
->>> over to another pagetable). The reason being that Xen has a symbiotic relationship
->>> with PV domains where pagetables are marked _RO so that any update to
->>> it will go through Xen so it can validate that we aren't doing anything stupid.
->>>
->>> But accessing the page table should be OK, not sure why it crashed - we
->>> aren't writting anything to it - just reading.
->>>
->>> Let me copy Ian on this - he might have better ideas.
->> It's pretty hard to follow the quoted context above but it certainly
->> seems plausible that set_memory_nx could inadvertently end up trying to
->> make a page which Xen made RO into a RW again.
->>
->> For example the callchain appear to pass through static_protections()
->> which explicitly makes .data and .bss writeable, I think these regions
->> can potentially contain page table pages -- e.g. allocated from BRK
->> perhaps?
-> 
-> They definitly do - it has the level1_ident_pgt, which is definitly used
-> during bootup.
-> 
-Ok that make sense
-> Perhaps the fix is when marking NX, just do NX, don't try to set RW if they
-> are RO.
-> 
-What do you think of this patch ?
+This series contains fixes on several drivers. There is also the removal of two duplicated
+old drivers:
+	tda9875 - currently unused, as their functionalities got migrated to tvaudio
+	radio-gemtek-pci - that supports the same device as radio-maxiradio
 
+Please pull from:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git media_fixes
 
-Matthieu
+Thanks!
+Mauro
 
---------------060207050508080407040706
-Content-Type: text/x-diff;
- name="0001-NX-protection-for-kernel-data-support-xen.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline;
- filename*0="0001-NX-protection-for-kernel-data-support-xen.patch"
+--
 
->From 928dabe66cc5992587eb70410208ca9885c64a5c Mon Sep 17 00:00:00 2001
-From: Matthieu CASTET <castet.matthieu@free.fr>
-Date: Thu, 20 Jan 2011 21:11:45 +0100
-Subject: [PATCH] NX protection for kernel data : support xen
+The following changes since commit c56eb8fb6dccb83d9fe62fd4dc00c834de9bc470:
 
-Xen want page table pages read only.
+  Linux 2.6.38-rc1 (2011-01-18 15:14:02 -0800)
 
-But the initial page table (from head_*.S) live in .data or .bss.
-Don't make static_protections enforce rw for .data/.bss in xen case.
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git media_fixes
 
-Signed-off-by: Matthieu CASTET <castet.matthieu@free.fr>
----
- arch/x86/mm/pageattr.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+Andy Walls (12):
+      [media] lirc_zilog: Reword debug message in ir_probe()
+      [media] lirc_zilog: Remove disable_tx module parameter
+      [media] lirc_zilog: Split struct IR into structs IR, IR_tx, and IR_rx
+      [media] lirc_zilog: Don't make private copies of i2c clients
+      [media] lirc_zilog: Extensive rework of ir_probe()/ir_remove()
+      [media] lirc_zilog: Update IR Rx polling kthread start/stop and some printks
+      [media] lirc_zilog: Remove unneeded tests for existence of the IR Tx function
+      [media] lirc_zilog: Remove useless struct i2c_driver.command function
+      [media] lirc_zilog: Add Andy Walls to copyright notice and authors list
+      [media] lirc_zilog: Update TODO.lirc_zilog
+      [media] ir-kbd-i2c: Add back defaults setting for Zilog Z8's at addr 0x71
+      [media] pvrusb2: Provide more information about IR units to lirc_zilog and ir-kbd-i2c
 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index 8b830ca..8698521 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -283,11 +283,14 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
- 		   __pa((unsigned long)__end_rodata) >> PAGE_SHIFT))
- 		pgprot_val(forbidden) |= _PAGE_RW;
- 	/*
--	 * .data and .bss should always be writable.
-+	 * .data and .bss should always be writable, but xen won't like
-+	 * if we make page table rw (that live in .data or .bss)
- 	 */
-+#ifndef CONFIG_XEN
- 	if (within(address, (unsigned long)_sdata, (unsigned long)_edata) ||
- 	    within(address, (unsigned long)__bss_start, (unsigned long)__bss_stop))
- 		pgprot_val(required) |= _PAGE_RW;
-+#endif
- 
- #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
- 	/*
--- 
-1.7.2.3
+Antti Palosaari (1):
+      [media] af9013: fix AF9013 TDA18271 IF config
 
+Christian Gmeiner (1):
+      [media] adv7175: support s_power
 
---------------060207050508080407040706--
+Dan Carpenter (1):
+      [media] [v3,media] av7110: check for negative array offset
+
+Dmitri Belimov (1):
+      [media] tm6000: rework init code
+
+Geert Uytterhoeven (1):
+      [media] radio-aimslab.c needs #include <linux/delay.h>
+
+Hans Verkuil (20):
+      [media] tda9875: remove duplicate driver
+      [media] bttv: remove obsolete 'no_tda9875' field
+      [media] saa7146: Convert from .ioctl to .unlocked_ioctl
+      [media] cpia2: convert .ioctl to .unlocked_ioctl
+      [media] davinci: convert vpif_capture to core-assisted locking
+      [media] davinci: convert vpif_display to core-assisted locking
+      [media] radio-maxiradio.c: use sensible frequency range
+      [media] radio-gemtek-pci: remove duplicate driver
+      [media] v4l2-ioctl: fix incorrect error code if VIDIOC_DBG_G/S_REGISTER are unsupported
+      [media] v4l2-subdev: remove core.s_config and v4l2_i2c_new_subdev_cfg()
+      [media] v4l2-subdev: add (un)register internal ops
+      [media] v4l2-ctrls: v4l2_ctrl_handler_setup must set is_new to 1
+      [media] v4l2-ctrls: fix missing 'read-only' check
+      [media] v4l2-ctrls: queryctrl shouldn't attempt to replace V4L2_CID_PRIVATE_BASE IDs
+      [media] DocBook/v4l: fix validation error in dev-rds.xml
+      [media] DocBook/v4l: update V4L2 revision and update copyright years
+      [media] w9966: zero device state after a detach
+      [media] zoran: use video_device_alloc instead of kmalloc
+      [media] v4l2-dev: don't memset video_device.dev
+      [media] v4l2-device: fix 'use-after-freed' oops
+
+Hans de Goede (19):
+      [media] gspca_main: Locking fixes 1
+      [media] gspca_main: Locking fixes 2
+      [media] gspca_main: Update buffer flags even when user_copy fails
+      [media] gspca_main: Remove no longer used users variable
+      [media] gspca_main: Set memory type to GSPCA_MEMORY_NO on buffer release
+      [media] gspca_main: Simplify read mode memory type checks
+      [media] gspca_main: Allow switching from read to mmap / userptr mode
+      [media] gspca_main: wake wq on streamoff
+      [media] et61x251: remove wrongly claimed usb ids
+      [media] sn9c102: Remove not supported and non existing usb ids
+      [media] gspca_sonixb: Refactor to unify bridge handling
+      [media] gspca_sonixb: Adjust autoexposure window for vga cams so that it is centered
+      [media] gspca_sonixb: Fix TAS5110D sensor gain control
+      [media] gspca_sonixb: TAS5130C brightness control really is a gain control
+      [media] gspca_sonixb: Add usb ids for known sn9c103 cameras
+      [media] gspca_sonixj: Enable more usb ids when sn9c102 gets compiled too
+      [media] gspca_sonixj: Probe sensor type independent of bridge type
+      [media] gspca_sonixj: Add one more commented out usb-id
+      [media] gspca_sonixb: Fix mirrored image with ov7630
+
+Jarod Wilson (8):
+      [media] rc/imon: fix ffdc device detection oops
+      [media] rc/imon: need to submit urb before ffdc type check
+      [media] rc: fix up and genericize some time unit conversions
+      [media] rc/imon: default to key mode instead of mouse mode
+      [media] rc/mceusb: timeout should be in ns, not us
+      [media] hdpvr: enable IR part
+      [media] hdpvr: reduce latency of i2c read/write w/recycled buffer
+      [media] staging/lirc: fix mem leaks and ptr err usage
+
+Jean-Fran√ßois Moine (8):
+      [media] gspca: Version change
+      [media] gspca: Remove __devinit, __devinitconst and __devinitdata
+      [media] gspca: Remove useless instructions
+      [media] gspca - ov519: Cleanup source and add a comment
+      [media] gspca - ov534: Clearer debug messages
+      [media] gspca - ov534: Propagate errors to higher level
+      [media] gspca - sonixj: Infrared bug fix and enhancement
+      [media] gspca - sonixj: Add LED (illuminator) control to the webcam 0c45:614a
+
+Jesper Juhl (2):
+      [media] frontends/ix2505v: Remember to free allocated memory in failure path
+      [media] media, tlg2300: Fix memory leak in alloc_bulk_urbs_generic()
+
+Kyle McMartin (1):
+      [media] rc/ene_ir: fix oops on module load
+
+Laurent Pinchart (2):
+      [media] v4l: Include linux/videodev2.h in media/v4l2-ctrls.h
+      [media] v4l: Fix a use-before-set in the control framework
+
+Mats Randgaard (5):
+      [media] vpif_cap/disp: Add debug functionality
+      [media] vpif: Consolidate formats from capture and display
+      [media] vpif_cap/disp: Add support for DV presets
+      [media] vpif_cap/disp: Added support for DV timings
+      [media] vpif_cap/disp: Cleanup, improved comments
+
+Matti Aaltonen (1):
+      [media] V4L2: WL1273 FM Radio: Replace ioctl with unlocked_ioctl
+
+Mauro Carvalho Chehab (12):
+      [media] rc-dib0700-nec: Fix keytable for Pixelview SBTVD
+      [media] dib0700: Fix IR keycode handling
+      [media] ir-kbd-i2c: Make IR debug messages more useful
+      [media] em28xx: Fix IR support for WinTV USB2
+      [media] tda8290: Make all read operations atomic
+      [media] tda8290: Fix a bug if no tuner is detected
+      [media] tda8290: Turn tda829x on before touching at the I2C gate
+      [media] mb86a20s: Fix i2c read/write error messages
+      [media] mb86a20s: Be sure that device is initialized before starting DVB
+      [media] saa7134: Fix analog mode for Kworld SBTVD
+      [media] saa7134: Fix digital mode on Kworld SBTVD
+      [media] saa7134: Kworld SBTVD: make both analog and digital to work
+
+Randy Dunlap (1):
+      [media] ir-raw: fix sparse non-ANSI function warning
+
+Stefan Richter (1):
+      [media] firedtv: fix remote control with newer Xorg evdev
+
+Tejun Heo (1):
+      [media] v4l/cx18: update workqueue usage
+
+Thadeu Lima de Souza Cascardo (1):
+      [media] DVB: cx231xx drivers does not use dummy frontend anymore
+
+Tobias Lorenz (2):
+      [media] radio-si470x: de-emphasis should be set if requested by module parameter
+      [media] radio-si470x: Always report support for RDS
+
+ Documentation/DocBook/dvb/dvbapi.xml               |    2 +-
+ Documentation/DocBook/media.tmpl                   |    4 +-
+ Documentation/DocBook/v4l/dev-rds.xml              |    6 +-
+ Documentation/DocBook/v4l/v4l2.xml                 |    3 +-
+ Documentation/video4linux/v4l2-controls.txt        |   12 +
+ drivers/media/common/saa7146_core.c                |    2 +-
+ drivers/media/common/saa7146_fops.c                |    8 +-
+ drivers/media/common/saa7146_vbi.c                 |    2 +-
+ drivers/media/common/saa7146_video.c               |   20 +-
+ drivers/media/common/tuners/tda8290.c              |  130 +++--
+ drivers/media/dvb/dvb-usb/dib0700_core.c           |    6 +-
+ drivers/media/dvb/firewire/firedtv-rc.c            |    9 +-
+ drivers/media/dvb/frontends/af9013.c               |    4 +-
+ drivers/media/dvb/frontends/ix2505v.c              |    2 +-
+ drivers/media/dvb/frontends/mb86a20s.c             |   36 +-
+ drivers/media/dvb/ttpci/av7110_ca.c                |    2 +-
+ drivers/media/radio/Kconfig                        |   14 -
+ drivers/media/radio/Makefile                       |    1 -
+ drivers/media/radio/radio-aimslab.c                |    1 +
+ drivers/media/radio/radio-gemtek-pci.c             |  478 --------------
+ drivers/media/radio/radio-maxiradio.c              |    4 +-
+ drivers/media/radio/radio-wl1273.c                 |    2 +-
+ drivers/media/radio/si470x/radio-si470x-common.c   |    9 +-
+ drivers/media/rc/ene_ir.c                          |   23 +-
+ drivers/media/rc/ene_ir.h                          |    2 -
+ drivers/media/rc/imon.c                            |   60 +-
+ drivers/media/rc/ir-raw.c                          |    2 +-
+ drivers/media/rc/keymaps/rc-dib0700-nec.c          |   52 +-
+ drivers/media/rc/mceusb.c                          |    3 +-
+ drivers/media/video/Kconfig                        |    9 -
+ drivers/media/video/Makefile                       |    1 -
+ drivers/media/video/adv7175.c                      |   11 +
+ drivers/media/video/bt8xx/bttv-cards.c             |   39 --
+ drivers/media/video/bt8xx/bttv.h                   |    1 -
+ drivers/media/video/cafe_ccic.c                    |   11 +-
+ drivers/media/video/cpia2/cpia2.h                  |    2 +-
+ drivers/media/video/cpia2/cpia2_core.c             |   65 +--
+ drivers/media/video/cpia2/cpia2_v4l.c              |  104 +---
+ drivers/media/video/cx18/cx18-driver.c             |   24 +-
+ drivers/media/video/cx18/cx18-driver.h             |    3 -
+ drivers/media/video/cx18/cx18-streams.h            |    3 +-
+ drivers/media/video/cx231xx/cx231xx-dvb.c          |    5 +-
+ drivers/media/video/cx25840/cx25840-core.c         |   22 +-
+ drivers/media/video/davinci/vpif.c                 |  177 ++++++
+ drivers/media/video/davinci/vpif.h                 |   18 +-
+ drivers/media/video/davinci/vpif_capture.c         |  451 +++++++++++---
+ drivers/media/video/davinci/vpif_capture.h         |    2 +
+ drivers/media/video/davinci/vpif_display.c         |  474 +++++++++++----
+ drivers/media/video/davinci/vpif_display.h         |    2 +
+ drivers/media/video/em28xx/em28xx-cards.c          |   19 +-
+ drivers/media/video/et61x251/et61x251.h            |   24 -
+ drivers/media/video/gspca/benq.c                   |    2 +-
+ drivers/media/video/gspca/conex.c                  |    4 +-
+ drivers/media/video/gspca/cpia1.c                  |    2 +-
+ drivers/media/video/gspca/etoms.c                  |    4 +-
+ drivers/media/video/gspca/finepix.c                |    2 +-
+ drivers/media/video/gspca/gl860/gl860.c            |    2 +-
+ drivers/media/video/gspca/gspca.c                  |  210 +++----
+ drivers/media/video/gspca/gspca.h                  |    2 -
+ drivers/media/video/gspca/jeilinj.c                |    2 +-
+ drivers/media/video/gspca/jpeg.h                   |    4 +-
+ drivers/media/video/gspca/konica.c                 |    2 +-
+ drivers/media/video/gspca/m5602/m5602_core.c       |    2 +-
+ drivers/media/video/gspca/mars.c                   |    2 +-
+ drivers/media/video/gspca/mr97310a.c               |    2 +-
+ drivers/media/video/gspca/ov519.c                  |    8 +-
+ drivers/media/video/gspca/ov534.c                  |   29 +-
+ drivers/media/video/gspca/ov534_9.c                |    2 +-
+ drivers/media/video/gspca/pac207.c                 |    2 +-
+ drivers/media/video/gspca/pac7302.c                |    4 +-
+ drivers/media/video/gspca/pac7311.c                |    4 +-
+ drivers/media/video/gspca/sn9c2028.c               |    2 +-
+ drivers/media/video/gspca/sn9c20x.c                |    2 +-
+ drivers/media/video/gspca/sonixb.c                 |  270 +++++----
+ drivers/media/video/gspca/sonixj.c                 |  155 +++---
+ drivers/media/video/gspca/spca1528.c               |    2 +-
+ drivers/media/video/gspca/spca500.c                |    2 +-
+ drivers/media/video/gspca/spca501.c                |    2 +-
+ drivers/media/video/gspca/spca505.c                |    2 +-
+ drivers/media/video/gspca/spca508.c                |    2 +-
+ drivers/media/video/gspca/spca561.c                |    2 +-
+ drivers/media/video/gspca/sq905.c                  |    2 +-
+ drivers/media/video/gspca/sq905c.c                 |    2 +-
+ drivers/media/video/gspca/sq930x.c                 |    2 +-
+ drivers/media/video/gspca/stk014.c                 |    2 +-
+ drivers/media/video/gspca/stv0680.c                |    2 +-
+ drivers/media/video/gspca/stv06xx/stv06xx.c        |    2 +-
+ drivers/media/video/gspca/sunplus.c                |    2 +-
+ drivers/media/video/gspca/t613.c                   |    2 +-
+ drivers/media/video/gspca/tv8532.c                 |    2 +-
+ drivers/media/video/gspca/vc032x.c                 |    2 +-
+ drivers/media/video/gspca/xirlink_cit.c            |    2 +-
+ drivers/media/video/gspca/zc3xx.c                  |    2 +-
+ drivers/media/video/hdpvr/Makefile                 |    4 +-
+ drivers/media/video/hdpvr/hdpvr-core.c             |   10 +-
+ drivers/media/video/hdpvr/hdpvr-i2c.c              |  143 ++---
+ drivers/media/video/hdpvr/hdpvr-video.c            |    7 +-
+ drivers/media/video/hdpvr/hdpvr.h                  |    5 +-
+ drivers/media/video/ir-kbd-i2c.c                   |   12 +-
+ drivers/media/video/ivtv/ivtv-i2c.c                |    9 +-
+ drivers/media/video/mt9v011.c                      |   54 +-
+ drivers/media/video/mt9v011.h                      |   36 --
+ drivers/media/video/ov7670.c                       |   74 +--
+ drivers/media/video/pvrusb2/pvrusb2-hdw-internal.h |    2 +
+ drivers/media/video/pvrusb2/pvrusb2-i2c-core.c     |   62 ++-
+ drivers/media/video/saa7134/saa7134-cards.c        |   51 +--
+ drivers/media/video/saa7134/saa7134-dvb.c          |   80 ++--
+ drivers/media/video/sn9c102/sn9c102_devtable.h     |   74 +--
+ drivers/media/video/sr030pc30.c                    |   10 -
+ drivers/media/video/tda9875.c                      |  411 -------------
+ drivers/media/video/tlg2300/pd-video.c             |   13 +-
+ drivers/media/video/v4l2-common.c                  |   19 +-
+ drivers/media/video/v4l2-ctrls.c                   |   34 +-
+ drivers/media/video/v4l2-dev.c                     |    9 +-
+ drivers/media/video/v4l2-device.c                  |   16 +-
+ drivers/media/video/v4l2-ioctl.c                   |   20 +-
+ drivers/media/video/w9966.c                        |    1 +
+ drivers/media/video/zoran/zoran_card.c             |    2 +-
+ drivers/staging/lirc/TODO.lirc_zilog               |   36 +-
+ drivers/staging/lirc/lirc_imon.c                   |    1 +
+ drivers/staging/lirc/lirc_it87.c                   |    1 +
+ drivers/staging/lirc/lirc_parallel.c               |   19 +-
+ drivers/staging/lirc/lirc_sasem.c                  |    1 +
+ drivers/staging/lirc/lirc_serial.c                 |    3 +-
+ drivers/staging/lirc/lirc_sir.c                    |    1 +
+ drivers/staging/lirc/lirc_zilog.c                  |  650 +++++++++++---------
+ drivers/staging/tm6000/tm6000-video.c              |   46 ++-
+ include/media/mt9v011.h                            |   17 +
+ include/media/rc-core.h                            |    3 +
+ include/media/saa7146.h                            |    2 +-
+ include/media/v4l2-common.h                        |   13 +-
+ include/media/v4l2-ctrls.h                         |    7 +-
+ include/media/v4l2-subdev.h                        |   23 +-
+ 133 files changed, 2442 insertions(+), 2661 deletions(-)
+ delete mode 100644 drivers/media/radio/radio-gemtek-pci.c
+ delete mode 100644 drivers/media/video/mt9v011.h
+ delete mode 100644 drivers/media/video/tda9875.c
+ create mode 100644 include/media/mt9v011.h
+
