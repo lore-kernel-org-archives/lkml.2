@@ -1,87 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab1ATUvg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 15:51:36 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:1530 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838Ab1ATUvf (ORCPT
+	id S1754755Ab1ATUxG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 15:53:06 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:22868 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754305Ab1ATUxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 15:51:35 -0500
-Message-ID: <4D38A051.2010301@caviumnetworks.com>
-Date: Thu, 20 Jan 2011 12:51:29 -0800
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Thu, 20 Jan 2011 15:53:04 -0500
+Date: Thu, 20 Jan 2011 21:53:23 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Phillip Lougher <phillip@lougher.demon.co.uk>
+cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] SquashFS, XZ: Don't use uninitialized variable in
+ squashfs_xz_uncompress
+Message-ID: <alpine.LNX.2.00.1101202140070.11854@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: RTC seems broken on 2.6.38-rc1 for RTCs lacking alarms.
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Jan 2011 20:51:34.0981 (UTC) FILETIME=[D326BF50:01CBB8E3]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hwclock program on my MIPS Debian GNU/Linux 5.0 system quit
-working with 2.6.38-rc1.
+In fs/squashfs/xz_wrapper.c::squashfs_xz_uncompress() we have this code:
 
-This particular ds1307 has no interrupt connection, so the alarm
-feature cannot be used.  Because of this the
-rtc_class_ops.set_alarm() function always will return -EINVAL
+	enum xz_ret xz_err;
+	...
+	do {
+		if (stream->buf.in_pos == stream->buf.in_size && k < b) {
+		... [nothing that assigns to 'xz_err'] ...
+			if (avail == 0) {
+				offset = 0;
+				put_bh(bh[k++]);
+				continue;
+			}
+		...
+	} while (xz_err == XZ_OK);
+
+If we hit that 'continue' statement the first time through, then the 
+'while' condition will be testing an uninitialized 'xz_err' - not what we 
+want.
+
+This patch should take care of the problem by making sure that 'xz_err' is 
+initialized to 'XZ_OK' at the start of the function.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ xz_wrapper.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+  compile tested only.
+
+diff --git a/fs/squashfs/xz_wrapper.c b/fs/squashfs/xz_wrapper.c
+index 856756c..daf76c3 100644
+--- a/fs/squashfs/xz_wrapper.c
++++ b/fs/squashfs/xz_wrapper.c
+@@ -74,7 +74,7 @@ static int squashfs_xz_uncompress(struct squashfs_sb_info *msblk, void **buffer,
+ 	struct buffer_head **bh, int b, int offset, int length, int srclength,
+ 	int pages)
+ {
+-	enum xz_ret xz_err;
++	enum xz_ret xz_err = XZ_OK;
+ 	int avail, total = 0, k = 0, page = 0;
+ 	struct squashfs_xz *stream = msblk->stream;
+ 
 
 
-This problem appears to be related to commits:
-042620a RTC: Remove UIE emulation
-6610e08 RTC: Rework RTC code to use timerqueue for events
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-My system uses a ds1307 RTC which still works as evidenced by the
-kernel boot messages.
-
-.
-.
-.
-rtc-ds1307 0-0068: setting system clock to 2011-01-20 19:58:48 UTC 
-(1295553528)
-.
-.
-.
-
-But hwclock now fails here is some nice strace output:
-.
-.
-.
-open("/dev/rtc0", O_RDONLY|O_LARGEFILE) = 3
-ioctl(3, PRESTO_GETMOUNT or RTC_UIE_ON, 0) = 0
-_newselect(4, [3], NULL, NULL, {5, 0})  = 0 (Timeout)
-write(2, "select() to /dev/rtc0 to wait for"..., 55select() to /dev/rtc0 
-to wait for clock tick timed out
-) = 55
-ioctl(3, PRESTO_SETPID or RTC_UIE_OFF, 0) = 0
-close(3)                                = 0
-exit_group(1)                           = ?
-
-
-The hwclock program is asking to put the clock in UIE mode and then
-does a select() on it.  Since the alarm doesn't work, the select times out.
-
-Previously the ioctl(RTC_UIE_ON) would return EINVAL:
-.
-.
-.
-open("/dev/rtc0", O_RDONLY|O_LARGEFILE)  = 3
-ioctl(3, PRESTO_GETMOUNT or RTC_UIE_ON, 0) = -1 EINVAL (Invalid argument)
-ioctl(3, PRESTO_SETOPT or RTC_RD_TIME, {tm_sec=48, tm_min=41, 
-tm_hour=20, tm_mday=20, tm_mon=0, tm_year=111, ...}) = 0
-ioctl(3, PRESTO_SETOPT or RTC_RD_TIME, {tm_sec=48, tm_min=41, 
-tm_hour=20, tm_mday=20, tm_mon=0, tm_year=111, ...}) = 0
-.
-.
-.
-
-The problem seems to be that rtc_update_irq_enable() no longer returns
--EINVAL when it cannot set the alarm.
-
-David Daney
