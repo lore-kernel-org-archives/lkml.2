@@ -1,142 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab1ATMwC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 07:52:02 -0500
-Received: from a.mx.secunet.com ([195.81.216.161]:43738 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755412Ab1ATMv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 07:51:59 -0500
-X-Greylist: delayed 1496 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Jan 2011 07:51:58 EST
-Date: Thu, 20 Jan 2011 13:26:59 +0100
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Eric Paris <eparis@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: flex_array related problems on selinux policy loading
-Message-ID: <20110120122659.GD4639@secunet.com>
+	id S1755539Ab1ATM66 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 07:58:58 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:57543 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752939Ab1ATM65 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 07:58:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=W6SkgQTjTTs9G3rt19w1lznb3JS/ARYd43i0W+S+Faryz2JG/kI7xH0eO63wq5VXZq
+         4sO4xcVowU+hBYCajHXXGL76zD3vHziN7cRxP3VNi4PM5KVwBZMqJK6eIXnaI4rx+c0X
+         RznDDuxdT8k8uSbSjoqOvCIgbp2DfBMetSuYc=
+Date: Thu, 20 Jan 2011 14:58:49 +0200
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        Philipp Reisner <philipp.reisner@linbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lars Ellenberg <lars.ellenberg@linbit.com>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] loop: queue_lock NULL pointer derefence in
+ blk_throtl_exit (v2)
+Message-ID: <20110120125849.GA4172@swordfish>
+References: <20110114192532.GA4274@swordfish>
+ <20110120113211.GB16184@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 20 Jan 2011 12:27:00.0305 (UTC) FILETIME=[5609CC10:01CBB89D]
+In-Reply-To: <20110120113211.GB16184@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some recent changes to use flex_array_alloc on selinux policy loading made
-me unable load my selinux policy. I'm not using 'common' and 'bool' in the
-policy, this leads to some zero size allocations in policydb_index().
-Unfortunately the behaviour on zero size allocations of flex_array_alloc()
-is not the same as of kmalloc(). While zero size allocations are legal on
-kmalloc(), flex_array_prealloc() fails with -ENOSPC if total_nr_elements
-is zero (this happens if I try to load my policy) or it hits a division by
-zero if element_size is zero.
+Performing
+$ sudo mount -o loop -o umask=0 /dev/sdb1 /mnt/
+mount: wrong fs type, bad option, bad superblock on /dev/loop0,
+       missing codepage or helper program, or other error
+       In some cases useful info is found in syslog - try
+       dmesg | tail  or so
 
-The patch below changes the flex_array_alloc behaviour on zero size allocations
-to be the same as with kmalloc. I'm able to load my policy with the patch
-and everything seems to work fine. However, flex_array_get() returns now NULL
-if the pointer to the struct flex_array is a ZERO_SIZE_PTR.  There is a lot
-of BUG_ON() in the policy handling code if flex_array_get() returns NULL, so
-somebody with a deeper knowledge on selinux policy handling should look into
-this to see if furter changes are necessary.
+$ sudo modprobe -r loop
 
-Steffen
+results in oops:
 
-Subject: [PATCH] flex_array: Change behaviour on zero size allocations
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
+ IP: [<ffffffff812479d4>] do_raw_spin_lock+0x14/0x122
+ Process modprobe (pid: 6189, threadinfo ffff88009a898000, task ffff880154a88000)
+ Call Trace:
+  [<ffffffff81486788>] _raw_spin_lock_irq+0x4a/0x51
+  [<ffffffff8123404b>] ? blk_throtl_exit+0x3b/0xa0
+  [<ffffffff8105b120>] ? cancel_delayed_work_sync+0xd/0xf
+  [<ffffffff8123404b>] blk_throtl_exit+0x3b/0xa0
+  [<ffffffff81229bc8>] blk_release_queue+0x21/0x65
+  [<ffffffff8123bb06>] kobject_release+0x51/0x66
+  [<ffffffff8123bab5>] ? kobject_release+0x0/0x66
+  [<ffffffff8123ce1e>] kref_put+0x43/0x4d
+  [<ffffffff8123ba27>] kobject_put+0x47/0x4b
+  [<ffffffff8122717c>] blk_cleanup_queue+0x56/0x5b
+  [<ffffffffa01c3824>] loop_exit+0x68/0x844 [loop]
+  [<ffffffff8107cccc>] sys_delete_module+0x1e8/0x25b
+  [<ffffffff814864c9>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+  [<ffffffff81002112>] system_call_fastpath+0x16/0x1b
 
-flex_array_alloc allocates the basic struct flex_array regardless whether
-total_nr_elements or element_size is zero. Then flex_array_prealloc
-fails with -ENOSPC if total_nr_elements is zero or it hits a division by
-zero if element_size is zero.
 
-This patch changes the behaviour on zero size allocations to the same
-as kmalloc, we return ZERO_SIZE_PTR in this case. All flex_array handlers
-test for ZERO_SIZE_PTR and return an appropriate value to the caller.
+because of an attempt to acquire NULL queue_lock.
+I added the same lines as in blk_queue_make_request -
+`fall back to embedded per-queue lock'.
 
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+v2: According to comment by Vivek Goyal, queue_lock NULL check and fix moved 
+out from loop driver code to blk_cleanup_queue, which is more general approach.
+
+
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+
 ---
- lib/flex_array.c |   27 +++++++++++++++++++++++++--
- 1 files changed, 25 insertions(+), 2 deletions(-)
 
-diff --git a/lib/flex_array.c b/lib/flex_array.c
-index c0ea40b..420d11d 100644
---- a/lib/flex_array.c
-+++ b/lib/flex_array.c
-@@ -88,8 +88,13 @@ struct flex_array *flex_array_alloc(int element_size, unsigned int total,
- 					gfp_t flags)
+ block/blk-core.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 2f4002f..45073ab 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -458,6 +458,10 @@ void blk_put_queue(struct request_queue *q)
+ 
+ void blk_cleanup_queue(struct request_queue *q)
  {
- 	struct flex_array *ret;
--	int max_size = FLEX_ARRAY_NR_BASE_PTRS *
--				FLEX_ARRAY_ELEMENTS_PER_PART(element_size);
-+	int max_size;
++	/* fall back to our embedded per-queue locks */
++	if (!q->queue_lock)
++		q->queue_lock = &q->__queue_lock;
 +
-+	if (unlikely(!element_size || !total))
-+		return ZERO_SIZE_PTR;
-+
-+	max_size = FLEX_ARRAY_NR_BASE_PTRS *
-+		   FLEX_ARRAY_ELEMENTS_PER_PART(element_size);
- 
- 	/* max_size will end up 0 if element_size > PAGE_SIZE */
- 	if (total > max_size)
-@@ -123,6 +128,9 @@ void flex_array_free_parts(struct flex_array *fa)
- {
- 	int part_nr;
- 
-+	if (unlikely(ZERO_OR_NULL_PTR(fa)))
-+		return;
-+
- 	if (elements_fit_in_base(fa))
- 		return;
- 	for (part_nr = 0; part_nr < FLEX_ARRAY_NR_BASE_PTRS; part_nr++)
-@@ -187,6 +195,9 @@ int flex_array_put(struct flex_array *fa, unsigned int element_nr, void *src,
- 	struct flex_array_part *part;
- 	void *dst;
- 
-+	if (unlikely(ZERO_OR_NULL_PTR(fa)))
-+		return 0;
-+
- 	if (element_nr >= fa->total_nr_elements)
- 		return -ENOSPC;
- 	if (elements_fit_in_base(fa))
-@@ -215,6 +226,9 @@ int flex_array_clear(struct flex_array *fa, unsigned int element_nr)
- 	struct flex_array_part *part;
- 	void *dst;
- 
-+	if (unlikely(ZERO_OR_NULL_PTR(fa)))
-+		return 0;
-+
- 	if (element_nr >= fa->total_nr_elements)
- 		return -ENOSPC;
- 	if (elements_fit_in_base(fa))
-@@ -252,6 +266,9 @@ int flex_array_prealloc(struct flex_array *fa, unsigned int start,
- 	int part_nr;
- 	struct flex_array_part *part;
- 
-+	if (unlikely(ZERO_OR_NULL_PTR(fa)))
-+		return 0;
-+
- 	if (start >= fa->total_nr_elements || end >= fa->total_nr_elements)
- 		return -ENOSPC;
- 	if (elements_fit_in_base(fa))
-@@ -284,6 +301,9 @@ void *flex_array_get(struct flex_array *fa, unsigned int element_nr)
- 	int part_nr = fa_element_to_part_nr(fa, element_nr);
- 	struct flex_array_part *part;
- 
-+	if (unlikely(ZERO_OR_NULL_PTR(fa)))
-+		return NULL;
-+
- 	if (element_nr >= fa->total_nr_elements)
- 		return NULL;
- 	if (elements_fit_in_base(fa))
-@@ -343,6 +363,9 @@ int flex_array_shrink(struct flex_array *fa)
- 	int part_nr;
- 	int ret = 0;
- 
-+	if (unlikely(ZERO_OR_NULL_PTR(fa)))
-+		return 0;
-+
- 	if (elements_fit_in_base(fa))
- 		return ret;
- 	for (part_nr = 0; part_nr < FLEX_ARRAY_NR_BASE_PTRS; part_nr++) {
--- 
-1.7.0.4
+ 	/*
+ 	 * We know we have process context here, so we can be a little
+ 	 * cautious and ensure that pending block actions on this device
+
 
