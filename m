@@ -1,86 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254Ab1ATV3l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 16:29:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20149 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754885Ab1ATV3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 16:29:39 -0500
-Date: Thu, 20 Jan 2011 22:28:41 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 1/3] When migrate_pages returns 0, all pages must have
- been released
-Message-ID: <20110120212841.GB9506@random.random>
-References: <f60d811fd1abcb68d40ac19af35881d700a97cd2.1295539829.git.minchan.kim@gmail.com>
- <alpine.DEB.2.00.1101201130100.10695@router.home>
- <20110120182444.GA9506@random.random>
- <alpine.DEB.2.00.1101201233001.20633@router.home>
+	id S1755286Ab1ATVad (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 16:30:33 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:44189 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755064Ab1ATVab (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 16:30:31 -0500
+Date: Thu, 20 Jan 2011 16:30:27 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+X-X-Sender: nico@xanadu.home
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Ben Dooks <ben-linux@fluff.org>, Paul Mundt <lethal@linux-sh.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Uwe Kleine-K??nig <u.kleine-koenig@pengutronix.de>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Locking in the clk API
+In-Reply-To: <20110120185617.GI6335@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.00.1101201623480.8580@xanadu.home>
+References: <201101111016.42819.jeremy.kerr@canonical.com> <20110111031552.GJ3760@linux-sh.org> <4D3862DB.5000708@fluff.org> <20110120185617.GI6335@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1101201233001.20633@router.home>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 12:49:15PM -0600, Christoph Lameter wrote:
-> On Thu, 20 Jan 2011, Andrea Arcangeli wrote:
-> 
-> > Hello,
-> >
-> > On Thu, Jan 20, 2011 at 11:30:35AM -0600, Christoph Lameter wrote:
-> > > On Fri, 21 Jan 2011, Minchan Kim wrote:
-> > >
-> > > > diff --git a/mm/migrate.c b/mm/migrate.c
-> > > > index 46fe8cc..7d34237 100644
-> > > > --- a/mm/migrate.c
-> > > > +++ b/mm/migrate.c
-> > > > @@ -772,6 +772,7 @@ uncharge:
-> > > >  unlock:
-> > > >  	unlock_page(page);
-> > > >
-> > > > +move_newpage:
-> > > >  	if (rc != -EAGAIN) {
-> > > >   		/*
-> > > >   		 * A page that has been migrated has all references
-> > > > @@ -785,8 +786,6 @@ unlock:
-> > > >  		putback_lru_page(page);
-> > > >  	}
-> > > >
-> > > > -move_newpage:
-> > > > -
-> > > >  	/*
-> > > >  	 * Move the new page to the LRU. If migration was not successful
-> > > >  	 * then this will free the page.
-> > > >
-> > >
-> > > What does this do? Not covered by the description.
-> >
-> > It makes a difference for the two goto move_newpage, when rc =
-> > 0. Otherwise the function will return 0, despite
-> > putback_lru_page(page) wasn't called (and the caller of migrate_pages
-> > won't call putback_lru_pages if migrate_pages returned 0).
-> 
-> Think about the difference:
-> 
-> Moving the move_newpage will now cause another removal and freeing of the
-> page if rc != -EAGAIN.
+On Thu, 20 Jan 2011, Russell King - ARM Linux wrote:
 
-The only ones doing "goto move_newpage" after the first two memleaks
-that are fixed by this patch are always run with rc = -EAGAIN. So this
-makes a difference only for the first two which were leaking memory before.
+> On Thu, Jan 20, 2011 at 04:29:15PM +0000, Ben Dooks wrote:
+> > I really don't like the fact that people are doing these things in
+> > atomic contexts, and I think we should apply some pressure to move
+> > the atomic caller cases to use systems where they can sleep such as
+> > using threaded-irq handlers (they work very nicely)
+> 
+> How do you ensure that printk is always called from a non-atomic
+> context?
 
-> The first goto move_newpage (because page count is 1) will now mean that
-> the page is freed twice. One because of the rc != EAGAIN branch and then
-> another time by the following putback_lru_page().
+Is this a good example?  I don't think that power sensitive systems such 
+as a cellphone should keep printk() enabled in the final product.  The 
+output from printk() over a serial port is a debugging convenience, and 
+trying to aggressively turn on/off the serial clock around each call to 
+printk() is a bit silly.  Better simply turn the serial clock on 
+whenever its console facility is opened, and turn it off when the 
+console is closed, which should be good enough in that context.
 
-Which following putback_lru_page()?  You mean
-putback_lru_page(newpage)? That is for the newly allocated page
-(allocated at the very top, so always needed), it's not relevant to
-the page_count(page) = 1. The page_count 1 is hold by the caller, so
-it's leaking memory right now (for everything but compaction).
+
+Nicolas
