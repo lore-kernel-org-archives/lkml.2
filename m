@@ -1,91 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244Ab1ATV2d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 16:28:33 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:35083 "EHLO ogre.sisk.pl"
+	id S1755278Ab1ATV2q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 16:28:46 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57034 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754887Ab1ATV2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 16:28:32 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [GIT] Networking
-Date: Thu, 20 Jan 2011 22:28:00 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc1+; KDE/4.4.4; x86_64; ; )
-Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-References: <20110119.180418.216749267.davem@davemloft.net> <AANLkTin32jUnBtHF-EAkSMnFQM6cTbn-G3NZQJ3xjTWU@mail.gmail.com>
-In-Reply-To: <AANLkTin32jUnBtHF-EAkSMnFQM6cTbn-G3NZQJ3xjTWU@mail.gmail.com>
+	id S1755112Ab1ATV2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 16:28:43 -0500
+Message-ID: <4D38A836.5040003@zytor.com>
+Date: Thu, 20 Jan 2011 13:25:10 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: matthieu castet <castet.matthieu@free.fr>
+CC: Lin Ming <ming.m.lin@intel.com>, Oliver Neukum <oneukum@suse.de>,
+        rjw@sisk.pl, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        Michal Marek <mmarek@suse.cz>, Yinghai Lu <yinghai@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Borislav Petkov <bp@alien8.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Siarhei Liakh <sliakh.lkml@gmail.com>,
+        Xuxian Jiang <jiang@cs.ncsu.edu>, Dave Airlie <airlied@redhat.com>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] S3 resume on SandyBridge doesn't work with NX protection
+ (5bd5a45)
+References: <20110119173710.GA1331@suse.de> <20110119230602.6dd34fa3@mat-laptop> <20110120134734.GA7230@suse.de> <1295535954.4d384f524c8f0@imp.free.fr> <20110120155909.GA21782@suse.de> <4D38A697.3040308@free.fr>
+In-Reply-To: <4D38A697.3040308@free.fr>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101202228.00400.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 20, 2011, Linus Torvalds wrote:
-> On Wed, Jan 19, 2011 at 6:04 PM, David Miller <davem@davemloft.net> wrote:
-> >
-> > 1) Revert a netlink flag sanity check that is causing regressions in
-> >   existing applications.
-> ...
-> 
-> This is a long-shot, but I thought I'd ask before I start trying to
-> bisect the fourth independent suspend/resume related issue in this
-> merge window..
-> 
-> When I suspend/resume while logged in by closing the lid on my laptop
-> on FC14, it causes the gnome-screensaver-dialog to start up. So far so
-> fine, that's what I want, and it all works fin in 2.6.37.
-> 
-> But in current -git (and in -rc8, so it's not changed by your latest
-> pull request), gnome-screensaver-dialog gets stuck after I type in my
-> password, making the box basically useless.
-> 
-> So I straced it over the network, and if I attach _when_ it is already
-> stuck, it immediately becomes unstuck.  But if I attach to it before
-> typing my password, I can see the hang in strace, and it looks like
-> this:
-> 
->   ...
->   read(3, 0x9806500, 4096)                = -1 EAGAIN (Resource
-> temporarily unavailable)
->   poll([{fd=4, events=POLLIN}, {fd=3, events=POLLIN}, {fd=12,
-> events=POLLIN|POLLPRI}, {fd=14, events=POLLIN|POLLPRI}, {fd=9,
-> events=POLLIN|POLLPRI}, {fd=10, events=POLLIN|POLLPRI}, {fd=15,
-> events=POLLIN}, {fd=16, events=POLLIN}, {fd=17, events=0}, {fd=19,
-> events=POLLIN}], 10, -1) = ? ERESTART_RESTARTBLOCK (To be restarted)
->   restart_syscall(
-> 
-> and that's it - it's now hung. So why did it work when I straced it
-> while hung? And why is it doing that ERESTART_RESTARTBLOCK in the
-> first place, I'm not seeing any signals there?
-> 
-> So I tried sending it a useless signal, which will re-animate the
-> strace, and now I get:
-> 
->   restart_syscall(<... resuming interrupted call ...>) = 1
->   --- SIGWINCH (Window changed) @ 0 (0) ---
->   poll([{fd=3, events=POLLIN|POLLOUT}], 1, -1) = 1 ([{fd=3, revents=POLLOUT}])
-> 
-> Whee. That signal got it started again, and the poll finished immediately.
-> 
-> And how/why did the input to the poll apparently change? That looks
-> suspicious too. Might be some odd strace artifact, but whatever.
-> 
-> So I'm contacting you because that fd=3 is a socket (I didn't check
-> details), and because anything I find in the git logs that discusses
-> "poll" seems to be network-related. So I'm wondering it this rings any
-> bells, because bisecting this is going to be painful as hell (since I
-> have to carefully work around all the _other_ problems I've bisected
-> on that machine while doing so).
+On 01/20/2011 01:18 PM, matthieu castet wrote:
+> PS :
+> x86 trampoline is a mess. There are many (wakeup, smpboot) and differ between 32 and 64 bit.
+> H. Peter Anvin, aren't you rewriting them ?
 
-This is a long shot too, but perhaps it's related to
+Yes, working on it, starting with the framework used to install them.
 
-8cfe400 Freezer: Fix a race during freezing of TASK_STOPPED tasks
+They can't all be unified; they are used for different purposes and have
+different requirements (for one thing, 32 vs 64 bits require different
+trampoline code), but the install framework patchset is almost done, and
+the recent change of keeping the 1:1 pagetable set around is also a
+dramatic cleanup.
 
-(adding Tejun to the CC just in case).
+	-hpa
 
-Rafael
