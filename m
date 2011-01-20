@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330Ab1ATQwt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 11:52:49 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:62558 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544Ab1ATQws (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 11:52:48 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=chl3Z4zJB8kA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=umSfIBqF0P9tJU2zMzoA:9 a=Xa5BjAj1KDbjCaywCQdSKTFSZDoA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [BUG] khugepaged crashes on x86_32
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <1295542013.12215.2755.camel@gandalf.stny.rr.com>
-References: <1295542013.12215.2755.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 20 Jan 2011 11:52:45 -0500
-Message-ID: <1295542365.12215.2762.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752481Ab1ATQxY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 11:53:24 -0500
+Received: from dsl78-143-211-26.in-addr.fast.co.uk ([78.143.211.26]:50016 "EHLO
+	ben-laptop" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752039Ab1ATQxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 11:53:23 -0500
+Message-ID: <4D38687A.6040307@fluff.org>
+Date: Thu, 20 Jan 2011 16:53:14 +0000
+From: Ben Dooks <ben-linux@fluff.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Paul Mundt <lethal@linux-sh.org>
+CC: Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-sh@vger.kernel.org, Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Locking in the clk API
+References: <201101111016.42819.jeremy.kerr@canonical.com>	<201101111744.59712.jeremy.kerr@canonical.com>	<20110111101314.GA774@linux-sh.org>	<201101111830.18597.jeremy.kerr@canonical.com> <20110111121816.GB774@linux-sh.org>
+In-Reply-To: <20110111121816.GB774@linux-sh.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-20 at 11:46 -0500, Steven Rostedt wrote:
+On 11/01/11 12:18, Paul Mundt wrote:
+> On Tue, Jan 11, 2011 at 06:30:18PM +0800, Jeremy Kerr wrote:
+>> Hi Paul,
+>>
+>>> No, the sleeping clock case is and always will be a corner case, and I
+>>> have no interest in pretending otherwise. On SH we have hundreds of
+>>> clocks that are all usable in the atomic context and perhaps less than a
+>>> dozen that aren't (and even in those cases much of the PLL negotiation is
+>>> handled in hardware so there's never any visibility for the lock-down
+>>> from the software side, other architectures also have similar behaviour).
+>>
+>> I'm not too worried about the corner-cases on the *implementation* side, more 
+>> the corner-cases on the API side: are we seeing more users of the API that 
+>> require an atomic clock, or more that don't care?
+>>
+> Again, you are approaching it from the angle that an atomic clock is a
+> special requirement rather than the default behaviour. Sleeping for
+> lookup, addition, and deletion are all quite acceptable, but
+> enable/disable pairs have always been intended to be usable from atomic
+> context. Anyone that doesn't count on that fact is either dealing with
+> special case clocks (PLLs, root clocks, etc.) or simply hasn't bothered
+> implementing any sort of fine grained runtime power management for their
+> platform.
 
-> I hit this bug with both v2.6.38-rc1 and with
-> 
-> HEAD == 12fcdba1b7ae8b25696433f420b775aeb556d89b
-
-Note, this is not fully reproducible at every boot. To test manually, I
-had to boot up a couple of times to trigger it. But it never took more
-than 5 boots to do so. I test by just booting up and shutting down, it
-may trigger with some use as well, but I did not try that.
-
--- Steve
-
-
+No, the API has always been defined to ensure clk_enable() returns once
+a clock is running and usable, so if the case where there are PLLs in
+the way is inconvenient to you, then sorry but they exist already.
