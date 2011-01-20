@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510Ab1ATML2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 07:11:28 -0500
-Received: from ra.se.axis.com ([195.60.68.13]:39337 "EHLO ra.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755352Ab1ATMLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 07:11:14 -0500
-Date: Thu, 20 Jan 2011 13:11:11 +0100
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, Mikael Starvik <starvik@axis.com>,
-        linux-cris-kernel <linux-cris-kernel@axis.com>
-Subject: Re: [PATCH] cris: use asm-generic/cacheflush.h
-Message-ID: <20110120121111.GC9874@axis.com>
-References: <1295523136-4277-1-git-send-email-akinobu.mita@gmail.com> <1295523136-4277-4-git-send-email-akinobu.mita@gmail.com>
+	id S1755477Ab1ATMLH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 07:11:07 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50853 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755352Ab1ATMLF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 07:11:05 -0500
+Message-ID: <4D3825FF.4030905@ru.mvista.com>
+Date: Thu, 20 Jan 2011 15:09:35 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295523136-4277-4-git-send-email-akinobu.mita@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Yang Ruirui <ruirui.r.yang@tieto.com>
+CC: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Hao Wu <hao.wu@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Alek Du <alek.du@intel.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] usb langwell otg: use notifier chain of struct otg_transceiver
+References: <20110120070513.GA24956@darkstar>
+In-Reply-To: <20110120070513.GA24956@darkstar>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 12:32:16PM +0100, Akinobu Mita wrote:
-> The implementation of the cache flushing interfaces on the cris
-> is identical with the default implementation in asm-generic.
-> 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: Mikael Starvik <starvik@axis.com>
+Hello.
 
-Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+On 20-01-2011 10:05, Yang Ruirui wrote:
 
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+> Use notifier chain in otg_transceiver instead of own notifier chain.
+
+> This patch depends on another patch which change otg_transceiver
+> notifier chain to atomic one, please see:
+> https://lkml.org/lkml/2011/1/19/72
+
+    Such comments should generally follow the --- tearline.
+
+> Signed-off-by: Yang Ruirui<ruirui.r.yang@tieto.com>
+> Reviewed-by: Felipe Balbi<balbi@ti.com>
+> ---
+
+WBR, Sergei
