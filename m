@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab1ASX6W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 18:58:22 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47680 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317Ab1ASX6V convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 18:58:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Zt+U7ouvGFlWLIqNhrP7bPj2ylRB7p8SM1YoGLbIog/a0w+w4Xe/hzk758mTnzLBe9
-         8ntzvoaGSEAz6RARue7EaV7yWqLgY8+EnrpnABgCNbSNc6amKmOR8l5K1irHaSaLD5IE
-         qUcSwZ9a0VdrauyC/R33JegIVbJjFjkSfwKJ8=
+	id S1754244Ab1ATACN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 19:02:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14144 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753412Ab1ATACL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 19:02:11 -0500
+Date: Thu, 20 Jan 2011 01:01:47 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: werner <w.landgraf@ru.ru>, Borislav Petkov <bp@amd64.org>,
+        Ilya Dryomov <idryomov@gmail.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: 2.6.38-rc1 problems with khugepaged
+Message-ID: <20110120000147.GR9506@random.random>
+References: <web-442414153@zbackend1.aha.ru>
+ <20110119155954.GA2272@kryptos.osrc.amd.com>
+ <20110119214523.GF2232@cmpxchg.org>
 MIME-Version: 1.0
-In-Reply-To: <201101181719.05608.maciej.rutecki@gmail.com>
-References: <a7a9bdaa5936630925fb7ffd1a1795b1@mail.gmail.com>
-	<201101181719.05608.maciej.rutecki@gmail.com>
-Date: Thu, 20 Jan 2011 10:58:19 +1100
-Message-ID: <AANLkTi=o_FhhzpAiEdQymXUV-SAek-uy86Q-cB1-POG9@mail.gmail.com>
-Subject: Re: [REPORT] BUG: spinlock recursion on CPU#0, init/1
-From: Nick Piggin <npiggin@gmail.com>
-To: maciej.rutecki@gmail.com
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110119214523.GF2232@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yeah this should be fixed as of about a week ago, sorry for
-not replying earlier.
+On Wed, Jan 19, 2011 at 10:45:23PM +0100, Johannes Weiner wrote:
+> Hi,
+> 
+> On Wed, Jan 19, 2011 at 04:59:54PM +0100, Borislav Petkov wrote:
+> > Adding some more parties to CC.
+> > 
+> > On Wed, Jan 19, 2011 at 09:45:25AM -0400, werner wrote:
+> > > **  Help   Help Help ***
+> > > 
+> > > My computer crashs on booting  ...   :( :(
+> 
+> That sucks!
+> 
+> I cross-compiled for 32-bit and was able to match up the disassembly
+> against the code line from your oops report.  Apparently the pte was
+> an invalid pointer, and it makes perfect sense: we unmap the highpte
+> _before_ we access the pointer again for __collapse_huge_page_copy().
+> 
+> Can you test with this fix applied?  It is only compile-tested, I too
+> have no 32-bit installations anymore.
 
-Thanks for reporting and please let us know if you have any
-further problems.
+Thanks Johannes, I already sent the same fix a few minutes ago, it is
+also confirmed to work from Ilya in Message-ID:
+<20110119224950.GA3429@kwango.lan.net>
 
-On Wed, Jan 19, 2011 at 3:19 AM, Maciej Rutecki
-<maciej.rutecki@gmail.com> wrote:
-> I created a Bugzilla entry at
-> https://bugzilla.kernel.org/show_bug.cgi?id=27022
-> for your bug report, please add your address to the CC list in there, thanks!
->
-> On poniedzia³ek, 10 stycznia 2011 o 16:21:59 Santosh Shilimkar wrote:
->> On latest mainline commit I seeing a regression when rootfs
->> is mounted on NFS. Not sure if it's already known regression.
->>
->> Anybody is aware of this one ?
->>
->> --------------------------------------
->> Uncompressing Linux... done, booting the kernel.
->> Linux version 2.6.37-03766-g0390214 (a0393909@a0393909-desktop) (gcc
->> version 4.4.1 (Sourcery G++ Lite 2010q1-202) ) #44 SMP Mon Jan 10 20:41:27
->> IST 2011
->>
->> [....]
->>
->> VFS: Mounted root (nfs filesystem) on device 0:13.
->> Freeing init memory: 296K
->> BUG: spinlock recursion on CPU#0, init/1
->>  lock: ef5a1e0c, .magic: dead4ead, .owner: init/1, .owner_cpu: 0
->> [<c0063290>] (unwind_backtrace+0x0/0xe4) from [<c024ce90>]
->> (do_raw_spin_lock+0x48/0x158)
->> [<c024ce90>] (do_raw_spin_lock+0x48/0x158) from [<c012f4e0>]
->> (nameidata_dentry_drop_rcu+0x84/0x17c)
->> [<c012f4e0>] (nameidata_dentry_drop_rcu+0x84/0x17c) from [<c012f608>]
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index 1be1034..e187454 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -1839,9 +1839,9 @@ static void collapse_huge_page(struct mm_struct *mm,
+>  	spin_lock(ptl);
+>  	isolated = __collapse_huge_page_isolate(vma, address, pte);
+>  	spin_unlock(ptl);
+> -	pte_unmap(pte);
+>  
+>  	if (unlikely(!isolated)) {
+> +		pte_unmap(pte);
+>  		spin_lock(&mm->page_table_lock);
+>  		BUG_ON(!pmd_none(*pmd));
+>  		set_pmd_at(mm, address, pmd, _pmd);
+> @@ -1858,6 +1858,7 @@ static void collapse_huge_page(struct mm_struct *mm,
+>  	anon_vma_unlock(vma->anon_vma);
+>  
+>  	__collapse_huge_page_copy(pte, new_page, vma, address, ptl);
+> +	pte_unmap(pte);
+>  	__SetPageUptodate(new_page);
+>  	pgtable = pmd_pgtable(_pmd);
+>  	VM_BUG_ON(page_count(pgtable) != 1);
+
+Good thing your fix is identical to mine ;).
