@@ -1,93 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab1ATEOP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 23:14:15 -0500
-Received: from void.printf.net ([89.145.121.20]:35065 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753585Ab1ATEON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 23:14:13 -0500
-Date: Thu, 20 Jan 2011 04:14:12 +0000
-From: Chris Ball <cjb@laptop.org>
-To: Pierre Tardy <tardyp@gmail.com>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pierre Tardy <pierre.tardy@intel.com>
-Subject: Re: [PATCH 3/3] mmc: remove anti clock gating quirk for wl1271
-Message-ID: <20110120041412.GA5274@void.printf.net>
-References: <cover.1294588491.git.tardyp@gmail.com> <cb471b35d320b96a9d143103fd9e9b76f8998470.1294588491.git.tardyp@gmail.com>
+	id S1755129Ab1ATESQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 23:18:16 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52014 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754458Ab1ATESP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 23:18:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Ma2V+WvYjledbrIZMablVZ0pIZ3neakIjUG/2ITUHqqyRDD1wJLszgWKaomTkAbU8r
+         7lhMAhBweVis86kIxiC0eyxOtEywpDBbYMWuks+RXQUNGemQCbdob4Ilp+x/4UwtNRzn
+         hYThHbAupH0C5FSBh9Q1hd8NPJxyOpqq1iJf0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <cb471b35d320b96a9d143103fd9e9b76f8998470.1294588491.git.tardyp@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1295443822.28776.23.camel@laptop>
+References: <1295275365.12840.13.camel@kolo>
+	<1295280032.30950.128.camel@laptop>
+	<1295339012.11678.35.camel@kolo>
+	<AANLkTikXf-OMEBx-UZktxooOs+YqUkSE9doyEZopjzOx@mail.gmail.com>
+	<1295357746.30950.681.camel@laptop>
+	<AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
+	<1295430276.30950.1414.camel@laptop>
+	<1295433498.30950.1482.camel@laptop>
+	<1295436632.30950.1542.camel@laptop>
+	<1295441881.11678.41.camel@kolo>
+	<1295442799.11678.43.camel@kolo>
+	<1295443822.28776.23.camel@laptop>
+Date: Thu, 20 Jan 2011 12:18:14 +0800
+Message-ID: <AANLkTinQ4sczEwZYCk1_tLmeJyjyXj4TVoSZbjg+KiRq@mail.gmail.com>
+Subject: Re: Bug in scheduler when using rt_mutex
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: samu.p.onkalo@nokia.com, mingo@elte.hu,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        tglx <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pierre,
-
-On Sun, Jan 09, 2011 at 05:26:20PM +0100, Pierre Tardy wrote:
-> From: Pierre Tardy <pierre.tardy@intel.com>
-> 
-> Signed-off-by: Pierre Tardy <pierre.tardy@intel.com>
-> ---
->  drivers/mmc/core/quirks.c |   18 ++++++++++++++++++
->  1 files changed, 18 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/mmc/core/quirks.c b/drivers/mmc/core/quirks.c
-> index fe467c8..506e4fc 100644
-> --- a/drivers/mmc/core/quirks.c
-> +++ b/drivers/mmc/core/quirks.c
-> @@ -33,6 +33,14 @@ static void add_quirk(struct mmc_card *card, int data)
->  }
->  
->  /*
-> + * This hook just removes a quirk unconditionnally
-> + */
-> +static void remove_quirk_hook(struct mmc_card *card, int data)
+On Wed, Jan 19, 2011 at 9:30 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> +static void switched_from_fair(struct rq *rq, struct task_struct *p)
 > +{
-> +	card->quirks &= ~data;
-> +}
-
-This adds a defined-but-not-used warning.  The MMC tree doesn't
-currently generate any warnings, so it would be good to avoid adding new
-ones, though I understand why it might make sense in this case.
-
-drivers/mmc/core/quirks.c:30:13: warning: ‘add_quirk’ defined but not used
-drivers/mmc/core/quirks.c:38:13: warning: ‘remove_quirk_hook’ defined but not used
-
+> +       struct sched_entity *se = &p->se;
+> +       struct cfs_rq *cfs_rq = cfs_rq_of(se);
 > +
-> +/*
->   * This hook just adds a quirk for all sdio devices
->   */
->  static void add_quirk_for_sdio_devices(struct mmc_card *card, int data)
-> @@ -41,9 +49,19 @@ static void add_quirk_for_sdio_devices(struct mmc_card *card, int data)
->  		card->quirks |= data;
->  }
->  
-> +#ifndef SDIO_VENDOR_ID_TI
-> +#define SDIO_VENDOR_ID_TI		0x0097
-> +#endif
-> +
-> +#ifndef SDIO_DEVICE_ID_TI_WL1271
-> +#define SDIO_DEVICE_ID_TI_WL1271	0x4076
-> +#endif
-> +
->  static const struct mmc_fixup mmc_fixup_methods[] = {
->  	{ SDIO_ANY_ID, SDIO_ANY_ID,
->  		add_quirk_for_sdio_devices, MMC_QUIRK_BROKEN_CLK_GATING }
-> +	{ SDIO_VENDOR_ID_TI, SDIO_DEVICE_ID_TI_WL1271,
-> +		remove_quirk_hook, MMC_QUIRK_BROKEN_CLK_GATING },
->  	{ 0 }
->  };
->  
+> +       /*
+> +        * Ensure the task's vruntime is normalized, so that when its
+> +        * switched back to the fair class the enqueue_entity(.flags=0) will
+> +        * do the right thing.
+> +        *
+> +        * If it was on_rq, then the dequeue_entity(.flags=0) will already
+> +        * have normalized the vruntime, if it was !on_rq, then only when
+> +        * the task is sleeping will it still have non-normalized vruntime.
+> +        */
+> +       if (!se->on_rq && p->state != TASK_RUNNING)
+> +               se->vruntime -= cfs_rq->min_vruntime;
 
-This doesn't compile, missing a comma.  Was it tested?
+Here it's possible that se->vruntime is little than cfs_rq->min_vruntime.
 
-drivers/mmc/core/quirks.c:63:2: error: expected ‘}’ before ‘{’ token
-
-(Otherwise, looks good.)
+Thanks,
+Yong
 
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Only stand for myself
