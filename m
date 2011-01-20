@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755747Ab1ATXOi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 18:14:38 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40436 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753838Ab1ATXOh (ORCPT
+	id S1755871Ab1ATXYM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 18:24:12 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53208 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754715Ab1ATXYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 18:14:37 -0500
-Date: Thu, 20 Jan 2011 15:13:49 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ali Gholami Rudi <aliqrudi@gmail.com>
-Cc: Matthew Garrett <mjg@redhat.com>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-acpi@vger.kernel.org, rpurdie@rpsys.net
-Subject: Re: [Intel-gfx] [PATCH 2/5] i915: Add native backlight control
-Message-Id: <20110120151349.49cf3ebb.akpm@linux-foundation.org>
-In-Reply-To: <20112101004346@lilem.mirepesht>
-References: <1295033065-13450-1-git-send-email-mjg@redhat.com>
-	<1295033065-13450-2-git-send-email-mjg@redhat.com>
-	<20112101000015@lilem.mirepesht>
-	<20112101004346@lilem.mirepesht>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Jan 2011 18:24:11 -0500
+Date: Thu, 20 Jan 2011 23:24:09 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kim Kyuwon <q1.kim@samsung.com>, Kim Kyuwon <chammoru@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] leds: Convert bd2802 driver to dev_pm_ops
+Message-ID: <20110120232409.GA23862@opensource.wolfsonmicro.com>
+References: <1295559395-28942-1-git-send-email-broonie@opensource.wolfsonmicro.com> <20110120151201.8dca7a7e.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110120151201.8dca7a7e.akpm@linux-foundation.org>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Jan 2011 00:43:46 +0330
-Ali Gholami Rudi <aliqrudi@gmail.com> wrote:
+On Thu, Jan 20, 2011 at 03:12:01PM -0800, Andrew Morton wrote:
 
-> Ali Gholami Rudi <aliqrudi@gmail.com> wrote:
-> > I tried to apply this patch but I get:
-> > 
-> > 	drivers/gpu/drm/i915/intel_panel.c: In function 'intel_panel_setup_backlight':
-> > 	drivers/gpu/drm/i915/intel_panel.c:319: error: 'struct backlight_properties' has no member named 'type'
-> > 	drivers/gpu/drm/i915/intel_panel.c:319: error: 'BACKLIGHT_RAW' undeclared (first use in this function)
-> > 	drivers/gpu/drm/i915/intel_panel.c:319: error: (Each undeclared identifier is reported only once
-> > 	drivers/gpu/drm/i915/intel_panel.c:319: error: for each function it appears in.)
-> 
-> After applying patch 1/5, the patch applied cleanly.
-> Now I can change the brightness using
-> /sys/class/backlight/intel_backlight/brightness.
-> So it does fix my issue.
-> 
+> CONFIG_PM=n:
 
-So we have a patch ordering issue and the
-radeon-expose-backlight-class-device-for-legacy-lvds-encoder.patch
-build error.
+To be honest I've been forming the opinion that this is just cruft these
+days - it's hard to see a modern Linux system where you're sufficiently
+space constrained to want to turn it off without also being sufficiently
+power constrained to want to turn it on and it's hassle to maintain it.
+That said...
 
-Matthew, I'll drop 'em all for now.
+> It would be nice to fix all this via automagic within the
+> SIMPLE_DEV_PM_OPS() implementation but I can't see a way of doing that :(
+
+...the problem here is that the macro is doing roughly the right magic
+but the original driver wasn't ifdefing the suspend and resume stuff at
+all.  If the were only defining the suspend and resume functions under
+CONFIG_PM_SLEEP it should build cleanly.  Since the original driver
+didn't have the ifdefs I didn't add or update them.
+
+This means the pm_ops can be unconditionally defined which seems to be
+the preferred idiom for this stuff.  If SIMPLE_DEV_PM_OPS() didn't do
+the stuff it's doing then the warnings would vanish in the same way they
+did originally, by virtue of the functions being unconditionally
+referenced from the vtable.
