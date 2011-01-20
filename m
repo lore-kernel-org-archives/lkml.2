@@ -1,68 +1,412 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727Ab1ATAdK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 19:33:10 -0500
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:49645 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752751Ab1ATAdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 19:33:08 -0500
-Message-ID: <4D3782BB.9080705@fusionio.com>
-Date: Wed, 19 Jan 2011 17:32:59 -0700
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-CC: Philipp Reisner <philipp.reisner@linbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lars Ellenberg <lars.ellenberg@linbit.com>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] loop: queue_lock NULL pointer derefence in blk_throtl_exit
-References: <20110114192532.GA4274@swordfish>
-In-Reply-To: <20110114192532.GA4274@swordfish>
+	id S1754744Ab1ATAiQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 19:38:16 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44727 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753873Ab1ATAiP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 19:38:15 -0500
+Date: Wed, 19 Jan 2011 16:37:58 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: linux-kernel@vger.kernel.org, device-drivers-devel@blackfin.uclinux.org
+Subject: Re: [PATCH] sigma-firmware: loader for Analog Devices' SigmaStudio
+Message-Id: <20110119163758.bb43d4ff.akpm@linux-foundation.org>
+In-Reply-To: <1294810891-23348-1-git-send-email-vapier@gentoo.org>
+References: <1294810891-23348-1-git-send-email-vapier@gentoo.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-01-14 12:25, Sergey Senozhatsky wrote:
-> Performing 
-> $ sudo mount -o loop -o umask=0 /dev/sdb1 /mnt/
-> mount: wrong fs type, bad option, bad superblock on /dev/loop0,
->        missing codepage or helper program, or other error
->        In some cases useful info is found in syslog - try
->        dmesg | tail  or so
-> 
-> $ sudo modprobe -r loop
-> 
-> results in oops:
-> 
->  BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
->  IP: [<ffffffff812479d4>] do_raw_spin_lock+0x14/0x122
->  Process modprobe (pid: 6189, threadinfo ffff88009a898000, task ffff880154a88000)
->  Call Trace:
->   [<ffffffff81486788>] _raw_spin_lock_irq+0x4a/0x51
->   [<ffffffff8123404b>] ? blk_throtl_exit+0x3b/0xa0
->   [<ffffffff8105b120>] ? cancel_delayed_work_sync+0xd/0xf
->   [<ffffffff8123404b>] blk_throtl_exit+0x3b/0xa0
->   [<ffffffff81229bc8>] blk_release_queue+0x21/0x65
->   [<ffffffff8123bb06>] kobject_release+0x51/0x66
->   [<ffffffff8123bab5>] ? kobject_release+0x0/0x66
->   [<ffffffff8123ce1e>] kref_put+0x43/0x4d
->   [<ffffffff8123ba27>] kobject_put+0x47/0x4b
->   [<ffffffff8122717c>] blk_cleanup_queue+0x56/0x5b
->   [<ffffffffa01c3824>] loop_exit+0x68/0x844 [loop]
->   [<ffffffff8107cccc>] sys_delete_module+0x1e8/0x25b
->   [<ffffffff814864c9>] ? trace_hardirqs_on_thunk+0x3a/0x3f
->   [<ffffffff81002112>] system_call_fastpath+0x16/0x1b
-> 
-> 
-> because of an attempt to acquire NULL queue_lock.
-> I added the same lines as in blk_queue_make_request - 
-> `fall back to embedded per-queue lock'.
+On Wed, 12 Jan 2011 00:41:31 -0500
+Mike Frysinger <vapier@gentoo.org> wrote:
 
-Queued up for 2.6.38, thanks.
+> Analog Devices' SigmaStudio can produce firmware blobs for devices with
+> these DSPs embedded (like some audio codecs).  Allow these device drivers
+> to easily parse and load them.
+> 
+> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+> ---
+>  drivers/firmware/Kconfig  |   12 +++++
+>  drivers/firmware/Makefile |    1 +
+>  drivers/firmware/sigma.c  |  110 +++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/sigma.h     |   60 ++++++++++++++++++++++++
 
--- 
-Jens Axboe
+The newly-added code has no callsites.  What are we to make of this?
+
+> diff --git a/drivers/firmware/Kconfig b/drivers/firmware/Kconfig
+> index e8b6a13..8f4f7b2 100644
+> --- a/drivers/firmware/Kconfig
+> +++ b/drivers/firmware/Kconfig
+> @@ -134,4 +134,16 @@ config ISCSI_IBFT
+>  	  detect iSCSI boot parameters dynamically during system boot, say Y.
+>  	  Otherwise, say N.
+>  
+> +config SIGMA
+> +	tristate "SigmaStudio firmware loader"
+> +	depends on I2C
+
+The dependence on just I2C looks odd.  What's the rationale here?
+
+> +	select CRC32
+> +	default n
+> +	help
+> +	  Enable helper functions for working with Analog Devices SigmaDSP
+> +	  parts and binary firmwares produced by Analog Devices SigmaStudio.
+> +
+> +	  If unsure, say N here.  Drivers that need these helpers will select
+> +	  this option automatically.
+> +
+>  endmenu
+> diff --git a/drivers/firmware/Makefile b/drivers/firmware/Makefile
+> index 1c3c173..ede9722 100644
+> --- a/drivers/firmware/Makefile
+> +++ b/drivers/firmware/Makefile
+> @@ -11,3 +11,4 @@ obj-$(CONFIG_DMIID)		+= dmi-id.o
+>  obj-$(CONFIG_ISCSI_IBFT_FIND)	+= iscsi_ibft_find.o
+>  obj-$(CONFIG_ISCSI_IBFT)	+= iscsi_ibft.o
+>  obj-$(CONFIG_FIRMWARE_MEMMAP)	+= memmap.o
+> +obj-$(CONFIG_SIGMA)		+= sigma.o
+> diff --git a/drivers/firmware/sigma.c b/drivers/firmware/sigma.c
+> new file mode 100644
+> index 0000000..e2945be
+> --- /dev/null
+> +++ b/drivers/firmware/sigma.c
+> @@ -0,0 +1,110 @@
+> +/*
+> + * Load Analog Devices SigmaStudio firmware files
+> + *
+> +__* Copyright 2009 Analog Devices Inc.
+> +__*
+> +__* Licensed under the GPL-2 or later.
+> + */
+
+Code had weird non-ascii chars.
+
+> +
+> +#include <linux/crc32.h>
+> +#include <linux/delay.h>
+> +#include <linux/firmware.h>
+> +#include <linux/kernel.h>
+> +#include <linux/i2c.h>
+> +#include <linux/sigma.h>
+> +
+> +/* Return: 0==OK, <0==error, =1 ==no more actions */
+> +int process_sigma_action(struct i2c_client *client, struct sigma_firmware *ssfw)
+> +{
+> +	struct sigma_action *sa = (void *)(ssfw->fw->data + ssfw->pos);
+> +	size_t len = sigma_action_len(sa);
+> +	int ret = 0;
+> +
+> +	pr_debug("%s: instr:%i addr:%#x len:%zu\n", __func__,
+> +		sa->instr, sa->addr, len);
+> +
+> +	switch (sa->instr) {
+> +		case SIGMA_ACTION_WRITEXBYTES:
+> +		case SIGMA_ACTION_WRITESINGLE:
+> +		case SIGMA_ACTION_WRITESAFELOAD:
+> +			if (ssfw->fw->size < ssfw->pos + len)
+> +				return -EINVAL;
+> +			ret = i2c_master_send(client, (void *)&sa->addr, len);
+> +			if (ret < 0)
+> +				return -EINVAL;
+> +			break;
+> +
+> +		case SIGMA_ACTION_DELAY:
+> +			ret = 0;
+> +			udelay(len);
+> +			len = 0;
+> +			break;
+> +
+> +		case SIGMA_ACTION_END:
+> +			return 1;
+> +
+> +		default:
+> +			return -EINVAL;
+> +	}
+
+Indent in the switch was wrong.  Please use checkpatch.
+
+> +	/* when arrive here ret=0 or sent data */
+> +	ssfw->pos += sigma_action_size(sa, len);
+> +	return ssfw->pos == ssfw->fw->size;
+> +}
+> +
+> +int process_sigma_actions(struct i2c_client *client, struct sigma_firmware *ssfw)
+
+Global scope appears to be unnecessary.
+
+> +{
+> +	pr_debug("%s: processing %p\n", __func__, ssfw);
+> +
+> +	while (1) {
+> +		int ret = process_sigma_action(client, ssfw);
+> +		pr_debug("%s: action returned %i\n", __func__, ret);
+> +		if (ret == 1)
+> +			return 0;
+> +		else if (ret)
+> +			return ret;
+> +	}
+> +}
+> +
+> +int process_sigma_firmware(struct i2c_client *client, const char *name)
+
+Global scope appears to be unnecessary.
+
+> +{
+> +	int ret;
+> +	struct sigma_firmware_header *ssfw_head;
+> +	struct sigma_firmware ssfw;
+> +	const struct firmware *fw;
+> +
+> +	pr_debug("%s: loading firmware %s\n", __func__, name);
+> +
+> +	/* first load the blob */
+> +	ret = request_firmware(&fw, name, &client->dev);
+> +	if (ret) {
+> +		pr_debug("%s: request_firmware() failed with %i\n", __func__, ret);
+> +		return ret;
+> +	}
+> +	ssfw.fw = fw;
+> +
+> +	/* then verify the header */
+> +	if (fw->size < sizeof(*ssfw_head)) {
+> +		ret = -ENODATA;
+> +		goto done;
+> +	}
+> +	ssfw_head = (void *)fw->data;
+> +	if (memcmp(ssfw_head->magic, SIGMA_MAGIC, ARRAY_SIZE(ssfw_head->magic))) {
+> +		ret = -EINVAL;
+> +		goto done;
+> +	}
+> +	pr_debug("%s: crc=%x\n", __func__, crc32(0, fw->data, fw->size));
+
+The code calculates and prints the crc but doesn't actually check it
+against anything.  What's up with that?
+
+> +	ssfw.pos = sizeof(*ssfw_head);
+> +
+> +	/* finally process all of the actions */
+> +	ret = process_sigma_actions(client, &ssfw);
+> +
+> + done:
+> +	release_firmware(fw);
+> +
+> +	pr_debug("%s: loaded %s\n", __func__, name);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL(process_sigma_firmware);
+> diff --git a/include/linux/sigma.h b/include/linux/sigma.h
+> new file mode 100644
+> index 0000000..510765f
+> --- /dev/null
+> +++ b/include/linux/sigma.h
+> @@ -0,0 +1,60 @@
+> +/*
+> + * Load firmware files from Analog Devices SigmaStudio
+> + *
+> +__* Copyright 2009 Analog Devices Inc.
+> +__*
+> +__* Licensed under the GPL-2 or later.
+> + */
+
+More weird non-ascii chars.
+
+> +#ifndef __SIGMA_FIRMWARE_H__
+> +#define __SIGMA_FIRMWARE_H__
+> +
+> +#include <linux/firmware.h>
+> +#include <linux/types.h>
+> +
+> +#define SIGMA_MAGIC "ADISIGM"
+> +
+> +struct sigma_firmware {
+> +	const struct firmware *fw;
+> +	size_t pos;
+> +};
+> +
+> +struct sigma_firmware_header {
+> +	unsigned char magic[7];
+> +	u8 version;
+> +	u32 crc;
+> +};
+> +
+> +enum {
+> +	SIGMA_ACTION_WRITEXBYTES = 0,
+> +	SIGMA_ACTION_WRITESINGLE,
+> +	SIGMA_ACTION_WRITESAFELOAD,
+> +	SIGMA_ACTION_DELAY,
+> +	SIGMA_ACTION_PLLWAIT,
+> +	SIGMA_ACTION_NOOP,
+> +	SIGMA_ACTION_END,
+> +};
+> +
+> +struct sigma_action {
+> +	u8 instr;
+> +	u8 len_hi;
+> +	u16 len;
+> +	u16 addr;
+> +	unsigned char payload[];
+> +};
+> +
+> +static inline u32 sigma_action_len(struct sigma_action *sa)
+> +{
+> +	return (sa->len_hi << 16) | sa->len;
+> +}
+> +
+> +static inline size_t sigma_action_size(struct sigma_action *sa, u32 payload_len)
+> +{
+> +	return sizeof(*sa) + payload_len + (payload_len % 2);
+> +}
+
+Did these two functions need to be in a header?  If they're only ever
+used in sigma.c then they should be located in that file.
+
+> +struct i2c_client;
+
+It's best to put forward declarations of this form right at the top of
+the header file.  Otherwise, we end up with duplicated
+forward-declarations as people add references to `struct i2c_client' at
+earlier sites in this file.  This has happened before.
+
+> +extern int process_sigma_firmware(struct i2c_client *client, const char *name);
+> +
+> +#endif
+
+
+A patch to address some of the above:
+
+--- a/drivers/firmware/sigma.c~sigma-firmware-loader-for-analog-devices-sigmastudio-fix
++++ a/drivers/firmware/sigma.c
+@@ -1,9 +1,9 @@
+ /*
+  * Load Analog Devices SigmaStudio firmware files
+  *
+- * Copyright 2009 Analog Devices Inc.
+- *
+- * Licensed under the GPL-2 or later.
++_* Copyright 2009 Analog Devices Inc.
++_*
++_* Licensed under the GPL-2 or later.
+  */
+ 
+ #include <linux/crc32.h>
+@@ -14,7 +14,8 @@
+ #include <linux/sigma.h>
+ 
+ /* Return: 0==OK, <0==error, =1 ==no more actions */
+-int process_sigma_action(struct i2c_client *client, struct sigma_firmware *ssfw)
++static int process_sigma_action(struct i2c_client *client,
++				struct sigma_firmware *ssfw)
+ {
+ 	struct sigma_action *sa = (void *)(ssfw->fw->data + ssfw->pos);
+ 	size_t len = sigma_action_len(sa);
+@@ -24,27 +25,27 @@ int process_sigma_action(struct i2c_clie
+ 		sa->instr, sa->addr, len);
+ 
+ 	switch (sa->instr) {
+-		case SIGMA_ACTION_WRITEXBYTES:
+-		case SIGMA_ACTION_WRITESINGLE:
+-		case SIGMA_ACTION_WRITESAFELOAD:
+-			if (ssfw->fw->size < ssfw->pos + len)
+-				return -EINVAL;
+-			ret = i2c_master_send(client, (void *)&sa->addr, len);
+-			if (ret < 0)
+-				return -EINVAL;
+-			break;
+-
+-		case SIGMA_ACTION_DELAY:
+-			ret = 0;
+-			udelay(len);
+-			len = 0;
+-			break;
++	case SIGMA_ACTION_WRITEXBYTES:
++	case SIGMA_ACTION_WRITESINGLE:
++	case SIGMA_ACTION_WRITESAFELOAD:
++		if (ssfw->fw->size < ssfw->pos + len)
++			return -EINVAL;
++		ret = i2c_master_send(client, (void *)&sa->addr, len);
++		if (ret < 0)
++			return -EINVAL;
++		break;
+ 
+-		case SIGMA_ACTION_END:
+-			return 1;
++	case SIGMA_ACTION_DELAY:
++		ret = 0;
++		udelay(len);
++		len = 0;
++		break;
+ 
+-		default:
+-			return -EINVAL;
++	case SIGMA_ACTION_END:
++		return 1;
++
++	default:
++		return -EINVAL;
+ 	}
+ 
+ 	/* when arrive here ret=0 or sent data */
+@@ -52,7 +53,8 @@ int process_sigma_action(struct i2c_clie
+ 	return ssfw->pos == ssfw->fw->size;
+ }
+ 
+-int process_sigma_actions(struct i2c_client *client, struct sigma_firmware *ssfw)
++static int process_sigma_actions(struct i2c_client *client,
++				 struct sigma_firmware *ssfw)
+ {
+ 	pr_debug("%s: processing %p\n", __func__, ssfw);
+ 
+@@ -78,7 +80,8 @@ int process_sigma_firmware(struct i2c_cl
+ 	/* first load the blob */
+ 	ret = request_firmware(&fw, name, &client->dev);
+ 	if (ret) {
+-		pr_debug("%s: request_firmware() failed with %i\n", __func__, ret);
++		pr_debug("%s: request_firmware() failed with %i\n",
++			 __func__, ret);
+ 		return ret;
+ 	}
+ 	ssfw.fw = fw;
+diff -puN include/linux/sigma.h~sigma-firmware-loader-for-analog-devices-sigmastudio-fix include/linux/sigma.h
+--- a/include/linux/sigma.h~sigma-firmware-loader-for-analog-devices-sigmastudio-fix
++++ a/include/linux/sigma.h
+@@ -1,9 +1,9 @@
+ /*
+  * Load firmware files from Analog Devices SigmaStudio
+  *
+- * Copyright 2009 Analog Devices Inc.
+- *
+- * Licensed under the GPL-2 or later.
++_* Copyright 2009 Analog Devices Inc.
++_*
++_* Licensed under the GPL-2 or later.
+  */
+ 
+ #ifndef __SIGMA_FIRMWARE_H__
+@@ -12,6 +12,8 @@
+ #include <linux/firmware.h>
+ #include <linux/types.h>
+ 
++struct i2c_client;
++
+ #define SIGMA_MAGIC "ADISIGM"
+ 
+ struct sigma_firmware {
+@@ -53,8 +55,6 @@ static inline size_t sigma_action_size(s
+ 	return sizeof(*sa) + payload_len + (payload_len % 2);
+ }
+ 
+-struct i2c_client;
+-
+ extern int process_sigma_firmware(struct i2c_client *client, const char *name);
+ 
+ #endif
+_
 
