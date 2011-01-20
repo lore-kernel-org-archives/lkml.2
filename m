@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375Ab1ATIhM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 03:37:12 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:49091 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753118Ab1ATIhK (ORCPT
+	id S1754607Ab1ATIqX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 03:46:23 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:57086 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753118Ab1ATIqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 03:37:10 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19OeDYXowBOlEFZHgsJOR2t1XIeWYXWRNHmyNeXI5
-	b0kTxDJxFrR9KT
-Subject: Re: Bug in scheduler when using rt_mutex
-From: Mike Galbraith <efault@gmx.de>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, samu.p.onkalo@nokia.com,
-        mingo@elte.hu,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        tglx <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <AANLkTi=7YyA-e8HAq+C_prK2EaZKcaTfzDJvmO3e3W=B@mail.gmail.com>
-References: <1295275365.12840.13.camel@kolo>
-	 <1295280032.30950.128.camel@laptop> <1295339012.11678.35.camel@kolo>
-	 <AANLkTikXf-OMEBx-UZktxooOs+YqUkSE9doyEZopjzOx@mail.gmail.com>
-	 <1295357746.30950.681.camel@laptop>
-	 <AANLkTimLSict5oq5PefDaMLB9q2fK91E8XgbUDEohP-_@mail.gmail.com>
-	 <1295430276.30950.1414.camel@laptop> <1295433498.30950.1482.camel@laptop>
-	 <1295436632.30950.1542.camel@laptop> <1295441881.11678.41.camel@kolo>
-	 <1295442799.11678.43.camel@kolo> <1295443822.28776.23.camel@laptop>
-	 <AANLkTinQ4sczEwZYCk1_tLmeJyjyXj4TVoSZbjg+KiRq@mail.gmail.com>
-	 <1295499568.8027.30.camel@marge.simson.net>
-	 <AANLkTikEwgMzco2fHT668Mg3fC-T3EBMUgQQqW-Ojj-Y@mail.gmail.com>
-	 <1295503938.8027.59.camel@marge.simson.net>
-	 <AANLkTi=7YyA-e8HAq+C_prK2EaZKcaTfzDJvmO3e3W=B@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 Jan 2011 09:37:05 +0100
-Message-ID: <1295512625.8027.88.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	Thu, 20 Jan 2011 03:46:21 -0500
+Message-ID: <4D37F654.70405@corscience.de>
+Date: Thu, 20 Jan 2011 09:46:12 +0100
+From: Thomas Weber <weber@corscience.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101220 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: linux-omap@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Daniel Morsing <daniel.morsing@gmail.com>, charu@ti.com
+Subject: Re: [PATCHv4 3/4] OMAP3: Devkit8000: Check return value of gpio_request
+References: <1295425166-25540-1-git-send-email-weber@corscience.de> <1295425166-25540-4-git-send-email-weber@corscience.de> <4D36D7DC.4020705@ru.mvista.com>
+In-Reply-To: <4D36D7DC.4020705@ru.mvista.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+X-Provags-ID: V02:K0:pA2QS4HCwpVtIZfrQjZueIVMDccunIyrSxLLl0HW0+q
+ 5zIB22IWgRzOrbGfg6FJAY35SpqQCtHWA3KdCzRMlzcxm6VOZ/
+ DVF7WksbM+TxDnFeaZFOHWlaa95kGv+Uxy8BPE67d+xeOuT3aw
+ moLPXDGxD3+SlGadnXpKAVB757fXEeB5hYMPRvfM9PpIQAvOnS
+ 9bWAJrPLYyCTjn03f2D5w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-20 at 15:06 +0800, Yong Zhang wrote:
-> On Thu, Jan 20, 2011 at 2:12 PM, Mike Galbraith <efault@gmx.de> wrote:
-> > If the task returns as a sleeper, place entity() will be called when it
-> > is awakened, so it's sleep credit will be clipped as usual.  So vruntime
-> > can be much less than min_vruntime at class exit time, and it doesn't
-> > matter, clipping on wakeup after re-entry takes care of it.. if that's
-> > what you were thinking about.
-> 
-> For a sleep task which stay in sched_fair before it's waked:
-> try_to_wake_up()
->   ttwu_activate()
->     activate_task()
->       enqueue_task_fair()
->         enqueue_entity()
->           place_entity()        <== clip vruntime
-> 
-> For a sleep task which promote to sched_rt when it's sleep:
-> rt_mutex_setprio()
->   check_class_changed()
->     switch_from_fair()       <== vruntime -= min_vruntime
->       try_to_wake_up()
->         ...run then stay on rq
->         rt_mutex_setprio()
->           enqueue_task_fair()     <==vruntime += min_vruntime
-> 
-> The difference is that in the second case, place_entity() is not
-> called, but wrt sched_fair, the task is a WAKEUP task.
-> Then we place this task in sched_fair before where it should be.
+Hello,
+Am 19.01.2011 13:23, schrieb Sergei Shtylyov:
+> Hello.
+>
+> On 19-01-2011 11:19, Thomas Weber wrote:
+>
+>> The return value of gpio_request is ignored.
+>> This patch adds the check of the return value of gpio_request.
+>
+>> Signed-off-by: Thomas Weber<weber@corscience.de>
+>> ---
+>>   arch/arm/mach-omap2/board-devkit8000.c |   16 ++++++++++++++--
+>>   1 files changed, 14 insertions(+), 2 deletions(-)
+>
+>> diff --git a/arch/arm/mach-omap2/board-devkit8000.c
+>> b/arch/arm/mach-omap2/board-devkit8000.c
+>> index 9fb416b..4ddd81c 100644
+>> --- a/arch/arm/mach-omap2/board-devkit8000.c
+>> +++ b/arch/arm/mach-omap2/board-devkit8000.c
+> [...]
+>> @@ -244,13 +246,23 @@ static int devkit8000_twl_gpio_setup(struct
+>> device *dev,
+>>
+>>       /* TWL4030_GPIO_MAX + 0 is "LCD_PWREN" (out, active high) */
+>>       devkit8000_lcd_device.reset_gpio = gpio + TWL4030_GPIO_MAX + 0;
+>> -    gpio_request(devkit8000_lcd_device.reset_gpio, "LCD_PWREN");
+>> +    ret = gpio_request(devkit8000_lcd_device.reset_gpio, "LCD_PWREN");
+>> +    if (ret < 0) {
+>> +        printk(KERN_ERR "Failed to request GPIO for LCD_PWRN\n");
+>> +        return ret;
+>> +    }
+>> +
+>>       /* Disable until needed */
+>>       gpio_direction_output(devkit8000_lcd_device.reset_gpio, 0);
+>>
+>>       /* gpio + 7 is "DVI_PD" (out, active low) */
+>>       devkit8000_dvi_device.reset_gpio = gpio + 7;
+>> -    gpio_request(devkit8000_dvi_device.reset_gpio, "DVI PowerDown");
+>> +    ret = gpio_request(devkit8000_dvi_device.reset_gpio, "DVI
+>> PowerDown");
+>> +    if (ret < 0) {
+>> +        printk(KERN_ERR "Failed to request GPIO for DVI PowerDown\n");
+>
+>    You forgot to call:
+>
+>         gpio_free(devkit8000_lcd_device.reset_gpio);
+>
+Couldn't I use lcd without dvi?
+And shouldn't the gpio then be set to -EINVAL for the gpio_is_valid()
+check in enable_lcd()/disable_lcd() and enable_dvi()/disable_dvi()?
 
-D'oh.  You're right, he needs to be clipped before he leaves.
-
-	-Mike
+Thomas
+>> +        return ret;
+>> +    }
+>> +
+>>       /* Disable until needed */
+>>       gpio_direction_output(devkit8000_dvi_device.reset_gpio, 0);
+>
+> WBR, Sergei
+> -- 
+>
 
