@@ -1,83 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab1ATUCp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 15:02:45 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:59664 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752245Ab1ATUCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 15:02:43 -0500
-Date: Thu, 20 Jan 2011 12:02:37 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Nick Piggin <npiggin@gmail.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	id S1754215Ab1ATUIR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 15:08:17 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:58665 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209Ab1ATUIP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 15:08:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=b+W3BpWHoPV/Q1Wl/VSJtZRaieZwOKVvcg1PqudoeM5MOXzn0548xGQhNdNzYa+gRr
+         OwuO70QAif56u7fiOwydGJYCJjfWmMM9qpFP3ILMUpkFS8Kaqq8cHX7zFMYL61TGlqY7
+         WPOlSKdDCq+yMMSNZ3almE9Xjio9J2MO0RTwE=
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [patch] fs: aio fix rcu lookup
-Message-ID: <20110120200237.GC17752@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110119132123.GC4246@quack.suse.cz>
- <x49ei88d7vl.fsf@segfault.boston.devel.redhat.com>
- <x49aaiwd6cs.fsf@segfault.boston.devel.redhat.com>
- <AANLkTiniSG3tfXx1iUtzf53sSsr=R6pmvmWrSV8FiYE9@mail.gmail.com>
- <x491v48d47d.fsf@segfault.boston.devel.redhat.com>
- <AANLkTi=ChBc3+o_GcdKKn4HZykNkQ70mxPLu9HYDfeFj@mail.gmail.com>
- <x49wrm0bo7g.fsf@segfault.boston.devel.redhat.com>
- <AANLkTikTJ-eCR2M73=G4q=0AAsb9aVosrFdwP+uY7enB@mail.gmail.com>
- <20110120040308.GD8476@linux.vnet.ibm.com>
- <AANLkTi=RdmWV9MLWzDxe6N_kWZQA+a2o8jg-PkB-7QGk@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=RdmWV9MLWzDxe6N_kWZQA+a2o8jg-PkB-7QGk@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+Subject: [PATCH] acpi: debugfs: fix buffer overflows, double free
+Date: Thu, 20 Jan 2011 23:08:06 +0300
+Message-Id: <1295554086-23873-1-git-send-email-segoon@openwall.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 05:31:53AM +1100, Nick Piggin wrote:
-> On Thu, Jan 20, 2011 at 3:03 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Thu, Jan 20, 2011 at 08:20:00AM +1100, Nick Piggin wrote:
-> >> On Thu, Jan 20, 2011 at 8:03 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
-> >> >> I don't know exactly how all programs use io_destroy -- of the small
-> >> >> number that do, probably an even smaller number would care here. But I
-> >> >> don't think it simplifies things enough to use synchronize_rcu for it.
-> >> >
-> >> > Above it sounded like you didn't think AIO should be using RCU at all.
-> >>
-> >> synchronize_rcu of course, not RCU (typo).
-> >
-> > I think that Nick is suggesting that call_rcu() be used instead.
-> > Perhaps also very sparing use of synchronize_rcu_expedited(), which
-> > is faster than synchronize_rcu(), but which which uses more CPU time.
-> 
-> call_rcu() is the obvious alternative, yes.
-> 
-> Basically, once we give in to synchronize_rcu() we're basically giving
-> up. That's certainly a very good tradeoff for something like filesystem
-> unregistration or module unload, it buys big simplifications in real
-> fastpaths. But I just don't think it should be taken lightly.
+File position is not controlled, it may lead to overwrites of arbitrary
+kernel memory.  Also the code may kfree() the same pointer multiple
+times.
 
-Makes sense to me!
+One more flaw is still present: if multiple processes open the file then
+all 3 static variables are shared, leading to various race conditions.
+They should be moved to file->private_data.
 
-BTW, on your earlier usage classification:
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+---
+ drivers/acpi/debugfs.c |   20 ++++++++++++++------
+ 1 files changed, 14 insertions(+), 6 deletions(-)
 
-> I think synchronize_rcu should firstly not be used unless it gives a good
-> simplification, or speedup in fastpath.
->
-> When that is satified, then it is a question of exactly what kind of slow
-> path it should be used in. I don't think it should be used in process-
-> synchronous code (eg syscalls) except for error cases, resource
-> exhaustion, management syscalls (like module unload).
+diff --git a/drivers/acpi/debugfs.c b/drivers/acpi/debugfs.c
+index 5df67f1..384f7ab 100644
+--- a/drivers/acpi/debugfs.c
++++ b/drivers/acpi/debugfs.c
+@@ -26,7 +26,9 @@ static ssize_t cm_write(struct file *file, const char __user * user_buf,
+ 			size_t count, loff_t *ppos)
+ {
+ 	static char *buf;
+-	static int uncopied_bytes;
++	static u32 max_size;
++	static u32 uncopied_bytes;
++
+ 	struct acpi_table_header table;
+ 	acpi_status status;
+ 
+@@ -37,19 +39,24 @@ static ssize_t cm_write(struct file *file, const char __user * user_buf,
+ 		if (copy_from_user(&table, user_buf,
+ 				   sizeof(struct acpi_table_header)))
+ 			return -EFAULT;
+-		uncopied_bytes = table.length;
+-		buf = kzalloc(uncopied_bytes, GFP_KERNEL);
++		uncopied_bytes = max_size = table.length;
++		buf = kzalloc(max_size, GFP_KERNEL);
+ 		if (!buf)
+ 			return -ENOMEM;
+ 	}
+ 
+-	if (uncopied_bytes < count) {
+-		kfree(buf);
++	if (buf == NULL)
++		return -EINVAL;
++
++	if ((*ppos > max_size) ||
++	    (*ppos + count > max_size) ||
++	    (*ppos + count < count) ||
++	    (count > uncopied_bytes))
+ 		return -EINVAL;
+-	}
+ 
+ 	if (copy_from_user(buf + (*ppos), user_buf, count)) {
+ 		kfree(buf);
++		buf = NULL;
+ 		return -EFAULT;
+ 	}
+ 
+@@ -59,6 +66,7 @@ static ssize_t cm_write(struct file *file, const char __user * user_buf,
+ 	if (!uncopied_bytes) {
+ 		status = acpi_install_method(buf);
+ 		kfree(buf);
++		buf = NULL;
+ 		if (ACPI_FAILURE(status))
+ 			return -EINVAL;
+ 		add_taint(TAINT_OVERRIDDEN_ACPI_TABLE);
+-- 
+1.7.0.4
 
-I don't have any feedback either way on your guidance to where
-synchronize_rcu() should be used, as I believe that it depends a lot
-on the details of usage, and would vary from one part of the kernel
-to another, and possibly also over time.
-
-But I am very glad to see that you have been thinking about it and
-that you are putting forth some clear guidelines!
-
-							Thanx, Paul
