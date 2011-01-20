@@ -1,102 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab1ATU6D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 15:58:03 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:35023 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754276Ab1ATU6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 15:58:01 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Subject: Re: [PATCH 0/11] ACPI: Fixes and cleanups related to iomaps management
-Date: Thu, 20 Jan 2011 21:57:16 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc1+; KDE/4.4.4; x86_64; ; )
-Cc: Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-References: <201101201226.41021.rjw@sisk.pl> <AANLkTikVRHfu2KhH4yi2VerkRXBdCODedCDORmpEzRXO@mail.gmail.com>
-In-Reply-To: <AANLkTikVRHfu2KhH4yi2VerkRXBdCODedCDORmpEzRXO@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101202157.16813.rjw@sisk.pl>
+	id S1754851Ab1ATVA0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 16:00:26 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45703 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754276Ab1ATVAZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 16:00:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:in-reply-to:references
+         :user-agent;
+        b=x9zR/fqg4s506W4dIDV1s5RBKzq3ehLyd9F0lgaHU163Vn7ErZYJf0jYOpow49Hix9
+         QEzaU5HVbxLTolJG9IJS7KNCa6BhDLOOyG8OUI8vOSONE+97GUgDHKLmTRcp4sX3ywyH
+         9Xv3bK1g7HhC3daJiMUSZ78+CsaeqvLukjcoE=
+Date: Fri, 21 Jan 2011 00:00:15 +0330
+From: Ali Gholami Rudi <aliqrudi@gmail.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: akpm@linux-foundation.org, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-acpi@vger.kernel.org, rpurdie@rpsys.net
+Subject: Re: [Intel-gfx] [PATCH 2/5] i915: Add native backlight control
+Message-ID: <20112101000015@lilem.mirepesht>
+In-Reply-To: <1295033065-13450-2-git-send-email-mjg@redhat.com>
+References: <1295033065-13450-1-git-send-email-mjg@redhat.com>
+	<1295033065-13450-2-git-send-email-mjg@redhat.com>
+User-Agent: git://repo.or.cz/mailx.git
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 20, 2011, Jeff Chua wrote:
-> On Thu, Jan 20, 2011 at 7:26 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> 
-> > [10/11] - Make the NVS code use existing iomaps if possible.
-> 
-> Seems ok.
-> 
-> > [11/11] - (cleanup) Remove an unnecessary field from struct nvs_page.
-> 
-> This seems to have an issue. Notebook tries to suspend ... then resume
-> immediately.
+Hi,
 
-That's unexpected.  Please apply the debug patch below in addition to the
-whole series and send a dmesg output containing a (failing) suspend attempt
-(with the patch applied).
+Matthew Garrett <mjg@redhat.com> wrote:
+> Not all systems expose a firmware or platform mechanism for changing the
+> backlight intensity on i915, so add native driver support.
+
+After switching to 2.6.38-rc1 from 2.6.37
+/sys/devices/virtual/backlight/acpi_video0/brightness
+disappeared and I cannot control the backlight.
+I tried using acpi_backlight=video but that didn't help
+(this is an HP laptop BTW and I don't think there is a
+native backlight control for it).
+
+I tried to apply this patch but I get:
+
+	drivers/gpu/drm/i915/intel_panel.c: In function 'intel_panel_setup_backlight':
+	drivers/gpu/drm/i915/intel_panel.c:319: error: 'struct backlight_properties' has no member named 'type'
+	drivers/gpu/drm/i915/intel_panel.c:319: error: 'BACKLIGHT_RAW' undeclared (first use in this function)
+	drivers/gpu/drm/i915/intel_panel.c:319: error: (Each undeclared identifier is reported only once
+	drivers/gpu/drm/i915/intel_panel.c:319: error: for each function it appears in.)
+	make[4]: *** [drivers/gpu/drm/i915/intel_panel.o] Error 1
+	make[3]: *** [drivers/gpu/drm/i915] Error 2
+	make[2]: *** [drivers/gpu/drm] Error 2
+	make[1]: *** [drivers/gpu] Error 2
+	make: *** [drivers] Error 2
+
+$ lspci | grep VGA
+00:02.0 VGA compatible controller: Intel Corporation Mobile GME965/GLE960 Integrated Graphics Controller (rev 0c)
+$ find /sys/ -name "*backlight*"
+/sys/class/backlight
+/sys/module/video/parameters/use_bios_initial_backlight
 
 Thanks,
-Rafael
+Ali
 
-
----
- drivers/acpi/nvs.c |   20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
-
-Index: linux-2.6/drivers/acpi/nvs.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/nvs.c
-+++ linux-2.6/drivers/acpi/nvs.c
-@@ -87,9 +87,15 @@ void suspend_nvs_free(void)
- 			entry->data = NULL;
- 			if (entry->kaddr) {
- 				if (entry->unmap) {
-+					pr_info("%s: Unmapping %p\n", __func__,
-+						entry->kaddr);
-+
- 					iounmap(entry->kaddr);
- 					entry->unmap = false;
- 				} else {
-+					pr_info("%s: Dropping %p\n", __func__,
-+						entry->kaddr);
-+
- 					acpi_os_unmap_memory(entry->kaddr,
- 							     entry->size);
- 				}
-@@ -139,9 +145,17 @@ int suspend_nvs_save(void)
- 			if (!entry->kaddr) {
- 				suspend_nvs_free();
- 				return -EIO;
-+			} else {
-+				pr_info("%s: Mapped %p\n", __func__,
-+					entry->kaddr);
- 			}
- 			entry->unmap = true;
-+		} else {
-+			pr_info("%s: Got address %p\n", __func__, entry->kaddr);
- 		}
-+		pr_info("%s: Saving %p <- %p\n", __func__,
-+			entry->data, entry->kaddr);
-+
- 		memcpy(entry->data, entry->kaddr, entry->size);
- 
- 		page_addr += PAGE_SIZE;
-@@ -164,6 +178,10 @@ void suspend_nvs_restore(void)
- 	printk(KERN_INFO "PM: Restoring platform NVS memory\n");
- 
- 	list_for_each_entry(entry, &nvs_list, node)
--		if (entry->data)
-+		if (entry->data) {
-+			pr_info("%s: Restoring %p -> %p\n", __func__,
-+				entry->data, entry->kaddr);
-+
- 			memcpy(entry->kaddr, entry->data, entry->size);
-+		}
- }
