@@ -1,85 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab1ATSnm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 13:43:42 -0500
-Received: from ausc60ps301.us.dell.com ([143.166.148.206]:14075 "EHLO
-	ausc60ps301.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186Ab1ATSnk convert rfc822-to-8bit (ORCPT
+	id S1753675Ab1ATSoH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 13:44:07 -0500
+Received: from e24smtp02.br.ibm.com ([32.104.18.86]:48403 "EHLO
+	e24smtp02.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753634Ab1ATSoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 13:43:40 -0500
-X-Loopcount0: from 10.170.28.41
-From: <Narendra_K@Dell.com>
-To: <sfr@canb.auug.org.au>
-CC: <jbarnes@virtuousgeek.org>, <lenb@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-next@vger.kernel.org>,
-        <Matt_Domsch@Dell.com>, <Charles_Rose@Dell.com>,
-        <Surya_Prabhakar@Dell.com>
-Date: Thu, 20 Jan 2011 10:41:50 -0800
-Subject: Re: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
- allmodconfig
-Thread-Topic: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
- allmodconfig
-Thread-Index: Acu40bMj9lKZ3rhXSkqLbkFuHOL0mg==
-Message-ID: <20110120190459.GA30978@fedora14-r610.oslab.blr.amer.dell.com>
-References: <20110112203414.GA5657@fedora14-r610.oslab.blr.amer.dell.com>
- <20110112160229.7b8d82c1@jbarnes-desktop>
- <alpine.LFD.2.02.1101122217370.19754@x980>
- <20110113075556.789ac3c3@jbarnes-vaio.home>
- <20110113162755.GA5872@fedora14-r610.oslab.blr.amer.dell.com>
- <20110114154458.GA18289@fedora14-r610.oslab.blr.amer.dell.com>
- <20110115080949.62176a3c.sfr@canb.auug.org.au>
- <20110117195215.GA2708@fedora14-r610.oslab.blr.amer.dell.com>
-In-Reply-To: <20110117195215.GA2708@fedora14-r610.oslab.blr.amer.dell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mutt/1.5.21 (2010-09-15)
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 Jan 2011 13:44:05 -0500
+Message-ID: <4D388271.50404@linux.vnet.ibm.com>
+Date: Thu, 20 Jan 2011 16:44:01 -0200
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
+To: Olof Johansson <olof@lixom.net>
+CC: linux-kernel@vger.kernel.org, Debora Velarde <debora@linux.vnet.ibm.com>,
+        Marcel Selhorst <m.selhorst@sirrix.com>,
+        tpmdd-devel@lists.sourceforge.net, James Morris <jmorris@namei.org>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH] tpm: fix panic caused by "tpm: Autodetect itpm devices"
+References: <1294370641-6791-1-git-send-email-olof@lixom.net> <AANLkTi=E1_Ur6GmwBRnjGRBpmSup4_1_k35ZKvBRcFtv@mail.gmail.com>
+In-Reply-To: <AANLkTi=E1_Ur6GmwBRnjGRBpmSup4_1_k35ZKvBRcFtv@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 18, 2011 at 12:58:48AM +0530, K, Narendra wrote:
-> On Sat, Jan 15, 2011 at 02:39:49AM +0530, Stephen Rothwell wrote:
-> > Hi Narendra,
-> > 
-> > On Fri, 14 Jan 2011 20:52:42 +0530 <Narendra_K@Dell.com> wrote:
-> > >
-> > > This patch addresses the build failure described in this thread by
-> > > compiling fs/nls/nls_base.c always into vmlinux, thus making the base
-> > > nls functions available always.
-> > 
-> > Even on platforms that don't support ACPI or DMI ...
-> > 
-> > You should really restrict this to CONFIG_ACPI || CONFIG_DMI ||
-> > CONFIG_NLS ... maybe create a CONFIG_NLS_BASE that is selected by ACPI,
-> > DMI and NLS?
-> 
-> Hi Stephen,
-> 
-> Thank you for the suggestions. 
-> 
-> I agree with your suggestion that we should compile nls_base.o
-> conditionally, only when ACPI || DMI || NLS. I have introduced a bew
-> config option CONFIG_NLS_BASE and made ACPI, DMI and NLS select it.
-> 
-> V1 -> V2:
-> 
-> 1. Conditionally compile fs/nls/nls_base.c by introducing a new config
-> option CONFIG_NLS_BASE, which is selected by (ACPI || DMI || NLS).
-> Behavior of the rest of the files under fs/nls is not changed.
-> 
-> From: Narendra K <narendra_k@dell.com>
-> Subject: [PATCH V2] Fix build failure when CONFIG_NLS is set to 'm' by allmodconfig
+On 01/20/2011 03:37 PM, Olof Johansson wrote:
+> Are all TPM maintainers MIA? This is a trivial patch that fixes a
+> panic, and it was a late-added regression in 2.6.37.
+>
+Not myself. I missed this one unfortunately in my work queue, sorry, 
+will keep alert to avoid this happening again.
 
-Hi,
+Acked-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+> -Olof
+>
+> On Thu, Jan 6, 2011 at 7:24 PM, Olof Johansson<olof@lixom.net>  wrote:
+>> commit 3f0d3d016d89a5efb8b926d4707eb21fa13f3d27 adds a check for
+>> PNP device id to the common tpm_tis_init() function, which in some
+>> cases (force=1) will be called without the device being a member of
+>> a pnp_dev. Oopsing and panics ensue.
+>>
+>> Move the test up to before the call to tpm_tis_init(), since it
+>> just modifies a global variable anyway.
+>>
+>> Signed-off-by: Olof Johansson<olof@lixom.net>
+>> Cc: Matthew Garrett<mjg@redhat.com>
+>> Cc: stable@kernel.org [2.6.37+]
+>> ---
+>>   drivers/char/tpm/tpm_tis.c |    6 +++---
+>>   1 files changed, 3 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+>> index c17a305..dd21df5 100644
+>> --- a/drivers/char/tpm/tpm_tis.c
+>> +++ b/drivers/char/tpm/tpm_tis.c
+>> @@ -493,9 +493,6 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
+>>                  "1.2 TPM (device-id 0x%X, rev-id %d)\n",
+>>                  vendor>>  16, ioread8(chip->vendor.iobase + TPM_RID(0)));
+>>
+>> -       if (is_itpm(to_pnp_dev(dev)))
+>> -               itpm = 1;
+>> -
+>>         if (itpm)
+>>                 dev_info(dev, "Intel iTPM workaround enabled\n");
+>>
+>> @@ -637,6 +634,9 @@ static int __devinit tpm_tis_pnp_init(struct pnp_dev *pnp_dev,
+>>         else
+>>                 interrupts = 0;
+>>
+>> +       if (is_itpm(pnp_dev))
+>> +               itpm = 1;
+>> +
+>>         return tpm_tis_init(&pnp_dev->dev, start, len, irq);
+>>   }
+>>
+>> --
+>> 1.7.3.GIT
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
 
-Please let me know if there are any concerns with Version 2 of the patch.
-If it looks good please consider it for inclusion.
-
-With regards,
-Narendra K
