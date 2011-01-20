@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab1ATL0P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 06:26:15 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53551 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755153Ab1ATL0K (ORCPT
+	id S1755377Ab1ATL1Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 06:27:24 -0500
+Received: from casper.infradead.org ([85.118.1.10]:45323 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754910Ab1ATL1X convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 06:26:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Rrak1t6S0kU6LTxYnbPUM8ox1SL+9dAExeX+GVf1dbniQPRIrhrKQN0So/Oktq86HW
-         CNI/zU4UeM+MdbiShm67hjDOYlQpTVJ/HhQp12Mell8Q+aJ6Hn3Dnb8si4xq1yNzVfgb
-         xHA9Em2/e3GHNIWlxki6VS5/c3DPafuk4AOYo=
-Date: Thu, 20 Jan 2011 12:26:06 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>,
+	Thu, 20 Jan 2011 06:27:23 -0500
+Subject: Re: [PATCH -v10 0/4] Lock-less list
+From: Peter Zijlstra <peterz@infradead.org>
+To: huang ying <huang.ying.caritas@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Huang Ying <ying.huang@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 1/2] lockdep: move early boot local IRQ enable/disable
- status to init/main.c
-Message-ID: <20110120112606.GF6036@htj.dyndns.org>
-References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
- <20110119120200.GA1057@elte.hu>
- <20110120110635.GB6036@htj.dyndns.org>
- <20110120111149.GD6036@htj.dyndns.org>
- <1295522631.28776.155.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295522631.28776.155.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        Ingo Molnar <mingo@elte.hu>, Chris Mason <chris.mason@oracle.com>
+In-Reply-To: <AANLkTimR6xd1PxCP6jmuNwFkANrGPdTf2wpiGsBXGpKx@mail.gmail.com>
+References: <1295245019-7816-1-git-send-email-ying.huang@intel.com>
+	 <20110119135546.bb7e8f62.akpm@linux-foundation.org>
+	 <1295484358.15213.25.camel@yhuang-dev>
+	 <20110119165247.cca2f434.akpm@linux-foundation.org>
+	 <1295520247.28776.152.camel@laptop>
+	 <AANLkTimR6xd1PxCP6jmuNwFkANrGPdTf2wpiGsBXGpKx@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 20 Jan 2011 12:27:56 +0100
+Message-ID: <1295522876.28776.158.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 12:23:51PM +0100, Peter Zijlstra wrote:
-> On Thu, 2011-01-20 at 12:11 +0100, Tejun Heo wrote:
-> > Hello, guys.
-> > 
-> > These two patches remove both warnings.  The first warning was
-> > completely spurious.  The second lockdep one was triggered by
-> > on_each_cpu() enabling local IRQ too early.
-> > 
-> > I don't think percpu allocator itself malfunctioned.  There was no
-> > allocation failure.  It whines when percpu allocation fails but didn't
-> > in the log.  Other than calling vfree() early triggering the above
-> > condition, it worked okay.
-> > 
-> > So, it's either the early enabling of local IRQ by on_each_cpu()
-> > breaking something in the IRQ subsystem or something different.  Ingo,
-> > can you please see whether these two patches cure the panic too?
+On Thu, 2011-01-20 at 19:18 +0800, huang ying wrote:
+> >
+> > In fact, I have a patch ready and waiting to revert the whole irq_work
+> > stuff, that too seems to be a superfluous generalization.
 > 
-> Why not use something like: system_state != SYSTEM_RUNNING ?
+> What do you plan to replace irq_work?  I plan to use it in APEI NMI
+> handler and MCE handler. 
 
-Cuz, it's finer grained than that.  We can add a SYSTEM_* flag but I
-wasn't sure whether that would be just creating more noise.  If we try
-to consolidate these things, we probably should consider
-oops_in_progress too.  It probably is a good idea but let's first fix
-the problem at hand.
+But will all that stuff be accepted? Please stop sending infrastructure
+bits and focus on your larger RAS picture, once you have consensus on
+that from all parties involved, then, and only then, does it make sense
+to submit everything, including infrastructure.
 
-Thanks.
+As it stands now you're simply submitting infrastructure without any
+users, and we all know the RAS thing isn't settled, so those users might
+never come..
 
--- 
-tejun
+
