@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755821Ab1ATPAP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 10:00:15 -0500
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:45642 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755736Ab1ATPAN (ORCPT
+	id S1755870Ab1ATPIM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 10:08:12 -0500
+Received: from mga03.intel.com ([143.182.124.21]:12388 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755807Ab1ATPIK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 10:00:13 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: _k5HKLUVM1mP.bxTMyHNBkcK6e4m_r8.Kz_2uEBrO604bUA
- uFkFyWtZO6lC2e7N3iXOsX7YKgehpvDdJvPnrxXgjS1ul1RYjCEF.8r05sHt
- BY7vspf5axUQzDmIWsYFsVidY9XVvqePDWCH30OFbAYMvPn.cyFTpqaTnObX
- DHstFZ6.Pq567iIKj3KxV942E.gR7yKVGgiJ9p7UvaI5Sd4W2ju6g0nbAdWs
- .C7aIoPwjLyE-
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 20 Jan 2011 09:00:09 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Balbir Singh <balbir@linux.vnet.ibm.com>
-cc: linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kosaki.motohiro@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [REPOST] [PATCH 3/3] Provide control over unmapped pages (v3)
-In-Reply-To: <20110120123649.30481.93286.stgit@localhost6.localdomain6>
-Message-ID: <alpine.DEB.2.00.1101200856310.10695@router.home>
-References: <20110120123039.30481.81151.stgit@localhost6.localdomain6> <20110120123649.30481.93286.stgit@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 20 Jan 2011 10:08:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,351,1291622400"; 
+   d="scan'208";a="377397668"
+From: "Anvin, H Peter" <h.peter.anvin@intel.com>
+To: Ingo Molnar <mingo@elte.hu>, "Li, Shaohua" <shaohua.li@intel.com>
+CC: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        "Lu, Hongjiu" <hongjiu.lu@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Sam Ravnborg <sam@ravnborg.org>
+Date: Thu, 20 Jan 2011 07:08:07 -0800
+Subject: RE: Linux 2.6.38-rc1 doesn't boot
+Thread-Topic: Linux 2.6.38-rc1 doesn't boot
+Thread-Index: Acu4lM1UQClXhK9pRu202feH4TSPIgAHutAg
+Message-ID: <ADDEBCD9C145E542A8688C29F1FBDCB9C915F59E@orsmsx502.amr.corp.intel.com>
+References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
+ <20110119073905.GA1652@gentoo.trippels.de>
+ <20110119074902.GA1670@gentoo.trippels.de>
+ <1295424766.1949.879.camel@sli10-conroe> <4D36A759.60704@intel.com>
+ <20110119090904.GA4927@elte.hu> <1295489286.1949.882.camel@sli10-conroe>
+ <20110120112541.GA23661@elte.hu>
+In-Reply-To: <20110120112541.GA23661@elte.hu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jan 2011, Balbir Singh wrote:
+(The patch will need to be paired with removing the hacks in the linker script.)
 
-> +	unmapped_page_control
-> +			[KNL] Available if CONFIG_UNMAPPED_PAGECACHE_CONTROL
-> +			is enabled. It controls the amount of unmapped memory
-> +			that is present in the system. This boot option plus
-> +			vm.min_unmapped_ratio (sysctl) provide granular control
-
-min_unmapped_ratio is there to guarantee that zone reclaim does not
-reclaim all unmapped pages.
-
-What you want here is a max_unmapped_ratio.
+-----Original Message-----
+From: Ingo Molnar [mailto:mingo@elte.hu] 
+Sent: Thursday, January 20, 2011 3:26 AM
+To: Li, Shaohua
+Cc: Anvin, H Peter; Markus Trippelsdorf; Lu, Hongjiu; Linus Torvalds; Linux Kernel Mailing List; Sam Ravnborg
+Subject: Re: Linux 2.6.38-rc1 doesn't boot
 
 
->  {
-> @@ -2297,6 +2320,12 @@ loop_again:
->  				shrink_active_list(SWAP_CLUSTER_MAX, zone,
->  							&sc, priority, 0);
->
-> +			/*
-> +			 * We do unmapped page reclaim once here and once
-> +			 * below, so that we don't lose out
-> +			 */
-> +			reclaim_unmapped_pages(priority, zone, &sc);
-> +
->  			if (!zone_watermark_ok_safe(zone, order,
+* Shaohua Li <shaohua.li@intel.com> wrote:
 
-Hmmmm. Okay that means background reclaim does it. If so then we also want
-zone reclaim to be able to work in the background I think.
-max_unmapped_ratio could also be useful to the zone reclaim logic.
+> it's not a build failure, without it, my i386 kernel can't boot
+> actually.
 
+Please try hpa's patch in this thread on top of very latest (today's) -git or latest 
+-tip:
+
+   http://people.redhat.com/mingo/tip.git/README
+
+Does that result in a booting system? That way we can avoid most of the linker 
+script madness.
+
+Thanks,
+
+	Ingo
