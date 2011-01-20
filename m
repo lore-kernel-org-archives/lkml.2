@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab1ATHnA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 02:43:00 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:49694 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753404Ab1ATHm6 (ORCPT
+	id S1754477Ab1ATHnR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 02:43:17 -0500
+Received: from mga11.intel.com ([192.55.52.93]:63760 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753076Ab1ATHnP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 02:42:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=l9Bot4HzTQ9GY2Zt5UiTaRXZ13vvmWYeWmw/u6bYuy+Tsj17Z2Wa0+ii13KrVbttSW
-         Lg15GWyi69ZRmkTsaA7MZligw47WiTyz+ovIef5OPjMgXi3jrp8iMgs7ctCnpHqXtcNy
-         O6Mp3qQZbtHvrkW9xncaQZ/FAaSEWaF0OC4yM=
-Date: Wed, 19 Jan 2011 23:42:52 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Trilok Soni <tsoni@codeaurora.org>
-Cc: riyer@nvidia.com, pavel@ucw.cz, shubhrajyoti@ti.com, ccross@android.com,
-        konkers@android.com, olof@lixom.net, achew@nvidia.com,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH v7] input: tegra-kbc - Add tegra keyboard driver
-Message-ID: <20110120074252.GC30522@core.coreip.homeip.net>
-References: <1295485917-21278-1-git-send-email-riyer@nvidia.com>
- <4D37E265.9060304@codeaurora.org>
- <20110120072948.GA30522@core.coreip.homeip.net>
- <4D37E539.6020301@codeaurora.org>
+	Thu, 20 Jan 2011 02:43:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,349,1291622400"; 
+   d="scan'208";a="649107114"
+From: "Wu, Hao" <hao.wu@intel.com>
+To: Yang Ruirui <ruirui.r.yang@tieto.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        "Du, Alek" <alek.du@intel.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 20 Jan 2011 15:42:44 +0800
+Subject: RE: [PATCH v2] usb langwell otg: use notifier chain of struct
+ otg_transceiver
+Thread-Topic: [PATCH v2] usb langwell otg: use notifier chain of struct
+ otg_transceiver
+Thread-Index: Acu4b1SapiET6wX5TWiDxov/IzyFjQABI7tQ
+Message-ID: <D5AB6E638E5A3E4B8F4406B113A5A19A31C3E9E2@shsmsx501.ccr.corp.intel.com>
+References: <20110120070513.GA24956@darkstar>
+In-Reply-To: <20110120070513.GA24956@darkstar>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D37E539.6020301@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 01:03:13PM +0530, Trilok Soni wrote:
-> Hi Dmitry,
-> 
-> >>
-> >> Wearing my legal hat. You might want to do 2010-2011 ?
-> > 
-> > OK, Rakesh, if you want copyright adjusted please shout and I can fix it
-> > up locally.
-> > 
-> > Trilok, I understand you are happy, right? Can I put you down as
-> > reviewed-by?
-> 
-> Yes. 
-> 
-> Reviewed-by: Trilok Soni <tsoni@codeaurora.org>
-> 
+On Thu, Jan 20, 2011 at 03:05:13PM +0800, Yang Ruirui wrote:
+> Use notifier chain in otg_transceiver instead of own notifier chain.
+>
+> This patch depends on another patch which change otg_transceiver
+>notifier chain to atomic one, please see:
+>https://lkml.org/lkml/2011/1/19/72
 
-Great, thanks.
+Looks good to me, no need to keep its own atomic notifier chain if struct otg_transceiver has one.
 
--- 
-Dmitry
+>Signed-off-by: Yang Ruirui <ruirui.r.yang@tieto.com>
+>Reviewed-by: Felipe Balbi <balbi@ti.com>
+
+Thanks
+Hao
