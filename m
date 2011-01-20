@@ -1,439 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab1ATLCe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 06:02:34 -0500
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:50926 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753142Ab1ATLCc (ORCPT
+	id S1755423Ab1ATLGn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 06:06:43 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36371 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755374Ab1ATLGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 06:02:32 -0500
-X-Greylist: delayed 1979 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Jan 2011 06:02:31 EST
-From: Arun Murthy <arun.murthy@stericsson.com>
-To: <sameo@linux.intel.com>
-Cc: <linux-kernel@vger.kernel.org>, <arun.murthy@stericsson.com>,
-        <linus.walleij@stericsson.com>, <srinidhi.kasagar@stericsson.com>,
-        <mattias.wallin@stericsson.com>
-Subject: [PATCH] mfd: ab8500-gpadc Add new GPADC driver
-Date: Thu, 20 Jan 2011 15:58:24 +0530
-Message-ID: <1295519304-27062-1-git-send-email-arun.murthy@stericsson.com>
-X-Mailer: git-send-email 1.7.2.dirty
+	Thu, 20 Jan 2011 06:06:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=o/SLJ1uGAlMowHe6DbdPjZErx+KaeD7UHihuyKDPg+QViQYbSpRGnRgoBvMjkH8H+z
+         JP7incURbY8MUclROrDqcAuMwfFUTfUwfdJSxOB4kkXDpfzAbZN2O21PXSiVV1lc0mTx
+         +xHRCl9uh4roy8IlrWaF4jaO7WaWRAyJ919kg=
+Date: Thu, 20 Jan 2011 12:06:35 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: [PATCH 1/2] lockdep: move early boot local IRQ enable/disable
+ status to init/main.c
+Message-ID: <20110120110635.GB6036@htj.dyndns.org>
+References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
+ <20110119120200.GA1057@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110119120200.GA1057@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AB8500 GPADC driver used to convert Acc and battery/ac/usb voltage
+During early boot, local IRQ is disabled until IRQ subsystem is
+properly initialized.  During this time, no one should enable local
+IRQ and some operations which usually are not allowed with IRQ
+disabled, e.g. operations which might sleep or require communications
+with other processors, are allowed.
 
-Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+lockdep tracked this with early_boot_irqs_off/on() callbacks.  As
+other subsystems need this information too, move it to init/main.c and
+make it generally available.  While at it, toggle the boolean to
+early_boot_irqs_disabled instead of enabled so that it can be
+initialized with %false and %true indicates the exceptional condition.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- drivers/mfd/Kconfig              |    7 +
- drivers/mfd/Makefile             |    1 +
- drivers/mfd/ab8500-gpadc.c       |  277 ++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/ab8500-gpadc.h |   47 +++++++
- include/linux/mfd/ab8500.h       |    6 +
- 5 files changed, 338 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/ab8500-gpadc.c
- create mode 100644 include/linux/mfd/ab8500-gpadc.h
+ include/linux/kernel.h |    2 ++
+ init/main.c            |   13 +++++++++++--
+ kernel/lockdep.c       |   18 +-----------------
+ 3 files changed, 14 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index fd01836..5309534 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -523,6 +523,13 @@ config AB8500_DEBUG
-          Select this option if you want debug information using the debug
-          filesystem, debugfs.
+Index: work/include/linux/kernel.h
+===================================================================
+--- work.orig/include/linux/kernel.h
++++ work/include/linux/kernel.h
+@@ -243,6 +243,8 @@ extern int test_taint(unsigned flag);
+ extern unsigned long get_taint(void);
+ extern int root_mountflags;
  
-+config AB8500_GPADC
-+	bool "AB8500 GPADC driver"
-+	depends on AB8500_CORE && REGULATOR_AB8500
-+	default y
-+	help
-+	  AB8500 GPADC driver used to convert Acc and battery/ac/usb voltage
++extern bool early_boot_irqs_disabled;
 +
- config AB3550_CORE
-         bool "ST-Ericsson AB3550 Mixed Signal Circuit core functions"
- 	select MFD_CORE
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index a54e2c7..c17ab3f 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -73,6 +73,7 @@ obj-$(CONFIG_AB3550_CORE)	+= ab3550-core.o
- obj-$(CONFIG_AB8500_CORE)	+= ab8500-core.o
- obj-$(CONFIG_AB8500_I2C_CORE)	+= ab8500-i2c.o
- obj-$(CONFIG_AB8500_DEBUG)	+= ab8500-debugfs.o
-+obj-$(CONFIG_AB8500_GPADC)	+= ab8500-gpadc.o
- obj-$(CONFIG_MFD_TIMBERDALE)    += timberdale.o
- obj-$(CONFIG_PMIC_ADP5520)	+= adp5520.o
- obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
-diff --git a/drivers/mfd/ab8500-gpadc.c b/drivers/mfd/ab8500-gpadc.c
-new file mode 100644
-index 0000000..b2113db
---- /dev/null
-+++ b/drivers/mfd/ab8500-gpadc.c
-@@ -0,0 +1,277 @@
-+/*
-+ * Copyright (C) ST-Ericsson SA 2010
-+ *
-+ * License Terms: GNU General Public License v2
-+ * Author: Arun R Murthy <arun.murthy@stericsson.com>
-+ */
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/device.h>
-+#include <linux/interrupt.h>
-+#include <linux/spinlock.h>
-+#include <linux/delay.h>
-+#include <linux/platform_device.h>
-+#include <linux/completion.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/mfd/ab8500.h>
-+#include <linux/mfd/abx500.h>
-+#include <linux/mfd/ab8500-gpadc.h>
-+
-+/*
-+ * GPADC register offsets
-+ * Bank : 0x0A
-+ */
-+#define AB8500_GPADC_CTRL1_REG		0x00
-+#define AB8500_GPADC_CTRL2_REG		0x01
-+#define AB8500_GPADC_CTRL3_REG		0x02
-+#define AB8500_GPADC_AUTO_TIMER_REG	0x03
-+#define AB8500_GPADC_STAT_REG		0x04
-+#define AB8500_GPADC_MANDATAL_REG	0x05
-+#define AB8500_GPADC_MANDATAH_REG	0x06
-+#define AB8500_GPADC_AUTODATAL_REG	0x07
-+#define AB8500_GPADC_AUTODATAH_REG	0x08
-+#define AB8500_GPADC_MUX_CTRL_REG	0x09
-+
-+/* gpadc constants */
-+#define EN_VINTCORE12			0x04
-+#define EN_VTVOUT			0x02
-+#define EN_GPADC			0x01
-+#define DIS_GPADC			0x00
-+#define SW_AVG_16			0x60
-+#define ADC_SW_CONV			0x04
-+#define EN_BUF				0x40
-+#define DIS_ZERO			0x00
-+#define GPADC_BUSY			0x01
-+
-+/**
-+ * ab8500_gpadc_convert() - gpadc conversion
-+ * @input:	analog input to be converted to digital data
-+ *
-+ * This function converts the selected analog i/p to digital
-+ * data. Thereafter calibration has to be made to obtain the
-+ * data in the required quantity measurement.
-+ */
-+int ab8500_gpadc_convert(struct ab8500_gpadc *di, u8 input)
-+{
-+	int ret;
-+	u16 data = 0;
-+	int looplimit = 0;
-+	u8 val, low_data, high_data;
-+
-+	if (!di)
-+		return -ENODEV;
-+
-+	mutex_lock(&di->ab8500_gpadc_lock);
-+	/* Enable VTVout LDO this is required for GPADC */
-+	regulator_enable(di->regu);
-+
-+	/* Check if ADC is not busy, lock and proceed */
-+	do {
-+		ret = abx500_get_register_interruptible(di->dev, AB8500_GPADC,
-+			AB8500_GPADC_STAT_REG, &val);
-+		if (ret < 0)
-+			goto out;
-+		if (!(val & GPADC_BUSY))
-+			break;
-+		msleep(10);
-+	} while (++looplimit < 10);
-+	if (looplimit >= 10 && (val & GPADC_BUSY)) {
-+		dev_err(di->dev, "gpadc_conversion: GPADC busy");
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	/* Enable GPADC */
-+	ret = abx500_mask_and_set_register_interruptible(di->dev, AB8500_GPADC,
-+		AB8500_GPADC_CTRL1_REG, EN_GPADC, EN_GPADC);
-+	if (ret < 0) {
-+		dev_err(di->dev, "gpadc_conversion: enable gpadc failed\n");
-+		goto out;
-+	}
-+	/* Select the input source and set average samples to 16 */
-+	ret = abx500_set_register_interruptible(di->dev, AB8500_GPADC,
-+		AB8500_GPADC_CTRL2_REG, (input | SW_AVG_16));
-+	if (ret < 0) {
-+		dev_err(di->dev,
-+			"gpadc_conversion: set avg samples failed\n");
-+		goto out;
-+	}
-+	/* Enable ADC, Buffering and select rising edge, start Conversion */
-+	ret = abx500_mask_and_set_register_interruptible(di->dev, AB8500_GPADC,
-+		AB8500_GPADC_CTRL1_REG, EN_BUF, EN_BUF);
-+	if (ret < 0) {
-+		dev_err(di->dev,
-+			"gpadc_conversion: select falling edge failed\n");
-+		goto out;
-+	}
-+	ret = abx500_mask_and_set_register_interruptible(di->dev, AB8500_GPADC,
-+		AB8500_GPADC_CTRL1_REG, ADC_SW_CONV, ADC_SW_CONV);
-+	if (ret < 0) {
-+		dev_err(di->dev,
-+			"gpadc_conversion: start s/w conversion failed\n");
-+		goto out;
-+	}
-+	/* wait for completion of conversion */
-+	if (!wait_for_completion_timeout(&di->ab8500_gpadc_complete, 2*HZ)) {
-+		dev_err(di->dev,
-+			"timeout: didnt recieve GPADC conversion interrupt\n");
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	/* Read the converted RAW data */
-+	ret = abx500_get_register_interruptible(di->dev, AB8500_GPADC,
-+		AB8500_GPADC_MANDATAL_REG, &low_data);
-+	if (ret < 0) {
-+		dev_err(di->dev, "gpadc_conversion: read low data failed\n");
-+		goto out;
-+	}
-+
-+	ret = abx500_get_register_interruptible(di->dev, AB8500_GPADC,
-+		AB8500_GPADC_MANDATAH_REG, &high_data);
-+	if (ret < 0) {
-+		dev_err(di->dev, "gpadc_conversion: read high data failed\n");
-+		goto out;
-+	}
-+
-+	data = (high_data << 8) | low_data;
-+	/* Disable GPADC */
-+	ret = abx500_set_register_interruptible(di->dev, AB8500_GPADC,
-+		AB8500_GPADC_CTRL1_REG, DIS_GPADC);
-+	if (ret < 0) {
-+		dev_err(di->dev, "gpadc_conversion: disable gpadc failed\n");
-+		goto out;
-+	}
-+	/* Disable VTVout LDO this is required for GPADC */
-+	regulator_disable(di->regu);
-+	mutex_unlock(&di->ab8500_gpadc_lock);
-+	return data;
-+
-+out:
-+	/*
-+	 * It has shown to be needed to turn off the GPADC if an error occurs,
-+	 * otherwise we might have problem when waiting for the busy bit in the
-+	 * GPADC status register to go low. In V1.1 there wait_for_completion
-+	 * seems to timeout when waiting for an interrupt.. Not seen in V2.0
-+	 */
-+	(void) abx500_set_register_interruptible(di->dev, AB8500_GPADC,
-+		AB8500_GPADC_CTRL1_REG, DIS_GPADC);
-+	regulator_disable(di->regu);
-+	mutex_unlock(&di->ab8500_gpadc_lock);
-+	dev_err(di->dev, "gpadc_conversion: Failed to AD convert channel %d\n",
-+		input);
-+	return ret;
-+}
-+EXPORT_SYMBOL(ab8500_gpadc_convert);
-+
-+/**
-+ * ab8500_bm_gpswadcconvend_handler() - isr for s/w gpadc conversion completion
-+ * @irq:	irq number
-+ * @data:	pointer to the data passed during request irq
-+ *
-+ * This is a interrupt service routine for s/w gpadc conversion completion.
-+ * Notifies the gpadc completion is completed and the converted raw value
-+ * can be read from the registers.
-+ * Returns IRQ status(IRQ_HANDLED)
-+ */
-+static irqreturn_t ab8500_bm_gpswadcconvend_handler(int irq, void *_di)
-+{
-+	struct ab8500_gpadc *di = _di;
-+
-+	complete(&di->ab8500_gpadc_complete);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int __devinit ab8500_gpadc_probe(struct platform_device *pdev)
-+{
-+	int ret = 0;
-+	struct ab8500_gpadc *di;
-+
-+	di = kzalloc(sizeof(struct ab8500_gpadc), GFP_KERNEL);
-+	if (!di) {
-+		dev_err(&pdev->dev, "Error: No memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	di->parent = dev_get_drvdata(pdev->dev.parent);
-+	di->irq = platform_get_irq_byname(pdev, "SW_CONV_END");
-+	if (di->irq < 0) {
-+		dev_err(di->dev, "failed to get platform irq-%d\n", di->irq);
-+		ret = di->irq;
-+		goto fail;
-+	}
-+
-+	di->dev = &pdev->dev;
-+	mutex_init(&di->ab8500_gpadc_lock);
-+
-+	/* Initialize completion used to notify completion of conversion */
-+	init_completion(&di->ab8500_gpadc_complete);
-+
-+	/* Register interrupt  - SwAdcComplete */
-+	ret = request_threaded_irq(di->irq, NULL,
-+		ab8500_bm_gpswadcconvend_handler,
-+		IRQF_NO_SUSPEND | IRQF_SHARED, "ab8500-gpadc", di);
-+	if (ret < 0) {
-+		dev_err(di->dev, "Failed to register interrupt, irq: %d\n",
-+			di->irq);
-+		goto fail;
-+	}
-+
-+	/* VTVout LDO used to power up ab8500-GPADC */
-+	di->regu = regulator_get(&pdev->dev, "vddadc");
-+	if (IS_ERR(di->regu)) {
-+		ret = PTR_ERR(di->regu);
-+		dev_err(di->dev, "failed to get vtvout LDO\n");
-+		goto fail;
-+	}
-+	di->parent->gpadc = di;
-+	dev_dbg(di->dev, "probe success\n");
-+	return 0;
-+fail:
-+	kfree(di);
-+	di = NULL;
-+	return ret;
-+}
-+
-+static int __devexit ab8500_gpadc_remove(struct platform_device *pdev)
-+{
-+	struct ab8500_gpadc *di = platform_get_drvdata(pdev);
-+
-+	/* remove interrupt  - completion of Sw ADC conversion */
-+	free_irq(di->irq, di);
-+	/* disable VTVout LDO that is being used by GPADC */
-+	regulator_put(di->regu);
-+	kfree(di);
-+	di = NULL;
-+	return 0;
-+}
-+
-+static struct platform_driver ab8500_gpadc_driver = {
-+	.probe = ab8500_gpadc_probe,
-+	.remove = __devexit_p(ab8500_gpadc_remove),
-+	.driver = {
-+		.name = "ab8500-gpadc",
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+static int __init ab8500_gpadc_init(void)
-+{
-+	return platform_driver_register(&ab8500_gpadc_driver);
-+}
-+
-+static void __exit ab8500_gpadc_exit(void)
-+{
-+	platform_driver_unregister(&ab8500_gpadc_driver);
-+}
-+
-+subsys_initcall_sync(ab8500_gpadc_init);
-+module_exit(ab8500_gpadc_exit);
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_AUTHOR("Arun R Murthy");
-+MODULE_ALIAS("platform:ab8500_gpadc");
-+MODULE_DESCRIPTION("AB8500 GPADC driver");
-diff --git a/include/linux/mfd/ab8500-gpadc.h b/include/linux/mfd/ab8500-gpadc.h
-new file mode 100644
-index 0000000..1b0adbb
---- /dev/null
-+++ b/include/linux/mfd/ab8500-gpadc.h
-@@ -0,0 +1,47 @@
-+/*
-+ * Copyright (C) 2010 ST-Ericsson SA
-+ * Licensed under GPLv2.
-+ *
-+ * Author: Arun R Murthy <arun.murthy@stericsson.com>
-+ */
-+
-+#ifndef	_AB8500_GPADC_H
-+#define _AB8500_GPADC_H
-+
-+/* GPADC source: From datasheet(ADCSwSel[4:0] in GPADCCtrl2) */
-+#define BAT_CTRL        0x01
-+#define BTEMP_BALL      0x02
-+#define MAIN_CHARGER_V  0x03
-+#define ACC_DETECT1     0x04
-+#define ACC_DETECT2     0x05
-+#define ADC_AUX1	0x06
-+#define ADC_AUX2	0x07
-+#define MAIN_BAT_V      0x08
-+#define VBUS_V          0x09
-+#define MAIN_CHARGER_C  0x0A
-+#define USB_CHARGER_C   0x0B
-+#define BK_BAT_V        0x0C
-+#define DIE_TEMP        0x0D
-+
-+/**
-+ * struct ab8500_gpadc - ab8500 GPADC device information
-+ * @dev:			pointer to the struct device
-+ * @parent:			pointer to the parent device structure ab8500
-+ * @ab8500_gpadc_complete:	pointer to the struct completion, to indicate
-+ *				the completion of gpadc conversion
-+ * @ab8500_gpadc_lock:		structure of type mutex
-+ * @regu:			pointer to the struct regulator
-+ * @irq:			interrupt number that is used by gpadc
-+ */
-+struct ab8500_gpadc {
-+	struct device *dev;
-+	struct ab8500 *parent;
-+	struct completion ab8500_gpadc_complete;
-+	struct mutex ab8500_gpadc_lock;
-+	struct regulator *regu;
-+	int irq;
-+};
-+
-+int ab8500_gpadc_convert(struct ab8500_gpadc *di, u8 input);
-+
-+#endif /* _AB8500_GPADC_H */
-diff --git a/include/linux/mfd/ab8500.h b/include/linux/mfd/ab8500.h
-index 37f56b7..8ebc4d8 100644
---- a/include/linux/mfd/ab8500.h
-+++ b/include/linux/mfd/ab8500.h
-@@ -106,6 +106,9 @@
- #define AB8500_NR_IRQS			112
- #define AB8500_NUM_IRQ_REGS		14
+ /* Values used for system_state */
+ extern enum system_states {
+ 	SYSTEM_BOOTING,
+Index: work/init/main.c
+===================================================================
+--- work.orig/init/main.c
++++ work/init/main.c
+@@ -96,6 +96,15 @@ static inline void mark_rodata_ro(void)
+ extern void tc_init(void);
+ #endif
  
-+/* Forward Declaration */
-+struct ab8500_gpadc;
++/*
++ * Debug helper: via this flag we know that we are in 'early bootup code'
++ * where only the boot processor is running with IRQ disabled.  This means
++ * two things - IRQ must not be enabled before the flag is cleared and some
++ * operations which are not allowed with IRQ disabled are allowed while the
++ * flag is set.
++ */
++bool early_boot_irqs_disabled __read_mostly;
 +
- /**
-  * struct ab8500 - ab8500 internal structure
-  * @dev: parent device
-@@ -119,6 +122,7 @@
-  * @tx_buf: tx buf for SPI
-  * @mask: cache of IRQ regs for bus lock
-  * @oldmask: cache of previous IRQ regs for bus lock
-+ * @gpadc: pointer to the ab8500 gpadc device information
+ enum system_states system_state __read_mostly;
+ EXPORT_SYMBOL(system_state);
+ 
+@@ -554,7 +563,7 @@ asmlinkage void __init start_kernel(void
+ 	cgroup_init_early();
+ 
+ 	local_irq_disable();
+-	early_boot_irqs_off();
++	early_boot_irqs_disabled = true;
+ 
+ /*
+  * Interrupts are still disabled. Do necessary setups, then
+@@ -621,7 +630,7 @@ asmlinkage void __init start_kernel(void
+ 	if (!irqs_disabled())
+ 		printk(KERN_CRIT "start_kernel(): bug: interrupts were "
+ 				 "enabled early\n");
+-	early_boot_irqs_on();
++	early_boot_irqs_disabled = false;
+ 	local_irq_enable();
+ 
+ 	/* Interrupts are enabled now so all GFP allocations are safe. */
+Index: work/kernel/lockdep.c
+===================================================================
+--- work.orig/kernel/lockdep.c
++++ work/kernel/lockdep.c
+@@ -2292,22 +2292,6 @@ mark_held_locks(struct task_struct *curr
+ }
+ 
+ /*
+- * Debugging helper: via this flag we know that we are in
+- * 'early bootup code', and will warn about any invalid irqs-on event:
+- */
+-static int early_boot_irqs_enabled;
+-
+-void early_boot_irqs_off(void)
+-{
+-	early_boot_irqs_enabled = 0;
+-}
+-
+-void early_boot_irqs_on(void)
+-{
+-	early_boot_irqs_enabled = 1;
+-}
+-
+-/*
+  * Hardirqs will be enabled:
   */
- struct ab8500 {
- 	struct device	*dev;
-@@ -137,6 +141,8 @@ struct ab8500 {
+ void trace_hardirqs_on_caller(unsigned long ip)
+@@ -2319,7 +2303,7 @@ void trace_hardirqs_on_caller(unsigned l
+ 	if (unlikely(!debug_locks || current->lockdep_recursion))
+ 		return;
  
- 	u8 mask[AB8500_NUM_IRQ_REGS];
- 	u8 oldmask[AB8500_NUM_IRQ_REGS];
-+
-+	struct ab8500_gpadc *gpadc;
- };
+-	if (DEBUG_LOCKS_WARN_ON(unlikely(!early_boot_irqs_enabled)))
++	if (DEBUG_LOCKS_WARN_ON(unlikely(early_boot_irqs_disabled)))
+ 		return;
  
- struct regulator_init_data;
--- 
-1.7.2.dirty
-
+ 	if (unlikely(curr->hardirqs_enabled)) {
