@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755699Ab1ATOae (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 09:30:34 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:11265 "EHLO
+	id S1755834Ab1ATOau (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 09:30:50 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:39196 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755788Ab1ATOab (ORCPT
+	with ESMTP id S1755737Ab1ATOaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 09:30:31 -0500
+	Thu, 20 Jan 2011 09:30:46 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=message-id:from:date:to:reply-to:cc:subject;
-        b=xJq9vgP37UTY3MvI4V0e4JJj6F/RKi+2NET8h9OhNOB0UzIE9pP5eFjMjjMW19Amjt
-         jhENmoyhe9P0Wf5rLipw==
-Message-ID: <4d384700.2308e30a.70bc.ffffd532@mx.google.com>
+        b=xe/wrkCJlLxoW3qdKLsXKJZNgY/d0Lx/fgozW06GyJZ5pjp5lKJorQTtI889HMd1bX
+         jdKJbtMrHY2m/uE62OQQ==
+Message-ID: <4d384706.c89cd80a.1e79.ffffa10d@mx.google.com>
 From: Stephane Eranian <eranian@google.com>
 Date: Thu, 20 Jan 2011 15:30:01 +0200
 To: linux-kernel@vger.kernel.org
@@ -21,1202 +21,538 @@ Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
         fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
         eranian@google.com, robert.richter@amd.com, acme@redhat.com,
         lizf@cn.fujitsu.com
-Subject: [PATCH 1/2] perf_events: add cgroup support (v8)
+Subject: [PATCH 2/2] perf_events: add cgroup support to perf tool (v8)
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This kernel patch adds the ability to filter monitoring based on
-container groups (cgroups). This is for use in per-cpu mode only.
-    
-The cgroup to monitor is passed as a file descriptor in the pid
-argument to the syscall. The file descriptor must be opened to 
-the cgroup name in the cgroup filesystem. For instance, if the
-cgroup name is foo and cgroupfs is mounted in /cgroup, then the
-file descriptor is opened to /cgroup/foo. Cgroup mode is
-activated by passing PERF_FLAG_PID_CGROUP in the flags argument
-to the syscall.
+This patch adds the ability to filter monitoring based on container groups
+(cgroups) for both perf stat and perf record. It is possible to monitor
+multiple cgroup in parallel. There is one cgroup per event. The cgroups to
+monitor are passed via a new -G option followed by a comma separated list of
+cgroup names.
 
-For instance to measure in cgroup foo on CPU1 assuming
-cgroupfs is mounted under /cgroup:
+The cgroup filesystem has to be mounted. Given a cgroup name, the perf tool
+finds the corresponding directory in the cgroup filesystem and opens it. It
+then passes that file descriptor to the kernel.
 
-struct perf_event_attr attr;
-int cgroup_fd, fd;
+Example:
+$ perf stat -B -a -e cycles:u,cycles:u,cycles:u -G test1,,test2 -- sleep 1
+ Performance counter stats for 'sleep 1':
 
-cgroup_fd = open("/cgroup/foo", O_RDONLY);
-fd = perf_event_open(&attr, cgroup_fd, 1, -1, PERF_FLAG_PID_CGROUP);
-close(cgroup_fd);
+      2,368,667,414  cycles                   test1
+      2,369,661,459  cycles                  
+      <not counted>  cycles                   test2
+
+        1.001856890  seconds time elapsed
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index ce104e3..780e88c 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -626,6 +626,7 @@ bool css_is_ancestor(struct cgroup_subsys_state *cg,
- /* Get id and depth of css */
- unsigned short css_id(struct cgroup_subsys_state *css);
- unsigned short css_depth(struct cgroup_subsys_state *css);
-+struct cgroup_subsys_state *cgroup_css_from_dir(struct file *f, int id);
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index e032716..5a520f8 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -137,6 +137,17 @@ Do not update the builid cache. This saves some overhead in situations
+ where the information in the perf.data file (which includes buildids)
+ is sufficient.
  
- #else /* !CONFIG_CGROUPS */
++-G name,...::
++--cgroup name,...::
++monitor only in the container (cgroup) called "name". This option is available only
++in per-cpu mode. The cgroup filesystem must be mounted. All threads belonging to
++container "name" are monitored when they run on the monitored CPUs. Multiple cgroups
++can be provided. Each cgroup is applied to the corresponding event, i.e., first cgroup
++to first event, second cgroup to second event and so on. It is possible to provide
++an empty cgroup (monitor all the time) using, e.g., -G foo,,bar. Cgroups must have
++corresponding events, i.e., they always refer to events defined earlier on the command
++line.
++
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1], linkperf:perf-list[1]
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index b6da7af..918cc38 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -83,6 +83,17 @@ This option is only valid in system-wide mode.
+ print counts using a CSV-style output to make it easy to import directly into
+ spreadsheets. Columns are separated by the string specified in SEP.
  
-diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
-index ccefff0..cdbfcb8 100644
---- a/include/linux/cgroup_subsys.h
-+++ b/include/linux/cgroup_subsys.h
-@@ -65,4 +65,8 @@ SUBSYS(net_cls)
- SUBSYS(blkio)
- #endif
++-G name::
++--cgroup name::
++monitor only in the container (cgroup) called "name". This option is available only
++in per-cpu mode. The cgroup filesystem must be mounted. All threads belonging to
++container "name" are monitored when they run on the monitored CPUs. Multiple cgroups
++can be provided. Each cgroup is applied to the corresponding event, i.e., first cgroup
++to first event, second cgroup to second event and so on. It is possible to provide
++an empty cgroup (monitor all the time) using, e.g., -G foo,,bar. Cgroups must have
++corresponding events, i.e., they always refer to events defined earlier on the command
++line.
++
+ EXAMPLES
+ --------
  
-+#ifdef CONFIG_CGROUP_PERF
-+SUBSYS(perf)
-+#endif
-+
- /* */
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index dda5b0a..c905765 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -464,6 +464,7 @@ enum perf_callchain_context {
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 2b5387d..ea8696e 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -426,6 +426,7 @@ LIB_H += util/probe-event.h
+ LIB_H += util/pstack.h
+ LIB_H += util/cpumap.h
+ LIB_H += $(ARCH_INCLUDE)
++LIB_H += util/cgroup.h
  
- #define PERF_FLAG_FD_NO_GROUP	(1U << 0)
- #define PERF_FLAG_FD_OUTPUT	(1U << 1)
-+#define PERF_FLAG_PID_CGROUP	(1U << 2) /* pid=cgroup id, per-cpu mode only */
+ LIB_OBJS += $(OUTPUT)util/abspath.o
+ LIB_OBJS += $(OUTPUT)util/alias.o
+@@ -475,6 +476,7 @@ LIB_OBJS += $(OUTPUT)util/probe-event.o
+ LIB_OBJS += $(OUTPUT)util/util.o
+ LIB_OBJS += $(OUTPUT)util/xyarray.o
+ LIB_OBJS += $(OUTPUT)util/cpumap.o
++LIB_OBJS += $(OUTPUT)util/cgroup.o
  
- #ifdef __KERNEL__
- /*
-@@ -471,6 +472,7 @@ enum perf_callchain_context {
-  */
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
  
- #ifdef CONFIG_PERF_EVENTS
-+# include <linux/cgroup.h>
- # include <asm/perf_event.h>
- # include <asm/local64.h>
- #endif
-@@ -716,6 +718,22 @@ struct swevent_hlist {
- #define PERF_ATTACH_GROUP	0x02
- #define PERF_ATTACH_TASK	0x04
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index fcd29e8..b0c60bf 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -23,6 +23,7 @@
+ #include "util/session.h"
+ #include "util/symbol.h"
+ #include "util/cpumap.h"
++#include "util/cgroup.h"
  
-+#ifdef CONFIG_CGROUP_PERF
-+/*
-+ * perf_cgroup_info keeps track of time_enabled for a cgroup.
-+ * This is a per-cpu dynamically allocated data structure.
-+ */
-+struct perf_cgroup_info {
-+	u64 time;
-+	u64 timestamp;
-+};
-+
-+struct perf_cgroup {
-+	struct cgroup_subsys_state css;
-+	struct perf_cgroup_info *info;	/* timing info, one per cpu */
-+};
-+#endif
-+
- /**
-  * struct perf_event - performance event kernel representation:
-  */
-@@ -832,6 +850,11 @@ struct perf_event {
- 	struct event_filter		*filter;
- #endif
- 
-+#ifdef CONFIG_CGROUP_PERF
-+	struct perf_cgroup		*cgrp; /* cgroup event is attach to */
-+	int				cgrp_defer_enabled;
-+#endif
-+
- #endif /* CONFIG_PERF_EVENTS */
- };
- 
-@@ -886,6 +909,7 @@ struct perf_event_context {
- 	u64				generation;
- 	int				pin_count;
- 	struct rcu_head			rcu_head;
-+	int				nr_cgroups; /* cgroup events present */
- };
- 
- /*
-@@ -1040,11 +1064,11 @@ have_event:
- 	__perf_sw_event(event_id, nr, nmi, regs, addr);
- }
- 
--extern atomic_t perf_task_events;
-+extern atomic_t perf_sched_events;
- 
- static inline void perf_event_task_sched_in(struct task_struct *task)
- {
--	COND_STMT(&perf_task_events, __perf_event_task_sched_in(task));
-+	COND_STMT(&perf_sched_events, __perf_event_task_sched_in(task));
- }
- 
- static inline
-@@ -1052,7 +1076,7 @@ void perf_event_task_sched_out(struct task_struct *task, struct task_struct *nex
- {
- 	perf_sw_event(PERF_COUNT_SW_CONTEXT_SWITCHES, 1, 1, NULL, 0);
- 
--	COND_STMT(&perf_task_events, __perf_event_task_sched_out(task, next));
-+	COND_STMT(&perf_sched_events, __perf_event_task_sched_out(task, next));
- }
- 
- extern void perf_event_mmap(struct vm_area_struct *vma);
-@@ -1121,6 +1145,29 @@ extern void perf_swevent_put_recursion_context(int rctx);
- extern void perf_event_enable(struct perf_event *event);
- extern void perf_event_disable(struct perf_event *event);
- extern void perf_event_task_tick(void);
-+
-+#ifdef CONFIG_CGROUP_PERF
-+
-+#define PERF_CGROUP_SWOUT	0x1 /* cgroup switch out every event */
-+#define PERF_CGROUP_SWIN	0x2 /* cgroup switch in events based on task */
-+
-+extern void perf_cgroup_switch(struct task_struct *tsk, int mode);
-+
-+static inline void perf_cgroup_sched_out(struct task_struct *task)
-+{
-+	/* if necessary, deschedule all events */
-+	perf_cgroup_switch(task, PERF_CGROUP_SWOUT);
-+}
-+
-+static inline void perf_cgroup_sched_in(struct task_struct *task)
-+{
-+	/* if necessary, schedule cgroup events */
-+	perf_cgroup_switch(task, PERF_CGROUP_SWIN);
-+}
-+#else
-+static inline void perf_cgroup_sched_out(struct task_struct *task)	{ }
-+static inline void perf_cgroup_sched_in(struct task_struct *task)	{ }
-+#endif
- #else
- static inline void
- perf_event_task_sched_in(struct task_struct *task)			{ }
-@@ -1134,6 +1181,8 @@ static inline void perf_event_delayed_put(struct task_struct *task)	{ }
- static inline void perf_event_print_debug(void)				{ }
- static inline int perf_event_task_disable(void)				{ return -EINVAL; }
- static inline int perf_event_task_enable(void)				{ return -EINVAL; }
-+static inline void perf_cgroup_sched_out(struct task_struct *task)	{ }
-+static inline void perf_cgroup_sched_in(struct task_struct *task)	{ }
- 
- static inline void
- perf_sw_event(u32 event_id, u64 nr, int nmi,
-diff --git a/init/Kconfig b/init/Kconfig
-index 4e33790..954eac3 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -683,6 +683,16 @@ config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
- 	  select this option (if, for some reason, they need to disable it
- 	  then noswapaccount does the trick).
- 
-+config CGROUP_PERF
-+	bool "Enable perf_event per-cpu per-container group (cgroup) monitoring"
-+	depends on PERF_EVENTS && CGROUPS
-+	help
-+	  This option extends the per-cpu mode to restrict monitoring to
-+	  threads which belong to the cgroup specificied and run on the
-+	  designated cpu.
-+
-+	  Say N if unsure.
-+
- menuconfig CGROUP_SCHED
- 	bool "Group CPU scheduler"
- 	depends on EXPERIMENTAL
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index b24d702..a27f64a 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -57,6 +57,7 @@
- #include <linux/vmalloc.h> /* TODO: replace with more sophisticated array */
- #include <linux/eventfd.h>
- #include <linux/poll.h>
-+#include <linux/perf_event.h>
- 
- #include <asm/atomic.h>
- 
-@@ -4232,6 +4233,7 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
- {
- 	int i;
- 	struct css_set *cg;
-+	unsigned long flags;
- 
- 	if (run_callbacks && need_forkexit_callback) {
- 		/*
-@@ -4259,8 +4261,20 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
- 
- 	/* Reassign the task to the init_css_set. */
- 	task_lock(tsk);
-+	/*
-+	 * we mask interrupts to prevent:
-+	 * - timer tick to cause event rotation which
-+	 *   could schedule back in cgroup events after
-+	 *   they were switched out by perf_cgroup_sched_out()
-+	 *
-+	 * - preemption which could schedule back in cgroup events
-+	 */
-+	local_irq_save(flags);
-+	perf_cgroup_sched_out(tsk);
- 	cg = tsk->cgroups;
- 	tsk->cgroups = &init_css_set;
-+	perf_cgroup_sched_in(tsk);
-+	local_irq_restore(flags);
- 	task_unlock(tsk);
- 	if (cg)
- 		put_css_set_taskexit(cg);
-@@ -4813,6 +4827,29 @@ css_get_next(struct cgroup_subsys *ss, int id,
- 	return ret;
- }
- 
-+/*
-+ * get corresponding css from file open on cgroupfs directory
-+ */
-+struct cgroup_subsys_state *cgroup_css_from_dir(struct file *f, int id)
-+{
-+	struct cgroup *cgrp;
-+	struct inode *inode;
-+	struct cgroup_subsys_state *css;
-+
-+	inode = f->f_dentry->d_inode;
-+	/* check in cgroup filesystem dir */
-+	if (inode->i_op != &cgroup_dir_inode_operations)
-+		return ERR_PTR(-EBADF);
-+
-+	if (id < 0 || id >= CGROUP_SUBSYS_COUNT)
-+		return ERR_PTR(-EINVAL);
-+
-+	/* get cgroup */
-+	cgrp = __d_cgrp(f->f_dentry);
-+	css = cgrp->subsys[id];
-+	return css ? css : ERR_PTR(-ENOENT);
-+}
-+
- #ifdef CONFIG_CGROUP_DEBUG
- static struct cgroup_subsys_state *debug_create(struct cgroup_subsys *ss,
- 						   struct cgroup *cont)
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 244ca3a..14bdefe 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -38,13 +38,23 @@
- 
- #include <asm/irq_regs.h>
- 
-+#define PERF_FLAG_ALL (PERF_FLAG_FD_NO_GROUP |\
-+		       PERF_FLAG_FD_OUTPUT  |\
-+		       PERF_FLAG_PID_CGROUP)
-+
- enum event_type_t {
- 	EVENT_FLEXIBLE = 0x1,
- 	EVENT_PINNED = 0x2,
- 	EVENT_ALL = EVENT_FLEXIBLE | EVENT_PINNED,
- };
- 
--atomic_t perf_task_events __read_mostly;
-+/*
-+ * perf_sched_events : >0 events exist
-+ * perf_cgroup_events: >0 per-cpu cgroup events exist on this cpu
-+ */
-+atomic_t perf_sched_events __read_mostly;
-+static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
-+
- static atomic_t nr_mmap_events __read_mostly;
- static atomic_t nr_comm_events __read_mostly;
- static atomic_t nr_task_events __read_mostly;
-@@ -75,7 +85,11 @@ static void cpu_ctx_sched_out(struct perf_cpu_context *cpuctx,
- 			      enum event_type_t event_type);
- 
- static void cpu_ctx_sched_in(struct perf_cpu_context *cpuctx,
--			     enum event_type_t event_type);
-+			     enum event_type_t event_type,
-+			     struct task_struct *task, int cgrp_sw);
-+
-+static void update_context_time(struct perf_event_context *ctx);
-+static u64 perf_event_time(struct perf_event *event);
- 
- void __weak perf_event_print_debug(void)	{ }
- 
-@@ -89,6 +103,292 @@ static inline u64 perf_clock(void)
- 	return local_clock();
- }
- 
-+#ifdef CONFIG_CGROUP_PERF
-+
-+static inline struct perf_cgroup *
-+perf_cgroup_from_task(struct task_struct *task)
-+{
-+	return container_of(task_subsys_state(task, perf_subsys_id),
-+			struct perf_cgroup, css);
-+}
-+
-+static inline bool
-+perf_cgroup_match(struct perf_event *event, struct task_struct *task)
-+{
-+	struct perf_cgroup *cgrp = NULL;
-+	if (task)
-+		cgrp = perf_cgroup_from_task(task);
-+	return !event->cgrp || event->cgrp == cgrp;
-+}
-+
-+static inline void perf_get_cgroup(struct perf_event *event)
-+{
-+	css_get(&event->cgrp->css);
-+}
-+
-+static inline void perf_put_cgroup(struct perf_event *event)
-+{
-+	css_put(&event->cgrp->css);
-+}
-+
-+static inline void perf_detach_cgroup(struct perf_event *event)
-+{
-+	perf_put_cgroup(event);
-+	event->cgrp = NULL;
-+}
-+
-+static inline int is_cgroup_event(struct perf_event *event)
-+{
-+	return event->cgrp != NULL;
-+}
-+
-+static inline u64 perf_cgroup_event_time(struct perf_event *event)
-+{
-+	struct perf_cgroup_info *t;
-+
-+	t = per_cpu_ptr(event->cgrp->info, event->cpu);
-+	return t->time;
-+}
-+
-+static inline void __update_cgrp_time(struct perf_cgroup *cgrp)
-+{
-+	struct perf_cgroup_info *info;
-+	u64 now;
-+
-+	now = perf_clock();
-+
-+	info = this_cpu_ptr(cgrp->info);
-+
-+	info->time += now - info->timestamp;
-+	info->timestamp = now;
-+}
-+
-+static inline void update_cgrp_time_from_task(struct task_struct *task)
-+{
-+	struct perf_cgroup *cgrp_out = perf_cgroup_from_task(task);
-+	if (cgrp_out)
-+		__update_cgrp_time(cgrp_out);
-+}
-+
-+static inline void update_cgrp_time_from_event(struct perf_event *event)
-+{
-+	struct perf_cgroup *cgrp = perf_cgroup_from_task(current);
-+	/*
-+	 * do not update time when cgroup is not active
-+	 */
-+	if (!event->cgrp || cgrp != event->cgrp)
-+		return;
-+
-+	__update_cgrp_time(event->cgrp);
-+}
-+
-+static inline void
-+perf_cgroup_set_timestamp(struct task_struct *task, u64 now)
-+{
-+	struct perf_cgroup *cgrp;
-+	struct perf_cgroup_info *info;
-+
-+	if (!task)
-+		return;
-+
-+	cgrp = perf_cgroup_from_task(task);
-+	info = per_cpu_ptr(cgrp->info, smp_processor_id());
-+	info->timestamp = now;
-+}
-+
-+/*
-+ * reschedule events based on the cgroup constraint of task.
-+ *
-+ * mode SWOUT : schedule out everything
-+ * mode SWIN : schedule in based on cgroup for next
-+ */
-+void perf_cgroup_switch(struct task_struct *task, int mode)
-+{
-+	struct perf_cpu_context *cpuctx;
-+	struct pmu *pmu;
-+	unsigned long flags;
-+
-+	/*
-+	 * disable interrupts to avoid geting nr_cgroup
-+	 * changes via __perf_event_disable(). Also
-+	 * avoids preemption.
-+	 */
-+	local_irq_save(flags);
-+
-+	/*
-+	 * we reschedule only in the presence of cgroup
-+	 * constrained events.
-+	 */
-+	rcu_read_lock();
-+
-+	list_for_each_entry_rcu(pmu, &pmus, entry) {
-+
-+		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
-+
-+		perf_pmu_disable(cpuctx->ctx.pmu);
-+
-+		/*
-+		 * perf_cgroup_events says at least one
-+		 * context on this CPU has cgroup events.
-+		 *
-+		 * ctx->nr_cgroups reports the number of cgroup
-+		 * events for a context.
-+		 */
-+		if (cpuctx->ctx.nr_cgroups > 0) {
-+
-+			if (mode & PERF_CGROUP_SWOUT)
-+				cpu_ctx_sched_out(cpuctx, EVENT_ALL);
-+
-+			if (mode & PERF_CGROUP_SWIN)
-+				cpu_ctx_sched_in(cpuctx, EVENT_ALL, task, 1);
-+		}
-+
-+		perf_pmu_enable(cpuctx->ctx.pmu);
-+	}
-+
-+	rcu_read_unlock();
-+
-+	local_irq_restore(flags);
-+}
-+
-+static inline int perf_cgroup_connect(int fd, struct perf_event *event,
-+				      struct perf_event_attr *attr,
-+				      struct perf_event *group_leader)
-+{
-+	struct perf_cgroup *cgrp;
-+	struct cgroup_subsys_state *css;
-+	struct file *file;
-+	int ret = 0, fput_needed;
-+
-+	file = fget_light(fd, &fput_needed);
-+	if (!file)
-+		return -EBADF;
-+
-+	css = cgroup_css_from_dir(file, perf_subsys_id);
-+	if (IS_ERR(css))
-+		return PTR_ERR(css);
-+
-+	cgrp = container_of(css, struct perf_cgroup, css);
-+	event->cgrp = cgrp;
-+
-+	/*
-+	 * all events in a group must monitor
-+	 * the same cgroup because a task belongs
-+	 * to only one perf cgroup at a time
-+	 */
-+	if (group_leader && group_leader->cgrp != cgrp) {
-+		perf_detach_cgroup(event);
-+		ret = -EINVAL;
-+	} else {
-+		/* must be done before we fput() the file */
-+		perf_get_cgroup(event);
-+	}
-+	fput_light(file, fput_needed);
-+	return ret;
-+}
-+
-+static inline void
-+perf_cgroup_set_shadow_time(struct perf_event *event, u64 now)
-+{
-+	struct perf_cgroup_info *t;
-+	t = per_cpu_ptr(event->cgrp->info, event->cpu);
-+	event->shadow_ctx_time = now - t->timestamp;
-+}
-+
-+static inline void
-+perf_cgroup_defer_enabled(struct perf_event *event, struct task_struct *task)
-+{
-+	/*
-+	 * when the current task's perf cgroup does not match
-+	 * the event's, we need to remember to call the
-+	 * perf_mark_enable() function the first time a task with
-+	 * a matching perf cgroup is scheduled in.
-+	 */
-+	if (is_cgroup_event(event) && !perf_cgroup_match(event, task))
-+		event->cgrp_defer_enabled = 1;
-+}
-+
-+static inline void
-+perf_cgroup_mark_enabled(struct perf_event *event,
-+			 struct perf_event_context *ctx)
-+{
-+	struct perf_event *sub;
-+	u64 tstamp = perf_event_time(event);
-+
-+	if (!event->cgrp_defer_enabled)
-+		return;
-+
-+	event->cgrp_defer_enabled = 0;
-+
-+	event->tstamp_enabled = tstamp - event->total_time_enabled;
-+	list_for_each_entry(sub, &event->sibling_list, group_entry) {
-+		if (sub->state >= PERF_EVENT_STATE_INACTIVE) {
-+			sub->tstamp_enabled = tstamp - sub->total_time_enabled;
-+			sub->cgrp_defer_enabled = 0;
-+		}
-+	}
-+}
-+#else /* !CONFIG_CGROUP_PERF */
-+
-+static inline bool
-+perf_cgroup_match(struct perf_event *event, struct task_struct *task)
-+{
-+	return true;
-+}
-+
-+static inline void perf_detach_cgroup(struct perf_event *event)
-+{}
-+
-+static inline int is_cgroup_event(struct perf_event *event)
-+{
-+	return 0;
-+}
-+
-+static inline u64 perf_cgroup_event_cgrp_time(struct perf_event *event)
-+{
-+	return 0;
-+}
-+
-+static inline void update_cgrp_time_from_event(struct perf_event *event)
-+{}
-+
-+static inline void update_cgrp_time_from_task(struct task_struct *t)
-+{}
-+
-+static inline int perf_cgroup_connect(pid_t pid, struct perf_event *event,
-+				      struct perf_event_attr *attr,
-+				      struct perf_event *group_leader)
-+{
-+	return -EINVAL;
-+}
-+
-+static inline void
-+perf_cgroup_set_timestamp(struct task_struct *task, u64 now)
-+{}
-+
-+void
-+perf_cgroup_switch(struct task_struct *task, struct task_struct *next)
-+{}
-+
-+static inline void
-+perf_cgroup_set_shadow_time(struct perf_event *event, u64 now)
-+{}
-+
-+static inline u64 perf_cgroup_event_time(struct perf_event *event)
-+{
-+	return 0;
-+}
-+
-+static inline void
-+perf_cgroup_defer_enabled(struct perf_event *event, struct task_struct *task)
-+{}
-+
-+static inline void
-+perf_cgroup_mark_enabled(struct perf_event *event,
-+			 struct perf_event_context *ctx)
-+{}
-+#endif
-+
- void perf_pmu_disable(struct pmu *pmu)
- {
- 	int *count = this_cpu_ptr(pmu->pmu_disable_count);
-@@ -271,6 +571,10 @@ static void update_context_time(struct perf_event_context *ctx)
- static u64 perf_event_time(struct perf_event *event)
- {
- 	struct perf_event_context *ctx = event->ctx;
-+
-+	if (is_cgroup_event(event))
-+		return perf_cgroup_event_time(event);
-+
- 	return ctx ? ctx->time : 0;
- }
- 
-@@ -285,9 +589,20 @@ static void update_event_times(struct perf_event *event)
- 	if (event->state < PERF_EVENT_STATE_INACTIVE ||
- 	    event->group_leader->state < PERF_EVENT_STATE_INACTIVE)
- 		return;
--
--	if (ctx->is_active)
-+	/*
-+	 * in cgroup mode, time_enabled represents
-+	 * the time the event was enabled AND active
-+	 * tasks were in the monitored cgroup. This is
-+	 * independent of the activity of the context as
-+	 * there may be a mix of cgroup and non-cgroup events.
-+	 *
-+	 * That is why we treat cgroup events differently
-+	 * here.
-+	 */
-+	if (is_cgroup_event(event))
- 		run_end = perf_event_time(event);
-+	else if (ctx->is_active)
-+		run_end = ctx->time;
- 	else
- 		run_end = event->tstamp_stopped;
- 
-@@ -299,6 +614,7 @@ static void update_event_times(struct perf_event *event)
- 		run_end = perf_event_time(event);
- 
- 	event->total_time_running = run_end - event->tstamp_running;
-+
- }
- 
- /*
-@@ -347,6 +663,17 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
- 		list_add_tail(&event->group_entry, list);
+ #include <unistd.h>
+ #include <sched.h>
+@@ -234,9 +235,10 @@ static void create_counter(struct perf_evsel *evsel, int cpu)
+ 	char *filter = evsel->filter;
+ 	struct perf_event_attr *attr = &evsel->attr;
+ 	struct perf_header_attr *h_attr;
++	unsigned long flags = 0;
+ 	int track = !evsel->idx; /* only the first counter needs these */
+ 	int thread_index;
+-	int ret;
++	int ret, pid = -1;
+ 	struct {
+ 		u64 count;
+ 		u64 time_enabled;
+@@ -313,6 +315,11 @@ static void create_counter(struct perf_evsel *evsel, int cpu)
+ 		attr->wakeup_events = 1;
  	}
  
-+	if (is_cgroup_event(event)) {
-+		ctx->nr_cgroups++;
-+		/*
-+		 * one more event:
-+		 * - that has cgroup constraint on event->cpu
-+		 * - that may need work on context switch
-+		 */
-+		atomic_inc(&per_cpu(perf_cgroup_events, event->cpu));
-+		jump_label_inc(&perf_sched_events);
++	if (evsel->cgrp) {
++		flags = PERF_FLAG_PID_CGROUP;
++		pid = evsel->cgrp->fd;
 +	}
 +
- 	list_add_rcu(&event->event_entry, &ctx->event_list);
- 	if (!ctx->nr_events)
- 		perf_pmu_rotate_start(ctx->pmu);
-@@ -473,6 +800,12 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
+ 	attr->mmap		= track;
+ 	attr->comm		= track;
+ 	attr->inherit		= !no_inherit;
+@@ -325,7 +332,10 @@ retry_sample_id:
  
- 	event->attach_state &= ~PERF_ATTACH_CONTEXT;
- 
-+	if (is_cgroup_event(event)) {
-+		ctx->nr_cgroups--;
-+		atomic_dec(&per_cpu(perf_cgroup_events, event->cpu));
-+		jump_label_dec(&perf_sched_events);
-+	}
+ 	for (thread_index = 0; thread_index < threads->nr; thread_index++) {
+ try_again:
+-		FD(evsel, nr_cpu, thread_index) = sys_perf_event_open(attr, threads->map[thread_index], cpu, group_fd, 0);
++		if (!evsel->cgrp)
++			pid = threads->map[thread_index];
 +
- 	ctx->nr_events--;
- 	if (event->attr.inherit_stat)
- 		ctx->nr_stat--;
-@@ -542,9 +875,10 @@ out:
- }
++		FD(evsel, nr_cpu, thread_index) = sys_perf_event_open(attr, pid, cpu, group_fd, flags);
  
- static inline int
--event_filter_match(struct perf_event *event)
-+event_filter_match(struct perf_event *event, struct task_struct *task)
- {
--	return event->cpu == -1 || event->cpu == smp_processor_id();
-+	return (event->cpu == -1 || event->cpu == smp_processor_id())
-+	    && perf_cgroup_match(event, task);
- }
+ 		if (FD(evsel, nr_cpu, thread_index) < 0) {
+ 			int err = errno;
+@@ -884,6 +894,9 @@ const struct option record_options[] = {
+ 		    "do not update the buildid cache"),
+ 	OPT_BOOLEAN('B', "no-buildid", &no_buildid,
+ 		    "do not collect buildids in perf.data"),
++	OPT_CALLBACK('G', "cgroup", NULL, "name",
++		     "monitor event in cgroup name only",
++		     parse_cgroups),
+ 	OPT_END()
+ };
  
- static void
-@@ -561,8 +895,8 @@ event_sched_out(struct perf_event *event,
- 	 * via read() for time_enabled, time_running:
- 	 */
- 	if (event->state == PERF_EVENT_STATE_INACTIVE
--	    && !event_filter_match(event)) {
--		delta = ctx->time - event->tstamp_stopped;
-+	    && !event_filter_match(event, current)) {
-+		delta = tstamp - event->tstamp_stopped;
- 		event->tstamp_running += delta;
- 		event->tstamp_stopped = tstamp;
+@@ -908,6 +921,12 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 		write_mode = WRITE_FORCE;
  	}
-@@ -720,6 +1054,7 @@ static void __perf_event_disable(void *info)
- 	 */
- 	if (event->state >= PERF_EVENT_STATE_INACTIVE) {
- 		update_context_time(ctx);
-+		update_cgrp_time_from_event(event);
- 		update_group_times(event);
- 		if (event == event->group_leader)
- 			group_sched_out(event, cpuctx, ctx);
-@@ -782,6 +1117,41 @@ retry:
- 	raw_spin_unlock_irq(&ctx->lock);
- }
  
-+static void perf_set_shadow_time(struct perf_event *event,
-+				 struct perf_event_context *ctx,
-+				 u64 tstamp)
-+{
-+	/*
-+	 * use the correct time source for the time snapshot
-+	 *
-+	 * We could get by without this by leveraging the
-+	 * fact that to get to this function, the caller
-+	 * has most likely already called update_context_time()
-+	 * and update_cgrp_time_xx() and thus both timestamp
-+	 * are identical (or very close). Given that tstamp is,
-+	 * already adjusted for cgroup, we could say that:
-+	 *    tstamp - ctx->timestamp
-+	 * is equivalent to
-+	 *    tstamp - cgrp->timestamp.
-+	 *
-+	 * Then, in perf_output_read(), the calculation would
-+	 * work with no changes because:
-+	 * - event is guaranteed scheduled in
-+	 * - no scheduled out in between
-+	 * - thus the timestamp would be the same
-+	 *
-+	 * But this is a bit hairy.
-+	 *
-+	 * So instead, we have an explicit cgroup call to remain
-+	 * within the time time source all along. We believe it
-+	 * is cleaner and simpler to understand.
-+	 */
-+	if (is_cgroup_event(event))
-+		perf_cgroup_set_shadow_time(event, tstamp);
-+	else
-+		event->shadow_ctx_time = tstamp - ctx->timestamp;
-+}
-+
- static int
- event_sched_in(struct perf_event *event,
- 		 struct perf_cpu_context *cpuctx,
-@@ -807,7 +1177,7 @@ event_sched_in(struct perf_event *event,
- 
- 	event->tstamp_running += tstamp - event->tstamp_stopped;
- 
--	event->shadow_ctx_time = tstamp - ctx->timestamp;
-+	perf_set_shadow_time(event, ctx, tstamp);
- 
- 	if (!is_software_event(event))
- 		cpuctx->active_oncpu++;
-@@ -923,9 +1293,9 @@ static void add_event_to_ctx(struct perf_event *event,
- 
- 	list_add_event(event, ctx);
- 	perf_group_attach(event);
--	event->tstamp_enabled = tstamp;
- 	event->tstamp_running = tstamp;
- 	event->tstamp_stopped = tstamp;
-+	event->tstamp_enabled = tstamp;
- }
- 
- /*
-@@ -957,10 +1327,16 @@ static void __perf_install_in_context(void *info)
- 	raw_spin_lock(&ctx->lock);
- 	ctx->is_active = 1;
- 	update_context_time(ctx);
-+	/*
-+	 * update cgrp time only if current cgrp
-+	 * matches event->cgrp. Must be done before
-+	 * calling add_event_to_ctx()
-+	 */
-+	update_cgrp_time_from_event(event);
- 
- 	add_event_to_ctx(event, ctx);
- 
--	if (!event_filter_match(event))
-+	if (!event_filter_match(event, current))
- 		goto unlock;
- 
- 	/*
-@@ -1102,10 +1478,19 @@ static void __perf_event_enable(void *info)
- 
- 	if (event->state >= PERF_EVENT_STATE_INACTIVE)
- 		goto unlock;
-+
-+	/*
-+	 * set current task's cgroup time reference point
-+	 */
-+	perf_cgroup_set_timestamp(current, perf_clock());
-+
- 	__perf_event_mark_enabled(event, ctx);
- 
--	if (!event_filter_match(event))
-+	if (!event_filter_match(event, current)) {
-+		if (is_cgroup_event(event))
-+			perf_cgroup_defer_enabled(event, current);
- 		goto unlock;
++	if (nr_cgroups && !system_wide) {
++		fprintf(stderr, "cgroup monitoring only available in"
++			" system-wide mode\n");
++		usage_with_options(record_usage, record_options);
 +	}
- 
- 	/*
- 	 * If the event is in a group and isn't the group leader,
-@@ -1227,6 +1612,7 @@ static void ctx_sched_out(struct perf_event_context *ctx,
- 	if (likely(!ctx->nr_events))
- 		goto out;
- 	update_context_time(ctx);
-+	update_cgrp_time_from_task(current);
- 
- 	if (!ctx->nr_active)
- 		goto out;
-@@ -1416,6 +1802,14 @@ void __perf_event_task_sched_out(struct task_struct *task,
- 
- 	for_each_task_context_nr(ctxn)
- 		perf_event_context_sched_out(task, ctxn, next);
 +
-+	/*
-+	 * if cgroup events exist on this CPU, then we need
-+	 * to check if we have to switch out PMU state.
-+	 * cgroup event are system-wide mode only
-+	 */
-+	if (atomic_read(&__get_cpu_var(perf_cgroup_events)))
-+		perf_cgroup_sched_out(task);
- }
+ 	symbol__init();
  
- static void task_ctx_sched_out(struct perf_event_context *ctx,
-@@ -1444,16 +1838,21 @@ static void cpu_ctx_sched_out(struct perf_cpu_context *cpuctx,
+ 	if (no_buildid_cache || no_buildid)
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 0ff11d9..43a61f9 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -48,6 +48,7 @@
+ #include "util/header.h"
+ #include "util/cpumap.h"
+ #include "util/thread.h"
++#include "util/cgroup.h"
  
- static void
- ctx_pinned_sched_in(struct perf_event_context *ctx,
--		    struct perf_cpu_context *cpuctx)
-+		    struct perf_cpu_context *cpuctx,
-+		    struct task_struct *task, int cgrp_sw)
- {
- 	struct perf_event *event;
+ #include <sys/prctl.h>
+ #include <math.h>
+@@ -386,6 +387,9 @@ static void nsec_printout(int cpu, struct perf_evsel *evsel, double avg)
  
- 	list_for_each_entry(event, &ctx->pinned_groups, group_entry) {
- 		if (event->state <= PERF_EVENT_STATE_OFF)
- 			continue;
--		if (!event_filter_match(event))
-+		if (!event_filter_match(event, task))
- 			continue;
+ 	fprintf(stderr, fmt, cpustr, msecs, csv_sep, event_name(evsel));
  
-+		/* may need to reset tstamp_enabled */
-+		if (is_cgroup_event(event))
-+			perf_cgroup_mark_enabled(event, ctx);
++	if (evsel->cgrp)
++		fprintf(stderr, "%s%s", csv_sep, evsel->cgrp->name);
 +
- 		if (group_can_go_on(event, cpuctx, 1))
- 			group_sched_in(event, cpuctx, ctx);
- 
-@@ -1470,7 +1869,8 @@ ctx_pinned_sched_in(struct perf_event_context *ctx,
- 
- static void
- ctx_flexible_sched_in(struct perf_event_context *ctx,
--		      struct perf_cpu_context *cpuctx)
-+		      struct perf_cpu_context *cpuctx,
-+		      struct task_struct *task, int cgrp_sw)
- {
- 	struct perf_event *event;
- 	int can_add_hw = 1;
-@@ -1483,9 +1883,13 @@ ctx_flexible_sched_in(struct perf_event_context *ctx,
- 		 * Listen to the 'cpu' scheduling filter constraint
- 		 * of events:
- 		 */
--		if (!event_filter_match(event))
-+		if (!event_filter_match(event, task))
- 			continue;
- 
-+		/* may need to reset tstamp_enabled */
-+		if (is_cgroup_event(event))
-+			perf_cgroup_mark_enabled(event, ctx);
-+
- 		if (group_can_go_on(event, cpuctx, can_add_hw)) {
- 			if (group_sched_in(event, cpuctx, ctx))
- 				can_add_hw = 0;
-@@ -1496,36 +1900,41 @@ ctx_flexible_sched_in(struct perf_event_context *ctx,
- static void
- ctx_sched_in(struct perf_event_context *ctx,
- 	     struct perf_cpu_context *cpuctx,
--	     enum event_type_t event_type)
-+	     enum event_type_t event_type,
-+	     struct task_struct *task, int cgrp_sw)
- {
-+	u64 now;
-+
- 	raw_spin_lock(&ctx->lock);
- 	ctx->is_active = 1;
- 	if (likely(!ctx->nr_events))
- 		goto out;
- 
--	ctx->timestamp = perf_clock();
--
-+	now = perf_clock();
-+	ctx->timestamp = now;
-+	perf_cgroup_set_timestamp(task, now);
- 	/*
- 	 * First go through the list and put on any pinned groups
- 	 * in order to give them the best chance of going on.
- 	 */
- 	if (event_type & EVENT_PINNED)
--		ctx_pinned_sched_in(ctx, cpuctx);
-+		ctx_pinned_sched_in(ctx, cpuctx, task, cgrp_sw);
- 
- 	/* Then walk through the lower prio flexible groups */
- 	if (event_type & EVENT_FLEXIBLE)
--		ctx_flexible_sched_in(ctx, cpuctx);
-+		ctx_flexible_sched_in(ctx, cpuctx, task, cgrp_sw);
- 
- out:
- 	raw_spin_unlock(&ctx->lock);
- }
- 
- static void cpu_ctx_sched_in(struct perf_cpu_context *cpuctx,
--			     enum event_type_t event_type)
-+			     enum event_type_t event_type,
-+			     struct task_struct *task, int cgrp_sw)
- {
- 	struct perf_event_context *ctx = &cpuctx->ctx;
- 
--	ctx_sched_in(ctx, cpuctx, event_type);
-+	ctx_sched_in(ctx, cpuctx, event_type, task, cgrp_sw);
- }
- 
- static void task_ctx_sched_in(struct perf_event_context *ctx,
-@@ -1537,11 +1946,12 @@ static void task_ctx_sched_in(struct perf_event_context *ctx,
- 	if (cpuctx->task_ctx == ctx)
+ 	if (csv_output)
  		return;
  
--	ctx_sched_in(ctx, cpuctx, event_type);
-+	ctx_sched_in(ctx, cpuctx, event_type, NULL, 0);
- 	cpuctx->task_ctx = ctx;
- }
+@@ -416,6 +420,9 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
  
--void perf_event_context_sched_in(struct perf_event_context *ctx)
-+void perf_event_context_sched_in(struct perf_event_context *ctx,
-+				 struct task_struct *task)
- {
- 	struct perf_cpu_context *cpuctx;
+ 	fprintf(stderr, fmt, cpustr, avg, csv_sep, event_name(evsel));
  
-@@ -1557,9 +1967,9 @@ void perf_event_context_sched_in(struct perf_event_context *ctx)
- 	 */
- 	cpu_ctx_sched_out(cpuctx, EVENT_FLEXIBLE);
++	if (evsel->cgrp)
++		fprintf(stderr, "%s%s", csv_sep, evsel->cgrp->name);
++
+ 	if (csv_output)
+ 		return;
  
--	ctx_sched_in(ctx, cpuctx, EVENT_PINNED);
--	cpu_ctx_sched_in(cpuctx, EVENT_FLEXIBLE);
--	ctx_sched_in(ctx, cpuctx, EVENT_FLEXIBLE);
-+	ctx_sched_in(ctx, cpuctx, EVENT_PINNED, task, 0);
-+	cpu_ctx_sched_in(cpuctx, EVENT_FLEXIBLE, task, 0);
-+	ctx_sched_in(ctx, cpuctx, EVENT_FLEXIBLE, task, 0);
+@@ -456,9 +463,17 @@ static void print_counter_aggr(struct perf_evsel *counter)
+ 	int scaled = counter->counts->scaled;
  
- 	cpuctx->task_ctx = ctx;
- 
-@@ -1592,8 +2002,15 @@ void __perf_event_task_sched_in(struct task_struct *task)
- 		if (likely(!ctx))
- 			continue;
- 
--		perf_event_context_sched_in(ctx);
-+		perf_event_context_sched_in(ctx, task);
- 	}
-+	/*
-+	 * if cgroup events exist on this CPU, then we need
-+	 * to check if we have to switch in PMU state.
-+	 * cgroup event are system-wide mode only
-+	 */
-+	if (atomic_read(&__get_cpu_var(perf_cgroup_events)))
-+		perf_cgroup_sched_in(task);
- }
- 
- #define MAX_INTERRUPTS (~0ULL)
-@@ -1710,7 +2127,7 @@ static void perf_ctx_adjust_freq(struct perf_event_context *ctx, u64 period)
- 		if (event->state != PERF_EVENT_STATE_ACTIVE)
- 			continue;
- 
--		if (!event_filter_match(event))
-+		if (!event_filter_match(event, current))
- 			continue;
- 
- 		hwc = &event->hw;
-@@ -1768,9 +2185,10 @@ static void perf_rotate_context(struct perf_cpu_context *cpuctx)
- 	struct perf_event_context *ctx = NULL;
- 	int rotate = 0, remove = 1;
- 
--	if (cpuctx->ctx.nr_events) {
-+	ctx = &cpuctx->ctx;
-+	if (ctx->nr_events) {
- 		remove = 0;
--		if (cpuctx->ctx.nr_events != cpuctx->ctx.nr_active)
-+		if (ctx->nr_events != ctx->nr_active)
- 			rotate = 1;
+ 	if (scaled == -1) {
+-		fprintf(stderr, "%*s%s%-24s\n",
++		fprintf(stderr, "%*s%s%*s",
+ 			csv_output ? 0 : 18,
+-			"<not counted>", csv_sep, event_name(counter));
++			"<not counted>",
++			csv_sep,
++			csv_output ? 0 : -24,
++			event_name(counter));
++
++		if (counter->cgrp)
++			fprintf(stderr, "%s%s", csv_sep, counter->cgrp->name);
++
++		fputc('\n', stderr);
+ 		return;
  	}
  
-@@ -1797,7 +2215,7 @@ static void perf_rotate_context(struct perf_cpu_context *cpuctx)
- 	if (ctx)
- 		rotate_ctx(ctx);
- 
--	cpu_ctx_sched_in(cpuctx, EVENT_FLEXIBLE);
-+	cpu_ctx_sched_in(cpuctx, EVENT_FLEXIBLE, current, 0);
- 	if (ctx)
- 		task_ctx_sched_in(ctx, EVENT_FLEXIBLE);
- 
-@@ -1876,7 +2294,7 @@ static void perf_event_enable_on_exec(struct perf_event_context *ctx)
- 
- 	raw_spin_unlock(&ctx->lock);
- 
--	perf_event_context_sched_in(ctx);
-+	perf_event_context_sched_in(ctx, ctx->task);
- out:
- 	local_irq_restore(flags);
+@@ -483,7 +498,6 @@ static void print_counter_aggr(struct perf_evsel *counter)
+ 		fprintf(stderr, "  (scaled from %.2f%%)",
+ 				100 * avg_running / avg_enabled);
+ 	}
+-
+ 	fprintf(stderr, "\n");
  }
-@@ -1902,6 +2320,7 @@ static void __perf_event_read(void *info)
  
- 	raw_spin_lock(&ctx->lock);
- 	update_context_time(ctx);
-+	update_cgrp_time_from_event(event);
- 	update_event_times(event);
- 	raw_spin_unlock(&ctx->lock);
+@@ -501,14 +515,19 @@ static void print_counter(struct perf_evsel *counter)
+ 		ena = counter->counts->cpu[cpu].ena;
+ 		run = counter->counts->cpu[cpu].run;
+ 		if (run == 0 || ena == 0) {
+-			fprintf(stderr, "CPU%*d%s%*s%s%-24s",
++			fprintf(stderr, "CPU%*d%s%*s%s%*s",
+ 				csv_output ? 0 : -4,
+ 				cpus->map[cpu], csv_sep,
+ 				csv_output ? 0 : 18,
+ 				"<not counted>", csv_sep,
++				csv_output ? 0 : -24,
+ 				event_name(counter));
  
-@@ -1932,8 +2351,10 @@ static u64 perf_event_read(struct perf_event *event)
- 		 * (e.g., thread is blocked), in that case
- 		 * we cannot update context time
- 		 */
--		if (ctx->is_active)
-+		if (ctx->is_active) {
- 			update_context_time(ctx);
-+			update_cgrp_time_from_event(event);
+-			fprintf(stderr, "\n");
++			if (counter->cgrp)
++				fprintf(stderr, "%s%s", csv_sep,
++					counter->cgrp->name);
++
++			fputc('\n', stderr);
+ 			continue;
+ 		}
+ 
+@@ -525,7 +544,7 @@ static void print_counter(struct perf_evsel *counter)
+ 					100.0 * run / ena);
+ 			}
+ 		}
+-		fprintf(stderr, "\n");
++		fputc('\n', stderr);
+ 	}
+ }
+ 
+@@ -638,6 +657,9 @@ static const struct option options[] = {
+ 		    "disable CPU count aggregation"),
+ 	OPT_STRING('x', "field-separator", &csv_sep, "separator",
+ 		   "print counts with custom separator"),
++	OPT_CALLBACK('G', "cgroup", NULL, "name",
++		     "monitor event in cgroup name only",
++		     parse_cgroups),
+ 	OPT_END()
+ };
+ 
+@@ -674,9 +696,13 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+ 	if (run_count <= 0)
+ 		usage_with_options(stat_usage, options);
+ 
+-	/* no_aggr is for system-wide only */
+-	if (no_aggr && !system_wide)
++	/* no_aggr, cgroup are for system-wide only */
++	if ((no_aggr || nr_cgroups) && !system_wide) {
++		fprintf(stderr, "both cgroup and no-aggregation "
++			"modes only available in system-wide mode\n");
++
+ 		usage_with_options(stat_usage, options);
++	}
+ 
+ 	/* Set attrs and nr_counters if no event is selected and !null_run */
+ 	if (!null_run && !nr_counters) {
+diff --git a/tools/perf/util/cgroup.c b/tools/perf/util/cgroup.c
+new file mode 100644
+index 0000000..b407859
+--- /dev/null
++++ b/tools/perf/util/cgroup.c
+@@ -0,0 +1,161 @@
++#include "util.h"
++#include "../perf.h"
++#include "parse-options.h"
++#include "evsel.h"
++#include "cgroup.h"
++#include "debugfs.h" /* MAX_PATH, STR() */
++#include "parse-events.h" /* for evsel_list */
++
++int nr_cgroups;
++
++static char cgroup_mountpoint[MAX_PATH+1];
++static int found_cgroup_mnt;
++
++static void cgroupfs_find_mountpoint(void)
++{
++	FILE *fp;
++	char type[64];
++
++	fp = fopen("/proc/mounts", "r");
++	if (!fp)
++		return;
++
++	while (fscanf(fp, "%*s %"
++				STR(MAX_PATH)
++				"s %99s %*s %*d %*d\n",
++				cgroup_mountpoint, type) == 2) {
++
++		if (!strcmp(type, "cgroup")) {
++			found_cgroup_mnt = 1;
++			break;
 +		}
- 		update_event_times(event);
- 		raw_spin_unlock_irqrestore(&ctx->lock, flags);
- 	}
-@@ -2312,7 +2733,7 @@ static void free_event(struct perf_event *event)
- 
- 	if (!event->parent) {
- 		if (event->attach_state & PERF_ATTACH_TASK)
--			jump_label_dec(&perf_task_events);
-+			jump_label_dec(&perf_sched_events);
- 		if (event->attr.mmap || event->attr.mmap_data)
- 			atomic_dec(&nr_mmap_events);
- 		if (event->attr.comm)
-@@ -2328,6 +2749,9 @@ static void free_event(struct perf_event *event)
- 		event->buffer = NULL;
- 	}
- 
-+	if (is_cgroup_event(event))
-+		perf_detach_cgroup(event);
++	}
++	fclose(fp);
++}
 +
- 	if (event->destroy)
- 		event->destroy(event);
- 
-@@ -3912,7 +4336,7 @@ static int perf_event_task_match(struct perf_event *event)
- 	if (event->state < PERF_EVENT_STATE_INACTIVE)
- 		return 0;
- 
--	if (!event_filter_match(event))
-+	if (!event_filter_match(event, current))
- 		return 0;
- 
- 	if (event->attr.comm || event->attr.mmap ||
-@@ -4049,7 +4473,7 @@ static int perf_event_comm_match(struct perf_event *event)
- 	if (event->state < PERF_EVENT_STATE_INACTIVE)
- 		return 0;
- 
--	if (!event_filter_match(event))
-+	if (!event_filter_match(event, current))
- 		return 0;
- 
- 	if (event->attr.comm)
-@@ -4197,7 +4621,7 @@ static int perf_event_mmap_match(struct perf_event *event,
- 	if (event->state < PERF_EVENT_STATE_INACTIVE)
- 		return 0;
- 
--	if (!event_filter_match(event))
-+	if (!event_filter_match(event, current))
- 		return 0;
- 
- 	if ((!executable && event->attr.mmap_data) ||
-@@ -5217,6 +5641,7 @@ static void task_clock_event_read(struct perf_event *event)
- 
- 	if (!in_nmi()) {
- 		update_context_time(event->ctx);
-+		update_cgrp_time_from_event(event);
- 		time = event->ctx->time;
- 	} else {
- 		u64 now = perf_clock();
-@@ -5639,7 +6064,7 @@ done:
- 
- 	if (!event->parent) {
- 		if (event->attach_state & PERF_ATTACH_TASK)
--			jump_label_inc(&perf_task_events);
-+			jump_label_inc(&perf_sched_events);
- 		if (event->attr.mmap || event->attr.mmap_data)
- 			atomic_inc(&nr_mmap_events);
- 		if (event->attr.comm)
-@@ -5814,7 +6239,7 @@ SYSCALL_DEFINE5(perf_event_open,
- 	int err;
- 
- 	/* for future expandability... */
--	if (flags & ~(PERF_FLAG_FD_NO_GROUP | PERF_FLAG_FD_OUTPUT))
-+	if (flags & ~PERF_FLAG_ALL)
- 		return -EINVAL;
- 
- 	err = perf_copy_attr(attr_uptr, &attr);
-@@ -5831,6 +6256,15 @@ SYSCALL_DEFINE5(perf_event_open,
- 			return -EINVAL;
- 	}
- 
++static int open_cgroup(char *name)
++{
++	static int mnt_done;
++
++	char path[MAX_PATH+1];
++	int fd;
++
++	if (!mnt_done) {
++		cgroupfs_find_mountpoint();
++		mnt_done = 1;
++	}
++
++	if (!found_cgroup_mnt)
++		return -1;
++
++	snprintf(path, MAX_PATH, "%s/%s", cgroup_mountpoint, name);
++
++	fd = open(path, O_RDONLY);
++	if (fd == -1)
++		fprintf(stderr, "no access to cgroup %s\n", path);
++
++	return fd;
++}
++
++static int add_cgroup(char *str)
++{
++	struct perf_evsel *counter;
++	struct cgroup_sel *cgrp = NULL;
++	int n;
 +	/*
-+	 * In cgroup mode, the pid argument is used to pass the fd
-+	 * opened to the cgroup directory in cgroupfs. The cpu argument
-+	 * designates the cpu on which to monitor threads from that
-+	 * cgroup.
++	 * check if cgrp is already defined, if so we reuse it
 +	 */
-+	if ((flags & PERF_FLAG_PID_CGROUP) && (pid == -1 || cpu == -1))
-+		return -EINVAL;
++	list_for_each_entry(counter, &evsel_list, node) {
++		cgrp = counter->cgrp;
++		if (!cgrp)
++			continue;
++		if (!strcmp(cgrp->name, str))
++			break;
 +
- 	event_fd = get_unused_fd_flags(O_RDWR);
- 	if (event_fd < 0)
- 		return event_fd;
-@@ -5848,7 +6282,7 @@ SYSCALL_DEFINE5(perf_event_open,
- 			group_leader = NULL;
- 	}
- 
--	if (pid != -1) {
-+	if (pid != -1 && !(flags & PERF_FLAG_PID_CGROUP)) {
- 		task = find_lively_task_by_vpid(pid);
- 		if (IS_ERR(task)) {
- 			err = PTR_ERR(task);
-@@ -5862,6 +6296,12 @@ SYSCALL_DEFINE5(perf_event_open,
- 		goto err_task;
- 	}
- 
-+	if (flags & PERF_FLAG_PID_CGROUP) {
-+		err = perf_cgroup_connect(pid, event, &attr, group_leader);
-+		if (err)
-+			goto err_alloc;
++		cgrp = NULL;
 +	}
 +
- 	/*
- 	 * Special case software events and allow them to be part of
- 	 * any hardware group.
-@@ -6718,3 +7158,49 @@ unlock:
- 	return ret;
- }
- device_initcall(perf_event_sysfs_init);
++	if (!cgrp) {
++		cgrp = zalloc(sizeof(*cgrp));
++		if (!cgrp)
++			return -1;
 +
-+#ifdef CONFIG_CGROUP_PERF
-+static struct cgroup_subsys_state *perf_cgroup_create(
-+	struct cgroup_subsys *ss, struct cgroup *cont)
-+{
-+	struct perf_cgroup *jc;
-+	struct perf_cgroup_info *t;
-+	int c;
++		cgrp->name = str;
 +
-+	jc = kmalloc(sizeof(*jc), GFP_KERNEL);
-+	if (!jc)
-+		return ERR_PTR(-ENOMEM);
-+
-+	memset(jc, 0, sizeof(*jc));
-+
-+	jc->info = alloc_percpu(struct perf_cgroup_info);
-+	if (!jc->info) {
-+		kfree(jc);
-+		return ERR_PTR(-ENOMEM);
++		cgrp->fd = open_cgroup(str);
++		if (cgrp->fd == -1) {
++			free(cgrp);
++			return -1;
++		}
 +	}
 +
-+	for_each_possible_cpu(c) {
-+		t = per_cpu_ptr(jc->info, c);
-+		t->time = 0;
-+		t->timestamp = 0;
++	/*
++	 * find corresponding event
++	 * if add cgroup N, then need to find event N
++	 */
++	n = 0;
++	list_for_each_entry(counter, &evsel_list, node) {
++		if (n == nr_cgroups)
++			goto found;
++		n++;
 +	}
-+	return &jc->css;
++	if (cgrp->refcnt == 0)
++		free(cgrp);
++
++	return -1;
++found:
++	cgrp->refcnt++;
++	counter->cgrp = cgrp;
++	return 0;
 +}
 +
-+static void perf_cgroup_destroy(struct cgroup_subsys *ss,
-+				struct cgroup *cont)
++void close_cgroup(struct cgroup_sel *cgrp)
 +{
-+	struct perf_cgroup *jc;
-+	jc = container_of(cgroup_subsys_state(cont, perf_subsys_id),
-+			  struct perf_cgroup, css);
-+	free_percpu(jc->info);
-+	kfree(jc);
++	if (!cgrp)
++		return;
++
++	/* XXX: not reentrant */
++	if (--cgrp->refcnt == 0) {
++		close(cgrp->fd);
++		free(cgrp->name);
++		free(cgrp);
++	}
 +}
 +
-+struct cgroup_subsys perf_subsys = {
-+	.name = "perf_event",
-+	.subsys_id = perf_subsys_id,
-+	.create = perf_cgroup_create,
-+	.destroy = perf_cgroup_destroy,
++int parse_cgroups(const struct option *opt __used, const char *str,
++		  int unset __used)
++{
++	const char *p, *e, *eos = str + strlen(str);
++	char *s;
++	int ret;
++
++	/* need to have some events defined first */
++	if (!nr_counters) {
++		fprintf(stderr, "must define events before cgroups\n");
++		return -1;
++	}
++
++	for (;;) {
++		p = strchr(str, ',');
++		e = p ? p : eos;
++
++		/* allow empty cgroups, i.e., skip */
++		if (e - str) {
++			/* termination added */
++			s = strndup(str, e - str);
++			if (!s)
++				return -1;
++			ret = add_cgroup(s);
++			if (ret) {
++				free(s);
++				return -1;
++			}
++		}
++		/* nr_cgroups is increased een for empty cgroups */
++		nr_cgroups++;
++		if (!p)
++			break;
++		str = p+1;
++	}
++	return 0;
++}
+diff --git a/tools/perf/util/cgroup.h b/tools/perf/util/cgroup.h
+new file mode 100644
+index 0000000..89acd6d
+--- /dev/null
++++ b/tools/perf/util/cgroup.h
+@@ -0,0 +1,17 @@
++#ifndef __CGROUP_H__
++#define __CGROUP_H__
++
++struct option;
++
++struct cgroup_sel {
++	char *name;
++	int fd;
++	int refcnt;
 +};
-+#endif /* CONFIG_CGROUP_PERF */
++
++
++extern int nr_cgroups; /* number of explicit cgroups defined */
++extern void close_cgroup(struct cgroup_sel *cgrp);
++extern int parse_cgroups(const struct option *opt, const char *str, int unset);
++
++#endif /* __CGROUP_H__ */
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index f5cfed6..65cab64 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -53,6 +53,7 @@ void perf_evsel__delete(struct perf_evsel *evsel)
+ {
+ 	assert(list_empty(&evsel->node));
+ 	xyarray__delete(evsel->fd);
++	close_cgroup(evsel->cgrp);
+ 	free(evsel);
+ }
+ 
+@@ -130,17 +131,28 @@ int __perf_evsel__read(struct perf_evsel *evsel,
+ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 			      struct thread_map *threads)
+ {
+-	int cpu, thread;
++	unsigned long flags = 0;
++	int cpu, thread, pid = -1;
+ 
+ 	if (evsel->fd == NULL &&
+ 	    perf_evsel__alloc_fd(evsel, cpus->nr, threads->nr) < 0)
+ 		return -1;
+ 
++	if (evsel->cgrp) {
++		flags = PERF_FLAG_PID_CGROUP;
++		pid = evsel->cgrp->fd;
++	}
+ 	for (cpu = 0; cpu < cpus->nr; cpu++) {
+ 		for (thread = 0; thread < threads->nr; thread++) {
++
++			if (!evsel->cgrp)
++				pid = threads->map[thread];
++
+ 			FD(evsel, cpu, thread) = sys_perf_event_open(&evsel->attr,
+-								     threads->map[thread],
+-								     cpus->map[cpu], -1, 0);
++								     pid,
++								     cpus->map[cpu],
++								     -1,
++								     flags);
+ 			if (FD(evsel, cpu, thread) < 0)
+ 				goto out_close;
+ 		}
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index b2d755f..2e2beb1 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -6,6 +6,7 @@
+ #include "../../../include/linux/perf_event.h"
+ #include "types.h"
+ #include "xyarray.h"
++#include "cgroup.h"
+  
+ struct perf_counts_values {
+ 	union {
+@@ -32,6 +33,7 @@ struct perf_evsel {
+ 	struct perf_counts	*counts;
+ 	int			idx;
+ 	void			*priv;
++	struct cgroup_sel	*cgrp;
+ };
+ 
+ struct cpu_map;
