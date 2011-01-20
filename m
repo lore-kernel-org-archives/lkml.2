@@ -1,87 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab1ATMdP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 07:33:15 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:37856 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752924Ab1ATMdN (ORCPT
+	id S1755511Ab1ATMgJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 07:36:09 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:39749 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752924Ab1ATMgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 07:33:13 -0500
-Message-ID: <4D382B99.7070005@vflare.org>
-Date: Thu, 20 Jan 2011 07:33:29 -0500
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	Thu, 20 Jan 2011 07:36:08 -0500
+Subject: [REPOST][PATCH 0/3] Unmapped page cache control (v3)
+To: linux-mm@kvack.org, akpm@linux-foundation.org
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: npiggin@kernel.dk, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kosaki.motohiro@jp.fujitsu.com, cl@linux.com,
+        kamezawa.hiroyu@jp.fujitsu.com
+Date: Thu, 20 Jan 2011 18:06:01 +0530
+Message-ID: <20110120123039.30481.81151.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/8] zcache: page cache compression support
-References: <1279283870-18549-1-git-send-email-ngupta@vflare.org 20110110131626.GA18407@shutemov.name> <9e7aa896-ed1f-4d50-8227-3a922be39949@default>
-In-Reply-To: <9e7aa896-ed1f-4d50-8227-3a922be39949@default>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2011 12:53 PM, Dan Magenheimer wrote:
->> From: Kirill A. Shutemov [mailto:kirill@shutemov.name]
->> Sent: Monday, January 10, 2011 6:16 AM
->> To: Nitin Gupta
->> Cc: Pekka Enberg; Hugh Dickins; Andrew Morton; Greg KH; Dan
->> Magenheimer; Rik van Riel; Avi Kivity; Christoph Hellwig; Minchan Kim;
->> Konrad Rzeszutek Wilk; linux-mm; linux-kernel
->> Subject: Re: [PATCH 0/8] zcache: page cache compression support
->>
->> Hi,
->>
->> What is status of the patchset?
->> Do you have updated patchset with fixes?
->>
->> --
->>   Kirill A. Shutemov
-> I wanted to give Nitin a week to respond, but I guess he
-> continues to be offline.
->
 
-Sorry, I was on post-exam-vacations, so couldn't
-look into it much :)
+The following series implements page cache control,
+this is a split out version of patch 1 of version 3 of the
+page cache optimization patches posted earlier at
+Previous posting http://lwn.net/Articles/419564/
 
-> I believe zcache is completely superceded by kztmem.
-> Kztmem, like zcache, is dependent on cleancache
-> getting merged.
->
-> Kztmem may supercede zram also although frontswap (which
-> kztmem uses for a more dynamic in-memory swap compression)
-> and zram have some functional differences that support
-> both being merged.
->
-> For latest kztmem patches and description, see:
->
-> https://lkml.org/lkml/2011/1/18/170
->
+The previous few revision received lot of comments, I've tried to
+address as many of those as possible in this revision. The
+last series was reviewed-by Christoph Lameter.
 
-I just started looking into kztmem (weird name!) but on
-the high level it seems so much similar to zcache with some
-dynamic resizing added (callback for shrinker interface).
+There were comments on overlap with Nick's changes and overlap
+with them. I don't feel these changes impact Nick's work and
+integration can/will be considered as the patches evolve, if
+need be.
 
-Now, I'll try rebuilding zcache according to new cleancache
-API as provided by these set of patches. This will help refresh
-whatever issues I was having back then with pagecache
-compression and maybe pick useful bits/directions from
-new kztmem work.
+Detailed Description
+====================
+This patch implements unmapped page cache control via preferred
+page cache reclaim. The current patch hooks into kswapd and reclaims
+page cache if the user has requested for unmapped page control.
+This is useful in the following scenario
+- In a virtualized environment with cache=writethrough, we see
+  double caching - (one in the host and one in the guest). As
+  we try to scale guests, cache usage across the system grows.
+  The goal of this patch is to reclaim page cache when Linux is running
+  as a guest and get the host to hold the page cache and manage it.
+  There might be temporary duplication, but in the long run, memory
+  in the guests would be used for mapped pages.
+- The option is controlled via a boot option and the administrator
+  can selectively turn it on, on a need to use basis.
 
-(PAM etc. synonyms make kztmem code reading quite heavy, and
-I still don't like frontswap approach but unfortunately do not yet
-have any better alternatives ready yet).
+A lot of the code is borrowed from zone_reclaim_mode logic for
+__zone_reclaim(). One might argue that the with ballooning and
+KSM this feature is not very useful, but even with ballooning,
+we need extra logic to balloon multiple VM machines and it is hard
+to figure out the correct amount of memory to balloon. With these
+patches applied, each guest has a sufficient amount of free memory
+available, that can be easily seen and reclaimed by the balloon driver.
+The additional memory in the guest can be reused for additional
+applications or used to start additional guests/balance memory in
+the host.
 
-Thanks,
-Nitin
+KSM currently does not de-duplicate host and guest page cache. The goal
+of this patch is to help automatically balance unmapped page cache when
+instructed to do so.
 
+There are some magic numbers in use in the code, UNMAPPED_PAGE_RATIO
+and the number of pages to reclaim when unmapped_page_control argument
+is supplied. These numbers were chosen to avoid aggressiveness in
+reaping page cache ever so frequently, at the same time providing control.
+
+The sysctl for min_unmapped_ratio provides further control from
+within the guest on the amount of unmapped pages to reclaim.
+
+Data from the previous patchsets can be found at
+https://lkml.org/lkml/2010/11/30/79
+
+Size measurement
+
+CONFIG_UNMAPPED_PAGECACHE_CONTROL and CONFIG_NUMA enabled
+# size mm/built-in.o 
+   text    data     bss     dec     hex filename
+ 419431 1883047  140888 2443366  254866 mm/built-in.o
+
+CONFIG_UNMAPPED_PAGECACHE_CONTROL disabled, CONFIG_NUMA enabled
+# size mm/built-in.o 
+   text    data     bss     dec     hex filename
+ 418908 1883023  140888 2442819  254643 mm/built-in.o
+
+
+---
+
+Balbir Singh (3):
+      Move zone_reclaim() outside of CONFIG_NUMA
+      Refactor zone_reclaim code
+      Provide control over unmapped pages
+
+
+ Documentation/kernel-parameters.txt |    8 ++
+ include/linux/mmzone.h              |    4 +
+ include/linux/swap.h                |   21 +++++-
+ init/Kconfig                        |   12 +++
+ kernel/sysctl.c                     |   20 +++--
+ mm/page_alloc.c                     |    9 ++
+ mm/vmscan.c                         |  132 +++++++++++++++++++++++++++++++----
+ 7 files changed, 175 insertions(+), 31 deletions(-)
+
+-- 
+Balbir Singh
