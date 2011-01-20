@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936Ab1ATTBt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 14:01:49 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:45779 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752977Ab1ATTBs convert rfc822-to-8bit (ORCPT
+	id S1753920Ab1ATTIn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 14:08:43 -0500
+Received: from pqueuea.post.tele.dk ([193.162.153.9]:58663 "EHLO
+	pqueuea.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751704Ab1ATTIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 14:01:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Q7W6+XMjcZ01vxxKaiO0IgVM15sPHmcdE1rFFX4qxBl83n2kPfwy3qYWXcHCoZ5Eyt
-         5IoBPtYjxah5vq3UEG3z7WtyFobvyDZ2Slpf0apcK/Z1wLhvPOKgsNrJ7OKUfxtAuxX6
-         mIa/F2NLXN4Rqkoq40pd5i6u57KWxI1fXRfkk=
+	Thu, 20 Jan 2011 14:08:42 -0500
+Date: Thu, 20 Jan 2011 20:08:18 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [patch 36/37] tile: Use generic irq Kconfig
+Message-ID: <20110120190818.GA22638@merkur.ravnborg.org>
+References: <20110119205258.462759212@linutronix.de> <20110119210840.631350392@linutronix.de> <4D3884E3.8050009@tilera.com>
 MIME-Version: 1.0
-In-Reply-To: <1295537418-2057-1-git-send-email-ratbert.chuang@gmail.com>
-References: <1295256060-2091-1-git-send-email-ratbert.chuang@gmail.com>
-	<1295537418-2057-1-git-send-email-ratbert.chuang@gmail.com>
-Date: Thu, 20 Jan 2011 20:01:47 +0100
-Message-ID: <AANLkTimFcEC0oXJGnJ7HQKLB9thfuWHeWSYSMCGR=hWJ@mail.gmail.com>
-Subject: Re: [PATCH v3] net: add Faraday FTMAC100 10/100 Ethernet driver
-From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
-To: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhutchings@solarflare.com, eric.dumazet@gmail.com, joe@perches.com,
-        dilinger@queued.net, Po-Yu Chuang <ratbert@faraday-tech.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D3884E3.8050009@tilera.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/1/20 Po-Yu Chuang <ratbert.chuang@gmail.com>:
-[...]
-> +/******************************************************************************
-> + * internal functions (receive descriptor)
-> + *****************************************************************************/
-> +static bool ftmac100_rxdes_first_segment(struct ftmac100_rxdes *rxdes)
-> +{
-> +       return le32_to_cpu(rxdes->rxdes0) & FTMAC100_RXDES0_FRS;
-> +}
-> +
-> +static bool ftmac100_rxdes_last_segment(struct ftmac100_rxdes *rxdes)
-> +{
-> +       return le32_to_cpu(rxdes->rxdes0) & FTMAC100_RXDES0_LRS;
-> +}
-> +
-[...]
+On Thu, Jan 20, 2011 at 01:54:27PM -0500, Chris Metcalf wrote:
+> On 1/19/2011 4:50 PM, Thomas Gleixner wrote:
+> > No functional change.
+> >
+> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: Chris Metcalf <cmetcalf@tilera.com>
+> > ---
+> >  arch/tile/Kconfig |   16 ++++++----------
+> >  1 file changed, 6 insertions(+), 10 deletions(-)
+> >
+> > Index: linux-2.6/arch/tile/Kconfig
+> > ===================================================================
+> > --- linux-2.6.orig/arch/tile/Kconfig
+> > +++ linux-2.6/arch/tile/Kconfig
+> > @@ -1,22 +1,18 @@
+> >  # For a description of the syntax of this configuration file,
+> >  # see Documentation/kbuild/config-language.txt.
+> >  
+> > +config TILE
+> > +       def_bool y
+> > +       select HAVE_GENERIC_HARDIRQS
+> > +       select GENERIC_IRQ_PROBE
+> > +       select GENERIC_PENDING_IRQ if SMP
+> > +
+> >  [...]
+> 
+> I'm not sure it's legal to have two "config TILE" blocks in this Kconfig
+> file; there's already one further down.
 
-You can change these and similar functions to use:
+It is OK to have two "config TILE" blocks.
+You should take care of moving the other one up after this goes in.
 
-rxdes->rxdes0 & cpu_to_le32(FTMAC100_RXDES0_LRS)
-
-This will be subject to constant folding by compiler and produce
-better code for big-endian arches.
-
-Best Regards,
-Micha³ Miros³aw
+	Sam
