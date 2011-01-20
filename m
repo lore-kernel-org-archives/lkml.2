@@ -1,69 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab1ATMt0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 07:49:26 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:37952 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933Ab1ATMtY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 07:49:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=pUrQbOlGUS1bxiHojZtXIVLv7sL1k5uFAD7DSzFNG6HZXCpPXFZrUR4WiE9Qr0L3Xw
-         TYKywpXdj2nM/zhjTOTF7foUBeEHp198pB/R21IjZVwYqK0xppcYc7df5HbPj8RkWWnl
-         E/tDqGslSNgVd/e6ZnmQ3a1ldrz36deC9Mucw=
+	id S1755430Ab1ATMwC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 07:52:02 -0500
+Received: from a.mx.secunet.com ([195.81.216.161]:43738 "EHLO a.mx.secunet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755412Ab1ATMv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 07:51:59 -0500
+X-Greylist: delayed 1496 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Jan 2011 07:51:58 EST
+Date: Thu, 20 Jan 2011 13:26:59 +0100
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Eric Paris <eparis@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: flex_array related problems on selinux policy loading
+Message-ID: <20110120122659.GD4639@secunet.com>
 MIME-Version: 1.0
-In-Reply-To: <20110120121455.GA7680@elte.hu>
-References: <1295245019-7816-1-git-send-email-ying.huang@intel.com>
-	<20110119135546.bb7e8f62.akpm@linux-foundation.org>
-	<1295484358.15213.25.camel@yhuang-dev>
-	<20110119165247.cca2f434.akpm@linux-foundation.org>
-	<1295520247.28776.152.camel@laptop>
-	<AANLkTimR6xd1PxCP6jmuNwFkANrGPdTf2wpiGsBXGpKx@mail.gmail.com>
-	<1295522876.28776.158.camel@laptop>
-	<AANLkTin3_NuGG_E0Juy7=1Q7PcMJ6id1ZU-Gngfp_=dg@mail.gmail.com>
-	<20110120121455.GA7680@elte.hu>
-Date: Thu, 20 Jan 2011 20:49:23 +0800
-Message-ID: <AANLkTikv3h_QoHs4uj6CNJdC7tb_-e0osKa47KWEJvFV@mail.gmail.com>
-Subject: Re: [PATCH -v10 0/4] Lock-less list
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Huang Ying <ying.huang@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 20 Jan 2011 12:27:00.0305 (UTC) FILETIME=[5609CC10:01CBB89D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 8:14 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * huang ying <huang.ying.caritas@gmail.com> wrote:
->
->> > But will all that stuff be accepted? Please stop sending infrastructure bits and
->> > focus on your larger RAS picture, once you have consensus on that from all
->> > parties involved, then, and only then, does it make sense to submit everything,
->> > including infrastructure.
->>
->> I am not sending hardware error reporting infrastructure.  As far as I know, Linus
->> and Andrew suggest to use printk for hardware error reporting.  And now, I just
->> try to write APEI driver and reporting hardware error with printk.  Is it
->> acceptable?  Do you have some other idea about hardware error reporting?
->
-> Erm, how could you possible have missed the perf based RAS daemon work of Boris,
-> which we've pointed out about half a dozen times already?
+Some recent changes to use flex_array_alloc on selinux policy loading made
+me unable load my selinux policy. I'm not using 'common' and 'bool' in the
+policy, this leads to some zero size allocations in policydb_index().
+Unfortunately the behaviour on zero size allocations of flex_array_alloc()
+is not the same as of kmalloc(). While zero size allocations are legal on
+kmalloc(), flex_array_prealloc() fails with -ENOSPC if total_nr_elements
+is zero (this happens if I try to load my policy) or it hits a division by
+zero if element_size is zero.
 
-Even if there is some other hardware error reporting infrastructure
-such as perf based, I think we still need printk too. After all, as
-Linus pointed out, printk is the most popular error reporting
-mechanism so far. Do you think so?
+The patch below changes the flex_array_alloc behaviour on zero size allocations
+to be the same as with kmalloc. I'm able to load my policy with the patch
+and everything seems to work fine. However, flex_array_get() returns now NULL
+if the pointer to the struct flex_array is a ZERO_SIZE_PTR.  There is a lot
+of BUG_ON() in the policy handling code if flex_array_get() returns NULL, so
+somebody with a deeper knowledge on selinux policy handling should look into
+this to see if furter changes are necessary.
 
-Best Regards,
-Huang Ying
+Steffen
+
+Subject: [PATCH] flex_array: Change behaviour on zero size allocations
+
+flex_array_alloc allocates the basic struct flex_array regardless whether
+total_nr_elements or element_size is zero. Then flex_array_prealloc
+fails with -ENOSPC if total_nr_elements is zero or it hits a division by
+zero if element_size is zero.
+
+This patch changes the behaviour on zero size allocations to the same
+as kmalloc, we return ZERO_SIZE_PTR in this case. All flex_array handlers
+test for ZERO_SIZE_PTR and return an appropriate value to the caller.
+
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+---
+ lib/flex_array.c |   27 +++++++++++++++++++++++++--
+ 1 files changed, 25 insertions(+), 2 deletions(-)
+
+diff --git a/lib/flex_array.c b/lib/flex_array.c
+index c0ea40b..420d11d 100644
+--- a/lib/flex_array.c
++++ b/lib/flex_array.c
+@@ -88,8 +88,13 @@ struct flex_array *flex_array_alloc(int element_size, unsigned int total,
+ 					gfp_t flags)
+ {
+ 	struct flex_array *ret;
+-	int max_size = FLEX_ARRAY_NR_BASE_PTRS *
+-				FLEX_ARRAY_ELEMENTS_PER_PART(element_size);
++	int max_size;
++
++	if (unlikely(!element_size || !total))
++		return ZERO_SIZE_PTR;
++
++	max_size = FLEX_ARRAY_NR_BASE_PTRS *
++		   FLEX_ARRAY_ELEMENTS_PER_PART(element_size);
+ 
+ 	/* max_size will end up 0 if element_size > PAGE_SIZE */
+ 	if (total > max_size)
+@@ -123,6 +128,9 @@ void flex_array_free_parts(struct flex_array *fa)
+ {
+ 	int part_nr;
+ 
++	if (unlikely(ZERO_OR_NULL_PTR(fa)))
++		return;
++
+ 	if (elements_fit_in_base(fa))
+ 		return;
+ 	for (part_nr = 0; part_nr < FLEX_ARRAY_NR_BASE_PTRS; part_nr++)
+@@ -187,6 +195,9 @@ int flex_array_put(struct flex_array *fa, unsigned int element_nr, void *src,
+ 	struct flex_array_part *part;
+ 	void *dst;
+ 
++	if (unlikely(ZERO_OR_NULL_PTR(fa)))
++		return 0;
++
+ 	if (element_nr >= fa->total_nr_elements)
+ 		return -ENOSPC;
+ 	if (elements_fit_in_base(fa))
+@@ -215,6 +226,9 @@ int flex_array_clear(struct flex_array *fa, unsigned int element_nr)
+ 	struct flex_array_part *part;
+ 	void *dst;
+ 
++	if (unlikely(ZERO_OR_NULL_PTR(fa)))
++		return 0;
++
+ 	if (element_nr >= fa->total_nr_elements)
+ 		return -ENOSPC;
+ 	if (elements_fit_in_base(fa))
+@@ -252,6 +266,9 @@ int flex_array_prealloc(struct flex_array *fa, unsigned int start,
+ 	int part_nr;
+ 	struct flex_array_part *part;
+ 
++	if (unlikely(ZERO_OR_NULL_PTR(fa)))
++		return 0;
++
+ 	if (start >= fa->total_nr_elements || end >= fa->total_nr_elements)
+ 		return -ENOSPC;
+ 	if (elements_fit_in_base(fa))
+@@ -284,6 +301,9 @@ void *flex_array_get(struct flex_array *fa, unsigned int element_nr)
+ 	int part_nr = fa_element_to_part_nr(fa, element_nr);
+ 	struct flex_array_part *part;
+ 
++	if (unlikely(ZERO_OR_NULL_PTR(fa)))
++		return NULL;
++
+ 	if (element_nr >= fa->total_nr_elements)
+ 		return NULL;
+ 	if (elements_fit_in_base(fa))
+@@ -343,6 +363,9 @@ int flex_array_shrink(struct flex_array *fa)
+ 	int part_nr;
+ 	int ret = 0;
+ 
++	if (unlikely(ZERO_OR_NULL_PTR(fa)))
++		return 0;
++
+ 	if (elements_fit_in_base(fa))
+ 		return ret;
+ 	for (part_nr = 0; part_nr < FLEX_ARRAY_NR_BASE_PTRS; part_nr++) {
+-- 
+1.7.0.4
+
