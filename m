@@ -1,88 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab1ATWSY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 17:18:24 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:23964 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254Ab1ATWSX (ORCPT
+	id S1753623Ab1ATWWi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 17:22:38 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33684 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752548Ab1ATWWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 17:18:23 -0500
-Date: Thu, 20 Jan 2011 23:18:42 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-cc: netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Chaoming Li <chaoming_li@realsil.com.cn>
-Subject: [PATCH] Fix NULL dereference in rtlwifi driver
-Message-ID: <alpine.LNX.2.00.1101202309030.11854@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Thu, 20 Jan 2011 17:22:36 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1295559646.2613.35.camel@edumazet-laptop>
+References: <20110119.180418.216749267.davem@davemloft.net>
+ <AANLkTin32jUnBtHF-EAkSMnFQM6cTbn-G3NZQJ3xjTWU@mail.gmail.com> <1295559646.2613.35.camel@edumazet-laptop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 20 Jan 2011 14:21:43 -0800
+Message-ID: <AANLkTikLY1B3=C2TjAbYKVHbub-aPeG2heaUBWRUAg=R@mail.gmail.com>
+Subject: Re: [GIT] Networking
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In drivers/net/wireless/rtlwifi/pci.c::_rtl_pci_rx_interrupt() we call 
-dev_alloc_skb(), which may fail and return NULL, but we do not check the 
-returned value against NULL before dereferencing the returned pointer. 
-This may lead to a NULL pointer dereference which means we'll crash - not 
-good.
+On Thu, Jan 20, 2011 at 1:40 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>
+> Then here ask for fd=3 both POLLIN and POLLOUT :
+> kernel answers : OK for POLLOUT (not POLLIN), so previous poll() call
+> was OK to be blocked after all...
+>
+> So I'm wondering if it could be a userland bug, that triggers with
+> recent kernel changes.
 
-This patch tries to solve the issue by testing for NULL and bailing out if 
-we couldn't allocate a skb. However, I don't know this code well, so I'm 
-not sure that jumping to the 'done' label here is the correct action to 
-take. Someone more knowledgable about this code than me should definately 
-review it before it is applied anywhere.
-While I was in the area I also moved an assignment in 
-_rtl_pci_init_rx_ring() a bit - if the dev_alloc_skb() call in that 
-function fails there's no reason to waste clock cycles assigning to the 
-local variable 'entry', we may as well do that after the NULL check and 
-potential bail out.
+As far as I can tell, that program isn't multi-threaded, and it should
+not have returned to user land at all (no signal, and a restart). So I
+think it's a kernel-only thing - there should have been nothing that
+could have changed the poll list in user space. But I didn't really
+check the threading status.
 
-Here's the proposed patch, but please don't take it as much more than a 
-bug report. If it happens to be correct, then by all means apply it, but 
-I'm not personally making any guarantees.
+I'm trying to bisect it now to figure out more hints.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- pci.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
-
-  compile tested only, I don't have the hardware to test for real.
-
-diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlwifi/pci.c
-index 0fa36aa..5e99f89 100644
---- a/drivers/net/wireless/rtlwifi/pci.c
-+++ b/drivers/net/wireless/rtlwifi/pci.c
-@@ -619,6 +619,13 @@ static void _rtl_pci_rx_interrupt(struct ieee80211_hw *hw)
- 					struct sk_buff *uskb = NULL;
- 					u8 *pdata;
- 					uskb = dev_alloc_skb(skb->len + 128);
-+					if (!uskb) {
-+						RT_TRACE(rtlpriv,
-+							(COMP_INTR | COMP_RECV),
-+							DBG_DMESG,
-+							("can't alloc rx skb\n"));
-+						goto done;
-+					}
- 					memcpy(IEEE80211_SKB_RXCB(uskb),
- 							&rx_status,
- 							sizeof(rx_status));
-@@ -1066,9 +1073,9 @@ static int _rtl_pci_init_rx_ring(struct ieee80211_hw *hw)
- 			struct sk_buff *skb =
- 			    dev_alloc_skb(rtlpci->rxbuffersize);
- 			u32 bufferaddress;
--			entry = &rtlpci->rx_ring[rx_queue_idx].desc[i];
- 			if (!skb)
- 				return 0;
-+			entry = &rtlpci->rx_ring[rx_queue_idx].desc[i];
- 
- 			/*skb->dev = dev; */
- 
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+             Linus
