@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab1ATWZN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 17:25:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43573 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751833Ab1ATWZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 17:25:11 -0500
-Date: Thu, 20 Jan 2011 13:50:21 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Huang Ying <ying.huang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@osdl.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        Dean Nelson <dnelson@redhat.com>
-Subject: Re: [PATCH 1/2] mm, Make __get_user_pages return -EHWPOISON for
- HWPOISON page optionally
-Message-ID: <20110120155021.GA5996@amt.cnet>
-References: <1294908168.4596.58.camel@yhuang-dev>
- <4D2ED737.6050802@redhat.com>
- <1294969036.4596.67.camel@yhuang-dev>
- <4D331054.4030206@redhat.com>
- <1295225259.10748.3.camel@yhuang-dev>
+	id S1754692Ab1ATW2K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 17:28:10 -0500
+Received: from v020138.sys.capside.net ([81.25.117.138]:45599 "EHLO
+	n023010.sys.capside.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753323Ab1ATW2J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 17:28:09 -0500
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Jan 2011 17:28:08 EST
+Date: Thu, 20 Jan 2011 23:21:21 +0100
+From: =?iso-8859-1?Q?L=2E_Alberto_Gim=E9nez?= <agimenez@sysvalve.es>
+To: linux-kernel@vger.kernel.org
+Cc: devel@linuxdriverproject.org, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH 0/3] Staging: rt2860: Fix checkpatch issues
+Message-ID: <20110120222121.GA7897@bart.evergreen.loc>
+References: <1294183665-5995-1-git-send-email-agimenez@sysvalve.es>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1295225259.10748.3.camel@yhuang-dev>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1294183665-5995-1-git-send-email-agimenez@sysvalve.es>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 17, 2011 at 08:47:39AM +0800, Huang Ying wrote:
-> Hi, Andrew,
+On Wed, Jan 05, 2011 at 12:27:42AM +0100, L. Alberto Giménez wrote:
+> Fix trivial checkpatch issues. 
 > 
-> On Sun, 2011-01-16 at 23:35 +0800, Avi Kivity wrote:
-> > On 01/14/2011 03:37 AM, Huang Ying wrote:
-> > > On Thu, 2011-01-13 at 18:43 +0800, Avi Kivity wrote:
-> > > >  On 01/13/2011 10:42 AM, Huang Ying wrote:
-> > > >  >  Make __get_user_pages return -EHWPOISON for HWPOISON page only if
-> > > >  >  FOLL_HWPOISON is specified.  With this patch, the interested callers
-> > > >  >  can distinguish HWPOISON page from general FAULT page, while other
-> > > >  >  callers will still get -EFAULT for pages, so the user space interface
-> > > >  >  need not to be changed.
-> > > >  >
-> > > >  >  get_user_pages_hwpoison is added as a variant of get_user_pages that
-> > > >  >  can return -EHWPOISON for HWPOISON page.
-> > > >  >
-> > > >  >  This feature is needed by KVM, where UCR MCE should be relayed to
-> > > >  >  guest for HWPOISON page, while instruction emulation and MMIO will be
-> > > >  >  tried for general FAULT page.
-> > > >  >
-> > > >  >  The idea comes from Andrew Morton.
-> > > >  >
-> > > >  >  Signed-off-by: Huang Ying<ying.huang@intel.com>
-> > > >  >  Cc: Andrew Morton<akpm@linux-foundation.org>
-> > > >  >
-> > > >  >  +#ifdef CONFIG_MEMORY_FAILURE
-> > > >  >  +int get_user_pages_hwpoison(struct task_struct *tsk, struct mm_struct *mm,
-> > > >  >  +			    unsigned long start, int nr_pages, int write,
-> > > >  >  +			    int force, struct page **pages,
-> > > >  >  +			    struct vm_area_struct **vmas);
-> > > >  >  +#else
-> > > >
-> > > >  Since we'd also like to add get_user_pages_noio(), perhaps adding a
-> > > >  flags field to get_user_pages() is better.
-> > >
-> > > Or export __get_user_pages()?
-> > 
-> > That's better, yes.
+> L. Alberto Giménez (3):
+>   Staging: rt2860: Fix space after unary '*' operator.
+>   Staging: rt2860: Fix space after unary '*' operator.
+>   Staging: rt2860: Fix space after unary '*' operator.
 > 
-> Do you think it is a good idea to export __get_user_pages() instead of
-> adding get_user_pages_noio() and get_user_pages_hwpoison()?
+>  drivers/staging/rt2860/rt_linux.c |    3 +--
+>  drivers/staging/rt2860/rt_linux.h |   12 ++++++------
+>  drivers/staging/rt2860/wpa.h      |   12 ++++--------
+>  3 files changed, 11 insertions(+), 16 deletions(-)
 
-Better Andrew and/or Linus should decide it.
+Hi Greg, have you been able to check these patches? Please tell me if you find
+anything wrong with them.
 
+Regards,
+-- 
+L. Alberto Giménez
+JabberID agimenez@jabber.sysvalve.es
+GnuPG key ID 0x3BAABDE1
