@@ -1,82 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755656Ab1ATN5t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 08:57:49 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:47634 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755472Ab1ATN5s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 08:57:48 -0500
-Message-ID: <4D383F6C.1070308@vflare.org>
-Date: Thu, 20 Jan 2011 08:58:04 -0500
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1755728Ab1ATN6X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 08:58:23 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:59902 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755623Ab1ATN6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 08:58:19 -0500
+Message-ID: <4D383F60.4080907@parallels.com>
+Date: Thu, 20 Jan 2011 07:57:52 -0600
+From: Rob Landley <rlandley@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Christoph Hellwig <hch@infradead.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/8] zcache: page cache compression support
-References: <9e7aa896-ed1f-4d50-8227-3a922be39949@default>	<4D382B99.7070005@vflare.org>	<20110120124730.GA7284@infradead.org> <AANLkTim4t4zT5W0TJ7Vwzb568u1W6vz3b_cZirfK0Uhs@mail.gmail.com>
-In-Reply-To: <AANLkTim4t4zT5W0TJ7Vwzb568u1W6vz3b_cZirfK0Uhs@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Kirill A. Shutemov" <kas@openvz.org>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        Pavel Emelyanov <xemul@parallels.com>, <linux-nfs@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        <containers@lists.linux-foundation.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 00/16] make rpc_pipefs be mountable multiple time
+References: <1295012954-7769-1-git-send-email-kas@openvz.org> <4D343658.1020205@parallels.com> <20110120113552.GB24349@shutemov.name>
+In-Reply-To: <20110120113552.GB24349@shutemov.name>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2011 08:16 AM, Pekka Enberg wrote:
-> Hi Christoph,
->
-> On Thu, Jan 20, 2011 at 07:33:29AM -0500, Nitin Gupta wrote:
->>> I just started looking into kztmem (weird name!) but on
->>> the high level it seems so much similar to zcache with some
->>> dynamic resizing added (callback for shrinker interface).
->>>
->>> Now, I'll try rebuilding zcache according to new cleancache
->>> API as provided by these set of patches. This will help refresh
->>> whatever issues I was having back then with pagecache
->>> compression and maybe pick useful bits/directions from
->>> new kztmem work.
-> On Thu, Jan 20, 2011 at 2:47 PM, Christoph Hellwig<hch@infradead.org>  wrote:
->> Yes, we shouldn't have two drivers doing almost the same in the
->> tree.  Also adding core hooks for staging drivers really is against
->> the idea of staging of having a separate crap tree.  So it would be
->> good to get zcache into a state where we can merge it into the
->> proper tree first.  And then we can discuss if adding an abstraction
->> layer between it and the core VM really makes sense, and if it does
->> how.   But I'm pretty sure there's now need for multiple layers of
->> abstraction for something that's relatively core VM functionality.
+On 01/20/2011 05:35 AM, Kirill A. Shutemov wrote:
+> On Mon, Jan 17, 2011 at 06:30:16AM -0600, Rob Landley wrote:
+>> On 01/14/2011 07:48 AM, Kirill A. Shutemov wrote:
+>>> Prepare nfs/sunrpc stack to use multiple instances of rpc_pipefs.
+>>> Only for client for now.
 >>
->> E.g. the abstraction should involve because of it's users, not the
->> compressed caching code should involve because it's needed to present
->> a user for otherwise useless code.
-> I'm not sure which hooks you're referring to but for zcache we did this:
->
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=b3a27d0529c6e5206f1b60f60263e3ecfd0d77cb
->
-> I completely agree with getting zcache merged properly before going
-> for the cleancache stuff.
->
+>> Ok, Google is being really unhelpful here.
+> 
+> It's better if you read the code. :)
 
-These hooks are for zram (generic, in-memory compressed block devices)
-which can also be used as swap disks. Without that swap notify hook, we
-could not free [compressed] swap pages as soon as they are marked free.
+I did.  That doesn't necessarily help if I don't know what it's _trying_
+to do and this implementation is just one small piece of a much larger
+mechanism.
 
-For zcache (which does pagecache compression), we need separate set
-of hooks, currently known as "cleancache" [1]. These hooks are very
-minimal but not sure if they are accepted yet (they are present in
-linux-next tree only, see: mm/cleancache.c, include/linux/cleancache.h
+>> What is rpc_pipefs for?  What uses it, and to do what exactly?  Is it
+>> used by nfs server code, or by the client code, or both?  Is it a way
+>> for userspace to talk to the kernel, or for the kernel to talk to
+>> itself?  Is it used at mount time, or during filesystem operation?
+> 
+> Ok, It try to answer. Please correct me, if I'm wrong.
+> 
+> rpc_pipefs is a userland/kernel interface (I don't see kernel-kernel
+> usecases, but it's possible, I guess).
 
-[1] cleancache: http://lwn.net/Articles/393013/
+Then why is the host context treated specially with an init_rcp_pipefs
+instance that isn't necessarily mounted anywhere?  (How does userspace
+access it if it isn't mounted anywhere?  Why doesn't the host context
+just use the same does-not-exist code as container context?  Presumably
+there's a reason for this?)
 
-Nitin
+I've also mounted NFS shares in test environments I never mounted
+rpc_pipefs in.  (It's possible that the nfs.mount command was doing so
+for me, and apparently unmounting it again afterwards.)  My test
+environment is exporting with the userspace NFS daemon so it's not using
+the kernel cacheing infrastructure.
 
+> There is client dir (nfs/clntX) in rpc_pipefs for every sunrpc client.
+> Both client and server (see fs/nfsd/nfs4callback.c) can create sunrpc
+> client. So we rpc_pipefs on both side.
 
+Ok, both client and server can create instances.  And use them to do what?
+
+I understand that the kernel needs to handle RPC calls to service NFS
+requests, what I'm not figuring out is how userspace is involved after
+the initial mount except on the other side of filesystem-agnostic system
+calls.
+
+> rpc_pipefs uses not only on mount time. See old idmapper, for example.
+
+Um, does this sentence say that the old idmapper uses rpc_pipefs?
+(Presumably not the kernel infrastructure controlled by
+CONFIG_NFS_USE_NEW_IDMAPPER because you said it's not a kernel-kernel
+communication mechanism...  So you're saying that whatever userspace
+infrastructure interacts with that will also depend on rpc_pipefs.  But
+the new infrastructure doesn't, which is why I need to look at the old?)
+
+(And again, CONFIG_NFS_USE_NEW_IDMAPPER needs /sbin/request-key from the
+keyutils package implying this is primarily for authentication, which
+would explain why I haven't seen it in my simple test environment...)
+
+Rob
