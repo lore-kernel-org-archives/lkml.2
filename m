@@ -1,79 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab1ATLcO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 06:32:14 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37737 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755441Ab1ATLbw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 06:31:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=FhBrXmYUOgk/FarLaUUs31h1v0t0Dcgn6AlmcPPYhz/LT8fpnDcMQK9Z8bxz6w0baS
-         btCA/b1uBzWh7/5ibUBr0bh3d/f+5L86Q4M3wgaF4nLtkFnFQxkYweMf21Qzzuz++2m3
-         kk27ZjVwRAqFz6DjWd+QJqnmkzCYGSZPdd2Lg=
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, arnd@arndb.de
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>
-Subject: [PATCH] h8300: use asm-generic/cacheflush.h
-Date: Thu, 20 Jan 2011 20:32:15 +0900
-Message-Id: <1295523136-4277-3-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1295523136-4277-1-git-send-email-akinobu.mita@gmail.com>
-References: <1295523136-4277-1-git-send-email-akinobu.mita@gmail.com>
+	id S1755423Ab1ATLd7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 06:33:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62204 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755056Ab1ATLd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 06:33:57 -0500
+Date: Thu, 20 Jan 2011 06:32:11 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        Philipp Reisner <philipp.reisner@linbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lars Ellenberg <lars.ellenberg@linbit.com>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] loop: queue_lock NULL pointer derefence in
+ blk_throtl_exit
+Message-ID: <20110120113211.GB16184@redhat.com>
+References: <20110114192532.GA4274@swordfish>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110114192532.GA4274@swordfish>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The implementation of the cache flushing interfaces on the h8300
-is identical with the default implementation in asm-generic.
+On Fri, Jan 14, 2011 at 09:25:32PM +0200, Sergey Senozhatsky wrote:
+> Performing 
+> $ sudo mount -o loop -o umask=0 /dev/sdb1 /mnt/
+> mount: wrong fs type, bad option, bad superblock on /dev/loop0,
+>        missing codepage or helper program, or other error
+>        In some cases useful info is found in syslog - try
+>        dmesg | tail  or so
+> 
+> $ sudo modprobe -r loop
+> 
+> results in oops:
+> 
+>  BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
+>  IP: [<ffffffff812479d4>] do_raw_spin_lock+0x14/0x122
+>  Process modprobe (pid: 6189, threadinfo ffff88009a898000, task ffff880154a88000)
+>  Call Trace:
+>   [<ffffffff81486788>] _raw_spin_lock_irq+0x4a/0x51
+>   [<ffffffff8123404b>] ? blk_throtl_exit+0x3b/0xa0
+>   [<ffffffff8105b120>] ? cancel_delayed_work_sync+0xd/0xf
+>   [<ffffffff8123404b>] blk_throtl_exit+0x3b/0xa0
+>   [<ffffffff81229bc8>] blk_release_queue+0x21/0x65
+>   [<ffffffff8123bb06>] kobject_release+0x51/0x66
+>   [<ffffffff8123bab5>] ? kobject_release+0x0/0x66
+>   [<ffffffff8123ce1e>] kref_put+0x43/0x4d
+>   [<ffffffff8123ba27>] kobject_put+0x47/0x4b
+>   [<ffffffff8122717c>] blk_cleanup_queue+0x56/0x5b
+>   [<ffffffffa01c3824>] loop_exit+0x68/0x844 [loop]
+>   [<ffffffff8107cccc>] sys_delete_module+0x1e8/0x25b
+>   [<ffffffff814864c9>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>   [<ffffffff81002112>] system_call_fastpath+0x16/0x1b
+> 
+> 
+> because of an attempt to acquire NULL queue_lock.
+> I added the same lines as in blk_queue_make_request - 
+> `fall back to embedded per-queue lock'.
+> 
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> 
+> ---
+> 
+>  drivers/block/loop.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+> index 44e18c0..49e6a54 100644
+> --- a/drivers/block/loop.c
+> +++ b/drivers/block/loop.c
+> @@ -1641,6 +1641,9 @@ out:
+>  
+>  static void loop_free(struct loop_device *lo)
+>  {
+> +	if (!lo->lo_queue->queue_lock)
+> +		lo->lo_queue->queue_lock = &lo->lo_queue->__queue_lock;
+> +
+>  	blk_cleanup_queue(lo->lo_queue);
+>  	put_disk(lo->lo_disk);
+>  	list_del(&lo->lo_list);
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
----
- arch/h8300/include/asm/cacheflush.h |   21 +--------------------
- 1 files changed, 1 insertions(+), 20 deletions(-)
+IIUC, the issue here seems to be that we allocated a request queue but
+never initiliazed it and then called blk_cleanup_queue() on that. 
 
-diff --git a/arch/h8300/include/asm/cacheflush.h b/arch/h8300/include/asm/cacheflush.h
-index 4cf2df2..46fddd6 100644
---- a/arch/h8300/include/asm/cacheflush.h
-+++ b/arch/h8300/include/asm/cacheflush.h
-@@ -9,32 +9,13 @@
-  * Cache handling functions
-  * No Cache memory all dummy functions
-  */
-+#include <asm-generic/cacheflush.h>
- 
--#define flush_cache_all()
--#define	flush_cache_mm(mm)
--#define	flush_cache_dup_mm(mm)		do { } while (0)
--#define	flush_cache_range(vma,a,b)
--#define	flush_cache_page(vma,p,pfn)
--#define ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE 0
--#define	flush_dcache_page(page)
--#define	flush_dcache_mmap_lock(mapping)
--#define	flush_dcache_mmap_unlock(mapping)
- #define	flush_icache()
--#define	flush_icache_page(vma,page)
--#define	flush_icache_range(start,len)
--#define flush_cache_vmap(start, end)
--#define flush_cache_vunmap(start, end)
- #define	cache_push_v(vaddr,len)
- #define	cache_push(paddr,len)
- #define	cache_clear(paddr,len)
- 
- #define	flush_dcache_range(a,b)
- 
--#define	flush_icache_user_range(vma,page,addr,len)
--
--#define copy_to_user_page(vma, page, vaddr, dst, src, len) \
--	memcpy(dst, src, len)
--#define copy_from_user_page(vma, page, vaddr, dst, src, len) \
--	memcpy(dst, src, len)
--
- #endif /* _ASM_H8300_CACHEFLUSH_H */
--- 
-1.7.3.4
+I noticed in loop driver there is another blk_cleanup_queue() call
+in loop_alloc() if memory allocation fails. There also we will run into
+similar issue.
 
+IMHO, a better place to fix this might be blk_release_queue() where we
+can default to q->__spin_lock if we are cleaning up an uninitialized queue.
+That way we shall not have to fix inidividual drivers. And it also
+does not sound right to expect a driver to make sure queue lock is
+initialized before it calls blk_cleanup_queue() on the queue.
+
+Thanks
+Vivek
