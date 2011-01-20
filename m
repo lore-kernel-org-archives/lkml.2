@@ -1,219 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab1ATIBc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 03:01:32 -0500
-Received: from mga09.intel.com ([134.134.136.24]:32873 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752283Ab1ATIBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 03:01:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,349,1291622400"; 
-   d="scan'208";a="698694706"
-Date: Thu, 20 Jan 2011 15:55:56 +0800
-From: Chuanxiao Dong <chuanxiao.dong@intel.com>
-To: linux-mmc@vger.kernel.org, cjb@laptop.org
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Subject: [PATCH v3 1/1]mmc: implemented eMMC4.4 enhanced area feature
-Message-ID: <20110120075556.GA23566@intel.com>
-Reply-To: Chuanxiao Dong <chuanxiao.dong@intel.com>
+	id S1755010Ab1ATIEd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 03:04:33 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36683 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752283Ab1ATIEb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 03:04:31 -0500
+Message-ID: <4D37EC89.2080802@monstr.eu>
+Date: Thu, 20 Jan 2011 09:04:25 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Peter Korsgaard <jacmet@sunsite.dk>
+CC: linux-serial@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Uartlite - ulite_transmit
+References: <4D2465E0.2000707@monstr.eu> <4D246672.3070002@monstr.eu>	<87vd22h3dq.fsf@macbook.be.48ers.dk> <4D257D61.2060400@monstr.eu>	<87r5cqh0bn.fsf@macbook.be.48ers.dk> <4D25871D.2000408@monstr.eu>	<87mxnegy4u.fsf@macbook.be.48ers.dk> <4D26C538.3010101@monstr.eu>	<4D26D79C.8060304@monstr.eu> <4D2D78F3.2040903@monstr.eu>	<87aaj6zays.fsf@macbook.be.48ers.dk> <4D2D8113.1020504@monstr.eu>	<8739oyza2n.fsf@macbook.be.48ers.dk> <4D32B5A2.1070508@monstr.eu>	<87r5cc5zqp.fsf@macbook.be.48ers.dk> <4D345DA3.8020105@monstr.eu> <87oc7cgbi1.fsf@macbook.be.48ers.dk>
+In-Reply-To: <87oc7cgbi1.fsf@macbook.be.48ers.dk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhanced area feature is a new feature defined in eMMC4.4 standard. This
-kind of area can help to improve the performance.
+Hi Peter,
 
-MMC driver will read out the enhanced area offset and size and add them
-to be device attributes. The feature enabling should be done in manufactory.
-To use this feature, bit ERASE_GRP_DEF should also be set.
+> Hi,
+> 
+>  >> The problem is the uart_flush_buffer() call we see after uart_open() in
+>  >> 4. If doesn't seem to come from serial_core (only called from uart_close
+>  >> / uart_hangup), so presumably it comes from the TTY core or
+>  >> userspace. Could you add a bit more debug to figure out where exactly it
+>  >> comes from?
+> 
+>  Michal> Last week I have also implemented simple ioctl function for
+>  Michal> uartlite - just printk to see what happen. Look at the second
+>  Michal> log below.
+> 
+>  Michal> uart_open(0) called
+>  Michal> ulite_ioctl 5401 bff76a18
+>  Michal> n_tty_ioctl
+>  Michal> ulite_ioctl 540b 2
+>  Michal> n_tty_ioctl
+>  Michal> n_tty_ioctl_helper TCFLSH
+>  Michal> tty_perform_flush TCIOFLUSH
+>  Michal> tty_perform_flush TCOFLUSH
+>  Michal> tty_driver_flush_buffer
+>  Michal> uart_flush_buffer(0) called
+> 
+> So your userspace is calling tcflush, and serial_core responds by
+> flushing (dropping) the buffer. That seems like expected behaviour to
+> me.
+> 
+> This is presumably from the busybox getty applet, which does:
+> 
+> static void termios_init(struct termios *tp, int speed, struct options *op)
+> {
+> 	speed_t ispeed, ospeed;
+> 	/*
+> 	 * Initial termios settings: 8-bit characters, raw-mode, blocking i/o.
+> 	 * Special characters are set after we have read the login name; all
+> 	 * reads will be done in raw mode anyway. Errors will be dealt with
+> 	 * later on.
+> 	 */
+> 	/* flush input and output queues, important for modems! */
+> 	tcflush(0, TCIOFLUSH);
+> 
+> You could change that to a tcdrain() if that's not what you want.
+> 
 
-Documentation/ABI/testing/sysfs-devices-mmc described the two new attributes
+Great that's work. Just for the record it is tcdrain(STDOUT_FILENO);
+Patch against busybox 1.14.3 version is below. Maybe worth to added it 
+mainline busybox.
 
-Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
----
- Documentation/ABI/testing/sysfs-devices-mmc |   19 ++++++
- drivers/mmc/core/mmc.c                      |   80 +++++++++++++++++++++++++++
- include/linux/mmc/card.h                    |    3 +
- include/linux/mmc/mmc.h                     |    3 +
- 4 files changed, 105 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-devices-mmc
+Thanks for your big help.
+Michal
 
-diff --git a/Documentation/ABI/testing/sysfs-devices-mmc b/Documentation/ABI/testing/sysfs-devices-mmc
-new file mode 100644
-index 0000000..6e759ae
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-devices-mmc
-@@ -0,0 +1,19 @@
-+What:		/sys/devices/.../mmc_host/mmcX/mmcX:XXXX/enhanced_area_offset
-+Date:		January 2011
-+Contact:	Chuanxiao Dong <chuanxiao.dong@intel.com>
-+Description:
-+		Enhanced area is a new feature defined in eMMC4.4 standard.eMMC4.4 or
-+		later card can support such feature. This kind of area can help to
-+		improve the card performance. If the feature is enabled, this attribute
-+		will indicate the start address of enhanced data area. If not, this
-+		attribute will be -EINVAL. Unit Byte. Format decimal.
-+
-+What:		/sys/devices/.../mmc_host/mmcX/mmcX:XXXX/enhanced_area_size
-+Date:		January 2011
-+Contact:	Chuanxiao Dong <chuanxiao.dong@intel.com>
-+Description:
-+		Enhanced area is a new feature defined in eMMC4.4 standard. eMMC4.4 or
-+		later card can support such feature. This kind of area can help to
-+		improve the card performance. If the feature is enabled, this attribute
-+		will indicate the size of enhanced data area. If not, this attribute
-+		will be -EINVAL. Unit KByte. Format decimal.
-diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-index 16006ef..5ab44bb 100644
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -302,6 +302,48 @@ static int mmc_read_ext_csd(struct mmc_card *card)
- 	}
- 
- 	if (card->ext_csd.rev >= 4) {
-+		/*
-+		 * Enhanced area feature support
-+		 * check whether eMMC card has the Enhanced area enabled.
-+		 * if so, export enhanced area offset and size to
-+		 * user by adding sysfs interface
-+		 */
-+		if ((ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x2) &&
-+				(ext_csd[EXT_CSD_PARTITION_ATTRIBUTE] & 0x1)) {
-+			u8 hc_erase_grp_sz =
-+				ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
-+			u8 hc_wp_grp_sz =
-+				ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
-+			/*
-+			 * set a flag to identify whether the enhanced
-+			 * user data is enabled
-+			 */
-+			card->ext_csd.enhanced_area_en = 1;
-+			/*
-+			 * calculate the enhanced data area offset, unit B
-+			 */
-+			card->ext_csd.enhanced_area_offset =
-+				(ext_csd[139] << 24) + (ext_csd[138] << 16) +
-+				(ext_csd[137] << 8) + ext_csd[136];
-+			if (mmc_card_blockaddr(card))
-+				card->ext_csd.enhanced_area_offset <<= 9;
-+			/*
-+			 * calculate the enhanced data area size, unit KB
-+			 */
-+			card->ext_csd.enhanced_area_size =
-+				(ext_csd[142] << 16) + (ext_csd[141] << 8) +
-+				ext_csd[140];
-+			card->ext_csd.enhanced_area_size *=
-+				(size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
-+			card->ext_csd.enhanced_area_size <<= 9;
-+		} else {
-+			/*
-+			 * If not enabled enhanced area, disable these
-+			 * device attributes
-+			 */
-+			card->ext_csd.enhanced_area_offset = -EINVAL;
-+			card->ext_csd.enhanced_area_size = -EINVAL;
-+		}
- 		card->ext_csd.sec_trim_mult =
- 			ext_csd[EXT_CSD_SEC_TRIM_MULT];
- 		card->ext_csd.sec_erase_mult =
-@@ -336,6 +378,9 @@ MMC_DEV_ATTR(manfid, "0x%06x\n", card->cid.manfid);
- MMC_DEV_ATTR(name, "%s\n", card->cid.prod_name);
- MMC_DEV_ATTR(oemid, "0x%04x\n", card->cid.oemid);
- MMC_DEV_ATTR(serial, "0x%08x\n", card->cid.serial);
-+MMC_DEV_ATTR(enhanced_area_offset, "%lld\n",
-+		card->ext_csd.enhanced_area_offset);
-+MMC_DEV_ATTR(enhanced_area_size, "%d\n", card->ext_csd.enhanced_area_size);
- 
- static struct attribute *mmc_std_attrs[] = {
- 	&dev_attr_cid.attr,
-@@ -349,6 +394,8 @@ static struct attribute *mmc_std_attrs[] = {
- 	&dev_attr_name.attr,
- 	&dev_attr_oemid.attr,
- 	&dev_attr_serial.attr,
-+	&dev_attr_enhanced_area_offset.attr,
-+	&dev_attr_enhanced_area_size.attr,
- 	NULL,
- };
- 
-@@ -484,6 +531,39 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
- 	}
- 
- 	/*
-+	 * If enhanced_area_en is TRUE, host need to enable
-+	 * ERASE_GRP_DEF bit.
-+	 * ERASE_GRP_DEF bit will be lost every time
-+	 * after a reset or power off.
-+	 */
-+	if (card->ext_csd.enhanced_area_en) {
-+		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-+				EXT_CSD_ERASE_GROUP_DEF, 1);
-+
-+		if (err && err != -EBADMSG)
-+			goto free_card;
-+
-+		if (err) {
-+			err = 0;
-+			/*
-+			 * Just disable enhanced area off & sz
-+			 * will try to enable ERASE_GROUP_DEF
-+			 * during next time reinit
-+			 */
-+			card->ext_csd.enhanced_area_offset = -EINVAL;
-+			card->ext_csd.enhanced_area_size = -EINVAL;
-+		} else {
-+			card->ext_csd.erase_group_def = 1;
-+			/*
-+			 * enable ERASE_GRP_DEF successfully.
-+			 * This will affect the erase size, so
-+			 * here need to reset erase size
-+			 */
-+			mmc_set_erase_size(card);
-+		}
-+	}
-+
-+	/*
- 	 * Activate high speed (if supported)
- 	 */
- 	if ((card->ext_csd.hs_max_dtr != 0) &&
-diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-index 8ce0827..736697f 100644
---- a/include/linux/mmc/card.h
-+++ b/include/linux/mmc/card.h
-@@ -54,6 +54,9 @@ struct mmc_ext_csd {
- 	unsigned int		sec_trim_mult;	/* Secure trim multiplier  */
- 	unsigned int		sec_erase_mult;	/* Secure erase multiplier */
- 	unsigned int		trim_timeout;		/* In milliseconds */
-+	bool			enhanced_area_en;	/* enhanced area en */
-+	loff_t		enhanced_area_offset;	/* enhanced area addr */
-+	size_t		enhanced_area_size;		/* enhanced area size */
- };
- 
- struct sd_scr {
-diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
-index 612301f..264ba54 100644
---- a/include/linux/mmc/mmc.h
-+++ b/include/linux/mmc/mmc.h
-@@ -253,6 +253,8 @@ struct _mmc_csd {
-  * EXT_CSD fields
-  */
- 
-+#define EXT_CSD_PARTITION_ATTRIBUTE	156	/* R/W */
-+#define EXT_CSD_PARTITION_SUPPORT	160	/* RO */
- #define EXT_CSD_ERASE_GROUP_DEF		175	/* R/W */
- #define EXT_CSD_ERASED_MEM_CONT		181	/* RO */
- #define EXT_CSD_BUS_WIDTH		183	/* R/W */
-@@ -262,6 +264,7 @@ struct _mmc_csd {
- #define EXT_CSD_CARD_TYPE		196	/* RO */
- #define EXT_CSD_SEC_CNT			212	/* RO, 4 bytes */
- #define EXT_CSD_S_A_TIMEOUT		217	/* RO */
-+#define EXT_CSD_HC_WP_GRP_SIZE		221	/* RO */
- #define EXT_CSD_ERASE_TIMEOUT_MULT	223	/* RO */
- #define EXT_CSD_HC_ERASE_GRP_SIZE	224	/* RO */
- #define EXT_CSD_SEC_TRIM_MULT		229	/* RO */
+
+diff --git 
+a/software/petalinux-dist/user/busybox/busybox-1.14.3/loginutils/getty.c 
+b/software/petalinux-dist/user/busybox/busybo
+index 24a182f..4c99e92 100644
+--- a/software/petalinux-dist/user/busybox/busybox-1.14.3/loginutils/getty.c
++++ b/software/petalinux-dist/user/busybox/busybox-1.14.3/loginutils/getty.c
+@@ -279,6 +279,8 @@ static void termios_init(struct termios *tp, int 
+speed, struct options *op)
+          * later on.
+          */
+  #ifdef __linux__
++       /* wait until all output written to the stdout has been 
+transmitted */
++       tcdrain(STDOUT_FILENO);
+         /* flush input and output queues, important for modems! */
+         ioctl(0, TCFLSH, TCIOFLUSH); /* tcflush(0, TCIOFLUSH)? - same */
+  #endif
+
+
 -- 
-1.6.6.1
-
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
