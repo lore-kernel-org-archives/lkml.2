@@ -1,138 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab1ATKEI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 05:04:08 -0500
-Received: from ganesha.gnumonks.org ([213.95.27.120]:35346 "EHLO
-	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755317Ab1ATKEF (ORCPT
+	id S1755359Ab1ATKEn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 05:04:43 -0500
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:60198 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755317Ab1ATKEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 05:04:05 -0500
-From: KyongHo Cho <pullip.cho@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>, Ilho Lee <ilho215.lee@samsung.com>,
-        KeyYoung Park <keyyoung.park@samsung.com>,
-        KyongHo Cho <pullip.cho@samsung.com>
-Subject: [PATCH] ARM: mm: Regarding section when dealing with meminfo
-Date: Thu, 20 Jan 2011 18:45:39 +0900
-Message-Id: <1295516739-9839-1-git-send-email-pullip.cho@samsung.com>
-X-Mailer: git-send-email 1.6.2.5
+	Thu, 20 Jan 2011 05:04:41 -0500
+From: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
+To: Richard Purdie <richard.purdie@linuxfoundation.org>
+Cc: Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 20 Jan 2011 11:03:29 +0100
+Subject: RE: [PATCH 1/2] leds: add driver for LM3530 ALS
+Thread-Topic: [PATCH 1/2] leds: add driver for LM3530 ALS
+Thread-Index: Acu34qXTczXLMvB2R6iGUOawY7B1fwAph31Q
+Message-ID: <2E48302EED53D048A7BA72B0A307FB51172F55C632@EXDCVYMBSTM005.EQ1STM.local>
+References: <1295420175-22332-1-git-send-email-shreshthakumar.sahu@stericsson.com>
+ <1295446213.14388.21898.camel@rex>
+In-Reply-To: <1295446213.14388.21898.camel@rex>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p0KA4qZW004421
 
-Sparsemem allows that a bank of memory spans over several adjacent
-sections if the start address and the end address of the bank
-belong to different sections.
-When gathering statictics of physical memory in mem_init() and
-show_mem(), this possiblity was not considered.
 
-This patch guarantees that simple increasing the pointer to page
-descriptors does not exceed the boundary of a section.
 
-Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
----
- arch/arm/mm/init.c |   74 +++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 51 insertions(+), 23 deletions(-)
+[...]
+> +	ret = i2c_smbus_write_byte_data(client,
+> +			LM3530_GEN_CONFIG, gen_config);
+> +	if (ret)
+> +		return ret;
+> +	ret = i2c_smbus_write_byte_data(client,
+> +			LM3530_ALS_CONFIG, als_config);
+> +	if (ret)
+> +		return ret;
+> +	ret = i2c_smbus_write_byte_data(client,
+> +			LM3530_BRT_RAMP_RATE, brt_ramp);
+> +	if (ret)
+> +		return ret;
+> +	ret = i2c_smbus_write_byte_data(client,
+> +			LM3530_ALS_IMP_SELECT, als_imp_sel);
+> +	if (ret)
+> +		return ret;
+> +	ret = i2c_smbus_write_byte_data(client,
+> +			LM3530_BRT_CTRL_REG, brightness);
+> +	if (ret)
+> +		return ret;
+> +	ret = i2c_smbus_write_byte_data(client,
+> +			LM3530_ALS_ZB0_REG, LM3530_DEF_ZB_0);
+> +	if (ret)
+> +		return ret;
+> +	ret = i2c_smbus_write_byte_data(client,
+> +			LM3530_ALS_ZB1_REG, LM3530_DEF_ZB_1);
+> +	if (ret)
+> +		return ret;
+> +	ret = i2c_smbus_write_byte_data(client,
+> +			LM3530_ALS_ZB2_REG, LM3530_DEF_ZB_2);
+> +	if (ret)
+> +		return ret;
+> +	ret = i2c_smbus_write_byte_data(client,
+> +			LM3530_ALS_ZB3_REG, LM3530_DEF_ZB_3);
+> +	if (ret)
+> +		return ret;
+> +	ret = i2c_smbus_write_byte_data(client,
+> +			LM3530_ALS_Z0T_REG, LM3530_DEF_ZT_0);
+> +	if (ret)
+> +		return ret;
+> +	ret = i2c_smbus_write_byte_data(client,
+> +			LM3530_ALS_Z1T_REG, LM3530_DEF_ZT_1);
+> +	if (ret)
+> +		return ret;
+> +	ret = i2c_smbus_write_byte_data(client,
+> +			LM3530_ALS_Z2T_REG, LM3530_DEF_ZT_2);
+> +	if (ret)
+> +		return ret;
+> +	ret = i2c_smbus_write_byte_data(client,
+> +			LM3530_ALS_Z3T_REG, LM3530_DEF_ZT_3);
+> +	if (ret)
+> +		return ret;
+> +	ret = i2c_smbus_write_byte_data(client,
+> +			LM3530_ALS_Z4T_REG, LM3530_DEF_ZT_4);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return ret;
 
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index 57c4c5c..6ccecbe 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -93,24 +93,38 @@ void show_mem(void)
- 
- 		pfn1 = bank_pfn_start(bank);
- 		pfn2 = bank_pfn_end(bank);
--
-+#ifndef CONFIG_SPARSEMEM
- 		page = pfn_to_page(pfn1);
- 		end  = pfn_to_page(pfn2 - 1) + 1;
--
-+#else
-+		pfn2--;
- 		do {
--			total++;
--			if (PageReserved(page))
--				reserved++;
--			else if (PageSwapCache(page))
--				cached++;
--			else if (PageSlab(page))
--				slab++;
--			else if (!page_count(page))
--				free++;
--			else
--				shared += page_count(page) - 1;
--			page++;
--		} while (page < end);
-+			page = pfn_to_page(pfn1);
-+			if (pfn_to_section_nr(pfn1) < pfn_to_section_nr(pfn2)) {
-+				pfn1 += PAGES_PER_SECTION;
-+				pfn1 &= PAGE_SECTION_MASK;
-+			} else {
-+				pfn1 = pfn2;
-+			}
-+			end = pfn_to_page(pfn1) + 1;
-+#endif
-+			do {
-+				total++;
-+				if (PageReserved(page))
-+					reserved++;
-+				else if (PageSwapCache(page))
-+					cached++;
-+				else if (PageSlab(page))
-+					slab++;
-+				else if (!page_count(page))
-+					free++;
-+				else
-+					shared += page_count(page) - 1;
-+				page++;
-+			} while (page < end);
-+#ifdef CONFIG_SPARSEMEM
-+		} while (pfn1 < pfn2);
-+#endif
- 	}
- 
- 	printk("%d pages of RAM\n", total);
-@@ -470,17 +484,31 @@ void __init mem_init(void)
- 
- 		pfn1 = bank_pfn_start(bank);
- 		pfn2 = bank_pfn_end(bank);
--
-+#ifndef CONFIG_SPARSEMEM
- 		page = pfn_to_page(pfn1);
- 		end  = pfn_to_page(pfn2 - 1) + 1;
--
-+#else
-+		pfn2--;
- 		do {
--			if (PageReserved(page))
--				reserved_pages++;
--			else if (!page_count(page))
--				free_pages++;
--			page++;
--		} while (page < end);
-+			page = pfn_to_page(pfn1);
-+			if (pfn_to_section_nr(pfn1) < pfn_to_section_nr(pfn2)) {
-+				pfn1 += PAGES_PER_SECTION;
-+				pfn1 &= PAGE_SECTION_MASK;
-+			} else {
-+				pfn1 = pfn2;
-+			}
-+			end = pfn_to_page(pfn1) + 1;
-+#endif
-+			do {
-+				if (PageReserved(page))
-+					reserved_pages++;
-+				else if (!page_count(page))
-+					free_pages++;
-+				page++;
-+			} while (page < end);
-+#ifdef CONFIG_SPARSEMEM
-+		} while (pfn1 < pfn2);
-+#endif
- 	}
- 
- 	/*
--- 
-1.6.2.5
+I can't help wonder if a table of values iterated over would look a
+little neater here. The last if is harmless but pointless too.
 
+[Shreshtha Kumar SAHU] done
+
+> +static ssize_t lm3530_mode_set(struct device *dev, struct device_attribute
+> +				   *attr, const char *buf, size_t size)
+> +{
+> +	int err;
+> +	struct i2c_client *client = container_of(
+> +					dev->parent, struct i2c_client, dev);
+> +	struct lm3530_data *drvdata = i2c_get_clientdata(client);
+> +	unsigned long mode;
+> +
+> +	err = strict_strtoul(buf, 10, &mode);
+> +	if (err < 0)
+> +		return -EINVAL;
+> +
+> +	if (mode == LM3530_BL_MODE_MANUAL)
+> +		drvdata->mode = LM3530_BL_MODE_MANUAL;
+> +	else if (mode == LM3530_BL_MODE_ALS)
+> +		drvdata->mode = LM3530_BL_MODE_ALS;
+> +	else if (mode == LM3530_BL_MODE_PWM) {
+> +		dev_err(dev, "PWM mode not supported\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	err = lm3530_init_registers(drvdata);
+> +	if (err) {
+> +		dev_err(dev, "Setting %s Mode failed :%d\n", buf, err);
+> +		return err;
+> +	}
+> +
+> +	return sizeof(drvdata->mode);
+> +}
+> +
+> +static DEVICE_ATTR(mode, 0644, NULL, lm3530_mode_set);
+
+So you poke random values of 0, 1, 2 into sysfs? I suspect that breaks
+sysfs guidelines and these should be meaningful values like "pwm", "als"
+and "led". The enum is ok within the kernel but not for exposure outside
+of it. 
+
+[Shreshtha Kumar SAHU] done
+
+Also, calling out PWM specifically as not supported seems like the wrong
+approach 
+[Shreshtha Kumar SAHU] I will add support for PWM soon.
+
+and I'm curious what happens if I poke 4 in there.
+[Shreshtha Kumar SAHU] rectified with implementation of meaningful input
+values
+
+
+The rest looked ok at a quick glance.
+
+Cheers,
+
+Richard
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
