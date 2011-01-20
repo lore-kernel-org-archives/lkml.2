@@ -1,48 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788Ab1ATQAr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 11:00:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52464 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753880Ab1ATQAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 11:00:45 -0500
-Date: Thu, 20 Jan 2011 07:52:28 -0800
-From: Greg KH <gregkh@suse.de>
-To: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, Tejun Heo <tj@kernel.org>,
-        Ruslan Pisarev <ruslan@rpisarev.org.ua>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pohmelfs/dir.c: Remove unneeded mutex_unlock() from
- pohmelfs_rename()
-Message-ID: <20110120155228.GB28815@suse.de>
-References: <40908.91.79.118.36.1295471624.squirrel@mail.ispras.ru>
- <20110120105113.GA24827@ioremap.net>
+	id S1755901Ab1ATQLH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 11:11:07 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33731 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750768Ab1ATQLG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 11:11:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110120105113.GA24827@ioremap.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <849307$b7q280@azsmga001.ch.intel.com>
+References: <AANLkTimOkFckq+r4cD-PSzc_RNs+HJL5CcEM-3Yh+dF6@mail.gmail.com>
+ <AANLkTin98pf1d29AtT7RwjGBeR=m4rBp7Ks6vvmz18vf@mail.gmail.com>
+ <AANLkTi=s9ZMdUe2bsK2OA5rJBej=R8CaJyE+kT3Fd5wG@mail.gmail.com> <849307$b7q280@azsmga001.ch.intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 20 Jan 2011 08:07:02 -0800
+Message-ID: <AANLkTi=AEhztUp30A0o5YxHCqqLg38+f5s+mXfbZTX8Y@mail.gmail.com>
+Subject: Re: more intel drm issues (was Re: [git pull] drm intel only fixes)
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Jeff Chua <jeff.chua.linux@gmail.com>, Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Dave Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 01:51:13PM +0300, Evgeniy Polyakov wrote:
-> On Thu, Jan 20, 2011 at 12:13:44AM +0300, Alexey Khoroshilov (khoroshilov@ispras.ru) wrote:
-> > I do not see any reason for the mutex_unlock(&inode->i_mutex); in
-> > pohmelfs_rename().
-> > 
-> > 
-> > Found by Linux Driver Verification project (linuxtesting.org).
-> 
-> Yes, that's a bug, we already unlocked i_mutex in common path and should
-> not do that on error.
-> 
-> Thank you. Greg, please apply.
-> 
-> > Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-> 
-> Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+On Thu, Jan 20, 2011 at 2:25 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>
+> Right, the autoreported HEAD may have been already reset to 0 and so hit
+> the wraparound bug which caused it to exit early without actually
+> quiescing the ringbuffer.
 
-Great, I'll queue it up with the next round of patches.
+Yeah, that would explain the issue.
 
-greg k-h
+> Another possibility is that I added a 3s timeout waiting for a request if
+> IRQs were suspended:
+
+No, if IRQ's are actually suspended here, then that codepath is
+totally buggy and would blow up (msleep() doesn't work, and jiffies
+wouldn't advance on UP). So that's not it.
+
+> Both of those I think are symptoms of another problem, that perhaps during
+> suspend we are shutting down parts of the chip before idling?
+
+That could be, but looking at the code, one thing strikes me: the
+_normal_ case (of just waiting for "enough space" in the ring buffer)
+doesn't need to use the exact case, but the "wait for ring buffer to
+be totally empty" does.
+
+Which means that the use of the "fast-but-inaccurate" 'head' sounds
+wrong for the "wait for idle" case.
+
+So can you explain the difference between
+
+   intel_read_status_page(ring, 4);
+
+vs
+
+   I915_READ_HEAD(ring);
+
+because from looking at the code, I get the notion that
+"intel_read_status_page()" may not be exact. But what happens if that
+inexact value matches our cached ring->actual_head, so we never even
+try to read the exact case? Does it _stay_ inexact for arbitrarily
+long times? If so, we might wait for the ring to empty forever (well,
+until the timeout - the behavior I see), even though the ring really
+_is_ empty. No?
+
+Also, isn't that "head < ring->actual_head" buggy? What about the
+overflow case? Not that we care, because afaik, 'actual_head' is not
+actually used anywhere, so it should be called 'pointless_head'?
+
+That code looks suspiciously bogus.
+
+                    Linus
