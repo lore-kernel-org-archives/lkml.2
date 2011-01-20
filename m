@@ -1,88 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753675Ab1ATSoH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 13:44:07 -0500
-Received: from e24smtp02.br.ibm.com ([32.104.18.86]:48403 "EHLO
-	e24smtp02.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753634Ab1ATSoF (ORCPT
+	id S1753617Ab1ATSsq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 13:48:46 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:44476 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730Ab1ATSsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 13:44:05 -0500
-Message-ID: <4D388271.50404@linux.vnet.ibm.com>
-Date: Thu, 20 Jan 2011 16:44:01 -0200
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+	Thu, 20 Jan 2011 13:48:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=SSOW4b5imrmIn5EqtiqXSE1vwREOXnHHNevFyKruekJGybXKolkUhclq2AwlGyuMKP
+         Fj9typ3gmtnNqb8p90zro4M687CfraO+MgyEyebLz3M58hlPkKJ8ixzDlqwgwL30kp7+
+         mB9zGTBOPTeNys3UHfELEUu1hDuVKtWCRWxO4=
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: linux-kernel@vger.kernel.org, Debora Velarde <debora@linux.vnet.ibm.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>,
-        tpmdd-devel@lists.sourceforge.net, James Morris <jmorris@namei.org>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH] tpm: fix panic caused by "tpm: Autodetect itpm devices"
-References: <1294370641-6791-1-git-send-email-olof@lixom.net> <AANLkTi=E1_Ur6GmwBRnjGRBpmSup4_1_k35ZKvBRcFtv@mail.gmail.com>
-In-Reply-To: <AANLkTi=E1_Ur6GmwBRnjGRBpmSup4_1_k35ZKvBRcFtv@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1295387347.20633.3.camel@bender>
+References: <1295338561.2003.3.camel@sven> <1295338738-4129-1-git-send-email-s.neumann@raumfeld.com>
+ <4D357DC0.2030006@metafoo.de> <AANLkTi=gGDZHukdSuupg22Gb9te+Vk_rsu6-vREeQRVE@mail.gmail.com>
+ <1295387347.20633.3.camel@bender>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Thu, 20 Jan 2011 13:48:24 -0500
+Message-ID: <AANLkTi=2Tx7M4=wF7GkQZLFe5=JLGv2G7roavKroWZ78@mail.gmail.com>
+Subject: Re: [PATCH] pxa3xx: fix PXA GPIO IRQ handling
+To: Sven Neumann <s.neumann@raumfeld.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        Lennert Buijtenhek <buytenh@wantstofly.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Daniel Mack <daniel@caiaq.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2011 03:37 PM, Olof Johansson wrote:
-> Are all TPM maintainers MIA? This is a trivial patch that fixes a
-> panic, and it was a late-added regression in 2.6.37.
+On Tue, Jan 18, 2011 at 4:49 PM, Sven Neumann <s.neumann@raumfeld.com> wrote:
+> On Tue, 2011-01-18 at 08:15 -0800, Eric Miao wrote:
+>> On Tue, Jan 18, 2011 at 3:47 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+>> > On 01/18/2011 09:18 AM, Sven Neumann wrote:
+>> >> From: Lars-Peter Clausen <lars@metafoo.de>
+>> >>
+>> >> Set the "set_wake" field of the irq_chip struct before calling
+>> >> set_irq_chip() for all of the IRQs, so that the compat handler
+>> >> actually gets installed.
+>>
+>> Not really sure if this is necessary. Lennert has done the transition to
+>> irq_data to those _set_wake() functions as well, so it should be OK
+>> that compat handler doesn't get installed.
+>>
+>> Now I'm not against moving this above, just wondering if there were
+>> any consequences/errors coming out?
 >
-Not myself. I missed this one unfortunately in my work queue, sorry, 
-will keep alert to avoid this happening again.
+> Well, our PXA300 device doesn't power up again when it should resume
+> from suspend. Fine with me if this has been fixed upstream,
 
-Acked-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-> -Olof
+Yeah, that's true. Mind re-post with your SOB?
+
+> but I would
+> still like to get this patch into 2.6.37. I'll try to test upstream as
+> soon as Linus releases 2.6.38-rc1...
 >
-> On Thu, Jan 6, 2011 at 7:24 PM, Olof Johansson<olof@lixom.net>  wrote:
->> commit 3f0d3d016d89a5efb8b926d4707eb21fa13f3d27 adds a check for
->> PNP device id to the common tpm_tis_init() function, which in some
->> cases (force=1) will be called without the device being a member of
->> a pnp_dev. Oopsing and panics ensue.
->>
->> Move the test up to before the call to tpm_tis_init(), since it
->> just modifies a global variable anyway.
->>
->> Signed-off-by: Olof Johansson<olof@lixom.net>
->> Cc: Matthew Garrett<mjg@redhat.com>
->> Cc: stable@kernel.org [2.6.37+]
->> ---
->>   drivers/char/tpm/tpm_tis.c |    6 +++---
->>   1 files changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
->> index c17a305..dd21df5 100644
->> --- a/drivers/char/tpm/tpm_tis.c
->> +++ b/drivers/char/tpm/tpm_tis.c
->> @@ -493,9 +493,6 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
->>                  "1.2 TPM (device-id 0x%X, rev-id %d)\n",
->>                  vendor>>  16, ioread8(chip->vendor.iobase + TPM_RID(0)));
->>
->> -       if (is_itpm(to_pnp_dev(dev)))
->> -               itpm = 1;
->> -
->>         if (itpm)
->>                 dev_info(dev, "Intel iTPM workaround enabled\n");
->>
->> @@ -637,6 +634,9 @@ static int __devinit tpm_tis_pnp_init(struct pnp_dev *pnp_dev,
->>         else
->>                 interrupts = 0;
->>
->> +       if (is_itpm(pnp_dev))
->> +               itpm = 1;
->> +
->>         return tpm_tis_init(&pnp_dev->dev, start, len, irq);
->>   }
->>
->> --
->> 1.7.3.GIT
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
-
+>
+> Sven
+>
+>
+>
