@@ -1,38 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab1ATOur (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 09:50:47 -0500
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:42399 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755770Ab1ATOuo (ORCPT
+	id S1755846Ab1ATOzZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 09:55:25 -0500
+Received: from caiajhbdcaid.dreamhost.com ([208.97.132.83]:56314 "EHLO
+	homiemail-a10.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755690Ab1ATOzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 09:50:44 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: iKu0aNQVM1nz0bNr5uMAi87Bl3E_3CqWqNqC7hi7OepvZrY
- ssnDYvQEpAC3vqwq1nJzAKuCZVoa4Y9HCeZ1vpoKnTX_3ghxvzQ1s54RUoMQ
- y_zknDbiSythyqwBh2OB63rQ4m92xjUMhX7neMPwtZ8ldMdgrhbJJVsFijS3
- 1PbuMZ5tz4.b3qML1sYha14XuizD_y2BfIhbd6rZMXxafeQiwi.oYjFuSU7Y
- _1ouSLgW_Hy64Jm9g_Gbr0GCJ4j_EXgqFB45qafSUe0hCY3_0d_L321BYLAs
- jJaTezeIr2Kzei0CK6HLGhEAYbf9BQodRkNLaOdqudqbvqTxX3Do-
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 20 Jan 2011 08:50:40 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Balbir Singh <balbir@linux.vnet.ibm.com>
-cc: linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kosaki.motohiro@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [REPOST] [PATCH 2/3] Refactor zone_reclaim code (v3)
-In-Reply-To: <20110120123628.30481.4569.stgit@localhost6.localdomain6>
-Message-ID: <alpine.DEB.2.00.1101200850190.10695@router.home>
-References: <20110120123039.30481.81151.stgit@localhost6.localdomain6> <20110120123628.30481.4569.stgit@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 20 Jan 2011 09:55:21 -0500
+X-Greylist: delayed 582 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Jan 2011 09:55:21 EST
+Subject: [PATCH] init: return proper error code in do_mounts_rd
+From: Davidlohr Bueso <dave@gnu.org>
+To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Namhyung Kim <namhyung@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 Jan 2011 11:55:12 -0300
+Message-ID: <1295535312.2089.3.camel@offworld>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Davidlohr Bueso <dave@gnu.org>
 
-Reviewed-by: Christoph Lameter <cl@linux.com>
+In do_mounts_rd() if memory cannot be allocated, return -ENOMEM.
+
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+---
+ init/do_mounts_rd.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/init/do_mounts_rd.c b/init/do_mounts_rd.c
+index 6e1ee69..fe9acb0 100644
+--- a/init/do_mounts_rd.c
++++ b/init/do_mounts_rd.c
+@@ -64,7 +64,7 @@ identify_ramdisk_image(int fd, int start_block, decompress_fn *decompressor)
+ 
+ 	buf = kmalloc(size, GFP_KERNEL);
+ 	if (!buf)
+-		return -1;
++		return -ENOMEM;
+ 
+ 	minixsb = (struct minix_super_block *) buf;
+ 	ext2sb = (struct ext2_super_block *) buf;
+-- 
+1.7.1
+
+
 
