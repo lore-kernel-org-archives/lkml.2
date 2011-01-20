@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920Ab1ATTIn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 14:08:43 -0500
-Received: from pqueuea.post.tele.dk ([193.162.153.9]:58663 "EHLO
-	pqueuea.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab1ATTIm (ORCPT
+	id S1753972Ab1ATTIw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 14:08:52 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35300 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753928Ab1ATTIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 14:08:42 -0500
-Date: Thu, 20 Jan 2011 20:08:18 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [patch 36/37] tile: Use generic irq Kconfig
-Message-ID: <20110120190818.GA22638@merkur.ravnborg.org>
-References: <20110119205258.462759212@linutronix.de> <20110119210840.631350392@linutronix.de> <4D3884E3.8050009@tilera.com>
+	Thu, 20 Jan 2011 14:08:51 -0500
+Date: Thu, 20 Jan 2011 19:08:22 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ben Dooks <ben-linux@fluff.org>
+Cc: Richard Zhao <linuxzsc@gmail.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        linux-sh <linux-sh@vger.kernel.org>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: Locking in the clk API
+Message-ID: <20110120190822.GK6335@n2100.arm.linux.org.uk>
+References: <201101111016.42819.jeremy.kerr@canonical.com> <20110111091607.GI12552@n2100.arm.linux.org.uk> <201101111744.59712.jeremy.kerr@canonical.com> <20110111103929.GN24920@pengutronix.de> <AANLkTinHL9X_bqMPR=W8Va01O4xngUnpGCkCiE3xEdiQ@mail.gmail.com> <4D386ABF.9060908@fluff.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D3884E3.8050009@tilera.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4D386ABF.9060908@fluff.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 01:54:27PM -0500, Chris Metcalf wrote:
-> On 1/19/2011 4:50 PM, Thomas Gleixner wrote:
-> > No functional change.
-> >
-> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: Chris Metcalf <cmetcalf@tilera.com>
-> > ---
-> >  arch/tile/Kconfig |   16 ++++++----------
-> >  1 file changed, 6 insertions(+), 10 deletions(-)
-> >
-> > Index: linux-2.6/arch/tile/Kconfig
-> > ===================================================================
-> > --- linux-2.6.orig/arch/tile/Kconfig
-> > +++ linux-2.6/arch/tile/Kconfig
-> > @@ -1,22 +1,18 @@
-> >  # For a description of the syntax of this configuration file,
-> >  # see Documentation/kbuild/config-language.txt.
-> >  
-> > +config TILE
-> > +       def_bool y
-> > +       select HAVE_GENERIC_HARDIRQS
-> > +       select GENERIC_IRQ_PROBE
-> > +       select GENERIC_PENDING_IRQ if SMP
-> > +
-> >  [...]
-> 
-> I'm not sure it's legal to have two "config TILE" blocks in this Kconfig
-> file; there's already one further down.
+On Thu, Jan 20, 2011 at 05:02:55PM +0000, Ben Dooks wrote:
+> If you want to make it so that each low-power mode has to work
+> out what PLLs need to be disabled and then re-enabled makes me
+> want to be sick. Hiding this stuff behind specific implementations
+> is a recipe for disaster.
 
-It is OK to have two "config TILE" blocks.
-You should take care of moving the other one up after this goes in.
+Why should systems which don't suffer from such problems be prevented
+from gaining power saving from turning off their clocks when devices
+are not being used (eg, the console serial port.)
 
-	Sam
+One solution to your root PLL issue would be to have a separate set of
+enable/disable API calls which get called at setup/release time (or
+whatever you'd like to call it) which can only be called from non-atomic
+context.  Maybe clk_prepare() and clk_unprepare().  These functions
+should perform whatever is necessary to ensure that the clock source
+is available for use atomically when clk_enable() is called.
+
+So, in your case, clk_prepare() ensures that the root PLL is enabled,
+clk_unprepare() allows it to be turned off.
+
+In the case of a console driver, clk_prepare() can be called when we
+know the port will be used as a console.  clk_enable() is then called
+before writing out the string, and clk_disable() after we've completely
+sent the last character.
+
+This allows the best of both worlds.  We now have a clk_enable() which
+can be used to turn the clocks off through the clock tree up to the first
+non-atomic clock, and we also have a way to deal with those which need
+to sleep.  So not only do "sleeping clock" implementations become possible
+but these "sleeping clock" implementations also get the opportunity to
+shutdown some of their clock tree with minimal latency for doing so.
