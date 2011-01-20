@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab1ATQLH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 11:11:07 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33731 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750768Ab1ATQLG (ORCPT
+	id S1755943Ab1ATQLR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 11:11:17 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51284 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755920Ab1ATQLM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 11:11:06 -0500
+	Thu, 20 Jan 2011 11:11:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=uISS0xmG/zPTWAi+D8zSAOkFBx5xoBe4dh3g0XUowo9+SAq4D0GHkMj86GBf4EqY+E
+         31tpGEW4PGyndfQA4P8xFvyd7Cd6EljEx42omilN1g8ozGueJaGPVFxGt05sVW6UV5tq
+         lsIegzX1NgKwUOpmXpk4prlEPceKEM7Nn24Ms=
+Date: Thu, 20 Jan 2011 17:11:06 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
+        rostedt@goodmis.org, amit.kucheria@linaro.org
+Subject: Re: [PATCH V2] tracing, perf : add cpu hotplug trace events
+Message-ID: <20110120161101.GA17218@nowhere>
+References: <AANLkTinNoYbDe5huY4_Q6YidbWxqXqVWbVP2_7o-=P3W@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <849307$b7q280@azsmga001.ch.intel.com>
-References: <AANLkTimOkFckq+r4cD-PSzc_RNs+HJL5CcEM-3Yh+dF6@mail.gmail.com>
- <AANLkTin98pf1d29AtT7RwjGBeR=m4rBp7Ks6vvmz18vf@mail.gmail.com>
- <AANLkTi=s9ZMdUe2bsK2OA5rJBej=R8CaJyE+kT3Fd5wG@mail.gmail.com> <849307$b7q280@azsmga001.ch.intel.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 20 Jan 2011 08:07:02 -0800
-Message-ID: <AANLkTi=AEhztUp30A0o5YxHCqqLg38+f5s+mXfbZTX8Y@mail.gmail.com>
-Subject: Re: more intel drm issues (was Re: [git pull] drm intel only fixes)
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jeff Chua <jeff.chua.linux@gmail.com>, Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Dave Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinNoYbDe5huY4_Q6YidbWxqXqVWbVP2_7o-=P3W@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 2:25 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
->
-> Right, the autoreported HEAD may have been already reset to 0 and so hit
-> the wraparound bug which caused it to exit early without actually
-> quiescing the ringbuffer.
+On Thu, Jan 20, 2011 at 09:25:54AM +0100, Vincent Guittot wrote:
+> Please find below a new proposal for adding trace events for cpu hotplug.
+> The goal is to measure the latency of each part (kernel, architecture)
+> and also to trace the cpu hotplug activity with other power events. I
+> have tested these traces events on an arm platform.
+> 
+> Changes since previous version:
+> -Use cpu_hotplug for trace name
+> -Define traces for kernel core and arch parts only
+> -Use DECLARE_EVENT_CLASS and DEFINE_EVENT
+> -Use proper indentation
+> 
+> Subject: [PATCH] cpu hotplug tracepoint
+> 
+> this patch adds new events for cpu hotplug tracing
+>  * plug/unplug sequence
+>  * core and architecture latency measurements
+> 
+> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.com>
+> ---
+>  include/trace/events/cpu_hotplug.h |  117 ++++++++++++++++++++++++++++++++++++
 
-Yeah, that would explain the issue.
+Note we can't apply new tracepoints if they are not inserted in the code.
 
-> Another possibility is that I added a 3s timeout waiting for a request if
-> IRQs were suspended:
+> +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_wait_die_start,
+> +
+> +	TP_PROTO(unsigned int cpuid),
+> +
+> +	TP_ARGS(cpuid)
+> +);
+> +
+> +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_wait_die_end,
+> +
+> +	TP_PROTO(unsigned int cpuid),
+> +
+> +	TP_ARGS(cpuid)
+> +);
 
-No, if IRQ's are actually suspended here, then that codepath is
-totally buggy and would blow up (msleep() doesn't work, and jiffies
-wouldn't advance on UP). So that's not it.
+What is wait die, compared to die for example?
 
-> Both of those I think are symptoms of another problem, that perhaps during
-> suspend we are shutting down parts of the chip before idling?
+We need those tracepoints to be applied to get that reviewable in practice.
 
-That could be, but looking at the code, one thing strikes me: the
-_normal_ case (of just waiting for "enough space" in the ring buffer)
-doesn't need to use the exact case, but the "wait for ring buffer to
-be totally empty" does.
-
-Which means that the use of the "fast-but-inaccurate" 'head' sounds
-wrong for the "wait for idle" case.
-
-So can you explain the difference between
-
-   intel_read_status_page(ring, 4);
-
-vs
-
-   I915_READ_HEAD(ring);
-
-because from looking at the code, I get the notion that
-"intel_read_status_page()" may not be exact. But what happens if that
-inexact value matches our cached ring->actual_head, so we never even
-try to read the exact case? Does it _stay_ inexact for arbitrarily
-long times? If so, we might wait for the ring to empty forever (well,
-until the timeout - the behavior I see), even though the ring really
-_is_ empty. No?
-
-Also, isn't that "head < ring->actual_head" buggy? What about the
-overflow case? Not that we care, because afaik, 'actual_head' is not
-actually used anywhere, so it should be called 'pointless_head'?
-
-That code looks suspiciously bogus.
-
-                    Linus
+Thanks.
