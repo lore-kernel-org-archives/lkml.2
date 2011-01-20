@@ -1,60 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619Ab1ATUtq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 15:49:46 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:25354 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838Ab1ATUto (ORCPT
+	id S1754654Ab1ATUvg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 15:51:36 -0500
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:1530 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753838Ab1ATUvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 15:49:44 -0500
-Date: Thu, 20 Jan 2011 12:48:36 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>, platform-driver-x86@vger.kernel.org
-Cc: akpm <akpm@linux-foundation.org>, David Woodhouse <dwmw2@infradead.org>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH] platform/x86: ideapad-laptop depends on INPUT
-Message-Id: <20110120124836.b36a7c24.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 20 Jan 2011 15:51:35 -0500
+Message-ID: <4D38A051.2010301@caviumnetworks.com>
+Date: Thu, 20 Jan 2011 12:51:29 -0800
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: John Stultz <john.stultz@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: RTC seems broken on 2.6.38-rc1 for RTCs lacking alarms.
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Jan 2011 20:51:34.0981 (UTC) FILETIME=[D326BF50:01CBB8E3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+The hwclock program on my MIPS Debian GNU/Linux 5.0 system quit
+working with 2.6.38-rc1.
 
-Most platform/x86 drivers that use INPUT_SPARSEKMAP also depend on INPUT,
-so do the same for ideapad-laptop.  This fixes a kconfig warning and
-subsequent build errors when CONFIG_INPUT is disabled.
+This particular ds1307 has no interrupt connection, so the alarm
+feature cannot be used.  Because of this the
+rtc_class_ops.set_alarm() function always will return -EINVAL
 
-warning: (ACER_WMI && ASUS_LAPTOP && DELL_WMI && HP_WMI && PANASONIC_LAPTOP && IDEAPAD_LAPTOP && EEEPC_LAPTOP && EEEPC_WMI && MSI_WMI && TOPSTAR_LAPTOP && ACPI_TOSHIBA) selects INPUT_SPARSEKMAP which has unmet direct dependencies (!S390 && INPUT)
 
-ERROR: "input_free_device" [drivers/platform/x86/ideapad-laptop.ko] undefined!
-ERROR: "input_register_device" [drivers/platform/x86/ideapad-laptop.ko] undefined!
-ERROR: "sparse_keymap_setup" [drivers/platform/x86/ideapad-laptop.ko] undefined!
-ERROR: "input_allocate_device" [drivers/platform/x86/ideapad-laptop.ko] undefined!
-ERROR: "input_unregister_device" [drivers/platform/x86/ideapad-laptop.ko] undefined!
-ERROR: "sparse_keymap_free" [drivers/platform/x86/ideapad-laptop.ko] undefined!
-ERROR: "sparse_keymap_report_event" [drivers/platform/x86/ideapad-laptop.ko] undefined!
+This problem appears to be related to commits:
+042620a RTC: Remove UIE emulation
+6610e08 RTC: Rework RTC code to use timerqueue for events
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: platform-driver-x86@vger.kernel.org
----
- drivers/platform/x86/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+My system uses a ds1307 RTC which still works as evidenced by the
+kernel boot messages.
 
---- lnx-2638-rc1.orig/drivers/platform/x86/Kconfig
-+++ lnx-2638-rc1/drivers/platform/x86/Kconfig
-@@ -227,7 +227,7 @@ config SONYPI_COMPAT
- config IDEAPAD_LAPTOP
- 	tristate "Lenovo IdeaPad Laptop Extras"
- 	depends on ACPI
--	depends on RFKILL
-+	depends on RFKILL && INPUT
- 	select INPUT_SPARSEKMAP
- 	help
- 	  This is a driver for the rfkill switches on Lenovo IdeaPad netbooks.
+.
+.
+.
+rtc-ds1307 0-0068: setting system clock to 2011-01-20 19:58:48 UTC 
+(1295553528)
+.
+.
+.
+
+But hwclock now fails here is some nice strace output:
+.
+.
+.
+open("/dev/rtc0", O_RDONLY|O_LARGEFILE) = 3
+ioctl(3, PRESTO_GETMOUNT or RTC_UIE_ON, 0) = 0
+_newselect(4, [3], NULL, NULL, {5, 0})  = 0 (Timeout)
+write(2, "select() to /dev/rtc0 to wait for"..., 55select() to /dev/rtc0 
+to wait for clock tick timed out
+) = 55
+ioctl(3, PRESTO_SETPID or RTC_UIE_OFF, 0) = 0
+close(3)                                = 0
+exit_group(1)                           = ?
+
+
+The hwclock program is asking to put the clock in UIE mode and then
+does a select() on it.  Since the alarm doesn't work, the select times out.
+
+Previously the ioctl(RTC_UIE_ON) would return EINVAL:
+.
+.
+.
+open("/dev/rtc0", O_RDONLY|O_LARGEFILE)  = 3
+ioctl(3, PRESTO_GETMOUNT or RTC_UIE_ON, 0) = -1 EINVAL (Invalid argument)
+ioctl(3, PRESTO_SETOPT or RTC_RD_TIME, {tm_sec=48, tm_min=41, 
+tm_hour=20, tm_mday=20, tm_mon=0, tm_year=111, ...}) = 0
+ioctl(3, PRESTO_SETOPT or RTC_RD_TIME, {tm_sec=48, tm_min=41, 
+tm_hour=20, tm_mday=20, tm_mon=0, tm_year=111, ...}) = 0
+.
+.
+.
+
+The problem seems to be that rtc_update_irq_enable() no longer returns
+-EINVAL when it cannot set the alarm.
+
+David Daney
