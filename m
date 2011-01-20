@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280Ab1ATJdG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 04:33:06 -0500
-Received: from hera.kernel.org ([140.211.167.34]:37607 "EHLO hera.kernel.org"
+	id S1755295Ab1ATJiL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 04:38:11 -0500
+Received: from cantor.suse.de ([195.135.220.2]:53996 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755103Ab1ATJdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 04:33:03 -0500
-Date: Thu, 20 Jan 2011 09:32:46 +0000
-From: Denis Kirjanov <dkirjanov@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
-        acme@ghostprotocols.net
-Subject: [PATCH] perftools: Fix build error
-Message-ID: <20110120093246.GA8031@hera.kernel.org>
+	id S1755171Ab1ATJiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 04:38:03 -0500
+Message-ID: <4D380279.4070502@suse.cz>
+Date: Thu, 20 Jan 2011 10:38:01 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 20 Jan 2011 09:32:47 +0000 (UTC)
+To: WANG Cong <xiyou.wangcong@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
+        tapio.vihuri@nokia.com
+Subject: Re: Checkpatch problem with Kconfig help symbol ?
+References: <1295440968.2276.46.camel@dell> <ih8qf2$41t$3@dough.gmane.org>
+In-Reply-To: <ih8qf2$41t$3@dough.gmane.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix perftools build error (ppc64 box) with PERF_VERSION = 2.6.38.rc1.47.g12fcdb
-CC builtin-top.o
-cc1: warnings being treated as errors
-builtin-top.c: In function 'print_sym_table':
-builtin-top.c:540: error: format '%Ld' expects type 'long long int', but argument 2 has type '__u64'
+On 20.1.2011 09:06, WANG Cong wrote:
+> On Wed, 19 Jan 2011 14:42:48 +0200, Tapio Vihuri wrote:
+> 
+>> Hi
+>>
+>> Is this false positive ?
+>>
+>> WARNING: please write a paragraph that describes the config symbol fully
+>> #60: FILE: drivers/input/misc/Kconfig:159: +       help
+>>
+>>
+>> Interesting enough, also:
+>>
+>> ./scripts/checkpatch.pl --file drivers/input/misc/Kconfig WARNING:
+>> please write a paragraph that describes the config symbol fully #430:
+>> FILE: input/misc/Kconfig:430:
+>> +       help
+>>
+>>
+>> But this is different line.
+>>
+> 
+> Seems yes, the Kconfig part of your patch looks fine.
 
-Signed-off-by: Denis Kirjanov <dkirjanov@kernel.org>
----
- tools/perf/builtin-top.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The check is complaining that the help text is too short:
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 05344c6..8202a2e 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -537,7 +537,7 @@ static void print_sym_table(void)
- 	if (nr_counters == 1 || !display_weighted) {
- 		struct perf_evsel *first;
- 		first = list_entry(evsel_list.next, struct perf_evsel, node);
--		printf("%Ld", first->attr.sample_period);
-+		printf("%Ld", (unsigned long long)first->attr.sample_period);
- 		if (freq)
- 			printf("Hz ");
- 		else
--- 
-1.7.3.4
++config ECI_CTRL_DEBUG
++	bool "ECI controller debug"
++	depends on INPUT_ECI_AT20
++	help
++	  Say Y here to enable debugging messages for ECI controller driver.
 
+Michal
