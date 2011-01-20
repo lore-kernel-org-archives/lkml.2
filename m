@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753735Ab1ATAnS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 19:43:18 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47125 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752750Ab1ATAnR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 19:43:17 -0500
-Date: Wed, 19 Jan 2011 16:41:59 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Milton Miller <miltonm@bga.com>
-Cc: Anton Blanchard <anton@samba.org>, Peter Zijlstra <peterz@infradead.org>,
-        xiaoguangrong@cn.fujitsu.com, mingo@elte.hu, jaxboe@fusionio.com,
-        npiggin@gmail.com, rusty@rustcorp.com.au,
-        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        benh@kernel.crashing.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] smp_call_function_many SMP race
-Message-Id: <20110119164159.2ff499c8.akpm@linux-foundation.org>
-In-Reply-To: <smp-call-function-simplified@mdm.bga.com>
-References: <20110112150740.77dde58c@kryten>
-	<1295288253.30950.280.camel@laptop>
-	<smp-call-function-peter-reply@mdm.bga.com>
-	<smp-call-function-simplified@mdm.bga.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1754668Ab1ATAqD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 19:46:03 -0500
+Received: from mga02.intel.com ([134.134.136.20]:54919 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752750Ab1ATAqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 19:46:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,347,1291622400"; 
+   d="scan'208";a="698601065"
+Subject: Re: [PATCH -v10 0/4] Lock-less list
+From: Huang Ying <ying.huang@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Chris Mason <chris.mason@oracle.com>
+In-Reply-To: <20110119135546.bb7e8f62.akpm@linux-foundation.org>
+References: <1295245019-7816-1-git-send-email-ying.huang@intel.com>
+	 <20110119135546.bb7e8f62.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 Jan 2011 08:45:58 +0800
+Message-ID: <1295484358.15213.25.camel@yhuang-dev>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Jan 2011 15:07:25 -0600
-Milton Miller <miltonm@bga.com> wrote:
+On Thu, 2011-01-20 at 05:55 +0800, Andrew Morton wrote:
+> I'm trying to remember why we're talking about this.
+> 
+> You had an ACPI-based "hardware error reporting" thing.  And that
+> required an nmi-context memory allocator.  And that required a
+> "lockless" list implementation.
+> 
+> Yes?
 
-> I noticed a failure where we hit the following WARN_ON in
-> generic_smp_call_function_interrupt:
-> 
->                 if (!cpumask_test_and_clear_cpu(cpu, data->cpumask))
->                         continue;
-> 
->                 data->csd.func(data->csd.info);
-> 
->                 refs = atomic_dec_return(&data->refs);
->                 WARN_ON(refs < 0);      <-------------------------
-> 
-> We atomically tested and cleared our bit in the cpumask, and yet the
-> number of cpus left (ie refs) was 0. How can this be?
-> 
-> It turns out commit 54fdade1c3332391948ec43530c02c4794a38172
-> (generic-ipi: make struct call_function_data lockless)
-> is at fault. It removes locking from smp_call_function_many and in
-> doing so creates a rather complicated race.
+Yes.  But the "lockless" list implementation is general, it can be used
+by other part of kernel too,  such as irq_work and xlist in
+net/rds/xlist.h in the patchset.
 
-I've been waving https://bugzilla.kernel.org/show_bug.cgi?id=23042 at
-the x86 guys for a while now, to no avail.  Do you think you just fixed
-it?
+Best Regards,
+Huang Ying
+
 
