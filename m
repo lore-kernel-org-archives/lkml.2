@@ -1,341 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab1ATUcP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 15:32:15 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:22582 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754505Ab1ATUcM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754774Ab1ATUcO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 15:32:14 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:41781 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753006Ab1ATUcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Jan 2011 15:32:12 -0500
-Date: Thu, 20 Jan 2011 21:32:31 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Charles Manning <cdhmanning@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 10/10] Add yaffs2 file system: Hook in to Linux tree
-In-Reply-To: <1294974369-31647-11-git-send-email-cdhmanning@gmail.com>
-Message-ID: <alpine.LNX.2.00.1101202121340.11854@swampdragon.chaosbits.net>
-References: <1294974369-31647-1-git-send-email-cdhmanning@gmail.com> <1294974369-31647-11-git-send-email-cdhmanning@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+Message-ID: <4D389BC0.8080900@free.fr>
+Date: Thu, 20 Jan 2011 21:32:00 +0100
+From: matthieu castet <castet.matthieu@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.8.1.23) Gecko/20090823 SeaMonkey/1.1.18
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Xiaotian Feng <xtfeng@gmail.com>
+CC: Valdis.Kletnieks@vt.edu, Ingo Molnar <mingo@elte.hu>,
+        Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
+        Arjan van de Ven <arjan@infradead.org>,
+        James Morris <jmorris@namei.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
+        Siarhei Liakh <sliakh.lkml@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 3/3 V13] RO/NX protection for loadable kernel
+References: <4CE2F914.9070106@free.fr>	<24422.1290656467@localhost>	<20101126182355.62615dff@mat-laptop>	<20101208221951.GO5750@outflux.net>	<20101211001857.4c5e0794@mat-laptop>	<20101222124019.GG10809@elte.hu>	<34428.1293053719@localhost> <AANLkTin55DXcQnK3NY7y-v8TXj5w-XT2rTJo9p90tj4g@mail.gmail.com>
+In-Reply-To: <AANLkTin55DXcQnK3NY7y-v8TXj5w-XT2rTJo9p90tj4g@mail.gmail.com>
+Content-Type: multipart/mixed;
+ boundary="------------050706020502070606060903"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a multi-part message in MIME format.
+--------------050706020502070606060903
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 
-Hi Charles,
-
-A few minor comments below.
-
-
-On Fri, 14 Jan 2011, Charles Manning wrote:
-
-> Change existing Makefile, Kconfig and MAINTAINERS.
-> Add yaffs2 specific Makefile and Kconfig
+Xiaotian Feng a écrit :
+> On Thu, Dec 23, 2010 at 5:35 AM,  <Valdis.Kletnieks@vt.edu> wrote:
+>> On Wed, 22 Dec 2010 13:40:19 +0100, Ingo Molnar said:
+>>> * mat <castet.matthieu@free.fr> wrote:
+>>>
+>>>> Le Wed, 8 Dec 2010 14:19:51 -0800,
+>>>> Kees Cook <kees.cook@canonical.com> a écrit :
+>>>>
+>>>>> On Fri, Nov 26, 2010 at 06:23:55PM +0100, mat wrote:
+>>>>>> could you try the attached patch ?
+>>>>>>
+>>>>>> on module load, we sort the __jump_table section. So we should make
+>>>>>> it writable.
+>>>>>>
+>>>>>>
+>>>>>> Matthieu
+>>>>>> diff --git a/arch/x86/include/asm/jump_label.h
+>>>>>> b/arch/x86/include/asm/jump_label.h index f52d42e..574dbc2 100644
+>>>>>> --- a/arch/x86/include/asm/jump_label.h
+>>>>>> +++ b/arch/x86/include/asm/jump_label.h
+>>>>>> @@ -14,7 +14,7 @@
+>>>>>>         do
+>>>>>> {                                                       \ asm
+>>>>>> goto("1:"                                       \
+>>>>>> JUMP_LABEL_INITIAL_NOP                  \
+>>>>>> -                       ".pushsection __jump_table,  \"a\" \n\t"\
+>>>>>> +                       ".pushsection __jump_table,  \"aw\" \n\t"\
+>>>>>>                         _ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
+>>>>>>                         ".popsection \n\t"                      \
+>>>>>>                         : :  "i" (key) :  : label);
+>>>>>> \
+>>>>> Acked-by: Kees Cook <kees.cook@canonical.com>
+>>>>>
+>>>>> Can this please get committed to tip?
+>>>> I think it is not need anymore with  Steven Rostedt patch [1]
+>>>>
+>>>> Matthieu
+>>>>
+>>>> [1]
+>>>>>> Here we set the text read only before we call the notifiers. The
+>>>>>> function tracer changes the calls to mcount into nops via a notifier
+>>>>>> call so this must be done after the module notifiers.
+>>> What's the status of this bug?
+>>>
+>>> If we still need the patch then please submit it standalone with a proper subject
+>>> line, with acks/signoffs added, etc.
+>> Steve Rostedt's patch that moves the setting of the page permissions seems to
+>> make this patch no longer necessary.  I tripped over this same issue, but the
+>> version in the latest -mmotm does not need it, as it includes Steve's fix.
+>>
 > 
-> Signed-off-by: Charles Manning <cdhmanning@gmail.com>
-> ---
->  MAINTAINERS        |    7 ++
->  fs/Kconfig         |    1 +
->  fs/Makefile        |    1 +
->  fs/yaffs2/Kconfig  |  161 ++++++++++++++++++++++++++++++++++++++++++++++++++++
->  fs/yaffs2/Makefile |   17 ++++++
->  5 files changed, 187 insertions(+), 0 deletions(-)
->  create mode 100644 fs/yaffs2/Kconfig
->  create mode 100644 fs/yaffs2/Makefile
+> I'm facing a boot failure (panic'ed on remove_jump_label_module_init)
+> on 2.6.37 (latest commit 3c0cb7c), which is 100% reproducible.
+> With this patch applied, I can boot my machine successfully, so I do
+> think this patch is needed.
 > 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 64d7621..4cc7215 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -6838,6 +6838,13 @@ L:	linux-serial@vger.kernel.org
->  S:	Maintained
->  F:	drivers/serial/uartlite.c
->  
-> +YAFFS2 FLASH FILE SYSTEM
-> +M:	Charles Manning <cdhmanning@gmail.com>
-> +W:	http://www.yaffs.net/
-> +L:	yaffs@lists.aleph1.co.uk
-> +S:	Maintained
-> +F:	fs/yaffs2
-> +
->  YAM DRIVER FOR AX.25
->  M:	Jean-Paul Roubelat <jpr@f6fbb.org>
->  L:	linux-hams@vger.kernel.org
-> diff --git a/fs/Kconfig b/fs/Kconfig
-> index 771f457..069abb1 100644
-> --- a/fs/Kconfig
-> +++ b/fs/Kconfig
-> @@ -176,6 +176,7 @@ source "fs/hfsplus/Kconfig"
->  source "fs/befs/Kconfig"
->  source "fs/bfs/Kconfig"
->  source "fs/efs/Kconfig"
-> +source "fs/yaffs2/Kconfig"
->  source "fs/jffs2/Kconfig"
->  # UBIFS File system configuration
->  source "fs/ubifs/Kconfig"
-> diff --git a/fs/Makefile b/fs/Makefile
-> index a7f7cef..e370ea5 100644
-> --- a/fs/Makefile
-> +++ b/fs/Makefile
-> @@ -121,3 +121,4 @@ obj-$(CONFIG_BTRFS_FS)		+= btrfs/
->  obj-$(CONFIG_GFS2_FS)           += gfs2/
->  obj-$(CONFIG_EXOFS_FS)          += exofs/
->  obj-$(CONFIG_CEPH_FS)		+= ceph/
-> +obj-$(CONFIG_YAFFS_FS)		+= yaffs2/
-> diff --git a/fs/yaffs2/Kconfig b/fs/yaffs2/Kconfig
-> new file mode 100644
-> index 0000000..6354140
-> --- /dev/null
-> +++ b/fs/yaffs2/Kconfig
-> @@ -0,0 +1,161 @@
-> +#
-> +# YAFFS file system configurations
-> +#
-> +
-> +config YAFFS_FS
-> +	tristate "YAFFS2 file system support"
-
-"file system"
-
-> +	default n
-> +	depends on MTD_BLOCK
-> +	select YAFFS_YAFFS1
-> +	select YAFFS_YAFFS2
-> +	help
-> +	  YAFFS2, or Yet Another Flash Filing System, is a filing system
-
-"filing system"
-
-> +	  optimised for NAND Flash chips.
-> +
-> +	  To compile the YAFFS2 file system support as a module, choose M
-
-"file system"
-
-Why "file system" in some places and "filing system" in others?
+Could you confirm that this patch fix the problem ?
 
 
-> +	  here: the module will be called yaffs2.
-> +
-> +	  If unsure, say N.
-> +
-> +	  Further information on YAFFS2 is available at
-> +	  <http://www.aleph1.co.uk/yaffs/>.
-> +
-> +config YAFFS_YAFFS1
-> +	bool "512 byte / page devices"
-> +	depends on YAFFS_FS
-> +	default y
-> +	help
-> +	  Enable YAFFS1 support -- yaffs for 512 byte / page devices
-> +
-> +	  Not needed for 2K-page devices.
-> +
-> +	  If unsure, say Y.
-> +
-> +config YAFFS_9BYTE_TAGS
-> +	bool "Use older-style on-NAND data format with pageStatus byte"
-> +	depends on YAFFS_YAFFS1
-> +	default n
-> +	help
-> +
-> +	  Older-style on-NAND data format has a "pageStatus" byte to record
-> +	  chunk/page state.  This byte is zero when the page is discarded.
-> +	  Choose this option if you have existing on-NAND data using this
-> +	  format that you need to continue to support.  New data written
-> +	  also uses the older-style format.  Note: Use of this option
-> +	  generally requires that MTD's oob layout be adjusted to use the
-> +	  older-style format.  See notes on tags formats and MTD versions
-> +	  in yaffs_mtdif1.c.
-> +
-> +	  If unsure, say N.
-> +
-> +config YAFFS_DOES_ECC
-> +	bool "Lets Yaffs do its own ECC"
+Matthieu
 
-Shouldn't this read "Let Yaffs do its own ECC" ?
-Ohh and why the different capitalization? Here it is "Yaffs", elsewhere it 
-it is "YAFFS".
+--------------050706020502070606060903
+Content-Type: text/x-diff;
+ name="0001-Fix-jump-table-in-module-init-section.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename="0001-Fix-jump-table-in-module-init-section.patch"
 
+>From 0eeba453aaba0ebff86f0a7ad9bfb8afbde0c0dc Mon Sep 17 00:00:00 2001
+From: Matthieu CASTET <castet.matthieu@free.fr>
+Date: Thu, 20 Jan 2011 21:25:03 +0100
+Subject: [PATCH] Fix jump table in module init section
 
-> +	depends on YAFFS_FS && YAFFS_YAFFS1 && !YAFFS_9BYTE_TAGS
-> +	default n
-> +	help
-> +	  This enables Yaffs to use its own ECC functions instead of using
+If we use jump table in module init, there are marked
+as removed in __jump_table section after init is done.
 
-Again - "Yaffs" vs "YAFFS". Personally I'd say "pick one".
+But we already applied ro permissions on the module, so
+we can't modify a read only section (crash in
+remove_jump_label_module_init).
 
+Make the __jump_table section rw.
 
-> +	  the ones from the generic MTD-NAND driver.
-> +
-> +	  If unsure, say N.
-> +
-> +config YAFFS_ECC_WRONG_ORDER
-> +	bool "Use the same ecc byte order as Steven Hill's nand_ecc.c"
+Signed-off-by: Matthieu CASTET <castet.matthieu@free.fr>
+---
+ arch/x86/include/asm/jump_label.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Shouldn't this be "Use the same ECC byte order ..." ?
-
-
-> +	depends on YAFFS_FS && YAFFS_DOES_ECC && !YAFFS_9BYTE_TAGS
-> +	default n
-> +	help
-> +	  This makes yaffs_ecc.c use the same ecc byte order as Steven
-> +	  Hill's nand_ecc.c. If not set, then you get the same ecc byte
-
-ECC?
-
-
-> +	  order as SmartMedia.
-> +
-> +	  If unsure, say N.
-> +
-> +config YAFFS_YAFFS2
-> +	bool "2048 byte (or larger) / page devices"
-> +	depends on YAFFS_FS
-> +	default y
-> +	help
-> +	  Enable YAFFS2 support -- yaffs for >= 2K bytes per page devices
-
-YAFFS vs Yaffs vs yaffs... - elsewhere as well, not pointing this out for 
-the rest of the patch..
-
-
-> +
-> +	  If unsure, say Y.
-> +
-> +config YAFFS_AUTO_YAFFS2
-> +	bool "Autoselect yaffs2 format"
-> +	depends on YAFFS_YAFFS2
-> +	default y
-> +	help
-> +	  Without this, you need to explicitely use yaffs2 as the file
-> +	  system type. With this, you can say "yaffs" and yaffs or yaffs2
-> +	  will be used depending on the device page size (yaffs on
-> +	  512-byte page devices, yaffs2 on 2K page devices).
-> +
-> +	  If unsure, say Y.
-> +
-> +config YAFFS_DISABLE_TAGS_ECC
-> +	bool "Disable YAFFS from doing ECC on tags by default"
-> +	depends on YAFFS_FS && YAFFS_YAFFS2
-> +	default n
-> +	help
-> +	  This defaults Yaffs to using its own ECC calculations on tags instead of
-> +	  just relying on the MTD.
-> +	  This behavior can also be overridden with tags_ecc_on and
-> +	  tags_ecc_off mount options.
-> +
-> +	  If unsure, say N.
-> +
-> +config YAFFS_ALWAYS_CHECK_CHUNK_ERASED
-> +	bool "Force chunk erase check"
-> +	depends on YAFFS_FS
-> +	default n
-> +	help
-> +          Normally YAFFS only checks chunks before writing until an erased
-
-You don't have this extra indentation at the start of the first line for 
-other help entries...
-
-
-> +	  chunk is found. This helps to detect any partially written
-> +	  chunks that might have happened due to power loss.
-> +
-> +	  Enabling this forces on the test that chunks are erased in flash
-> +	  before writing to them. This takes more time but is potentially
-> +	  a bit more secure.
-> +
-> +	  Suggest setting Y during development and ironing out driver
-
-Perhaps "It is suggested to set this to Y during development ..." or "We 
-recommend setting this to Y during .." - the current wording is a little 
-clumsy IMHO.
-
-> +	  issues etc. Suggest setting to N if you want faster writing.
-> +
-
-Same for "N".
-
-
-> +	  If unsure, say Y.
-> +
-> +config YAFFS_EMPTY_LOST_AND_FOUND
-> +	bool "Empty lost and found on boot"
-> +	depends on YAFFS_FS
-> +	default n
-> +	help
-> +	  If this is enabled then the contents of lost and found is
-> +	  automatically dumped at mount.
-
-Hmm, isn't the dir named "lost+found", not "lost and found" ?
-
-
-> +
-> +	  If unsure, say N.
-> +
-> +config YAFFS_DISABLE_BLOCK_REFRESHING
-> +	bool "Disable yaffs2 block refreshing"
-> +	depends on YAFFS_FS
-> +	default n
-> +	help
-> +	 If this is set, then block refreshing is disabled.
-> +	 Block refreshing infrequently refreshes the oldest block in
-> +	 a yaffs2 file system. This mechanism helps to refresh flash to
-> +	 mitigate against data loss. This is particularly useful for MLC.
-> +
-> +	  If unsure, say N.
-> +
-> +config YAFFS_DISABLE_BACKGROUND
-> +	bool "Disable yaffs2 background processing"
-> +	depends on YAFFS_FS
-> +	default n
-> +	help
-> +	 If this is set, then background processing is disabled.
-> +	 Background processing makes many foreground activities faster.
-> +
-> +	 If unsure, say N.
-> +
-> +config YAFFS_XATTR
-> +	bool "Enable yaffs2 xattr support"
-> +	depends on YAFFS_FS
-> +	default y
-> +	help
-> +	 If this is set then yaffs2 will provide xattr support.
-> +	 If unsure, say Y.
-
-You usually have a blank line before the "If unsure, say X" line, but not 
-here - I think you should have.
-
-
-> diff --git a/fs/yaffs2/Makefile b/fs/yaffs2/Makefile
-> new file mode 100644
-> index 0000000..e63a28a
-> --- /dev/null
-> +++ b/fs/yaffs2/Makefile
-> @@ -0,0 +1,17 @@
-> +#
-> +# Makefile for the linux YAFFS filesystem routines.
-> +#
-> +
-> +obj-$(CONFIG_YAFFS_FS) += yaffs.o
-> +
-> +yaffs-y := yaffs_ecc.o yaffs_vfs.o yaffs_guts.o yaffs_checkptrw.o
-> +yaffs-y += yaffs_packedtags1.o yaffs_packedtags2.o yaffs_nand.o
-> +yaffs-y += yaffs_tagscompat.o yaffs_tagsvalidity.o
-> +yaffs-y += yaffs_mtdif.o yaffs_mtdif1.o yaffs_mtdif2.o
-> +yaffs-y += yaffs_nameval.o yaffs_attribs.o
-> +yaffs-y += yaffs_allocator.o
-> +yaffs-y += yaffs_yaffs1.o
-> +yaffs-y += yaffs_yaffs2.o
-> +yaffs-y += yaffs_bitmap.o
-> +yaffs-y += yaffs_verify.o
-> +
-> 
-
+diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
+index f52d42e..574dbc2 100644
+--- a/arch/x86/include/asm/jump_label.h
++++ b/arch/x86/include/asm/jump_label.h
+@@ -14,7 +14,7 @@
+ 	do {							\
+ 		asm goto("1:"					\
+ 			JUMP_LABEL_INITIAL_NOP			\
+-			".pushsection __jump_table,  \"a\" \n\t"\
++			".pushsection __jump_table,  \"aw\" \n\t"\
+ 			_ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
+ 			".popsection \n\t"			\
+ 			: :  "i" (key) :  : label);		\
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.7.2.3
 
+
+--------------050706020502070606060903--
