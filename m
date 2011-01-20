@@ -1,63 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353Ab1ATVh0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 16:37:26 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:23420 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755044Ab1ATVhZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 16:37:25 -0500
-Date: Thu, 20 Jan 2011 22:37:43 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: alsa-devel@alsa-project.org, Takashi Iwai <tiwai@suse.de>,
-        Jaroslav Kysela <perex@perex.cz>, Clemens Ladisch <clemens@ladisch.de>
-Subject: [PATCH][RFC] Sound, Xonar, CS43xx: Don't overrun static array
-Message-ID: <alpine.LNX.2.00.1101202228370.11854@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755432Ab1ATViw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 16:38:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15234 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755332Ab1ATVis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 16:38:48 -0500
+Date: Thu, 20 Jan 2011 16:31:27 -0500
+From: Rik van Riel <riel@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>,
+        ttracy@redhat.com, dshaks@redhat.com,
+        "Nakajima, Jun" <jun.nakajima@intel.com>
+Subject: [RFC -v6 PATCH 0/8] directed yield for Pause Loop Exiting
+Message-ID: <20110120163127.2568f4fe@annuminas.surriel.com>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When running SMP virtual machines, it is possible for one VCPU to be
+spinning on a spinlock, while the VCPU that holds the spinlock is not
+currently running, because the host scheduler preempted it to run
+something else.
 
-'cs4398_regs' in 'struct xonar_cs43xx' is an array of 'u8' with a size of 
-8. So, this code in sound/pci/oxygen/xonar_cs43xx.c::dump_d1_registers()
+Both Intel and AMD CPUs have a feature that detects when a virtual
+CPU is spinning on a lock and will trap to the host.
 
-    		for (i = 2; i <= 8; ++i)
-	  			snd_iprintf(buffer, " %02x", data->cs4398_regs[i]);
+The current KVM code sleeps for a bit whenever that happens, which
+results in eg. a 64 VCPU Windows guest taking forever and a bit to
+boot up.  This is because the VCPU holding the lock is actually
+running and not sleeping, so the pause is counter-productive.
 
-will overrun the array when 'i == 8'.
+In other workloads a pause can also be counter-productive, with
+spinlock detection resulting in one guest giving up its CPU time
+to the others.  Instead of spinning, it ends up simply not running
+much at all.
 
-I guess that what's needed to fix it is the trivial patch below, but I 
-must admit that I have no idea about this code, so I may very well be 
-wrong. Additionally, I have no way to actually test this, so all I know is 
-that the below compiles. Someone who actually knows this code should take 
-a look before anything is comitted - consider the below (not much more 
-than) a bug report.
+This patch series aims to fix that, by having a VCPU that spins
+give the remainder of its timeslice to another VCPU in the same
+guest before yielding the CPU - one that is runnable but got 
+preempted, hopefully the lock holder.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- xonar_cs43xx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+v6:
+- implement yield_task_fair in a way that works with task groups,
+  this allows me to actually get a performance improvement!
+- fix another race Avi pointed out, the code should be good now
+v5:
+- fix the race condition Avi pointed out, by tracking vcpu->pid
+- also allows us to yield to vcpu tasks that got preempted while in qemu
+  userspace
+v4:
+- change to newer version of Mike Galbraith's yield_to implementation
+- chainsaw out some code from Mike that looked like a great idea, but
+  turned out to give weird interactions in practice
+v3:
+- more cleanups
+- change to Mike Galbraith's yield_to implementation
+- yield to spinning VCPUs, this seems to work better in some
+  situations and has little downside potential
+v2:
+- make lots of cleanups and improvements suggested
+- do not implement timeslice scheduling or fairness stuff
+  yet, since it is not entirely clear how to do that right
+  (suggestions welcome)
 
-diff --git a/sound/pci/oxygen/xonar_cs43xx.c b/sound/pci/oxygen/xonar_cs43xx.c
-index 9f72d42..2527191 100644
---- a/sound/pci/oxygen/xonar_cs43xx.c
-+++ b/sound/pci/oxygen/xonar_cs43xx.c
-@@ -392,7 +392,7 @@ static void dump_d1_registers(struct oxygen *chip,
- 	unsigned int i;
- 
- 	snd_iprintf(buffer, "\nCS4398: 7?");
--	for (i = 2; i <= 8; ++i)
-+	for (i = 2; i < 8; ++i)
- 		snd_iprintf(buffer, " %02x", data->cs4398_regs[i]);
- 	snd_iprintf(buffer, "\n");
- 	dump_cs4362a_registers(data, buffer);
+
+Benchmark "results":
+
+Two 4-CPU KVM guests are pinned to the same 4 physical CPUs.
+
+One guest runs the AMQP performance test, the other guest runs
+0, 2 or 4 infinite loops, for CPU overcommit factors of 0, 1.5
+and 4.
+
+The AMQP perftest is run 30 times, with 8 and 16 threads.
+
+8thr	no overcommit	1.5x overcommit		2x overcommit
+
+no PLE	223801		135137			104951
+PLE	224135		141105			118744
+
+16thr	no overcommit	1.5x overcommit		2x overcommit
+
+no PLE	222424		126175			105299
+PLE	222534		138082			132945
+
+Note: this is with the KVM guests NOT running inside cgroups.  There
+seems to be a CPU load balancing issue with cgroup fair group scheduling,
+which often results in one guest getting only 80% CPU time and the other
+guest 320%.  That will have to be fixed to get meaningful results with
+cgroups.
+
+CPU time division between the AMQP guest and the infinite loop guest
+were not exactly fair, but the guests got close to the same amount
+of CPU time in each test run.
+
+There is a substantial amount of randomness in CPU time division between
+guests, but the performance improvement is consistent between multiple
+runs.
 
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+All rights reversed.
 
+
+-- 
+-- 
+All rights reversed.
