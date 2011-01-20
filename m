@@ -1,221 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754390Ab1ATUQN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 15:16:13 -0500
-Received: from cantor.suse.de ([195.135.220.2]:47182 "EHLO mx1.suse.de"
+	id S1754370Ab1ATUVP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 15:21:15 -0500
+Received: from cantor.suse.de ([195.135.220.2]:47351 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754370Ab1ATUQK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 15:16:10 -0500
-Date: Thu, 20 Jan 2011 21:16:02 +0100
+	id S1753411Ab1ATUVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 15:21:14 -0500
+Date: Thu, 20 Jan 2011 21:21:12 +0100
 From: Jan Kara <jack@suse.cz>
 To: Nick Piggin <npiggin@gmail.com>
-Cc: paulmck@linux.vnet.ibm.com, Jeff Moyer <jmoyer@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+Cc: Jan Kara <jack@suse.cz>, Jeff Moyer <jmoyer@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-kernel@vger.kernel.org
 Subject: Re: [patch] fs: aio fix rcu lookup
-Message-ID: <20110120201602.GA19797@quack.suse.cz>
-References: <20110119132123.GC4246@quack.suse.cz>
- <x49ei88d7vl.fsf@segfault.boston.devel.redhat.com>
- <x49aaiwd6cs.fsf@segfault.boston.devel.redhat.com>
- <AANLkTiniSG3tfXx1iUtzf53sSsr=R6pmvmWrSV8FiYE9@mail.gmail.com>
- <x491v48d47d.fsf@segfault.boston.devel.redhat.com>
- <AANLkTi=ChBc3+o_GcdKKn4HZykNkQ70mxPLu9HYDfeFj@mail.gmail.com>
- <x49wrm0bo7g.fsf@segfault.boston.devel.redhat.com>
- <AANLkTikTJ-eCR2M73=G4q=0AAsb9aVosrFdwP+uY7enB@mail.gmail.com>
- <20110120040308.GD8476@linux.vnet.ibm.com>
- <AANLkTi=RdmWV9MLWzDxe6N_kWZQA+a2o8jg-PkB-7QGk@mail.gmail.com>
+Message-ID: <20110120202111.GB19797@quack.suse.cz>
+References: <x49tyh7mjr6.fsf@segfault.boston.devel.redhat.com>
+ <AANLkTikgsGHJ+q6=We_zPAivyABq+z2f6Atv6ZScLYOU@mail.gmail.com>
+ <20110118190114.GA5070@quack.suse.cz>
+ <AANLkTin1+B_1CV-weALdS8EYJO60BJd0b7AGWzc0wrWr@mail.gmail.com>
+ <20110118235236.GA14087@quack.suse.cz>
+ <AANLkTikvCkMDM9+i=44eEkX094=ZHpnQaN+541pm1icK@mail.gmail.com>
+ <20110119132123.GC4246@quack.suse.cz>
+ <AANLkTi=Z0eyXBkWL6YYdUVzA16hs=WjC7u=wfEHzAozC@mail.gmail.com>
+ <20110119165011.GA16682@quack.suse.cz>
+ <AANLkTikqwy_-0-8J5_UcBrS+ukA67cz791XxChsNPZOf@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="J/dobhs11T7y2rNN"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=RdmWV9MLWzDxe6N_kWZQA+a2o8jg-PkB-7QGk@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikqwy_-0-8J5_UcBrS+ukA67cz791XxChsNPZOf@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---J/dobhs11T7y2rNN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Fri 21-01-11 05:31:53, Nick Piggin wrote:
-> On Thu, Jan 20, 2011 at 3:03 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Thu, Jan 20, 2011 at 08:20:00AM +1100, Nick Piggin wrote:
-> >> On Thu, Jan 20, 2011 at 8:03 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
-> >> >> I don't know exactly how all programs use io_destroy -- of the small
-> >> >> number that do, probably an even smaller number would care here. But I
-> >> >> don't think it simplifies things enough to use synchronize_rcu for it.
-> >> >
-> >> > Above it sounded like you didn't think AIO should be using RCU at all.
+On Thu 20-01-11 04:37:55, Nick Piggin wrote:
+> On Thu, Jan 20, 2011 at 3:50 AM, Jan Kara <jack@suse.cz> wrote:
+> > On Thu 20-01-11 03:03:23, Nick Piggin wrote:
+> >> On Thu, Jan 20, 2011 at 12:21 AM, Jan Kara <jack@suse.cz> wrote:
+> >> >  Well, we are not required to cancel all the outstanding AIO because of the
+> >> > API requirement, that's granted. But we must do it because of the way how
+> >> > the code is written. Outstanding IO requests reference ioctx but they are
+> >> > not counted in ctx->users but in ctx->reqs_active. So the code relies on
+> >> > the fact that the reference held by the hash table protects ctx from being
+> >> > freed and io_destroy() waits for requests before dropping the last
+> >> > reference to ctx. But there's the second race I describe making it possible
+> >> > for new IO to be created after io_destroy() has waited for all IO to
+> >> > finish...
 > >>
-> >> synchronize_rcu of course, not RCU (typo).
-> >
-> > I think that Nick is suggesting that call_rcu() be used instead.
-> > Perhaps also very sparing use of synchronize_rcu_expedited(), which
-> > is faster than synchronize_rcu(), but which which uses more CPU time.
+> >> Yes there is that race too I agree. I just didn't follow through the code far
+> >> enough to see it was a problem -- I thought it was by design.
+> >>
+> >> I'd like to solve it without synchronize_rcu() though.
+> >  Ah, OK. I don't find io_destroy() performance critical but I can
 > 
-> call_rcu() is the obvious alternative, yes.
+> Probably not performance critical, but it could be a very
+> large slowdown so somebody might complain.
 > 
-> Basically, once we give in to synchronize_rcu() we're basically giving
-> up. That's certainly a very good tradeoff for something like filesystem
-> unregistration or module unload, it buys big simplifications in real
-> fastpaths. But I just don't think it should be taken lightly.
-So in the end, I've realized I don't need synchronize_rcu() at all and
-in fact everything is OK even without call_rcu() if I base my fix on top
-of your patch.
-
-Attached is your patch with added comment I proposed and also a patch
-fixing the second race. Better?
+> > understand that you need not like synchronize_rcu() there. ;) Then it
+> > should be possible to make IO requests count in ctx->users which would
+> > solve the race as well. We'd just have to be prepared that request
+> > completion might put the last reference to ioctx and free it but that
+> > shouldn't be an issue. Do you like that solution better?
+> 
+> I think so, if it can be done without slowing things down
+> and adding locks or atomics if possible.
+  Actually, I found that freeing ioctx upon IO completion isn't
+straightforward because freeing ioctx may need to sleep (it is destroying
+work queue) and aio_complete() can be called from an interrupt context.
+We could offload the sleeping work to the RCU callback (basically we'd have
+to offload the whole __put_ioctx() to RCU callback) but I'm not convinced
+it's worth it so I rather chose a bit more subtle approach for fixing the
+race (see my patch).
 
 								Honza
 -- 
 Jan Kara <jack@suse.cz>
 SUSE Labs, CR
-
---J/dobhs11T7y2rNN
-Content-Type: text/x-patch; charset=us-ascii
-Content-Disposition: attachment; filename="0001-fs-Fix-aio-rcu-ioctx-lookup.patch"
-
->From 68857d7f2087edbbc5ee1d828f151ac46406f3be Mon Sep 17 00:00:00 2001
-From: Nick Piggin <npiggin@gmail.com>
-Date: Thu, 20 Jan 2011 20:08:52 +0100
-Subject: [PATCH 1/2] fs: Fix aio rcu ioctx lookup
-
-aio-dio-invalidate-failure GPFs in aio_put_req from io_submit.
-
-lookup_ioctx doesn't implement the rcu lookup pattern properly.  rcu_read_lock
-does not prevent refcount going to zero, so we might take a refcount on a zero
-count ioctx.
-
-Fix the bug by atomically testing for zero refcount before incrementing.
-
-[JK: Added comment into the code]
-
-Signed-off-by: Nick Piggin <npiggin@kernel.dk>
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/aio.c |   35 ++++++++++++++++++++++++-----------
- 1 files changed, 24 insertions(+), 11 deletions(-)
-
-diff --git a/fs/aio.c b/fs/aio.c
-index fc557a3..b4dd668 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -239,15 +239,23 @@ static void __put_ioctx(struct kioctx *ctx)
- 	call_rcu(&ctx->rcu_head, ctx_rcu_free);
- }
- 
--#define get_ioctx(kioctx) do {						\
--	BUG_ON(atomic_read(&(kioctx)->users) <= 0);			\
--	atomic_inc(&(kioctx)->users);					\
--} while (0)
--#define put_ioctx(kioctx) do {						\
--	BUG_ON(atomic_read(&(kioctx)->users) <= 0);			\
--	if (unlikely(atomic_dec_and_test(&(kioctx)->users))) 		\
--		__put_ioctx(kioctx);					\
--} while (0)
-+static inline void get_ioctx(struct kioctx *kioctx)
-+{
-+	BUG_ON(atomic_read(&kioctx->users) <= 0);
-+	atomic_inc(&kioctx->users);
-+}
-+
-+static inline int try_get_ioctx(struct kioctx *kioctx)
-+{
-+	return atomic_inc_not_zero(&kioctx->users);
-+}
-+
-+static inline void put_ioctx(struct kioctx *kioctx)
-+{
-+	BUG_ON(atomic_read(&kioctx->users) <= 0);
-+	if (unlikely(atomic_dec_and_test(&kioctx->users)))
-+		__put_ioctx(kioctx);
-+}
- 
- /* ioctx_alloc
-  *	Allocates and initializes an ioctx.  Returns an ERR_PTR if it failed.
-@@ -601,8 +609,13 @@ static struct kioctx *lookup_ioctx(unsigned long ctx_id)
- 	rcu_read_lock();
- 
- 	hlist_for_each_entry_rcu(ctx, n, &mm->ioctx_list, list) {
--		if (ctx->user_id == ctx_id && !ctx->dead) {
--			get_ioctx(ctx);
-+		/*
-+		 * RCU protects us against accessing freed memory but
-+		 * we have to be careful not to get a reference when the
-+		 * reference count already dropped to 0 (ctx->dead test
-+		 * is unreliable because of races).
-+		 */
-+		if (ctx->user_id == ctx_id && !ctx->dead && try_get_ioctx(ctx)){
- 			ret = ctx;
- 			break;
- 		}
--- 
-1.7.1
-
-
---J/dobhs11T7y2rNN
-Content-Type: text/x-patch; charset=us-ascii
-Content-Disposition: attachment; filename="0002-fs-Fix-race-between-io_destroy-and-io_submit-in-AIO.patch"
-
->From 6d5375d55b5d88e8ceda739052566e033be620c2 Mon Sep 17 00:00:00 2001
-From: Jan Kara <jack@suse.cz>
-Date: Wed, 19 Jan 2011 00:37:48 +0100
-Subject: [PATCH 2/2] fs: Fix race between io_destroy() and io_submit() in AIO
-
-A race can occur when io_submit() races with io_destroy():
-
- CPU1						CPU2
-io_submit()
-  do_io_submit()
-    ...
-    ctx = lookup_ioctx(ctx_id);
-						io_destroy()
-    Now do_io_submit() holds the last reference to ctx.
-    ...
-    queue new AIO
-    put_ioctx(ctx) - frees ctx with active AIOs
-
-We solve this issue by checking whether ctx is being destroyed
-in AIO submission path after adding new AIO to ctx. Then we
-are guaranteed that either io_destroy() waits for new AIO or
-we see that ctx is being destroyed and bail out.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/aio.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
-
-diff --git a/fs/aio.c b/fs/aio.c
-index b4dd668..0244c04 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -1642,6 +1642,21 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
- 		goto out_put_req;
- 
- 	spin_lock_irq(&ctx->ctx_lock);
-+	/*
-+	 * We could have raced with io_destroy() and are currently holding a
-+	 * reference to ctx which should be destroyed. We cannot submit IO
-+	 * since ctx gets freed as soon as io_submit() puts its reference.
-+	 * The check here is reliable since io_destroy() sets ctx->dead before
-+	 * waiting for outstanding IO. Thus if we don't see ctx->dead set here,
-+	 * io_destroy() waits for our IO to finish.
-+	 * The check is inside ctx->ctx_lock to avoid extra memory barrier
-+	 * in this fast path...
-+	 */
-+	if (ctx->dead) {
-+		spin_unlock_irq(&ctx->ctx_lock);
-+		ret = -EINVAL;
-+		goto out_put_req;
-+	}
- 	aio_run_iocb(req);
- 	if (!list_empty(&ctx->run_list)) {
- 		/* drain the run list */
--- 
-1.7.1
-
-
---J/dobhs11T7y2rNN--
