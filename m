@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab1ATKvU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 05:51:20 -0500
-Received: from matrixpower.ru ([195.178.208.66]:45653 "EHLO tservice.net.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755210Ab1ATKvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 05:51:16 -0500
-Date: Thu, 20 Jan 2011 13:51:13 +0300
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Tejun Heo <tj@kernel.org>,
-        Ruslan Pisarev <ruslan@rpisarev.org.ua>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pohmelfs/dir.c: Remove unneeded mutex_unlock() from
- pohmelfs_rename()
-Message-ID: <20110120105113.GA24827@ioremap.net>
-References: <40908.91.79.118.36.1295471624.squirrel@mail.ispras.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <40908.91.79.118.36.1295471624.squirrel@mail.ispras.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755410Ab1ATLAb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 06:00:31 -0500
+Received: from mga09.intel.com ([134.134.136.24]:31695 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753142Ab1ATLA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 06:00:29 -0500
+Message-Id: <0d30dc$kqbkiv@orsmga001.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,350,1291622400"; 
+   d="scan'208";a="698733151"
+Date: Thu, 20 Jan 2011 11:00:25 +0000
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [PATCH] drm/i915: Dont kick-off hangcheck after a DRI interrupt
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org
+References: <20110120070508.GA2345@gondor.apana.org.au> <1295517361-15825-1-git-send-email-chris@chris-wilson.co.uk> <20110120101010.GA4299@gondor.apana.org.au>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <20110120101010.GA4299@gondor.apana.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 12:13:44AM +0300, Alexey Khoroshilov (khoroshilov@ispras.ru) wrote:
-> I do not see any reason for the mutex_unlock(&inode->i_mutex); in
-> pohmelfs_rename().
+On Thu, 20 Jan 2011 21:10:10 +1100, Herbert Xu <herbert@gondor.apana.org.au> wrote:
+> While the current kernel tree has indeed changed from 2.6.36,
+> I don't think this is the spot corresponding to my crash.
 > 
-> 
-> Found by Linux Driver Verification project (linuxtesting.org).
+> My spot was in hangcheck_elapsed and as far as I can see it will
+> crash in the current kernel in pretty much the same way.  In
+> particular, i915_hangcheck_ring_idle will probably crash on all
+> three rings.
 
-Yes, that's a bug, we already unlocked i_mutex in common path and should
-not do that on error.
+Except that i915_hangcheck_elapsed should not be called from DRI code
+paths, the whole error recovery code only works with GEM (we can't recover
+the hardware if it is being poked directly by "userspace").
+ 
+> FWIW after adding the INIT_LIST_HEAD to the init_dri function
+> my kernel hasn't crashed yet (a couple of hours and counting).
 
-Thank you. Greg, please apply.
+Ah, yes. Need to pull some more code in from init_ringbuffer.
 
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+For my sanity can you check that the above patch also prevents the crash?
+I'd rather not install a timer, and execute undesirable code paths, if we
+don't need one.
+-Chris
 
 -- 
-	Evgeniy Polyakov
+Chris Wilson, Intel Open Source Technology Centre
