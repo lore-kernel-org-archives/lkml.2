@@ -1,52 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab1ATBQh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Jan 2011 20:16:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8479 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752356Ab1ATBQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Jan 2011 20:16:36 -0500
-Date: Wed, 19 Jan 2011 20:16:10 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: x86@kernel.org
-Subject: Update x86 cache descriptors.
-Message-ID: <20110120011609.GA15462@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
+	id S1754129Ab1ATBSt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Jan 2011 20:18:49 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:49687 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752881Ab1ATBSs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Jan 2011 20:18:48 -0500
+X-AuditID: b753bd60-a1894ba000000ca4-cc-4d378d7450d6
+Message-ID: <4D378D71.3050204@hitachi.com>
+Date: Thu, 20 Jan 2011 10:18:41 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Switch proc interfaces in kernel/ to %pK
+References: <1295391078.1831.21.camel@dan>  <4D363E92.2020602@hitachi.com> <1295449491.1806.13.camel@dan>
+In-Reply-To: <1295449491.1806.13.camel@dan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update to latest definitions in http://www.intel.com/Assets/PDF/appnote/241618.pdf
+(2011/01/20 0:04), Dan Rosenberg wrote:
+> On Wed, 2011-01-19 at 10:29 +0900, Masami Hiramatsu wrote:
+>> (2011/01/19 7:51), Dan Rosenberg wrote:
+>>> Switch users of %p in /proc interfaces in kernel/ to %pK, to allow
+>>> configuring the level of exposure of kernel pointers via the
+>>> kptr_restrict sysctl.
+>>
+>> This report_probe interface is at /sys/kernel/debug/kprobes/list.
+>> Is that policy applied to debugfs interface (for debug) too?
+>> # in that case, you might update ftrace and perf tracing interfaces...
+>>
+> 
+> There's no reason to not update ftrace and perf too, since I'd assume no
+> one is using debugging interfaces without root privileges anyway.  I'll
+> add them to my list.
 
-[note, this update of the doc has removed some old values which we have listed.
- I think until we have clarification that they were never used in production,
- they should be left there]
+OK, I see.
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index 7283e98..e4638e4 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -66,6 +66,7 @@ static const struct _cache_table __cpuinitconst cache_table[] =
- 	{ 0x45, LVL_2,      MB(2) },	/* 4-way set assoc, 32 byte line size */
- 	{ 0x46, LVL_3,      MB(4) },	/* 4-way set assoc, 64 byte line size */
- 	{ 0x47, LVL_3,      MB(8) },	/* 8-way set assoc, 64 byte line size */
-+	{ 0x48, LVL_2,      MB(3) },	/* 12-way set assoc, 64 byte line size */
- 	{ 0x49, LVL_3,      MB(4) },	/* 16-way set assoc, 64 byte line size */
- 	{ 0x4a, LVL_3,      MB(6) },	/* 12-way set assoc, 64 byte line size */
- 	{ 0x4b, LVL_3,      MB(8) },	/* 16-way set assoc, 64 byte line size */
-@@ -87,6 +88,7 @@ static const struct _cache_table __cpuinitconst cache_table[] =
- 	{ 0x7c, LVL_2,      MB(1) },	/* 8-way set assoc, sectored cache, 64 byte line size */
- 	{ 0x7d, LVL_2,      MB(2) },	/* 8-way set assoc, 64 byte line size */
- 	{ 0x7f, LVL_2,      512 },	/* 2-way set assoc, 64 byte line size */
-+	{ 0x80, LVL_2,      512 },	/* 8-way set assoc, 64 byte line size */
- 	{ 0x82, LVL_2,      256 },	/* 8-way set assoc, 32 byte line size */
- 	{ 0x83, LVL_2,      512 },	/* 8-way set assoc, 32 byte line size */
- 	{ 0x84, LVL_2,      MB(1) },	/* 8-way set assoc, 32 byte line size */
+
+>>> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+>>> index 7798181..2437ca4 100644
+>>> --- a/kernel/kprobes.c
+>>> +++ b/kernel/kprobes.c
+>>> @@ -2021,11 +2021,11 @@ static void __kprobes report_probe(struct seq_file *pi, struct kprobe *p,
+>>>  		kprobe_type = "k";
+>>>  
+>>>  	if (sym)
+>>> -		seq_printf(pi, "%p  %s  %s+0x%x  %s ",
+>>> +		seq_printf(pi, "%pK  %s  %s+0x%x  %s ",
+>>>  			p->addr, kprobe_type, sym, offset,
+>>>  			(modname ? modname : " "));
+>>>  	else
+>>> -		seq_printf(pi, "%p  %s  %p ",
+>>> +		seq_printf(pi, "%pK  %s  %pK ",
+>>>  			p->addr, kprobe_type, p->addr);
+>>>  
+>>>  	if (!pp)
+>>
+>>
+>> -- 
+>> Masami HIRAMATSU
+>> 2nd Dept. Linux Technology Center
+>> Hitachi, Ltd., Systems Development Laboratory
+>> E-mail: masami.hiramatsu.pt@hitachi.com
+> 
+> 
+
+
+-- 
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
