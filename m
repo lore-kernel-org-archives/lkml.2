@@ -1,110 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754304Ab1ATPy6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 10:54:58 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:64884 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752468Ab1ATPy5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 10:54:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=AnYlKov6R4cvS0ZKOUvwfg/DBz3OzpSHg9zOKMt2amtz4wRktI4xpGiferXRchngQl
-         18l+ZsereUVxiJrcI74AuaJuEWTz0pvI0qbCdNracPWjrupP/sTMUPVVyULsXN4Dg6aM
-         YbFvOPCQY6MnSUnDKYTun0zxPIaNWQOiMUbmc=
+	id S1754919Ab1ATP7P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 10:59:15 -0500
+Received: from cantor.suse.de ([195.135.220.2]:39771 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753826Ab1ATP7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 10:59:14 -0500
+Date: Thu, 20 Jan 2011 16:59:10 +0100
+From: Matthias Hopf <mhopf@suse.de>
+To: castet.matthieu@free.fr
+Cc: Lin Ming <ming.m.lin@intel.com>, Oliver Neukum <oneukum@suse.de>,
+        rjw@sisk.pl, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        Michal Marek <mmarek@suse.cz>, Yinghai Lu <yinghai@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Borislav Petkov <bp@alien8.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Siarhei Liakh <sliakh.lkml@gmail.com>,
+        Xuxian Jiang <jiang@cs.ncsu.edu>, Dave Airlie <airlied@redhat.com>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] S3 resume on SandyBridge doesn't work with NX
+ protection (5bd5a45)
+Message-ID: <20110120155909.GA21782@suse.de>
+Mail-Followup-To: castet.matthieu@free.fr,
+	Lin Ming <ming.m.lin@intel.com>, Oliver Neukum <oneukum@suse.de>,
+	rjw@sisk.pl, Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	x86@kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Rusty Russell <rusty@rustcorp.com.au>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+	Jesse Barnes <jbarnes@virtuousgeek.org>,
+	Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	Denys Vlasenko <vda.linux@googlemail.com>,
+	Michal Marek <mmarek@suse.cz>, Yinghai Lu <yinghai@kernel.org>,
+	Johannes Weiner <hannes@cmpxchg.org>,
+	Pekka Enberg <penberg@cs.helsinki.fi>,
+	Borislav Petkov <bp@alien8.de>,
+	Suresh Siddha <suresh.b.siddha@intel.com>,
+	Siarhei Liakh <sliakh.lkml@gmail.com>,
+	Xuxian Jiang <jiang@cs.ncsu.edu>, Dave Airlie <airlied@redhat.com>,
+	Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+References: <20110119173710.GA1331@suse.de>
+ <20110119230602.6dd34fa3@mat-laptop>
+ <20110120134734.GA7230@suse.de>
+ <1295535954.4d384f524c8f0@imp.free.fr>
 MIME-Version: 1.0
-In-Reply-To: <1295538105.2825.308.camel@edumazet-laptop>
-References: <1295256060-2091-1-git-send-email-ratbert.chuang@gmail.com>
- <1295537418-2057-1-git-send-email-ratbert.chuang@gmail.com> <1295538105.2825.308.camel@edumazet-laptop>
-From: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Date: Thu, 20 Jan 2011 23:54:35 +0800
-Message-ID: <AANLkTikpp3pC4BW-1mb7FvPgggAFL31ZDpoo=FRR57yy@mail.gmail.com>
-Subject: Re: [PATCH v3] net: add Faraday FTMAC100 10/100 Ethernet driver
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhutchings@solarflare.com, joe@perches.com, dilinger@queued.net,
-        Po-Yu Chuang <ratbert@faraday-tech.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295535954.4d384f524c8f0@imp.free.fr>
+Organization: SUSE LINUX Products GmbH, =?iso-8859-1?Q?G?=
+	=?iso-8859-1?Q?F=3A_Markus_Rex=2C_HRB_16746_=28AG_N=FCrnberg=29?=
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Eric,
+On Jan 20, 11 16:05:54 +0100, castet.matthieu@free.fr wrote:
+> > > > Git commit 5bd5a45 in Linus' tree "x86: Add NX protection for kernel
+> > > > data" apparently breaks resume on SandyBridge machines. This is
+> > > > supposed to be fixed with commit 691513f "x86: Resume trampoline must
+> > > > be executable", but even git master (v2.6.38-rc1) shows the same
+> > > > symptoms.
+> > > Is it a 32bit or 64 bit kernel ?
+> >
+> > Sorry, forgot that. It's a 32bit kernel.
+> Ok that explain why 691513f doesn't work
+> >
+> Does this sequence make the machine reboot ?
+> 
+> # echo 0 > /sys/devices/system/cpu/cpu1/online
+> # echo 1 > /sys/devices/system/cpu/cpu1/online
 
-On Thu, Jan 20, 2011 at 11:41 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le jeudi 20 janvier 2011 à 23:30 +0800, Po-Yu Chuang a écrit :
->
->> +static bool ftmac100_tx_complete_packet(struct ftmac100 *priv)
->> +{
->> +     struct net_device *netdev = priv->netdev;
->> +     struct ftmac100_txdes *txdes;
->> +     struct sk_buff *skb;
->> +     dma_addr_t map;
->> +
->> +     if (priv->tx_pending == 0)
->> +             return false;
->> +
->> +     txdes = ftmac100_current_clean_txdes(priv);
->> +
->> +     if (ftmac100_txdes_owned_by_dma(txdes))
->> +             return false;
->> +
->> +     skb = ftmac100_txdes_get_skb(txdes);
->> +     map = ftmac100_txdes_get_dma_addr(txdes);
->> +
->> +     if (unlikely(ftmac100_txdes_excessive_collision(txdes) ||
->> +                  ftmac100_txdes_late_collision(txdes))) {
->> +             /*
->> +              * packet transmitted to ethernet lost due to late collision
->> +              * or excessive collision
->> +              */
->> +             netdev->stats.tx_aborted_errors++;
->> +     } else {
->> +             netdev->stats.tx_packets++;
->> +             netdev->stats.tx_bytes += skb->len;
->> +     }
->> +
->> +     dma_unmap_single(priv->dev, map, skb_headlen(skb), DMA_TO_DEVICE);
->> +
->> +     dev_kfree_skb_irq(skb);
->> +
->> +     ftmac100_txdes_reset(txdes);
->> +
->> +     ftmac100_tx_clean_pointer_advance(priv);
->> +
->> +     priv->tx_pending--;
->> +     netif_wake_queue(netdev);
->> +
->> +     return true;
->> +}
->> +
->> +static void ftmac100_tx_complete(struct ftmac100 *priv)
->> +{
->> +     unsigned long flags;
->> +
->> +     spin_lock_irqsave(&priv->tx_lock, flags);
->> +     while (ftmac100_tx_complete_packet(priv))
->> +             ;
->> +     spin_unlock_irqrestore(&priv->tx_lock, flags);
->> +}
->> +
->
-> I dont understand why you still block hard IRQS, after full NAPI
-> conversion.
->
-> Now you run from NAPI, and softirq handler, are you sure you still need
-> to block hard IRQ and tx_lock ?
->
-> It seems to me ftmac100_xmit() could only block softirqs (but they
-> already are blocked by caller), so you could use spin_lock() from
-> ftmac100_xmit()
+Nope, it doesn't.
 
-I was not quite clear about when to use what kinds of locking.
-After your explanation, now I understand.
-I will submit v4 tomorrow.
+dmesg output:
 
-really appreciate,
-Po-Yu Chuang
+[ 8172.670422] Unmapping cpu 1 from all nodes
+[ 8172.671802] CPU 1 is now offline
+[ 8176.572869] Booting Node 0 Processor 1 APIC 0x1
+[ 8176.583474] Initializing CPU#1
+[ 8176.583803] Mapping cpu 1 to node 0
+
+Looks good to me.
+I also tried disabling all but one CPUs (this is a quad core machine),
+works as well.
+
+
+Matthias
+
+-- 
+Matthias Hopf <mhopf@suse.de>      __        __   __
+Maxfeldstr. 5 / 90409 Nuernberg   (_   | |  (_   |__          mat@mshopf.de
+Phone +49-911-74053-715           __)  |_|  __)  |__  R & D   www.mshopf.de
