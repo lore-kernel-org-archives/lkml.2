@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753109Ab1ATRbL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 12:31:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4917 "EHLO mx1.redhat.com"
+	id S1753141Ab1ATRf5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 12:35:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12036 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752953Ab1ATRbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 12:31:09 -0500
-Subject: Re: [BUG?] tracing/function_graph: set_graph_function was broken
- from 2.6.36-rc2
-From: Steven Rostedt <srostedt@redhat.com>
-To: wu zhangjin <wuzhangjin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        zhiping zhong <xzhong86@163.com>
-In-Reply-To: <AANLkTinxxOsXNatAiP0t8Vv0xFZcdSpoWWrG49g6JjqF@mail.gmail.com>
-References: <AANLkTinxxOsXNatAiP0t8Vv0xFZcdSpoWWrG49g6JjqF@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat
-Date: Thu, 20 Jan 2011 12:30:54 -0500
-Message-ID: <1295544654.19789.19.camel@fedora>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752057Ab1ATRf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 12:35:57 -0500
+Date: Thu, 20 Jan 2011 18:28:10 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prasad <prasad@linux.vnet.ibm.com>, Roland McGrath <roland@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Q: perf_event && task->ptrace_bps[]
+Message-ID: <20110120172810.GA6809@redhat.com>
+References: <20101108145647.GA3426@redhat.com> <20110117203459.GA32700@redhat.com> <20110118184234.GA1808@nowhere> <20110119153746.GA32563@redhat.com> <20110119200536.GC1772@nowhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110119200536.GC1772@nowhere>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-20 at 02:55 +0800, wu zhangjin wrote:
-> Hi, Steve
-> 
-> Zhiping Zhong reported a problem about set_graph_function: whenever
-> users configure the entries through the tracing/set_graph_function
-> interface, the tracing result always include the other functions which
-> are not configured through the interfaces, and most of the tracing
-> result we can see are the irq related functions, which means
-> set_graph_function doesn't work as expects.
+On 01/19, Frederic Weisbecker wrote:
+>
+> On Wed, Jan 19, 2011 at 04:37:46PM +0100, Oleg Nesterov wrote:
+> >
+> > I think we can reuse perf_event_mutex for this. Not very good too,
+> > but simple. But this depends on what can we do under this mutex...
+>
+> That could work. I feel a bit uncomfortable to use a perf related
+> mutex for that though. I can't figure out any deadlock with the current
+> state, but if we are going to use that solution, perf events will be
+> created/destroyed/disabled/enabled under that mutex.
 
-It does, but you need to disable irq tracing:
+No, I didn't mean create/destroy under that mutex, but
 
-echo 0 > /debug/tracing/options/funcgraph-irqs
+> Dunno, that doesn't seem to be a good use of perf_event_mutex.
 
-Perhaps I'll make this the default :-/
+I agree anyway.
 
--- Steve
+> OTOH I can drop
+> more of them for the no-running-breakpoint case from thread_struct
+> in a subsequent task.
 
-> 
-> I have done some investigation, in the *ftrace_graph_entry ->
-> trace_graph_entry() function, there is checking like this:
-> 
->         [snip]
->         /* trace it when it is-nested-in or is a function enabled. */
->         if (!(trace->depth || ftrace_graph_addr(trace->func)) ||
->               ftrace_graph_ignore_irqs())
->                 return 0;
->         [snip]
-> 
-> and:
-> 
-> static inline int ftrace_graph_ignore_irqs(void)
-> {
->         if (!ftrace_graph_skip_irqs)
->                 return 0;
-> 
->         return in_irq();
-> }
-> 
-> and:
-> 
-> /* When set, irq functions will be ignored */
-> static int ftrace_graph_skip_irqs;
-> 
-> As we can see above, ftrace_graph_skip_irqs is initialized as 0, then,
-> ftrace_graph_ignore_irqs() will return 0 by default, as a result, the
-> checking in trace_graph_entry() will always be false, then every
-> function will be traced whenever the set_graph_function is configured,
-> so, this may be the cause.
-> 
-> A quick fix looks like this:
-> 
->         /* trace it when it is-nested-in or is a function enabled. */
-> -       if (!(trace->depth || ftrace_graph_addr(trace->func)) ||
-> -             ftrace_graph_ignore_irqs())
-> +       if (!(trace->depth || ftrace_graph_addr(trace->func) ||
-> +             !ftrace_graph_ignore_irqs()))
->                 return 0;
-> 
-> And as the git log shows, the ftrace_graph_ignore_irqs() function was
-> added from the following commit:
-> 
->           tracing: Do not trace in irq when funcgraph-irq option is zero
-> 
-> Regards,
-> Wu Zhangjin
+Hmm. Can't understand what do you mean. Just curious, could you explain?
 
+> Note the problem touches more archs than x86. Basically every
+> arch that use breakpoint use a similar scheme that must be fixed.
+
+Yes. Perhaps we should try to unify some code... Say, can't we move
+->ptrace_bps[] to task_struct?
+
+
+> +void ptrace_put_breakpoints(struct task_struct *tsk)
+> +{
+> +	if (!atomic_dec_return(&tsk->ptrace_bp_refcnt))
+> +		flush_ptrace_hw_breakpoint(tsk);
+
+(minor nit, atomic_dec_and_test() looks more natural)
+
+
+I think the patch is correct and should fix the problem.
+
+Thanks!
+
+Oleg.
 
