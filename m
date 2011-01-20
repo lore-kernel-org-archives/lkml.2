@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755842Ab1ATOq5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 09:46:57 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:49097 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755701Ab1ATOqy convert rfc822-to-8bit (ORCPT
+	id S1755798Ab1ATOtc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 09:49:32 -0500
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:26956 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755731Ab1ATOtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 09:46:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=IcAhQU+bzDlGYqJ73Ny1yNlTU4lzOV7QkXvbXWjErZDYtV1TQVuWKsf+wD8TSLRbW4
-         fYQgYczQT8gekYRnUmFA==
+	Thu, 20 Jan 2011 09:49:31 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 1mmrlJkVM1nnIEup0TpneKAYi6LMTnooVffteaPmeei0Qwf
+ zTyZu0uvMRa5v.fTsMR.kExQ7RxPuWKekABjS75PXlNg2DfhaRSM9jdwCrOA
+ F4OtJmgP1Ts8TKQFFE4WSj2GT8c8cx4dTO5q54FXXjeoHwQhccBXkflA2rBN
+ 8aORKXMjgzr_z_YQ9aopTXdqGxlIvFD8U8nGJXq682Tlk6TAL6xxPuwNHKW4
+ CaR8e3hkzvlJ3q99fOJPOLcQUxltcnsKut9RJBWrMKdpP.Yo-
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 20 Jan 2011 08:49:27 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Balbir Singh <balbir@linux.vnet.ibm.com>
+cc: linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kosaki.motohiro@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: [REPOST] [PATCH 1/3] Move zone_reclaim() outside of CONFIG_NUMA
+ (v3)
+In-Reply-To: <20110120123608.30481.63446.stgit@localhost6.localdomain6>
+Message-ID: <alpine.DEB.2.00.1101200847350.10695@router.home>
+References: <20110120123039.30481.81151.stgit@localhost6.localdomain6> <20110120123608.30481.63446.stgit@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1295534345.28776.175.camel@laptop>
-References: <4d384700.2308e30a.70bc.ffffd532@mx.google.com>
-	<1295534345.28776.175.camel@laptop>
-Date: Thu, 20 Jan 2011 15:46:51 +0100
-Message-ID: <AANLkTimBypM3rr4QS3NcnAXcXUH-2-fE7mKG12NuX1Vv@mail.gmail.com>
-Subject: Re: [PATCH 1/2] perf_events: add cgroup support (v8)
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
-        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
-        lizf@cn.fujitsu.com, Paul Menage <menage@google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+On Thu, 20 Jan 2011, Balbir Singh wrote:
 
-Note that I also had to drop my optimization which was handling cgroup switch
-from perf_event_task_sched_out() (and which had to deal with PF_EXITING).
-I realized there was an issue in sampling mode during context switch. If you are
-measuring at the kernel level, then you may get samples from the previous task
-(which may not be in your cgroup) if a counter overflows in the middle
-of the context
-switch because you've switched cgroup before "current" is actually
-updated. Thus,
-the perf_event interrupt handler associates the sample to the old tasks.
-
-So now, I switch out everything from perf_event_task_sched_out() and
-wait until perf_event_task_sched_in() to re-examine the situation for the
-new task. That's the only way to maintain consistency with "current".
-
-
-On Thu, Jan 20, 2011 at 3:39 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, 2011-01-20 at 15:30 +0200, Stephane Eranian wrote:
->> @@ -4259,8 +4261,20 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
->>
->>         /* Reassign the task to the init_css_set. */
->>         task_lock(tsk);
->> +       /*
->> +        * we mask interrupts to prevent:
->> +        * - timer tick to cause event rotation which
->> +        *   could schedule back in cgroup events after
->> +        *   they were switched out by perf_cgroup_sched_out()
->> +        *
->> +        * - preemption which could schedule back in cgroup events
->> +        */
->> +       local_irq_save(flags);
->> +       perf_cgroup_sched_out(tsk);
->>         cg = tsk->cgroups;
->>         tsk->cgroups = &init_css_set;
->> +       perf_cgroup_sched_in(tsk);
->> +       local_irq_restore(flags);
->>         task_unlock(tsk);
->>         if (cg)
->>                 put_css_set_taskexit(cg);
+> --- a/include/linux/swap.h
+> +++ b/include/linux/swap.h
+> @@ -253,11 +253,11 @@ extern int vm_swappiness;
+>  extern int remove_mapping(struct address_space *mapping, struct page *page);
+>  extern long vm_total_pages;
 >
-> So you too need a callback on cgroup change there.. Li, Paul, any chance
-> we can fix this cgroup_subsys::exit callback? The scheduler code needs
-> to do funny thing because its in the wrong place as well.
->
+> +extern int sysctl_min_unmapped_ratio;
+> +extern int zone_reclaim(struct zone *, gfp_t, unsigned int);
+>  #ifdef CONFIG_NUMA
+>  extern int zone_reclaim_mode;
+> -extern int sysctl_min_unmapped_ratio;
+>  extern int sysctl_min_slab_ratio;
+> -extern int zone_reclaim(struct zone *, gfp_t, unsigned int);
+>  #else
+>  #define zone_reclaim_mode 0
+
+So the end result of this patch is that zone reclaim is compiled
+into vmscan.o even on !NUMA configurations but since zone_reclaim_mode ==
+0 noone can ever call that code?
+
