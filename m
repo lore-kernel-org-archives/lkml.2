@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab1ATLaf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 06:30:35 -0500
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:55916 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755056Ab1ATLae convert rfc822-to-8bit (ORCPT
+	id S1755432Ab1ATLbr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 06:31:47 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52036 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755056Ab1ATLbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 06:30:34 -0500
+	Thu, 20 Jan 2011 06:31:45 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=USIzYQHIVJlpY1WIJ5PvTVWOAik5M4pUJDfjDjHxnAsEvqF8NbXBKDUQxzMNFKhJtC
-         r3NQX41TMkZYFPCaLRmfRficfec8RFRk9LUAr+ok1gzsWgayFGW/uwJgOwkHMm4MXxoi
-         mar1z8TN+RECTkUPbyWNGgQBI/mjQrUYJ3obY=
-MIME-Version: 1.0
-In-Reply-To: <20110120112606.GF6036@htj.dyndns.org>
-References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
-	<20110119120200.GA1057@elte.hu>
-	<20110120110635.GB6036@htj.dyndns.org>
-	<20110120111149.GD6036@htj.dyndns.org>
-	<1295522631.28776.155.camel@laptop>
-	<20110120112606.GF6036@htj.dyndns.org>
-Date: Thu, 20 Jan 2011 13:30:33 +0200
-X-Google-Sender-Auth: 2g6iGF3SoY0enFIZCuJfg45IXr0
-Message-ID: <AANLkTikiYjV+brMK0Aneazq7O6Pz5HVFgAiPqvJBkhkO@mail.gmail.com>
-Subject: Re: [PATCH 1/2] lockdep: move early boot local IRQ enable/disable
- status to init/main.c
-From: Pekka Enberg <penberg@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=gXO/mQTN/7JzKjafRpeCHrSKlx6kYG7/cztwbww4DW/oKYEs+DcyrLUg19Un/0O6G7
+         0ZFuSg5Z/qNwhGzWHfXGOhx/1gKQwSdMeKPcyRzHy/PCQb+ST7aVFXwNSCAvWP1gjfNc
+         9F3XJGpyLRf62mKX8U3wBjEiaQ55kT1O3ot7M=
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, arnd@arndb.de
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org
+Subject: [PATCH] s390: use asm-generic/cacheflush.h
+Date: Thu, 20 Jan 2011 20:32:13 +0900
+Message-Id: <1295523136-4277-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Jan 20, 2011 at 12:23:51PM +0100, Peter Zijlstra wrote:
->> On Thu, 2011-01-20 at 12:11 +0100, Tejun Heo wrote:
->> > Hello, guys.
->> >
->> > These two patches remove both warnings.  The first warning was
->> > completely spurious.  The second lockdep one was triggered by
->> > on_each_cpu() enabling local IRQ too early.
->> >
->> > I don't think percpu allocator itself malfunctioned.  There was no
->> > allocation failure.  It whines when percpu allocation fails but didn't
->> > in the log.  Other than calling vfree() early triggering the above
->> > condition, it worked okay.
->> >
->> > So, it's either the early enabling of local IRQ by on_each_cpu()
->> > breaking something in the IRQ subsystem or something different.  Ingo,
->> > can you please see whether these two patches cure the panic too?
->>
->> Why not use something like: system_state != SYSTEM_RUNNING ?
+The implementation of the cache flushing interfaces on the s390
+is identical with the default implementation in asm-generic.
 
-On Thu, Jan 20, 2011 at 1:26 PM, Tejun Heo <tj@kernel.org> wrote:
-> Cuz, it's finer grained than that.  We can add a SYSTEM_* flag but I
-> wasn't sure whether that would be just creating more noise.  If we try
-> to consolidate these things, we probably should consider
-> oops_in_progress too.  It probably is a good idea but let's first fix
-> the problem at hand.
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux390@de.ibm.com
+Cc: linux-s390@vger.kernel.org
+---
+ arch/s390/include/asm/cacheflush.h |   23 +----------------------
+ 1 files changed, 1 insertions(+), 22 deletions(-)
 
-Yup, SYSTEM_RUNNING happens much later in the boot sequence so we
-don't want to use it here. We had a long discussion about system_state
-when we introduced gfp_allowed_mask and IIRC people wanted to avoid
-more system_state flags and preferred more explicit ones like
-early_boot_irqs_disabled.
+diff --git a/arch/s390/include/asm/cacheflush.h b/arch/s390/include/asm/cacheflush.h
+index 405cc97..7e1f776 100644
+--- a/arch/s390/include/asm/cacheflush.h
++++ b/arch/s390/include/asm/cacheflush.h
+@@ -1,29 +1,8 @@
+ #ifndef _S390_CACHEFLUSH_H
+ #define _S390_CACHEFLUSH_H
+ 
+-/* Keep includes the same across arches.  */
+-#include <linux/mm.h>
+-
+ /* Caches aren't brain-dead on the s390. */
+-#define flush_cache_all()			do { } while (0)
+-#define flush_cache_mm(mm)			do { } while (0)
+-#define flush_cache_dup_mm(mm)			do { } while (0)
+-#define flush_cache_range(vma, start, end)	do { } while (0)
+-#define flush_cache_page(vma, vmaddr, pfn)	do { } while (0)
+-#define ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE 0
+-#define flush_dcache_page(page)			do { } while (0)
+-#define flush_dcache_mmap_lock(mapping)		do { } while (0)
+-#define flush_dcache_mmap_unlock(mapping)	do { } while (0)
+-#define flush_icache_range(start, end)		do { } while (0)
+-#define flush_icache_page(vma,pg)		do { } while (0)
+-#define flush_icache_user_range(vma,pg,adr,len)	do { } while (0)
+-#define flush_cache_vmap(start, end)		do { } while (0)
+-#define flush_cache_vunmap(start, end)		do { } while (0)
+-
+-#define copy_to_user_page(vma, page, vaddr, dst, src, len) \
+-	memcpy(dst, src, len)
+-#define copy_from_user_page(vma, page, vaddr, dst, src, len) \
+-	memcpy(dst, src, len)
++#include <asm-generic/cacheflush.h>
+ 
+ #ifdef CONFIG_DEBUG_PAGEALLOC
+ void kernel_map_pages(struct page *page, int numpages, int enable);
+-- 
+1.7.3.4
 
-We can do more cleanups later but for the problem at hand:
-
-Acked-by: Pekka Enberg <penberg@kernel.org>
-
-for both patches.
-
-                   Pekka
