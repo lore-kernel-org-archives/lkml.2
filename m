@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837Ab1AUBJd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 20:09:33 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48363
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752356Ab1AUBJb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 20:09:31 -0500
-Date: Thu, 20 Jan 2011 17:10:05 -0800 (PST)
-Message-Id: <20110120.171005.93464500.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, pablo@netfilter.org, kaber@trash.net
-Subject: Re: linux-next: build failure after merge of the net tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110121120553.5e827247.sfr@canb.auug.org.au>
-References: <20110121120553.5e827247.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1753541Ab1AUBRu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 20:17:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15786 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751412Ab1AUBRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 20:17:48 -0500
+Date: Thu, 20 Jan 2011 20:20:50 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Steve French <smfrench@gmail.com>, <linux-cifs@vger.kernel.org>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Suresh Jayaraman <sjayaraman@suse.de>
+Subject: Re: linux-next: build warning after merge of the cifs tree
+Message-ID: <20110120202050.0bc68484@corrin.poochiereds.net>
+In-Reply-To: <20110121120524.23dcf86d.sfr@canb.auug.org.au>
+References: <20110121120524.23dcf86d.sfr@canb.auug.org.au>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/uqCs2g1h2CJkLD0mcJt57XJ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 21 Jan 2011 12:05:53 +1100
+--Sig_/uqCs2g1h2CJkLD0mcJt57XJ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, 21 Jan 2011 12:05:24 +1100
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
 > Hi all,
-> 
-> After merging the net tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> ERROR: ".nf_conntrack_tstamp_fini" [net/netfilter/nf_conntrack.ko] undefined!
-> ERROR: ".nf_conntrack_tstamp_init" [net/netfilter/nf_conntrack.ko] undefined!
-> 
-> Presumably caused by commit a992ca2a0498edd22a88ac8c41570f536de29c9e
-> ("netfilter: nf_conntrack_tstamp: add flow-based timestamp extension").
-> 
-> I have used the net tree from next-20110120 for today.
+>=20
+> After merging the cifs tree, today's linux-next build (powerpc
+> ppc64_defconfig) produced this warning:
+>=20
+> fs/cifs/cifssmb.c: In function 'CIFSSMBEcho':
+> fs/cifs/cifssmb.c:740: warning: large integer implicitly truncated to uns=
+igned type
+>=20
+> Introduced by commit 766fdbb57fdb1e53bc34c431103e95383d7f13ba ("cifs: add
+> ability to send an echo request").
+>=20
 
-I just pushed a fix into net-next-2.6 to cure this a few minutes ago.
+Oh duh -- <forehead slap>...
+
+        smb->hdr.WordCount =3D cpu_to_le16(1);
+
+...and WordCount is u8. I'll send Steve a fix tomorrow...
+
+--=20
+Jeff Layton <jlayton@redhat.com>
+
+--Sig_/uqCs2g1h2CJkLD0mcJt57XJ
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+
+iEYEARECAAYFAk0433YACgkQojH4PzJJfGU1DwCgh4gQcKxKEaR0IJtG1ta1K6T9
+G/oAnRmNToo9dyeev285r08Fc3kLEdBm
+=qnSQ
+-----END PGP SIGNATURE-----
+
+--Sig_/uqCs2g1h2CJkLD0mcJt57XJ--
