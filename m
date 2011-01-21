@@ -1,129 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab1AUAFQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 19:05:16 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:35342 "EHLO ogre.sisk.pl"
+	id S1753268Ab1AUAHT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 19:07:19 -0500
+Received: from tundra.namei.org ([65.99.196.166]:53583 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751997Ab1AUAFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 19:05:14 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Subject: Re: [PATCH 0/11] ACPI: Fixes and cleanups related to iomaps management
-Date: Fri, 21 Jan 2011 01:04:43 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc1+; KDE/4.4.4; x86_64; ; )
-Cc: Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-References: <201101201226.41021.rjw@sisk.pl> <201101202157.16813.rjw@sisk.pl> <AANLkTikKZghRY6pdM1CY7=AKex4t9=QSQOdXDjjvXXM1@mail.gmail.com>
-In-Reply-To: <AANLkTikKZghRY6pdM1CY7=AKex4t9=QSQOdXDjjvXXM1@mail.gmail.com>
+	id S1752356Ab1AUAHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 19:07:18 -0500
+Date: Fri, 21 Jan 2011 11:07:13 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Davidlohr Bueso <dave@gnu.org>
+cc: Stephen Smalley <sds@tycho.nsa.gov>, Eric Paris <eparis@parisplace.org>,
+        LKML <linux-kernel@vger.kernel.org>, selinux@tycho.nsa.gov
+Subject: Re: [PATCH 1/3] selinux: return -ENOMEM when memory allocation
+ fails
+In-Reply-To: <1295548318.2089.11.camel@offworld>
+Message-ID: <alpine.LRH.2.00.1101211101150.14355@tundra.namei.org>
+References: <1295548318.2089.11.camel@offworld>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101210104.43641.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 20, 2011, Jeff Chua wrote:
-> On Fri, Jan 21, 2011 at 4:57 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Thursday, January 20, 2011, Jeff Chua wrote:
-> >> On Thu, Jan 20, 2011 at 7:26 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >>
-> >> > [10/11] - Make the NVS code use existing iomaps if possible.
-> >>
-> >> Seems ok.
-> >>
-> >> > [11/11] - (cleanup) Remove an unnecessary field from struct nvs_page.
-> >>
-> >> This seems to have an issue. Notebook tries to suspend ... then resume
-> >> immediately.
-> >
-> > That's unexpected.  Please apply the debug patch below in addition to the
-> > whole series and send a dmesg output containing a (failing) suspend attempt
-> > (with the patch applied).
+On Thu, 20 Jan 2011, Davidlohr Bueso wrote:
+
+> From: Davidlohr Bueso <dave@gnu.org>
 > 
-> Attached.
+> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+> ---
+>  security/selinux/ss/conditional.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/security/selinux/ss/conditional.c b/security/selinux/ss/conditional.c
+> index c3f845c..a533732 100644
+> --- a/security/selinux/ss/conditional.c
+> +++ b/security/selinux/ss/conditional.c
+> @@ -178,7 +178,7 @@ int cond_init_bool_indexes(struct policydb *p)
+>  	p->bool_val_to_struct = (struct cond_bool_datum **)
+>  		kmalloc(p->p_bools.nprim * sizeof(struct cond_bool_datum *), GFP_KERNEL);
+>  	if (!p->bool_val_to_struct)
+> -		return -1;
+> +		return -ENOMEM;
+>  	return 0;
 
-Thanks, but unfortunately this wasn't conclusive.  Please apply the patch below
-instead of the previous one (on top of [1/11] - [11/11]) and collect dmesg
-output containing a (failing) suspend attempt.
+The caller has already set -ENOMEM, so the code should probably be updated 
+there, too, e.g.
 
-Please attach full dmesg, so that I can see the size and address of your
-system's NVS region.
-
-Thanks,
-Rafael
+	rc = cond_init_bool_indexes();
+	if (rc)
+		goto out;
 
 
----
- drivers/acpi/nvs.c |   27 ++++++++++++++++++++++++++-
- 1 file changed, 26 insertions(+), 1 deletion(-)
 
-Index: linux-2.6/drivers/acpi/nvs.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/nvs.c
-+++ linux-2.6/drivers/acpi/nvs.c
-@@ -87,9 +87,15 @@ void suspend_nvs_free(void)
- 			entry->data = NULL;
- 			if (entry->kaddr) {
- 				if (entry->unmap) {
-+					pr_info("%s: Unmapping %p\n", __func__,
-+						entry->kaddr);
-+
- 					iounmap(entry->kaddr);
- 					entry->unmap = false;
- 				} else {
-+					pr_info("%s: Dropping %p\n", __func__,
-+						entry->kaddr);
-+
- 					acpi_os_unmap_memory(entry->kaddr,
- 							     entry->size);
- 				}
-@@ -130,6 +136,8 @@ int suspend_nvs_save(void)
- 		unsigned long phys = page_addr + offset;
- 		unsigned int size = entry->size;
- 
-+		pr_info("%s: phys = %lx, size = %d\n", __func__, phys, size);
-+
- 		if (!entry->data)
- 			return -ENOMEM;
- 
-@@ -137,11 +145,24 @@ int suspend_nvs_save(void)
- 		if (!entry->kaddr) {
- 			entry->kaddr = acpi_os_ioremap(phys, size);
- 			if (!entry->kaddr) {
-+
-+				pr_info("%s: acpi_os_ioremap() failed\n",
-+					__func__);
-+
- 				suspend_nvs_free();
- 				return -EIO;
-+			} else {
-+				pr_info("%s: Mapped %p\n", __func__,
-+					entry->kaddr);
- 			}
- 			entry->unmap = true;
-+		} else {
-+			pr_info("%s: Got address %p\n", __func__, entry->kaddr);
- 		}
-+
-+		pr_info("%s: Saving %p <- %p\n", __func__,
-+			entry->data, entry->kaddr);
-+
- 		memcpy(entry->data, entry->kaddr, entry->size);
- 
- 		page_addr += PAGE_SIZE;
-@@ -164,6 +185,10 @@ void suspend_nvs_restore(void)
- 	printk(KERN_INFO "PM: Restoring platform NVS memory\n");
- 
- 	list_for_each_entry(entry, &nvs_list, node)
--		if (entry->data)
-+		if (entry->data) {
-+			pr_info("%s: Restoring %p -> %p\n", __func__,
-+				entry->data, entry->kaddr);
-+
- 			memcpy(entry->kaddr, entry->data, entry->size);
-+		}
- }
+-- 
+James Morris
+<jmorris@namei.org>
