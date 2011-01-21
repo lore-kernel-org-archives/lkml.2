@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab1AURmj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 12:42:39 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:37957 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753059Ab1AURmi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 12:42:38 -0500
-Date: Fri, 21 Jan 2011 12:42:36 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for
-	this_cpu_cmpxchg_double
-Message-ID: <20110121174236.GA12150@Krystal>
-References: <alpine.DEB.2.00.1101071227450.3014@router.home> <20110108172453.GF13269@mtj.dyndns.org> <4D393636.4040607@cs.helsinki.fi> <20110121092649.GA2832@htj.dyndns.org> <4D39A6EB.70705@zytor.com> <20110121154831.GE2832@htj.dyndns.org> <20110121165425.GB11687@Krystal> <20110121170847.GH2832@htj.dyndns.org> <1da7491b-6e7d-4453-9c6f-0e7767421ec4@email.android.com> <alpine.DEB.2.00.1101211121350.15692@router.home>
+	id S1754234Ab1AURnS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 12:43:18 -0500
+Received: from smtp.ispras.ru ([83.149.198.201]:41495 "EHLO smtp.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752314Ab1AURnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 12:43:15 -0500
+From: Alexander Strakh <strakh@ispras.ru>
+Organization: ISP RAS
+To: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        Tobias Lorenz <tobias.lorenz@gmx.net>,
+        Edouard Lafargue <edouard@lafargue.name>
+Subject: BUG: double mutex lock in  drivers/media/radio/si470x/radio-si470x-common.c
+Date: Fri, 21 Jan 2011 21:00:25 +0300
+User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.7-desktop; KDE/4.4.4; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1101211121350.15692@router.home>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 12:38:38 up 58 days, 22:41,  4 users,  load average: 0.09, 0.04,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101212100.25827.strakh@ispras.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Christoph Lameter (cl@linux.com) wrote:
-> On Fri, 21 Jan 2011, H. Peter Anvin wrote:
-> 
-> > We could do cmpxchg with a structure... the problem with a lon int type is that Cristoph ran into bugs with __int128 on 64 bits.
-> 
-> We also would need to be pass the structure by value (well its really a
-> variable but its like passing by value) in order to be similar to the
-> other this_cpu_ops
-> 
-> You'd want either
-> 
-> DEFINE_PERCPU(struct mycustomdoublestruct, percpu_dd)
-> 
-> this_cpu_cmpxchg_double(percpu_dd, oldword1, oldword2, newword1, newword2)
-> 
-> with the problem of type checking
+        KERNEL_VERSION: 2.6.37
+        SUBJECT: double mutex lock in drivers/media/radio/si470x/radio-si470x-
+common.c in function ssize_t si470x_fops_read.
 
-What is the problem with type checking here ?
+1. First mutex_lock on &radio->lock in line 441
+2. Second in line 462
 
-We could use a gcc builtin like the following to check if the alignment of
-"percpu_dd" meets the double-cas requirements:
+I think that mutex in line 462 is not needed.
 
-#define testmacro(a, b) \
-        __builtin_choose_expr(__alignof__(a) >= 2 * sizeof(unsigned long), \
-                              ((a).low) = (b), \    /* success */
-                              ((a).low) = (void) 0) /* compile-error */
+ 433static ssize_t si470x_fops_read(struct file *file, char __user *buf,
+ 434                size_t count, loff_t *ppos)
+ 435{
+....
+ 441        mutex_lock(&radio->lock);
+ 442        if ((radio->registers[SYSCONFIG1] & SYSCONFIG1_RDS) == 0)
+ 443                si470x_rds_on(radio);
+ 444
+ 445        /* block if no new data available */
+ 446        while (radio->wr_index == radio->rd_index) {
+ 447                if (file->f_flags & O_NONBLOCK) {
+ 448                        retval = -EWOULDBLOCK;
+ 449                        goto done;
+ 450                }
+ 451                if (wait_event_interruptible(radio->read_queue,
+ 452                        radio->wr_index != radio->rd_index) < 0) {
+ 453                        retval = -EINTR;
+ 454                        goto done;
+ 455                }
+ 456        }
+ 457
+ 458        /* calculate block count from byte count */
+ 459        count /= 3;
+ 460
+ 461        /* copy RDS block out of internal buffer and to user buffer */
+ 462        mutex_lock(&radio->lock);
 
-> or
-> 
-> this_cpu_cmpxchg_double(percpu_dd, old_dd, new_dd)
-> 
-> with the problem of 128 bit constants/structs passed by value.
+Found by Linux Device Drivers Verification Project
 
-Yeah, I guess trying to deal with 128-bit value might be a bit tricky. But
-having something sane and with compile-time-checked alignment for the percpu_dd
-type is not to be looked over.
+Remove second mutex.
 
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Signed-off-by: Alexander Strakh <strakh@ispras.ru>
+___
+diff --git a/drivers/media/radio/si470x/radio-si470x-common.c 
+b/drivers/media/radio/si470x/radio-si470x-common.c
+index ac76dfe..e50452b 100644
+--- a/drivers/media/radio/si470x/radio-si470x-common.c
++++ b/drivers/media/radio/si470x/radio-si470x-common.c
+@@ -459,7 +459,6 @@ static ssize_t si470x_fops_read(struct file *file, char 
+__user *buf,
+ 	count /= 3;
+ 
+ 	/* copy RDS block out of internal buffer and to user buffer */
+-	mutex_lock(&radio->lock);
+ 	while (block_count < count) {
+ 		if (radio->rd_index == radio->wr_index)
+ 			break;
