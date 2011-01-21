@@ -1,68 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750830Ab1AUFAM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 00:00:12 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:63684 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750701Ab1AUFAJ (ORCPT
+	id S1750881Ab1AUFDo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 00:03:44 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47138 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750695Ab1AUFDk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 00:00:09 -0500
+	Fri, 21 Jan 2011 00:03:40 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=EaQMoPK4Mmebrn1Gz418zLkP3FCAHzVewRiwxEqhwwXP+VBmbPInz/iSZBTR+rXoEi
-         MAs04W0jbRGv0Rcfy+AScN+o6KPTja969Kn+LA2GTR5Mucapgq0F3qzl1mJwCCM44ly6
-         3xWPEXhU2TBVCq3MWuCgci4JbgO7/KbQax6AQ=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND] select: remove unused MAX_SELECT_SECONDS
-Date: Fri, 21 Jan 2011 13:59:59 +0900
-Message-Id: <1295585999-3044-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.3.4.600.g982838b0
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=NF9On9TRVkMLzoWX35L50sC59wBRYEgjFC5kpD6tsVrxQ2+Nnpcjk/AesYGJqDt6Ky
+         fVmm6piauhSlpuQaWOJLCpqXv4xL6b8JCZKTDm9i0wYd04VQwZfcH975s5EI0DJO/rTm
+         x6hIjhIZZaEjFTjLz0U/WmZ6/C8OPm82nvg1Q=
+MIME-Version: 1.0
+In-Reply-To: <1295550009.28001.59.camel@Joe-Laptop>
+References: <1295256060-2091-1-git-send-email-ratbert.chuang@gmail.com>
+ <1295537418-2057-1-git-send-email-ratbert.chuang@gmail.com> <1295550009.28001.59.camel@Joe-Laptop>
+From: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Date: Fri, 21 Jan 2011 13:03:18 +0800
+Message-ID: <AANLkTi=b9ma=xV1ovbJmy94BrDT696VR4OcyR9vqwGtB@mail.gmail.com>
+Subject: Re: [PATCH v3] net: add Faraday FTMAC100 10/100 Ethernet driver
+To: Joe Perches <joe@perches.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhutchings@solarflare.com, eric.dumazet@gmail.com, dilinger@queued.net,
+        Po-Yu Chuang <ratbert@faraday-tech.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the leftover from the commit 8ff3e8e85fa6 ("select:
-switch select() and poll() over to hrtimers").
+Dear Joe,
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Acked-by: Arjan van de Ven <arjan@linux.intel.com>
----
- fs/compat.c |    3 ---
- fs/select.c |    3 ---
- 2 files changed, 0 insertions(+), 6 deletions(-)
+On Fri, Jan 21, 2011 at 3:00 AM, Joe Perches <joe@perches.com> wrote:
+> On Thu, 2011-01-20 at 23:30 +0800, Po-Yu Chuang wrote:
+>>  drivers/net/ftmac100.c | 1243 ++++++++++++++++++++++++++++++++++++++++++++++++
+>
+> []
+>
+>> +/******************************************************************************
+>> + * struct napi_struct functions
+>> + *****************************************************************************/
+>> +static int ftmac100_poll(struct napi_struct *napi, int budget)
+>> +{
+>> +     struct ftmac100 *priv = container_of(napi, struct ftmac100, napi);
+>> +     struct net_device *netdev = priv->netdev;
+>> +     unsigned int status;
+>> +     bool completed = true;
+>> +     int rx = 0;
+>> +
+>> +     status = ioread32(priv->base + FTMAC100_OFFSET_ISR);
+>> +
+>> +     if (status & (FTMAC100_INT_RPKT_FINISH | FTMAC100_INT_NORXBUF)) {
+>> +             /*
+>> +              * FTMAC100_INT_RPKT_FINISH:
+>> +              *      RX DMA has received packets into RX buffer successfully
+>> +              *
+>> +              * FTMAC100_INT_NORXBUF:
+>> +              *      RX buffer unavailable
+>> +              */
+>> +             bool retry;
+>> +
+>> +             do {
+>> +                     retry = ftmac100_rx_packet(priv, &rx);
+>> +             } while (retry && rx < budget);
+>> +
+>> +             if (retry && rx == budget)
+>> +                     completed = false;
+>
+> Is it useful to retry the NORXBUF case?
 
-diff --git a/fs/compat.c b/fs/compat.c
-index f6fd0a00e6cc..002595083ae5 100644
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -1695,9 +1695,6 @@ int compat_set_fd_set(unsigned long nr, compat_ulong_t __user *ufdset,
-  * Update: ERESTARTSYS breaks at least the xview clock binary, so
-  * I'm trying ERESTARTNOHAND which restart only when you want to.
-  */
--#define MAX_SELECT_SECONDS \
--	((unsigned long) (MAX_SCHEDULE_TIMEOUT / HZ)-1)
--
- int compat_core_sys_select(int n, compat_ulong_t __user *inp,
- 	compat_ulong_t __user *outp, compat_ulong_t __user *exp,
- 	struct timespec *end_time)
-diff --git a/fs/select.c b/fs/select.c
-index e56560d2b08a..d33418fdc858 100644
---- a/fs/select.c
-+++ b/fs/select.c
-@@ -517,9 +517,6 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
-  * Update: ERESTARTSYS breaks at least the xview clock binary, so
-  * I'm trying ERESTARTNOHAND which restart only when you want to.
-  */
--#define MAX_SELECT_SECONDS \
--	((unsigned long) (MAX_SCHEDULE_TIMEOUT / HZ)-1)
--
- int core_sys_select(int n, fd_set __user *inp, fd_set __user *outp,
- 			   fd_set __user *exp, struct timespec *end_time)
- {
--- 
-1.7.3.4.600.g982838b0
+The idea is that if I miss packet finished interrupts (then rx buffers used up),
+I should retrieve the received packets ASAP to free buffers to HW.
+Maybe this is really unnecessary.
+I am not quite sure, but I'll do your advice now.
 
+>> +     }
+>> +
+>> +     if (status & FTMAC100_INT_NORXBUF) {
+>> +             /* RX buffer unavailable */
+>> +             if (net_ratelimit())
+>> +                     netdev_info(netdev, "INT_NORXBUF\n");
+>> +
+>> +             netdev->stats.rx_over_errors++;
+>> +     }
+>
+> Perhaps this "if (status & FTMAC100_INT_NORXBUF)" block should be
+> moved into the test block above it before the retry?
+
+Since status is not changed in the function, it does not matter where
+the test is.
+But I agree that it is better to handle error cases earlier.
+
+> It's possible to miss multiple states because of the ratelimit.
+>
+> If multiple ISR status bits are possible, it might be better to
+> combine all netdev_info uses into a single call.
+>
+> Something like:
+>
+>        if ((status & (FTMAC100_INT_NORXBUF | FTMAC100_INT_RPKT_LOST |
+>                       FTMAC100_INT_AHB_ERR | FTMAC100_INT_PHYSTS_CHG)) &&
+>            net_ratelimit())
+>                netdev_info(netdev, "ISR status: %x%s%s%s%s\n",
+>                            status & FTMAC100_INT_NORXBUF ? ": INT_NORXBUF" : "",
+>                            status & FTMAC100_INT_RPKT_LOST ? ": INT_RPKT_LOST" : "",
+>                            status & FTMAC100_INT_AHB_ERR ? ": INT_AHB_ERR" : "",
+>                            status & FTMAC100_INT_PHYSTS_CHG ? " : INT_PHYSTS_CHG" : "");
+
+Agree. Thanks.
+
+best regards,
+Po-Yu Chuang
