@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378Ab1AUAkO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 19:40:14 -0500
-Received: from x35.xmailserver.org ([64.71.152.41]:39634 "EHLO
-	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753799Ab1AUAkL (ORCPT
+	id S1754414Ab1AUAmF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 19:42:05 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:19043 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754043Ab1AUAmD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 19:40:11 -0500
-X-AuthUser: davidel@xmailserver.org
-Date: Thu, 20 Jan 2011 16:40:05 -0800 (PST)
-From: Davide Libenzi <davidel@xmailserver.org>
-X-X-Sender: davide@davide-lnx1
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Colin Walters <walters@verbum.org>, Eric Dumazet <eric.dumazet@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT] Networking
-In-Reply-To: <AANLkTik8dk1o2u+JxzsijYFxJ7Y3ZV16DUNkc-+SYPnu@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1101201638100.4677@davide-lnx1>
-References: <20110119.180418.216749267.davem@davemloft.net> <AANLkTin32jUnBtHF-EAkSMnFQM6cTbn-G3NZQJ3xjTWU@mail.gmail.com> <1295559646.2613.35.camel@edumazet-laptop> <AANLkTikLY1B3=C2TjAbYKVHbub-aPeG2heaUBWRUAg=R@mail.gmail.com>
- <AANLkTin6GM5W0nmWgD1a-2FK=CvHk=P3o6CYe-sFe6c=@mail.gmail.com> <AANLkTin-RBwg+J4MqOm7A40-TFAJ1sp4e6tzi6OaobNi@mail.gmail.com> <AANLkTim71374Qb1TW5Lc8H+rpQNk5a25ARczHU-+cn=D@mail.gmail.com> <AANLkTik8dk1o2u+JxzsijYFxJ7Y3ZV16DUNkc-+SYPnu@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
-X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
+	Thu, 20 Jan 2011 19:42:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=LO54W0DZv6MzyrwgrfM0w11tb2h88V/rvadE5N/8En9M0pJXBuiSgw2EfMk+e0qB5+
+         T/Mh/5pQj4lvRlFM0m1Q==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1295555565-21563-1-git-send-email-dwalker@codeaurora.org>
+References: <1295555565-21563-1-git-send-email-dwalker@codeaurora.org>
+Date: Thu, 20 Jan 2011 16:42:00 -0800
+Message-ID: <AANLkTik+HCj9dkD2s4WgwCqKWCXDbdSnKDUbyGfYfaPr@mail.gmail.com>
+Subject: Re: [PATCH 0/7] Nexus One Support
+From: Dima Zavin <dmitriyz@google.com>
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, davidb@codeaurora.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jan 2011, Linus Torvalds wrote:
+You are not the author of any of these patches. Where are the author
+attributions for the team that actually wrote this code?
 
-> On Thu, Jan 20, 2011 at 4:02 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > So far I only did a revert, I didn't see exactly _which_ of the wakeup
-> > cases it was. But it's definitely that commit.
-> 
-> This patch - that adds all the appropriate POLLxxx flags - seems to
-> fix it for me. Will commit. Anybody wants to review/ack?
+--Dima
 
-I believe you can drop the POLLERR, otherwise looks good to me.
-
-
-- Davide
-
-
+On Thu, Jan 20, 2011 at 12:32 PM, Daniel Walker <dwalker@codeaurora.org> wrote:
+> This series adds basic Nexus One support which includes a booting
+> kernel, and functional MMC .
+>
+> Most people won't be able to use this yet unfortunately because
+> you need a serial cable to get any output. However, it's a start.
+>
+> Brian Swetland (1):
+>  [ARM] msm: qsd8k memory base is at 0x20000000
+>
+> Daniel Walker (6):
+>  msm: qsd8x50: add uart platform data
+>  msm: qsd8x50: add acpuclock code
+>  msm: mahimahi: add mahimahi board file
+>  msm: mahimahi: add in mmc support code
+>  msm: mahimahi: add gpio pin muxing code
+>  msm: mahimahi: initialize mmc at start up
+>
+>  arch/arm/mach-msm/Kconfig              |    8 +-
+>  arch/arm/mach-msm/Makefile             |    5 +-
+>  arch/arm/mach-msm/Makefile.boot        |    5 +
+>  arch/arm/mach-msm/acpuclock-qsd8x50.c  |  457 ++++++++++++++++++++++++++++++++
+>  arch/arm/mach-msm/board-mahimahi-mmc.c |  238 +++++++++++++++++
+>  arch/arm/mach-msm/board-mahimahi.c     |   52 +++-
+>  arch/arm/mach-msm/board-mahimahi.h     |  147 ++++++++++
+>  arch/arm/mach-msm/devices-qsd8x50.c    |   42 +++
+>  arch/arm/mach-msm/include/mach/board.h |    1 +
+>  9 files changed, 942 insertions(+), 13 deletions(-)
+>  create mode 100644 arch/arm/mach-msm/acpuclock-qsd8x50.c
+>  create mode 100644 arch/arm/mach-msm/board-mahimahi-mmc.c
+>  create mode 100644 arch/arm/mach-msm/board-mahimahi.h
+>
+> --
+> Sent by a consultant of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
