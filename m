@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750710Ab1AUGds (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 01:33:48 -0500
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:53231 "EHLO
+	id S1754403Ab1AUGeB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 01:34:01 -0500
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:53276 "EHLO
 	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104Ab1AUGdp (ORCPT
+	with ESMTP id S1754305Ab1AUGd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 01:33:45 -0500
+	Fri, 21 Jan 2011 01:33:58 -0500
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: Andi Kleen <tatsu@ab.jp.nec.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -16,9 +16,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>,
         tony.luck@intel.com, LKML <linux-kernel@vger.kernel.org>,
         linux-mm <linux-mm@kvack.org>
-Subject: [PATCH 5/7] hugetlb: fix race condition between hugepage soft offline and page fault
-Date: Fri, 21 Jan 2011 15:28:58 +0900
-Message-Id: <1295591340-1862-6-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 7/7] HWPOISON, hugetlb: fix hard offline for hugepage backed KVM guest
+Date: Fri, 21 Jan 2011 15:29:00 +0900
+Message-Id: <1295591340-1862-8-git-send-email-n-horiguchi@ah.jp.nec.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1295591340-1862-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1295591340-1862-1-git-send-email-n-horiguchi@ah.jp.nec.com>
@@ -26,113 +26,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When hugepage soft offline succeeds, the old hugepage is expected
-to be temporarily enqueued to free hugepage list, and then dequeued
-as a HWPOISONed hugepage.
+When a qemu-kvm process touches HWPOISONed pages,
+we expect that a SIGBUS signal causes MCE on the guest OS.
+But currently it doesn't work on a hugepage backed KVM guest
+because is_hwpoison_address() can't detect the HWPOISON entry
+on PMD and the guest repeats page fault infinitely.
 
-But there is a race window, which collapses reference counting.
-See the following list:
-
-  soft offline                       page fault
-
-  soft_offline_huge_page
-    migrate_huge_pages
-      unmap_and_move_huge_page
-        lock_page
-        try_to_unmap
-        move_to_new_page
-          migrate_page
-            migrate_page_copy
-                                     hugetlb_fault
-                                       migration_hugepage_entry_wait
-                                         get_page_unless_zero
-                                         wait_on_page_locked
-          remove_migration_ptes
-        unlock_page
-  -------------------------------------------------------------------
-        put_page                         put_page
-    dequeue_hwpoisoned_huge_page
-
-
-Two put_page()s below the horizontal line are racy.
-If put_page() from soft offline comes first, the HWPOISONed hugepage
-remains in free hugepage list, causing wrong results.
-
-It's hard to fix this problem by locking because we cannot control
-page fault by page lock.
-So this patch just adds to free_huge_page() a HWPOISON check,
-which ensures that the last user of the old hugepage dequeues it
-from free hugepage list.
+This patch fixes it.
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Huang Ying <ying.huang@intel.com>
 ---
- mm/hugetlb.c |   28 +++++++++++++++++++++-------
- 1 files changed, 21 insertions(+), 7 deletions(-)
+ include/linux/swapops.h |   12 ++++++++++++
+ mm/hugetlb.c            |    4 +++-
+ mm/memory-failure.c     |    2 +-
+ 3 files changed, 16 insertions(+), 2 deletions(-)
 
+diff --git v2.6.38-rc1/include/linux/swapops.h v2.6.38-rc1/include/linux/swapops.h
+index a220ef5..2c1a942 100644
+--- v2.6.38-rc1/include/linux/swapops.h
++++ v2.6.38-rc1/include/linux/swapops.h
+@@ -177,3 +177,15 @@ extern void migration_hugepage_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+ static inline void migration_hugepage_entry_wait(struct mm_struct *mm,
+ 				 pmd_t *pmd, unsigned long address) { }
+ #endif
++
++#if defined(CONFIG_MEMORY_FAILURE) && defined(CONFIG_HUGETLB_PAGE)
++extern int is_hugetlb_entry_hwpoisoned(pte_t pte);
++#else
++static inline int is_hugetlb_entry_hwpoisoned(pte_t pte)
++{
++	return 0;
++}
++#endif
++
++
++
 diff --git v2.6.38-rc1/mm/hugetlb.c v2.6.38-rc1/mm/hugetlb.c
-index d3b856a..b777c81 100644
+index b777c81..c65922e 100644
 --- v2.6.38-rc1/mm/hugetlb.c
 +++ v2.6.38-rc1/mm/hugetlb.c
-@@ -524,6 +524,8 @@ struct hstate *size_to_hstate(unsigned long size)
- 	return NULL;
+@@ -2185,7 +2185,8 @@ static int is_hugetlb_entry_migration(pte_t pte)
+ 		return 0;
  }
  
-+static int __dequeue_hwpoisoned_huge_page(struct page *hpage, struct hstate *h);
-+
- static void free_huge_page(struct page *page)
+-static int is_hugetlb_entry_hwpoisoned(pte_t pte)
++#ifdef CONFIG_MEMORY_FAILURE
++int is_hugetlb_entry_hwpoisoned(pte_t pte)
  {
- 	/*
-@@ -548,6 +550,8 @@ static void free_huge_page(struct page *page)
- 		h->surplus_huge_pages_node[nid]--;
- 	} else {
- 		enqueue_huge_page(h, page);
-+		if (unlikely(PageHWPoison(page)))
-+			__dequeue_hwpoisoned_huge_page(page, h);
- 	}
- 	spin_unlock(&hugetlb_lock);
- 	if (mapping)
-@@ -2932,17 +2936,11 @@ static int is_hugepage_on_freelist(struct page *hpage)
- 	return 0;
- }
+ 	swp_entry_t swp;
  
--/*
-- * This function is called from memory failure code.
-- * Assume the caller holds page lock of the head page.
-- */
--int dequeue_hwpoisoned_huge_page(struct page *hpage)
-+static int __dequeue_hwpoisoned_huge_page(struct page *hpage, struct hstate *h)
- {
--	struct hstate *h = page_hstate(hpage);
- 	int nid = page_to_nid(hpage);
- 	int ret = -EBUSY;
- 
--	spin_lock(&hugetlb_lock);
- 	if (is_hugepage_on_freelist(hpage)) {
- 		list_del(&hpage->lru);
- 		set_page_refcounted(hpage);
-@@ -2950,6 +2948,22 @@ int dequeue_hwpoisoned_huge_page(struct page *hpage)
- 		h->free_huge_pages_node[nid]--;
- 		ret = 0;
- 	}
-+	return ret;
-+}
-+
-+/*
-+ * This function is called from memory failure code.
-+ * Assume the caller holds page lock of the head page.
-+ */
-+int dequeue_hwpoisoned_huge_page(struct page *hpage)
-+{
-+	struct hstate *h = page_hstate(hpage);
-+	int ret;
-+
-+	if (!h)
-+		return 0;
-+	spin_lock(&hugetlb_lock);
-+	ret = __dequeue_hwpoisoned_huge_page(hpage, h);
- 	spin_unlock(&hugetlb_lock);
- 	return ret;
+@@ -2197,6 +2198,7 @@ static int is_hugetlb_entry_hwpoisoned(pte_t pte)
+ 	} else
+ 		return 0;
  }
++#endif
+ 
+ void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
+ 			    unsigned long end, struct page *ref_page)
+diff --git v2.6.38-rc1/mm/memory-failure.c v2.6.38-rc1/mm/memory-failure.c
+index eed1846..8ee5038 100644
+--- v2.6.38-rc1/mm/memory-failure.c
++++ v2.6.38-rc1/mm/memory-failure.c
+@@ -1461,7 +1461,7 @@ int is_hwpoison_address(unsigned long addr)
+ 	pmdp = pmd_offset(pudp, addr);
+ 	pmd = *pmdp;
+ 	if (!pmd_present(pmd) || pmd_large(pmd))
+-		return 0;
++		return is_hugetlb_entry_hwpoisoned(*(pte_t *)pmdp);
+ 	ptep = pte_offset_map(pmdp, addr);
+ 	pte = *ptep;
+ 	pte_unmap(ptep);
 -- 
 1.7.3.4
 
