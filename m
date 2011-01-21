@@ -1,98 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab1AUPs3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 10:48:29 -0500
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:60265 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752070Ab1AUPs1 (ORCPT
+	id S1752143Ab1AUPsj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 10:48:39 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:49301 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753463Ab1AUPsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 10:48:27 -0500
-From: "Unrein, Jason" <Jason.Unrein@lsi.com>
-To: "purpleidea@gmail.com" <purpleidea@gmail.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-CC: scsi <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        DL-MPT Fusion Linux <DL-MPTFusionLinux@lsi.com>
-Date: Fri, 21 Jan 2011 08:47:23 -0700
-Subject: RE: Status of the LSI 2108
-Thread-Topic: Status of the LSI 2108
-Thread-Index: Acu4/dPMqmBFQfx+QYmsdf884mWrhQAgvLng
-Message-ID: <D41A5B864986B546A595D85C4701A9C001023A5A4E@cosmail03.lsi.com>
-References: <1295411153.20086.81.camel@localhost>
-	 <20110120153419.806d38e1.rdunlap@xenotime.net>
- <1295567826.20086.89.camel@localhost>
-In-Reply-To: <1295567826.20086.89.camel@localhost>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Fri, 21 Jan 2011 10:48:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=oIt7UKxAiSSChrr9eICG9fyHyYr1p6pmG8qyZx/ftUoTf7gvtaTDbMcOqRsuFD3+BV
+         kJm7p84fRnfodNRuwSMlr5oMwWyMhOt2Zsrhx0zRr0DhRWbSMpILbooWYaqZyDPLqcFR
+         e8eGINdEAjN3upIr96+sbjRZ8HgGL//WceQ3E=
+Date: Fri, 21 Jan 2011 16:48:31 +0100
+From: Tejun Heo <tj@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Christoph Lameter <cl@linux.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for
+ this_cpu_cmpxchg_double
+Message-ID: <20110121154831.GE2832@htj.dyndns.org>
+References: <20110106204513.669098445@linux.com>
+ <20110106204525.222395863@linux.com>
+ <4D263C91.30709@zytor.com>
+ <alpine.DEB.2.00.1101070907060.3014@router.home>
+ <20110107180419.GB23082@Krystal>
+ <alpine.DEB.2.00.1101071227450.3014@router.home>
+ <20110108172453.GF13269@mtj.dyndns.org>
+ <4D393636.4040607@cs.helsinki.fi>
+ <20110121092649.GA2832@htj.dyndns.org>
+ <4D39A6EB.70705@zytor.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D39A6EB.70705@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p0LFmgog011836
 
-The latest vanilla kernel should have support for all of our second generation sas HBAs (6gb/s capable).  If there are any problems you can always download an updated driver from the www.lsi.com website.  
+Hello, Peter.
 
-The Supermicro ftp site you sent is actually for our counterpart in LSI, Megaraid.  Since they run a different firmware, they have a different driver in the kernel (megaraid_sas) where as ours are mptlinux (Gen1, 3.0gb/s), mpt2sas (Gen2), mpt2sasbtm (Gen2 but for older 2.6 kernels).  We both use the same chip so Supermicro might be making it a little confusing.  You might see if they reference the chip as a Megaraid chip in any way or if it is always an LSI chip. It is possible to run it in both modes if all the hardware components are there.
+On Fri, Jan 21, 2011 at 07:31:55AM -0800, H. Peter Anvin wrote:
+> I really object to passing two pointers where one of them has to be a
+> fixed offset to the other.  That really doesn't make any sense.
 
-It would probably be best to email Supermicro and get the details from them about the chip to confirm what you need.
+Yeah, I hear you, but it really comes down to which ugliness disgusts
+one the most.  That, unfortunately, is inherently very subjective when
+there's no significantly better choice.
 
------Original Message-----
-From: James Shubin [mailto:purpleidea@gmail.com] 
-Sent: Thursday, January 20, 2011 5:57 PM
-To: Randy Dunlap
-Cc: scsi; linux-kernel@vger.kernel.org; DL-MPT Fusion Linux
-Subject: Re: Status of the LSI 2108
+For me, the double parameter thing at least seems to have the
+advantages of being able to verify the two intended memory locations
+to be used actually are together and looking ugly reflecting its true
+nature.
 
-Thanks Randy for sending me in the right direction.
-Hello linux-scsi and LSI. Any thoughts to the below question would be
-much appreciated!
+The inherent ugliness stems from the fact that we don't have the
+built-in data type to properly deal with this.  Array of length two
+might be better fit, but I can see as many downsides with that too.
 
-James
+So, if anyone can give something clearly better for technical reasons,
+I'll be more than happy to take it, but as it currently stands, it
+seems we'll have to choose one among uglies and not everyone would be
+happy about the choice.  :-(
 
+Thanks.
 
-On Thu, 2011-01-20 at 15:34 -0800, Randy Dunlap wrote:
-> On Tue, 18 Jan 2011 23:25:53 -0500 James Shubin wrote:
-> 
-> > Hi,
-> > 
-> > I've been trying to find out if the LSI 2108 is fully supported in the
-> > vanilla kernel, and any thoughts as to the quality/robustness.
-> > 
-> > This seems to be the correct source:
-> > ftp://ftp.supermicro.nl/driver/SAS/LSI/2108/Driver/Linux/v04.31/
-> > however I'm not sure at all if it's maintained, or what. I would
-> > outright test this myself, however I haven't bought the servers yet
-> > 
-> > Thanks for your help,
-> > Please cc-me on replies.
-> 
-> Hi,
-> 
-> Probably better to ask on the linux-scsi mailing list [added].
-> Also added the lsi.com email address.
-> 
-> 
-> drivers/scsi/mpt2sas/mpt2sas_scsih.c contains this:
-> 
-> 	/* Liberator ~ 2108 */
-> 	{ MPI2_MFGPAGE_VENDORID_LSI, MPI2_MFGPAGE_DEVID_SAS2108_1,
-> 		PCI_ANY_ID, PCI_ANY_ID },
-> 	{ MPI2_MFGPAGE_VENDORID_LSI, MPI2_MFGPAGE_DEVID_SAS2108_2,
-> 		PCI_ANY_ID, PCI_ANY_ID },
-> 	{ MPI2_MFGPAGE_VENDORID_LSI, MPI2_MFGPAGE_DEVID_SAS2108_3,
-> 		PCI_ANY_ID, PCI_ANY_ID },
-> 
-> so it looks like there is at least some basic support for the 2108.
-> 
-> 
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+tejun
