@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753268Ab1AUAHT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 19:07:19 -0500
-Received: from tundra.namei.org ([65.99.196.166]:53583 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752356Ab1AUAHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 19:07:18 -0500
-Date: Fri, 21 Jan 2011 11:07:13 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Davidlohr Bueso <dave@gnu.org>
-cc: Stephen Smalley <sds@tycho.nsa.gov>, Eric Paris <eparis@parisplace.org>,
-        LKML <linux-kernel@vger.kernel.org>, selinux@tycho.nsa.gov
-Subject: Re: [PATCH 1/3] selinux: return -ENOMEM when memory allocation
- fails
-In-Reply-To: <1295548318.2089.11.camel@offworld>
-Message-ID: <alpine.LRH.2.00.1101211101150.14355@tundra.namei.org>
-References: <1295548318.2089.11.camel@offworld>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753392Ab1AUAIF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 19:08:05 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54702 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752700Ab1AUAID (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 19:08:03 -0500
+Date: Thu, 20 Jan 2011 16:07:16 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mike Travis <travis@sgi.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Len Brown <len.brown@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Jack Steiner <steiner@sgi.com>, Robin Holt <holt@sgi.com>,
+        Lori Gilbertson <loriann@sgi.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 1/6] printk: Allocate kernel log buffer earlier
+Message-Id: <20110120160716.d65c308b.akpm@linux-foundation.org>
+In-Reply-To: <4D38CB72.2060503@sgi.com>
+References: <20110119230106.341785959@gulag1.americas.sgi.com>
+	<20110119230106.527741713@gulag1.americas.sgi.com>
+	<20110120155021.c39387c3.akpm@linux-foundation.org>
+	<4D38CB72.2060503@sgi.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jan 2011, Davidlohr Bueso wrote:
+On Thu, 20 Jan 2011 15:55:30 -0800
+Mike Travis <travis@sgi.com> wrote:
 
-> From: Davidlohr Bueso <dave@gnu.org>
+> If I have:
 > 
-> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-> ---
->  security/selinux/ss/conditional.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> void __init setup(void)
+> {
+> 	static int data;
+> ...
 > 
-> diff --git a/security/selinux/ss/conditional.c b/security/selinux/ss/conditional.c
-> index c3f845c..a533732 100644
-> --- a/security/selinux/ss/conditional.c
-> +++ b/security/selinux/ss/conditional.c
-> @@ -178,7 +178,7 @@ int cond_init_bool_indexes(struct policydb *p)
->  	p->bool_val_to_struct = (struct cond_bool_datum **)
->  		kmalloc(p->p_bools.nprim * sizeof(struct cond_bool_datum *), GFP_KERNEL);
->  	if (!p->bool_val_to_struct)
-> -		return -1;
-> +		return -ENOMEM;
->  	return 0;
+> Does data automatically get put into the initdata section?  Or does
+> it need the __initdata tag as well?
 
-The caller has already set -ENOMEM, so the code should probably be updated 
-there, too, e.g.
+It needs __initdata.  gcc doesn't know that __init and __initdata are
+related things - as far as the compiler is concerned, they're all just
+sections.
 
-	rc = cond_init_bool_indexes();
-	if (rc)
-		goto out;
-
-
-
--- 
-James Morris
-<jmorris@namei.org>
