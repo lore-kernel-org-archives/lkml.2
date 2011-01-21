@@ -1,119 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211Ab1AUQAm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 11:00:42 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60611 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733Ab1AUQAT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 11:00:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=jny1NuDAMRejxfbrbt35e4u8Pu7bOWBue5z3PYGJ7paO0/IlJ3Xyb2vqtJzkc+DJX6
-         1tShBqKzeYqLP3T6E8QzyVTKpuN5B7yJY04GOUI2PCdyuqmKTf5kfQIwqgApJ62i4z3Z
-         w/eMkaxMg4612xcyp/Es5KIxeep3Y32XoTuMQ=
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk, tytso@mit.edu, djwong@us.ibm.com, shli@kernel.org,
-        neilb@suse.de, adilger.kernel@dilger.ca, jack@suse.cz,
-        snitzer@redhat.com, linux-kernel@vger.kernel.org, kmannth@us.ibm.com,
-        cmm@us.ibm.com, linux-ext4@vger.kernel.org, rwheeler@redhat.com,
-        hch@lst.de, josef@redhat.com
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/3] block: add REQ_FLUSH_SEQ
-Date: Fri, 21 Jan 2011 16:59:56 +0100
-Message-Id: <1295625598-15203-2-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1295625598-15203-1-git-send-email-tj@kernel.org>
-References: <1295625598-15203-1-git-send-email-tj@kernel.org>
+	id S1754222Ab1AUQB3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 11:01:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11043 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750817Ab1AUQB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 11:01:27 -0500
+Date: Fri, 21 Jan 2011 16:53:23 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, stern@rowland.harvard.edu,
+        a.p.zijlstra@chello.nl, fweisbec@gmail.com, roland@redhat.com,
+        tglx@linutronix.de, prasad@linux.vnet.ibm.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/urgent] perf: Fix find_get_context() vs
+	perf_event_exit_task() race
+Message-ID: <20110121155323.GA2988@redhat.com>
+References: <20110119182207.GB12183@redhat.com> <tip-dbe08d82ce3967ccdf459f7951d02589cf967300@git.kernel.org> <20110121152939.GA28552@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110121152939.GA28552@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rq == &q->flush_rq was used to determine whether a rq is part of a
-flush sequence, which worked because all requests in a flush sequence
-were sequenced using the single dedicated request.  This is about to
-change, so introduce REQ_FLUSH_SEQ flag to distinguish flush sequence
-requests.
+On 01/21, Ingo Molnar wrote:
+>
+> * tip-bot for Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > @@ -6127,7 +6133,7 @@ static void perf_event_exit_task_context(struct task_struct *child, int ctxn)
+> >  	 * scheduled, so we are now safe from rescheduling changing
+> >  	 * our context.
+> >  	 */
+> > -	child_ctx = child->perf_event_ctxp[ctxn];
+> > +	child_ctx = rcu_dereference(child->perf_event_ctxp[ctxn]);
+> >  	task_ctx_sched_out(child_ctx, EVENT_ALL);
+> >
+> >  	/*
+>
+> hm, this one's causing:
+>
+>  [   25.557579] ===================================================
+>  [   25.561361] [ INFO: suspicious rcu_dereference_check() usage. ]
 
-This patch doesn't cause any behavior change.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- block/blk-core.c          |    4 ++--
- block/blk-flush.c         |    1 +
- block/blk.h               |    2 +-
- include/linux/blk_types.h |    2 ++
- 4 files changed, 6 insertions(+), 3 deletions(-)
+Oh, indeed, I am stupid!
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 2f4002f..22e0b4f 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -151,7 +151,7 @@ static void req_bio_endio(struct request *rq, struct bio *bio,
- {
- 	struct request_queue *q = rq->q;
- 
--	if (&q->flush_rq != rq) {
-+	if (!(rq->cmd_flags & REQ_FLUSH_SEQ)) {
- 		if (error)
- 			clear_bit(BIO_UPTODATE, &bio->bi_flags);
- 		else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
-@@ -1804,7 +1804,7 @@ static void blk_account_io_done(struct request *req)
- 	 * normal IO on queueing nor completion.  Accounting the
- 	 * containing request is enough.
- 	 */
--	if (blk_do_io_stat(req) && req != &req->q->flush_rq) {
-+	if (blk_do_io_stat(req) && !(req->cmd_flags & REQ_FLUSH_SEQ)) {
- 		unsigned long duration = jiffies - req->start_time;
- 		const int rw = rq_data_dir(req);
- 		struct hd_struct *part;
-diff --git a/block/blk-flush.c b/block/blk-flush.c
-index 54b123d..8592869 100644
---- a/block/blk-flush.c
-+++ b/block/blk-flush.c
-@@ -130,6 +130,7 @@ static struct request *queue_next_fseq(struct request_queue *q)
- 		BUG();
- 	}
- 
-+	rq->cmd_flags |= REQ_FLUSH_SEQ;
- 	elv_insert(q, rq, ELEVATOR_INSERT_FRONT);
- 	return rq;
- }
-diff --git a/block/blk.h b/block/blk.h
-index 2db8f32..9d2ee8f 100644
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -61,7 +61,7 @@ static inline struct request *__elv_next_request(struct request_queue *q)
- 		while (!list_empty(&q->queue_head)) {
- 			rq = list_entry_rq(q->queue_head.next);
- 			if (!(rq->cmd_flags & (REQ_FLUSH | REQ_FUA)) ||
--			    rq == &q->flush_rq)
-+			    (rq->cmd_flags & REQ_FLUSH_SEQ))
- 				return rq;
- 			rq = blk_do_flush(q, rq);
- 			if (rq)
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 46ad519..dddedfc 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -148,6 +148,7 @@ enum rq_flag_bits {
- 	__REQ_ALLOCED,		/* request came from our alloc pool */
- 	__REQ_COPY_USER,	/* contains copies of user pages */
- 	__REQ_FLUSH,		/* request for cache flush */
-+	__REQ_FLUSH_SEQ,	/* request for flush sequence */
- 	__REQ_IO_STAT,		/* account I/O stat */
- 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
- 	__REQ_SECURE,		/* secure discard (used with __REQ_DISCARD) */
-@@ -188,6 +189,7 @@ enum rq_flag_bits {
- #define REQ_ALLOCED		(1 << __REQ_ALLOCED)
- #define REQ_COPY_USER		(1 << __REQ_COPY_USER)
- #define REQ_FLUSH		(1 << __REQ_FLUSH)
-+#define REQ_FLUSH_SEQ		(1 << __REQ_FLUSH_SEQ)
- #define REQ_IO_STAT		(1 << __REQ_IO_STAT)
- #define REQ_MIXED_MERGE		(1 << __REQ_MIXED_MERGE)
- #define REQ_SECURE		(1 << __REQ_SECURE)
--- 
-1.7.1
+I added rcu_dereference() because it has smp_read_barrier_depends(),
+but I forgot about rcu_dereference_check().
+
+I'll send the fix soon...
+
+Oleg.
 
