@@ -1,91 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab1AUSEq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 13:04:46 -0500
-Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:46890 "HELO
-	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753824Ab1AUSEo (ORCPT
+	id S1754765Ab1AUSFb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 13:05:31 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64630 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753824Ab1AUSFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 13:04:44 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=QfxxbDR5JU67CeuV5fty9uPdESsFEkIBr/r+X4KuR1uAn6B7fRtHzzPinaz8XmgLhJN0Y6UVFgN19FwDzW4e10WSfJsJ8LIAFxU98UMW53hkKEYYL/lWHVW/yXWaJi2Y;
-Date: Fri, 21 Jan 2011 10:04:41 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: Joe Perches <joe@perches.com>, Dima Zavin <dmitriyz@google.com>,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, davidb@codeaurora.org
-Subject: Re: [PATCH 0/7] Nexus One Support
-Message-ID: <20110121100441.06a94482@jbarnes-desktop>
-In-Reply-To: <1295632828.19880.22.camel@m0nster>
-References: <1295555565-21563-1-git-send-email-dwalker@codeaurora.org>
-	<AANLkTik+HCj9dkD2s4WgwCqKWCXDbdSnKDUbyGfYfaPr@mail.gmail.com>
-	<1295571359.9236.53.camel@m0nster>
-	<1295574085.4096.6.camel@Joe-Laptop>
-	<1295575123.9236.54.camel@m0nster>
-	<1295576730.4096.24.camel@Joe-Laptop>
-	<1295624801.19880.13.camel@m0nster>
-	<20110121094827.41818a55@jbarnes-desktop>
-	<20110121095658.1ab623fe@jbarnes-desktop>
-	<1295632828.19880.22.camel@m0nster>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 21 Jan 2011 13:05:30 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=drdald6eqTGd/FhFhEY67R10JixL9P8ays66aivT6jDM8ndc1DYC5n8NToxclB0yiY
+         oJvwnxI7N5PRIN3RwE91yO62YmriXDkGmNp7R1U4Z37oH4uaW641AUAZ7StLjBkJnV45
+         JGVM4dkfI6NiHpuX3MPTQwFs36AihETY8yEaQ=
+From: Marek Vasut <marek.vasut@gmail.com>
+To: Axel Lin <axel.lin@gmail.com>
+Subject: Re: [PATCH] video: pxa168fb: remove a redundant pxa168fb_check_var call
+Date: Fri, 21 Jan 2011 19:07:07 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-trunk-amd64; KDE/4.4.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        linux-arm-kernel@lists.infradead.org
+References: <1295608686.3976.9.camel@phoenix>
+In-Reply-To: <1295608686.3976.9.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+Message-Id: <201101211907.07386.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Jan 2011 10:00:28 -0800
-Daniel Walker <dwalker@codeaurora.org> wrote:
-
-> On Fri, 2011-01-21 at 09:56 -0800, Jesse Barnes wrote:
-> > On Fri, 21 Jan 2011 09:48:27 -0800
-> > Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> > 
-> > > On Fri, 21 Jan 2011 07:46:41 -0800
-> > > Daniel Walker <dwalker@codeaurora.org> wrote:
-> > > > This isn't what's happening tho. In maintainer land if someone forwards
-> > > > you a patch then you leave the original author on the patch. They wrote
-> > > > the patch and your just forwarding it on up the ladder. This isn't the
-> > > > case with these patches.. I crafted each of the commit I have authorship
-> > > > on, no one forwarded those commits to me. I'm not taking authorship
-> > > > credit for any thing I didn't create, although I an giving credit to the
-> > > > place which gave me the raw material which was Google. From my
-> > > > experience this is how it's done in Linux ..
-> > > 
-> > > I don't know why you're even trying to defend this, just admit you were
-> > > wrong and move on.
-> > > 
-> > > Trying to claim the author field for these patches for yourself is both
-> > > misleading and vain.  You did not write the code and are therefore not
-> > > the author, trying to conflate the author and commit fields in this way
-> > > is so misguided I thought you must be trolling when I first saw this
-> > > thread.
-> > > 
-> > > This is not "how it's done in Linux" at all.  In this case you're
-> > > trying to act like a maintainer by collecting patches and forwarding
-> > > them upstream, so you need to preserve authorship and the s-o-b chain.
-> > > If you want to take responsibility for the code going forward, great,
-> > > but don't pollute the logs with bogus author fields that imply you
-> > > wrote the stuff in the first place.
-> > 
-> > That said, if you did significant work on these before committing them,
-> > then you're right and I'm wrong.  It *is* fairly common for committers
-> > to change things; and if the changes are significant enough, they claim
-> > authorship and note the original author in the changelog.
-> > 
-> > So if that's the case here, I apologize, but I didn't see that
-> > explained in any part of the thread I read.
+On Friday 21 January 2011 12:18:06 Axel Lin wrote:
+> Current implementation calls pxa168fb_check_var twice in pxa168fb_probe.
 > 
-> I did a significant amount of work to create the commits and series. I'm
-> sorry if that's not clear, but it is in fact true.
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/video/pxa168fb.c |    6 +-----
+>  1 files changed, 1 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/video/pxa168fb.c b/drivers/video/pxa168fb.c
+> index cea6403..35f61dd 100644
+> --- a/drivers/video/pxa168fb.c
+> +++ b/drivers/video/pxa168fb.c
+> @@ -701,16 +701,12 @@ static int __devinit pxa168fb_probe(struct
+> platform_device *pdev) */
+>  	pxa168fb_init_mode(info, mi);
+> 
+> -	ret = pxa168fb_check_var(&info->var, info);
+> -	if (ret)
+> -		goto failed_free_fbmem;
+> -
+>  	/*
+>  	 * Fill in sane defaults.
+>  	 */
+>  	ret = pxa168fb_check_var(&info->var, info);
+>  	if (ret)
+> -		goto failed;
+> +		goto failed_free_fbmem;
+> 
+>  	/*
+>  	 * enable controller clock
 
-Changes to the code or just reordering and merging commits?  If the
-former, then I think Christoph's comment applies, if the latter, I
-think preserving authorship is still the right thing to do.
+Please, don't use the get_maintainers script. This CCs too many people, really. 
+As for pxa168, only CC linux-arm-kernel, Eric, Haojian and that's about it 
+(fixed). Thanks
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+I can't comment on the code, though Haojian, is there any particular reason why 
+the call's twice in there? Maybe some HW quirk or something?
+
+Cheers
