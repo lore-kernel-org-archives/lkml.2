@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab1AUUq3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 15:46:29 -0500
-Received: from kroah.org ([198.145.64.141]:38341 "EHLO coco.kroah.org"
+	id S1753464Ab1AUUqd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 15:46:33 -0500
+Received: from kroah.org ([198.145.64.141]:38344 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752730Ab1AUUq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 15:46:27 -0500
-Date: Fri, 21 Jan 2011 12:38:15 -0800
+	id S1753288Ab1AUUq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 15:46:29 -0500
+Date: Fri, 21 Jan 2011 12:40:13 -0800
 From: Greg KH <greg@kroah.com>
-To: Naveen Kumar G <naveen.gaddipati@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com
-Subject: Re: [PATCH 2/2] staging: synaptics: Implement error hamdling for
- rmi4 touch regulator
-Message-ID: <20110121203815.GA25099@kroah.com>
-References: <1295605236-3031-1-git-send-email-naveen.gaddipati@stericsson.com>
+To: Sutharsan Ramamoorthy <sutharsan.ramamoorthy@yahoo.com>
+Cc: tony@atomide.com, linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-usb@vger.kernel.org, david.cross@cypress.com, srmt@cypress.com
+Subject: Re: Staging: Westbridge: fix EXPORT_SYMBOL errors reported by
+ checkpatch.pl
+Message-ID: <20110121204012.GA28267@kroah.com>
+References: <444938.26253.qm@web121610.mail.ne1.yahoo.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1295605236-3031-1-git-send-email-naveen.gaddipati@stericsson.com>
+In-Reply-To: <444938.26253.qm@web121610.mail.ne1.yahoo.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 03:50:36PM +0530, Naveen Kumar G wrote:
-> From: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+On Wed, Jan 19, 2011 at 05:31:46PM -0800, Sutharsan Ramamoorthy wrote:
+> From: Sutharsan Ramamoorthy <srmt@cypress.com>
 > 
-> Implement the error handling for regulator in synaptics
-> rmi4 touch screen
+> This patch fixes errors in westbridge device controller driver in the 
+> staging tree reported by checkpatch.pl. File containing EXPORT_SYMBOL() 
+> macros for all the APIs exported by the westbridge software has been removed. EXPORT_SYMBOL() macros are added after the corresponding function definitions.
 > 
-> Signed-off-by: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+> Signed-off-by: Sutharsan Ramamoorthy <srmt@cypress.com>
 
-This patch has some fuzz and doesn't apply correctly.  Care to rediff it
-and resend it?
+This patch is corrupted and can't be applied.  Perhaps it's due to the
+mime encoding?
+
+Anyway, care to fix your email client and resend it so that I can apply
+it?
 
 thanks,
 
