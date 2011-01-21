@@ -1,78 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab1AUHXX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 02:23:23 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:37971 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750872Ab1AUHXW (ORCPT
+	id S1752519Ab1AUHXz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 02:23:55 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:39742 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750872Ab1AUHXy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 02:23:22 -0500
-Date: Fri, 21 Jan 2011 12:53:15 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kosaki.motohiro@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [REPOST] [PATCH 3/3] Provide control over unmapped pages (v3)
-Message-ID: <20110121072315.GL2897@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20110120123039.30481.81151.stgit@localhost6.localdomain6>
- <20110120123649.30481.93286.stgit@localhost6.localdomain6>
- <alpine.DEB.2.00.1101200856310.10695@router.home>
+	Fri, 21 Jan 2011 02:23:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Ox9aIVWdXIm4QEdXHDlVEgC5VgNX83GRJ8wEvW50aXdeAzG6a4zDw618Rus//y38S/
+         Ry/qF0OlBW80kOmUhrUvjRh++YP6/gBUDa6b5m7oXB14r/IQCuSpEJOzVp7Cmu49j6pB
+         uOY86FtLd52L4BgnuEX6pRxSBvXEivRLW2RHY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1101200856310.10695@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1295402148.4773.143.camel@debian>
+References: <1295402148.4773.143.camel@debian>
+Date: Fri, 21 Jan 2011 08:23:53 +0100
+Message-ID: <AANLkTin6M=tX+NZGstP-ZG9uSQ487XisRpMKKVKHYnQ5@mail.gmail.com>
+Subject: Re: [performance bug] kernel building regression on 64 LCPUs machine
+From: Corrado Zoccolo <czoccolo@gmail.com>
+To: "Alex,Shi" <alex.shi@intel.com>
+Cc: vgoyal@redhat.com, jaxboe@fusionio.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Li, Shaohua" <shaohua.li@intel.com>,
+        "Chen, Tim C" <tim.c.chen@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Christoph Lameter <cl@linux.com> [2011-01-20 09:00:09]:
+On Wed, Jan 19, 2011 at 2:55 AM, Alex,Shi <alex.shi@intel.com> wrote:
+> Shaohua and I tested kernel building performance on latest kernel. and
+> found it is drop about 15% on our 64 LCPUs NHM-EX machine on ext4 file
+> system. We find this performance dropping is due to commit
+> 749ef9f8423054e326f. If we revert this patch or just change the
+> WRITE_SYNC back to WRITE in jbd2/commit.c file. the performance can be
+> recovered.
+>
+> iostat report show with the commit, read request merge number increased
+> and write request merge dropped. The total request size increased and
+> queue length dropped. So we tested another patch: only change WRITE_SYNC
+> to WRITE_SYNC_PLUG in jbd2/commit.c, but nothing effected.
+>
+> we didn't test deadline IO mode, just test cfq. seems insert write
+> request into sync queue effect much read performance, but we don't know
+> details. What's your comments of this?
+>
+> iostat of .37 kernel:
+> rrqm/s   wrqm/s r/s     w/s     rMB/s  wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+> 22.5772 96.46 92.3742 14.747  1.0048  0.439474 34.8557 0.18078 3.8076 0.30447 2.94302
+> iostat of commit reverted .37:
+> 26.6223 80.21 107.875 6.03538 1.51415 0 41.3275 0.153385 3.80569 0.377231 3.22323
 
-> On Thu, 20 Jan 2011, Balbir Singh wrote:
-> 
-> > +	unmapped_page_control
-> > +			[KNL] Available if CONFIG_UNMAPPED_PAGECACHE_CONTROL
-> > +			is enabled. It controls the amount of unmapped memory
-> > +			that is present in the system. This boot option plus
-> > +			vm.min_unmapped_ratio (sysctl) provide granular control
-> 
-> min_unmapped_ratio is there to guarantee that zone reclaim does not
-> reclaim all unmapped pages.
-> 
-> What you want here is a max_unmapped_ratio.
+>From these numbers, it seems to me that with the patch reverted, the
+write bandwidth is really low, and probably you are keeping most
+written files in the buffer cache during the whole compile, while the
+non-reverted kernel is making progress in writing out the files. So
+the 'improved' read bandwidth is due to unfairness w.r.t. writes.
+Does the result change if you add a final sync and time that as well,
+in order to see the full time to make it on disk?
+
+I think that in a more extreme test where you end up filling all the
+buffer cache with written data, you will see much longer stalls with
+the revert than without.
+
+Thanks,
+Corrado
+
+>
+> vmstat report show, read bandwidth dropping:
+> vmstat of .37:
+>  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+> 3.4 52.6 0.0 64303937.0 16466.7 121544.5 0.0 0.0 2102.7 1914.6 7414.1 3185.7 2.0 1.0 80.3 16.7 0.0
+> vmstat of revert all from .37
+> 2.2 35.8 0.0 64306767.4 17265.6 126101.2 0.0 0.0 2415.8 1619.1 8532.2 3556.2 2.5 1.1 83.0 13.3 0.0
+>
+> Regards
+> Alex
+>
+> ===
+> diff --git a/fs/jbd/commit.c b/fs/jbd/commit.c
+> index 34a4861..27ac2f3 100644
+> --- a/fs/jbd/commit.c
+> +++ b/fs/jbd/commit.c
+> @@ -294,7 +294,7 @@ void journal_commit_transaction(journal_t *journal)
+>        int first_tag = 0;
+>        int tag_flag;
+>        int i;
+> -       int write_op = WRITE_SYNC;
+> +       int write_op = WRITE;
+>
+>        /*
+>         * First job: lock down the current transaction and wait for
+> diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
+> index f3ad159..69ff08e 100644
+> --- a/fs/jbd2/commit.c
+> +++ b/fs/jbd2/commit.c
+> @@ -329,7 +329,7 @@ void jbd2_journal_commit_transaction(journal_t *journal)
+>        int tag_bytes = journal_tag_bytes(journal);
+>        struct buffer_head *cbh = NULL; /* For transactional checksums */
+>        __u32 crc32_sum = ~0;
+> -       int write_op = WRITE_SYNC;
+> +       int write_op = WRITE;
+>
+>        /*
+>         * First job: lock down the current transaction and wait for
+>
+>
 >
 
-I thought about that, the logic for reusing min_unmapped_ratio was to
-keep a limit beyond which unmapped page cache shrinking should stop.
-I think you are suggesting max_unmapped_ratio as the point at which
-shrinking should begin, right?
- 
-> 
-> >  {
-> > @@ -2297,6 +2320,12 @@ loop_again:
-> >  				shrink_active_list(SWAP_CLUSTER_MAX, zone,
-> >  							&sc, priority, 0);
-> >
-> > +			/*
-> > +			 * We do unmapped page reclaim once here and once
-> > +			 * below, so that we don't lose out
-> > +			 */
-> > +			reclaim_unmapped_pages(priority, zone, &sc);
-> > +
-> >  			if (!zone_watermark_ok_safe(zone, order,
-> 
-> Hmmmm. Okay that means background reclaim does it. If so then we also want
-> zone reclaim to be able to work in the background I think.
 
-Anything specific you had in mind, works for me in testing, but is
-there anything specific that stands out in your mind that needs to be
-done?
-
-Thanks for the review!
- 
 
 -- 
-	Three Cheers,
-	Balbir
+__________________________________________________________________________
+
+dott. Corrado Zoccolo                          mailto:czoccolo@gmail.com
+PhD - Department of Computer Science - University of Pisa, Italy
+--------------------------------------------------------------------------
+The self-confidence of a warrior is not the self-confidence of the average
+man. The average man seeks certainty in the eyes of the onlooker and calls
+that self-confidence. The warrior seeks impeccability in his own eyes and
+calls that humbleness.
+                               Tales of Power - C. Castaneda
