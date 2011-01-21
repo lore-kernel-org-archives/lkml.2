@@ -1,3233 +1,495 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab1AUHok (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 02:44:40 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:19716 "EHLO
+	id S1754039Ab1AUHpJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 02:45:09 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:57576 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750872Ab1AUHoh (ORCPT
+	with ESMTP id S1750882Ab1AUHpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 02:44:37 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6232"; a="71349360"
+	Fri, 21 Jan 2011 02:45:06 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6232"; a="71349491"
 From: Tatyana Brokhman <tlinder@codeaurora.org>
 To: gregkh@suse.de
 Cc: linux-arm-msm@vger.kernel.org, Tatyana Brokhman <tlinder@codeaurora.org>,
         linux-usb@vger.kernel.org (open list:USB GADGET/PERIPH...),
         linux-kernel@vger.kernel.org (open list)
-Subject: [RFC/PATCH 1/4] uasp: MS UAS Protocol implementation - Infrastructure
-Date: Fri, 21 Jan 2011 09:44:13 +0200
-Message-Id: <1295595854-23232-1-git-send-email-tlinder@codeaurora.org>
+Subject: [RFC/PATCH 2/4] uasp: COMMAND IU handling infrastructure
+Date: Fri, 21 Jan 2011 09:44:52 +0200
+Message-Id: <1295595893-23267-1-git-send-email-tlinder@codeaurora.org>
 X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements the infrastructure for the UASP function driver.
-The UASP Function driver registers as a second configuration of the MS
-Function driver.
-
-A new module parameter was added to the mass_storage module:
-bool use_uasp. (default = 0)
-If this parameter is set to true, the mass_storage module will register
-with the UASP configuration as the devices first configuration and
-operate according to the UAS protocol.
-
-The number of buffers used by the mass_storage device was increased to 4
-since UASP uses 4 endpoints instead of 2 used by the BOT protocol
-(implemented by f_mass_storage.c)
-
-It defines the API for COMMAND/TASK MANAGEMENT IU implementation.
+This patch defines APIs for different COMMAND IUs implementation
 
 Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
 ---
- drivers/usb/gadget/f_mass_storage.c |   28 +-
- drivers/usb/gadget/f_uasp.c         | 2398 +++++++++++++++++++++++++++++++++++
- drivers/usb/gadget/f_uasp.h         |  414 ++++++
- drivers/usb/gadget/mass_storage.c   |   67 +-
- drivers/usb/gadget/storage_common.c |    3 +-
- drivers/usb/gadget/uasp_cmdiu.c     |   91 ++
- drivers/usb/gadget/uasp_tmiu.c      |   61 +
- 7 files changed, 3043 insertions(+), 19 deletions(-)
- create mode 100644 drivers/usb/gadget/f_uasp.c
- create mode 100644 drivers/usb/gadget/f_uasp.h
- create mode 100644 drivers/usb/gadget/uasp_cmdiu.c
- create mode 100644 drivers/usb/gadget/uasp_tmiu.c
+ drivers/usb/gadget/uasp_cmdiu.c |  436 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 436 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index 07a524e..96dbb9d 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -2741,7 +2741,8 @@ static inline void fsg_common_put(struct fsg_common *common)
- 
- static struct fsg_common *fsg_common_init(struct fsg_common *common,
- 					  struct usb_composite_dev *cdev,
--					  struct fsg_config *cfg)
-+					  struct fsg_config *cfg,
-+					  int start_thread)
- {
- 	struct usb_gadget *gadget = cdev->gadget;
- 	struct fsg_buffhd *bh;
-@@ -2890,12 +2891,14 @@ buffhds_first_it:
- 	kref_init(&common->ref);
- 
- 	/* Tell the thread to start working */
--	common->thread_task =
--		kthread_create(fsg_main_thread, common,
--			       cfg->thread_name ?: "file-storage");
--	if (IS_ERR(common->thread_task)) {
--		rc = PTR_ERR(common->thread_task);
--		goto error_release;
-+	if (start_thread) {
-+		common->thread_task =
-+			kthread_create(fsg_main_thread, common,
-+				       cfg->thread_name ?: "file-storage");
-+		if (IS_ERR(common->thread_task)) {
-+			rc = PTR_ERR(common->thread_task);
-+			goto error_release;
-+		}
- 	}
- 	init_completion(&common->thread_notifier);
- 	init_waitqueue_head(&common->fsg_wait);
-@@ -2926,10 +2929,11 @@ buffhds_first_it:
- 	}
- 	kfree(pathbuf);
- 
--	DBG(common, "I/O thread pid: %d\n", task_pid_nr(common->thread_task));
--
--	wake_up_process(common->thread_task);
--
-+	if (start_thread) {
-+		DBG(common, "I/O thread pid: %d\n",
-+		    task_pid_nr(common->thread_task));
-+		wake_up_process(common->thread_task);
-+	}
- 	return common;
- 
- error_luns:
-@@ -3197,6 +3201,6 @@ fsg_common_from_params(struct fsg_common *common,
- {
- 	struct fsg_config cfg;
- 	fsg_config_from_params(&cfg, params);
--	return fsg_common_init(common, cdev, &cfg);
-+	return fsg_common_init(common, cdev, &cfg, 1);
- }
- 
-diff --git a/drivers/usb/gadget/f_uasp.c b/drivers/usb/gadget/f_uasp.c
-new file mode 100644
-index 0000000..a0d878f
---- /dev/null
-+++ b/drivers/usb/gadget/f_uasp.c
-@@ -0,0 +1,2398 @@
-+/*
-+ * f_uasp.c -- Mass Storage USB UASP Composite Function
-+ *
-+ * Copyright (C) 2003-2005 Alan Stern
-+ * Copyright (C) 2011 Code Aurora Forum.
-+ * All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+/*
-+ *  The UASP Function acts as a USB Mass Storage device, appearing to the
-+ * host as a disk drive or as a CD-ROM drive. In contrary to
-+ * f_mass_storage function that implements the BOT protocol, the UASP
-+ * function implements the UAS Protocol.
-+ * It's operational both in High and Super connection speeds.
-+ * Streaming support depends on the DCD streaming capabilities.
-+ *
-+ * The Function supports multiple logical units (LUNs).  Backing storage
-+ * for each LUN is provided by a regular file or a block device. Access
-+ * for each LUN can be limited to read-only.  Moreover, the function can
-+ * indicate that LUN is removable and/or CD-ROM.  (The later implies
-+ * read-only access.)
-+ *
-+ * Requirements from the system are:
-+ * - 2 bulk-in and 2 bulk-out endpoints are needed.
-+ * - The number of buffers used by the Function depends on whether
-+ *   streaming is supported by the DCD or not. If streaming is not
-+ *   supported then the minimum number of buffers used by the UASP
-+ *   function is 4 - one for each endpoint, when the buffer for the
-+ *   command endpoint is allocated statically and is dedicated to the
-+ *   command endpoint only.
-+ *   If streaming is supported then the number of required buffers
-+ *   equals num_of_streams * 4.
-+ *   The size of each buffer is 16K by default and is configurable
-+ *   by a parameter.
-+ *
-+ * Note that the driver is slightly non-portable in that it assumes that
-+ * the same memory/DMA buffer my be used both for bulk-in and bulk-out
-+ * endpoints. With most device controllers this isn't an issue, but there
-+ * may be some with hardware restrictions that prevent a buffer from being
-+ * used by more than one endpoint.
-+ *
-+ * This function is heavily based on "Mass Storage USB Composite Function" by
-+ * Michal Nazarewicz which is based based on "File-backed Storage Gadget" by
-+ * Alan Stern which in turn is heavily based on "Gadget Zero" by David
-+ * Brownell.  The driver's SCSI command interface was based on the
-+ * "Information technology - Small Computer System Interface - 2"
-+ * document from X3T9.2 Project 375D, Revision 10L, 7-SEP-93,
-+ * available at <http://www.t10.org/ftp/t10/drafts/s2/s2-r10l.pdf>.
-+ * The single exception is opcode 0x23 (READ FORMAT CAPACITIES), which
-+ * was based on the "Universal Serial Bus Mass Storage Class UFI
-+ * Command Specification" document, Revision 1.0, December 14, 1998,
-+ * available at
-+ * <http://www.usb.org/developers/devclass_docs/usbmass-ufi10.pdf>.
-+ */
-+
-+/*
-+ *				Driver Design
-+ *
-+ * The UASP Function driver registers as a second configuration to the
-+ * mass_storage module. In the enumeration if the host wishes to use the
-+ * UAS protocol it sends a SET_CONFIGURATION command and chooses the UASP
-+ * configuration.
-+ * The UASP function driver inherits from the Mass Storage Function
-+ * driver and extends it according to UASP requirements.
-+ *
-+ * All of the control/status transfers in UASP are performed in form of
-+ * IUs (Information Units. See section 6.2 of the UASP Spec). The
-+ * command/data/status parts of the SCSI protocol are replaced by:
-+ * - command IU / task management IU
-+ * - data phase
-+ * - sense IU / response IU
-+ * Each command / task management is handled by the main thread (if not
-+ * LUN specific) or by the specific LUN thread, if such LUN exists. Each
-+ * of the threads (generic and LUN specific) implements the above
-+ * host/device interaction.
-+ *
-+ * The guiding line through the design was to inherit as much as possible
-+ * from already existing f_mass_storage driver since the UASP protocol
-+ * extends the already existing BOT protocol. Re-using already
-+ * implemented (by the f_mass_storage driver) functions as is wasn't
-+ * always possible and a code duplication was forced. In order to clean
-+ * this up all the SCSI command handling should be taken out to a
-+ * different file both from the UASP driver and from the f_mass_storage
-+ * driver, leaving the later two to handle just the UASP/BOT protocols
-+ * and not the SCSI protocol. By doing so code duplication will be spared.
-+ *
-+ * An alternative design would have been to implement the USP driver from
-+ * scratch, without the inheritance from f_mass_storage. The pros of this
-+ * approach would have been that the existing f_mass_storage driver would
-+ * remain as is (without any modifications whatsoever). On the other hand
-+ * the cons were:
-+ * 1. A separate mechanism would be required to indicate which one of the
-+ *    drivers to load when connecting to a host according to the hosts
-+ *    capability to support UASP. In the chosen approach this decision is
-+ *    left to the host to choose the configuration it wishes to operate
-+ *    in.
-+ * 2. Code/data structures duplication. As already mentioned, the UASP
-+ *    protocol extends the BOT protocol implemented by the f_mass_storage
-+ *    driver, thus the two are similar in their data structures and basic
-+ *    functionality.
-+ * We decided to leave this to a second phase of the development in order
-+ * to leave the existing f_mass_storage driver with as less changes as
-+ * possible.
-+ *
-+ * The handling of command IUs and task management IUs was divided into
-+ * two separate files that are both included by the f_uasp driver.
-+ *
-+ * Several kernel threads are created as part of the init sequence:
-+ * - UASP main thread
-+ * - A thread for each of the existing LUNs
-+ * The UASP main thread handles all of the generic commands/task
-+ * management requests and routes LUN specific requests to be handled by
-+ * the appropriate LUNs task.
-+ * The approach of "task per LUN" was chosen due to the UAS protocol
-+ * enhancement over the BOT protocol. The main retouch of the UAS
-+ * protocol of the BOT protocol is the fact that independent commands can
-+ * be performed in parallel. For example a READ command for two different
-+ * LUNS. Thus in order to implement this concurrency a separate thread is
-+ * needed for each of the existing LUNS.
-+ * As long as the LUN threads are alive they keep an open reference to the
-+ * backing file. This prevents the unmounting of the backing file's
-+ * underlying file system and cause problems during system shutdown.
-+ *
-+ * In the existing f_mass_storage common data structures a single lock is
-+ * used for protecting the state of the driver USB requests handled by it.
-+ * Since a separate thread was created for each LUN, allowing it to handle
-+ * requests addressed to it, the same protection mechanism was required.
-+ * Thus a lock was added to each of the LUNS to protect the LUNs state and
-+ * the IUs (USB requests) handled by that LUN.
-+ *
-+ * Interrupt routines field callbacks from controller driver:
-+ * - bulk-in, bulk-out, command and status request notifications
-+ * - disconnect events
-+ * Completion requests are passed to the appropriate thread by wake up
-+ * calls. Most of the ep0 requests are handled at interrupt time except
-+ * for the following:
-+ * - SetInterface
-+ * - SetConfiguration
-+ * - Device reset
-+ * The above are handled by the main thread and are passed to it in form
-+ * of "exceptions" using SIGUSR1 signal (since they should interrupt any
-+ * ongoing I/O operations).
-+ *
-+ * In normal operation the main thread is created during UASP_bind but
-+ * started only when the UASP configuration is choosen. This is necessary
-+ * since msg main thread is also created during msg_bind but since UASP
-+ * Function inherits from the Mass Storage Function, the running thread
-+ * (UASP or msg) will be saved in a data structure that is shared by UASP
-+ * and msg.
-+ * The main thread is stopped during unbind but can also be stopped when
-+ * it receives a signal. There is no point in leaving the gadget if the
-+ * main thread is dead but this is not implemented yet. Maybe a callback
-+ * function is needed.
-+ *
-+ * To provide maximum throughput the driver uses a circular pipeline of
-+ * buffer heads (struct fsg_buffhd in which each of the buffers is linked
-+ * in a 1:1 connection to an element of struct uasp_buf). Each buffer head
-+ * contains a bulk-in and bulk-out requests and thus can be used both for
-+ * IN and OUT transfers.
-+ * The usage of the pipe line is similar to it's usage by the Mass Storage
-+ * Function.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/fcntl.h>
-+#include <linux/file.h>
-+#include <linux/fs.h>
-+#include <linux/kref.h>
-+#include <linux/kthread.h>
-+#include <linux/string.h>
-+#include <linux/usb/ch9.h>
-+#include <linux/usb/gadget.h>
-+#include <linux/kernel.h>
-+#include <linux/usb/storage.h>
-+
-+#include "uasp_cmdiu.c"
-+#include "uasp_tmiu.c"
-+
-+/* Descriptors */
-+
-+/* There is only one interface. */
-+static struct usb_interface_descriptor
-+uasp_intf_desc = {
-+	.bLength =		sizeof uasp_intf_desc,
-+	.bDescriptorType =	USB_DT_INTERFACE,
-+
-+	.bNumEndpoints =	4,
-+	.bInterfaceClass =	USB_CLASS_MASS_STORAGE,
-+	.bInterfaceSubClass =	USB_SC_SCSI,
-+	.bInterfaceProtocol =	USB_PR_UAS,
-+	.iInterface =		FSG_STRING_INTERFACE,
-+};
-+
-+/* BULK-in pipe descriptors */
-+static struct usb_endpoint_descriptor
-+uasp_bulk_in_desc = {
-+	.bLength =		USB_DT_ENDPOINT_SIZE,
-+	.bDescriptorType =	USB_DT_ENDPOINT,
-+	.bEndpointAddress =	USB_DIR_IN,
-+	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
-+	.wMaxPacketSize =	cpu_to_le16(512),
-+};
-+
-+struct usb_pipe_usage_descriptor
-+uasp_bulk_in_pipe_usg_desc = {
-+	.bLength =		sizeof uasp_bulk_in_pipe_usg_desc,
-+	.bDescriptorType =	USB_DT_PIPE_USAGE,
-+	.bPipeID =		PIPE_ID_DATA_IN,
-+	.Reserved =		0,
-+};
-+
-+struct usb_endpoint_descriptor
-+uasp_ss_bulk_in_desc = {
-+	.bLength =		USB_DT_ENDPOINT_SIZE,
-+	.bDescriptorType =	USB_DT_ENDPOINT,
-+	.bEndpointAddress =	USB_DIR_IN,
-+	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
-+	.wMaxPacketSize =	cpu_to_le16(0x400),
-+};
-+
-+struct usb_ss_ep_comp_descriptor
-+uasp_bulk_in_ep_comp_desc = {
-+	.bLength =		sizeof uasp_bulk_in_ep_comp_desc,
-+	.bDescriptorType =	USB_DT_SS_ENDPOINT_COMP,
-+	.bMaxBurst =		0, /*
-+				    * Doesn't support burst. Maybe update later?
-+				    * Should it be HW dependent?
-+				    */
-+	.bmAttributes =		UASP_BULK_NUM_STREAMS,
-+	.wBytesPerInterval =	0,
-+};
-+
-+/* BULK-out pipe descriptors */
-+struct usb_endpoint_descriptor
-+uasp_bulk_out_desc = {
-+	.bLength =		USB_DT_ENDPOINT_SIZE,
-+	.bDescriptorType =	USB_DT_ENDPOINT,
-+	.bEndpointAddress =	USB_DIR_OUT,
-+	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
-+	.wMaxPacketSize =	cpu_to_le16(512),
-+};
-+
-+struct usb_pipe_usage_descriptor
-+uasp_bulk_out_pipe_usg_desc = {
-+	.bLength =		sizeof uasp_bulk_out_pipe_usg_desc,
-+	.bDescriptorType =	USB_DT_PIPE_USAGE,
-+	.bPipeID =		PIPE_ID_DATA_OUT,
-+	.Reserved =		0,
-+};
-+
-+struct usb_endpoint_descriptor
-+uasp_ss_bulk_out_desc = {
-+	.bLength =		USB_DT_ENDPOINT_SIZE,
-+	.bDescriptorType =	USB_DT_ENDPOINT,
-+	.bEndpointAddress =	USB_DIR_OUT,
-+	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
-+	.wMaxPacketSize =	cpu_to_le16(0x400),
-+};
-+
-+struct usb_ss_ep_comp_descriptor
-+uasp_bulk_out_ep_comp_desc = {
-+	.bLength =		sizeof uasp_bulk_out_ep_comp_desc,
-+	.bDescriptorType =	USB_DT_SS_ENDPOINT_COMP,
-+	.bMaxBurst =		0, /*
-+				    * Doesn't support burst. Maybe update later?
-+				    * Should it be HW dependent?
-+				    */
-+	.bmAttributes =		UASP_BULK_NUM_STREAMS,
-+	.wBytesPerInterval =	0,
-+};
-+
-+/* Status pipe - descriptors */
-+struct usb_endpoint_descriptor
-+uasp_status_in_desc = {
-+	.bLength =		USB_DT_ENDPOINT_SIZE,
-+	.bDescriptorType =	USB_DT_ENDPOINT,
-+	.bEndpointAddress =	USB_DIR_IN,
-+	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
-+	.wMaxPacketSize =	cpu_to_le16(512),
-+};
-+
-+struct usb_pipe_usage_descriptor
-+uasp_status_in_pipe_usg_desc = {
-+	.bLength =		sizeof uasp_status_in_pipe_usg_desc,
-+	.bDescriptorType =	USB_DT_PIPE_USAGE,
-+	.bPipeID =		PIPE_ID_STS,
-+	.Reserved =		0,
-+};
-+
-+struct usb_endpoint_descriptor
-+uasp_ss_status_in_desc = {
-+	.bLength =		USB_DT_ENDPOINT_SIZE,
-+	.bDescriptorType =	USB_DT_ENDPOINT,
-+	.bEndpointAddress =	USB_DIR_IN,
-+	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
-+	.wMaxPacketSize =	cpu_to_le16(0x400),
-+};
-+
-+struct usb_ss_ep_comp_descriptor
-+uasp_status_in_ep_comp_desc = {
-+	.bLength =		sizeof uasp_status_in_ep_comp_desc,
-+	.bDescriptorType =	USB_DT_SS_ENDPOINT_COMP,
-+	.bMaxBurst =		0, /*
-+				    * Doesn't support burst. Maybe update later?
-+				    * Should it be HW dependent?
-+				    */
-+	.bmAttributes =		UASP_BULK_NUM_STREAMS,
-+	.wBytesPerInterval =	0,
-+};
-+
-+/* Command pipe descriptors */
-+struct usb_endpoint_descriptor
-+uasp_command_out_desc = {
-+	.bLength =		USB_DT_ENDPOINT_SIZE,
-+	.bDescriptorType =	USB_DT_ENDPOINT,
-+	.bEndpointAddress =	USB_DIR_OUT,
-+	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
-+	.wMaxPacketSize =	cpu_to_le16(512),
-+};
-+
-+struct usb_pipe_usage_descriptor
-+uasp_command_out_pipe_usg_desc = {
-+	.bLength =		sizeof uasp_command_out_pipe_usg_desc,
-+	.bDescriptorType =	USB_DT_PIPE_USAGE,
-+	.bPipeID =		PIPE_ID_CMD,
-+	.Reserved =		0,
-+};
-+
-+struct usb_endpoint_descriptor
-+uasp_ss_command_out_desc = {
-+	.bLength =		USB_DT_ENDPOINT_SIZE,
-+	.bDescriptorType =	USB_DT_ENDPOINT,
-+	.bEndpointAddress =	USB_DIR_OUT,
-+	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
-+	.wMaxPacketSize =	cpu_to_le16(0x400),
-+};
-+
-+struct usb_ss_ep_comp_descriptor
-+uasp_command_out_ep_comp_desc = {
-+	.bLength =		sizeof uasp_command_out_ep_comp_desc,
-+	.bDescriptorType =	USB_DT_SS_ENDPOINT_COMP,
-+	.bMaxBurst =		0, /*
-+				    * Doesn't support burst. Maybe update later?
-+				    * Should it be HW dependent?
-+				    */
-+	.bmAttributes =		0, /* No streams on command endpoint */
-+	.wBytesPerInterval =	0,
-+};
-+
-+/* HS configuration function descriptors */
-+struct usb_descriptor_header *uasp_hs_function_desc[] = {
-+	(struct usb_descriptor_header *) &uasp_intf_desc,
-+	(struct usb_descriptor_header *) &uasp_bulk_in_desc,
-+	(struct usb_descriptor_header *) &uasp_bulk_in_pipe_usg_desc,
-+	(struct usb_descriptor_header *) &uasp_bulk_out_desc,
-+	(struct usb_descriptor_header *) &uasp_bulk_out_pipe_usg_desc,
-+	(struct usb_descriptor_header *) &uasp_status_in_desc,
-+	(struct usb_descriptor_header *) &uasp_status_in_pipe_usg_desc,
-+	(struct usb_descriptor_header *) &uasp_command_out_desc,
-+	(struct usb_descriptor_header *) &uasp_command_out_pipe_usg_desc,
-+	NULL,
-+};
-+
-+/* SS configuration function descriptors */
-+struct usb_descriptor_header *uasp_ss_function_desc[] = {
-+	(struct usb_descriptor_header *) &uasp_intf_desc,
-+	(struct usb_descriptor_header *) &uasp_ss_bulk_in_desc,
-+	(struct usb_descriptor_header *) &uasp_bulk_in_ep_comp_desc,
-+	(struct usb_descriptor_header *) &uasp_bulk_in_pipe_usg_desc,
-+	(struct usb_descriptor_header *) &uasp_ss_bulk_out_desc,
-+	(struct usb_descriptor_header *) &uasp_bulk_out_ep_comp_desc,
-+	(struct usb_descriptor_header *) &uasp_bulk_out_pipe_usg_desc,
-+	(struct usb_descriptor_header *) &uasp_ss_status_in_desc,
-+	(struct usb_descriptor_header *) &uasp_status_in_ep_comp_desc,
-+	(struct usb_descriptor_header *) &uasp_status_in_pipe_usg_desc,
-+	(struct usb_descriptor_header *) &uasp_ss_command_out_desc,
-+	(struct usb_descriptor_header *) &uasp_command_out_ep_comp_desc,
-+	(struct usb_descriptor_header *) &uasp_command_out_pipe_usg_desc,
-+	NULL,
-+};
-+
-+/*--------------------------------------------------------------------------*/
-+static inline struct uasp_dev *uaspd_from_func(struct usb_function *f)
-+{
-+	struct fsg_dev		*fsg_dev = fsg_from_func(f);
-+	return container_of(fsg_dev, struct uasp_dev, fsg_dev);
-+}
-+
-+static void uasp_common_release(struct kref *ref)
-+{
-+	struct uasp_common *ucommon =
-+		container_of(ref, struct uasp_common, ref);
-+	struct uasp_lun *ulun;
-+	int i;
-+
-+	/* First stop all lun threads */
-+	run_lun_threads(ucommon->udev, LUN_STATE_TERMINATED);
-+	for (i = 0; i < ucommon->common->nluns; i++) {
-+		ulun = &(ucommon->uluns[i]);
-+		if (ulun->lun_state != LUN_STATE_TERMINATED) {
-+			wait_for_completion(&ulun->thread_notifier);
-+			/* The cleanup routine waits for this completion also */
-+			complete(&ulun->thread_notifier);
-+		}
-+	}
-+	fsg_common_release(&(ucommon->common->ref));
-+	kfree(ucommon->uluns);
-+	kfree(ucommon);
-+}
-+
-+
-+static inline void uasp_common_put(struct uasp_common *common)
-+{
-+	kref_put(&(common->ref), uasp_common_release);
-+}
-+
-+static struct uasp_lun *find_lun_by_id(struct uasp_dev *udev, u8 *lun_id)
-+{
-+	int i;
-+	struct uasp_lun *curlun;
-+
-+	DBG(udev->ucommon->common, "%s() - Enter.\n", __func__);
-+
-+	for (i = 0; i < udev->ucommon->common->nluns; ++i) {
-+		curlun = &udev->ucommon->uluns[i];
-+
-+		if (memcmp(lun_id, curlun->lun_id, 8) == 0) {
-+			DBG(udev->ucommon->common, "%s() - LUN found\n",
-+			    __func__);
-+			return curlun;
-+		}
-+	}
-+	DBG(udev->ucommon->common, "%s() - LUN not found\n", __func__);
-+	return 0;
-+}
-+
-+/**
-+ * wakeup_lun_thread() - Wakes up the given LUn thread
-+ * @lun: the LUN which thread needs wakening
-+ *
-+ * NOTE: Caller must hold uasp_lun->lock
-+ *
-+ */
-+static void wakeup_lun_thread(struct uasp_lun *lun)
-+{
-+	/* Tell the lun thread that something has happened */
-+	lun->thread_wakeup_needed = 1;
-+	if (lun->lun_thread_task)
-+		wake_up_process(lun->lun_thread_task);
-+}
-+
-+/**
-+ * command_complete() - Callback function for the command endpoint
-+ * @ep: pointer to the usb_ep (command endpoint)
-+ * @req: usb_request received on this endpoint
-+ *
-+ * This function is passed to the outreq->complete() of the command endpoint.
-+ * If the request completed without errors the function marks the state of the
-+ * command buffer as full and wakes up the uasp main thread.
-+ */
-+static void command_complete(struct usb_ep *ep, struct usb_request *req)
-+{
-+	struct uasp_dev *udev = (struct uasp_dev *) ep->driver_data;
-+	unsigned long flags;
-+
-+	if (req->actual > 0)
-+		dump_msg(udev->ucommon->common, "command", req->buf,
-+			 req->actual);
-+	DBG(udev->ucommon->common, "%s() - Enter", __func__);
-+
-+	if (req != udev->cmd_buff.outreq) {
-+		ERROR(udev->ucommon->common, "(%s) req(%p) != "
-+					     "cmd_buff.outreq(%p), udev=%p,"
-+					     " common->state = %d\n",
-+		      __func__, req, udev->cmd_buff.outreq, udev,
-+		      udev->ucommon->common->state);
-+	}
-+
-+	if (req->status == -ECONNRESET) {
-+		spin_lock_irqsave(&(udev->ucommon->common->lock), flags);
-+		udev->cmd_buff.state = BUF_STATE_EMPTY;
-+		spin_unlock_irqrestore(&(udev->ucommon->common->lock), flags);
-+
-+		usb_ep_fifo_flush(ep);
-+		return;
-+	}
-+
-+	spin_lock_irqsave(&(udev->ucommon->common->lock), flags);
-+	udev->cmd_buff.state = BUF_STATE_FULL;
-+	wakeup_thread(udev->ucommon->common);
-+	spin_unlock_irqrestore(&(udev->ucommon->common->lock), flags);
-+}
-+
-+/**
-+ * status_complete() - Callback function for the status endpoint
-+ * @ep: pointer to the usb_ep (status endpoint)
-+ * @req: usb_request received on this endpoint
-+ *
-+ * This function is passed to the outreq->complete() of the status endpoint.
-+ * If the request completion status isn't ECONNRESET the requests tmiu/cmdiu
-+ * state is updated to aborted/completed/failed (according to the completion
-+ * status of the usb request). If the tmiu/cmdiu was LUN specific, the
-+ * corresponding LUN thread is awaken. If it was general, uasp main thread is
-+ * awaken.
-+ */
-+void status_complete(struct usb_ep *ep, struct usb_request *req)
-+{
-+	struct uasp_dev *udev = (struct uasp_dev *) ep->driver_data;
-+	struct uasp_lun *curlun = NULL;
-+	struct tm_iu *tmiu;
-+	struct cmd_iu *cmdiu;
-+	uint8_t cmd_id = ((uint8_t *)req->context)[0];
-+	unsigned long flags;
-+
-+	DBG(udev->ucommon->common, "%s() - Enter", __func__);
-+
-+	if (req->status == -ECONNRESET)
-+		usb_ep_fifo_flush(ep);
-+
-+	spin_lock_irqsave(&(udev->ucommon->common->lock), flags);
-+	/* If Sense IU is filled for TM FUNCTION IU */
-+	if (cmd_id == IU_ID_TASK_MANAGEMENT) {
-+		DBG(udev->ucommon->common, "%s() - received "
-+					   "IU_ID_TASK_MANAGEMENT\n", __func__);
-+		tmiu = (struct tm_iu *)req->context;
-+
-+		if (tmiu->state != COMMAND_STATE_FAILED &&
-+		    tmiu->state != COMMAND_STATE_ABORTED) {
-+			if (req->status == -ERESTART)
-+				tmiu->state = COMMAND_STATE_ABORTED;
-+			else if (!req->status)
-+				tmiu->state = COMMAND_STATE_FAILED;
-+			else
-+				tmiu->state = COMMAND_STATE_COMPLETED;
-+		}
-+		curlun = find_lun_by_id(udev, tmiu->lun);
-+	}
-+	/* If Sense IU is filled for COMMAND IU */
-+	else if (cmd_id == IU_ID_COMMAND) {
-+		DBG(udev->ucommon->common, "%s() - received "
-+					   "IU_ID_COMMAND\n", __func__);
-+		cmdiu = (struct cmd_iu *)req->context;
-+
-+		if (cmdiu->state != COMMAND_STATE_FAILED &&
-+		    cmdiu->state != COMMAND_STATE_ABORTED) {
-+			if (req->status == -ERESTART)
-+				cmdiu->state = COMMAND_STATE_ABORTED;
-+			else if (req->status != 0)
-+				cmdiu->state = COMMAND_STATE_FAILED;
-+			else if (cmdiu->state == COMMAND_STATE_STATUS)
-+					cmdiu->state = COMMAND_STATE_COMPLETED;
-+		}
-+
-+		DBG(udev->ucommon->common, "%s() - Completion for req\n",
-+		     __func__);
-+		cmdiu->req_sts = CMD_REQ_COMPLETED;
-+		cmdiu->bh->inreq_busy = 0;
-+
-+		curlun = find_lun_by_id(udev, cmdiu->lun);
-+	} else {
-+		ERROR(udev->ucommon->common,
-+		      "%s() - received invalid IU (iu_id = %02x)!\n",
-+		      __func__, cmd_id);
-+		spin_unlock_irqrestore(&(udev->ucommon->common->lock), flags);
-+		return;
-+	}
-+
-+	if (curlun) {
-+		spin_unlock_irqrestore(&(udev->ucommon->common->lock),
-+				       flags);
-+		spin_lock_irqsave(&(curlun->lock), flags);
-+		curlun->pending_requests++;
-+		curlun->active_requests--;
-+		wakeup_lun_thread(curlun);
-+		spin_unlock_irqrestore(&(curlun->lock), flags);
-+		spin_lock_irqsave(&(udev->ucommon->common->lock),
-+				  flags);
-+	} else {
-+		udev->pending_requests++;
-+		udev->active_requests--;
-+		wakeup_thread(udev->ucommon->common);
-+	}
-+	spin_unlock_irqrestore(&(udev->ucommon->common->lock), flags);
-+}
-+
-+/**
-+ * uasp_bulk_in_complete() - Callback function for the bulk IN endpoint
-+ * @ep: pointer to the usb_ep (bulk IN endpoint)
-+ * @req: usb_request received on this endpoint
-+ *
-+ * This function is passed to the outreq->complete() of the bulk IN endpoint.
-+ * The requests cmdiu state is updated according to the completion status of
-+ * the usb request. If the cmdiu was LUN specific, the  corresponding LUN
-+ * thread is awaken. If it was general, uasp main thread is awaken.
-+ */
-+void uasp_bulk_in_complete(struct usb_ep *ep, struct usb_request *req)
-+{
-+	struct uasp_dev *udev = (struct uasp_dev *) ep->driver_data;
-+	struct uasp_lun *curlun;
-+	struct cmd_iu *cmdiu;
-+	unsigned long flags;
-+
-+	DBG(udev->ucommon->common, "%s() - Enter\n", __func__);
-+
-+	if (req->status == -ECONNRESET)
-+		usb_ep_fifo_flush(ep);
-+
-+	cmdiu = (struct cmd_iu *)req->context;
-+
-+	spin_lock_irqsave(&(udev->ucommon->common->lock), flags);
-+	if (cmdiu->state != COMMAND_STATE_ABORTED &&
-+	    cmdiu->state != COMMAND_STATE_FAILED) {
-+		if (req->status == -ERESTART)
-+			cmdiu->state = COMMAND_STATE_ABORTED;
-+		else if (req->status != 0)
-+			cmdiu->state = COMMAND_STATE_FAILED;
-+	}
-+
-+	cmdiu->req_sts = CMD_REQ_COMPLETED;
-+	cmdiu->bh->inreq_busy = 0;
-+
-+
-+	curlun = find_lun_by_id(udev, cmdiu->lun);
-+	if (curlun) {
-+		spin_unlock_irqrestore(&udev->ucommon->common->lock, flags);
-+		spin_lock_irqsave(&curlun->lock, flags);
-+		curlun->pending_requests++;
-+		curlun->active_requests--;
-+		wakeup_lun_thread(curlun);
-+		spin_unlock_irqrestore(&curlun->lock, flags);
-+		spin_lock_irqsave(&(udev->ucommon->common->lock), flags);
-+	} else {
-+		udev->pending_requests++;
-+		udev->active_requests--;
-+		wakeup_thread(udev->ucommon->common);
-+	}
-+	spin_unlock_irqrestore(&udev->ucommon->common->lock, flags);
-+}
-+
-+
-+/**
-+ * uasp_bulk_out_complete() - Callback function for the bulk OUT endpoint
-+ * @ep: pointer to the usb_ep (bulk OUT endpoint)
-+ * @req: usb_request received on this endpoint
-+ *
-+ * This function is passed to the outreq->complete() of the bulk OUT endpoint.
-+ * The requests cmdiu state is updated according to the completion status of
-+ * the usb request. If the cmdiu was LUN specific, the  corresponding LUN
-+ * thread is awaken. If it was general, uasp main thread is awaken.
-+ */
-+void uasp_bulk_out_complete(struct usb_ep *ep, struct usb_request *req)
-+{
-+	struct uasp_dev *udev = (struct uasp_dev *) ep->driver_data;
-+	struct uasp_lun *curlun;
-+	struct cmd_iu *cmdiu;
-+	unsigned long flags;
-+
-+	DBG(udev->ucommon->common, "%s() - Enter\n", __func__);
-+
-+	if (req->status == -ECONNRESET)
-+		usb_ep_fifo_flush(ep);
-+
-+	spin_lock_irqsave(&udev->ucommon->common->lock, flags);
-+	cmdiu = (struct cmd_iu *)req->context;
-+
-+	if (cmdiu->state != COMMAND_STATE_ABORTED &&
-+	    cmdiu->state != COMMAND_STATE_FAILED) {
-+		if (req->status == -ERESTART)
-+			cmdiu->state = COMMAND_STATE_ABORTED;
-+		else if (req->status != 0)
-+			cmdiu->state = COMMAND_STATE_FAILED;
-+	}
-+
-+	cmdiu->req_sts = CMD_REQ_COMPLETED;
-+	cmdiu->bh->outreq_busy = 0;
-+
-+	curlun = find_lun_by_id(udev, cmdiu->lun);
-+	if (curlun) {
-+		spin_unlock_irqrestore(&udev->ucommon->common->lock, flags);
-+		spin_lock_irqsave(&curlun->lock, flags);
-+		curlun->pending_requests++;
-+		curlun->active_requests--;
-+		wakeup_lun_thread(curlun);
-+		spin_unlock_irqrestore(&curlun->lock, flags);
-+		spin_lock_irqsave(&udev->ucommon->common->lock, flags);
-+	} else {
-+		udev->pending_requests++;
-+		udev->active_requests--;
-+		wakeup_thread(udev->ucommon->common);
-+	}
-+	spin_unlock_irqrestore(&udev->ucommon->common->lock, flags);
-+}
-+
-+/**
-+ * do_uasp_set_interface() - Enables/disables the UASP FD.
-+ * @uaspd: pointer to the uasp device structure
-+ * @new_fsg: pointer to fsg_dev for the new configuration
-+ *
-+ * Returns 0 on success negative error code otherwise.
-+ *
-+ * Initiates all endpoints and enables them. Allocates buffers and requests.
-+ */
-+static int do_uasp_set_interface(struct uasp_dev *uaspd,
-+				 struct fsg_dev *new_fsg)
-+{
-+	int rc = 0;
-+	int i;
-+	struct fsg_dev	*fsgd;
-+	struct fsg_common *fcommon;
-+
-+	if (!uaspd)
-+		return -EIO;
-+
-+	DBG(uaspd->ucommon->common, "%s()- Enter\n", __func__);
-+
-+	fcommon = uaspd->ucommon->common;
-+	if (uaspd->ucommon->common->running)
-+		DBG(uaspd->ucommon->common, "reset inteface\n");
-+
-+reset_uasp:
-+	/* Deallocate the requests */
-+	if (uaspd->ucommon->common->fsg) {
-+		fsgd = fcommon->fsg;
-+
-+		for (i = 0; i < FSG_NUM_BUFFERS; ++i) {
-+			struct fsg_buffhd *bh = &fcommon->buffhds[i];
-+			if (bh->inreq) {
-+				usb_ep_free_request(fsgd->bulk_in, bh->inreq);
-+				bh->inreq = NULL;
-+			}
-+			if (bh->outreq) {
-+				usb_ep_free_request(fsgd->bulk_out, bh->outreq);
-+				bh->outreq = NULL;
-+			}
-+		}
-+
-+		/* Deallocate command and status requests */
-+		if (uaspd->cmd_buff.inreq) {
-+			ERROR(uaspd->ucommon->common,
-+			      "%s(): uaspd->cmd_buff.inreq isn't NULL. "
-+			      "How can that be???",
-+			      __func__);
-+			usb_ep_free_request(uaspd->command,
-+					    uaspd->cmd_buff.inreq);
-+			uaspd->cmd_buff.inreq = NULL;
-+		}
-+		if (uaspd->cmd_buff.outreq) {
-+			usb_ep_free_request(uaspd->command,
-+					    uaspd->cmd_buff.outreq);
-+			uaspd->cmd_buff.outreq = NULL;
-+		}
-+
-+		/* Disable the endpoints */
-+		if (fsgd->bulk_in_enabled) {
-+			usb_ep_disable(fsgd->bulk_in);
-+			fsgd->bulk_in_enabled = 0;
-+		}
-+		if (fsgd->bulk_out_enabled) {
-+			usb_ep_disable(fsgd->bulk_out);
-+			fsgd->bulk_out_enabled = 0;
-+		}
-+		fsgd->bulk_in->desc = NULL;
-+		fsgd->bulk_out->desc = NULL;
-+
-+		if (uaspd->cmd_enabled) {
-+			usb_ep_disable(uaspd->command);
-+			uaspd->cmd_enabled = 0;
-+		}
-+		if (uaspd->status_enabled) {
-+			usb_ep_disable(uaspd->status);
-+			uaspd->status_enabled = 0;
-+		}
-+		uaspd->command->desc = NULL;
-+		uaspd->status->desc = NULL;
-+		DBG(uaspd->ucommon->common, "%s()- disabled endpoints\n",
-+		    __func__);
-+
-+		fcommon->fsg = NULL;
-+		wake_up(&fcommon->fsg_wait);
-+	}
-+
-+	fcommon->running = 0;
-+	if (!new_fsg || rc)
-+		return rc;
-+
-+	fcommon->fsg = new_fsg;
-+	fsgd = fcommon->fsg;
-+
-+	/* Enable the endpoints */
-+	config_ep_by_speed(fcommon->gadget, &fsgd->function, fsgd->bulk_in);
-+	rc = usb_ep_enable(fsgd->bulk_in);
-+	if (rc)
-+		goto reset_uasp;
-+	fsgd->bulk_in->driver_data = uaspd;
-+	fsgd->bulk_in_enabled = 1;
-+
-+	config_ep_by_speed(fsgd->common->gadget, &fsgd->function,
-+			   fsgd->bulk_out);
-+	rc = usb_ep_enable(fsgd->bulk_out);
-+	if (rc)
-+		goto reset_uasp;
-+	fsgd->bulk_out->driver_data = uaspd;
-+	fsgd->bulk_out_enabled = 1;
-+
-+	fsgd->common->bulk_out_maxpacket =
-+		le16_to_cpu(fsgd->bulk_out->maxpacket);
-+	clear_bit(IGNORE_BULK_OUT, &fsgd->atomic_bitflags);
-+
-+	config_ep_by_speed(fsgd->common->gadget, &fsgd->function,
-+			   uaspd->command);
-+	rc = usb_ep_enable(uaspd->command);
-+	if (rc)
-+		goto reset_uasp;
-+	uaspd->command->driver_data = uaspd;
-+	uaspd->cmd_enabled = 1;
-+
-+	config_ep_by_speed(fsgd->common->gadget, &fsgd->function,
-+			   uaspd->status);
-+	rc = usb_ep_enable(uaspd->status);
-+	if (rc)
-+		goto reset_uasp;
-+	uaspd->status->driver_data = uaspd;
-+	uaspd->status_enabled = 1;
-+
-+	/* Allocate the data - requests */
-+	for (i = 0; i < UASP_NUM_BUFFERS; ++i) {
-+		struct uasp_buff	*buff = &uaspd->ucommon->ubufs[i];
-+
-+		buff->fsg_buff->inreq = usb_ep_alloc_request(fsgd->bulk_in,
-+							     GFP_ATOMIC);
-+		if (!buff->fsg_buff->inreq)
-+			goto reset_uasp;
-+
-+		buff->fsg_buff->outreq = usb_ep_alloc_request(fsgd->bulk_out,
-+							     GFP_ATOMIC);
-+		if (!buff->fsg_buff->outreq)
-+			goto reset_uasp;
-+
-+		buff->fsg_buff->inreq->buf =
-+				buff->fsg_buff->outreq->buf =
-+				buff->fsg_buff->buf;
-+		buff->fsg_buff->inreq->context =
-+				buff->fsg_buff->outreq->context =
-+				buff->fsg_buff;
-+	}
-+
-+	/* Allocate command ep request */
-+	uaspd->cmd_buff.outreq = usb_ep_alloc_request(uaspd->command,
-+							     GFP_ATOMIC);
-+	if (!uaspd->cmd_buff.outreq) {
-+		ERROR(uaspd->ucommon->common, "failed allocating outreq for "
-+					     "command buffer\n");
-+		goto reset_uasp;
-+	}
-+
-+	DBG(uaspd->ucommon->common, "%s() allocated command request = %p, "
-+				    "udev=%p\n", __func__,
-+				uaspd->cmd_buff.outreq, uaspd);
-+	uaspd->cmd_buff.outreq->buf = &(uaspd->cmd_buff.buf);
-+	uaspd->cmd_buff.inreq = NULL;
-+	uaspd->cmd_buff.state = BUF_STATE_EMPTY;
-+
-+	fcommon->running = 1;
-+	for (i = 0; i < fsgd->common->nluns; ++i)
-+		fsgd->common->luns[i].unit_attention_data = SS_RESET_OCCURRED;
-+	return 0;
-+}
-+
-+static void handle_uasp_exception(struct uasp_common *ucommon)
-+{
-+	siginfo_t		info;
-+	int			sig;
-+	int			i;
-+	struct uasp_buff	*ubuf;
-+	struct fsg_buffhd	*bh;
-+	enum fsg_state		old_state;
-+	struct fsg_lun		*curlun;
-+	unsigned int		exception_req_tag;
-+	int			rc;
-+
-+	struct fsg_common *fcommon = ucommon->common;
-+
-+	DBG(ucommon->common, "%s()- Enter\n", __func__);
-+
-+	/*
-+	 * Clear the existing signals.  Anything but SIGUSR1 is converted
-+	 * into a high-priority EXIT exception.
-+	 */
-+	for (;;) {
-+		sig = dequeue_signal_lock(current, &current->blocked, &info);
-+		if (!sig)
-+			break;
-+		if (sig != SIGUSR1) {
-+			if (fcommon->state < FSG_STATE_EXIT)
-+				DBG(fcommon, "Main thread exiting on signal\n");
-+			raise_exception(fcommon, FSG_STATE_EXIT);
-+		}
-+	}
-+
-+	/* Cancel all the pending transfers */
-+	if (fsg_is_set(fcommon)) {
-+		for (i = 0; i < FSG_NUM_BUFFERS; i++) {
-+			ubuf = &ucommon->ubufs[i];
-+			bh = ubuf->fsg_buff;
-+			if (bh->inreq_busy)
-+				usb_ep_dequeue(ubuf->ep, bh->inreq);
-+			if (bh->outreq_busy)
-+				usb_ep_dequeue(ubuf->ep, bh->outreq);
-+			ubuf->stream_id = 0;
-+		}
-+
-+		/* Wait until everything is idle */
-+		for (;;) {
-+			int num_active = 0;
-+			for (i = 0; i < FSG_NUM_BUFFERS; ++i) {
-+				bh = &fcommon->buffhds[i];
-+				num_active += bh->inreq_busy + bh->outreq_busy;
-+			}
-+			if (num_active == 0)
-+				break;
-+			if (sleep_thread(fcommon))
-+				return;
-+		}
-+
-+		/* Clear out the controller's fifos */
-+		if (fcommon->fsg->bulk_in_enabled)
-+			usb_ep_fifo_flush(fcommon->fsg->bulk_in);
-+		if (fcommon->fsg->bulk_out_enabled)
-+			usb_ep_fifo_flush(fcommon->fsg->bulk_out);
-+		usb_ep_fifo_flush(ucommon->udev->status);
-+		usb_ep_fifo_flush(ucommon->udev->command);
-+	}
-+
-+	/*
-+	 * Reset the I/O buffer states and pointers, the SCSI  state, and the
-+	 * exception.  Then invoke the handler.
-+	 */
-+	spin_lock_irq(&fcommon->lock);
-+
-+	for (i = 0; i < FSG_NUM_BUFFERS; ++i) {
-+		bh = &fcommon->buffhds[i];
-+		bh->state = BUF_STATE_EMPTY;
-+	}
-+	exception_req_tag = fcommon->exception_req_tag;
-+	old_state = fcommon->state;
-+
-+	if (old_state == FSG_STATE_ABORT_BULK_OUT)
-+		fcommon->state = FSG_STATE_STATUS_PHASE;
-+	else {
-+		for (i = 0; i < fcommon->nluns; ++i) {
-+			/* TODO: reset uasp luns data */
-+			curlun = &fcommon->luns[i];
-+			curlun->prevent_medium_removal = 0;
-+			curlun->sense_data = SS_NO_SENSE;
-+			curlun->unit_attention_data = SS_NO_SENSE;
-+			curlun->sense_data_info = 0;
-+			curlun->info_valid = 0;
-+		}
-+		fcommon->state = FSG_STATE_IDLE;
-+	}
-+	spin_unlock_irq(&fcommon->lock);
-+
-+	/* Carry out any extra actions required for the exception */
-+	switch (old_state) {
-+	case FSG_STATE_ABORT_BULK_OUT:
-+		/* TODO */
-+		break;
-+
-+	case FSG_STATE_RESET:
-+		/* TODO */
-+		break;
-+
-+	case FSG_STATE_CONFIG_CHANGE:
-+		if (fcommon->fsg == fcommon->new_fsg) {
-+			DBG(fcommon, "nothing to do. same config\n");
-+			break;
-+		}
-+		/* Enable/disabel the interface according to the new_config */
-+		rc = do_uasp_set_interface(ucommon->udev, fcommon->new_fsg);
-+		if (rc != 0)
-+			fcommon->fsg = NULL;	/* Reset on errors */
-+		break;
-+	case FSG_STATE_EXIT:
-+	case FSG_STATE_TERMINATED:
-+		/* Free resources */
-+		(void)do_uasp_set_interface(ucommon->udev, NULL);
-+		spin_lock_irq(&fcommon->lock);
-+		fcommon->state = FSG_STATE_TERMINATED;	/* Stop the thread*/
-+		spin_unlock_irq(&fcommon->lock);
-+		break;
-+
-+	case FSG_STATE_INTERFACE_CHANGE:
-+	case FSG_STATE_DISCONNECT:
-+	case FSG_STATE_COMMAND_PHASE:
-+	case FSG_STATE_DATA_PHASE:
-+	case FSG_STATE_STATUS_PHASE:
-+	case FSG_STATE_IDLE:
-+		break;
-+	}
-+}
-+
-+/**
-+ * uasp_command_check() - Verifies the data received via command endpoint for
-+ * accuracy.
-+ * @udev: Programming view of uasp device.
-+ * @command: Pointer to the received data buffer.
-+ *
-+ * Return 0 - if no error condition and the command is a
-+ *	   COMMAND IU
-+ *	  1 - if no error condition and the command is a TASK
-+ *	   MANAGEMENT IU
-+ *	  negative value on error.
-+ *
-+ * If the command is valid returns it by reference in command
-+ * param. The following steps are implemented in this function:
-+ * - Checking that the received data is a TM FUNCTION or COMMAND IU.
-+ * - Chekcing that the length of the received data is correct
-+ *   (16 bytes for TM FUNCTION IU and 36 bytes for COMMAND IU).
-+ * - Checking that there is no overlapped tag.
-+ */
-+static int uasp_command_check(struct uasp_dev *udev, void **command)
-+{
-+	int i = 0;
-+	int rc = 0;
-+	unsigned long flags;
-+	uint16_t ip_tag;
-+	uint8_t cmd_id;
-+	struct uasp_lun *curlun;
-+	struct cmd_iu *cmdiu;
-+	struct tm_iu *tmiu;
-+	struct fsg_buffhd *bh;
-+	struct usb_request *req;
-+
-+	bh = &(udev->cmd_buff);
-+	bh->state = BUF_STATE_EMPTY;
-+	req = udev->cmd_buff.outreq;
-+	*command = NULL;
-+
-+	DBG(udev->ucommon->common, "%s() - Enter\n", __func__);
-+
-+	/* Id of the received command (tmiu or cmdiu) */
-+	cmd_id = ((uint8_t *)req->buf)[0];
-+
-+	/* ip_tag of the received command */
-+	ip_tag = IUGETW(&((uint8_t *)req->buf)[2]);
-+
-+	/* Invalid completion status */
-+	if (req->status) {
-+		ERROR(udev->ucommon->common,
-+		      "%s() - Invalid completion status for command "
-+		      "request = -%d\n", __func__, req->status);
-+		return -EINVAL;
-+	}
-+
-+	/* Check is the data received via command endpoint is a command */
-+	if (cmd_id != IU_ID_TASK_MANAGEMENT && cmd_id != IU_ID_COMMAND) {
-+		ERROR(udev->ucommon->common,
-+		      "%s() - Invalid data is received\n", __func__);
-+		/* TODO: something needs to be done (e.g. halt endpoints) */
-+		return -EINVAL;
-+	}
-+
-+	/* Invalid count of bytes received for tmiu */
-+	if (cmd_id == IU_ID_TASK_MANAGEMENT && req->actual != 16) {
-+		ERROR(udev->ucommon->common,
-+		      "%s() - Invalid byte count for tmiu is received = %d\n",
-+		       __func__, req->actual);
-+		/* TODO: something needs to be done (e.g. halt endpoints) */
-+		return -EINVAL;
-+	}
-+
-+	/* Invalid count of bytes received for cmdiu */
-+	if (cmd_id == IU_ID_COMMAND && req->actual < 32) {
-+		ERROR(udev->ucommon->common,
-+		      "%s() - Invalid byte count for cmdiu is received = %d\n",
-+		      __func__, req->actual);
-+		/* TODO: something needs to be done (e.g. halt endpoints) */
-+		return -EINVAL;
-+	}
-+
-+	/* Try to allocate memory for received command */
-+	tmiu = NULL;
-+	cmdiu = NULL;
-+
-+	if (cmd_id == IU_ID_TASK_MANAGEMENT) {
-+		tmiu = kmalloc(sizeof(struct tm_iu), GFP_KERNEL);
-+
-+		if (!tmiu) {
-+			ERROR(udev->ucommon->common,
-+			      "%s() - No memory for tmiu\n", __func__);
-+			return -ENOMEM;
-+		}
-+		*command = tmiu;
-+		memcpy(*command, req->buf, 16);
-+	} else {
-+		cmdiu = kmalloc(sizeof(struct cmd_iu), GFP_KERNEL);
-+
-+		if (!cmdiu) {
-+			ERROR(udev->ucommon->common,
-+			      "%s() - No memory for cmdiu\n", __func__);
-+			return -ENOMEM;
-+		}
-+		*command = cmdiu;
-+		memcpy(*command, req->buf, req->actual);
-+	}
-+
-+	/* Check for overlapping ip_tag */
-+
-+	/* Check for ip_tag overlapping over all cmd an tm_func queues */
-+	for (i = 0; i < udev->ucommon->common->nluns; ++i) {
-+		curlun = &udev->ucommon->uluns[i];
-+		spin_lock_irqsave(&(curlun->lock), flags);
-+
-+		list_for_each_entry(cmdiu, &curlun->cmd_queue, node) {
-+			if (cmdiu->state != COMMAND_STATE_IDLE &&
-+			    cmdiu->state != COMMAND_STATE_DATA &&
-+			    cmdiu->state != COMMAND_STATE_STATUS) {
-+				continue;
-+			}
-+
-+			/* Overlapped ip_tag found */
-+			if (IUGETW(cmdiu->ip_tag) == ip_tag) {
-+				spin_unlock_irqrestore(&(curlun->lock), flags);
-+				goto overlapped_ipt_tag;
-+			}
-+		}
-+
-+		list_for_each_entry(tmiu, &curlun->tm_func_queue, node) {
-+
-+			if (tmiu->state != COMMAND_STATE_IDLE &&
-+			    tmiu->state != COMMAND_STATE_STATUS)
-+				continue;
-+
-+			/* Overlapped ip_tag found */
-+			if (IUGETW(tmiu->ip_tag) == ip_tag)
-+				goto overlapped_ipt_tag;
-+		}
-+		spin_unlock_irqrestore(&(curlun->lock), flags);
-+	}
-+
-+	spin_lock_irqsave(&(udev->ucommon->common->lock), flags);
-+	list_for_each_entry(cmdiu, &udev->cmd_queue, node) {
-+		if (cmdiu->state != COMMAND_STATE_IDLE &&
-+		    cmdiu->state != COMMAND_STATE_DATA &&
-+		    cmdiu->state != COMMAND_STATE_STATUS)
-+			continue;
-+
-+		/* Overlapped ip_tag found */
-+		if (IUGETW(cmdiu->ip_tag) == ip_tag) {
-+			spin_unlock_irqrestore(&(udev->ucommon->common->lock),
-+					       flags);
-+			goto overlapped_ipt_tag;
-+		}
-+	}
-+
-+	list_for_each_entry(tmiu, &udev->tm_func_queue, node) {
-+		if (tmiu->state != COMMAND_STATE_IDLE &&
-+		    tmiu->state != COMMAND_STATE_STATUS)
-+			continue;
-+
-+		/* Overlapped ip_tag found */
-+		if (IUGETW(tmiu->ip_tag) == ip_tag) {
-+			spin_unlock_irqrestore(&(udev->ucommon->common->lock),
-+					       flags);
-+			goto overlapped_ipt_tag;
-+		}
-+	}
-+	spin_unlock_irqrestore(&(udev->ucommon->common->lock), flags);
-+
-+	/* No overlapped ip_tag */
-+	if (cmd_id == IU_ID_TASK_MANAGEMENT)
-+		return 0;
-+
-+	return 1;
-+
-+overlapped_ipt_tag:
-+	ERROR(udev->ucommon->common, "%s() - Overlapped tag found. "
-+				     "Aborting all\n", __func__);
-+
-+	run_lun_threads(udev, LUN_STATE_OVERLAPPED_TAG);
-+
-+	/* Wait for luns abort completion. Sleep if luns are in processing */
-+	while (!all_lun_state_non_processing(udev)) {
-+		DBG(udev->ucommon->common,
-+		    "%s() - Luns are in process. Going to sleep\n", __func__);
-+		rc = sleep_thread(udev->ucommon->common);
-+		if (rc) {
-+			ERROR(udev->ucommon->common,
-+			      "%s() - sleep_thread failed! (%d)", __func__, rc);
-+			return -EINVAL;
-+		}
-+		DBG(udev->ucommon->common, "%s() - Wakes up\n", __func__);
-+		rc = 0;
-+	}
-+
-+	/* Abort none-lun commands */
-+	abort_commands(udev, &udev->cmd_queue, &udev->tm_func_queue,
-+		       &(udev->ucommon->common->lock));
-+
-+	spin_lock_irqsave(&(udev->ucommon->common->lock), flags);
-+	udev->pending_requests = 0;
-+	spin_unlock_irqrestore(&(udev->ucommon->common->lock), flags);
-+
-+	if (cmd_id == IU_ID_TASK_MANAGEMENT) {
-+		tmiu = *command;
-+
-+		spin_lock_irqsave(&(udev->ucommon->common->lock), flags);
-+		tmiu->bh = get_buffhd(udev->ucommon->common->buffhds);
-+		spin_unlock_irqrestore(&(udev->ucommon->common->lock), flags);
-+
-+		if (!tmiu->bh) {
-+			ERROR(udev->ucommon->common,
-+			      "%s(): didnt manage to get buffers for tmiu!\n",
-+			       __func__);
-+			return -EINVAL;
-+		}
-+		fill_response_iu(udev, (struct response_iu *)tmiu->bh,
-+				 IUGETW(tmiu->ip_tag),
-+				 0,
-+				 RESPONSE_OVERLAPPED_TAG_ATTEMPTED);
-+
-+		fill_usb_request(tmiu->bh->inreq, tmiu->bh->buf,
-+				 UASP_SIZEOF_RESPONSE_IU, 0,
-+				 (void *)tmiu, 0,
-+				 IUGETW(tmiu->ip_tag), status_complete);
-+
-+		tmiu->ep = udev->status;
-+
-+		if (usb_ep_queue(cmdiu->ep, cmdiu->bh->inreq, 0))
-+			tmiu->state = COMMAND_STATE_FAILED;
-+		else
-+			tmiu->state = COMMAND_STATE_STATUS;
-+
-+		list_add_tail(&tmiu->node, &(udev->tm_func_queue));
-+	} else {
-+		cmdiu = *command;
-+
-+		spin_lock_irqsave(&(udev->ucommon->common->lock), flags);
-+		cmdiu->bh = get_buffhd(udev->ucommon->common->buffhds);
-+		spin_unlock_irqrestore(&(udev->ucommon->common->lock), flags);
-+
-+		if (!cmdiu->bh) {
-+			ERROR(udev->ucommon->common,
-+			      "%s(): didnt manage to get buffers for cmdiu!\n",
-+			       __func__);
-+			return -EINVAL;
-+		}
-+
-+		fill_sense_iu(udev, (struct sense_iu *)cmdiu->bh,
-+			  IUGETW(cmdiu->ip_tag),
-+			  STATUS_CHECK_CONDITION,
-+			  SS_OVERLAPPED_COMMANDS_ATTEMPTED);
-+
-+		fill_usb_request(cmdiu->bh->inreq, cmdiu->bh->buf,
-+				 UASP_SIZEOF_SENSE_IU, 0,
-+				 (void *)cmdiu, 0,
-+				 IUGETW(cmdiu->ip_tag), status_complete);
-+		cmdiu->ep = udev->status;
-+
-+		if (usb_ep_queue(cmdiu->ep, cmdiu->bh->inreq, 0))
-+			cmdiu->state = COMMAND_STATE_FAILED;
-+		else
-+			cmdiu->state = COMMAND_STATE_STATUS;
-+
-+		list_add_tail(&cmdiu->node, &(udev->cmd_queue));
-+	}
-+	return -EINVAL;
-+}
-+
-+/**
-+ * insert_tm_func_to_list() - Insert the tmiu to the appropriate queue
-+ * @udev: Programming view of uasp device.
-+ * @tmiu: the tmiu to place in the appropriate queue
-+ *
-+ * This function tries to allocate the LUN corresponding to the LUN id in the
-+ * received tmiu. If such LUN is found the tmiu is placed in it's tm_func_queue.
-+ * If the LUN wasn't found then the tmiu will be placed in the general
-+ * tm_func_queue .
-+ *
-+ * TODO: Should this be protected by locks?
-+ */
-+static void insert_tm_func_to_list(struct uasp_dev *udev, struct tm_iu *tmiu)
-+{
-+	struct tm_iu *tmiu1;
-+	struct uasp_lun *curlun;
-+
-+	DBG(udev->ucommon->common, "%s() - Enter\n", __func__);
-+
-+	curlun = find_lun_by_id(udev, tmiu->lun);
-+	tmiu->state = COMMAND_STATE_IDLE;
-+
-+	if (tmiu->tm_function == TM_FUNCTION_IT_NEXUS_RESET) {
-+		list_add(&tmiu->node, &udev->tm_func_queue);
-+		return;
-+	}
-+
-+	if (!curlun) {
-+		list_add_tail(&tmiu->node, &udev->tm_func_queue);
-+		return;
-+	}
-+
-+	/* tmiu should be handled by curlun */
-+
-+	if (tmiu->tm_function == TM_FUNCTION_RESET_LUN) {
-+		list_add(&tmiu->node, &curlun->tm_func_queue);
-+		return;
-+	}
-+
-+	/*
-+	 * Insert tmiu to queue acording to the folowing priority:
-+	 * 1.TM_FUNCTION_RESET_LUN
-+	 * 2. TM_FUNCTION_ABORT_TASK_SET or TM_FUNCTION_CLEAR_TASK_SET
-+	 * 3. TM_FUNCTION_ABORT_TASK
-+	 * 4. TM_FUNCTION_QUERY_ASYNC_EVENT
-+	 * All other...
-+	 */
-+	list_for_each_entry(tmiu1, &curlun->tm_func_queue, node) {
-+		if (tmiu1->tm_function == TM_FUNCTION_RESET_LUN)
-+			continue;
-+
-+		if (tmiu->tm_function == TM_FUNCTION_ABORT_TASK_SET ||
-+		    tmiu->tm_function == TM_FUNCTION_CLEAR_TASK_SET) {
-+			list_add(&tmiu->node, &tmiu1->node);
-+			return;
-+		}
-+
-+		if (tmiu1->tm_function == TM_FUNCTION_ABORT_TASK_SET ||
-+		    tmiu1->tm_function == TM_FUNCTION_CLEAR_TASK_SET)
-+			continue;
-+
-+		if (tmiu->tm_function == TM_FUNCTION_ABORT_TASK) {
-+			list_add(&tmiu->node, &tmiu1->node);
-+			return;
-+		}
-+
-+		if (tmiu1->tm_function == TM_FUNCTION_ABORT_TASK)
-+			continue;
-+
-+		if (tmiu->tm_function == TM_FUNCTION_QUERY_ASYNC_EVENT) {
-+			list_add(&tmiu->node, &tmiu1->node);
-+			return;
-+		}
-+
-+		if (tmiu1->tm_function == TM_FUNCTION_QUERY_ASYNC_EVENT)
-+			continue;
-+
-+		list_add_tail(&tmiu->node, &tmiu1->node);
-+		return;
-+	}
-+
-+	list_add_tail(&tmiu->node, &tmiu1->node);
-+}
-+
-+/**
-+ * insert_cmd_to_list() - Insert the tmiu to the appropriate queue
-+ * @udev: Programming view of uasp device.
-+ * @cmdiu: the cmdiu to place in the appropriate queue
-+ *
-+ * This function tries to locate the LUN corresponding to the LUN id in the
-+ * received cmdiu. If such LUN is found the cmdiu is placed in it's cmd_queue.
-+ * If the LUN wasn't found then the cmdiu will be placed in the general
-+ * cmd_queue.
-+ *
-+ * TODO: Should this be protected by locks?
-+ */
-+static void insert_cmd_to_list(struct uasp_dev *udev, struct cmd_iu *cmdiu)
-+{
-+	struct list_head *link;
-+	struct cmd_iu *cmdiu1;
-+	struct uasp_lun *curlun;
-+
-+	DBG(udev->ucommon->common, "%s(): cmdiu->lun = %p\n", __func__,
-+	    cmdiu->lun);
-+
-+	DBG(udev->ucommon->common, "%02x %02x %02x %02x %02x %02x %02x %02x\n",
-+		cmdiu->lun[0], cmdiu->lun[1], cmdiu->lun[2], cmdiu->lun[3],
-+		cmdiu->lun[4], cmdiu->lun[5], cmdiu->lun[6], cmdiu->lun[7]);
-+
-+	curlun = find_lun_by_id(udev, cmdiu->lun);
-+	cmdiu->state = COMMAND_STATE_IDLE;
-+
-+	if (!curlun)
-+		link = &udev->cmd_queue;
-+	else
-+		link = &curlun->cmd_queue;
-+
-+	/* Place cmdiu in the queue, in the right place */
-+	if (cmdiu->forth_byte.task_attribute == TASK_ATTR_ACA) {
-+		list_add(&cmdiu->node, link);
-+		return;
-+	}
-+
-+	list_for_each_entry(cmdiu1, link, node) {
-+		/* ACA should be in the head of the queue */
-+		if (cmdiu1->forth_byte.task_attribute  == TASK_ATTR_ACA)
-+			continue;
-+
-+		/* The new HEAD OF QUEUE should be placed after ACA */
-+		if (cmdiu1->forth_byte.task_attribute ==
-+				TASK_ATTR_HEAD_OF_QUEUE) {
-+			list_add(&cmdiu->node, &cmdiu1->node);
-+			return;
-+		}
-+
-+		/* If ORDERED or SIMPLE, place at the end of the queue */
-+		list_add_tail(&cmdiu->node, link);
-+		return;
-+	}
-+
-+	/* In the case when the queue is empty */
-+	list_add_tail(&cmdiu->node, link);
-+	DBG(udev->ucommon->common,
-+	     "%s() - Cmdiu is added to the tail of the queue\n", __func__);
-+}
-+
-+/**
-+ * get_command() - Gets the next command from command emdpoint
-+ * @udev: Programming view of uasp device.
-+ *
-+ * Return 0 if no error condition, negative value otherwise.
-+ *
-+ * This function is responsible for:
-+ * - Utilizing the command endpoint.
-+ * - Checking of the received data for accuracy. For more details please see
-+ *   the description of the uasp_command_check() function.
-+ * - Adding the received TM FUNCTION or COMMAND IU to the appropriate queue.
-+ */
-+static int get_command(struct uasp_dev *udev)
-+{
-+	int rc = 0;
-+	void *command = 0;
-+
-+	DBG(udev->ucommon->common, "%s() - Enter\n", __func__);
-+
-+queue_cmd_ep:
-+	/* If command endpoint is not active, activate */
-+	if (udev->cmd_buff.state == BUF_STATE_EMPTY) {
-+		udev->cmd_buff.state = BUF_STATE_BUSY;
-+		/* Queue a request to read the next command */
-+		udev->cmd_buff.outreq->buf = udev->cmd_buff.buf;
-+		udev->cmd_buff.outreq->complete = command_complete;
-+		udev->cmd_buff.outreq->length =
-+			(FSG_BUFLEN < udev->command->maxpacket ? FSG_BUFLEN :
-+					udev->command->maxpacket);
-+		udev->cmd_buff.outreq->short_not_ok = 1;
-+		rc = usb_ep_queue(udev->command, udev->cmd_buff.outreq, 0);
-+		if (rc) {
-+			ERROR(udev->ucommon->common,
-+			      "%s()usb_ep_queue failed = %d\n", __func__, rc);
-+			udev->cmd_buff.state = BUF_STATE_EMPTY;
-+		}
-+		DBG(udev->ucommon->common, "%s() queued command request = %p\n",
-+		     __func__, udev->cmd_buff.outreq);
-+		return rc;
-+	}
-+	/* If command endpoint is busy, do nothing */
-+	else if (udev->cmd_buff.state == BUF_STATE_BUSY)
-+		return rc;
-+
-+	rc = uasp_command_check(udev, &command);
-+
-+	if (rc == 0) {
-+		DBG(udev->ucommon->common, "%s() - Received a TMC IU\n",
-+		    __func__);
-+		insert_tm_func_to_list(udev, (struct tm_iu *)command);
-+		udev->cmd_buff.state = BUF_STATE_EMPTY;
-+		goto queue_cmd_ep;
-+	} else if (rc == 1) {
-+		DBG(udev->ucommon->common, "%s() -Received a CMD IU\n",
-+		    __func__);
-+		insert_cmd_to_list(udev, (struct cmd_iu *)command);
-+		udev->cmd_buff.state = BUF_STATE_EMPTY;
-+		goto queue_cmd_ep;
-+	}
-+
-+	return rc;
-+}
-+
-+/**
-+ * remove_completed_commands() - removes all completed UIs
-+ * @udev: Programming view of uasp device
-+ * @cmd_queue: pointer to the command IUs queue to go over
-+ * @tm_func_queue: pointer to the tm IUs queue to go over
-+ *
-+ * This function goes over the command IUs queue and TM IUs queue and removes
-+ * all completed IUs
-+ */
-+static void remove_completed_commands(struct uasp_dev *udev,
-+				     struct list_head *cmd_queue,
-+				     struct list_head *tm_func_queue)
-+{
-+	struct cmd_iu *cmdiu;
-+	struct cmd_iu *tmp_cmdiu;
-+	struct tm_iu *tmiu;
-+	struct tm_iu *tmp_tmiu;
-+
-+	DBG(udev->ucommon->common, "%s() - Enter\n", __func__);
-+
-+	/* Remove completed, aborted or failed commands from cmd_queue */
-+	list_for_each_entry_safe(cmdiu, tmp_cmdiu, cmd_queue, node) {
-+		DBG(udev->ucommon->common, "%s() - cmd_queue cycle"
-+					   " cmdiu->state=%d "
-+					   " cmdiu->req_sts=%d\n",
-+		     __func__, cmdiu->state, cmdiu->req_sts);
-+
-+		/* Do not touch incompleted commands !!! */
-+		if (cmdiu->state != COMMAND_STATE_ABORTED &&
-+		    cmdiu->state != COMMAND_STATE_COMPLETED &&
-+		    cmdiu->state != COMMAND_STATE_FAILED)
-+			continue;
-+
-+		if (cmdiu->state == COMMAND_STATE_ABORTED ||
-+		    cmdiu->state == COMMAND_STATE_FAILED) {
-+			if (cmdiu->req_sts == CMD_REQ_IN_PROGRESS) {
-+				if (cmdiu->bh->inreq_busy &&
-+				    usb_ep_dequeue(cmdiu->ep,
-+						   cmdiu->bh->inreq)) {
-+					cmdiu->req_sts = CMD_REQ_COMPLETED;
-+					cmdiu->bh->inreq_busy = 0;
-+				}
-+				if (cmdiu->bh->outreq_busy &&
-+				    usb_ep_dequeue(cmdiu->ep,
-+						   cmdiu->bh->outreq)) {
-+					cmdiu->req_sts = CMD_REQ_COMPLETED;
-+					cmdiu->bh->outreq_busy = 0;
-+				}
-+			}
-+
-+			if (cmdiu->req_sts == CMD_REQ_IN_PROGRESS)
-+				continue;
-+		}
-+		DBG(udev->ucommon->common, "%s() - deleted cmdiu: "
-+				   "cmdiu[0] = %d, cmdiu->state = %d\n",
-+		     __func__, cmdiu->cdb[0], cmdiu->state);
-+		list_del(&cmdiu->node);
-+		if (cmdiu->bh) {
-+			DBG(udev->ucommon->common, "%s() - Freeing the "
-+						   "cmdiu->bh\n", __func__);
-+			cmdiu->bh->state = BUF_STATE_EMPTY;
-+		}
-+		kfree(cmdiu);
-+	}
-+
-+	/* Remove completed, aborted or failed commands from tm_func_queue */
-+	list_for_each_entry_safe(tmiu, tmp_tmiu, tm_func_queue, node) {
-+		/* Do not touch incompleted commands !!! */
-+		if (tmiu->state != COMMAND_STATE_ABORTED &&
-+		    tmiu->state != COMMAND_STATE_COMPLETED &&
-+		    tmiu->state != COMMAND_STATE_FAILED)
-+			continue;
-+
-+		DBG(udev->ucommon->common, "%s() - deleted tmiu\n",  __func__);
-+		list_del(&tmiu->node);
-+		if (tmiu->bh) {
-+			DBG(udev->ucommon->common, "%s() - Freeing the "
-+						   "tmiu->bh\n", __func__);
-+			tmiu->bh->state = BUF_STATE_EMPTY;
-+		}
-+		kfree(tmiu);
-+	}
-+	if (list_empty(cmd_queue) && list_empty(tm_func_queue))
-+		DBG(udev->ucommon->common, "%s() - both lists are empty\n",
-+		    __func__);
-+	DBG(udev->ucommon->common, "%s() - exit\n", __func__);
-+}
-+
-+/**
-+ * all_lun_state_non_processing() - Returns 1, if all luns are in
-+ * none-processing state
-+ * @udev: Programming view of uasp device
-+ *
-+ */
-+int all_lun_state_non_processing(struct uasp_dev *udev)
-+{
-+	struct uasp_lun *curlun;
-+	int i;
-+
-+	DBG(udev->ucommon->common, "%s() - Enter\n", __func__);
-+
-+	for (i = 0; i < udev->ucommon->common->nluns; ++i) {
-+		curlun = &udev->ucommon->uluns[i];
-+		if (curlun->lun_state > LUN_STATE_IDLE)
-+			return 0;
-+	}
-+	return 1;
-+}
-+
-+/*
-+ * pending_cmd_in_lun() - Checks for pending IUs in all LUNs queues
-+ * @data: Programming view of uasp device
-+ *
-+ * Returns 1 if all luns are in non-processing state and and if are incomplete
-+ * or pending commands in one of the luns.
-+ */
-+static int pending_cmd_in_lun(void *data)
-+{
-+	struct uasp_dev *udev = (struct uasp_dev *)data;
-+	struct uasp_lun *curlun;
-+	int i;
-+
-+	DBG(udev->ucommon->common, "%s() - Enter\n", __func__);
-+	for (i = 0; i < udev->ucommon->common->nluns; ++i) {
-+		curlun = &udev->ucommon->uluns[i];
-+		if (curlun->pending_requests)
-+			return 1;
-+	}
-+
-+	return 0;
-+}
-+
-+static int sleep_lun_thread(struct uasp_lun *lun)
-+{
-+	int	rc = 0;
-+
-+	/* Wait until a signal arrives or we are woken up */
-+	for (;;) {
-+		try_to_freeze();
-+		set_current_state(TASK_INTERRUPTIBLE);
-+		if (signal_pending(current)) {
-+			rc = -EINTR;
-+			break;
-+		}
-+		if (lun->thread_wakeup_needed)
-+			break;
-+		schedule();
-+	}
-+	__set_current_state(TASK_RUNNING);
-+	lun->thread_wakeup_needed = 0;
-+	return rc;
-+}
-+
-+/**
-+ * run_lun_threads() - Wakeup all LUN threads with a given state
-+ * @udev: Programming view of uasp device
-+ * @state: The state to run the LUn in (from enum lun_state)
-+ *
-+ */
-+void run_lun_threads(struct uasp_dev *udev, int state)
-+{
-+	struct uasp_lun *curlun;
-+	int i;
-+	unsigned long flags;
-+
-+	DBG(udev->ucommon->common, "%s() - Enter. State = %d\n",
-+	    __func__, state);
-+
-+	for (i = 0; i < udev->ucommon->common->nluns; ++i) {
-+		curlun = &udev->ucommon->uluns[i];
-+		spin_lock_irqsave(&(curlun->lock), flags);
-+		curlun->lun_state = state;
-+		wakeup_lun_thread(curlun);
-+		spin_unlock_irqrestore(&(curlun->lock), flags);
-+	}
-+	DBG(udev->ucommon->common, "%s() - Exit\n", __func__);
-+	/*?dwc_waitq_trigger(fsg->wq);*/
-+}
-+
-+/**
-+ * abort_commands() - Aborts all IUs on given queues
-+ * @udev: Programming view of uasp device
-+ * @cmd_queue: pointer to the cmd IUs queue to abort IUs from
-+ * @tm_func_queue: pointer to the tm IUs queue to abort IUs from
-+ * @lock: pointer to spinlock_t to lock when performing the abort.
-+ *	Can be udev->lock if the cmd_queue and the tm_func_queue are general,
-+ *	or curlun->lock if they belong to a specific LUN
-+ *
-+ * TODO: Add wait mechanism using curlun->active_requests or
-+ * udev->active_requests
-+ */
-+void abort_commands(struct uasp_dev *udev,
-+			struct list_head *cmd_queue,
-+			struct list_head *tm_func_queue,
-+			spinlock_t *lock)
-+{
-+	unsigned long flags;
-+	struct cmd_iu *cmdiu, *tmp_cmdiu;
-+	struct tm_iu *tmiu, *tmp_tmiu;
-+
-+	DBG(udev->ucommon->common, "%s() - Enter\n", __func__);
-+
-+	if (!cmd_queue)
-+		goto tmiu_part;
-+
-+	spin_lock_irqsave(lock, flags);
-+	list_for_each_entry_safe(cmdiu, tmp_cmdiu, cmd_queue, node) {
-+		if (cmdiu->state == COMMAND_STATE_DATA) {
-+			/* TODO: what about outreq???? */
-+			if (cmdiu->req_sts == CMD_REQ_IN_PROGRESS) {
-+				spin_unlock_irqrestore(lock, flags);
-+				if (cmdiu->bh->inreq_busy)
-+					usb_ep_dequeue(cmdiu->ep,
-+						       cmdiu->bh->inreq);
-+				if (cmdiu->bh->outreq_busy)
-+					usb_ep_dequeue(cmdiu->ep,
-+						       cmdiu->bh->outreq);
-+				spin_lock_irqsave(lock, flags);
-+			}
-+		} else if (cmdiu->state == COMMAND_STATE_STATUS) {
-+			spin_unlock_irqrestore(lock, flags);
-+			usb_ep_dequeue(cmdiu->ep, cmdiu->bh->inreq);
-+			spin_lock_irqsave(lock, flags);
-+		} else
-+			cmdiu->state = COMMAND_STATE_ABORTED;
-+	}
-+	spin_unlock_irqrestore(lock, flags);
-+
-+tmiu_part:
-+	if (!tm_func_queue)
-+		return;
-+
-+	spin_lock_irqsave(lock, flags);
-+	list_for_each_entry_safe(tmiu, tmp_tmiu, tm_func_queue, node) {
-+		if (tmiu->state == COMMAND_STATE_STATUS) {
-+			spin_unlock_irqrestore(lock, flags);
-+			usb_ep_dequeue(tmiu->ep, tmiu->bh->inreq);
-+			spin_lock_irqsave(lock, flags);
-+		} else
-+			tmiu->state = COMMAND_STATE_ABORTED;
-+	}
-+	spin_unlock_irqrestore(lock, flags);
-+}
-+
-+/**
-+ * do_uasp() - UASP main routine
-+ * @udev: Programming view of uasp device
-+ *
-+ * This function is responsible for operating based on UASP protocol. It is
-+ * responsible for:
-+ * - Getting and initial processing of TM FUNCTION IU or COMMAND IU received
-+ *   from HOST side via command endpoint. For more details please
-+ *   see the description of get_command() function.
-+ * - Processing of TM FUNCTION IUs addressed to IT_NEXUS. For more details
-+ *   please see the tmiu.c file.
-+ * - Processing of COMMAND IUs addressed to IT_NEXUS. For more details
-+ *   please see the tmiu.c file.
-+ * - Running the threads which are responsible for processing of TM FUNCTION
-+ *   and COMMAND IUs addressed to a certain LUN. For more details please see
-+ *   the description of fsg_lun_thread(void *_lun) function.
-+ */
-+void do_uasp(struct uasp_dev *udev)
-+{
-+	unsigned long		flags;
-+	struct fsg_dev		*fsg = &(udev->fsg_dev);
-+	struct uasp_common	*ucommon = udev->ucommon;
-+	int rc;
-+
-+	DBG(ucommon->common, "%s() - Enter\n", __func__);
-+
-+	spin_lock_irqsave(&(fsg->common->lock), flags);
-+	if (!exception_in_progress(fsg->common))
-+		fsg->common->state = FSG_STATE_COMMAND_PHASE;
-+	spin_unlock_irqrestore(&(fsg->common->lock), flags);
-+
-+	if (exception_in_progress(fsg->common))
-+		return;
-+
-+	if (get_command(udev))
-+		return;
-+
-+	spin_lock_irqsave(&(fsg->common->lock), flags);
-+	if (!exception_in_progress(fsg->common))
-+		fsg->common->state = FSG_STATE_DATA_PHASE;
-+	spin_unlock_irqrestore(&(fsg->common->lock), flags);
-+
-+	if (exception_in_progress(fsg->common))
-+		return;
-+
-+	spin_lock_irqsave(&(ucommon->common->lock), flags);
-+	udev->pending_requests = 0;
-+	spin_unlock_irqrestore(&(ucommon->common->lock), flags);
-+
-+	do_tmiu(udev, NULL);
-+	if (exception_in_progress(fsg->common))
-+		return;
-+
-+	do_cmdiu(udev, NULL);
-+	if (exception_in_progress(fsg->common))
-+		return;
-+
-+	remove_completed_commands(udev, &udev->cmd_queue, &udev->tm_func_queue);
-+
-+	spin_lock_irqsave(&(fsg->common->lock), flags);
-+	if (!exception_in_progress(fsg->common)) {
-+		fsg->common->state = FSG_STATE_IDLE;
-+		spin_unlock_irqrestore(&(fsg->common->lock), flags);
-+		run_lun_threads(udev, LUN_STATE_PROCESSING);
-+	} else
-+		spin_unlock_irqrestore(&(fsg->common->lock), flags);
-+
-+	rc = 0;
-+	while (!rc) {
-+		/* If exception is in progress */
-+		if (exception_in_progress(ucommon->common)) {
-+			DBG(ucommon->common,
-+			    "%s() - Exception is in progress\n", __func__);
-+			return;
-+		}
-+
-+		/* Sleep if luns are in processing */
-+		rc = all_lun_state_non_processing(udev);
-+		if (!rc) {
-+			DBG(ucommon->common,
-+			    "%s() - Luns are in process\n", __func__);
-+			goto sleep;
-+		}
-+
-+		/* Wake up if command is received */
-+		if (udev->cmd_buff.state == BUF_STATE_FULL) {
-+			DBG(ucommon->common,
-+			    "%s() - Command is received\n", __func__);
-+			return;
-+		}
-+
-+		/* Wake up if there are pending requests in luns */
-+		if (pending_cmd_in_lun(udev)) {
-+			DBG(ucommon->common,
-+			    "%s() - Pending requests in LUN\n", __func__);
-+			return;
-+		}
-+
-+		/* Wake up if there are pending requests */
-+		if (udev->pending_requests) {
-+			DBG(ucommon->common,
-+			    "%s() - Pending requests in device\n",
-+			     __func__);
-+			return;
-+		}
-+sleep:
-+		/* Try to sleep */
-+		DBG(ucommon->common, "%s() - Going to sleep\n", __func__);
-+		rc = sleep_thread(fsg->common);
-+		if (rc)
-+			return;
-+		DBG(ucommon->common, "%s() - Wakes up\n", __func__);
-+
-+		rc = 0;
-+	}
-+}
-+
-+/**
-+ * close_lun() - Close the backing file of the given LUN
-+ * @ulun: pointer to the LUn to close
-+ *
-+ * This function should be called when fsg_common->filesem is
-+ * taken!
-+ */
-+static void close_lun(struct uasp_lun *ulun)
-+{
-+	struct fsg_lun *fsglun = ulun->lun;
-+	/*TODO: stop lun task and clear all queues!*/
-+
-+	if (!fsg_lun_is_open(fsglun))
-+		return;
-+
-+	fsg_lun_close(fsglun);
-+	fsglun->unit_attention_data = SS_MEDIUM_NOT_PRESENT;
-+}
-+
-+static int lun_exception_in_progress(struct uasp_lun *curlun)
-+{
-+	if (curlun->lun_state > LUN_STATE_PROCESSING)
-+		return 1;
-+
-+	return 0;
-+}
-+
-+/**
-+ * handle_lun_exception() - Abort all TM and CMD IUs for a given LUN
-+ * @udev: Programming view of file storage gadget.
-+ * @curlun: Pointer to struct uasp_lun structure.
-+ *
-+ * This function is responsible for aborting the active TM FUNCTION and
-+ * COMMAND IUs connected to the curlun, removing all TM FUNCTION and COMMAND
-+ * IUs from appropriate queues, and keeping the exception data if there is a
-+ * need.
-+ */
-+static void handle_lun_exception(struct uasp_dev *udev, struct uasp_lun *curlun)
-+{
-+	unsigned long flags;
-+	DBG(udev->ucommon->common, "%s() - Enter\n", __func__);
-+
-+	/* Abort all commands and remove them from lists */
-+	abort_commands(udev, &curlun->cmd_queue, &curlun->tm_func_queue,
-+		       &(curlun->lock));
-+	remove_completed_commands(udev, &curlun->cmd_queue,
-+				   &curlun->tm_func_queue);
-+	curlun->pending_requests = 0;
-+
-+	spin_lock_irqsave(&(curlun->lock), flags);
-+	switch (curlun->lun_state) {
-+	case LUN_STATE_RESET:
-+		curlun->lun->unit_attention_data = SS_RESET_OCCURRED;
-+	case LUN_STATE_OVERLAPPED_TAG:
-+		curlun->lun_state = LUN_STATE_PROCESSING;
-+		break;
-+	case LUN_STATE_EXIT:
-+		curlun->lun_state = LUN_STATE_TERMINATED;
-+		break;
-+	default:
-+		break;
-+	}
-+	spin_unlock_irqrestore(&(curlun->lock), flags);
-+	DBG(udev->ucommon->common, "%s() - Exit\n", __func__);
-+}
-+
-+/**
-+ * uasp_lun_thread() - UASP LUN main thread
-+ * @param: pointer to the uasp LUN structure
-+ *
-+ * Returns 0 on success -1 otherwise
-+ *
-+ * This function is UASP LUN main thread. It consist of a while loop that
-+ * performs the following as long as the LUN state isn't terminated:
-+ * - handles LUN exceptions if such exist
-+ * - handles LUN specific cmd IUs
-+ * - handles LUN specific tm IUs
-+ * - removes completed IUs from cmd and tm queues
-+ */
-+static int uasp_lun_thread(void *param)
-+{
-+	struct uasp_lun		*ulun = (struct uasp_lun *)param;
-+	struct uasp_dev		*udev;
-+	unsigned long		flags;
-+
-+	if (!ulun)
-+		return  -1;
-+	udev = ulun->dev;
-+	DBG(udev->ucommon->common, "%s() - Enter for lun_id = %d\n", __func__,
-+					ulun->lun_id[7]);
-+
-+	while (ulun->lun_state != LUN_STATE_TERMINATED) {
-+		DBG(udev->ucommon->common, "%s() - Wakes up\n", __func__);
-+
-+		if (lun_exception_in_progress(ulun)) {
-+			DBG(udev->ucommon->common,
-+			    "%s() - exception_in_progress!"
-+			      " ulun->lun_state=%d\n", __func__,
-+			    ulun->lun_state);
-+			handle_lun_exception(udev, ulun);
-+			continue;
-+		}
-+
-+		spin_lock_irqsave(&(ulun->lock), flags);
-+		ulun->pending_requests = 0;
-+		spin_unlock_irqrestore(&(ulun->lock), flags);
-+
-+		do_tmiu(udev, ulun);
-+		if (lun_exception_in_progress(ulun))
-+			continue;
-+
-+		do_cmdiu(udev, ulun);
-+		if (lun_exception_in_progress(ulun))
-+			continue;
-+
-+		remove_completed_commands(udev, &ulun->cmd_queue,
-+					  &ulun->tm_func_queue);
-+		if (lun_exception_in_progress(ulun))
-+			continue;
-+
-+		spin_lock_irqsave(&(udev->ucommon->common->lock), flags);
-+		if (!lun_exception_in_progress(ulun)) {
-+			ulun->lun_state = LUN_STATE_IDLE;
-+			wakeup_thread(udev->ucommon->common);
-+		}
-+		spin_unlock_irqrestore(&(udev->ucommon->common->lock), flags);
-+
-+		DBG(udev->ucommon->common, "%s() - Going to sleep\n", __func__);
-+		sleep_lun_thread(ulun);
-+		continue;
-+	}
-+
-+	spin_lock_irqsave(&(udev->ucommon->common->lock), flags);
-+	ulun->lun_thread_task = NULL;
-+	spin_unlock_irqrestore(&(udev->ucommon->common->lock), flags);
-+	/* Let the unbind and cleanup routines know the thread has exited */
-+	complete_and_exit(&ulun->thread_notifier, 0);
-+	return 0;
-+}
-+
-+/**
-+ * uasp_main_thread() - UASP main thread
-+ * @param: pointer to the uasp_common structure
-+ *
-+ * This function is UASP main thread. It consist of a while loop that performs
-+ * the following as long as the state isn't terminated:
-+ * - handles UASP device exceptions if such exist
-+ * - calles do_uasp() (see do_uasp() function for more details)
-+ * - when state is terminated closed all LUNS
-+ */
-+static int uasp_main_thread(void *param)
-+{
-+	struct uasp_common *ucommon = (struct uasp_common *)param;
-+	struct fsg_common  *common = ucommon->common;
-+
-+	/*
-+	 * Allow the thread to be killed by a signal, but set the signal mask
-+	 * to block everything but INT, TERM, KILL, and USR1.
-+	 */
-+	allow_signal(SIGINT);
-+	allow_signal(SIGTERM);
-+	allow_signal(SIGKILL);
-+	allow_signal(SIGUSR1);
-+
-+	/* Allow the thread to be frozen */
-+	set_freezable();
-+
-+	/*
-+	 * Arrange for userspace references to be interpreted as kernel
-+	 * pointers.  That way we can pass a kernel pointer to a routine
-+	 * that expects a __user pointer and it will work okay.
-+	 */
-+	set_fs(get_ds());
-+
-+		/* The main loop */
-+	while (common->state != FSG_STATE_TERMINATED) {
-+		DBG(common, "uasp main loop: continuing\n");
-+		if (exception_in_progress(ucommon->common) ||
-+		    signal_pending(current)) {
-+			DBG(common, "uasp thread main loop: exception\n");
-+			handle_uasp_exception(ucommon);
-+			continue;
-+		}
-+
-+		if (!common->running) {
-+			DBG(common, "uasp thread main loop: not running\n");
-+			sleep_thread(ucommon->common);
-+			continue;
-+		}
-+		do_uasp(ucommon->udev);
-+	}
-+
-+	DBG(common, "uasp main loop: exiting\n");
-+
-+	spin_lock_irq(&common->lock);
-+	common->thread_task = NULL;
-+	spin_unlock_irq(&common->lock);
-+
-+	if (!common->ops || !common->ops->thread_exits ||
-+	    common->ops->thread_exits(common) < 0) {
-+		struct uasp_lun	*ulun = ucommon->uluns;
-+		unsigned i ;
-+		down_write(&common->filesem);
-+		for (i = 0; i < common->nluns; i++, ulun++)
-+			close_lun(ulun);
-+		up_write(&common->filesem);
-+	}
-+
-+	/* Let the unbind and cleanup routines know the thread has exited */
-+	complete_and_exit(&common->thread_notifier, 0);
-+
-+	return 0;
-+}
-+
-+/**
-+ * uasp_common_init() - Init uasp_common data structure
-+ * @common: pointer to inited fsg_common data structure
-+ * @cdev: pointer to usb_composite device that the UASP function is a part of
-+ * @cfg: pointer to fsg_config data structure
-+ *
-+ * This function should be called after (struct fsg_common) common was already
-+ * initiated by fsg_common_init
-+ */
-+static struct uasp_common *uasp_common_init(struct fsg_common *common,
-+					  struct usb_composite_dev *cdev,
-+					    struct fsg_config *cfg)
-+{
-+	struct fsg_lun *flun;
-+	struct uasp_lun *ulun;
-+	struct uasp_common	*ucommon;
-+	int nluns = common->nluns;
-+	int i, rc;
-+
-+	if (!common || !cdev || !cfg)
-+		return NULL;
-+
-+	DBG(common, "%s() - Enter\n", __func__);
-+
-+	ucommon = kzalloc(sizeof *ucommon, GFP_KERNEL);
-+	if (unlikely(!ucommon))
-+		return NULL;
-+
-+	/* Save reference to fsg_common structure in ucommon */
-+	ucommon->common = common;
-+
-+	/*Allocate the uLUNs and init them according to fsg_common luns */
-+	ulun = kzalloc(nluns * sizeof *ulun, GFP_KERNEL);
-+	if (!ulun) {
-+		kfree(ucommon);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+	ucommon->uluns = ulun;
-+
-+	/* Create the reference between ulun and fsg_lun */
-+	for (i = 0, flun = common->luns; i < nluns;
-+				++i, ++flun, ++ulun)
-+		ulun->lun = flun;
-+
-+	/*
-+	 * Buffers in ubufs are static -- no need for additional allocation.
-+	 * Connect each ubuf to fsg_buff from the buffhds cyclic list
-+	 */
-+	for (i = 0; i < FSG_NUM_BUFFERS; i++) {
-+		ucommon->ubufs[i].fsg_buff = &(common->buffhds[i]);
-+		ucommon->ubufs[i].ep = NULL;
-+		ucommon->ubufs[i].stream_id = 0;
-+	}
-+
-+#define OR(x, y) ((x) ? (x) : (y))
-+	/* Tell the thread to start working */
-+	common->thread_task =
-+		kthread_create(uasp_main_thread, (void *)ucommon,
-+			       OR(cfg->thread_name, "file-storage-UASP"));
-+	if (IS_ERR(common->thread_task)) {
-+		rc = PTR_ERR(common->thread_task);
-+		goto error_release;
-+	}
-+#undef OR
-+
-+
-+	/* Information */
-+	INFO(common, UASP_DRIVER_DESC ", version: " UASP_DRIVER_VERSION "\n");
-+	DBG(common, "I/O thread pid: %d\n", task_pid_nr(common->thread_task));
-+
-+	wake_up_process(common->thread_task);
-+
-+	return ucommon;
-+
-+error_release:
-+	common->state = FSG_STATE_TERMINATED;	/* The thread is dead */
-+	/* Call uasp_common_release() directly, ref might be not initialised */
-+	uasp_common_release(&common->ref);
-+	return ERR_PTR(rc);
-+}
-+
-+/**
-+ * finish_lun_init() - Finish the LUN structure inialization
-+ * @udev: Programming view of file storage gadget.
-+ *
-+ * This function is used to init the uasp_lun fileds. It's called from uasp_add
-+ * after the uasp_dev was allocated. It creates (and starts) all lun tasks
-+ */
-+static int finish_lun_init(struct uasp_dev *udev)
-+{
-+	int i, j, rc = 0;
-+	struct uasp_lun *ulun = NULL;
-+	char thread_name[20];
-+
-+	if (!udev)
-+		return -EIO;
-+
-+	for (i = 0, ulun = udev->ucommon->uluns;
-+	       i < udev->ucommon->common->nluns; i++, ulun++) {
-+		/* TODO: this is a workaround, fix later */
-+		memset(ulun->lun_id, 0, 8);
-+		ulun->lun_id[0] = i+1;
-+		INIT_LIST_HEAD(&ulun->cmd_queue);
-+		INIT_LIST_HEAD(&ulun->tm_func_queue);
-+		ulun->lun_state = LUN_STATE_IDLE;
-+		ulun->dev = udev;
-+		ulun->pending_requests = ulun->active_requests = 0;
-+
-+		/* Create and start lun threads */
-+		sprintf(thread_name, "uasp-lun-thread%d", i);
-+		DBG(udev->ucommon->common,
-+		    "creating & starting lun thread: thread_name = %s\n",
-+		    thread_name);
-+
-+		ulun->lun_thread_task = kthread_create(uasp_lun_thread,
-+						       (void *)ulun,
-+						       thread_name);
-+		if (IS_ERR(ulun->lun_thread_task)) {
-+			rc = PTR_ERR(ulun->lun_thread_task);
-+			goto err_lun_init;
-+		}
-+		init_completion(&ulun->thread_notifier);
-+		wake_up_process(ulun->lun_thread_task);
-+	}
-+	INFO(udev->ucommon->common, "All lun threads are started\n");
-+	return rc;
-+
-+err_lun_init:
-+	for (j = 0, ulun = udev->ucommon->uluns ; j < i; j++, ulun++)
-+		ulun->lun_state = LUN_STATE_EXIT;
-+	return rc;
-+}
-+
-+static int __init uasp_bind(struct usb_configuration *c, struct usb_function *f)
-+{
-+	struct uasp_dev		*uaspd = uaspd_from_func(f);
-+	struct fsg_dev		*fsgd = &(uaspd->fsg_dev);
-+	struct usb_gadget	*gadget = c->cdev->gadget;
-+	int			rc;
-+	int			i;
-+	struct usb_ep		*ep;
-+
-+	fsgd->common->gadget = gadget;
-+
-+	/* Allocate new interface */
-+	i = usb_interface_id(c, f);
-+	if (i < 0)
-+		return i;
-+	uasp_intf_desc.bInterfaceNumber = i;
-+	fsgd->interface_number = i;
-+
-+	/* Find all the endpoints we will use */
-+	ep = usb_ep_autoconfig(gadget, &uasp_bulk_in_desc);
-+	if (!ep)
-+		goto autoconf_fail;
-+	ep->driver_data = uaspd;	/* claim the endpoint */
-+	fsgd->bulk_in = ep;
-+
-+	ep = usb_ep_autoconfig(gadget, &uasp_bulk_out_desc);
-+	if (!ep)
-+		goto autoconf_fail;
-+	ep->driver_data = uaspd;	/* claim the endpoint */
-+	fsgd->bulk_out = ep;
-+
-+	ep = usb_ep_autoconfig(gadget, &uasp_status_in_desc);
-+	if (!ep)
-+		goto autoconf_fail;
-+	ep->driver_data = uaspd;	/* claim the endpoint */
-+	uaspd->status = ep;
-+
-+	ep = usb_ep_autoconfig(gadget, &uasp_command_out_desc);
-+	if (!ep)
-+		goto autoconf_fail;
-+	ep->driver_data = uaspd;	/* claim the endpoint */
-+	uaspd->command = ep;
-+
-+	/* Assume endpoint addresses are the same for both speeds */
-+	uasp_ss_bulk_in_desc.bEndpointAddress =
-+		uasp_bulk_in_desc.bEndpointAddress;
-+	uasp_ss_bulk_out_desc.bEndpointAddress =
-+		uasp_bulk_out_desc.bEndpointAddress;
-+	uasp_ss_status_in_desc.bEndpointAddress =
-+		uasp_status_in_desc.bEndpointAddress;
-+	uasp_ss_command_out_desc.bEndpointAddress =
-+		uasp_command_out_desc.bEndpointAddress;
-+	f->ss_descriptors = uasp_ss_function_desc;
-+
-+	return 0;
-+
-+autoconf_fail:
-+	ERROR(fsgd->common, "unable to autoconfigure all endpoints\n");
-+	rc = -ENOTSUPP;
-+	return rc;
-+}
-+
-+static void uasp_unbind(struct usb_configuration *c, struct usb_function *f)
-+{
-+	struct uasp_dev		*uaspd = uaspd_from_func(f);
-+
-+	DBG(uaspd->fsg_dev.common, "unbind\n");
-+	if (uaspd->fsg_dev.common->fsg == &(uaspd->fsg_dev)) {
-+		uaspd->fsg_dev.common->new_fsg = NULL;
-+		raise_exception(uaspd->fsg_dev.common, FSG_STATE_CONFIG_CHANGE);
-+		/* TODO: make interruptible or killable somehow? */
-+		wait_event(uaspd->fsg_dev.common->fsg_wait,
-+			   uaspd->fsg_dev.common->fsg != &(uaspd->fsg_dev));
-+	}
-+	uasp_common_put(uaspd->ucommon);
-+	kfree(uaspd->cmd_buff.buf);
-+	kfree(uaspd);
-+}
-+
-+static int uasp_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
-+{
-+	struct fsg_dev *fsg = fsg_from_func(f);
-+	fsg->common->new_fsg = fsg;
-+	raise_exception(fsg->common, FSG_STATE_CONFIG_CHANGE);
-+	return 0;
-+}
-+
-+static void uasp_disable(struct usb_function *f)
-+{
-+	struct fsg_dev *fsg = fsg_from_func(f);
-+	fsg->common->new_fsg = NULL;
-+	raise_exception(fsg->common, FSG_STATE_CONFIG_CHANGE);
-+	return;
-+}
-+
-+/**
-+ * uasp_add() - Add the UASP function to the given configuration
-+ * @cdev: pointer to the composite device
-+ * @c: usb configuration to add the function to
-+ * @common: pointer to the fsg_common data structure
-+ * @ucommon: pointer to uasp common data structure
-+ *
-+ * Returns 0 on sucsess error code otherwise
-+ *
-+ * Initiate the uasp_function and adds it to the given configuration by calling
-+ * usb_add_function()
-+ */
-+static int uasp_add(struct usb_composite_dev *cdev,
-+		   struct usb_configuration *c,
-+		   struct fsg_common *common,
-+		   struct uasp_common *ucommon)
-+{
-+	struct uasp_dev *uaspd;
-+	int rc;
-+
-+	uaspd = kzalloc(sizeof *uaspd, GFP_KERNEL);
-+	if (unlikely(!uaspd))
-+		return -ENOMEM;
-+
-+	uaspd->fsg_dev.function.name		= UASP_DRIVER_DESC;
-+	uaspd->fsg_dev.function.strings		= fsg_strings_array;
-+	uaspd->fsg_dev.function.descriptors	= uasp_hs_function_desc;
-+	uaspd->fsg_dev.function.hs_descriptors	= uasp_hs_function_desc;
-+	uaspd->fsg_dev.function.bind		= uasp_bind;
-+	uaspd->fsg_dev.function.unbind		= uasp_unbind;
-+	uaspd->fsg_dev.function.set_alt		= uasp_set_alt;
-+	uaspd->fsg_dev.function.disable		= uasp_disable;
-+
-+	uaspd->fsg_dev.common			= common;
-+
-+	uaspd->ucommon = ucommon;
-+
-+	/* Init the command and status buffers */
-+	uaspd->cmd_buff.buf = kmalloc(FSG_BUFLEN, GFP_KERNEL);
-+	if (unlikely(!uaspd->cmd_buff.buf)) {
-+		rc = -ENOMEM;
-+		goto uasp_add_err;
-+	}
-+
-+	ucommon->udev = uaspd;
-+	rc = finish_lun_init(uaspd);
-+	if (rc)
-+		goto uasp_add_err;
-+
-+	INIT_LIST_HEAD(&uaspd->cmd_queue);
-+	INIT_LIST_HEAD(&uaspd->tm_func_queue);
-+	/*
-+	 * Our caller holds a reference to common structure so we don't have
-+	 * to be worry about it being freed until we return from this function.
-+	 * So instead of incrementing counter now and decrement in error
-+	 * recovery we increment it only when call to usb_add_function() was
-+	 * successful.
-+	 */
-+	rc = usb_add_function(c, &uaspd->fsg_dev.function);
-+
-+	if (likely(rc == 0))
-+		fsg_common_get(uaspd->fsg_dev.common);
-+	else
-+		goto uasp_add_err;
-+
-+	return rc;
-+uasp_add_err:
-+	kfree(ucommon);
-+	kfree(uaspd->cmd_buff.buf);
-+	kfree(uaspd);
-+	return rc;
-+}
-+
-+/**
-+ * fill_usb_request() - fills the usb_request structure with the given values.
-+ * @req: pointer to usb_request structure to be filled.
-+ * @buf: the buffer to send/receive
-+ * @length: length field of the request.
-+ * @zero: zero field of the request.
-+ * @context: context field of the request.
-+ * @short_not_ok: short_not_ok field of the request.
-+ * @stream_id: stream_id field of the request.
-+ * @complete: complete function to be called on request completion
-+ *
-+ */
-+void fill_usb_request(struct usb_request *req,
-+		      void *buf,
-+		      unsigned length,
-+		      unsigned zero,
-+		      void *context,
-+		      unsigned short_not_ok,
-+		      unsigned stream_id,
-+		      usb_request_complete_t complete)
-+{
-+	req->buf = buf;
-+	req->length = length;
-+	req->zero = zero;
-+	req->context = context;
-+	req->short_not_ok = short_not_ok;
-+	req->stream_id = stream_id;
-+	req->complete = complete;
-+}
-+
-diff --git a/drivers/usb/gadget/f_uasp.h b/drivers/usb/gadget/f_uasp.h
-new file mode 100644
-index 0000000..e7cadbc
---- /dev/null
-+++ b/drivers/usb/gadget/f_uasp.h
-@@ -0,0 +1,414 @@
-+/*
-+ * f_uasp.h -- Mass Storage USB UASP Composite Function header
-+ *
-+ * Copyright (C) 2003-2005 Alan Stern
-+ * Copyright (C) 2011 Code Aurora Forum.
-+ * All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _F_UASP_H
-+#define _F_UASP_H
-+
-+#include <linux/kernel.h>
-+#include <scsi/scsi.h>
-+
-+/*
-+ * Number of supported streams on the bulk eps
-+ * Actual number of streams is 2^UASP_BULK_NUM_STREAMS
-+ * 0 = doensn't support streaming
-+ */
-+#define UASP_BULK_NUM_STREAMS	0
-+
-+#define UASP_DRIVER_DESC	"Mass Storage UASP Function"
-+#define UASP_DRIVER_VERSION	"2010/07/1"
-+
-+#if UASP_BULK_NUM_STREAMS > 0
-+#define UASP_NUM_BUFFERS	(UASP_BULK_NUM_STREAMS*FSG_NUM_BUFFERS)
-+#else
-+#define UASP_NUM_BUFFERS	FSG_NUM_BUFFERS
-+#endif
-+
-+/* Pipe usage descriptor: refer to UAS spec 5.3.3.5 */
-+#define USB_DT_PIPE_USAGE	0x24
-+
-+typedef void (*usb_request_complete_t)(struct usb_ep *ep,
-+				      struct usb_request *req);
-+
-+/* IU identifier summary - see table 10 of the UAS Spec */
-+enum iu_id {
-+	IU_ID_COMMAND			= 0x01,
-+	IU_ID_SENSE			= 0x03,
-+	IU_ID_RESPONSE			= 0x04,
-+	IU_ID_TASK_MANAGEMENT		= 0x05,
-+	IU_ID_READ_READY		= 0x06,
-+	IU_ID_WRITE_READY		= 0x07,
-+};
-+
-+/* TASK ATTRIBUTE field - see table 13 of the UAS Spec */
-+enum task_attribute_data {
-+	TASK_ATTR_SIMPLE		= 0,
-+	TASK_ATTR_HEAD_OF_QUEUE		= 1,
-+	TASK_ATTR_ORDERED		= 2,
-+	TASK_ATTR_ACA			= 4,
-+};
-+
-+/* Macros for accessing UAS IU fields, which are big-endian */
-+#define IUSETW2(w, h, l) ((w)[0] = (u_int8_t)(h), (w)[1] = (u_int8_t)(l))
-+#define IUCONSTW(x)	{ ((x) >> 8) & 0xff, (x) & 0xff }
-+#define IUCONSTDW(x)	{ ((x) >> 24) & 0xff, ((x) >> 16) & 0xff, \
-+			((x) >> 8) & 0xff, (x) & 0xff }
-+#define IUGETW(w) (((w)[0] << 8) | (w)[1])
-+#define IUSETW(w, v) ((w)[0] = (u_int8_t)((v) >> 8), (w)[1] = (u_int8_t)(v))
-+#define IUGETDW(w) (((w)[0] << 24) | ((w)[1] << 16) | ((w)[2] << 8) | (w)[3])
-+#define IUSETDW(w, v) ((w)[0] = (u_int8_t)((v) >> 24), \
-+		      (w)[1] = (u_int8_t)((v) >> 16), \
-+		      (w)[2] = (u_int8_t)((v) >> 8), \
-+		      (w)[3] = (u_int8_t)(v))
-+
-+/* USB_DT_PIPE_USAGE: Pipe usage descriptor */
-+struct usb_pipe_usage_descriptor {
-+	__u8  bLength;
-+	__u8  bDescriptorType;
-+
-+	__u8  bPipeID;
-+/* Pipe ID defenitions: Table 9 from UAS spec*/
-+#define PIPE_ID_CMD		0x01	/* Command pipe */
-+#define PIPE_ID_STS		0x02	/* Status pipe */
-+#define PIPE_ID_DATA_IN		0x03	/* Data-in piep */
-+#define PIPE_ID_DATA_OUT	0x04	/* Data-out pipe */
-+	__u8  Reserved;
-+} __attribute__ ((packed));
-+
-+/**
-+ * struct uasp_buff - UASP buffer definition.
-+ * @fsg_buff: pointer to the fsg_buf that this structure extends
-+ * @ep: the ep the buff was allocated for
-+ * @stream_id: Same as in struct usb_req
-+ *
-+ * Extends the struct fsg_buffhd. Each (used) buffer will be assigned to a
-+ * specific stream. The stream is the same as the stream_id in the usb_request
-+ * the buffer is assigned for.
-+ * Note: stream_id has a meaning only when ep != null
-+ */
-+struct uasp_buff {
-+	struct fsg_buffhd	*fsg_buff;
-+	struct usb_ep		*ep;
-+	unsigned		stream_id:16;
-+};
-+
-+/**
-+ * struct uasp_common - Common data shared by all UASP devices
-+ * @udev: Programming view of uasp device.
-+ * @common: points to fsg_common in fsg_dev
-+ * @ubufs: buffers to be used by the uasp device. Each element in
-+ *	ubufs[i].fsg_buff points to a fsg_buffhd struct from fsg_common data
-+ *	structure
-+ * @uluns: luns of the uasp device. Each element in uluns[i].lun points to a
-+ *	fsg_lun array element from fsg_common data structure
-+ * @kref:
-+ *
-+ * Extends the struct fsg_common structure.
-+ */
-+struct uasp_common {
-+	struct uasp_dev		*udev;
-+	struct fsg_common	*common;
-+	/*
-+	 * TODO: fix this to ubufs[UASP_NUM_BUFFERS]
-+	 * There is a 1:1 connection between ubufs[i] and fcommon->fsg_buff[i]
-+	 * and since there are FSG_NUM_BUFFERS fsg_buffers this needs to be
-+	 * fixed!
-+	 */
-+	struct uasp_buff	ubufs[FSG_NUM_BUFFERS];
-+	struct uasp_lun		*uluns;
-+	struct kref		ref;
-+};
-+
-+/* Extends fsg_dev */
-+struct uasp_dev {
-+	struct fsg_dev		fsg_dev;
-+
-+	struct uasp_common	*ucommon;
-+	struct usb_ep		*status;
-+	struct usb_ep		*command;
-+	struct fsg_buffhd	cmd_buff;
-+
-+	unsigned int		cmd_enabled;
-+	unsigned int		status_enabled;
-+	/* General Command IUs queue */
-+	struct list_head	cmd_queue;
-+	/* General Task Management IUs queue */
-+	struct list_head	tm_func_queue;
-+	int			active_requests;
-+	int			pending_requests;
-+};
-+
-+/* LUN state */
-+enum lun_state {
-+	LUN_STATE_IDLE			= 0,
-+	LUN_STATE_PROCESSING		= 1,
-+	LUN_STATE_RESET			= 2,
-+	LUN_STATE_OVERLAPPED_TAG	= 3,
-+	LUN_STATE_EXIT			= 4,
-+	LUN_STATE_TERMINATED		= 5,
-+};
-+
-+/* Extends struct fsg_lun */
-+struct uasp_lun {
-+	struct fsg_lun		*lun;
-+	u8			lun_id[8];
-+	/* Command IUs queue */
-+	struct list_head	cmd_queue;
-+	/* TaskManagement IUs queue */
-+	struct list_head	tm_func_queue;
-+	enum lun_state		lun_state;
-+	struct uasp_dev		*dev;
-+
-+	/* lock protects: state, all the req_busy's */
-+	spinlock_t		lock;
-+
-+	int			thread_wakeup_needed;
-+	struct task_struct	*lun_thread_task;
-+	struct completion	thread_notifier;
-+
-+	int			pending_requests;
-+	int			active_requests;
-+};
-+
-+
-+/* COMMAND IU related defenitions*/
-+/* COMMAND IU state */
-+enum command_state {
-+	COMMAND_STATE_IDLE		= 0,
-+	COMMAND_STATE_RR_WR		= 1,
-+	COMMAND_STATE_DATA		= 2,
-+	COMMAND_STATE_STATUS		= 3,
-+	COMMAND_STATE_ABORTED		= 4,
-+	COMMAND_STATE_COMPLETED		= 5,
-+	COMMAND_STATE_FAILED		= 6,
-+};
-+
-+/* COMMAND IU - Section 6.2.2 from UAS Spec */
-+struct cmd_iu {
-+	u8 iu_id;	/* should be set to 01h*/
-+	u8 reserved;
-+	u8 ip_tag[2];	/* section 4.2 of the UAS spec*/
-+
-+	struct {
-+		unsigned reserved:1;
-+		unsigned command_priority:4;
-+		unsigned task_attribute:3;
-+	} __attribute__((packed)) forth_byte;
-+
-+	u8 reserved5; /* Should be set to 0 */
-+	u8 length; /*
-+		    * length is represented only by bits 2-7.
-+		    * bits 0-1 are reserved
-+		    */
-+	u8 reserved7; /*place holder. should be 0*/
-+	u8 lun[8];
-+	u8 cdb[16];
-+	u8 *add_cdb;	/* Additional cdb bytes*/
-+
-+	/* Buffer connected to the certain COMMAND IU */
-+	struct fsg_buffhd *bh;
-+
-+	/* State of the COMMAND IU */
-+	int state;
-+	/* Endpoint on which the processing of COMMAND IU currently performs */
-+	struct usb_ep *ep;
-+
-+#define CMD_REQ_NOT_SUBMITTED	0
-+#define CMD_REQ_IN_PROGRESS	1
-+#define CMD_REQ_COMPLETED	2
-+	/*
-+	 * Status of the struct usb_request item submitted for certain
-+	 * COMMAND IU
-+	 */
-+	u8 req_sts;
-+
-+	/* For READ, WRITE, VERIFY SCSI COMMANDs the current file offset  */
-+	u32 file_offset;
-+	 /*
-+	  * For READ, WRITE, VERIFY SCSI COMMANDs the remaining
-+	  * transfer length
-+	  */
-+	u32 xfer_len;
-+
-+	/* Link for adding to the queue */
-+	struct list_head node;
-+};
-+
-+
-+/* STATUS values of SENSE IU as defined in SAM-4 */
-+enum status_code_data {
-+	STATUS_GOOD =			0x00,
-+	STATUS_CHECK_CONDITION =	0x02,
-+	STATUS_CONDITION_MET =		0x04,
-+	STATUS_BUSY =			0x08,
-+	STATUS_RESERVATION_CONFLICT =	0x18,
-+	STATUS_TASK_SET_FULL =		0x28,
-+	STATUS_ACA_ACTIVE =		0x30,
-+	STATUS_TASK_ABORTED =		0x40,
-+};
-+
-+/* SENSE IU - section 6.2.5 of the UAS spec */
-+struct sense_iu {
-+	__u8 iu_id;	/* should be 0x03h*/
-+	__u8 reserved1;
-+	__u8 ip_tag[2];/* section 4.2 of the UAS spec*/
-+	__u8 length[2];	/*
-+			 * Contains the number of bytes that follow the
-+			 * SENSE IU. If no sense data is avaliable, then the
-+			 * length field should be 0
-+			 */
-+	__u8 status;	/* Status code*/
-+	__u8 reserved2;
-+	__u8 sense_data[5];
-+} __attribute__ ((packed));
-+#define UASP_SIZEOF_SENSE_IU	13
-+
-+/* TASK MANAGEMENT IU related defenitions */
-+/* TM FUNCTION types - see table 20 of the UAS Spec */
-+enum tm_function_data {
-+	TM_FUNCTION_ABORT_TASK			= 0x01,
-+	TM_FUNCTION_ABORT_TASK_SET		= 0x02,
-+	TM_FUNCTION_CLEAR_TASK_SET		= 0x04,
-+	TM_FUNCTION_RESET_LUN			= 0x08,
-+	TM_FUNCTION_IT_NEXUS_RESET		= 0x10,
-+	TM_FUNCTION_CLEAR_ACA			= 0x40,
-+	TM_FUNCTION_QUERY_TASK			= 0x80,
-+	TM_FUNCTION_QUERY_TASK_SET		= 0x81,
-+	TM_FUNCTION_QUERY_ASYNC_EVENT	= 0x82,
-+};
-+
-+/* TM FUNCTION IU  - see table 19 of the UAS Spec */
-+struct tm_iu {
-+	u8 iu_id;	/* Should be set to 05h */
-+	u8 reserved1;
-+	u8 ip_tag[2];	/* section 4.2 of the UAS spec */
-+	u8 tm_function; /* valid values defined in tm_function_data */
-+	u8 reserved5;
-+	/* Reserved for all tm_functions but ABORT_TASK and QUERY_TASK */
-+	u8 task_tag[2];
-+	u8 lun[8];
-+
-+	/* Buffer connected to the certain TM FUNCTION IU */
-+	struct fsg_buffhd *bh;
-+	/*
-+	 * Endpoint on which the processing of TM FUNCTION IU
-+	 * currently performs
-+	 */
-+	struct usb_ep *ep;
-+	/* State of the TM FUNCTION IU */
-+	int state;
-+	/* Link for adding to the queue */
-+	struct list_head node;
-+};
-+
-+/* Response code values of RESPONSE IU - see table 18 of the UAS Spec */
-+enum response_code_data {
-+	RESPONSE_TM_FUNCTION_COMPLETE		= 0x00,
-+	RESPONSE_INVALID_IU			= 0x02,
-+	RESPONSE_TM_FUNCTION_NOT_SUPPORTED	= 0x04,
-+	RESPONSE_TM_FUNCTION_FAILED		= 0x05,
-+	RESPONSE_TM_FUNCTION_SUCCEEDED		= 0x08,
-+	RESPONSE_INCORRECT_LUN			= 0x09,
-+	RESPONSE_OVERLAPPED_TAG_ATTEMPTED	= 0x0A,
-+};
-+
-+/* RESPONSE IU - see table 17 of the UAS Spec */
-+struct response_iu {
-+	__u8 iu_id;	/* Should be set to 04h*/
-+	__u8 reserved;
-+	__u8 ip_tag[2];
-+	__u8 resp_info[3];
-+	__u8 status;	/* Response code*/
-+} __attribute__ ((packed));
-+#define UASP_SIZEOF_RESPONSE_IU		8
-+
-+void fill_usb_request(struct usb_request *req,
-+		      void *buf,
-+		      unsigned length,
-+		      unsigned zero,
-+		      void *context,
-+		      unsigned short_not_ok,
-+		      unsigned stream_id,
-+		      usb_request_complete_t complete);
-+
-+/* Completion callback of the bulk in endpoint for SS mode. */
-+void uasp_bulk_in_complete(struct usb_ep *ep, struct usb_request *req);
-+
-+/**
-+ * uasp_bulk_in_complete() - Callback function for the bulk IN endpoint
-+ * @ep: pointer to the usb_ep (bulk IN endpoint)
-+ * @req: usb_request received on this endpoint
-+ *
-+ * This function is passed to the outreq->complete() of the bulk IN endpoint.
-+ * The requests cmdiu state is updated according to the completion status of
-+ * the usb request. If the cmdiu was LUN specific, the  corresponding LUN
-+ * thread is awaken. If it was general, uasp main thread is awaken.
-+ */
-+void uasp_bulk_out_complete(struct usb_ep *ep, struct usb_request *req);
-+
-+/**
-+ * status_complete() - Callback function for the status endpoint
-+ * @ep: pointer to the usb_ep (status endpoint)
-+ * @req: usb_request received on this endpoint
-+ *
-+ * This function is passed to the outreq->complete() of the status endpoint.
-+ * If the request completion status isn't ECONNRESET the requests tmiu/cmdiu
-+ * state is updated to aborted/completed/failed (according to the completion
-+ * status of the usb request). If the tmiu/cmdiu was LUN specific, the
-+ * corresponding LUN thread is awaken. If it was general, uasp main thread is
-+ * awaken.
-+ */
-+void status_complete(struct usb_ep *ep, struct usb_request *req);
-+
-+/**
-+ * abort_commands() - Aborts all IUs on given queues
-+ * @udev: Programming view of uasp device
-+ * @cmd_queue: pointer to the cmd IUs queue to abort IUs from
-+ * @tm_func_queue: pointer to the tm IUs queue to abort IUs from
-+ * @lock: pointer to spinlock_t to lock when performing the abort.
-+ *	Can be udev->lock if the cmd_queue and the tm_func_queue are general,
-+ *	or curlun->lock if they belong to a specific LUN
-+ *
-+ * TODO: Add wait mechanism using curlun->active_requests or
-+ * udev->active_requests
-+ */
-+void abort_commands(struct uasp_dev *udev,
-+			struct list_head *cmd_queue,
-+			struct list_head *tm_func_queue,
-+			spinlock_t *lock);
-+
-+/**
-+ * run_lun_threads() - Wakeup all LUN threads with a given state
-+ * @udev: Programming view of uasp device
-+ * @state: The state to run the LUn in (from enum lun_state)
-+ *
-+ */
-+void run_lun_threads(struct uasp_dev *udev, int state);
-+
-+/**
-+ * all_lun_state_non_processing() - Returns 1, if all luns are in
-+ * none-processing state
-+ * @udev: Programming view of uasp device
-+ *
-+ */
-+int all_lun_state_non_processing(struct uasp_dev *udev);
-+
-+#endif /* _F_UASP_H */
-diff --git a/drivers/usb/gadget/mass_storage.c b/drivers/usb/gadget/mass_storage.c
-index 0182242..8faa850 100644
---- a/drivers/usb/gadget/mass_storage.c
-+++ b/drivers/usb/gadget/mass_storage.c
-@@ -62,6 +62,7 @@
- #include "config.c"
- #include "epautoconf.c"
- #include "f_mass_storage.c"
-+#include "f_uasp.c"
- 
- /*-------------------------------------------------------------------------*/
- 
-@@ -75,7 +76,7 @@ static struct usb_device_descriptor msg_device_desc = {
- 	/* Vendor and product id can be overridden by module parameters.  */
- 	.idVendor =		cpu_to_le16(FSG_VENDOR_ID),
- 	.idProduct =		cpu_to_le16(FSG_PRODUCT_ID),
--	.bNumConfigurations =	1,
-+	.bNumConfigurations =	2,
- };
- 
- static struct usb_otg_descriptor otg_descriptor = {
-@@ -130,7 +131,8 @@ static int __init msg_do_config(struct usb_configuration *c)
- 	fsg_config_from_params(&config, &mod_data);
- 	config.ops = &ops;
- 
--	retp = fsg_common_init(&common, c->cdev, &config);
-+	/* Init fsg_common and start the fsg main thread */
-+	retp = fsg_common_init(&common, c->cdev, &config, 1);
- 	if (IS_ERR(retp))
- 		return PTR_ERR(retp);
- 
-@@ -145,19 +147,72 @@ static struct usb_configuration msg_config_driver = {
- 	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
- };
- 
-+static int __init uasp_do_config(struct usb_configuration *c)
-+{
-+	static const struct fsg_operations ops = {
-+		.thread_exits = msg_thread_exits,
-+	};
-+
-+	struct fsg_common *fcommon;
-+	struct uasp_common *ucommon;
-+	struct fsg_config config;
-+	int ret = 0;
-+
-+	fsg_config_from_params(&config, &mod_data);
-+	config.ops = &ops;
-+	fcommon = fsg_common_init(0, c->cdev, &config, 0);
-+	if (IS_ERR(fcommon))
-+		return PTR_ERR(fcommon);
-+
-+	ucommon = uasp_common_init(fcommon, c->cdev, &config);
-+	if (IS_ERR(ucommon))
-+		return PTR_ERR(ucommon);
-+	ret = uasp_add(c->cdev, c, fcommon, ucommon);
-+	uasp_common_put(ucommon);
-+
-+	return ret;
-+}
-+
-+static struct usb_configuration uasp_config_driver = {
-+	.label			= "Linux UASP File-Backed Storage",
-+	.bConfigurationValue	= 2,
-+	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
-+};
-+
-+
- 
- /****************************** Gadget Bind ******************************/
- 
-+bool use_uasp ;
-+module_param(use_uasp, bool, S_IRUGO | S_IWUSR);
- static int __init msg_bind(struct usb_composite_dev *cdev)
- {
- 	int status;
- 
--	status = usb_add_config(cdev, &msg_config_driver, msg_do_config);
--	if (status < 0)
--		return status;
--
- 	dev_info(&cdev->gadget->dev,
- 		 DRIVER_DESC ", version: " DRIVER_VERSION "\n");
-+
-+	if (use_uasp) {
-+		/*
-+		 * TODO: fix the bellow!
-+		 * Right now the host always chooses the first configuration.
-+		 * Untill this is fixed, if we want the device to opperate in
-+		 * UASP mode we switch the configurations numbers
-+		 */
-+		msg_config_driver.bConfigurationValue = 2;
-+		uasp_config_driver.bConfigurationValue = 1;
-+		/* register uasp configuration */
-+		status = usb_add_config(cdev, &uasp_config_driver,
-+					uasp_do_config);
-+		if (status < 0)
-+			return status;
-+	} else {
-+		/* register our second configuration */
-+		status = usb_add_config(cdev, &msg_config_driver,
-+					msg_do_config);
-+		if (status < 0)
-+			return status;
-+	}
- 	set_bit(0, &msg_registered);
- 	return 0;
- }
-diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
-index b015561..861c7ff 100644
---- a/drivers/usb/gadget/storage_common.c
-+++ b/drivers/usb/gadget/storage_common.c
-@@ -220,6 +220,7 @@ struct interrupt_data {
- #define SS_UNRECOVERED_READ_ERROR		0x031100
- #define SS_WRITE_ERROR				0x030c02
- #define SS_WRITE_PROTECTED			0x072700
-+#define SS_OVERLAPPED_COMMANDS_ATTEMPTED	0x0b4e00
- 
- #define SK(x)		((u8) ((x) >> 16))	/* Sense Key byte, etc. */
- #define ASC(x)		((u8) ((x) >> 8))
-@@ -263,7 +264,7 @@ static struct fsg_lun *fsg_lun_from_dev(struct device *dev)
- #define DELAYED_STATUS	(EP0_BUFSIZE + 999)	/* An impossibly large value */
- 
- /* Number of buffers we will use.  2 is enough for double-buffering */
--#define FSG_NUM_BUFFERS	2
-+#define FSG_NUM_BUFFERS	4
- 
- /* Default size of buffer length. */
- #define FSG_BUFLEN	((u32)16384)
 diff --git a/drivers/usb/gadget/uasp_cmdiu.c b/drivers/usb/gadget/uasp_cmdiu.c
-new file mode 100644
-index 0000000..8a7b34e
---- /dev/null
+index 8a7b34e..1444d56 100644
+--- a/drivers/usb/gadget/uasp_cmdiu.c
 +++ b/drivers/usb/gadget/uasp_cmdiu.c
-@@ -0,0 +1,91 @@
-+/*
-+ * uasp_cmdiu.c -- Mass Storage UAS Protocol - COMMAND IUs handling
-+ *		   implementation
-+ *
-+ * Copyright (C) 2003-2005 Alan Stern
-+ * Copyright (C) 2011 Code Aurora Forum.
-+ * All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
+@@ -48,6 +48,53 @@ struct fsg_buffhd *get_buffhd(struct fsg_buffhd *bh)
+ }
+ 
+ /**
++ * check_cmdiu() - initial verification of the COMMAND IU
++ * @udev: Programming view of UASP device.
++ * @curlun: Pointer to struct lun if the COMMAND IU to be checked is addressed
++ *	to a valid LUN, 0 otherwise.
++ * @cmdiu: COMMAND IU to be checked.
++ * @needs_medium: Specifies, is the medium needed for the COMMAND IU processing.
 + */
-+
-+#include <linux/list.h>
-+#include "f_uasp.h"
-+
-+/**
-+ * get_buffhd() - returns a buffer fot IU processing
-+ * @bh: Array of the buffers in which the search should be done.
-+ *
-+ * Return pointer to the found buffer if it exists, 0 otherwise.
-+ *
-+ * This function tries to find a free buffer for COMMAND IU or
-+ * TM FUNCTION IU processing.
-+ */
-+struct fsg_buffhd *get_buffhd(struct fsg_buffhd *bh)
++static uint32_t check_cmdiu(struct uasp_dev *udev,
++			    struct uasp_lun *curlun,
++			    struct cmd_iu *cmdiu,
++			    u8 needs_medium)
 +{
-+	int i;
++	u32 ua_data = 0;
 +
-+	for (i = 0; i < FSG_NUM_BUFFERS; i++) {
-+		if (bh[i].state == BUF_STATE_EMPTY) {
-+			bh[i].state = BUF_STATE_BUSY;
-+			return &bh[i];
++	DBG(udev->ucommon->common, "%s() - Enter\n", __func__);
++
++	if (!curlun || !curlun->lun) {
++		if (cmdiu->cdb[0] != INQUIRY &&
++		    cmdiu->cdb[0] != REQUEST_SENSE) {
++			DBG(udev->ucommon->common,
++			      "%s() - Logical unit is not supported\n",
++			      __func__);
++			return SS_LOGICAL_UNIT_NOT_SUPPORTED;
++		}
++	} else {
++		if (curlun->lun->unit_attention_data &&
++		    cmdiu->cdb[0] != INQUIRY &&
++		    cmdiu->cdb[0] != REQUEST_SENSE) {
++			DBG(udev->ucommon->common,
++			    "%s() - There is an unit attention condition\n",
++			    __func__);
++			ua_data = curlun->lun->unit_attention_data;
++			curlun->lun->unit_attention_data = SS_NO_SENSE;
++			return ua_data;
 +		}
 +	}
 +
-+	return NULL;
++	if (curlun && !(curlun->lun->filp) && needs_medium) {
++		DBG(udev->ucommon->common,
++		    "%s() - Medium is not present\n", __func__);
++		return SS_MEDIUM_NOT_PRESENT;
++	}
++
++	return SS_NO_SENSE;
 +}
 +
 +/**
-+ * fill_sense_iu() - fills the struct sense_iu with a given values.
+  * fill_sense_iu() - fills the struct sense_iu with a given values.
+  * @udev: Programming view of UASP device.
+  * @siu: Pointer to structure to be filled.
+@@ -77,6 +124,330 @@ void fill_sense_iu(struct uasp_dev *udev,
+ }
+ 
+ /**
++ * do_uasp_inquiry() - performs INQUIRY SCSI command.
 + * @udev: Programming view of UASP device.
-+ * @siu: Pointer to structure to be filled.
-+ * @ip_tag: ip_tag field of the structure.
-+ * @status: status field of the structure.
-+ * @sense_data: sense_data field of the structure.
++ * @curlun: Pointer to struct uasp_lun if the COMMAND IU to be
++ *	performed is addressed to a valid LUN, 0 otherwise.
++ * @cmdiu: COMMAND IU to be performed.
++ *
++ * Returns 1 if usb request should be submitted to PCD after cmdiu processing,
++ *         0 otherwise.
 + */
-+void fill_sense_iu(struct uasp_dev *udev,
-+	       struct sense_iu *siu,
-+	       u16 ip_tag,
-+	       u8 status,
-+	       u32 sense_data)
++static int do_uasp_inquiry(struct uasp_dev *udev,
++			struct uasp_lun *curlun,
++			struct cmd_iu *cmdiu)
 +{
-+	DBG(udev->ucommon->common, "%s()\n", __func__);
-+
-+	siu->iu_id = IU_ID_SENSE;
-+	siu->reserved1 = 0;
-+	IUSETW(siu->ip_tag, ip_tag);
-+	IUSETW(siu->length, 2);
-+	if (sense_data)
-+		IUSETW(siu->length, 5);
-+	siu->status = status;
-+	siu->reserved2 = 0;
-+	siu->sense_data[0] = SK(sense_data);
-+	siu->sense_data[1] = ASC(sense_data);
-+	siu->sense_data[2] = ASCQ(sense_data);
++	return 0;
 +}
 +
++
 +/**
-+ * do_cmdiu() - This function performs the COMMAND IUs from a given queue.
++ * do_uasp_request_sense() - performs REQUEST SENSE SCSI command.
 + * @udev: Programming view of UASP device.
-+ * @curlun: Pointer to struct uasp_lun if COMMAND IUs from lun::cmd_queue
-+ *	should be performed, 0 if COMMAND IUs from uasp_dev::cmd_queue should
-+ *	be performed.
++ * @curlun: Pointer to struct uasp_lun if the COMMAND IU to be
++ *	   performed is addressed to a valid LUN, 0 otherwise.
++ * @cmdiu: COMMAND IU to be performed.
++ *
++ * Returns 1 if usb request should be submitted to PCD after cmdiu processing,
++ *         0 otherwise.
 + */
-+void do_cmdiu(struct uasp_dev *udev, struct uasp_lun *curlun)
++static int do_uasp_request_sense(struct uasp_dev *udev,
++			      struct uasp_lun *curlun,
++			      struct cmd_iu *cmdiu)
 +{
-+	DBG(udev->ucommon->common, "%s() - Enter\n", __func__);
-+}
-+
-+
-diff --git a/drivers/usb/gadget/uasp_tmiu.c b/drivers/usb/gadget/uasp_tmiu.c
-new file mode 100644
-index 0000000..4e244ae
---- /dev/null
-+++ b/drivers/usb/gadget/uasp_tmiu.c
-@@ -0,0 +1,61 @@
-+/*
-+ * uasp_tmiu.c -- Mass Storage UAS Protocol - TASK MANAGEMENT IUs handling
-+ *	     implementation
-+ *
-+ * Copyright (C) 2003-2005 Alan Stern
-+ * Copyright (C) 2011 Code Aurora Forum.
-+ * All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#include <linux/list.h>
-+#include "f_uasp.h"
-+
-+/**
-+ * fill_response_iu() - fills the struct response_iu with the given values.
-+ * @udev: Programming view of file storage gadget.
-+ * @riu: Pointer to structure to be filled.
-+ * @ip_tag: ip_tag field of the structure.
-+ * @resp_info: resp_info field of the structure.
-+ * @status: status field of the structure.
-+ */
-+void fill_response_iu(struct uasp_dev *udev,
-+	       struct response_iu *riu,
-+	       uint16_t ip_tag,
-+	       uint32_t resp_info,
-+	       uint8_t status)
-+{
-+	riu->iu_id = IU_ID_RESPONSE;
-+	riu->reserved = 0;
-+	IUSETW(riu->ip_tag, ip_tag);
-+	riu->resp_info[0] = SK(resp_info);
-+	riu->resp_info[1] = ASC(resp_info);
-+	riu->resp_info[2] = ASCQ(resp_info);
-+	riu->status = status;
++	return 0;
 +}
 +
 +/**
-+ * do_tmdiu() - processes the TM FUNCTION IUs from a given queue.
-+ * @udev: Programming view of file storage gadget.
-+ * @curlun: Pointer to struct uasp_lun if TM FUNCTION IUs from
-+ *	uasp_lun::tm_func_queue should be processed,
-+ *	0 if TM FUNCTION IUs from uasp_dev::tm_func_queue should
-+ *	be processed.
++ * do_uasp_test_unit_ready() - performs TEST UNIT READY SCSI command.
++ * @udev: Programming view of UASP device.
++ * @curlun: Pointer to struct uasp_lun if the COMMAND IU to be
++ *	   performed is addressed to a valid LUN, 0 otherwise.
++ * @cmdiu: COMMAND IU to be performed.
++ *
++ * Returns 1 if usb request should be submitted to PCD after cmdiu processing,
++ *         0 otherwise.
 + */
-+void do_tmiu(struct uasp_dev *udev, struct uasp_lun *curlun)
++static int do_uasp_test_unit_ready(struct uasp_dev *udev,
++				struct uasp_lun *curlun,
++				struct cmd_iu *cmdiu)
 +{
-+	DBG(udev->ucommon->common, "%s() - Enter\n", __func__);
++	return 0;
 +}
++
++/**
++ * do_uasp_mode_sense() - performs MODE SENSE(6) and MODE SENSE(10)
++ * SCSI commands.
++ * @udev: Programming view of UASP device.
++ * @curlun: Pointer to struct uasp_lun if the COMMAND IU to be
++ *	   performed is addressed to a valid LUN, 0 otherwise.
++ * @cmdiu: COMMAND IU to performed.
++ *
++ * Returns 1 if usb request should be submitted to PCD after cmdiu processing,
++ *	   0 otherwise.
++ */
++static int do_uasp_mode_sense(struct uasp_dev *udev,
++			   struct uasp_lun *curlun,
++			   struct cmd_iu *cmdiu)
++{
++	return 0;
++}
++
++/**
++ * do_uasp_prevent_allow() - performs PREVENT ALLOW MEDIUM REMOVAL SCSI command.
++ * @udev: Programming view of UASP device.
++ * @curlun: Pointer to struct uasp_lun if the COMMAND IU to be
++ *	   performed is addressed to a valid LUN, 0 otherwise.
++ * @cmdiu: COMMAND IU to be performed.
++ *
++ * Returns 1 if usb request should be submitted to PCD after cmdiu processing,
++ *         0 otherwise.
++ */
++static int do_uasp_prevent_allow(struct uasp_dev *udev,
++			      struct uasp_lun *curlun,
++			      struct cmd_iu *cmdiu)
++{
++	return 0;
++}
++
++/**
++ * do_uasp_read() - performs READ(6), READ(10), READ(12) SCSI commands.
++ * @udev: Programming view of UASP device.
++ * @curlun: Pointer to struct uasp_lun if the COMMAND IU to be performed is
++ *	addressed to a valid LUN, 0 otherwise.
++ * @cmdiu: COMMAND IU to be performed.
++ *
++ * Returns non zero if usb request(s) should be submitted to PCD after cmdiu
++ * processing, 0 otherwise.
++ */
++static int do_uasp_read(struct uasp_dev *udev,
++		     struct uasp_lun *curlun,
++		     struct cmd_iu *cmdiu)
++{
++	return 0;
++}
++
++/**
++ * do_uasp_read_capacity() - This function performs READ CAPACITY SCSI command.
++ * @udev: Programming view of UASP device.
++ * @curlun: Pointer to struct uasp_lun if the COMMAND IU to be performed is
++ *	   addressed to a valid LUN, 0 otherwise.
++ * @cmdiu: COMMAND IU to be performed.
++ *
++ * Returns 1 if usb request should be submitted to PCD after cmdiu processing,
++ *	   0 otherwise.
++ *
++ */
++static int do_uasp_read_capacity(struct uasp_dev *udev,
++			 struct uasp_lun *curlun,
++			 struct cmd_iu *cmdiu)
++{
++	return 0;
++}
++
++/**
++ * do_uasp_read_format_capacities() - performs READ FORMAT CAPACITIES
++ * SCSI command.
++ * @udev: Programming view of UASP device.
++ * @curlun: Pointer to struct uasp_lun if the COMMAND IU to be performed is
++ *	   addressed to a valid LUN, 0 otherwise.
++ * @cmdiu: COMMAND IU to be performed.
++ *
++ * Returns 1 if usb request should be submitted to PCD after cmdiu processing,
++ *         0 otherwise.
++ */
++static int do_uasp_read_format_capacities(struct uasp_dev *udev,
++				       struct uasp_lun *curlun,
++				       struct cmd_iu *cmdiu)
++{
++	return 0;
++}
++
++/**
++ * do_uasp_start_stop() - performs START STOP UNIT SCSI command.
++ * @udev: Programming view of UASP device.
++ * @curlun: Pointer to struct uasp_lun if the COMMAND IU to be performed is
++ *	   addressed to a valid LUN, 0 otherwise.
++ * @cmdiu: COMMAND IU to be performed.
++ *
++ * Returns 1 if usb request should be submitted to PCD after cmdiu processing,
++ *	   0 otherwise.
++ *
++ */
++static int do_uasp_start_stop(struct uasp_dev *udev,
++			   struct uasp_lun *curlun,
++			   struct cmd_iu *cmdiu)
++{
++	return 0;
++}
++
++/**
++ * do_uasp_verify() - This function performs VERIFY SCSI command.
++ * @udev: Programming view of UASP device.
++ * @curlun: Pointer to struct uasp_lun if the COMMAND IU to be performed is
++ *	   addressed to a valid LUN, 0 otherwise.
++ * @cmdiu: COMMAND IU to be performed.
++ *
++ * Returns 1 if usb request should be submitted to PCD after cmdiu processing,
++ *         0 otherwise.
++ */
++static int do_uasp_verify(struct uasp_dev *udev,
++		       struct uasp_lun *curlun,
++		       struct cmd_iu *cmdiu)
++{
++	return 0;
++}
++
++/**
++ * do_uasp_write() - This function performs WRITE(6), WRITE(10), WRITE(12)
++ * SCSI commands.
++ * @udev: Programming view of UASP device.
++ * @curlun: Pointer to struct uasp_lun if the COMMAND IU to be performed is
++ *	   addressed to a valid LUN, 0 otherwise.
++ * @cmdiu: COMMAND IU to be performed.
++ *
++ * Returns: 1 if an IN usb request should be submitted to PCD after processing
++ *	    2 if an OUT usb request should be submitted to PCD after processing
++ *	    0 otherwise.
++ */
++static int do_uasp_write(struct uasp_dev *udev,
++		      struct uasp_lun *curlun,
++		      struct cmd_iu *cmdiu)
++{
++	return 0;
++}
++
++/**
++ * do_uasp_synchronize_cache() - performs SYNCHRONIZE CACHE SCSI command.
++ * @udev: Programming view of UASP device.
++ * @curlun: Pointer to struct uasp_lun if the COMMAND IU to be performed is
++ *	   addressed to a valid LUN, 0 otherwise.
++ * @cmdiu: COMMAND IU to be performed.
++ *
++ * Returns 1 if usb request should be submitted to PCD after cmdiu processing,
++ *         0 otherwise.
++ */
++static int do_uasp_synchronize_cache(struct uasp_dev *udev,
++				  struct uasp_lun *curlun,
++				  struct cmd_iu *cmdiu)
++{
++	return 0;
++}
++
++/**
++ * process_cmdiu() - This function performs a given COMMAND IU.
++ * @udev: Programming view of UASP device.
++ * @curlun: Pointer to struct uasp_lun if the COMMAND IU to be performed is
++ *	   addressed to a valid LUN, 0 otherwise.
++ * @cmdiu: COMMAND IU to be performed.
++ */
++static void process_cmdiu(struct uasp_dev *udev,
++			  struct uasp_lun *curlun,
++			  struct cmd_iu *cmdiu)
++{
++	unsigned long flags;
++	struct sense_iu *siu;
++	struct usb_request *req;
++	int rc = 0;
++
++	DBG(udev->ucommon->common, "%s() Enter. (cmdiu->cdb[0]=%04x)\n",
++	    __func__, cmdiu->cdb[0]);
++
++	/* We're using the backing file */
++	down_read(&udev->ucommon->common->filesem);
++	switch (cmdiu->cdb[0]) {
++	case INQUIRY:
++		rc = do_uasp_inquiry(udev, curlun, cmdiu);
++		break;
++	case MODE_SENSE:
++	case MODE_SENSE_10:
++		rc = do_uasp_mode_sense(udev, curlun, cmdiu);
++		break;
++	case ALLOW_MEDIUM_REMOVAL:
++		rc = do_uasp_prevent_allow(udev, curlun, cmdiu);
++		break;
++	case READ_6:
++	case READ_10:
++	case READ_12:
++		rc = do_uasp_read(udev, curlun, cmdiu);
++		break;
++	case READ_CAPACITY:
++		rc = do_uasp_read_capacity(udev, curlun, cmdiu);
++		break;
++	case READ_FORMAT_CAPACITIES:
++		rc = do_uasp_read_format_capacities(udev, curlun, cmdiu);
++		break;
++	case REQUEST_SENSE:
++		rc = do_uasp_request_sense(udev, curlun, cmdiu);
++		break;
++	case START_STOP:
++		rc = do_uasp_start_stop(udev, curlun, cmdiu);
++		break;
++	case SYNCHRONIZE_CACHE:
++		rc = do_uasp_synchronize_cache(udev, curlun, cmdiu);
++		break;
++	case TEST_UNIT_READY:
++		rc = do_uasp_test_unit_ready(udev, curlun, cmdiu);
++		break;
++	case VERIFY:
++		rc = do_uasp_verify(udev, curlun, cmdiu);
++		break;
++	case WRITE_6:
++	case WRITE_10:
++	case WRITE_12:
++		rc = do_uasp_write(udev, curlun, cmdiu);
++		break;
++	case FORMAT_UNIT:
++	case MODE_SELECT:
++	case MODE_SELECT_10:
++	case RELEASE:
++	case RESERVE:
++	case SEND_DIAGNOSTIC:
++	default:
++		ERROR(udev->ucommon->common,
++		      "%s(): Unsupported  command = %x\n",
++		    __func__, cmdiu->cdb[0]);
++		cmdiu->state = COMMAND_STATE_STATUS;
++		siu = (struct sense_iu *)cmdiu->bh->inreq->buf;
++		fill_sense_iu(udev, siu, IUGETW(cmdiu->ip_tag),
++			      STATUS_CHECK_CONDITION,
++			      SS_INVALID_COMMAND);
++		fill_usb_request(cmdiu->bh->inreq, (void *)siu,
++				 UASP_SIZEOF_SENSE_IU, 0,
++				 (void *)cmdiu, 0, IUGETW(cmdiu->ip_tag),
++				 status_complete);
++		cmdiu->ep = udev->status;
++		rc = 1;
++		break;
++	}
++
++	up_read(&udev->ucommon->common->filesem);
++	if (rc) {
++		req = (rc == 2 ? cmdiu->bh->outreq : cmdiu->bh->inreq);
++		if (usb_ep_queue(cmdiu->ep, req, 0)) {
++			ERROR(udev->ucommon->common,
++			      "%s()usb_ep_queue failed\n",  __func__);
++			cmdiu->state = COMMAND_STATE_FAILED;
++		} else {
++			DBG(udev->ucommon->common,
++			    "%s() - process_cmdiu: queued req to ep\n",
++			    __func__);
++			if (curlun) {
++				spin_lock_irqsave(&(curlun->lock), flags);
++				curlun->active_requests++;
++				spin_unlock_irqrestore(&(curlun->lock), flags);
++			} else {
++				spin_lock_irqsave(
++					&(udev->ucommon->common->lock), flags);
++				udev->active_requests++;
++				spin_unlock_irqrestore(
++					&(udev->ucommon->common->lock), flags);
++			}
++		}
++	}
++}
++
++/**
+  * do_cmdiu() - This function performs the COMMAND IUs from a given queue.
+  * @udev: Programming view of UASP device.
+  * @curlun: Pointer to struct uasp_lun if COMMAND IUs from lun::cmd_queue
+@@ -85,7 +456,72 @@ void fill_sense_iu(struct uasp_dev *udev,
+  */
+ void do_cmdiu(struct uasp_dev *udev, struct uasp_lun *curlun)
+ {
++	struct list_head *link;
++	struct cmd_iu *cmdiu, *tmp;
++	unsigned long flags;
++	int cmd_is_active = 0;
++
+ 	DBG(udev->ucommon->common, "%s() - Enter\n", __func__);
++
++	/* Select the cmd_queue from which cmdius should be processed */
++	if (curlun)
++		link = &curlun->cmd_queue;
++	else
++		link = &udev->cmd_queue;
++
++	list_for_each_entry_safe(cmdiu, tmp, link, node) {
++		DBG(udev->ucommon->common, "%s() - Rolling over cmdiu queue\n",
++		     __func__);
++
++		/*
++		 * TODO: this is a workaround. It is added for processing
++		 * of only one command in a certain nexus or lun.
++		 * Remove this after initial testing.
++		 */
++		if (cmd_is_active) {
++			DBG(udev->ucommon->common,
++			    "%s() - Cmdiu is on data stage, do not process"
++				 " next cmdiu\n", __func__);
++			break;
++		}
++
++		spin_lock_irqsave(&(udev->ucommon->common->lock), flags);
++		if (cmdiu->state == COMMAND_STATE_IDLE) {
++			/* Try to get buffers for cmdiu processing */
++			cmdiu->bh = get_buffhd(udev->ucommon->common->buffhds);
++			spin_unlock_irqrestore(&(udev->ucommon->common->lock),
++					       flags);
++
++			if (!cmdiu->bh) {
++				ERROR(udev->ucommon->common,
++				      "%s() -Didn't manage to get buffers for "
++				      "cmdiu!\n", __func__);
++				continue;
++			}
++		} else if (cmdiu->state == COMMAND_STATE_DATA) {
++			cmd_is_active = 1;
++			if (cmdiu->req_sts == CMD_REQ_COMPLETED)
++				spin_unlock_irqrestore(
++					&(udev->ucommon->common->lock), flags);
++			else {
++				spin_unlock_irqrestore(
++					&(udev->ucommon->common->lock), flags);
++				continue;
++			}
++			cmd_is_active = 0;
++		} else {
++			spin_unlock_irqrestore(&(udev->ucommon->common->lock),
++					       flags);
++			continue;
++		}
++
++		process_cmdiu(udev, curlun, cmdiu);
++
++		if (cmdiu->state == COMMAND_STATE_DATA) {
++			cmd_is_active = 1;
++			break;
++		}
++	}
+ }
+ 
+ 
 -- 
 1.6.3.3
 --
