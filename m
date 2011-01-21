@@ -1,110 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426Ab1AUWO5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 17:14:57 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57623 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754274Ab1AUWO4 (ORCPT
+	id S1754720Ab1AUWPI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 17:15:08 -0500
+Received: from ns2.cypress.com ([157.95.67.5]:35994 "EHLO aliases"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754477Ab1AUWPD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 17:14:56 -0500
-Date: Fri, 21 Jan 2011 14:14:02 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH] leds: Fix warnings when PM is disabled for BD2802
-Message-Id: <20110121141402.30aac149.akpm@linux-foundation.org>
-In-Reply-To: <1295631217-19591-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1295631217-19591-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Jan 2011 17:15:03 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [v4 3/3] 3/3 spi: Cypress TTSP G3 SPI Device Driver
+Date: Fri, 21 Jan 2011 14:14:27 -0800
+Message-ID: <FB9C2CB29A07AB45B575A4E8D2AABC0901518928@labamba.mis.cypress.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [v4 3/3] 3/3 spi: Cypress TTSP G3 SPI Device Driver
+Thread-Index: Acu5TZYiWB6z0/ADRe2sGdb0832MBwAap7EA
+References: <kev@cypress.com> <1294188847-24728-3-git-send-email-kev@cypress.com> <20110112184550.GB9168@core.coreip.homeip.net> <FB9C2CB29A07AB45B575A4E8D2AABC0901490D54@labamba.mis.cypress.com> <4D38182B.60803@codeaurora.org> <20110121092739.GB24214@core.coreip.homeip.net>
+From: "Kevin McNeely" <Kevin.McNeely@cypress.com>
+To: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        "Trilok Soni" <tsoni@codeaurora.org>
+Cc: "David Brown" <davidb@codeaurora.org>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        "Eric Miao" <eric.y.miao@gmail.com>,
+        "Mike Frysinger" <vapier@gentoo.org>,
+        "Henrik Rydberg" <rydberg@euromail.se>,
+        "Alan Cox" <alan@linux.intel.com>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 21 Jan 2011 22:14:28.0549 (UTC) FILETIME=[920ABF50:01CBB9B8]
+X-Brightmail-Tracker: AAAAAA==
+X-MailScanner: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Jan 2011 17:33:37 +0000
-Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+Hi Dmitry,
 
-> The suspend and resume functions will only be referenced when PM is
-> enabled so they generate warnings due to being unreferenced and
-> unexported.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
-> 
-> This is the more usual idiom for fixing this than the patch you added.
-> 
->  drivers/leds/leds-bd2802.c |   30 ++++++++++++++++--------------
->  1 files changed, 16 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/leds/leds-bd2802.c b/drivers/leds/leds-bd2802.c
-> index 22152a2..ef0b868 100644
-> --- a/drivers/leds/leds-bd2802.c
-> +++ b/drivers/leds/leds-bd2802.c
-> @@ -319,20 +319,6 @@ static void bd2802_turn_off(struct bd2802_led *led, enum led_ids id,
->  	bd2802_update_state(led, id, color, BD2802_OFF);
->  }
->  
-> -static void bd2802_restore_state(struct bd2802_led *led)
-> -{
-> -	int i;
-> -
-> -	for (i = 0; i < LED_NUM; i++) {
-> -		if (led->led[i].r)
-> -			bd2802_turn_on(led, i, RED, led->led[i].r);
-> -		if (led->led[i].g)
-> -			bd2802_turn_on(led, i, GREEN, led->led[i].g);
-> -		if (led->led[i].b)
-> -			bd2802_turn_on(led, i, BLUE, led->led[i].b);
-> -	}
-> -}
-> -
->  #define BD2802_SET_REGISTER(reg_addr, reg_name)				\
->  static ssize_t bd2802_store_reg##reg_addr(struct device *dev,		\
->  	struct device_attribute *attr, const char *buf, size_t count)	\
-> @@ -761,6 +747,7 @@ static int __exit bd2802_remove(struct i2c_client *client)
->  	return 0;
->  }
->  
-> +#ifdef CONFIG_PM_SLEEP
->  static int bd2802_suspend(struct device *dev)
->  {
->  	struct i2c_client *client = to_i2c_client(dev);
-> @@ -771,6 +758,20 @@ static int bd2802_suspend(struct device *dev)
->  	return 0;
->  }
->  
-> +static void bd2802_restore_state(struct bd2802_led *led)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < LED_NUM; i++) {
-> +		if (led->led[i].r)
-> +			bd2802_turn_on(led, i, RED, led->led[i].r);
-> +		if (led->led[i].g)
-> +			bd2802_turn_on(led, i, GREEN, led->led[i].g);
-> +		if (led->led[i].b)
-> +			bd2802_turn_on(led, i, BLUE, led->led[i].b);
-> +	}
-> +}
-> +
->  static int bd2802_resume(struct device *dev)
->  {
->  	struct i2c_client *client = to_i2c_client(dev);
-> @@ -783,6 +784,7 @@ static int bd2802_resume(struct device *dev)
->  
->  	return 0;
->  }
-> +#endif
->  
+Thank you for the update.  I will begin work on the protocol B and
+cleanup according to your findings.  I appreciate your comments.
 
-That rather sucks.  It leaves an all-zeroes instance of dev_pm_ops
-uselessly bloating the driver.  And it leaves
-bd2802_i2c_driver.driver.pm pointing at that all-zeroes instance of
-dev_pm_ops, which is rather dangerous.
+Best regards,
+Kevin
 
-If CONFIG_PM_SLEEP=n, the .driver.pm field shouldn't exist at all.
 
-<looks at Rafael>
+> -----Original Message-----
+> From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
+> Sent: Friday, January 21, 2011 1:28 AM
+> To: Trilok Soni
+> Cc: Kevin McNeely; David Brown; Samuel Ortiz; Eric Miao; Mike
+> Frysinger; Henrik Rydberg; Alan Cox; linux-input@vger.kernel.org;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [v4 3/3] 3/3 spi: Cypress TTSP G3 SPI Device Driver
+> 
+> On Thu, Jan 20, 2011 at 04:40:35PM +0530, Trilok Soni wrote:
+> > Hi Dmitry,
+> >
+> > On 1/13/2011 12:32 AM, Kevin McNeely wrote:
+> > > Hi Dmitry,
+> > >
+> > > Thank you for your review.
+> > >
+> > > Will the existing patches get into the current merge?
+> > >
+> > > Can I revisit this discussion as part of our plan to provide a
+> Protocol
+> > > B driver?
+> > >
+> > > Thanks and best regards,
+> > > Kevin
+> > >
+> >
+> > Any updates on Kevin's question here?
+> >
+> 
+> Hi Trilok, Kevin,
+> 
+> Ah, sorry, was not feeling well last week and lost track of this
+> driver.
+> 
+> No, I am sorry, bit the driver is not quite ready to be merged. Aside
+> of
+> SPI abort/timeout issues we also have cyttsp_close() implementation
+> busted (once you close device you lose irq) and bunch of other things
+I
+> need to look over. I also have concern about having protocol A now and
+> upgrading to protocol B: clients that only understand protocol A will
+> get broken at A->B transition. I think we should consider implementing
+> B
+> right away for mainline (no, I do not want A/B config options).
+> 
+> Sorry for being slow with doing full review...
+> 
+> Thanks.
+> 
+> --
+> Dmitry
+
+---------------------------------------------------------------
+This message and any attachments may contain Cypress (or its
+subsidiaries) confidential information. If it has been received
+in error, please advise the sender and immediately delete this
+message.
+---------------------------------------------------------------
+
