@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749Ab1AUGkh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 01:40:37 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36539 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069Ab1AUGke (ORCPT
+	id S1753114Ab1AUGkq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 01:40:46 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36612 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752411Ab1AUGkg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 01:40:34 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 21 Jan 2011 15:34:31 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: [PATCH 0/7] memcg : more fixes and clean up for 2.6.28-rc
-Message-Id: <20110121153431.191134dd.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Jan 2011 01:40:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=xApzOLQTh+tV28gJX6WSbyhO5MaPILlDLRMDJ/q/pbqj3nUSbNZDgqwCdqhiLweMRD
+         MdMCqE+AreXezINE1YC8KjFEREBF4p8qdZIvo1rytG1Kiqr85UlmE+pheIpaxeK++umT
+         Z8xFL+uKV4k7fYEQ9ounBY1QsMPBvzvBlzj8g=
+MIME-Version: 1.0
+In-Reply-To: <1295591340-1862-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1295591340-1862-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1295591340-1862-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+Date: Fri, 21 Jan 2011 15:40:35 +0900
+Message-ID: <AANLkTikOdCzhsw3_JQtbJOmA8CRm2hCZEY0LLw5uYtmM@mail.gmail.com>
+Subject: Re: [PATCH 3/7] remove putback_lru_pages() in hugepage migration context
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <tatsu@ab.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Mel Gorman <mel@csn.ul.ie>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Huang Ying <ying.huang@intel.com>,
+        Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>,
+        tony.luck@intel.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-This is a set of patches which I'm now testing, and it seems it passed
-small test. So I post this.
+On Fri, Jan 21, 2011 at 3:28 PM, Naoya Horiguchi
+<n-horiguchi@ah.jp.nec.com> wrote:
+> This putback_lru_pages() is inserted at cf608ac19c to allow
+> memory compaction to count the number of migration failed pages.
+>
+> But we should not do it for a hugepage because page->lru of a hugepage
+> is used differently from that of a normal page:
+>
+>   in-use hugepage : page->lru is unlinked,
+>   free hugepage   : page->lru is linked to the free hugepage list,
+>
+> so putting back hugepages to LRU lists collapses this rule.
+> We just drop this change (without any impact on memory compaction.)
+>
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
 
-Some are bug fixes and other are clean ups but I think these are for 2.6.38.
+As I said previously, It seems mistake during patch merge.
+I didn't add it in my original patch. You can see my final patch.
+https://lkml.org/lkml/2010/8/24/248
 
-Brief decription
+Anyway, I realized it recently so I sent the patch to Andrew.
+Could you see this one?
+https://lkml.org/lkml/2011/1/20/241
 
-[1/7] remove buggy comment and use better name for mem_cgroup_move_parent()
-      The fixes for mem_cgroup_move_parent() is already in mainline, this is
-      an add-on.
-
-[2/7] a bug fix for a new function mem_cgroup_split_huge_fixup(),
-      which was recently merged.
-
-[3/7] prepare for fixes in [4/7],[5/7]. This is an enhancement of function
-      which is used now.
-
-[4/7] fix mem_cgroup_charge() for THP. By this, memory cgroup's charge function
-      will handle THP request in sane way.
-
-[5/7] fix khugepaged scan condition for memcg.
-      This is a fix for hang of processes under small/buzy memory cgroup.
-
-[6/7] rename vairable names to be page_size, nr_pages, bytes rather than
-      ambiguous names.
-
-[7/7] some memcg function requires the caller to initialize variable
-      before call. It's ugly and fix it.
+Thanks for notice me.
 
 
-I think patch 1,2,3,4,5 is urgent ones. But I think patch "5" needs some
-good review. But without "5", stress-test on small memory cgroup will not
-run succesfully.
 
-Thanks,
--Kame
-
+-- 
+Kind regards,
+Minchan Kim
