@@ -1,46 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665Ab1AUSQd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 13:16:33 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40915 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab1AUSQb (ORCPT
+	id S1753041Ab1AUSSB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 13:18:01 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:17750 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888Ab1AUSSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 13:16:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=FuxhZ/c9gR32u6ihElHguV2shGD8t4pyd4YebsENSrTi/Kpco9ySB3rjuIuuvs9ldq
-         LSZB+r2atOjnPjdLvkVpEQR+uYPx3MpnBjw0xX/Xh9HG2EtihzGGQInSDGrZi/ss+SW2
-         H3gU9dB8TM4sw/GKM/mXGZWFHO+4xYVIxdwc4=
-Date: Fri, 21 Jan 2011 19:16:26 +0100
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
-        yinghai@kernel.org, brgerst@gmail.com, gorcunov@gmail.com,
-        penberg@kernel.org, shaohui.zheng@intel.com, rientjes@google.com
-Subject: Re: [PATCHSET] x86: unify x86_32 and 64 NUMA init paths, take#4
-Message-ID: <20110121181626.GB22824@htj.dyndns.org>
-References: <1293731369-10851-1-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1293731369-10851-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 21 Jan 2011 13:18:00 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6233"; a="71194947"
+Subject: Re: [PATCH 0/7] Nexus One Support
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Joe Perches <joe@perches.com>, Dima Zavin <dmitriyz@google.com>,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, davidb@codeaurora.org
+In-Reply-To: <20110121100441.06a94482@jbarnes-desktop>
+References: <1295555565-21563-1-git-send-email-dwalker@codeaurora.org>
+	 <AANLkTik+HCj9dkD2s4WgwCqKWCXDbdSnKDUbyGfYfaPr@mail.gmail.com>
+	 <1295571359.9236.53.camel@m0nster> <1295574085.4096.6.camel@Joe-Laptop>
+	 <1295575123.9236.54.camel@m0nster> <1295576730.4096.24.camel@Joe-Laptop>
+	 <1295624801.19880.13.camel@m0nster>
+	 <20110121094827.41818a55@jbarnes-desktop>
+	 <20110121095658.1ab623fe@jbarnes-desktop>
+	 <1295632828.19880.22.camel@m0nster>
+	 <20110121100441.06a94482@jbarnes-desktop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 21 Jan 2011 10:18:02 -0800
+Message-ID: <1295633882.19880.31.camel@m0nster>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, 2011-01-21 at 10:04 -0800, Jesse Barnes wrote:
+> On Fri, 21 Jan 2011 10:00:28 -0800
+> Daniel Walker <dwalker@codeaurora.org> wrote:
+> 
+> > On Fri, 2011-01-21 at 09:56 -0800, Jesse Barnes wrote:
+> > > On Fri, 21 Jan 2011 09:48:27 -0800
+> > > Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> > > 
+> > > > On Fri, 21 Jan 2011 07:46:41 -0800
+> > > > Daniel Walker <dwalker@codeaurora.org> wrote:
+> > > > > This isn't what's happening tho. In maintainer land if someone forwards
+> > > > > you a patch then you leave the original author on the patch. They wrote
+> > > > > the patch and your just forwarding it on up the ladder. This isn't the
+> > > > > case with these patches.. I crafted each of the commit I have authorship
+> > > > > on, no one forwarded those commits to me. I'm not taking authorship
+> > > > > credit for any thing I didn't create, although I an giving credit to the
+> > > > > place which gave me the raw material which was Google. From my
+> > > > > experience this is how it's done in Linux ..
+> > > > 
+> > > > I don't know why you're even trying to defend this, just admit you were
+> > > > wrong and move on.
+> > > > 
+> > > > Trying to claim the author field for these patches for yourself is both
+> > > > misleading and vain.  You did not write the code and are therefore not
+> > > > the author, trying to conflate the author and commit fields in this way
+> > > > is so misguided I thought you must be trolling when I first saw this
+> > > > thread.
+> > > > 
+> > > > This is not "how it's done in Linux" at all.  In this case you're
+> > > > trying to act like a maintainer by collecting patches and forwarding
+> > > > them upstream, so you need to preserve authorship and the s-o-b chain.
+> > > > If you want to take responsibility for the code going forward, great,
+> > > > but don't pollute the logs with bogus author fields that imply you
+> > > > wrote the stuff in the first place.
+> > > 
+> > > That said, if you did significant work on these before committing them,
+> > > then you're right and I'm wrong.  It *is* fairly common for committers
+> > > to change things; and if the changes are significant enough, they claim
+> > > authorship and note the original author in the changelog.
+> > > 
+> > > So if that's the case here, I apologize, but I didn't see that
+> > > explained in any part of the thread I read.
+> > 
+> > I did a significant amount of work to create the commits and series. I'm
+> > sorry if that's not clear, but it is in fact true.
+> 
+> Changes to the code or just reordering and merging commits?  If the
+> former, then I think Christoph's comment applies, if the latter, I
+> think preserving authorship is still the right thing to do.
 
-On Thu, Dec 30, 2010 at 06:49:13PM +0100, Tejun Heo wrote:
-> This is the fourth take of unify-x86_32-and-64-NUMA-init-paths
-> patchset.
+I changed both, switching to new kernel API's, clean ups, finding a
+minimum set of code for this support, and debugging that and fixing
+defects in the code. This wasn't a trivial amount of work to create the
+series and commits.
 
-hpa, shall I refresh and resend?
-
-Thanks.
+Daniel
 
 -- 
-tejun
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
+Forum.
+
+
