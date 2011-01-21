@@ -1,90 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab1AUHa2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 02:30:28 -0500
-Received: from mga02.intel.com ([134.134.136.20]:60643 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751532Ab1AUHa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 02:30:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,356,1291622400"; 
-   d="scan'208";a="595095814"
-Subject: Re: regression 2.6.37 -> 2.6.38-rc1: after suspend backlight
-	cannot be adjusted
-From: Zhang Rui <rui.zhang@intel.com>
-To: Norbert Preining <preining@logic.at>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <1295594905.1866.749.camel@rui>
-References: <20110121015529.GD9796@gamma.logic.tuwien.ac.at>
-	 <1295583107.2613.45.camel@edumazet-laptop>
-	 <1295583394.2613.47.camel@edumazet-laptop>
-	 <20110121015529.GD9796@gamma.logic.tuwien.ac.at>
-	 <1295583107.2613.45.camel@edumazet-laptop>
-	 <20110121064614.GA23310@gamma.logic.tuwien.ac.at>
-	 <1295594905.1866.749.camel@rui>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 Jan 2011 15:29:58 +0800
-Message-ID: <1295594998.1866.750.camel@rui>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1753562Ab1AUHbH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 02:31:07 -0500
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:43691 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753535Ab1AUHbF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 02:31:05 -0500
+Message-ID: <4D393636.4040607@cs.helsinki.fi>
+Date: Fri, 21 Jan 2011 09:31:02 +0200
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Christoph Lameter <cl@linux.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for this_cpu_cmpxchg_double
+References: <20110106204513.669098445@linux.com> <20110106204525.222395863@linux.com> <4D263C91.30709@zytor.com> <alpine.DEB.2.00.1101070907060.3014@router.home> <20110107180419.GB23082@Krystal> <alpine.DEB.2.00.1101071227450.3014@router.home> <20110108172453.GF13269@mtj.dyndns.org>
+In-Reply-To: <20110108172453.GF13269@mtj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-btw, please attach the acpidump of this laptop.
+On 1/8/11 7:24 PM, Tejun Heo wrote:
+> Hello,
+>
+> On Fri, Jan 07, 2011 at 12:41:58PM -0600, Christoph Lameter wrote:
+>> On Fri, 7 Jan 2011, Mathieu Desnoyers wrote:
+>>
+>>> I have to admit that I also hate the current interface for two reasons:
+>
+> Call me weird but I like this one than others.  It sure is ugly but
+> the operation itself isn't a particularly pretty so it kinda matches.
+> Also, this one is the least error prone and more consistent with other
+> cpu ops.
 
-thanks,
-rui
+So what are we going to do about this patch? I'd love to merge 
+Christoph's SLUB patches for linux-next now that .38-rc1 is out.
 
-On Fri, 2011-01-21 at 15:28 +0800, Zhang Rui wrote:
-> how do you change the backlight? hotkeys?
-> does changing /sys/class/backlight/acpi_video0/brightness work for you?
-> 
-> thanks,
-> rui
-> 
-> On Fri, 2011-01-21 at 14:46 +0800, Norbert Preining wrote:
-> > Hi Eric, hi all
-> > 
-> > On Fr, 21 Jan 2011, Eric Dumazet wrote:
-> > > Maybe this is the problem Linus had to bisect, you could try his patch :
-> > 
-> > > Or just pull linux-2.6, since patch is now committed
-> > > 
-> > > commit 28e58ee8ce1f0e69c207f747b7b9054b071e328d
-> > 
-> > I am now running on top of 8d99641f6c1a so I have this patch included,
-> > but still see the same problem. Adjustment *before* suspend works,
-> > afterwards does not.
-> > 
-> > Can someone give me a quick notive how to bisect only those commits
-> > that touch the relevant parts? acpi?
-> > 
-> > Best wishes
-> > 
-> > Norbert
-> > ------------------------------------------------------------------------
-> > Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-> > JAIST, Japan                                 TeX Live & Debian Developer
-> > DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-> > ------------------------------------------------------------------------
-> > POTT SHRIGLEY (n.)
-> > Dried remains of a week-old casserole, eaten when extremely drunk at
-> > two a.m.
-> > 			--- Douglas Adams, The Meaning of Liff
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
+			Pekka
