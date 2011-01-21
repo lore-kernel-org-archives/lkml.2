@@ -1,92 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330Ab1AUSZr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 13:25:47 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:17559 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752212Ab1AUSZq convert rfc822-to-8bit (ORCPT
+	id S1754052Ab1AUS1F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 13:27:05 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37752 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752903Ab1AUS1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 13:25:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=tIVHhC5lv9Cj0JW2sKrwOEBR6/4Zwc4k0MLCCiLun0bS/C9hflvVrdykCEY7MIfqhp
-         2ndv9GOSVcqg1tZYyYtw==
-MIME-Version: 1.0
-In-Reply-To: <1295633925.28776.308.camel@laptop>
-References: <AANLkTikX=tQwYKj9VZhCNudErf4TP-74+Jv3WPvSdUMn@mail.gmail.com>
-	<1295633925.28776.308.camel@laptop>
-Date: Fri, 21 Jan 2011 19:25:43 +0100
-Message-ID: <AANLkTima4Bfe-wRewbEkbrF9MGJmW1D0Cd3B4KynntSk@mail.gmail.com>
-Subject: Re: perf_events: question about __perf_event_read()
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Fri, 21 Jan 2011 13:27:03 -0500
+Date: Fri, 21 Jan 2011 10:26:54 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stuart Swales <stuart.swales.croftnuisk@gmail.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] adfs: add hexadecimal filetype suffix option
+Message-Id: <20110121102654.fd87c917.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1101211434210.3490@dc5850.croftnuisk.local>
+References: <4D2DEDDB.1070605@gmail.com>
+	<20110119154915.a0bb2878.akpm@linux-foundation.org>
+	<alpine.DEB.2.00.1101211434210.3490@dc5850.croftnuisk.local>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 7:18 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, 2011-01-21 at 19:06 +0100, Stephane Eranian wrote:
->> Hi,
->>
->> I think the code below still has a problem in case of a per-cpu event.
->>
->> If you issue a read() on a different CPU, then you IPI to the event's cpu.
->> By the time you get there, the event may be de-scheduled in which
->> case you don't want to issue event->pmu_read() nor update context
->> timings. The function has a test but it seems to be checking the per-cpu
->> case only.
->>
->> I have seen panics on P4 with this code because it goes all the way
->> down to rdmsrl() with a bogus counter index (like -1).
->>
->> Am I missing something here?
->>
->> static void __perf_event_read(void *info)
->> {
->>         struct perf_event *event = info;
->>         struct perf_event_context *ctx = event->ctx;
->>         struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
->>
->>         /*
->>          * If this is a task context, we need to check whether it is
->>          * the current task context of this cpu.  If not it has been
->>          * scheduled out before the smp call arrived.  In that case
->>          * event->count would have been updated to a recent sample
->>          * when the event was scheduled out.
->>          */
->>         if (ctx->task && cpuctx->task_ctx != ctx)
->>                 return;
->>
->>         raw_spin_lock(&ctx->lock);
->
-> Shouldn't we re-check event->state once we hold this lock?
->
-I remember checking this about a month ago and tip-x86 had
-some checks in this routine, but now the're gone.
+On Fri, 21 Jan 2011 14:43:14 +0000 (GMT) Stuart Swales <stuart.swales.croftnuisk@gmail.com> wrote:
 
-I think you need something like:
+> > Was `mount -o remount,ftsuffix=1' implemented and tested?
+> 
+> I didn't specifically check it out with remount.  Is that likely to be a
+> problem?
 
-+	if (ctx->is_active)
-+		update_context_time(ctx);
+It should work and should be tested and maintained.
 
-+	if (event->state == PERF_EVENT_STATE_ACTIVE)
-+		event->pmu->read(event);
+I do worry about the effect on userspace of having all the filenames
+change on the fly.  I guess if it makes applications misbehave then
+that's a userspace (administrator) error.
 
->>         update_context_time(ctx);
->>         update_event_times(event);
->>         raw_spin_unlock(&ctx->lock);
->>
->>         event->pmu->read(event);
->> }
->
->
->
+Does it mean that existing dcache entries are now out of sync, so some
+filenames are suffixless and others are suffixed?  If so, that might be
+too hard to fix, and some way of disabling `mount -o remount' should be
+found.
+
+> > Am I correct in assuming that "mount -o remount,ftsuffix=0" turns this
+> > off again?
+
+That too.
