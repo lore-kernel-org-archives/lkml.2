@@ -1,112 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab1AUQU1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 11:20:27 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:58761 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750880Ab1AUQUY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 11:20:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=X5av/gZxMCCRzA8hC33jaVQOy1F3mma+RsSlP70rvrpkXuTO0IfrYUZi9xFpJma6QV
-         HjC8yG9SHLShhYmKVwy30F9n9SrwzllzNnYMJc82Wp7gu3z/C5L+BDjt+4zBCiI2hoCa
-         rIhC8TdxWZwg7K8WPOiK/POYeGPtFDJYfFSQA=
-Subject: RE: Status of the LSI 2108
-From: James Shubin <purpleidea@gmail.com>
-Reply-To: purpleidea@gmail.com
-To: support@supermicro.com
-In-Reply-To: <D41A5B864986B546A595D85C4701A9C001023A5A4E@cosmail03.lsi.com>
-References: <1295411153.20086.81.camel@localhost>
-	 <20110120153419.806d38e1.rdunlap@xenotime.net>
-	 <1295567826.20086.89.camel@localhost>
-	 <D41A5B864986B546A595D85C4701A9C001023A5A4E@cosmail03.lsi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 Jan 2011 11:20:35 -0500
-Message-ID: <1295626835.20086.131.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754097Ab1AUQ1O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 11:27:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24295 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750880Ab1AUQ1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 11:27:13 -0500
+Date: Fri, 21 Jan 2011 17:26:50 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: Re: [PATCH] drm/i915,agp/intel: Do not clear stolen entries
+Message-ID: <20110121162650.GB28563@jolsa.brq.redhat.com>
+References: <20110120232410.GA19405@nowhere>
+ <1295607537-877-1-git-send-email-chris@chris-wilson.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295607537-877-1-git-send-email-chris@chris-wilson.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Supermicro,
+this patch fixed the issue for me
 
-I'm looking for information on whether the LSI 2108 is fully supported
-in the vanilla linux kernel, and any thoughts as to the quality/
-robustness of the driver. The servers in question that I'm interested in
-are the:
-http://www.supermicro.com/products/system/2U/8026/SYS-8026B-6R.cfm?SAS=Y
+Tested-by: Jiri Olsa <jolsa@redhat.com>
+if needed :)
 
-Thank you for your time, feel free to see the below history for some
-background.
-
-James
+thanks,
+jirka
 
 
-On Fri, 2011-01-21 at 08:47 -0700, Unrein, Jason wrote:
-> The latest vanilla kernel should have support for all of our second generation sas HBAs (6gb/s capable).  If there are any problems you can always download an updated driver from the www.lsi.com website.  
+On Fri, Jan 21, 2011 at 10:58:57AM +0000, Chris Wilson wrote:
+> We can only utilize the stolen portion of the GTT if we are in sole
+> charge of the hardware. This is only true if using GEM and KMS,
+> otherwise VESA continues to access stolen memory.
 > 
-> The Supermicro ftp site you sent is actually for our counterpart in LSI, Megaraid.  Since they run a different firmware, they have a different driver in the kernel (megaraid_sas) where as ours are mptlinux (Gen1, 3.0gb/s), mpt2sas (Gen2), mpt2sasbtm (Gen2 but for older 2.6 kernels).  We both use the same chip so Supermicro might be making it a little confusing.  You might see if they reference the chip as a Megaraid chip in any way or if it is always an LSI chip. It is possible to run it in both modes if all the hardware components are there.
+> Reported-by: Arnd Bergmann <arnd@arndb.de>
+> Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+> ---
+>  drivers/char/agp/intel-gtt.c    |   18 ++++++++----------
+>  drivers/gpu/drm/i915/i915_gem.c |    6 ++++--
+>  2 files changed, 12 insertions(+), 12 deletions(-)
 > 
-> It would probably be best to email Supermicro and get the details from them about the chip to confirm what you need.
+> diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
+> index 826ab09..cbbcaba 100644
+> --- a/drivers/char/agp/intel-gtt.c
+> +++ b/drivers/char/agp/intel-gtt.c
+> @@ -68,6 +68,7 @@ static struct _intel_private {
+>  	phys_addr_t gma_bus_addr;
+>  	u32 PGETBL_save;
+>  	u32 __iomem *gtt;		/* I915G */
+> +	bool clear_fake_agp; /* on first access via agp, fill with scratch */
+>  	int num_dcache_entries;
+>  	union {
+>  		void __iomem *i9xx_flush_page;
+> @@ -869,21 +870,12 @@ static int intel_fake_agp_free_gatt_table(struct agp_bridge_data *bridge)
+>  
+>  static int intel_fake_agp_configure(void)
+>  {
+> -	int i;
+> -
+>  	if (!intel_enable_gtt())
+>  	    return -EIO;
+>  
+> +	intel_private.clear_fake_agp = true;
+>  	agp_bridge->gart_bus_addr = intel_private.gma_bus_addr;
+>  
+> -	for (i = 0; i < intel_private.base.gtt_total_entries; i++) {
+> -		intel_private.driver->write_entry(intel_private.scratch_page_dma,
+> -						  i, 0);
+> -	}
+> -	readl(intel_private.gtt+i-1);	/* PCI Posting. */
+> -
+> -	global_cache_flush();
+> -
+>  	return 0;
+>  }
+>  
+> @@ -945,6 +937,12 @@ static int intel_fake_agp_insert_entries(struct agp_memory *mem,
+>  {
+>  	int ret = -EINVAL;
+>  
+> +	if (intel_private.clear_fake_agp) {
+> +		intel_gtt_clear_range(intel_private.base.stolen_size / PAGE_SIZE,
+> +				      intel_private.base.gtt_total_entries);
+> +		intel_private.clear_fake_agp = false;
+> +	}
+> +
+>  	if (INTEL_GTT_GEN == 1 && type == AGP_DCACHE_MEMORY)
+>  		return i810_insert_dcache_entries(mem, pg_start, type);
+>  
+> diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+> index 812b97b..6542e7d 100644
+> --- a/drivers/gpu/drm/i915/i915_gem.c
+> +++ b/drivers/gpu/drm/i915/i915_gem.c
+> @@ -140,12 +140,14 @@ void i915_gem_do_init(struct drm_device *dev,
+>  {
+>  	drm_i915_private_t *dev_priv = dev->dev_private;
+>  
+> -	drm_mm_init(&dev_priv->mm.gtt_space, start,
+> -		    end - start);
+> +	drm_mm_init(&dev_priv->mm.gtt_space, start, end - start);
+>  
+>  	dev_priv->mm.gtt_total = end - start;
+>  	dev_priv->mm.mappable_gtt_total = min(end, mappable_end) - start;
+>  	dev_priv->mm.gtt_mappable_end = mappable_end;
+> +
+> +	/* Take over this portion of the GTT */
+> +	intel_gtt_clear_range(start / PAGE_SIZE, end / PAGE_SIZE);
+>  }
+>  
+>  int
+> -- 
+> 1.7.2.3
 > 
-> -----Original Message-----
-> From: James Shubin [mailto:purpleidea@gmail.com] 
-> Sent: Thursday, January 20, 2011 5:57 PM
-> To: Randy Dunlap
-> Cc: scsi; linux-kernel@vger.kernel.org; DL-MPT Fusion Linux
-> Subject: Re: Status of the LSI 2108
-> 
-> Thanks Randy for sending me in the right direction.
-> Hello linux-scsi and LSI. Any thoughts to the below question would be
-> much appreciated!
-> 
-> James
-> 
-> 
-> On Thu, 2011-01-20 at 15:34 -0800, Randy Dunlap wrote:
-> > On Tue, 18 Jan 2011 23:25:53 -0500 James Shubin wrote:
-> > 
-> > > Hi,
-> > > 
-> > > I've been trying to find out if the LSI 2108 is fully supported in the
-> > > vanilla kernel, and any thoughts as to the quality/robustness.
-> > > 
-> > > This seems to be the correct source:
-> > > ftp://ftp.supermicro.nl/driver/SAS/LSI/2108/Driver/Linux/v04.31/
-> > > however I'm not sure at all if it's maintained, or what. I would
-> > > outright test this myself, however I haven't bought the servers yet
-> > > 
-> > > Thanks for your help,
-> > > Please cc-me on replies.
-> > 
-> > Hi,
-> > 
-> > Probably better to ask on the linux-scsi mailing list [added].
-> > Also added the lsi.com email address.
-> > 
-> > 
-> > drivers/scsi/mpt2sas/mpt2sas_scsih.c contains this:
-> > 
-> > 	/* Liberator ~ 2108 */
-> > 	{ MPI2_MFGPAGE_VENDORID_LSI, MPI2_MFGPAGE_DEVID_SAS2108_1,
-> > 		PCI_ANY_ID, PCI_ANY_ID },
-> > 	{ MPI2_MFGPAGE_VENDORID_LSI, MPI2_MFGPAGE_DEVID_SAS2108_2,
-> > 		PCI_ANY_ID, PCI_ANY_ID },
-> > 	{ MPI2_MFGPAGE_VENDORID_LSI, MPI2_MFGPAGE_DEVID_SAS2108_3,
-> > 		PCI_ANY_ID, PCI_ANY_ID },
-> > 
-> > so it looks like there is at least some basic support for the 2108.
-> > 
-> > 
-> > ---
-> > ~Randy
-> > *** Remember to use Documentation/SubmitChecklist when testing your code ***
-> 
-> 
-
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
