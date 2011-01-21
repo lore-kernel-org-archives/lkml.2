@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426Ab1AUQh7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 11:37:59 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55500 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754027Ab1AUQh6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 11:37:58 -0500
+	id S1754468Ab1AUQkD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 11:40:03 -0500
+Received: from hera.kernel.org ([140.211.167.34]:50471 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754330Ab1AUQkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 11:40:01 -0500
+Date: Fri, 21 Jan 2011 16:39:49 GMT
+From: tip-bot for John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, hpa@zytor.com,
+        mingo@redhat.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, john.stultz@linaro.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+In-Reply-To: <1294939849-20608-1-git-send-email-john.stultz@linaro.org>
+References: <1294939849-20608-1-git-send-email-john.stultz@linaro.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/urgent] rtc: Cleanup removed UIE emulation declaration
+Message-ID: <tip-1daeddd5962acad1bea55e524fc0fadf32654a21@git.kernel.org>
+Git-Commit-ID: 1daeddd5962acad1bea55e524fc0fadf32654a21
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20110121174438.7521539f@tornado.gnet>
-References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
- <20110119083916.GA2166@elte.hu> <20110121174438.7521539f@tornado.gnet>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 21 Jan 2011 08:37:34 -0800
-Message-ID: <AANLkTi=p3=MkGevrW1YU0v_V5iXLw7iLDuWeb7Rf8Xx_@mail.gmail.com>
-Subject: Re: PPS parport boot lockup: INFO: HARDIRQ-READ-safe ->
- HARDIRQ-READ-unsafe lock order detected
-To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 21 Jan 2011 16:39:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 6:44 AM, Alexander Gordeev
-<lasaine@lvk.cs.msu.su> wrote:
->
-> But parport_unregister_device should probably never be called while
-> parport interrupts are enabled (in hardware). So this is a false
-> positive. Is this right?
+Commit-ID:  1daeddd5962acad1bea55e524fc0fadf32654a21
+Gitweb:     http://git.kernel.org/tip/1daeddd5962acad1bea55e524fc0fadf32654a21
+Author:     John Stultz <john.stultz@linaro.org>
+AuthorDate: Thu, 13 Jan 2011 09:30:49 -0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 21 Jan 2011 17:38:18 +0100
 
-"Enabled in hardware" is immaterial - with shared interrupts, it
-doesn't matter one whit whether parport interrupts are disabled on the
-chip, because some other chip may be using the same interrupt line.
+rtc: Cleanup removed UIE emulation declaration
 
-So you'd need to have something that guarantees that there is no
-concurrent use, like actually unregistering the irq handler itself.
-Things like that can work.
+rtc_dev_update_irq_enable_emul was removed in commit
+042620a018afcfba1d678062b62e463b9e43a68d (UIE emulation is
+now handled via hrtimer), but the declaration was missed.
+This patch cleans it up.
 
-HOWEVER, even then I think you should see the lockdep message as a
-problem. The automated toolchain is great because it shows problems
-that it thinks might happen - not when they happen, but based on a
-simpler theoretical model. Ignoring the error because there is some
-rule in place that is hard to explain to the automated toolchain is
-the wrong thing to do, because it makes the lockdep automation less
-reliable.
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+LKML-Reference: <1294939849-20608-1-git-send-email-john.stultz@linaro.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/rtc.h |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-Think of it as a compiler warning - maybe the warning doesn't actually
-imply an actual bug, but you should strive to write code that doesn't
-warn, because otherwise the noise from the warning you ignored will
-make it harder for others to see the _real_ bugs.
-
-                 Linus
+diff --git a/include/linux/rtc.h b/include/linux/rtc.h
+index 3c995b4..ea76069 100644
+--- a/include/linux/rtc.h
++++ b/include/linux/rtc.h
+@@ -235,8 +235,6 @@ extern int rtc_irq_set_freq(struct rtc_device *rtc,
+ 				struct rtc_task *task, int freq);
+ extern int rtc_update_irq_enable(struct rtc_device *rtc, unsigned int enabled);
+ extern int rtc_alarm_irq_enable(struct rtc_device *rtc, unsigned int enabled);
+-extern int rtc_dev_update_irq_enable_emul(struct rtc_device *rtc,
+-						unsigned int enabled);
+ 
+ void rtc_aie_update_irq(void *private);
+ void rtc_uie_update_irq(void *private);
