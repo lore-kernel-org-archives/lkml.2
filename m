@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763Ab1AUSkt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 13:40:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22567 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752993Ab1AUSks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 13:40:48 -0500
-Subject: Re: [BUG?] tracing/function_graph: set_graph_function was broken
- from 2.6.36-rc2
-From: Steven Rostedt <srostedt@redhat.com>
-To: wu zhangjin <wuzhangjin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        zhiping zhong <xzhong86@163.com>
-In-Reply-To: <AANLkTin6g8SGnuG6j6JVCdBvOeiBj8Quwr2T9K+3jUwq@mail.gmail.com>
-References: <AANLkTinxxOsXNatAiP0t8Vv0xFZcdSpoWWrG49g6JjqF@mail.gmail.com>
-	 <1295544654.19789.19.camel@fedora>
-	 <AANLkTin6g8SGnuG6j6JVCdBvOeiBj8Quwr2T9K+3jUwq@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat
-Date: Fri, 21 Jan 2011 13:40:31 -0500
-Message-ID: <1295635231.26768.2.camel@fedora>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754717Ab1AUSmi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 13:42:38 -0500
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:47958 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752993Ab1AUSmi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 13:42:38 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 203v0UcVM1mdlOd8SutWc96OJsPx9uIHfqid2O2o9BI8m2E
+ QPKyKCWZs6xzliqn5KK0k3i9lNSuAkew2ZdL.GMHLb4ZxLDupgmu7VQAbHmV
+ Py8euUwaOGNMQhYu3E4Wo.nuoxF_dihSwnbkA0qniGMhT6lr9PFSHQnKe7HO
+ PCBVehn9eX_Hx6I4PgtQuBF7w2OxIfIgIfCIPM9v5Anm_HTQCBmG79bgddxM
+ F5bO336ZAjseSH8t1BdPxihFbNGyc1eq2nH8WhlBCUFbfixaHVSdqKI.St09
+ nmAwjfNxPQxvn2W7fG.arrFr1iDglqGYfNEkPyh4s3c6tet0-
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 21 Jan 2011 12:42:34 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+cc: "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for
+ this_cpu_cmpxchg_double
+In-Reply-To: <20110121181051.GC12150@Krystal>
+Message-ID: <alpine.DEB.2.00.1101211241060.15692@router.home>
+References: <4D393636.4040607@cs.helsinki.fi> <20110121092649.GA2832@htj.dyndns.org> <4D39A6EB.70705@zytor.com> <20110121154831.GE2832@htj.dyndns.org> <20110121165425.GB11687@Krystal> <20110121170847.GH2832@htj.dyndns.org> <1da7491b-6e7d-4453-9c6f-0e7767421ec4@email.android.com>
+ <alpine.DEB.2.00.1101211121350.15692@router.home> <20110121174236.GA12150@Krystal> <alpine.DEB.2.00.1101211146320.15692@router.home> <20110121181051.GC12150@Krystal>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-21 at 17:27 +0800, wu zhangjin wrote:
-> On Fri, Jan 21, 2011 at 1:30 AM, Steven Rostedt <srostedt@redhat.com> wrote:
+On Fri, 21 Jan 2011, Mathieu Desnoyers wrote:
 
-> >> trace_graph_entry():
-> >>
-> >>         [snip]
-> >>         /* trace it when it is-nested-in or is a function enabled. */
-> >>         if (!(trace->depth || ftrace_graph_addr(trace->func)) ||
-> >>               ftrace_graph_ignore_irqs())
-> >>                 return 0;
-> >>         [snip]
-> >>
-> 
-> By default, ftrace_graph_ignore_irqs() is false, then, if we don't put
-> 0 to /debug/tracing/options/funcgraph-irqs, it will not return even if
-> we have specified some entries through the tracing/set_graph_function
-> interface, as a result, every function will be traced and it doesn't
-> work as we expected, the expected result is only the specified
-> functions are reserved in the tracing result.
-> 
+> "if the pointer passed is constant" -> if you use the actual type of percpu_dd
+> to check the alignment, then you can do an alignment check at compile-time even
+> for a non-const parameter. The requirement imposed on typing will take care to
+> make sure that even a non-const pointer will have the proper alignment.
 
-???
-
-It's an or, if the first case is true:
-
-  !(trace->depth || ftrace_graph_addr(trace->func))
-
-then we return and do not trace. Regardless of what
-ftrace_graph_ignore_irqs() is set to.
-
-Can you show me an example of what you are having a problem with?
-
--- Steve
-
+True that would be a benefit if we used something like percpu_dd. If
+somehow we can marry that to a parameter list that only includes single
+word entities then we would have the best of both.
 
