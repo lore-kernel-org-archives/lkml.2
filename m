@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab1AUOfZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 09:35:25 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:65124 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752998Ab1AUOfX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 09:35:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=bJ0rOAf8mcYX5PkJiIUQZZfMWXbTfwU0KvdQ6AD3S5Gjh2zfzgcBSjJZTvZJzDr5K3
-         pJub0V0N+M9Ham1tbGTpW80deAP6GkbIYCUf8cddYaMu4iflhyBxpcpNJ2eXXWxJ81P1
-         P/Vjl0LmGTvGHQLNr6EKWUFPXegv4YLZzeipo=
-Message-ID: <4D3999A7.1030201@libero.it>
-Date: Fri, 21 Jan 2011 15:35:19 +0100
-From: Dario Lombardo <dario.lombardo@libero.it>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1753281Ab1AUOgc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 09:36:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61945 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752497Ab1AUOgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 09:36:31 -0500
+Message-ID: <4D3999BC.7000107@redhat.com>
+Date: Fri, 21 Jan 2011 09:35:40 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [PATCH: linux-2.6]: drivers: update to pl2303 usb-serial to support
- Motorola cables
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Michal Simek <monstr@monstr.eu>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] mm: System without MMU do not need pte_mkwrite
+References: <1295596196-8233-1-git-send-email-monstr@monstr.eu> <1295596196-8233-2-git-send-email-monstr@monstr.eu>
+In-Reply-To: <1295596196-8233-2-git-send-email-monstr@monstr.eu>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dario Lombardo <dario.lombardo@libero.it>
+On 01/21/2011 02:49 AM, Michal Simek wrote:
+> The patch "thp: export maybe_mkwrite"
+> (sha1 14fd403f2146f740942d78af4e0ee59396ad8eab)
+> break systems without MMU.
+>
+> Error log:
+>    CC      arch/microblaze/mm/init.o
+> In file included from include/linux/mman.h:14,
+>                   from arch/microblaze/mm/consistent.c:24:
+> include/linux/mm.h: In function 'maybe_mkwrite':
+> include/linux/mm.h:482: error: implicit declaration of function 'pte_mkwrite'
+> include/linux/mm.h:482: error: incompatible types in assignment
+>
+> Signed-off-by: Michal Simek<monstr@monstr.eu>
+> CC: Andrea Arcangeli<aarcange@redhat.com>
+> CC: Linus Torvalds<torvalds@linux-foundation.org>
+> CC: Andrew Morton<akpm@linux-foundation.org>
+> CC: Rik van Riel<riel@redhat.com>
+> CC: Ingo Molnar<mingo@elte.hu>
 
-Added 0x0307 device id to support Motorola cables to the pl2303 usb 
-serial driver. This cable has a modified chip that is a pl2303, but 
-declares itself as 0307. Fixed by adding the right device id to the 
-supported devices list, assigning it the code labeled 
-PL2303_PRODUCT_ID_MOTOROLA.
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-Signed-off-by: Dario Lombardo <dario.lombardo@libero.it>
-
----
-
---- a/drivers/usb/serial/pl2303.c    2011-01-21 09:11:09.000000000 +0100
-+++ b/drivers/usb/serial/pl2303.c    2011-01-19 13:58:22.000000000 +0100
-@@ -50,6 +50,7 @@
-      { USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_MMX) },
-      { USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_GPRS) },
-      { USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_HCR331) },
-+    { USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_MOTOROLA) },
-      { USB_DEVICE(IODATA_VENDOR_ID, IODATA_PRODUCT_ID) },
-      { USB_DEVICE(IODATA_VENDOR_ID, IODATA_PRODUCT_ID_RSAQ5) },
-      { USB_DEVICE(ATEN_VENDOR_ID, ATEN_PRODUCT_ID) },
---- a/drivers/usb/serial/pl2303.h    2011-01-21 09:11:21.000000000 +0100
-+++ b/drivers/usb/serial/pl2303.h    2011-01-19 13:54:30.000000000 +0100
-@@ -21,6 +21,7 @@
-  #define PL2303_PRODUCT_ID_MMX        0x0612
-  #define PL2303_PRODUCT_ID_GPRS        0x0609
-  #define PL2303_PRODUCT_ID_HCR331    0x331a
-+#define PL2303_PRODUCT_ID_MOTOROLA  0x0307
-
-  #define ATEN_VENDOR_ID        0x0557
-  #define ATEN_VENDOR_ID2        0x0547
+-- 
+All rights reversed
