@@ -1,190 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab1AURjh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 12:39:37 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:45532 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882Ab1AURjg convert rfc822-to-8bit (ORCPT
+	id S1753796Ab1AURka (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 12:40:30 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:48119 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751809Ab1AURk3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 12:39:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ZCGt4BLfc9yr3b6cRH+VBEOYZ6gjh0j2EahyGfGoC3Ab8EUIKeIR4SBiySwAWBtOVs
-         aFj1fCu46HPRZ/0Xt/k0JvLHGKMuR3e9sFRMSZY0NTLka7croH2m2dYFGXOSbXElyDcG
-         oeooJZPKCdJ2r/EI64DW+HfLsleZ5D3JXWVq8=
+	Fri, 21 Jan 2011 12:40:29 -0500
 MIME-Version: 1.0
-In-Reply-To: <4D38BCFA.8050609@google.com>
-References: <1295245019-7816-1-git-send-email-ying.huang@intel.com>
-	<20110119135546.bb7e8f62.akpm@linux-foundation.org>
-	<1295484358.15213.25.camel@yhuang-dev>
-	<20110119165247.cca2f434.akpm@linux-foundation.org>
-	<1295520247.28776.152.camel@laptop>
-	<AANLkTimR6xd1PxCP6jmuNwFkANrGPdTf2wpiGsBXGpKx@mail.gmail.com>
-	<1295522876.28776.158.camel@laptop>
-	<AANLkTin3_NuGG_E0Juy7=1Q7PcMJ6id1ZU-Gngfp_=dg@mail.gmail.com>
-	<20110120121455.GA7680@elte.hu>
-	<AANLkTikv3h_QoHs4uj6CNJdC7tb_-e0osKa47KWEJvFV@mail.gmail.com>
-	<20110120130625.GA14436@elte.hu>
-	<4D38BCFA.8050609@google.com>
-Date: Fri, 21 Jan 2011 09:39:34 -0800
-X-Google-Sender-Auth: IxcpLC_KLsqGYejIq_H1_MxYHOI
-Message-ID: <AANLkTinbnJCWbtJWQPC7dYqTZGJWTS_mPCk-MnrNetXd@mail.gmail.com>
-Subject: Re: [PATCH -v10 0/4] Lock-less list
-From: Tim Hockin <thockin@hockin.org>
-To: Mike Waychison <mikew@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, huang ying <huang.ying.caritas@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Huang Ying <ying.huang@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>,
-        Robert Lippert <rlippert@google.com>
+X-Originating-IP: [134.191.244.34]
+In-Reply-To: <20110121171857.GC2400@joana>
+References: <1294138788-10307-1-git-send-email-pavan_savoy@ti.com>
+	<AANLkTinPC-i2xi9pCQ-RzGWuwZ5uTM3NXG7y6gwTnPYv@mail.gmail.com>
+	<20110121171857.GC2400@joana>
+Date: Fri, 21 Jan 2011 23:10:28 +0530
+Message-ID: <AANLkTimGNjfMtf+6XBMfKHo_F0sEnAJVdWjobfxDWoe7@mail.gmail.com>
+Subject: Re: [RFC 0/2] remove BT references from TI_ST
+From: Pavan Savoy <pavan_savoy@sify.com>
+To: "Gustavo F. Padovan" <padovan@profusion.mobi>
+Cc: marcel@holtmann.org, linux-kernel@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OOh ohh, can I jump in?  As another of "those Google guys" who has
-been dealing with Linux's lack of solutions here for years....
+Gustavo,
 
-On Thu, Jan 20, 2011 at 2:53 PM, Mike Waychison <mikew@google.com> wrote:
-> On 01/20/11 05:06, Ingo Molnar wrote:
+On Fri, Jan 21, 2011 at 10:48 PM, Gustavo F. Padovan
+<padovan@profusion.mobi> wrote:
+> Hi Pavan,
+>
+> * Pavan Savoy <pavan_savoy@sify.com> [2011-01-19 23:56:29 +0530]:
+>
+>> Gustavo,
 >>
->> * huang ying<huang.ying.caritas@gmail.com>  wrote:
+>> On Tue, Jan 4, 2011 at 4:29 PM,  <pavan_savoy@ti.com> wrote:
+>> > From: Pavan Savoy <pavan_savoy@ti.com>
+>> >
+>> > Gustavo,
+>> >
+>> > Based on your comments, that the underlying shared transport driver
+>> > for btwilink driver made use of the BT references to peek into the packets
+>> > I have modified the TI_ST.
 >>
->>> On Thu, Jan 20, 2011 at 8:14 PM, Ingo Molnar<mingo@elte.hu>  wrote:
->>>>
->>>> * huang ying<huang.ying.caritas@gmail.com>  wrote:
->>>>
->>>>>> But will all that stuff be accepted? Please stop sending
->>>>>> infrastructure bits and
->>>>>> focus on your larger RAS picture, once you have consensus on that from
->>>>>> all
->>>>>> parties involved, then, and only then, does it make sense to submit
->>>>>> everything,
->>>>>> including infrastructure.
->>>>>
->>>>> I am not sending hardware error reporting infrastructure.  As far as I
->>>>> know, Linus
->>>>> and Andrew suggest to use printk for hardware error reporting.  And
->>>>> now, I just
->>>>> try to write APEI driver and reporting hardware error with printk.  Is
->>>>> it
->>>>> acceptable?  Do you have some other idea about hardware error
->>>>> reporting?
->>>>
->>>> Erm, how could you possible have missed the perf based RAS daemon work
->>>> of Boris,
->>>> which we've pointed out about half a dozen times already?
->>>
->>> Even if there is some other hardware error reporting infrastructure
->>> such as perf based, I think we still need printk too. After all, as
->>> Linus pointed out, printk is the most popular error reporting
->>> mechanism so far. Do you think so?
+>> Since there lacks a generic way to parse the packets coming in from the
+>> UART into BT, FM or GPS, we have to look into the data to fragment assembled
+>> data or assemble fragmented data.
 >>
->> Of course, that's why the upstream EDAC code uses printk too. In fact it
->> does all
->> sorts of in-kernel decoding to make the printk output more useful - the
->> /dev/mcelog
->> method of pushing all decoding to user-space is fundamentally flawed.
-
-EDAC is fundamentally flawed and we don't use it any more.  It strips
-off so much information that we can't actually figure out what
-happened to the level we want.  We do it in userspace now.
-
-> Geez, I don't know how to approach this preposition in a concise way :(
->  Processing machine checks in-kernel is just as flawed as relying on
-> /dev/mcelog alone IMO.  I agree with you that relying on /dev/mcelog to get
-> all of our error data out is flawed, but so is relying on an in-kernel
-> "abstraction" of the data exposed from the hardware.
+>> Please have a look, Please suggest whether something like this is required,
+>> If not, please also suggest, if including BT headers is a problem ?
 >
->
-> There are many different ways a system can fail such that an MCE isn't
-> received and processed by the kernel.  Sometimes the error is just too fatal
-> to do anything useful.  Errors like a NB buffer CRC error, a bus syncflood,
-> or a cache hierarchy ECC error that was incorrectly propagated up through to
-> the L1 (which may only have parity checking) can cause the kernel to fall
-> over as the CPU is either cut off from the rest of the world or too confused
-> to get anything right.
->
-> Getting at this information is still very worthwhile however, and I'm
-> guessing that this is what the APEI bits are meant to be doing.  You'll be
-> seeing patches for Google firmware drivers that provide functionality along
-> the same vein in the coming days (I'm still busy whitewashing and
-> documenting them).
->
-> It's also very ignorant to assume that the kernel knows everything about the
-> system and is capable of decoding errors to the satisfaction of userland.
->  As Duncan Laurie pointed out (https://lkml.org/lkml/2011/1/11/390) we care
-> about not only the physical address, but which stick and which dimm *chip*
-> on the stick is having problems.  In-kernel abstractions  break down due to
-> the following:
+> Not really. The real problem is to break the abstraction between drivers
+> layers (core and bluetooth drivers in this case)
 
-This.  Andi was trying to use DMI tables to decode physical address to
-DIMMs, but I'll tell you this: I have yet to see a platform that has
-THAT MUCH information in the DMI tables and have it be *correct*.
+ok, fine. Although I myself personally would prefer the older way ...
+But its fine, I understand why references to bluetooth headers doesn't look good
+at shared transport level...
 
+>>
+>> Because I just include the BT headers and don't have a build
+>> dependency as such on
+>> BT/HCI and don't use any functions from hci_core in my shared transport driver.
+>>
+>> > For this reason, Now the above lying protocol drivers like BT, FM and GPS
+>> > would send details about their packet types and header information which
+>> > would assist shared transport driver to parse the data.
 >
->   * The kernel couldn't possible know how my i2c busses are setup and the
-> SPD EEPROMs are related to the physical memory abstraction that the bios
-> sets up for me.  I don't know of any standard way to have the BIOS expose
-> this sort of information to the operating system.  This sort of layout
-> changes between motherboard spins quite frequently as well, so good luck
-> mapping it yourself in any generic way.
+> Fair enough. This new approach is way better.
+
+Ok, So there is no problem with BT driver doing this multiple calls to
+st_register (or a single call
+with info array of ACL, SCO, Event to st_register) ?
+This would only hold true for BT.
+For FM or GPS there would be only 1 set of info sent across from protocol
+drivers to the shared transport drivers...
+
+Also, during firmware download, is hard-coding of few parameters
+pertaining to HCI-Event alright ?
+because this needs to happen even if say BT doesn't plan to use the
+shared transport and only FM
+V4L2 is at works..
+
+>> >
+>> > Gustavo, please also notice the change in btwilink driver in and around,
+>> > st_register and suggest if something like this is OK.
+>> > btwilink can also be modified to send in all the packet specific data
+>> > in one shot, if that is preferred.
+>> >
+>> > Please review and provide comments..
+>> >
+>> > Note:
+>> > If this is alright, I will send out a modified patch with updated
+>> > subject to lkml/Greg for linux-next.
 >
->   * The kernel couldn't know how to map SPD JEDEC Manufacturer ID, Model
-> part number and revision to anything useful about the chips themselves.
->
->   * The kernel also couldn't know how to communicate with the AMBs in a
-> meaningful way (if present).
->
->
-> At the end of the day,   The only things I really care about are:
->
->   * I don't care if the kernel pre-processes the data it gets from the
-> hardware when there is an error.  For most users, burping something out to
-> the logs in decoded form is generally useful.  It isn't for us.
->   * Don't ever put the kernel in a position where it will spam the logs and
-> wedge the system -- even if the hardware is wonky.
+> Ok. Go ahead. Then tell me when I'll be able to apply your patch. (I need to
+> have the core modifications in my tree first). Or I just ack the patch and it
+> finds its way to mainline through Greg's tree.
 
-I'll add to this - sometimes 100 MCEs/second is acceptable.  The
-Kernel needs to not flake out under that.
+Yes, I will post a patch to lkml against linux-next to greg KH, and
+based on that send a
+separate patch to linux-bluetooth for the btwilink..
 
->   * Don't dummy the data such that I can't do the same calculations with
-> better visibility from userland.
-
-This.  We do extensive analysis of data in userland.
-
->   * Don't ever enforce a reactive policy that can't be changed from
-> userland.
->   * I don't care whether the data comes from netlink, /dev/mcelog,
-> whiz-bang-sysfs uevent, or thingamaboo perfevents doohickie: as long as I
-> get events that are both atomic+consistent and the ABI is maintained.
-
-I've been asking for hardware events for ever.  I seem to recall a
-proposal from IBM at OLS 2002 or 2003 where this was discussed.  I
-wanted it then, and I still want it.  But I don't just want MCEs.  Why
-can I not use the same channel to get PCI errors or SATA errors or
-EDAC (non-MCE) errors.
-
-I don't care what the channel is, so long as I can rate-limit
-(/dev/mcelog is pretty good at that) events and the events I read
-contain full details about what happened.
-
-> I've CCed Robert who owns our userland bits as he may have something to add.
->
-> That said, I'd love to have generic NMI-safe data-passing for improved
-> debugability, regardless of this conflated bickering about RAS
-> infrastructure :)
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Gustavo F. Padovan
+> http://profusion.mobi
 >
