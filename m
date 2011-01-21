@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964Ab1AUUZy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 15:25:54 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:49023 "EHLO relay.sgi.com"
+	id S1754927Ab1AUUZv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 15:25:51 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:49022 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753898Ab1AUUZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753463Ab1AUUZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Jan 2011 15:25:06 -0500
-Message-Id: <20110121202502.581981983@gulag1.americas.sgi.com>
+Message-Id: <20110121202504.796868924@gulag1.americas.sgi.com>
 References: <20110121202502.090169599@gulag1.americas.sgi.com>
 User-Agent: quilt/0.46-1
-Date: Fri, 21 Jan 2011 14:25:03 -0600
+Date: Fri, 21 Jan 2011 14:25:08 -0600
 From: Mike Travis <travis@sgi.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
         Len Brown <len.brown@intel.com>, "H. Peter Anvin" <hpa@zytor.com>
@@ -17,173 +17,40 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Jack Steiner <steiner@sgi.com>,
         Robin Holt <holt@sgi.com>, Lori Gilbertson <loriann@sgi.com>,
         x86@kernel.org, linux-acpi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/6] printk: Allocate kernel log buffer earlier v1
-Content-Disposition: inline; filename=get_log_buff_early
+Subject: [PATCH 6/6] printk: Minimize time zero output
+Content-Disposition: inline; filename=minimize-time-zero-msgs
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On larger systems, because of the numerous ACPI, Bootmem and EFI
-messages, the static log buffer overflows before the larger one
-specified by the log_buf_len param is allocated.  Minimize the
-overflow by allocating the new log buffer as soon as possible.
-
-All arch's are covered by the "setup_log_buf" in start_kernel().
-The x86 arch allocates it right after bootmem is created.
-
-v1: Added pertinent __init & __initdata specifiers.
+Reduce the length for time zero messages by only printing "[0] ".
 
 Signed-off-by: Mike Travis <travis@sgi.com>
 Reviewed-by: Jack Steiner <steiner@sgi.com>
 Reviewed-by: Robin Holt <holt@sgi.com>
 ---
- arch/x86/kernel/setup.c |    5 ++
- include/linux/kernel.h  |    3 +
- init/main.c             |    1 
- kernel/printk.c         |   81 +++++++++++++++++++++++++++++-------------------
- 4 files changed, 59 insertions(+), 31 deletions(-)
+ kernel/printk.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- linux-2.6.32.orig/arch/x86/kernel/setup.c
-+++ linux-2.6.32/arch/x86/kernel/setup.c
-@@ -966,6 +966,11 @@ void __init setup_arch(char **cmdline_p)
- 
- 	initmem_init(0, max_pfn);
- 
-+	/*
-+	 * Allocate bigger log buffer as early as possible
-+	 */
-+	setup_log_buf();
-+
- #ifdef CONFIG_ACPI_SLEEP
- 	/*
- 	 * Reserve low memory region for sleep support.
---- linux-2.6.32.orig/include/linux/kernel.h
-+++ linux-2.6.32/include/linux/kernel.h
-@@ -17,6 +17,7 @@
- #include <linux/typecheck.h>
- #include <linux/ratelimit.h>
- #include <linux/dynamic_debug.h>
-+#include <linux/init.h>
- #include <asm/byteorder.h>
- #include <asm/bug.h>
- 
-@@ -281,6 +282,8 @@ static inline void log_buf_kexec_setup(v
- }
- #endif
- 
-+void __init setup_log_buf(void);
-+
- extern int printk_needs_cpu(int cpu);
- extern void printk_tick(void);
- 
---- linux-2.6.32.orig/init/main.c
-+++ linux-2.6.32/init/main.c
-@@ -589,6 +589,7 @@ asmlinkage void __init start_kernel(void
- 	 * These use large bootmem allocations and must precede
- 	 * kmem_cache_init()
- 	 */
-+	setup_log_buf();
- 	pidhash_init();
- 	vfs_caches_init_early();
- 	sort_main_extable();
 --- linux-2.6.32.orig/kernel/printk.c
 +++ linux-2.6.32/kernel/printk.c
-@@ -167,46 +167,65 @@ void log_buf_kexec_setup(void)
- }
- #endif
+@@ -805,11 +805,14 @@ asmlinkage int vprintk(const char *fmt,
+ 				unsigned long nanosec_rem;
  
-+static unsigned long __initdata new_log_buf_len;
- static int __init log_buf_len_setup(char *str)
- {
- 	unsigned size = memparse(str, &str);
--	unsigned long flags;
- 
- 	if (size)
- 		size = roundup_pow_of_two(size);
--	if (size > log_buf_len) {
--		unsigned start, dest_idx, offset;
--		char *new_log_buf;
+ 				t = cpu_clock(printk_cpu);
+-				nanosec_rem = do_div(t, 1000000000);
+-				tlen = sprintf(tbuf, "[%5lu.%06lu] ",
++				if (likely(t)) {
++					nanosec_rem = do_div(t, 1000000000);
++					tlen = sprintf(tbuf, "[%5lu.%06lu] ",
+ 						(unsigned long) t,
+ 						nanosec_rem / 1000);
 -
--		new_log_buf = alloc_bootmem(size);
--		if (!new_log_buf) {
--			printk(KERN_WARNING "log_buf_len: allocation failed\n");
--			goto out;
--		}
--
--		spin_lock_irqsave(&logbuf_lock, flags);
--		log_buf_len = size;
--		log_buf = new_log_buf;
--
--		offset = start = min(con_start, log_start);
--		dest_idx = 0;
--		while (start != log_end) {
--			log_buf[dest_idx] = __log_buf[start & (__LOG_BUF_LEN - 1)];
--			start++;
--			dest_idx++;
--		}
--		log_start -= offset;
--		con_start -= offset;
--		log_end -= offset;
--		spin_unlock_irqrestore(&logbuf_lock, flags);
-+	if (size > log_buf_len)
-+		new_log_buf_len = size;
- 
--		printk(KERN_NOTICE "log_buf_len: %d\n", log_buf_len);
--	}
--out:
--	return 1;
-+	return 0;
- }
-+early_param("log_buf_len", log_buf_len_setup);
- 
--__setup("log_buf_len=", log_buf_len_setup);
-+void __init setup_log_buf(void)
-+{
-+	unsigned long flags;
-+	unsigned start, dest_idx, offset;
-+	char *new_log_buf;
-+	char first_line[64], *first_nl;
-+
-+	if (!new_log_buf_len)
-+		return;
-+
-+	new_log_buf = alloc_bootmem(new_log_buf_len);
-+	memset(first_line, 0, sizeof(first_line));
-+
-+	spin_lock_irqsave(&logbuf_lock, flags);
-+	log_buf_len = new_log_buf_len;
-+	log_buf = new_log_buf;
-+	new_log_buf_len = 0;
-+
-+	offset = start = min(con_start, log_start);
-+	dest_idx = 0;
-+	while (start != log_end) {
-+		unsigned log_idx_mask = start & (__LOG_BUF_LEN - 1);
-+
-+		log_buf[dest_idx] = __log_buf[log_idx_mask];
-+		if (dest_idx < sizeof(first_line) - 1)
-+			first_line[dest_idx] = __log_buf[log_idx_mask];
-+		start++;
-+		dest_idx++;
-+	}
-+	log_start -= offset;
-+	con_start -= offset;
-+	log_end -= offset;
-+	spin_unlock_irqrestore(&logbuf_lock, flags);
-+
-+	first_nl = strchr(first_line, '\n');
-+	if (first_nl)
-+		*first_nl = '\0';
-+
-+	pr_info("log_buf_len: %d, first line: %s\n",
-+		log_buf_len, first_line);
-+
-+	pr_debug("bu: %d/%d (%d%%)\n",
-+		dest_idx, __LOG_BUF_LEN - dest_idx,
-+		(dest_idx * 100) / __LOG_BUF_LEN);
-+}
- 
- #ifdef CONFIG_BOOT_PRINTK_DELAY
- 
++				} else {
++					tlen = sprintf(tbuf, "[0] ");
++				}
+ 				for (tp = tbuf; tp < tbuf + tlen; tp++)
+ 					emit_log_char(*tp);
+ 				printed_len += tlen;
 
 -- 
