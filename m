@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851Ab1AUS5H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 13:57:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54776 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752212Ab1AUS5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 13:57:06 -0500
-Date: Fri, 21 Jan 2011 13:56:17 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, tytso@mit.edu, djwong@us.ibm.com, shli@kernel.org,
-        neilb@suse.de, adilger.kernel@dilger.ca, jack@suse.cz,
-        snitzer@redhat.com, linux-kernel@vger.kernel.org, kmannth@us.ibm.com,
-        cmm@us.ibm.com, linux-ext4@vger.kernel.org, rwheeler@redhat.com,
-        hch@lst.de, josef@redhat.com, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 3/3] block: reimplement FLUSH/FUA to support merge
-Message-ID: <20110121185617.GI12072@redhat.com>
-References: <1295625598-15203-1-git-send-email-tj@kernel.org>
- <1295625598-15203-4-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295625598-15203-4-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754871Ab1AUS7G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 13:59:06 -0500
+Received: from xenotime.net ([72.52.115.56]:56329 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752566Ab1AUS7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 13:59:05 -0500
+Date: Fri, 21 Jan 2011 10:58:59 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Jonathan McCune <jonmccune@cmu.edu>
+Cc: linux-kernel@vger.kernel.org, tboot-devel@lists.sourceforge.net,
+        trivial@kernel.org
+Subject: Re: [PATCH, TRIVIAL] Add more explicit dependencies for
+ CONFIG_INTEL_TXT
+Message-Id: <20110121105859.7ea78d6c.rdunlap@xenotime.net>
+In-Reply-To: <AANLkTi=0W3hZs6bsCwttg9BBgoQs0v-qVO5x5UPnNM+k@mail.gmail.com>
+References: <AANLkTi=0W3hZs6bsCwttg9BBgoQs0v-qVO5x5UPnNM+k@mail.gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 04:59:58PM +0100, Tejun Heo wrote:
+On Fri, 21 Jan 2011 13:39:19 -0500 Jonathan McCune wrote:
 
-[..]
-> + * The actual execution of flush is double buffered.  Whenever a request
-> + * needs to execute PRE or POSTFLUSH, it queues at
-> + * q->flush_queue[q->flush_pending_idx].  Once certain criteria are met, a
-> + * flush is issued and the pending_idx is toggled.  When the flush
-> + * completes, all the requests which were pending are proceeded to the next
-> + * step.  This allows arbitrary merging of different types of FLUSH/FUA
-> + * requests.
-> + *
-> + * Currently, the following conditions are used to determine when to issue
-> + * flush.
-> + *
-> + * C1. At any given time, only one flush shall be in progress.  This makes
-> + *     double buffering sufficient.
-> + *
-> + * C2. Flush is not deferred if any request is executing DATA of its
-> + *     sequence.  This avoids issuing separate POSTFLUSHes for requests
-> + *     which shared PREFLUSH.
+> This patch makes the documentation slightly more explicit about how to
+> enable Intel TXT support in the kernel, and adds two dependencies to
+> the relevant option in Kconfig.  Without this patch it is difficult to
+> determine how to enable Intel TXT support without some knowledge of
+> Kconfig.
+> 
+> Signed-off-by: Jonathan McCune <jonmccune@cmu.edu>
+> 
+> ---
+>  Documentation/intel_txt.txt |    4 +++-
+>  security/Kconfig            |    2 +-
+>  2 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/intel_txt.txt b/Documentation/intel_txt.txt
+> index 849de1a..8487f76 100644
+> --- a/Documentation/intel_txt.txt
+> +++ b/Documentation/intel_txt.txt
+> @@ -196,7 +196,9 @@ Execution Technology (TXT)".  It is marked as
+> EXPERIMENTAL and
+>  depends on the generic x86 support (to allow maximum flexibility in
+>  kernel build options), since the tboot code will detect whether the
+>  platform actually supports Intel TXT and thus whether any of the
+> -kernel code is executed.
+> +kernel code is executed. The kernel option for enabling Intel TXT
+> +support will only appear if its dependencies are also enabled.
+> +These are CONFIG_DMAR and CONFIG_PCI_MSI.
 
-Tejun, did you mean "Flush is deferred" instead of "Flush is not deferred"
-above?
+Shouldn't that comment match the "depends on" line below??
 
-IIUC, C2 might help only if requests which contain data are also going to 
-issue postflush. Couple of cases come to mind.
 
-- If queue supports FUA, I think we will not issue POSTFLUSH. In that
-  case issuing next PREFLUSH which data is in flight might make sense.
+>  The Q35_SINIT_17.BIN file is what Intel TXT refers to as an
+>  Authenticated Code Module.  It is specific to the chipset in the
+> diff --git a/security/Kconfig b/security/Kconfig
+> index 95accd4..5fd4e35 100644
+> --- a/security/Kconfig
+> +++ b/security/Kconfig
+> @@ -136,7 +136,7 @@ config SECURITY_PATH
+> 
+>  config INTEL_TXT
+>  	bool "Enable Intel(R) Trusted Execution Technology (Intel(R) TXT)"
+> -	depends on HAVE_INTEL_TXT
+> +	depends on HAVE_INTEL_TXT && EXPERIMENTAL && DMAR && ACPI
+>  	help
+>  	  This option enables support for booting the kernel with the
+>  	  Trusted Boot (tboot) module. This will utilize
+> -- 
 
-- Even if queue does not support FUA and we are only getting requests
-  with REQ_FLUSH then also waiting for data requests to finish before
-  issuing next FLUSH might not help.
 
-- Even if queue does not support FUA and say we have a mix of REQ_FUA
-  and REQ_FLUSH, then this will help only if in a batch we have more
-  than 1 request which is going to issue POSTFLUSH and those postflush
-  will be merged.
-
-- Ric Wheeler was once mentioning that there are boxes which advertise
-  writeback cache but are battery backed so they ignore flush internally and
-  signal completion immediately. I am not sure how prevalent those
-  cases are but I think waiting for data to finish will delay processing
-  of new REQ_FLUSH requests in pending queue for such array. There
-  we will not anyway benefit from merging of FLUSH.
-
-Given that C2 is going to benefit primarily only if queue does not support
-FUA and we have many requets with REQ_FUA set, will it make sense to 
-put additional checks for C2. Atleast a simple queue support FUA
-check might help.
-
-In practice does C2 really help or we can get rid of it entirely?
-
-Thanks
-Vivek
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
