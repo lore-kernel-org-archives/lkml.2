@@ -1,48 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874Ab1AUTSN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 14:18:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25859 "EHLO mx1.redhat.com"
+	id S1754880Ab1AUTUH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 14:20:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10269 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751598Ab1AUTSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 14:18:12 -0500
-Date: Fri, 21 Jan 2011 20:17:57 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: werner <w.landgraf@ru.ru>
-Cc: akpm@linux-foundation.org, hannes@cmpxchg.org, idryomov@gmail.com,
-        rostedt@goodmis.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <jweiner@redhat.com>
-Subject: Re: 2.6.38-rc1 problems with khugepaged
-Message-ID: <20110121191757.GO9506@random.random>
-References: <web-444048714@zbackend1.aha.ru>
+	id S1754386Ab1AUTUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 14:20:04 -0500
+Date: Fri, 21 Jan 2011 14:19:20 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, tytso@mit.edu, djwong@us.ibm.com, shli@kernel.org,
+        neilb@suse.de, adilger.kernel@dilger.ca, jack@suse.cz,
+        snitzer@redhat.com, linux-kernel@vger.kernel.org, kmannth@us.ibm.com,
+        cmm@us.ibm.com, linux-ext4@vger.kernel.org, rwheeler@redhat.com,
+        hch@lst.de, josef@redhat.com
+Subject: Re: [PATCH 3/3] block: reimplement FLUSH/FUA to support merge
+Message-ID: <20110121191920.GJ12072@redhat.com>
+References: <1295625598-15203-1-git-send-email-tj@kernel.org>
+ <1295625598-15203-4-git-send-email-tj@kernel.org>
+ <20110121185617.GI12072@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <web-444048714@zbackend1.aha.ru>
+In-Reply-To: <20110121185617.GI12072@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 06:43:44AM -0400, werner wrote:
-> 2.6.38-rc1-git1 runs normally with khugepaged switched 
-> OFF.  Thus, khugepaged  is the problem; as said if 
-> switched it on, during boot the computer becomes very slow 
-> and sticks almost.    wl
+On Fri, Jan 21, 2011 at 01:56:17PM -0500, Vivek Goyal wrote:
+> On Fri, Jan 21, 2011 at 04:59:58PM +0100, Tejun Heo wrote:
+> 
+> [..]
+> > + * The actual execution of flush is double buffered.  Whenever a request
+> > + * needs to execute PRE or POSTFLUSH, it queues at
+> > + * q->flush_queue[q->flush_pending_idx].  Once certain criteria are met, a
+> > + * flush is issued and the pending_idx is toggled.  When the flush
+> > + * completes, all the requests which were pending are proceeded to the next
+> > + * step.  This allows arbitrary merging of different types of FLUSH/FUA
+> > + * requests.
+> > + *
+> > + * Currently, the following conditions are used to determine when to issue
+> > + * flush.
+> > + *
+> > + * C1. At any given time, only one flush shall be in progress.  This makes
+> > + *     double buffering sufficient.
+> > + *
+> > + * C2. Flush is not deferred if any request is executing DATA of its
+> > + *     sequence.  This avoids issuing separate POSTFLUSHes for requests
+> > + *     which shared PREFLUSH.
+> 
+> Tejun, did you mean "Flush is deferred" instead of "Flush is not deferred"
+> above?
+> 
+> IIUC, C2 might help only if requests which contain data are also going to 
+> issue postflush. Couple of cases come to mind.
+> 
+> - If queue supports FUA, I think we will not issue POSTFLUSH. In that
+>   case issuing next PREFLUSH which data is in flight might make sense.
+> 
+> - Even if queue does not support FUA and we are only getting requests
+>   with REQ_FLUSH then also waiting for data requests to finish before
+>   issuing next FLUSH might not help.
+> 
+> - Even if queue does not support FUA and say we have a mix of REQ_FUA
+>   and REQ_FLUSH, then this will help only if in a batch we have more
+>   than 1 request which is going to issue POSTFLUSH and those postflush
+>   will be merged.
+> 
+> - Ric Wheeler was once mentioning that there are boxes which advertise
+>   writeback cache but are battery backed so they ignore flush internally and
+>   signal completion immediately. I am not sure how prevalent those
+>   cases are but I think waiting for data to finish will delay processing
+>   of new REQ_FLUSH requests in pending queue for such array. There
+>   we will not anyway benefit from merging of FLUSH.
+> 
+> Given that C2 is going to benefit primarily only if queue does not support
+> FUA and we have many requets with REQ_FUA set, will it make sense to 
+> put additional checks for C2. Atleast a simple queue support FUA
+> check might help.
 
-Sorry, looks like x86 32bit THP wasn't tested in all possible .config
-(32bit support is upstream-only feature and because of lower userbase
-it also got a lot less testing than 64bit support).
+Reading through the blk_insert_flush() bit more, looks like pure REQ_FUA
+requests will not even show up in data list if queue supports FUA. But
+IIUC requests with both REQ_FLUSH and REQ_FUA set will still show up even if
+queue supports FUA.
 
-Does it make any difference if you both disable CONFIG_PARAVIRT and
-enable HIGHMEM64?
-
-For now keep THP off on 32bit, it should be trivial to reproduce so
-fix will come soon.
-
-Minchan info shows it's an 32bit arch bug so don't be too worried
-about it because it can't affect 64bit builds and it's not common code
-bug and we'll fix it ASAP.
-
-Thanks,
-Andrea
+Thanks
+Vivek
