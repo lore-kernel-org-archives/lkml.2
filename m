@@ -1,148 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753649Ab1AUOnK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 09:43:10 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:46894 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753249Ab1AUOnE (ORCPT
+	id S1753670Ab1AUOot (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 09:44:49 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:47657 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753420Ab1AUOor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 09:43:04 -0500
-Message-ID: <4D399B72.3000103@canonical.com>
-Date: Fri, 21 Jan 2011 15:42:58 +0100
-From: Stefan Bader <stefan.bader@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+	Fri, 21 Jan 2011 09:44:47 -0500
+X-Authenticated: #4630777
+X-Provags-ID: V01U2FsdGVkX18jUWtWti0jKa3FTpvKUeMPYE1WM4lsIfYJnz5lfw
+	ZrwH4yvA/2jyDi
+Date: Fri, 21 Jan 2011 15:41:31 +0100
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] fsnotify: Do not always merge overflow events
+Message-ID: <20110121144131.GA15375@lsanfilippo.unix.rd.tt.avira.com>
+References: <20101126113958.GB11676@lsanfilippo.unix.rd.tt.avira.com> <1295469422.21577.33.camel@localhost.localdomain>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        xen-devel@lists.xensource.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen: p2m: correctly initialize partial p2m
- leave
-References: <4D3848DF.9000906@canonical.com> <20110121142647.GA27319@dumpdata.com>
-In-Reply-To: <20110121142647.GA27319@dumpdata.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295469422.21577.33.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2011 03:26 PM, Konrad Rzeszutek Wilk wrote:
-> On Thu, Jan 20, 2011 at 03:38:23PM +0100, Stefan Bader wrote:
->> There have been changes and code been moved around, so this is just a quick
->> rebase of the change I tested on a 2.6.37 based kernel. The basic problem seem
->> still valid, though.
+On Wed, Jan 19, 2011 at 03:37:01PM -0500, Eric Paris wrote:
+> On Fri, 2010-11-26 at 12:39 +0100, Lino Sanfilippo wrote:
 > 
-> Yup.
->>
->> Initially I thought of adding a cc to stable into the s-o-b, but the patch needs
->> to be adapted anyway (I can supply that version if the way I fixed the issue
->> looks ok).
+> > With this patch we only merge an overflow event if the last event in the
+> > queue is also an overflow event.
 > 
-> OK, let me send this upstream to Linus for adaption. I fixed one compile warning
-> but otherwsie it is the same. Look below for details.
+> I liked the idea, but not the patch.  It left some dead return_event
+> code, but more importantly I'd rather keep the generic code generic if
+> we could.  I merged this patch instead which pushes the handling out to
+> fanotify_merge, so if some listener wants other complex behavior they
+> can handle it.
 > 
-> And when that is done I would appreciate you sending a copy to stable.
-> 
-Sure, will do that as soon as the change hits 2.6.38 upstream.
+> What do you think?
 
--Stefan
+I think keeping it generic and up to the listener is a very good idea. 
+But what we also have to consider then is how overflow events are handled if _no_ merge() 
+function is defined by a listener:
+Right now, since o-events are not merged in that case, a new o-event is put in the 
+queue everytime the queue is found full, possibly increasing the queue more and more. 
+So we could end up with a queue that is permanently overflowed only because its 
+filled with countless overflow events :|.
+I dont think that this is a good default behaviour.
 
->>
->> Regards,
->> Stefan
-> 
->> >From 1e9c9514caf0399c88ae9288e6db8e3d1c4b4be5 Mon Sep 17 00:00:00 2001
->> From: Stefan Bader <stefan.bader@canonical.com>
->> Date: Thu, 20 Jan 2011 11:37:43 +0100
->> Subject: [PATCH] xen: p2m: correctly initialize partial p2m leave
->>
->> After changing the p2m mapping to a tree by
->>
->>   commit 58e05027b530ff081ecea68e38de8d59db8f87e0
->>     xen: convert p2m to a 3 level tree
->>
->> and trying to boot a DomU with 615MB of memory, the following crash was
->> observed in the dump:
->>
->> kernel direct mapping tables up to 26f00000 @ 1ec4000-1fff000
->> BUG: unable to handle kernel NULL pointer dereference at (null)
->> IP: [<c0107397>] xen_set_pte+0x27/0x60
->> *pdpt = 0000000000000000 *pde = 0000000000000000
->>
->> Adding further debug statements showed that when trying to set up
->> pfn=0x26700 the returned mapping was invalid.
->>
->> pfn=0x266ff calling set_pte(0xc1fe77f8, 0x6b3003)
->> pfn=0x26700 calling set_pte(0xc1fe7800, 0x3)
->>
->> Although the last_pfn obtained from the startup info is 0x26700, which
->> should in turn not be hit, the additional 8MB which are added as extra
->> memory normally seem to be ok. This lead to looking into the initial
->> p2m tree construction, which uses the smaller value and assuming that
->> there is other code handling the extra memory.
->>
->> When the p2m tree is set up, the leaves are directly pointed to the
->> array which the domain builder set up. But if the mapping is not on a
->> boundary that fits into one p2m page, this will result in the last leaf
->> being only partially valid. And as the invalid entries are not
->> initialized in that case, things go badly wrong.
->>
->> I am trying to fix that by checking whether the current leaf is a
->> complete map and if not, allocate a completely new page and copy only
->> the valid pointers there. This may not be the most efficient or elegant
->> solution, but at least it seems to allow me booting DomUs with memory
->> assignments all over the range.
->>
->> BugLink: http://bugs.launchpad.net/bugs/686692
->>
->> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
->> ---
->>  arch/x86/xen/p2m.c |   20 +++++++++++++++++++-
->>  1 files changed, 19 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
->> index 8f2251d..c9307ec 100644
->> --- a/arch/x86/xen/p2m.c
->> +++ b/arch/x86/xen/p2m.c
->> @@ -237,7 +237,25 @@ void __init xen_build_dynamic_phys_to_machine(void)
->>  			p2m_top[topidx] = mid;
->>  		}
->>  
->> -		p2m_top[topidx][mididx] = &mfn_list[pfn];
->> +		/*
->> +		 * As long as the mfn_list has enough entries to completely
->> +		 * fill a p2m page, pointing into the array is ok. But if
->> +		 * not the entries beyond the last pfn will be undefined.
->> +		 * And guessing that the 'what-ever-there-is' does not take it
->> +		 * too kindly when changing it to invalid markers, a new page
->> +		 * is allocated, initialized and filled with the valid part.
->> +		 */
->> +		if (unlikely(pfn + P2M_PER_PAGE > max_pfn)) {
->> +			unsigned long p2midx;
->> +			unsigned long **p2m = extend_brk(PAGE_SIZE, PAGE_SIZE);
-> 
-> 			unsigned long  *p2m.
-> 
-> 
->> +			p2m_init(p2m);
->> +
->> +			for (p2midx = 0; pfn + p2midx < max_pfn; p2midx++) {
->> +				p2m[p2midx] = mfn_list[pfn + p2midx];
->> +			}
->> +			p2m_top[topidx][mididx] = p2m;
->> +		} else
->> +			p2m_top[topidx][mididx] = &mfn_list[pfn];
->>  	}
->>  
->>  	m2p_override_init();
->> -- 
->> 1.7.0.4
->>
-> 
->> _______________________________________________
->> Xen-devel mailing list
->> Xen-devel@lists.xensource.com
->> http://lists.xensource.com/xen-devel
-> 
+My suggestion is to do both, keep generic and offer a default merge() function - 
+which does nothing but merge overflow events in a sane way. 
+So listeners could decide whether they want to keep the default behaviour, 
+reuse it in their own implementation or completely replace it with their own 
+implementation. 
+
+In the example below the implementation from fanotify_merge_q_overflow() is used as 
+a generic (default) merge() function: 
+
+
+diff --git a/fs/notify/fanotify/fanotify.c b/fs/notify/fanotify/fanotify.c
+index c2ba86a..87925c0 100644
+--- a/fs/notify/fanotify/fanotify.c
++++ b/fs/notify/fanotify/fanotify.c
+@@ -40,6 +40,8 @@ static struct fsnotify_event *fanotify_merge(struct list_head *list,
+ 
+ 	pr_debug("%s: list=%p event=%p\n", __func__, list, event);
+ 
++	if (event == q_overflow_event)
++		return fsnotify_generic_merge(list, event);
+ 
+ 	list_for_each_entry_reverse(test_holder, list, event_list) {
+ 		if (should_merge(test_holder->event, event)) {
+diff --git a/fs/notify/notification.c b/fs/notify/notification.c
+index f39260f..8e66252 100644
+--- a/fs/notify/notification.c
++++ b/fs/notify/notification.c
+@@ -56,7 +56,7 @@ static struct kmem_cache *fsnotify_event_holder_cachep;
+  * it is needed.  It's refcnt is set 1 at kernel init time and will never
+  * get set to 0 so it will never get 'freed'
+  */
+-static struct fsnotify_event *q_overflow_event;
++struct fsnotify_event *q_overflow_event;
+ static atomic_t fsnotify_sync_cookie = ATOMIC_INIT(0);
+ 
+ /**
+@@ -132,6 +132,22 @@ struct fsnotify_event_private_data *fsnotify_remove_priv_from_event(struct fsnot
+ 	return priv;
+ }
+ 
++/* generic merging for q_overflow, only merge with the last event */
++struct fsnotify_event *fsnotify_generic_merge(struct list_head *list,
++					      struct fsnotify_event *event)
++{
++	struct fsnotify_event_holder *last;
++
++	if (event != q_overflow_event)
++		return NULL;
++	last = list_entry(list->prev, struct fsnotify_event_holder, event_list);
++	if (last->event == q_overflow_event) {
++		fsnotify_get_event(q_overflow_event);
++		return q_overflow_event;
++	}
++	return NULL;
++}
++
+ /*
+  * Add an event to the group notification queue.  The group can later pull this
+  * event off the queue to deal with.  If the event is successfully added to the
+@@ -145,9 +161,14 @@ struct fsnotify_event *fsnotify_add_notify_event(struct fsnotify_group *group, s
+ 	struct fsnotify_event *return_event = NULL;
+ 	struct fsnotify_event_holder *holder = NULL;
+ 	struct list_head *list = &group->notification_list;
++	struct fsnotify_event *(* merge_event) (struct list_head *,
++						struct fsnotify_event *)
++		= fsnotify_generic_merge;
+ 
+ 	pr_debug("%s: group=%p event=%p priv=%p\n", __func__, group, event, priv);
+ 
++	if (merge) /* use merge() function provided by listener */
++		merge_event = merge;
+ 	/*
+ 	 * There is one fsnotify_event_holder embedded inside each fsnotify_event.
+ 	 * Check if we expect to be able to use that holder.  If not alloc a new
+@@ -179,10 +200,10 @@ alloc_holder:
+ 		priv = NULL;
+ 	}
+ 
+-	if (!list_empty(list) && merge) {
++	if (!list_empty(list)) {
+ 		struct fsnotify_event *tmp;
+ 
+-		tmp = merge(list, event);
++		tmp = merge_event(list, event);
+ 		if (tmp) {
+ 			mutex_unlock(&group->notification_mutex);
+ 
+@@ -210,7 +231,6 @@ alloc_holder:
+ 			fsnotify_put_event(return_event);
+ 			return_event = NULL;
+ 		}
+-
+ 		goto alloc_holder;
+ 	}
+ 
+diff --git a/include/linux/fsnotify_backend.h b/include/linux/fsnotify_backend.h
+index 6a3c660..e3d1b78 100644
+--- a/include/linux/fsnotify_backend.h
++++ b/include/linux/fsnotify_backend.h
+@@ -364,6 +364,11 @@ extern struct fsnotify_group *fsnotify_alloc_group(const struct fsnotify_ops *op
+ /* drop reference on a group from fsnotify_alloc_group */
+ extern void fsnotify_put_group(struct fsnotify_group *group);
+ 
++/* special event used to indicate the queue is full */
++extern struct fsnotify_event *q_overflow_event;
++/* generic merging */
++extern struct fsnotify_event *fsnotify_generic_merge(struct list_head *list,
++						     struct fsnotify_event *event);
+ /* take a reference to an event */
+ extern void fsnotify_get_event(struct fsnotify_event *event);
+ extern void fsnotify_put_event(struct fsnotify_event *event);
+
+
 
