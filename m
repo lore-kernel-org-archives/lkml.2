@@ -1,83 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504Ab1AUInU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 03:43:20 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:54451 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431Ab1AUInS convert rfc822-to-8bit (ORCPT
+	id S1754656Ab1AUIrg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 03:47:36 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:55632 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753255Ab1AUIrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 03:43:18 -0500
+	Fri, 21 Jan 2011 03:47:35 -0500
+Date: Fri, 21 Jan 2011 03:47:29 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Tatyana Brokhman <tlinder@codeaurora.org>
+Cc: gregkh@suse.de, linux-arm-msm@vger.kernel.org,
+        "open list:USB GADGET/PERIPH..." <linux-usb@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC/PATCH 1/4] uasp: MS UAS Protocol implementation -
+ Infrastructure
+Message-ID: <20110121084729.GA12517@infradead.org>
+References: <1295595854-23232-1-git-send-email-tlinder@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <20110120161101.GA17218@nowhere>
-References: <AANLkTinNoYbDe5huY4_Q6YidbWxqXqVWbVP2_7o-=P3W@mail.gmail.com>
-	<20110120161101.GA17218@nowhere>
-Date: Fri, 21 Jan 2011 09:43:18 +0100
-Message-ID: <AANLkTinhX6UwQA0HFhuu5=jbq84woVhqtahuzA5hEo2o@mail.gmail.com>
-Subject: Re: [PATCH V2] tracing, perf : add cpu hotplug trace events
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
-        rostedt@goodmis.org, amit.kucheria@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295595854-23232-1-git-send-email-tlinder@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 January 2011 17:11, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Thu, Jan 20, 2011 at 09:25:54AM +0100, Vincent Guittot wrote:
->> Please find below a new proposal for adding trace events for cpu hotplug.
->> The goal is to measure the latency of each part (kernel, architecture)
->> and also to trace the cpu hotplug activity with other power events. I
->> have tested these traces events on an arm platform.
->>
->> Changes since previous version:
->> -Use cpu_hotplug for trace name
->> -Define traces for kernel core and arch parts only
->> -Use DECLARE_EVENT_CLASS and DEFINE_EVENT
->> -Use proper indentation
->>
->> Subject: [PATCH] cpu hotplug tracepoint
->>
->> this patch adds new events for cpu hotplug tracing
->>  * plug/unplug sequence
->>  * core and architecture latency measurements
->>
->> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.com>
->> ---
->>  include/trace/events/cpu_hotplug.h |  117 ++++++++++++++++++++++++++++++++++++
->
-> Note we can't apply new tracepoints if they are not inserted in the code.
+On Fri, Jan 21, 2011 at 09:44:13AM +0200, Tatyana Brokhman wrote:
+> This patch implements the infrastructure for the UASP function driver.
+> The UASP Function driver registers as a second configuration of the MS
+> Function driver.
 
-I agree, i just want to have 1st feedbacks on the tracepoint interface
-before providing a patch which inserts the trace in the code.
+We now have a proper scsi target infrastructure in drivers/target,
+please use it.
 
->
->> +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_wait_die_start,
->> +
->> +     TP_PROTO(unsigned int cpuid),
->> +
->> +     TP_ARGS(cpuid)
->> +);
->> +
->> +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_wait_die_end,
->> +
->> +     TP_PROTO(unsigned int cpuid),
->> +
->> +     TP_ARGS(cpuid)
->> +);
->
-> What is wait die, compared to die for example?
->
-
-The arch_wait_die is used to trace the process which waits for the cpu
-to die (__cpu_die) and the arch_die is used to trace when the cpu dies
-(cpu_die)
-
-> We need those tracepoints to be applied to get that reviewable in practice.
->
-
-Ok, I'm going to send a proposal
-
-> Thanks.
->
