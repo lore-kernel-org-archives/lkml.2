@@ -1,63 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab1AUSfH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 13:35:07 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:5807 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752283Ab1AUSfF (ORCPT
+	id S1754439Ab1AUSh4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 13:37:56 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:45832 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752988Ab1AUShz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 13:35:05 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6233"; a="71413657"
-Subject: Re: [PATCH 0/7] Nexus One Support
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Joe Perches <joe@perches.com>, Dima Zavin <dmitriyz@google.com>,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, davidb@codeaurora.org
-In-Reply-To: <20110121102740.7f7a57f9@jbarnes-desktop>
-References: <1295555565-21563-1-git-send-email-dwalker@codeaurora.org>
-	 <AANLkTik+HCj9dkD2s4WgwCqKWCXDbdSnKDUbyGfYfaPr@mail.gmail.com>
-	 <1295571359.9236.53.camel@m0nster> <1295574085.4096.6.camel@Joe-Laptop>
-	 <1295575123.9236.54.camel@m0nster> <1295576730.4096.24.camel@Joe-Laptop>
-	 <1295624801.19880.13.camel@m0nster>
-	 <20110121094827.41818a55@jbarnes-desktop>
-	 <20110121095658.1ab623fe@jbarnes-desktop>
-	 <1295632828.19880.22.camel@m0nster>
-	 <20110121100441.06a94482@jbarnes-desktop>
-	 <1295633882.19880.31.camel@m0nster>
-	 <20110121102740.7f7a57f9@jbarnes-desktop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 Jan 2011 10:35:06 -0800
-Message-ID: <1295634906.19880.34.camel@m0nster>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Jan 2011 13:37:55 -0500
+Date: Fri, 21 Jan 2011 13:37:52 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for
+	this_cpu_cmpxchg_double
+Message-ID: <20110121183752.GA12998@Krystal>
+References: <alpine.DEB.2.00.1101071227450.3014@router.home> <20110108172453.GF13269@mtj.dyndns.org> <4D393636.4040607@cs.helsinki.fi> <20110121092649.GA2832@htj.dyndns.org> <4D39A6EB.70705@zytor.com> <20110121154831.GE2832@htj.dyndns.org> <20110121165425.GB11687@Krystal> <alpine.DEB.2.00.1101211101510.15418@router.home> <20110121175054.GB12150@Krystal> <alpine.DEB.2.00.1101211158090.15692@router.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1101211158090.15692@router.home>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 13:26:52 up 58 days, 23:29,  4 users,  load average: 0.03, 0.01,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-21 at 10:27 -0800, Jesse Barnes wrote:
+* Christoph Lameter (cl@linux.com) wrote:
+> On Fri, 21 Jan 2011, Mathieu Desnoyers wrote:
+> 
+> > > > With:
+> > > >   struct cmpxchg_double *pcp
+> > >
+> > > That does not conform to the parameter conventions in other this_cpu_ops.
+> > > The first parameter is a variable because the notion of a pointer is
+> > > problematic given that percpu operations use a segment prefix to relocate
+> > > pointers.
+> >
+> > So the first argument could be along the lines of:
+> >
+> > struct cmpxchg_double pcp
+> >
+> > then.
+> 
+> Ok then you would pass a struct by value? Or use a non-scalar as a
+> variable passed to a this_cpu_op? So far per cpu scalars have been the
+> only variables allowed to be specified in this_cpu operations.
 
-> Ok, then I'm sorry for jumping the gun.  The changelogs made the
-> changes sound more trivial ("slight modifications and cleanup"); and
-> those would only justify a small [] text near the s-o-b lines.  But if
-> they're larger, maybe you should expand on the text and include the
-> original authorship like Christoph suggested (or use the original
-> author for patches where the changes really were trivial).
+What I have in mind is that the struct passed would be non-scalar for this
+specific operation. I'm not sure about the distinction between "pass a struct by
+value" and "use a non-scalar as a variable passed to a this_cpu_op" -- I feel
+I'm missing an important detail in what you say, because I see these as being
+the same thing.
 
-yeah, I didn't really think about that line when I wrote it.. It should
-just says "Base on code from Google." I was just trying to give them
-some credit.
+> 
+> > > >         struct cmpxchg_double casdbl;
+> > > >         struct {
+> > > >                 void *ptr;
+> > > >                 unsigned long cpuid_tid;
+> > > >         } t;
+> > > > }
+> > >
+> > > There is no need for aliases with the existing implementation.
+> > >
+> > > How will the macro check the parameters now?
+> >
+> > Well, my last proposal to check __alignof__ within a __builtin_choose_expr
+> > check wouldn't need this union actually, which would be much better I think.
+> 
+> The existing implementation has a check for alignment. That is not the
+> problem.
 
-I've done changes like your suggesting
-(923a081c72fa2dccb7ea7070bd8e0f4dc99ceff8) so I'm not a novice to this.
+It's a dynamic check right ? (based on VM_BUG_ON() if I remember well) It adds
+code and runtime conditions, which would go away if we let the alignment check
+be done at compile-time.
 
-Daniel
+> The typechecking would need to be addressed. I.e. if I pass a
+> pointer for old and an ulong for the new value then I'd like to see the
+> compiler complain. Or if the first parameter is a long but the type of the
+> first word is a pointer etc etc.
+
+Hrm. Then the only solution I see would be to require that the structure
+used as percpu_dd parameter have fixed field names (yeah, that's a bit odd, but
+could not come up with a more elegant solution at the moment):
+
+struct mycustomdoublestruct {
+        sometype word1;
+        someothertype word2;
+}
+
+So we can access percpu_dd.word1 and percpu_dd.word2 within
+this_cpu_cmpxchg_double for the type checking.
+
+Mathieu
 
 
 -- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
-Forum.
-
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
