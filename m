@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab1AUSSK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 13:18:10 -0500
-Received: from casper.infradead.org ([85.118.1.10]:54609 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753082Ab1AUSSI convert rfc822-to-8bit (ORCPT
+	id S1753129Ab1AUSUN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 13:20:13 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:52518 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752082Ab1AUSUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 13:18:08 -0500
-Subject: Re: perf_events: question about __perf_event_read()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>
-In-Reply-To: <AANLkTikX=tQwYKj9VZhCNudErf4TP-74+Jv3WPvSdUMn@mail.gmail.com>
-References: <AANLkTikX=tQwYKj9VZhCNudErf4TP-74+Jv3WPvSdUMn@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 21 Jan 2011 19:18:45 +0100
-Message-ID: <1295633925.28776.308.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 21 Jan 2011 13:20:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:subject:from:to:mime-version;
+        b=KTn0c+tLw3roFbqE19ElwaiEU9n3Nid4oAx7U0T18Pk85YkEbjHpXlNJ4L8cLkKSeA
+         t9kaiJABVjBSai5NbI6qByToqg/Sq1xRW+6biagBfsjYN9O/RGHf6udjCO7LyWVfjafQ
+         UZqQED8DCuINiWPACbIjFIcpzdYtNjjcxw5eU=
+Message-ID: <4d39ce58.cc7e0e0a.5448.59e4@mx.google.com>
+Date: Fri, 21 Jan 2011 10:20:08 -0800 (PST)
+Subject: 'autogroup' sched code KILLING responsiveness
+From: Michael Witten <mfwitten@gmail.com>
+To: linux-kernel@vger.kernel.org
+MIME-version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-21 at 19:06 +0100, Stephane Eranian wrote:
-> Hi,
-> 
-> I think the code below still has a problem in case of a per-cpu event.
-> 
-> If you issue a read() on a different CPU, then you IPI to the event's cpu.
-> By the time you get there, the event may be de-scheduled in which
-> case you don't want to issue event->pmu_read() nor update context
-> timings. The function has a test but it seems to be checking the per-cpu
-> case only.
-> 
-> I have seen panics on P4 with this code because it goes all the way
-> down to rdmsrl() with a bogus counter index (like -1).
-> 
-> Am I missing something here?
-> 
-> static void __perf_event_read(void *info)
-> {
->         struct perf_event *event = info;
->         struct perf_event_context *ctx = event->ctx;
->         struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
-> 
->         /*
->          * If this is a task context, we need to check whether it is
->          * the current task context of this cpu.  If not it has been
->          * scheduled out before the smp call arrived.  In that case
->          * event->count would have been updated to a recent sample
->          * when the event was scheduled out.
->          */
->         if (ctx->task && cpuctx->task_ctx != ctx)
->                 return;
-> 
->         raw_spin_lock(&ctx->lock);
+Bisecting shows that this commit:
 
-Shouldn't we re-check event->state once we hold this lock?
+  5091faa449ee0b7d73bc296a93bca9540fc51d0a
+  sched: Add 'autogroup' scheduling feature: automated per session task groups
+  Date:   Tue Nov 30 14:18:03 2010 +0100
 
->         update_context_time(ctx);
->         update_event_times(event);
->         raw_spin_unlock(&ctx->lock);
-> 
->         event->pmu->read(event);
-> }
+is the reason that my computer has become unusable.
 
+With that code in place, a resource-intensive activity (such as
+compiling the Linux kernel) causes my computer to become
+unresponsive for many seconds at a time; the entire screen
+does not refresh, typed keys are dropped or are handled very
+late, etc (even in Linux's plain virtual consoles).
 
+I'm using a uniprocessor (UP) machine, and I've noticed that such
+codepaths often get clobbered by changes that only make it to SMP
+configurations (I guess kernel hackers have better equipment than
+I do); maybe that has something to do with it.
+
+I'm a laymen, so all I can do at this time is report my experience;
+if this has already been discussed, I would appeciate a link to
+the right thread.
+
+Sincerely,
+Michael Witten
