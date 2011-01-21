@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532Ab1AUSkJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 13:40:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36835 "EHLO mail.zytor.com"
+	id S1754763Ab1AUSkt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 13:40:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22567 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752993Ab1AUSkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 13:40:08 -0500
-X-User-Agent: K-9 Mail for Android
-References: <alpine.DEB.2.00.1101071227450.3014@router.home> <20110108172453.GF13269@mtj.dyndns.org> <4D393636.4040607@cs.helsinki.fi> <20110121092649.GA2832@htj.dyndns.org> <4D39A6EB.70705@zytor.com> <20110121154831.GE2832@htj.dyndns.org> <20110121165425.GB11687@Krystal> <20110121170847.GH2832@htj.dyndns.org> <1da7491b-6e7d-4453-9c6f-0e7767421ec4@email.android.com> <alpine.DEB.2.00.1101211121350.15692@router.home> <20110121174236.GA12150@Krystal>
-In-Reply-To: <20110121174236.GA12150@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: =?US-ASCII?Q?Re=3A_=5Bcpuops_cmpxchg_double_V2_1/4=5D_Gen?= =?US-ASCII?Q?eric_support_for=09this=5Fcpu=5Fcmpxchg=5Fdouble?=
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 21 Jan 2011 10:31:15 -0800
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Christoph Lameter <cl@linux.com>
-CC: Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Message-ID: <8110a580-58bd-4dab-881c-7e69bf75ad96@email.android.com>
+	id S1752993Ab1AUSks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 13:40:48 -0500
+Subject: Re: [BUG?] tracing/function_graph: set_graph_function was broken
+ from 2.6.36-rc2
+From: Steven Rostedt <srostedt@redhat.com>
+To: wu zhangjin <wuzhangjin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        zhiping zhong <xzhong86@163.com>
+In-Reply-To: <AANLkTin6g8SGnuG6j6JVCdBvOeiBj8Quwr2T9K+3jUwq@mail.gmail.com>
+References: <AANLkTinxxOsXNatAiP0t8Vv0xFZcdSpoWWrG49g6JjqF@mail.gmail.com>
+	 <1295544654.19789.19.camel@fedora>
+	 <AANLkTin6g8SGnuG6j6JVCdBvOeiBj8Quwr2T9K+3jUwq@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat
+Date: Fri, 21 Jan 2011 13:40:31 -0500
+Message-ID: <1295635231.26768.2.camel@fedora>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What is the problem with passing 128-bit structures by value?  I'm quite sure *that* is okay.
+On Fri, 2011-01-21 at 17:27 +0800, wu zhangjin wrote:
+> On Fri, Jan 21, 2011 at 1:30 AM, Steven Rostedt <srostedt@redhat.com> wrote:
 
-"Mathieu Desnoyers" <mathieu.desnoyers@efficios.com> wrote:
+> >> trace_graph_entry():
+> >>
+> >>         [snip]
+> >>         /* trace it when it is-nested-in or is a function enabled. */
+> >>         if (!(trace->depth || ftrace_graph_addr(trace->func)) ||
+> >>               ftrace_graph_ignore_irqs())
+> >>                 return 0;
+> >>         [snip]
+> >>
+> 
+> By default, ftrace_graph_ignore_irqs() is false, then, if we don't put
+> 0 to /debug/tracing/options/funcgraph-irqs, it will not return even if
+> we have specified some entries through the tracing/set_graph_function
+> interface, as a result, every function will be traced and it doesn't
+> work as we expected, the expected result is only the specified
+> functions are reserved in the tracing result.
+> 
 
->* Christoph Lameter (cl@linux.com) wrote:
->> On Fri, 21 Jan 2011, H. Peter Anvin wrote:
->> 
->> > We could do cmpxchg with a structure... the problem with a lon int
->type is that Cristoph ran into bugs with __int128 on 64 bits.
->> 
->> We also would need to be pass the structure by value (well its really
->a
->> variable but its like passing by value) in order to be similar to the
->> other this_cpu_ops
->> 
->> You'd want either
->> 
->> DEFINE_PERCPU(struct mycustomdoublestruct, percpu_dd)
->> 
->> this_cpu_cmpxchg_double(percpu_dd, oldword1, oldword2, newword1,
->newword2)
->> 
->> with the problem of type checking
->
->What is the problem with type checking here ?
->
->We could use a gcc builtin like the following to check if the alignment
->of
->"percpu_dd" meets the double-cas requirements:
->
->#define testmacro(a, b) \
->   __builtin_choose_expr(__alignof__(a) >= 2 * sizeof(unsigned long), \
->                              ((a).low) = (b), \    /* success */
->                              ((a).low) = (void) 0) /* compile-error */
->
->> or
->> 
->> this_cpu_cmpxchg_double(percpu_dd, old_dd, new_dd)
->> 
->> with the problem of 128 bit constants/structs passed by value.
->
->Yeah, I guess trying to deal with 128-bit value might be a bit tricky.
->But
->having something sane and with compile-time-checked alignment for the
->percpu_dd
->type is not to be looked over.
->
->Thanks,
->
->Mathieu
->
->-- 
->Mathieu Desnoyers
->Operating System Efficiency R&D Consultant
->EfficiOS Inc.
->http://www.efficios.com
+???
 
--- 
-Sent from my mobile phone.  Please pardon any lack of formatting.
+It's an or, if the first case is true:
+
+  !(trace->depth || ftrace_graph_addr(trace->func))
+
+then we return and do not trace. Regardless of what
+ftrace_graph_ignore_irqs() is set to.
+
+Can you show me an example of what you are having a problem with?
+
+-- Steve
+
+
