@@ -1,43 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab1AUS4E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 13:56:04 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:53160 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808Ab1AUS4C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 13:56:02 -0500
-Subject: Re: [PATCH] RTC: remove Kconfig symbol for UIE emulation
-From: John Stultz <john.stultz@linaro.org>
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Alessandro Zummo <a.zummo@towertech.it>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Richard Cochran <richardcochran@gmail.com>
-In-Reply-To: <1295625406-15340-1-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <1290136329-18291-5-git-send-email-john.stultz@linaro.org>
-	 <1295625406-15340-1-git-send-email-u.kleine-koenig@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 Jan 2011 10:55:54 -0800
-Message-ID: <1295636154.1923.0.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1754851Ab1AUS5H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 13:57:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54776 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752212Ab1AUS5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 13:57:06 -0500
+Date: Fri, 21 Jan 2011 13:56:17 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, tytso@mit.edu, djwong@us.ibm.com, shli@kernel.org,
+        neilb@suse.de, adilger.kernel@dilger.ca, jack@suse.cz,
+        snitzer@redhat.com, linux-kernel@vger.kernel.org, kmannth@us.ibm.com,
+        cmm@us.ibm.com, linux-ext4@vger.kernel.org, rwheeler@redhat.com,
+        hch@lst.de, josef@redhat.com, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 3/3] block: reimplement FLUSH/FUA to support merge
+Message-ID: <20110121185617.GI12072@redhat.com>
+References: <1295625598-15203-1-git-send-email-tj@kernel.org>
+ <1295625598-15203-4-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295625598-15203-4-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-21 at 16:56 +0100, Uwe Kleine-König wrote:
-> The effect of changing the value of this symbol is gone since
-> 
-> 	042620a (RTC: Remove UIE emulation)
-> 
-> so remove symbol, too.
-> 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+On Fri, Jan 21, 2011 at 04:59:58PM +0100, Tejun Heo wrote:
 
-Ah! Thanks for catching that!
+[..]
+> + * The actual execution of flush is double buffered.  Whenever a request
+> + * needs to execute PRE or POSTFLUSH, it queues at
+> + * q->flush_queue[q->flush_pending_idx].  Once certain criteria are met, a
+> + * flush is issued and the pending_idx is toggled.  When the flush
+> + * completes, all the requests which were pending are proceeded to the next
+> + * step.  This allows arbitrary merging of different types of FLUSH/FUA
+> + * requests.
+> + *
+> + * Currently, the following conditions are used to determine when to issue
+> + * flush.
+> + *
+> + * C1. At any given time, only one flush shall be in progress.  This makes
+> + *     double buffering sufficient.
+> + *
+> + * C2. Flush is not deferred if any request is executing DATA of its
+> + *     sequence.  This avoids issuing separate POSTFLUSHes for requests
+> + *     which shared PREFLUSH.
 
-Acked-by: John Stultz <john.stultz@linaro.org>
+Tejun, did you mean "Flush is deferred" instead of "Flush is not deferred"
+above?
 
+IIUC, C2 might help only if requests which contain data are also going to 
+issue postflush. Couple of cases come to mind.
 
+- If queue supports FUA, I think we will not issue POSTFLUSH. In that
+  case issuing next PREFLUSH which data is in flight might make sense.
+
+- Even if queue does not support FUA and we are only getting requests
+  with REQ_FLUSH then also waiting for data requests to finish before
+  issuing next FLUSH might not help.
+
+- Even if queue does not support FUA and say we have a mix of REQ_FUA
+  and REQ_FLUSH, then this will help only if in a batch we have more
+  than 1 request which is going to issue POSTFLUSH and those postflush
+  will be merged.
+
+- Ric Wheeler was once mentioning that there are boxes which advertise
+  writeback cache but are battery backed so they ignore flush internally and
+  signal completion immediately. I am not sure how prevalent those
+  cases are but I think waiting for data to finish will delay processing
+  of new REQ_FLUSH requests in pending queue for such array. There
+  we will not anyway benefit from merging of FLUSH.
+
+Given that C2 is going to benefit primarily only if queue does not support
+FUA and we have many requets with REQ_FUA set, will it make sense to 
+put additional checks for C2. Atleast a simple queue support FUA
+check might help.
+
+In practice does C2 really help or we can get rid of it entirely?
+
+Thanks
+Vivek
