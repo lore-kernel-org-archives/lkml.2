@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865Ab1AUJlM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 04:41:12 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39739 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752072Ab1AUJlK (ORCPT
+	id S1752903Ab1AUJmF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 04:42:05 -0500
+Received: from nwd2mail11.analog.com ([137.71.25.57]:50629 "EHLO
+	nwd2mail11.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876Ab1AUJmD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 04:41:10 -0500
-Date: Fri, 21 Jan 2011 09:40:42 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: Ben Dooks <ben-linux@fluff.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        linux-sh <linux-sh@vger.kernel.org>,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Richard Zhao <linuxzsc@gmail.com>
-Subject: Re: Locking in the clk API
-Message-ID: <20110121094042.GD13235@n2100.arm.linux.org.uk>
-References: <201101111016.42819.jeremy.kerr@canonical.com> <20110111091607.GI12552@n2100.arm.linux.org.uk> <201101111744.59712.jeremy.kerr@canonical.com> <20110111103929.GN24920@pengutronix.de> <AANLkTinHL9X_bqMPR=W8Va01O4xngUnpGCkCiE3xEdiQ@mail.gmail.com> <4D386ABF.9060908@fluff.org> <20110120190822.GK6335@n2100.arm.linux.org.uk> <4D3932B4.8010904@codeaurora.org>
+	Fri, 21 Jan 2011 04:42:03 -0500
+X-IronPort-AV: E=Sophos;i="4.60,357,1291611600"; 
+   d="scan'208";a="27612473"
+From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Richard Purdie <rpurdie@rpsys.net>
+CC: Mike Frysinger <vapier@gentoo.org>,
+        "device-drivers-devel@blackfin.uclinux.org" 
+	<device-drivers-devel@blackfin.uclinux.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 21 Jan 2011 09:41:58 +0000
+Subject: RE: [PATCH] backlight: new driver for the ADP8870 backlight devices
+Thread-Topic: [PATCH] backlight: new driver for the ADP8870 backlight devices
+Thread-Index: Acu5TdByeXs1cxJXTIW2qyZQlMnMkAAAGzbw
+Message-ID: <544AC56F16B56944AEC3BD4E3D591771324C0A8C91@LIMKCMBX1.ad.analog.com>
+References: <1294794049-17337-1-git-send-email-vapier@gentoo.org>
+	<20110120164816.5afa0561.akpm@linux-foundation.org>
+	<544AC56F16B56944AEC3BD4E3D591771324C0A8C6F@LIMKCMBX1.ad.analog.com>
+ <20110121013013.076a0fed.akpm@linux-foundation.org>
+In-Reply-To: <20110121013013.076a0fed.akpm@linux-foundation.org>
+Accept-Language: de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: de-DE, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D3932B4.8010904@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 11:16:04PM -0800, Saravana Kannan wrote:
-> This suggestion looked promising till I realized that clk_set_rate()  
-> will still be atomic. clk_set_rate() will need to enable/disable the  
-> PLLs depending on which PLLs the rates are derived from. So, the locking  
-> in clk_prepare/unprepare() still has to be atomic since the "slow stuff"  
-> is shared with clk_set_rate().
+Andrew Morton wrote on 2011-01-21:
+> On Fri, 21 Jan 2011 09:25:50 +0000 "Hennerich, Michael"
+> <Michael.Hennerich@analog.com> wrote:
+>
+>>> Is the sysfs API documented anywhere?
+>>
+>> Yes - http://wiki-analog.com/software/driver/linux/adp8870
+>> I guess you are asking me to write something that goes into linux-
+> 2.6.x/Documentation?
+>
+> That would be nice, please.  Documentation/ABI/, perhaps.
+>
+> In an ideal world, documentation wouldn't be necessary because all
+> backlight drivers offer the same (or sufficiently similar) interfaces,
+> so one generic document describes them all.  I don't know how close we
+> are to that however.
 
-Who calls clk_set_rate() from an atomic context?  Do we know whether
-anyone does?
+This driver implements the ABI documented in
+linux-2.6.x/Documentation/ABI/stable/sysfs-class-backlight
+however it adds some additional ABI for ambient light sensor/zones.
+
+http://wiki-analog.com/software/driver/linux/adp8870
+
+Richard do you think my extension is suitable to be added there too?
+
+Greetings,
+Michael
+
+--
+Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
+Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368; Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin, Margaret Seif
+
+
