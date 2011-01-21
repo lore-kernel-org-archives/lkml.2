@@ -1,133 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab1AUIy7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 03:54:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52678 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751265Ab1AUIy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 03:54:58 -0500
-Date: Fri, 21 Jan 2011 16:57:21 +0800
-From: Han Pingtian <phan@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Denis Kirjanov <dkirjanov@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org
-Subject: Re: [PATCH] perftools: Fix build error
-Message-ID: <20110121085721.GD2994@hpt.nay.redhat.com>
-Mail-Followup-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-	Denis Kirjanov <dkirjanov@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-	linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-	paulus@samba.org
-References: <20110120093246.GA8031@hera.kernel.org>
- <20110120114719.GD23661@elte.hu>
- <4D385866.3060405@kernel.org>
- <20110120172218.GB13482@ghostprotocols.net>
+	id S1754741Ab1AUIzR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 03:55:17 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:48386 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754438Ab1AUIzH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 03:55:07 -0500
+Message-ID: <4D3949E4.9010407@canonical.com>
+Date: Fri, 21 Jan 2011 09:55:00 +0100
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110120172218.GB13482@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning safter merge of the swiotlb-xen tree
+References: <20110121124159.135c7f5f.sfr@canb.auug.org.au>
+In-Reply-To: <20110121124159.135c7f5f.sfr@canb.auug.org.au>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/mixed;
+ boundary="------------060908050600080004090004"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 03:22:18PM -0200, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Jan 20, 2011 at 06:44:38PM +0300, Denis Kirjanov escreveu:
-> > On 01/20/2011 02:47 PM, Ingo Molnar wrote:
-> > > 
-> > > * Denis Kirjanov <dkirjanov@kernel.org> wrote:
-> > > 
-> > >> Fix perftools build error (ppc64 box) with PERF_VERSION = 2.6.38.rc1.47.g12fcdb
-> > >> CC builtin-top.o
-> > >> cc1: warnings being treated as errors
-> > >> builtin-top.c: In function 'print_sym_table':
-> > >> builtin-top.c:540: error: format '%Ld' expects type 'long long int', but argument 2 has type '__u64'
-> > >>
-> > >> Signed-off-by: Denis Kirjanov <dkirjanov@kernel.org>
-> > >> ---
-> > >>  tools/perf/builtin-top.c |    2 +-
-> > >>  1 files changed, 1 insertions(+), 1 deletions(-)
-> > >>
-> > >> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-> > >> index 05344c6..8202a2e 100644
-> > >> --- a/tools/perf/builtin-top.c
-> > >> +++ b/tools/perf/builtin-top.c
-> > >> @@ -537,7 +537,7 @@ static void print_sym_table(void)
-> > >>  	if (nr_counters == 1 || !display_weighted) {
-> > >>  		struct perf_evsel *first;
-> > >>  		first = list_entry(evsel_list.next, struct perf_evsel, node);
-> > >> -		printf("%Ld", first->attr.sample_period);
-> > >> +		printf("%Ld", (unsigned long long)first->attr.sample_period);
-> > > 
-> > > Wouldnt %Lu solve this in a cleaner way?
-> > > 
-> > > Thanks,
-> > > 
-> > > 	Ingo
-> > > 
-> > I think that cleaner way is to use PRIu64.
-> 
-> Fuglier, definetely, but indeed, more portable, as I noticed when trying
-> to build the tools on a RHEL4/Fedora3 machine, as there are people using
-> such old beasts with modern kernels.
-> 
-> I'll take the patch for perf/urgent, as it prevents building in .38,
-> please consider going thru tools/perf and patching the other %Ld and
-> %Lu instances :-)
-There are also some %Lx in code, shall we change them with PRIx64?
-> 
-> - Arnaldo
->  
-> > 
-> > >From 492bf54effdf8c154e76c4ca734f27ce1db46df6 Mon Sep 17 00:00:00 2001
-> > From: Denis Kirjanov <dkirjanov@kernel.org>
-> > Date: Thu, 20 Jan 2011 18:34:56 +0300
-> > Subject: [PATCH] perftools: Fix build error
-> > 
-> >     CC perf.o
-> >     CC builtin-top.o
-> > cc1: warnings being treated as errors
-> > builtin-top.c: In function 'print_sym_table':
-> > builtin-top.c:540: error: format '%Ld' expects type 'long long int', but argument 2 has type '__u64'
-> > make: *** [builtin-top.o] Error 1
-> > 
-> > 
-> > Signed-off-by: Denis Kirjanov <dkirjanov@kernel.org>
-> > ---
-> >  tools/perf/builtin-top.c |    3 ++-
-> >  1 files changed, 2 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-> > index 05344c6..a7bc50b 100644
-> > --- a/tools/perf/builtin-top.c
-> > +++ b/tools/perf/builtin-top.c
-> > @@ -40,6 +40,7 @@
-> >  #include <stdio.h>
-> >  #include <termios.h>
-> >  #include <unistd.h>
-> > +#include <inttypes.h>
-> >  
-> >  #include <errno.h>
-> >  #include <time.h>
-> > @@ -537,7 +538,7 @@ static void print_sym_table(void)
-> >  	if (nr_counters == 1 || !display_weighted) {
-> >  		struct perf_evsel *first;
-> >  		first = list_entry(evsel_list.next, struct perf_evsel, node);
-> > -		printf("%Ld", first->attr.sample_period);
-> > +		printf("%" PRIu64, first->attr.sample_period);
-> >  		if (freq)
-> >  			printf("Hz ");
-> >  		else
-> > -- 
-> > 1.7.3.4
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+This is a multi-part message in MIME format.
+--------------060908050600080004090004
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
+On 01/21/2011 02:41 AM, Stephen Rothwell wrote:
+> Hi Konrad,
+> 
+> After merging the swiotlb-xen tree, today's linux-next build (x86_64
+> allmodconfig) produced these warnings:
+> 
+> arch/x86/xen/p2m.c: In function 'xen_build_dynamic_phys_to_machine':
+> arch/x86/xen/p2m.c:251: warning: passing argument 1 of 'p2m_init' from incompatible pointer type
+> arch/x86/xen/p2m.c:121: note: expected 'long unsigned int *' but argument is of type 'long unsigned int **'
+> arch/x86/xen/p2m.c:254: warning: assignment makes pointer from integer without a cast
+> arch/x86/xen/p2m.c:256: warning: assignment from incompatible pointer type
+> 
+> Introduced by commit fc0976e2c086e6e518e32dcafedb5a2ba3ea297d ("xen: p2m:
+> correctly initialize partial p2m leave").
+> 
+Sorry about that. For some reason I was blinded to the fact that p2m holds longs
+not pointers. And "unfortunately" it works either way. The following update
+would remove the warnings. Not sure it can still be folded into the original patch.
+
+-Stefan
+
+
+
+--------------060908050600080004090004
+Content-Type: text/x-diff;
+ name="0002-xen-p2m-Use-the-correct-type-for-p2m-page.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0002-xen-p2m-Use-the-correct-type-for-p2m-page.patch"
+
+>From fc26a9b0a6b87ee7d5d7cef77664c0d58bfc9761 Mon Sep 17 00:00:00 2001
+From: Stefan Bader <stefan.bader@canonical.com>
+Date: Fri, 21 Jan 2011 09:46:07 +0100
+Subject: [PATCH 2/2] xen: p2m: Use the correct type for p2m page
+
+In "xen: p2m: correctly initialize partial p2m leave" I introduced new
+compiler warnings by using unsigned long ** instead of unsigned long *
+for the 3rd level tree structure. Due to the nature of pointers and long
+this works practically but it should be done right.
+
+BugLink: http://bugs.launchpad.net/bugs/686692
+
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+---
+ arch/x86/xen/p2m.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index c9307ec..ddc81a0 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -247,7 +247,7 @@ void __init xen_build_dynamic_phys_to_machine(void)
+ 		 */
+ 		if (unlikely(pfn + P2M_PER_PAGE > max_pfn)) {
+ 			unsigned long p2midx;
+-			unsigned long **p2m = extend_brk(PAGE_SIZE, PAGE_SIZE);
++			unsigned long *p2m = extend_brk(PAGE_SIZE, PAGE_SIZE);
+ 			p2m_init(p2m);
+ 
+ 			for (p2midx = 0; pfn + p2midx < max_pfn; p2midx++) {
 -- 
-Han Pingtian
-Quality Engineer
-hpt @ #kernel-qe
-Red Hat, Inc
-Freedom ... courage ... Commitment ... ACCOUNTABILITY
+1.7.0.4
+
+
+--------------060908050600080004090004--
