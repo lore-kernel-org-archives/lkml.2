@@ -1,39 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898Ab1AURfq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 12:35:46 -0500
-Received: from www.tglx.de ([62.245.132.106]:33398 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751809Ab1AURfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 12:35:45 -0500
-Date: Fri, 21 Jan 2011 18:34:22 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Young <hidave.darkstar@gmail.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH V4] rtmutex: ensure only the top waiter or higher priority
- task can take the lock and remove unrelated boosting
-In-Reply-To: <4D3012D5.4060709@cn.fujitsu.com>
-Message-ID: <alpine.LFD.2.00.1101211833120.2971@localhost6.localdomain6>
-References: <4D07330A.7020600@cn.fujitsu.com>  <alpine.LFD.2.00.1012141850460.12146@localhost6.localdomain6>  <4D083900.1050801@cn.fujitsu.com>  <1292386606.5015.1862.camel@gandalf.stny.rr.com>  <4D130D23.1040309@cn.fujitsu.com>  <1294851790.26623.372.camel@gandalf.stny.rr.com>
-  <1294851864.26623.373.camel@gandalf.stny.rr.com> <1294851934.26623.374.camel@gandalf.stny.rr.com> <4D3012D5.4060709@cn.fujitsu.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753850Ab1AURh3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 12:37:29 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61694 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751809Ab1AURh2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 12:37:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=qJLmvhZcSMEytghhFdEW0BaZkvXDJjTaxgazVoDxVh1vzLxAC3Jo9CMMmtDQ82ZpmW
+         wKrJ9//VaadFlIru2fIOo22qgQbti2Kf6z7alUWzcPMyDFUhGhjfOSNlGg0BV/c+nVZ2
+         SwSzwktGZct8cuZq5T56KKP1Vne5Cqaxi/QR0=
+Date: Fri, 21 Jan 2011 18:37:23 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [GIT PULL] workqueue fixes for v2.6.38-rc1
+Message-ID: <20110121173723.GL2832@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Jan 2011, Lai Jiangshan wrote:
-> On 01/13/2011 01:05 AM, Steven Rostedt wrote:
+Hello, Linus.
 
-Does not apply to mainline. Can you please redo ?
+Please pull from the following branch to receive workqueue fixes.
 
-Thanks,
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git fixes-2.6.38
 
-	tglx
+It contains two patches.  One relaxes lockdep annotation for
+flush_work() such that it doesn't trigger spuriously when a work tries
+to flush another work on the same multi-concurrency workqueue.  The
+other one just adds comment explaining a misleading piece of code.
+
+Tejun Heo (2):
+      workqueue: relax lockdep annotation on flush_work()
+      workqueue: note the nested NOT_RUNNING test in worker_clr_flags() isn't a noop
+
+ include/linux/lockdep.h |    3 +++
+ kernel/workqueue.c      |   20 +++++++++++++++++---
+ 2 files changed, 20 insertions(+), 3 deletions(-)
+
+Thanks.
+
+--
+tejun
