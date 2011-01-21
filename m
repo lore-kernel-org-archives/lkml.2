@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab1AUELy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 23:11:54 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:44370 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740Ab1AUELx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 23:11:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=wpmsExv8KyNQdQP3OpbApk/lnOqZzueAIgj6dt5/aFm+Q/X5/yD88mSt6HVU8/fNHd
-         B/Cmm8AY8W7OcGHB3eM5qXQVU1o/xSuzbH7rlI4PIPQ3W2Ibj6i8Hd1xJqO8fvDRbZuQ
-         vdhXZCocq33ggN2AlmOMMO/siFYyMMw66eX1g=
-Subject: Re: regression 2.6.37 -> 2.6.38-rc1: after suspend backlight
- cannot be adjusted
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Norbert Preining <preining@logic.at>
-Cc: linux-kernel@vger.kernel.org,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <20110121015529.GD9796@gamma.logic.tuwien.ac.at>
-References: <20110121015529.GD9796@gamma.logic.tuwien.ac.at>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 Jan 2011 05:11:47 +0100
-Message-ID: <1295583107.2613.45.camel@edumazet-laptop>
+	id S1753510Ab1AUEMm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 23:12:42 -0500
+Received: from mga09.intel.com ([134.134.136.24]:44890 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751740Ab1AUEMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 23:12:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,355,1291622400"; 
+   d="scan'208";a="699043453"
+Date: Thu, 20 Jan 2011 20:12:40 -0800
+From: Fenghua Yu <fenghua.yu@intel.com>
+To: H Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: "R, Durgadoss" <durgadoss.r@intel.com>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86,mcheck,therm_throt.c: Export symbol platform_thermal_notify to allow coretemp to handler intr
+Message-ID: <20110121041239.GB26954@linux-os.sc.intel.com>
+References: <D6D887BA8C9DFF48B5233887EF046541094482ED6A@bgsmsx502.gar.corp.intel.com> <20110120221704.GA26954@linux-os.sc.intel.com> <20110121022611.GC9496@ericsson.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110121022611.GC9496@ericsson.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 21 janvier 2011 à 10:55 +0900, Norbert Preining a écrit :
-> Hi everyone,
-> 
-> (please Cc)
-> 
-> going to 2.6.38-rc1 I see the following regression: After reboot I
-> can easily adjust the backlight with the keys on my keyboard, but 
-> after a suspend-to-ram this does not work anymore.
-> 
-> This is a Sony laptop, and backlight is controlled by the video
-> acpi driver AFAIR.
-> 
+In therm_throt.c, commit 9e76a97efd31a08cb19d0ba12013b8fb4ad3e474 patch
+doesn't export the symbol platform_thermal_notify.
 
-Hi Norbert
+Other drivers (e.g. drivers/hwmon/coretemp.c) can not find the symbol
+platform_thermal_notify when defining threshould interrupt handler.
 
-Maybe this is the problem Linus had to bisect, you could try his patch :
+Please apply this patch to allow threshold interrupt handler in coretemp.
 
-http://marc.info/?l=linux-netdev&m=129556877919576&w=2
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+---
 
-Thanks !
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |    1 +
+ 1 files changed, 1 insertion(+)
 
 
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index e12246f..6f8c5e9 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -59,6 +59,7 @@ struct thermal_state {
+ 
+ /* Callback to handle core threshold interrupts */
+ int (*platform_thermal_notify)(__u64 msr_val);
++EXPORT_SYMBOL(platform_thermal_notify);
+ 
+ static DEFINE_PER_CPU(struct thermal_state, thermal_state);
+ 
