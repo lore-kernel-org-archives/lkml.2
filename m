@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab1AUTbA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 14:31:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17711 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754855Ab1AUTa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 14:30:58 -0500
-Subject: SELinux/SMACK/TOMOYO: ioctl permissions handling is wrong and
- nonsensicle
-From: Eric Paris <eparis@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        selinux@tycho.nsa.gov
-Cc: sds@tycho.nsa.gov, jmorris@namei.org, casey@schaufler-ca.com,
-        john.johansen@canonical.com, penguin-kernel@I-love.SAKURA.ne.jp,
-        takedakn@nttdata.co.jp
-Date: Fri, 21 Jan 2011 14:30:35 -0500
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1295638239.3403.15.camel@localhost.localdomain>
-Mime-Version: 1.0
+	id S1754923Ab1AUTco (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 14:32:44 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:51283 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754882Ab1AUTcm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 14:32:42 -0500
+Date: Fri, 21 Jan 2011 14:32:40 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Christoph Lameter <cl@linux.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for
+	this_cpu_cmpxchg_double
+Message-ID: <20110121193240.GA13581@Krystal>
+References: <alpine.DEB.2.00.1101070907060.3014@router.home> <20110107180419.GB23082@Krystal> <alpine.DEB.2.00.1101071227450.3014@router.home> <20110108172453.GF13269@mtj.dyndns.org> <4D393636.4040607@cs.helsinki.fi> <20110121092649.GA2832@htj.dyndns.org> <4D39A6EB.70705@zytor.com> <20110121154831.GE2832@htj.dyndns.org> <20110121165425.GB11687@Krystal> <20110121170847.GH2832@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110121170847.GH2832@htj.dyndns.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 14:31:32 up 59 days, 34 min,  4 users,  load average: 0.01, 0.02,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[I've included an AA person as well in case you ever decide to try to
-mediate ioctl operations]
+* Tejun Heo (tj@kernel.org) wrote:
+[...]
+> > (note: packed here along with "aligned" does _not_ generate ugly
+> > bytewise read/write memory ops like "packed" alone. The use of
+> > "packed" is to let the compiler down-align the structure to the
+> > value requested, instead of uselessly aligning it on 32-byte if it
+> > chooses to.)
+> 
+> Yeah, good point.  :-)
 
-SELinux used to recognize certain individual ioctls and check
-permissions based on the knowledge of the individual ioctl.  In commit
-242631c49d4cf396 the SELinux code stopped trying to understand
-individual ioctls and to instead looked at the ioctl access bits to
-determine in we should check read or write for that operation.  This
-same suggestion was made to SMACK (and I believe copied into TOMOYO).
-But this suggestion is total rubbish.  The ioctl access bits are
-actually the access requirements for the structure being passed into the
-ioctl, and are completely unrelated to the operation of the ioctl or the
-object the ioctl is being performed upon.
+For the records, I just noticed that "packed, aligned(8)" can generate unaligned
+accesses on sparc64 by removing the padding between a "int" and a following
+pointer. So we should not use it.
 
-Take FS_IOC_FIEMAP as an example.  FS_IOC_FIEMAP is defined as:
+Thanks,
 
-FS_IOC_FIEMAP _IOWR('f', 11, struct fiemap)
+Mathieu
 
-So it has access bits R and W.  What this really means is that the
-kernel is going to both read and write to the struct fiemap.  It has
-nothing at all to do with the operations that this ioctl might perform
-on the file itself!
-
-If anything, our logic is exactly backwards, since an ioctl which writes
-to userspace would be 'reading' something from the file and an ioctl
-which reads from userspace would be 'writing' something to the file...
-
-I'm planning to revert this SELinux commit, but I want other LSM authors
-to realize that (assuming I'm not completely off in the woods somewhere)
-you should take a look at your ioctl permissions checking as well....
-
--Eric
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
