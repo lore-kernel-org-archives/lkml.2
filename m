@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289Ab1AUHg4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 02:36:56 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:35171 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752331Ab1AUHgy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 02:36:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=rpcAkRaKh4FIi8DOpto8klx8j20hl1vQf3qcd7VmD6UT5AqUqPMDNVUv3gHY4w1vLG
-         4eOQOHF0AB3SLA6vpQHGyycNzbaOvX1Qm71Rs6gfTc1//pq2gH1VTyfxhU6WCfMZYf8z
-         54nlMNlyRhIrQfZpVfoCFyL6UsXLZ38qU/KvY=
-Date: Thu, 20 Jan 2011 23:36:05 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Davidlohr Bueso <dave@gnu.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org
-Subject: Re: [PATCH] input: trackpoint: return proper error value
-Message-ID: <20110121073605.GC21842@core.coreip.homeip.net>
-References: <1295534730.2089.1.camel@offworld>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295534730.2089.1.camel@offworld>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753591Ab1AUHir (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 02:38:47 -0500
+Received: from sh.osrg.net ([192.16.179.4]:59321 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750872Ab1AUHip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 02:38:45 -0500
+Date: Fri, 21 Jan 2011 16:37:38 +0900 (JST)
+Message-Id: <20110121.163738.135792151.ryusuke@osrg.net>
+To: wakko@animx.eu.org
+Cc: linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: NILFS crash on 2.6.37
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+In-Reply-To: <20110121024918.GA29598@animx.eu.org>
+References: <20110121024918.GA29598@animx.eu.org>
+X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 21 Jan 2011 16:37:40 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 11:45:30AM -0300, Davidlohr Bueso wrote:
-> From: Davidlohr Bueso <dave@gnu.org>
+(Cc'ed to linux-nilfs)
+On Thu, 20 Jan 2011 21:49:18 -0500, Wakko Warner wrote:
+> At one time I had created a filesystem with nilfs on it.  I don't know if
+> it's nilfs or nilfs2.  Attempting to mount it with nilfs2 on 2.6.37 (also
+> happens on 2.6.36.2), the kernel oopses.  Once the kernel oopses, any
+> further attempts to mount it hangs the process.  I have also noticed that
+> attempting to umount other filesystems also hangs the process.
 > 
-> If sysfs_create_group() returns an error, we should return it in trackpoint_detect(), instead of -1.
-> 
-> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-> ---
->  drivers/input/mouse/trackpoint.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/input/mouse/trackpoint.c b/drivers/input/mouse/trackpoint.c
-> index 54b2fa8..e8b7c3f 100644
-> --- a/drivers/input/mouse/trackpoint.c
-> +++ b/drivers/input/mouse/trackpoint.c
-> @@ -324,7 +324,7 @@ int trackpoint_detect(struct psmouse *psmouse, bool set_properties)
->  			error);
->  		kfree(psmouse->private);
->  		psmouse->private = NULL;
-> -		return -1;
-> +		return error;
+> [ 1202.579525] NILFS version 2 loaded
+> [ 1202.581501] NILFS warning: broken superblock. using spare superblock.
+> [ 1202.582093] NILFS warning: broken superblock. using spare superblock.
+> [ 1202.821896] segctord starting. Construction interval = 5 seconds, CP frequency < 30 seconds
+> [ 1202.824419] BUG: unable to handle kernel NULL pointer dereference at   (null)
+> [ 1202.824561] IP: [<c03196bc>] memcpy+0xc/0x1b
+> [ 1202.824667] *pdpt = 0000000033b94001 *pde = 0000000000000000 
+> [ 1202.824797] Oops: 0002 [#1] SMP 
+<snip>
+> [ 1202.825136] Call Trace:
+> [ 1202.825136]  [<f953720e>] ? nilfs_setup_super+0x6c/0xa5 [nilfs2]
+> [ 1202.825136]  [<f95369e9>] ? nilfs_get_root_dentry+0x81/0xcb [nilfs2]
+> [ 1202.825136]  [<f9537a08>] ? nilfs_mount+0x4f9/0x62c [nilfs2]
+> [ 1202.825136]  [<c02745cf>] ? kstrdup+0x36/0x3f
+> [ 1202.825136]  [<f953750f>] ? nilfs_mount+0x0/0x62c [nilfs2]
+> [ 1202.825136]  [<c0293940>] ? vfs_kern_mount+0x4d/0x12c
+> [ 1202.825136]  [<c02a5100>] ? get_fs_type+0x76/0x8f
+> [ 1202.825136]  [<c0293a68>] ? do_kern_mount+0x33/0xbf
+> [ 1202.825136]  [<c02a784a>] ? do_mount+0x2ed/0x714
+> [ 1202.825136]  [<c02a6171>] ? copy_mount_options+0x28/0xfc
+> [ 1202.825136]  [<c02a7ce3>] ? sys_mount+0x72/0xaf
+> [ 1202.825136]  [<c0473085>] ? syscall_call+0x7/0xb
+> [ 1202.825136] Code: 43 4c 04 83 fe 01 19 c0 24 fc 04 08 88 43 4d 5b 5e 5f c3 90 90 90 90 90 90 90 90 90 90 90 90 57 56 53 89 cb c1 e9 02 89 c7 89 d6 <f3> a5 89 d9 83 e1 03 74 02 f3 a4 5b 5e 5f c3 55 57 56 53 89 c5 
+> [ 1202.825136] EIP: [<c03196bc>] memcpy+0xc/0x1b SS:ESP 0068:f3b35e74
+> [ 1202.825136] CR2: 0000000000000000
+> [ 1202.831111] ---[ end trace e5a2d0918d598efa ]---
 
-This is not the only place where we return -1 in place of proper error
-code in that driver. Care to update all of them?
+Thanks for the report.
 
-Thanks.
+This seems to be a regression on 2.6.36 which could happen when one of
+two superblocks is broken.
 
--- 
-Dmitry
+I'll fix it.
+
+Ryusuke Konishi
