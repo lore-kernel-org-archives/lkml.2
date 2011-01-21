@@ -1,50 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab1AUKsq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 05:48:46 -0500
-Received: from mail-out.m-online.net ([212.18.0.9]:35736 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714Ab1AUKsp (ORCPT
+	id S1754126Ab1AUK7N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 05:59:13 -0500
+Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:50693
+	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752070Ab1AUK7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 05:48:45 -0500
-X-Auth-Info: KLGU9BAXUzT3T5j+UM7Bi2O8MSoLBUjyIHgTgzEuVO4=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: RTC seems broken on 2.6.38-rc1 for RTCs lacking alarms.
-References: <4D38A051.2010301@caviumnetworks.com>
-	<1295558196.2998.85.camel@work-vm>
-	<AANLkTinJfQCEcqHy8oc8+F+yrmY_AkhPLCdZ7R95tk6H@mail.gmail.com>
-	<1295562203.2998.105.camel@work-vm>
-	<4D38BD2A.2070705@caviumnetworks.com>
-X-Yow: I'd like TRAINED SEALS and a CONVERTIBLE on my doorstep by NOON!!
-Date: Fri, 21 Jan 2011 11:48:45 +0100
-In-Reply-To: <4D38BD2A.2070705@caviumnetworks.com> (David Daney's message of
-	"Thu, 20 Jan 2011 14:54:34 -0800")
-Message-ID: <m2fwsm7cs2.fsf@whitebox.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2.92 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 21 Jan 2011 05:59:11 -0500
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Frederic Weisbecker <fweisbec@gmail.com>, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH] drm/i915,agp/intel: Do not clear stolen entries
+Date: Fri, 21 Jan 2011 10:58:57 +0000
+Message-Id: <1295607537-877-1-git-send-email-chris@chris-wilson.co.uk>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <20110120232410.GA19405@nowhere>
+References: <20110120232410.GA19405@nowhere>
+X-Originating-IP: 78.156.66.37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Daney <ddaney@caviumnetworks.com> writes:
+We can only utilize the stolen portion of the GTT if we are in sole
+charge of the hardware. This is only true if using GEM and KMS,
+otherwise VESA continues to access stolen memory.
 
-> John,
->
-> With that patch, it works now.  Thanks.
+Reported-by: Arnd Bergmann <arnd@arndb.de>
+Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+---
+ drivers/char/agp/intel-gtt.c    |   18 ++++++++----------
+ drivers/gpu/drm/i915/i915_gem.c |    6 ++++--
+ 2 files changed, 12 insertions(+), 12 deletions(-)
 
-Works here as well.
-
-Thanks, Andreas.
-
+diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
+index 826ab09..cbbcaba 100644
+--- a/drivers/char/agp/intel-gtt.c
++++ b/drivers/char/agp/intel-gtt.c
+@@ -68,6 +68,7 @@ static struct _intel_private {
+ 	phys_addr_t gma_bus_addr;
+ 	u32 PGETBL_save;
+ 	u32 __iomem *gtt;		/* I915G */
++	bool clear_fake_agp; /* on first access via agp, fill with scratch */
+ 	int num_dcache_entries;
+ 	union {
+ 		void __iomem *i9xx_flush_page;
+@@ -869,21 +870,12 @@ static int intel_fake_agp_free_gatt_table(struct agp_bridge_data *bridge)
+ 
+ static int intel_fake_agp_configure(void)
+ {
+-	int i;
+-
+ 	if (!intel_enable_gtt())
+ 	    return -EIO;
+ 
++	intel_private.clear_fake_agp = true;
+ 	agp_bridge->gart_bus_addr = intel_private.gma_bus_addr;
+ 
+-	for (i = 0; i < intel_private.base.gtt_total_entries; i++) {
+-		intel_private.driver->write_entry(intel_private.scratch_page_dma,
+-						  i, 0);
+-	}
+-	readl(intel_private.gtt+i-1);	/* PCI Posting. */
+-
+-	global_cache_flush();
+-
+ 	return 0;
+ }
+ 
+@@ -945,6 +937,12 @@ static int intel_fake_agp_insert_entries(struct agp_memory *mem,
+ {
+ 	int ret = -EINVAL;
+ 
++	if (intel_private.clear_fake_agp) {
++		intel_gtt_clear_range(intel_private.base.stolen_size / PAGE_SIZE,
++				      intel_private.base.gtt_total_entries);
++		intel_private.clear_fake_agp = false;
++	}
++
+ 	if (INTEL_GTT_GEN == 1 && type == AGP_DCACHE_MEMORY)
+ 		return i810_insert_dcache_entries(mem, pg_start, type);
+ 
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 812b97b..6542e7d 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -140,12 +140,14 @@ void i915_gem_do_init(struct drm_device *dev,
+ {
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+ 
+-	drm_mm_init(&dev_priv->mm.gtt_space, start,
+-		    end - start);
++	drm_mm_init(&dev_priv->mm.gtt_space, start, end - start);
+ 
+ 	dev_priv->mm.gtt_total = end - start;
+ 	dev_priv->mm.mappable_gtt_total = min(end, mappable_end) - start;
+ 	dev_priv->mm.gtt_mappable_end = mappable_end;
++
++	/* Take over this portion of the GTT */
++	intel_gtt_clear_range(start / PAGE_SIZE, end / PAGE_SIZE);
+ }
+ 
+ int
 -- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+1.7.2.3
+
