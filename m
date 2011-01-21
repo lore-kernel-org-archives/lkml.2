@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab1AUAoN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 19:44:13 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:39395 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754457Ab1AUAoL (ORCPT
+	id S1754505Ab1AUAq1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 19:46:27 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:59991 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753873Ab1AUAq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 19:44:11 -0500
-Date: Fri, 21 Jan 2011 00:43:59 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ali Gholami Rudi <aliqrudi@gmail.com>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-acpi@vger.kernel.org, rpurdie@rpsys.net
-Subject: Re: [Intel-gfx] [PATCH 2/5] i915: Add native backlight control
-Message-ID: <20110121004359.GA6422@srcf.ucam.org>
-References: <1295033065-13450-1-git-send-email-mjg@redhat.com> <1295033065-13450-2-git-send-email-mjg@redhat.com> <20112101000015@lilem.mirepesht> <20112101004346@lilem.mirepesht> <20110120151349.49cf3ebb.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110120151349.49cf3ebb.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Thu, 20 Jan 2011 19:46:26 -0500
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=Zf2-li83EnIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=DnL8GuZpbblXTxYtpzMA:9 a=DRps-_N0Q0auJ_6kXe0GIyFRdesA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: Oops in trace_hardirqs_on (powerpc)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: =?ISO-8859-1?Q?J=F6rg?= Sommer <joerg@alea.gnuu.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+In-Reply-To: <1293072176.22802.6.camel@gandalf.stny.rr.com>
+References: <20100806233157.GA7117@alea.gnuu.de>
+	 <1285184671.26872.127.camel@gandalf.stny.rr.com>
+	 <20100927125037.GA4497@alea.gnuu.de> <1285639094.2989.1.camel@frodo>
+	 <20101219132705.GE6615@alea.gnuu.de>
+	 <1293072176.22802.6.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 20 Jan 2011 19:46:23 -0500
+Message-ID: <1295570783.12215.3239.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 03:13:49PM -0800, Andrew Morton wrote:
-> On Fri, 21 Jan 2011 00:43:46 +0330
-> Ali Gholami Rudi <aliqrudi@gmail.com> wrote:
-> 
-> > Ali Gholami Rudi <aliqrudi@gmail.com> wrote:
-> > > I tried to apply this patch but I get:
-> > > 
-> > > 	drivers/gpu/drm/i915/intel_panel.c: In function 'intel_panel_setup_backlight':
-> > > 	drivers/gpu/drm/i915/intel_panel.c:319: error: 'struct backlight_properties' has no member named 'type'
-> > > 	drivers/gpu/drm/i915/intel_panel.c:319: error: 'BACKLIGHT_RAW' undeclared (first use in this function)
-> > > 	drivers/gpu/drm/i915/intel_panel.c:319: error: (Each undeclared identifier is reported only once
-> > > 	drivers/gpu/drm/i915/intel_panel.c:319: error: for each function it appears in.)
-> > 
-> > After applying patch 1/5, the patch applied cleanly.
-> > Now I can change the brightness using
-> > /sys/class/backlight/intel_backlight/brightness.
-> > So it does fix my issue.
+On Wed, 2010-12-22 at 21:42 -0500, Steven Rostedt wrote:
+> On Sun, 2010-12-19 at 14:27 +0100, Jörg Sommer wrote:
+> > Hi Steven,
 > > 
 > 
-> So we have a patch ordering issue and the
-> radeon-expose-backlight-class-device-for-legacy-lvds-encoder.patch
-> build error.
+> > Did you've fixed this problem? The bug report is still marked as open.
+> > https://bugzilla.kernel.org/show_bug.cgi?id=16573
+> > 
+> 
+> I just posted a patch to that BZ. I have it here below too. Could you
+> see if it fixes you problem. I only fixed the one place that you
+> reported, it may need more fixes (and in that case a macro to do the
+> work).
+> 
+> I hit the same bug on my ppc64 box, and have a fix for that, that I'll
+> post to LKML tomorrow.
 
-He applied 2/5, it didn't build, he applied 1/5 and it built? I don't 
-think that's a patch ordering issue :)
 
-I think Michel's patch should fix the Radeon one. If not, can you drop 
-that and keep the rest of the set? I'm travelling at the moment and 
-won't have proper build access until the weekend.
+Here's my official:
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
+
+> -- Steve
+> 
+> diff --git a/arch/powerpc/kernel/entry_32.S b/arch/powerpc/kernel/entry_32.S
+> index ed4aeb9..915cc03 100644
+> --- a/arch/powerpc/kernel/entry_32.S
+> +++ b/arch/powerpc/kernel/entry_32.S
+> @@ -879,7 +879,18 @@ END_MMU_FTR_SECTION_IFSET(MMU_FTR_TYPE_47x)
+>  	 */
+>  	andi.	r10,r9,MSR_EE
+>  	beq	1f
+> +	/*
+> +	 * Since the ftrace irqsoff latency trace checks CALLER_ADDR1,
+> +	 * which is the stack frame here, we need to force a stack frame
+> +	 * in case we came from user space.
+> +	 */
+> +	stwu	r1,-32(r1)
+> +	mflr	r0
+> +	stw	r0,4(r1)
+> +	stwu	r1,-32(r1)
+>  	bl	trace_hardirqs_on
+> +	lwz	r1,0(r1)
+> +	lwz	r1,0(r1)
+>  	lwz	r9,_MSR(r1)
+>  1:
+>  #endif /* CONFIG_TRACE_IRQFLAGS */
+> 
+
+
