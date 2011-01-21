@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753624Ab1AUPEi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 10:04:38 -0500
-Received: from casper.infradead.org ([85.118.1.10]:40297 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753486Ab1AUPEh convert rfc822-to-8bit (ORCPT
+	id S1753840Ab1AUPHX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 10:07:23 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58420 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476Ab1AUPHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 10:04:37 -0500
-Subject: Re: Q: perf_install_in_context/perf_event_enable are racy?
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Alan Stern <stern@rowland.harvard.edu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, Prasad <prasad@linux.vnet.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110121142616.GA31165@redhat.com>
-References: <20101108145647.GA3426@redhat.com>
-	 <20101108145725.GA3434@redhat.com> <20110119182141.GA12183@redhat.com>
-	 <20110120193033.GA13924@redhat.com> <1295611905.28776.269.camel@laptop>
-	 <20110121130323.GA12900@elte.hu> <1295617185.28776.273.camel@laptop>
-	 <20110121142616.GA31165@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 21 Jan 2011 16:05:04 +0100
-Message-ID: <1295622304.28776.293.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 21 Jan 2011 10:07:20 -0500
+From: Borislav Petkov <bp@amd64.org>
+To: <peterz@infradead.org>, <mingo@elte.hu>
+Cc: <tony.luck@intel.com>, <acme@infradead.org>, <rostedt@goodmis.org>,
+        <fweisbec@gmail.com>, <linux-edac@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH 01/12] perf: Start the massive restructuring
+Date: Fri, 21 Jan 2011 16:09:24 +0100
+Message-Id: <1295622575-18607-2-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.4.rc2
+In-Reply-To: <1295622575-18607-1-git-send-email-bp@amd64.org>
+References: <1295622575-18607-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-21 at 15:26 +0100, Oleg Nesterov wrote:
-> 
-> > Ah, I think I see how that works:
-> 
-> Hmm. I don't...
-> 
-> >
-> >   __perf_event_task_sched_out()
-> >     perf_event_context_sched_out()
-> >       if (do_switch)
-> >         cpuctx->task_ctx = NULL;
-> 
-> exactly, this clears ->task_ctx
-> 
-> > vs
-> >
-> >   __perf_install_in_context()
-> >    if (cpu_ctx->task_ctx != ctx)
-> 
-> And then __perf_install_in_context() sets cpuctx->task_ctx = ctx,
-> because ctx->task == current && cpuctx->task_ctx == NULL.
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-Hrm,. right, so the comment suggests it should do what it doesn't :-)
+mv kernel/perf_event.c -> kernel/events/core.c. From there, all other
+sensible splitting can happen.
 
-It looks like Paul's a63eaf34ae60bd (perf_counter: Dynamically allocate
-tasks' perf_counter_context struct), relevant hunk below, wrecked it:
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ kernel/Makefile                        |    5 +++--
+ kernel/events/Makefile                 |    5 +++++
+ kernel/{perf_event.c => events/core.c} |    0
+ 3 files changed, 8 insertions(+), 2 deletions(-)
+ create mode 100644 kernel/events/Makefile
+ rename kernel/{perf_event.c => events/core.c} (100%)
 
-@@ -568,11 +582,17 @@ static void __perf_install_in_context(void *info)
-         * If this is a task context, we need to check whether it is
-         * the current task context of this cpu. If not it has been
-         * scheduled out before the smp call arrived.
-+        * Or possibly this is the right context but it isn't
-+        * on this cpu because it had no counters.
-         */
--       if (ctx->task && cpuctx->task_ctx != ctx)
--               return;
-+       if (ctx->task && cpuctx->task_ctx != ctx) {
-+               if (cpuctx->task_ctx || ctx->task != current)
-+                       return;
-+               cpuctx->task_ctx = ctx;
-+       }
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 0b5ff08..e9d9deb 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -21,7 +21,6 @@ CFLAGS_REMOVE_mutex-debug.o = -pg
+ CFLAGS_REMOVE_rtmutex-debug.o = -pg
+ CFLAGS_REMOVE_cgroup-debug.o = -pg
+ CFLAGS_REMOVE_sched_clock.o = -pg
+-CFLAGS_REMOVE_perf_event.o = -pg
+ CFLAGS_REMOVE_irq_work.o = -pg
+ endif
  
-        spin_lock_irqsave(&ctx->lock, flags);
-+       ctx->is_active = 1;
-        update_context_time(ctx);
- 
-        /*
+@@ -102,7 +101,9 @@ obj-$(CONFIG_X86_DS) += trace/
+ obj-$(CONFIG_RING_BUFFER) += trace/
+ obj-$(CONFIG_SMP) += sched_cpupri.o
+ obj-$(CONFIG_IRQ_WORK) += irq_work.o
+-obj-$(CONFIG_PERF_EVENTS) += perf_event.o
++
++obj-$(CONFIG_PERF_EVENTS) += events/
++
+ obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
+ obj-$(CONFIG_USER_RETURN_NOTIFIER) += user-return-notifier.o
+ obj-$(CONFIG_PADATA) += padata.o
+diff --git a/kernel/events/Makefile b/kernel/events/Makefile
+new file mode 100644
+index 0000000..26c00e4
+--- /dev/null
++++ b/kernel/events/Makefile
+@@ -0,0 +1,5 @@
++ifdef CONFIG_FUNCTION_TRACER
++CFLAGS_REMOVE_core.o = -pg
++endif
++
++obj-y += core.o
+diff --git a/kernel/perf_event.c b/kernel/events/core.c
+similarity index 100%
+rename from kernel/perf_event.c
+rename to kernel/events/core.c
+-- 
+1.7.4.rc2
 
-
-I can't really seem to come up with a sane test that isn't racy with
-something, my cold seems to have clogged not only my nose :/
