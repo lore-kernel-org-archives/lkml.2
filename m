@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab1AUVRo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 16:17:44 -0500
-Received: from mail.perches.com ([173.55.12.10]:3256 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750889Ab1AUVRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 16:17:42 -0500
-Subject: Re: [PATCH 0/7] Nexus One Support
-From: Joe Perches <joe@perches.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Daniel Walker <dwalker@codeaurora.org>, Dima Zavin <dmitriyz@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        davidb@codeaurora.org
-In-Reply-To: <AANLkTikVDn+W8t7KSym5tCGZowyYvoLFrk8d0mumiRF-@mail.gmail.com>
-References: <1295555565-21563-1-git-send-email-dwalker@codeaurora.org>
-	 <AANLkTik+HCj9dkD2s4WgwCqKWCXDbdSnKDUbyGfYfaPr@mail.gmail.com>
-	 <1295571359.9236.53.camel@m0nster> <1295574085.4096.6.camel@Joe-Laptop>
-	 <1295575123.9236.54.camel@m0nster> <1295576730.4096.24.camel@Joe-Laptop>
-	 <1295624801.19880.13.camel@m0nster>
-	 <20110121094827.41818a55@jbarnes-desktop>
-	 <20110121095658.1ab623fe@jbarnes-desktop>
-	 <1295632828.19880.22.camel@m0nster>
-	 <20110121100441.06a94482@jbarnes-desktop>
-	 <1295633882.19880.31.camel@m0nster>
-	 <AANLkTi=L+MW5-KLP_TKSxhstD8JEtBW=RKci5wSbZsd6@mail.gmail.com>
-	 <1295642995.19880.42.camel@m0nster>
-	 <AANLkTikVDn+W8t7KSym5tCGZowyYvoLFrk8d0mumiRF-@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 Jan 2011 13:17:40 -0800
-Message-ID: <1295644660.25868.43.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753617Ab1AUVUg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 16:20:36 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45668 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448Ab1AUVUe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 16:20:34 -0500
+Date: Fri, 21 Jan 2011 21:20:28 +0000
+From: James Hogan <james@albanarts.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Len Brown <len.brown@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: 2.6.38-rc1 resume hang (da8aeb92 "ACPI/Battery: Update
+ information on info notification and resume")
+Message-ID: <20110121212028.GA2916@gandalf>
+References: <20110121140031.GA3280@gandalf>
+ <201101212130.26693.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201101212130.26693.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-21 at 23:05 +0200, Pekka Enberg wrote:
-> Daniel doing something the
-> Android folks should have done themselves a long time ago?
+Hi Rafael,
 
-I think it's more polite myself.
+On Fri, Jan 21, 2011 at 09:30:26PM +0100, Rafael J. Wysocki wrote:
+> On Friday, January 21, 2011, James Hogan wrote:
+> > Hi,
+> > 
+> > After updating from 2.6.37 to 2.6.28-rc1, resume from suspend is broken
+> > on my Dell M1210 Laptop.
+> > 
+> > I tried pm_trace and both block and battery matched the hash, so I
+> > bisected the problem to commit da8aeb92 (see below).
+> > 
+> > I've reverted this commit on 2.6.38 and it doesn't die on resume anymore.
+> > 
+> > My bisection log and .config are pasted below.
+> > 
+> > Let me know if I can provide any more info or help test any patches etc.
+> 
+> This should have been fixed already in the current Linus' tree by this commit:
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=b23fffd778c312b8fb258d342051fcbdf6712128
+> 
+> Can you verify, please?
 
-I agree that ideally the androiding googlers (googly androids?)
-should submit it.
+Yes, that fixes it. I'll remember to check for an existing fix at the
+end of the bisection as well as the beginning next time.
 
-Dima?  Are you doing anything useful right now?
+Thanks
 
-cheers, Joe
-
-
+James
