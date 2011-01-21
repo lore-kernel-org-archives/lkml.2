@@ -1,128 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab1AUDGv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 22:06:51 -0500
-Received: from mga14.intel.com ([143.182.124.37]:25235 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752333Ab1AUDGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 22:06:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,355,1291622400"; 
-   d="scan'208";a="377740509"
-From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
-To: Chris Ball <cjb@laptop.org>
-CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Date: Fri, 21 Jan 2011 11:06:08 +0800
-Subject: RE: [PATCH v3 1/1]mmc: implemented eMMC4.4 enhanced area feature
-Thread-Topic: [PATCH v3 1/1]mmc: implemented eMMC4.4 enhanced area feature
-Thread-Index: Acu4vOZQ5xytTdiSRTu76Dx5mHuefgAVV0gg
-Message-ID: <5D8008F58939784290FAB48F5497519835341813A7@shsmsx502.ccr.corp.intel.com>
-References: <20110120075556.GA23566@intel.com>
- <20110120161248.GA11774@void.printf.net>
-In-Reply-To: <20110120161248.GA11774@void.printf.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1752436Ab1AUDM1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 22:12:27 -0500
+Received: from tn-76-7-162-101.sta.embarqhsd.net ([76.7.162.101]:43574 "EHLO
+	animx.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750856Ab1AUDM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 22:12:26 -0500
+X-Greylist: delayed 1385 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Jan 2011 22:12:25 EST
+Date: Thu, 20 Jan 2011 21:49:18 -0500
+From: Wakko Warner <wakko@animx.eu.org>
+To: linux-kernel@vger.kernel.org
+Subject: NILFS crash on 2.6.37
+Message-ID: <20110121024918.GA29598@animx.eu.org>
+Mail-Followup-To: linux-kernel@vger.kernel.org
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.6+20040907i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p0L3755F008193
 
-Hi Chris,
-> > --- /dev/null
-> > +++ b/Documentation/ABI/testing/sysfs-devices-mmc
-> > @@ -0,0 +1,19 @@
-> > +What:
-> 	/sys/devices/.../mmc_host/mmcX/mmcX:XXXX/enhanced_area_offset
-> > +Date:		January 2011
-> > +Contact:	Chuanxiao Dong <chuanxiao.dong@intel.com>
-> > +Description:
-> > +		Enhanced area is a new feature defined in eMMC4.4 standard.eMMC4.4
-> or
-> > +		later card can support such feature. This kind of area can help to
-> > +		improve the card performance. If the feature is enabled, this attribute
-> > +		will indicate the start address of enhanced data area. If not, this
-> > +		attribute will be -EINVAL. Unit Byte. Format decimal.
-> > +
-> > +What:		/sys/devices/.../mmc_host/mmcX/mmcX:XXXX/enhanced_area_size
-> > +Date:		January 2011
-> > +Contact:	Chuanxiao Dong <chuanxiao.dong@intel.com>
-> > +Description:
-> > +		Enhanced area is a new feature defined in eMMC4.4 standard. eMMC4.4
-> or
-> > +		later card can support such feature. This kind of area can help to
-> > +		improve the card performance. If the feature is enabled, this attribute
-> > +		will indicate the size of enhanced data area. If not, this attribute
-> > +		will be -EINVAL. Unit KByte. Format decimal.
-> 
-> This is still wrapped at > 80 columns.
-Sorry for that. I have set the textwidth=80 for vim, not understand why this is still wrapped at >80 columns... I know checkpatch.pl can help us to find the style problem, and is there some other script which can help find the style problem of Document or how can I avoid such errors?
-Chris, thank you for your kind patience to help me find these stupid errors again...
+At one time I had created a filesystem with nilfs on it.  I don't know if
+it's nilfs or nilfs2.  Attempting to mount it with nilfs2 on 2.6.37 (also
+happens on 2.6.36.2), the kernel oopses.  Once the kernel oopses, any
+further attempts to mount it hangs the process.  I have also noticed that
+attempting to umount other filesystems also hangs the process.
 
-> > diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-> > index 8ce0827..736697f 100644
-> > --- a/include/linux/mmc/card.h
-> > +++ b/include/linux/mmc/card.h
-> > @@ -54,6 +54,9 @@ struct mmc_ext_csd {
-> >  	unsigned int		sec_trim_mult;	/* Secure trim multiplier  */
-> >  	unsigned int		sec_erase_mult;	/* Secure erase multiplier */
-> >  	unsigned int		trim_timeout;		/* In milliseconds */
-> > +	bool			enhanced_area_en;	/* enhanced area en */
-> > +	loff_t		enhanced_area_offset;	/* enhanced area addr */
-> > +	size_t		enhanced_area_size;		/* enhanced area size */
-> 
-> Now enhanced_area_en is aligned correctly, but the other two aren't.
-> 
-> This adds a warning:
-> 
-> drivers/mmc/core/mmc.c: In function ‚Äòmmc_enhanced_area_size_show‚Äô:
-> drivers/mmc/core/mmc.c:383:261: warning: format ‚Äò%d‚Äô expects type ‚Äòint‚Äô,
-> but argument 3 has type ‚Äòsize_t‚Äô
-> 
-> If you really want size_t, you should use %zu for it -- see
-> Documentation/printk-formats.txt.  (Declaring it as unsigned int would
-> work fine too.)
-> 
-> Oh, and let's mention the units of _offset and _size in the comment in
-> card.h.
-Chris, you mean the type of _offset and _size? I think the 64bits number for _offset is enough, also the 32bits number for _size since the units of _size is Kbytes. Any suggestions on that?
+[ 1202.579525] NILFS version 2 loaded
+[ 1202.581501] NILFS warning: broken superblock. using spare superblock.
+[ 1202.582093] NILFS warning: broken superblock. using spare superblock.
+[ 1202.821896] segctord starting. Construction interval = 5 seconds, CP frequency < 30 seconds
+[ 1202.824419] BUG: unable to handle kernel NULL pointer dereference at   (null)
+[ 1202.824561] IP: [<c03196bc>] memcpy+0xc/0x1b
+[ 1202.824667] *pdpt = 0000000033b94001 *pde = 0000000000000000 
+[ 1202.824797] Oops: 0002 [#1] SMP 
+[ 1202.824922] last sysfs file: /sys/devices/virtual/block/dm-9/dm/name
+[ 1202.824978] Modules linked in: nilfs2 crc32 sha256_generic nfsd exportfs ipv6 nfs lockd nfs_acl auth_rpcgss sunrpc ext2 8250_pnp sr_mod cdrom ata_piix e1000 floppy aic7xxx libata sg 8250 evdev serial_core button processor thermal_sys
+[ 1202.825136] 
+[ 1202.825136] Pid: 3529, comm: mount.nilfs2 Not tainted 2.6.37 #1 /
+[ 1202.825136] EIP: 0060:[<c03196bc>] EFLAGS: 00010202 CPU: 3
+[ 1202.825136] EIP is at memcpy+0xc/0x1b
+[ 1202.825136] EAX: 00000000 EBX: 00000100 ECX: 00000040 EDX: f7b55400
+[ 1202.825136] ESI: f7b55400 EDI: 00000000 EBP: f3f45b20 ESP: f3b35e74
+[ 1202.825136]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[ 1202.825136] Process mount.nilfs2 (pid: 3529, ti=f3b34000 task=f3870d40 task.ti=f3b34000)
+[ 1202.825136] Stack:
+[ 1202.825136]  f3d77cc0 f3f45b00 f7b55400 f953720e f51f0c38 f95369e9 00000000 00000000
+[ 1202.825136]  f3f45b08 00000000 f9537a08 00000001 f3b35ee8 f5006584 00000002 00000003
+[ 1202.825136]  f51f0c00 f4c23800 f3d77cc0 f3f45b00 00000000 392d6d64 00000000 f50dbde0
+[ 1202.825136] Call Trace:
+[ 1202.825136]  [<f953720e>] ? nilfs_setup_super+0x6c/0xa5 [nilfs2]
+[ 1202.825136]  [<f95369e9>] ? nilfs_get_root_dentry+0x81/0xcb [nilfs2]
+[ 1202.825136]  [<f9537a08>] ? nilfs_mount+0x4f9/0x62c [nilfs2]
+[ 1202.825136]  [<c02745cf>] ? kstrdup+0x36/0x3f
+[ 1202.825136]  [<f953750f>] ? nilfs_mount+0x0/0x62c [nilfs2]
+[ 1202.825136]  [<c0293940>] ? vfs_kern_mount+0x4d/0x12c
+[ 1202.825136]  [<c02a5100>] ? get_fs_type+0x76/0x8f
+[ 1202.825136]  [<c0293a68>] ? do_kern_mount+0x33/0xbf
+[ 1202.825136]  [<c02a784a>] ? do_mount+0x2ed/0x714
+[ 1202.825136]  [<c02a6171>] ? copy_mount_options+0x28/0xfc
+[ 1202.825136]  [<c02a7ce3>] ? sys_mount+0x72/0xaf
+[ 1202.825136]  [<c0473085>] ? syscall_call+0x7/0xb
+[ 1202.825136] Code: 43 4c 04 83 fe 01 19 c0 24 fc 04 08 88 43 4d 5b 5e 5f c3 90 90 90 90 90 90 90 90 90 90 90 90 57 56 53 89 cb c1 e9 02 89 c7 89 d6 <f3> a5 89 d9 83 e1 03 74 02 f3 a4 5b 5e 5f c3 55 57 56 53 89 c5 
+[ 1202.825136] EIP: [<c03196bc>] memcpy+0xc/0x1b SS:ESP 0068:f3b35e74
+[ 1202.825136] CR2: 0000000000000000
+[ 1202.831111] ---[ end trace e5a2d0918d598efa ]---
 
-> 
-> >  };
-> >
-> >  struct sd_scr {
-> > diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
-> > index 612301f..264ba54 100644
-> > --- a/include/linux/mmc/mmc.h
-> > +++ b/include/linux/mmc/mmc.h
-> > @@ -253,6 +253,8 @@ struct _mmc_csd {
-> >   * EXT_CSD fields
-> >   */
-> >
-> > +#define EXT_CSD_PARTITION_ATTRIBUTE	156	/* R/W */
-> > +#define EXT_CSD_PARTITION_SUPPORT	160	/* RO */
-> >  #define EXT_CSD_ERASE_GROUP_DEF		175	/* R/W */
-> >  #define EXT_CSD_ERASED_MEM_CONT		181	/* RO */
-> >  #define EXT_CSD_BUS_WIDTH		183	/* R/W */
-> > @@ -262,6 +264,7 @@ struct _mmc_csd {
-> >  #define EXT_CSD_CARD_TYPE		196	/* RO */
-> >  #define EXT_CSD_SEC_CNT			212	/* RO, 4 bytes */
-> >  #define EXT_CSD_S_A_TIMEOUT		217	/* RO */
-> > +#define EXT_CSD_HC_WP_GRP_SIZE		221	/* RO */
-> >  #define EXT_CSD_ERASE_TIMEOUT_MULT	223	/* RO */
-> >  #define EXT_CSD_HC_ERASE_GRP_SIZE	224	/* RO */
-> >  #define EXT_CSD_SEC_TRIM_MULT		229	/* RO */
-> 
-> Thanks,
-> 
-> --
-> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-> One Laptop Per Child
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+-- 
+ Microsoft has beaten Volkswagen's world record.  Volkswagen only created 22
+ million bugs.
