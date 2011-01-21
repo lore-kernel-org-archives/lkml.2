@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755147Ab1AVAPF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 19:15:05 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:34599 "HELO
+	id S1755162Ab1AVAPJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 19:15:09 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:37422 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755093Ab1AVAPD (ORCPT
+	with SMTP id S1755148Ab1AVAPG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 19:15:03 -0500
+	Fri, 21 Jan 2011 19:15:06 -0500
 X-Authenticated: #911537
-X-Provags-ID: V01U2FsdGVkX1+sH0Qd6Iasz1hfby+vF/I+J8zIGEz2iSyQc0YCAR
-	ZjZhMlYqzydFHi
+X-Provags-ID: V01U2FsdGVkX18lvXNyB70lUYySXz4v6ZuKFiW+F0ZdEm5szCKIwe
+	/v1wvXAIbE30GG
 From: Torben Hohn <torbenh@gmx.de>
 To: linux-kernel@vger.kernel.org
 Cc: tglx@linutronix.de, johnstul@us.ibm.com, hch@infradead.org,
         yong.zhang0@gmail.com, Torben Hohn <torbenh@gmx.de>
-Subject: [PATCH 10/18] h8300: switch do_timer() to xtime_update()
-Date: Sat, 22 Jan 2011 00:06:56 +0100
-Message-Id: <1295651224-29823-11-git-send-email-torbenh@gmx.de>
+Subject: [PATCH 11/18] ia64: switch do_timer() to xtime_update()
+Date: Sat, 22 Jan 2011 00:06:57 +0100
+Message-Id: <1295651224-29823-12-git-send-email-torbenh@gmx.de>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1295651224-29823-1-git-send-email-torbenh@gmx.de>
 References: <1295651224-29823-1-git-send-email-torbenh@gmx.de>
@@ -25,42 +25,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xtime_update() takes the xtime_lock itself.
+local_cpu_data->itm_next = new_itm;  does not need to be protected
+by this lock. and xtime_update() takes the lock itself.
 
 Signed-off-by: Torben Hohn <torbenh@gmx.de>
 ---
- arch/h8300/kernel/time.c         |    4 +---
- arch/h8300/kernel/timer/timer8.c |    2 +-
- 2 files changed, 2 insertions(+), 4 deletions(-)
+ arch/ia64/kernel/time.c |   19 +++++--------------
+ arch/ia64/xen/time.c    |   13 +++++--------
+ 2 files changed, 10 insertions(+), 22 deletions(-)
 
-diff --git a/arch/h8300/kernel/time.c b/arch/h8300/kernel/time.c
-index 165005a..32263a1 100644
---- a/arch/h8300/kernel/time.c
-+++ b/arch/h8300/kernel/time.c
-@@ -35,9 +35,7 @@ void h8300_timer_tick(void)
- {
- 	if (current->pid)
- 		profile_tick(CPU_PROFILING);
--	write_seqlock(&xtime_lock);
--	do_timer(1);
--	write_sequnlock(&xtime_lock);
-+	xtime_update(1);
- 	update_process_times(user_mode(get_irq_regs()));
- }
+diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
+index 9702fa9..156ad80 100644
+--- a/arch/ia64/kernel/time.c
++++ b/arch/ia64/kernel/time.c
+@@ -190,19 +190,10 @@ timer_interrupt (int irq, void *dev_id)
  
-diff --git a/arch/h8300/kernel/timer/timer8.c b/arch/h8300/kernel/timer/timer8.c
-index 3946c0f..7a1533f 100644
---- a/arch/h8300/kernel/timer/timer8.c
-+++ b/arch/h8300/kernel/timer/timer8.c
-@@ -61,7 +61,7 @@
+ 		new_itm += local_cpu_data->itm_delta;
  
- /*
-  * timer_interrupt() needs to keep up the real-time clock,
-- * as well as call the "do_timer()" routine every clocktick
-+ * as well as call the "xtime_update()" routine every clocktick
-  */
+-		if (smp_processor_id() == time_keeper_id) {
+-			/*
+-			 * Here we are in the timer irq handler. We have irqs locally
+-			 * disabled, but we don't know if the timer_bh is running on
+-			 * another CPU. We need to avoid to SMP race by acquiring the
+-			 * xtime_lock.
+-			 */
+-			write_seqlock(&xtime_lock);
+-			do_timer(1);
+-			local_cpu_data->itm_next = new_itm;
+-			write_sequnlock(&xtime_lock);
+-		} else
+-			local_cpu_data->itm_next = new_itm;
++		if (smp_processor_id() == time_keeper_id)
++			xtime_update(1);
++
++		local_cpu_data->itm_next = new_itm;
  
- static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ 		if (time_after(new_itm, ia64_get_itc()))
+ 			break;
+@@ -222,7 +213,7 @@ skip_process_time_accounting:
+ 		 * comfort, we increase the safety margin by
+ 		 * intentionally dropping the next tick(s).  We do NOT
+ 		 * update itm.next because that would force us to call
+-		 * do_timer() which in turn would let our clock run
++		 * xtime_update() which in turn would let our clock run
+ 		 * too fast (with the potentially devastating effect
+ 		 * of losing monotony of time).
+ 		 */
+diff --git a/arch/ia64/xen/time.c b/arch/ia64/xen/time.c
+index c1c5445..1f8244a 100644
+--- a/arch/ia64/xen/time.c
++++ b/arch/ia64/xen/time.c
+@@ -139,14 +139,11 @@ consider_steal_time(unsigned long new_itm)
+ 		run_posix_cpu_timers(p);
+ 		delta_itm += local_cpu_data->itm_delta * (stolen + blocked);
+ 
+-		if (cpu == time_keeper_id) {
+-			write_seqlock(&xtime_lock);
+-			do_timer(stolen + blocked);
+-			local_cpu_data->itm_next = delta_itm + new_itm;
+-			write_sequnlock(&xtime_lock);
+-		} else {
+-			local_cpu_data->itm_next = delta_itm + new_itm;
+-		}
++		if (cpu == time_keeper_id)
++			xtime_update(stolen + blocked);
++
++		local_cpu_data->itm_next = delta_itm + new_itm;
++
+ 		per_cpu(xen_stolen_time, cpu) += NS_PER_TICK * stolen;
+ 		per_cpu(xen_blocked_time, cpu) += NS_PER_TICK * blocked;
+ 	}
 -- 
 1.7.2.3
 
