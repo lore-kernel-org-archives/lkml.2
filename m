@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401Ab1AUId4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 03:33:56 -0500
-Received: from www.tglx.de ([62.245.132.106]:40375 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751466Ab1AUIdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 03:33:54 -0500
-To: Tony Lindgren <tony@atomide.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-omap@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Cc: balbi@ti.com
-Subject: [PATCH v3] OMAP2/3: clock: fix fint calculation for DPLL_FREQSEL
-From: John Ogness <john.ogness@linutronix.de>
-References: <87ei8726wf.fsf@vostro.fn.ogness.net>
-	<20110120111645.GB2223@legolas.emea.dhcp.ti.com>
-	<8739on1wdd.fsf_-_@vostro.fn.ogness.net>
-	<20110121031553.GA2448@legolas.emea.dhcp.ti.com>
-Date: Fri, 21 Jan 2011 09:33:33 +0100
-In-Reply-To: <20110121031553.GA2448@legolas.emea.dhcp.ti.com> (Felipe Balbi's message of "Fri\, 21 Jan 2011 05\:15\:53 +0200")
-Message-ID: <87y66e3bc2.fsf_-_@vostro.fn.ogness.net>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	id S1754449Ab1AUIfp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 03:35:45 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50377 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753203Ab1AUIfo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 03:35:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=lDSiF/ACZ5VfmciIhPefuOdsLwYNcoIwY0RNrq1OLHM/7atvnFZlU3FVgO5eMV7HgA
+         B2r/Wv2yN7gp5ortCB0UdwbwXcbs2uHbbpHGsR0QtBWgyuMR4qO+8jO3pjTsZ3AEFCtf
+         jPPUn12kIXl7Yy+qUBR3exvvpONnoDpEelc5M=
+Message-ID: <4D39455D.4070808@gmail.com>
+Date: Fri, 21 Jan 2011 09:35:41 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Chris Wilson <chris@chris-wilson.co.uk>
+CC: Dave Airlie <airlied@linux.ie>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm/i915/ringbuffer: Fix use of stale HEAD position whilst
+ polling for space
+References: <AANLkTi=AEhztUp30A0o5YxHCqqLg38+f5s+mXfbZTX8Y@mail.gmail.com> <1295545279-21335-1-git-send-email-chris@chris-wilson.co.uk>
+In-Reply-To: <1295545279-21335-1-git-send-email-chris@chris-wilson.co.uk>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John Ogness <john.ogness@linutronix.de>
+On 01/20/2011 06:41 PM, Chris Wilson wrote:
+> During suspend, Linus found that his machine would hang for 3 seconds,
+> and identified that intel_ring_buffer_wait() was the culprit:
 
-In OMAP35X TRM Rev 2010-05 Figure 7-18 "DPLL With EMI Reduction
-Feature", it is shown that the internal frequency is calculated by
-CLK_IN/(N+1). However, the value passed to _dpll_test_fint() is
-already "N+1" since Linux is using the values to divide by. In the
-technical reference manual, "N" is referring to the divider's register
-value (0-127).
+FWIW works for me. From 4s I'm back to:
+PM: suspend of devices complete after 1087.670 msecs
 
-Signed-off-by: John Ogness <john.ogness@linutronix.de>
----
-patch v3:
-Patch against linux-next-20110121.
-I have improved the commit message so that it is acceptable for the
-git commit log.
+BTW I did this change as there are loops running out of bounds of this
+array added in 1ec14ad3.
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.h
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.h
+@@ -52,7 +52,7 @@ struct  intel_ring_buffer {
 
- arch/arm/mach-omap2/clkt_dpll.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+        u32             irq_seqno;              /* last seq seem at irq
+time */
+        u32             waiting_seqno;
+-       u32             sync_seqno[I915_NUM_RINGS-1];
++       u32             sync_seqno[I915_NUM_RINGS];
+        atomic_t        irq_refcount;
+        bool __must_check (*irq_get)(struct intel_ring_buffer *ring);
+        void            (*irq_put)(struct intel_ring_buffer *ring);
 
-diff --git a/arch/arm/mach-omap2/clkt_dpll.c b/arch/arm/mach-omap2/clkt_dpll.c
-index 337392c..acb7ae5 100644
---- a/arch/arm/mach-omap2/clkt_dpll.c
-+++ b/arch/arm/mach-omap2/clkt_dpll.c
-@@ -77,7 +77,7 @@ static int _dpll_test_fint(struct clk *clk, u8 n)
- 	dd = clk->dpll_data;
- 
- 	/* DPLL divider must result in a valid jitter correction val */
--	fint = clk->parent->rate / (n + 1);
-+	fint = clk->parent->rate / n;
- 	if (fint < DPLL_FINT_BAND1_MIN) {
- 
- 		pr_debug("rejecting n=%d due to Fint failure, "
+thanks,
 -- 
-1.5.6.5
+js
