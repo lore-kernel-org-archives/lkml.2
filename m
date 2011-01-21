@@ -1,113 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab1AUAEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 19:04:43 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46051 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753127Ab1AUAEm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 19:04:42 -0500
-Date: Thu, 20 Jan 2011 16:04:07 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>
-Cc: <linus.walleij@stericsson.com>, <richard.purdie@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2 1/2] leds: add driver for LM3530 ALS
-Message-Id: <20110120160407.00ffc28e.akpm@linux-foundation.org>
-In-Reply-To: <1295518249-28316-1-git-send-email-shreshthakumar.sahu@stericsson.com>
-References: <1295518249-28316-1-git-send-email-shreshthakumar.sahu@stericsson.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753245Ab1AUAFQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 19:05:16 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:35342 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751997Ab1AUAFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 19:05:14 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Subject: Re: [PATCH 0/11] ACPI: Fixes and cleanups related to iomaps management
+Date: Fri, 21 Jan 2011 01:04:43 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc1+; KDE/4.4.4; x86_64; ; )
+Cc: Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+References: <201101201226.41021.rjw@sisk.pl> <201101202157.16813.rjw@sisk.pl> <AANLkTikKZghRY6pdM1CY7=AKex4t9=QSQOdXDjjvXXM1@mail.gmail.com>
+In-Reply-To: <AANLkTikKZghRY6pdM1CY7=AKex4t9=QSQOdXDjjvXXM1@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201101210104.43641.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jan 2011 15:40:49 +0530
-Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com> wrote:
-
-> From: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
+On Thursday, January 20, 2011, Jeff Chua wrote:
+> On Fri, Jan 21, 2011 at 4:57 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Thursday, January 20, 2011, Jeff Chua wrote:
+> >> On Thu, Jan 20, 2011 at 7:26 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >>
+> >> > [10/11] - Make the NVS code use existing iomaps if possible.
+> >>
+> >> Seems ok.
+> >>
+> >> > [11/11] - (cleanup) Remove an unnecessary field from struct nvs_page.
+> >>
+> >> This seems to have an issue. Notebook tries to suspend ... then resume
+> >> immediately.
+> >
+> > That's unexpected.  Please apply the debug patch below in addition to the
+> > whole series and send a dmesg output containing a (failing) suspend attempt
+> > (with the patch applied).
 > 
-> simple backlight driver for National Semiconductor LM3530.
-> Presently only manual mode is supported, PWM and ALS support
-> to be added.
-> 
->
-> ...
->
-> +static int lm3530_get_mode_from_str(const char *str, int count)
-> +{
-> +	int i;
-> +
-> +	if (str[0] == '\n')
-> +		return -1;
+> Attached.
 
-Why is this here?  I think the function would work OK if it was removed?
+Thanks, but unfortunately this wasn't conclusive.  Please apply the patch below
+instead of the previous one (on top of [1/11] - [11/11]) and collect dmesg
+output containing a (failing) suspend attempt.
 
-> +	for (i = 0; i < LM3530_BL_MODE_MAX; i++)
+Please attach full dmesg, so that I can see the size and address of your
+system's NVS region.
 
-Could use ARRAY_SIZE(mode_map) here and do away with
-LM3530_BL_MODE_MAX.
+Thanks,
+Rafael
 
-> +		if (!strncmp(mode_map[i].mode, str, count))
 
-Why strncmp?  The code will treat input of the form "alsfoo" as "als",
-which is sloppy.
+---
+ drivers/acpi/nvs.c |   27 ++++++++++++++++++++++++++-
+ 1 file changed, 26 insertions(+), 1 deletion(-)
 
-> +			return mode_map[i].mode_val;
-> +
-> +	return -1;
-> +}
-> +
->
-> ...
->
-> +static ssize_t lm3530_mode_set(struct device *dev, struct device_attribute
-> +				   *attr, const char *buf, size_t size)
-> +{
-> +	int err;
-> +	struct i2c_client *client = container_of(
-> +					dev->parent, struct i2c_client, dev);
-> +	struct lm3530_data *drvdata = i2c_get_clientdata(client);
-> +	int mode;
-> +
-> +	mode = lm3530_get_mode_from_str(buf, size-1);
-
-And why the "size-1"?  Assuming there's a \n?  But userspace should be
-able to do write(fd, 3, "als")?
-
-Perhaps all this can be tidied up with
-
-	mode = lm3530_get_mode_from_str(strim(buf));
-
-Alternatively, see sysfs_streq() - it was added to address these sorts
-of things.
-
-> +	if (mode < 0) {
-> +		dev_err(dev, "Invalid mode\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (mode == LM3530_BL_MODE_MANUAL)
-> +		drvdata->mode = LM3530_BL_MODE_MANUAL;
-> +	else if (mode == LM3530_BL_MODE_ALS)
-> +		drvdata->mode = LM3530_BL_MODE_ALS;
-> +	else if (mode == LM3530_BL_MODE_PWM) {
-> +		dev_err(dev, "PWM mode not supported\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	err = lm3530_init_registers(drvdata);
-> +	if (err) {
-> +		dev_err(dev, "Setting %s Mode failed :%d\n", buf, err);
-> +		return err;
-> +	}
-> +
-> +	return sizeof(drvdata->mode);
-> +}
-> +
->
-> ...
->
-
+Index: linux-2.6/drivers/acpi/nvs.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/nvs.c
++++ linux-2.6/drivers/acpi/nvs.c
+@@ -87,9 +87,15 @@ void suspend_nvs_free(void)
+ 			entry->data = NULL;
+ 			if (entry->kaddr) {
+ 				if (entry->unmap) {
++					pr_info("%s: Unmapping %p\n", __func__,
++						entry->kaddr);
++
+ 					iounmap(entry->kaddr);
+ 					entry->unmap = false;
+ 				} else {
++					pr_info("%s: Dropping %p\n", __func__,
++						entry->kaddr);
++
+ 					acpi_os_unmap_memory(entry->kaddr,
+ 							     entry->size);
+ 				}
+@@ -130,6 +136,8 @@ int suspend_nvs_save(void)
+ 		unsigned long phys = page_addr + offset;
+ 		unsigned int size = entry->size;
+ 
++		pr_info("%s: phys = %lx, size = %d\n", __func__, phys, size);
++
+ 		if (!entry->data)
+ 			return -ENOMEM;
+ 
+@@ -137,11 +145,24 @@ int suspend_nvs_save(void)
+ 		if (!entry->kaddr) {
+ 			entry->kaddr = acpi_os_ioremap(phys, size);
+ 			if (!entry->kaddr) {
++
++				pr_info("%s: acpi_os_ioremap() failed\n",
++					__func__);
++
+ 				suspend_nvs_free();
+ 				return -EIO;
++			} else {
++				pr_info("%s: Mapped %p\n", __func__,
++					entry->kaddr);
+ 			}
+ 			entry->unmap = true;
++		} else {
++			pr_info("%s: Got address %p\n", __func__, entry->kaddr);
+ 		}
++
++		pr_info("%s: Saving %p <- %p\n", __func__,
++			entry->data, entry->kaddr);
++
+ 		memcpy(entry->data, entry->kaddr, entry->size);
+ 
+ 		page_addr += PAGE_SIZE;
+@@ -164,6 +185,10 @@ void suspend_nvs_restore(void)
+ 	printk(KERN_INFO "PM: Restoring platform NVS memory\n");
+ 
+ 	list_for_each_entry(entry, &nvs_list, node)
+-		if (entry->data)
++		if (entry->data) {
++			pr_info("%s: Restoring %p -> %p\n", __func__,
++				entry->data, entry->kaddr);
++
+ 			memcpy(entry->kaddr, entry->data, entry->size);
++		}
+ }
