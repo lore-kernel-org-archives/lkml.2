@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316Ab1AUWIT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 17:08:19 -0500
-Received: from outgoing.selfhost.de ([82.98.87.70]:48678 "EHLO
-	outgoing.selfhost.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752946Ab1AUWIS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 17:08:18 -0500
-Message-ID: <4D3A03CA.2060507@afaics.de>
-Date: Fri, 21 Jan 2011 23:08:10 +0100
-From: Harald Dunkel <harri@afaics.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101210 Thunderbird/3.1.7
+	id S1754307Ab1AUWNU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 17:13:20 -0500
+Received: from hera.kernel.org ([140.211.167.34]:58409 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752861Ab1AUWNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 17:13:19 -0500
+Date: Fri, 21 Jan 2011 22:12:43 GMT
+From: tip-bot for Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, oleg@redhat.com,
+        mingo@elte.hu
+In-Reply-To: <20110121174547.GA8796@redhat.com>
+References: <20110121174547.GA8796@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf: perf_event_exit_task_context: s/rcu_dereference/rcu_dereference_raw/
+Message-ID: <tip-806839b22cbda90176d7f8d421889bddd7826e93@git.kernel.org>
+Git-Commit-ID: 806839b22cbda90176d7f8d421889bddd7826e93
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: how to avoid that install.sh goes mad, if I am not root?
-References: <4D388A08.1010004@afaics.de>	<19768.44428.482148.361069@pilspetsen.it.uu.se> <ihbvd1$jbj$3@dough.gmane.org>
-In-Reply-To: <ihbvd1$jbj$3@dough.gmane.org>
-X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 21 Jan 2011 22:12:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Commit-ID:  806839b22cbda90176d7f8d421889bddd7826e93
+Gitweb:     http://git.kernel.org/tip/806839b22cbda90176d7f8d421889bddd7826e93
+Author:     Oleg Nesterov <oleg@redhat.com>
+AuthorDate: Fri, 21 Jan 2011 18:45:47 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 21 Jan 2011 22:08:16 +0100
 
-On 01/21/11 13:49, WANG Cong wrote:
-> On Thu, 20 Jan 2011 22:47:56 +0100, Mikael Pettersson wrote:
->>
->> First, at least on x86, the kernel will look for the 'installkernel'
->> executable first in your own ~/bin/, so if you have that then it will
->> override /sbin/installkernel.
->>
-> 
-> That still doesn't look like a good solution.
-> 
+perf: perf_event_exit_task_context: s/rcu_dereference/rcu_dereference_raw/
 
-Same for me.
+In theory, almost every user of task->child->perf_event_ctxp[]
+is wrong. find_get_context() can install the new context at any
+moment, we need read_barrier_depends().
 
-Obviously running /sbin/installkernel is not reasonable for
-UID != 0 (or if $FAKEROOTKEY is set), so I would suggest to
-skip /sbin/installkernel and the default Lilo setup in
-install.sh for this case.
+dbe08d82ce3967ccdf459f7951d02589cf967300 "perf: Fix
+find_get_context() vs perf_event_exit_task() race" added
+rcu_dereference() into perf_event_exit_task_context() to make
+the precedent, but this makes __rcu_dereference_check() unhappy.
+Use rcu_dereference_raw() to shut up the warning.
 
+Reported-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: acme@redhat.com
+Cc: paulus@samba.org
+Cc: stern@rowland.harvard.edu
+Cc: a.p.zijlstra@chello.nl
+Cc: fweisbec@gmail.com
+Cc: roland@redhat.com
+Cc: prasad@linux.vnet.ibm.com
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+LKML-Reference: <20110121174547.GA8796@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/perf_event.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Only a suggestion, of course.
-
-Regards
-
-Harri
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk06A8oACgkQUTlbRTxpHjeuVwCeJjTgyjcIqvqrUTqxoGgAJngd
-iwkAn2U/qiekItqItRBmpeEqk/dH0FKZ
-=LgO3
------END PGP SIGNATURE-----
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index c5fa717..126a302 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -6136,7 +6136,7 @@ static void perf_event_exit_task_context(struct task_struct *child, int ctxn)
+ 	 * scheduled, so we are now safe from rescheduling changing
+ 	 * our context.
+ 	 */
+-	child_ctx = rcu_dereference(child->perf_event_ctxp[ctxn]);
++	child_ctx = rcu_dereference_raw(child->perf_event_ctxp[ctxn]);
+ 	task_ctx_sched_out(child_ctx, EVENT_ALL);
+ 
+ 	/*
