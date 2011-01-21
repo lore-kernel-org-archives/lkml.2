@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753624Ab1AUR2n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 12:28:43 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50370 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753453Ab1AUR2l (ORCPT
+	id S1753463Ab1AURaE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 12:30:04 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:46080 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752567Ab1AURaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 12:28:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=dUNdzk3+gFM/PffhyhMkYQTfUwYNhwJm7Lxc1y945n0ahhhwu9XsjvrfGQ+Lanh2DC
-         gTbcYZEhC8Spo5lGjdzSJN51P7XR535wShN/Inu5b+xRDpEXgF5UabYJbI8snSJ5+iOI
-         4d2uOyZMhRrUjdkB1UCxowaOBouvz100FrePQ=
-Date: Fri, 21 Jan 2011 18:28:36 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Pekka Enbeerg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        akpm@linux-foundation.org
-Subject: Re: x86: A fast way to check capabilities of the current cpu
-Message-ID: <20110121172836.GK2832@htj.dyndns.org>
-References: <alpine.DEB.2.00.1012151404070.21102@router.home>
- <20110121171133.GI2832@htj.dyndns.org>
- <alpine.DEB.2.00.1101211114530.15692@router.home>
+	Fri, 21 Jan 2011 12:30:03 -0500
+Date: Fri, 21 Jan 2011 15:29:37 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: peterz@infradead.org, mingo@elte.hu, tony.luck@intel.com,
+        rostedt@goodmis.org, fweisbec@gmail.com, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH 08/12] perf: Carve out mmap helpers for general use
+Message-ID: <20110121172937.GC15066@ghostprotocols.net>
+References: <1295622575-18607-1-git-send-email-bp@amd64.org>
+ <1295622575-18607-9-git-send-email-bp@amd64.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1101211114530.15692@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1295622575-18607-9-git-send-email-bp@amd64.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 11:21:02AM -0600, Christoph Lameter wrote:
-> > I don't think percpu_read_stable() can be used here.  It's not
-> > guaranteed to be stable across different cpus.
+Em Fri, Jan 21, 2011 at 04:09:31PM +0100, Borislav Petkov escreveu:
+> From: Borislav Petkov <borislav.petkov@amd.com>
 > 
-> Why would that matter? The caller has to disabled preemption anyways since
-> otherwise the processor may change which means that the result of the
-> operation is useless.
+> Export the mmap_read* helpers into tools/lib/perf/mmap.[ch]
 
-Because
+Borislav, can you take a look at:
 
-	preempt_disable();
-	this_cpu_has();
-	preempt_enable();
-	preempt_disable();
-	this_cpu_has();
-	preempt_enable();
+http://git.kernel.org/?p=linux/kernel/git/acme/linux-2.6.git;a=shortlog;h=refs/heads/perf/core
 
-might malfunction.  percpu_read_stable() is pretty much applicable
-only to stuff local to the thread.
+More specifically take a look at the function test__basic_mmap in:
 
-> > Also, can we just implement what's necessary on top of this_cpu_has()?
-> > this_cpu_has() already has constant handling, so there's no need to
-> > add this_cpu_test_bit() at this point.
-> 
-> Not sure what you mean. this_cpu_test_bit is necessary because
-> test_cpu_cap expects a regular pointer and performs a regular load.
-> this_cpu_constant_test_bit handles the segment prefix necessary for a per
-> cpu load.
-> 
-> The constant refers to the bit.
+http://git.kernel.org/?p=linux/kernel/git/acme/linux-2.6.git;a=blob;f=tools/perf/builtin-test.c;h=f03798a298b00b328a11f06ce20cc352d123ec28;hb=refs/heads/perf/core
 
-Oh, you're right.  Sorry about that.  Can you please then add a
-comment noting that the operation is x86 only?  Maybe prefix it with
-x86_?
+434 /*
+435  * This test will generate random numbers of calls to some getpid syscalls,
+436  * then establish an mmap for a group of events that are created to monitor
+437  * the syscalls.
+438  *
+439  * It will receive the events, using mmap, use its PERF_SAMPLE_ID generated
+440  * sample.id field to map back to its respective perf_evsel instance.
+441  *
+442  * Then it checks if the number of syscalls reported as perf events by
+443  * the kernel corresponds to the number of syscalls made.
+444  */
 
-Thanks.
+I'll read the rest of your patchset to see if there are more things like
+this.
 
--- 
-tejun
+- Arnaldo
