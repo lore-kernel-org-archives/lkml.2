@@ -1,100 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853Ab1AUEre (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 23:47:34 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39390 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042Ab1AUErc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 23:47:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=oLcmw4M+ibrO1liTj+2AZRrcdcMAPI0ZpjzsCkbhzXBhghC85X37X2P47taNkCPL+q
-         /TCF3Jz2f9EjOfDpGKCIIC3iFJPHoET2fSGkheSV0Me5wbdrUr6euNh5LF+eUXZXbm0Q
-         UCGLzhF4gl9eQsyao9jX92TVcWMAWFCGiBqCE=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTim5N_sCCoOR40y7sTvdDoFkUJd4tUSSbrCccGjy@mail.gmail.com>
-References: <201101111016.42819.jeremy.kerr@canonical.com>
-	<20110111091607.GI12552@n2100.arm.linux.org.uk>
-	<201101111744.59712.jeremy.kerr@canonical.com>
-	<20110111103929.GN24920@pengutronix.de>
-	<AANLkTinHL9X_bqMPR=W8Va01O4xngUnpGCkCiE3xEdiQ@mail.gmail.com>
-	<4D386ABF.9060908@fluff.org>
-	<20110120190822.GK6335@n2100.arm.linux.org.uk>
-	<AANLkTim5N_sCCoOR40y7sTvdDoFkUJd4tUSSbrCccGjy@mail.gmail.com>
-Date: Fri, 21 Jan 2011 13:47:29 +0900
-Message-ID: <AANLkTikJjkJvr2J-9eq2-Jj8L=JvwUQS+QNj9gWFX-TL@mail.gmail.com>
-Subject: Re: Locking in the clk API
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Ben Dooks <ben-linux@fluff.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        linux-sh <linux-sh@vger.kernel.org>,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Richard Zhao <linuxzsc@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753656Ab1AUEuu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 23:50:50 -0500
+Received: from gate.crashing.org ([63.228.1.57]:35409 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751827Ab1AUEus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 23:50:48 -0500
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 21 Jan 2011 15:50:02 +1100
+Message-ID: <1295585402.2148.274.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 9:09 AM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
-> On Fri, Jan 21, 2011 at 4:08 AM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
->> On Thu, Jan 20, 2011 at 05:02:55PM +0000, Ben Dooks wrote:
->>> If you want to make it so that each low-power mode has to work
->>> out what PLLs need to be disabled and then re-enabled makes me
->>> want to be sick. Hiding this stuff behind specific implementations
->>> is a recipe for disaster.
->>
->> Why should systems which don't suffer from such problems be prevented
->> from gaining power saving from turning off their clocks when devices
->> are not being used (eg, the console serial port.)
->>
->> One solution to your root PLL issue would be to have a separate set of
->> enable/disable API calls which get called at setup/release time (or
->> whatever you'd like to call it) which can only be called from non-atomic
->> context.  Maybe clk_prepare() and clk_unprepare().  These functions
->> should perform whatever is necessary to ensure that the clock source
->> is available for use atomically when clk_enable() is called.
->>
->> So, in your case, clk_prepare() ensures that the root PLL is enabled,
->> clk_unprepare() allows it to be turned off.
->>
->> In the case of a console driver, clk_prepare() can be called when we
->> know the port will be used as a console.  clk_enable() is then called
->> before writing out the string, and clk_disable() after we've completely
->> sent the last character.
->>
->> This allows the best of both worlds.  We now have a clk_enable() which
->> can be used to turn the clocks off through the clock tree up to the first
->> non-atomic clock, and we also have a way to deal with those which need
->> to sleep.  So not only do "sleeping clock" implementations become possible
->> but these "sleeping clock" implementations also get the opportunity to
->> shutdown some of their clock tree with minimal latency for doing so.
->
-> This is exactly what I suggested in my last post, except the console example.
-> Only to be a part of common clock api because it's not very safe to assume
-> future SoCs will have the same simple clock topologies that they have today.
->
-> Not to mean to teach, but I hope you realize with more and more
-> device controller being crammed into ever shrinking SoCs,
-> clock would eventually have to be flexible in functionality
-> and complicated in hierarchy. Ben already gave examples
-> of Audio, MFC and Video controllers of latest Samsung SoCs.
+Hi Linus !
 
-plus
+Here's a bunch of powerpc stuff for you to pull. There's a whole series from
+Anton which is in large part trivial cleanups, but it's all obvious enough
+stuff or worthy enough fixes that I decided to not wait until the next merge
+window (besides it's from Anton :-)
 
-a) If only Samsung bsp implements the api, it would be impossible to
-share drivers, those that can be, with other platforms without nasty ifdef's.
-b) If the task of unification starts with only a particular platform made to
-implement a new api, the attempt kills its own purpose.
+The rest is generally minor fixes. The two simple_write_to_buffer changes
+from Akinobu were around for a while (and Andrew had picked them up already),
+I just happen to have "missed" them in my collection for the previous batch.
+
+Cheers,
+Ben.
+
+The following changes since commit 12fcdba1b7ae8b25696433f420b775aeb556d89b:
+
+  Merge branch 'x86-fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2011-01-19 20:27:25 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+Akinobu Mita (2):
+      powerpc/spufs: Use simple_write_to_buffer
+      powerpc/rtas_flash: Use simple_read_from_buffer
+
+Anton Blanchard (19):
+      powerpc/kexec: Move all ppc_md kexec function pointers together
+      powerpc/kexec: Remove ppc_md.machine_kexec_cleanup
+      powerpc/kexec: Remove ppc_md.machine_kexec
+      powerpc/kdump: Remove ppc_md.machine_crash_shutdown
+      powerpc/kexec: Don't initialise kexec hooks to default handlers
+      powerpc/kexec: Remove empty ppc_md.machine_kexec_prepare
+      powerpc/kdump: Move crash_kexec_stop_spus to kdump crash handler
+      powerpc/kdump: Disable ftrace during kexec
+      powerpc: Print 32 bits of DSISR in show_regs
+      powerpc: Don't force MSR_RI in machine_check_exception
+      powerpc: Never halt RTAS error logging after receiving an unrecoverable machine check
+      powerpc: Remove duplicate debugger hook in machine_check_exception
+      powerpc: Don't silently handle machine checks from userspace
+      powerpc: Rework pseries machine check handler
+      powerpc: Fix corruption when grabbing FWNMI data
+      powerpc: Check RTAS extended log flag before checking length
+      powerpc: machine_check_generic is wrong on 64bit
+      powerpc: Disable mcount tracers in pseries defconfig
+      powerpc: Enable 64kB pages and 1024 threads in pseries config
+
+Ben Hutchings (1):
+      powerpc/boot/dts: Install dts from the right directory
+
+Benjamin Herrenschmidt (1):
+      Merge remote branch 'kumar/next' into merge
+
+Ilya Yanok (1):
+      powerpc/mpc8308: fix USB DR controller initialization
+
+Li Yang (1):
+      powerpc/85xx: add e500 HID1 bit definition
+
+Michael Ellerman (1):
+      powerpc: Ensure the else case of feature sections will fit
+
+Nishanth Aravamudan (1):
+      powerpc/pseries: Add BNX2=m to defconfig
+
+Scott Wood (1):
+      powerpc/mpic: Fix mask/unmask timeout message
+
+Shaohui Xie (1):
+      powerpc/fsl_rio: Fix non-standard HID1 register access
+
+Steven Rostedt (2):
+      powerpc/ppc64/tracing: Add stack frame to calls of trace_hardirqs_on/off
+      powerpc/ppc32/tracing: Add stack frame to calls of trace_hardirqs_on/off
+
+Tejun Heo (1):
+      powerpc/cell: Use system_wq in cpufreq_spudemand
+
+Timur Tabi (2):
+      powerpc/85xx: fix compatible properties of the P1022DS DMA nodes used for audio
+      powerpc: fix warning when compiling immap_qe.h
+
+roel kluin (1):
+      powerpc/macintosh: Fix wrong test in fan_{read,write}_reg()
+
+ arch/powerpc/boot/Makefile                      |    2 +-
+ arch/powerpc/boot/dts/mpc8308rdb.dts            |    2 +-
+ arch/powerpc/boot/dts/p1022ds.dts               |    4 +-
+ arch/powerpc/configs/pseries_defconfig          |    7 +-
+ arch/powerpc/include/asm/feature-fixups.h       |   27 ++++---
+ arch/powerpc/include/asm/immap_qe.h             |   21 ++++--
+ arch/powerpc/include/asm/irqflags.h             |   40 +++++++--
+ arch/powerpc/include/asm/machdep.h              |   18 +----
+ arch/powerpc/include/asm/reg.h                  |    2 +
+ arch/powerpc/include/asm/reg_booke.h            |   14 +++
+ arch/powerpc/include/asm/spu.h                  |    8 --
+ arch/powerpc/kernel/cpu_setup_fsl_booke.S       |    6 ++
+ arch/powerpc/kernel/cputable.c                  |   23 -----
+ arch/powerpc/kernel/crash.c                     |   72 +----------------
+ arch/powerpc/kernel/entry_32.S                  |   11 +++
+ arch/powerpc/kernel/machine_kexec.c             |   19 ++--
+ arch/powerpc/kernel/process.c                   |    2 +-
+ arch/powerpc/kernel/rtas_flash.c                |   53 ++-----------
+ arch/powerpc/kernel/rtasd.c                     |    2 +-
+ arch/powerpc/kernel/time.c                      |   25 +++++-
+ arch/powerpc/kernel/traps.c                     |   12 +---
+ arch/powerpc/lib/feature-fixups-test.S          |   19 ++++
+ arch/powerpc/platforms/83xx/mpc83xx.h           |    2 +
+ arch/powerpc/platforms/83xx/usb.c               |   21 ++++-
+ arch/powerpc/platforms/cell/cpufreq_spudemand.c |   20 +----
+ arch/powerpc/platforms/cell/qpace_setup.c       |    5 -
+ arch/powerpc/platforms/cell/spu_base.c          |   70 ++++++++++++++++
+ arch/powerpc/platforms/cell/spufs/file.c        |   27 ++-----
+ arch/powerpc/platforms/embedded6xx/gamecube.c   |   11 ---
+ arch/powerpc/platforms/embedded6xx/wii.c        |   11 ---
+ arch/powerpc/platforms/pseries/kexec.c          |   10 --
+ arch/powerpc/platforms/pseries/ras.c            |  102 +++++++++++++++-------
+ arch/powerpc/sysdev/fsl_rio.c                   |    2 -
+ arch/powerpc/sysdev/mpic.c                      |    6 +-
+ drivers/macintosh/therm_pm72.c                  |    4 +-
+ 35 files changed, 334 insertions(+), 346 deletions(-)
+
+
