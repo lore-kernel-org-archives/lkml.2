@@ -1,105 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478Ab1AURPa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 12:15:30 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41140 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752848Ab1AURPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 12:15:30 -0500
-X-User-Agent: K-9 Mail for Android
-References: <4D263C91.30709@zytor.com> <alpine.DEB.2.00.1101070907060.3014@router.home> <20110107180419.GB23082@Krystal> <alpine.DEB.2.00.1101071227450.3014@router.home> <20110108172453.GF13269@mtj.dyndns.org> <4D393636.4040607@cs.helsinki.fi> <20110121092649.GA2832@htj.dyndns.org> <4D39A6EB.70705@zytor.com> <20110121154831.GE2832@htj.dyndns.org> <20110121165425.GB11687@Krystal> <20110121170847.GH2832@htj.dyndns.org>
-In-Reply-To: <20110121170847.GH2832@htj.dyndns.org>
+	id S1754548Ab1AURS0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 12:18:26 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48559 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753535Ab1AURSZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 12:18:25 -0500
+Date: Fri, 21 Jan 2011 15:18:57 -0200
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Pavan Savoy <pavan_savoy@sify.com>
+Cc: marcel@holtmann.org, linux-kernel@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, Pavan Savoy <pavan_savoy@ti.com>
+Subject: Re: [RFC 0/2] remove BT references from TI_ST
+Message-ID: <20110121171857.GC2400@joana>
+References: <1294138788-10307-1-git-send-email-pavan_savoy@ti.com>
+ <AANLkTinPC-i2xi9pCQ-RzGWuwZ5uTM3NXG7y6gwTnPYv@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for this_cpu_cmpxchg_double
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 21 Jan 2011 09:13:41 -0800
-To: Tejun Heo <tj@kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>, Christoph Lameter <cl@linux.com>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Message-ID: <1da7491b-6e7d-4453-9c6f-0e7767421ec4@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinPC-i2xi9pCQ-RzGWuwZ5uTM3NXG7y6gwTnPYv@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We could do cmpxchg with a structure... the problem with a lon int type is that Cristoph ran into bugs with __int128 on 64 bits.
+Hi Pavan,
 
-"Tejun Heo" <tj@kernel.org> wrote:
+* Pavan Savoy <pavan_savoy@sify.com> [2011-01-19 23:56:29 +0530]:
 
->Hello,
->
->On Fri, Jan 21, 2011 at 11:54:25AM -0500, Mathieu Desnoyers wrote:
->> "The single large 128 bit scalar does not work. Having to define an
->> additional structure it also a bit clumsy. I think its best to get
->> another patchset out that also duplicates the first parameter and
->> makes the percpu variable specs conform to the other this_cpu ops."
->>
->> I'm again probably missing something, but what is "clumsy" about
->> defining a structure like the following to ensure proper alignment
->> of the target pointer (instead of adding a runtime test) ?
->> 
->> struct cmpxchg_double {
->> #if __BYTE_ORDER == __LITTLE_ENDIAN
->>         unsigned long low, high;
->> #else
->>         unsigned long high, low;
->> #endif
->> } __attribute__((packed, aligned(2 * sizeof(unsigned long))));
->>
->> (note: packed here along with "aligned" does _not_ generate ugly
->> bytewise read/write memory ops like "packed" alone. The use of
->> "packed" is to let the compiler down-align the structure to the
->> value requested, instead of uselessly aligning it on 32-byte if it
->> chooses to.)
->
->Yeah, good point.  :-)
->
->> The prototype could then look like:
->> 
->> bool __this_cpu_generic_cmpxchg_double(pcp, oval_low, oval_high,
->nval_low, nval_high);
->> 
->> With:
->>   struct cmpxchg_double *pcp
->> 
->> I think Christoph's point is that he wants to alias this with a
->pointer. Well,
->> this can be done cleanly with:
->> 
->> union {
->>         struct cmpxchg_double casdbl;
->>         struct {
->>                 void *ptr;
->>                 unsigned long cpuid_tid;
->>         } t;
->> }
->> 
->> So by keeping distinct variables for the oval/nal arguments, we let
->> the compiler use registers (instead of the mandatory stack use that
->> would be required if we pass union or structures as oval/nval
->> arguments), but we ensure proper alignment (and drop the unneeded
->> second pointer, as well as the runtime pointer alignment checks) by
->> passing one single pcp pointer of a fixed type with a known
->> alignment.
->
->Actually, we might be able to work around the stack usage regardless
->of the passed type.  We should be able to decompose the structure or
->ulonglong using macro and then pass the decomposed parameters to a
->function if necessary.
->
->Hmm, if we do ulonglong, we don't even need a separate interface and
->can simply use cmpxchg().  If someone can come up with something which
->uses ulonglong that way, it would be great; then, we wouldn't need to
->worry about alignment either.  Am I missing something?
->
->Thanks.
->
->-- 
->tejun
+> Gustavo,
+> 
+> On Tue, Jan 4, 2011 at 4:29 PM,  <pavan_savoy@ti.com> wrote:
+> > From: Pavan Savoy <pavan_savoy@ti.com>
+> >
+> > Gustavo,
+> >
+> > Based on your comments, that the underlying shared transport driver
+> > for btwilink driver made use of the BT references to peek into the packets
+> > I have modified the TI_ST.
+> 
+> Since there lacks a generic way to parse the packets coming in from the
+> UART into BT, FM or GPS, we have to look into the data to fragment assembled
+> data or assemble fragmented data.
+> 
+> Please have a look, Please suggest whether something like this is required,
+> If not, please also suggest, if including BT headers is a problem ?
+
+Not really. The real problem is to break the abstraction between drivers
+layers (core and bluetooth drivers in this case)
+
+> 
+> Because I just include the BT headers and don't have a build
+> dependency as such on
+> BT/HCI and don't use any functions from hci_core in my shared transport driver.
+> 
+> > For this reason, Now the above lying protocol drivers like BT, FM and GPS
+> > would send details about their packet types and header information which
+> > would assist shared transport driver to parse the data.
+
+Fair enough. This new approach is way better.
+
+> >
+> > Gustavo, please also notice the change in btwilink driver in and around,
+> > st_register and suggest if something like this is OK.
+> > btwilink can also be modified to send in all the packet specific data
+> > in one shot, if that is preferred.
+> >
+> > Please review and provide comments..
+> >
+> > Note:
+> > If this is alright, I will send out a modified patch with updated
+> > subject to lkml/Greg for linux-next.
+
+Ok. Go ahead. Then tell me when I'll be able to apply your patch. (I need to
+have the core modifications in my tree first). Or I just ack the patch and it
+finds its way to mainline through Greg's tree.
 
 -- 
-Sent from my mobile phone.  Please pardon any lack of formatting.
+Gustavo F. Padovan
+http://profusion.mobi
