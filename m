@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab1AUEBf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 23:01:35 -0500
-Received: from lmr1.uibk.ac.at ([138.232.1.142]:48904 "EHLO lmr1.uibk.ac.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751740Ab1AUEBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 23:01:34 -0500
-X-Greylist: delayed 2666 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Jan 2011 23:01:34 EST
-Message-ID: <20110121040135.817497wxny9qc2s0@web-mail.uibk.ac.at>
-Date: Fri, 21 Jan 2011 04:01:35 +0100
-From: Ingo Hartwig Schneider <Ingo.Schneider@uibk.ac.at>
-Reply-to: western@algish.com
-To: undisclosed-recipients:;
-Subject: Prior to the Instruction from Mr. David Cameron
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
-X-Originating-IP: 138.232.2.86
-X-Forwarded-For: 85.214.243.253
-X-Spam-Score: (***) 3.1 FRELAY_DYN_RDNSM,FROM_NET_2,FSL_HELO_NON_FQDN_1,HELO_LOCALHOST,RCVD_IN_BL_SPAMCOP_NET,RCVD_NUMERIC_HELO,RCV_SMTP_UIBK,T_LOTS_OF_MONEY,T_RP_MATCHES_RCVD
+	id S1753405Ab1AUELy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 23:11:54 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:44370 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740Ab1AUELx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 23:11:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=wpmsExv8KyNQdQP3OpbApk/lnOqZzueAIgj6dt5/aFm+Q/X5/yD88mSt6HVU8/fNHd
+         B/Cmm8AY8W7OcGHB3eM5qXQVU1o/xSuzbH7rlI4PIPQ3W2Ibj6i8Hd1xJqO8fvDRbZuQ
+         vdhXZCocq33ggN2AlmOMMO/siFYyMMw66eX1g=
+Subject: Re: regression 2.6.37 -> 2.6.38-rc1: after suspend backlight
+ cannot be adjusted
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Norbert Preining <preining@logic.at>
+Cc: linux-kernel@vger.kernel.org,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <20110121015529.GD9796@gamma.logic.tuwien.ac.at>
+References: <20110121015529.GD9796@gamma.logic.tuwien.ac.at>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 21 Jan 2011 05:11:47 +0100
+Message-ID: <1295583107.2613.45.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-    My associate has helped me to send your first payment
-of $7,500 USD to you as instructed by Mr. David Cameron
-the United Kingdom prime minister after the last G20
-meeting that was held in United Kingdom, making you one
-of the beneficiaries. Here is the information below.
+Le vendredi 21 janvier 2011 à 10:55 +0900, Norbert Preining a écrit :
+> Hi everyone,
+> 
+> (please Cc)
+> 
+> going to 2.6.38-rc1 I see the following regression: After reboot I
+> can easily adjust the backlight with the keys on my keyboard, but 
+> after a suspend-to-ram this does not work anymore.
+> 
+> This is a Sony laptop, and backlight is controlled by the video
+> acpi driver AFAIR.
+> 
 
-MTCN Numbers: 6096147516
-Sender First Name Is = Johannes
-Second Name = Davis
+Hi Norbert
 
-I told him to keep sending you $7,500 USD twice a week
-until the FULL payment of ($820000.00 United State Dollars)
-is completed.
+Maybe this is the problem Linus had to bisect, you could try his patch :
 
-A certificate will be made to change the Receiver Name as
-stated by the British prime minister, send your Full Names
-and address via Email to: Mr Garry Moore
+http://marc.info/?l=linux-netdev&m=129556877919576&w=2
 
-You cannot pickup the money until the certificate is issued to you.
-
-Regards
-Mr. Garry Moore.
-Tel: +(44) 702 401 4955.
-
-
-
-
+Thanks !
 
 
