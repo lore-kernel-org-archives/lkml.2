@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab1AUGlz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 01:41:55 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:37162 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750844Ab1AUGlx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 01:41:53 -0500
-Date: Thu, 20 Jan 2011 22:41:49 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Shaohua Li <shli@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        "Theodore Ts'o" <tytso@mit.edu>, Neil Brown <neilb@suse.de>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, Jan Kara <jack@suse.cz>,
-        Mike Snitzer <snitzer@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <cmm@us.ibm.com>,
-        linux-ext4@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Josef Bacik <josef@redhat.com>
-Subject: Re: [PATCH v7.1] block: Coordinate flush requests
-Message-ID: <20110121064149.GH27381@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110113025646.GB27381@tux1.beaverton.ibm.com> <AANLkTi=hF8hwgtx+N-dBNRjoffX7nQmaehkE3PsFpSDq@mail.gmail.com> <20110113074603.GC27381@tux1.beaverton.ibm.com> <AANLkTi=pkM1-91cKULt=5L=cPpTUcR5qqFrbj7Bjtk36@mail.gmail.com> <20110115173211.GC27123@htj.dyndns.org> <AANLkTi=MiY+GMXRwfOMhEzGQC3=F89FOKAJ4y1hvyDG0@mail.gmail.com> <20110120185057.GA4701@htj.dyndns.org> <20110120191341.GB4701@htj.dyndns.org>
+	id S1754071Ab1AUGmF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 01:42:05 -0500
+Received: from ns2.cypress.com ([157.95.67.5]:61749 "EHLO aliases"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753509Ab1AUGmC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 01:42:02 -0500
+From: "Sutharshan Ramamoorthy / Prod" <srmt@cypress.com>
+To: kernelnewbies@nl.linux.org, linux-kernel@vger.kernel.org
+Cc: odc@cypress.com
+Subject: printk(KERN_x...) vs dev_x()
+Date: Thu, 20 Jan 2011 22:38:12 -0800
+Message-Id: <20110121062844.M9817@cypress.com>
+X-Mailer: Open WebMail 2.50 20050106
+X-OriginatingIP: 24.23.136.37 (srmt)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110120191341.GB4701@htj.dyndns.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Type: text/plain;
+	charset=iso-8859-1
+X-Brightmail-Tracker: AAAAAA==
+X-Brightmail-Tracker: AAAAAA==
+X-MailScanner: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 08:13:41PM +0100, Tejun Heo wrote:
-> On Thu, Jan 20, 2011 at 07:50:57PM +0100, Tejun Heo wrote:
-> > Hello,
-> > 
-> > On Tue, Jan 18, 2011 at 09:12:55AM +0800, Shaohua Li wrote:
-> > > This makes sense. would it possible N flush data payloads delay the
-> > > first request?
-> > 
-> > I ended up with a different design.  Still buggy.  It triggers a weird
-> > oops under stress test but other than that things generally seem to
-> > work as expected.  Please read the comment at the top of blk-flush.c
-> > for more info.  I'll post properly after more testing and debugging.
-> 
-> The oops was caused by debugging code I put in (not posted together).
-> It runs fine without it, so if you have some time, please give it a
-> spin.
+Hi,
 
-Seems to run without incident on my storage test arrays.  The fsync-happy
-performance numbers are comparable to previous iterations of flush patches.
-Looks good, thank you!
+I'm submitting patches to linux kernel.
+I'd like to know, Which is the acceptable practice to print debug messages?
 
---D
+At some places in the code, there is no valid 'dev' pointer to pass to
+dev_xx() macro, at such places is it ok to use printk(KERN_XXX...)?
+
+Please let me know correct format of print messages.
+
+Thanks,
+Sutharsan.
+
+---------------------------------------------------------------
+This message and any attachments may contain Cypress (or its
+subsidiaries) confidential information. If it has been received
+in error, please advise the sender and immediately delete this
+message.
+---------------------------------------------------------------
+
