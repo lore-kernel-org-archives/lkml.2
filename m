@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab1AUQfB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 11:35:01 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:35009 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752369Ab1AUQe7 (ORCPT
+	id S1754426Ab1AUQh7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 11:37:59 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55500 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754027Ab1AUQh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 11:34:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=G4u8j/q70S8mmcxe4PCw9m7HtAdLNFQaSOkK+kiYYBEZ82b+TgQeIHcWKo6+0dk0UY
-         kSKerfLSJaNxQJkBKjB7LbXXQZvlNF8pk7XuczN7Em1toTv0p32vGTQwvqXh4x9Imd6G
-         rnYqOfHSAPZO7s1ImWFJS0crtKq3C6QFpfYOk=
-Date: Fri, 21 Jan 2011 17:34:54 +0100
-From: Tejun Heo <tj@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Christoph Lameter <cl@linux.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for
- this_cpu_cmpxchg_double
-Message-ID: <20110121163454.GF2832@htj.dyndns.org>
-References: <4D263C91.30709@zytor.com>
- <alpine.DEB.2.00.1101070907060.3014@router.home>
- <20110107180419.GB23082@Krystal>
- <alpine.DEB.2.00.1101071227450.3014@router.home>
- <20110108172453.GF13269@mtj.dyndns.org>
- <4D393636.4040607@cs.helsinki.fi>
- <20110121092649.GA2832@htj.dyndns.org>
- <4D39A6EB.70705@zytor.com>
- <20110121154831.GE2832@htj.dyndns.org>
- <c661a1e2-4e08-4e6b-b2c8-93e231be981f@email.android.com>
+	Fri, 21 Jan 2011 11:37:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <c661a1e2-4e08-4e6b-b2c8-93e231be981f@email.android.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110121174438.7521539f@tornado.gnet>
+References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
+ <20110119083916.GA2166@elte.hu> <20110121174438.7521539f@tornado.gnet>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 21 Jan 2011 08:37:34 -0800
+Message-ID: <AANLkTi=p3=MkGevrW1YU0v_V5iXLw7iLDuWeb7Rf8Xx_@mail.gmail.com>
+Subject: Re: PPS parport boot lockup: INFO: HARDIRQ-READ-safe ->
+ HARDIRQ-READ-unsafe lock order detected
+To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 08:30:41AM -0800, H. Peter Anvin wrote:
-> There is a technical argument: any noninline version will have
-> actual code overhead.
+On Fri, Jan 21, 2011 at 6:44 AM, Alexander Gordeev
+<lasaine@lvk.cs.msu.su> wrote:
+>
+> But parport_unregister_device should probably never be called while
+> parport interrupts are enabled (in hardware). So this is a false
+> positive. Is this right?
 
-But the type checking and all those stuff have to be macros anyway.
-If out-of-line implementation is necessary, it can take whatever
-parameter to optimize performance from the frontend macro.
+"Enabled in hardware" is immaterial - with shared interrupts, it
+doesn't matter one whit whether parport interrupts are disabled on the
+chip, because some other chip may be using the same interrupt line.
 
-Thanks.
+So you'd need to have something that guarantees that there is no
+concurrent use, like actually unregistering the irq handler itself.
+Things like that can work.
 
--- 
-tejun
+HOWEVER, even then I think you should see the lockdep message as a
+problem. The automated toolchain is great because it shows problems
+that it thinks might happen - not when they happen, but based on a
+simpler theoretical model. Ignoring the error because there is some
+rule in place that is hard to explain to the automated toolchain is
+the wrong thing to do, because it makes the lockdep automation less
+reliable.
+
+Think of it as a compiler warning - maybe the warning doesn't actually
+imply an actual bug, but you should strive to write code that doesn't
+warn, because otherwise the noise from the warning you ignored will
+make it harder for others to see the _real_ bugs.
+
+                 Linus
