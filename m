@@ -1,40 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab1AUWdy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 17:33:54 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43102 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752901Ab1AUWdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 17:33:53 -0500
-Message-ID: <4D3A096C.7060800@zytor.com>
-Date: Fri, 21 Jan 2011 14:32:12 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+	id S1753263Ab1AUWht (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 17:37:49 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50662 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab1AUWhs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 17:37:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:from:date:message-id:subject:to:content-type;
+        b=OdLKlpSCx0lZhq5FP6/jOJ0uQrwDEyxln93MBuOq5XLXZoJoIhmOzsjXVygzvyGhHE
+         dropO6xLbiLHWucpZXIzzc8NzBEDSVMrYiQZ/DaltWMybIE5aY1dOK8S/jj+1Pg2ipyL
+         yGgM8tZ/7FFHSgdgowmDP46FWIUFXVtf8wRFQ=
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Tejun Heo <tj@kernel.org>, Pekka Enbeerg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        akpm@linux-foundation.org
-Subject: Re: x86: A fast way to check capabilities of the current cpu
-References: <alpine.DEB.2.00.1012151404070.21102@router.home> <20110121171133.GI2832@htj.dyndns.org> <alpine.DEB.2.00.1101211114530.15692@router.home> <20110121172836.GK2832@htj.dyndns.org> <alpine.DEB.2.00.1101211139330.15692@router.home>
-In-Reply-To: <alpine.DEB.2.00.1101211139330.15692@router.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Reply-To: linasvepstas@gmail.com
+From: Linas Vepstas <linasvepstas@gmail.com>
+Date: Fri, 21 Jan 2011 16:37:24 -0600
+Message-ID: <AANLkTimKqkWT9=8xfMnak9DCUd=EiY6WJgqTOrYouwv3@mail.gmail.com>
+Subject: FYI: BUG: deadlock workqueues + OOM
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2011 09:46 AM, Christoph Lameter wrote:
->> Oh, you're right.  Sorry about that.  Can you please then add a
->> comment noting that the operation is x86 only?  Maybe prefix it with
->> x86_?
-> 
-> For a function defined in an specific include file and only used in arch
-> specific code?
+I've been working on a new arch (patches to be submitted "real soon now")
+and have started seeing a deadlock in the workqueues.  This email is "FYI",
+as I don't have much in the way of good evidence yet, but it seems like an
+arch-indep bug so I thought I'd report it :-)
 
-Yes, x86_ prefix to indicate it's an x86-specific interface, as opposed
-to arch_ which is a architecture-specific component of the
-implementation of a generic interface.
+kernel: linux-2.6.37-rc8
+system: 768K RAM, 4-way cpu, rootfs on NFS, no local block storage, no swap.
 
-	-hpa
+scenario: run a "mempig" that occasionally triggers the OOM killer, while
+also running a pthread-create bomb (like fork-bomb but for threads) (but
+each thread returns immediately).
+
+Deadlock: two cpu's in idle loop, two cpu's spinning on spinlock in
+kernel/workqueue.c, interrupts disabled.  A pair of "typical" stack
+traces below:
+
+c0288484 _raw_spin_lock_irqsave
+c0041224 __queue_work  -- kernel/workqueue.c
+spin_lock_irqsave(&gcwq->lock, flags);
+c0041500 queue_work_on
+c025d7d0 xprt_force_disconnect
+xs_tcp_write_space
+tcp_fin
+svc_drop
+tcp_rcv_established
+ ... etc.
+
+c02883c4 _raw_spin_lock_irq
+c0042d80 start_flush_work kernel/workqueue.c
+c00435d0 flush_work
+c01aed54 n_tty_read
+c01a99cc tty_read
+... etc.
+
+The precise stack traces vary, but they always end up with one cpu
+in start_flush_work()  and the other in __queue_work()
+
+I was wondering if this reminds anyone of anything.  I'll provide
+more if/when I narrow it down.
+
+--linas
