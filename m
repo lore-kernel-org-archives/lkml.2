@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224Ab1AUPIY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 10:08:24 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58547 "EHLO
+	id S1754245Ab1AUPIZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 10:08:25 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58536 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753822Ab1AUPIT (ORCPT
+	with ESMTP id S1754164Ab1AUPIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 10:08:19 -0500
+	Fri, 21 Jan 2011 10:08:11 -0500
 From: Borislav Petkov <bp@amd64.org>
 To: <peterz@infradead.org>, <mingo@elte.hu>
 Cc: <tony.luck@intel.com>, <acme@infradead.org>, <rostedt@goodmis.org>,
         <fweisbec@gmail.com>, <linux-edac@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH] ras: Add RAS daemon
-Date: Fri, 21 Jan 2011 16:09:35 +0100
-Message-Id: <1295622575-18607-13-git-send-email-bp@amd64.org>
+Subject: [PATCH 11/12] perf: Export tracepoint_id_to_path
+Date: Fri, 21 Jan 2011 16:09:34 +0100
+Message-Id: <1295622575-18607-12-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.4.rc2
 In-Reply-To: <1295622575-18607-1-git-send-email-bp@amd64.org>
 References: <1295622575-18607-1-git-send-email-bp@amd64.org>
@@ -25,374 +25,477 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
+This is needed when linking against libtrace.a so move it to
+<lib/trace/trace-event-info.c> and adjust all headers accordingly.
+
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- tools/Makefile     |    4 +
- tools/ras/Makefile |   16 +++
- tools/ras/rasd.c   |  311 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 331 insertions(+), 0 deletions(-)
- create mode 100644 tools/ras/Makefile
- create mode 100644 tools/ras/rasd.c
+ tools/lib/trace/trace-event-info.c |  123 ++++++++++++++++++++++++++++++-----
+ tools/lib/trace/trace-event.h      |   19 ++++++
+ tools/perf/util/parse-events.c     |  104 +-----------------------------
+ tools/perf/util/parse-events.h     |    1 -
+ tools/perf/util/parse-options.h    |    1 +
+ 5 files changed, 128 insertions(+), 120 deletions(-)
 
-diff --git a/tools/Makefile b/tools/Makefile
-index 71dce04..a012fa3 100644
---- a/tools/Makefile
-+++ b/tools/Makefile
-@@ -22,11 +22,15 @@ liblk: .FORCE
- liblkperf:
- 	$(QUIET_SUBDIR0)lib/perf/ $(QUIET_SUBDIR1)
+diff --git a/tools/lib/trace/trace-event-info.c b/tools/lib/trace/trace-event-info.c
+index 808bdfa..77fade5 100644
+--- a/tools/lib/trace/trace-event-info.c
++++ b/tools/lib/trace/trace-event-info.c
+@@ -18,7 +18,6 @@
+  *
+  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  */
+-#define _GNU_SOURCE
+ #include <dirent.h>
+ #include <mntent.h>
+ #include <stdio.h>
+@@ -26,6 +25,7 @@
+ #include <string.h>
+ #include <stdarg.h>
+ #include <sys/types.h>
++#include <sys/param.h>
+ #include <sys/stat.h>
+ #include <sys/wait.h>
+ #include <pthread.h>
+@@ -39,9 +39,11 @@
  
-+ras: libtrace liblk liblkperf .FORCE
-+	$(QUIET_SUBDIR0)ras/ $(QUIET_SUBDIR1)
-+
- clean:
- 	$(QUIET_SUBDIR0)lib/trace/ $(QUIET_SUBDIR1) clean
- 	$(QUIET_SUBDIR0)lib/lk/ $(QUIET_SUBDIR1) clean
- 	$(QUIET_SUBDIR0)lib/perf/ $(QUIET_SUBDIR1) clean
- 	$(QUIET_SUBDIR0)perf/ $(QUIET_SUBDIR1) clean
-+	$(QUIET_SUBDIR0)ras/ $(QUIET_SUBDIR1) clean
+ #include "../../perf/perf.h"
+ #include "trace-event.h"
+-#include <lk/debugfs.h>
+ #include "../../perf/util/evsel.h"
  
- 
- .PHONY: clean .FORCE
-diff --git a/tools/ras/Makefile b/tools/ras/Makefile
-new file mode 100644
-index 0000000..0b2f458
---- /dev/null
-+++ b/tools/ras/Makefile
-@@ -0,0 +1,16 @@
-+include ../scripts/Makefile.lib
-+
-+CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 -DNO_NEWT_SUPPORT $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
-+ALL_CFLAGS = $(CFLAGS) $(BASIC_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
-+ALL_LDFLAGS = $(LDFLAGS)
-+
-+RASLIBS=$(LIB_OUTPUT)libtrace.a $(LIB_OUTPUT)liblk.a $(LIB_OUTPUT)liblkperf.a
-+
-+rasd: rasd.o
-+	$(QUIET_CC)$(CC) $(ALL_CFLAGS) -o $@ $^ $(RASLIBS)
-+
-+%.o: %.c
-+	$(QUIET_CC)$(CC) $(ALL_CFLAGS) -c $<
-+
-+clean:
-+	rm -rf *.o rasd
-diff --git a/tools/ras/rasd.c b/tools/ras/rasd.c
-new file mode 100644
-index 0000000..a8b14b7
---- /dev/null
-+++ b/tools/ras/rasd.c
-@@ -0,0 +1,311 @@
-+/*
-+ * Linux RAS daemon.
-+ *
-+ * Initial code reused from Linux Daemon Writing HOWTO
-+ */
-+
-+#include <errno.h>
-+#include <fcntl.h>
-+#include <stdio.h>
-+#include <stdint.h>
-+#include <stdlib.h>
-+#include <unistd.h>
-+#include <sys/stat.h>
-+#include <sys/mman.h>
-+#include <sys/types.h>
-+
 +#include <lk/util.h>
 +#include <lk/debugfs.h>
-+#include <perf/mmap.h>
-+#include <perf/util.h>
-+#include <trace/trace-event.h>
 +
-+#include "../../arch/x86/include/asm/mce.h"
-+
-+#ifdef DEBUG
-+#define dbg(fmt, args...) \
-+	fprintf(stderr, "DBG %s: " fmt "\n", __func__, ##args)
-+#else
-+#define dbg(fmt, args...) do { } while (0)
-+#endif
-+
-+#define MMAP_PAGES		128
-+#define MCE_TP			"mce/mce_record"
-+
-+#define PFX "rasd: "
-+
-+static int fds[MAX_NR_CPUS];
-+static struct mmap_data mmaps[MAX_NR_CPUS];
-+static struct event *mce_event;
-+static struct mce m;
-+static const char *dfs_root;
-+
-+static int nr_cpus;
-+static unsigned int page_size;
-+
-+const char *logf_path = "/var/log/ras.log";
-+
-+static unsigned long long read_file(const char *file, void *buf)
+ #define VERSION "0.5"
+ 
+ #define _STR(x) #x
+@@ -58,6 +60,7 @@
+ unsigned int page_size;
+ 
+ static const char *output_file = "trace.info";
++static const char *dfs_path;
+ static int output_fd;
+ 
+ struct event_list {
+@@ -72,7 +75,7 @@ struct events {
+ 	char *name;
+ };
+ 
+-static void die(const char *fmt, ...)
++static void t_die(const char *fmt, ...)
+ {
+ 	va_list ap;
+ 	int ret = errno;
+@@ -97,7 +100,7 @@ void *malloc_or_die(unsigned int size)
+ 
+ 	data = malloc(size);
+ 	if (!data)
+-		die("malloc");
++		t_die("malloc");
+ 	return data;
+ }
+ 
+@@ -106,7 +109,7 @@ static const char *find_debugfs(void)
+ 	const char *path = debugfs_mount(NULL);
+ 
+ 	if (!path)
+-		die("Your kernel not support debugfs filesystem");
++		t_die("Your kernel not support debugfs filesystem");
+ 
+ 	return path;
+ }
+@@ -167,7 +170,7 @@ static ssize_t write_or_die(const void *buf, size_t len)
+ 
+ 	ret = write(output_fd, buf, len);
+ 	if (ret < 0)
+-		die("writing to '%s'", output_file);
++		t_die("writing to '%s'", output_file);
+ 
+ 	return ret;
+ }
+@@ -205,7 +208,7 @@ static unsigned long long copy_file(const char *file)
+ 
+ 	fd = open(file, O_RDONLY);
+ 	if (fd < 0)
+-		die("Can't read '%s'", file);
++		t_die("Can't read '%s'", file);
+ 	size = copy_file_fd(fd);
+ 	close(fd);
+ 
+@@ -236,7 +239,7 @@ unsigned long get_filesize(const char *file)
+ 
+ 	fd = open(file, O_RDONLY);
+ 	if (fd < 0)
+-		die("Can't read '%s'", file);
++		t_die("Can't read '%s'", file);
+ 	size = get_size_fd(fd);
+ 	close(fd);
+ 
+@@ -252,7 +255,7 @@ static void read_header_files(void)
+ 	path = get_tracing_file("events/header_page");
+ 	fd = open(path, O_RDONLY);
+ 	if (fd < 0)
+-		die("can't read '%s'", path);
++		t_die("can't read '%s'", path);
+ 
+ 	/* unfortunately, you can not stat debugfs files for size */
+ 	size = get_size_fd(fd);
+@@ -263,14 +266,14 @@ static void read_header_files(void)
+ 	close(fd);
+ 
+ 	if (size != check_size)
+-		die("wrong size for '%s' size=%lld read=%lld",
++		t_die("wrong size for '%s' size=%lld read=%lld",
+ 		    path, size, check_size);
+ 	put_tracing_file(path);
+ 
+ 	path = get_tracing_file("events/header_event");
+ 	fd = open(path, O_RDONLY);
+ 	if (fd < 0)
+-		die("can't read '%s'", path);
++		t_die("can't read '%s'", path);
+ 
+ 	size = get_size_fd(fd);
+ 
+@@ -278,7 +281,7 @@ static void read_header_files(void)
+ 	write_or_die(&size, 8);
+ 	check_size = copy_file_fd(fd);
+ 	if (size != check_size)
+-		die("wrong size for '%s'", path);
++		t_die("wrong size for '%s'", path);
+ 	put_tracing_file(path);
+ 	close(fd);
+ }
+@@ -306,7 +309,7 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
+ 
+ 	dir = opendir(sys);
+ 	if (!dir)
+-		die("can't read directory '%s'", sys);
++		t_die("can't read directory '%s'", sys);
+ 
+ 	while ((dent = readdir(dir))) {
+ 		if (dent->d_type != DT_DIR ||
+@@ -342,7 +345,7 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
+ 			write_or_die(&size, 8);
+ 			check_size = copy_file(format);
+ 			if (size != check_size)
+-				die("error in size of file '%s'", format);
++				t_die("error in size of file '%s'", format);
+ 		}
+ 
+ 		free(format);
+@@ -386,7 +389,7 @@ static void read_event_files(struct tracepoint_path *tps)
+ 
+ 	dir = opendir(path);
+ 	if (!dir)
+-		die("can't read directory '%s'", path);
++		t_die("can't read directory '%s'", path);
+ 
+ 	while ((dent = readdir(dir))) {
+ 		if (dent->d_type != DT_DIR ||
+@@ -440,7 +443,7 @@ static void read_proc_kallsyms(void)
+ 	write_or_die(&size, 4);
+ 	check_size = copy_file(path);
+ 	if (size != check_size)
+-		die("error in size of file '%s'", path);
++		t_die("error in size of file '%s'", path);
+ 
+ }
+ 
+@@ -463,11 +466,95 @@ static void read_ftrace_printk(void)
+ 	write_or_die(&size, 4);
+ 	check_size = copy_file(path);
+ 	if (size != check_size)
+-		die("error in size of file '%s'", path);
++		t_die("error in size of file '%s'", path);
+ out:
+ 	put_tracing_file(path);
+ }
+ 
++int tp_event_has_id(struct dirent *sys_dir, struct dirent *evt_dir)
 +{
-+	unsigned long long size = 0;
-+	int fd, r;
++	char evt_path[MAXPATHLEN];
++	int fd;
 +
-+	fd = open(file, O_RDONLY);
++	snprintf(evt_path, MAXPATHLEN, "%s/%s/%s/id", dfs_path,
++			sys_dir->d_name, evt_dir->d_name);
++	fd = open(evt_path, O_RDONLY);
 +	if (fd < 0)
-+		die("Can't read '%s'", file);
-+
-+	do {
-+		r = read(fd, buf, BUFSIZ);
-+		if (r > 0)
-+			size += r;
-+	} while (r > 0);
-+
++		return -EINVAL;
 +	close(fd);
-+
-+	return size;
-+}
-+
-+static void parse_mce_event(void)
-+{
-+	struct stat st;
-+	char *format_path, *format_buf, *path;
-+	int fsize, err = 0;
-+
-+	path = get_tracing_file("events");
-+
-+	dbg("Got %s", path);
-+
-+	format_path = malloc_or_die(MAXPATHLEN + sizeof(MCE_TP) + 10);
-+	sprintf(format_path, "%s/%s/format", path, MCE_TP);
-+
-+	err = stat(format_path, &st);
-+	if (err < 0)
-+		die("accessing %s", format_path);
-+
-+	dbg("Format access %s ok", format_path);
-+
-+	fsize = get_filesize(format_path);
-+	dbg("Format file size: %d", fsize);
-+
-+	format_buf = malloc_or_die(fsize);
-+	if (!format_buf)
-+		die("allocating format buffer");
-+
-+	if (!read_file(format_path, format_buf))
-+		die("reading in format file");
-+
-+	dbg("Format file contents:\n%s", format_buf);
-+
-+	init_input_buf(format_buf, fsize);
-+
-+	mce_event = alloc_event();
-+	if (!mce_event)
-+		die("Cannot alloc mce_event");
-+
-+	mce_event->name = event_read_name();
-+	if (!mce_event->name)
-+		error("no event name");
-+
-+	mce_event->id = event_read_id();
-+	if (mce_event->id < 0)
-+		error(PFX "failed to read event id");
-+
-+	if (event_read_format(mce_event))
-+		die("parsing event");
-+
-+
-+	free(format_buf);
-+	free(format_path);
-+	free(path);
-+}
-+
-+static void fill_mce_data(void *vbuf, size_t buflen)
-+{
-+	struct format_field *field;
-+	char *buf = vbuf;
-+	u32 tp_len;
-+#ifdef DEBUG
-+	unsigned i;
-+#endif
-+
-+	if (!buflen)
-+		return;
-+
-+#ifdef DEBUG
-+	dbg("buflen %lu", buflen);
-+
-+	for (i = 0; i < buflen; i++) {
-+
-+		if (!(i & 0xf) && i)
-+			printf("\n");
-+
-+		printf("0x%2.2x ", *(unsigned char *)(buf + i));
-+	}
-+#endif
-+
-+	/* skip event header for now, u32 size inclusive */
-+	buf    += sizeof(struct perf_event_header);
-+	buflen -= sizeof(struct perf_event_header) + 4;
-+
-+	tp_len = *(u32 *)buf;
-+
-+	if (tp_len != buflen)
-+		warning("bufsize mismatch: %lu <-> %u (tp)\n", buflen, tp_len);
-+
-+	/* skip size */
-+	buf += 4;
-+
-+	for (field = mce_event->format.fields; field; field = field->next) {
-+		if ((size_t)(field->offset + field->size) > buflen)
-+			warning("MCE buf truncated? (off: %d <-> buflen: %lu)",
-+				field->offset, buflen);
-+
-+		dbg("field %s, offset: %d", field->name, field->offset);
-+
-+		if (!strncmp(field->name, "bank", 4))
-+			m.bank = *(u8 *)(buf + field->offset);
-+		else if (!strncmp(field->name, "status", 6))
-+			m.status = *(u64 *)(buf + field->offset);
-+		else if (!strncmp(field->name, "addr", 4))
-+			m.addr = *(u64 *)(buf + field->offset);
-+		else if (!strncmp(field->name, "misc", 4))
-+			m.misc = *(u64 *)(buf + field->offset);
-+		else if (!strncmp(field->name, "ip", 2))
-+			m.ip = *(u64 *)(buf + field->offset);
-+		else if (!strncmp(field->name, "cs", 2))
-+			m.cs = *(u8 *)(buf + field->offset);
-+		else if (!strncmp(field->name, "tsc", 3))
-+			m.tsc = *(u64 *)(buf + field->offset);
-+		else if (!strncmp(field->name, "cpu", 3))
-+			m.cpu = *(u8 *)(buf + field->offset);
-+		else
-+			warning("skipping %s", field->name);
-+	}
-+}
-+
-+static int ras_init(void)
-+{
-+	int cpu;
-+
-+	fprintf(stderr, PFX "Starting daemon.\n");
-+
-+	page_size = sysconf(_SC_PAGE_SIZE);
-+
-+	dfs_root = debugfs_mount(NULL);
-+	if (!dfs_root) {
-+		error("Cannot mount debugfs, exiting... ");
-+		return 1;
-+	}
-+
-+	nr_cpus = sysconf(_SC_NPROCESSORS_CONF);
-+	if (nr_cpus < 0) {
-+		error("Cannot get # CPUs, exiting... ");
-+		return 1;
-+	}
-+
-+	parse_mce_event();
-+	assert(mce_event);
-+
-+	for (cpu = 0; cpu < nr_cpus; cpu++) {
-+		char dfs_path[MAXPATHLEN];
-+
-+		snprintf(dfs_path, MAXPATHLEN, "%s/%s%d",
-+			 dfs_root, MCE_TP, cpu);
-+
-+		dbg("dfs_path: %s", dfs_path);
-+
-+		fds[cpu] = open(dfs_path, O_RDWR, O_NONBLOCK);
-+		if (fds[cpu] < 0) {
-+			error("open perf event on cpu %d\n", cpu);
-+			return 1;
-+		} else
-+			dbg("cpu %d, fd %d", cpu, fds[cpu]);
-+	}
-+
-+	for (cpu = 0; cpu < nr_cpus; cpu++) {
-+		mmaps[cpu].prev = 0;
-+		mmaps[cpu].mask = MMAP_PAGES*page_size - 1;
-+		mmaps[cpu].base = mmap(NULL, (MMAP_PAGES + 1) * page_size,
-+				       PROT_READ | PROT_WRITE, MAP_SHARED,
-+				       fds[cpu], 0);
-+
-+		if (mmaps[cpu].base == MAP_FAILED) {
-+			error("cannot mmap: %s (%d).", strerror(errno), errno);
-+			return 1;
-+		}
-+	}
 +
 +	return 0;
 +}
 +
-+static void ras_exit(void)
++struct tracepoint_path *tracepoint_id_to_path(u64 config)
 +{
-+	free(mce_event);
-+}
++	struct tracepoint_path *path = NULL;
++	DIR *sys_dir, *evt_dir;
++	struct dirent *sys_next, *evt_next, sys_dirent, evt_dirent;
++	char id_buf[4];
++	int fd;
++	u64 id;
++	char evt_path[MAXPATHLEN];
++	char dir_path[MAXPATHLEN];
 +
-+int main(void)
-+{
-+	pid_t pid, sid;
-+	FILE *logfile = NULL;
-+	int err = 0;
++	dfs_path = debugfs_mount(NULL);
++	if (!dfs_path)
++		return NULL;
 +
-+	pid = fork();
-+	if (pid < 0) {
-+		error(PFX "Error forking daemon thread.");
-+		exit(EXIT_FAILURE);
-+	}
++	sys_dir = opendir(dfs_path);
++	if (!sys_dir)
++		return NULL;
 +
-+	/* parent can disappear now */
-+	if (pid > 0)
-+		exit(EXIT_SUCCESS);
++	for_each_subsystem(sys_dir, sys_dirent, sys_next) {
 +
-+	umask(0);
++		snprintf(dir_path, MAXPATHLEN, "%s/%s", dfs_path,
++			 sys_dirent.d_name);
++		evt_dir = opendir(dir_path);
++		if (!evt_dir)
++			continue;
 +
-+	sid = setsid();
-+	if (sid < 0) {
-+		error(PFX "Error creating session.");
-+		exit(EXIT_FAILURE);
-+	}
++		for_each_event(sys_dirent, evt_dir, evt_dirent, evt_next) {
 +
-+	if (chdir("/") < 0) {
-+		error(PFX "Error chdir to /");
-+		exit(EXIT_FAILURE);
-+	}
-+
-+	logfile = fopen(logf_path, "a");
-+	if (!logfile) {
-+		error(PFX "Error opening logs: %s\n", strerror(errno));
-+		err = errno;
-+		goto exit;
-+	}
-+
-+	close(STDIN_FILENO);
-+	close(STDOUT_FILENO);
-+	close(STDERR_FILENO);
-+
-+	if (ras_init()) {
-+		err = -EINVAL;
-+		goto cleanup;
-+	}
-+
-+	while (1) {
-+
-+		if (mmap_read_all(mmaps, nr_cpus, fill_mce_data)) {
-+			fprintf(logfile,
-+				"Got MCE, cpu: %d, status: 0x%016llx, addr: 0x%016llx\n",
-+				m.cpu, m.status, m.addr);
-+			fflush(logfile);
++			snprintf(evt_path, MAXPATHLEN, "%s/%s/id", dir_path,
++				 evt_dirent.d_name);
++			fd = open(evt_path, O_RDONLY);
++			if (fd < 0)
++				continue;
++			if (read(fd, id_buf, sizeof(id_buf)) < 0) {
++				close(fd);
++				continue;
++			}
++			close(fd);
++			id = atoll(id_buf);
++			if (id == config) {
++				closedir(evt_dir);
++				closedir(sys_dir);
++				path = zalloc(sizeof(*path));
++				path->system = malloc(MAX_EVENT_LENGTH);
++				if (!path->system) {
++					free(path);
++					return NULL;
++				}
++				path->name = malloc(MAX_EVENT_LENGTH);
++				if (!path->name) {
++					free(path->system);
++					free(path);
++					return NULL;
++				}
++				strncpy(path->system, sys_dirent.d_name,
++					MAX_EVENT_LENGTH);
++				strncpy(path->name, evt_dirent.d_name,
++					MAX_EVENT_LENGTH);
++				return path;
++			}
 +		}
-+
-+		sleep(30);
++		closedir(evt_dir);
 +	}
 +
-+	ras_exit();
-+
-+cleanup:
-+	fclose(logfile);
-+
-+exit:
-+	return err;
-+
++	closedir(sys_dir);
++	return NULL;
 +}
++
+ static struct tracepoint_path *
+ get_tracepoints_path(struct list_head *pattrs)
+ {
+@@ -481,7 +568,7 @@ get_tracepoints_path(struct list_head *pattrs)
+ 		++nr_tracepoints;
+ 		ppath->next = tracepoint_id_to_path(pos->attr.config);
+ 		if (!ppath->next)
+-			die("%s\n", "No memory to alloc tracepoints list");
++			t_die("%s\n", "No memory to alloc tracepoints list");
+ 		ppath = ppath->next;
+ 	}
+ 
+diff --git a/tools/lib/trace/trace-event.h b/tools/lib/trace/trace-event.h
+index 0c06b5b..501e1ad 100644
+--- a/tools/lib/trace/trace-event.h
++++ b/tools/lib/trace/trace-event.h
+@@ -2,6 +2,7 @@
+ #define __LIB_TRACE_EVENTS_H
+ 
+ #include <stdbool.h>
++#include <dirent.h>
+ #include "../../perf/util/parse-events.h"
+ 
+ #define __unused __attribute__((unused))
+@@ -312,4 +313,22 @@ int common_pc(struct scripting_context *context);
+ int common_flags(struct scripting_context *context);
+ int common_lock_depth(struct scripting_context *context);
+ 
++#define MAX_EVENT_LENGTH 512
++#define TP_PATH_LEN (MAX_EVENT_LENGTH * 2 + 1)
++
++#define for_each_subsystem(sys_dir, sys_dirent, sys_next)	       \
++	while (!readdir_r(sys_dir, &sys_dirent, &sys_next) && sys_next)	       \
++	if (sys_dirent.d_type == DT_DIR &&				       \
++	   (strcmp(sys_dirent.d_name, ".")) &&				       \
++	   (strcmp(sys_dirent.d_name, "..")))
++
++#define for_each_event(sys_dirent, evt_dir, evt_dirent, evt_next)	       \
++	while (!readdir_r(evt_dir, &evt_dirent, &evt_next) && evt_next)        \
++	if (evt_dirent.d_type == DT_DIR &&				       \
++	   (strcmp(evt_dirent.d_name, ".")) &&				       \
++	   (strcmp(evt_dirent.d_name, "..")) &&				       \
++	   (!tp_event_has_id(&sys_dirent, &evt_dirent)))
++
++extern int tp_event_has_id(struct dirent *sys_dir, struct dirent *evt_dir);
++extern struct tracepoint_path *tracepoint_id_to_path(u64 config);
+ #endif /* __LIB_TRACE_EVENTS_H */
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index b17b01f..f336cba 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -1,5 +1,4 @@
+ #include "../../../include/linux/hw_breakpoint.h"
+-#include <lk/util.h>
+ #include "../perf.h"
+ #include "evsel.h"
+ #include "parse-options.h"
+@@ -9,7 +8,10 @@
+ #include "symbol.h"
+ #include "cache.h"
+ #include "header.h"
++
+ #include <lk/debugfs.h>
++#include <lk/util.h>
++#include <trace/trace-event.h>
+ 
+ int				nr_counters;
+ 
+@@ -125,106 +127,6 @@ static unsigned long hw_cache_stat[C(MAX)] = {
+  [C(BPU)]	= (CACHE_READ),
+ };
+ 
+-#define for_each_subsystem(sys_dir, sys_dirent, sys_next)	       \
+-	while (!readdir_r(sys_dir, &sys_dirent, &sys_next) && sys_next)	       \
+-	if (sys_dirent.d_type == DT_DIR &&				       \
+-	   (strcmp(sys_dirent.d_name, ".")) &&				       \
+-	   (strcmp(sys_dirent.d_name, "..")))
+-
+-static int tp_event_has_id(struct dirent *sys_dir, struct dirent *evt_dir)
+-{
+-	char evt_path[MAXPATHLEN];
+-	int fd;
+-
+-	snprintf(evt_path, MAXPATHLEN, "%s/%s/%s/id", debugfs_path,
+-			sys_dir->d_name, evt_dir->d_name);
+-	fd = open(evt_path, O_RDONLY);
+-	if (fd < 0)
+-		return -EINVAL;
+-	close(fd);
+-
+-	return 0;
+-}
+-
+-#define for_each_event(sys_dirent, evt_dir, evt_dirent, evt_next)	       \
+-	while (!readdir_r(evt_dir, &evt_dirent, &evt_next) && evt_next)        \
+-	if (evt_dirent.d_type == DT_DIR &&				       \
+-	   (strcmp(evt_dirent.d_name, ".")) &&				       \
+-	   (strcmp(evt_dirent.d_name, "..")) &&				       \
+-	   (!tp_event_has_id(&sys_dirent, &evt_dirent)))
+-
+-#define MAX_EVENT_LENGTH 512
+-
+-
+-struct tracepoint_path *tracepoint_id_to_path(u64 config)
+-{
+-	struct tracepoint_path *path = NULL;
+-	DIR *sys_dir, *evt_dir;
+-	struct dirent *sys_next, *evt_next, sys_dirent, evt_dirent;
+-	char id_buf[4];
+-	int fd;
+-	u64 id;
+-	char evt_path[MAXPATHLEN];
+-	char dir_path[MAXPATHLEN];
+-
+-	if (debugfs_valid_mountpoint(debugfs_path))
+-		return NULL;
+-
+-	sys_dir = opendir(debugfs_path);
+-	if (!sys_dir)
+-		return NULL;
+-
+-	for_each_subsystem(sys_dir, sys_dirent, sys_next) {
+-
+-		snprintf(dir_path, MAXPATHLEN, "%s/%s", debugfs_path,
+-			 sys_dirent.d_name);
+-		evt_dir = opendir(dir_path);
+-		if (!evt_dir)
+-			continue;
+-
+-		for_each_event(sys_dirent, evt_dir, evt_dirent, evt_next) {
+-
+-			snprintf(evt_path, MAXPATHLEN, "%s/%s/id", dir_path,
+-				 evt_dirent.d_name);
+-			fd = open(evt_path, O_RDONLY);
+-			if (fd < 0)
+-				continue;
+-			if (read(fd, id_buf, sizeof(id_buf)) < 0) {
+-				close(fd);
+-				continue;
+-			}
+-			close(fd);
+-			id = atoll(id_buf);
+-			if (id == config) {
+-				closedir(evt_dir);
+-				closedir(sys_dir);
+-				path = zalloc(sizeof(*path));
+-				path->system = malloc(MAX_EVENT_LENGTH);
+-				if (!path->system) {
+-					free(path);
+-					return NULL;
+-				}
+-				path->name = malloc(MAX_EVENT_LENGTH);
+-				if (!path->name) {
+-					free(path->system);
+-					free(path);
+-					return NULL;
+-				}
+-				strncpy(path->system, sys_dirent.d_name,
+-					MAX_EVENT_LENGTH);
+-				strncpy(path->name, evt_dirent.d_name,
+-					MAX_EVENT_LENGTH);
+-				return path;
+-			}
+-		}
+-		closedir(evt_dir);
+-	}
+-
+-	closedir(sys_dir);
+-	return NULL;
+-}
+-
+-#define TP_PATH_LEN (MAX_EVENT_LENGTH * 2 + 1)
+ static const char *tracepoint_id_to_name(u64 config)
+ {
+ 	static char buf[TP_PATH_LEN];
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index c29c407..946dc44 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -23,7 +23,6 @@ struct tracepoint_path {
+ 	struct tracepoint_path *next;
+ };
+ 
+-extern struct tracepoint_path *tracepoint_id_to_path(u64 config);
+ extern bool have_tracepoints(struct list_head *evsel_list);
+ 
+ extern int			nr_counters;
+diff --git a/tools/perf/util/parse-options.h b/tools/perf/util/parse-options.h
+index abc31a1..6bcb9a4 100644
+--- a/tools/perf/util/parse-options.h
++++ b/tools/perf/util/parse-options.h
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <stdbool.h>
++#include <lk/util.h>
+ 
+ enum parse_opt_type {
+ 	/* special types */
 -- 
 1.7.4.rc2
 
