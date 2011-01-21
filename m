@@ -1,65 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532Ab1AUQr2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 11:47:28 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:49702 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752433Ab1AUQr1 (ORCPT
+	id S1754559Ab1AUQy3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 11:54:29 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:43827 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754486Ab1AUQy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 11:47:27 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stuart Swales <stuart.swales.croftnuisk@gmail.com>
-Subject: Re: [PATCH] adfs: add hexadecimal filetype suffix option
-Date: Fri, 21 Jan 2011 17:47:17 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37+; KDE/4.5.1; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org
-References: <4D2DEDDB.1070605@gmail.com> <20110119154915.a0bb2878.akpm@linux-foundation.org> <alpine.DEB.2.00.1101211431490.3490@dc5850.croftnuisk.local>
-In-Reply-To: <alpine.DEB.2.00.1101211431490.3490@dc5850.croftnuisk.local>
+	Fri, 21 Jan 2011 11:54:28 -0500
+Date: Fri, 21 Jan 2011 11:54:25 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Christoph Lameter <cl@linux.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for
+	this_cpu_cmpxchg_double
+Message-ID: <20110121165425.GB11687@Krystal>
+References: <20110106204525.222395863@linux.com> <4D263C91.30709@zytor.com> <alpine.DEB.2.00.1101070907060.3014@router.home> <20110107180419.GB23082@Krystal> <alpine.DEB.2.00.1101071227450.3014@router.home> <20110108172453.GF13269@mtj.dyndns.org> <4D393636.4040607@cs.helsinki.fi> <20110121092649.GA2832@htj.dyndns.org> <4D39A6EB.70705@zytor.com> <20110121154831.GE2832@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101211747.17544.arnd@arndb.de>
-X-Provags-ID: V02:K0:WX5AFsxPURrWVHTQ6GkUTH6Mb/smDDGNLn2cQMqjUUY
- gTzuOMhk5nUOPnJ+YVR5fUsb5u56MRnEE2fTXcrtP8dw3b074I
- eD3tNcF5S2A10srH40OneKPFzpNXpNldlFclVY16dzgTJ84Gsm
- 3WkXdV6bJ6Tm3PwhOf185vhBWPzHnJAHka1FKfatXVatvyC8lF
- Uqi3c+pL2ebhK7HKCB7IQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110121154831.GE2832@htj.dyndns.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 11:26:59 up 58 days, 21:30,  4 users,  load average: 0.00, 0.00,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 21 January 2011 15:34:12 Stuart Swales wrote:
+* Tejun Heo (tj@kernel.org) wrote:
+> Hello, Peter.
 > 
-> [PATCH] adfs: add hexadecimal filetype suffix option
+> On Fri, Jan 21, 2011 at 07:31:55AM -0800, H. Peter Anvin wrote:
+> > I really object to passing two pointers where one of them has to be a
+> > fixed offset to the other.  That really doesn't make any sense.
 > 
-> ADFS (FileCore) storage complies with the RISC OS filetype specification
-> (12 bits of file type information is stored in the file load address, rather
-> than using a file extension).  The existing driver largely ignores this
-> information and does not present it to the end user.
+> Yeah, I hear you, but it really comes down to which ugliness disgusts
+> one the most.  That, unfortunately, is inherently very subjective when
+> there's no significantly better choice.
 > 
-> It is desirable that stored filetypes be made visible to the end user to
-> facilitate a precise copy of data and metadata from a hard disc (or image
-> thereof) into a RISC OS emulator (such as RPCEmu) or to a network share which
-> can be accessed by real Acorn systems.
+> For me, the double parameter thing at least seems to have the
+> advantages of being able to verify the two intended memory locations
+> to be used actually are together and looking ugly reflecting its true
+> nature.
 > 
-> This patch implements a per-mount filetype suffix option (use -o ftsuffix=1)
-> to present any filetype as a ,xyz hexadecimal suffix on each file.  This type
-> suffix is compatible with that used by RISC OS systems that access network
-> servers using NFS client software and by RPCemu's host filing system.
+> The inherent ugliness stems from the fact that we don't have the
+> built-in data type to properly deal with this.  Array of length two
+> might be better fit, but I can see as many downsides with that too.
 > 
-> Signed-off-by: Stuart Swales <stuart.swales.croftnuisk@gmail.com>
+> So, if anyone can give something clearly better for technical reasons,
+> I'll be more than happy to take it, but as it currently stands, it
+> seems we'll have to choose one among uglies and not everyone would be
+> happy about the choice.  :-(
 
-The patch looks fine to me, but it tells me that you have some knowledge
-and interest in this file system. Adfs is currently one of only a handful
-of modules in the kernel that still uses the big kernel lock, because
-nobody so far had enough motivation to fix this.
+Quoting Christoph, from the previous exchange:
 
-Would you be able to take a look at this? The straightforward approach
-would be to add a mutex to adfs_sb_info and use that in place of
-lock_kernel. It's mostly a matter of testing to make sure that no
-deadlocks get introduced in the process.
+"The single large 128 bit scalar does not work. Having to define an
+additional structure it also a bit clumsy. I think its best to get another
+patchset out that also duplicates the first parameter and makes the percpu
+variable specs conform to the other this_cpu ops."
 
-	Arnd
+I'm again probably missing something, but what is "clumsy" about defining a
+structure like the following to ensure proper alignment of the target
+pointer (instead of adding a runtime test) ?
+
+struct cmpxchg_double {
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+        unsigned long low, high;
+#else
+        unsigned long high, low;
+#endif
+} __attribute__((packed, aligned(2 * sizeof(unsigned long))));
+
+(note: packed here along with "aligned" does _not_ generate ugly bytewise
+read/write memory ops like "packed" alone. The use of "packed" is to let the
+compiler down-align the structure to the value requested, instead of uselessly
+aligning it on 32-byte if it chooses to.)
+
+The prototype could then look like:
+
+bool __this_cpu_generic_cmpxchg_double(pcp, oval_low, oval_high, nval_low, nval_high);
+
+With:
+  struct cmpxchg_double *pcp
+
+I think Christoph's point is that he wants to alias this with a pointer. Well,
+this can be done cleanly with:
+
+union {
+        struct cmpxchg_double casdbl;
+        struct {
+                void *ptr;
+                unsigned long cpuid_tid;
+        } t;
+}
+
+So by keeping distinct variables for the oval/nal arguments, we let the compiler
+use registers (instead of the mandatory stack use that would be required if we
+pass union or structures as oval/nval arguments), but we ensure proper alignment
+(and drop the unneeded second pointer, as well as the runtime pointer alignment
+checks) by passing one single pcp pointer of a fixed type with a known
+alignment.
+
+Thoughts ?
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
