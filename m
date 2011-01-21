@@ -1,88 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab1AUHU0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 02:20:26 -0500
-Received: from a.mx.secunet.com ([195.81.216.161]:40243 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750882Ab1AUHUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 02:20:24 -0500
-Date: Fri, 21 Jan 2011 08:20:22 +0100
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: flex_array related problems on selinux policy loading
-Message-ID: <20110121072022.GA3070@secunet.com>
-References: <20110120122659.GD4639@secunet.com>
- <1295537330.9039.583.camel@nimitz>
+	id S1752000Ab1AUHXX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 02:23:23 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:37971 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750872Ab1AUHXW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 02:23:22 -0500
+Date: Fri, 21 Jan 2011 12:53:15 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kosaki.motohiro@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: [REPOST] [PATCH 3/3] Provide control over unmapped pages (v3)
+Message-ID: <20110121072315.GL2897@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20110120123039.30481.81151.stgit@localhost6.localdomain6>
+ <20110120123649.30481.93286.stgit@localhost6.localdomain6>
+ <alpine.DEB.2.00.1101200856310.10695@router.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1295537330.9039.583.camel@nimitz>
+In-Reply-To: <alpine.DEB.2.00.1101200856310.10695@router.home>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 21 Jan 2011 07:20:22.0519 (UTC) FILETIME=[AA843070:01CBB93B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 07:28:50AM -0800, Dave Hansen wrote:
-> On Thu, 2011-01-20 at 13:26 +0100, Steffen Klassert wrote:
-> ...
-> > @@ -187,6 +195,9 @@ int flex_array_put(struct flex_array *fa, unsigned int element_nr, void *src,
-> >  	struct flex_array_part *part;
-> >  	void *dst;
-> > 
-> > +	if (unlikely(ZERO_OR_NULL_PTR(fa)))
-> > +		return 0;
+* Christoph Lameter <cl@linux.com> [2011-01-20 09:00:09]:
+
+> On Thu, 20 Jan 2011, Balbir Singh wrote:
 > 
-> I think it's OK to add these for the array alloc and free cases.  But,
-> it's really dangerous to do it for put.  It has the potential to
-> silently throw away data and then be really confusing to debug when you
-> can't get it back later.
-
-If the pointer to struct flex_array is a ZERO_SIZE_PTR we have to exit
-before we try to dereference the first time as we have not allocated
-anything. We can think about returning an error value in flex_array_put
-if the flex_array is a ZERO_SIZE_PTR. The the user would be notified
-that we could not store his data, but that's all we can do here I think.
-
-Anyway, I just noticed in some functions the line
-
-int part_nr = fa_element_to_part_nr(fa, element_nr);
-
-which already dereferences the flex_array before I test for ZERO_SIZE_PTR.
-So I have to fix this and to resubmit the patch.
-
+> > +	unmapped_page_control
+> > +			[KNL] Available if CONFIG_UNMAPPED_PAGECACHE_CONTROL
+> > +			is enabled. It controls the amount of unmapped memory
+> > +			that is present in the system. This boot option plus
+> > +			vm.min_unmapped_ratio (sysctl) provide granular control
 > 
-> This can only make sense if you have a zero-byte element.  However, this
-> would also just return if you happened to try and insert data in to a
-> zero-length array.  That's a bug we need to catch.  Note that
-> kmem_cache_create() doesn't let you create caches for zero-byte objects.
+> min_unmapped_ratio is there to guarantee that zone reclaim does not
+> reclaim all unmapped pages.
 > 
-> > @@ -215,6 +226,9 @@ int flex_array_clear(struct flex_array *fa, unsigned int element_nr)
-> >  	struct flex_array_part *part;
-> >  	void *dst;
-> > 
-> > +	if (unlikely(ZERO_OR_NULL_PTR(fa)))
-> > +		return 0;
+> What you want here is a max_unmapped_ratio.
+>
+
+I thought about that, the logic for reusing min_unmapped_ratio was to
+keep a limit beyond which unmapped page cache shrinking should stop.
+I think you are suggesting max_unmapped_ratio as the point at which
+shrinking should begin, right?
+ 
 > 
-> I tend to think about the flex_array itself as being more like a
-> kmem_cache than anything else.  So, all of the operations on the array
-> itself, like shrinking and growing are probably OK.
-
-Hm, if either element_size or total_nr_elements is zero on allocation time,
-the maximum size the array can ever have is zero. So I don't see how to
-grow (shrink) anything in this case. Do I miss something here?
-
+> >  {
+> > @@ -2297,6 +2320,12 @@ loop_again:
+> >  				shrink_active_list(SWAP_CLUSTER_MAX, zone,
+> >  							&sc, priority, 0);
+> >
+> > +			/*
+> > +			 * We do unmapped page reclaim once here and once
+> > +			 * below, so that we don't lose out
+> > +			 */
+> > +			reclaim_unmapped_pages(priority, zone, &sc);
+> > +
+> >  			if (!zone_watermark_ok_safe(zone, order,
 > 
-> Can you also pull the unlikely()s?  
-> 
+> Hmmmm. Okay that means background reclaim does it. If so then we also want
+> zone reclaim to be able to work in the background I think.
 
-Usually, when you call flex_array_alloc you want to allocate some memory.
-So I considered a zero size allocation as a rare corner case, like kmalloc
-does. Therefore the unlikely branch predictors made sense for me. Anyway,
-I don't have a strong opinion about the unlikelys, so if you think it is
-better to remove them I'll do so.
+Anything specific you had in mind, works for me in testing, but is
+there anything specific that stands out in your mind that needs to be
+done?
 
-Steffen
+Thanks for the review!
+ 
 
+-- 
+	Three Cheers,
+	Balbir
