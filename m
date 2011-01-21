@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab1AUIdU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 03:33:20 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:33797 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751755Ab1AUIdT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 03:33:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=MzrKBixPaPkcdiR4M3uIuEQ5rDYm/FMBy82LHjFgn454jjmrSJzvpysWB6t2Vuy82A
-         tqmgluXRKmL8CK0/Q3iXDT5LDWKy4xxcvI8lqmZhQ9Ib0biQk+z59b46IIjPfZ+CYinZ
-         l7SO5IVUId3wLDpES79ttFbP+ub7TwN6wlF8I=
-Date: Fri, 21 Jan 2011 10:24:02 +0200
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: nobody <darwinskernel@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: tag&track [Re: Linux 2.6.38-rc1]
-Message-ID: <20110121082402.GA4689@p183.telecom.by>
-References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
- <AANLkTimp0UcWi68N5Jv_hUww9PhGVgCzY0qYLETc8Dj_@mail.gmail.com>
- <1161CC5A-C8CA-477E-B2CE-7870F8E634EE@gmail.com>
- <AANLkTin+Div6HoAJdFOfqRFSMyxqx7ft7mcteXomaV_Y@mail.gmail.com>
- <20110119051049.GA2536@WALL-E>
- <AANLkTikdCek7DGN885Cjuo1nkswe_Y8KG6Knn8XknzsF@mail.gmail.com>
- <20110121032310.GA28289@WALL-E>
+	id S1754401Ab1AUId4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 03:33:56 -0500
+Received: from www.tglx.de ([62.245.132.106]:40375 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751466Ab1AUIdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 03:33:54 -0500
+To: Tony Lindgren <tony@atomide.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-omap@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Cc: balbi@ti.com
+Subject: [PATCH v3] OMAP2/3: clock: fix fint calculation for DPLL_FREQSEL
+From: John Ogness <john.ogness@linutronix.de>
+References: <87ei8726wf.fsf@vostro.fn.ogness.net>
+	<20110120111645.GB2223@legolas.emea.dhcp.ti.com>
+	<8739on1wdd.fsf_-_@vostro.fn.ogness.net>
+	<20110121031553.GA2448@legolas.emea.dhcp.ti.com>
+Date: Fri, 21 Jan 2011 09:33:33 +0100
+In-Reply-To: <20110121031553.GA2448@legolas.emea.dhcp.ti.com> (Felipe Balbi's message of "Fri\, 21 Jan 2011 05\:15\:53 +0200")
+Message-ID: <87y66e3bc2.fsf_-_@vostro.fn.ogness.net>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110121032310.GA28289@WALL-E>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 10:23:10PM -0500, nobody wrote:
-> On Tue, Jan 18, 2011 at 09:42:42PM -0800, Linus Torvalds wrote:
-> > On Tue, Jan 18, 2011 at 9:10 PM, nobody <darwinskernel@gmail.com> wrote:
-> > >
-> > > i wish i could do that for everything. i am pulling up to 500MiB every
-> > > -rc cycle and mostly codes for hardwares i don't have.
-> > 
-> > No you're not.
-> 
-> ... i was lying.
-> 
-> > So no, you're not pulling 500MiB every -rc cycle, unless you're doing
-> > something stupid like using http (which will trigger a re-fetch, since
-> > I end up repacking a couple of times a release) or always re-cloning.
-> 
-> re-cloning to reclaim disk space. but disk space is not the only thing;
-> i can compile a tar release all in ram (1G) but re-cloning 388M into a
-> build directory there is a no go.
+From: John Ogness <john.ogness@linutronix.de>
 
-git-clone -s
+In OMAP35X TRM Rev 2010-05 Figure 7-18 "DPLL With EMI Reduction
+Feature", it is shown that the internal frequency is calculated by
+CLK_IN/(N+1). However, the value passed to _dpll_test_fint() is
+already "N+1" since Linux is using the values to divide by. In the
+technical reference manual, "N" is referring to the divider's register
+value (0-127).
 
-sheesh...
+Signed-off-by: John Ogness <john.ogness@linutronix.de>
+---
+patch v3:
+Patch against linux-next-20110121.
+I have improved the commit message so that it is acceptable for the
+git commit log.
+
+ arch/arm/mach-omap2/clkt_dpll.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/clkt_dpll.c b/arch/arm/mach-omap2/clkt_dpll.c
+index 337392c..acb7ae5 100644
+--- a/arch/arm/mach-omap2/clkt_dpll.c
++++ b/arch/arm/mach-omap2/clkt_dpll.c
+@@ -77,7 +77,7 @@ static int _dpll_test_fint(struct clk *clk, u8 n)
+ 	dd = clk->dpll_data;
+ 
+ 	/* DPLL divider must result in a valid jitter correction val */
+-	fint = clk->parent->rate / (n + 1);
++	fint = clk->parent->rate / n;
+ 	if (fint < DPLL_FINT_BAND1_MIN) {
+ 
+ 		pr_debug("rejecting n=%d due to Fint failure, "
+-- 
+1.5.6.5
