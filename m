@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab1AUCZJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 21:25:09 -0500
-Received: from sycorax.lbl.gov ([128.3.11.121]:46492 "EHLO sycorax.lbl.gov"
+	id S1754090Ab1AUCZe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 21:25:34 -0500
+Received: from mail.perches.com ([173.55.12.10]:3235 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751701Ab1AUCZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 21:25:08 -0500
-From: Alex Romosan <romosan@sycorax.lbl.gov>
-To: linux-kernel@vger.kernel.org
-Cc: xfs@oss.sgi.com
-Subject: Re: xfs used disk space bug in 2.6.38-rc1 (commit 6e857567dbbfe14dd6cc3f7414671b047b1ff5c7)
-References: <87zkqvtet2.fsf@sycorax.lbl.gov>
-Date: Thu, 20 Jan 2011 18:25:05 -0800
-In-Reply-To: <87zkqvtet2.fsf@sycorax.lbl.gov> (message from Alex Romosan on
-	Thu, 20 Jan 2011 14:01:45 -0800)
-Message-ID: <8739onro1q.fsf@sycorax.lbl.gov>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753315Ab1AUCZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 21:25:32 -0500
+Subject: Re: [PATCH 0/7] Nexus One Support
+From: Joe Perches <joe@perches.com>
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: Dima Zavin <dmitriyz@google.com>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        davidb@codeaurora.org
+In-Reply-To: <1295575123.9236.54.camel@m0nster>
+References: <1295555565-21563-1-git-send-email-dwalker@codeaurora.org>
+	 <AANLkTik+HCj9dkD2s4WgwCqKWCXDbdSnKDUbyGfYfaPr@mail.gmail.com>
+	 <1295571359.9236.53.camel@m0nster>  <1295574085.4096.6.camel@Joe-Laptop>
+	 <1295575123.9236.54.camel@m0nster>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 Jan 2011 18:25:30 -0800
+Message-ID: <1295576730.4096.24.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alex Romosan <romosan@sycorax.lbl.gov> writes:
+On Thu, 2011-01-20 at 17:58 -0800, Daniel Walker wrote:
+> On Thu, 2011-01-20 at 17:41 -0800, Joe Perches wrote:
+> > On Thu, 2011-01-20 at 16:55 -0800, Daniel Walker wrote:
+> > > On Thu, 2011-01-20 at 16:42 -0800, Dima Zavin wrote:
+> > > > You are not the author of any of these patches. Where are the author
+> > > > attributions for the team that actually wrote this code?
+> > > In the commit text.. The author field is used to denote who authored the
+> > > commit, which in this case is me.
+> > You have that wrong.
+> > Author and Committer are different git fields.
+> > http://www.kernel.org/pub/software/scm/git/docs/user-manual.html
+> > 
+> >       * an author: The name of the person responsible for this change,
+> >         together with its date.
+> >       * a committer: The name of the person who actually created the
+> >         commit, with the date it was done. This may be different from
+> >         the author, for example, if the author was someone who wrote a
+> >         patch and emailed it to the person who used it to create the
+> >         commit.
+> I'm not even sure how to make these different, but in this case it
+> doesn't matter because the "committer" as you defined it above is more
+> than one person ..
 
-> my home directory is using xfs and i noticed that when i try to compile
-> a program or do any kind of disk access (like git pull, etc) the amount
-> of space used jumps by tens of gigabytes causing the disk to seemingly
-> become full (eventually). on reboot the used disk space goes back to the
-> correct value. i did a 'git bisect start -- fs/xfs' and i tracked it
-> down to commit 6e857567dbbfe14dd6cc3f7414671b047b1ff5c7. if i revert
-> this patch then disk usage doesn't increase unexpectedly (i have 270GB
-> free and the disk became full by simply trying to compile wine). i can
-> try patches if somebody comes up with one.
+Not really, no.
 
-actually, even with that patch reverted the disk usage still creeps up
-eventually so something else is not quite right.
+The authors may be different, but the first git
+committer of the patch is different.
 
---alex--
+The committer is the person that does a git commit
+either directly with git commit or git am.
 
--- 
-| I believe the moment is at hand when, by a paranoiac and active |
-|  advance of the mind, it will be possible (simultaneously with  |
-|  automatism and other passive states) to systematize confusion  |
-|  and thus to help to discredit completely the world of reality. |
+If a git tree is pulled by someone else, the initial
+committer name remains on the commit.
+
+You should keep the original patch author names and
+add your own "Signed-off-by:" and not claim authorship
+of the patches themselves.
+
+cheers, Joe
+
