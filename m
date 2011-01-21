@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753152Ab1AUKX0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 05:23:26 -0500
-Received: from mail-out.m-online.net ([212.18.0.9]:40190 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844Ab1AUKXY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 05:23:24 -0500
-X-Auth-Info: 7GCPMvuR5kzAnsbU/UGhZN+VxwwFbuscDmLI3SNtPMM=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>
-Subject: Re: [PATCH 3/5] RTC: Rework RTC code to use timerlist for events
-References: <1290136329-18291-1-git-send-email-john.stultz@linaro.org>
-	<1290136329-18291-4-git-send-email-john.stultz@linaro.org>
-	<m2hbd378jt.fsf@igel.home> <1295550774.2998.58.camel@work-vm>
-X-Yow: Today, THREE WINOS from DETROIT sold me a framed photo of
- TAB HUNTER before his MAKEOVER!
-Date: Fri, 21 Jan 2011 11:23:22 +0100
-In-Reply-To: <1295550774.2998.58.camel@work-vm> (John Stultz's message of
-	"Thu, 20 Jan 2011 11:12:54 -0800")
-Message-ID: <m262tizhb9.fsf@whitebox.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2.92 (gnu/linux)
+	id S1753518Ab1AUK2s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 05:28:48 -0500
+Received: from www.tglx.de ([62.245.132.106]:33895 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750710Ab1AUK2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 05:28:46 -0500
+Date: Fri, 21 Jan 2011 11:27:59 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sam Ravnborg <sam@ravnborg.org>
+cc: Chris Metcalf <cmetcalf@tilera.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [patch 36/37] tile: Use generic irq Kconfig
+In-Reply-To: <20110120190818.GA22638@merkur.ravnborg.org>
+Message-ID: <alpine.LFD.2.00.1101211127260.2971@localhost6.localdomain6>
+References: <20110119205258.462759212@linutronix.de> <20110119210840.631350392@linutronix.de> <4D3884E3.8050009@tilera.com> <20110120190818.GA22638@merkur.ravnborg.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-John Stultz <john.stultz@linaro.org> writes:
+On Thu, 20 Jan 2011, Sam Ravnborg wrote:
 
-> On Thu, 2011-01-20 at 19:07 +0100, Andreas Schwab wrote:
->> John Stultz <john.stultz@linaro.org> writes:
->> 
->> > This patch reworks a large portion of the generic RTC code
->> > to in-effect virtualize the rtc interrupt code.
->> 
->> That breaks RTC on powermac which uses rtc-generic.
->> 
->> # hwclock 
->> select() to /dev/rtc0 to wait for clock tick timed out
->
-> Actually, can you also send strace output?
+> On Thu, Jan 20, 2011 at 01:54:27PM -0500, Chris Metcalf wrote:
+> > On 1/19/2011 4:50 PM, Thomas Gleixner wrote:
+> > > No functional change.
+> > >
+> > > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > > Cc: Chris Metcalf <cmetcalf@tilera.com>
+> > > ---
+> > >  arch/tile/Kconfig |   16 ++++++----------
+> > >  1 file changed, 6 insertions(+), 10 deletions(-)
+> > >
+> > > Index: linux-2.6/arch/tile/Kconfig
+> > > ===================================================================
+> > > --- linux-2.6.orig/arch/tile/Kconfig
+> > > +++ linux-2.6/arch/tile/Kconfig
+> > > @@ -1,22 +1,18 @@
+> > >  # For a description of the syntax of this configuration file,
+> > >  # see Documentation/kbuild/config-language.txt.
+> > >  
+> > > +config TILE
+> > > +       def_bool y
+> > > +       select HAVE_GENERIC_HARDIRQS
+> > > +       select GENERIC_IRQ_PROBE
+> > > +       select GENERIC_PENDING_IRQ if SMP
+> > > +
+> > >  [...]
+> > 
+> > I'm not sure it's legal to have two "config TILE" blocks in this Kconfig
+> > file; there's already one further down.
 
-ioctl(4, RTC_UIE_ON, 0)                 = 0
-select(5, [4], NULL, NULL, {5, 0})      = 0 (Timeout)
-write(2, "select() to /dev/rtc0 to wait fo"..., 55) = 55
-ioctl(4, RTC_UIE_OFF, 0)                = 0
+Missed that.
+ 
+> It is OK to have two "config TILE" blocks.
+> You should take care of moving the other one up after this goes in.
 
-CONFIG_RTC_INTF_DEV_UIE_EMUL was never enabled, and RTC_UIE_ON returned
-EINVAL before, which caused hwclock to fall back to polling.
+Will consolidate before sending it upstream.
 
-Andreas.
+Thanks,
 
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+	tglx
