@@ -1,32 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754634Ab1AURVJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 12:21:09 -0500
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:42690 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754526Ab1AURVG (ORCPT
+	id S1752958Ab1AURYw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 12:24:52 -0500
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:45936 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751773Ab1AURYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 12:21:06 -0500
+	Fri, 21 Jan 2011 12:24:51 -0500
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: KjlKy.sVM1nq_8MGwf3N4OOSsi8ibFE7Z8ojlHjGVCxdfM1
- 5CqYJ5vAi7b9_LMbh13kAWlmuwB7ue.RcsktZtzvrcJfb0srAtj0Co.lPzr2
- aMgWbDKQDbQHZOeXOUNHr3oPT7cqjenSJUhsKMjQ61TixL0WpvUruG4ttkfB
- KltxiR84xa2ysQXNiVIix3loeLE_NaLi2pVCjakaE4wHrKoi3jS5q0hY_1Hn
- zXbV8uJst4yCpFnFGjHOiac0Z6x9VX1acHcw7dqP5Ho1cExMzNXF4xiXM1Vx
- pZQwCfytef5OjP2HqUuwxtgJET.c1cidwqaDbkkS12orEt7k-
+X-YMail-OSG: 0yWJ2DwVM1k7MQI0sydduBtAngXBzU.t6TLd5CKStNgS0Ww
+ _Ek_0LdgaRPKQx5HK9zDfl71F13CfZBeAwI6szWM8F3Vwj1WzftazkLZY9Zq
+ r1I6AuvZk.hdFmWxMOMPtp38bWYd21LX2v8XnSU1y9Co06OgQRV.xfBHdxT.
+ AtC_uHoNp6.xBdugufjn8mGRizTm.zZFWd3cVl8mza.YQ7282_1xpasqkc_Q
+ Z
 X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 21 Jan 2011 11:21:02 -0600 (CST)
+Date: Fri, 21 Jan 2011 11:24:47 -0600 (CST)
 From: Christoph Lameter <cl@linux.com>
 X-X-Sender: cl@router.home
-To: Tejun Heo <tj@kernel.org>
-cc: "H. Peter Anvin" <hpa@zytor.com>, Pekka Enbeerg <penberg@cs.helsinki.fi>,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Tejun Heo <tj@kernel.org>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        akpm@linux-foundation.org
-Subject: Re: x86: A fast way to check capabilities of the current cpu
-In-Reply-To: <20110121171133.GI2832@htj.dyndns.org>
-Message-ID: <alpine.DEB.2.00.1101211114530.15692@router.home>
-References: <alpine.DEB.2.00.1012151404070.21102@router.home> <20110121171133.GI2832@htj.dyndns.org>
+        Pekka Enberg <penberg@cs.helsinki.fi>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for
+ this_cpu_cmpxchg_double
+In-Reply-To: <1da7491b-6e7d-4453-9c6f-0e7767421ec4@email.android.com>
+Message-ID: <alpine.DEB.2.00.1101211121350.15692@router.home>
+References: <4D263C91.30709@zytor.com> <alpine.DEB.2.00.1101070907060.3014@router.home> <20110107180419.GB23082@Krystal> <alpine.DEB.2.00.1101071227450.3014@router.home> <20110108172453.GF13269@mtj.dyndns.org> <4D393636.4040607@cs.helsinki.fi>
+ <20110121092649.GA2832@htj.dyndns.org> <4D39A6EB.70705@zytor.com> <20110121154831.GE2832@htj.dyndns.org> <20110121165425.GB11687@Krystal> <20110121170847.GH2832@htj.dyndns.org> <1da7491b-6e7d-4453-9c6f-0e7767421ec4@email.android.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -34,37 +35,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Jan 2011, Tejun Heo wrote:
+On Fri, 21 Jan 2011, H. Peter Anvin wrote:
 
-> Hello, Christoph.
->
-> I was trying to forward this to x86 tree but spotted a problem.
->
-> On Wed, Dec 15, 2010 at 02:07:39PM -0600, Christoph Lameter wrote:
-> > +static __always_inline int this_cpu_constant_test_bit(unsigned int nr,
-> > +                        const unsigned long __percpu *addr)
-> > +{
-> > +	unsigned long __percpu *a = (unsigned long *)addr + nr / BITS_PER_LONG;
-> > +
-> > +	return ((1UL << (nr % BITS_PER_LONG)) & percpu_read_stable(*a)) != 0;
-> > +}
->
-> I don't think percpu_read_stable() can be used here.  It's not
-> guaranteed to be stable across different cpus.
+> We could do cmpxchg with a structure... the problem with a lon int type is that Cristoph ran into bugs with __int128 on 64 bits.
 
-Why would that matter? The caller has to disabled preemption anyways since
-otherwise the processor may change which means that the result of the
-operation is useless.
+We also would need to be pass the structure by value (well its really a
+variable but its like passing by value) in order to be similar to the
+other this_cpu_ops
 
-> Also, can we just implement what's necessary on top of this_cpu_has()?
-> this_cpu_has() already has constant handling, so there's no need to
-> add this_cpu_test_bit() at this point.
+You'd want either
 
-Not sure what you mean. this_cpu_test_bit is necessary because
-test_cpu_cap expects a regular pointer and performs a regular load.
-this_cpu_constant_test_bit handles the segment prefix necessary for a per
-cpu load.
+DEFINE_PERCPU(struct mycustomdoublestruct, percpu_dd)
 
-The constant refers to the bit.
+this_cpu_cmpxchg_double(percpu_dd, oldword1, oldword2, newword1, newword2)
+
+with the problem of type checking
+
+or
+
+this_cpu_cmpxchg_double(percpu_dd, old_dd, new_dd)
+
+with the problem of 128 bit constants/structs passed by value.
+
+
 
 
