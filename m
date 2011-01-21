@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355Ab1AUPJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 10:09:29 -0500
-Received: from cantor.suse.de ([195.135.220.2]:46573 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754231Ab1AUPJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 10:09:26 -0500
-Date: Fri, 21 Jan 2011 16:09:25 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Alan Ott <alan@signal11.us>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] HID: Report Descriptor in Sysfs
-In-Reply-To: <4D399DAB.3080808@signal11.us>
-Message-ID: <alpine.LNX.2.00.1101211607290.5725@pobox.suse.cz>
-References: <1295590785-7101-1-git-send-email-alan@signal11.us> <alpine.LNX.2.00.1101211054210.5725@pobox.suse.cz> <4D399DAB.3080808@signal11.us>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754423Ab1AUPKF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 10:10:05 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:36822 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754035Ab1AUPJ4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 10:09:56 -0500
+Subject: Re: Bug in scheduler when using rt_mutex
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>, samu.p.onkalo@nokia.com, mingo@elte.hu,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        tglx <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <20110121150323.GC6051@zhy>
+References: <1295499568.8027.30.camel@marge.simson.net>
+	 <AANLkTikEwgMzco2fHT668Mg3fC-T3EBMUgQQqW-Ojj-Y@mail.gmail.com>
+	 <1295503938.8027.59.camel@marge.simson.net>
+	 <AANLkTi=7YyA-e8HAq+C_prK2EaZKcaTfzDJvmO3e3W=B@mail.gmail.com>
+	 <1295512625.8027.88.camel@marge.simson.net>
+	 <AANLkTi=WhLy=4MNdm-HaOUOmbKXsNSJojnzqRTYp6qop@mail.gmail.com>
+	 <1295518047.8027.104.camel@marge.simson.net>
+	 <1295608136.28776.266.camel@laptop> <20110121122412.GA5071@zhy>
+	 <1295617258.28776.274.camel@laptop>  <20110121150323.GC6051@zhy>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 21 Jan 2011 16:10:27 +0100
+Message-ID: <1295622627.28776.295.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Jan 2011, Alan Ott wrote:
+On Fri, 2011-01-21 at 23:03 +0800, Yong Zhang wrote:
+> On Fri, Jan 21, 2011 at 02:40:58PM +0100, Peter Zijlstra wrote:
+> > On Fri, 2011-01-21 at 20:24 +0800, Yong Zhang wrote:
+> > > > Index: linux-2.6/kernel/sched.c
+> > > > ===================================================================
+> > > > --- linux-2.6.orig/kernel/sched.c
+> > > > +++ linux-2.6/kernel/sched.c
+> > > > @@ -2624,6 +2624,8 @@ void sched_fork(struct task_struct *p, i
+> > > >  
+> > > >       if (!rt_prio(p->prio))
+> > > >               p->sched_class = &fair_sched_class;
+> > > > +     else
+> > > > +             p->se.vruntime = 0;
+> > > 
+> > > This can be moved to __sched_fork() 
+> > 
+> > But we cannot do it unconditionally, we want to inherit the parent's
+> > ->vruntime when we're a fair task clone.
+> 
+> Doesn't task_fork_fair()(which is called after __sched_fork())
+> take the inherit job?
+> 
+> Am I missing something?
 
-> Maybe it is. To be honest I didn't check debugfs. I have two concerns about
-> it:
-> 1. Is it wise for userspace programs to rely on:
-
-Ah, I didn't realize that you want it to be used by some acutal userspace 
-applications. Out of curiosity -- what is the usage pattern you are 
-targetting?
-
-The idea behind debugfs-provided userspace descriptor is that driver 
-developer is easily able to inspect the descriptor, and write a kernel 
-driver that fixes it up in case it is bogus.
-There were also efforts to make the report descriptor replaceable in a 
-request_firmware() way, but that never converged to state in which it 
-could be applied IIRC.
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Ah, indeed, we do the place_entity(.initial=1) thing there
+unconditionally. For some reason I thought we relied on the inherited
+vruntime.
