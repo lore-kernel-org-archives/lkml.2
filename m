@@ -1,50 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129Ab1AUSUN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 13:20:13 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:52518 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752082Ab1AUSUM (ORCPT
+	id S1753836Ab1AUSUT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 13:20:19 -0500
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:29654 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753166Ab1AUSUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 13:20:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:subject:from:to:mime-version;
-        b=KTn0c+tLw3roFbqE19ElwaiEU9n3Nid4oAx7U0T18Pk85YkEbjHpXlNJ4L8cLkKSeA
-         t9kaiJABVjBSai5NbI6qByToqg/Sq1xRW+6biagBfsjYN9O/RGHf6udjCO7LyWVfjafQ
-         UZqQED8DCuINiWPACbIjFIcpzdYtNjjcxw5eU=
-Message-ID: <4d39ce58.cc7e0e0a.5448.59e4@mx.google.com>
-Date: Fri, 21 Jan 2011 10:20:08 -0800 (PST)
-Subject: 'autogroup' sched code KILLING responsiveness
-From: Michael Witten <mfwitten@gmail.com>
-To: linux-kernel@vger.kernel.org
-MIME-version: 1.0
+	Fri, 21 Jan 2011 13:20:16 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: Hia3cwAVM1mZ3gnWo3r2xVUSEQT57HOZzkmTUwD3GM1meUG
+ 3Oc_D6V3otokrdDrPS9Z7bCQ5RunXHPILExt8m_iBPxgjRUTzftZrStSGBve
+ XyCGO813fTIDy0Rvvealftn8PvMc2kql9Q_amugLUScXegfmGAlxWRWe49aK
+ A8DTKgqZXAiX.b7IRmGZLPDuyv0qt1N6FDc_e0VAeS4egcvoM93VOYre1G9C
+ O
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 21 Jan 2011 12:20:12 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Tejun Heo <tj@kernel.org>
+cc: "H. Peter Anvin" <hpa@zytor.com>, Pekka Enbeerg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        akpm@linux-foundation.org
+Subject: Re: x86: A fast way to check capabilities of the current cpu
+In-Reply-To: <20110121181250.GA22824@htj.dyndns.org>
+Message-ID: <alpine.DEB.2.00.1101211215220.15692@router.home>
+References: <alpine.DEB.2.00.1012151404070.21102@router.home> <20110121171133.GI2832@htj.dyndns.org> <alpine.DEB.2.00.1101211114530.15692@router.home> <20110121172836.GK2832@htj.dyndns.org> <alpine.DEB.2.00.1101211139330.15692@router.home>
+ <20110121174817.GM2832@htj.dyndns.org> <alpine.DEB.2.00.1101211155150.15692@router.home> <20110121181250.GA22824@htj.dyndns.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bisecting shows that this commit:
 
-  5091faa449ee0b7d73bc296a93bca9540fc51d0a
-  sched: Add 'autogroup' scheduling feature: automated per session task groups
-  Date:   Tue Nov 30 14:18:03 2010 +0100
 
-is the reason that my computer has become unusable.
+On Fri, 21 Jan 2011, Tejun Heo wrote:
 
-With that code in place, a resource-intensive activity (such as
-compiling the Linux kernel) causes my computer to become
-unresponsive for many seconds at a time; the entire screen
-does not refresh, typed keys are dropped or are handled very
-late, etc (even in Linux's plain virtual consoles).
+> On Fri, Jan 21, 2011 at 11:57:09AM -0600, Christoph Lameter wrote:
+> > > Hmm?  asm/percpu.h gets included by linux/percpu.h, so it would end up
+> > > in most .c files.
+> >
+> > The function is defined in arch/x86/include/asm/percpu.h. At least my
+> > patches here are that way.
+> >
+> > #include "asm/percpu.h" will get you include/asm-generic/percpu.h on
+> > other arches.
+>
+> Yeah, I was referring to generic code having visibility to the x86
+> specific this_cpu op which isn't available on other archs.  I don't
+> feel too strong about it so if you don't like it, just add a comment.
 
-I'm using a uniprocessor (UP) machine, and I've noticed that such
-codepaths often get clobbered by changes that only make it to SMP
-configurations (I guess kernel hackers have better equipment than
-I do); maybe that has something to do with it.
+The code segments in generic code that use this function are in #ifdef
+CONFIG_X86 sections.
 
-I'm a laymen, so all I can do at this time is report my experience;
-if this has already been discussed, I would appeciate a link to
-the right thread.
+Where do you want me to add a comment?
 
-Sincerely,
-Michael Witten
+In include/x86/include/asm/percpu.h saying that the operations defined
+there are x86 specific? Or in the #ifdef CONFIG_X86 sections saying that
+the this_cpu_has operations are x86 specific?
+
+
+
+Code snippet from drivers/acpi/processor_throttling.c
+
+...
+
+#ifdef CONFIG_X86
+static int acpi_throttling_rdmsr(u64 *value)
+{
+        u64 msr_high, msr_low;
+        u64 msr = 0;
+        int ret = -1;
+
+        if ((this_cpu_read(cpu_info.x86_vendor) != X86_VENDOR_INTEL) ||
+                !this_cpu_has(X86_FEATURE_ACPI)) {
+                printk(KERN_ERR PREFIX
+                        "HARDWARE addr space,NOT supported yet\n");
+        } else {
+                msr_low = 0;
+                msr_high = 0;
+                rdmsr_safe(MSR_IA32_THERM_CONTROL,
+                        (u32 *)&msr_low , (u32 *) &msr_high);
+                msr = (msr_high << 32) | msr_low;
+                *value = (u64) msr;
+                ret = 0;
+        }
+        return ret;
+}
+
+
