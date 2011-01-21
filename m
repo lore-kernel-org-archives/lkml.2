@@ -1,48 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751647Ab1AUFmX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 00:42:23 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51933 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab1AUFmS (ORCPT
+	id S1751441Ab1AUFzT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 00:55:19 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45041 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750695Ab1AUFzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 00:42:18 -0500
-MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 20 Jan 2011 22:41:58 -0700
-X-Google-Sender-Auth: Pqm6_HoxBcs7cuDs49qusKtRYpU
-Message-ID: <AANLkTinuAQb_OyfoA-8ivgC7MnQYfiMai2wQKjtOj_-K@mail.gmail.com>
-Subject: [git pull] devicetree build failure fix
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linuxppc-dev <linuxppc-dev@ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 21 Jan 2011 00:55:16 -0500
+Date: Thu, 20 Jan 2011 21:55:02 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: sedat.dilek@gmail.com
+Cc: Sedat Dilek <sedat.dilek@googlemail.com>, Matthew Garrett <mjg@redhat.com>,
+        DRI <dri-devel@lists.freedesktop.org>, intel-gfx@lists.freedesktop.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org
+Subject: Re: [Intel-gfx] [PATCH 2/5] i915: Add native backlight control
+Message-Id: <20110120215502.2305532b.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTimogiJMKkcgfOCJHxpyZHcB36+xzRFgkqWPOiv_@mail.gmail.com>
+References: <AANLkTimogiJMKkcgfOCJHxpyZHcB36+xzRFgkqWPOiv_@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, 21 Jan 2011 06:36:54 +0100 Sedat Dilek <sedat.dilek@googlemail.com> wrote:
 
-Here's a fix for a stupid bug I introduced.
+> ( Original posting from [1] )
+> 
+> I have the backlight-type patchset for months in my patch-series (and
+> maintained them if necessary against daily linux-next).
+> Also the last series from 14-Jan-2011 (see 1-5 patch from [2] and the
+> following ones at dri-devel ML).
+> 
+> If you couldn't find the updated v2 radeon-backlight-type patch, here
+> the extract from my patch-series:
+> ...
+> # Patch from <https://patchwork.kernel.org/patch/491351/>
+> + backlight-type/v2-drm-radeon-kms-Expose-backlight-class-device-for-legacy-LVDS-encoder.patch
+> ...
+> 
+> I can only speak for the radeon(-KMS) part with
+> CONFIG_BACKLIGHT_CLASS_DEVICE=y set and against linux-next: It worked,
+> it works.
+> 
+> I am a bit angry that someone of the "big 5" gets immediately an
+> answer where mine is ignored [3].
 
-g.
+Well, who were they sent to?
 
-The following changes since commit c56eb8fb6dccb83d9fe62fd4dc00c834de9bc470:
+If it was dri-devel then perhaps the people there felt it was
+inappropriate to their tree, or they were all busy fixing
+100000000000000 regressions.
 
-  Linux 2.6.38-rc1 (2011-01-18 15:14:02 -0800)
+If it was Richard then he's been distracted by other things for some
+time, which is why I recently started handling backlight and leds
+patches.
 
-are available in the git repository at:
-  git://git.secretlab.ca/git/linux-2.6 devicetree/merge
+If it was me then kick me, but I don't think it was.
 
-Grant Likely (1):
-      powerpc/83xx: fix build failures on dt compatible list.
+In general, if you think that patches aren't getting attention then let
+me know and send them to me - harassing people for you is part of my
+job description.
 
- arch/powerpc/platforms/83xx/mpc830x_rdb.c |    4 ++--
- arch/powerpc/platforms/83xx/mpc831x_rdb.c |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+> So dear Mr. AKPM, if you can standstill for a few moments to answer
+> only one of my questions, through which kernel-tree will this patchset
+> walk trough?
+
+leds and backlight patches are presently getting merged into my tree
+and I'm sending them into Linus.  I make sure that Richard sees them
+all and when he finds time he helps review them for us.
+
+They should turn up in linux-next too - we're working on that.
 
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+This particular patch series is theoretically a bit late for 2.6.38,
+but if anyone thinks that's a wrong decision, feel free to explain why.
+
