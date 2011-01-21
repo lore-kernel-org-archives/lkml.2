@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064Ab1AVAOu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 19:14:50 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:35541 "HELO
+	id S1755111Ab1AVAO5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 19:14:57 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:46707 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755043Ab1AVAOs (ORCPT
+	with SMTP id S1755072Ab1AVAOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 19:14:48 -0500
+	Fri, 21 Jan 2011 19:14:55 -0500
 X-Authenticated: #911537
-X-Provags-ID: V01U2FsdGVkX1/MjMAPAjXMyOifTKMWAz88AfShJNbYwEdZUjGaGs
-	NyMnLlsA3nQC9+
+X-Provags-ID: V01U2FsdGVkX1++zy86QKG+ywLcUlw/wmIZ0mWVcOneZ2vKD3qbbF
+	OBIjYSmg2W4StX
 From: Torben Hohn <torbenh@gmx.de>
 To: linux-kernel@vger.kernel.org
 Cc: tglx@linutronix.de, johnstul@us.ibm.com, hch@infradead.org,
         yong.zhang0@gmail.com, Torben Hohn <torbenh@gmx.de>
-Subject: [PATCH 13/18] m68k: switch do_timer() to xtime_update()
-Date: Sat, 22 Jan 2011 00:06:59 +0100
-Message-Id: <1295651224-29823-14-git-send-email-torbenh@gmx.de>
+Subject: [PATCH 18/18] make do_timer() and xtime_lock private to the timer code
+Date: Sat, 22 Jan 2011 00:07:04 +0100
+Message-Id: <1295651224-29823-19-git-send-email-torbenh@gmx.de>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1295651224-29823-1-git-send-email-torbenh@gmx.de>
 References: <1295651224-29823-1-git-send-email-torbenh@gmx.de>
@@ -25,120 +25,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xtime_update() properly takes the xtime_lock
+this commit finishes the xtime_lock cleanup.
+arch code is now using xtime_update().
+
+and do_timer() and xtime_lock are declared in kernel/time/timer-internal.h
+i did not use tick-internal.h because it would have meant that i needed
+to include some more stuff in kernel/time/ntp.c
 
 Signed-off-by: Torben Hohn <torbenh@gmx.de>
 ---
- arch/m68k/bvme6000/config.c  |    4 ++--
- arch/m68k/kernel/time.c      |    4 ++--
- arch/m68k/mvme147/config.c   |    4 ++--
- arch/m68k/mvme16x/config.c   |    4 ++--
- arch/m68k/sun3/sun3ints.c    |    2 +-
- arch/m68knommu/kernel/time.c |    8 ++------
- 6 files changed, 11 insertions(+), 15 deletions(-)
+ include/linux/sched.h        |    1 -
+ include/linux/time.h         |    2 --
+ kernel/hrtimer.c             |    2 ++
+ kernel/time/ntp.c            |    2 ++
+ kernel/time/tick-common.c    |    1 +
+ kernel/time/tick-sched.c     |    1 +
+ kernel/time/timer-internal.h |    7 +++++++
+ 7 files changed, 13 insertions(+), 3 deletions(-)
+ create mode 100644 kernel/time/timer-internal.h
 
-diff --git a/arch/m68k/bvme6000/config.c b/arch/m68k/bvme6000/config.c
-index 9fe6fef..1edd950 100644
---- a/arch/m68k/bvme6000/config.c
-+++ b/arch/m68k/bvme6000/config.c
-@@ -45,8 +45,8 @@ extern int bvme6000_set_clock_mmss (unsigned long);
- extern void bvme6000_reset (void);
- void bvme6000_set_vectors (void);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 9d9a078..cdef640 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2049,7 +2049,6 @@ extern void release_uids(struct user_namespace *ns);
  
--/* Save tick handler routine pointer, will point to do_timer() in
-- * kernel/sched.c, called via bvme6000_process_int() */
-+/* Save tick handler routine pointer, will point to xtime_update() in
-+ * kernel/timer/timekeeping.c, called via bvme6000_process_int() */
+ #include <asm/current.h>
  
- static irq_handler_t tick_handler;
+-extern void do_timer(unsigned long ticks);
+ extern void xtime_update(unsigned long ticks);
  
-diff --git a/arch/m68k/kernel/time.c b/arch/m68k/kernel/time.c
-index 06438da..18b34ee 100644
---- a/arch/m68k/kernel/time.c
-+++ b/arch/m68k/kernel/time.c
-@@ -37,11 +37,11 @@ static inline int set_rtc_mmss(unsigned long nowtime)
+ extern int wake_up_state(struct task_struct *tsk, unsigned int state);
+diff --git a/include/linux/time.h b/include/linux/time.h
+index 1e6d3b5..4a324ac 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -113,8 +113,6 @@ static inline struct timespec timespec_sub(struct timespec lhs,
+ #define timespec_valid(ts) \
+ 	(((ts)->tv_sec >= 0) && (((unsigned long) (ts)->tv_nsec) < NSEC_PER_SEC))
+ 
+-extern seqlock_t xtime_lock;
+-
+ extern void read_persistent_clock(struct timespec *ts);
+ extern void read_boot_clock(struct timespec *ts);
+ extern int update_persistent_clock(struct timespec now);
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 0c8d7c0..63f4714 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -50,6 +50,8 @@
+ 
+ #include <trace/events/timer.h>
+ 
++#include "time/timer-internal.h"
++
+ /*
+  * The timer bases:
+  *
+diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
+index 5c00242..f3b47ad 100644
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -16,6 +16,8 @@
+ #include <linux/mm.h>
+ #include <linux/module.h>
+ 
++#include "timer-internal.h"
++
+ /*
+  * NTP timekeeping variables:
+  */
+diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
+index 051bc80..7ff565b 100644
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -23,6 +23,7 @@
+ #include <asm/irq_regs.h>
+ 
+ #include "tick-internal.h"
++#include "timer-internal.h"
  
  /*
-  * timer_interrupt() needs to keep up the real-time clock,
-- * as well as call the "do_timer()" routine every clocktick
-+ * as well as call the "xtime_update()" routine every clocktick
-  */
- static irqreturn_t timer_interrupt(int irq, void *dummy)
- {
--	do_timer(1);
-+	xtime_update(1);
- 	update_process_times(user_mode(get_irq_regs()));
- 	profile_tick(CPU_PROFILING);
+  * Tick devices
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 3e216e0..ad67e55 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -25,6 +25,7 @@
+ #include <asm/irq_regs.h>
  
-diff --git a/arch/m68k/mvme147/config.c b/arch/m68k/mvme147/config.c
-index 100baaa..6cb9c3a 100644
---- a/arch/m68k/mvme147/config.c
-+++ b/arch/m68k/mvme147/config.c
-@@ -46,8 +46,8 @@ extern void mvme147_reset (void);
+ #include "tick-internal.h"
++#include "timer-internal.h"
  
- static int bcd2int (unsigned char b);
- 
--/* Save tick handler routine pointer, will point to do_timer() in
-- * kernel/sched.c, called via mvme147_process_int() */
-+/* Save tick handler routine pointer, will point to xtime_update() in
-+ * kernel/time/timekeeping.c, called via mvme147_process_int() */
- 
- irq_handler_t tick_handler;
- 
-diff --git a/arch/m68k/mvme16x/config.c b/arch/m68k/mvme16x/config.c
-index 11edf61..0b28e26 100644
---- a/arch/m68k/mvme16x/config.c
-+++ b/arch/m68k/mvme16x/config.c
-@@ -51,8 +51,8 @@ extern void mvme16x_reset (void);
- 
- int bcd2int (unsigned char b);
- 
--/* Save tick handler routine pointer, will point to do_timer() in
-- * kernel/sched.c, called via mvme16x_process_int() */
-+/* Save tick handler routine pointer, will point to xtime_update() in
-+ * kernel/time/timekeeping.c, called via mvme16x_process_int() */
- 
- static irq_handler_t tick_handler;
- 
-diff --git a/arch/m68k/sun3/sun3ints.c b/arch/m68k/sun3/sun3ints.c
-index 2d9e21b..6464ad3 100644
---- a/arch/m68k/sun3/sun3ints.c
-+++ b/arch/m68k/sun3/sun3ints.c
-@@ -66,7 +66,7 @@ static irqreturn_t sun3_int5(int irq, void *dev_id)
- #ifdef CONFIG_SUN3
- 	intersil_clear();
- #endif
--        do_timer(1);
-+	xtime_update(1);
- 	update_process_times(user_mode(get_irq_regs()));
-         if (!(kstat_cpu(0).irqs[irq] % 20))
-                 sun3_leds(led_pattern[(kstat_cpu(0).irqs[irq] % 160) / 20]);
-diff --git a/arch/m68knommu/kernel/time.c b/arch/m68knommu/kernel/time.c
-index d6ac2a4..6623909 100644
---- a/arch/m68knommu/kernel/time.c
-+++ b/arch/m68knommu/kernel/time.c
-@@ -36,7 +36,7 @@ static inline int set_rtc_mmss(unsigned long nowtime)
- #ifndef CONFIG_GENERIC_CLOCKEVENTS
  /*
-  * timer_interrupt() needs to keep up the real-time clock,
-- * as well as call the "do_timer()" routine every clocktick
-+ * as well as call the "xtime_update()" routine every clocktick
-  */
- irqreturn_t arch_timer_interrupt(int irq, void *dummy)
- {
-@@ -44,11 +44,7 @@ irqreturn_t arch_timer_interrupt(int irq, void *dummy)
- 	if (current->pid)
- 		profile_tick(CPU_PROFILING);
- 
--	write_seqlock(&xtime_lock);
--
--	do_timer(1);
--
--	write_sequnlock(&xtime_lock);
-+	xtime_update(1);
- 
- 	update_process_times(user_mode(get_irq_regs()));
- 
+  * Per cpu nohz control structure
+diff --git a/kernel/time/timer-internal.h b/kernel/time/timer-internal.h
+new file mode 100644
+index 0000000..f84a499
+--- /dev/null
++++ b/kernel/time/timer-internal.h
+@@ -0,0 +1,7 @@
++/*
++ * timer internal variable and functions
++ */
++
++extern void do_timer(unsigned long ticks);
++extern seqlock_t xtime_lock;
++
 -- 
 1.7.2.3
 
