@@ -1,15 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab1AUUZr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 15:25:47 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:45248 "EHLO relay.sgi.com"
+	id S1754889Ab1AUUZt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 15:25:49 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:45256 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752924Ab1AUUZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 15:25:05 -0500
-Message-Id: <20110121202504.354385643@gulag1.americas.sgi.com>
-References: <20110121202502.090169599@gulag1.americas.sgi.com>
+	id S1753020Ab1AUUZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 15:25:06 -0500
+Message-Id: <20110121202502.090169599@gulag1.americas.sgi.com>
 User-Agent: quilt/0.46-1
-Date: Fri, 21 Jan 2011 14:25:07 -0600
+Date: Fri, 21 Jan 2011 14:25:02 -0600
 From: Mike Travis <travis@sgi.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
         Len Brown <len.brown@intel.com>, "H. Peter Anvin" <hpa@zytor.com>
@@ -17,75 +16,50 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Jack Steiner <steiner@sgi.com>,
         Robin Holt <holt@sgi.com>, Lori Gilbertson <loriann@sgi.com>,
         x86@kernel.org, linux-acpi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 5/6] x86: Minimize SRAT messages
-Content-Disposition: inline; filename=minimize-srat-msgs
+Subject: [PATCH 0/6] init: Shrink early messages to prevent overflowing the kernel log buffer
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Condense the SRAT: messages to show all APIC id's for the
-node on a single line.
 
-v1: Added pertinent __init & __initdata specifiers.
+On larger systems, information in the kernel log is lost because
+there is so much early text printed, that it overflows the static
+log buffer before the log_buf_len kernel parameter can be processed,
+and a bigger log buffer allocated.
 
-Signed-off-by: Mike Travis <travis@sgi.com>
-Reviewed-by: Jack Steiner <steiner@sgi.com>
-Reviewed-by: Robin Holt <holt@sgi.com>
----
- arch/x86/mm/srat_64.c |   16 ++++++++++++----
- drivers/acpi/numa.c   |    3 +++
- 2 files changed, 15 insertions(+), 4 deletions(-)
+Distros are relunctant to increase memory usage by increasing the
+size of the static log buffer, so minimize the problem by allocating
+the new log buffer as early as possible, and reducing the amount
+of characters those early messages generate.
 
---- linux-2.6.32.orig/arch/x86/mm/srat_64.c
-+++ linux-2.6.32/arch/x86/mm/srat_64.c
-@@ -115,6 +115,7 @@ acpi_numa_x2apic_affinity_init(struct ac
- {
- 	int pxm, node;
- 	int apic_id;
-+	static int __initdata last_node = -1, last_pxm = -1;
- 
- 	if (srat_disabled())
- 		return;
-@@ -136,8 +137,16 @@ acpi_numa_x2apic_affinity_init(struct ac
- 	apicid_to_node[apic_id] = node;
- 	node_set(node, cpu_nodes_parsed);
- 	acpi_numa = 1;
--	printk(KERN_INFO "SRAT: PXM %u -> APIC %u -> Node %u\n",
--	       pxm, apic_id, node);
-+	if (node != last_node) {
-+		pr_info("SRAT: Node %u: PXM:APIC %u:%u",
-+		       node, pxm, apic_id);
-+		last_node = node;
-+		last_pxm = pxm;
-+	} else if (pxm != last_pxm) {
-+		pr_cont(" %u:%u", pxm, apic_id);
-+		last_pxm = pxm;
-+	} else
-+		pr_cont(" :%u", apic_id);
- }
- 
- /* Callback for Proximity Domain -> LAPIC mapping */
-@@ -294,8 +303,7 @@ acpi_numa_memory_affinity_init(struct ac
- 			nd->end = end;
- 	}
- 
--	printk(KERN_INFO "SRAT: Node %u PXM %u %lx-%lx\n", node, pxm,
--	       start, end);
-+	pr_info("SRAT: Node %u PXM %u %lx+%lx\n", node, pxm, start, end-start);
- 	e820_register_active_regions(node, start >> PAGE_SHIFT,
- 				     end >> PAGE_SHIFT);
- 
---- linux-2.6.32.orig/drivers/acpi/numa.c
-+++ linux-2.6.32/drivers/acpi/numa.c
-@@ -290,6 +290,9 @@ int __init acpi_numa_init(void)
- 	if (!acpi_table_parse(ACPI_SIG_SRAT, acpi_parse_srat)) {
- 		acpi_table_parse_srat(ACPI_SRAT_TYPE_X2APIC_CPU_AFFINITY,
- 				      acpi_parse_x2apic_affinity, NR_CPUS);
-+		/* insure trailing newline is output */
-+		pr_cont("\n");
-+
- 		acpi_table_parse_srat(ACPI_SRAT_TYPE_CPU_AFFINITY,
- 				      acpi_parse_processor_affinity, NR_CPUS);
- 		acpi_table_parse_srat(ACPI_SRAT_TYPE_MEMORY_AFFINITY,
+Some stats from testing these changes on our current lab UV systems.
+(Both of these systems lost all of the e820 and EFI memmap ranges
+before the changes.)
+
+System X:
+	8,793,945,145,344 bytes of system memory
+	256 nodes
+	599 EFI Mem ranges
+	4096 cpu_ids
+	43% of static log buffer unused
+
+System Y:
+	11,779,115,188,224 bytes of system memory
+	492 Nodes
+	976 EFI Mem ranges
+	1968 cpu_ids
+	17% of static log buffer unused
+
+The last stat is how close the static log buffer came
+to overflowing.  While these resources are fairly close
+to today's max limits, there is not a lot of head room
+for growth.
+
+An alternative for the future might be to create a larger
+static log buffer in the __initdata section, and then
+always allocate a dynamically sized log buffer to replace
+it.  This would also allow shrinking the log buffer for
+memory tight situations.  But it would add complexity to
+the code.
 
 -- 
