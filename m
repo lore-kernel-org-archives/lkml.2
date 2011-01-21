@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab1AUSKz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 13:10:55 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:57151 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752675Ab1AUSKy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 13:10:54 -0500
-Date: Fri, 21 Jan 2011 13:10:51 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+	id S1752675Ab1AUSLs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 13:11:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63347 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751181Ab1AUSLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 13:11:47 -0500
+Date: Fri, 21 Jan 2011 18:36:18 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
 To: Christoph Lameter <cl@linux.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for
-	this_cpu_cmpxchg_double
-Message-ID: <20110121181051.GC12150@Krystal>
-References: <4D393636.4040607@cs.helsinki.fi> <20110121092649.GA2832@htj.dyndns.org> <4D39A6EB.70705@zytor.com> <20110121154831.GE2832@htj.dyndns.org> <20110121165425.GB11687@Krystal> <20110121170847.GH2832@htj.dyndns.org> <1da7491b-6e7d-4453-9c6f-0e7767421ec4@email.android.com> <alpine.DEB.2.00.1101211121350.15692@router.home> <20110121174236.GA12150@Krystal> <alpine.DEB.2.00.1101211146320.15692@router.home>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH 1/3] When migrate_pages returns 0, all pages must have
+ been released
+Message-ID: <20110121173618.GH9506@random.random>
+References: <f60d811fd1abcb68d40ac19af35881d700a97cd2.1295539829.git.minchan.kim@gmail.com>
+ <alpine.DEB.2.00.1101201130100.10695@router.home>
+ <20110120182444.GA9506@random.random>
+ <alpine.DEB.2.00.1101201233001.20633@router.home>
+ <20110120212841.GB9506@random.random>
+ <alpine.DEB.2.00.1101211005150.14313@router.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1101211146320.15692@router.home>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 12:54:11 up 58 days, 22:57,  4 users,  load average: 0.01, 0.01,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.DEB.2.00.1101211005150.14313@router.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Christoph Lameter (cl@linux.com) wrote:
-> On Fri, 21 Jan 2011, Mathieu Desnoyers wrote:
+On Fri, Jan 21, 2011 at 10:11:03AM -0600, Christoph Lameter wrote:
+> On Thu, 20 Jan 2011, Andrea Arcangeli wrote:
 > 
-> > > this_cpu_cmpxchg_double(percpu_dd, oldword1, oldword2, newword1, newword2)
-> > >
-> > > with the problem of type checking
-> >
-> > What is the problem with type checking here ?
+> > Which following putback_lru_page()?  You mean
+> > putback_lru_page(newpage)? That is for the newly allocated page
+> > (allocated at the very top, so always needed), it's not relevant to
+> > the page_count(page) = 1. The page_count 1 is hold by the caller, so
+> > it's leaking memory right now (for everything but compaction).
 > 
-> You need to know the fields in the struct to do the type checking with
-> each of the other parameters.
+> Ahh yes we removed the putback_lru_pages call from migrate_pages()
+> and broke the existing release logic. The caller has to call
+> putback_release_pages() as per commit
 
-Isn't that a bit much to try to match the type of each oldword/newword
-parameter to the structure fields ? Having separated word 1-2 parameter is just
-an artefact caused by the inability of some gcc to deal with int128; were we to
-use int128, we would have none of this type-checking whatsoever.
+putback_lru_paeges
 
-We could simply check that the first parameter alignment is >= 2 * sizeof(long)
-and that its size == 2 * sizeof(long), so that the layout in memory fits the
-cmpxchg_double requirements. This should work both for structure and array
-parameters.
+> cf608ac19c95804dc2df43b1f4f9e068aa9034ab
 
-Now if the user needs to map "oldword1, oldword2" to the actual percpu_dd
-fields, we could ensure that the order of these two parameters actually match
-the structure field or array index order. This would, of course, be documented
-above this_cpu_cmpxchg_double().
+That is the very commit that introduced the two bugs that I've fixed
+by code review.
 
 > 
-> > We could use a gcc builtin like the following to check if the alignment of
-> > "percpu_dd" meets the double-cas requirements:
-> >
-> > #define testmacro(a, b) \
-> >         __builtin_choose_expr(__alignof__(a) >= 2 * sizeof(unsigned long), \
-> >                               ((a).low) = (b), \    /* success */
-> >                               ((a).low) = (void) 0) /* compile-error */
-> >
-> > > or
-> > >
-> > > this_cpu_cmpxchg_double(percpu_dd, old_dd, new_dd)
-> > >
-> > > with the problem of 128 bit constants/structs passed by value.
-> >
-> > Yeah, I guess trying to deal with 128-bit value might be a bit tricky. But
-> > having something sane and with compile-time-checked alignment for the percpu_dd
-> > type is not to be looked over.
-> 
-> The existing implementation could be equipped to do a compile time check
-> for the proper alignment if the pointer passed is constant.
+> If that is still the case then we still have the double free.
 
-"if the pointer passed is constant" -> if you use the actual type of percpu_dd
-to check the alignment, then you can do an alignment check at compile-time even
-for a non-const parameter. The requirement imposed on typing will take care to
-make sure that even a non-const pointer will have the proper alignment.
+The caller only calls putback_lru_pages if ret != 0 (the two cases you
+refer to happen with ret = 0).
 
-Thanks,
+Even if caller unconditionally calls putback_lru_pages (kind of what
+compaction did), it can't double free because migrate_pages already
+unlinked the pages before calling putback_lru_page(page), so there's
+no way to do a double free (however if the caller unconditionally
+called putback_lru_pages there would be no memleak to fix, but it
+doesn't).
 
-Mathieu
+> Could we please document the calling conventions exactly in the source?
+> Right now it says that the caller should call putback_lru_pages().
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+The caller should call putback_lru_pages only if ret != 0. Minchan
+this is your commit we're discussing can you check the commentary?
+
+Thanks!
+Andrea
+
