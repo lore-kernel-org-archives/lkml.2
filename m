@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927Ab1AUUZv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 15:25:51 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:49022 "EHLO relay.sgi.com"
+	id S1751242Ab1AUUbF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 15:31:05 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:40893 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753463Ab1AUUZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 15:25:06 -0500
-Message-Id: <20110121202504.796868924@gulag1.americas.sgi.com>
-References: <20110121202502.090169599@gulag1.americas.sgi.com>
-User-Agent: quilt/0.46-1
-Date: Fri, 21 Jan 2011 14:25:08 -0600
-From: Mike Travis <travis@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Len Brown <len.brown@intel.com>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jack Steiner <steiner@sgi.com>,
-        Robin Holt <holt@sgi.com>, Lori Gilbertson <loriann@sgi.com>,
-        x86@kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 6/6] printk: Minimize time zero output
-Content-Disposition: inline; filename=minimize-time-zero-msgs
+	id S1750701Ab1AUUbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 15:31:01 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: James Hogan <james@albanarts.com>
+Subject: Re: 2.6.38-rc1 resume hang (da8aeb92 "ACPI/Battery: Update information on info notification and resume")
+Date: Fri, 21 Jan 2011 21:30:26 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc1+; KDE/4.4.4; x86_64; ; )
+Cc: Len Brown <len.brown@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        ACPI Devel Mailing List <linux-acpi@gver.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+References: <20110121140031.GA3280@gandalf>
+In-Reply-To: <20110121140031.GA3280@gandalf>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101212130.26693.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduce the length for time zero messages by only printing "[0] ".
+On Friday, January 21, 2011, James Hogan wrote:
+> Hi,
+> 
+> After updating from 2.6.37 to 2.6.28-rc1, resume from suspend is broken
+> on my Dell M1210 Laptop.
+> 
+> I tried pm_trace and both block and battery matched the hash, so I
+> bisected the problem to commit da8aeb92 (see below).
+> 
+> I've reverted this commit on 2.6.38 and it doesn't die on resume anymore.
+> 
+> My bisection log and .config are pasted below.
+> 
+> Let me know if I can provide any more info or help test any patches etc.
 
-Signed-off-by: Mike Travis <travis@sgi.com>
-Reviewed-by: Jack Steiner <steiner@sgi.com>
-Reviewed-by: Robin Holt <holt@sgi.com>
----
- kernel/printk.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+This should have been fixed already in the current Linus' tree by this commit:
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=b23fffd778c312b8fb258d342051fcbdf6712128
 
---- linux-2.6.32.orig/kernel/printk.c
-+++ linux-2.6.32/kernel/printk.c
-@@ -805,11 +805,14 @@ asmlinkage int vprintk(const char *fmt,
- 				unsigned long nanosec_rem;
- 
- 				t = cpu_clock(printk_cpu);
--				nanosec_rem = do_div(t, 1000000000);
--				tlen = sprintf(tbuf, "[%5lu.%06lu] ",
-+				if (likely(t)) {
-+					nanosec_rem = do_div(t, 1000000000);
-+					tlen = sprintf(tbuf, "[%5lu.%06lu] ",
- 						(unsigned long) t,
- 						nanosec_rem / 1000);
--
-+				} else {
-+					tlen = sprintf(tbuf, "[0] ");
-+				}
- 				for (tp = tbuf; tp < tbuf + tlen; tp++)
- 					emit_log_char(*tp);
- 				printed_len += tlen;
+Can you verify, please?
 
--- 
+Rafael
