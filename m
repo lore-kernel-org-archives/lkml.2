@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602Ab1AUXIk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 18:08:40 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:51591 "HELO
+	id S1754798Ab1AUXIv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 18:08:51 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:59318 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754314Ab1AUXHX (ORCPT
+	with SMTP id S1754301Ab1AUXHX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Jan 2011 18:07:23 -0500
 X-Authenticated: #911537
@@ -14,9 +14,9 @@ From: Torben Hohn <torbenh@gmx.de>
 To: linux-kernel@vger.kernel.org
 Cc: tglx@linutronix.de, johnstul@us.ibm.com, hch@infradead.org,
         yong.zhang0@gmail.com, Torben Hohn <torbenh@gmx.de>
-Subject: [PATCH 03/18] alpha: change do_timer() to xtime_update()
-Date: Sat, 22 Jan 2011 00:06:49 +0100
-Message-Id: <1295651224-29823-4-git-send-email-torbenh@gmx.de>
+Subject: [PATCH 02/18] provide xtime_update() which does not require holding xtime_lock like do_timer()
+Date: Sat, 22 Jan 2011 00:06:48 +0100
+Message-Id: <1295651224-29823-3-git-send-email-torbenh@gmx.de>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1295651224-29823-1-git-send-email-torbenh@gmx.de>
 References: <1295651224-29823-1-git-send-email-torbenh@gmx.de>
@@ -25,48 +25,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xtime_update() takes the xtime_lock itself.
-this code looks like its protecting state with this lock.
-but this is only touched here and during init.
+some arch code failed to lock the xtime_lock.
+and some code looks like its using the xtime_lock to protect
+other stuff.
+
+this prepares the cleanup of this code.
 
 Signed-off-by: Torben Hohn <torbenh@gmx.de>
 ---
- arch/alpha/kernel/time.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
+ include/linux/sched.h     |    1 +
+ kernel/time/timekeeping.c |    9 +++++++++
+ 2 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/arch/alpha/kernel/time.c b/arch/alpha/kernel/time.c
-index c1f3e7c..a58e84f 100644
---- a/arch/alpha/kernel/time.c
-+++ b/arch/alpha/kernel/time.c
-@@ -159,7 +159,7 @@ void read_persistent_clock(struct timespec *ts)
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index d747f94..9d9a078 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2050,6 +2050,7 @@ extern void release_uids(struct user_namespace *ns);
+ #include <asm/current.h>
  
- /*
-  * timer_interrupt() needs to keep up the real-time clock,
-- * as well as call the "do_timer()" routine every clocktick
-+ * as well as call the "xtime_update()" routine every clocktick
-  */
- irqreturn_t timer_interrupt(int irq, void *dev)
- {
-@@ -172,8 +172,6 @@ irqreturn_t timer_interrupt(int irq, void *dev)
- 	profile_tick(CPU_PROFILING);
- #endif
+ extern void do_timer(unsigned long ticks);
++extern void xtime_update(unsigned long ticks);
  
--	write_seqlock(&xtime_lock);
--
- 	/*
- 	 * Calculate how many ticks have passed since the last update,
- 	 * including any previous partial leftover.  Save any resulting
-@@ -187,9 +185,7 @@ irqreturn_t timer_interrupt(int irq, void *dev)
- 	nticks = delta >> FIX_SHIFT;
- 
- 	if (nticks)
--		do_timer(nticks);
--
--	write_sequnlock(&xtime_lock);
-+		xtime_update(nticks);
- 
- 	if (test_irq_work_pending()) {
- 		clear_irq_work_pending();
+ extern int wake_up_state(struct task_struct *tsk, unsigned int state);
+ extern int wake_up_process(struct task_struct *tsk);
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 546d82f..2deef94 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -958,3 +958,12 @@ void do_timer(unsigned long ticks)
+ 	update_wall_time();
+ 	calc_global_load(ticks);
+ }
++
++/* xtime_update - updates the timer infrastructure.
++ */
++void xtime_update(unsigned long ticks)
++{
++	write_seqlock(&xtime_lock);
++	do_timer(ticks);
++	write_sequnlock(&xtime_lock);
++}
 -- 
 1.7.2.3
 
