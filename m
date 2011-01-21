@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754923Ab1AUTco (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 14:32:44 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:51283 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754882Ab1AUTcm (ORCPT
+	id S1754943Ab1AUTjo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 14:39:44 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:22834 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754892Ab1AUTjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 14:32:42 -0500
-Date: Fri, 21 Jan 2011 14:32:40 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Christoph Lameter <cl@linux.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for
-	this_cpu_cmpxchg_double
-Message-ID: <20110121193240.GA13581@Krystal>
-References: <alpine.DEB.2.00.1101070907060.3014@router.home> <20110107180419.GB23082@Krystal> <alpine.DEB.2.00.1101071227450.3014@router.home> <20110108172453.GF13269@mtj.dyndns.org> <4D393636.4040607@cs.helsinki.fi> <20110121092649.GA2832@htj.dyndns.org> <4D39A6EB.70705@zytor.com> <20110121154831.GE2832@htj.dyndns.org> <20110121165425.GB11687@Krystal> <20110121170847.GH2832@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110121170847.GH2832@htj.dyndns.org>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 14:31:32 up 59 days, 34 min,  4 users,  load average: 0.01, 0.02,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 21 Jan 2011 14:39:43 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6233"; a="71204709"
+Subject: Attribute Server and Client TODOs
+From: Brian Gix <bgix@codeaurora.org>
+To: claudio.takahasi@openbossa.org
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Organization: Code Aurora Forum
+Date: Fri, 21 Jan 2011 11:39:43 -0800
+Message-ID: <1295638783.1774.21.camel@ubuntuLab1>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tejun Heo (tj@kernel.org) wrote:
-[...]
-> > (note: packed here along with "aligned" does _not_ generate ugly
-> > bytewise read/write memory ops like "packed" alone. The use of
-> > "packed" is to let the compiler down-align the structure to the
-> > value requested, instead of uselessly aligning it on 32-byte if it
-> > chooses to.)
-> 
-> Yeah, good point.  :-)
+Hi Claudio, etc,
 
-For the records, I just noticed that "packed, aligned(8)" can generate unaligned
-accesses on sparc64 by removing the padding between a "int" and a following
-pointer. So we should not use it.
+We are starting to look at the adopted LE profiles, and it is becoming
+clear that Higher layer (Applications etc) server support will be needed
+for some of the significant use cases such as Proximity.  Is anybody
+currently working on a D-Bus interface to the Attribute Server?  I know
+there is nothing in code that has been up-streamed yet, but I was
+wondering if anyone has put some thought into what a D-Bus interface for
+the Attribute Server might look like?
 
-Thanks,
+Also, one of my compatriots is telling me that she cannot get the GATT
+Client D-Bus interface to work.  I don't know if this is a simple lack
+of Introspection Data (required by d-feet), or if there is a build or
+configuration parameter that needs to be setup.  I have just been using
+the gatttool to run my tests, and not going through D-Bus.  If anybody
+has been using D-Bus for GATT Client testing, I would be interested in
+finding out if there is some setup requirements that I am missing.
 
-Mathieu
+
+Thanks for your time.
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Brian Gix
+bgix@codeaurora.org
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+
