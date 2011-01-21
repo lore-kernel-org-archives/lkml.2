@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635Ab1AUGdK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 01:33:10 -0500
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:53016 "EHLO
+	id S1753467Ab1AUGdO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 01:33:14 -0500
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:53040 "EHLO
 	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710Ab1AUGdH (ORCPT
+	with ESMTP id S1750710Ab1AUGdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 01:33:07 -0500
+	Fri, 21 Jan 2011 01:33:11 -0500
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: Andi Kleen <tatsu@ab.jp.nec.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -16,101 +16,41 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>,
         tony.luck@intel.com, LKML <linux-kernel@vger.kernel.org>,
         linux-mm <linux-mm@kvack.org>
-Subject: [PATCH 4/7] hugetlb, migration: add migration_hugepage_entry_wait()
-Date: Fri, 21 Jan 2011 15:28:57 +0900
-Message-Id: <1295591340-1862-5-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 0/7] HWPOISON for hugepage backed KVM guest
+Date: Fri, 21 Jan 2011 15:28:53 +0900
+Message-Id: <1295591340-1862-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1295591340-1862-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1295591340-1862-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-migration_entry_wait() doesn't work for hugepage, because page->ptl
-on hugepage is unused for now. So this patch introduces a hugepage
-variant of this function.
+Hi,
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- include/linux/swapops.h |    8 ++++++++
- mm/hugetlb.c            |    3 ++-
- mm/migrate.c            |   33 +++++++++++++++++++++++++++++++++
- 3 files changed, 43 insertions(+), 1 deletions(-)
+I wrote "HWPOISON for hugepage" patchset last year, but it didn't
+cover the hugepages used by KVM guest because follow_hugetlb_pages()
+called in a guest page fault code path didn't know about swap entry
+formatted pmd entry.
+This patchset fixes it and makes both soft and hard offline available
+on hugepage backed KVM guest.
 
-diff --git v2.6.38-rc1/include/linux/swapops.h v2.6.38-rc1/include/linux/swapops.h
-index cd42e30..a220ef5 100644
---- v2.6.38-rc1/include/linux/swapops.h
-+++ v2.6.38-rc1/include/linux/swapops.h
-@@ -169,3 +169,11 @@ static inline int non_swap_entry(swp_entry_t entry)
- 	return 0;
- }
- #endif
-+
-+#if defined(CONFIG_HUGETLB_PAGE) || defined(CONFIG_MIGRATION)
-+extern void migration_hugepage_entry_wait(struct mm_struct *mm, pmd_t *pmd,
-+					unsigned long address);
-+#else
-+static inline void migration_hugepage_entry_wait(struct mm_struct *mm,
-+				 pmd_t *pmd, unsigned long address) { }
-+#endif
-diff --git v2.6.38-rc1/mm/hugetlb.c v2.6.38-rc1/mm/hugetlb.c
-index 97c7471..d3b856a 100644
---- v2.6.38-rc1/mm/hugetlb.c
-+++ v2.6.38-rc1/mm/hugetlb.c
-@@ -2618,7 +2618,8 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	if (ptep) {
- 		entry = huge_ptep_get(ptep);
- 		if (unlikely(is_hugetlb_entry_migration(entry))) {
--			migration_entry_wait(mm, (pmd_t *)ptep, address);
-+			migration_hugepage_entry_wait(mm, (pmd_t *)ptep,
-+						      address);
- 			return 0;
- 		} else if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
- 			return VM_FAULT_HWPOISON_LARGE | 
-diff --git v2.6.38-rc1/mm/migrate.c v2.6.38-rc1/mm/migrate.c
-index 46fe8cc..363685f 100644
---- v2.6.38-rc1/mm/migrate.c
-+++ v2.6.38-rc1/mm/migrate.c
-@@ -220,6 +220,39 @@ out:
- 	pte_unmap_unlock(ptep, ptl);
- }
- 
-+void migration_hugepage_entry_wait(struct mm_struct *mm, pmd_t *pmd,
-+				   unsigned long address)
-+{
-+	pte_t *ptep, pte;
-+	spinlock_t *ptl;
-+	swp_entry_t entry;
-+	struct page *page;
-+
-+	ptep = (pte_t *)pmd;
-+	ptl = &(mm)->page_table_lock;
-+	spin_lock(ptl);
-+	pte = *ptep;
-+	if (!is_swap_pte(pte))
-+		goto out;
-+
-+	entry = pte_to_swp_entry(pte);
-+	if (!is_migration_entry(entry))
-+		goto out;
-+
-+	page = migration_entry_to_page(entry);
-+
-+	if (!get_page_unless_zero(page))
-+		goto out;
-+	spin_unlock(ptl);
-+	pte_unmap(ptep);
-+	wait_on_page_locked(page);
-+	put_page(page);
-+	return;
-+out:
-+	spin_unlock(ptl);
-+	pte_unmap(ptep);
-+}
-+
- /*
-  * Replace the page in the mapping.
-  *
--- 
-1.7.3.4
+I appreciate all of your comments and reviews.
 
+Thanks,
+Naoya Horiguchi
+
+Summary:
+
+  [PATCH 1/7] hugetlb: check swap entry in follow_hugetlb_page()
+  [PATCH 2/7] check hugepage swap entry in get_user_pages_fast()
+  [PATCH 3/7] remove putback_lru_pages() in hugepage migration context
+  [PATCH 4/7] hugetlb, migration: add migration_hugepage_entry_wait()
+  [PATCH 5/7] hugetlb: fix race condition between hugepage soft offline and page fault
+  [PATCH 6/7] HWPOISON: pass order to set/clear_page_hwpoison_huge_page()
+  [PATCH 7/7] HWPOISON, hugetlb: fix hard offline for hugepage backed KVM guest
+
+  arch/x86/mm/gup.c       |    9 +++++++++
+  include/linux/swapops.h |   20 ++++++++++++++++++++
+  mm/hugetlb.c            |   39 +++++++++++++++++++++++++++++----------
+  mm/memory-failure.c     |   24 +++++++++++++-----------
+  mm/migrate.c            |   33 +++++++++++++++++++++++++++++++++
+  5 files changed, 104 insertions(+), 21 deletions(-)
