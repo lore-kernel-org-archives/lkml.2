@@ -1,95 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833Ab1AUMYa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 07:24:30 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:58048 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752012Ab1AUMY1 (ORCPT
+	id S1754843Ab1AUM03 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 07:26:29 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:58315 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015Ab1AUM01 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 07:24:27 -0500
+	Fri, 21 Jan 2011 07:26:27 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ilkVTAZkO/sYHGzHxiznk4fXbVWRG56DQje9mDvGzwmCTbQUjuE6CkAk+oKxX9D/gs
-         RZ6E8OTbGzIjYpqJ7TCC7O1yTiRvXouPVc5iQrKQDLKYmKUR+XBDvy7UI+j7YWv5ZTc3
-         kYzdhWcQ7J9oPjK8riIKKNharRsT+e/5X+1fY=
-Date: Fri, 21 Jan 2011 20:24:12 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Galbraith <efault@gmx.de>, samu.p.onkalo@nokia.com, mingo@elte.hu,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        tglx <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: Bug in scheduler when using rt_mutex
-Message-ID: <20110121122412.GA5071@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1295443822.28776.23.camel@laptop>
- <AANLkTinQ4sczEwZYCk1_tLmeJyjyXj4TVoSZbjg+KiRq@mail.gmail.com>
- <1295499568.8027.30.camel@marge.simson.net>
- <AANLkTikEwgMzco2fHT668Mg3fC-T3EBMUgQQqW-Ojj-Y@mail.gmail.com>
- <1295503938.8027.59.camel@marge.simson.net>
- <AANLkTi=7YyA-e8HAq+C_prK2EaZKcaTfzDJvmO3e3W=B@mail.gmail.com>
- <1295512625.8027.88.camel@marge.simson.net>
- <AANLkTi=WhLy=4MNdm-HaOUOmbKXsNSJojnzqRTYp6qop@mail.gmail.com>
- <1295518047.8027.104.camel@marge.simson.net>
- <1295608136.28776.266.camel@laptop>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Bg4rfVPI3RSd0gK5jZ8wUSkEVkVV6ijrUwUc7v9476PtAc1WifHnL9bG/gs86JnSdY
+         vMZZyuUo64f7Y9pix0+2ZZXLiOgPXzHjl2nTBY6jdpYs8z03uIDpMYbHlxnO7OpSnMCz
+         df/rXlCOHnRReqGFpH+2Ph75Ty9ISEt5yGla8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1295608136.28776.266.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1295596533-1748-1-git-send-email-ratbert.chuang@gmail.com>
+References: <1295537418-2057-1-git-send-email-ratbert.chuang@gmail.com>
+	<1295596533-1748-1-git-send-email-ratbert.chuang@gmail.com>
+Date: Fri, 21 Jan 2011 13:26:26 +0100
+Message-ID: <AANLkTikpu05V92T+YvuHW+jcTH-Bu2t6=HoQn5OR3ZhX@mail.gmail.com>
+Subject: Re: [PATCH v4] net: add Faraday FTMAC100 10/100 Ethernet driver
+From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
+To: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhutchings@solarflare.com, eric.dumazet@gmail.com, joe@perches.com,
+        dilinger@queued.net, Po-Yu Chuang <ratbert@faraday-tech.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 12:08:56PM +0100, Peter Zijlstra wrote:
-> > That's ok, we don't and aren't supposed to care what happens while he's
-> > gone.  But we do have to make sure that vruntime is sane either when he
-> > leaves, or when he comes back.  Seems to me the easiest is clip when he
-> > leaves to cover him having slept a long time before leaving, then coming
-> > back on us as a runner.  If he comes back as a sleeper, he'll be clipped
-> > again anyway, so all is well.
-> >
-> > sched_fork() should probably zero child's vruntime too, so non-fair
-> > children can't enter fair_class with some bogus lag they never had.
-> 
-> Something like so?
-> 
-> Index: linux-2.6/kernel/sched.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched.c
-> +++ linux-2.6/kernel/sched.c
-> @@ -2624,6 +2624,8 @@ void sched_fork(struct task_struct *p, i
->  
->  	if (!rt_prio(p->prio))
->  		p->sched_class = &fair_sched_class;
-> +	else
-> +		p->se.vruntime = 0;
+2011/1/21 Po-Yu Chuang <ratbert.chuang@gmail.com>:
+> From: Po-Yu Chuang <ratbert@faraday-tech.com>
+>
+> FTMAC100 Ethernet Media Access Controller supports 10/100 Mbps and
+> MII.  This driver has been working on some ARM/NDS32 SoC's including
+> Faraday A320 and Andes AG101.
+>
+> Signed-off-by: Po-Yu Chuang <ratbert@faraday-tech.com>
+[...]
+> +static void ftmac100_txdes_reset(struct ftmac100_txdes *txdes)
+> +{
+> +       /* clear all except end of ring bit */
+> +       txdes->txdes0 = 0;
+> +       txdes->txdes1 &= FTMAC100_TXDES1_EDOTR;
+> +       txdes->txdes2 = 0;
+> +       txdes->txdes3 = 0;
+> +}
 
-This can be moved to __sched_fork()
+This also probably needs cpu_to_le32().
 
->  
->  	if (p->sched_class->task_fork)
->  		p->sched_class->task_fork(p);
-> Index: linux-2.6/kernel/sched_fair.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched_fair.c
-> +++ linux-2.6/kernel/sched_fair.c
-> @@ -4086,8 +4086,14 @@ static void switched_from_fair(struct rq
->  	 * have normalized the vruntime, if it was !on_rq, then only when
->  	 * the task is sleeping will it still have non-normalized vruntime.
->  	 */
-> -	if (!se->on_rq && p->state != TASK_RUNNING)
-> +	if (!se->on_rq && p->state != TASK_RUNNING) {
-> +		/*
-> +		 * Fix up our vruntime so that the current sleep doesn't
-> +		 * cause 'unlimited' sleep bonus.
-> +		 */
-> +		place_entity(cfs_rq, se, 0);
->  		se->vruntime -= cfs_rq->min_vruntime;
+[...]
+> +static void ftmac100_free_buffers(struct ftmac100 *priv)
+> +{
+> +       int i;
+> +
+> +       for (i = 0; i < RX_QUEUE_ENTRIES; i += 2) {
+> +               struct ftmac100_rxdes *rxdes = &priv->descs->rxdes[i];
+> +               dma_addr_t d = ftmac100_rxdes_get_dma_addr(rxdes);
+> +               void *page = ftmac100_rxdes_get_va(rxdes);
+> +
+> +               if (d)
+> +                       dma_unmap_single(priv->dev, d, PAGE_SIZE,
+> +                                        DMA_FROM_DEVICE);
+> +
+> +               if (page != NULL)
+> +                       free_page((unsigned long)page);
+> +       }
+> +
+[...]
 
-Now I will say yes.
-Though it's same to my suggestion which was rejected by myself :)
+> +static int ftmac100_alloc_buffers(struct ftmac100 *priv)
+> +{
+> +       int i;
+> +
+> +       priv->descs = dma_alloc_coherent(priv->dev,
+> +                                        sizeof(struct ftmac100_descs),
+> +                                        &priv->descs_dma_addr,
+> +                                        GFP_KERNEL | GFP_DMA);
+> +       if (priv->descs == NULL)
+> +               return -ENOMEM;
+> +
+> +       memset(priv->descs, 0, sizeof(struct ftmac100_descs));
+> +
+> +       /* initialize RX ring */
+> +
+> +       ftmac100_rxdes_set_end_of_ring(&priv->descs->rxdes[RX_QUEUE_ENTRIES - 1]);
+> +
+> +       for (i = 0; i < RX_QUEUE_ENTRIES; i += 2) {
+> +               struct ftmac100_rxdes *rxdes = &priv->descs->rxdes[i];
+> +               void *page;
+> +               dma_addr_t d;
+> +
+> +               page = (void *)__get_free_page(GFP_KERNEL | GFP_DMA);
+> +               if (page == NULL)
+> +                       goto err;
+> +
+> +               d = dma_map_single(priv->dev, page, PAGE_SIZE, DMA_FROM_DEVICE);
+> +               if (unlikely(dma_mapping_error(priv->dev, d))) {
+> +                       free_page((unsigned long)page);
+> +                       goto err;
+> +               }
+> +
+> +               /*
+> +                * The hardware enforces a sub-2K maximum packet size, so we
+> +                * put two buffers on every hardware page.
+> +                */
+> +               ftmac100_rxdes_set_va(rxdes, page);
+> +               ftmac100_rxdes_set_va(rxdes + 1, page + PAGE_SIZE / 2);
+> +
+> +               ftmac100_rxdes_set_dma_addr(rxdes, d);
+> +               ftmac100_rxdes_set_dma_addr(rxdes + 1, d + PAGE_SIZE / 2);
+> +
+> +               ftmac100_rxdes_set_buffer_size(rxdes, RX_BUF_SIZE);
+> +               ftmac100_rxdes_set_buffer_size(rxdes + 1, RX_BUF_SIZE);
+> +
+> +               ftmac100_rxdes_set_dma_own(rxdes);
+> +               ftmac100_rxdes_set_dma_own(rxdes + 1);
+> +       }
+[...]
 
-Thanks,
-Yong
+Did you test this? This looks like it will result in double free after
+packet RX, as you are giving the same page (referenced once) to two
+distinct RX descriptors, that may be assigned different packets.
+
+Since your not implementing any RX offloads, you might just allocate
+fresh skb's with alloc_skb() and store skb pointer in rxdes3. Since
+hardware doesn't touch it, you can skip cpu_to_le32()/le32_to_cpu()
+there (leave a comment, though).
+
+Unless this needs to work for ISA devices, you should drop GFP_DMA
+allocation flag.
+
+Best Regards,
+Micha³ Miros³aw
