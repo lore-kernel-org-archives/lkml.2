@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496Ab1AUPhu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 10:37:50 -0500
-Received: from mga02.intel.com ([134.134.136.20]:49927 "EHLO mga02.intel.com"
+	id S1752954Ab1AUPiE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 10:38:04 -0500
+Received: from hera.kernel.org ([140.211.167.34]:51721 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750817Ab1AUPht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 10:37:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,358,1291622400"; 
-   d="scan'208";a="699205190"
-From: "Lu, Hongjiu" <hongjiu.lu@intel.com>
-To: "Anvin, H Peter" <h.peter.anvin@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Sam Ravnborg <sam@ravnborg.org>
-Date: Fri, 21 Jan 2011 07:37:46 -0800
-Subject: RE: Linux 2.6.38-rc1 doesn't boot
-Thread-Topic: Linux 2.6.38-rc1 doesn't boot
-Thread-Index: Acu5f92bq00plkE7Qwuwsg1b6rUE3gAATPwQ
-Message-ID: <9DA5872FEF993D41B7173F58FCF6BE9409F70604@orsmsx504.amr.corp.intel.com>
-References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
-	 <20110119073905.GA1652@gentoo.trippels.de>
-	 <20110119074902.GA1670@gentoo.trippels.de>
-	 <1295424766.1949.879.camel@sli10-conroe> <4D36A759.60704@intel.com>
-	 <20110119090904.GA4927@elte.hu> <1295489286.1949.882.camel@sli10-conroe>
-	 <20110120112541.GA23661@elte.hu>
-	 <ADDEBCD9C145E542A8688C29F1FBDCB9C915F59E@orsmsx502.amr.corp.intel.com>
- <1295594339.1949.936.camel@sli10-conroe> <4D39A621.7080007@intel.com>
-In-Reply-To: <4D39A621.7080007@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1752668Ab1AUPiC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 10:38:02 -0500
+Date: Fri, 21 Jan 2011 15:37:35 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf: Annotate cpuctx->ctx.mutex to avoid a lockdep splat
+Message-ID: <tip-547e9fd7d328af261f184bf66effc5033c886498@git.kernel.org>
+Git-Commit-ID: 547e9fd7d328af261f184bf66effc5033c886498
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 21 Jan 2011 15:37:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p0LFbwVN011780
 
-Or we can just ban those broken linker versions.
+Commit-ID:  547e9fd7d328af261f184bf66effc5033c886498
+Gitweb:     http://git.kernel.org/tip/547e9fd7d328af261f184bf66effc5033c886498
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Wed, 19 Jan 2011 12:51:39 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 21 Jan 2011 16:32:42 +0100
 
-H.J.
+perf: Annotate cpuctx->ctx.mutex to avoid a lockdep splat
 
+Lockdep spotted:
 
-> -----Original Message-----
-> From: Anvin, H Peter
-> Sent: Friday, January 21, 2011 7:29 AM
-> To: Li, Shaohua
-> Cc: Ingo Molnar; Markus Trippelsdorf; Lu, Hongjiu; Linus Torvalds;
-> Linux Kernel Mailing List; Sam Ravnborg
-> Subject: Re: Linux 2.6.38-rc1 doesn't boot
-> 
-> On 01/20/2011 11:18 PM, Li, Shaohua wrote:
-> >  		*(.jiffies)
-> >  	}
-> >  	jiffies = VVIRT(.jiffies);
-> > +	jiffies_64 = jiffies;
-> >
-> 
-> OK, this is just messed up.  If we need jiffies in a special section
-> then we should declare it as such (see __jiffy_data), but it's not
-> clear
-> to me why we would.  This seems like hack upon hack.
-> 
-> However, I suspect we may want to put jiffies into a .S file, and that
-> .S file needs to take into account architectures which need underscore
-> prefixes (which really sucks to have in ELF and is a major fail on
-> those
-> ABI designers...)
-> 
-> 	-hpa
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+	loop_1b_instruc/1899 is trying to acquire lock:
+	 (event_mutex){+.+.+.}, at: [<ffffffff810e1908>] perf_trace_init+0x3b/0x2f7
+
+	but task is already holding lock:
+	 (&ctx->mutex){+.+.+.}, at: [<ffffffff810eb45b>] perf_event_init_context+0xc0/0x218
+
+	which lock already depends on the new lock.
+
+	the existing dependency chain (in reverse order) is:
+
+	-> #3 (&ctx->mutex){+.+.+.}:
+	-> #2 (cpu_hotplug.lock){+.+.+.}:
+	-> #1 (module_mutex){+.+...}:
+	-> #0 (event_mutex){+.+.+.}:
+
+But because the deadlock would be cpuhotplug (cpu-event) vs fork
+(task-event) it cannot, in fact, happen. We can annotate this by giving the
+perf_event_context used for the cpuctx a different lock class from those
+used by tasks.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <new-submission>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/perf_event.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 244ca3a..c5fa717 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -5380,6 +5380,8 @@ free_dev:
+ 	goto out;
+ }
+ 
++static struct lock_class_key cpuctx_mutex;
++
+ int perf_pmu_register(struct pmu *pmu, char *name, int type)
+ {
+ 	int cpu, ret;
+@@ -5428,6 +5430,7 @@ skip_type:
+ 
+ 		cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
+ 		__perf_event_init_context(&cpuctx->ctx);
++		lockdep_set_class(&cpuctx->ctx.mutex, &cpuctx_mutex);
+ 		cpuctx->ctx.type = cpu_context;
+ 		cpuctx->ctx.pmu = pmu;
+ 		cpuctx->jiffies_interval = 1;
