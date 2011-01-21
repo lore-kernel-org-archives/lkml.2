@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751215Ab1AUFhB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 00:37:01 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:47272 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750695Ab1AUFg7 (ORCPT
+	id S1751647Ab1AUFmX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 00:42:23 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51933 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab1AUFmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 00:36:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:date:message-id:subject:from:to:cc
-         :content-type;
-        b=D0eQT0TIvDwMvAYAtE7FdNFDGfs4rZ2O0X5rKPA0AkSQOtouCJlO5FwIHtKoe5xzpg
-         fwajwsOq7VaXQl2z5//WRV42wYmcM5kSg55pZh+DrfpqZnO+mOqi2PUrx6lASY1WuiyC
-         gssqHZioeGOfh6CSEDvaFOrvAof9xdejOwgRo=
+	Fri, 21 Jan 2011 00:42:18 -0500
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Fri, 21 Jan 2011 06:36:54 +0100
-Message-ID: <AANLkTimogiJMKkcgfOCJHxpyZHcB36+xzRFgkqWPOiv_@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH 2/5] i915: Add native backlight control
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Matthew Garrett <mjg@redhat.com>
-Cc: DRI <dri-devel@lists.freedesktop.org>, intel-gfx@lists.freedesktop.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 20 Jan 2011 22:41:58 -0700
+X-Google-Sender-Auth: Pqm6_HoxBcs7cuDs49qusKtRYpU
+Message-ID: <AANLkTinuAQb_OyfoA-8ivgC7MnQYfiMai2wQKjtOj_-K@mail.gmail.com>
+Subject: [git pull] devicetree build failure fix
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linuxppc-dev <linuxppc-dev@ozlabs.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-( Original posting from [1] )
+Hi Linus,
 
-I have the backlight-type patchset for months in my patch-series (and
-maintained them if necessary against daily linux-next).
-Also the last series from 14-Jan-2011 (see 1-5 patch from [2] and the
-following ones at dri-devel ML).
+Here's a fix for a stupid bug I introduced.
 
-If you couldn't find the updated v2 radeon-backlight-type patch, here
-the extract from my patch-series:
-...
-# Patch from <https://patchwork.kernel.org/patch/491351/>
-+ backlight-type/v2-drm-radeon-kms-Expose-backlight-class-device-for-legacy-LVDS-encoder.patch
-...
+g.
 
-I can only speak for the radeon(-KMS) part with
-CONFIG_BACKLIGHT_CLASS_DEVICE=y set and against linux-next: It worked,
-it works.
+The following changes since commit c56eb8fb6dccb83d9fe62fd4dc00c834de9bc470:
 
-I am a bit angry that someone of the "big 5" gets immediately an
-answer where mine is ignored [3].
-So dear Mr. AKPM, if you can standstill for a few moments to answer
-only one of my questions, through which kernel-tree will this patchset
-walk trough?
-Thanks in advance.
+  Linux 2.6.38-rc1 (2011-01-18 15:14:02 -0800)
 
-- Sedat -
+are available in the git repository at:
+  git://git.secretlab.ca/git/linux-2.6 devicetree/merge
 
-[1] http://lists.freedesktop.org/archives/dri-devel/2011-January/007378.html
-[2] http://lists.freedesktop.org/archives/dri-devel/2011-January/007168.html
-[3] http://lists.freedesktop.org/archives/dri-devel/2011-January/007193.html
+Grant Likely (1):
+      powerpc/83xx: fix build failures on dt compatible list.
+
+ arch/powerpc/platforms/83xx/mpc830x_rdb.c |    4 ++--
+ arch/powerpc/platforms/83xx/mpc831x_rdb.c |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
