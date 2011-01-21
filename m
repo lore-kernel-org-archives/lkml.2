@@ -1,100 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab1AUW1z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 17:27:55 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:45817 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754839Ab1AUW1y (ORCPT
+	id S1754870Ab1AUW2W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 17:28:22 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:28379 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754598Ab1AUW2U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 17:27:54 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+ClfNusryCedSVDwFo7lKUZ0+eh3huWkz2nrdHNs
-	DDGBk3uT0dbXef
-Subject: Re: 'autogroup' sched code KILLING responsiveness
-From: Mike Galbraith <efault@gmx.de>
-To: Michael Witten <mfwitten@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <4d39ce58.cc7e0e0a.5448.59e4@mx.google.com>
-References: <4d39ce58.cc7e0e0a.5448.59e4@mx.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 Jan 2011 23:27:50 +0100
-Message-ID: <1295648870.23779.15.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Fri, 21 Jan 2011 17:28:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=x1fwgY3iqoRhnhgOIRAiEBCXGr9/mso+KXiCEnYfyVYBJW85cWAr/xzhye351De3iM
+         NVH7jK3xgF7kylgDctcw==
+MIME-Version: 1.0
+In-Reply-To: <20110121220238.GE23151@n2100.arm.linux.org.uk>
+References: <201101111016.42819.jeremy.kerr@canonical.com>
+	<20110111031552.GJ3760@linux-sh.org>
+	<4D3862DB.5000708@fluff.org>
+	<20110120185617.GI6335@n2100.arm.linux.org.uk>
+	<alpine.LFD.2.00.1101201623480.8580@xanadu.home>
+	<AANLkTimwBruVgGQWs5NQG7U3PcF6RQHZ6Pd1hjxyGpcA@mail.gmail.com>
+	<4D3907BD.4040900@codeaurora.org>
+	<AANLkTik53zyXytvuAd5zK0_zExfQT3FmOgTr8BexmGeT@mail.gmail.com>
+	<alpine.LFD.2.00.1101211618170.8580@xanadu.home>
+	<20110121220238.GE23151@n2100.arm.linux.org.uk>
+Date: Fri, 21 Jan 2011 14:28:15 -0800
+Message-ID: <AANLkTimT+vfg9p4GSnn1jGW9r_gVom7xEUzMVJDscPg2@mail.gmail.com>
+Subject: Re: Locking in the clk API
+From: Colin Cross <ccross@google.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Saravana Kannan <skannan@codeaurora.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
+        Dima Zavin <dmitriyz@google.com>, Ben Dooks <ben-linux@fluff.org>,
+        "Uwe Kleine-K??nig" <u.kleine-koenig@pengutronix.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-21 at 10:20 -0800, Michael Witten wrote:
-> Bisecting shows that this commit:
-> 
->   5091faa449ee0b7d73bc296a93bca9540fc51d0a
->   sched: Add 'autogroup' scheduling feature: automated per session task groups
->   Date:   Tue Nov 30 14:18:03 2010 +0100
-> 
-> is the reason that my computer has become unusable.
-> 
-> With that code in place, a resource-intensive activity (such as
-> compiling the Linux kernel) causes my computer to become
-> unresponsive for many seconds at a time; the entire screen
-> does not refresh, typed keys are dropped or are handled very
-> late, etc (even in Linux's plain virtual consoles).
+On Fri, Jan 21, 2011 at 2:02 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Fri, Jan 21, 2011 at 04:53:44PM -0500, Nicolas Pitre wrote:
+>> So I think that the API must be augmented with more methods, such as:
+>>
+>> clk_slow_enable():
+>>   - may sleep
+>>   - may be a no-op if the clk_fast_enable() is supported
+>>
+>> clk_fast_enable():
+>>   - may not sleep, used in atomic context
+>>   - may be a no-op if controlling the clock takes time, in which case
+>>     clk_slow_enable() must have set the clock up entirely
+>>
+>> ... and similar for clk_slow_disable() and clk_fast_disable().
+>
+> Isn't this along the same lines as my clk_prepare() vs clk_enable()
+> suggestion?
+>
+> I suggested that clk_prepare() be callable only from non-atomic contexts,
+> and do whatever's required to ensure that the clock is available.  That
+> may end up enabling the clock as a result.
+>
+> clk_enable() callable from atomic contexts, and turns the clock on if
+> the hardware supports such an operation.
+>
+> So, if you have something like:
+>
+> Xtal--->PLL--->Routing/Masking--->Device
+>
+> clk = clk_get() returns the clock for the device.
+>
+> clk_prepare(clk) would walk up the clock tree, selecting the routing and
+> preparing each clock.  Clocks prior to _and_ including the PLL would need
+> to be enabled.
+>
+> clk_enable(clk) would walk up the tree if the clock isn't already enabled,
+> calling clk_enable() on the parent clock.  As we require prepared clocks
+> to already be enabled, this automatically stops at the PLL.
+>
+> To encourage correct usage, we just need to make sure that clk_prepare()
+> has a might_sleep() thing, and clk_enable() throws a fit if it's used
+> on a clk without prepare being used first.  The second point is not easy
+> to do in a foolproof manner though, but doing _something_ is better than
+> nothing.
 
-That's not what I'm experiencing with a UP kernel...
+I like this proposal, and I prefer the clk_prepare naming over
+clk_slow_enable - too many people would call clk_slow_enable instead
+of, and not as well as, clk_fast_enable.
 
-marge:~> time perf stat -a sh -c 'true'
+On Tegra, I currently use the ugly conditional mutex or spinlock
+method to deal with voltage scaling based on clock frequency.  Clocks
+that have a voltage dependency, or depend on a clock that has a
+voltage dependency, are non-atomic, everything else is atomic.  PLLs
+are atomic because they lock very fast (300 uS or 1ms) and are shared
+by so many clocks that they realistically don't get turned off very
+often, and if I made them non-atomic, all clocks would be non-atomic.
 
- Performance counter stats for 'sh -c true':
+If clk_prepare, clk_unprepare, and clk_set_rate were only callable in
+sleepable contexts, I could make PLLs and voltage-dependent clocks
+sleepable, but allow atomic clocks to depend on them.  Calling
+clk_prepare on a voltage-dependent clock would bump the voltage up if
+necessary, but not enable the clock.  Drivers that don't need atomic
+clocks can call clk_prepare and clk_enable when they want the clock
+on, keeping the same power savings as my current implementation.
 
-             49580 cache-misses             #      5.170 M/sec  (scaled from 37.28%)
-            336112 cache-references         #     35.048 M/sec  (scaled from 78.81%)
-            185857 branch-misses            #     21.019 %      (scaled from 62.83%)
-            884249 branches                 #     92.204 M/sec  (scaled from 21.25%)
-          12672552 instructions             #      0.553 IPC    (scaled from 58.38%)
-          22896301 cycles                   #   2387.490 M/sec  (scaled from 58.38%)
-               410 page-faults              #      0.043 M/sec
-                 0 CPU-migrations           #      0.000 M/sec
-                13 context-switches         #      0.001 M/sec
-          9.590115 task-clock-msecs         #      1.005 CPUs 
-
-        0.009540836  seconds time elapsed
-
-
-real    0m0.020s
-user    0m0.000s
-sys     0m0.000s
-marge:~>
-
-It took 20 ms to do the above and get it to my screen while the below
-was running (among others).  I've got a make -j 100 running as I write
-this, and don't even notice that it's running.
-
-Can you provide some information such as hardware description,
-configuration, and perhaps measurements demonstrating the problem?
-
-top - 22:34:38 up 33 min, 22 users,  load average: 104.07, 101.73, 78.13
-Tasks: 675 total, 101 running, 574 sleeping,   0 stopped,   0 zombie
-Cpu(s): 95.2%us,  4.8%sy,  0.0%ni,  0.0%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st
-
-  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  P COMMAND                                                              
- 6770 root      20   0  401m  79m  29m R 46.9  1.0   3:22.66 0 mplayer                                                              
- 6100 root      20   0  449m  94m  18m S  2.9  1.2   1:33.82 0 Xorg                                                                 
- 7486 root      20   0  374m  46m  17m S  2.9  0.6   0:54.02 0 konsole                                                              
- 7752 root      20   0  104m  66m 8072 R  1.0  0.8   0:01.76 0 cc1                                                                  
- 9796 root      20   0 89764  49m 8028 R  1.0  0.6   0:01.21 0 cc1                                                                  
- 9928 root      20   0 98916  59m 8164 R  1.0  0.7   0:01.18 0 cc1                                                                  
-10321 root      20   0 88788  49m 8116 R  1.0  0.6   0:01.06 0 cc1                                                                  
-10619 root      20   0 89736  50m 8068 R  1.0  0.6   0:01.00 0 cc1                                                                  
-11356 root      20   0 19764 8152 2300 S  1.0  0.1   0:00.01 0 as                                                                   
-11597 root      20   0 97212  56m 7924 R  1.0  0.7   0:00.65 0 cc1                                                                  
-12203 root      20   0 79332  40m 7588 R  1.0  0.5   0:00.48 0 cc1                                                                  
-12209 root      20   0 80760  40m 7536 R  1.0  0.5   0:00.47 0 cc1                                                                  
-12247 root      20   0 85252  46m 7752 R  1.0  0.6   0:00.46 0 cc1                                                                  
-12510 root      20   0 82192  40m 5184 R  1.0  0.5   0:00.36 0 cc1                                                                  
-12612 root      20   0 81172  39m 5192 R  1.0  0.5   0:00.33 0 cc1                                                                  
-12615 root      20   0 81160  38m 4360 R  1.0  0.5   0:00.33 0 cc1                                                                  
-
-
-
+Converting all the existing clk API users could be hard, but with a
+little trickery backwards compatibility with the previous API could
+also be maintained.  clk_enable could call clk_prepare if it hasn't
+been called, with a WARN_ON_ONCE to find drivers that need to be
+fixed, and the last clk_disable could call clk_unprepare.  For systems
+where all clocks are atomic, everything would continue to work.
