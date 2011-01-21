@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602Ab1AURSn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 12:18:43 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:32820 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564Ab1AURSl (ORCPT
+	id S1754630Ab1AURTU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 12:19:20 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45936 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515Ab1AURTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 12:18:41 -0500
-Message-ID: <4D39BF9E.3030007@ru.mvista.com>
-Date: Fri, 21 Jan 2011 20:17:18 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+	Fri, 21 Jan 2011 12:19:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=uqxPTr1ivyyBu/cY2i+KARDL2a8zbXm0Xvpxy9K50rSDwa8u/9ryPPjdyJS8y3S8Uf
+         2BqRRdZ0hdnVxdVhvOFAZsOJ+W3V56Dl0Y7BLUkDbtoo/N5s52F5OnPwnYXfdHGAGg6d
+         bhNyLMj29EuHA5oLVY+DYBNxgJ4xAo9TxW4dU=
+Date: Fri, 21 Jan 2011 18:19:14 +0100
+From: Tejun Heo <tj@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Christoph Lameter <cl@linux.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for
+ this_cpu_cmpxchg_double
+Message-ID: <20110121171914.GJ2832@htj.dyndns.org>
+References: <20110107180419.GB23082@Krystal>
+ <alpine.DEB.2.00.1101071227450.3014@router.home>
+ <20110108172453.GF13269@mtj.dyndns.org>
+ <4D393636.4040607@cs.helsinki.fi>
+ <20110121092649.GA2832@htj.dyndns.org>
+ <4D39A6EB.70705@zytor.com>
+ <20110121154831.GE2832@htj.dyndns.org>
+ <20110121165425.GB11687@Krystal>
+ <20110121170847.GH2832@htj.dyndns.org>
+ <1da7491b-6e7d-4453-9c6f-0e7767421ec4@email.android.com>
 MIME-Version: 1.0
-To: "Dr. David Alan Gilbert" <david.gilbert@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        acme@ghostprotocols.net, mingo@elte.hu, dave.martin@linaro.org
-Subject: Re: [PATCH] fix perf Annotation of Thumb code
-References: <20110121163922.GA31398@davesworkthinkpad>
-In-Reply-To: <20110121163922.GA31398@davesworkthinkpad>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1da7491b-6e7d-4453-9c6f-0e7767421ec4@email.android.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Fri, Jan 21, 2011 at 09:13:41AM -0800, H. Peter Anvin wrote:
+> We could do cmpxchg with a structure... the problem with a lon int
+> type is that Cristoph ran into bugs with __int128 on 64 bits.
 
-Dr. David Alan Gilbert wrote:
+But, IIRC, the problem with int128 was with passing it as parameter
+and return value.  We don't have to do that.  We'll be just using it
+as a data storage / container type.  Or even that is broken?
 
->   In ARM's Thumb mode the bottom bit of the symbol address is set to mark
-> the function as Thumb; the instructions are in reality 2 or 4 byte on 2
-> byte alignments, and when the +1 address is used in annotate it causes
-> objdump to disassemble invalid instructions.  
+Thanks.
 
->   The patch removes that bottom bit during symbol loading.
->   This patch is against current linus's git, (2b1caf.....).
->   Many thinks to Dave Martin for comments on an initial version of the patch.
-
-
-> Dave
-
-> (For reference this corresponds to this bug
-> https://bugs.launchpad.net/linux-linaro/+bug/677547 )
-
->         Signed-off-by: Dr. David Alan Gilbert <david.gilbert@linaro.org>
-
-    Hm, I think there should be no spaces/tabs before signoff...
-
-> ---
-
-> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-> index 15ccfba..36e76c1 100644
-> --- a/tools/perf/util/symbol.c
-> +++ b/tools/perf/util/symbol.c
-> @@ -1161,6 +1161,13 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
->  
->  		section_name = elf_sec__name(&shdr, secstrs);
->  
-> +		/* On ARM, symbols for thumb functions have 1 added to
-> +		 * the symbol address as a flag - remove it */
-> +		if ((ehdr.e_machine == EM_ARM) &&
-> +			(map->type == MAP__FUNCTION) &&
-> +			(sym.st_value & 1))
-> +			sym.st_value-=1;
-
-   The coding style used suggests spaces around -=.
-
-WBR, Sergei
+-- 
+tejun
