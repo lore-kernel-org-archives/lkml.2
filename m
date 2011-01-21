@@ -1,90 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab1AUIUQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 03:20:16 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52164 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754003Ab1AUIUO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 03:20:14 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=N8ePVK8h95hOelUaJjfMr2le4YmokLWdSwZiaTXcl5fBYVLyNO0Pg9qPjn2yfJn6QP
-         iqUKJSfREhtIO5HD3t6QMvJwNUoScUwid8VKW7zL4KUzedjj8Ez/OSxwdRXe45fsRPTq
-         3+W6p39EIb+dW36DpNnKAxEb0UGN8MhL10iig=
-From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-To: ralf@linux-mips.org, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
-        will.deacon@arm.com
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        wuzhangjin@gmail.com, paulus@samba.org, mingo@elte.hu, acme@redhat.com,
-        dengcheng.zhu@gmail.com, matt@console-pimps.org, sshtylyov@mvista.com,
-        ddaney@caviumnetworks.com
-Subject: [PATCH v4 5/5] MIPS/Perf-events: Use unsigned delta for right shift in event update
-Date: Fri, 21 Jan 2011 16:19:21 +0800
-Message-Id: <1295597961-7565-6-git-send-email-dengcheng.zhu@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1295597961-7565-1-git-send-email-dengcheng.zhu@gmail.com>
-References: <1295597961-7565-1-git-send-email-dengcheng.zhu@gmail.com>
+	id S1754667Ab1AUIUt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 03:20:49 -0500
+Received: from mga02.intel.com ([134.134.136.20]:58806 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754506Ab1AUIUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 03:20:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,357,1291622400"; 
+   d="scan'208";a="595106681"
+Subject: Re: [performance bug] kernel building regression on 64 LCPUs
+ machine
+From: Shaohua Li <shaohua.li@intel.com>
+To: Corrado Zoccolo <czoccolo@gmail.com>, Jan Kara <jack@suse.cz>,
+        "Ted Ts'o" <tytso@mit.edu>
+Cc: "Shi, Alex" <alex.shi@intel.com>, "vgoyal@redhat.com" <vgoyal@redhat.com>,
+        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>
+In-Reply-To: <AANLkTin6M=tX+NZGstP-ZG9uSQ487XisRpMKKVKHYnQ5@mail.gmail.com>
+References: <1295402148.4773.143.camel@debian>
+	 <AANLkTin6M=tX+NZGstP-ZG9uSQ487XisRpMKKVKHYnQ5@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 21 Jan 2011 16:20:03 +0800
+Message-ID: <1295598003.1949.943.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Leverage the commit for ARM by Will Deacon:
+On Fri, 2011-01-21 at 15:23 +0800, Corrado Zoccolo wrote:
+> On Wed, Jan 19, 2011 at 2:55 AM, Alex,Shi <alex.shi@intel.com> wrote:
+> > Shaohua and I tested kernel building performance on latest kernel. and
+> > found it is drop about 15% on our 64 LCPUs NHM-EX machine on ext4 file
+> > system. We find this performance dropping is due to commit
+> > 749ef9f8423054e326f. If we revert this patch or just change the
+> > WRITE_SYNC back to WRITE in jbd2/commit.c file. the performance can be
+> > recovered.
+> >
+> > iostat report show with the commit, read request merge number increased
+> > and write request merge dropped. The total request size increased and
+> > queue length dropped. So we tested another patch: only change WRITE_SYNC
+> > to WRITE_SYNC_PLUG in jbd2/commit.c, but nothing effected.
+> >
+> > we didn't test deadline IO mode, just test cfq. seems insert write
+> > request into sync queue effect much read performance, but we don't know
+> > details. What's your comments of this?
+> >
+> > iostat of .37 kernel:
+> > rrqm/s   wrqm/s r/s     w/s     rMB/s  wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+> > 22.5772 96.46 92.3742 14.747  1.0048  0.439474 34.8557 0.18078 3.8076 0.30447 2.94302
+> > iostat of commit reverted .37:
+> > 26.6223 80.21 107.875 6.03538 1.51415 0 41.3275 0.153385 3.80569 0.377231 3.22323
+> 
+> From these numbers, it seems to me that with the patch reverted, the
+> write bandwidth is really low, and probably you are keeping most
+> written files in the buffer cache during the whole compile, while the
+> non-reverted kernel is making progress in writing out the files. So
+> the 'improved' read bandwidth is due to unfairness w.r.t. writes.
+> Does the result change if you add a final sync and time that as well,
+> in order to see the full time to make it on disk?
+> 
+> I think that in a more extreme test where you end up filling all the
+> buffer cache with written data, you will see much longer stalls with
+> the revert than without.
+Not just bandwidth issue. cpu might have more idle. so I bet even the
+'kbuild + sync' workload still has regression
 
-- 446a5a8b1eb91a6990e5c8fe29f14e7a95b69132
-    ARM: 6205/1: perf: ensure counter delta is treated as unsigned
+And the no-write-merge of WRITE_SYNC isn't good, at least we should use
+WRITE_SYNC_PLUG.
 
-    Hardware performance counters on ARM are 32-bits wide but atomic64_t
-    variables are used to represent counter data in the hw_perf_event structure.
+Thanks,
+Shaohua
 
-    The armpmu_event_update function right-shifts a signed 64-bit delta variable
-    and adds the result to the event count. This can lead to shifting in sign-bits
-    if the MSB of the 32-bit counter value is set. This results in perf output
-    such as:
+> >
+> > vmstat report show, read bandwidth dropping:
+> > vmstat of .37:
+> >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+> > 3.4 52.6 0.0 64303937.0 16466.7 121544.5 0.0 0.0 2102.7 1914.6 7414.1 3185.7 2.0 1.0 80.3 16.7 0.0
+> > vmstat of revert all from .37
+> > 2.2 35.8 0.0 64306767.4 17265.6 126101.2 0.0 0.0 2415.8 1619.1 8532.2 3556.2 2.5 1.1 83.0 13.3 0.0
+> >
+> > Regards
+> > Alex
+> >
+> > ===
+> > diff --git a/fs/jbd/commit.c b/fs/jbd/commit.c
+> > index 34a4861..27ac2f3 100644
+> > --- a/fs/jbd/commit.c
+> > +++ b/fs/jbd/commit.c
+> > @@ -294,7 +294,7 @@ void journal_commit_transaction(journal_t *journal)
+> >        int first_tag = 0;
+> >        int tag_flag;
+> >        int i;
+> > -       int write_op = WRITE_SYNC;
+> > +       int write_op = WRITE;
+> >
+> >        /*
+> >         * First job: lock down the current transaction and wait for
+> > diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
+> > index f3ad159..69ff08e 100644
+> > --- a/fs/jbd2/commit.c
+> > +++ b/fs/jbd2/commit.c
+> > @@ -329,7 +329,7 @@ void jbd2_journal_commit_transaction(journal_t *journal)
+> >        int tag_bytes = journal_tag_bytes(journal);
+> >        struct buffer_head *cbh = NULL; /* For transactional checksums */
+> >        __u32 crc32_sum = ~0;
+> > -       int write_op = WRITE_SYNC;
+> > +       int write_op = WRITE;
+> >
+> >        /*
+> >         * First job: lock down the current transaction and wait for
+> >
+> >
+> >
+> 
+> 
+> 
 
-     Performance counter stats for 'sleep 20':
-
-     18446744073460670464  cycles             <-- 0xFFFFFFFFF12A6000
-            7783773  instructions             #      0.000 IPC
-                465  context-switches
-                161  page-faults
-            1172393  branches
-
-       20.154242147  seconds time elapsed
-
-    This patch ensures that the delta value is treated as unsigned so that the
-    right shift sets the upper bits to zero.
-
-Changes:
-v4 - v3:
-o None
-v3 - v2:
-o Keep all mentioned commits in the form of number + title + original
-summary + (MIPS specific info when needed).
-v2 - v1:
-o None
-
-Acked-by: Will Deacon <will.deacon@arm.com>
-Acked-by: David Daney <ddaney@caviumnetworks.com>
-Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
----
- arch/mips/kernel/perf_event.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/mips/kernel/perf_event.c b/arch/mips/kernel/perf_event.c
-index 8f7d2f8..a824485 100644
---- a/arch/mips/kernel/perf_event.c
-+++ b/arch/mips/kernel/perf_event.c
-@@ -169,7 +169,7 @@ static void mipspmu_event_update(struct perf_event *event,
- 	unsigned long flags;
- 	int shift = 64 - TOTAL_BITS;
- 	s64 prev_raw_count, new_raw_count;
--	s64 delta;
-+	u64 delta;
- 
- again:
- 	prev_raw_count = local64_read(&hwc->prev_count);
--- 
-1.7.1
 
