@@ -1,90 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954Ab1AUPiE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 10:38:04 -0500
-Received: from hera.kernel.org ([140.211.167.34]:51721 "EHLO hera.kernel.org"
+	id S1753357Ab1AUPiW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 10:38:22 -0500
+Received: from hera.kernel.org ([140.211.167.34]:51730 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752668Ab1AUPiC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 10:38:02 -0500
-Date: Fri, 21 Jan 2011 15:37:35 GMT
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <new-submission>
-References: <new-submission>
+	id S1750800Ab1AUPiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 10:38:20 -0500
+Date: Fri, 21 Jan 2011 15:37:10 GMT
+From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-kernel@vger.kernel.org, durgadoss.r@intel.com, hpa@zytor.com,
+        mingo@redhat.com, lm-sensors@lm-sensors.org, fenghua.yu@intel.com,
+        khali@linux-fr.org, tglx@linutronix.de, guenter.roeck@ericsson.com,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, durgadoss.r@intel.com,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        fenghua.yu@intel.com, khali@linux-fr.org, tglx@linutronix.de,
+        guenter.roeck@ericsson.com, mingo@elte.hu
+In-Reply-To: <20110121041239.GB26954@linux-os.sc.intel.com>
+References: <20110121041239.GB26954@linux-os.sc.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf: Annotate cpuctx->ctx.mutex to avoid a lockdep splat
-Message-ID: <tip-547e9fd7d328af261f184bf66effc5033c886498@git.kernel.org>
-Git-Commit-ID: 547e9fd7d328af261f184bf66effc5033c886498
+Subject: [tip:x86/urgent] x86, mcheck, therm_throt.c: Export symbol platform_thermal_notify to allow coretemp to handler intr
+Message-ID: <tip-f21bbec9ffcaf73e99938209e52b757d93f9133b@git.kernel.org>
+Git-Commit-ID: f21bbec9ffcaf73e99938209e52b757d93f9133b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 21 Jan 2011 15:37:36 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 21 Jan 2011 15:37:12 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  547e9fd7d328af261f184bf66effc5033c886498
-Gitweb:     http://git.kernel.org/tip/547e9fd7d328af261f184bf66effc5033c886498
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Wed, 19 Jan 2011 12:51:39 +0100
+Commit-ID:  f21bbec9ffcaf73e99938209e52b757d93f9133b
+Gitweb:     http://git.kernel.org/tip/f21bbec9ffcaf73e99938209e52b757d93f9133b
+Author:     Fenghua Yu <fenghua.yu@intel.com>
+AuthorDate: Thu, 20 Jan 2011 20:12:40 -0800
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 21 Jan 2011 16:32:42 +0100
+CommitDate: Fri, 21 Jan 2011 14:11:12 +0100
 
-perf: Annotate cpuctx->ctx.mutex to avoid a lockdep splat
+x86, mcheck, therm_throt.c: Export symbol platform_thermal_notify to allow coretemp to handler intr
 
-Lockdep spotted:
+In therm_throt.c, commit
+9e76a97efd31a08cb19d0ba12013b8fb4ad3e474 patch doesn't export
+the symbol platform_thermal_notify.
 
-	loop_1b_instruc/1899 is trying to acquire lock:
-	 (event_mutex){+.+.+.}, at: [<ffffffff810e1908>] perf_trace_init+0x3b/0x2f7
+Other drivers (e.g. drivers/hwmon/coretemp.c) can not find the
+symbol platform_thermal_notify when defining threshould
+interrupt handler.
 
-	but task is already holding lock:
-	 (&ctx->mutex){+.+.+.}, at: [<ffffffff810eb45b>] perf_event_init_context+0xc0/0x218
+Please apply this patch to allow threshold interrupt handler in
+coretemp.
 
-	which lock already depends on the new lock.
-
-	the existing dependency chain (in reverse order) is:
-
-	-> #3 (&ctx->mutex){+.+.+.}:
-	-> #2 (cpu_hotplug.lock){+.+.+.}:
-	-> #1 (module_mutex){+.+...}:
-	-> #0 (event_mutex){+.+.+.}:
-
-But because the deadlock would be cpuhotplug (cpu-event) vs fork
-(task-event) it cannot, in fact, happen. We can annotate this by giving the
-perf_event_context used for the cpuctx a different lock class from those
-used by tasks.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <new-submission>
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Cc: R Durgadoss <durgadoss.r@intel.com>
+Cc: khali@linux-fr.org <khali@linux-fr.org>
+Cc: lm-sensors@lm-sensors.org <lm-sensors@lm-sensors.org>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>
+LKML-Reference: <20110121041239.GB26954@linux-os.sc.intel.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/perf_event.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 244ca3a..c5fa717 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -5380,6 +5380,8 @@ free_dev:
- 	goto out;
- }
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index e12246f..6f8c5e9 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -59,6 +59,7 @@ struct thermal_state {
  
-+static struct lock_class_key cpuctx_mutex;
-+
- int perf_pmu_register(struct pmu *pmu, char *name, int type)
- {
- 	int cpu, ret;
-@@ -5428,6 +5430,7 @@ skip_type:
+ /* Callback to handle core threshold interrupts */
+ int (*platform_thermal_notify)(__u64 msr_val);
++EXPORT_SYMBOL(platform_thermal_notify);
  
- 		cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
- 		__perf_event_init_context(&cpuctx->ctx);
-+		lockdep_set_class(&cpuctx->ctx.mutex, &cpuctx_mutex);
- 		cpuctx->ctx.type = cpu_context;
- 		cpuctx->ctx.pmu = pmu;
- 		cpuctx->jiffies_interval = 1;
+ static DEFINE_PER_CPU(struct thermal_state, thermal_state);
+ 
