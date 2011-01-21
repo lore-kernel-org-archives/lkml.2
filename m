@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab1AUGng (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 01:43:36 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38892 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412Ab1AUGne (ORCPT
+	id S1752903Ab1AUGpa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 01:45:30 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51523 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab1AUGp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 01:43:34 -0500
+	Fri, 21 Jan 2011 01:45:28 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 21 Jan 2011 15:37:26 +0900
+Date: Fri, 21 Jan 2011 15:39:28 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
@@ -17,9 +17,8 @@ Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
         "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
         "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: [PATCH 1/7] memcg : comment, style fixes for recent patch of
- move_parent
-Message-Id: <20110121153726.54f4a159.kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH 2/7] memcg : more fixes and clean up for 2.6.28-rc
+Message-Id: <20110121153928.bb0c5e90.kamezawa.hiroyu@jp.fujitsu.com>
 In-Reply-To: <20110121153431.191134dd.kamezawa.hiroyu@jp.fujitsu.com>
 References: <20110121153431.191134dd.kamezawa.hiroyu@jp.fujitsu.com>
 Organization: FUJITSU Co. LTD.
@@ -33,60 +32,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-A fix for 987eba66e0e6aa654d60881a14731a353ee0acb4
+This is a fix for
+ca3e021417eed30ec2b64ce88eb0acf64aa9bc29
 
-A clean up for mem_cgroup_move_parent(). 
- - remove unnecessary initialization of local variable.
- - rename charge_size -> page_size
- - remove unnecessary (wrong) comment.
+mem_cgroup_disabled() should be checked at splitting.
 
 Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/memcontrol.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ mm/memcontrol.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
 Index: mmotm-0107/mm/memcontrol.c
 ===================================================================
 --- mmotm-0107.orig/mm/memcontrol.c
 +++ mmotm-0107/mm/memcontrol.c
-@@ -2265,7 +2265,7 @@ static int mem_cgroup_move_parent(struct
- 	struct cgroup *cg = child->css.cgroup;
- 	struct cgroup *pcg = cg->parent;
- 	struct mem_cgroup *parent;
--	int charge = PAGE_SIZE;
-+	int page_size;
+@@ -2144,6 +2144,8 @@ void mem_cgroup_split_huge_fixup(struct 
+ 	struct page_cgroup *tail_pc = lookup_page_cgroup(tail);
  	unsigned long flags;
- 	int ret;
  
-@@ -2278,22 +2278,23 @@ static int mem_cgroup_move_parent(struct
- 		goto out;
- 	if (isolate_lru_page(page))
- 		goto put;
--	/* The page is isolated from LRU and we have no race with splitting */
--	charge = PAGE_SIZE << compound_order(page);
-+
-+	page_size = PAGE_SIZE << compound_order(page);
- 
- 	parent = mem_cgroup_from_cont(pcg);
--	ret = __mem_cgroup_try_charge(NULL, gfp_mask, &parent, false, charge);
-+	ret = __mem_cgroup_try_charge(NULL, gfp_mask,
-+				&parent, false, page_size);
- 	if (ret || !parent)
- 		goto put_back;
- 
--	if (charge > PAGE_SIZE)
-+	if (page_size > PAGE_SIZE)
- 		flags = compound_lock_irqsave(page);
- 
--	ret = mem_cgroup_move_account(pc, child, parent, true, charge);
-+	ret = mem_cgroup_move_account(pc, child, parent, true, page_size);
- 	if (ret)
--		mem_cgroup_cancel_charge(parent, charge);
-+		mem_cgroup_cancel_charge(parent, page_size);
- put_back:
--	if (charge > PAGE_SIZE)
-+	if (page_size > PAGE_SIZE)
- 		compound_unlock_irqrestore(page, flags);
- 	putback_lru_page(page);
- put:
++	if (mem_cgroup_disabled())
++		return;
+ 	/*
+ 	 * We have no races with charge/uncharge but will have races with
+ 	 * page state accounting.
 
