@@ -1,35 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab1AUPbo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 10:31:44 -0500
-Received: from smtp.nokia.com ([147.243.1.48]:40358 "EHLO mgw-sa02.nokia.com"
+	id S1754020Ab1AUPdZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 10:33:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48026 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753537Ab1AUPbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 10:31:43 -0500
-Date: Fri, 21 Jan 2011 17:30:43 +0200 (EET)
-From: Aaro Koskinen <aaro.koskinen@nokia.com>
-X-X-Sender: aakoskin@esdhcp041196.research.nokia.com
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.38-rc1
-In-Reply-To: <20110119214040.09794c7a@lxorguk.ukuu.org.uk>
-Message-ID: <alpine.DEB.1.10.1101211725240.8142@esdhcp041196.research.nokia.com>
-References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com> <20110119214040.09794c7a@lxorguk.ukuu.org.uk>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+	id S1753828Ab1AUPdZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 10:33:25 -0500
+Message-ID: <4D39A6EB.70705@zytor.com>
+Date: Fri, 21 Jan 2011 07:31:55 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
-X-Nokia-AV: Clean
+To: Tejun Heo <tj@kernel.org>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>, Christoph Lameter <cl@linux.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for this_cpu_cmpxchg_double
+References: <20110106204513.669098445@linux.com> <20110106204525.222395863@linux.com> <4D263C91.30709@zytor.com> <alpine.DEB.2.00.1101070907060.3014@router.home> <20110107180419.GB23082@Krystal> <alpine.DEB.2.00.1101071227450.3014@router.home> <20110108172453.GF13269@mtj.dyndns.org> <4D393636.4040607@cs.helsinki.fi> <20110121092649.GA2832@htj.dyndns.org>
+In-Reply-To: <20110121092649.GA2832@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 01/21/2011 01:26 AM, Tejun Heo wrote:
+> Hello,
+> 
+> On Fri, Jan 21, 2011 at 09:31:02AM +0200, Pekka Enberg wrote:
+>> On 1/8/11 7:24 PM, Tejun Heo wrote:
+>>> Call me weird but I like this one than others.  It sure is ugly but
+>>> the operation itself isn't a particularly pretty so it kinda matches.
+>>> Also, this one is the least error prone and more consistent with other
+>>> cpu ops.
+>>
+>> So what are we going to do about this patch? I'd love to merge
+>> Christoph's SLUB patches for linux-next now that .38-rc1 is out.
+> 
+> At least you like it, which is good.
+> 
+> I don't think the currently proposed one with two separate parameters
+> is significantly better than other alternatives and vice-versa.  They
+> all have slightly different ugliness and error proneness issues.
+> 
+> That said, I still like the double parameter one best, and, unless
+> there are distinctively good reasons to choose another one, I'm gonna
+> commit it to percpu tree in a few days so that merge can proceed.  So,
+> if you have something to say, now would be a good time to assert it.
+> 
 
-On Wed, 19 Jan 2011, Alan Cox wrote:
-> Only oddity is the kmemleak report is reporting a few possible leaks and
-> suggesting I look in the sysfs file .. which isn't there ???
+I really object to passing two pointers where one of them has to be a
+fixed offset to the other.  That really doesn't make any sense.
 
-It's a debugfs file; the log assumes you have debugfs mounted at
-/sys/kernel/debug/.
-
-A.
+	-hpa
