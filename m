@@ -1,58 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab1AUQB3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 11:01:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11043 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750817Ab1AUQB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 11:01:27 -0500
-Date: Fri, 21 Jan 2011 16:53:23 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, stern@rowland.harvard.edu,
-        a.p.zijlstra@chello.nl, fweisbec@gmail.com, roland@redhat.com,
-        tglx@linutronix.de, prasad@linux.vnet.ibm.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/urgent] perf: Fix find_get_context() vs
-	perf_event_exit_task() race
-Message-ID: <20110121155323.GA2988@redhat.com>
-References: <20110119182207.GB12183@redhat.com> <tip-dbe08d82ce3967ccdf459f7951d02589cf967300@git.kernel.org> <20110121152939.GA28552@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110121152939.GA28552@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754299Ab1AUQBf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 11:01:35 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47166 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754233Ab1AUQBc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 11:01:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=Qf1eXwzeg4+n3+/IIxboakdHQ90SF/PAr+HQ1hoFSPoPo6JpfCeG3pZYP4QE4p8iDj
+         tBvFDT8OLlr/ChFsE8JCdddQxL2RHVWoxlVvcVIdpz5YPZGiSupjPUtdCf7B4B2MDKAe
+         lYZN7K9B3W+AOI6qrKUyJP67v9pNsXk+mnQiY=
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk, tytso@mit.edu, djwong@us.ibm.com, shli@kernel.org,
+        neilb@suse.de, adilger.kernel@dilger.ca, jack@suse.cz,
+        snitzer@redhat.com, linux-kernel@vger.kernel.org, kmannth@us.ibm.com,
+        cmm@us.ibm.com, linux-ext4@vger.kernel.org, rwheeler@redhat.com,
+        hch@lst.de, josef@redhat.com
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 2/3] block: improve flush bio completion
+Date: Fri, 21 Jan 2011 16:59:57 +0100
+Message-Id: <1295625598-15203-3-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1295625598-15203-1-git-send-email-tj@kernel.org>
+References: <1295625598-15203-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21, Ingo Molnar wrote:
->
-> * tip-bot for Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > @@ -6127,7 +6133,7 @@ static void perf_event_exit_task_context(struct task_struct *child, int ctxn)
-> >  	 * scheduled, so we are now safe from rescheduling changing
-> >  	 * our context.
-> >  	 */
-> > -	child_ctx = child->perf_event_ctxp[ctxn];
-> > +	child_ctx = rcu_dereference(child->perf_event_ctxp[ctxn]);
-> >  	task_ctx_sched_out(child_ctx, EVENT_ALL);
-> >
-> >  	/*
->
-> hm, this one's causing:
->
->  [   25.557579] ===================================================
->  [   25.561361] [ INFO: suspicious rcu_dereference_check() usage. ]
+bio's for flush are completed twice - once during the data phase and
+one more time after the whole sequence is complete.  The first
+completion shouldn't notify completion to the issuer.
 
+This was achieved by skipping all bio completion steps in
+req_bio_endio() for the first completion; however, this has two
+drawbacks.
 
-Oh, indeed, I am stupid!
+* Error is not recorded in bio and must be tracked somewhere else.
 
-I added rcu_dereference() because it has smp_read_barrier_depends(),
-but I forgot about rcu_dereference_check().
+* Partial completion is not supported.
 
-I'll send the fix soon...
+Both don't cause problems for the current users; however, they make
+further improvements difficult.  Change req_bio_endio() such that it
+only skips the actual notification part for the first completion.  bio
+completion is implemented with partial completions on mind anyway so
+this is as simple as moving the REQ_FLUSH_SEQ conditional such that
+only calling of bio_endio() is skipped.
 
-Oleg.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ block/blk-core.c |   48 +++++++++++++++++++++---------------------------
+ 1 files changed, 21 insertions(+), 27 deletions(-)
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 22e0b4f..038519b 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -151,37 +151,31 @@ static void req_bio_endio(struct request *rq, struct bio *bio,
+ {
+ 	struct request_queue *q = rq->q;
+ 
+-	if (!(rq->cmd_flags & REQ_FLUSH_SEQ)) {
+-		if (error)
+-			clear_bit(BIO_UPTODATE, &bio->bi_flags);
+-		else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
+-			error = -EIO;
+-
+-		if (unlikely(nbytes > bio->bi_size)) {
+-			printk(KERN_ERR "%s: want %u bytes done, %u left\n",
+-			       __func__, nbytes, bio->bi_size);
+-			nbytes = bio->bi_size;
+-		}
++	if (error)
++		clear_bit(BIO_UPTODATE, &bio->bi_flags);
++	else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
++		error = -EIO;
++
++	if (unlikely(nbytes > bio->bi_size)) {
++		printk(KERN_ERR "%s: want %u bytes done, %u left\n",
++		       __func__, nbytes, bio->bi_size);
++		nbytes = bio->bi_size;
++	}
+ 
+-		if (unlikely(rq->cmd_flags & REQ_QUIET))
+-			set_bit(BIO_QUIET, &bio->bi_flags);
++	if (unlikely(rq->cmd_flags & REQ_QUIET))
++		set_bit(BIO_QUIET, &bio->bi_flags);
+ 
+-		bio->bi_size -= nbytes;
+-		bio->bi_sector += (nbytes >> 9);
++	bio->bi_size -= nbytes;
++	bio->bi_sector += (nbytes >> 9);
+ 
+-		if (bio_integrity(bio))
+-			bio_integrity_advance(bio, nbytes);
++	if (bio_integrity(bio))
++		bio_integrity_advance(bio, nbytes);
+ 
+-		if (bio->bi_size == 0)
+-			bio_endio(bio, error);
+-	} else {
+-		/*
+-		 * Okay, this is the sequenced flush request in
+-		 * progress, just record the error;
+-		 */
+-		if (error && !q->flush_err)
+-			q->flush_err = error;
+-	}
++	/* don't actually finish bio if it's part of flush sequence */
++	if (bio->bi_size == 0 && !(rq->cmd_flags & REQ_FLUSH_SEQ))
++		bio_endio(bio, error);
++	else if (error && !q->flush_err)
++		q->flush_err = error;
+ }
+ 
+ void blk_dump_rq_flags(struct request *rq, char *msg)
+-- 
+1.7.1
 
