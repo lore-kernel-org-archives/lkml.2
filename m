@@ -1,123 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab1AUJIu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 04:08:50 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55815 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431Ab1AUJIs convert rfc822-to-8bit (ORCPT
+	id S1754780Ab1AUJMJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 04:12:09 -0500
+Received: from mga09.intel.com ([134.134.136.24]:52936 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750810Ab1AUJMH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 04:08:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=YxmoRQtt5vJlUuKVBhZOnqpNs02/pjoYwL6p1gAeyp7I89P0OdIBNK70OiKFahsbSE
-         HNBYtPfvg1DCFBK3NU+GEEbreujW8nhcxuKouBKMB6vqIe06s2u5IIQ1dbnxv6/Y72HV
-         UjOAw8umYiGcepP7Y0Yj8ao1OedWKW0jx2xCw=
-MIME-Version: 1.0
-In-Reply-To: <20110121074530.GB12307@m-desktop>
-References: <1295426461-12459-1-git-send-email-weber@corscience.de>
- <AANLkTin0-joNuqxqL79j0wqPk_A5mtAgzEY=X=PeH=+C@mail.gmail.com>
- <20110119130049.GB9365@m-desktop> <4D36E7CC.5090303@corscience.de>
- <AANLkTikjdukQ+kUUR7N11rZ5b=Xd=xLb0-chMrbp5BQ6@mail.gmail.com>
- <20110120114855.GD1987@m-desktop> <38f2b3af600ce3dfea1e73edec7c81fa@mail.gmail.com>
- <AANLkTimxTaU3x9DZvL4dvXs1nTYjCQnbyZLC73SOKrgQ@mail.gmail.com> <20110121074530.GB12307@m-desktop>
-From: Govindraj <govindraj.ti@gmail.com>
-Date: Fri, 21 Jan 2011 14:38:26 +0530
-Message-ID: <AANLkTim2etyaoeuoXmnpZ3uij8O+bzPW-uq_z-o1CNQ3@mail.gmail.com>
-Subject: Re: [PATCHv2] OMAP: Enable Magic SysRq on serial console ttyOx
-To: "G, Manjunath Kondaiah" <manjugk@ti.com>
-Cc: Anand Gadiyar <gadiyar@ti.com>, Thomas Weber <weber@corscience.de>,
-        linux-omap@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        Govindraj Raja <govindraj.raja@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrei Emeltchenko <andrei.emeltchenko@nokia.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 21 Jan 2011 04:12:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,357,1291622400"; 
+   d="scan'208";a="595121483"
+From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
+To: Chris Ball <cjb@laptop.org>
+CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Date: Fri, 21 Jan 2011 17:12:00 +0800
+Subject: RE: [PATCH v3 1/1]mmc: implemented eMMC4.4 enhanced area feature
+Thread-Topic: [PATCH v3 1/1]mmc: implemented eMMC4.4 enhanced area feature
+Thread-Index: Acu5QdVlhNhS+s2lR7mXY3YLFbJivgAB4DHA
+Message-ID: <5D8008F58939784290FAB48F549751983539F50558@shsmsx502.ccr.corp.intel.com>
+References: <20110120075556.GA23566@intel.com>
+ <20110120161248.GA11774@void.printf.net>
+ <5D8008F58939784290FAB48F5497519835341813A7@shsmsx502.ccr.corp.intel.com>
+ <20110121080422.GA21763@void.printf.net>
+In-Reply-To: <20110121080422.GA21763@void.printf.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 1:15 PM, G, Manjunath Kondaiah <manjugk@ti.com> wrote:
-> On Fri, Jan 21, 2011 at 12:54:29PM +0530, Govindraj wrote:
->> On Thu, Jan 20, 2011 at 5:49 PM, Anand Gadiyar <gadiyar@ti.com> wrote:
->> >> > >>>> Magic SysRq key is not working for OMAP on new serial
->> >> > >>>> console ttyOx because SUPPORT_SYSRQ is not defined
->> >> > >>>> for omap-serial.
->> >> > >>>>
->> >> > >>>> This patch defines SUPPORT_SYSRQ in omap-serial and
->> >> > >>>> enables handling of Magic SysRq character.
->> >> > >>>>
->> >> > >>>> Signed-off-by: Thomas Weber <weber@corscience.de>
->> >> > >>>
->> >> > >>> Looks fine to me.
->> >> > >>>
->> >> > >>> Acked-by: Govindraj.R <govindraj.raja@ti.com>
->> >> > >> I tried to use SysRq key on minicom after applying this patch, it
->> > looks
->> >> > >> like it is not triggering sysrq event.
->> >> > >>
->> >> > >> Am I missing anything?
->> >> > >>
->> >> > >> -Manjunath
->> >> > >> --
->> >> > > Hello Manjunath,
->> >> > >
->> >> > > Do you have CONFIG_MAGIC_SYSRQ enabled?
->> >> > > Magic SysRq key in Kernel Hacking
->> >> > >
->> >> > > I tested it on Devkit8000 (beagle board clone).
->> >> > >
->> >> >
->> >> > re-setting lsr_break_flag to 0 in receive chars is causing issues
->> >> > in getting sysrq key break sequence on omap-serial.c
->> >> >
->> >> > Manju,
->> >> >
->> >> > can you try this change on your environment.
->> >> > With below change works for me on 3430SDP/4430SDP.
->> >> > key sequence I checked.
->> >> > [alt + b + t]  => shows trace of tasks running.
->> >> > [alt + b + b] => system reboot.
->> >>
->> >> With below patch, it works fine on TeraTerm. However, I am not able to
->> >> perform the same on minicom.
->> >>
->> >> Tested-by: Manjunath G Kondaiah <manjugk@ti.com>
->> >>
->> >> -Manjunath
->> >>
->> >
->> > Not sure what you guys are trying out, but I am able to use sysrq
->> > just fine in minicom (using only Thomas' original patch) - you need
->> > to send a break sequence, and the way to do this in minicom is to
->> > do Ctrl-A followed by F.
->> >
->> > Works for me, without the "resetting lsr_break_flag to 0" part.
->> >
->> > @Govind,
->> >
->> > What are the issues you see in getting sysrq key break sequence
->> > without your change? And how is your change fixing this?
->>
->> Actually I was using teraterm on windows platform.
->> using keyboard to send a break char [alt + b] sometimes
->> i observed that first break char was getting lost and subsequent break
->> chars where getting
->> recognized. However using send break option from terterm menu seems to
->> work most of times.
->> my change can be dropped.
-> If it is fixing the issue of losing first break character, what is wrong in
-> having this patch?
->
-> Do you see any other issues because of this change?
+Hi Chris,
+> 	/sys/devices/.../mmc_host/mmcX/mmcX:XXXX/enhanced_area_size
+> > > > +Date:		January 2011
+> > > > +Contact:	Chuanxiao Dong <chuanxiao.dong@intel.com>
+> > > > +Description:
+> > > > +		Enhanced area is a new feature defined in eMMC4.4 standard.
+> eMMC4.4
+> > > or
+> > > > +		later card can support such feature. This kind of area can help to
+> > > > +		improve the card performance. If the feature is enabled, this
+> attribute
+> > > > +		will indicate the size of enhanced data area. If not, this attribute
+> > > > +		will be -EINVAL. Unit KByte. Format decimal.
+> > >
+> > > This is still wrapped at > 80 columns.
+> > Sorry for that. I have set the textwidth=80 for vim, not understand why this is still
+> wrapped at >80 columns... I know checkpatch.pl can help us to find the style
+> problem, and is there some other script which can help find the style problem of
+> Document or how can I avoid such errors?
+> 
+> checkpatch.pl will warn about >80 chars, so that should be fine on its own.
+I have used the checkpatch.pl to check this patch, and no error or warning found....
 
-Haven't seen any thing else.
-Will leave it to Thomas to incorporate if he is willing to
-take up the change else will post out this change some time
-later.
+> 
+> > > Oh, and let's mention the units of _offset and _size in the comment in
+> > > card.h.
+> >
+> > Chris, you mean the type of _offset and _size? I think the 64bits number for
+> _offset is enough, also the 32bits number for _size since the units of _size is Kbytes.
+> Any suggestions on that?
+> 
+> Ah, I wasn't clear -- I meant the bytes/kilobytes units, not the data type
+> sizes.  e.g.:
+> 
+> +   size_t          enhanced_area_size;             /* Units: KB */
+I think the units of _offset and _size should be easy for user to understand, so just choose the Byte for _offset and Kbyte for _size...
+And as spec said, the _size is (ENH_SIZE_MULT_2 << 16 + ENH_SIZE_MULT_1 << 8 + ENH_SIZE_MULT_0) x HC_WP_GRP_SIZE x HC_ERASE_GPR_SIZE x 512kBytes. It must be Kbytes aligned. That is another reason to choose it.
+What do you think?
 
---
-Thanks,
-Govindraj.R
+Thanks
+Chuanxiao
