@@ -1,50 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249Ab1AUQOp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 11:14:45 -0500
-Received: from cantor.suse.de ([195.135.220.2]:48800 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750880Ab1AUQOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 11:14:43 -0500
-Date: Fri, 21 Jan 2011 17:14:42 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Alan Ott <alan@signal11.us>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] HID: Report Descriptor in Sysfs
-In-Reply-To: <4D39A660.7040302@signal11.us>
-Message-ID: <alpine.LNX.2.00.1101211714050.5725@pobox.suse.cz>
-References: <1295590785-7101-1-git-send-email-alan@signal11.us> <alpine.LNX.2.00.1101211054210.5725@pobox.suse.cz> <4D399DAB.3080808@signal11.us> <alpine.LNX.2.00.1101211607290.5725@pobox.suse.cz> <4D39A660.7040302@signal11.us>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753995Ab1AUQU1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 11:20:27 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:58761 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880Ab1AUQUY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 11:20:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=X5av/gZxMCCRzA8hC33jaVQOy1F3mma+RsSlP70rvrpkXuTO0IfrYUZi9xFpJma6QV
+         HjC8yG9SHLShhYmKVwy30F9n9SrwzllzNnYMJc82Wp7gu3z/C5L+BDjt+4zBCiI2hoCa
+         rIhC8TdxWZwg7K8WPOiK/POYeGPtFDJYfFSQA=
+Subject: RE: Status of the LSI 2108
+From: James Shubin <purpleidea@gmail.com>
+Reply-To: purpleidea@gmail.com
+To: support@supermicro.com
+In-Reply-To: <D41A5B864986B546A595D85C4701A9C001023A5A4E@cosmail03.lsi.com>
+References: <1295411153.20086.81.camel@localhost>
+	 <20110120153419.806d38e1.rdunlap@xenotime.net>
+	 <1295567826.20086.89.camel@localhost>
+	 <D41A5B864986B546A595D85C4701A9C001023A5A4E@cosmail03.lsi.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 21 Jan 2011 11:20:35 -0500
+Message-ID: <1295626835.20086.131.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Jan 2011, Alan Ott wrote:
+Hi Supermicro,
 
-> Well, what I really want is the Usage Page and Usage of the device. For some
-> background, I maintain a library called hidapi[1] for accessing HID devices in
-> a cross platform way. There are currently four backends, Linux-hidraw,
-> Linux-libusb, Mac OS, and Windows.
+I'm looking for information on whether the LSI 2108 is fully supported
+in the vanilla linux kernel, and any thoughts as to the quality/
+robustness of the driver. The servers in question that I'm interested in
+are the:
+http://www.supermicro.com/products/system/2U/8026/SYS-8026B-6R.cfm?SAS=Y
+
+Thank you for your time, feel free to see the below history for some
+background.
+
+James
+
+
+On Fri, 2011-01-21 at 08:47 -0700, Unrein, Jason wrote:
+> The latest vanilla kernel should have support for all of our second generation sas HBAs (6gb/s capable).  If there are any problems you can always download an updated driver from the www.lsi.com website.  
 > 
-> I've recently received requests for supporting composite HID devices. Since a
-> composite device will show up as multiple devices with the same VID/PID, one
-> needs a way to differentiate between its different interfaces. On Windows and
-> Mac, the platform HID libraries support getting the Usage Page and Usage of
-> each interface. On Linux/libusb I can request the HID report descriptor and
-> parse it myself, but I have to claim the interface to do it, and to do that, I
-> have to detach the kernel driver. Needless to say, detaching the kernel driver
-> is not good, especially when the library is supposed to be just scanning for
-> devices.
+> The Supermicro ftp site you sent is actually for our counterpart in LSI, Megaraid.  Since they run a different firmware, they have a different driver in the kernel (megaraid_sas) where as ours are mptlinux (Gen1, 3.0gb/s), mpt2sas (Gen2), mpt2sasbtm (Gen2 but for older 2.6 kernels).  We both use the same chip so Supermicro might be making it a little confusing.  You might see if they reference the chip as a Megaraid chip in any way or if it is always an LSI chip. It is possible to run it in both modes if all the hardware components are there.
 > 
-> For these reasons, it would be really convenient to get the report descriptor
-> from sysfs.
+> It would probably be best to email Supermicro and get the details from them about the chip to confirm what you need.
+> 
+> -----Original Message-----
+> From: James Shubin [mailto:purpleidea@gmail.com] 
+> Sent: Thursday, January 20, 2011 5:57 PM
+> To: Randy Dunlap
+> Cc: scsi; linux-kernel@vger.kernel.org; DL-MPT Fusion Linux
+> Subject: Re: Status of the LSI 2108
+> 
+> Thanks Randy for sending me in the right direction.
+> Hello linux-scsi and LSI. Any thoughts to the below question would be
+> much appreciated!
+> 
+> James
+> 
+> 
+> On Thu, 2011-01-20 at 15:34 -0800, Randy Dunlap wrote:
+> > On Tue, 18 Jan 2011 23:25:53 -0500 James Shubin wrote:
+> > 
+> > > Hi,
+> > > 
+> > > I've been trying to find out if the LSI 2108 is fully supported in the
+> > > vanilla kernel, and any thoughts as to the quality/robustness.
+> > > 
+> > > This seems to be the correct source:
+> > > ftp://ftp.supermicro.nl/driver/SAS/LSI/2108/Driver/Linux/v04.31/
+> > > however I'm not sure at all if it's maintained, or what. I would
+> > > outright test this myself, however I haven't bought the servers yet
+> > > 
+> > > Thanks for your help,
+> > > Please cc-me on replies.
+> > 
+> > Hi,
+> > 
+> > Probably better to ask on the linux-scsi mailing list [added].
+> > Also added the lsi.com email address.
+> > 
+> > 
+> > drivers/scsi/mpt2sas/mpt2sas_scsih.c contains this:
+> > 
+> > 	/* Liberator ~ 2108 */
+> > 	{ MPI2_MFGPAGE_VENDORID_LSI, MPI2_MFGPAGE_DEVID_SAS2108_1,
+> > 		PCI_ANY_ID, PCI_ANY_ID },
+> > 	{ MPI2_MFGPAGE_VENDORID_LSI, MPI2_MFGPAGE_DEVID_SAS2108_2,
+> > 		PCI_ANY_ID, PCI_ANY_ID },
+> > 	{ MPI2_MFGPAGE_VENDORID_LSI, MPI2_MFGPAGE_DEVID_SAS2108_3,
+> > 		PCI_ANY_ID, PCI_ANY_ID },
+> > 
+> > so it looks like there is at least some basic support for the 2108.
+> > 
+> > 
+> > ---
+> > ~Randy
+> > *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> 
+> 
 
-In this case, you can still get the report descriptor from hidraw (which 
-is parallel to any other HID-bus based kernel driver). Woudl that suit 
-your needs?
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
