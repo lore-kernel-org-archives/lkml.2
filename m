@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab1AUKFB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 05:05:01 -0500
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:50578 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753315Ab1AUKE7 (ORCPT
+	id S1753847Ab1AUKIs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 05:08:48 -0500
+Received: from mtagate5.uk.ibm.com ([194.196.100.165]:51024 "EHLO
+	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753480Ab1AUKIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 05:04:59 -0500
-Date: Fri, 21 Jan 2011 19:00:28 +0900
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mel Gorman <mel@csn.ul.ie>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Huang Ying <ying.huang@intel.com>,
-        Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>,
-        tony.luck@intel.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 3/7] remove putback_lru_pages() in hugepage migration
- context
-Message-ID: <20110121100028.GA11102@spritzera.linux.bs1.fc.nec.co.jp>
-References: <1295591340-1862-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1295591340-1862-4-git-send-email-n-horiguchi@ah.jp.nec.com>
- <AANLkTikOdCzhsw3_JQtbJOmA8CRm2hCZEY0LLw5uYtmM@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
-Content-Disposition: inline
-In-Reply-To: <AANLkTikOdCzhsw3_JQtbJOmA8CRm2hCZEY0LLw5uYtmM@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 21 Jan 2011 05:08:46 -0500
+Message-Id: <20110121100651.821690659@linux.vnet.ibm.com>
+User-Agent: quilt/0.47-1
+Date: Fri, 21 Jan 2011 11:06:51 +0100
+From: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
+To: robert.richter@amd.com
+Cc: mingo@elte.hu, oprofile-list@lists.sf.net, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, borntraeger@de.ibm.com,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com
+Subject: [patch v2 0/3] OProfile support for System z's hardware sampling
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello Robert,
 
-On Fri, Jan 21, 2011 at 03:40:35PM +0900, Minchan Kim wrote:
-> Hello,
-> 
-> On Fri, Jan 21, 2011 at 3:28 PM, Naoya Horiguchi
-> <n-horiguchi@ah.jp.nec.com> wrote:
-> > This putback_lru_pages() is inserted at cf608ac19c to allow
-> > memory compaction to count the number of migration failed pages.
-> >
-> > But we should not do it for a hugepage because page->lru of a hugepage
-> > is used differently from that of a normal page:
-> >
-> >   in-use hugepage : page->lru is unlinked,
-> >   free hugepage   : page->lru is linked to the free hugepage list,
-> >
-> > so putting back hugepages to LRU lists collapses this rule.
-> > We just drop this change (without any impact on memory compaction.)
-> >
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > Cc: Minchan Kim <minchan.kim@gmail.com>
-> 
-> As I said previously, It seems mistake during patch merge.
-> I didn't add it in my original patch. You can see my final patch.
-> https://lkml.org/lkml/2010/8/24/248
+I'm resending yesterday's mail because I missed to specify the correct sender information.
 
-OK.
+This is a re-posting of the patch series originally posted last month:
 
-> Anyway, I realized it recently so I sent the patch to Andrew.
-> Could you see this one?
-> https://lkml.org/lkml/2011/1/20/241
+http://marc.info/?l=linux-s390&m=129285043619973&w=2
 
-This patch seems not to change hugepage soft offline's behavior,
-so I have no objection.
+Heinz
 
--- Naoya Horiguchi
+Changes in
+
+v2:
+   - kernel module hwsampler removed, everything is now in oprofile kernel module
+   - functions from hwsampler-main.c and smpctl.c merged into arch/s390/oprofile/hwsampler.c
+     - functions made static
+   - arch/s390/include/asm/hwsampler.h moved to arch/s390/oprofile/hwsampler.h
+     - structs have now hws_ prefix
+   - config variables changed, HAVE_HWSAMPLER used only
+   - original patch 4 (handle_munmap.patch) removed
+
+Description:
+
+So far, OProfile takes samples by using a software interrupt.
+The purpose of this series of patches is to add support for System z hardware sampling to OProfile.
+
+Hardware (HW) sampling is a feature provided by System z processors (z10 and follow ons).
+When sampling, the processor takes samples containing the instruction address, PID, and other information.
+The samples are taken at a programmable rate and stored into a buffer provided by the operating system.
+The sampling process is implemented in hardware and millicode and thus does not affect the operating system
+being oberved, apart from requiring buffer memory that the Linux kernel must provide.
+
+Hardware sampling is available in LPAR mode on 64 BIT processors only.
+
+The overall approach is to replace the software-based sample generation by hardware sampling.
+All required functionality to control the HW sampling mechanism is added to the oprofile kernel module.
+The functions provide support for
+ - controlling the sampling hardware,
+ - setting up appropriate buffer structures (HW buffers),
+ - retrieving sample entries from these buffers.
+Multiple CPUs can be handled.
+
+The samples contain the instruction address, a bit distinguishing between kernel and user space,
+and for user space samples also the PID.
+Instead of taking samples from its own per-CPU buffers, OProfile would rather take samples from the
+HW buffers.
+
+When hardware sampling can be enabled on the current System z processor it will be the new default.
+Switching back to timer based sampling can be established by using
+
+   echo 0 > /dev/oprofile/hwsampling/hwsampler
+
+The user space drivers of OProfile also need an extension to control hw sampling by appropriate options.
+
