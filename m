@@ -1,73 +1,392 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab1AUR4M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 12:56:12 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:47322 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753691Ab1AUR4L (ORCPT
+	id S1754676Ab1AUR4s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 12:56:48 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52960 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753948Ab1AUR4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 12:56:11 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6233"; a="71408504"
-Subject: Re: [PATCH 0/7] Nexus One Support
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Joe Perches <joe@perches.com>, Dima Zavin <dmitriyz@google.com>,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, davidb@codeaurora.org
-In-Reply-To: <20110121094827.41818a55@jbarnes-desktop>
-References: <1295555565-21563-1-git-send-email-dwalker@codeaurora.org>
-	 <AANLkTik+HCj9dkD2s4WgwCqKWCXDbdSnKDUbyGfYfaPr@mail.gmail.com>
-	 <1295571359.9236.53.camel@m0nster> <1295574085.4096.6.camel@Joe-Laptop>
-	 <1295575123.9236.54.camel@m0nster> <1295576730.4096.24.camel@Joe-Laptop>
-	 <1295624801.19880.13.camel@m0nster>
-	 <20110121094827.41818a55@jbarnes-desktop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 Jan 2011 09:56:09 -0800
-Message-ID: <1295632569.19880.20.camel@m0nster>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Jan 2011 12:56:47 -0500
+Date: Fri, 21 Jan 2011 15:57:18 -0200
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: pavan_savoy@ti.com
+Cc: marcel@holtmann.org, linux-kernel@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org
+Subject: Re: [RFC 2/2] Bluetooth: btwilink driver
+Message-ID: <20110121175718.GD2400@joana>
+References: <1294138788-10307-1-git-send-email-pavan_savoy@ti.com>
+ <1294138788-10307-2-git-send-email-pavan_savoy@ti.com>
+ <1294138788-10307-3-git-send-email-pavan_savoy@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294138788-10307-3-git-send-email-pavan_savoy@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-21 at 09:48 -0800, Jesse Barnes wrote:
-> On Fri, 21 Jan 2011 07:46:41 -0800
-> Daniel Walker <dwalker@codeaurora.org> wrote:
-> > This isn't what's happening tho. In maintainer land if someone forwards
-> > you a patch then you leave the original author on the patch. They wrote
-> > the patch and your just forwarding it on up the ladder. This isn't the
-> > case with these patches.. I crafted each of the commit I have authorship
-> > on, no one forwarded those commits to me. I'm not taking authorship
-> > credit for any thing I didn't create, although I an giving credit to the
-> > place which gave me the raw material which was Google. From my
-> > experience this is how it's done in Linux ..
-> 
-> I don't know why you're even trying to defend this, just admit you were
-> wrong and move on.
-> 
-> Trying to claim the author field for these patches for yourself is both
-> misleading and vain.  You did not write the code and are therefore not
-> the author, trying to conflate the author and commit fields in this way
-> is so misguided I thought you must be trolling when I first saw this
-> thread.
-> 
-> This is not "how it's done in Linux" at all.  In this case you're
-> trying to act like a maintainer by collecting patches and forwarding
-> them upstream, so you need to preserve authorship and the s-o-b chain.
-> If you want to take responsibility for the code going forward, great,
-> but don't pollute the logs with bogus author fields that imply you
-> wrote the stuff in the first place.
+Hi Pavan,
 
-I did create these commits. Do you think someone else created the
-commits? There is no commit forwarding happening here.
+* pavan_savoy@ti.com <pavan_savoy@ti.com> [2011-01-04 04:59:48 -0600]:
 
-Daniel
+> From: Pavan Savoy <pavan_savoy@ti.com>
+> 
+> -- patch description --
+> 
+> This is the bluetooth protocol driver for the TI WiLink7 chipsets.
+> Texas Instrument's WiLink chipsets combine wireless technologies
+> like BT, FM, GPS and WLAN onto a single chip.
+> 
+> This Bluetooth driver works on top of the TI_ST shared transport
+> line discipline driver which also allows other drivers like
+> FM V4L2 and GPS character driver to make use of the same UART interface.
+> 
+> Kconfig and Makefile modifications to enable the Bluetooth
+> driver for Texas Instrument's WiLink 7 chipset.
+> 
+> Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+> ---
+>  drivers/bluetooth/Kconfig    |   10 +
+>  drivers/bluetooth/Makefile   |    1 +
+>  drivers/bluetooth/btwilink.c |  397 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 408 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/bluetooth/btwilink.c
+> 
+> diff --git a/drivers/bluetooth/Kconfig b/drivers/bluetooth/Kconfig
+> index 02deef4..8e0de9a 100644
+> --- a/drivers/bluetooth/Kconfig
+> +++ b/drivers/bluetooth/Kconfig
+> @@ -219,4 +219,14 @@ config BT_ATH3K
+>  	  Say Y here to compile support for "Atheros firmware download driver"
+>  	  into the kernel or say M to compile it as module (ath3k).
+>  
+> +config BT_WILINK
+> +	tristate "Texas Instruments WiLink7 driver"
+> +	depends on TI_ST
+> +	help
+> +	  This enables the Bluetooth driver for Texas Instrument's BT/FM/GPS
+> +	  combo devices. This makes use of shared transport line discipline
+> +	  core driver to communicate with the BT core of the combo chip.
+> +
+> +	  Say Y here to compile support for Texas Instrument's WiLink7 driver
+> +	  into the kernel or say M to compile it as module.
+>  endmenu
+> diff --git a/drivers/bluetooth/Makefile b/drivers/bluetooth/Makefile
+> index 71bdf13..f4460f4 100644
+> --- a/drivers/bluetooth/Makefile
+> +++ b/drivers/bluetooth/Makefile
+> @@ -18,6 +18,7 @@ obj-$(CONFIG_BT_HCIBTSDIO)	+= btsdio.o
+>  obj-$(CONFIG_BT_ATH3K)		+= ath3k.o
+>  obj-$(CONFIG_BT_MRVL)		+= btmrvl.o
+>  obj-$(CONFIG_BT_MRVL_SDIO)	+= btmrvl_sdio.o
+> +obj-$(CONFIG_BT_WILINK)		+= btwilink.o
+>  
+>  btmrvl-y			:= btmrvl_main.o
+>  btmrvl-$(CONFIG_DEBUG_FS)	+= btmrvl_debugfs.o
+> diff --git a/drivers/bluetooth/btwilink.c b/drivers/bluetooth/btwilink.c
+> new file mode 100644
+> index 0000000..0201aca
+> --- /dev/null
+> +++ b/drivers/bluetooth/btwilink.c
+> @@ -0,0 +1,397 @@
+> +/*
+> + *  Texas Instrument's Bluetooth Driver For Shared Transport.
+> + *
+> + *  Bluetooth Driver acts as interface between HCI core and
+> + *  TI Shared Transport Layer.
+> + *
+> + *  Copyright (C) 2009-2010 Texas Instruments
+> + *  Author: Raja Mani <raja_mani@ti.com>
+> + *	Pavan Savoy <pavan_savoy@ti.com>
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License version 2 as
+> + *  published by the Free Software Foundation.
+> + *
+> + *  This program is distributed in the hope that it will be useful,
+> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + *  GNU General Public License for more details.
+> + *
+> + *  You should have received a copy of the GNU General Public License
+> + *  along with this program; if not, write to the Free Software
+> + *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> + *
+> + */
+> +
+> +#include <linux/platform_device.h>
+> +#include <net/bluetooth/bluetooth.h>
+> +#include <net/bluetooth/hci_core.h>
+> +
+> +#include <linux/ti_wilink_st.h>
+> +
+> +/* Bluetooth Driver Version */
+> +#define VERSION               "1.0"
+> +
+> +/* Number of seconds to wait for registration completion
+> + * when ST returns PENDING status.
+> + */
+> +#define BT_REGISTER_TIMEOUT   6000	/* 6 sec */
+> +
+> +/**
+> + * struct ti_st - driver operation structure
+> + * @hdev: hci device pointer which binds to bt driver
+> + * @reg_status: ST registration callback status
+> + * @st_write: write function provided by the ST driver
+> + *	to be used by the driver during send_frame.
+> + * @wait_reg_completion - completion sync between ti_st_open
+> + *	and ti_st_registration_completion_cb.
+> + */
+> +struct ti_st {
+> +	struct hci_dev *hdev;
+> +	char reg_status;
+> +	long (*st_write) (struct sk_buff *);
+> +	struct completion wait_reg_completion;
+> +};
+> +
+> +/* Increments HCI counters based on pocket ID (cmd,acl,sco) */
+> +static inline void ti_st_tx_complete(struct ti_st *hst, int pkt_type)
+> +{
+> +	struct hci_dev *hdev = hst->hdev;
+> +
+> +	/* Update HCI stat counters */
+> +	switch (pkt_type) {
+> +	case HCI_COMMAND_PKT:
+> +		hdev->stat.cmd_tx++;
+> +		break;
+> +
+> +	case HCI_ACLDATA_PKT:
+> +		hdev->stat.acl_tx++;
+> +		break;
+> +
+> +	case HCI_SCODATA_PKT:
+> +		hdev->stat.sco_tx++;
+> +		break;
+> +	}
+> +}
+> +
+> +/* ------- Interfaces to Shared Transport ------ */
+> +
+> +/* Called by ST layer to indicate protocol registration completion
+> + * status.ti_st_open() function will wait for signal from this
+> + * API when st_register() function returns ST_PENDING.
+> + */
+> +static void st_registration_completion_cb(void *priv_data, char data)
+> +{
+> +	struct ti_st *lhst = priv_data;
+> +
+> +	/* Save registration status for use in ti_st_open() */
+> +	lhst->reg_status = data;
+> +	/* complete the wait in ti_st_open() */
+> +	complete(&lhst->wait_reg_completion);
+> +}
+> +
+> +/* Called by Shared Transport layer when receive data is
+> + * available */
+> +static long st_receive(void *priv_data, struct sk_buff *skb)
+> +{
+> +	struct ti_st *lhst = priv_data;
+> +	int err;
+> +
+> +	if (!skb)
+> +		return -EFAULT;
+> +
+> +	if (!lhst) {
+> +		kfree_skb(skb);
+> +		return -EFAULT;
+> +	}
+> +
+> +	skb->dev = (void *) lhst->hdev;
+> +
+> +	/* Forward skb to HCI core layer */
+> +	err = hci_recv_frame(skb);
+> +	if (err < 0) {
+> +		BT_ERR("Unable to push skb to HCI core(%d)", err);
+> +		return err;
+> +	}
+> +
+> +	lhst->hdev->stat.byte_rx += skb->len;
+> +
+> +	return 0;
+> +}
+> +
+> +/* ------- Interfaces to HCI layer ------ */
+> +/* protocol structure registered with shared transport */
+> +static struct st_proto_s ti_st_proto[3] = {
+> +	{
+> +		.chnl_id = 0x02, /* ACL */
+
+Please create macros for the chnl_id in the core driver.
+
+> +		.recv = st_receive,
+> +		.reg_complete_cb = st_registration_completion_cb,
+> +		.hdr_len = 4,
+> +		.offset_len_in_hdr = 2,
+> +		.len_size = 2,
+> +		.reserve = 8,
+> +	},
+> +	{
+> +		.chnl_id = 0x03, /* SCO */
+> +		.recv = st_receive,
+> +		.reg_complete_cb = st_registration_completion_cb,
+> +		.hdr_len = 3,
+> +		.offset_len_in_hdr = 2,
+> +		.len_size = 1,
+> +		.reserve = 8,
+> +	},
+> +	{
+> +		.chnl_id = 0x04, /* HCI Events */
+> +		.recv = st_receive,
+> +		.reg_complete_cb = st_registration_completion_cb,
+> +		.hdr_len = 2,
+> +		.offset_len_in_hdr = 1,
+> +		.len_size = 1,
+> +		.reserve = 8,
+> +	},
+> +};
+> +
+> +/* Called from HCI core to initialize the device */
+> +static int ti_st_open(struct hci_dev *hdev)
+> +{
+> +	unsigned long timeleft;
+> +	struct ti_st *hst;
+> +	int err, i;
+> +
+> +	BT_DBG("%s %p", hdev->name, hdev);
+
+Blank line here.
+
+> +	if (test_and_set_bit(HCI_RUNNING, &hdev->flags)) {
+> +		BT_ERR("btwilink already opened");
+
+No need for this BT_ERR. It already returns -EBUSY.
+
+> +		return -EBUSY;
+> +	}
+> +
+> +	/* provide contexts for callbacks from ST */
+> +	hst = hdev->driver_data;
+> +
+> +	for (i = 0; i < 3; i++) {
+> +		ti_st_proto[i].priv_data = hst;
+> +		ti_st_proto[i].max_frame_size = HCI_MAX_FRAME_SIZE;
+> +
+> +		err = st_register(&ti_st_proto[i]);
+
+Let's change the order here. First
+
+		if (!err)
+			goto to "hst->st_write = ti_st_proto[i].write"
+
+		if (err != -EINPROGRESS) {
+		}
+
+		then here code for err == -EINPROGRESS
+
+
+> +		if (err == -EINPROGRESS) {
+> +			/* ST is busy with either protocol
+> +			 * registration or firmware download.
+> +			 */
+> +			/* Prepare wait-for-completion handler data structures.
+> +			*/
+> +			init_completion(&hst->wait_reg_completion);
+> +
+> +			/* Reset ST registration callback status flag,
+> +			 * this value will be updated in
+> +			 * ti_st_registration_completion_cb()
+> +			 * function whenever it called from ST driver.
+> +			 */
+> +			hst->reg_status = -EINPROGRESS;
+> +
+> +			BT_DBG("waiting for registration "
+> +			"completion signal from ST");
+> +			timeleft = wait_for_completion_timeout
+> +				(&hst->wait_reg_completion,
+> +				 msecs_to_jiffies(BT_REGISTER_TIMEOUT));
+> +			if (!timeleft) {
+> +				clear_bit(HCI_RUNNING, &hdev->flags);
+> +				BT_ERR("Timeout(%d sec),didn't get reg "
+> +						"completion signal from ST",
+> +						BT_REGISTER_TIMEOUT / 1000);
+> +				return -ETIMEDOUT;
+> +			}
+> +
+> +			/* Is ST registration callback
+> +			 * called with ERROR status? */
+> +			if (hst->reg_status != 0) {
+> +				clear_bit(HCI_RUNNING, &hdev->flags);
+> +				BT_ERR("ST registration completed with invalid "
+> +						"status %d", hst->reg_status);
+> +				return -EAGAIN;
+> +			}
+> +			err = 0;
+
+remove this err = 0; and return 0 in the end of the function.
+
+> +		} else if (err != 0) {
+> +			clear_bit(HCI_RUNNING, &hdev->flags);
+> +			BT_ERR("st_register failed %d", err);
+> +			return err;
+> +		}
+
+Blank line here.
+
+> +		hst->st_write = ti_st_proto[i].write;
+> +		if (!hst->st_write) {
+> +			BT_ERR("undefined ST write function");
+> +			clear_bit(HCI_RUNNING, &hdev->flags);
+> +
+> +			/* Undo registration with ST */
+> +			err = st_unregister(&ti_st_proto[i]);
+> +			if (err)
+> +				BT_ERR("st_unregister() failed with "
+> +				"error %d", err);
+
+
+You are unregistering only one protocol here, if the fail happens in the third
+one you will leak two of them.
+
+> +
+> +			hst->st_write = NULL;
+> +			/* ti_st_proto.write is filled up by the
+> +			 * underlying shared transport driver
+> +			 * upon registration
+> +			 */
+> +			return err;
+> +		}
+> +	}
+> +
+> +	return err;
+> +}
+> +
+> +/* Close device */
+> +static int ti_st_close(struct hci_dev *hdev)
+> +{
+> +	int err, i;
+> +	struct ti_st *hst = hdev->driver_data;
+> +
+> +	if (!test_and_clear_bit(HCI_RUNNING, &hdev->flags))
+> +		return 0;
+> +
+> +	for (i = 0; i < 3; i++) {
+> +		/* continue to unregister from transport */
+
+This comment is pointless.
+
+> +		err = st_unregister(&ti_st_proto[i]);
+> +		if (err)
+> +			BT_ERR("st_unregister() failed with error %d", err);
+> +	}
+> +
+> +	hst->st_write = NULL;
+> +
+> +	return err;
+
+err is will report the error if it happens in the first or second unregister.
 
 
 -- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
-Forum.
-
-
+Gustavo F. Padovan
+http://profusion.mobi
