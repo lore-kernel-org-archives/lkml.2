@@ -1,395 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754133Ab1AUKJO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 05:09:14 -0500
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:44208 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753593Ab1AUKIr (ORCPT
+	id S1753782Ab1AUKLw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 05:11:52 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36271 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753315Ab1AUKLv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 05:08:47 -0500
-Message-Id: <20110121100842.039354578@linux.vnet.ibm.com>
-User-Agent: quilt/0.47-1
-Date: Fri, 21 Jan 2011 11:06:53 +0100
-From: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-To: robert.richter@amd.com
-Cc: mingo@elte.hu, oprofile-list@lists.sf.net, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, borntraeger@de.ibm.com,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
-        Maran Pakkirisamy <maranp@linux.vnet.ibm.com>
-Subject: [patch v2 2/3] This patch enhances OProfile to support System zs hardware sampling feature
-References: <20110121100651.821690659@linux.vnet.ibm.com>
-Content-Disposition: inline; filename=oprofile_vfs.patch
+	Fri, 21 Jan 2011 05:11:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=jeygePyyfpTf3sKBJrbuIlh4rbwS1xz8bS4/jBXJbnI0zANudhBfRErYMa6xluMFQ+
+         ocZmZ+3wvKPTey6kW3A4aJZ3wHD9uIUw5KNHjCybwHIB9bk448TDCSJPWIlfDZ75L6FU
+         XLpjXzfIpy1r+9VZEzFBg+9Z26x9DayLxQIiU=
+MIME-Version: 1.0
+In-Reply-To: <20110121093940.GC13235@n2100.arm.linux.org.uk>
+References: <201101111016.42819.jeremy.kerr@canonical.com>
+	<20110111091607.GI12552@n2100.arm.linux.org.uk>
+	<201101111744.59712.jeremy.kerr@canonical.com>
+	<20110111103929.GN24920@pengutronix.de>
+	<AANLkTinHL9X_bqMPR=W8Va01O4xngUnpGCkCiE3xEdiQ@mail.gmail.com>
+	<4D386ABF.9060908@fluff.org>
+	<20110120190822.GK6335@n2100.arm.linux.org.uk>
+	<AANLkTim5N_sCCoOR40y7sTvdDoFkUJd4tUSSbrCccGjy@mail.gmail.com>
+	<AANLkTikJjkJvr2J-9eq2-Jj8L=JvwUQS+QNj9gWFX-TL@mail.gmail.com>
+	<20110121093940.GC13235@n2100.arm.linux.org.uk>
+Date: Fri, 21 Jan 2011 19:11:48 +0900
+Message-ID: <AANLkTimrZGd80+L-X3d9tZDHg4n_ajv8tv55pLFx_kRC@mail.gmail.com>
+Subject: Re: Locking in the clk API
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Ben Dooks <ben-linux@fluff.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        linux-sh <linux-sh@vger.kernel.org>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Richard Zhao <linuxzsc@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
+On Fri, Jan 21, 2011 at 6:39 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Fri, Jan 21, 2011 at 01:47:29PM +0900, Jassi Brar wrote:
+>> On Fri, Jan 21, 2011 at 9:09 AM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
+>> > On Fri, Jan 21, 2011 at 4:08 AM, Russell King - ARM Linux
+>> > <linux@arm.linux.org.uk> wrote:
+>> >> On Thu, Jan 20, 2011 at 05:02:55PM +0000, Ben Dooks wrote:
+>> >>> If you want to make it so that each low-power mode has to work
+>> >>> out what PLLs need to be disabled and then re-enabled makes me
+>> >>> want to be sick. Hiding this stuff behind specific implementations
+>> >>> is a recipe for disaster.
+>> >>
+>> >> Why should systems which don't suffer from such problems be prevented
+>> >> from gaining power saving from turning off their clocks when devices
+>> >> are not being used (eg, the console serial port.)
+>> >>
+>> >> One solution to your root PLL issue would be to have a separate set of
+>> >> enable/disable API calls which get called at setup/release time (or
+>> >> whatever you'd like to call it) which can only be called from non-atomic
+>> >> context.  Maybe clk_prepare() and clk_unprepare().  These functions
+>> >> should perform whatever is necessary to ensure that the clock source
+>> >> is available for use atomically when clk_enable() is called.
+>> >>
+>> >> So, in your case, clk_prepare() ensures that the root PLL is enabled,
+>> >> clk_unprepare() allows it to be turned off.
+>> >>
+>> >> In the case of a console driver, clk_prepare() can be called when we
+>> >> know the port will be used as a console.  clk_enable() is then called
+>> >> before writing out the string, and clk_disable() after we've completely
+>> >> sent the last character.
+>> >>
+>> >> This allows the best of both worlds.  We now have a clk_enable() which
+>> >> can be used to turn the clocks off through the clock tree up to the first
+>> >> non-atomic clock, and we also have a way to deal with those which need
+>> >> to sleep.  So not only do "sleeping clock" implementations become possible
+>> >> but these "sleeping clock" implementations also get the opportunity to
+>> >> shutdown some of their clock tree with minimal latency for doing so.
+>> >
+>> > This is exactly what I suggested in my last post, except the console example.
+>> > Only to be a part of common clock api because it's not very safe to assume
+>> > future SoCs will have the same simple clock topologies that they have today.
+>> >
+>> > Not to mean to teach, but I hope you realize with more and more
+>> > device controller being crammed into ever shrinking SoCs,
+>> > clock would eventually have to be flexible in functionality
+>> > and complicated in hierarchy. Ben already gave examples
+>> > of Audio, MFC and Video controllers of latest Samsung SoCs.
+>>
+>> plus
+>>
+>> a) If only Samsung bsp implements the api, it would be impossible to
+>> share drivers, those that can be, with other platforms without nasty ifdef's.
+>> b) If the task of unification starts with only a particular platform made to
+>> implement a new api, the attempt kills its own purpose.
+>
+> I guess we give up with the idea of unifying the API then, because it is
+> proving to be impossible to come to any kind of concensus.  Even ideas
+> to solve the points of contention are argued against.
+>
+> I see no one else coming up with any practical ideas how to resolve this,
+> but what I do see is that attempts to provide a solution to allow progress
+> towards a unified API are shot down with great vigour.
+>
+> So from what I can see it's a complete waste of time discussing this any
+> further.
+>
+> Unified clock API?  It'll *never* happen.
 
-OProfile is enhanced to export all files for controlling System z's hardware sampling,
-and to invoke hwsampler exported functions to initialize and use System z's hardware sampling.
-
-The patch invokes hwsampler_setup() during oprofile init and exports following
-hwsampler files under oprofilefs if hwsampler's setup succeeded:
-
-A new directory for hardware sampling based files
-
- /dev/oprofile/hwsampling/
-
-The userland daemon must explicitly write to the following files
-to disable (or enable) hardware based sampling
-
- /dev/oprofile/hwsampling/hwsampler
-
-to modify the actual sampling rate
-
- /dev/oprofile/hwsampling/hw_interval
-
-to modify the amount of sampling memory (measured in 4K pages)
-
- /dev/oprofile/hwsampling/hw_sdbt_blocks
-
-The following files are read only and show
-the possible minimum sampling rate
-
- /dev/oprofile/hwsampling/hw_min_interval
-
-the possible maximum sampling rate
-
- /dev/oprofile/hwsampling/hw_max_interval
-
-The patch splits the oprofile_timer_[init/exit] function so that it can be also called
-through user context (oprofilefs) to avoid kernel oops.
-
-Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
-Signed-off-by: Maran Pakkirisamy <maranp@linux.vnet.ibm.com>
-Signed-off-by: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
----
- arch/s390/oprofile/Makefile          |    3 
- arch/s390/oprofile/hwsampler_files.c |  146 +++++++++++++++++++++++++++++++++++
- arch/s390/oprofile/init.c            |    7 +
- drivers/oprofile/oprof.c             |   32 +++++++
- drivers/oprofile/oprof.h             |    2 
- drivers/oprofile/timer_int.c         |   16 +++
- include/linux/oprofile.h             |   21 +++++
- 7 files changed, 222 insertions(+), 5 deletions(-)
-
-Index: linux-2.6/arch/s390/oprofile/hwsampler_files.c
-===================================================================
---- /dev/null
-+++ linux-2.6/arch/s390/oprofile/hwsampler_files.c
-@@ -0,0 +1,146 @@
-+/**
-+ * arch/s390/oprofile/hwsampler_files.c
-+ *
-+ * Copyright IBM Corp. 2010
-+ * Author: Mahesh Salgaonkar (mahesh@linux.vnet.ibm.com)
-+ */
-+#include <linux/oprofile.h>
-+#include <linux/errno.h>
-+#include <linux/fs.h>
-+
-+#include "hwsampler.h"
-+
-+#define DEFAULT_INTERVAL	4096
-+
-+#define DEFAULT_SDBT_BLOCKS	1
-+#define DEFAULT_SDB_BLOCKS	511
-+
-+static unsigned long oprofile_hw_interval = DEFAULT_INTERVAL;
-+static unsigned long oprofile_min_interval;
-+static unsigned long oprofile_max_interval;
-+
-+static unsigned long oprofile_sdbt_blocks = DEFAULT_SDBT_BLOCKS;
-+static unsigned long oprofile_sdb_blocks = DEFAULT_SDB_BLOCKS;
-+
-+static unsigned long oprofile_hwsampler;
-+
-+static int oprofile_hwsampler_start(void)
-+{
-+	int retval;
-+
-+	retval = hwsampler_allocate(oprofile_sdbt_blocks, oprofile_sdb_blocks);
-+	if (retval)
-+		return retval;
-+
-+	retval = hwsampler_start_all(oprofile_hw_interval);
-+	if (retval)
-+		hwsampler_deallocate();
-+
-+	return retval;
-+}
-+
-+static void oprofile_hwsampler_stop(void)
-+{
-+	hwsampler_stop_all();
-+	hwsampler_deallocate();
-+	return;
-+}
-+
-+int oprofile_arch_set_hwsampler(struct oprofile_operations *ops)
-+{
-+	printk(KERN_INFO "oprofile: using hardware sampling\n");
-+	ops->start = oprofile_hwsampler_start;
-+	ops->stop = oprofile_hwsampler_stop;
-+	ops->cpu_type = "timer";
-+
-+	return 0;
-+}
-+
-+static ssize_t hwsampler_read(struct file *file, char __user *buf,
-+		size_t count, loff_t *offset)
-+{
-+	return oprofilefs_ulong_to_user(oprofile_hwsampler, buf, count, offset);
-+}
-+
-+static ssize_t hwsampler_write(struct file *file, char const __user *buf,
-+		size_t count, loff_t *offset)
-+{
-+	unsigned long val;
-+	int retval;
-+
-+	if (*offset)
-+		return -EINVAL;
-+
-+	retval = oprofilefs_ulong_from_user(&val, buf, count);
-+	if (retval)
-+		return retval;
-+
-+	if (oprofile_hwsampler == val)
-+		return -EINVAL;
-+
-+	retval = oprofile_set_hwsampler(val);
-+
-+	if (retval)
-+		return retval;
-+
-+	oprofile_hwsampler = val;
-+	return count;
-+}
-+
-+static const struct file_operations hwsampler_fops = {
-+	.read		= hwsampler_read,
-+	.write		= hwsampler_write,
-+};
-+
-+static int oprofile_create_hwsampling_files(struct super_block *sb,
-+						struct dentry *root)
-+{
-+	struct dentry *hw_dir;
-+
-+	/* reinitialize default values */
-+	oprofile_hwsampler = 1;
-+
-+	hw_dir = oprofilefs_mkdir(sb, root, "hwsampling");
-+	if (!hw_dir)
-+		return -EINVAL;
-+
-+	oprofilefs_create_file(sb, hw_dir, "hwsampler", &hwsampler_fops);
-+	oprofilefs_create_ulong(sb, hw_dir, "hw_interval",
-+				&oprofile_hw_interval);
-+	oprofilefs_create_ro_ulong(sb, hw_dir, "hw_min_interval",
-+				&oprofile_min_interval);
-+	oprofilefs_create_ro_ulong(sb, hw_dir, "hw_max_interval",
-+				&oprofile_max_interval);
-+	oprofilefs_create_ulong(sb, hw_dir, "hw_sdbt_blocks",
-+				&oprofile_sdbt_blocks);
-+
-+	return 0;
-+}
-+
-+int oprofile_hwsampler_init(struct oprofile_operations* ops)
-+{
-+	if (hwsampler_setup())
-+		return -ENODEV;
-+
-+	/*
-+	 * create hwsampler files only if hwsampler_setup() succeeds.
-+	 */
-+	ops->create_files = oprofile_create_hwsampling_files;
-+	oprofile_min_interval = hwsampler_query_min_interval();
-+	if (oprofile_min_interval < 0) {
-+		oprofile_min_interval = 0;
-+		return -ENODEV;
-+	}
-+	oprofile_max_interval = hwsampler_query_max_interval();
-+	if (oprofile_max_interval < 0) {
-+		oprofile_max_interval = 0;
-+		return -ENODEV;
-+	}
-+	oprofile_arch_set_hwsampler(ops);
-+	return 0;
-+}
-+
-+void oprofile_hwsampler_exit(void)
-+{
-+	hwsampler_shutdown();
-+}
-Index: linux-2.6/drivers/oprofile/oprof.c
-===================================================================
---- linux-2.6.orig/drivers/oprofile/oprof.c
-+++ linux-2.6/drivers/oprofile/oprof.c
-@@ -239,6 +239,38 @@ int oprofile_set_ulong(unsigned long *ad
- 	return err;
- }
- 
-+#ifdef CONFIG_HAVE_HWSAMPLER
-+int oprofile_set_hwsampler(unsigned long val)
-+{
-+	int err = 0;
-+
-+	mutex_lock(&start_mutex);
-+
-+	if (oprofile_started) {
-+		err = -EBUSY;
-+		goto out;
-+	}
-+
-+	switch (val) {
-+	case 1:
-+		/* Switch to hardware sampling. */
-+		__oprofile_timer_exit();
-+		err = oprofile_arch_set_hwsampler(&oprofile_ops);
-+		break;
-+	case 0:
-+		printk(KERN_INFO "oprofile: using timer interrupt.\n");
-+		err = __oprofile_timer_init(&oprofile_ops);
-+		break;
-+	default:
-+		err = -EINVAL;
-+	}
-+
-+out:
-+	mutex_unlock(&start_mutex);
-+	return err;
-+}
-+#endif /* CONFIG_HAVE_HWSAMPLER */
-+
- static int __init oprofile_init(void)
- {
- 	int err;
-Index: linux-2.6/drivers/oprofile/oprof.h
-===================================================================
---- linux-2.6.orig/drivers/oprofile/oprof.h
-+++ linux-2.6/drivers/oprofile/oprof.h
-@@ -35,7 +35,9 @@ struct dentry;
- 
- void oprofile_create_files(struct super_block *sb, struct dentry *root);
- int oprofile_timer_init(struct oprofile_operations *ops);
-+int __oprofile_timer_init(struct oprofile_operations *ops);
- void oprofile_timer_exit(void);
-+void __oprofile_timer_exit(void);
- 
- int oprofile_set_ulong(unsigned long *addr, unsigned long val);
- int oprofile_set_timeout(unsigned long time);
-Index: linux-2.6/drivers/oprofile/timer_int.c
-===================================================================
---- linux-2.6.orig/drivers/oprofile/timer_int.c
-+++ linux-2.6/drivers/oprofile/timer_int.c
-@@ -97,14 +97,13 @@ static struct notifier_block __refdata o
- 	.notifier_call = oprofile_cpu_notify,
- };
- 
--int __init oprofile_timer_init(struct oprofile_operations *ops)
-+int  __oprofile_timer_init(struct oprofile_operations *ops)
- {
- 	int rc;
- 
- 	rc = register_hotcpu_notifier(&oprofile_cpu_notifier);
- 	if (rc)
- 		return rc;
--	ops->create_files = NULL;
- 	ops->setup = NULL;
- 	ops->shutdown = NULL;
- 	ops->start = oprofile_hrtimer_start;
-@@ -113,7 +112,18 @@ int __init oprofile_timer_init(struct op
- 	return 0;
- }
- 
--void __exit oprofile_timer_exit(void)
-+int __init oprofile_timer_init(struct oprofile_operations *ops)
-+{
-+	return __oprofile_timer_init(ops);
-+}
-+
-+void __oprofile_timer_exit(void)
- {
- 	unregister_hotcpu_notifier(&oprofile_cpu_notifier);
- }
-+
-+void __exit oprofile_timer_exit(void)
-+{
-+	__oprofile_timer_exit();
-+}
-+
-Index: linux-2.6/include/linux/oprofile.h
-===================================================================
---- linux-2.6.orig/include/linux/oprofile.h
-+++ linux-2.6/include/linux/oprofile.h
-@@ -89,6 +89,27 @@ int oprofile_arch_init(struct oprofile_o
-  */
- void oprofile_arch_exit(void);
- 
-+#ifdef CONFIG_HAVE_HWSAMPLER
-+/**
-+ * setup hardware sampler for oprofiling.
-+ */
-+
-+int oprofile_set_hwsampler(unsigned long);
-+
-+/**
-+ * hardware sampler module initialization for the s390 arch
-+ */
-+
-+int oprofile_arch_set_hwsampler(struct oprofile_operations *ops);
-+
-+/**
-+ * Add an s390 hardware sample.
-+ */
-+void oprofile_add_ext_hw_sample(unsigned long pc, struct pt_regs * const regs,
-+	unsigned long event, int is_kernel,
-+	struct task_struct *task);
-+#endif /* CONFIG_HAVE_HWSAMPLER */
-+
- /**
-  * Add a sample. This may be called from any context.
-  */
-Index: linux-2.6/arch/s390/oprofile/init.c
-===================================================================
---- linux-2.6.orig/arch/s390/oprofile/init.c
-+++ linux-2.6/arch/s390/oprofile/init.c
-@@ -11,16 +11,21 @@
- #include <linux/oprofile.h>
- #include <linux/init.h>
- #include <linux/errno.h>
-+#include <linux/fs.h>
- 
-+extern int oprofile_hwsampler_init(struct oprofile_operations* ops);
-+extern void oprofile_hwsampler_exit(void);
- 
- extern void s390_backtrace(struct pt_regs * const regs, unsigned int depth);
- 
- int __init oprofile_arch_init(struct oprofile_operations* ops)
- {
- 	ops->backtrace = s390_backtrace;
--	return -ENODEV;
-+
-+	return oprofile_hwsampler_init(ops);
- }
- 
- void oprofile_arch_exit(void)
- {
-+	oprofile_hwsampler_exit();
- }
-Index: linux-2.6/arch/s390/oprofile/Makefile
-===================================================================
---- linux-2.6.orig/arch/s390/oprofile/Makefile
-+++ linux-2.6/arch/s390/oprofile/Makefile
-@@ -6,4 +6,5 @@ DRIVER_OBJS = $(addprefix ../../../drive
- 		oprofilefs.o oprofile_stats.o  \
- 		timer_int.o )
- 
--oprofile-y				:= $(DRIVER_OBJS) init.o backtrace.o
-+oprofile-y				:= $(DRIVER_OBJS) init.o backtrace.o \
-+					hwsampler_files.o hwsampler.o
-
+Why can't we have that new function, clk_setup or whatever, a part of new API?
+For now, it'll just be a place holder whit NULL as platform specific hooks.
+Eventually platforms like Samsung will have that filled and others
+keep that empty.
+Only let it be defined for drivers to always call clk_setup at probe
+and clk_enable when
+needed.
+Or am I overlooking something?
