@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab1AUA2h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 19:28:37 -0500
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:37408 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753065Ab1AUA2g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 19:28:36 -0500
-Message-id: <isapiwc.d5d1bc27.4ba4.4d38d17e.d73ba.1d@mail.jp.nec.com>
-In-Reply-To: <20110121083930.d803126f.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110118113528.fd24928f.kamezawa.hiroyu@jp.fujitsu.com>
- <20110118114348.9e1dba9b.kamezawa.hiroyu@jp.fujitsu.com>
- <20110120134108.GO2232@cmpxchg.org>
- <20110121083930.d803126f.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Fri, 21 Jan 2011 09:21:18 +0900
-From: nishimura@mxp.nes.nec.co.jp
-Subject: Re: [PATCH 4/4] memcg: fix rmdir, force_empty with THP
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
+	id S1753999Ab1AUAbs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 19:31:48 -0500
+Received: from borg.medozas.de ([188.40.89.202]:49731 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753720Ab1AUAbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 19:31:47 -0500
+Date: Fri, 21 Jan 2011 01:31:45 +0100 (CET)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+cc: Jens Axboe <jaxboe@fusionio.com>, Christoph Hellwig <hch@lst.de>
+Subject: loop: busywait for release?
+Message-ID: <alpine.LNX.2.01.1101210124270.982@obet.zrqbmnf.qr>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> > @@ -2278,17 +2287,23 @@ static int mem_cgroup_move_parent(struct
->> >  		goto out;
->> >  	if (isolate_lru_page(page))
->> >  		goto put;
->> > +	/* The page is isolated from LRU and we have no race with splitting */
->> > +	charge = PAGE_SIZE << compound_order(page);
->> 
->> Why is LRU isolation preventing the splitting?
->> 
-Oops! It seems that this comment made me confuse 'split' and 'collapse'.
-Yes, it's 'collapse', not 'split', that is prevented by isolation.
+to the principal editors of drivers/block/loop.c,
 
-> I use compound_lock now. I'll post clean up.
-> 
-I'll wait for your patch.
+Hi,
 
-Thanks,
-Daisuke Nishimura.
+
+I have here a program that sets up a loop device, does its
+(quite minimal) work and releases the loop device again.
+
+As soon as a loop device is set up using LOOP_SET_FD, userspace
+programs like udev immediately pounce on the loop device for fstype
+identification and whatnot, and render the release of the device
+futile with -EBUSY.
+
+I could retry until EBUSY is no longer returned, however, since I see
+nothing in the loop device driver that could help fence off _new
+openers_, EBUSY may be encountered indefinitely.
+
+I reckon vfsmounts have the same issue, though one can use `umount -l` 
+to fence new processes off, and then (if desired) kill existing ones.
+
+What is the preferred way to solve this for loop?
+
+
+thanks,
+Jan
