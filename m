@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556Ab1AUQkk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 11:40:40 -0500
-Received: from hera.kernel.org ([140.211.167.34]:50491 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754524Ab1AUQkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 11:40:39 -0500
-Date: Fri, 21 Jan 2011 16:40:13 GMT
-From: tip-bot for Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        konrad.wilk@oracle.com, johnstul@us.ibm.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, johnstul@us.ibm.com, tglx@linutronix.de
-In-Reply-To: <1295027246-11110-1-git-send-email-johnstul@us.ibm.com>
-References: <1295027246-11110-1-git-send-email-johnstul@us.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] acpi_pm: Clear pmtmr_ioport if acpi_pm initialization fails
-Message-ID: <tip-db6b175fa6ad1408cbb2fb62949a6d55cfece03e@git.kernel.org>
-Git-Commit-ID: db6b175fa6ad1408cbb2fb62949a6d55cfece03e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1754499Ab1AUQkb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 11:40:31 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:45765 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754411Ab1AUQka (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Fri, 21 Jan 2011 11:40:30 -0500
+Date: Fri, 21 Jan 2011 11:38:31 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Stefan Bader <stefan.bader@canonical.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>
+Subject: [GIT PULL] (xen) stable/bug-fixes-rc1
+Message-ID: <20110121163831.GA29131@dumpdata.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 21 Jan 2011 16:40:14 +0000 (UTC)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  db6b175fa6ad1408cbb2fb62949a6d55cfece03e
-Gitweb:     http://git.kernel.org/tip/db6b175fa6ad1408cbb2fb62949a6d55cfece03e
-Author:     Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-AuthorDate: Fri, 14 Jan 2011 09:47:26 -0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 21 Jan 2011 17:38:19 +0100
+Hello Linus,
 
-acpi_pm: Clear pmtmr_ioport if acpi_pm initialization fails
+Please pull from:
 
-If the acpi pm timer throws invalid data, clear pmtmr_ioport
-so the pm timer won't accidentally be used.
+ git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/bug-fixes-rc1
 
-This was found when using Xen where there is a acpi pm reported,
-but gives bogus values, and other code was continuing to try
-to use the pm timer after the initialization failed.
+changes since git commit c56eb8fb6dccb83d9fe62fd4dc00c834de9bc470
+Linus Torvalds (1):
+    Linux 2.6.38-rc1
 
-[jstultz: Catch additional failure and reword changelog message. ]
+This git pull includes a bootup fix found by Canonical during their kernel rollout,
+and also a warning found by Randy during his compile shakedown.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-LKML-Reference: <1295027246-11110-1-git-send-email-johnstul@us.ibm.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- drivers/clocksource/acpi_pm.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+Randy Dunlap (1):
+      xen: fix non-ANSI function warning in irq.c
 
-diff --git a/drivers/clocksource/acpi_pm.c b/drivers/clocksource/acpi_pm.c
-index cfb0f52..effe797 100644
---- a/drivers/clocksource/acpi_pm.c
-+++ b/drivers/clocksource/acpi_pm.c
-@@ -202,17 +202,21 @@ static int __init init_acpi_pm_clocksource(void)
- 			printk(KERN_INFO "PM-Timer had inconsistent results:"
- 			       " 0x%#llx, 0x%#llx - aborting.\n",
- 			       value1, value2);
-+			pmtmr_ioport = 0;
- 			return -EINVAL;
+Stefan Bader (1):
+      xen: p2m: correctly initialize partial p2m leaf
+
+ arch/x86/xen/irq.c |    2 +-
+ arch/x86/xen/p2m.c |   20 +++++++++++++++++++-
+ 2 files changed, 20 insertions(+), 2 deletions(-)
+
+
+
+diff --git a/arch/x86/xen/irq.c b/arch/x86/xen/irq.c
+index 9d30105..6a6fe89 100644
+--- a/arch/x86/xen/irq.c
++++ b/arch/x86/xen/irq.c
+@@ -126,7 +126,7 @@ static const struct pv_irq_ops xen_irq_ops __initdata = {
+ #endif
+ };
+ 
+-void __init xen_init_irq_ops()
++void __init xen_init_irq_ops(void)
+ {
+ 	pv_irq_ops = xen_irq_ops;
+ 	x86_init.irqs.intr_init = xen_init_IRQ;
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index 8f2251d..ddc81a0 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -237,7 +237,25 @@ void __init xen_build_dynamic_phys_to_machine(void)
+ 			p2m_top[topidx] = mid;
  		}
- 		if (i == ACPI_PM_READ_CHECKS) {
- 			printk(KERN_INFO "PM-Timer failed consistency check "
- 			       " (0x%#llx) - aborting.\n", value1);
-+			pmtmr_ioport = 0;
- 			return -ENODEV;
- 		}
+ 
+-		p2m_top[topidx][mididx] = &mfn_list[pfn];
++		/*
++		 * As long as the mfn_list has enough entries to completely
++		 * fill a p2m page, pointing into the array is ok. But if
++		 * not the entries beyond the last pfn will be undefined.
++		 * And guessing that the 'what-ever-there-is' does not take it
++		 * too kindly when changing it to invalid markers, a new page
++		 * is allocated, initialized and filled with the valid part.
++		 */
++		if (unlikely(pfn + P2M_PER_PAGE > max_pfn)) {
++			unsigned long p2midx;
++			unsigned long *p2m = extend_brk(PAGE_SIZE, PAGE_SIZE);
++			p2m_init(p2m);
++
++			for (p2midx = 0; pfn + p2midx < max_pfn; p2midx++) {
++				p2m[p2midx] = mfn_list[pfn + p2midx];
++			}
++			p2m_top[topidx][mididx] = p2m;
++		} else
++			p2m_top[topidx][mididx] = &mfn_list[pfn];
  	}
  
--	if (verify_pmtmr_rate() != 0)
-+	if (verify_pmtmr_rate() != 0){
-+		pmtmr_ioport = 0;
- 		return -ENODEV;
-+	}
- 
- 	return clocksource_register_hz(&clocksource_acpi_pm,
- 						PMTMR_TICKS_PER_SEC);
+ 	m2p_override_init();
