@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab1AUVzx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 16:55:53 -0500
-Received: from msux-gh1-uea02.nsa.gov ([63.239.65.40]:50669 "EHLO
-	msux-gh1-uea02.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752946Ab1AUVzw (ORCPT
+	id S1754225Ab1AUWDW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 17:03:22 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56298 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753137Ab1AUWDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 16:55:52 -0500
-X-Greylist: delayed 1096 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Jan 2011 16:55:52 EST
-Subject: Re: SELinux/SMACK/TOMOYO: ioctl permissions handling is wrong and
- nonsensicle
-From: Stephen Smalley <sds@tycho.nsa.gov>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        selinux@tycho.nsa.gov, jmorris@namei.org, casey@schaufler-ca.com,
-        john.johansen@canonical.com, penguin-kernel@I-love.SAKURA.ne.jp,
-        takedakn@nttdata.co.jp
-In-Reply-To: <1295638239.3403.15.camel@localhost.localdomain>
-References: <1295638239.3403.15.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Organization: National Security Agency
-Date: Fri, 21 Jan 2011 16:37:05 -0500
-Message-ID: <1295645825.10909.5.camel@moss-pluto>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Jan 2011 17:03:21 -0500
+Date: Fri, 21 Jan 2011 22:02:38 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Dima Zavin <dmitriyz@google.com>, Saravana Kannan <skannan@codeaurora.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        linux-sh@vger.kernel.org, Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>, Ben Dooks <ben-linux@fluff.org>,
+        Uwe Kleine-K??nig <u.kleine-koenig@pengutronix.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Locking in the clk API
+Message-ID: <20110121220238.GE23151@n2100.arm.linux.org.uk>
+References: <201101111016.42819.jeremy.kerr@canonical.com> <20110111031552.GJ3760@linux-sh.org> <4D3862DB.5000708@fluff.org> <20110120185617.GI6335@n2100.arm.linux.org.uk> <alpine.LFD.2.00.1101201623480.8580@xanadu.home> <AANLkTimwBruVgGQWs5NQG7U3PcF6RQHZ6Pd1hjxyGpcA@mail.gmail.com> <4D3907BD.4040900@codeaurora.org> <AANLkTik53zyXytvuAd5zK0_zExfQT3FmOgTr8BexmGeT@mail.gmail.com> <alpine.LFD.2.00.1101211618170.8580@xanadu.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1101211618170.8580@xanadu.home>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-21 at 14:30 -0500, Eric Paris wrote:
-> [I've included an AA person as well in case you ever decide to try to
-> mediate ioctl operations]
+On Fri, Jan 21, 2011 at 04:53:44PM -0500, Nicolas Pitre wrote:
+> So I think that the API must be augmented with more methods, such as:
 > 
-> SELinux used to recognize certain individual ioctls and check
-> permissions based on the knowledge of the individual ioctl.  In commit
-> 242631c49d4cf396 the SELinux code stopped trying to understand
-> individual ioctls and to instead looked at the ioctl access bits to
-> determine in we should check read or write for that operation.  This
-> same suggestion was made to SMACK (and I believe copied into TOMOYO).
-> But this suggestion is total rubbish.  The ioctl access bits are
-> actually the access requirements for the structure being passed into the
-> ioctl, and are completely unrelated to the operation of the ioctl or the
-> object the ioctl is being performed upon.
+> clk_slow_enable():
+>   - may sleep
+>   - may be a no-op if the clk_fast_enable() is supported
 > 
-> Take FS_IOC_FIEMAP as an example.  FS_IOC_FIEMAP is defined as:
+> clk_fast_enable():
+>   - may not sleep, used in atomic context
+>   - may be a no-op if controlling the clock takes time, in which case 
+>     clk_slow_enable() must have set the clock up entirely
 > 
-> FS_IOC_FIEMAP _IOWR('f', 11, struct fiemap)
-> 
-> So it has access bits R and W.  What this really means is that the
-> kernel is going to both read and write to the struct fiemap.  It has
-> nothing at all to do with the operations that this ioctl might perform
-> on the file itself!
-> 
-> If anything, our logic is exactly backwards, since an ioctl which writes
-> to userspace would be 'reading' something from the file and an ioctl
-> which reads from userspace would be 'writing' something to the file...
-> 
-> I'm planning to revert this SELinux commit, but I want other LSM authors
-> to realize that (assuming I'm not completely off in the woods somewhere)
-> you should take a look at your ioctl permissions checking as well....
+> ... and similar for clk_slow_disable() and clk_fast_disable().
 
-That's unfortunate.  Prior attempt to address ioctl was here:
-http://marc.info/?l=linux-security-module&m=113088357020104&w=2
+Isn't this along the same lines as my clk_prepare() vs clk_enable()
+suggestion?
 
-Which led to the approach based on _IOC_DIR.
+I suggested that clk_prepare() be callable only from non-atomic contexts,
+and do whatever's required to ensure that the clock is available.  That
+may end up enabling the clock as a result.
 
-We could revisit that approach, or just give up and always check
-FILE__IOCTL unconditionally. I don't think we want to go back to
-interpreting ioctl commands in the hook, as it is a layering violation
-and same ioctl command value could mean different things for different
-underlying objects.
+clk_enable() callable from atomic contexts, and turns the clock on if
+the hardware supports such an operation.
 
--- 
-Stephen Smalley
-National Security Agency
+So, if you have something like:
 
+Xtal--->PLL--->Routing/Masking--->Device
+
+clk = clk_get() returns the clock for the device.
+
+clk_prepare(clk) would walk up the clock tree, selecting the routing and
+preparing each clock.  Clocks prior to _and_ including the PLL would need
+to be enabled.
+
+clk_enable(clk) would walk up the tree if the clock isn't already enabled,
+calling clk_enable() on the parent clock.  As we require prepared clocks
+to already be enabled, this automatically stops at the PLL.
+
+To encourage correct usage, we just need to make sure that clk_prepare()
+has a might_sleep() thing, and clk_enable() throws a fit if it's used
+on a clk without prepare being used first.  The second point is not easy
+to do in a foolproof manner though, but doing _something_ is better than
+nothing.
