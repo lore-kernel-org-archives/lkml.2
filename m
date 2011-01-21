@@ -1,113 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab1AUSxE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 13:53:04 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:38610 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752805Ab1AUSxB (ORCPT
+	id S1754864Ab1AUSxQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 13:53:16 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:46755 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598Ab1AUSxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 13:53:01 -0500
-Date: Fri, 21 Jan 2011 13:52:59 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Richard Mortimer <richm@oldelvet.org.uk>
-Cc: David Miller <davem@davemloft.net>, rostedt@goodmis.org,
-        609371@bugs.debian.org, ben@decadent.org.uk,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, mingo@redhat.com
-Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
-	Unknown relocation: 36
-Message-ID: <20110121185259.GA13198@Krystal>
-References: <20110119221327.GA23544@Krystal> <20110119.142137.184823805.davem@davemloft.net> <20110119223339.GD23544@Krystal> <20110119.164107.135521108.davem@davemloft.net> <20110121000421.GA5014@Krystal> <4D39CB0C.8070308@oldelvet.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D39CB0C.8070308@oldelvet.org.uk>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 13:50:10 up 58 days, 23:53,  4 users,  load average: 0.08, 0.03,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 21 Jan 2011 13:53:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=aRltul8hDmLccd7EASSJl27dohha0oPvXQrp439PQ+8NAHxmxN4CuzkQJmQeFFdLxl
+         BP6Z8PHSiVRHrvMIdtykkA9BiFyFkwfkYeKJ8eDtZtRRhssJA0EiIAjW3DSLgiqbg6ei
+         aoiaMi0SFmqVKE6uqXbckVAO56+odC1hR0XpI=
+Subject: Re: 2.6.38-rc1: arp triggers RTNL assertion
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jamie Heilman <jamie@audible.transient.net>,
+        David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+In-Reply-To: <1295593946.2613.52.camel@edumazet-laptop>
+References: <20110121061758.GA2247@fifty-fifty.audible.transient.net>
+	 <1295593946.2613.52.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 21 Jan 2011 19:52:56 +0100
+Message-ID: <1295635976.2609.23.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Richard Mortimer (richm@oldelvet.org.uk) wrote:
->
->
-> On 21/01/2011 00:04, Mathieu Desnoyers wrote:
->> * David Miller (davem@davemloft.net) wrote:
->>> From: Mathieu Desnoyers<mathieu.desnoyers@efficios.com>
->>> Date: Wed, 19 Jan 2011 17:33:39 -0500
->>>
->>>> So I guess we go for the following. Is it verbose enough ?
->>>
->>> It's got all of the details that seem to matter, thanks.
->>
->> I'm letting people following this thread and the bug report know that I posted
->> the patch we discussed about here in the following thread:
->>
->> https://lkml.org/lkml/2011/1/19/509
->>
->> Feedback is welcome,
->>
+Le vendredi 21 janvier 2011 à 08:12 +0100, Eric Dumazet a écrit :
+> Le jeudi 20 janvier 2011 à 22:17 -0800, Jamie Heilman a écrit :
+> > With 2.6.38-rc1 when I run: arp -Ds 192.168.2.41 eth0 pub
+> > I see:
+> > 
+> > RTNL: assertion failed at net/core/neighbour.c (589)
+> > Pid: 2330, comm: arp Not tainted 2.6.38-rc1-00132-g8d99641-dirty #1
+> > Call Trace:
+> >  [<c11ed339>] ? pneigh_lookup+0xc3/0x168
+> >  [<c1219f27>] ? arp_req_set+0x86/0x1d5
+> >  [<c11e74b5>] ? dev_get_by_name_rcu+0x72/0x7f
+> >  [<c121a1a3>] ? arp_ioctl+0x12d/0x22e
+> >  [<c121dfeb>] ? inet_ioctl+0x82/0xa7
+> >  [<c11d8ffc>] ? sock_ioctl+0x1b7/0x1db
+> >  [<c11d8e45>] ? sock_ioctl+0x0/0x1db
+> >  [<c108f02f>] ? do_vfs_ioctl+0x47c/0x4c5
+> >  [<c101803c>] ? do_page_fault+0x315/0x341
+> >  [<c11daaf3>] ? sys_socket+0x44/0x5a
+> >  [<c11dab71>] ? sys_socketcall+0x68/0x270
+> >  [<c108f0ab>] ? sys_ioctl+0x33/0x4b
+> >  [<c1002897>] ? sysenter_do_call+0x12/0x26
+> > 
+> > Figured I'd Cc Eric as this could be related to commit 941666c2,
+> > "net: RCU conversion of dev_getbyhwaddr() and arp_ioctl()"
+> > 
+> > Config attached, just in case (the uncommited change, in the tree this
+> > kernel was built from, is just Chuck Lever's recent nfs3xdr.c patch).
+> 
+> Thanks for the report, I am looking at this right now.
+> 
+> 
 
-Hi Richard,
+Here is how I fixed this, thanks again Jamie !
 
-> Hi Mathieu,
->
-> Thanks for this.
->
-> The good news is that I have a 2.6.37 kernel + your patches booting and  
-> it has been running for about an hour on sparc64/Sun Fire V120. I did a  
-> bit of poking around in /debug and turned on/off a bit of tracing and  
-> nothing broke.
+[PATCH] net: neighbour: pneigh_lookup() doesnt need RTNL
 
-That's a good start :)
+Commit 941666c2 "net: RCU conversion of dev_getbyhwaddr() and
+arp_ioctl()" introduced a regression, reported by Jamie Heilman.
+"arp -Ds 192.168.2.41 eth0 pub" triggered the ASSERT_RTNL() assert.
 
-> I did have a few problems applying your patch series. Your diffs have  
-> semicolons at the end of a couple of the macros that don't appear in the  
-> mainline 2.6.37. One was circa line 174 of include/linux/tracepoint.h  
-> but I don't have the other to hand at the moment and I don't have much  
-> time before I need to go out.
+Relax pneigh_lookup() to not require RTNL being held, using the tbl
+rwlock, in read or write mode for the whole function duration.
 
-I know what's causing this, I'll rebase my patch before my next post (I was
-working at the tail of my lttng patch queue). Thanks for letting me know.
+Reported-by: Jamie Heilman <jamie@audible.transient.net>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ net/core/neighbour.c |   17 ++++++++++-------
+ 1 files changed, 10 insertions(+), 7 deletions(-)
 
-> I'm also getting a lot of Kernel unaligned access errors from the  
-> kernel. I don't know if they are related to this or not and this is the  
-> first time that I personally have got 2.6.37 to boot on sparc64. The  
-> messages that I am getting seem to be repeats of
->
-> [ 4376.807811] Kernel unaligned access at TPC[456e94]  
-> try_to_wake_up+0x58/0xec
-> [ 4376.807908] Kernel unaligned access at TPC[75541c] schedule+0x454/0x660
-> [ 4376.808044] Kernel unaligned access at TPC[75541c] schedule+0x454/0x660
-> [ 4376.808871] Kernel unaligned access at TPC[456e94]  
-> try_to_wake_up+0x58/0xec
-> [ 4376.808965] Kernel unaligned access at TPC[75541c] schedule+0x454/0x660
-> [ 4381.813354] log_unaligned: 337 callbacks suppressed
->
-> I have to go out now but will be around later/over the weekend.
+diff --git a/net/core/neighbour.c b/net/core/neighbour.c
+index 799f06e..6b96b2c 100644
+--- a/net/core/neighbour.c
++++ b/net/core/neighbour.c
+@@ -578,17 +578,18 @@ struct pneigh_entry * pneigh_lookup(struct neigh_table *tbl,
+ 	int key_len = tbl->key_len;
+ 	u32 hash_val = pneigh_hash(pkey, key_len);
+ 
+-	read_lock_bh(&tbl->lock);
++	if (creat)
++		write_lock_bh(&tbl->lock);
++	else
++		read_lock_bh(&tbl->lock);
++
+ 	n = __pneigh_lookup_1(tbl->phash_buckets[hash_val],
+ 			      net, pkey, key_len, dev);
+-	read_unlock_bh(&tbl->lock);
+ 
+ 	if (n || !creat)
+ 		goto out;
+ 
+-	ASSERT_RTNL();
+-
+-	n = kmalloc(sizeof(*n) + key_len, GFP_KERNEL);
++	n = kmalloc(sizeof(*n) + key_len, GFP_ATOMIC);
+ 	if (!n)
+ 		goto out;
+ 
+@@ -607,11 +608,13 @@ struct pneigh_entry * pneigh_lookup(struct neigh_table *tbl,
+ 		goto out;
+ 	}
+ 
+-	write_lock_bh(&tbl->lock);
+ 	n->next = tbl->phash_buckets[hash_val];
+ 	tbl->phash_buckets[hash_val] = n;
+-	write_unlock_bh(&tbl->lock);
+ out:
++	if (creat)
++		write_unlock_bh(&tbl->lock);
++	else
++		read_unlock_bh(&tbl->lock);
+ 	return n;
+ }
+ EXPORT_SYMBOL(pneigh_lookup);
 
-Can you send me your .config ? I'd really like to see which of tracepoint/static
-jump patching are enabled.
 
-Do you get this message as soon as the system boots, or only when you enable
-tracing ?
-
-Thanks,
-
-Mathieu
-
->
-> Regards
->
-> Richard
->
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
