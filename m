@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754403Ab1AULO6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 06:14:58 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35428 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714Ab1AULO5 (ORCPT
+	id S1754665Ab1AULP1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 06:15:27 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:58796 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754301Ab1AULPZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 06:14:57 -0500
-Date: Fri, 21 Jan 2011 11:14:32 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: vexpress: register platform PATA device.
-Message-ID: <20110121111432.GO13235@n2100.arm.linux.org.uk>
-References: <1294435445-2020-1-git-send-email-nbowler@elliptictech.com> <20110107224348.GZ31708@n2100.arm.linux.org.uk> <20110110211622.GA10381@elliptictech.com>
+	Fri, 21 Jan 2011 06:15:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=j61U6EWNQeGWkKeWjuFHBQWJ+pxjyriOWzJau50gYrTo5ajqEXccNiPfCHczXv45UM
+         y3DE60wOeCtV19Q7Gwm2z6WOylHWBPAgB03+ai/QaLXuK4Rf+FO1rt9p66ki95vYB6IP
+         i9qWnfmsWSqARkZMND7YI1mIiuLNQYM4pv6II=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110110211622.GA10381@elliptictech.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20110121103850.GI13235@n2100.arm.linux.org.uk>
+References: <1295516739-9839-1-git-send-email-pullip.cho@samsung.com>
+	<1295544047.9039.609.camel@nimitz>
+	<20110120180146.GH6335@n2100.arm.linux.org.uk>
+	<AANLkTimsL8YfSdXCBpN2cNVpj8HeJF0f-A7MJQoie+Zm@mail.gmail.com>
+	<20110121103850.GI13235@n2100.arm.linux.org.uk>
+Date: Fri, 21 Jan 2011 20:15:24 +0900
+X-Google-Sender-Auth: vmBbjtfg6DH6vobDVBcWX_QCeNQ
+Message-ID: <AANLkTi=8DnGVJ6j4rHv+bQoTK2UhgMysC95LuKjH-fBy@mail.gmail.com>
+Subject: Re: [PATCH] ARM: mm: Regarding section when dealing with meminfo
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        KeyYoung Park <keyyoung.park@samsung.com>,
+        linux-kernel@vger.kernel.org, Ilho Lee <ilho215.lee@samsung.com>,
+        linux-mm@kvack.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 10, 2011 at 04:16:22PM -0500, Nick Bowler wrote:
-> On 2011-01-07 22:43 +0000, Russell King - ARM Linux wrote:
-> > On Fri, Jan 07, 2011 at 04:24:05PM -0500, Nick Bowler wrote:
-> > > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> > > index d56d21c..ee61039 100644
-> > > --- a/arch/arm/Kconfig
-> > > +++ b/arch/arm/Kconfig
-> > > @@ -264,6 +264,7 @@ config ARCH_VEXPRESS
-> > >  	select HAVE_CLK
-> > >  	select ICST
-> > >  	select PLAT_VERSATILE
-> > > +	select HAVE_PATA_PLATFORM
-> > 
-> > To avoid the Kconfig warning, this should be:
-> > 
-> > 	select HAVE_PATA_PLATFORM if ATA
-> > 
-> > or it needs to be moved outside of the if ATA ... endif block in
-> > drivers/ata/Kconfig.
-> 
-> The Kconfig dependency fix was merged into mainline today, so this patch
-> should no longer trigger the aforementioned warning.
+On Fri, Jan 21, 2011 at 7:38 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Fri, Jan 21, 2011 at 11:12:27AM +0900, KyongHo Cho wrote:
+>> Since the size of section is 256 mib and NR_BANKS is defined as 8,
+>> no ARM system can have more RAM than 2GiB in the current implementation.
+>> If you want banks in meminfo not to cross sparsemem boundaries,
+>> we need to find another way of physical memory specification in the kernel.
+>
+> There is no problem with increasing NR_BANKS.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+I think it is not reasonable to split a contiguous physical memory
+into several chunks.
+9 banks are required to use 2 gib.
+Even though you think it is no problem,
+it becomes a problem when we want to give physical memory information
+via booting command line but atag
+because there is a restriction in number of characters in booting command line.
 
-Ok, can you put it in the patch system please?
-
-Thanks.
+I don't understand why larger bank size than the section size is problem.
