@@ -1,141 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833Ab1AUO1t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 09:27:49 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:50826 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752332Ab1AUO1s (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Fri, 21 Jan 2011 09:27:48 -0500
-Date: Fri, 21 Jan 2011 09:26:47 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefan Bader <stefan.bader@canonical.com>
-Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        xen-devel@lists.xensource.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen: p2m: correctly initialize partial p2m
- leave
-Message-ID: <20110121142647.GA27319@dumpdata.com>
-References: <4D3848DF.9000906@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D3848DF.9000906@canonical.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753062Ab1AUO2s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 09:28:48 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:50385 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752402Ab1AUO2r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 09:28:47 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Fri, 21 Jan 2011 15:28:28 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
+Subject: [git pull] FireWire updates post 2.6.38-rc1
+Message-ID: <20110121152828.0c9a308d@stein>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 03:38:23PM +0100, Stefan Bader wrote:
-> There have been changes and code been moved around, so this is just a quick
-> rebase of the change I tested on a 2.6.37 based kernel. The basic problem seem
-> still valid, though.
+Linus, please pull from the fixes and fwnet branches at
 
-Yup.
-> 
-> Initially I thought of adding a cc to stable into the s-o-b, but the patch needs
-> to be adapted anyway (I can supply that version if the way I fixed the issue
-> looks ok).
+    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git fixes
+    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git fwnet
 
-OK, let me send this upstream to Linus for adaption. I fixed one compile warning
-but otherwsie it is the same. Look below for details.
+to receive (a) an update which waited on a new net/ EXPORT_SYMBOL,
+(b) a regression fix for the IEEE 1394 (FireWire) subsystem.  Thanks.
 
-And when that is done I would appreciate you sending a copy to stable.
+Maxim Levitsky (1):
+      firewire: net: invalidate ARP entries of removed nodes
 
-> 
-> Regards,
-> Stefan
+Stefan Richter (2):
+      firewire: core: fix unstable I/O with Canon camcorder
+      firewire: net: is not experimental anymore
 
-> >From 1e9c9514caf0399c88ae9288e6db8e3d1c4b4be5 Mon Sep 17 00:00:00 2001
-> From: Stefan Bader <stefan.bader@canonical.com>
-> Date: Thu, 20 Jan 2011 11:37:43 +0100
-> Subject: [PATCH] xen: p2m: correctly initialize partial p2m leave
-> 
-> After changing the p2m mapping to a tree by
-> 
->   commit 58e05027b530ff081ecea68e38de8d59db8f87e0
->     xen: convert p2m to a 3 level tree
-> 
-> and trying to boot a DomU with 615MB of memory, the following crash was
-> observed in the dump:
-> 
-> kernel direct mapping tables up to 26f00000 @ 1ec4000-1fff000
-> BUG: unable to handle kernel NULL pointer dereference at (null)
-> IP: [<c0107397>] xen_set_pte+0x27/0x60
-> *pdpt = 0000000000000000 *pde = 0000000000000000
-> 
-> Adding further debug statements showed that when trying to set up
-> pfn=0x26700 the returned mapping was invalid.
-> 
-> pfn=0x266ff calling set_pte(0xc1fe77f8, 0x6b3003)
-> pfn=0x26700 calling set_pte(0xc1fe7800, 0x3)
-> 
-> Although the last_pfn obtained from the startup info is 0x26700, which
-> should in turn not be hit, the additional 8MB which are added as extra
-> memory normally seem to be ok. This lead to looking into the initial
-> p2m tree construction, which uses the smaller value and assuming that
-> there is other code handling the extra memory.
-> 
-> When the p2m tree is set up, the leaves are directly pointed to the
-> array which the domain builder set up. But if the mapping is not on a
-> boundary that fits into one p2m page, this will result in the last leaf
-> being only partially valid. And as the invalid entries are not
-> initialized in that case, things go badly wrong.
-> 
-> I am trying to fix that by checking whether the current leaf is a
-> complete map and if not, allocate a completely new page and copy only
-> the valid pointers there. This may not be the most efficient or elegant
-> solution, but at least it seems to allow me booting DomUs with memory
-> assignments all over the range.
-> 
-> BugLink: http://bugs.launchpad.net/bugs/686692
-> 
-> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-> ---
->  arch/x86/xen/p2m.c |   20 +++++++++++++++++++-
->  1 files changed, 19 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-> index 8f2251d..c9307ec 100644
-> --- a/arch/x86/xen/p2m.c
-> +++ b/arch/x86/xen/p2m.c
-> @@ -237,7 +237,25 @@ void __init xen_build_dynamic_phys_to_machine(void)
->  			p2m_top[topidx] = mid;
->  		}
->  
-> -		p2m_top[topidx][mididx] = &mfn_list[pfn];
-> +		/*
-> +		 * As long as the mfn_list has enough entries to completely
-> +		 * fill a p2m page, pointing into the array is ok. But if
-> +		 * not the entries beyond the last pfn will be undefined.
-> +		 * And guessing that the 'what-ever-there-is' does not take it
-> +		 * too kindly when changing it to invalid markers, a new page
-> +		 * is allocated, initialized and filled with the valid part.
-> +		 */
-> +		if (unlikely(pfn + P2M_PER_PAGE > max_pfn)) {
-> +			unsigned long p2midx;
-> +			unsigned long **p2m = extend_brk(PAGE_SIZE, PAGE_SIZE);
-
-			unsigned long  *p2m.
+ drivers/firewire/Kconfig     |    6 ++----
+ drivers/firewire/core-card.c |   11 +++++++++--
+ drivers/firewire/net.c       |    9 ++++++++-
+ 3 files changed, 19 insertions(+), 7 deletions(-)
 
 
-> +			p2m_init(p2m);
-> +
-> +			for (p2midx = 0; pfn + p2midx < max_pfn; p2midx++) {
-> +				p2m[p2midx] = mfn_list[pfn + p2midx];
-> +			}
-> +			p2m_top[topidx][mididx] = p2m;
-> +		} else
-> +			p2m_top[topidx][mididx] = &mfn_list[pfn];
->  	}
->  
->  	m2p_override_init();
-> -- 
-> 1.7.0.4
-> 
+diff --git a/drivers/firewire/Kconfig b/drivers/firewire/Kconfig
+index 68f942c..0c56989 100644
+--- a/drivers/firewire/Kconfig
++++ b/drivers/firewire/Kconfig
+@@ -49,15 +49,13 @@ config FIREWIRE_SBP2
+ 	  configuration section.
+ 
+ config FIREWIRE_NET
+-	tristate "IP networking over 1394 (EXPERIMENTAL)"
+-	depends on FIREWIRE && INET && EXPERIMENTAL
++	tristate "IP networking over 1394"
++	depends on FIREWIRE && INET
+ 	help
+ 	  This enables IPv4 over IEEE 1394, providing IP connectivity with
+ 	  other implementations of RFC 2734 as found on several operating
+ 	  systems.  Multicast support is currently limited.
+ 
+-	  NOTE, this driver is not stable yet!
+-
+ 	  To compile this driver as a module, say M here:  The module will be
+ 	  called firewire-net.
+ 
+diff --git a/drivers/firewire/core-card.c b/drivers/firewire/core-card.c
+index be04923..24ff355 100644
+--- a/drivers/firewire/core-card.c
++++ b/drivers/firewire/core-card.c
+@@ -75,6 +75,8 @@ static size_t config_rom_length = 1 + 4 + 1 + 1;
+ #define BIB_IRMC		((1) << 31)
+ #define NODE_CAPABILITIES	0x0c0083c0 /* per IEEE 1394 clause 8.3.2.6.5.2 */
+ 
++#define CANON_OUI		0x000085
++
+ static void generate_config_rom(struct fw_card *card, __be32 *config_rom)
+ {
+ 	struct fw_descriptor *desc;
+@@ -284,6 +286,7 @@ static void bm_work(struct work_struct *work)
+ 	bool root_device_is_running;
+ 	bool root_device_is_cmc;
+ 	bool irm_is_1394_1995_only;
++	bool keep_this_irm;
+ 
+ 	spin_lock_irq(&card->lock);
+ 
+@@ -305,6 +308,10 @@ static void bm_work(struct work_struct *work)
+ 	irm_is_1394_1995_only = irm_device && irm_device->config_rom &&
+ 			(irm_device->config_rom[2] & 0x000000f0) == 0;
+ 
++	/* Canon MV5i works unreliably if it is not root node. */
++	keep_this_irm = irm_device && irm_device->config_rom &&
++			irm_device->config_rom[3] >> 8 == CANON_OUI;
++
+ 	root_id  = root_node->node_id;
+ 	irm_id   = card->irm_node->node_id;
+ 	local_id = card->local_node->node_id;
+@@ -333,7 +340,7 @@ static void bm_work(struct work_struct *work)
+ 			goto pick_me;
+ 		}
+ 
+-		if (irm_is_1394_1995_only) {
++		if (irm_is_1394_1995_only && !keep_this_irm) {
+ 			new_root_id = local_id;
+ 			fw_notify("%s, making local node (%02x) root.\n",
+ 				  "IRM is not 1394a compliant", new_root_id);
+@@ -382,7 +389,7 @@ static void bm_work(struct work_struct *work)
+ 
+ 		spin_lock_irq(&card->lock);
+ 
+-		if (rcode != RCODE_COMPLETE) {
++		if (rcode != RCODE_COMPLETE && !keep_this_irm) {
+ 			/*
+ 			 * The lock request failed, maybe the IRM
+ 			 * isn't really IRM capable after all. Let's
+diff --git a/drivers/firewire/net.c b/drivers/firewire/net.c
+index c2e194c..7ed08fd 100644
+--- a/drivers/firewire/net.c
++++ b/drivers/firewire/net.c
+@@ -191,6 +191,7 @@ struct fwnet_peer {
+ 	struct fwnet_device *dev;
+ 	u64 guid;
+ 	u64 fifo;
++	__be32 ip;
+ 
+ 	/* guarded by dev->lock */
+ 	struct list_head pd_list; /* received partial datagrams */
+@@ -570,6 +571,8 @@ static int fwnet_finish_incoming_packet(struct net_device *net,
+ 				peer->speed = sspd;
+ 			if (peer->max_payload > max_payload)
+ 				peer->max_payload = max_payload;
++
++			peer->ip = arp1394->sip;
+ 		}
+ 		spin_unlock_irqrestore(&dev->lock, flags);
+ 
+@@ -1470,6 +1473,7 @@ static int fwnet_add_peer(struct fwnet_device *dev,
+ 	peer->dev = dev;
+ 	peer->guid = (u64)device->config_rom[3] << 32 | device->config_rom[4];
+ 	peer->fifo = FWNET_NO_FIFO_ADDR;
++	peer->ip = 0;
+ 	INIT_LIST_HEAD(&peer->pd_list);
+ 	peer->pdg_size = 0;
+ 	peer->datagram_label = 0;
+@@ -1589,10 +1593,13 @@ static int fwnet_remove(struct device *_dev)
+ 
+ 	mutex_lock(&fwnet_device_mutex);
+ 
++	net = dev->netdev;
++	if (net && peer->ip)
++		arp_invalidate(net, peer->ip);
++
+ 	fwnet_remove_peer(peer, dev);
+ 
+ 	if (list_empty(&dev->peer_list)) {
+-		net = dev->netdev;
+ 		unregister_netdev(net);
+ 
+ 		if (dev->local_fifo != FWNET_NO_FIFO_ADDR)
 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xensource.com
-> http://lists.xensource.com/xen-devel
-
+-- 
+Stefan Richter
+-=====-==-== ---= =-=-=
+http://arcgraph.de/sr/
