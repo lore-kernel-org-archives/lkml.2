@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630Ab1AURTU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 12:19:20 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45936 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751515Ab1AURTT (ORCPT
+	id S1754645Ab1AURTu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 12:19:50 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:43576 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515Ab1AURTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 12:19:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=uqxPTr1ivyyBu/cY2i+KARDL2a8zbXm0Xvpxy9K50rSDwa8u/9ryPPjdyJS8y3S8Uf
-         2BqRRdZ0hdnVxdVhvOFAZsOJ+W3V56Dl0Y7BLUkDbtoo/N5s52F5OnPwnYXfdHGAGg6d
-         bhNyLMj29EuHA5oLVY+DYBNxgJ4xAo9TxW4dU=
-Date: Fri, 21 Jan 2011 18:19:14 +0100
-From: Tejun Heo <tj@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Christoph Lameter <cl@linux.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for
- this_cpu_cmpxchg_double
-Message-ID: <20110121171914.GJ2832@htj.dyndns.org>
-References: <20110107180419.GB23082@Krystal>
- <alpine.DEB.2.00.1101071227450.3014@router.home>
- <20110108172453.GF13269@mtj.dyndns.org>
- <4D393636.4040607@cs.helsinki.fi>
- <20110121092649.GA2832@htj.dyndns.org>
- <4D39A6EB.70705@zytor.com>
- <20110121154831.GE2832@htj.dyndns.org>
- <20110121165425.GB11687@Krystal>
- <20110121170847.GH2832@htj.dyndns.org>
- <1da7491b-6e7d-4453-9c6f-0e7767421ec4@email.android.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1da7491b-6e7d-4453-9c6f-0e7767421ec4@email.android.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 21 Jan 2011 12:19:48 -0500
+Date: Fri, 21 Jan 2011 09:18:56 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Greg Kroah-Hartman <gregkh@suse.de>, akpm <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Hank Janssen <hjanssen@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: [PATCH -next] staging/hv: hv_utils depends on CONNECTOR
+Message-Id: <20110121091856.bd5b10af.randy.dunlap@oracle.com>
+In-Reply-To: <20110121132707.27768675.sfr@canb.auug.org.au>
+References: <20110121132707.27768675.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 09:13:41AM -0800, H. Peter Anvin wrote:
-> We could do cmpxchg with a structure... the problem with a lon int
-> type is that Cristoph ran into bugs with __int128 on 64 bits.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-But, IIRC, the problem with int128 was with passing it as parameter
-and return value.  We don't have to do that.  We'll be just using it
-as a data storage / container type.  Or even that is broken?
+Don't build hv_utils when CONFIG_CONNECTOR is not enabled.
+Fixes these build errors:
 
-Thanks.
+ERROR: "cn_add_callback" [drivers/staging/hv/hv_utils.ko] undefined!
+ERROR: "cn_del_callback" [drivers/staging/hv/hv_utils.ko] undefined!
+ERROR: "cn_netlink_send" [drivers/staging/hv/hv_utils.ko] undefined!
 
--- 
-tejun
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Hank Janssen <hjanssen@microsoft.com>
+Cc: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ drivers/staging/hv/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- linux-next-20110121.orig/drivers/staging/hv/Kconfig
++++ linux-next-20110121/drivers/staging/hv/Kconfig
+@@ -31,6 +31,7 @@ config HYPERV_NET
+ 
+ config HYPERV_UTILS
+ 	tristate "Microsoft Hyper-V Utilities driver"
++	depends on CONNECTOR
+ 	default HYPERV
+ 	help
+ 	  Select this option to enable the Hyper-V Utilities.
