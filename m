@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753736Ab1AUP1R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 10:27:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58679 "EHLO mx2.suse.de"
+	id S1753947Ab1AUP14 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 10:27:56 -0500
+Received: from void.printf.net ([89.145.121.20]:52558 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753398Ab1AUP1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 10:27:17 -0500
-Date: Fri, 21 Jan 2011 16:27:12 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Tao Ma <tm@tao.ma>
-Cc: linux-kernel@vger.kernel.org, Tao Ma <boyu.mt@taobao.com>
-Subject: Re: [PATCH] ext4/trivial: Fix comment typo "especiially".
-In-Reply-To: <1295623291-10909-1-git-send-email-tm@tao.ma>
-Message-ID: <alpine.LNX.2.00.1101211627070.5725@pobox.suse.cz>
-References: <1295623291-10909-1-git-send-email-tm@tao.ma>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753398Ab1AUP1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 10:27:54 -0500
+Date: Fri, 21 Jan 2011 15:27:50 +0000
+From: Chris Ball <cjb@laptop.org>
+To: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
+Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH v3 1/1]mmc: implemented eMMC4.4 enhanced area feature
+Message-ID: <20110121152750.GA32551@void.printf.net>
+References: <20110120075556.GA23566@intel.com> <20110120161248.GA11774@void.printf.net> <5D8008F58939784290FAB48F5497519835341813A7@shsmsx502.ccr.corp.intel.com> <20110121080422.GA21763@void.printf.net> <5D8008F58939784290FAB48F549751983539F50558@shsmsx502.ccr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5D8008F58939784290FAB48F549751983539F50558@shsmsx502.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Jan 2011, Tao Ma wrote:
+Hi Chuanxiao,
 
-> From: Tao Ma <boyu.mt@taobao.com>
-> 
-> Change "especiially" to "especially".
-> 
-> Cc: Jiri Kosina <jkosina@suse.cz>
-> Signed-off-by: Tao Ma <boyu.mt@taobao.com>
-> ---
->  fs/ext4/extents.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-> index 63a7581..353b387 100644
-> --- a/fs/ext4/extents.c
-> +++ b/fs/ext4/extents.c
-> @@ -131,7 +131,7 @@ static ext4_fsblk_t ext4_ext_find_goal(struct inode *inode,
->  		 * fragmenting the file system's free space.  Maybe we
->  		 * should have some hueristics or some way to allow
->  		 * userspace to pass a hint to file system,
-> -		 * especiially if the latter case turns out to be
-> +		 * especially if the latter case turns out to be
->  		 * common.
->  		 */
->  		ex = path[depth].p_ext;
+On Fri, Jan 21, 2011 at 05:12:00PM +0800, Dong, Chuanxiao wrote:
+> I have used the checkpatch.pl to check this patch, and no error or warning found....
 
-Applied.
+Oh, you're right!  I wonder if that's because it's in a .txt file rather
+than a source file.  Not sure how to get it to warn about this, then.
+
+> > Ah, I wasn't clear -- I meant the bytes/kilobytes units, not the data type
+> > sizes.  e.g.:
+> > 
+> > +   size_t          enhanced_area_size;             /* Units: KB */
+> I think the units of _offset and _size should be easy for user to understand, so just choose the Byte for _offset and Kbyte for _size...
+> And as spec said, the _size is (ENH_SIZE_MULT_2 << 16 + ENH_SIZE_MULT_1 << 8 + ENH_SIZE_MULT_0) x HC_WP_GRP_SIZE x HC_ERASE_GPR_SIZE x 512kBytes. It must be Kbytes aligned. That is another reason to choose it.
+
+I agree that we we should use these units, I'm just arguing that we
+might as well mention them in the comment area.  The other card.h
+definitions mention their unit sizes too.  At the moment your comments
+for card.h simply repeat the variable name, which isn't useful -- why
+not make them repeat some useful and not-necessarily-obvious information
+instead?
+
+Thanks,
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
