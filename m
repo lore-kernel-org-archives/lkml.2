@@ -1,88 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751119Ab1AUFPx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 00:15:53 -0500
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:65440 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750695Ab1AUFPw (ORCPT
+	id S1751004Ab1AUF2P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 00:28:15 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:55952 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750695Ab1AUF2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 00:15:52 -0500
-Date: Fri, 21 Jan 2011 14:15:10 +0900
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Huang Ying <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        LKLM <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] Unlock the locked hugetlb page without
- MF_COUNT_INCREASED.
-Message-ID: <20110121051510.GC16406@spritzera.linux.bs1.fc.nec.co.jp>
-References: <4D38E00E.9020509@np.css.fujitsu.com>
+	Fri, 21 Jan 2011 00:28:14 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmUEALGoOE15LN5mgWdsb2JhbACkYhYBARYiJL4wDYJvglQE
+Date: Fri, 21 Jan 2011 16:28:02 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Malcolm Scott <lkml@malc.org.uk>
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: [PATCH] Re: XFS deadlock in 2.6.37
+Message-ID: <20110121052802.GA16267@dastard>
+References: <alpine.DEB.2.00.1101201702260.29071@callisto.malc.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D38E00E.9020509@np.css.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.00.1101201702260.29071@callisto.malc.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 10:23:26AM +0900, Jin Dongming wrote:
-> When the unmapped hugetlb page is poisoned, the page is locked
-> for checking some conditions of page. When one of the following condition
-> in __memory_failure()
->     if (!PageHWPoison(hpage)
->         || (hwpoison_filter(p) && TestClearPageHWPoison(p))
->         || (p != hpage && TestSetPageHWPoison(hpage) {
->         ...
->     }
-> 
-> is matched, it just returns from __memory_failure() without unlocking
-> the locked hugetlb page. This will block the process which wants to
-> map the blocked hugetlb page.
-> 
-> If some process is blocked, error message could be outputted as following:
->     kernel: INFO: task hmmap:3307 blocked for more than 120 seconds.
->     kernel: "echo 0 > /proc/sys/    kernel/hung_task_timeout_secs" disables this message.
->     kernel: hmmap         D ffff880196946100     0  3307      1 0x00000080
->     kernel:  ffff880196946100 0000000000000086 ffff880195ca6040 0000000000000000
->     kernel:  0000000000000046 ffffffff81036a7d ffffffff81d08980 0000000000000000
->     kernel:  ffffffff8189c74c ffffffff814f6886 000000000000002e 0000000000000246
->     kernel: Call Trace:
->     kernel:  [<ffffffff81036a7d>] ? release_console_sem+0x174/0x18e
->     kernel:  [<ffffffff810914f4>] ? sync_page+0x0/0x48
->     kernel:  [<ffffffff813bcbdb>] ? io_schedule+0x56/0x8c
->     kernel:  [<ffffffff81091538>] ? sync_page+0x44/0x48
->     kernel:  [<ffffffff813bd0ab>] ? __wait_on_bit_lock+0x3e/0x83
->     kernel:  [<ffffffff810914e1>] ? __lock_page+0x5e/0x64
->     kernel:  [<ffffffff8104ea89>] ? wake_bit_function+0x0/0x23
->     kernel:  [<ffffffff810bd723>] ? hugetlb_fault+0x38e/0x6ef
->     kernel:  [<ffffffff813c11ac>] ? do_page_fault+0x283/0x3dd
->     kernel:  [<ffffffff81032546>] ? __wake_up+0x30/0x44
->     kernel:  [<ffffffff813be79f>] ? page_fault+0x1f/0x30
-> 
-> This is because the hugetlb page has been locked in __memory_failure(),
-> the process will be blocked by lock_page() in hugetlb_fault()
-> all the time.
-> 
-> So this patch unlock the locked hugetlb page before returning from
-> __memory_failure().
-> 
-> Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-> Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-> ---
->  mm/memory-failure.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-> index 548fbd7..8665eed 100644
-> --- a/mm/memory-failure.c
-> +++ b/mm/memory-failure.c
-> @@ -1000,6 +1000,7 @@ int __memory_failure(unsigned long pfn, int trapno, int flags)
->  			    || (hwpoison_filter(p) && TestClearPageHWPoison(p))
->  			    || (p != hpage && TestSetPageHWPoison(hpage))) {
->  				atomic_long_sub(nr_pages, &mce_bad_pages);
-> +				unlock_page(hpage);
+[cc xfs@os.sgi.com]
 
-Good fix, thank you.
+On Thu, Jan 20, 2011 at 05:08:45PM +0000, Malcolm Scott wrote:
+> Hi all,
+> 
+> I've had the following deadlock happen twice on a 2.6.37 system with
+> several XFS filesystems (including root) and no swap (may be
+> relevant, considering that kswapd is one task involved here).  Some
+> minor filesystem corruption resulted (but maybe only because the
+> root fs couldn't be synced/umounted).
+> 
+> If you need any more info, please let me know.
+> 
+> --- first crash ---
+> 
+> [504603.250208] INFO: task kswapd0:37 blocked for more than 120 seconds.
+> [504603.261107] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> [504603.273465] kswapd0       D 0000000000000003     0    37      2 0x00000000
+> [504603.273473]  ffff88034428bc10 0000000000000046 ffff88034428bfd8 ffff88034428a000
+> [504603.273479]  0000000000013a80 ffff8803442903a0 ffff88034428bfd8 0000000000013a80
+> [504603.273483]  ffff88034572ad80 ffff880344290000 ffffffffffffff10 ffff880343a51e28
+> [504603.273488] Call Trace:
+> [504603.273500]  [<ffffffff815ce917>] __mutex_lock_slowpath+0xf7/0x180
+> [504603.273504]  [<ffffffff815ce303>] mutex_lock+0x23/0x50
+> [504603.273541]  [<ffffffffa00cf709>] xfs_qm_dqreclaim_one+0x29/0x350 [xfs]
+> [504603.273554]  [<ffffffffa00cfaed>] xfs_qm_shake_freelist+0x1d/0x40 [xfs]
+> [504603.273567]  [<ffffffffa00cfb69>] xfs_qm_shake+0x59/0x70 [xfs]
+> [504603.273573]  [<ffffffff8111d619>] shrink_slab+0x89/0x180
+> [504603.273577]  [<ffffffff81120420>] balance_pgdat+0x2b0/0x530
+> [504603.273580]  [<ffffffff811207df>] kswapd+0x13f/0x2b0
+> [504603.273585]  [<ffffffff81087d30>] ? autoremove_wake_function+0x0/0x40
+> [504603.273588]  [<ffffffff811206a0>] ? kswapd+0x0/0x2b0
+> [504603.273591]  [<ffffffff81087606>] kthread+0x96/0xa0
+> [504603.273596]  [<ffffffff8100cea4>] kernel_thread_helper+0x4/0x10
+> [504603.273599]  [<ffffffff81087570>] ? kthread+0x0/0xa0
+> [504603.273603]  [<ffffffff8100cea0>] ? kernel_thread_helper+0x0/0x10
 
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+[snip]
+
+Looks like everything is hung up on the freelist lock. Can you
+test the patch below?
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
+
+xfs: fix dquot shaker deadlock
+
+From: Dave Chinner <dchinner@redhat.com>
+
+Commit 368e136 ("xfs: remove duplicate code from dquot reclaim") fails
+to unlock the dquot freelist when the number of loop restarts is
+exceeded in xfs_qm_dqreclaim_one(). This causes hangs in memory
+reclaim. Remove the bogus loop exit check that causes the problem.
+
+Reported-by: Malcolm Scott <lkml@malc.org.uk>
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+---
+ fs/xfs/quota/xfs_qm.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/fs/xfs/quota/xfs_qm.c b/fs/xfs/quota/xfs_qm.c
+index f8e854b..9431c56 100644
+--- a/fs/xfs/quota/xfs_qm.c
++++ b/fs/xfs/quota/xfs_qm.c
+@@ -1992,8 +1992,6 @@ dqfunlock:
+ 		xfs_dqunlock(dqp);
+ 		if (dqpout)
+ 			break;
+-		if (restarts >= XFS_QM_RECLAIM_MAX_RESTARTS)
+-			return NULL;
+ 	}
+ 	mutex_unlock(&xfs_Gqm->qm_dqfrlist_lock);
+ 	return dqpout;
