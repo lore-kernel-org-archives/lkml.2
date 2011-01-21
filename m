@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab1AUBRu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 20:17:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15786 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751412Ab1AUBRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 20:17:48 -0500
-Date: Thu, 20 Jan 2011 20:20:50 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Steve French <smfrench@gmail.com>, <linux-cifs@vger.kernel.org>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Suresh Jayaraman <sjayaraman@suse.de>
-Subject: Re: linux-next: build warning after merge of the cifs tree
-Message-ID: <20110120202050.0bc68484@corrin.poochiereds.net>
-In-Reply-To: <20110121120524.23dcf86d.sfr@canb.auug.org.au>
-References: <20110121120524.23dcf86d.sfr@canb.auug.org.au>
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/uqCs2g1h2CJkLD0mcJt57XJ"; protocol="application/pgp-signature"
+	id S1753467Ab1AUBUW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 20:20:22 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47318 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412Ab1AUBUU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 20:20:20 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+Message-ID: <4D38E00E.9020509@np.css.fujitsu.com>
+Date: Fri, 21 Jan 2011 10:23:26 +0900
+From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Huang Ying <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        LKLM <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/3] Unlock the locked hugetlb page without MF_COUNT_INCREASED.
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/uqCs2g1h2CJkLD0mcJt57XJ
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+When the unmapped hugetlb page is poisoned, the page is locked
+for checking some conditions of page. When one of the following condition
+in __memory_failure()
+    if (!PageHWPoison(hpage)
+        || (hwpoison_filter(p) && TestClearPageHWPoison(p))
+        || (p != hpage && TestSetPageHWPoison(hpage) {
+        ...
+    }
 
-On Fri, 21 Jan 2011 12:05:24 +1100
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+is matched, it just returns from __memory_failure() without unlocking
+the locked hugetlb page. This will block the process which wants to
+map the blocked hugetlb page.
 
-> Hi all,
->=20
-> After merging the cifs tree, today's linux-next build (powerpc
-> ppc64_defconfig) produced this warning:
->=20
-> fs/cifs/cifssmb.c: In function 'CIFSSMBEcho':
-> fs/cifs/cifssmb.c:740: warning: large integer implicitly truncated to uns=
-igned type
->=20
-> Introduced by commit 766fdbb57fdb1e53bc34c431103e95383d7f13ba ("cifs: add
-> ability to send an echo request").
->=20
+If some process is blocked, error message could be outputted as following:
+    kernel: INFO: task hmmap:3307 blocked for more than 120 seconds.
+    kernel: "echo 0 > /proc/sys/    kernel/hung_task_timeout_secs" disables this message.
+    kernel: hmmap         D ffff880196946100     0  3307      1 0x00000080
+    kernel:  ffff880196946100 0000000000000086 ffff880195ca6040 0000000000000000
+    kernel:  0000000000000046 ffffffff81036a7d ffffffff81d08980 0000000000000000
+    kernel:  ffffffff8189c74c ffffffff814f6886 000000000000002e 0000000000000246
+    kernel: Call Trace:
+    kernel:  [<ffffffff81036a7d>] ? release_console_sem+0x174/0x18e
+    kernel:  [<ffffffff810914f4>] ? sync_page+0x0/0x48
+    kernel:  [<ffffffff813bcbdb>] ? io_schedule+0x56/0x8c
+    kernel:  [<ffffffff81091538>] ? sync_page+0x44/0x48
+    kernel:  [<ffffffff813bd0ab>] ? __wait_on_bit_lock+0x3e/0x83
+    kernel:  [<ffffffff810914e1>] ? __lock_page+0x5e/0x64
+    kernel:  [<ffffffff8104ea89>] ? wake_bit_function+0x0/0x23
+    kernel:  [<ffffffff810bd723>] ? hugetlb_fault+0x38e/0x6ef
+    kernel:  [<ffffffff813c11ac>] ? do_page_fault+0x283/0x3dd
+    kernel:  [<ffffffff81032546>] ? __wake_up+0x30/0x44
+    kernel:  [<ffffffff813be79f>] ? page_fault+0x1f/0x30
 
-Oh duh -- <forehead slap>...
+This is because the hugetlb page has been locked in __memory_failure(),
+the process will be blocked by lock_page() in hugetlb_fault()
+all the time.
 
-        smb->hdr.WordCount =3D cpu_to_le16(1);
+So this patch unlock the locked hugetlb page before returning from
+__memory_failure().
 
-...and WordCount is u8. I'll send Steve a fix tomorrow...
+Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+---
+ mm/memory-failure.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
---=20
-Jeff Layton <jlayton@redhat.com>
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 548fbd7..8665eed 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1000,6 +1000,7 @@ int __memory_failure(unsigned long pfn, int trapno, int flags)
+ 			    || (hwpoison_filter(p) && TestClearPageHWPoison(p))
+ 			    || (p != hpage && TestSetPageHWPoison(hpage))) {
+ 				atomic_long_sub(nr_pages, &mce_bad_pages);
++				unlock_page(hpage);
+ 				return 0;
+ 			}
+ 			set_page_hwpoison_huge_page(hpage);
+-- 
+1.7.2.2
 
---Sig_/uqCs2g1h2CJkLD0mcJt57XJ
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-
-iEYEARECAAYFAk0433YACgkQojH4PzJJfGU1DwCgh4gQcKxKEaR0IJtG1ta1K6T9
-G/oAnRmNToo9dyeev285r08Fc3kLEdBm
-=qnSQ
------END PGP SIGNATURE-----
-
---Sig_/uqCs2g1h2CJkLD0mcJt57XJ--
