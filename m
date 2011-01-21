@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255Ab1AUKCO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 05:02:14 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:55846 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751827Ab1AUKCN (ORCPT
+	id S1753577Ab1AUKFB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 05:05:01 -0500
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:50578 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753315Ab1AUKE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 05:02:13 -0500
-From: Thomas Weber <weber@corscience.de>
-To: linux-omap@vger.kernel.org
-Cc: Thomas Weber <weber@corscience.de>, manjugk@ti.com, gadiyar@ti.com,
-        tony@atomide.com, govindraj@ti.com, gregkh@suse.de,
-        andrei.emeltchenko@nokia.com, linux-kernel@vger.kernel.org
-Subject: [PATCHv3] OMAP: Enable Magic SysRq on serial console ttyOx
-Date: Fri, 21 Jan 2011 11:01:24 +0100
-Message-Id: <1295604084-27761-1-git-send-email-weber@corscience.de>
-X-Mailer: git-send-email 1.7.4.rc2
-X-Provags-ID: V02:K0:tAVTROuFpqi0MaJux9EouHv/eZTBp+8LMG/jlNgUptE
- zYoC/xC5Y9mYkhiHxYITuo8gJayjthDxz3hCNpaDv+YKMOzr2a
- 3d7n6TmkhAj3THdo6L8AXL5v89QCt9xvrLRda6gF58jYiENpBA
- zkbMmrTGWwd+YO02wK02mEuJjpHgXo0KHKTpxTtH3z+Vmu9W74
- q3uvY/ZF+CJqnxQ0Lw1QA==
+	Fri, 21 Jan 2011 05:04:59 -0500
+Date: Fri, 21 Jan 2011 19:00:28 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Mel Gorman <mel@csn.ul.ie>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Huang Ying <ying.huang@intel.com>,
+        Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>,
+        tony.luck@intel.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 3/7] remove putback_lru_pages() in hugepage migration
+ context
+Message-ID: <20110121100028.GA11102@spritzera.linux.bs1.fc.nec.co.jp>
+References: <1295591340-1862-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1295591340-1862-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <AANLkTikOdCzhsw3_JQtbJOmA8CRm2hCZEY0LLw5uYtmM@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-2022-jp
+Content-Disposition: inline
+In-Reply-To: <AANLkTikOdCzhsw3_JQtbJOmA8CRm2hCZEY0LLw5uYtmM@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Magic SysRq key is not working for OMAP on new serial
-console ttyOx because SUPPORT_SYSRQ is not defined
-for omap-serial.
+Hi,
 
-This patch defines SUPPORT_SYSRQ in omap-serial and
-enables handling of Magic SysRq character.
+On Fri, Jan 21, 2011 at 03:40:35PM +0900, Minchan Kim wrote:
+> Hello,
+> 
+> On Fri, Jan 21, 2011 at 3:28 PM, Naoya Horiguchi
+> <n-horiguchi@ah.jp.nec.com> wrote:
+> > This putback_lru_pages() is inserted at cf608ac19c to allow
+> > memory compaction to count the number of migration failed pages.
+> >
+> > But we should not do it for a hugepage because page->lru of a hugepage
+> > is used differently from that of a normal page:
+> >
+> >   in-use hugepage : page->lru is unlinked,
+> >   free hugepage   : page->lru is linked to the free hugepage list,
+> >
+> > so putting back hugepages to LRU lists collapses this rule.
+> > We just drop this change (without any impact on memory compaction.)
+> >
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > Cc: Minchan Kim <minchan.kim@gmail.com>
+> 
+> As I said previously, It seems mistake during patch merge.
+> I didn't add it in my original patch. You can see my final patch.
+> https://lkml.org/lkml/2010/8/24/248
 
-Further there is an issue of losing first break character.
-Removing the reset of the lsr_break_flag fixes this issue.
+OK.
 
-Signed-off-by: Thomas Weber <weber@corscience.de>
----
- drivers/serial/omap-serial.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+> Anyway, I realized it recently so I sent the patch to Andrew.
+> Could you see this one?
+> https://lkml.org/lkml/2011/1/20/241
 
-diff --git a/drivers/serial/omap-serial.c b/drivers/serial/omap-serial.c
-index 7f2f010..699b344 100644
---- a/drivers/serial/omap-serial.c
-+++ b/drivers/serial/omap-serial.c
-@@ -20,6 +20,10 @@
-  * this driver as required for the omap-platform.
-  */
- 
-+#if defined(CONFIG_SERIAL_OMAP_CONSOLE) && defined(CONFIG_MAGIC_SYSRQ)
-+#define SUPPORT_SYSRQ
-+#endif
-+
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/console.h>
-@@ -190,7 +194,6 @@ static inline void receive_chars(struct uart_omap_port *up, int *status)
- 			if (up->port.line == up->port.cons->index) {
- 				/* Recover the break flag from console xmit */
- 				lsr |= up->lsr_break_flag;
--				up->lsr_break_flag = 0;
- 			}
- #endif
- 			if (lsr & UART_LSR_BI)
--- 
-1.7.4.rc2
+This patch seems not to change hugepage soft offline's behavior,
+so I have no objection.
 
+-- Naoya Horiguchi
