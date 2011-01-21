@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab1AUPd4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 10:33:56 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:46598 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753719Ab1AUPdx convert rfc822-to-8bit (ORCPT
+	id S1754261Ab1AUPeL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 10:34:11 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:55408 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754052Ab1AUPeJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 10:33:53 -0500
-Subject: Re: [PATCH 00/21] mm: Preemptibility -v6
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>, Nick Piggin <npiggin@kernel.dk>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Andrea Arcangeli <aarcange@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <alpine.LSU.2.00.1101201052060.1603@sister.anvils>
-References: <20101126143843.801484792@chello.nl>
-	 <alpine.LSU.2.00.1101172301340.2899@sister.anvils>
-	 <1295457039.28776.137.camel@laptop>
-	 <alpine.LSU.2.00.1101201052060.1603@sister.anvils>
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 21 Jan 2011 10:34:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=bHo9e/Uj73HalBZ6Za0T6HfWJXGS539E0MJ1IVeEMjFqBvUhMONiQc/mtcMpUzzsHW
+         BGYpaNPiutoSToo21HtNEtq/CZ8s9Muf0chwsBRuFmjyU7oBzzsOjIE3vpS3HzH9bqXA
+         l2ToDCthtxUUSLknbSNR3LfBQSNq8J1L+BK0w=
+MIME-Version: 1.0
+In-Reply-To: <20110119103323.GC4693@hedu-HP-Z800-Workstation>
+References: <20110119092011.GA23624@darkstar>
+	<20110119103323.GC4693@hedu-HP-Z800-Workstation>
+Date: Fri, 21 Jan 2011 17:34:08 +0200
+Message-ID: <AANLkTimKfFAaOkCh_9EaUegYcv-rOVqvMCQ6t7qPbQeB@mail.gmail.com>
+Subject: Re: [PATCH] usb otg: use atomic notifier instead of blocking notifier
+From: Grazvydas Ignotas <notasas@gmail.com>
+To: Heikki Krogerus <heikki.krogerus@nokia.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Felipe Balbi <balbi@ti.com>, Tejun Heo <tj@kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Hema HK <hemahk@ti.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yang Ruirui <ruirui.r.yang@tieto.com>,
+        David Brownell <david-b@pacbell.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Fri, 21 Jan 2011 16:33:54 +0100
-Message-ID: <1295624034.28776.303.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-20 at 11:57 -0800, Hugh Dickins wrote:
-> > > 21/21 mm-optimize_page_lock_anon_vma_fast-path.patch
-> > >       I certainly see the call for this patch, I want to eliminate those
-> > >       doubled atomics too.  This appears correct to me, and I've not dreamt
-> > >       up an alternative; but I do dislike it, and I suspect you don't like
-> > >       it much either.  I'm ambivalent about it, would love a better patch.
-> > 
-> > Like said, I fully agree with that sentiment, just haven't been able to
-> > come up with anything saner :/ Although I can optimize the
-> > __put_anon_vma() path a bit by doing something like:
-> > 
-> >   if (mutex_is_locked()) { anon_vma_lock(); anon_vma_unlock(); }
-> > 
-> > But I bet that wants a barrier someplace and my head hurts.. 
-> 
-> Without daring to hurt my head very much, yes, I'd say those kind
-> of "optimizations" have a habit of turning out to be racily wrong.
-> 
-> But you put your finger on it: if you hadn't had to add that lock-
-> unlock pair into __put_anon_vma(), I wouldn't have minded the
-> contortions added to page_lock_anon_vma(). 
+On Wed, Jan 19, 2011 at 12:33 PM, Heikki Krogerus
+<heikki.krogerus@nokia.com> wrote:
+> On Wed, Jan 19, 2011 at 05:20:11PM +0800, ext Yang Ruirui wrote:
+>> --- linux-2.6.orig/include/linux/usb/otg.h      2011-01-17 09:39:11.000000000 +0800
+>> +++ linux-2.6/include/linux/usb/otg.h   2011-01-19 16:38:06.649546989 +0800
+>> @@ -74,7 +74,7 @@ struct otg_transceiver {
+>>         void __iomem                    *io_priv;
+>>
+>>         /* for notification of usb_xceiv_events */
+>> -       struct blocking_notifier_head   notifier;
+>> +       struct atomic_notifier_head     notifier;
+>>
+>>         /* to pass extra port status to the root hub */
+>>         u16                     port_status;
+>> @@ -234,13 +234,13 @@ otg_start_srp(struct otg_transceiver *ot
+>>  static inline int
+>>  otg_register_notifier(struct otg_transceiver *otg, struct notifier_block *nb)
+>>  {
+>> -       return blocking_notifier_chain_register(&otg->notifier, nb);
+>> +       return atomic_notifier_chain_register(&otg->notifier, nb);
+>>  }
+>>
+>>  static inline void
+>>  otg_unregister_notifier(struct otg_transceiver *otg, struct notifier_block *nb)
+>>  {
+>> -       blocking_notifier_chain_unregister(&otg->notifier, nb);
+>> +       atomic_notifier_chain_unregister(&otg->notifier, nb);
+>>  }
+>>
+>>  /* for OTG controller drivers (and maybe other stuff) */
+>
+> Is drivers/power/twl4030_charger.c ready for atomic notifiers?
 
-I think there's just about enough implied barriers there that the
-'simple' code just works ;-)
-
-But given that I'm trying to think with snot for brains thanks to some
-cold, I don't trust myself at all to have gotten this right.
-
-[ for Oleg and Paul: https://lkml.org/lkml/2010/11/26/213 contains the
-full patch this is against ]
-
----
-Index: linux-2.6/mm/rmap.c
-===================================================================
---- linux-2.6.orig/mm/rmap.c
-+++ linux-2.6/mm/rmap.c
-@@ -1559,9 +1559,20 @@ void __put_anon_vma(struct anon_vma *ano
- 	 * Synchronize against page_lock_anon_vma() such that
- 	 * we can safely hold the lock without the anon_vma getting
- 	 * freed.
-+	 *
-+	 * Relies on the full mb implied by the atomic_dec_and_test() from
-+	 * put_anon_vma() against the full mb implied by mutex_trylock() from
-+	 * page_lock_anon_vma(). This orders:
-+	 *
-+	 * page_lock_anon_vma()		VS	put_anon_vma()
-+	 *   mutex_trylock()			  atomic_dec_and_test()
-+	 *   smp_mb()				  smp_mb()
-+	 *   atomic_read()			  mutex_is_locked()
- 	 */
--	anon_vma_lock(anon_vma);
--	anon_vma_unlock(anon_vma);
-+	if (mutex_is_locked(&anon_vma->root->mutex)) {
-+		anon_vma_lock(anon_vma);
-+		anon_vma_unlock(anon_vma);
-+	}
- 
- 	if (anon_vma->root != anon_vma)
- 		put_anon_vma(anon_vma->root);
-
+No it is not, it's doing some i2c stuff. With twl4030 it's called from
+threaded_irq in twl4030-usb instead of musb core and is working fine..
