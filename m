@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab1AURr2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 12:47:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38705 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753649Ab1AURr1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 12:47:27 -0500
-Date: Fri, 21 Jan 2011 18:44:42 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>, Nick Piggin <npiggin@kernel.dk>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 00/21] mm: Preemptibility -v6
-Message-ID: <20110121174442.GI9506@random.random>
-References: <20101126143843.801484792@chello.nl>
- <alpine.LSU.2.00.1101172301340.2899@sister.anvils>
- <1295457039.28776.137.camel@laptop>
+	id S1754335Ab1AURsX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 12:48:23 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47695 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753531Ab1AURsW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 12:48:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=jN8Q+XeL2CrrNO2Tx+FBwQza3PPdlyLOgy+fMEET3Ik3O6s6OuwRriMghSArn/fANe
+         DmfgVG4nsmkZf+s8QJQqe5gcUy0EpjQKb9G/zGP/T83+VdrhVCzAkOSREIDDd5MfhYkU
+         s7X3OnakCOSWLcLdLpSiZKoH+CUKHYFskts7g=
+Date: Fri, 21 Jan 2011 18:48:17 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Pekka Enbeerg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        akpm@linux-foundation.org
+Subject: Re: x86: A fast way to check capabilities of the current cpu
+Message-ID: <20110121174817.GM2832@htj.dyndns.org>
+References: <alpine.DEB.2.00.1012151404070.21102@router.home>
+ <20110121171133.GI2832@htj.dyndns.org>
+ <alpine.DEB.2.00.1101211114530.15692@router.home>
+ <20110121172836.GK2832@htj.dyndns.org>
+ <alpine.DEB.2.00.1101211139330.15692@router.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1295457039.28776.137.camel@laptop>
+In-Reply-To: <alpine.DEB.2.00.1101211139330.15692@router.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 06:10:39PM +0100, Peter Zijlstra wrote:
-> > 19/21 mm-convert_i_mmap_lock_and_anon_vma-_lock_to_mutexes.patch
-> >       I suggest doing the anon_vma lock->mutex conversion separately here.
-> >       Acked-by: Hugh Dickins <hughd@google.com>
-> >       except that in the past we have renamed a lock when we've done this
-> >       kind of conversion, so I'd expect anon_vma->mutex throughout now.
-> >       Or am I just out of date?  I don't feel very strongly about it.
+On Fri, Jan 21, 2011 at 11:46:04AM -0600, Christoph Lameter wrote:
+> > Oh, you're right.  Sorry about that.  Can you please then add a
+> > comment noting that the operation is x86 only?  Maybe prefix it with
+> > x86_?
 > 
-> Done.. however:
-> 
-> Index: linux-2.6/include/linux/huge_mm.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/huge_mm.h
-> +++ linux-2.6/include/linux/huge_mm.h
-> @@ -91,12 +91,8 @@ extern void __split_huge_page_pmd(struct
->  #define wait_split_huge_page(__anon_vma, __pmd)				\
->  	do {								\
->  		pmd_t *____pmd = (__pmd);				\
-> -		spin_unlock_wait(&(__anon_vma)->root->lock);		\
-> -		/*							\
-> -		 * spin_unlock_wait() is just a loop in C and so the	\
-> -		 * CPU can reorder anything around it.			\
-> -		 */							\
-> -		smp_mb();						\
-> +		anon_vma_lock(__anon_vma);				\
-> +		anon_vma_unlock(__anon_vma);				\
->  		BUG_ON(pmd_trans_splitting(*____pmd) ||			\
->  		       pmd_trans_huge(*____pmd));			\
->  	} while (0)
-> 
-> Andrea, is that smp_mb() simply to avoid us doing anything before the
-> lock is free? Why isn't there an mb() before to ensure nothing leaks
-> past it from the other end?
+> For a function defined in an specific include file and only used in arch
+> specific code?
 
-The idea would be that by the time we read the pmd set to
-pmd_trans_splitting with the page_table_lock hold, we're guaranteed
-we'll see the anon-vma locked (if it's still locked). So it's ok if
-spin_unlock_wait happens before reading the pmd_trans_splitting check
-inside the CPU (all it matters is for it not to happen before the
-spin_lock(&page_table_lock) which it can't by the acquire semantics of
-the spinlock).
+Hmm?  asm/percpu.h gets included by linux/percpu.h, so it would end up
+in most .c files.
 
-So in short we know we start with the anon_vma locked, and we just
-wait as long as needed.
+Thanks.
 
-So we only need to protect to the stuff after spin_unlock_wait().
+-- 
+tejun
