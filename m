@@ -1,82 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608Ab1AUQ52 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 11:57:28 -0500
-Received: from core.signal11.us ([64.251.29.136]:39130 "EHLO core.signal11.us"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754581Ab1AUQ50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 11:57:26 -0500
-Message-ID: <4D39BAF5.9010506@signal11.us>
-Date: Fri, 21 Jan 2011 11:57:25 -0500
-From: Alan Ott <alan@signal11.us>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100528 Lightning/1.0b1 Thunderbird/3.0.5
+	id S1752615Ab1AURHV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 12:07:21 -0500
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:34612 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750882Ab1AURHV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 12:07:21 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 7juzENEVM1kKqCHyajVg1yfWHVLcfLVed1UIdyCJsZwa61n
+ igTXmdOnp0fX4ciyFI2JVves4cqTCqWPaekWDC8h_hL_LuCjfeybQvjE0kxA
+ E2MvKWzw25POJMepK6YNBdTa.ynax5p2lKgibhAQRH5TNpyloqMLHjgeOwuD
+ BjSTfBDEbuOdsqnoA4vkxWUz5T9kxzjJtxFWaAWUiVp69RIDVuMlUPSviU4w
+ kDVCiqcyk.d0-
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 21 Jan 2011 11:07:16 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+cc: Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for
+ this_cpu_cmpxchg_double
+In-Reply-To: <20110121165425.GB11687@Krystal>
+Message-ID: <alpine.DEB.2.00.1101211101510.15418@router.home>
+References: <20110106204525.222395863@linux.com> <4D263C91.30709@zytor.com> <alpine.DEB.2.00.1101070907060.3014@router.home> <20110107180419.GB23082@Krystal> <alpine.DEB.2.00.1101071227450.3014@router.home> <20110108172453.GF13269@mtj.dyndns.org>
+ <4D393636.4040607@cs.helsinki.fi> <20110121092649.GA2832@htj.dyndns.org> <4D39A6EB.70705@zytor.com> <20110121154831.GE2832@htj.dyndns.org> <20110121165425.GB11687@Krystal>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] HID: Report Descriptor in Sysfs
-References: <1295590785-7101-1-git-send-email-alan@signal11.us> <alpine.LNX.2.00.1101211054210.5725@pobox.suse.cz> <4D399DAB.3080808@signal11.us> <alpine.LNX.2.00.1101211607290.5725@pobox.suse.cz> <4D39A660.7040302@signal11.us> <alpine.LNX.2.00.1101211714050.5725@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1101211714050.5725@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Fri Jan 21 11:57:26 2011
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4d39baf6157481982510456
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2011 11:14 AM, Jiri Kosina wrote:
-> On Fri, 21 Jan 2011, Alan Ott wrote:
+On Fri, 21 Jan 2011, Mathieu Desnoyers wrote:
+
+> I'm again probably missing something, but what is "clumsy" about defining a
+> structure like the following to ensure proper alignment of the target
+> pointer (instead of adding a runtime test) ?
 >
->    
->> Well, what I really want is the Usage Page and Usage of the device. For some
->> background, I maintain a library called hidapi[1] for accessing HID devices in
->> a cross platform way. There are currently four backends, Linux-hidraw,
->> Linux-libusb, Mac OS, and Windows.
->>
->> I've recently received requests for supporting composite HID devices. Since a
->> composite device will show up as multiple devices with the same VID/PID, one
->> needs a way to differentiate between its different interfaces. On Windows and
->> Mac, the platform HID libraries support getting the Usage Page and Usage of
->> each interface. On Linux/libusb I can request the HID report descriptor and
->> parse it myself, but I have to claim the interface to do it, and to do that, I
->> have to detach the kernel driver. Needless to say, detaching the kernel driver
->> is not good, especially when the library is supposed to be just scanning for
->> devices.
->>
->> For these reasons, it would be really convenient to get the report descriptor
->> from sysfs.
->>      
-> In this case, you can still get the report descriptor from hidraw (which
-> is parallel to any other HID-bus based kernel driver). Woudl that suit
-> your needs?
+> struct cmpxchg_double {
+> #if __BYTE_ORDER == __LITTLE_ENDIAN
+>         unsigned long low, high;
+> #else
+>         unsigned long high, low;
+> #endif
+> } __attribute__((packed, aligned(2 * sizeof(unsigned long))));
 >
->    
+> (note: packed here along with "aligned" does _not_ generate ugly bytewise
+> read/write memory ops like "packed" alone. The use of "packed" is to let the
+> compiler down-align the structure to the value requested, instead of uselessly
+> aligning it on 32-byte if it chooses to.)
+>
+> The prototype could then look like:
+>
+> bool __this_cpu_generic_cmpxchg_double(pcp, oval_low, oval_high, nval_low, nval_high);
+>
+> With:
+>   struct cmpxchg_double *pcp
 
-Not exactly, because not all HID devices have a hidraw interface 
-(because some are blacklisted). These devices are still accessible 
-through libusb. Plus, getting it from hidraw involves having permissions 
-to open the device[1]. Maybe that's less of a limitation, but since I 
-can get everything else from sysfs (vid/pid, strings, device version), 
-it seemed to make sense to me to have the hid report descriptor in the 
-same place.
+That does not conform to the parameter conventions in other this_cpu_ops.
+The first parameter is a variable because the notion of a pointer is
+problematic given that percpu operations use a segment prefix to relocate
+pointers. You would be implicitly passing a 128 bit argument although the
+compiler may not need to generate code for that.
 
-Again, if I'm completely wrong about how I should be going about this, 
-just let me know.
+> I think Christoph's point is that he wants to alias this with a pointer. Well,
+> this can be done cleanly with:
+>
+> union {
+>         struct cmpxchg_double casdbl;
+>         struct {
+>                 void *ptr;
+>                 unsigned long cpuid_tid;
+>         } t;
+> }
 
-Alan.
+There is no need for aliases with the existing implementation.
 
+How will the macro check the parameters now?
 
-[1] Last year, I suggested adding some interfaces to hidraw to get 
-things like the serial number, and it was suggested to me on 
-linux-usb[2] that I use sysfs (through libudev) instead. I extrapolated 
-that the proper paradigm was to use sysfs to get information about the 
-device, and to use the device node itself to actually communicate with 
-the device. I could be wrong again.
+> Thoughts ?
 
-[2] I didn't realize at the time that I really should have asked on 
-linux-input instead of linux-usb.
-
-
+Could you actually try to write a patch instead running through points
+that we have discussed earlier?
