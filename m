@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753659Ab1AUAQf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 19:16:35 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49449 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752946Ab1AUAQe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 19:16:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Oj5qCoyh/Xn5Rf/pqGlIacpLEE3yDX8z0dSobs5FdDBH/qmuBE4a5gcV1idPSvyb0T
-         qPQy0FssAaIRWamgu60r2Wfbip9+Ofj1r7h+gKdEOamApKbw+ISHUTMkjIfOE3zC18r5
-         jh6sPRSz3Qmc5hO9TYObQi67srKD86HBbkAR4=
+	id S1753740Ab1AUASF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 19:18:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20551 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753367Ab1AUASE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 19:18:04 -0500
+Message-ID: <4D38D070.2050802@redhat.com>
+Date: Thu, 20 Jan 2011 19:16:48 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <1295560051-4054-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1295560051-4054-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Date: Fri, 21 Jan 2011 09:16:32 +0900
-X-Google-Sender-Auth: d3xhvVPkx8hsql5x8M8hz3SSlo0
-Message-ID: <AANLkTikj4MntQj+YN=D+8W=6XtcMbh3OVKS_b4tP-2dq@mail.gmail.com>
-Subject: Re: [PATCH] mfd: Staticise non-exported symbols in MAX8998 driver
-From: Kyungmin Park <kyungmin.park@samsung.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Satoru Moriya <satoru.moriya@hds.com>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mel@csn.ul.ie" <mel@csn.ul.ie>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Seiji Aguchi <seiji.aguchi@hds.com>
+Subject: Re: [RFC][PATCH 0/2] Tunable watermark
+References: <65795E11DBF1E645A09CEC7EAEE94B9C3A30A295@USINDEVS02.corp.hds.com>
+In-Reply-To: <65795E11DBF1E645A09CEC7EAEE94B9C3A30A295@USINDEVS02.corp.hds.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+On 01/07/2011 05:03 PM, Satoru Moriya wrote:
 
-On Fri, Jan 21, 2011 at 6:47 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> No need to have them in the global namespace and sparse complains.
+> The result is following.
 >
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/mfd/max8998.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+>                    | default |  case 1   |  case 2 |
+> ----------------------------------------------------------
+> wmark_min_kbytes  |  5752   |    5752   |   5752  |
+> wmark_low_kbytes  |  7190   |   16384   |  32768  | (KB)
+> wmark_high_kbytes |  8628   |   20480   |  40960  |
+> ----------------------------------------------------------
+> real              |   503   |    364    |    337  |
+> user              |     3   |      5    |      4  | (msec)
+> sys               |   153   |    149    |    146  |
+> ----------------------------------------------------------
+> page fault        |  32768  |  32768    |  32768  |
+> kswapd_wakeup     |   1809  |    335    |    228  | (times)
+> direct reclaim    |      5  |      0    |      0  |
 >
-> diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
-> index bbfe867..c002142 100644
-> --- a/drivers/mfd/max8998.c
-> +++ b/drivers/mfd/max8998.c
-> @@ -233,7 +233,7 @@ struct max8998_reg_dump {
->        u8      val;
->  };
->  #define SAVE_ITEM(x)   { .addr = (x), .val = 0x0, }
-> -struct max8998_reg_dump max8998_dump[] = {
-> +static struct max8998_reg_dump max8998_dump[] = {
->        SAVE_ITEM(MAX8998_REG_IRQM1),
->        SAVE_ITEM(MAX8998_REG_IRQM2),
->        SAVE_ITEM(MAX8998_REG_IRQM3),
-> @@ -298,7 +298,7 @@ static int max8998_restore(struct device *dev)
->        return 0;
->  }
->
-> -const struct dev_pm_ops max8998_pm = {
-> +static const struct dev_pm_ops max8998_pm = {
->        .suspend = max8998_suspend,
->        .resume = max8998_resume,
->        .freeze = max8998_freeze,
-> --
-> 1.7.2.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> As you can see, direct reclaim was performed 5 times and
+> its exec time was 503 msec in the default case. On the other
+> hand, in case 1 (large delta case ) no direct reclaim was
+> performed and its exec time was 364 msec.
+
+Saving 1.5 seconds on a one-off workload is probably not
+worth the complexity of giving a system administrator
+yet another set of tunables to mess with.
+
+However, I suspect it may be a good idea if the kernel
+could adjust these watermarks automatically, since direct
+reclaim could lead to quite a big performance penalty.
+
+I do not know which events should be used to increase and
+decrease the watermarks, but I have some ideas:
+- direct reclaim (increase)
+- kswapd has trouble freeing pages (increase)
+- kswapd frees enough memory at DEF_PRIORITY (decrease)
+- next to no direct reclaim events in the last N (1000?)
+   reclaim events (decrease)
+
+I guess we will also need to be sure that the watermarks
+are never raised above some sane upper threshold.  Maybe
+4x or 5x the default?
+
+
+-- 
+All rights reversed
