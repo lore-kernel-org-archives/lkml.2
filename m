@@ -1,112 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab1AURmA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 12:42:00 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:64672 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752389Ab1AURl7 convert rfc822-to-8bit (ORCPT
+	id S1754122Ab1AURmj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 12:42:39 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:37957 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753059Ab1AURmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 12:41:59 -0500
+	Fri, 21 Jan 2011 12:42:38 -0500
+Date: Fri, 21 Jan 2011 12:42:36 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for
+	this_cpu_cmpxchg_double
+Message-ID: <20110121174236.GA12150@Krystal>
+References: <alpine.DEB.2.00.1101071227450.3014@router.home> <20110108172453.GF13269@mtj.dyndns.org> <4D393636.4040607@cs.helsinki.fi> <20110121092649.GA2832@htj.dyndns.org> <4D39A6EB.70705@zytor.com> <20110121154831.GE2832@htj.dyndns.org> <20110121165425.GB11687@Krystal> <20110121170847.GH2832@htj.dyndns.org> <1da7491b-6e7d-4453-9c6f-0e7767421ec4@email.android.com> <alpine.DEB.2.00.1101211121350.15692@router.home>
 MIME-Version: 1.0
-In-Reply-To: <20110121164404.GA2520@nowhere>
-References: <AANLkTinNoYbDe5huY4_Q6YidbWxqXqVWbVP2_7o-=P3W@mail.gmail.com>
-	<20110120161101.GA17218@nowhere>
-	<AANLkTinhX6UwQA0HFhuu5=jbq84woVhqtahuzA5hEo2o@mail.gmail.com>
-	<20110121164404.GA2520@nowhere>
-Date: Fri, 21 Jan 2011 18:41:58 +0100
-Message-ID: <AANLkTi=Tx3DYczwf9U=QS9XGs6C8sjKwVZr+RLuo781V@mail.gmail.com>
-Subject: Re: [PATCH V2] tracing, perf : add cpu hotplug trace events
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
-        rostedt@goodmis.org, amit.kucheria@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1101211121350.15692@router.home>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 12:38:38 up 58 days, 22:41,  4 users,  load average: 0.09, 0.04,
+	0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 January 2011 17:44, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Fri, Jan 21, 2011 at 09:43:18AM +0100, Vincent Guittot wrote:
->> On 20 January 2011 17:11, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> > On Thu, Jan 20, 2011 at 09:25:54AM +0100, Vincent Guittot wrote:
->> >> Please find below a new proposal for adding trace events for cpu hotplug.
->> >> The goal is to measure the latency of each part (kernel, architecture)
->> >> and also to trace the cpu hotplug activity with other power events. I
->> >> have tested these traces events on an arm platform.
->> >>
->> >> Changes since previous version:
->> >> -Use cpu_hotplug for trace name
->> >> -Define traces for kernel core and arch parts only
->> >> -Use DECLARE_EVENT_CLASS and DEFINE_EVENT
->> >> -Use proper indentation
->> >>
->> >> Subject: [PATCH] cpu hotplug tracepoint
->> >>
->> >> this patch adds new events for cpu hotplug tracing
->> >>  * plug/unplug sequence
->> >>  * core and architecture latency measurements
->> >>
->> >> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.com>
->> >> ---
->> >>  include/trace/events/cpu_hotplug.h |  117 ++++++++++++++++++++++++++++++++++++
->> >
->> > Note we can't apply new tracepoints if they are not inserted in the code.
->>
->> I agree, i just want to have 1st feedbacks on the tracepoint interface
->> before providing a patch which inserts the trace in the code.
->>
->> >
->> >> +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_wait_die_start,
->> >> +
->> >> +     TP_PROTO(unsigned int cpuid),
->> >> +
->> >> +     TP_ARGS(cpuid)
->> >> +);
->> >> +
->> >> +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_wait_die_end,
->> >> +
->> >> +     TP_PROTO(unsigned int cpuid),
->> >> +
->> >> +     TP_ARGS(cpuid)
->> >> +);
->> >
->> > What is wait die, compared to die for example?
->> >
->>
->> The arch_wait_die is used to trace the process which waits for the cpu
->> to die (__cpu_die) and the arch_die is used to trace when the cpu dies
->> (cpu_die)
->
-> I still can't find the difference.
->
-> Having:
->
-> trace_cpu_hotplug_arch_die_start(cpu)
-> __cpu_die();
-> trace_cpu_hotplug_arch_die_end(cpu)
->
-> Is not enough to get both the information that a cpu dies
-> and the time took to do so?
->
+* Christoph Lameter (cl@linux.com) wrote:
+> On Fri, 21 Jan 2011, H. Peter Anvin wrote:
+> 
+> > We could do cmpxchg with a structure... the problem with a lon int type is that Cristoph ran into bugs with __int128 on 64 bits.
+> 
+> We also would need to be pass the structure by value (well its really a
+> variable but its like passing by value) in order to be similar to the
+> other this_cpu_ops
+> 
+> You'd want either
+> 
+> DEFINE_PERCPU(struct mycustomdoublestruct, percpu_dd)
+> 
+> this_cpu_cmpxchg_double(percpu_dd, oldword1, oldword2, newword1, newword2)
+> 
+> with the problem of type checking
 
-it's quite interesting to trace the cpu_die function because the cpu
-really dies in this one. The __cpu_die function can't return if the
-cpu fails to die in the very last step and then wake up. But this
-could be detected with some cpu_die traces.
+What is the problem with type checking here ?
 
-for a normal use case we have something like :
-cpu 0 enters __cpu_die
-cpu 1 enters cpu_die
-cpu1 acks that it is going to died
-cpu0 returns from __cpu_die
+We could use a gcc builtin like the following to check if the alignment of
+"percpu_dd" meets the double-cas requirements:
 
-if the cpu 1 fails to die at the very last step, we could have:
-cpu 0 enters __cpu_die
-cpu 1 enters cpu_idle --> cpu_die
-cpu1 leaves cpu_die because of some issues and comes back into cpu_idle.
-cpu0 returns from __cpu_die after a timeout or an error ack
+#define testmacro(a, b) \
+        __builtin_choose_expr(__alignof__(a) >= 2 * sizeof(unsigned long), \
+                              ((a).low) = (b), \    /* success */
+                              ((a).low) = (void) 0) /* compile-error */
 
-Then, cpu_die traces can be used with power traces for profiling the
-cpu power state. May be, the power.h trace file is a better place for
-the cpu_die traces ?
+> or
+> 
+> this_cpu_cmpxchg_double(percpu_dd, old_dd, new_dd)
+> 
+> with the problem of 128 bit constants/structs passed by value.
+
+Yeah, I guess trying to deal with 128-bit value might be a bit tricky. But
+having something sane and with compile-time-checked alignment for the percpu_dd
+type is not to be looked over.
+
+Thanks,
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
