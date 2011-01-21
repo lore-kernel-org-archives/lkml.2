@@ -1,104 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751004Ab1AUF2P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 00:28:15 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:55952 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750695Ab1AUF2O (ORCPT
+	id S1751215Ab1AUFhB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 00:37:01 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:47272 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750695Ab1AUFg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 00:28:14 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmUEALGoOE15LN5mgWdsb2JhbACkYhYBARYiJL4wDYJvglQE
-Date: Fri, 21 Jan 2011 16:28:02 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Malcolm Scott <lkml@malc.org.uk>
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: [PATCH] Re: XFS deadlock in 2.6.37
-Message-ID: <20110121052802.GA16267@dastard>
-References: <alpine.DEB.2.00.1101201702260.29071@callisto.malc.org.uk>
+	Fri, 21 Jan 2011 00:36:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:date:message-id:subject:from:to:cc
+         :content-type;
+        b=D0eQT0TIvDwMvAYAtE7FdNFDGfs4rZ2O0X5rKPA0AkSQOtouCJlO5FwIHtKoe5xzpg
+         fwajwsOq7VaXQl2z5//WRV42wYmcM5kSg55pZh+DrfpqZnO+mOqi2PUrx6lASY1WuiyC
+         gssqHZioeGOfh6CSEDvaFOrvAof9xdejOwgRo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1101201702260.29071@callisto.malc.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: sedat.dilek@gmail.com
+Date: Fri, 21 Jan 2011 06:36:54 +0100
+Message-ID: <AANLkTimogiJMKkcgfOCJHxpyZHcB36+xzRFgkqWPOiv_@mail.gmail.com>
+Subject: Re: [Intel-gfx] [PATCH 2/5] i915: Add native backlight control
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Garrett <mjg@redhat.com>
+Cc: DRI <dri-devel@lists.freedesktop.org>, intel-gfx@lists.freedesktop.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[cc xfs@os.sgi.com]
+( Original posting from [1] )
 
-On Thu, Jan 20, 2011 at 05:08:45PM +0000, Malcolm Scott wrote:
-> Hi all,
-> 
-> I've had the following deadlock happen twice on a 2.6.37 system with
-> several XFS filesystems (including root) and no swap (may be
-> relevant, considering that kswapd is one task involved here).  Some
-> minor filesystem corruption resulted (but maybe only because the
-> root fs couldn't be synced/umounted).
-> 
-> If you need any more info, please let me know.
-> 
-> --- first crash ---
-> 
-> [504603.250208] INFO: task kswapd0:37 blocked for more than 120 seconds.
-> [504603.261107] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> [504603.273465] kswapd0       D 0000000000000003     0    37      2 0x00000000
-> [504603.273473]  ffff88034428bc10 0000000000000046 ffff88034428bfd8 ffff88034428a000
-> [504603.273479]  0000000000013a80 ffff8803442903a0 ffff88034428bfd8 0000000000013a80
-> [504603.273483]  ffff88034572ad80 ffff880344290000 ffffffffffffff10 ffff880343a51e28
-> [504603.273488] Call Trace:
-> [504603.273500]  [<ffffffff815ce917>] __mutex_lock_slowpath+0xf7/0x180
-> [504603.273504]  [<ffffffff815ce303>] mutex_lock+0x23/0x50
-> [504603.273541]  [<ffffffffa00cf709>] xfs_qm_dqreclaim_one+0x29/0x350 [xfs]
-> [504603.273554]  [<ffffffffa00cfaed>] xfs_qm_shake_freelist+0x1d/0x40 [xfs]
-> [504603.273567]  [<ffffffffa00cfb69>] xfs_qm_shake+0x59/0x70 [xfs]
-> [504603.273573]  [<ffffffff8111d619>] shrink_slab+0x89/0x180
-> [504603.273577]  [<ffffffff81120420>] balance_pgdat+0x2b0/0x530
-> [504603.273580]  [<ffffffff811207df>] kswapd+0x13f/0x2b0
-> [504603.273585]  [<ffffffff81087d30>] ? autoremove_wake_function+0x0/0x40
-> [504603.273588]  [<ffffffff811206a0>] ? kswapd+0x0/0x2b0
-> [504603.273591]  [<ffffffff81087606>] kthread+0x96/0xa0
-> [504603.273596]  [<ffffffff8100cea4>] kernel_thread_helper+0x4/0x10
-> [504603.273599]  [<ffffffff81087570>] ? kthread+0x0/0xa0
-> [504603.273603]  [<ffffffff8100cea0>] ? kernel_thread_helper+0x0/0x10
+I have the backlight-type patchset for months in my patch-series (and
+maintained them if necessary against daily linux-next).
+Also the last series from 14-Jan-2011 (see 1-5 patch from [2] and the
+following ones at dri-devel ML).
 
-[snip]
+If you couldn't find the updated v2 radeon-backlight-type patch, here
+the extract from my patch-series:
+...
+# Patch from <https://patchwork.kernel.org/patch/491351/>
++ backlight-type/v2-drm-radeon-kms-Expose-backlight-class-device-for-legacy-LVDS-encoder.patch
+...
 
-Looks like everything is hung up on the freelist lock. Can you
-test the patch below?
+I can only speak for the radeon(-KMS) part with
+CONFIG_BACKLIGHT_CLASS_DEVICE=y set and against linux-next: It worked,
+it works.
 
-Cheers,
+I am a bit angry that someone of the "big 5" gets immediately an
+answer where mine is ignored [3].
+So dear Mr. AKPM, if you can standstill for a few moments to answer
+only one of my questions, through which kernel-tree will this patchset
+walk trough?
+Thanks in advance.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+- Sedat -
 
-xfs: fix dquot shaker deadlock
-
-From: Dave Chinner <dchinner@redhat.com>
-
-Commit 368e136 ("xfs: remove duplicate code from dquot reclaim") fails
-to unlock the dquot freelist when the number of loop restarts is
-exceeded in xfs_qm_dqreclaim_one(). This causes hangs in memory
-reclaim. Remove the bogus loop exit check that causes the problem.
-
-Reported-by: Malcolm Scott <lkml@malc.org.uk>
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
----
- fs/xfs/quota/xfs_qm.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/fs/xfs/quota/xfs_qm.c b/fs/xfs/quota/xfs_qm.c
-index f8e854b..9431c56 100644
---- a/fs/xfs/quota/xfs_qm.c
-+++ b/fs/xfs/quota/xfs_qm.c
-@@ -1992,8 +1992,6 @@ dqfunlock:
- 		xfs_dqunlock(dqp);
- 		if (dqpout)
- 			break;
--		if (restarts >= XFS_QM_RECLAIM_MAX_RESTARTS)
--			return NULL;
- 	}
- 	mutex_unlock(&xfs_Gqm->qm_dqfrlist_lock);
- 	return dqpout;
+[1] http://lists.freedesktop.org/archives/dri-devel/2011-January/007378.html
+[2] http://lists.freedesktop.org/archives/dri-devel/2011-January/007168.html
+[3] http://lists.freedesktop.org/archives/dri-devel/2011-January/007193.html
