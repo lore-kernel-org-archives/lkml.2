@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab1AUAJz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 19:09:55 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43723 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854Ab1AUAJx convert rfc822-to-8bit (ORCPT
+	id S1753553Ab1AUAMr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 19:12:47 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48442 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752121Ab1AUAMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 19:09:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=QIXE49LxGOHlShO0siwAg73RZQ630C6opOnmegsW3s0Bx5jK0U4kWZhyiIm4MdUGyG
-         UWV1netGtL9s8/GJAwxlhvumNKEPNx+VVG2ayzBzHE/FNjs2P7c82rXRvOWW7THFKAyN
-         BB9i5cBBgmb3X4eHTKdruXg/91m3TKMrAhqPM=
+	Thu, 20 Jan 2011 19:12:46 -0500
 MIME-Version: 1.0
-In-Reply-To: <20110120190822.GK6335@n2100.arm.linux.org.uk>
-References: <201101111016.42819.jeremy.kerr@canonical.com>
-	<20110111091607.GI12552@n2100.arm.linux.org.uk>
-	<201101111744.59712.jeremy.kerr@canonical.com>
-	<20110111103929.GN24920@pengutronix.de>
-	<AANLkTinHL9X_bqMPR=W8Va01O4xngUnpGCkCiE3xEdiQ@mail.gmail.com>
-	<4D386ABF.9060908@fluff.org>
-	<20110120190822.GK6335@n2100.arm.linux.org.uk>
-Date: Fri, 21 Jan 2011 09:09:51 +0900
-Message-ID: <AANLkTim5N_sCCoOR40y7sTvdDoFkUJd4tUSSbrCccGjy@mail.gmail.com>
-Subject: Re: Locking in the clk API
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Ben Dooks <ben-linux@fluff.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        linux-sh <linux-sh@vger.kernel.org>,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Richard Zhao <linuxzsc@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <AANLkTim71374Qb1TW5Lc8H+rpQNk5a25ARczHU-+cn=D@mail.gmail.com>
+References: <20110119.180418.216749267.davem@davemloft.net>
+ <AANLkTin32jUnBtHF-EAkSMnFQM6cTbn-G3NZQJ3xjTWU@mail.gmail.com>
+ <1295559646.2613.35.camel@edumazet-laptop> <AANLkTikLY1B3=C2TjAbYKVHbub-aPeG2heaUBWRUAg=R@mail.gmail.com>
+ <AANLkTin6GM5W0nmWgD1a-2FK=CvHk=P3o6CYe-sFe6c=@mail.gmail.com>
+ <AANLkTin-RBwg+J4MqOm7A40-TFAJ1sp4e6tzi6OaobNi@mail.gmail.com> <AANLkTim71374Qb1TW5Lc8H+rpQNk5a25ARczHU-+cn=D@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 20 Jan 2011 16:11:55 -0800
+Message-ID: <AANLkTik8dk1o2u+JxzsijYFxJ7Y3ZV16DUNkc-+SYPnu@mail.gmail.com>
+Subject: Re: [GIT] Networking
+To: Colin Walters <walters@verbum.org>,
+        Davide Libenzi <davidel@xmailserver.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>,
+        akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=00221532cba8565fe3049a501a5f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 4:08 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Thu, Jan 20, 2011 at 05:02:55PM +0000, Ben Dooks wrote:
->> If you want to make it so that each low-power mode has to work
->> out what PLLs need to be disabled and then re-enabled makes me
->> want to be sick. Hiding this stuff behind specific implementations
->> is a recipe for disaster.
->
-> Why should systems which don't suffer from such problems be prevented
-> from gaining power saving from turning off their clocks when devices
-> are not being used (eg, the console serial port.)
->
-> One solution to your root PLL issue would be to have a separate set of
-> enable/disable API calls which get called at setup/release time (or
-> whatever you'd like to call it) which can only be called from non-atomic
-> context.  Maybe clk_prepare() and clk_unprepare().  These functions
-> should perform whatever is necessary to ensure that the clock source
-> is available for use atomically when clk_enable() is called.
->
-> So, in your case, clk_prepare() ensures that the root PLL is enabled,
-> clk_unprepare() allows it to be turned off.
->
-> In the case of a console driver, clk_prepare() can be called when we
-> know the port will be used as a console.  clk_enable() is then called
-> before writing out the string, and clk_disable() after we've completely
-> sent the last character.
->
-> This allows the best of both worlds.  We now have a clk_enable() which
-> can be used to turn the clocks off through the clock tree up to the first
-> non-atomic clock, and we also have a way to deal with those which need
-> to sleep.  So not only do "sleeping clock" implementations become possible
-> but these "sleeping clock" implementations also get the opportunity to
-> shutdown some of their clock tree with minimal latency for doing so.
+--00221532cba8565fe3049a501a5f
+Content-Type: text/plain; charset=ISO-8859-1
 
-This is exactly what I suggested in my last post, except the console example.
-Only to be a part of common clock api because it's not very safe to assume
-future SoCs will have the same simple clock topologies that they have today.
+On Thu, Jan 20, 2011 at 4:02 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> So far I only did a revert, I didn't see exactly _which_ of the wakeup
+> cases it was. But it's definitely that commit.
 
-Not to mean to teach, but I hope you realize with more and more
-device controller being crammed into ever shrinking SoCs,
-clock would eventually have to be flexible in functionality
-and complicated in hierarchy. Ben already gave examples
-of Audio, MFC and Video controllers of latest Samsung SoCs.
+This patch - that adds all the appropriate POLLxxx flags - seems to
+fix it for me. Will commit. Anybody wants to review/ack?
+
+        Linus
+
+--00221532cba8565fe3049a501a5f
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gj6c5oen0
+
+IGZzL3BpcGUuYyB8ICAgMTAgKysrKystLS0tLQogMSBmaWxlcyBjaGFuZ2VkLCA1IGluc2VydGlv
+bnMoKyksIDUgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZnMvcGlwZS5jIGIvZnMvcGlwZS5j
+CmluZGV4IDg5ZTllMTkuLmRhNDJmN2QgMTAwNjQ0Ci0tLSBhL2ZzL3BpcGUuYworKysgYi9mcy9w
+aXBlLmMKQEAgLTQ0MSw3ICs0NDEsNyBAQCByZWRvOgogCQkJYnJlYWs7CiAJCX0KIAkJaWYgKGRv
+X3dha2V1cCkgewotCQkJd2FrZV91cF9pbnRlcnJ1cHRpYmxlX3N5bmNfcG9sbCgmcGlwZS0+d2Fp
+dCwgUE9MTE9VVCk7CisJCQl3YWtlX3VwX2ludGVycnVwdGlibGVfc3luY19wb2xsKCZwaXBlLT53
+YWl0LCBQT0xMT1VUIHwgUE9MTFdSTk9STSk7CiAgCQkJa2lsbF9mYXN5bmMoJnBpcGUtPmZhc3lu
+Y193cml0ZXJzLCBTSUdJTywgUE9MTF9PVVQpOwogCQl9CiAJCXBpcGVfd2FpdChwaXBlKTsKQEAg
+LTQ1MCw3ICs0NTAsNyBAQCByZWRvOgogCiAJLyogU2lnbmFsIHdyaXRlcnMgYXN5bmNocm9ub3Vz
+bHkgdGhhdCB0aGVyZSBpcyBtb3JlIHJvb20uICovCiAJaWYgKGRvX3dha2V1cCkgewotCQl3YWtl
+X3VwX2ludGVycnVwdGlibGVfc3luY19wb2xsKCZwaXBlLT53YWl0LCBQT0xMT1VUKTsKKwkJd2Fr
+ZV91cF9pbnRlcnJ1cHRpYmxlX3N5bmNfcG9sbCgmcGlwZS0+d2FpdCwgUE9MTE9VVCB8IFBPTExX
+Uk5PUk0pOwogCQlraWxsX2Zhc3luYygmcGlwZS0+ZmFzeW5jX3dyaXRlcnMsIFNJR0lPLCBQT0xM
+X09VVCk7CiAJfQogCWlmIChyZXQgPiAwKQpAQCAtNjEyLDcgKzYxMiw3IEBAIHJlZG8yOgogCQkJ
+YnJlYWs7CiAJCX0KIAkJaWYgKGRvX3dha2V1cCkgewotCQkJd2FrZV91cF9pbnRlcnJ1cHRpYmxl
+X3N5bmNfcG9sbCgmcGlwZS0+d2FpdCwgUE9MTElOKTsKKwkJCXdha2VfdXBfaW50ZXJydXB0aWJs
+ZV9zeW5jX3BvbGwoJnBpcGUtPndhaXQsIFBPTExJTiB8IFBPTExSRE5PUk0pOwogCQkJa2lsbF9m
+YXN5bmMoJnBpcGUtPmZhc3luY19yZWFkZXJzLCBTSUdJTywgUE9MTF9JTik7CiAJCQlkb193YWtl
+dXAgPSAwOwogCQl9CkBAIC02MjMsNyArNjIzLDcgQEAgcmVkbzI6CiBvdXQ6CiAJbXV0ZXhfdW5s
+b2NrKCZpbm9kZS0+aV9tdXRleCk7CiAJaWYgKGRvX3dha2V1cCkgewotCQl3YWtlX3VwX2ludGVy
+cnVwdGlibGVfc3luY19wb2xsKCZwaXBlLT53YWl0LCBQT0xMSU4pOworCQl3YWtlX3VwX2ludGVy
+cnVwdGlibGVfc3luY19wb2xsKCZwaXBlLT53YWl0LCBQT0xMSU4gfCBQT0xMUkROT1JNKTsKIAkJ
+a2lsbF9mYXN5bmMoJnBpcGUtPmZhc3luY19yZWFkZXJzLCBTSUdJTywgUE9MTF9JTik7CiAJfQog
+CWlmIChyZXQgPiAwKQpAQCAtNzE1LDcgKzcxNSw3IEBAIHBpcGVfcmVsZWFzZShzdHJ1Y3QgaW5v
+ZGUgKmlub2RlLCBpbnQgZGVjciwgaW50IGRlY3cpCiAJaWYgKCFwaXBlLT5yZWFkZXJzICYmICFw
+aXBlLT53cml0ZXJzKSB7CiAJCWZyZWVfcGlwZV9pbmZvKGlub2RlKTsKIAl9IGVsc2UgewotCQl3
+YWtlX3VwX2ludGVycnVwdGlibGVfc3luY19wb2xsKCZwaXBlLT53YWl0LCBQT0xMSU4gfCBQT0xM
+T1VUKTsKKwkJd2FrZV91cF9pbnRlcnJ1cHRpYmxlX3N5bmNfcG9sbCgmcGlwZS0+d2FpdCwgUE9M
+TElOIHwgUE9MTE9VVCB8IFBPTExSRE5PUk0gfCBQT0xMV1JOT1JNIHwgUE9MTEVSUiB8IFBPTExI
+VVApOwogCQlraWxsX2Zhc3luYygmcGlwZS0+ZmFzeW5jX3JlYWRlcnMsIFNJR0lPLCBQT0xMX0lO
+KTsKIAkJa2lsbF9mYXN5bmMoJnBpcGUtPmZhc3luY193cml0ZXJzLCBTSUdJTywgUE9MTF9PVVQp
+OwogCX0K
+--00221532cba8565fe3049a501a5f--
