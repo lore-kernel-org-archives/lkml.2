@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234Ab1AURnS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 12:43:18 -0500
-Received: from smtp.ispras.ru ([83.149.198.201]:41495 "EHLO smtp.ispras.ru"
+	id S1754370Ab1AURn2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 12:43:28 -0500
+Received: from mga09.intel.com ([134.134.136.24]:27094 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752314Ab1AURnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 12:43:15 -0500
-From: Alexander Strakh <strakh@ispras.ru>
-Organization: ISP RAS
-To: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        Tobias Lorenz <tobias.lorenz@gmx.net>,
-        Edouard Lafargue <edouard@lafargue.name>
-Subject: BUG: double mutex lock in  drivers/media/radio/si470x/radio-si470x-common.c
-Date: Fri, 21 Jan 2011 21:00:25 +0300
-User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.7-desktop; KDE/4.4.4; x86_64; ; )
+	id S1754249Ab1AURn0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 12:43:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,359,1291622400"; 
+   d="scan'208";a="595247718"
+From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
+To: Chris Ball <cjb@laptop.org>
+CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Date: Sat, 22 Jan 2011 01:43:21 +0800
+Subject: RE: [PATCH v3 1/1]mmc: implemented eMMC4.4 enhanced area feature
+Thread-Topic: [PATCH v3 1/1]mmc: implemented eMMC4.4 enhanced area feature
+Thread-Index: Acu5f8i0Xhj0kOonSS6ZTaoyZc+ZogAEj3Zw
+Message-ID: <5D8008F58939784290FAB48F549751983539F505FF@shsmsx502.ccr.corp.intel.com>
+References: <20110120075556.GA23566@intel.com>
+ <20110120161248.GA11774@void.printf.net>
+ <5D8008F58939784290FAB48F5497519835341813A7@shsmsx502.ccr.corp.intel.com>
+ <20110121080422.GA21763@void.printf.net>
+ <5D8008F58939784290FAB48F549751983539F50558@shsmsx502.ccr.corp.intel.com>
+ <20110121152750.GA32551@void.printf.net>
+In-Reply-To: <20110121152750.GA32551@void.printf.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101212100.25827.strakh@ispras.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-        KERNEL_VERSION: 2.6.37
-        SUBJECT: double mutex lock in drivers/media/radio/si470x/radio-si470x-
-common.c in function ssize_t si470x_fops_read.
+Hi Chris,
 
-1. First mutex_lock on &radio->lock in line 441
-2. Second in line 462
+> -----Original Message-----
+> From: Chris Ball [mailto:cjb@laptop.org]
+> Sent: Friday, January 21, 2011 11:28 PM
+> To: Dong, Chuanxiao
+> Cc: linux-mmc@vger.kernel.org; linux-kernel@vger.kernel.org;
+> akpm@linux-foundation.org
+> Subject: Re: [PATCH v3 1/1]mmc: implemented eMMC4.4 enhanced area feature
+> 
+> Hi Chuanxiao,
+> 
+> On Fri, Jan 21, 2011 at 05:12:00PM +0800, Dong, Chuanxiao wrote:
+> > I have used the checkpatch.pl to check this patch, and no error or warning
+> found....
+> 
+> Oh, you're right!  I wonder if that's because it's in a .txt file rather
+> than a source file.  Not sure how to get it to warn about this, then.
+> 
+> > > Ah, I wasn't clear -- I meant the bytes/kilobytes units, not the data type
+> > > sizes.  e.g.:
+> > >
+> > > +   size_t          enhanced_area_size;             /* Units: KB */
+> > I think the units of _offset and _size should be easy for user to understand, so just
+> choose the Byte for _offset and Kbyte for _size...
+> > And as spec said, the _size is (ENH_SIZE_MULT_2 << 16 + ENH_SIZE_MULT_1 <<
+> 8 + ENH_SIZE_MULT_0) x HC_WP_GRP_SIZE x HC_ERASE_GPR_SIZE x 512kBytes. It
+> must be Kbytes aligned. That is another reason to choose it.
+> 
+> I agree that we we should use these units, I'm just arguing that we
+> might as well mention them in the comment area.  The other card.h
+> definitions mention their unit sizes too.  At the moment your comments
+> for card.h simply repeat the variable name, which isn't useful -- why
+> not make them repeat some useful and not-necessarily-obvious information
+> instead?
+Sure, Chris. I will take care of such things in my future submissions. Of cause including the next v4 enhanced area feature patch. :) I also remember to fix the compile warnings. Thanks a lot, Chris.
 
-I think that mutex in line 462 is not needed.
-
- 433static ssize_t si470x_fops_read(struct file *file, char __user *buf,
- 434                size_t count, loff_t *ppos)
- 435{
-....
- 441        mutex_lock(&radio->lock);
- 442        if ((radio->registers[SYSCONFIG1] & SYSCONFIG1_RDS) == 0)
- 443                si470x_rds_on(radio);
- 444
- 445        /* block if no new data available */
- 446        while (radio->wr_index == radio->rd_index) {
- 447                if (file->f_flags & O_NONBLOCK) {
- 448                        retval = -EWOULDBLOCK;
- 449                        goto done;
- 450                }
- 451                if (wait_event_interruptible(radio->read_queue,
- 452                        radio->wr_index != radio->rd_index) < 0) {
- 453                        retval = -EINTR;
- 454                        goto done;
- 455                }
- 456        }
- 457
- 458        /* calculate block count from byte count */
- 459        count /= 3;
- 460
- 461        /* copy RDS block out of internal buffer and to user buffer */
- 462        mutex_lock(&radio->lock);
-
-Found by Linux Device Drivers Verification Project
-
-Remove second mutex.
-
-Signed-off-by: Alexander Strakh <strakh@ispras.ru>
-___
-diff --git a/drivers/media/radio/si470x/radio-si470x-common.c 
-b/drivers/media/radio/si470x/radio-si470x-common.c
-index ac76dfe..e50452b 100644
---- a/drivers/media/radio/si470x/radio-si470x-common.c
-+++ b/drivers/media/radio/si470x/radio-si470x-common.c
-@@ -459,7 +459,6 @@ static ssize_t si470x_fops_read(struct file *file, char 
-__user *buf,
- 	count /= 3;
- 
- 	/* copy RDS block out of internal buffer and to user buffer */
--	mutex_lock(&radio->lock);
- 	while (block_count < count) {
- 		if (radio->rd_index == radio->wr_index)
- 			break;
+Thanks
+Chuanxiao
