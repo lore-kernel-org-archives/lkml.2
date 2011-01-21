@@ -1,79 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922Ab1AUJ1w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 04:27:52 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61059 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754900Ab1AUJ1t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 04:27:49 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=j651S3qdhG/oIID7hWZA9nK9ujiCtGp91wnIEaZU2EAodiriEKyQFQrZl52jAEhWMW
-         LlJEbSQB3SDMO7uR1rsdbZuket3eRQ5FW1X3MtBu35AI2gNul5jdr2T7zIfAiNy1GTCp
-         KgFMugUqUpYk7ylxogL6lFBBQ/t1ZCrCSInOU=
-Date: Fri, 21 Jan 2011 01:27:39 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Trilok Soni <tsoni@codeaurora.org>
-Cc: Kevin McNeely <Kevin.McNeely@cypress.com>,
-        David Brown <davidb@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Eric Miao <eric.y.miao@gmail.com>, Mike Frysinger <vapier@gentoo.org>,
-        Henrik Rydberg <rydberg@euromail.se>, Alan Cox <alan@linux.intel.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [v4 3/3] 3/3 spi: Cypress TTSP G3 SPI Device Driver
-Message-ID: <20110121092739.GB24214@core.coreip.homeip.net>
-References: <kev@cypress.com>
- <1294188847-24728-3-git-send-email-kev@cypress.com>
- <20110112184550.GB9168@core.coreip.homeip.net>
- <FB9C2CB29A07AB45B575A4E8D2AABC0901490D54@labamba.mis.cypress.com>
- <4D38182B.60803@codeaurora.org>
+	id S1751215Ab1AUJ2u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 04:28:50 -0500
+Received: from smtp.ispras.ru ([83.149.198.201]:40121 "EHLO smtp.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750710Ab1AUJ2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 04:28:49 -0500
+X-Greylist: delayed 1786 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Jan 2011 04:28:48 EST
+From: Alexander Strakh <strakh@ispras.ru>
+Organization: ISP RAS
+To: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Fwd: Re: BUG: double mutex_unlock in drivers/media/video/tlg2300/pd-video.c
+Date: Fri, 21 Jan 2011 12:15:51 +0300
+User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.7-desktop; KDE/4.4.4; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D38182B.60803@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Multipart/Mixed;
+  boundary="Boundary-00=_H7UONZKQu5o1qy5"
+Message-Id: <201101211215.51322.strakh@ispras.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 04:40:35PM +0530, Trilok Soni wrote:
-> Hi Dmitry,
-> 
-> On 1/13/2011 12:32 AM, Kevin McNeely wrote:
-> > Hi Dmitry,
-> > 
-> > Thank you for your review.
-> > 
-> > Will the existing patches get into the current merge?
-> > 
-> > Can I revisit this discussion as part of our plan to provide a Protocol
-> > B driver?
-> > 
-> > Thanks and best regards,
-> > Kevin
-> > 
-> 
-> Any updates on Kevin's question here?
-> 
+--Boundary-00=_H7UONZKQu5o1qy5
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 
-Hi Trilok, Kevin,
 
-Ah, sorry, was not feeling well last week and lost track of this driver.
 
-No, I am sorry, bit the driver is not quite ready to be merged. Aside of
-SPI abort/timeout issues we also have cyttsp_close() implementation
-busted (once you close device you lose irq) and bunch of other things I
-need to look over. I also have concern about having protocol A now and
-upgrading to protocol B: clients that only understand protocol A will
-get broken at A->B transition. I think we should consider implementing B
-right away for mainline (no, I do not want A/B config options).
+--Boundary-00=_H7UONZKQu5o1qy5
+Content-Type: message/rfc822;
+  name="forwarded message"
+Content-Transfer-Encoding: 7bit
+Content-Description: Alexander Strakh <strakh@ispras.ru>: Re: BUG: double mutex_unlock in drivers/media/video/tlg2300/pd-video.c
+Content-Disposition: inline
 
-Sorry for being slow with doing full review...
+From: Alexander Strakh <strakh@ispras.ru>
+Organization: ISP RAS
+To: Huang Shijie <shijie8@gmail.com>
+Subject: Re: BUG: double mutex_unlock in drivers/media/video/tlg2300/pd-video.c
+Date: Wed, 15 Dec 2010 17:19:32 +0300
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+References: <201012131859.15152.strakh@ispras.ru> <AANLkTi=4CZ2LD8cj_cjnb5yyyML+M6T=57EjT_hD4TBn@mail.gmail.com>
+In-Reply-To: <AANLkTi=4CZ2LD8cj_cjnb5yyyML+M6T=57EjT_hD4TBn@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+Message-Id: <201012151719.33086.strakh@ispras.ru>
 
-Thanks.
+Hello,
 
--- 
-Dmitry
+> Hi Strakh:
+>=20
+> Thanks for your patch.
+>=20
+> But I prefer to remove the mutex_unlock() in the pd_vidioc_s_fmt(),
+> since the pd_vidioc_s_fmt() is also called in restore_v4l2_context().
+>=20
+> would you please change the patch?
+> I will ack it.
+>=20
+> Best Regards
+> Huang Shijie
+>=20
+> 2010/12/13 Alexander Strakh <strakh@ispras.ru>:
+> >        KERNEL_VERSION: 2.6.36
+> >        SUBJECT: double mutex_lock in
+> > drivers/media/video/tlg2300/pd-video.c in function vidioc_s_fmt
+> >        SUBSCRIBE:
+> >        First mutex_unlock in function pd_vidioc_s_fmt in line 767:
+> >=20
+> >  764        ret |=3D send_set_req(pd, VIDEO_ROSOLU_SEL,
+> >  765                                vid_resol, &cmd_status);
+> >  766        if (ret || cmd_status) {
+> >  767                mutex_unlock(&pd->lock);
+> >  768                return -EBUSY;
+> >  769        }
+> >=20
+> >        Second mutex_unlock in function vidioc_s_fmt in line 806:
+> >=20
+> >  805        pd_vidioc_s_fmt(pd, &f->fmt.pix);
+> >  806        mutex_unlock(&pd->lock);
+> >=20
+> > Found by Linux Device Drivers Verification Project
+> >=20
+> > =D0=A1hecks the return code of pd_vidioc_s_fm before mutex_unlocking.
+> >=20
+> > Signed-off-by: Alexander Strakh <strakh@ispras.ru>
+> >=20
+> > ---
+> > diff --git a/drivers/media/video/tlg2300/pd-video.c
+> > b/drivers/media/video/tlg2300/pd-video.c
+> > index a1ffe18..fe6bd2b 100644
+> > --- a/drivers/media/video/tlg2300/pd-video.c
+> > +++ b/drivers/media/video/tlg2300/pd-video.c
+> > @@ -802,8 +802,8 @@ static int vidioc_s_fmt(struct file *file, void *fh,
+> > struct v4l2_format *f)
+> >                return -EINVAL;
+> >        }
+> >=20
+> > -       pd_vidioc_s_fmt(pd, &f->fmt.pix);
+> > -       mutex_unlock(&pd->lock);
+> > +       if(!pd_vidioc_s_fmt(pd, &f->fmt.pix))
+> > +               mutex_unlock(&pd->lock);
+> >        return 0;
+> >  }
+
+ Removing mutex_unlock from pd_vidioc_s_fmt().
+
+=2D--
+diff --git a/drivers/media/video/tlg2300/pd-video.c=20
+b/drivers/media/video/tlg2300/pd-video.c
+index a1ffe18..6eb4538 100644
+=2D-- a/drivers/media/video/tlg2300/pd-video.c
++++ b/drivers/media/video/tlg2300/pd-video.c
+@@ -763,10 +763,8 @@ static int pd_vidioc_s_fmt(struct poseidon *pd, struct=
+=20
+v4l2_pix_format *pix)
+ 	}
+ 	ret |=3D send_set_req(pd, VIDEO_ROSOLU_SEL,
+ 				vid_resol, &cmd_status);
+=2D	if (ret || cmd_status) {
+=2D		mutex_unlock(&pd->lock);
++	if (ret || cmd_status)
+ 		return -EBUSY;
+=2D	}
+=20
+ 	pix_def->pixelformat =3D pix->pixelformat; /* save it */
+ 	pix->height =3D (context->tvnormid & V4L2_STD_525_60) ?  480 : 576;
+
+
+--Boundary-00=_H7UONZKQu5o1qy5--
