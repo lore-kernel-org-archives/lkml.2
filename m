@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114Ab1AUGkq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 01:40:46 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36612 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752411Ab1AUGkg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 01:40:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=xApzOLQTh+tV28gJX6WSbyhO5MaPILlDLRMDJ/q/pbqj3nUSbNZDgqwCdqhiLweMRD
-         MdMCqE+AreXezINE1YC8KjFEREBF4p8qdZIvo1rytG1Kiqr85UlmE+pheIpaxeK++umT
-         Z8xFL+uKV4k7fYEQ9ounBY1QsMPBvzvBlzj8g=
+	id S1752910Ab1AUGlz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 01:41:55 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:37162 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750844Ab1AUGlx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 01:41:53 -0500
+Date: Thu, 20 Jan 2011 22:41:49 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Shaohua Li <shli@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        "Theodore Ts'o" <tytso@mit.edu>, Neil Brown <neilb@suse.de>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, Jan Kara <jack@suse.cz>,
+        Mike Snitzer <snitzer@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <cmm@us.ibm.com>,
+        linux-ext4@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Josef Bacik <josef@redhat.com>
+Subject: Re: [PATCH v7.1] block: Coordinate flush requests
+Message-ID: <20110121064149.GH27381@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110113025646.GB27381@tux1.beaverton.ibm.com> <AANLkTi=hF8hwgtx+N-dBNRjoffX7nQmaehkE3PsFpSDq@mail.gmail.com> <20110113074603.GC27381@tux1.beaverton.ibm.com> <AANLkTi=pkM1-91cKULt=5L=cPpTUcR5qqFrbj7Bjtk36@mail.gmail.com> <20110115173211.GC27123@htj.dyndns.org> <AANLkTi=MiY+GMXRwfOMhEzGQC3=F89FOKAJ4y1hvyDG0@mail.gmail.com> <20110120185057.GA4701@htj.dyndns.org> <20110120191341.GB4701@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <1295591340-1862-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1295591340-1862-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1295591340-1862-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-Date: Fri, 21 Jan 2011 15:40:35 +0900
-Message-ID: <AANLkTikOdCzhsw3_JQtbJOmA8CRm2hCZEY0LLw5uYtmM@mail.gmail.com>
-Subject: Re: [PATCH 3/7] remove putback_lru_pages() in hugepage migration context
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <tatsu@ab.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mel Gorman <mel@csn.ul.ie>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Huang Ying <ying.huang@intel.com>,
-        Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>,
-        tony.luck@intel.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110120191341.GB4701@htj.dyndns.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Jan 20, 2011 at 08:13:41PM +0100, Tejun Heo wrote:
+> On Thu, Jan 20, 2011 at 07:50:57PM +0100, Tejun Heo wrote:
+> > Hello,
+> > 
+> > On Tue, Jan 18, 2011 at 09:12:55AM +0800, Shaohua Li wrote:
+> > > This makes sense. would it possible N flush data payloads delay the
+> > > first request?
+> > 
+> > I ended up with a different design.  Still buggy.  It triggers a weird
+> > oops under stress test but other than that things generally seem to
+> > work as expected.  Please read the comment at the top of blk-flush.c
+> > for more info.  I'll post properly after more testing and debugging.
+> 
+> The oops was caused by debugging code I put in (not posted together).
+> It runs fine without it, so if you have some time, please give it a
+> spin.
 
-On Fri, Jan 21, 2011 at 3:28 PM, Naoya Horiguchi
-<n-horiguchi@ah.jp.nec.com> wrote:
-> This putback_lru_pages() is inserted at cf608ac19c to allow
-> memory compaction to count the number of migration failed pages.
->
-> But we should not do it for a hugepage because page->lru of a hugepage
-> is used differently from that of a normal page:
->
->   in-use hugepage : page->lru is unlinked,
->   free hugepage   : page->lru is linked to the free hugepage list,
->
-> so putting back hugepages to LRU lists collapses this rule.
-> We just drop this change (without any impact on memory compaction.)
->
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
+Seems to run without incident on my storage test arrays.  The fsync-happy
+performance numbers are comparable to previous iterations of flush patches.
+Looks good, thank you!
 
-As I said previously, It seems mistake during patch merge.
-I didn't add it in my original patch. You can see my final patch.
-https://lkml.org/lkml/2010/8/24/248
-
-Anyway, I realized it recently so I sent the patch to Andrew.
-Could you see this one?
-https://lkml.org/lkml/2011/1/20/241
-
-Thanks for notice me.
-
-
-
--- 
-Kind regards,
-Minchan Kim
+--D
