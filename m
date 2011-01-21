@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754113Ab1AUHMf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 02:12:35 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:44850 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412Ab1AUHMc (ORCPT
+	id S1754231Ab1AUHQI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 02:16:08 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:19079 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753771Ab1AUHQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 02:12:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=F3maTDFM24jNh14E0M+eM4ldumV2emFWX1xcmElPbNBhZA00+k7RQ8q4by86sTxt5F
-         tArEIkBSKFf2qQ3Xd+6yPowu4IsxTpGHCbXnUBdozz2/+qYxAn1uN0LN7Wqbb7c2vN2B
-         7vnt5qttFfMMvg89LCDGElDA/Jti5BrT5PiSM=
-Subject: Re: 2.6.38-rc1: arp triggers RTNL assertion
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jamie Heilman <jamie@audible.transient.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-In-Reply-To: <20110121061758.GA2247@fifty-fifty.audible.transient.net>
-References: <20110121061758.GA2247@fifty-fifty.audible.transient.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 Jan 2011 08:12:26 +0100
-Message-ID: <1295593946.2613.52.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Fri, 21 Jan 2011 02:16:07 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6232"; a="71130270"
+Message-ID: <4D3932B4.8010904@codeaurora.org>
+Date: Thu, 20 Jan 2011 23:16:04 -0800
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Ben Dooks <ben-linux@fluff.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        linux-sh <linux-sh@vger.kernel.org>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Uwe_Kleine?= =?ISO-8859-1?Q?-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Richard Zhao <linuxzsc@gmail.com>
+Subject: Re: Locking in the clk API
+References: <201101111016.42819.jeremy.kerr@canonical.com>	<20110111091607.GI12552@n2100.arm.linux.org.uk>	<201101111744.59712.jeremy.kerr@canonical.com>	<20110111103929.GN24920@pengutronix.de>	<AANLkTinHL9X_bqMPR=W8Va01O4xngUnpGCkCiE3xEdiQ@mail.gmail.com>	<4D386ABF.9060908@fluff.org> <20110120190822.GK6335@n2100.arm.linux.org.uk>
+In-Reply-To: <20110120190822.GK6335@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 20 janvier 2011 à 22:17 -0800, Jamie Heilman a écrit :
-> With 2.6.38-rc1 when I run: arp -Ds 192.168.2.41 eth0 pub
-> I see:
-> 
-> RTNL: assertion failed at net/core/neighbour.c (589)
-> Pid: 2330, comm: arp Not tainted 2.6.38-rc1-00132-g8d99641-dirty #1
-> Call Trace:
->  [<c11ed339>] ? pneigh_lookup+0xc3/0x168
->  [<c1219f27>] ? arp_req_set+0x86/0x1d5
->  [<c11e74b5>] ? dev_get_by_name_rcu+0x72/0x7f
->  [<c121a1a3>] ? arp_ioctl+0x12d/0x22e
->  [<c121dfeb>] ? inet_ioctl+0x82/0xa7
->  [<c11d8ffc>] ? sock_ioctl+0x1b7/0x1db
->  [<c11d8e45>] ? sock_ioctl+0x0/0x1db
->  [<c108f02f>] ? do_vfs_ioctl+0x47c/0x4c5
->  [<c101803c>] ? do_page_fault+0x315/0x341
->  [<c11daaf3>] ? sys_socket+0x44/0x5a
->  [<c11dab71>] ? sys_socketcall+0x68/0x270
->  [<c108f0ab>] ? sys_ioctl+0x33/0x4b
->  [<c1002897>] ? sysenter_do_call+0x12/0x26
-> 
-> Figured I'd Cc Eric as this could be related to commit 941666c2,
-> "net: RCU conversion of dev_getbyhwaddr() and arp_ioctl()"
-> 
-> Config attached, just in case (the uncommited change, in the tree this
-> kernel was built from, is just Chuck Lever's recent nfs3xdr.c patch).
+On 01/20/2011 11:08 AM, Russell King - ARM Linux wrote:
+> On Thu, Jan 20, 2011 at 05:02:55PM +0000, Ben Dooks wrote:
+>> If you want to make it so that each low-power mode has to work
+>> out what PLLs need to be disabled and then re-enabled makes me
+>> want to be sick. Hiding this stuff behind specific implementations
+>> is a recipe for disaster.
+>
+> Why should systems which don't suffer from such problems be prevented
+> from gaining power saving from turning off their clocks when devices
+> are not being used (eg, the console serial port.)
+>
+> One solution to your root PLL issue would be to have a separate set of
+> enable/disable API calls which get called at setup/release time (or
+> whatever you'd like to call it) which can only be called from non-atomic
+> context.  Maybe clk_prepare() and clk_unprepare().  These functions
+> should perform whatever is necessary to ensure that the clock source
+> is available for use atomically when clk_enable() is called.
+>
+> So, in your case, clk_prepare() ensures that the root PLL is enabled,
+> clk_unprepare() allows it to be turned off.
+>
+> In the case of a console driver, clk_prepare() can be called when we
+> know the port will be used as a console.  clk_enable() is then called
+> before writing out the string, and clk_disable() after we've completely
+> sent the last character.
+>
+> This allows the best of both worlds.  We now have a clk_enable() which
+> can be used to turn the clocks off through the clock tree up to the first
+> non-atomic clock, and we also have a way to deal with those which need
+> to sleep.  So not only do "sleeping clock" implementations become possible
+> but these "sleeping clock" implementations also get the opportunity to
+> shutdown some of their clock tree with minimal latency for doing so.
 
-Thanks for the report, I am looking at this right now.
+This suggestion looked promising till I realized that clk_set_rate() 
+will still be atomic. clk_set_rate() will need to enable/disable the 
+PLLs depending on which PLLs the rates are derived from. So, the locking 
+in clk_prepare/unprepare() still has to be atomic since the "slow stuff" 
+is shared with clk_set_rate().
 
+IMO, the most workable/flexible suggestion I have seen so far is:
+- Having a way to explicitly ask for an atomic clock from clk_get(). 
+That way the driver can decide to fail early during probe or decide to 
+enable/disable in open/close or if it gets atomic clocks to 
+enable/disable in atomic context.
+- Atomic and sleep-able variants of clk_enable/disable/set_rate. I 
+personally prefer the existing APIs to be sleep-able and introduce new 
+atomic variants, but it's not worth the time arguing over that.
 
+Taking one step at a time, do we all at least agree having two variants 
+of enable/disable/set_rate?
 
+Thanks,
+Saravana
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
