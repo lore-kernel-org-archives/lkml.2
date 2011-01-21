@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752998Ab1AUUq2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 15:46:28 -0500
-Received: from kroah.org ([198.145.64.141]:38336 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752684Ab1AUUq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 15:46:26 -0500
-Date: Fri, 21 Jan 2011 12:33:52 -0800
-From: Greg KH <greg@kroah.com>
-To: Sutharsan Ramamoorthy <sutharsan.ramamoorthy@yahoo.com>
-Cc: tony@atomide.com, linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, david.cross@cypress.com, srmt@cypress.com
-Subject: Re: [PATCH] Westbridge software module, fixes errors reported by
- checkpatch.pl
-Message-ID: <20110121203352.GD22299@kroah.com>
-References: <444938.26253.qm@web121610.mail.ne1.yahoo.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <444938.26253.qm@web121610.mail.ne1.yahoo.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753945Ab1AUUty (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 15:49:54 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:7717 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753838Ab1AUUtw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 15:49:52 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6233"; a="71212259"
+Subject: Re: [PATCH 0/7] Nexus One Support
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Dima Zavin <dmitriyz@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Joe Perches <joe@perches.com>,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, davidb@codeaurora.org
+In-Reply-To: <AANLkTi=L+MW5-KLP_TKSxhstD8JEtBW=RKci5wSbZsd6@mail.gmail.com>
+References: <1295555565-21563-1-git-send-email-dwalker@codeaurora.org>
+	 <AANLkTik+HCj9dkD2s4WgwCqKWCXDbdSnKDUbyGfYfaPr@mail.gmail.com>
+	 <1295571359.9236.53.camel@m0nster> <1295574085.4096.6.camel@Joe-Laptop>
+	 <1295575123.9236.54.camel@m0nster> <1295576730.4096.24.camel@Joe-Laptop>
+	 <1295624801.19880.13.camel@m0nster>
+	 <20110121094827.41818a55@jbarnes-desktop>
+	 <20110121095658.1ab623fe@jbarnes-desktop>
+	 <1295632828.19880.22.camel@m0nster>
+	 <20110121100441.06a94482@jbarnes-desktop>
+	 <1295633882.19880.31.camel@m0nster>
+	 <AANLkTi=L+MW5-KLP_TKSxhstD8JEtBW=RKci5wSbZsd6@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 21 Jan 2011 12:49:55 -0800
+Message-ID: <1295642995.19880.42.camel@m0nster>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 05:31:46PM -0800, Sutharsan Ramamoorthy wrote:
-> From: Sutharsan Ramamoorthy <srmt@cypress.com>
+On Fri, 2011-01-21 at 12:44 -0800, Dima Zavin wrote:
+> Really though? Let's look at one of them:
 > 
-> This patch fixes errors in westbridge device controller driver in the 
-> staging tree reported by checkpatch.pl. File containing EXPORT_SYMBOL() 
-> macros for all the APIs exported by the westbridge software has been removed. EXPORT_SYMBOL() macros are added after the corresponding function definitions.
 
-In the future, please wrap your commit messages at 72 characters, so I
-don't have to edit the patch by hand.
+>       2 Arve Hjønnevåg <arve@android.com>
+>       6 Brian Swetland <swetland@google.com>
+>      14 Dima Zavin <dima@android.com>
+>       2 Haley Teng <Haley_Teng@htc.com>
+>       1 Iliyan Malchev <malchev@google.com>
+>       5 Mike Chan <mike@android.com>
 
-Your subject was also quite vague, I've fixed it up, please be more
-careful in the future.
+I'll add this list into the commit text ..
 
-thanks,
+Daniel
 
-greg k-h
+-- 
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
+Forum.
+
+
