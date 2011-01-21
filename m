@@ -1,22 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494Ab1AUI4W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 03:56:22 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34343 "EHLO
-	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751265Ab1AUI4V (ORCPT
+	id S1754552Ab1AUJBd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 04:01:33 -0500
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:59693 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751265Ab1AUJBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 03:56:21 -0500
-Date: Fri, 21 Jan 2011 08:55:26 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Sutharshan Ramamoorthy / Prod" <srmt@cypress.com>
-Cc: kernelnewbies@nl.linux.org, linux-kernel@vger.kernel.org, odc@cypress.com
-Subject: Re: printk(KERN_x...) vs dev_x()
-Message-ID: <20110121085526.4617abae@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110121062844.M9817@cypress.com>
-References: <20110121062844.M9817@cypress.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Fri, 21 Jan 2011 04:01:32 -0500
+Date: Fri, 21 Jan 2011 17:48:18 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 4/7] memcg : fix charge function of THP allocation.
+Message-Id: <20110121174818.28e1cc83.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20110121154430.70d45f15.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110121153431.191134dd.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110121154430.70d45f15.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -24,13 +30,202 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> At some places in the code, there is no valid 'dev' pointer to pass to
-> dev_xx() macro, at such places is it ok to use printk(KERN_XXX...)?
+On Fri, 21 Jan 2011 15:44:30 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-pr_debug() is the equivalent you want. Ideally tweak the code so the dev
-pointer is available. I know that right now is a bit of a problem in a
-few cases (some tty stuff for example only just acquired a usable dev
-pointer)
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> When THP is used, Hugepage size charge can happen. It's not handled
+> correctly in mem_cgroup_do_charge(). For example, THP can fallback
+> to small page allocation when HUGEPAGE allocation seems difficult
+> or busy, but memory cgroup doesn't understand it and continue to
+> try HUGEPAGE charging. And the worst thing is memory cgroup
+> believes 'memory reclaim succeeded' if limit - usage > PAGE_SIZE.
+> 
+> By this, khugepaged etc...can goes into inifinite reclaim loop
+> if tasks in memcg are busy.
+> 
+> After this patch 
+>  - Hugepage allocation will fail if 1st trial of page reclaim fails.
+>  - distinguish THP allocaton from Bached allocation. 
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  mm/memcontrol.c |   51 +++++++++++++++++++++++++++++++++++----------------
+>  1 file changed, 35 insertions(+), 16 deletions(-)
+> 
+> Index: mmotm-0107/mm/memcontrol.c
+> ===================================================================
+> --- mmotm-0107.orig/mm/memcontrol.c
+> +++ mmotm-0107/mm/memcontrol.c
+> @@ -1812,24 +1812,25 @@ enum {
+>  	CHARGE_OK,		/* success */
+>  	CHARGE_RETRY,		/* need to retry but retry is not bad */
+>  	CHARGE_NOMEM,		/* we can't do more. return -ENOMEM */
+> +	CHARGE_NEED_BREAK,	/* big size allocation failure */
+>  	CHARGE_WOULDBLOCK,	/* GFP_WAIT wasn't set and no enough res. */
+>  	CHARGE_OOM_DIE,		/* the current is killed because of OOM */
+>  };
+>  
+>  static int __mem_cgroup_do_charge(struct mem_cgroup *mem, gfp_t gfp_mask,
+> -				int csize, bool oom_check)
+> +			int page_size, bool do_reclaim, bool oom_check)
 
-Alan
-			-- Linus Torvalds
+I'm sorry, I can't understand why we need 'do_reclaim'. See below.
+
+>  {
+>  	struct mem_cgroup *mem_over_limit;
+>  	struct res_counter *fail_res;
+>  	unsigned long flags = 0;
+>  	int ret;
+>  
+> -	ret = res_counter_charge(&mem->res, csize, &fail_res);
+> +	ret = res_counter_charge(&mem->res, page_size, &fail_res);
+>  
+>  	if (likely(!ret)) {
+>  		if (!do_swap_account)
+>  			return CHARGE_OK;
+> -		ret = res_counter_charge(&mem->memsw, csize, &fail_res);
+> +		ret = res_counter_charge(&mem->memsw, page_size, &fail_res);
+>  		if (likely(!ret))
+>  			return CHARGE_OK;
+>  
+> @@ -1838,14 +1839,14 @@ static int __mem_cgroup_do_charge(struct
+>  	} else
+>  		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
+>  
+> -	if (csize > PAGE_SIZE) /* change csize and retry */
+> +	if (!do_reclaim)
+>  		return CHARGE_RETRY;
+>  
+
+>From the very beginning, do we need this "CHARGE_RETRY" ?
+
+>  	if (!(gfp_mask & __GFP_WAIT))
+>  		return CHARGE_WOULDBLOCK;
+>  
+>  	ret = mem_cgroup_hierarchical_reclaim(mem_over_limit, NULL,
+> -					gfp_mask, flags, csize);
+> +					gfp_mask, flags, page_size);
+>  	/*
+>  	 * try_to_free_mem_cgroup_pages() might not give us a full
+>  	 * picture of reclaim. Some pages are reclaimed and might be
+> @@ -1853,19 +1854,28 @@ static int __mem_cgroup_do_charge(struct
+>  	 * Check the limit again to see if the reclaim reduced the
+>  	 * current usage of the cgroup before giving up
+>  	 */
+> -	if (ret || mem_cgroup_check_under_limit(mem_over_limit, csize))
+> +	if (ret || mem_cgroup_check_under_limit(mem_over_limit, page_size))
+>  		return CHARGE_RETRY;
+>  
+>  	/*
+> +	 * When page_size > PAGE_SIZE, THP calls this function and it's
+> +	 * ok to tell 'there are not enough pages for hugepage'. THP will
+> +	 * fallback into PAGE_SIZE allocation. If we do reclaim eagerly,
+> +	 * page splitting will occur and it seems much worse.
+> +	 */
+> +	if (page_size > PAGE_SIZE)
+> +		return CHARGE_NEED_BREAK;
+> +
+> +	/*
+>  	 * At task move, charge accounts can be doubly counted. So, it's
+>  	 * better to wait until the end of task_move if something is going on.
+>  	 */
+>  	if (mem_cgroup_wait_acct_move(mem_over_limit))
+>  		return CHARGE_RETRY;
+> -
+>  	/* If we don't need to call oom-killer at el, return immediately */
+>  	if (!oom_check)
+>  		return CHARGE_NOMEM;
+> +
+>  	/* check OOM */
+>  	if (!mem_cgroup_handle_oom(mem_over_limit, gfp_mask))
+>  		return CHARGE_OOM_DIE;
+> @@ -1885,7 +1895,7 @@ static int __mem_cgroup_try_charge(struc
+>  	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
+>  	struct mem_cgroup *mem = NULL;
+>  	int ret;
+> -	int csize = max(CHARGE_SIZE, (unsigned long) page_size);
+> +	bool use_pcp_cache = (page_size == PAGE_SIZE);
+>  
+>  	/*
+>  	 * Unlike gloval-vm's OOM-kill, we're not in memory shortage
+> @@ -1910,7 +1920,7 @@ again:
+>  		VM_BUG_ON(css_is_removed(&mem->css));
+>  		if (mem_cgroup_is_root(mem))
+>  			goto done;
+> -		if (page_size == PAGE_SIZE && consume_stock(mem))
+> +		if (use_pcp_cache && consume_stock(mem))
+>  			goto done;
+>  		css_get(&mem->css);
+>  	} else {
+> @@ -1933,7 +1943,7 @@ again:
+>  			rcu_read_unlock();
+>  			goto done;
+>  		}
+> -		if (page_size == PAGE_SIZE && consume_stock(mem)) {
+> +		if (use_pcp_cache && consume_stock(mem)) {
+>  			/*
+>  			 * It seems dagerous to access memcg without css_get().
+>  			 * But considering how consume_stok works, it's not
+> @@ -1967,17 +1977,26 @@ again:
+>  			oom_check = true;
+>  			nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
+>  		}
+> -
+> -		ret = __mem_cgroup_do_charge(mem, gfp_mask, csize, oom_check);
+> +		if (use_pcp_cache)
+> +			ret = __mem_cgroup_do_charge(mem, gfp_mask,
+> +					CHARGE_SIZE, false, oom_check);
+> +		else
+> +			ret = __mem_cgroup_do_charge(mem, gfp_mask,
+> +					page_size, true, oom_check);
+>  
+
+hmm, this confuses me. I think 'use_pcp_cache' will be used to decide
+whether we should do consume_stock() or not, but why we change charge size
+and reclaim behavior depending on it ? I think this code itself is right,
+but using 'use_pcp_cache' confused me.
+
+
+>  		switch (ret) {
+>  		case CHARGE_OK:
+>  			break;
+>  		case CHARGE_RETRY: /* not in OOM situation but retry */
+> -			csize = page_size;
+> +			if (use_pcp_cache)/* need to reclaim pages */
+> +				use_pcp_cache = false;
+>  			css_put(&mem->css);
+>  			mem = NULL;
+>  			goto again;
+> +		case CHARGE_NEED_BREAK: /* page_size > PAGE_SIZE */
+> +			css_put(&mem->css);
+> +			/* returning faiulre doesn't mean OOM for hugepages */
+> +			goto nomem;
+
+I like this change.
+
+>  		case CHARGE_WOULDBLOCK: /* !__GFP_WAIT */
+>  			css_put(&mem->css);
+>  			goto nomem;
+> @@ -1994,9 +2013,9 @@ again:
+>  			goto bypass;
+>  		}
+>  	} while (ret != CHARGE_OK);
+> -
+> -	if (csize > page_size)
+> -		refill_stock(mem, csize - page_size);
+> +	/* This flag is cleared when we fail CHAEGE_SIZE charge. */
+> +	if (use_pcp_cache)
+> +		refill_stock(mem, CHARGE_SIZE - page_size);
+
+Ditto. can't we keep 'csize' and old code here ?
+
+>  	css_put(&mem->css);
+>  done:
+>  	*memcg = mem;
+> 
+
+
+Thanks,
+Daisuke Nishimura.
