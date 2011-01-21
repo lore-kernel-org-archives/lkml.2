@@ -1,78 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754414Ab1AUAmF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 19:42:05 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:19043 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754043Ab1AUAmD convert rfc822-to-8bit (ORCPT
+	id S1754279Ab1AUAn5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 19:43:57 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:44697 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751563Ab1AUAn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 19:42:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=LO54W0DZv6MzyrwgrfM0w11tb2h88V/rvadE5N/8En9M0pJXBuiSgw2EfMk+e0qB5+
-         T/Mh/5pQj4lvRlFM0m1Q==
+	Thu, 20 Jan 2011 19:43:56 -0500
+Message-ID: <4D38D6DE.10405@vflare.org>
+Date: Thu, 20 Jan 2011 19:44:14 -0500
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <1295555565-21563-1-git-send-email-dwalker@codeaurora.org>
-References: <1295555565-21563-1-git-send-email-dwalker@codeaurora.org>
-Date: Thu, 20 Jan 2011 16:42:00 -0800
-Message-ID: <AANLkTik+HCj9dkD2s4WgwCqKWCXDbdSnKDUbyGfYfaPr@mail.gmail.com>
-Subject: Re: [PATCH 0/7] Nexus One Support
-From: Dima Zavin <dmitriyz@google.com>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, davidb@codeaurora.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Jerome Marchand <jmarchan@redhat.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] [resend] Staging: zram: simplify zram_make_request
+References: <4D0B88E5.4040005@redhat.com> <4D0B89F7.1000103@redhat.com>
+In-Reply-To: <4D0B89F7.1000103@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You are not the author of any of these patches. Where are the author
-attributions for the team that actually wrote this code?
 
---Dima
+zram_read() and zram_write() always return zero, so make them return
+void to simplify the code.
 
-On Thu, Jan 20, 2011 at 12:32 PM, Daniel Walker <dwalker@codeaurora.org> wrote:
-> This series adds basic Nexus One support which includes a booting
-> kernel, and functional MMC .
->
-> Most people won't be able to use this yet unfortunately because
-> you need a serial cable to get any output. However, it's a start.
->
-> Brian Swetland (1):
->  [ARM] msm: qsd8k memory base is at 0x20000000
->
-> Daniel Walker (6):
->  msm: qsd8x50: add uart platform data
->  msm: qsd8x50: add acpuclock code
->  msm: mahimahi: add mahimahi board file
->  msm: mahimahi: add in mmc support code
->  msm: mahimahi: add gpio pin muxing code
->  msm: mahimahi: initialize mmc at start up
->
->  arch/arm/mach-msm/Kconfig              |    8 +-
->  arch/arm/mach-msm/Makefile             |    5 +-
->  arch/arm/mach-msm/Makefile.boot        |    5 +
->  arch/arm/mach-msm/acpuclock-qsd8x50.c  |  457 ++++++++++++++++++++++++++++++++
->  arch/arm/mach-msm/board-mahimahi-mmc.c |  238 +++++++++++++++++
->  arch/arm/mach-msm/board-mahimahi.c     |   52 +++-
->  arch/arm/mach-msm/board-mahimahi.h     |  147 ++++++++++
->  arch/arm/mach-msm/devices-qsd8x50.c    |   42 +++
->  arch/arm/mach-msm/include/mach/board.h |    1 +
->  9 files changed, 942 insertions(+), 13 deletions(-)
->  create mode 100644 arch/arm/mach-msm/acpuclock-qsd8x50.c
->  create mode 100644 arch/arm/mach-msm/board-mahimahi-mmc.c
->  create mode 100644 arch/arm/mach-msm/board-mahimahi.h
->
-> --
-> Sent by a consultant of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
+---
+  drivers/staging/zram/zram_drv.c |   19 ++++++++-----------
+  1 files changed, 8 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/staging/zram/zram_drv.c 
+b/drivers/staging/zram/zram_drv.c
+index 01d6dd9..5ed4e75 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -200,7 +200,7 @@ static void handle_uncompressed_page(struct zram *zram,
+  	flush_dcache_page(page);
+  }
+
+-static int zram_read(struct zram *zram, struct bio *bio)
++static void zram_read(struct zram *zram, struct bio *bio)
+  {
+
+  	int i;
+@@ -209,7 +209,7 @@ static int zram_read(struct zram *zram, struct bio *bio)
+
+  	if (unlikely(!zram->init_done)) {
+  		bio_endio(bio, -ENXIO);
+-		return 0;
++		return;
+  	}
+
+  	zram_stat64_inc(zram, &zram->stats.num_reads);
+@@ -271,14 +271,13 @@ static int zram_read(struct zram *zram, struct bio 
+*bio)
+
+  	set_bit(BIO_UPTODATE, &bio->bi_flags);
+  	bio_endio(bio, 0);
+-	return 0;
++	return;
+
+  out:
+  	bio_io_error(bio);
+-	return 0;
+  }
+
+-static int zram_write(struct zram *zram, struct bio *bio)
++static void zram_write(struct zram *zram, struct bio *bio)
+  {
+  	int i, ret;
+  	u32 index;
+@@ -402,11 +401,10 @@ memstore:
+
+  	set_bit(BIO_UPTODATE, &bio->bi_flags);
+  	bio_endio(bio, 0);
+-	return 0;
++	return;
+
+  out:
+  	bio_io_error(bio);
+-	return 0;
+  }
+
+  /*
+@@ -431,7 +429,6 @@ static inline int valid_io_request(struct zram 
+*zram, struct bio *bio)
+   */
+  static int zram_make_request(struct request_queue *queue, struct bio *bio)
+  {
+-	int ret = 0;
+  	struct zram *zram = queue->queuedata;
+
+  	if (!valid_io_request(zram, bio)) {
+@@ -442,15 +439,15 @@ static int zram_make_request(struct request_queue 
+*queue, struct bio *bio)
+
+  	switch (bio_data_dir(bio)) {
+  	case READ:
+-		ret = zram_read(zram, bio);
++		zram_read(zram, bio);
+  		break;
+
+  	case WRITE:
+-		ret = zram_write(zram, bio);
++		zram_write(zram, bio);
+  		break;
+  	}
+
+-	return ret;
++	return 0;
+  }
+
+  void zram_reset_device(struct zram *zram)
+-- 
+1.7.3.5
