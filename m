@@ -1,98 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551Ab1AURdq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 12:33:46 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48199 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751665Ab1AURdp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 12:33:45 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] leds: Fix warnings when PM is disabled for BD2802
-Date: Fri, 21 Jan 2011 17:33:37 +0000
-Message-Id: <1295631217-19591-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1753898Ab1AURfq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 12:35:46 -0500
+Received: from www.tglx.de ([62.245.132.106]:33398 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751809Ab1AURfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 12:35:45 -0500
+Date: Fri, 21 Jan 2011 18:34:22 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Young <hidave.darkstar@gmail.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH V4] rtmutex: ensure only the top waiter or higher priority
+ task can take the lock and remove unrelated boosting
+In-Reply-To: <4D3012D5.4060709@cn.fujitsu.com>
+Message-ID: <alpine.LFD.2.00.1101211833120.2971@localhost6.localdomain6>
+References: <4D07330A.7020600@cn.fujitsu.com>  <alpine.LFD.2.00.1012141850460.12146@localhost6.localdomain6>  <4D083900.1050801@cn.fujitsu.com>  <1292386606.5015.1862.camel@gandalf.stny.rr.com>  <4D130D23.1040309@cn.fujitsu.com>  <1294851790.26623.372.camel@gandalf.stny.rr.com>
+  <1294851864.26623.373.camel@gandalf.stny.rr.com> <1294851934.26623.374.camel@gandalf.stny.rr.com> <4D3012D5.4060709@cn.fujitsu.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The suspend and resume functions will only be referenced when PM is
-enabled so they generate warnings due to being unreferenced and
-unexported.
+On Fri, 14 Jan 2011, Lai Jiangshan wrote:
+> On 01/13/2011 01:05 AM, Steven Rostedt wrote:
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
+Does not apply to mainline. Can you please redo ?
 
-This is the more usual idiom for fixing this than the patch you added.
+Thanks,
 
- drivers/leds/leds-bd2802.c |   30 ++++++++++++++++--------------
- 1 files changed, 16 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/leds/leds-bd2802.c b/drivers/leds/leds-bd2802.c
-index 22152a2..ef0b868 100644
---- a/drivers/leds/leds-bd2802.c
-+++ b/drivers/leds/leds-bd2802.c
-@@ -319,20 +319,6 @@ static void bd2802_turn_off(struct bd2802_led *led, enum led_ids id,
- 	bd2802_update_state(led, id, color, BD2802_OFF);
- }
- 
--static void bd2802_restore_state(struct bd2802_led *led)
--{
--	int i;
--
--	for (i = 0; i < LED_NUM; i++) {
--		if (led->led[i].r)
--			bd2802_turn_on(led, i, RED, led->led[i].r);
--		if (led->led[i].g)
--			bd2802_turn_on(led, i, GREEN, led->led[i].g);
--		if (led->led[i].b)
--			bd2802_turn_on(led, i, BLUE, led->led[i].b);
--	}
--}
--
- #define BD2802_SET_REGISTER(reg_addr, reg_name)				\
- static ssize_t bd2802_store_reg##reg_addr(struct device *dev,		\
- 	struct device_attribute *attr, const char *buf, size_t count)	\
-@@ -761,6 +747,7 @@ static int __exit bd2802_remove(struct i2c_client *client)
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM_SLEEP
- static int bd2802_suspend(struct device *dev)
- {
- 	struct i2c_client *client = to_i2c_client(dev);
-@@ -771,6 +758,20 @@ static int bd2802_suspend(struct device *dev)
- 	return 0;
- }
- 
-+static void bd2802_restore_state(struct bd2802_led *led)
-+{
-+	int i;
-+
-+	for (i = 0; i < LED_NUM; i++) {
-+		if (led->led[i].r)
-+			bd2802_turn_on(led, i, RED, led->led[i].r);
-+		if (led->led[i].g)
-+			bd2802_turn_on(led, i, GREEN, led->led[i].g);
-+		if (led->led[i].b)
-+			bd2802_turn_on(led, i, BLUE, led->led[i].b);
-+	}
-+}
-+
- static int bd2802_resume(struct device *dev)
- {
- 	struct i2c_client *client = to_i2c_client(dev);
-@@ -783,6 +784,7 @@ static int bd2802_resume(struct device *dev)
- 
- 	return 0;
- }
-+#endif
- 
- static SIMPLE_DEV_PM_OPS(bd2802_pm, bd2802_suspend, bd2802_resume);
- 
--- 
-1.7.2.3
-
+	tglx
