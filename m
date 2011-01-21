@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477Ab1AUWRP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 17:17:15 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:36753 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754219Ab1AUWRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 17:17:14 -0500
-Message-ID: <4D3A05DC.4000208@free.fr>
-Date: Fri, 21 Jan 2011 23:17:00 +0100
-From: matthieu castet <castet.matthieu@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.8.1.23) Gecko/20090823 SeaMonkey/1.1.18
+	id S1754591Ab1AUWY4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 17:24:56 -0500
+Received: from pfepb.post.tele.dk ([195.41.46.236]:49880 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754384Ab1AUWYx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 17:24:53 -0500
+Date: Fri, 21 Jan 2011 23:24:51 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: sparclinux <sparclinux@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH 0/5] sparc64: drop deprecated irq features
+Message-ID: <20110121222451.GA29468@merkur.ravnborg.org>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Lin Ming <ming.m.lin@intel.com>, Oliver Neukum <oneukum@suse.de>,
-        rjw@sisk.pl, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        Michal Marek <mmarek@suse.cz>, Yinghai Lu <yinghai@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Borislav Petkov <bp@alien8.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>,
-        Xuxian Jiang <jiang@cs.ncsu.edu>, Dave Airlie <airlied@redhat.com>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [REGRESSION] S3 resume on SandyBridge doesn't work with NX protection
- (5bd5a45)
-References: <20110119173710.GA1331@suse.de> <20110119230602.6dd34fa3@mat-laptop> <20110120134734.GA7230@suse.de> <1295535954.4d384f524c8f0@imp.free.fr> <20110120155909.GA21782@suse.de> <4D38A697.3040308@free.fr> <4D38A836.5040003@zytor.com>
-In-Reply-To: <4D38A836.5040003@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-H. Peter Anvin a écrit :
-> On 01/20/2011 01:18 PM, matthieu castet wrote:
->> PS :
->> x86 trampoline is a mess. There are many (wakeup, smpboot) and differ between 32 and 64 bit.
->> H. Peter Anvin, aren't you rewriting them ?
-> 
-> Yes, working on it, starting with the framework used to install them.
-> 
-> They can't all be unified; they are used for different purposes and have
-> different requirements (for one thing, 32 vs 64 bits require different
-> trampoline code), but the install framework patchset is almost done, and
-> the recent change of keeping the 1:1 pagetable set around is also a
-> dramatic cleanup.
-Of course, but for example on x64, using smp trampoline to exit rm wakecode help
-to merge code in one place.
+This set of patches update sparc64 so no deprecated genirq
+features are used.
 
-Also the start of 32/64 bits trampoline (rm part) is really similar. The main difference is the verify_cpu
-check, but can't it be called latter (when we switch to 64 bits ) ?
+I did this mainly to understand the genirq stuff better.
+Originally I looked into sparc64 code and was confused
+because it used deprecated stuff. So the logical step
+was to update sparc64 to avoid the deprecated stuff.
+So I did so and the result follows.
 
-In the end we could have something like
+This is an RFC because:
+- This is not yet tested
+- I expect a (trivial) conflict when we get Thomas'
+  __DO_irq stuff merged
+- I expect to get some feedback that needs to be addressed
 
-wakeup_code:
-(common rm 16 bit code)
-call trampoline
+I made one conceptual change.
+irq_handler_data was previously assinged to irq_data.chip_data.
+This is changed so it uses irq_data.handler_data
 
-trampoline:
-(common rm 16 bit code)
-call startup_32_vector (either startup_32_smp for 32 bits (exit trampoline) or startup_32 for 64 bit).
+Looking into kernel/irq/* this looked OK.
 
-startup_32:
+I plan to do some testing within the next week.
+
+I looked at integrating struct virt_irq_table[] as
+chip_data in irq_data.
+But the way the virt_irq_alloc() function is used did not
+make this bovious how to do so. So I played safe and did
+not try to do so.
+
+Any comments aprreciated.
+If there are more features from genirq we could use let me
+know and I may look at it.
+And if something just looks wrong please say so too.
+
+	Sam
+
+
+Sam Ravnborg (5):
+      sparc64: fix direct access to irq_desc
+      sparc: in handler_irq() rename irq parameter to pil
+      sparc64: all pointers to irq_handler_data renamed to handler_data
+      sparc64: use {get,set}_irq_data for handler_data
+      sparc64: use up-to-data genirq functions
+
+ arch/sparc/Kconfig            |    2 -
+ arch/sparc/kernel/irq_32.c    |   20 ++--
+ arch/sparc/kernel/irq_64.c    |  197 ++++++++++++++++++++---------------------
+ arch/sparc/kernel/sun4d_irq.c |   18 ++--
+ 4 files changed, 117 insertions(+), 120 deletions(-)
