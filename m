@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab1AUS1F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 13:27:05 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37752 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752903Ab1AUS1D (ORCPT
+	id S1754656Ab1AUS1S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 13:27:18 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:57285 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753151Ab1AUS1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 13:27:03 -0500
-Date: Fri, 21 Jan 2011 10:26:54 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stuart Swales <stuart.swales.croftnuisk@gmail.com>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] adfs: add hexadecimal filetype suffix option
-Message-Id: <20110121102654.fd87c917.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1101211434210.3490@dc5850.croftnuisk.local>
-References: <4D2DEDDB.1070605@gmail.com>
-	<20110119154915.a0bb2878.akpm@linux-foundation.org>
-	<alpine.DEB.2.00.1101211434210.3490@dc5850.croftnuisk.local>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Jan 2011 13:27:15 -0500
+Date: Fri, 21 Jan 2011 16:27:49 -0200
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Pavan Savoy <pavan_savoy@sify.com>
+Cc: marcel@holtmann.org, linux-kernel@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org
+Subject: Re: [RFC 0/2] remove BT references from TI_ST
+Message-ID: <20110121182749.GE2400@joana>
+References: <1294138788-10307-1-git-send-email-pavan_savoy@ti.com>
+ <AANLkTinPC-i2xi9pCQ-RzGWuwZ5uTM3NXG7y6gwTnPYv@mail.gmail.com>
+ <20110121171857.GC2400@joana>
+ <AANLkTimGNjfMtf+6XBMfKHo_F0sEnAJVdWjobfxDWoe7@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimGNjfMtf+6XBMfKHo_F0sEnAJVdWjobfxDWoe7@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Jan 2011 14:43:14 +0000 (GMT) Stuart Swales <stuart.swales.croftnuisk@gmail.com> wrote:
+Hi Pavan,
 
-> > Was `mount -o remount,ftsuffix=1' implemented and tested?
+* Pavan Savoy <pavan_savoy@sify.com> [2011-01-21 23:10:28 +0530]:
+
+> >> > If this is alright, I will send out a modified patch with updated
+> >> > subject to lkml/Greg for linux-next.
+> >
+> > Ok. Go ahead. Then tell me when I'll be able to apply your patch. (I need to
+> > have the core modifications in my tree first). Or I just ack the patch and it
+> > finds its way to mainline through Greg's tree.
 > 
-> I didn't specifically check it out with remount.  Is that likely to be a
-> problem?
+> Yes, I will post a patch to lkml against linux-next to greg KH, and
+> based on that send a
+> separate patch to linux-bluetooth for the btwilink..
 
-It should work and should be tested and maintained.
+Actually send everything to Greg KH, will work out better. Otherwise you will
+have to one release cycle to merge it here (until the other patches reach my
+tree). Then I just Ack it.
 
-I do worry about the effect on userspace of having all the filenames
-change on the fly.  I guess if it makes applications misbehave then
-that's a userspace (administrator) error.
-
-Does it mean that existing dcache entries are now out of sync, so some
-filenames are suffixless and others are suffixed?  If so, that might be
-too hard to fix, and some way of disabling `mount -o remount' should be
-found.
-
-> > Am I correct in assuming that "mount -o remount,ftsuffix=0" turns this
-> > off again?
-
-That too.
+-- 
+Gustavo F. Padovan
+http://profusion.mobi
