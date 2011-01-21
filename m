@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab1AUVWv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 16:22:51 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:49315 "EHLO e3.ny.us.ibm.com"
+	id S1753975Ab1AUVZs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 16:25:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31527 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753073Ab1AUVWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 16:22:49 -0500
-Date: Fri, 21 Jan 2011 13:22:45 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Nick Piggin <npiggin@gmail.com>, Jeff Moyer <jmoyer@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] fs: aio fix rcu lookup
-Message-ID: <20110121212245.GN17752@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <x49aaiwd6cs.fsf@segfault.boston.devel.redhat.com>
- <AANLkTiniSG3tfXx1iUtzf53sSsr=R6pmvmWrSV8FiYE9@mail.gmail.com>
- <x491v48d47d.fsf@segfault.boston.devel.redhat.com>
- <AANLkTi=ChBc3+o_GcdKKn4HZykNkQ70mxPLu9HYDfeFj@mail.gmail.com>
- <x49wrm0bo7g.fsf@segfault.boston.devel.redhat.com>
- <AANLkTikTJ-eCR2M73=G4q=0AAsb9aVosrFdwP+uY7enB@mail.gmail.com>
- <20110120040308.GD8476@linux.vnet.ibm.com>
- <AANLkTi=RdmWV9MLWzDxe6N_kWZQA+a2o8jg-PkB-7QGk@mail.gmail.com>
- <20110120200237.GC17752@linux.vnet.ibm.com>
- <1295554555.2613.15.camel@edumazet-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1295554555.2613.15.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1753486Ab1AUVZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 16:25:46 -0500
+Subject: Re: [PATCH] System Wide Capability Bounding Set
+From: Eric Paris <eparis@redhat.com>
+To: "Andrew G. Morgan" <morgan@kernel.org>
+Cc: "Serge E. Hallyn" <serge@canonical.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, sgrubb@redhat.com
+Date: Fri, 21 Jan 2011 16:25:34 -0500
+In-Reply-To: <AANLkTik07sOb8oQThFPLvAnQLXbyPJ+oqtqE2SMX2erk@mail.gmail.com>
+References: <1294266337.3237.45.camel@localhost.localdomain>
+	 <20110111220201.GA6446@localhost>
+	 <1295034658.2816.16.camel@localhost.localdomain>
+	 <AANLkTik07sOb8oQThFPLvAnQLXbyPJ+oqtqE2SMX2erk@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1295645135.3403.31.camel@localhost.localdomain>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 09:15:55PM +0100, Eric Dumazet wrote:
-> Le jeudi 20 janvier 2011 à 12:02 -0800, Paul E. McKenney a écrit :
-> > On Fri, Jan 21, 2011 at 05:31:53AM +1100, Nick Piggin wrote:
-> > > call_rcu() is the obvious alternative, yes.
-> > > 
-> > > Basically, once we give in to synchronize_rcu() we're basically giving
-> > > up. That's certainly a very good tradeoff for something like filesystem
-> > > unregistration or module unload, it buys big simplifications in real
-> > > fastpaths. But I just don't think it should be taken lightly.
-> > 
-> > Makes sense to me!
-> > 
-> > BTW, on your earlier usage classification:
-> > 
-> > > I think synchronize_rcu should firstly not be used unless it gives a good
-> > > simplification, or speedup in fastpath.
-> > >
-> > > When that is satified, then it is a question of exactly what kind of slow
-> > > path it should be used in. I don't think it should be used in process-
-> > > synchronous code (eg syscalls) except for error cases, resource
-> > > exhaustion, management syscalls (like module unload).
-> > 
-> > I don't have any feedback either way on your guidance to where
-> > synchronize_rcu() should be used, as I believe that it depends a lot
-> > on the details of usage, and would vary from one part of the kernel
-> > to another, and possibly also over time.
-> > 
-> 
-> Sometime, a mixture of call_rcu() and synchronize_rcu() is used, to have
-> a limit on pending callbacks (eating too much memory)
-> 
-> net/ipv4/fib_trie.c for example issues call_rcu() most of the time, but
-> is able to trigger one synchronize_rcu() if more than XXX (128) pages of
-> memory were queued in rcu queues.
-> 
-> For details, check commit c3059477fce2d956
-> (ipv4: Use synchronize_rcu() during trie_rebalance())
+On Sun, 2011-01-16 at 19:16 -0800, Andrew G. Morgan wrote:
 
-Good point!
+> I'm not a supporter of system-wide security contexts changing under
+> running programs. Previous experience has taught me that tricking a
+> program into thinking it has one sort of privilege and then
+> withdrawing it without notice can be dangerous.
 
-							Thanx, Paul
+But a bounding set doesn't affect a running program's abilities, the
+bset is only applied at exec().  So if it's fcaps based you have all
+that wacky kill logic.
+
+>  Since privileged
+> programs include shells that invoke privileged commands to perform
+> system admin tasks, I consider a global bounding set to be trouble in
+> the making. 
+
+No question, but then again, if you have CAP_SYS_MODULE there are a lot
+easier ways to make trouble   :)
+
+> If we were to delete that special code what I think is missing from
+> the current kernel model, is not a global bounding set, but a 'kernel
+> auto-exec' securebits value. One that can be set by an admin at
+> runtime to suppress the root-is-all-capable behavior of the auto-exec
+> process, and defer the privilege escalation to carefully audited file
+> capabilities on the relevant helper binaries.
+
+But how can that leave us with an impotent root?  Root would be easily
+able to craft a file with any caps it wants in fI and fP on any of the
+plethora of helper programs the kernel calls and escalate away it's
+impotence.
+
+I'd really like to drop a cap from an entire system never to return.
+Maybe I can get there by exposing the bset of the kthread which launches
+the helpers (makes me feel very dirty).  But that is smaller than the
+global bset....
+
+-Eric
+
