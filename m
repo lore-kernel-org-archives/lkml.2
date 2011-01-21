@@ -1,102 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765Ab1AUPHW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 10:07:22 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58419 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143Ab1AUPHU (ORCPT
+	id S1753532Ab1AUPVp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 10:21:45 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:38975 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752998Ab1AUPVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 10:07:20 -0500
-From: Borislav Petkov <bp@amd64.org>
-To: <peterz@infradead.org>, <mingo@elte.hu>
-Cc: <tony.luck@intel.com>, <acme@infradead.org>, <rostedt@goodmis.org>,
-        <fweisbec@gmail.com>, <linux-edac@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [RFC PATCHSET 0/12] RAS daemon v4
-Date: Fri, 21 Jan 2011 16:09:23 +0100
-Message-Id: <1295622575-18607-1-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.4.rc2
+	Fri, 21 Jan 2011 10:21:45 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
+	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer:X-Identified-User;
+	b=MCGh4UoO31T1/j6S4Hxmi9issDTHwbL/sIa8W9zipKiafHkvxhZVP596PTpcwvo/dvscmXkCIYg55nnsK0VbkcS9Pre61cGDJAgOSl1KAu+o9lulLhCQNUfjEUIvgIQo;
+From: Tao Ma <tm@tao.ma>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Kosina <jkosina@suse.cz>, Tao Ma <boyu.mt@taobao.com>
+Subject: [PATCH] ext4/trivial: Fix comment typo "especiially".
+Date: Fri, 21 Jan 2011 23:21:31 +0800
+Message-Id: <1295623291-10909-1-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.1
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 111.193.12.95 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: Tao Ma <boyu.mt@taobao.com>
 
-Hi,
+Change "especiially" to "especially".
 
-here's another round of the RAS daemon patchset. This time I'd like to
-get some ACKs/NACKs on the perf bits and whether this is agreeable to
-do. To some of the patches:
-
-* 0001-perf-Start-the-massive-restructuring.patch:
-
-This renames perf_event.c into events/core.c, as talked about earlier.
-This is only a first step though, the rest should come from perf people
-I guess...
-
-* 0002-perf-Add-persistent-event-facilities.patch
-
-... and this one puts the persistent bits in persistent.c
-
-* 0004-perf-Add-Makefile.lib.patch
-* 0005-perf-Export-trace-event-utils.patch
-
-I'm adding a toplevel tools/Makefile here which we could use for the
-other tools in there since we keep growing even more tools with each
-kernel release.
-
-* 0007-perf-Export-debugfs-utilities.patch
-
-This one is needed only temporary, as we're moving the perf events to
-/sysfs. After that work is done, the persistent fd will be read from
-there.
-
-For more details, check the individual patches.
-
-Btw, the patches are ontop of tip/master from ~two weeks ago, i.e.:
-cf1f6cd677a9ce8c80e5de61724a25074ad9a8cf.
-
-In order to run this patchset, you need only this hunk:
-
+Cc: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
 ---
-diff --git a/drivers/edac/mce_amd.c b/drivers/edac/mce_amd.c
-index c018109..7bffbc6 100644
---- a/drivers/edac/mce_amd.c
-+++ b/drivers/edac/mce_amd.c
-@@ -1,5 +1,6 @@
- #include <linux/module.h>
- #include <linux/slab.h>
-+#include <trace/events/mce.h>
- 
- #include "mce_amd.h"
- 
-@@ -598,6 +599,8 @@ int amd_decode_mce(struct notifier_block *nb, unsigned long val, void *data)
- 
- 	amd_decode_err_code(m->status & 0xffff);
- 
-+	trace_mce_record(m);
-+
- 	return NOTIFY_STOP;
- }
- EXPORT_SYMBOL_GPL(amd_decode_mce);
----
+ fs/ext4/extents.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-so that you can inject some MCEs like so:
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 63a7581..353b387 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -131,7 +131,7 @@ static ext4_fsblk_t ext4_ext_find_goal(struct inode *inode,
+ 		 * fragmenting the file system's free space.  Maybe we
+ 		 * should have some hueristics or some way to allow
+ 		 * userspace to pass a hint to file system,
+-		 * especiially if the latter case turns out to be
++		 * especially if the latter case turns out to be
+ 		 * common.
+ 		 */
+ 		ex = path[depth].p_ext;
+-- 
+1.7.1
 
-$ cd tools/
-$ make -j ras
-$ ./ras/rasd
-$ modprobe mce_amd_inj (built by CONFIG_EDAC_MCE_INJ)
-$ echo 0x9c00410000010016 > /sys/devices/system/edac/mce/status
-$ echo 0 > /sys/devices/system/edac/mce/bank
-
-And after 30 sec the latest, /var/log/ras.log will contain:
-
-Got MCE, cpu: 0, status: 0x9c00410000010016, addr: 0x0000000000000000
-
-This is still undecoded yet but I'm working on it.
-
-Anyway, please take a look and send me all comments you'd have.
-
-Thanks.
