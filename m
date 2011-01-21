@@ -1,40 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784Ab1AUE6K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 23:58:10 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:35584 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751827Ab1AUE6H (ORCPT
+	id S1750830Ab1AUFAM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 00:00:12 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:63684 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750701Ab1AUFAJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 23:58:07 -0500
-Date: Fri, 21 Jan 2011 04:57:54 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ali Gholami Rudi <aliqrudi@gmail.com>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-acpi@vger.kernel.org, rpurdie@rpsys.net
-Subject: Re: [Intel-gfx] [PATCH 2/5] i915: Add native backlight control
-Message-ID: <20110121045754.GA9897@srcf.ucam.org>
-References: <1295033065-13450-1-git-send-email-mjg@redhat.com> <1295033065-13450-2-git-send-email-mjg@redhat.com> <20112101000015@lilem.mirepesht> <20112101004346@lilem.mirepesht> <20110120151349.49cf3ebb.akpm@linux-foundation.org> <20110121004359.GA6422@srcf.ucam.org> <20110120170337.94d83333.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110120170337.94d83333.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Fri, 21 Jan 2011 00:00:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=EaQMoPK4Mmebrn1Gz418zLkP3FCAHzVewRiwxEqhwwXP+VBmbPInz/iSZBTR+rXoEi
+         MAs04W0jbRGv0Rcfy+AScN+o6KPTja969Kn+LA2GTR5Mucapgq0F3qzl1mJwCCM44ly6
+         3xWPEXhU2TBVCq3MWuCgci4JbgO7/KbQax6AQ=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND] select: remove unused MAX_SELECT_SECONDS
+Date: Fri, 21 Jan 2011 13:59:59 +0900
+Message-Id: <1295585999-3044-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.3.4.600.g982838b0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 05:03:37PM -0800, Andrew Morton wrote:
-> I updated the new drivers/video/backlight/adp5520_bl.c, but there's a
-> decent chance that unconverted drivers will sneak in.  I trust they
-> will still work OK?
+Remove the leftover from the commit 8ff3e8e85fa6 ("select:
+switch select() and poll() over to hrtimers").
 
-They should fire a warning on registration but otherwise work. I'll send 
-fixup patches for any I see.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Acked-by: Arjan van de Ven <arjan@linux.intel.com>
+---
+ fs/compat.c |    3 ---
+ fs/select.c |    3 ---
+ 2 files changed, 0 insertions(+), 6 deletions(-)
 
+diff --git a/fs/compat.c b/fs/compat.c
+index f6fd0a00e6cc..002595083ae5 100644
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -1695,9 +1695,6 @@ int compat_set_fd_set(unsigned long nr, compat_ulong_t __user *ufdset,
+  * Update: ERESTARTSYS breaks at least the xview clock binary, so
+  * I'm trying ERESTARTNOHAND which restart only when you want to.
+  */
+-#define MAX_SELECT_SECONDS \
+-	((unsigned long) (MAX_SCHEDULE_TIMEOUT / HZ)-1)
+-
+ int compat_core_sys_select(int n, compat_ulong_t __user *inp,
+ 	compat_ulong_t __user *outp, compat_ulong_t __user *exp,
+ 	struct timespec *end_time)
+diff --git a/fs/select.c b/fs/select.c
+index e56560d2b08a..d33418fdc858 100644
+--- a/fs/select.c
++++ b/fs/select.c
+@@ -517,9 +517,6 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+  * Update: ERESTARTSYS breaks at least the xview clock binary, so
+  * I'm trying ERESTARTNOHAND which restart only when you want to.
+  */
+-#define MAX_SELECT_SECONDS \
+-	((unsigned long) (MAX_SCHEDULE_TIMEOUT / HZ)-1)
+-
+ int core_sys_select(int n, fd_set __user *inp, fd_set __user *outp,
+ 			   fd_set __user *exp, struct timespec *end_time)
+ {
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.3.4.600.g982838b0
+
