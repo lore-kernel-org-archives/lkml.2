@@ -1,61 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab1AURaE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 12:30:04 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:46080 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752567Ab1AURaD (ORCPT
+	id S1753551Ab1AURdq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 12:33:46 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48199 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751665Ab1AURdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 12:30:03 -0500
-Date: Fri, 21 Jan 2011 15:29:37 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: peterz@infradead.org, mingo@elte.hu, tony.luck@intel.com,
-        rostedt@goodmis.org, fweisbec@gmail.com, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 08/12] perf: Carve out mmap helpers for general use
-Message-ID: <20110121172937.GC15066@ghostprotocols.net>
-References: <1295622575-18607-1-git-send-email-bp@amd64.org>
- <1295622575-18607-9-git-send-email-bp@amd64.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295622575-18607-9-git-send-email-bp@amd64.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 21 Jan 2011 12:33:45 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] leds: Fix warnings when PM is disabled for BD2802
+Date: Fri, 21 Jan 2011 17:33:37 +0000
+Message-Id: <1295631217-19591-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Jan 21, 2011 at 04:09:31PM +0100, Borislav Petkov escreveu:
-> From: Borislav Petkov <borislav.petkov@amd.com>
-> 
-> Export the mmap_read* helpers into tools/lib/perf/mmap.[ch]
+The suspend and resume functions will only be referenced when PM is
+enabled so they generate warnings due to being unreferenced and
+unexported.
 
-Borislav, can you take a look at:
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
 
-http://git.kernel.org/?p=linux/kernel/git/acme/linux-2.6.git;a=shortlog;h=refs/heads/perf/core
+This is the more usual idiom for fixing this than the patch you added.
 
-More specifically take a look at the function test__basic_mmap in:
+ drivers/leds/leds-bd2802.c |   30 ++++++++++++++++--------------
+ 1 files changed, 16 insertions(+), 14 deletions(-)
 
-http://git.kernel.org/?p=linux/kernel/git/acme/linux-2.6.git;a=blob;f=tools/perf/builtin-test.c;h=f03798a298b00b328a11f06ce20cc352d123ec28;hb=refs/heads/perf/core
+diff --git a/drivers/leds/leds-bd2802.c b/drivers/leds/leds-bd2802.c
+index 22152a2..ef0b868 100644
+--- a/drivers/leds/leds-bd2802.c
++++ b/drivers/leds/leds-bd2802.c
+@@ -319,20 +319,6 @@ static void bd2802_turn_off(struct bd2802_led *led, enum led_ids id,
+ 	bd2802_update_state(led, id, color, BD2802_OFF);
+ }
+ 
+-static void bd2802_restore_state(struct bd2802_led *led)
+-{
+-	int i;
+-
+-	for (i = 0; i < LED_NUM; i++) {
+-		if (led->led[i].r)
+-			bd2802_turn_on(led, i, RED, led->led[i].r);
+-		if (led->led[i].g)
+-			bd2802_turn_on(led, i, GREEN, led->led[i].g);
+-		if (led->led[i].b)
+-			bd2802_turn_on(led, i, BLUE, led->led[i].b);
+-	}
+-}
+-
+ #define BD2802_SET_REGISTER(reg_addr, reg_name)				\
+ static ssize_t bd2802_store_reg##reg_addr(struct device *dev,		\
+ 	struct device_attribute *attr, const char *buf, size_t count)	\
+@@ -761,6 +747,7 @@ static int __exit bd2802_remove(struct i2c_client *client)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
+ static int bd2802_suspend(struct device *dev)
+ {
+ 	struct i2c_client *client = to_i2c_client(dev);
+@@ -771,6 +758,20 @@ static int bd2802_suspend(struct device *dev)
+ 	return 0;
+ }
+ 
++static void bd2802_restore_state(struct bd2802_led *led)
++{
++	int i;
++
++	for (i = 0; i < LED_NUM; i++) {
++		if (led->led[i].r)
++			bd2802_turn_on(led, i, RED, led->led[i].r);
++		if (led->led[i].g)
++			bd2802_turn_on(led, i, GREEN, led->led[i].g);
++		if (led->led[i].b)
++			bd2802_turn_on(led, i, BLUE, led->led[i].b);
++	}
++}
++
+ static int bd2802_resume(struct device *dev)
+ {
+ 	struct i2c_client *client = to_i2c_client(dev);
+@@ -783,6 +784,7 @@ static int bd2802_resume(struct device *dev)
+ 
+ 	return 0;
+ }
++#endif
+ 
+ static SIMPLE_DEV_PM_OPS(bd2802_pm, bd2802_suspend, bd2802_resume);
+ 
+-- 
+1.7.2.3
 
-434 /*
-435  * This test will generate random numbers of calls to some getpid syscalls,
-436  * then establish an mmap for a group of events that are created to monitor
-437  * the syscalls.
-438  *
-439  * It will receive the events, using mmap, use its PERF_SAMPLE_ID generated
-440  * sample.id field to map back to its respective perf_evsel instance.
-441  *
-442  * Then it checks if the number of syscalls reported as perf events by
-443  * the kernel corresponds to the number of syscalls made.
-444  */
-
-I'll read the rest of your patchset to see if there are more things like
-this.
-
-- Arnaldo
