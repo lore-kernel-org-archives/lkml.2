@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab1AUCZe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Jan 2011 21:25:34 -0500
-Received: from mail.perches.com ([173.55.12.10]:3235 "EHLO mail.perches.com"
+	id S1753185Ab1AUC05 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Jan 2011 21:26:57 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:35442 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753315Ab1AUCZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Jan 2011 21:25:32 -0500
-Subject: Re: [PATCH 0/7] Nexus One Support
-From: Joe Perches <joe@perches.com>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: Dima Zavin <dmitriyz@google.com>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        davidb@codeaurora.org
-In-Reply-To: <1295575123.9236.54.camel@m0nster>
-References: <1295555565-21563-1-git-send-email-dwalker@codeaurora.org>
-	 <AANLkTik+HCj9dkD2s4WgwCqKWCXDbdSnKDUbyGfYfaPr@mail.gmail.com>
-	 <1295571359.9236.53.camel@m0nster>  <1295574085.4096.6.camel@Joe-Laptop>
-	 <1295575123.9236.54.camel@m0nster>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 Jan 2011 18:25:30 -0800
-Message-ID: <1295576730.4096.24.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751701Ab1AUC04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Jan 2011 21:26:56 -0500
+Date: Thu, 20 Jan 2011 18:26:11 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Fenghua Yu <fenghua.yu@intel.com>
+CC: "R, Durgadoss" <durgadoss.r@intel.com>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        H Peter Anvin <hpa@zytor.com>
+Subject: Re: patch[1/1]:hwmon:Adding_Threshold_support_to_coretemp
+Message-ID: <20110121022611.GC9496@ericsson.com>
+References: <D6D887BA8C9DFF48B5233887EF046541094482ED6A@bgsmsx502.gar.corp.intel.com>
+ <20110120221704.GA26954@linux-os.sc.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110120221704.GA26954@linux-os.sc.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-20 at 17:58 -0800, Daniel Walker wrote:
-> On Thu, 2011-01-20 at 17:41 -0800, Joe Perches wrote:
-> > On Thu, 2011-01-20 at 16:55 -0800, Daniel Walker wrote:
-> > > On Thu, 2011-01-20 at 16:42 -0800, Dima Zavin wrote:
-> > > > You are not the author of any of these patches. Where are the author
-> > > > attributions for the team that actually wrote this code?
-> > > In the commit text.. The author field is used to denote who authored the
-> > > commit, which in this case is me.
-> > You have that wrong.
-> > Author and Committer are different git fields.
-> > http://www.kernel.org/pub/software/scm/git/docs/user-manual.html
-> > 
-> >       * an author: The name of the person responsible for this change,
-> >         together with its date.
-> >       * a committer: The name of the person who actually created the
-> >         commit, with the date it was done. This may be different from
-> >         the author, for example, if the author was someone who wrote a
-> >         patch and emailed it to the person who used it to create the
-> >         commit.
-> I'm not even sure how to make these different, but in this case it
-> doesn't matter because the "committer" as you defined it above is more
-> than one person ..
+On Thu, Jan 20, 2011 at 05:17:05PM -0500, Fenghua Yu wrote:
+[ ... ]
+> This patch has compilation error:
+> ERROR: "platform_thermal_notify" [drivers/hwmon/coretemp.ko] undefined!
+> 
+> The reason is commit 9e76a97efd31a08cb19d0ba12013b8fb4ad3e474 patch for
+> therm_throt.c in upstream doesn't export the symbol platform_thermal_notify.
+> 
+> The following patch should fix the issue. Apply it before compiling your patch.
+> 
+> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 
-Not really, no.
+You are hiding your patch in a reply to another patch. Plus, your patch needs to go
+into a different subsystem. Hope the x86 maintainers catch it.
 
-The authors may be different, but the first git
-committer of the patch is different.
-
-The committer is the person that does a git commit
-either directly with git commit or git am.
-
-If a git tree is pulled by someone else, the initial
-committer name remains on the commit.
-
-You should keep the original patch author names and
-add your own "Signed-off-by:" and not claim authorship
-of the patches themselves.
-
-cheers, Joe
-
+Guenter
