@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753857Ab1AUP6E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 10:58:04 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:45372 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752696Ab1AUP6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 10:58:00 -0500
-Subject: Re: flex_array related problems on selinux policy loading
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-In-Reply-To: <20110121072022.GA3070@secunet.com>
-References: <20110120122659.GD4639@secunet.com>
-	 <1295537330.9039.583.camel@nimitz>  <20110121072022.GA3070@secunet.com>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Fri, 21 Jan 2011 07:57:35 -0800
-Message-ID: <1295625455.9039.3326.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1753805Ab1AUQAU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 11:00:20 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40594 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752647Ab1AUQAR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 11:00:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:subject:date:message-id:x-mailer;
+        b=IBgYVaaX9xZMMLDTJTW1V6A3E4WnAbYC/yg+gZ8fqhuicDP0zYTtvKGSsPWM8j3FMw
+         N57q9BC0gKk+ggA6gNNRksuQ89tQ7X8ytqmbq+y3Sb1f5+wBs3bYyp5egkBBIrEWV8GP
+         TAoZ0beIE5KqO46PNjFfwCwvjzclMP/HQ0nyw=
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk, tytso@mit.edu, djwong@us.ibm.com, shli@kernel.org,
+        neilb@suse.de, adilger.kernel@dilger.ca, jack@suse.cz,
+        snitzer@redhat.com, linux-kernel@vger.kernel.org, kmannth@us.ibm.com,
+        cmm@us.ibm.com, linux-ext4@vger.kernel.org, rwheeler@redhat.com,
+        hch@lst.de, josef@redhat.com
+Subject: [PATCHSET] block: reimplement FLUSH/FUA to support merge
+Date: Fri, 21 Jan 2011 16:59:55 +0100
+Message-Id: <1295625598-15203-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-21 at 08:20 +0100, Steffen Klassert wrote:
-> On Thu, Jan 20, 2011 at 07:28:50AM -0800, Dave Hansen wrote:
-> > On Thu, 2011-01-20 at 13:26 +0100, Steffen Klassert wrote:
-> > ...
-> > > @@ -187,6 +195,9 @@ int flex_array_put(struct flex_array *fa, unsigned int element_nr, void *src,
-> > >  	struct flex_array_part *part;
-> > >  	void *dst;
-> > > 
-> > > +	if (unlikely(ZERO_OR_NULL_PTR(fa)))
-> > > +		return 0;
-> > 
-> > I think it's OK to add these for the array alloc and free cases.  But,
-> > it's really dangerous to do it for put.  It has the potential to
-> > silently throw away data and then be really confusing to debug when you
-> > can't get it back later.
-> 
-> If the pointer to struct flex_array is a ZERO_SIZE_PTR we have to exit
-> before we try to dereference the first time as we have not allocated
-> anything. We can think about returning an error value in flex_array_put
-> if the flex_array is a ZERO_SIZE_PTR. The the user would be notified
-> that we could not store his data, but that's all we can do here I think.
+Hello,
 
-Yeah, a zero-sized array with a put() done on it should return -ENOSPC,
-not 0.  But, an array storing 0-byte objects can and should return 0.
+This patchset reimplements (yeah, once more) so that FLUSH/FUA
+requests can be merged.  This is inspired by Darrick's patches to
+merge multiple zero-data flushes which helps workloads with highly
+concurrent fsync requests.
 
-Basically, the patch confuses those two cases.
+For more information, please read the patch description on the third
+patch.
 
-> > I tend to think about the flex_array itself as being more like a
-> > kmem_cache than anything else.  So, all of the operations on the array
-> > itself, like shrinking and growing are probably OK.
-> 
-> Hm, if either element_size or total_nr_elements is zero on allocation time,
-> the maximum size the array can ever have is zero. So I don't see how to
-> grow (shrink) anything in this case. Do I miss something here?
+ 0001-block-add-REQ_FLUSH_SEQ.patch
+ 0002-block-improve-flush-bio-completion.patch
+ 0003-block-reimplement-FLUSH-FUA-to-support-merge.patch
 
-I mean it shouldn't return an error, nor is it invalid.  You can't _do_
-anything, but it's at least valid.
+0001-0002 prepare for the reimplementation.  0003 reimplements.
 
-My suggestion would be to simply make sure that the code handles 0-sized
-objects and 0-length arrays OK, and do it in two separate patches.  The
-ZERO_SIZE_PTR can't be used for both because you need to know which
-situation you were in and you need different behavior (like in
-flex_array_put()).
+Tested on FLUSH+FUA, FLUSH, and no FLUSH configurations.  Works pretty
+solid for me.  Darrick says that preliminary performance test looks
+okay.  Darrick, please use this version for further testing as I fixed
+a few problems.
 
-Frankly, I like the idea of just allocating a 'struct flex_array' in any
-case, and just teaching the code to handle element_size=0 and
-nr_elements=0.  That way, if you have bugs in the code that does things
-like flex_array_alloc(elem_size=0, len=5, ...) and then
-flex_array_get(fa, index=99), you have the potential to detect and
-report the bugs.  The only way to do that is to remember what you set
-the length as.  
+This patchset is based on 2.6.38-rc1 (2b1caf6e) and available in the
+following git branch,
 
-If you're worried about allocating a whole page, you could easily just
-kmalloc() a the two integers for the metadata portion of the 'struct
-flex_array'.
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git block-flush-merge
 
--- Dave
+and contains the following changes.
 
+ block/blk-core.c          |   56 ++---
+ block/blk-flush.c         |  441 +++++++++++++++++++++++++++++++---------------
+ block/blk.h               |   12 -
+ block/elevator.c          |    7 
+ include/linux/blk_types.h |    2 
+ include/linux/blkdev.h    |   18 +
+ include/linux/elevator.h  |    1 
+ 7 files changed, 355 insertions(+), 182 deletions(-)
+
+Thanks.
+
+--
+tejun
