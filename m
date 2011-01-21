@@ -1,62 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423Ab1AUPKF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 10:10:05 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:36822 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754035Ab1AUPJ4 convert rfc822-to-8bit (ORCPT
+	id S1753765Ab1AUPHW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 10:07:22 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58419 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143Ab1AUPHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 10:09:56 -0500
-Subject: Re: Bug in scheduler when using rt_mutex
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>, samu.p.onkalo@nokia.com, mingo@elte.hu,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        tglx <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <20110121150323.GC6051@zhy>
-References: <1295499568.8027.30.camel@marge.simson.net>
-	 <AANLkTikEwgMzco2fHT668Mg3fC-T3EBMUgQQqW-Ojj-Y@mail.gmail.com>
-	 <1295503938.8027.59.camel@marge.simson.net>
-	 <AANLkTi=7YyA-e8HAq+C_prK2EaZKcaTfzDJvmO3e3W=B@mail.gmail.com>
-	 <1295512625.8027.88.camel@marge.simson.net>
-	 <AANLkTi=WhLy=4MNdm-HaOUOmbKXsNSJojnzqRTYp6qop@mail.gmail.com>
-	 <1295518047.8027.104.camel@marge.simson.net>
-	 <1295608136.28776.266.camel@laptop> <20110121122412.GA5071@zhy>
-	 <1295617258.28776.274.camel@laptop>  <20110121150323.GC6051@zhy>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 21 Jan 2011 16:10:27 +0100
-Message-ID: <1295622627.28776.295.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 21 Jan 2011 10:07:20 -0500
+From: Borislav Petkov <bp@amd64.org>
+To: <peterz@infradead.org>, <mingo@elte.hu>
+Cc: <tony.luck@intel.com>, <acme@infradead.org>, <rostedt@goodmis.org>,
+        <fweisbec@gmail.com>, <linux-edac@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [RFC PATCHSET 0/12] RAS daemon v4
+Date: Fri, 21 Jan 2011 16:09:23 +0100
+Message-Id: <1295622575-18607-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.4.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-21 at 23:03 +0800, Yong Zhang wrote:
-> On Fri, Jan 21, 2011 at 02:40:58PM +0100, Peter Zijlstra wrote:
-> > On Fri, 2011-01-21 at 20:24 +0800, Yong Zhang wrote:
-> > > > Index: linux-2.6/kernel/sched.c
-> > > > ===================================================================
-> > > > --- linux-2.6.orig/kernel/sched.c
-> > > > +++ linux-2.6/kernel/sched.c
-> > > > @@ -2624,6 +2624,8 @@ void sched_fork(struct task_struct *p, i
-> > > >  
-> > > >       if (!rt_prio(p->prio))
-> > > >               p->sched_class = &fair_sched_class;
-> > > > +     else
-> > > > +             p->se.vruntime = 0;
-> > > 
-> > > This can be moved to __sched_fork() 
-> > 
-> > But we cannot do it unconditionally, we want to inherit the parent's
-> > ->vruntime when we're a fair task clone.
-> 
-> Doesn't task_fork_fair()(which is called after __sched_fork())
-> take the inherit job?
-> 
-> Am I missing something?
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-Ah, indeed, we do the place_entity(.initial=1) thing there
-unconditionally. For some reason I thought we relied on the inherited
-vruntime.
+Hi,
+
+here's another round of the RAS daemon patchset. This time I'd like to
+get some ACKs/NACKs on the perf bits and whether this is agreeable to
+do. To some of the patches:
+
+* 0001-perf-Start-the-massive-restructuring.patch:
+
+This renames perf_event.c into events/core.c, as talked about earlier.
+This is only a first step though, the rest should come from perf people
+I guess...
+
+* 0002-perf-Add-persistent-event-facilities.patch
+
+... and this one puts the persistent bits in persistent.c
+
+* 0004-perf-Add-Makefile.lib.patch
+* 0005-perf-Export-trace-event-utils.patch
+
+I'm adding a toplevel tools/Makefile here which we could use for the
+other tools in there since we keep growing even more tools with each
+kernel release.
+
+* 0007-perf-Export-debugfs-utilities.patch
+
+This one is needed only temporary, as we're moving the perf events to
+/sysfs. After that work is done, the persistent fd will be read from
+there.
+
+For more details, check the individual patches.
+
+Btw, the patches are ontop of tip/master from ~two weeks ago, i.e.:
+cf1f6cd677a9ce8c80e5de61724a25074ad9a8cf.
+
+In order to run this patchset, you need only this hunk:
+
+---
+diff --git a/drivers/edac/mce_amd.c b/drivers/edac/mce_amd.c
+index c018109..7bffbc6 100644
+--- a/drivers/edac/mce_amd.c
++++ b/drivers/edac/mce_amd.c
+@@ -1,5 +1,6 @@
+ #include <linux/module.h>
+ #include <linux/slab.h>
++#include <trace/events/mce.h>
+ 
+ #include "mce_amd.h"
+ 
+@@ -598,6 +599,8 @@ int amd_decode_mce(struct notifier_block *nb, unsigned long val, void *data)
+ 
+ 	amd_decode_err_code(m->status & 0xffff);
+ 
++	trace_mce_record(m);
++
+ 	return NOTIFY_STOP;
+ }
+ EXPORT_SYMBOL_GPL(amd_decode_mce);
+---
+
+so that you can inject some MCEs like so:
+
+$ cd tools/
+$ make -j ras
+$ ./ras/rasd
+$ modprobe mce_amd_inj (built by CONFIG_EDAC_MCE_INJ)
+$ echo 0x9c00410000010016 > /sys/devices/system/edac/mce/status
+$ echo 0 > /sys/devices/system/edac/mce/bank
+
+And after 30 sec the latest, /var/log/ras.log will contain:
+
+Got MCE, cpu: 0, status: 0x9c00410000010016, addr: 0x0000000000000000
+
+This is still undecoded yet but I'm working on it.
+
+Anyway, please take a look and send me all comments you'd have.
+
+Thanks.
