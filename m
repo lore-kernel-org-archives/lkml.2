@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562Ab1AUHbH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 02:31:07 -0500
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:43691 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753535Ab1AUHbF (ORCPT
+	id S1753289Ab1AUHg4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 02:36:56 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:35171 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752331Ab1AUHgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 02:31:05 -0500
-Message-ID: <4D393636.4040607@cs.helsinki.fi>
-Date: Fri, 21 Jan 2011 09:31:02 +0200
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Fri, 21 Jan 2011 02:36:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=rpcAkRaKh4FIi8DOpto8klx8j20hl1vQf3qcd7VmD6UT5AqUqPMDNVUv3gHY4w1vLG
+         4eOQOHF0AB3SLA6vpQHGyycNzbaOvX1Qm71Rs6gfTc1//pq2gH1VTyfxhU6WCfMZYf8z
+         54nlMNlyRhIrQfZpVfoCFyL6UsXLZ38qU/KvY=
+Date: Thu, 20 Jan 2011 23:36:05 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Davidlohr Bueso <dave@gnu.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org
+Subject: Re: [PATCH] input: trackpoint: return proper error value
+Message-ID: <20110121073605.GC21842@core.coreip.homeip.net>
+References: <1295534730.2089.1.camel@offworld>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Christoph Lameter <cl@linux.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [cpuops cmpxchg double V2 1/4] Generic support for this_cpu_cmpxchg_double
-References: <20110106204513.669098445@linux.com> <20110106204525.222395863@linux.com> <4D263C91.30709@zytor.com> <alpine.DEB.2.00.1101070907060.3014@router.home> <20110107180419.GB23082@Krystal> <alpine.DEB.2.00.1101071227450.3014@router.home> <20110108172453.GF13269@mtj.dyndns.org>
-In-Reply-To: <20110108172453.GF13269@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295534730.2089.1.camel@offworld>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/8/11 7:24 PM, Tejun Heo wrote:
-> Hello,
->
-> On Fri, Jan 07, 2011 at 12:41:58PM -0600, Christoph Lameter wrote:
->> On Fri, 7 Jan 2011, Mathieu Desnoyers wrote:
->>
->>> I have to admit that I also hate the current interface for two reasons:
->
-> Call me weird but I like this one than others.  It sure is ugly but
-> the operation itself isn't a particularly pretty so it kinda matches.
-> Also, this one is the least error prone and more consistent with other
-> cpu ops.
+On Thu, Jan 20, 2011 at 11:45:30AM -0300, Davidlohr Bueso wrote:
+> From: Davidlohr Bueso <dave@gnu.org>
+> 
+> If sysfs_create_group() returns an error, we should return it in trackpoint_detect(), instead of -1.
+> 
+> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+> ---
+>  drivers/input/mouse/trackpoint.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/input/mouse/trackpoint.c b/drivers/input/mouse/trackpoint.c
+> index 54b2fa8..e8b7c3f 100644
+> --- a/drivers/input/mouse/trackpoint.c
+> +++ b/drivers/input/mouse/trackpoint.c
+> @@ -324,7 +324,7 @@ int trackpoint_detect(struct psmouse *psmouse, bool set_properties)
+>  			error);
+>  		kfree(psmouse->private);
+>  		psmouse->private = NULL;
+> -		return -1;
+> +		return error;
 
-So what are we going to do about this patch? I'd love to merge 
-Christoph's SLUB patches for linux-next now that .38-rc1 is out.
+This is not the only place where we return -1 in place of proper error
+code in that driver. Care to update all of them?
 
-			Pekka
+Thanks.
+
+-- 
+Dmitry
