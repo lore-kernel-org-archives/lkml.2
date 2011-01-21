@@ -1,60 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754694Ab1AUSEI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 13:04:08 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:60403 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824Ab1AUSEG (ORCPT
+	id S1754740Ab1AUSEq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 13:04:46 -0500
+Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:46890 "HELO
+	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753824Ab1AUSEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 13:04:06 -0500
-Date: Fri, 21 Jan 2011 19:06:27 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Tony Luck <tony.luck@intel.com>
-Cc: Borislav Petkov <bp@amd64.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "acme@infradead.org" <acme@infradead.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ras: Add RAS daemon
-Message-ID: <20110121180627.GA19016@aftab>
-References: <1295622575-18607-1-git-send-email-bp@amd64.org>
- <1295622575-18607-13-git-send-email-bp@amd64.org>
- <AANLkTinWZr7Ps-B+YT7tZm4+1=mTOGutUWWfi9L59wra@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinWZr7Ps-B+YT7tZm4+1=mTOGutUWWfi9L59wra@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 21 Jan 2011 13:04:44 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=QfxxbDR5JU67CeuV5fty9uPdESsFEkIBr/r+X4KuR1uAn6B7fRtHzzPinaz8XmgLhJN0Y6UVFgN19FwDzW4e10WSfJsJ8LIAFxU98UMW53hkKEYYL/lWHVW/yXWaJi2Y;
+Date: Fri, 21 Jan 2011 10:04:41 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: Joe Perches <joe@perches.com>, Dima Zavin <dmitriyz@google.com>,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, davidb@codeaurora.org
+Subject: Re: [PATCH 0/7] Nexus One Support
+Message-ID: <20110121100441.06a94482@jbarnes-desktop>
+In-Reply-To: <1295632828.19880.22.camel@m0nster>
+References: <1295555565-21563-1-git-send-email-dwalker@codeaurora.org>
+	<AANLkTik+HCj9dkD2s4WgwCqKWCXDbdSnKDUbyGfYfaPr@mail.gmail.com>
+	<1295571359.9236.53.camel@m0nster>
+	<1295574085.4096.6.camel@Joe-Laptop>
+	<1295575123.9236.54.camel@m0nster>
+	<1295576730.4096.24.camel@Joe-Laptop>
+	<1295624801.19880.13.camel@m0nster>
+	<20110121094827.41818a55@jbarnes-desktop>
+	<20110121095658.1ab623fe@jbarnes-desktop>
+	<1295632828.19880.22.camel@m0nster>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 12:54:20PM -0500, Tony Luck wrote:
-> On Fri, Jan 21, 2011 at 7:09 AM, Borislav Petkov <bp@amd64.org> wrote:
-> > +       format_buf = malloc_or_die(fsize);
-> > +       if (!format_buf)
-> > +               die("allocating format buffer");
+On Fri, 21 Jan 2011 10:00:28 -0800
+Daniel Walker <dwalker@codeaurora.org> wrote:
+
+> On Fri, 2011-01-21 at 09:56 -0800, Jesse Barnes wrote:
+> > On Fri, 21 Jan 2011 09:48:27 -0800
+> > Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> > 
+> > > On Fri, 21 Jan 2011 07:46:41 -0800
+> > > Daniel Walker <dwalker@codeaurora.org> wrote:
+> > > > This isn't what's happening tho. In maintainer land if someone forwards
+> > > > you a patch then you leave the original author on the patch. They wrote
+> > > > the patch and your just forwarding it on up the ladder. This isn't the
+> > > > case with these patches.. I crafted each of the commit I have authorship
+> > > > on, no one forwarded those commits to me. I'm not taking authorship
+> > > > credit for any thing I didn't create, although I an giving credit to the
+> > > > place which gave me the raw material which was Google. From my
+> > > > experience this is how it's done in Linux ..
+> > > 
+> > > I don't know why you're even trying to defend this, just admit you were
+> > > wrong and move on.
+> > > 
+> > > Trying to claim the author field for these patches for yourself is both
+> > > misleading and vain.  You did not write the code and are therefore not
+> > > the author, trying to conflate the author and commit fields in this way
+> > > is so misguided I thought you must be trolling when I first saw this
+> > > thread.
+> > > 
+> > > This is not "how it's done in Linux" at all.  In this case you're
+> > > trying to act like a maintainer by collecting patches and forwarding
+> > > them upstream, so you need to preserve authorship and the s-o-b chain.
+> > > If you want to take responsibility for the code going forward, great,
+> > > but don't pollute the logs with bogus author fields that imply you
+> > > wrote the stuff in the first place.
+> > 
+> > That said, if you did significant work on these before committing them,
+> > then you're right and I'm wrong.  It *is* fairly common for committers
+> > to change things; and if the changes are significant enough, they claim
+> > authorship and note the original author in the changelog.
+> > 
+> > So if that's the case here, I apologize, but I didn't see that
+> > explained in any part of the thread I read.
 > 
-> You don't trust "malloc_or_die()" to make it dead enough? :-)
+> I did a significant amount of work to create the commits and series. I'm
+> sorry if that's not clear, but it is in fact true.
 
-Yeah, it ain't dead yet! That's me with the big hammer.
-
-Good catch, will fix.
-
-> Will take a look through the rest of bits - looks very interesting.
-
-Thanks a lot sir :).
+Changes to the code or just reordering and merging commits?  If the
+former, then I think Christoph's comment applies, if the latter, I
+think preserving authorship is still the right thing to do.
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Jesse Barnes, Intel Open Source Technology Center
