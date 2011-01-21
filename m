@@ -1,135 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab1AUGCn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 01:02:43 -0500
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:44759 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861Ab1AUGCa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 01:02:30 -0500
-Date: Fri, 21 Jan 2011 14:52:22 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Miklos Szeredi <miklos@szeredi.hu>, minchan.kim@gmail.com,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH v4] mm: add replace_page_cache_page() function
-Message-Id: <20110121145222.82694908.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20110119102348.56a41328.kamezawa.hiroyu@jp.fujitsu.com>
-References: <E1Pf9Zj-0002td-Ct@pomaz-ex.szeredi.hu>
-	<20110118152844.88cfdc2c.akpm@linux-foundation.org>
-	<20110119092733.4927f935.nishimura@mxp.nes.nec.co.jp>
-	<20110119094813.2ea20439.kamezawa.hiroyu@jp.fujitsu.com>
-	<isapiwc.47df251f.f8b.4d363a30.58500.62@mail.jp.nec.com>
-	<20110119102348.56a41328.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1753027Ab1AUGSu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 01:18:50 -0500
+Received: from lo.gmane.org ([80.91.229.12]:35605 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752031Ab1AUGSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 01:18:48 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: WANG Cong <xiyou.wangcong@gmail.com>
+Subject: Re: [PATCH] Do not potentially overflow string in sumversion
+Date: Fri, 21 Jan 2011 06:18:35 +0000 (UTC)
+Message-ID: <ihb8fr$jbj$1@dough.gmane.org>
+References: <alpine.LNX.2.00.1101202353010.11854@swampdragon.chaosbits.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 123.125.1.164
+User-Agent: Pan/0.133 (House of Butterflies)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Jan 2011 10:23:48 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On Fri, 21 Jan 2011 00:00:56 +0100, Jesper Juhl wrote:
 
-> On Wed, 19 Jan 2011 10:11:12 +0900
-> nishimura@mxp.nes.nec.co.jp wrote:
+> In scripts/mod/sumversion.c (in get_src_version()) we call
+> getenv("MODVERDIR"). This returns a pointer to a string of unknown
+> length. This string of unknown length we then pass on as an argument to
+> sprintf() and tell it to write the result to 'filelist' which has a,
+> very much fixed, size of 'PATH_MAX + 1'. If the string returned by
+> getenv() is too long we'll overrun the statically allocated buffer. This
+> patch prevents the buffer overrun by using snprintf() and telling it to
+> copy a maximum of 'PATH_MAX + 1' bytes (including the terminating \0).
 > 
-> > > On Wed, 19 Jan 2011 09:27:33 +0900
-> > > Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-> > > 
-> > >> On Tue, 18 Jan 2011 15:28:44 -0800
-> > >> Andrew Morton <akpm@linux-foundation.org> wrote:
-> > >> 
-> > >> > On Tue, 18 Jan 2011 12:18:11 +0100
-> > >> > Miklos Szeredi <miklos@szeredi.hu> wrote:
-> > >> > 
-> > >> > > +int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
-> > >> > > +{
-> > >> > > +	int error;
-> > >> > > +	struct mem_cgroup *memcg = NULL;
-> > >> > 
-> > >> > I'm suspecting that the unneeded initialisation was added to suppress a
-> > >> > warning?
-> > >> > 
-> > >> No.
-> > >> It's necessary for mem_cgroup_{prepare|end}_migration().
-> > >> mem_cgroup_prepare_migration() will return without doing anything in
-> > >> "if (mem_cgroup_disabled()" case(iow, "memcg" is not overwritten),
-> > >> but mem_cgroup_end_migration() depends on the value of "memcg" to decide
-> > >> whether prepare_migration has succeeded or not.
-> > >> This may not be a good implementation, but IMHO I'd like to to initialize
-> > >> valuable before using it in general.
-> > >> 
-> > > 
-> > > I think it can be initlized in mem_cgroup_prepare_migration().
-> > > I'll send patch later.
-> > > 
-> > I see, thanks.
-> > 
-> > I think you know it, but just a note:
-> > mem_cgroup_{try_charge|commit_charge}_swapin()
-> > use the same logic, so try_charge_swapin() should also be changed
-> > for consistency.
-> > 
-> 
-> Thank you for caution. But I think THP+memcg bugs should be fixed before
-> style fixes..
-> 
-I do agree.
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net> ---
 
-> After my patch (yesterday), accounting information seems works well but
-> I saw very huge latency when we hit limits.
-> ==
-> Jan 18 10:27:22 rhel6-test kernel: [56177.770922] sh used greatest stack depth: 3592 bytes l
-> eft
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007] INFO: rcu_sched_state detected stall on CP
-> U 0 (t=60000 jiffies)
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007] sending NMI to all CPUs:
-> ...
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007] NMI backtrace for cpu 0
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007] CPU 0
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007] Modules linked in: autofs4 sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables ipv6 virtio_balloon virtio_net virtio_blk virtio_pci virtio_ring virtio [last unloaded: scsi_wait_scan]
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007]
-> ...
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  <IRQ>
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8102a04e>] arch_trigger_all_cpu_backtrace+0x5e/0xa0
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff810bca09>] __rcu_pending+0x169/0x3b0
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8108a250>] ? tick_sched_timer+0x0/0xc0
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff810bccbc>] rcu_check_callbacks+0x6c/0x120
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff810689a8>] update_process_times+0x48/0x90
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8108a2b6>] tick_sched_timer+0x66/0xc0
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8107ede0>] __run_hrtimer+0x90/0x1e0
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff81032db9>] ? kvm_clock_get_cycles+0x9/0x10
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8107f1be>] hrtimer_interrupt+0xde/0x240
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8155268b>] smp_apic_timer_interrupt+0x6b/0x9b
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8100c9d3>] apic_timer_interrupt+0x13/0x20
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  <EOI>
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff810a726a>] ? res_counter_charge+0xda/0x100
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff81145459>] __mem_cgroup_try_charge+0x199/0x5d0
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff811461c6>] mem_cgroup_charge_common+0x96/0x110
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff811463b5>] mem_cgroup_newpage_charge+0x45/0x50
-> Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8113dbd4>] khugepaged+0x924/0x1430
-> ==
-> 
-> I guess we need to relax retry logic when page_size > PAGE_SIZE.
-> I need to stop test application with Ctrl-C.
-> (Test was make -j 16 under 200M limit.)
-> 
-I think this is caused by a following scenario.
+Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
 
-1. mem_cgroup_charge_common() try to charge a huge page(i.e. page_size != PAGE_SIZE).
-2. mem_cgroup_do_charge() fails to charge, and return CHARGE_RETRY, because
-   "csize > PAGE_SIZE".
-3. When mem_cgroup_do_charge() returns CHARGE_RETRY, mem_cgroup_charge_common()
-   changes 'csize' to 'page_size', which is bigger than PAGE_SIZE.
+Next time, please Cc linux-kbuild for kbuild changes.
 
-I think you're stuck inside a loop between 2 and 3.
+Regards.
 
 
-Thanks,
-Daisuke Nishimura. 
