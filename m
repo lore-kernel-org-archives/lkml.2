@@ -1,106 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892Ab1AUPhM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 10:37:12 -0500
-Received: from hera.kernel.org ([140.211.167.34]:35770 "EHLO hera.kernel.org"
+	id S1752496Ab1AUPhu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 10:37:50 -0500
+Received: from mga02.intel.com ([134.134.136.20]:49927 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750714Ab1AUPhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 10:37:11 -0500
-Date: Fri, 21 Jan 2011 15:36:46 GMT
-From: tip-bot for Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        akinobu.mita@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, akinobu.mita@gmail.com, mingo@elte.hu
-In-Reply-To: <1295523136-4277-2-git-send-email-akinobu.mita@gmail.com>
-References: <1295523136-4277-2-git-send-email-akinobu.mita@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Use asm-generic/cacheflush.h
-Message-ID: <tip-cc67ba6352ecbf6891083a18f8c78fa639ebd274@git.kernel.org>
-Git-Commit-ID: cc67ba6352ecbf6891083a18f8c78fa639ebd274
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1750817Ab1AUPht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 10:37:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,358,1291622400"; 
+   d="scan'208";a="699205190"
+From: "Lu, Hongjiu" <hongjiu.lu@intel.com>
+To: "Anvin, H Peter" <h.peter.anvin@intel.com>,
+        "Li, Shaohua" <shaohua.li@intel.com>
+CC: Ingo Molnar <mingo@elte.hu>, Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Sam Ravnborg <sam@ravnborg.org>
+Date: Fri, 21 Jan 2011 07:37:46 -0800
+Subject: RE: Linux 2.6.38-rc1 doesn't boot
+Thread-Topic: Linux 2.6.38-rc1 doesn't boot
+Thread-Index: Acu5f92bq00plkE7Qwuwsg1b6rUE3gAATPwQ
+Message-ID: <9DA5872FEF993D41B7173F58FCF6BE9409F70604@orsmsx504.amr.corp.intel.com>
+References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
+	 <20110119073905.GA1652@gentoo.trippels.de>
+	 <20110119074902.GA1670@gentoo.trippels.de>
+	 <1295424766.1949.879.camel@sli10-conroe> <4D36A759.60704@intel.com>
+	 <20110119090904.GA4927@elte.hu> <1295489286.1949.882.camel@sli10-conroe>
+	 <20110120112541.GA23661@elte.hu>
+	 <ADDEBCD9C145E542A8688C29F1FBDCB9C915F59E@orsmsx502.amr.corp.intel.com>
+ <1295594339.1949.936.camel@sli10-conroe> <4D39A621.7080007@intel.com>
+In-Reply-To: <4D39A621.7080007@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 21 Jan 2011 15:36:47 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p0LFbwVN011780
 
-Commit-ID:  cc67ba6352ecbf6891083a18f8c78fa639ebd274
-Gitweb:     http://git.kernel.org/tip/cc67ba6352ecbf6891083a18f8c78fa639ebd274
-Author:     Akinobu Mita <akinobu.mita@gmail.com>
-AuthorDate: Thu, 20 Jan 2011 20:32:14 +0900
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 21 Jan 2011 14:11:12 +0100
+Or we can just ban those broken linker versions.
 
-x86: Use asm-generic/cacheflush.h
+H.J.
 
-The implementation of the cache flushing interfaces on the x86
-is identical with the default implementation in asm-generic.
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: arnd@arndb.de
-LKML-Reference: <1295523136-4277-2-git-send-email-akinobu.mita@gmail.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/cacheflush.h |   42 +------------------------------------
- 1 files changed, 1 insertions(+), 41 deletions(-)
-
-diff --git a/arch/x86/include/asm/cacheflush.h b/arch/x86/include/asm/cacheflush.h
-index 63e35ec..62f0844 100644
---- a/arch/x86/include/asm/cacheflush.h
-+++ b/arch/x86/include/asm/cacheflush.h
-@@ -1,48 +1,8 @@
- #ifndef _ASM_X86_CACHEFLUSH_H
- #define _ASM_X86_CACHEFLUSH_H
- 
--/* Keep includes the same across arches.  */
--#include <linux/mm.h>
--
- /* Caches aren't brain-dead on the intel. */
--static inline void flush_cache_all(void) { }
--static inline void flush_cache_mm(struct mm_struct *mm) { }
--static inline void flush_cache_dup_mm(struct mm_struct *mm) { }
--static inline void flush_cache_range(struct vm_area_struct *vma,
--				     unsigned long start, unsigned long end) { }
--static inline void flush_cache_page(struct vm_area_struct *vma,
--				    unsigned long vmaddr, unsigned long pfn) { }
--#define ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE 0
--static inline void flush_dcache_page(struct page *page) { }
--static inline void flush_dcache_mmap_lock(struct address_space *mapping) { }
--static inline void flush_dcache_mmap_unlock(struct address_space *mapping) { }
--static inline void flush_icache_range(unsigned long start,
--				      unsigned long end) { }
--static inline void flush_icache_page(struct vm_area_struct *vma,
--				     struct page *page) { }
--static inline void flush_icache_user_range(struct vm_area_struct *vma,
--					   struct page *page,
--					   unsigned long addr,
--					   unsigned long len) { }
--static inline void flush_cache_vmap(unsigned long start, unsigned long end) { }
--static inline void flush_cache_vunmap(unsigned long start,
--				      unsigned long end) { }
--
--static inline void copy_to_user_page(struct vm_area_struct *vma,
--				     struct page *page, unsigned long vaddr,
--				     void *dst, const void *src,
--				     unsigned long len)
--{
--	memcpy(dst, src, len);
--}
--
--static inline void copy_from_user_page(struct vm_area_struct *vma,
--				       struct page *page, unsigned long vaddr,
--				       void *dst, const void *src,
--				       unsigned long len)
--{
--	memcpy(dst, src, len);
--}
-+#include <asm-generic/cacheflush.h>
- 
- #ifdef CONFIG_X86_PAT
- /*
+> -----Original Message-----
+> From: Anvin, H Peter
+> Sent: Friday, January 21, 2011 7:29 AM
+> To: Li, Shaohua
+> Cc: Ingo Molnar; Markus Trippelsdorf; Lu, Hongjiu; Linus Torvalds;
+> Linux Kernel Mailing List; Sam Ravnborg
+> Subject: Re: Linux 2.6.38-rc1 doesn't boot
+> 
+> On 01/20/2011 11:18 PM, Li, Shaohua wrote:
+> >  		*(.jiffies)
+> >  	}
+> >  	jiffies = VVIRT(.jiffies);
+> > +	jiffies_64 = jiffies;
+> >
+> 
+> OK, this is just messed up.  If we need jiffies in a special section
+> then we should declare it as such (see __jiffy_data), but it's not
+> clear
+> to me why we would.  This seems like hack upon hack.
+> 
+> However, I suspect we may want to put jiffies into a .S file, and that
+> .S file needs to take into account architectures which need underscore
+> prefixes (which really sucks to have in ELF and is a major fail on
+> those
+> ABI designers...)
+> 
+> 	-hpa
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
