@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab1AVBvi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 20:51:38 -0500
-Received: from void.printf.net ([89.145.121.20]:54631 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751696Ab1AVBvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 20:51:37 -0500
-Date: Sat, 22 Jan 2011 01:51:32 +0000
-From: Chris Ball <cjb@laptop.org>
-To: Chuanxiao Dong <chuanxiao.dong@intel.com>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH v4 1/1]mmc: implemented eMMC4.4 enhanced area feature
-Message-ID: <20110122015132.GA6748@void.printf.net>
-References: <20110121200941.GA16236@intel.com>
-MIME-Version: 1.0
+	id S1754220Ab1AVB5z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 20:57:55 -0500
+Received: from tn-76-7-162-101.sta.embarqhsd.net ([76.7.162.101]:46075 "EHLO
+	animx.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753826Ab1AVB5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 20:57:54 -0500
+Date: Fri, 21 Jan 2011 20:57:48 -0500
+From: Wakko Warner <wakko@animx.eu.org>
+To: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Cc: linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: NILFS crash on 2.6.37
+Message-ID: <20110122015748.GA3174@animx.eu.org>
+Mail-Followup-To: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+	linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20110121024918.GA29598@animx.eu.org> <20110121.163738.135792151.ryusuke@osrg.net> <20110121.181859.144825828.ryusuke@osrg.net>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110121200941.GA16236@intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110121.181859.144825828.ryusuke@osrg.net>
+User-Agent: Mutt/1.5.6+20040907i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chuanxiao,
+Ryusuke Konishi wrote:
+> On Fri, 21 Jan 2011 16:37:38 +0900 (JST), Ryusuke Konishi wrote:
+> > (Cc'ed to linux-nilfs)
+> > > [ 1202.581501] NILFS warning: broken superblock. using spare superblock.
+> > > [ 1202.582093] NILFS warning: broken superblock. using spare superblock.
 
-On Sat, Jan 22, 2011 at 04:09:41AM +0800, Chuanxiao Dong wrote:
-> Enhanced area feature is a new feature defined in eMMC4.4 standard. This
-> kind of area can help to improve the performance.
-> 
-> MMC driver will read out the enhanced area offset and size and add them
-> to be device attributes. The feature enabling should be done in manufactory.
-> To use this feature, bit ERASE_GRP_DEF should also be set.
-> 
-> Documentation/ABI/testing/sysfs-devices-mmc described the two new attributes
-> 
-> Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
+Why does it say this 2 times?  Just curious.
 
-Looks good, pushed to mmc-next.  Thanks for all the edits to this!
+> > Thanks for the report.
+> > 
+> > This seems to be a regression on 2.6.36 which could happen when one of
+> > two superblocks is broken.
+> > 
+> > I'll fix it.
+> 
+> Does the following patch fix your problem?
+
+> diff --git a/fs/nilfs2/super.c b/fs/nilfs2/super.c
+> index 0994f6a7..58fd707 100644
+> --- a/fs/nilfs2/super.c
+> +++ b/fs/nilfs2/super.c
+> @@ -704,7 +704,8 @@ skip_mount_setup:
+>  	sbp[0]->s_state =
+>  		cpu_to_le16(le16_to_cpu(sbp[0]->s_state) & ~NILFS_VALID_FS);
+>  	/* synchronize sbp[1] with sbp[0] */
+> -	memcpy(sbp[1], sbp[0], nilfs->ns_sbsize);
+> +	if (sbp[1])
+> +		memcpy(sbp[1], sbp[0], nilfs->ns_sbsize);
+>  	return nilfs_commit_super(sbi, NILFS_SB_COMMIT_ALL);
+>  }
+
+That patch fix it.  Just a note, the 2.6.37 vanilla source was about 20
+lines up from 704
 
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+ Microsoft has beaten Volkswagen's world record.  Volkswagen only created 22
+ million bugs.
