@@ -1,41 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab1AVAu4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 19:50:56 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51579
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750791Ab1AVAuz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752058Ab1AVAuz (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 21 Jan 2011 19:50:55 -0500
-Date: Fri, 21 Jan 2011 16:51:27 -0800 (PST)
-Message-Id: <20110121.165127.113728879.davem@davemloft.net>
-To: torbenh@gmx.de
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, johnstul@us.ibm.com,
-        hch@infradead.org, yong.zhang0@gmail.com
-Subject: Re: [PATCH 16/18] sparc: switch do_timer() to xtime_update()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1295651224-29823-17-git-send-email-torbenh@gmx.de>
-References: <1295651224-29823-1-git-send-email-torbenh@gmx.de>
-	<1295651224-29823-17-git-send-email-torbenh@gmx.de>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Received: from mx1.redhat.com ([209.132.183.28]:33021 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750766Ab1AVAuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 19:50:54 -0500
+Date: Fri, 21 Jan 2011 19:49:55 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, tytso@mit.edu, djwong@us.ibm.com, shli@kernel.org,
+        neilb@suse.de, adilger.kernel@dilger.ca, jack@suse.cz,
+        linux-kernel@vger.kernel.org, kmannth@us.ibm.com, cmm@us.ibm.com,
+        linux-ext4@vger.kernel.org, rwheeler@redhat.com, hch@lst.de,
+        josef@redhat.com
+Subject: Re: [PATCH 3/3] block: reimplement FLUSH/FUA to support merge
+Message-ID: <20110122004955.GA17792@redhat.com>
+References: <1295625598-15203-1-git-send-email-tj@kernel.org>
+ <1295625598-15203-4-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295625598-15203-4-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Torben Hohn <torbenh@gmx.de>
-Date: Sat, 22 Jan 2011 00:07:02 +0100
+On Fri, Jan 21 2011 at 10:59am -0500,
+Tejun Heo <tj@kernel.org> wrote:
 
-> xtime_update() takes the xtime_lock itself.
-> 
-> i dont think that pcic_clear_clock_irq() and clear_clock_irq need
-> to be protected by a lock.
-> it might make sense to move them after xtime_update() though.
-> 
-> Signed-off-by: Torben Hohn <torbenh@gmx.de>
+> diff --git a/block/blk-flush.c b/block/blk-flush.c
+> index 8592869..cd73e93 100644
+> --- a/block/blk-flush.c
+> +++ b/block/blk-flush.c
+> @@ -1,6 +1,69 @@
+>  /*
+>   * Functions to sequence FLUSH and FUA writes.
+> + *
+> + * Copyright (C) 2011		Max Planck Institute for Gravitational Physics
+> + * Copyright (C) 2011		Tejun Heo <tj@kernel.org>
+> + *
+> + * This file is released under the GPLv2.
+> + *
+> + * REQ_{FLUSH|FUA} requests are decomposed to sequences consisted of three
+> + * optional steps - PREFLUSH, DATA and POSTFLUSH - according to the request
+> + * properties and hardware capability.
+> + *
+> + * If a request doesn't have data, only REQ_FLUSH makes sense, which
+> + * indicates a simple flush request.  If there is data, REQ_FLUSH indicates
+> + * that the device cache should be flushed before the data is executed, and
+> + * REQ_FUA means that the data must be on non-volatile media on request
+> + * completion.
+> + *
+> + * If the device doesn't have writeback cache, FLUSH and FUA don't make any
+> + * difference.  The requests are either completed immediately if there's no
+> + * data or executed as normal requests otherwise.
 
-Agreed:
+For devices without a writeback cache, I'm not seeing where pure flushes
+are completed immediately.  But I do see where data is processed
+directly in blk_insert_flush().
 
-Acked-by: David S. Miller <davem@davemloft.net>
+
+> -struct request *blk_do_flush(struct request_queue *q, struct request *rq)
+> +/**
+> + * blk_abort_flush - @q is being aborted, abort flush requests
+      ^^^^^^^^^^^^^^^ 
+Small comment nit, s/blk_abort_flush/blk_abort_flushes/
+
+> + * @q: request_queue being aborted
+> + *
+> + * To be called from elv_abort_queue().  @q is being aborted.  Prepare all
+> + * FLUSH/FUA requests for abortion.
+> + *
+> + * CONTEXT:
+> + * spin_lock_irq(q->queue_lock)
+> + */
+> +void blk_abort_flushes(struct request_queue *q)
