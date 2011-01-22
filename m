@@ -1,111 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751104Ab1AVFay (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 00:30:54 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52220 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875Ab1AVFax convert rfc822-to-8bit (ORCPT
+	id S1751139Ab1AVFyv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 00:54:51 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50964 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab1AVFyu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 00:30:53 -0500
+	Sat, 22 Jan 2011 00:54:50 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=AHV+z8aO0VDZGJ7KLRycfEK7doBEYDJmwqL/ltVI1n4WHWTzy2NppGoVp3UbR3cV2b
-         SNaCEL8RrMFGqAbuIsrPJ4fBM0JbU2ub7ysjpBTUO9hi8jn347fHvOkGdAWJVNsTSvbJ
-         cpvwg09EOKwVzpucfK9smnvkkOuhY0H5MU+mo=
+        b=Tf2UK7LltqBXZzBwjG8QqN0gcJe7i3C6ClEIMEw8ppoyIsmm/z9pdazdXc0WszpvWS
+         6m20NsKGsdmgqhrDplDnbNtviw40C7j90SOjyKrlj7+NfhC7JrIeTjtHWGPs5n1Y5YRp
+         m+yP/I/4MfJanhdj35+YQr0mfG9YJGIw/EGCs=
 MIME-Version: 1.0
-In-Reply-To: <20110122040757.GA2094@richard-laptop>
-References: <201101111016.42819.jeremy.kerr@canonical.com>
-	<20110111091607.GI12552@n2100.arm.linux.org.uk>
-	<201101111744.59712.jeremy.kerr@canonical.com>
-	<20110111103929.GN24920@pengutronix.de>
-	<AANLkTinHL9X_bqMPR=W8Va01O4xngUnpGCkCiE3xEdiQ@mail.gmail.com>
-	<4D386ABF.9060908@fluff.org>
-	<20110120190822.GK6335@n2100.arm.linux.org.uk>
-	<AANLkTim5N_sCCoOR40y7sTvdDoFkUJd4tUSSbrCccGjy@mail.gmail.com>
-	<AANLkTikJjkJvr2J-9eq2-Jj8L=JvwUQS+QNj9gWFX-TL@mail.gmail.com>
-	<20110122040757.GA2094@richard-laptop>
-Date: Sat, 22 Jan 2011 14:30:51 +0900
-Message-ID: <AANLkTimW70Wq7hEhgz021ZEknGgsaTXs3nVPNig4F3Tj@mail.gmail.com>
-Subject: Re: Locking in the clk API
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Richard Zhao <linuxzsc@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        linux-sh <linux-sh@vger.kernel.org>,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <201101212206.37469.rjw@sisk.pl>
+References: <201101201226.41021.rjw@sisk.pl>
+	<201101210104.43641.rjw@sisk.pl>
+	<AANLkTi=3JZUa3AtfcxnSuS36ORZLbS2-M+fJAR6_Moof@mail.gmail.com>
+	<201101212206.37469.rjw@sisk.pl>
+Date: Sat, 22 Jan 2011 13:54:49 +0800
+Message-ID: <AANLkTimEoAhO9TRx4Aq7NnTTt6G-u+cHJRyAMjSAJgTm@mail.gmail.com>
+Subject: Re: [PATCH 0/11] ACPI: Fixes and cleanups related to iomaps management
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 22, 2011 at 1:08 PM, Richard Zhao <linuxzsc@gmail.com> wrote:
-> On Fri, Jan 21, 2011 at 01:47:29PM +0900, Jassi Brar wrote:
->> On Fri, Jan 21, 2011 at 9:09 AM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
->> > On Fri, Jan 21, 2011 at 4:08 AM, Russell King - ARM Linux
->> > <linux@arm.linux.org.uk> wrote:
->> >> On Thu, Jan 20, 2011 at 05:02:55PM +0000, Ben Dooks wrote:
->> >>> If you want to make it so that each low-power mode has to work
->> >>> out what PLLs need to be disabled and then re-enabled makes me
->> >>> want to be sick. Hiding this stuff behind specific implementations
->> >>> is a recipe for disaster.
->> >>
->> >> Why should systems which don't suffer from such problems be prevented
->> >> from gaining power saving from turning off their clocks when devices
->> >> are not being used (eg, the console serial port.)
->> >>
->> >> One solution to your root PLL issue would be to have a separate set of
->> >> enable/disable API calls which get called at setup/release time (or
->> >> whatever you'd like to call it) which can only be called from non-atomic
->> >> context.  Maybe clk_prepare() and clk_unprepare().  These functions
->> >> should perform whatever is necessary to ensure that the clock source
->> >> is available for use atomically when clk_enable() is called.
->> >>
->> >> So, in your case, clk_prepare() ensures that the root PLL is enabled,
->> >> clk_unprepare() allows it to be turned off.
->> >>
->> >> In the case of a console driver, clk_prepare() can be called when we
->> >> know the port will be used as a console.  clk_enable() is then called
->> >> before writing out the string, and clk_disable() after we've completely
->> >> sent the last character.
->> >>
->> >> This allows the best of both worlds.  We now have a clk_enable() which
->> >> can be used to turn the clocks off through the clock tree up to the first
->> >> non-atomic clock, and we also have a way to deal with those which need
->> >> to sleep.  So not only do "sleeping clock" implementations become possible
->> >> but these "sleeping clock" implementations also get the opportunity to
->> >> shutdown some of their clock tree with minimal latency for doing so.
->> >
->> > This is exactly what I suggested in my last post, except the console example.
->> > Only to be a part of common clock api because it's not very safe to assume
->> > future SoCs will have the same simple clock topologies that they have today.
->> >
->> > Not to mean to teach, but I hope you realize with more and more
->> > device controller being crammed into ever shrinking SoCs,
->> > clock would eventually have to be flexible in functionality
->> > and complicated in hierarchy. Ben already gave examples
->> > of Audio, MFC and Video controllers of latest Samsung SoCs.
->>
->> plus
->>
->> a) If only Samsung bsp implements the api, it would be impossible to
->> share drivers, those that can be, with other platforms without nasty ifdef's.
->> b) If the task of unification starts with only a particular platform made to
->> implement a new api, the attempt kills its own purpose.
-> I'm not clear. Why does Samsung SoC go against clk_prepare/unprepare?
-> If its clock tree has many plls and device clock is not far away from plls and
-> may sleep, we may use prepare/unprepare to do actually clock enable/disable.
+2011/1/22 Rafael J. Wysocki <rjw@sisk.pl>:
+> On Friday, January 21, 2011, Jeff Chua wrote:
+>> 2011/1/21 Rafael J. Wysocki <rjw@sisk.pl>:
+>> > Thanks, but unfortunately this wasn't conclusive. �Please apply the patch below
+>> > instead of the previous one (on top of [1/11] - [11/11]) and collect dmesg
+> So, below is a replacement for [11/11]. �Please test it on top of
+> [1/11] - [10/11] (the current Linus' tree already contains [1/11] and [2/11])
+> and let me know if it works for you (in either case, please attach dmesg
+> output containing a suspend attempt).
+>
+> If it works, I'll remove the diagnostic messages and submit along with the
+> rest of the patchset.
 
-I am not against clk_prepare/unprepare.
-I rather suggest make it part of common clock API.
-Please read my last two posts again.
+Rafael,
+
+dmesg attached. This time, it worked!
+
+I discovered CONFIG_THINKPAD_ACPI caused suspend-to-disk to hang. I
+need the Thinkpad ACPI to control the fan and bluetooth. It looks like
+the thinkpad acpi is trying acquire locks while suspending.  Disabling
+cmos, light, led and hotkeys makes suspend-to-disk works again.
+
+Thanks,
+Jeff
