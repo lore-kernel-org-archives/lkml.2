@@ -1,61 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754239Ab1AVBRh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 20:17:37 -0500
-Received: from hera.kernel.org ([140.211.167.34]:45786 "EHLO hera.kernel.org"
+	id S1754369Ab1AVBRi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 20:17:38 -0500
+Received: from hera.kernel.org ([140.211.167.34]:45787 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753124Ab1AVBRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754029Ab1AVBRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Jan 2011 20:17:35 -0500
 From: Jens Axboe <jaxboe@fusionio.com>
 To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org
 Cc: hch@infradead.org
-Subject: [PATCH 0/10] On-stack explicit block queue plugging
-Date: Sat, 22 Jan 2011 01:17:19 +0000
-Message-Id: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
+Subject: [PATCH 03/10] scsi: convert to blk_delay_queue()
+Date: Sat, 22 Jan 2011 01:17:22 +0000
+Message-Id: <1295659049-2688-4-git-send-email-jaxboe@fusionio.com>
 X-Mailer: git-send-email 1.7.3.5
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 22 Jan 2011 01:17:31 +0000 (UTC)
+In-Reply-To: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
+References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 22 Jan 2011 01:17:32 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+---
+ drivers/scsi/scsi_lib.c |   44 +++++++++++++++++++-------------------------
+ 1 files changed, 19 insertions(+), 25 deletions(-)
 
-This is something that I have been sitting on for a while and
-I finally got a bit of time to bring it up to date and at least
-ensure that basic functionality was there.
-
-Currently we use what I call implicit IO plugging for block devices.
-This means that the target block device queue may or may not be
-"plugged" when someone submits IO. The IO submitter has to
-ensure that the IO is sent off by calling a function to submit
-it. This ugliness propagates through to the vm, which needs a
-->sync_page() hook to ensure that things are submitted if someone
-ends up waiting on a page.
-
-Additionally, queue plugging ends up being a burden on the
-queue lock (which is already heavily contended in some cases).
-By moving to an explicit plugging scheme we make the API nicer,
-get rid of the ->sync_page() vm hack, and allow IO to be queued
-up in an on-stack structure and submitted in batches to the
-block device queue.
-
-Right now only submission of mergeable IO is lockless, the next
-step is ensuring that rq allocation can be less queue lock
-intensive and get some benefits there as well. There's an
-unrelated batching change in this series as well that doesn't
-really belong that's the start of that.
-
-The patch boots and runs on my laptop, but apart from that I make
-no guarantees as to the state of it. Particularly the md and dm
-changes are quite invasive and need both careful review (and then,
-I'm sure, bug fixing) and testing.
-
-Patches are against 2.6.38-rc1 and can also be found in the block
-git tree, in the for-2.6.39/stack-plug branch.
-
-I'm traveling, so I'll tend to replies/comments/reviews/bugs on
-this patch series when I get back early next week.
-
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 9045c52..5a0ae7a 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -67,6 +67,13 @@ static struct scsi_host_sg_pool scsi_sg_pools[] = {
+ 
+ struct kmem_cache *scsi_sdb_cache;
+ 
++/*
++ * When to reinvoke queueing after a resource shortage. It's 3 msecs to
++ * not change behaviour from the previous unplug mechanism, experimentation
++ * may prove this needs changing.
++ */
++#define SCSI_QUEUE_DELAY	3
++
+ static void scsi_run_queue(struct request_queue *q);
+ 
+ /*
+@@ -149,14 +156,7 @@ static int __scsi_queue_insert(struct scsi_cmnd *cmd, int reason, int unbusy)
+ 	/*
+ 	 * Requeue this command.  It will go before all other commands
+ 	 * that are already in the queue.
+-	 *
+-	 * NOTE: there is magic here about the way the queue is plugged if
+-	 * we have no outstanding commands.
+-	 * 
+-	 * Although we *don't* plug the queue, we call the request
+-	 * function.  The SCSI request function detects the blocked condition
+-	 * and plugs the queue appropriately.
+-         */
++	 */
+ 	spin_lock_irqsave(q->queue_lock, flags);
+ 	blk_requeue_request(q, cmd->request);
+ 	spin_unlock_irqrestore(q->queue_lock, flags);
+@@ -1194,11 +1194,11 @@ int scsi_prep_return(struct request_queue *q, struct request *req, int ret)
+ 	case BLKPREP_DEFER:
+ 		/*
+ 		 * If we defer, the blk_peek_request() returns NULL, but the
+-		 * queue must be restarted, so we plug here if no returning
+-		 * command will automatically do that.
++		 * queue must be restarted, so we schedule a callback to happen
++		 * shortly.
+ 		 */
+ 		if (sdev->device_busy == 0)
+-			blk_plug_device(q);
++			blk_delay_queue(q, SCSI_QUEUE_DELAY);
+ 		break;
+ 	default:
+ 		req->cmd_flags |= REQ_DONTPREP;
+@@ -1237,7 +1237,7 @@ static inline int scsi_dev_queue_ready(struct request_queue *q,
+ 				   sdev_printk(KERN_INFO, sdev,
+ 				   "unblocking device at zero depth\n"));
+ 		} else {
+-			blk_plug_device(q);
++			blk_delay_queue(q, SCSI_QUEUE_DELAY);
+ 			return 0;
+ 		}
+ 	}
+@@ -1467,7 +1467,7 @@ static void scsi_request_fn(struct request_queue *q)
+ 	 * the host is no longer able to accept any more requests.
+ 	 */
+ 	shost = sdev->host;
+-	while (!blk_queue_plugged(q)) {
++	for (;;) {
+ 		int rtn;
+ 		/*
+ 		 * get next queueable request.  We do this early to make sure
+@@ -1546,15 +1546,8 @@ static void scsi_request_fn(struct request_queue *q)
+ 		 */
+ 		rtn = scsi_dispatch_cmd(cmd);
+ 		spin_lock_irq(q->queue_lock);
+-		if(rtn) {
+-			/* we're refusing the command; because of
+-			 * the way locks get dropped, we need to 
+-			 * check here if plugging is required */
+-			if(sdev->device_busy == 0)
+-				blk_plug_device(q);
+-
+-			break;
+-		}
++		if (rtn)
++			goto out_delay;
+ 	}
+ 
+ 	goto out;
+@@ -1573,9 +1566,10 @@ static void scsi_request_fn(struct request_queue *q)
+ 	spin_lock_irq(q->queue_lock);
+ 	blk_requeue_request(q, req);
+ 	sdev->device_busy--;
+-	if(sdev->device_busy == 0)
+-		blk_plug_device(q);
+- out:
++out_delay:
++	if (sdev->device_busy == 0)
++		blk_delay_queue(q, SCSI_QUEUE_DELAY);
++out:
+ 	/* must be careful here...if we trigger the ->remove() function
+ 	 * we cannot be holding the q lock */
+ 	spin_unlock_irq(q->queue_lock);
 -- 
-Jens Axboe
+1.7.3.2.146.gca209
 
