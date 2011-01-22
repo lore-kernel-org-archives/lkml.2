@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515Ab1AVUGr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 15:06:47 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:23303 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab1AVUGq (ORCPT
+	id S1751614Ab1AVUZw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 15:25:52 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:49015 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903Ab1AVUZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 15:06:46 -0500
-Date: Sat, 22 Jan 2011 21:07:16 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-cifs@vger.kernel.org
-cc: Steve French <sfrench@samba.org>, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] CIFS: Remove pointless variable assignment in
- cifs_dfs_do_automount()
-Message-ID: <alpine.LNX.2.00.1101222101070.7746@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sat, 22 Jan 2011 15:25:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=j2cSFT4HmjO+JxxLoUZaEp+Zlc9NuCdkUVOVO/yQZXmPbXwyvDgAOzFus4YelQu2Xn
+         EBJTB1SwXbw/tAkndjeHUKq9IcWk1aZaE/Vyfsg43avA/1UzjgpRFVRf/Q45gPh+dIUd
+         3EJdYjFTBXCM9cawhRkVxMVQsGms56XXRYbok=
+Date: Sat, 22 Jan 2011 22:17:09 +0200
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Will Newton <will.newton@gmail.com>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] headers: remove aio.h from sched.h
+Message-ID: <20110122201709.GA4691@p183.telecom.by>
+References: <20110122150315.GA26270@p183.telecom.by>
+ <AANLkTi=TOo=u+wz7GEDZfPnOoV3VywOrf46yPK7wLykT@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=TOo=u+wz7GEDZfPnOoV3VywOrf46yPK7wLykT@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In fs/cifs/cifs_dfs_ref.c::cifs_dfs_do_automount() we have this code:
+On Sat, Jan 22, 2011 at 03:31:19PM +0000, Will Newton wrote:
+> On Sat, Jan 22, 2011 at 3:03 PM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
+> > --- a/block/scsi_ioctl.c
+> > +++ b/block/scsi_ioctl.c
+> > @@ -26,6 +26,7 @@
+> >  #include <linux/cdrom.h>
+> >  #include <linux/slab.h>
+> >  #include <linux/times.h>
+> > +#include <linux/uio.h>
+> >  #include <asm/uaccess.h>
+> >
+> >  #include <scsi/scsi.h>
+> 
+> Should this be aio.h?
+> 
+> There's a few more instances of uio,h elsewhere in the patch.
 
-	...
-	mnt = ERR_PTR(-EINVAL);
-	if (IS_ERR(tlink)) {
-		mnt = ERR_CAST(tlink);
-		goto free_full_path;
-	}
-	ses = tlink_tcon(tlink)->ses;
-
-	rc = get_dfs_path(xid, ses, full_path + 1, cifs_sb->local_nls,
-		&num_referrals, &referrals,
-		cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
-
-	cifs_put_tlink(tlink);
-
-	mnt = ERR_PTR(-ENOENT);
-	...
-
-The assignment of 'mnt = ERR_PTR(-EINVAL);' is completely pointless. If we 
-take the 'if (IS_ERR(tlink))' branch we'll set 'mnt' again and we'll also 
-do so if we do not take the branch. There is no way we'll ever use 'mnt' 
-with the assigned 'ERR_PTR(-EINVAL)' value, so we may as well just remove 
-the pointless assignment.
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- cifs_dfs_ref.c |    1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/fs/cifs/cifs_dfs_ref.c b/fs/cifs/cifs_dfs_ref.c
-index 7ed3653..f1c6862 100644
---- a/fs/cifs/cifs_dfs_ref.c
-+++ b/fs/cifs/cifs_dfs_ref.c
-@@ -297,7 +297,6 @@ static struct vfsmount *cifs_dfs_do_automount(struct dentry *mntpt)
- 
- 	cifs_sb = CIFS_SB(mntpt->d_inode->i_sb);
- 	tlink = cifs_sb_tlink(cifs_sb);
--	mnt = ERR_PTR(-EINVAL);
- 	if (IS_ERR(tlink)) {
- 		mnt = ERR_CAST(tlink);
- 		goto free_full_path;
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+No. It's for "struct iovec" specifically.
