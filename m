@@ -1,52 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237Ab1AVJeJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 04:34:09 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:59142 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289Ab1AVJeG (ORCPT
+	id S1752389Ab1AVJfT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 04:35:19 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58439 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783Ab1AVJfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 04:34:06 -0500
+	Sat, 22 Jan 2011 04:35:16 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type;
-        b=p0Rk6DbVtnF4KgnDIiu9xaAPEes5k69LD2En+du1d5hpaeuoNZ2vjt2OzQCFfW3TsZ
-         yjkwZZAz5oorA06z/3/jhCmqtc/XnQSDkjLvSzT00i3Eh6SyD3FaJdOUA+diGpFcq6/x
-         MbsC5tStXa2v3/D77wnXMPbaVIdI1aZPzg9/4=
+        h=from:reply-to:to:subject:date:user-agent:mime-version:content-type
+         :content-transfer-encoding:content-disposition:message-id;
+        b=vc6dBdlvGctXPVhyiPZZXHdbuu0FqVY3NPznW0QOyvrvbbsKh6RauxjveyPJb8Qp01
+         U5aGa9i0aDawVpAe8Foq+uwVJASWYEoL86V6avwsjn0K01aDxU2QVHrTBQNMCIIkHvi7
+         u0yXRmmBhX+kBOkJwGABjjHPZVgQDOMq0PLVQ=
+From: Chris Clayton <chris2553@googlemail.com>
+Reply-To: chris2553@googlemail.com
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: DRM BUG - X fails to start with 2.6.38-rc2+
+Date: Sat, 22 Jan 2011 09:35:03 +0000
+User-Agent: KMail/1.9.10
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20110122120941.20aec5de.sfr@canb.auug.org.au>
-References: <20110121164501.GB29131@dumpdata.com>
-	<20110122120941.20aec5de.sfr@canb.auug.org.au>
-Date: Sat, 22 Jan 2011 10:34:03 +0100
-Message-ID: <AANLkTi=0g9BOKbtMKFK-gaNojmj7AZhTaqoyhnELVySn@mail.gmail.com>
-Subject: Re: Change name from swiotlb-xen to xen-two tree and branches.
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201101220935.03623.chris2553@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 22, 2011 at 2:09 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Konrad,
->
-> On Fri, 21 Jan 2011 11:45:01 -0500 Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-[...]
->> Would you be OK changing the name from swiotlb-xen to 'xen-two' and
->> pulling from #linux-next branch instead of #master please?
->
-> All done - but my next tree will not be built until Jan 31 ...
->
+Hi,
 
-It would be great to have a linux-next based on 2.6.38-rc2 before LCA-2011.
-The only conflict I had to solve was in "arch/x86/xen/p2m.c" (for
-details see [1]).
+I'm not subscribed, so please cc me on any reply,
 
-- Sedat -
+I've built and installed the latest -git kernel (pulled this morning) and X 
+fails to start.  I see the grey X background and, for a split second, what 
+looks like the kdm login dialogue box appears before disappearing again. Then 
+the screen goes black and the monitor goes into power saving made. I can't 
+access consoles with Alt-Fn - the machine is effectively locked and can be 
+rcovered only by powering off and then on again.
 
-[1] "xen: p2m: correctly initialize partial p2m leaf"
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=8e1b4cf2108488ccfb9a3e7ed7cd85a435e01d4b
+The only diagnostics I can find in the logs is at the end of/var/log/kernel:
+
+Jan 22 08:20:08 upstairs kernel: r8169 0000:02:00.0: eth0: link up
+Jan 22 08:20:17 upstairs kernel: [drm] Initialized drm 1.1.0 20060810
+Jan 22 08:20:19 upstairs kernel: pci 0000:00:02.0: PCI INT A -> GSI 16 (level, 
+low) -> IRQ 16
+Jan 22 08:20:19 upstairs kernel: pci 0000:00:02.0: setting latency timer to 64
+Jan 22 08:20:19 upstairs kernel: ioremap error for 0xbdce0000-0xbdce3000, 
+requested 0x10, got 0x0
+Jan 22 08:20:19 upstairs kernel: [drm] Supports vblank timestamp caching Rev 1 
+(10.10.2010).
+Jan 22 08:20:19 upstairs kernel: [drm] Driver supports precise vblank timestamp 
+query.
+Jan 22 08:20:19 upstairs kernel: [drm] Initialized i915 1.6.0 20080730 for 
+0000:00:02.0 on minor 0
+Jan 22 08:20:37 upstairs kernel: BUG: unable to handle kernel NULL pointer 
+dereference at 00000194
+Jan 22 08:20:37 upstairs kernel: IP: [<f87c1aae>] 
+drm_calc_vbltimestamp_from_scanoutpos+0x3e/0x4b0 [drm]
+
+/var/log/Xorg.0.log appears not to have been written to because it contains what 
+appears to be only random data rather than the usual text.
+
+The graphics-related lspci output shows:
+
+00:02.0 VGA compatible controller: Intel Corporation 4 Series Chipset Integrated 
+Graphics Controller (rev 03) (prog-if 00 [VGAcontroller])
+        Subsystem: Giga-byte Technology Device d000
+        Flags: bus master, fast devsel, latency 0, IRQ 16
+        Memory at e1000000 (64-bit, non-prefetchable) [size=4M]
+        Memory at d0000000 (64-bit, prefetchable) [size=256M]
+        I/O ports at e000 [size=8]
+        Expansion ROM at <unassigned> [disabled]
+        Capabilities: [90] MSI: Enable- Count=1/1 Maskable- 64bit-
+        Capabilities: [d0] Power Management version 2
+        Capabilities: [a4] PCI Advanced Features
+
+00:02.1 Display controller: Intel Corporation 4 Series Chipset Integrated 
+Graphics Controller (rev 03)
+        Subsystem: Giga-byte Technology Device d000
+        Flags: bus master, fast devsel, latency 0
+        Memory at e1400000 (64-bit, non-prefetchable) [size=1M]
+        Capabilities: [d0] Power Management version 2
+
+All works fine with 2.6.37 .
+
+Please let me know if any additional diagnostics are needed or if you want any 
+patches testing.
+
+Thanks in advance
+
+Chris
+
+-- 
+The more I see, the more I know. The more I know, the less I understand. 
+Changing Man - Paul Weller
