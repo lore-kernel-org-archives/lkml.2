@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab1AVBRr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 20:17:47 -0500
-Received: from hera.kernel.org ([140.211.167.34]:45819 "EHLO hera.kernel.org"
+	id S1754832Ab1AVBR7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 20:17:59 -0500
+Received: from hera.kernel.org ([140.211.167.34]:45823 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754540Ab1AVBRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 20:17:43 -0500
+	id S1754014Ab1AVBRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 20:17:45 -0500
 From: Jens Axboe <jaxboe@fusionio.com>
 To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org
-Cc: hch@infradead.org
-Subject: [PATCH 07/10] fs: make generic file read/write functions plug
-Date: Sat, 22 Jan 2011 01:17:26 +0000
-Message-Id: <1295659049-2688-8-git-send-email-jaxboe@fusionio.com>
+Cc: hch@infradead.org, Shaohua Li <shaohua.li@intel.com>
+Subject: [PATCH 10/10] fs: make aio plug
+Date: Sat, 22 Jan 2011 01:17:29 +0000
+Message-Id: <1295659049-2688-11-git-send-email-jaxboe@fusionio.com>
 X-Mailer: git-send-email 1.7.3.5
 In-Reply-To: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
 References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 22 Jan 2011 01:17:40 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 22 Jan 2011 01:17:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Shaohua Li <shaohua.li@intel.com>
+
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 ---
- mm/filemap.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ fs/aio.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 380776c..f9a29c8 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1243,12 +1243,15 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 	unsigned long seg = 0;
- 	size_t count;
- 	loff_t *ppos = &iocb->ki_pos;
+diff --git a/fs/aio.c b/fs/aio.c
+index c5ea494..1476bed 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -1660,6 +1660,7 @@ long do_io_submit(aio_context_t ctx_id, long nr,
+ 	long ret = 0;
+ 	int i;
+ 	struct hlist_head batch_hash[AIO_BATCH_HASH_SIZE] = { { 0, }, };
 +	struct blk_plug plug;
  
- 	count = 0;
- 	retval = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
- 	if (retval)
- 		return retval;
+ 	if (unlikely(nr < 0))
+ 		return -EINVAL;
+@@ -1676,6 +1677,8 @@ long do_io_submit(aio_context_t ctx_id, long nr,
+ 		return -EINVAL;
+ 	}
  
 +	blk_start_plug(&plug);
 +
- 	/* coalesce the iovecs and go direct-to-BIO for O_DIRECT */
- 	if (filp->f_flags & O_DIRECT) {
- 		loff_t size;
-@@ -1321,6 +1324,7 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 	/*
+ 	 * AKPM: should this return a partial result if some of the IOs were
+ 	 * successfully submitted?
+@@ -1698,6 +1701,7 @@ long do_io_submit(aio_context_t ctx_id, long nr,
+ 		if (ret)
  			break;
  	}
- out:
 +	blk_finish_plug(&plug);
- 	return retval;
- }
- EXPORT_SYMBOL(generic_file_aio_read);
-@@ -2432,11 +2436,13 @@ ssize_t generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
- {
- 	struct file *file = iocb->ki_filp;
- 	struct inode *inode = file->f_mapping->host;
-+	struct blk_plug plug;
- 	ssize_t ret;
+ 	aio_batch_free(batch_hash);
  
- 	BUG_ON(iocb->ki_pos != pos);
- 
- 	mutex_lock(&inode->i_mutex);
-+	blk_start_plug(&plug);
- 	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
- 	mutex_unlock(&inode->i_mutex);
- 
-@@ -2447,6 +2453,7 @@ ssize_t generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 		if (err < 0 && ret > 0)
- 			ret = err;
- 	}
-+	blk_finish_plug(&plug);
- 	return ret;
- }
- EXPORT_SYMBOL(generic_file_aio_write);
+ 	put_ioctx(ctx);
 -- 
 1.7.3.2.146.gca209
 
