@@ -1,118 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab1AVCTT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 21:19:19 -0500
-Received: from hera.kernel.org ([140.211.167.34]:41573 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754399Ab1AVCTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 21:19:18 -0500
-Date: Sat, 22 Jan 2011 02:18:57 GMT
-From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        arjan@linux.intel.com, andreas.herrmann3@amd.com,
-        a.p.zijlstra@chello.hl, lenb@kernel.org, tglx@linutronix.de,
-        hpa@linux.intel.com, borislav.petkov@amd.com, venki@google.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        andreas.herrmann3@amd.com, arjan@linux.intel.com,
-        a.p.zijlstra@chello.hl, lenb@kernel.org, tglx@linutronix.de,
-        hpa@linux.intel.com, venki@google.com, borislav.petkov@amd.com
-In-Reply-To: <1295534572-10730-1-git-send-email-bp@amd64.org>
-References: <1295534572-10730-1-git-send-email-bp@amd64.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, hotplug: Fix powersavings with offlined cores on AMD
-Message-ID: <tip-93789b32dbf355e70f18b17a82e8661677a7f7fb@git.kernel.org>
-Git-Commit-ID: 93789b32dbf355e70f18b17a82e8661677a7f7fb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1755057Ab1AVCWl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 21:22:41 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:8811 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754985Ab1AVCWi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 21:22:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=IYt+PIf3eeCp7hV7mxdVjAccbQ6os/bYoKIaXtXrJ5Q/KpkSQKSQFSNg/Ccv8E24v7
+         adyrJIPNFvZxPO+NWCNQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 22 Jan 2011 02:18:59 +0000 (UTC)
+In-Reply-To: <4D3A346E.9070709@codeaurora.org>
+References: <201101111016.42819.jeremy.kerr@canonical.com>
+	<20110111031552.GJ3760@linux-sh.org>
+	<4D3862DB.5000708@fluff.org>
+	<20110120185617.GI6335@n2100.arm.linux.org.uk>
+	<alpine.LFD.2.00.1101201623480.8580@xanadu.home>
+	<AANLkTimwBruVgGQWs5NQG7U3PcF6RQHZ6Pd1hjxyGpcA@mail.gmail.com>
+	<4D3907BD.4040900@codeaurora.org>
+	<AANLkTik53zyXytvuAd5zK0_zExfQT3FmOgTr8BexmGeT@mail.gmail.com>
+	<alpine.LFD.2.00.1101211618170.8580@xanadu.home>
+	<20110121220238.GE23151@n2100.arm.linux.org.uk>
+	<AANLkTimT+vfg9p4GSnn1jGW9r_gVom7xEUzMVJDscPg2@mail.gmail.com>
+	<4D3A346E.9070709@codeaurora.org>
+Date: Fri, 21 Jan 2011 18:22:34 -0800
+Message-ID: <AANLkTi=T=mBBT=1G7DpwQEOnrXSamfwppv6j8uUPE4Sj@mail.gmail.com>
+Subject: Re: Locking in the clk API
+From: Colin Cross <ccross@google.com>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Dima Zavin <dmitriyz@google.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>,
+        "Uwe Kleine-K??nig" <u.kleine-koenig@pengutronix.de>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  93789b32dbf355e70f18b17a82e8661677a7f7fb
-Gitweb:     http://git.kernel.org/tip/93789b32dbf355e70f18b17a82e8661677a7f7fb
-Author:     Borislav Petkov <borislav.petkov@amd.com>
-AuthorDate: Thu, 20 Jan 2011 15:42:52 +0100
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 21 Jan 2011 18:14:54 -0800
+On Fri, Jan 21, 2011 at 5:35 PM, Saravana Kannan <skannan@codeaurora.org> wrote:
+> On 01/21/2011 02:28 PM, Colin Cross wrote:
+>>
+>> On Fri, Jan 21, 2011 at 2:02 PM, Russell King - ARM Linux
+>> <linux@arm.linux.org.uk>  wrote:
+>>>
+>>> On Fri, Jan 21, 2011 at 04:53:44PM -0500, Nicolas Pitre wrote:
+>>>>
+>>>> So I think that the API must be augmented with more methods, such as:
+>>>>
+>>>> clk_slow_enable():
+>>>>   - may sleep
+>>>>   - may be a no-op if the clk_fast_enable() is supported
+>>>>
+>>>> clk_fast_enable():
+>>>>   - may not sleep, used in atomic context
+>>>>   - may be a no-op if controlling the clock takes time, in which case
+>>>>     clk_slow_enable() must have set the clock up entirely
+>>>>
+>>>> ... and similar for clk_slow_disable() and clk_fast_disable().
+>>>
+>>> Isn't this along the same lines as my clk_prepare() vs clk_enable()
+>>> suggestion?
+>>>
+>>> I suggested that clk_prepare() be callable only from non-atomic contexts,
+>>> and do whatever's required to ensure that the clock is available.  That
+>>> may end up enabling the clock as a result.
+>>>
+>>> clk_enable() callable from atomic contexts, and turns the clock on if
+>>> the hardware supports such an operation.
+>>>
+>>> So, if you have something like:
+>>>
+>>> Xtal--->PLL--->Routing/Masking--->Device
+>>>
+>>> clk = clk_get() returns the clock for the device.
+>>>
+>>> clk_prepare(clk) would walk up the clock tree, selecting the routing and
+>>> preparing each clock.  Clocks prior to _and_ including the PLL would need
+>>> to be enabled.
+>>>
+>>> clk_enable(clk) would walk up the tree if the clock isn't already
+>>> enabled,
+>>> calling clk_enable() on the parent clock.  As we require prepared clocks
+>>> to already be enabled, this automatically stops at the PLL.
+>>>
+>>> To encourage correct usage, we just need to make sure that clk_prepare()
+>>> has a might_sleep() thing, and clk_enable() throws a fit if it's used
+>>> on a clk without prepare being used first.  The second point is not easy
+>>> to do in a foolproof manner though, but doing _something_ is better than
+>>> nothing.
+>>
+>> I like this proposal, and I prefer the clk_prepare naming over
+>> clk_slow_enable - too many people would call clk_slow_enable instead
+>> of, and not as well as, clk_fast_enable.
+>>
+>> On Tegra, I currently use the ugly conditional mutex or spinlock
+>> method to deal with voltage scaling based on clock frequency.
+>
+> Colin,
+>
+> MSM is in a similar situation, so thought I should bring this up to you
+> attention -- do you have no use case for changing the rate in atomic
+> context? If you do, the clk_prepare/unprepare() approach won't work.
+>
+> Do you have no such requirement?
 
-x86, hotplug: Fix powersavings with offlined cores on AMD
-
-ea53069231f9317062910d6e772cca4ce93de8c8 made a CPU use monitor/mwait
-when offline. This is not the optimal choice for AMD wrt to powersavings
-and we'd prefer our cores to halt (i.e. enter C1) instead. For this, the
-same selection whether to use monitor/mwait has to be used as when we
-select the idle routine for the machine.
-
-With this patch, offlining cores 1-5 on a X6 machine allows core0 to
-boost again.
-
-[ hpa: putting this in urgent since it is a (power) regression fix ]
-
-Reported-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-Cc: stable@kernel.org # 37.x
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Len Brown <lenb@kernel.org>
-Cc: Venkatesh Pallipadi <venki@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.hl>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-LKML-Reference: <1295534572-10730-1-git-send-email-bp@amd64.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/cpu.h |    1 +
- arch/x86/kernel/process.c  |    3 ++-
- arch/x86/kernel/smpboot.c  |    3 ++-
- 3 files changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/include/asm/cpu.h b/arch/x86/include/asm/cpu.h
-index 4fab24d..6e6e755 100644
---- a/arch/x86/include/asm/cpu.h
-+++ b/arch/x86/include/asm/cpu.h
-@@ -32,5 +32,6 @@ extern void arch_unregister_cpu(int);
- 
- DECLARE_PER_CPU(int, cpu_state);
- 
-+int __cpuinit mwait_usable(const struct cpuinfo_x86 *);
- 
- #endif /* _ASM_X86_CPU_H */
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index d8286ed..e764fc0 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -14,6 +14,7 @@
- #include <linux/utsname.h>
- #include <trace/events/power.h>
- #include <linux/hw_breakpoint.h>
-+#include <asm/cpu.h>
- #include <asm/system.h>
- #include <asm/apic.h>
- #include <asm/syscalls.h>
-@@ -505,7 +506,7 @@ static void poll_idle(void)
- #define MWAIT_ECX_EXTENDED_INFO		0x01
- #define MWAIT_EDX_C1			0xf0
- 
--static int __cpuinit mwait_usable(const struct cpuinfo_x86 *c)
-+int __cpuinit mwait_usable(const struct cpuinfo_x86 *c)
- {
- 	u32 eax, ebx, ecx, edx;
- 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 763df77..0cbe8c0 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1402,8 +1402,9 @@ static inline void mwait_play_dead(void)
- 	unsigned int highest_subcstate = 0;
- 	int i;
- 	void *mwait_ptr;
-+	struct cpuinfo_x86 *c = __this_cpu_ptr(&cpu_info);
- 
--	if (!cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_MWAIT))
-+	if (!(cpu_has(c, X86_FEATURE_MWAIT) && mwait_usable(c)))
- 		return;
- 	if (!cpu_has(__this_cpu_ptr(&cpu_info), X86_FEATURE_CLFLSH))
- 		return;
+I can't think of any case that requires clk_set_rate in atomic
+context.  We usually only scale frequencies to save power, so we can
+always scale up early in sleepable context for a minor power penalty.
