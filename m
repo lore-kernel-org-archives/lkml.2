@@ -1,92 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246Ab1AVRPw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 12:15:52 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:57544 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751487Ab1AVRPv (ORCPT
+	id S1752293Ab1AVRVz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 12:21:55 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34643 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515Ab1AVRVx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 12:15:51 -0500
-Date: Sat, 22 Jan 2011 12:15:49 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, rostedt@goodmis.org, fweisbec@gmail.com,
-        mingo@elte.hu, richm@oldelvet.org.uk, ben@decadent.org.uk,
-        sparclinux@vger.kernel.org, stable <stable@kernel.org>
-Subject: Re: [patch 2/3] tracing: fix sparc64 alignment crash with
-	__u64_aligned/U64_ALIGN()
-Message-ID: <20110122171549.GB31308@Krystal>
-References: <20110121203630.725922272@efficios.com> <20110121203642.884088920@efficios.com> <20110121.160509.146106348.davem@davemloft.net>
+	Sat, 22 Jan 2011 12:21:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=ivklu17Te60h7VYdGY8h1GI507FsuVR534YJgvvfysALw2jH2iNjp0ygQgJKhabb3K
+         9VoiXGJOsI8OgN7+8kgEAbjl4CuZ4XIZ92y/eavfQtgexaHIqvtFoKq/sBRhHvX+b+Io
+         KJElxbuzwrbBIkWMv/YrEEV6s1GYFO6nJGdLc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110121.160509.146106348.davem@davemloft.net>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 12:11:38 up 59 days, 22:14,  5 users,  load average: 0.13, 0.10,
-	0.04
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <87tyh1bvgt.fsf@ti.com>
+References: <1295426461-12459-1-git-send-email-weber@corscience.de>
+ <AANLkTin0-joNuqxqL79j0wqPk_A5mtAgzEY=X=PeH=+C@mail.gmail.com>
+ <20110119130049.GB9365@m-desktop> <4D36E7CC.5090303@corscience.de>
+ <AANLkTikjdukQ+kUUR7N11rZ5b=Xd=xLb0-chMrbp5BQ6@mail.gmail.com>
+ <20110120114855.GD1987@m-desktop> <38f2b3af600ce3dfea1e73edec7c81fa@mail.gmail.com>
+ <AANLkTimxTaU3x9DZvL4dvXs1nTYjCQnbyZLC73SOKrgQ@mail.gmail.com>
+ <20110121074530.GB12307@m-desktop> <87tyh1bvgt.fsf@ti.com>
+From: Govindraj <govindraj.ti@gmail.com>
+Date: Sat, 22 Jan 2011 22:43:46 +0530
+Message-ID: <AANLkTi=DM0u-iLMz-zvyYepZfD0gnuSZoNnZ8HEHrrWw@mail.gmail.com>
+Subject: Re: [PATCHv2] OMAP: Enable Magic SysRq on serial console ttyOx
+To: Kevin Hilman <khilman@ti.com>
+Cc: "G, Manjunath Kondaiah" <manjugk@ti.com>, Anand Gadiyar <gadiyar@ti.com>,
+        Thomas Weber <weber@corscience.de>, linux-omap@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>,
+        Govindraj Raja <govindraj.raja@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrei Emeltchenko <andrei.emeltchenko@nokia.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* David Miller (davem@davemloft.net) wrote:
-> From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> Date: Fri, 21 Jan 2011 15:36:32 -0500
-> 
-> > Problem description:
-> > 
-> > gcc happily align structures defined statically on 32-byte. Ftrace trace events
-> > and Tracepoints both statically define structures into sections (using the
-> > "section" attribute), to then assign these to symbols with the linker scripts to
-> > iterate the these sections as an array.
-> > 
-> > However, gcc uses different alignments for these structures when they are
-> > defined statically and when they are globally visible and/or in an array.
-> > Therefore iteration on these arrays sees "holes" of padding.
-> > 
-> > Use the __u64_aligned for type declarations and variable definitions to ensure
-> > that gcc:
-> > 
-> > a) iterates on the correctly aligned type. (type attribute)
-> > b) generates the definitions within the sections with the appropriate alignment.
-> >    (variable attribute)
-> > 
-> > The Ftrace code introduced the "aligned(4)" variable attribute in commit
-> > 1473e4417c79f12d91ef91a469699bfa911f510f to try to work around this problem that
-> > showed up on x86_64, but it causes unaligned accesses on sparc64, and is
-> > generally a bad idea on 64-bit if RCU pointers are contained within the
-> > structure. Moreover, it did not use the same attribute as type attribute, which
-> > could cause the iteration on the extern array structure not to match the
-> > variable definitions for some structure sizes.
-> > 
-> > We should also ensure proper alignment of each Ftrace section in
-> > include/asm-generic/vmlinux.lds.h.
-> > 
-> > Moving all STRUCT_ALIGN() for FTRACE_EVENTS() and TRACE_SYSCALLS() into the
-> > definitions, so the alignment is only done if these infrastructures are
-> > configured in. Use U64_ALIGN instead of STRUCT_ALIGN.
-> > 
-> > Also align TRACE_PRINTKS on U64_ALIGN to make sure the beginning of the section
-> > is aligned on pointer size.
-> > 
-> > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> 
-> Acked-by: David S. Miller <davem@davemloft.net>
+On Sat, Jan 22, 2011 at 6:33 AM, Kevin Hilman <khilman@ti.com> wrote:
+> "G, Manjunath Kondaiah" <manjugk@ti.com> writes:
+>
+>> On Fri, Jan 21, 2011 at 12:54:29PM +0530, Govindraj wrote:
+>>> On Thu, Jan 20, 2011 at 5:49 PM, Anand Gadiyar <gadiyar@ti.com> wrote:
+>>> >> > >>>> Magic SysRq key is not working for OMAP on new serial
+>>> >> > >>>> console ttyOx because SUPPORT_SYSRQ is not defined
+>>> >> > >>>> for omap-serial.
+>>> >> > >>>>
+>>> >> > >>>> This patch defines SUPPORT_SYSRQ in omap-serial and
+>>> >> > >>>> enables handling of Magic SysRq character.
+>>> >> > >>>>
+>>> >> > >>>> Signed-off-by: Thomas Weber <weber@corscience.de>
+>>> >> > >>>
+>>> >> > >>> Looks fine to me.
+>>> >> > >>>
+>>> >> > >>> Acked-by: Govindraj.R <govindraj.raja@ti.com>
+>>> >> > >> I tried to use SysRq key on minicom after applying this patch, it
+>>> > looks
+>>> >> > >> like it is not triggering sysrq event.
+>>> >> > >>
+>>> >> > >> Am I missing anything?
+>>> >> > >>
+>>> >> > >> -Manjunath
+>>> >> > >> --
+>>> >> > > Hello Manjunath,
+>>> >> > >
+>>> >> > > Do you have CONFIG_MAGIC_SYSRQ enabled?
+>>> >> > > Magic SysRq key in Kernel Hacking
+>>> >> > >
+>>> >> > > I tested it on Devkit8000 (beagle board clone).
+>>> >> > >
+>>> >> >
+>>> >> > re-setting lsr_break_flag to 0 in receive chars is causing issues
+>>> >> > in getting sysrq key break sequence on omap-serial.c
+>>> >> >
+>>> >> > Manju,
+>>> >> >
+>>> >> > can you try this change on your environment.
+>>> >> > With below change works for me on 3430SDP/4430SDP.
+>>> >> > key sequence I checked.
+>>> >> > [alt + b + t]  => shows trace of tasks running.
+>>> >> > [alt + b + b] => system reboot.
+>>> >>
+>>> >> With below patch, it works fine on TeraTerm. However, I am not able to
+>>> >> perform the same on minicom.
+>>> >>
+>>> >> Tested-by: Manjunath G Kondaiah <manjugk@ti.com>
+>>> >>
+>>> >> -Manjunath
+>>> >>
+>>> >
+>>> > Not sure what you guys are trying out, but I am able to use sysrq
+>>> > just fine in minicom (using only Thomas' original patch) - you need
+>>> > to send a break sequence, and the way to do this in minicom is to
+>>> > do Ctrl-A followed by F.
+>>> >
+>>> > Works for me, without the "resetting lsr_break_flag to 0" part.
+>>> >
+>>> > @Govind,
+>>> >
+>>> > What are the issues you see in getting sysrq key break sequence
+>>> > without your change? And how is your change fixing this?
+>>>
+>>> Actually I was using teraterm on windows platform.
+>>> using keyboard to send a break char [alt + b] sometimes
+>>> i observed that first break char was getting lost and subsequent break
+>>> chars where getting
+>>> recognized. However using send break option from terterm menu seems to
+>>> work most of times.
+>>> my change can be dropped.
+>> If it is fixing the issue of losing first break character, what is wrong in
+>> having this patch?
+>>
+>> Do you see any other issues because of this change?
+>
+> Were you loosing the first break character because of PM?  i.e., if the
+> OMAP is in retention or off while idle, we will always loose the first
+> character.  The first character causes the wakeup, but does not make it
+> to the UART.
+>
 
-Thanks! This patch, just like 1/3, should also go into -stable, for both .36 and
-.37.
+No, even without PM i.e., even without setting sleep_while_idle and timeouts for
+uart I observed on windows-teraterm sometimes first break char was getting lost.
 
-As I'm thinking, the following patch (for Tracepoints) should only go into the
--tip tree, as it does not fix a problem -- it merely reduces the data footprint
-of the tracepoints structures. I'm therefore not forwarding patch 3/3 for
-inclusion into -stable.
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+--
+Thanks,
+Govindraj.R
