@@ -1,37 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072Ab1AVAX7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 19:23:59 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43416
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754894Ab1AVAX6 (ORCPT
+	id S1755179Ab1AVAYc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 19:24:32 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46424 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755098Ab1AVAYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 19:23:58 -0500
-Date: Fri, 21 Jan 2011 16:24:32 -0800 (PST)
-Message-Id: <20110121.162432.77330574.davem@davemloft.net>
-To: segoon@openwall.com
-Cc: kernel-janitors@vger.kernel.org, chas@cmf.nrl.navy.mil,
-        linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] atm: idt77105: fix fetch_stats() result
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1295602987-11688-1-git-send-email-segoon@openwall.com>
-References: <1295602987-11688-1-git-send-email-segoon@openwall.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 21 Jan 2011 19:24:31 -0500
+Date: Fri, 21 Jan 2011 16:23:25 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] leds: Fix warnings when PM is disabled for BD2802
+Message-Id: <20110121162325.c3b513bf.akpm@linux-foundation.org>
+In-Reply-To: <20110121233837.GC27943@core.coreip.homeip.net>
+References: <1295631217-19591-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	<20110121141402.30aac149.akpm@linux-foundation.org>
+	<20110121233837.GC27943@core.coreip.homeip.net>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vasiliy Kulikov <segoon@openwall.com>
-Date: Fri, 21 Jan 2011 12:43:07 +0300
+On Fri, 21 Jan 2011 15:38:37 -0800 Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
 
-> copy_to_user() used PRIV(dev)->stats instead of local stats variable.
-> Zero stats were returned to user in case of (zero != 0), also memcpy()
-> was pointless.
+> > That rather sucks.  It leaves an all-zeroes instance of dev_pm_ops
+> > uselessly bloating the driver.
 > 
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> It is per-driver, not per device so do we really care?
 
-Applied, thanks.
+We care about everything.  If the objective was to make life easier for
+ourselves, we'd all be on the golf course.
+
+> >  And it leaves
+> > bd2802_i2c_driver.driver.pm pointing at that all-zeroes instance of
+> > dev_pm_ops, which is rather dangerous.
+> 
+> Nothing dagerous here - PM core deals with half-filled pm_ops just fine.
+> 
+> > 
+> > If CONFIG_PM_SLEEP=n, the .driver.pm field shouldn't exist at all.
+> 
+> Meh, we have _waaay_ too many config options, I'd rather see CONFIG_PM
+> and possibly CONFIG_PM_SLEEP go, maybe leaving us with
+> CONFIG_PM_RUNTIME and maybe not. How many devices out there do not want
+> PM?
+
+Don't know.  How do we determine this?
