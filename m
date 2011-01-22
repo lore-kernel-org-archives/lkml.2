@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751375Ab1AVSjR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 13:39:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29440 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750724Ab1AVSjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 13:39:15 -0500
-Date: Sat, 22 Jan 2011 19:38:00 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Luca Tettamanti <kronos.it@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] compaction: don't depend on HUGETLB_PAGE
-Message-ID: <20110122183800.GU9506@random.random>
-References: <AANLkTikdwZp1r_MD4TH7bsLjzPAtHzq7XWoLZmFwdK=S@mail.gmail.com>
+	id S1751888Ab1AVSmj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 13:42:39 -0500
+Received: from racecourse.oldelvet.net ([93.93.128.81]:46353 "EHLO
+	racecourse.oldelvet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750715Ab1AVSmh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jan 2011 13:42:37 -0500
+Message-ID: <4D3B2519.6050307@oldelvet.org.uk>
+Date: Sat, 22 Jan 2011 18:42:33 +0000
+From: Richard Mortimer <richm@oldelvet.org.uk>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikdwZp1r_MD4TH7bsLjzPAtHzq7XWoLZmFwdK=S@mail.gmail.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: David Miller <davem@davemloft.net>, rostedt@goodmis.org,
+        609371@bugs.debian.org, ben@decadent.org.uk,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, mingo@redhat.com
+Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
+ Unknown relocation: 36
+References: <20110119221327.GA23544@Krystal> <20110119.142137.184823805.davem@davemloft.net> <20110119223339.GD23544@Krystal> <20110119.164107.135521108.davem@davemloft.net> <20110121000421.GA5014@Krystal> <4D39CB0C.8070308@oldelvet.org.uk> <20110121185259.GA13198@Krystal> <4D39E913.8060104@oldelvet.org.uk> <20110121204033.GA14125@Krystal> <4D3A0DC9.8010101@oldelvet.org.uk>
+In-Reply-To: <4D3A0DC9.8010101@oldelvet.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 21/01/2011 22:50, Richard Mortimer wrote:
+>
+>
+> On 21/01/2011 20:40, Mathieu Desnoyers wrote:
+>> * Richard Mortimer (richm@oldelvet.org.uk) wrote:
+>>
+>> Thanks for the info! At first glance, it does not seem to contradict my
+>> findings. When you find time, can you have a try at v3 I just posted ?
+>>
+> I'm setting the compilation off now. I will give it a whirl some time
+> Saturday or Sunday.
+>
+...
 
-On Sat, Jan 22, 2011 at 03:48:03PM +0100, Luca Tettamanti wrote:
-> Hello Andrea,
-> this commit:
-> 
-> commit 5d6892407cab23d4bf2f6de065ca351a53849323
-> Author: Andrea Arcangeli <aarcange@redhat.com>
-> Date:   Thu Jan 13 15:47:07 2011 -0800
-> 
->     thp: select CONFIG_COMPACTION if TRANSPARENT_HUGEPAGE enabled
-> 
-> causes this warning during the configuration process:
-> 
-> warning: (TRANSPARENT_HUGEPAGE) selects COMPACTION which has unmet
-> direct dependencies (EXPERIMENTAL && HUGETLB_PAGE && MMU)
-> 
-> This happens because 'select' does not enable the dependencies of its
-> target, so when I selected THP it also enabled COMPATION but I don't
-> have HUGETLBFS (=HUGETLB_PAGE) enabled.
-> Making THP select HUGETLB_PAGE fixes the warning but I'm not 100% sure
-> that's correct (does it work without HUGETLBFS?).
+>
+>> Make sure to start tracing in your tests, as I think the unaligned
+>> access only
+>> happens when accessing the struct tracepoint fields below the "int
+>> state" field.
+>>
 
-Mel, what's your take about this issue?
+I have the revised patch running now with tracing enabled. Everything 
+looks good to me.
 
-Luca does the below fix all your .config problems?
+Thanks.
 
-====
-Subject: compaction: don't depend on HUGETLB_PAGE
-
-From: Andrea Arcangeli <aarcange@redhat.com>
-
-COMPACTION doesn't depend on HUGETLB_PAGE, it doesn't depend on THP
-either, it is also useful for regular alloc_pages(order > 0) including
-the very kernel stack during fork (THREAD_ORDER = 1). It's always
-better to enable COMPACTION.
-
-The warning should be an error because we would end up with MIGRATION
-not selected, and COMPACTION wouldn't work without migration (despite
-it seems to build with an inline migrate_pages returning -ENOSYS).
-
-I'd also like to remove EXPERIMENTAL: compaction has been in the
-kernel for some releases (for full safety the default remains
-disabled which I think is enough).
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
-
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 3ad483b..e9c0c61 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -179,7 +179,7 @@ config SPLIT_PTLOCK_CPUS
- config COMPACTION
- 	bool "Allow for memory compaction"
- 	select MIGRATION
--	depends on EXPERIMENTAL && HUGETLB_PAGE && MMU
-+	depends on MMU
- 	help
- 	  Allows the compaction of memory for the allocation of huge pages.
- 
+Richard
