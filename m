@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035Ab1AVAEn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 19:04:43 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54346
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755013Ab1AVAEl (ORCPT
+	id S1754981Ab1AVAHL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 19:07:11 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:42731 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754816Ab1AVAHJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 19:04:41 -0500
-Date: Fri, 21 Jan 2011 16:05:16 -0800 (PST)
-Message-Id: <20110121.160516.256850550.davem@davemloft.net>
-To: mathieu.desnoyers@efficios.com
-Cc: linux-kernel@vger.kernel.org, rostedt@goodmis.org, fweisbec@gmail.com,
-        mingo@elte.hu, richm@oldelvet.org.uk, ben@decadent.org.uk,
-        sparclinux@vger.kernel.org
-Subject: Re: [patch 3/3] tracepoints: use __u64_aligned/U64_ALIGN()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110121203643.046218322@efficios.com>
-References: <20110121203630.725922272@efficios.com>
-	<20110121203643.046218322@efficios.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Jan 2011 19:07:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=fxyURtE73vBU95IuX2i0+bEtEe+Rn5cUHr5crzqCte1bQNNk6H0Z+dKGaRxhv2QQFJ
+         gfZk82e1xacYwJ1Kkxj31wA9iBChvCQULSXwk1DcBFAuYdLeNomf2jGUs5owyM1Gi6MK
+         ttRh2mjVJSwZIj2hB20xJBnx6G2+Ydd7wJX3Y=
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: [PATCH] migration: clear migrate_pages's comment
+Date: Sat, 22 Jan 2011 09:06:52 +0900
+Message-Id: <1295654812-2108-1-git-send-email-minchan.kim@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Date: Fri, 21 Jan 2011 15:36:33 -0500
+Callers of migrate_pages should putback_lru_pages to return pages
+isolated to LRU or free list. Now comment is rather confusing.
+It says caller always have to call it.
+More clear thing is that caller have to call it if migrate_pages's 
+return value isn't zero.
 
-> commit 7e066fb870fcd1025ec3ba7bbde5d541094f4ce1 added the aligned(32) type and
-> variable attribute to the tracepoint structures to deal with gcc happily
-> aligning statically defined structures on 32-byte multiples.
-> 
-> Working on issues within Ftrace, we came up with __64_aligned, which deals with
-> this issue more elegantly by forcing an 8-byte alignment to both the type
-> declaration and variable definition.
-> 
-> This therefore saves space, bringing down the size of struct tracepoint from 64
-> bytes to 38 on 64-bit architectures.
-> 
-> Updating:
-> - The type attribute (for iteration over the struct tracepoint array)
-> - Added the variable attribute to the extern definition (needed to force gcc to
->   consider this alignment for the following definition)
-> - The definition variable attribute (to force gcc to this specific alignment for
->   the static definitions)
-> - The linker script (8-byte alignment can now replace the previous 32-byte
->   alignment for the custom tracepoint section)
-> 
-> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+---
+ mm/migrate.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Acked-by: David S. Miller <davem@davemloft.net>
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 3a6d4fd..7661152 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -887,7 +887,7 @@ out:
+  * are movable anymore because to has become empty
+  * or no retryable pages exist anymore.
+  * Caller should call putback_lru_pages to return pages to the LRU
+- * or free list.
++ * or free list only if ret != 0.
+  *
+  * Return: Number of pages not migrated or error code.
+  */
+-- 
+1.7.0.4
+
