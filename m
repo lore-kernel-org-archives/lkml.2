@@ -1,129 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108Ab1AVVGd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 16:06:33 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:59259 "EHLO e5.ny.us.ibm.com"
+	id S1751236Ab1AVVTJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 16:19:09 -0500
+Received: from imr4.ericy.com ([198.24.6.8]:35503 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750881Ab1AVVGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 16:06:30 -0500
-Date: Sat, 22 Jan 2011 13:06:23 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>, Nick Piggin <npiggin@kernel.dk>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Andrea Arcangeli <aarcange@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 00/21] mm: Preemptibility -v6
-Message-ID: <20110122210623.GR17752@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20101126143843.801484792@chello.nl>
- <alpine.LSU.2.00.1101172301340.2899@sister.anvils>
- <1295457039.28776.137.camel@laptop>
- <alpine.LSU.2.00.1101201052060.1603@sister.anvils>
- <1295624034.28776.303.camel@laptop>
+	id S1750738Ab1AVVTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jan 2011 16:19:07 -0500
+Date: Sat, 22 Jan 2011 13:18:14 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.38-rc1/-2: applesmc lockdep warning
+Message-ID: <20110122211814.GA22465@ericsson.com>
+References: <20110122134513.1e1d512a@stein>
+ <20110122200002.GA1677@polaris.bitmath.org>
+ <20110122204050.GB22252@ericsson.com>
+ <20110122205254.GA2854@polaris.bitmath.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1295624034.28776.303.camel@laptop>
+In-Reply-To: <20110122205254.GA2854@polaris.bitmath.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 04:33:54PM +0100, Peter Zijlstra wrote:
-> On Thu, 2011-01-20 at 11:57 -0800, Hugh Dickins wrote:
-> > > > 21/21 mm-optimize_page_lock_anon_vma_fast-path.patch
-> > > >       I certainly see the call for this patch, I want to eliminate those
-> > > >       doubled atomics too.  This appears correct to me, and I've not dreamt
-> > > >       up an alternative; but I do dislike it, and I suspect you don't like
-> > > >       it much either.  I'm ambivalent about it, would love a better patch.
-> > > 
-> > > Like said, I fully agree with that sentiment, just haven't been able to
-> > > come up with anything saner :/ Although I can optimize the
-> > > __put_anon_vma() path a bit by doing something like:
-> > > 
-> > >   if (mutex_is_locked()) { anon_vma_lock(); anon_vma_unlock(); }
-> > > 
-> > > But I bet that wants a barrier someplace and my head hurts.. 
-> > 
-> > Without daring to hurt my head very much, yes, I'd say those kind
-> > of "optimizations" have a habit of turning out to be racily wrong.
-> > 
-> > But you put your finger on it: if you hadn't had to add that lock-
-> > unlock pair into __put_anon_vma(), I wouldn't have minded the
-> > contortions added to page_lock_anon_vma(). 
+On Sat, Jan 22, 2011 at 03:52:54PM -0500, Henrik Rydberg wrote:
+> > I can take it.
 > 
-> I think there's just about enough implied barriers there that the
-> 'simple' code just works ;-)
+> Great, thanks.
 > 
-> But given that I'm trying to think with snot for brains thanks to some
-> cold, I don't trust myself at all to have gotten this right.
+> > Looks pretty straightforward. Do you think it is ready for upstream,
+> > or should I wait for verification ?
 > 
-> [ for Oleg and Paul: https://lkml.org/lkml/2010/11/26/213 contains the
-> full patch this is against ]
+> I was able to reproduce the problem, but a verification would still be
+> good, just in case - if possible. AFAICT, it will be another week
+> before rc3, so there seems to be no rush.
 > 
-> ---
-> Index: linux-2.6/mm/rmap.c
-> ===================================================================
-> --- linux-2.6.orig/mm/rmap.c
-> +++ linux-2.6/mm/rmap.c
-> @@ -1559,9 +1559,20 @@ void __put_anon_vma(struct anon_vma *ano
->  	 * Synchronize against page_lock_anon_vma() such that
->  	 * we can safely hold the lock without the anon_vma getting
->  	 * freed.
-> +	 *
-> +	 * Relies on the full mb implied by the atomic_dec_and_test() from
-> +	 * put_anon_vma() against the full mb implied by mutex_trylock() from
-> +	 * page_lock_anon_vma(). This orders:
-> +	 *
-> +	 * page_lock_anon_vma()		VS	put_anon_vma()
-> +	 *   mutex_trylock()			  atomic_dec_and_test()
-> +	 *   smp_mb()				  smp_mb()
-> +	 *   atomic_read()			  mutex_is_locked()
->  	 */
-> -	anon_vma_lock(anon_vma);
-> -	anon_vma_unlock(anon_vma);
-> +	if (mutex_is_locked(&anon_vma->root->mutex)) {
-> +		anon_vma_lock(anon_vma);
-> +		anon_vma_unlock(anon_vma);
-> +	}
->  
->  	if (anon_vma->root != anon_vma)
->  		put_anon_vma(anon_vma->root);
-> 
+Ok, let's do it that way: I applied it, but won't submit to Linus yet.
+This way we get some basic coverage through linux-next for a couple of days.
 
-OK, so the anon_vma slab cache is SLAB_DESTROY_BY_RCU.  Presumably
-all callers of page_lock_anon_vma() check the identity of the page
-that got locked, since it might be recycled at any time.  But when
-I look at 2.6.37, I only see checks for NULL.  So I am assuming
-that this code is supposed to prevent such recycling.
-
-I am not sure that I am seeing a consistent snapshot of all of the
-relevant code, in particular, I am guessing that the ->lock and ->mutex
-are the result of changes rather than there really being both a spinlock
-and a mutex in anon_vma.  Mainline currently has a lock, FWIW.  But from
-what I do see, I am concerned about the following sequence of events:
-
-o	CPU 0 starts executing page_lock_anon_vma() as shown at
-	https://lkml.org/lkml/2010/11/26/213, fetches the pointer
-	to anon_vma->root->lock, but does not yet invoke
-	mutex_trylock().
-
-o	CPU 1 executes __put_anon_vma() above on the same VMA
-	that CPU 0 is attempting to use.  It sees that the
-	anon_vma->root->mutex (presumably AKA ->lock) is not held,
-	so it calls anon_vma_free().
-
-o	CPU 2 reallocates the anon_vma freed by CPU 1, so that it
-	now has a non-zero reference count.
-
-o	CPU 0 continues execution, incorrectly acquiring a reference
-	to the now-recycled anon_vma.
-
-Or am I misunderstanding what this code is trying to do?
-
-							Thanx, Paul
+Guenter
