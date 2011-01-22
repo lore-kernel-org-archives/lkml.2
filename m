@@ -1,124 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751031Ab1AVTXD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 14:23:03 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:23077 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724Ab1AVTXB (ORCPT
+	id S1751055Ab1AVTm6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 14:42:58 -0500
+Received: from web63902.mail.re1.yahoo.com ([69.147.97.117]:43942 "HELO
+	web63902.mail.re1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750724Ab1AVTm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 14:23:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=ktDsd3cT00R4I7ll0MVYgL27z9TAYOgGBwl4nNbxF2z7xBZV5b1cW5DySFIi80ju3p
-         FkmhH5bUogVkWDqXlH5w==
+	Sat, 22 Jan 2011 14:42:56 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:References:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=sx+IQBj6RZZeFjdAGoewg5a+L6NSRvMC3ofFAYcINmV/9UI59dIAEkqWT8AMayUZqipQ4z/PR/sX2NBJhyUKkN/u2ZtafGVXl7hopepa44N9Wfej6ius6i0L0DZ6yzj7lX6Yq3/GkhbThDQc0ZalVHR2Lkmrrh80qq7Kv3ykVFc=;
+Message-ID: <115440.16148.qm@web63902.mail.re1.yahoo.com>
+X-YMail-OSG: Cd4w_twVM1lPTlRmbrWNGd3Cj2FqDbOIZLOsd2zw6ZjyyaH
+ eqgYjefRcFHm_c1PxKGEXU08_ck3viKodfFP4u9Qpy7aTgO96vc0jI5Ei8nI
+ UMhXmMi7Qxbp96U1TlS1m22MXsw_UH6sJHrfZTK71QCSfdIDE43F1uDsBpWt
+ YRod.oVsVE5CwYV.V9OLLr6UCjkqzHhbLwB7i0DMiGfRxcEJAuDNf31WRLFr
+ mjDiu7_C50._j.FTdF6Ihmb3wGX8bB.4kp_HD9jm7sULVvfx6_iRxxb4FKaU
+ Xawdjs8g7QdLw11GPqyIzYzp_0Ce7RclKKEY.wRBLy7DdjoUzHIIBnYFRX25
+ chocLD6z7LeaCMaxQuKfJkj71ew--
+X-Mailer: YahooMailRC/555 YahooMailWebService/0.8.107.285259
+References: <702550.61465.qm@web63902.mail.re1.yahoo.com>  <1295686781.2609.37.camel@edumazet-laptop> <1295709344.2651.55.camel@edumazet-laptop>
+Date: Sat, 22 Jan 2011 11:42:54 -0800 (PST)
+From: PK <runningdoglackey@yahoo.com>
+Subject: Re: Problems with /proc/net/tcp6  - possible bug - ipv6
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+In-Reply-To: <1295709344.2651.55.camel@edumazet-laptop>
 MIME-Version: 1.0
-In-Reply-To: <20110122122018.GC5194@n2100.arm.linux.org.uk>
-References: <20110121094827.41818a55@jbarnes-desktop>
-	<20110121095658.1ab623fe@jbarnes-desktop>
-	<1295632828.19880.22.camel@m0nster>
-	<20110121100441.06a94482@jbarnes-desktop>
-	<1295633882.19880.31.camel@m0nster>
-	<AANLkTi=L+MW5-KLP_TKSxhstD8JEtBW=RKci5wSbZsd6@mail.gmail.com>
-	<1295642995.19880.42.camel@m0nster>
-	<1295643762.25868.31.camel@Joe-Laptop>
-	<1295645098.22882.1.camel@m0nster>
-	<AANLkTi=mvdfpCPefGeDr+eGxpSUr3is5jgugHtgB-m1w@mail.gmail.com>
-	<20110122122018.GC5194@n2100.arm.linux.org.uk>
-Date: Sat, 22 Jan 2011 11:22:57 -0800
-Message-ID: <AANLkTi=47z21zExtfHq2WYdUdXeC1rNhe7vQsqPkFsMi@mail.gmail.com>
-Subject: Re: [PATCH 0/7] Nexus One Support
-From: Brian Swetland <swetland@google.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Pekka Enberg <penberg@kernel.org>, Daniel Walker <dwalker@codeaurora.org>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Dima Zavin <dmitriyz@google.com>, Joe Perches <joe@perches.com>,
-        davidb@codeaurora.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 22, 2011 at 4:20 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
+Eric Dumazet wrote:
+> 
+> I had some incidents, after hours of testing...
 >
-> One of the problems of preserving the micro-detail of history right
-> from the early inception of support for a platform is that quite often
-> the early support is buggy or broken - it might not even compile.  There
-> may be 20 or so patches on top of that which eventually get it to a
-> usable state.
->
-> Do we really want to put off people from reviewing patches because of
-> the size of micro-development that happened prior to getting to a point
-> where the result of that development is usable?
-...
->
-> I personally believe that Daniel is doing the right thing here, except
-> he needs to preserve a better record of authorship.  I even think it's
-> fine if he decides to drop people's sign-offs if he thinks the code has
-> changed significantly from the original authors - provided he's willing
-> to take responsibility for the submission of that code.
->
-> If you read what a sign-off means (the DCO) then it's clear that if the
-> code has changed significantly, the original sign-offs do not apply
-> anymore - the original sign-offs can't warrant that the modified code
-> is covered by appropriate licenses or even that the person who modified
-> their code has the rights to submit it.
+> After following patch, I could not reproduce it.
 
-I completely agree that it's not realistic that the entire development
-history of this code be preserved as it goes upstream.  Nobody needs
-to see the 20-30 fiddly changes over a couple months of people from
-three companies tinkering with subtleties of the SCPLL sequencing for
-QSD8x50, when the end result is (hopefully) 200-300 lines of working
-code.
 
-I also will state that I have absolutely no problem with people
-picking patches that we've made available, tidying things up, and
-pushing them into mainline, particularly bits that have languished for
-a while.  At the same time, we're working to improving our process for
-future work -- for example the Tegra2 development efforts, I believe,
-have been a step forward as far as getting stuff upstream from the
-start of a project.
+Looks like that patch solved the /proc/net/tcp6 problem.  The causal commit was 
+the one you identified... confirmed with bisect.
 
-All we ask is that some reasonable acknowledgement of original
-authorship is maintained for non-trivial work.  A 5-10 line patch that
-deals with mechanical issues of board files or cleans stuff up is no
-big deal.  100s of lines that represent some real work is something
-else.
+These warnings show up when I run the script (or I presume any tcp6 connection 
+flooder) with /proc/sys/net/tcp/ipv4/tcp_tw_recycle enabled.  There's textual 
+corruption of the traces a lot of the time.  Here's a sample trace that doesn't 
+appear to be corrupt.  All the warnings I've seen are from route.c:209, and I 
+don't see how that would cause memory corruption.
 
-I'm in the same boat as Daniel much of the time, since we often do
-spend some time toward the end of a development cycle collapsing a
-bunch of patches from multiple developers at Google or closely-working
-OEM partners down into a smaller set that hopefully makes a little bit
-more sense.
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629431] ------------[ cut here 
+]------------
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629435] WARNING: at 
+net/ipv6/route.c:209 rt6_bind_peer+0x74/0x80()
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629436] Hardware name: VirtualBox
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629437] Modules linked in: nls_utf8 
+isofs fuse snd_intel8x0 snd_ac97_codec ac97_bus snd_pcm snd_seq_midi snd_rawmidi 
+snd_seq_midi_eve
+nt snd_seq snd_timer snd_seq_device snd psmouse e1000 i2c_piix4 soundcore 
+snd_page_alloc
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629446] Pid: 1741, comm: ruby Tainted: 
+G        W   2.6.38-rc2+ #15
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629447] Call Trace:
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629448]  <IRQ>  [<ffffffff81048b7f>] ? 
+warn_slowpath_common+0x7f/0xc0
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629452]  [<ffffffff81048bda>] ? 
+warn_slowpath_null+0x1a/0x20
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629454]  [<ffffffff814534a4>] ? 
+rt6_bind_peer+0x74/0x80
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629456]  [<ffffffff8146aa2d>] ? 
+tcp_v6_get_peer+0xbd/0xd0
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629458]  [<ffffffff8140c6f7>] ? 
+tcp_time_wait+0x287/0x300
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629460]  [<ffffffff813fd089>] ? 
+tcp_fin+0x119/0x1f0
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629462]  [<ffffffff813fd8de>] ? 
+tcp_data_queue+0x77e/0xc60
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629464]  [<ffffffff814017f9>] ? 
+tcp_rcv_state_process+0x6f9/0xa40
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629466]  [<ffffffff81400e25>] ? 
+tcp_rcv_established+0x345/0x620
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629468]  [<ffffffff8146b0ee>] ? 
+tcp_v6_do_rcv+0x18e/0x540
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629470]  [<ffffffff8146c468>] ? 
+tcp_v6_rcv+0x728/0x7e0
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629473]  [<ffffffff81447bdd>] ? 
+ip6_input_finish+0x17d/0x3a0
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629475]  [<ffffffff81447e58>] ? 
+ip6_input+0x58/0x60
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629477]  [<ffffffff81447651>] ? 
+ip6_rcv_finish+0x21/0x50
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629488]  [<ffffffff81447998>] ? 
+ipv6_rcv+0x318/0x3e0
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629491]  [<ffffffff813b3e7a>] ? 
+__netif_receive_skb+0x40a/0x690
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629493]  [<ffffffff813b420a>] ? 
+process_backlog+0x10a/0x210
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629496]  [<ffffffff814996b5>] ? 
+_raw_spin_lock_irq+0x15/0x20
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629498]  [<ffffffff813b9612>] ? 
+net_rx_action+0x112/0x2f0
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629500]  [<ffffffff8104f85b>] ? 
+__do_softirq+0xab/0x200
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629502]  [<ffffffff81003e7c>] ? 
+call_softirq+0x1c/0x30
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629503]  <EOI>  [<ffffffff81005505>] ? 
+do_softirq+0x65/0xa0
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629506]  [<ffffffff8104f354>] ? 
+local_bh_enable+0x94/0xa0
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629508]  [<ffffffff813b8372>] ? 
+dev_queue_xmit+0x1c2/0x620
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629510]  [<ffffffff814452c6>] ? 
+ip6_finish_output2+0xb6/0x370
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629512]  [<ffffffff8113d1c0>] ? 
+__pollwait+0x0/0xf0
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629514]  [<ffffffff81446770>] ? 
+ip6_finish_output+0x90/0xc0
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629516]  [<ffffffff81446818>] ? 
+ip6_output+0x78/0xf0
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629518]  [<ffffffff81443804>] ? 
+dst_output+0x14/0x20
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629520]  [<ffffffff81446c88>] ? 
+ip6_xmit+0x3f8/0x4c0
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629523]  [<ffffffff814729f8>] ? 
+inet6_csk_xmit+0x268/0x2e0
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629525]  [<ffffffff8149968f>] ? 
+_raw_spin_lock_irqsave+0x2f/0x40
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629527]  [<ffffffff814029a7>] ? 
+tcp_transmit_skb+0x407/0x8f0
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629529]  [<ffffffff81405197>] ? 
+tcp_write_xmit+0x1e7/0x9d0
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629531]  [<ffffffff81405c27>] ? 
+tcp_send_fin+0xa7/0x1d0
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629533]  [<ffffffff81405b06>] ? 
+__tcp_push_pending_frames+0x26/0xa0
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629535]  [<ffffffff81405bed>] ? 
+tcp_send_fin+0x6d/0x1d0
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629536]  [<ffffffff813f64e9>] ? 
+tcp_close+0x109/0x440
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629539]  [<ffffffff8141a9de>] ? 
+inet_release+0x5e/0x80
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629541]  [<ffffffff8144226f>] ? 
+inet6_release+0x3f/0x50
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629548]  [<ffffffff813a1559>] ? 
+sock_release+0x29/0x90
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629549]  [<ffffffff813a15d7>] ? 
+sock_close+0x17/0x30
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629551]  [<ffffffff8112cc0a>] ? 
+fput+0xea/0x260
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629553]  [<ffffffff8112928d>] ? 
+filp_close+0x5d/0x90
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629555]  [<ffffffff81129377>] ? 
+sys_close+0xb7/0x120
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629558]  [<ffffffff81002f82>] ? 
+system_call_fastpath+0x16/0x1b
+Jan 22 11:09:08 vbox-alpha kernel: [  907.629559] ---[ end trace 
+e63dd54cc0b51607 ]---
 
-What would be useful would be a reasonable convention for
-acknowledging multiple authors, perhaps something along the lines of:
 
-Author: Awesome Upstreamer <au@example.com>  or  Main Author <main@example.com>
-Committer: Awesome Upstreamer <au@example.com>
-Subject: arm: msm8k: acpu clock management
 
-... summary of the patch ...
-
-Original-Author: Joe Firmware Guy <joe@oem.com>
-Original-Author: Kernel Droid <droid@android.com>
-Signed-off-by: ...
-
-Though I'm not sure "Original-Author" is the best phrasing here...  Or
-perhaps just having the patch description end with "This patch is
-based on original code by Joe Firmware Guy, Kernel Droid, etc is the
-way to go.  I do think that for work where there is one clear original
-author, it's nice to leave them as the Author, but at the end of the
-day, provided the code's heading in the right direction and the
-contributors are acknowledged, that's a detail.
-
-If there's some consensus on the way to do this, we can make sure to
-use the same method when we're collapsing history on our own patchsets
-(obviously the current model we're using can be messy and confusing)
-to simplify things going forward.
-
-Brian
+      
