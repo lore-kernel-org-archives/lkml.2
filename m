@@ -1,108 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab1AVBJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 20:09:26 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:54981 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791Ab1AVBJZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 20:09:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:from:date:message-id:subject:to:cc
-         :content-type;
-        b=JIUXx88cm4ls4x/7reu/UtJIJDE3HXJMSko0rKgEHAdMIRwbXp1cgQEpFP+I1kBvnD
-         oS4R5EchpeFsLGwSFsWrEq9YxzhQ6qMz4nvHFtmxCMfN1RmCU2cJZverHB1buk7EIbSw
-         jXj+TJlVfxnQ3U1tvFUMhb+YpAvW9y5An9qrI=
-MIME-Version: 1.0
-Reply-To: andrea.merello@gmail.com
-From: Andrea Merello <andrea.merello@gmail.com>
-Date: Sat, 22 Jan 2011 02:09:04 +0100
-Message-ID: <AANLkTikmw=Hoa_R94dKwy432Wm3XfMwuDvkqoT9xmJRY@mail.gmail.com>
-Subject: DVB TDA18218 tuner driver BUG in I2C write
-To: Antti Palosaari <crope@iki.fi>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754178Ab1AVBJu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 20:09:50 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:56760 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753750Ab1AVBJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 20:09:48 -0500
+Date: Sat, 22 Jan 2011 12:09:41 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Change name from swiotlb-xen to xen-two tree and branches.
+Message-Id: <20110122120941.20aec5de.sfr@canb.auug.org.au>
+In-Reply-To: <20110121164501.GB29131@dumpdata.com>
+References: <20110121164501.GB29131@dumpdata.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sat__22_Jan_2011_12_09_41_+1100_0lveTnDHZ_z4Fe0c"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+--Signature=_Sat__22_Jan_2011_12_09_41_+1100_0lveTnDHZ_z4Fe0c
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm looking at tda18218.c file from 2.6.37 kernel.
-I think the tda18218_wr_regs function has a bug:
+Hi Konrad,
 
-I think it works as long as priv->cfg->i2c_wr_max is > than len parameter,
-but let's assume that priv->cfg->i2c_wr_max is set to 2.
+On Fri, 21 Jan 2011 11:45:01 -0500 Konrad Rzeszutek Wilk <konrad.wilk@oracl=
+e.com> wrote:
+>
+> I was wondering if you would be OK change the name and branch
+> of one of my trees?
+>=20
+> In the past the git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.=
+git
+> was called 'swiotlb-xen' but it has expanded since I've took the role
+> of Xen co-maintainer.
+>=20
+> Would you be OK changing the name from swiotlb-xen to 'xen-two' and
+> pulling from #linux-next branch instead of #master please?
 
-If tda18218_wr_regs is called with len = 1 it is easy to see it does
-not perform the write. In this case:
+All done - but my next tree will not be built until Jan 31 ...
 
-msg_len_max is priv->cfg->i2c_wr_max -1, thus it is 1
-remainder is len % msg_len_max, thus it is 0
+> I wonder if there is a better name than 'xen-two'?
 
-the 'for loop' condition (i <= quotient && remainder) is thus false
-and no write is performed at all.
+If you think of one, let me know.
 
-I changed the function so it writes correctly now for me. Maybe you
-prefer to fix the original algo rather than heavily changing it as I
-did. Anyway I attach the patch I produced to make it working here.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Please note that I tested this only with priv->cfg->i2c_wr_max set to
-2 and with the AF9035 driver that is not even in the kernel (any plan
-to include ?) and I couldn't try this with any other in-kernel driver
-due to lack of HW. So the patch need to be eventually checked and
-tested more.
+--Signature=_Sat__22_Jan_2011_12_09_41_+1100_0lveTnDHZ_z4Fe0c
+Content-Type: application/pgp-signature
 
-Thank you
-Andrea
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
---- drivers/media/common/tuners/tda18218_orig.c 2011-01-22
-22:44:59.323333347 +0100
-+++ drivers/media/common/tuners/tda18218.c      2011-01-22
-22:46:36.846666668 +0100
-@@ -28,8 +28,9 @@ MODULE_PARM_DESC(debug, "Turn on/off deb
- /* write multiple registers */
- static int tda18218_wr_regs(struct tda18218_priv *priv, u8 reg, u8
-*val, u8 len)
- {
--       int ret;
--       u8 buf[1+len], quotient, remainder, i, msg_len, msg_len_max;
-+       int ret=0;
-+       u8 buf[1+len], msg_len, msg_len_max;
-+       int remaining;
-        struct i2c_msg msg[1] = {
-                {
-                        .addr = priv->cfg->i2c_address,
-@@ -39,18 +40,21 @@ static int tda18218_wr_regs(struct tda18
-        };
+iQEcBAEBAgAGBQJNOi5VAAoJEDMEi1NhKgbsFckH/i0W977KxMLSeHOHfRo+liGk
+VAzJs7/+/pe66Pbisy3Kii0aKFI3sLgsS63nGeOrM2z2W+lMksVgPWXq7ezpZ0CG
+Yq9feve9P3ZsSd8FHX6h7/NdnVxn7Kip3rfvearA9D4GKfy2Kq14bo7IUxnetVAF
+RGXvFJUmiZANn7EIx99DvRWgZQL3vztgbSQXkrYfilrDUvOxvK6mDNXJOpO/8l2T
+zV5ccXjc8l2ewaMiMKBGQv53APeRs7hzsKSqa3ZD2nhjUQsSUGWdxlE2yI3JJc5H
+REhxZL5VqkiI369jbI7S3vaMHUZ+k6Oq48/gYoTZRoh5W4BLZl7VEC7PXCqVb5E=
+=iASd
+-----END PGP SIGNATURE-----
 
-        msg_len_max = priv->cfg->i2c_wr_max - 1;
--       quotient = len / msg_len_max;
--       remainder = len % msg_len_max;
--       msg_len = msg_len_max;
--       for (i = 0; (i <= quotient && remainder); i++) {
--               if (i == quotient)  /* set len of the last msg */
--                       msg_len = remainder;
--
--               msg[0].len = msg_len + 1;
--               buf[0] = reg + i * msg_len_max;
--               memcpy(&buf[1], &val[i * msg_len_max], msg_len);
-+
-+       remaining = len;
-+       for (; remaining > 0;remaining -= msg_len_max) {
-+
-+               msg_len = remaining;
-+
-+               if (msg_len > msg_len_max)  /* set len of the last msg */
-+                       msg_len = msg_len_max;
-+
-+               msg[0].len = msg_len +1;
-+               buf[0] = reg + (len - remaining);
-+               memcpy(&buf[1], &val[(len - remaining)], msg_len);
-
-                ret = i2c_transfer(priv->i2c, msg, 1);
-+
-                if (ret != 1)
-                        break;
-        }
+--Signature=_Sat__22_Jan_2011_12_09_41_+1100_0lveTnDHZ_z4Fe0c--
