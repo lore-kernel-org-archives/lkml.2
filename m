@@ -1,99 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab1AVJfT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 04:35:19 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58439 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab1AVJfQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 04:35:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:mime-version:content-type
-         :content-transfer-encoding:content-disposition:message-id;
-        b=vc6dBdlvGctXPVhyiPZZXHdbuu0FqVY3NPznW0QOyvrvbbsKh6RauxjveyPJb8Qp01
-         U5aGa9i0aDawVpAe8Foq+uwVJASWYEoL86V6avwsjn0K01aDxU2QVHrTBQNMCIIkHvi7
-         u0yXRmmBhX+kBOkJwGABjjHPZVgQDOMq0PLVQ=
-From: Chris Clayton <chris2553@googlemail.com>
-Reply-To: chris2553@googlemail.com
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: DRM BUG - X fails to start with 2.6.38-rc2+
-Date: Sat, 22 Jan 2011 09:35:03 +0000
-User-Agent: KMail/1.9.10
+	id S1752518Ab1AVJn2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 04:43:28 -0500
+Received: from www.tglx.de ([62.245.132.106]:46026 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752204Ab1AVJn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jan 2011 04:43:26 -0500
+Date: Sat, 22 Jan 2011 10:43:17 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Vernon Mauery <vernux@us.ibm.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Wait to remove active timer when rescheduling hrtimer
+In-Reply-To: <AANLkTinG5RmVERMKWFaJRNki+1NGbLLWudc2jtw=igPV@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1101221031330.2971@localhost6.localdomain6>
+References: <1295632350-10215-1-git-send-email-vernux@us.ibm.com> <alpine.LFD.2.00.1101212232210.2971@localhost6.localdomain6> <AANLkTinG5RmVERMKWFaJRNki+1NGbLLWudc2jtw=igPV@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201101220935.03623.chris2553@googlemail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 21 Jan 2011, Vernon Mauery wrote:
+> > Hmm, why does it hang ?
+> 
+> 
+> After running the script, I run a netperf command similar to the one
+> that the script prints, that runs traffic over the interface that we
+> just set up QoS on.  Within 10-15 seconds, the machine goes silent.
+> (this is on a 2.6.33.7-rt29 kernel)
+> 
+> My guess would be that without this patch, it is possible to have a
+> timer currently in the tree, not delete it and then schedule it again.
+>  Not on this machine or on this kernel, I saw a similar problem
+> (caused by the same thing: using sch_htb on -rt kernel), but instead
+> of a silent hang, it gave me an oops that looked like this:
+>
+>  [<ffffffff81054dfc>] __remove_hrtimer+0x6e/0x7b
+>  [<ffffffff81227401>] ? qdisc_watchdog+0x0/0x23
+>  [<ffffffff81055cbb>] run_hrtimer_softirq+0x7a/0x14e
+>  [<ffffffff81043d26>] ksoftirqd+0x16a/0x26f
+>  [<ffffffff81043bbc>] ? ksoftirqd+0x0/0x26f
+>  [<ffffffff81043bbc>] ? ksoftirqd+0x0/0x26f
+>  [<ffffffff8105261c>] kthread+0x49/0x79
+>  [<ffffffff8100d088>] child_rip+0xa/0x12
+>  [<ffffffff810525d3>] ? kthread+0x0/0x79
+>  [<ffffffff8100d07e>] ? child_rip+0x0/0x12
 
-I'm not subscribed, so please cc me on any reply,
+ 
+> Any ideas on this?  The patch I sent fixes the problem.  The idea came
+> from a proposed patch a long time ago that just added a hrtimer_cancel
+> call just before the hrtimer_start call in the sch_api.c watchdog
+> code.  I figured if the explicit cancel before the start fixed the
+> problem, there was something that the cancel did that the start alone
+> didn't.  What I found was that the cancel waits if the timer is
+> currently running, while start just brute-force cancels the timer.
 
-I've built and installed the latest -git kernel (pulled this morning) and X 
-fails to start.  I see the grey X background and, for a split second, what 
-looks like the kdm login dialogue box appears before disappearing again. Then 
-the screen goes black and the monitor goes into power saving made. I can't 
-access consoles with Alt-Fn - the machine is effectively locked and can be 
-rcovered only by powering off and then on again.
+Hmm. That's weird. The remove in start() and in the softirq code is
+protected by the base lock. So whoever comes first, removes the
+timer. So if the timer call back runs then the remove in start() will
+be a noop. And if the timer is removed right before the softirq wants
+to run the callback then the softirq wont see it anymore.
 
-The only diagnostics I can find in the logs is at the end of/var/log/kernel:
+So I fear while your patch makes the hang/oops go away it is papering
+over the real bug. Can you try to reproduce with function tracing (add
+timer events as well) enabled ? If yes, set ftrace_dump_on_oops. So we
+should see the history which led to this problem.
 
-Jan 22 08:20:08 upstairs kernel: r8169 0000:02:00.0: eth0: link up
-Jan 22 08:20:17 upstairs kernel: [drm] Initialized drm 1.1.0 20060810
-Jan 22 08:20:19 upstairs kernel: pci 0000:00:02.0: PCI INT A -> GSI 16 (level, 
-low) -> IRQ 16
-Jan 22 08:20:19 upstairs kernel: pci 0000:00:02.0: setting latency timer to 64
-Jan 22 08:20:19 upstairs kernel: ioremap error for 0xbdce0000-0xbdce3000, 
-requested 0x10, got 0x0
-Jan 22 08:20:19 upstairs kernel: [drm] Supports vblank timestamp caching Rev 1 
-(10.10.2010).
-Jan 22 08:20:19 upstairs kernel: [drm] Driver supports precise vblank timestamp 
-query.
-Jan 22 08:20:19 upstairs kernel: [drm] Initialized i915 1.6.0 20080730 for 
-0000:00:02.0 on minor 0
-Jan 22 08:20:37 upstairs kernel: BUG: unable to handle kernel NULL pointer 
-dereference at 00000194
-Jan 22 08:20:37 upstairs kernel: IP: [<f87c1aae>] 
-drm_calc_vbltimestamp_from_scanoutpos+0x3e/0x4b0 [drm]
+Thanks,
 
-/var/log/Xorg.0.log appears not to have been written to because it contains what 
-appears to be only random data rather than the usual text.
-
-The graphics-related lspci output shows:
-
-00:02.0 VGA compatible controller: Intel Corporation 4 Series Chipset Integrated 
-Graphics Controller (rev 03) (prog-if 00 [VGAcontroller])
-        Subsystem: Giga-byte Technology Device d000
-        Flags: bus master, fast devsel, latency 0, IRQ 16
-        Memory at e1000000 (64-bit, non-prefetchable) [size=4M]
-        Memory at d0000000 (64-bit, prefetchable) [size=256M]
-        I/O ports at e000 [size=8]
-        Expansion ROM at <unassigned> [disabled]
-        Capabilities: [90] MSI: Enable- Count=1/1 Maskable- 64bit-
-        Capabilities: [d0] Power Management version 2
-        Capabilities: [a4] PCI Advanced Features
-
-00:02.1 Display controller: Intel Corporation 4 Series Chipset Integrated 
-Graphics Controller (rev 03)
-        Subsystem: Giga-byte Technology Device d000
-        Flags: bus master, fast devsel, latency 0
-        Memory at e1400000 (64-bit, non-prefetchable) [size=1M]
-        Capabilities: [d0] Power Management version 2
-
-All works fine with 2.6.37 .
-
-Please let me know if any additional diagnostics are needed or if you want any 
-patches testing.
-
-Thanks in advance
-
-Chris
-
--- 
-The more I see, the more I know. The more I know, the less I understand. 
-Changing Man - Paul Weller
+	tglx
