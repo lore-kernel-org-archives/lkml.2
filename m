@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643Ab1AVJpQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 04:45:16 -0500
-Received: from www.tglx.de ([62.245.132.106]:46070 "EHLO www.tglx.de"
+	id S1752412Ab1AVKEQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 05:04:16 -0500
+Received: from www.tglx.de ([62.245.132.106]:47912 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752204Ab1AVJpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 04:45:14 -0500
-Date: Sat, 22 Jan 2011 10:45:00 +0100 (CET)
+	id S1752022Ab1AVKEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jan 2011 05:04:15 -0500
+Date: Sat, 22 Jan 2011 11:01:49 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
 To: Torben Hohn <torbenh@gmx.de>
 cc: linux-kernel@vger.kernel.org, johnstul@us.ibm.com, hch@infradead.org,
         yong.zhang0@gmail.com
-Subject: Re: [PATCH 01/18] move do_timer() from kernel/timer.c into
- kernel/time/timekeeping.c
-In-Reply-To: <1295651224-29823-2-git-send-email-torbenh@gmx.de>
-Message-ID: <alpine.LFD.2.00.1101221044010.2971@localhost6.localdomain6>
-References: <1295651224-29823-1-git-send-email-torbenh@gmx.de> <1295651224-29823-2-git-send-email-torbenh@gmx.de>
+Subject: Re: [PATCH 09/18] frv: switch do_timer() to xtime_update()
+In-Reply-To: <1295651224-29823-10-git-send-email-torbenh@gmx.de>
+Message-ID: <alpine.LFD.2.00.1101221051570.2971@localhost6.localdomain6>
+References: <1295651224-29823-1-git-send-email-torbenh@gmx.de> <1295651224-29823-10-git-send-email-torbenh@gmx.de>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -25,36 +24,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Sat, 22 Jan 2011, Torben Hohn wrote:
 
-Please add a sensible change log, why you move that code.
+> this code looks like its protecting __set_LEDS() with this lock also.
+> i dont think thats necessary.
 
-> Signed-off-by: Torben Hohn <torbenh@gmx.de>
-> ---
->  kernel/time/timekeeping.c |   12 ++++++++++++
->  kernel/timer.c            |   13 -------------
->  2 files changed, 12 insertions(+), 13 deletions(-)
-> 
-> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-> index d27c756..546d82f 100644
-> --- a/kernel/time/timekeeping.c
-> +++ b/kernel/time/timekeeping.c
-> @@ -946,3 +946,15 @@ struct timespec get_monotonic_coarse(void)
->  				now.tv_nsec + mono.tv_nsec);
->  	return now;
->  }
-> +
-> +/*
-> + * The 64-bit jiffies value is not atomic - you MUST NOT read it
-> + * without sampling the sequence number in xtime_lock.
-> + * jiffies is defined in the linker script...
-> + */
-> +void do_timer(unsigned long ticks)
-> +{
-> +	jiffies_64 += ticks;
-> +	update_wall_time();
-> +	calc_global_load(ticks);
-> +}
+This changelog is horrible. 
 
-That also should make update_wall_time() static.
+This code does not look like protecting the __set_LEDS() call with the
+xtime_lock. The call happens to be inside the xtime_lock held region.
+
+Now instead of bringing up a weak argument "I dont think ..." you
+should provide a proper analysis why it's safe to move that code out.
+
+It's pretty simple:
+
+No other call site of __set_LEDS() is protected by xtime_lock, so
+xtime_lock does not protect anything related to __set_LEDS(). It's
+just inside the xtime_lock region for no good reason at all.
+
+Please be more careful when writing change logs, so a reviewer can
+understand the reasoning behind your change easily.
+
+Also all arch/* patches are missing a "Cc: arch-maintainer@somewhere.xxx".
+
+>  {
+> @@ -61,10 +61,11 @@ static irqreturn_t timer_interrupt(int irq, void *dummy)
+>  	 * CPU. We need to avoid to SMP race with it. NOTE: we don't need
+>  	 * the irq version of write_lock because as just said we have irq
+>  	 * locally disabled. -arca
+> +	 *
+> +	 * xtime_update takes the writelock.
+
+  Errm. xtime_update write locks xtime_lock. Please be careful with comments.
 
 Thanks,
 
