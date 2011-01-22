@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754946Ab1AVBSh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 20:18:37 -0500
-Received: from hera.kernel.org ([140.211.167.34]:45820 "EHLO hera.kernel.org"
+	id S1754844Ab1AVBSg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 20:18:36 -0500
+Received: from hera.kernel.org ([140.211.167.34]:45821 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752331Ab1AVBRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753534Ab1AVBRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Jan 2011 20:17:44 -0500
 From: Jens Axboe <jaxboe@fusionio.com>
 To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org
 Cc: hch@infradead.org
-Subject: [PATCH 08/10] read-ahead: use plugging
-Date: Sat, 22 Jan 2011 01:17:27 +0000
-Message-Id: <1295659049-2688-9-git-send-email-jaxboe@fusionio.com>
+Subject: [PATCH 09/10] fs: make mpage read/write_pages() plug
+Date: Sat, 22 Jan 2011 01:17:28 +0000
+Message-Id: <1295659049-2688-10-git-send-email-jaxboe@fusionio.com>
 X-Mailer: git-send-email 1.7.3.5
 In-Reply-To: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
 References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
@@ -22,37 +22,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 ---
- mm/readahead.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ fs/mpage.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/mm/readahead.c b/mm/readahead.c
-index cbddc3e..2c0cc48 100644
---- a/mm/readahead.c
-+++ b/mm/readahead.c
-@@ -109,9 +109,12 @@ EXPORT_SYMBOL(read_cache_pages);
- static int read_pages(struct address_space *mapping, struct file *filp,
- 		struct list_head *pages, unsigned nr_pages)
+diff --git a/fs/mpage.c b/fs/mpage.c
+index d78455a..0afc809 100644
+--- a/fs/mpage.c
++++ b/fs/mpage.c
+@@ -364,6 +364,9 @@ mpage_readpages(struct address_space *mapping, struct list_head *pages,
+ 	sector_t last_block_in_bio = 0;
+ 	struct buffer_head map_bh;
+ 	unsigned long first_logical_block = 0;
++	struct blk_plug plug;
++
++	blk_start_plug(&plug);
+ 
+ 	map_bh.b_state = 0;
+ 	map_bh.b_size = 0;
+@@ -385,6 +388,7 @@ mpage_readpages(struct address_space *mapping, struct list_head *pages,
+ 	BUG_ON(!list_empty(pages));
+ 	if (bio)
+ 		mpage_bio_submit(READ, bio);
++	blk_finish_plug(&plug);
+ 	return 0;
+ }
+ EXPORT_SYMBOL(mpage_readpages);
+@@ -666,8 +670,11 @@ int
+ mpage_writepages(struct address_space *mapping,
+ 		struct writeback_control *wbc, get_block_t get_block)
  {
 +	struct blk_plug plug;
- 	unsigned page_idx;
  	int ret;
  
 +	blk_start_plug(&plug);
 +
- 	if (mapping->a_ops->readpages) {
- 		ret = mapping->a_ops->readpages(filp, mapping, pages, nr_pages);
- 		/* Clean up the remaining pages */
-@@ -129,7 +132,10 @@ static int read_pages(struct address_space *mapping, struct file *filp,
- 		page_cache_release(page);
+ 	if (!get_block)
+ 		ret = generic_writepages(mapping, wbc);
+ 	else {
+@@ -682,6 +689,7 @@ mpage_writepages(struct address_space *mapping,
+ 		if (mpd.bio)
+ 			mpage_bio_submit(WRITE, mpd.bio);
  	}
- 	ret = 0;
-+
- out:
 +	blk_finish_plug(&plug);
-+
  	return ret;
  }
- 
+ EXPORT_SYMBOL(mpage_writepages);
 -- 
 1.7.3.2.146.gca209
 
