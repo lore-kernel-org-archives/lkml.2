@@ -1,92 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720Ab1AVCEN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 21:04:13 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:37204 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754625Ab1AVCEL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 21:04:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=o88TVk+elM3ydBpPL6rPGlZ/V7ntdMD/35R85tFuK2UkuEKqbEdj0BdefDsBLGhB05
-         bSAcf1GM8axSpoFyU1dQ==
+	id S1754821Ab1AVCMo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 21:12:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34631 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754634Ab1AVCMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 21:12:43 -0500
+Date: Sat, 22 Jan 2011 03:12:26 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: werner <w.landgraf@ru.ru>
+Cc: akpm@linux-foundation.org, hannes@cmpxchg.org, idryomov@gmail.com,
+        rostedt@goodmis.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <jweiner@redhat.com>
+Subject: [PATCH] thp: fix PARAVIRT x86 32bit noPAE
+Message-ID: <20110122021226.GQ9506@random.random>
+References: <web-444048714@zbackend1.aha.ru>
+ <20110121191757.GO9506@random.random>
 MIME-Version: 1.0
-In-Reply-To: <4D3A3024.9040402@codeaurora.org>
-References: <AANLkTi=4-OgPUugnUBaqSU3oC=3wxTjAsOB_Ais3Or+i@mail.gmail.com>
-	<1290563018-2804-1-git-send-email-ccross@android.com>
-	<4D3A3024.9040402@codeaurora.org>
-Date: Fri, 21 Jan 2011 18:04:06 -0800
-X-Google-Sender-Auth: fWzHe2shHz5kOFVZW5sdLaNKwt0
-Message-ID: <AANLkTimEA2pjbWgB51GsqofreJtqT7QSr8cQ2xSMCa50@mail.gmail.com>
-Subject: Re: [PATCH] cgroup: Remove call to synchronize_rcu in cgroup_attach_task
-From: Colin Cross <ccross@android.com>
-To: Bryan Huntsman <bryanh@codeaurora.org>
-Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        mbohan@codeaurora.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110121191757.GO9506@random.random>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 5:17 PM, Bryan Huntsman <bryanh@codeaurora.org> wrote:
-> On 11/23/2010 05:43 PM, Colin Cross wrote:
->> synchronize_rcu can be very expensive, averaging 100 ms in
->> some cases.  In cgroup_attach_task, it is used to prevent
->> a task->cgroups pointer dereferenced in an RCU read side
->> critical section from being invalidated by delaying the call
->> to put_css_set until after an RCU grace period.
->>
->> To avoid the call to synchronize_rcu, make the put_css_set
->> call rcu-safe by moving the deletion of the css_set links
->> into rcu-protected free_css_set_rcu.
->>
->> The calls to check_for_release in free_css_set_rcu now occur
->> in softirq context, so convert all uses of the
->> release_list_lock spinlock to irq safe versions.
->>
->> The decrement of the cgroup refcount is no longer
->> synchronous with the call to put_css_set, which can result
->> in the cgroup refcount staying positive after the last call
->> to cgroup_attach_task returns.  To allow the cgroup to be
->> deleted with cgroup_rmdir synchronously after
->> cgroup_attach_task, introduce a second refcount,
->> rmdir_count, that is decremented synchronously in
->> put_css_set.  If cgroup_rmdir is called on a cgroup for
->> hich rmdir_count is zero but count is nonzero, reuse the
->> rmdir waitqueue to block the rmdir until the rcu callback
->> is called.
->>
->> Signed-off-by: Colin Cross <ccross@android.com>
->> ---
->>
->> This patch is similar to what you described.  The main differences are
->> that I used a new atomic to handle the rmdir case, and I converted
->> check_for_release to be callable in softirq context rather than schedule
->> work in free_css_set_rcu.  Your css_set scanning in rmdir sounds better,
->> I'll take another look at that.  Is there any problem with disabling irqs
->> with spin_lock_irqsave in check_for_release?
->>
->>  include/linux/cgroup.h |    6 ++
->>  kernel/cgroup.c        |  124 ++++++++++++++++++++++++++++--------------------
->>  2 files changed, 78 insertions(+), 52 deletions(-)
->>
->
-> Colin, what became of this patch?  I see this in your Tegra tree for
-> Android.
->
-> http://android.git.kernel.org/?p=kernel/tegra.git;a=commit;h=05946a1e0fdb011ac0e6638ee60b181c584f127b
->
-> I looked in linux-next but didn't see it there.  This resolves a
-> performance issue on MSM SMP so I'm curious if this is going upstream.
->  Thanks.
->
+I reproduced your 32bit x86 problem with an initramfs with a hugepage
+benchmark placed as /init inside KVM (not exactly an extensive test
+but it was trivial to reproduce). I tested below fix with HIGHMEM4G
+and HIGHMEM64G with PARAVIRT=y (and verified setting PARAVIRT=n fixed
+it, in other email Minchan also verified that setting HIGHMEM64G=y
+also fixed it, to confirm my theory the problem was the below #ifdef).
 
-It's been posted, there are no outstanding comments I am working on,
-but they haven't been picked up.
+The stress test reaches exit() successfully now (before the fix it
+crashed in out_of_memory() instead of do_exit as expected):
+
+NMI watchdog disabled for cpu0: unable to create perf event: -2
+ï¿½Kernel panic - not syncing: Attempted to kill init!
+Pid: 1, comm: init Not tainted 2.6.37+ #17
+Call Trace:
+ [<c14351d2>] ? panic+0x57/0x161
+ [<c107439b>] ? trace_hardirqs_on+0xb/0x10
+ [<c1045321>] ? do_exit+0x6b1/0x6e0
+ [<c10728ab>] ? trace_hardirqs_off+0xb/0x10
+ [<c1045389>] ? do_group_exit+0x39/0xa0
+ [<c1045403>] ? sys_exit_group+0x13/0x20
+ [<c1002d9c>] ? sysenter_do_call+0x12/0x3c
+QEMU 0.12.1 monitor - type 'help' for more information
+(qemu) quit
+
+====
+Subject: thp: fix PARAVIRT x86 32bit noPAE
+
+From: Andrea Arcangeli <aarcange@redhat.com>
+
+This fixes TRANSPARENT_HUGEPAGE=y with PARAVIRT=y and HIGHMEM64=n.
+
+The #ifdef that this patch removes was erratically introduced to fix a build
+error for noPAE (where pmd.pmd doesn't exist). So then the kernel built but it
+failed at runtime because set_pmd_at was a noop. This will correct it by
+enabling set_pmd_at for noPAE mode too.
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+
+diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
+index 2071a8b..ebbc4d8 100644
+--- a/arch/x86/include/asm/paravirt.h
++++ b/arch/x86/include/asm/paravirt.h
+@@ -558,13 +558,12 @@ static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
+ static inline void set_pmd_at(struct mm_struct *mm, unsigned long addr,
+ 			      pmd_t *pmdp, pmd_t pmd)
+ {
+-#if PAGETABLE_LEVELS >= 3
+ 	if (sizeof(pmdval_t) > sizeof(long))
+ 		/* 5 arg words */
+ 		pv_mmu_ops.set_pmd_at(mm, addr, pmdp, pmd);
+ 	else
+-		PVOP_VCALL4(pv_mmu_ops.set_pmd_at, mm, addr, pmdp, pmd.pmd);
+-#endif
++		PVOP_VCALL4(pv_mmu_ops.set_pmd_at, mm, addr, pmdp,
++			    native_pmd_val(pmd));
+ }
+ #endif
+ 
