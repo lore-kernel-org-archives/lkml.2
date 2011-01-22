@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab1AVLT6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 06:19:58 -0500
-Received: from www17.your-server.de ([213.133.104.17]:41722 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742Ab1AVLT5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 06:19:57 -0500
-Subject: Re: 2.6.37-08009-ge6f597a "feels" slow - rhythmbox skips audio
-From: Thomas Meyer <thomas@m3y3r.de>
-To: walt <w41ter@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <ih73o4$gnf$1@dough.gmane.org>
-References: <1295395790.3327.9.camel@localhost.localdomain>
-	 <ih73o4$gnf$1@dough.gmane.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 22 Jan 2011 12:17:18 +0100
-Message-ID: <1295695038.2120.6.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: thomas@m3y3r.de
+	id S1752716Ab1AVL3R (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 06:29:17 -0500
+Received: from gw.loccal.net ([94.142.235.206]:44707 "EHLO mail.loccal.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751820Ab1AVL3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jan 2011 06:29:16 -0500
+X-Greylist: delayed 586 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Jan 2011 06:29:16 EST
+From: Michal Sojka <sojkam1@fel.cvut.cz>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Sojka <sojkam1@fel.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH] perf: Document default event for perf record
+Date: Sat, 22 Jan 2011 12:18:37 +0100
+Message-Id: <1295695127-29309-1-git-send-email-sojkam1@fel.cvut.cz>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, den 19.01.2011, 08:33 -0800 schrieb walt:
-> On 01/18/2011 04:09 PM, Thomas Meyer wrote:
-> > hi,
-> >
-> > kernel version 2.6.37-08009-ge6f597a "feels" slow and background audio
-> > skips/stalls when performing some cpu (and/or io?) intensive tasks like
-> > a kernel compile or grepping for a string in the kernel source or
-> > upgrading the system via yum upgrade.
-> >
-> > I didn't see this behaviour with 2.6.37 (and previous versions) on my UP
-> > system.
-> 
-> I see the same on my UP machine (but not SMP) when using the new
-> SCHED_AUTOGROUP feature.  Do you have that enabled?
+The description of -e option was reformatted (unindented and enclosed
+in an OpenBlock) in order to render the added line correctly.
+---
+ tools/perf/Documentation/perf-record.txt |   28 ++++++++++++++++------------
+ 1 files changed, 16 insertions(+), 12 deletions(-)
 
-Yes, I *had* SCHED_AUTOGROUP enabled. After disabling it, the machine is
-back to normal speed.
-
-kind regards
-thomas
-
-PS: CC me please as I'm not subscribed to the list.
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index e032716..bfcf3f2 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -27,18 +27,22 @@ OPTIONS
+ -e::
+ --event=::
+ 	Select the PMU event. Selection can be:
+-
+-        - a symbolic event name	(use 'perf list' to list all events)
+-
+-        - a raw PMU event (eventsel+umask) in the form of rNNN where NNN is a
+-	  hexadecimal event descriptor.
+-
+-        - a hardware breakpoint event in the form of '\mem:addr[:access]'
+-          where addr is the address in memory you want to break in.
+-          Access is the memory access type (read, write, execute) it can
+-          be passed as follows: '\mem:addr[:[r][w][x]]'.
+-          If you want to profile read-write accesses in 0x1000, just set
+-          'mem:0x1000:rw'.
+++
++--
++- a symbolic event name	(use 'perf list' to list all events)
++
++- a raw PMU event (eventsel+umask) in the form of rNNN where NNN is a
++  hexadecimal event descriptor.
++
++- a hardware breakpoint event in the form of '\mem:addr[:access]'
++  where addr is the address in memory you want to break in.
++  Access is the memory access type (read, write, execute) it can
++  be passed as follows: '\mem:addr[:[r][w][x]]'.
++  If you want to profile read-write accesses in 0x1000, just set
++  'mem:0x1000:rw'.
++
++By default, 'cpu-cycles' event is selected.
++--
+ 
+ --filter=<filter>::
+         Event filter.
+-- 
+1.7.2.3
 
