@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922Ab1AVADN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 19:03:13 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:16535 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754489Ab1AVADM (ORCPT
+	id S1754946Ab1AVAEa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 19:04:30 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54324
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754816Ab1AVAE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 19:03:12 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6233"; a="71451211"
-Subject: Re: [PATCH 0/7] Nexus One Support
-From: Daniel Walker <dwalker@codeaurora.org>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Pekka Enberg <penberg@kernel.org>, Dima Zavin <dmitriyz@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, Joe Perches <joe@perches.com>,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, davidb@codeaurora.org
-In-Reply-To: <20110121234930.GK3043@thunk.org>
-References: <1295576730.4096.24.camel@Joe-Laptop>
-	 <1295624801.19880.13.camel@m0nster>
-	 <20110121094827.41818a55@jbarnes-desktop>
-	 <20110121095658.1ab623fe@jbarnes-desktop>
-	 <1295632828.19880.22.camel@m0nster>
-	 <20110121100441.06a94482@jbarnes-desktop>
-	 <1295633882.19880.31.camel@m0nster>
-	 <AANLkTi=L+MW5-KLP_TKSxhstD8JEtBW=RKci5wSbZsd6@mail.gmail.com>
-	 <1295642995.19880.42.camel@m0nster>
-	 <AANLkTikVDn+W8t7KSym5tCGZowyYvoLFrk8d0mumiRF-@mail.gmail.com>
-	 <20110121234930.GK3043@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 Jan 2011 16:03:13 -0800
-Message-ID: <1295654593.22882.9.camel@m0nster>
+	Fri, 21 Jan 2011 19:04:29 -0500
+Date: Fri, 21 Jan 2011 16:05:03 -0800 (PST)
+Message-Id: <20110121.160503.233879710.davem@davemloft.net>
+To: mathieu.desnoyers@efficios.com
+Cc: linux-kernel@vger.kernel.org, rostedt@goodmis.org, fweisbec@gmail.com,
+        mingo@elte.hu, richm@oldelvet.org.uk, ben@decadent.org.uk,
+        sparclinux@vger.kernel.org
+Subject: Re: [patch 1/3] introduce __u64_aligned and U64_ALIGN() for
+ structure alignment in custom sections (v3)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110121203642.725191236@efficios.com>
+References: <20110121203630.725922272@efficios.com>
+	<20110121203642.725191236@efficios.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-21 at 18:49 -0500, Ted Ts'o wrote:
-> On Fri, Jan 21, 2011 at 11:05:54PM +0200, Pekka Enberg wrote:
-> > 
-> > On Fri, Jan 21, 2011 at 10:49 PM, Daniel Walker <dwalker@codeaurora.org> wrote:
-> > > I'll add this list into the commit text ..
-> > 
-> > So why is everyone bitching at Daniel when he's doing something the
-> > Android folks should have done themselves a long time ago?
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Date: Fri, 21 Jan 2011 15:36:31 -0500
+
+> Problem description:
 > 
-> Two wrongs don't make a right.  And it's not like not submitting
-> changes is wrong, although granted it's not ideal.  (I'd say removing
-> attribution from a git commit is even worse.  If you're doing the
-> equivalent of a cherry pick, you should preserve the Author field.
+> gcc happily align on 32-byte structures defined statically. Ftrace trace events
+> and Tracepoints both statically define structures into custom sections (using
+> the "section" attribute), to then assign these to symbols with the linker
+> scripts to iterate the these sections as an array.
+> 
+> However, gcc uses different alignments for these structures when they are
+> defined statically than when they are globally visible and/or in an array.
+> Therefore iteration on these arrays sees "holes" of padding. gcc is within its
+> rights to increase the alignment of the statically defined structures because,
+> normally, there should be no other accesses to them than in the local object. We
+> are actually iterating on the generated structures as if they were an array
+> without letting gcc knowing anything about it.
+> 
+> This patch introduces __u64_aligned to force gcc to use the u64 type and
+> variable alignment, up-aligning or down-aligning the target type if necessary.
+> The memory accesses to the target structure are efficient (does not require
+> bytewise memory accesses) and the atomic pointer update guarantees required by
+> RCU are kept. u64 is considered as the largest type that can generate a trap for
+> unaligned accesses (u64 on sparc32 needs to be aligned on 64-bit).
+> 
+> This alignment should be used for both structure definitions and declarations
+> (as *both* the type and variable attribute) when using the "section"
+> attribute to generate arrays of structures. Given that gcc only uses the type
+> attribute "aligned" as a lower-bound for alignment, the structures should not
+> contain types which require alignment larger than that of u64. The "aligned"
+> variable attribute, on the other hand, forces gcc to use exactly the specified
+> alignment.
+> 
+> Also introduce the linker script U64_ALIGN() macro for specification of custom
+> section alignment that matches that of __u64_aligned.
+> 
+> Changelog since v2:
+> - Drop the "packed" type attribute, because it causes gcc to drop the padding
+>   between consecutive "int" and "pointer"/"long" fields, which leads to
+>   unaligned accesses on sparc64.
+> 
+> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-right, but it wasn't a cherrypick which was explain in the thread. So
-there's no wrongs here ..
-
-Daniel
-
--- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
-Forum.
-
-
+Acked-by: David S. Miller <davem@davemloft.net>
