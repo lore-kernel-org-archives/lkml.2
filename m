@@ -1,82 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751034Ab1AVFVl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 00:21:41 -0500
-Received: from smtp02.lnh.mail.rcn.net ([207.172.157.102]:10526 "EHLO
-	smtp02.lnh.mail.rcn.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875Ab1AVFVk (ORCPT
+	id S1751104Ab1AVFay (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 00:30:54 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52220 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875Ab1AVFax convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 00:21:40 -0500
-X-Greylist: delayed 574 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Jan 2011 00:21:40 EST
-Date: Sat, 22 Jan 2011 00:11:34 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: matthieu castet <castet.matthieu@free.fr>
-Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        Kees Cook <kees.cook@canonical.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "keir.fraser@eu.citrix.com" <keir.fraser@eu.citrix.com>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "sliakh.lkml@gmail.com" <sliakh.lkml@gmail.com>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "ak@muc.de" <ak@muc.de>, "davej@redhat.com" <davej@redhat.com>,
-        "jiang@cs.ncsu.edu" <jiang@cs.ncsu.edu>,
-        "arjan@infradead.org" <arjan@infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        Stefan Bader <stefan.bader@canonical.com>, konrad@kernel.org
-Subject: Re: [tip:x86/security] x86: Add NX protection for kernel data
-Message-ID: <20110122051134.GA6905@dumpdata.com>
-References: <20110119233824.GA2869@dumpdata.com> <1295522306.4d381a02b1e10@imp.free.fr> <20110120150618.GC5092@dumpdata.com> <1295537856.14780.54.camel@zakaz.uk.xensource.com> <20110120190531.GA9687@dumpdata.com> <4D3899AB.60207@free.fr> <20110120210436.GA1810@dumpdata.com> <20110120211939.GA32262@dumpdata.com> <20110120215556.GA29700@dumpdata.com> <4D39FDA2.2000305@free.fr>
+	Sat, 22 Jan 2011 00:30:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=AHV+z8aO0VDZGJ7KLRycfEK7doBEYDJmwqL/ltVI1n4WHWTzy2NppGoVp3UbR3cV2b
+         SNaCEL8RrMFGqAbuIsrPJ4fBM0JbU2ub7ysjpBTUO9hi8jn347fHvOkGdAWJVNsTSvbJ
+         cpvwg09EOKwVzpucfK9smnvkkOuhY0H5MU+mo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4D39FDA2.2000305@free.fr>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110122040757.GA2094@richard-laptop>
+References: <201101111016.42819.jeremy.kerr@canonical.com>
+	<20110111091607.GI12552@n2100.arm.linux.org.uk>
+	<201101111744.59712.jeremy.kerr@canonical.com>
+	<20110111103929.GN24920@pengutronix.de>
+	<AANLkTinHL9X_bqMPR=W8Va01O4xngUnpGCkCiE3xEdiQ@mail.gmail.com>
+	<4D386ABF.9060908@fluff.org>
+	<20110120190822.GK6335@n2100.arm.linux.org.uk>
+	<AANLkTim5N_sCCoOR40y7sTvdDoFkUJd4tUSSbrCccGjy@mail.gmail.com>
+	<AANLkTikJjkJvr2J-9eq2-Jj8L=JvwUQS+QNj9gWFX-TL@mail.gmail.com>
+	<20110122040757.GA2094@richard-laptop>
+Date: Sat, 22 Jan 2011 14:30:51 +0900
+Message-ID: <AANLkTimW70Wq7hEhgz021ZEknGgsaTXs3nVPNig4F3Tj@mail.gmail.com>
+Subject: Re: Locking in the clk API
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Richard Zhao <linuxzsc@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        linux-sh <linux-sh@vger.kernel.org>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 10:41:54PM +0100, matthieu castet wrote:
-> Konrad Rzeszutek Wilk a �crit :
->>> -	 * .data and .bss should always be writable.
->>> +	 * .data and .bss should always be writable, but xen won't like
->>> +	 * if we make page table rw (that live in .data or .bss)
->>>  	 */
->>> +#ifdef CONFIG_X86_32
->>>  	if (within(address, (unsigned long)_sdata, (unsigned long)_edata) ||
->>> -	    within(address, (unsigned long)__bss_start, (unsigned long)__bss_stop))
->>> -		pgprot_val(required) |= _PAGE_RW;
->>> +	    within(address, (unsigned long)__bss_start, (unsigned long)__bss_stop)) {
->>> +		unsigned int level;
->>> +		if (lookup_address(address, &level) && (level != PG_LEVEL_4K))
->>> +			pgprot_val(forbidden) |= _PAGE_RW;
->>> +	}
->>> +#endif
->>>   #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
->>>
->>> fyi, it does make it boot.
+On Sat, Jan 22, 2011 at 1:08 PM, Richard Zhao <linuxzsc@gmail.com> wrote:
+> On Fri, Jan 21, 2011 at 01:47:29PM +0900, Jassi Brar wrote:
+>> On Fri, Jan 21, 2011 at 9:09 AM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
+>> > On Fri, Jan 21, 2011 at 4:08 AM, Russell King - ARM Linux
+>> > <linux@arm.linux.org.uk> wrote:
+>> >> On Thu, Jan 20, 2011 at 05:02:55PM +0000, Ben Dooks wrote:
+>> >>> If you want to make it so that each low-power mode has to work
+>> >>> out what PLLs need to be disabled and then re-enabled makes me
+>> >>> want to be sick. Hiding this stuff behind specific implementations
+>> >>> is a recipe for disaster.
+>> >>
+>> >> Why should systems which don't suffer from such problems be prevented
+>> >> from gaining power saving from turning off their clocks when devices
+>> >> are not being used (eg, the console serial port.)
+>> >>
+>> >> One solution to your root PLL issue would be to have a separate set of
+>> >> enable/disable API calls which get called at setup/release time (or
+>> >> whatever you'd like to call it) which can only be called from non-atomic
+>> >> context.  Maybe clk_prepare() and clk_unprepare().  These functions
+>> >> should perform whatever is necessary to ensure that the clock source
+>> >> is available for use atomically when clk_enable() is called.
+>> >>
+>> >> So, in your case, clk_prepare() ensures that the root PLL is enabled,
+>> >> clk_unprepare() allows it to be turned off.
+>> >>
+>> >> In the case of a console driver, clk_prepare() can be called when we
+>> >> know the port will be used as a console.  clk_enable() is then called
+>> >> before writing out the string, and clk_disable() after we've completely
+>> >> sent the last character.
+>> >>
+>> >> This allows the best of both worlds.  We now have a clk_enable() which
+>> >> can be used to turn the clocks off through the clock tree up to the first
+>> >> non-atomic clock, and we also have a way to deal with those which need
+>> >> to sleep.  So not only do "sleeping clock" implementations become possible
+>> >> but these "sleeping clock" implementations also get the opportunity to
+>> >> shutdown some of their clock tree with minimal latency for doing so.
+>> >
+>> > This is exactly what I suggested in my last post, except the console example.
+>> > Only to be a part of common clock api because it's not very safe to assume
+>> > future SoCs will have the same simple clock topologies that they have today.
+>> >
+>> > Not to mean to teach, but I hope you realize with more and more
+>> > device controller being crammed into ever shrinking SoCs,
+>> > clock would eventually have to be flexible in functionality
+>> > and complicated in hierarchy. Ben already gave examples
+>> > of Audio, MFC and Video controllers of latest Samsung SoCs.
 >>
->> Hold it.. ccache is a wonderful tool but I think I've just "rebuilt" the
->> binaries with the .bss HPAGE_ALIGN aligment by mistake, so this path got never
->> taken.
+>> plus
 >>
->>
-> Ok,
->
-> ATM I saw the following solution to solve the problem :
-> 1) remove the data/bss check in static_protections, it was introduced by NX patches (64edc8ed). But I am not sure it
-> is really needed anymore.
-> 2) add ". = ALIGN(HPAGE_SIZE)" somewhere after init section. But if we want not to be allocated in image we
-> should put it before bss. And if we want to be freed after init, we should put before .init.end.
-> This mean moving .smp_locks (and .data_nosave when x86 will be added) before init section. I have no idea of the impact.
-> 3) add some logic in arch/x86/xen/mmu.c, that will ignore RW page setting for the page table marked RO.
-> 4) make static_protections take and old_prot argument, and only apply RW .data/.bss requirement if page is already RW.
->
-> If possible I will go for 1).
+>> a) If only Samsung bsp implements the api, it would be impossible to
+>> share drivers, those that can be, with other platforms without nasty ifdef's.
+>> b) If the task of unification starts with only a particular platform made to
+>> implement a new api, the attempt kills its own purpose.
+> I'm not clear. Why does Samsung SoC go against clk_prepare/unprepare?
+> If its clock tree has many plls and device clock is not far away from plls and
+> may sleep, we may use prepare/unprepare to do actually clock enable/disable.
 
-Sounds good. Just send me the patch and I will test it.
+I am not against clk_prepare/unprepare.
+I rather suggest make it part of common clock API.
+Please read my last two posts again.
