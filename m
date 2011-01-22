@@ -1,110 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582Ab1AVWR4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 17:17:56 -0500
-Received: from sg2ehsobe002.messaging.microsoft.com ([207.46.51.76]:57249 "EHLO
-	SG2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750881Ab1AVWRz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 17:17:55 -0500
-X-SpamScore: -33
-X-BigFish: VPS-33(zzbb2cK542N1432N98dN4015L9371Pzz1202hzz8275dh8275chz2dh95h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 8BIT
-x-cr-puzzleid: {9342BA30-3BFE-4984-905B-B6C263063CDE}
-x-cr-hashedpuzzle: HDMU H24v K613 LVBO LlK4 L9rW MMSK MPDk M7vZ NI4Y PX1g QAVB QVZs Ra5L Rw8j UGIk;2;agBqAEAAYwBoAGEAbwBzAGIAaQB0AHMALgBuAGUAdAA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcA;Sosha1_v1;7;{9342BA30-3BFE-4984-905B-B6C263063CDE};bABpAG4AbgBqAEAAeABpAGwAaQBuAHgALgBjAG8AbQA=;Sat, 22 Jan 2011 22:17:39 GMT;UgBFADoAIABjAG8AbgBzAG8AbABlACAAcAByAG8AYgBsAGUAbQA/ACwAIABjAGwAbwBzAGUAKAAyACkAIABoAGEAbgBnAHMAIAAvAHMAYgBpAG4ALwBpAG4AaQB0AA==
-Content-Class: urn:content-classes:message
-Subject: RE: console problem?, close(2) hangs /sbin/init
-Date: Sat, 22 Jan 2011 15:17:39 -0700
-In-Reply-To: <alpine.LNX.2.00.1101222312560.7746@swampdragon.chaosbits.net>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: console problem?, close(2) hangs /sbin/init
-Thread-Index: Acu6ga2EfH4LKA61T+qZbvGFKc/MZAAAA2nw
-References: <7110b8bd-1411-4a92-81b7-1a76f5d5cb65@SG2EHSMHS005.ehs.local> <alpine.LNX.2.00.1101222312560.7746@swampdragon.chaosbits.net>
-From: John Linn <John.Linn@xilinx.com>
+	id S1752564Ab1AVWWO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 17:22:14 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:59193 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab1AVWWN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jan 2011 17:22:13 -0500
+From: Andreas Schwab <schwab@linux-m68k.org>
 To: Jesper Juhl <jj@chaosbits.net>
-CC: <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 22 Jan 2011 22:17:46.0962 (UTC) FILETIME=[32B7EB20:01CBBA82]
-X-RCIS-Action: ALLOW
-Message-ID: <3caedaa7-fa80-400f-bac6-a8c635d00c4d@SG2EHSMHS004.ehs.local>
-X-OriginatorOrg: xilinx.com
+Cc: Lasse Collin <lasse.collin@tukaani.org>, linux-kernel@vger.kernel.org
+Subject: Re: Possible array overrun in lzma_reset()
+References: <alpine.LNX.2.00.1101222124360.7746@swampdragon.chaosbits.net>
+X-Yow: Vote for ME -- I'm well-tapered, half-cocked, ill-conceived and
+ TAX-DEFERRED!
+Date: Sat, 22 Jan 2011 23:22:08 +0100
+In-Reply-To: <alpine.LNX.2.00.1101222124360.7746@swampdragon.chaosbits.net>
+	(Jesper Juhl's message of "Sat, 22 Jan 2011 21:41:05 +0100 (CET)")
+Message-ID: <m2bp38r33j.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2.92 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Jesper Juhl [mailto:jj@chaosbits.net]
-> Sent: Saturday, January 22, 2011 3:14 PM
-> To: John Linn
-> Cc: linux-kernel@vger.kernel.org
-> Subject: Re: console problem?, close(2) hangs /sbin/init
-> 
-> On Sat, 22 Jan 2011, John Linn wrote:
-> 
-> > I have a kernel that runs fine
-> 
-> What kernel exactely?
+Jesper Juhl <jj@chaosbits.net> writes:
 
-2.6.37, but I also tried a 2.6.35 build.
+> 787  		probs = s->lzma.is_match[0];
+> At conditional (1): "i < 14134UL" taking true path
+> At conditional (2): "i < 14134UL" taking true path
+> At conditional (3): "i < 14134UL" taking true path
+> 788  		for (i = 0; i < PROBS_TOTAL; ++i)
+> Event overrun-local: Overrunning static array of size 32 bytes at byte position 28266 by indexing pointer "probs" with index variable "i".
+> Event overrun-local: Note: These bugs are often difficult to see at first glance. Coverity recommends a close inspection of the events leading to this overrun.
+> 789  			probs[i] = RC_BIT_MODEL_TOTAL / 2;
+> ...
+>
+> I looked into the report and found that 's->lzma.is_match' is
+> 	uint16_t is_match[STATES][POS_STATES_MAX]
+> where 'STATES' is '#define STATES 12' and 'POS_STATES_MAX' is '#define POS_STATES_MAX (1 << 4)'.
+>
+> So I think the checker has a point.
 
-> 
-> >with a busybox root file system using
-> > inittab.  When I move to a non-busybox init (sysvinit), I see init
-> > hanging when doing a close of standard error very early when it
-starts.
-> > I have debugged it with GDB but not found the source of the hang as
-it's
-> > in the kernel it appears.
-> >
-> > To debug this, I use init=/bin/sh on the kernel command line, then
-exec
-> > init to start it. The same root file system works on another board
-with
-> > a different kernel.
-> 
-> What other kernel version exactely?
+The loop treats the part of the structure from is_match to the end as a
+single array of PROBS_TOTAL uint16_t (which it is, in effect).
 
-2.6.28, but others have told them tested the same root file system on
-2.6.37 kernels on other boards fine.
+Andreas.
 
-It's a poky based root file system for ARM.
-
-I've tried comparing kernel configs to try look for differences without
-much luck yet.
-
-Thanks,
-John
-
-> 
-> > I have also noticed that building init with
-> > INITDEBUG on so that it forks for debugging makes it work fine. This
-> > seems to indicate the device nodes are all fine to me.
-> >
-> > It seems related to PID 1 and the console device.
-> >
-> > Adding debug to the kernel in sys_close() shows it hanging in
-> > filp_close() and I'm still digging more (maybe locking issue). The
-> > console is a serial device with a newer driver which I suspected to
-be
-> > the issue, but can't see anything wrong.
-> >
-> > Any hints or similar problems seen would be much appreciated.
-> > Thanks,
-> > John
-> >
-> 
-> --
-> Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-> Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-> Plain text mails only, please.
-> 
-
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
-
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
