@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab1AVO2b (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 09:28:31 -0500
-Received: from smtprelay0237.hostedemail.com ([216.40.44.237]:41407 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753197Ab1AVO2a (ORCPT
+	id S1753358Ab1AVObi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 09:31:38 -0500
+Received: from 63.mail-out.ovh.net ([91.121.185.56]:44532 "HELO
+	63.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753197Ab1AVObh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 09:28:30 -0500
-X-Panda: scanned!
-X-Spam-Summary: 2,-1.05263,0,7b64d08d37933433,d41d8cd98f00b204,rostedt@goodmis.org,tglx@linutronix.de:laijs@cn.fujitsu.com:tglx@linutronix.de:laijs@cn.fujitsu.com:mingo@elte.hu:a.p.zijlstra@chello.nl:akpm@linux-foundation.org:hidave.darkstar@gmail.com:dvhart@linux.intel.com:namhyung@gmail.com:linux-kernel@vger.kernel.org:torvalds@linux-foundation.org,RULES_HIT:152:355:379:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1536:1559:1593:1594:1676:1711:1714:1730:1747:1766:1792:2393:2551:2559:2562:2693:3027:3138:3867:3872:5007:7652:7875:7903:10004:10016:10400:10471,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:none,DNSBL:none,Custom_rules:0:0:0
-X-Session-Marker: 726F737465647440676F6F646D69732E6F7267
-X-Filterd-Recvd-Size: 1831
-X-User-Agent: K-9 Mail for Android
-References: <4D07330A.7020600@cn.fujitsu.com> <alpine.LFD.2.00.1012141850460.12146@localhost6.localdomain6> <4D083900.1050801@cn.fujitsu.com> <1292386606.5015.1862.camel@gandalf.stny.rr.com> <4D130D23.1040309@cn.fujitsu.com> <1294851790.26623.372.camel@gandalf.stny.rr.com> <1294851864.26623.373.camel@gandalf.stny.rr.com> <1294851934.26623.374.camel@gandalf.stny.rr.com> <4D3012D5.4060709@cn.fujitsu.com> <alpine.LFD.2.00.1101211833120.2971@localhost6.localdomain6> <5987f58c-029d-4b2d-a887-9589dcc4ae0c@email.android.com>
-In-Reply-To: <5987f58c-029d-4b2d-a887-9589dcc4ae0c@email.android.com>
+	Sat, 22 Jan 2011 09:31:37 -0500
+Message-ID: <4D3AEA45.20609@example.com>
+Date: Sat, 22 Jan 2011 15:31:33 +0100
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=utf-8
+To: Peter Zijlstra <peterz@infradead.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Will you make your code buildable?
+References: <4D308308.8090103@example.com> <1295025446.2274.6.camel@twins>
+In-Reply-To: <1295025446.2274.6.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH V4] rtmutex: ensure only the top waiter or higher priority task can take the lock and remove unrelated boosting
-From: Steven Rostedt <rostedt@goodmis.org>
-Date: Sat, 22 Jan 2011 09:09:21 -0500
-To: Thomas Gleixner <tglx@linutronix.de>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Young <hidave.darkstar@gmail.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Message-ID: <c65c37b6-a703-4b7c-9589-6fbbd8bf9127@email.android.com>
+X-Ovh-Tracer-Id: 16881180254902448527
+X-Ovh-Remote: 178.42.63.137 (afml137.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 14.01.2011 18:17, Peter Zijlstra wrote:
+> On Fri, 2011-01-14 at 18:08 +0100, Piotr Hosowicz wrote:
+>> Hello Peter, hello all,
+>>
+>> I CC LKML, because maybe other are uding Peter's code also. I get
+>> following code when I merge your code to Linus tree:
+>>
+>> mm/migrate.c: In function ‘unmap_and_move_huge_page’:
+>> mm/migrate.c:845: error: ‘rcu_locked’ undeclared (first use in this
+>> function)
+>> mm/migrate.c:845: error: (Each undeclared identifier is reported only once
+>> mm/migrate.c:845: error: for each function it appears in.)
+>>
+>> I didn't manage to repair it by myself. Will you fix it?
+>
+> Yeah, I'll refresh post 38-rc1.
 
-Oh but it will have to wait till Monday
+Hello Peter,
 
--- Steve 
+It is now rc2. How long will it take? I am eager to build with your code.
+
+Regards,
+
+Piotr Hosowicz
+
+
 -- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+Z cyklu "Uroki demokracji", czyli pytania i odpowiedzi w teledurniejach:
+- Gdzie odbywały się lądowania Aliantów (D-Day)?
+- Pearl Harbour?
+NP: ZZTop - Made into a movie
+NB: 2.6.38-rc2
