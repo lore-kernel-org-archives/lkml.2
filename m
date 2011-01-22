@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab1AVBR0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 20:17:26 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:11828 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752342Ab1AVBRZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 20:17:25 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6233"; a="71242754"
-Message-ID: <4D3A3024.9040402@codeaurora.org>
-Date: Fri, 21 Jan 2011 17:17:24 -0800
-From: Bryan Huntsman <bryanh@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        mbohan@codeaurora.org
-Subject: Re: [PATCH] cgroup: Remove call to synchronize_rcu in cgroup_attach_task
-References: <AANLkTi=4-OgPUugnUBaqSU3oC=3wxTjAsOB_Ais3Or+i@mail.gmail.com> <1290563018-2804-1-git-send-email-ccross@android.com>
-In-Reply-To: <1290563018-2804-1-git-send-email-ccross@android.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754476Ab1AVBRj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 20:17:39 -0500
+Received: from hera.kernel.org ([140.211.167.34]:45788 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754034Ab1AVBRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 20:17:36 -0500
+From: Jens Axboe <jaxboe@fusionio.com>
+To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org
+Cc: hch@infradead.org
+Subject: [PATCH 02/10] ide-cd: convert to blk_delay_queue() for a short pause
+Date: Sat, 22 Jan 2011 01:17:21 +0000
+Message-Id: <1295659049-2688-3-git-send-email-jaxboe@fusionio.com>
+X-Mailer: git-send-email 1.7.3.5
+In-Reply-To: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
+References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 22 Jan 2011 01:17:32 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2010 05:43 PM, Colin Cross wrote:
-> synchronize_rcu can be very expensive, averaging 100 ms in
-> some cases.  In cgroup_attach_task, it is used to prevent
-> a task->cgroups pointer dereferenced in an RCU read side
-> critical section from being invalidated by delaying the call
-> to put_css_set until after an RCU grace period.
-> 
-> To avoid the call to synchronize_rcu, make the put_css_set
-> call rcu-safe by moving the deletion of the css_set links
-> into rcu-protected free_css_set_rcu.
-> 
-> The calls to check_for_release in free_css_set_rcu now occur
-> in softirq context, so convert all uses of the
-> release_list_lock spinlock to irq safe versions.
-> 
-> The decrement of the cgroup refcount is no longer
-> synchronous with the call to put_css_set, which can result
-> in the cgroup refcount staying positive after the last call
-> to cgroup_attach_task returns.  To allow the cgroup to be
-> deleted with cgroup_rmdir synchronously after
-> cgroup_attach_task, introduce a second refcount,
-> rmdir_count, that is decremented synchronously in
-> put_css_set.  If cgroup_rmdir is called on a cgroup for
-> hich rmdir_count is zero but count is nonzero, reuse the
-> rmdir waitqueue to block the rmdir until the rcu callback
-> is called.
-> 
-> Signed-off-by: Colin Cross <ccross@android.com>
-> ---
-> 
-> This patch is similar to what you described.  The main differences are
-> that I used a new atomic to handle the rmdir case, and I converted
-> check_for_release to be callable in softirq context rather than schedule
-> work in free_css_set_rcu.  Your css_set scanning in rmdir sounds better,
-> I'll take another look at that.  Is there any problem with disabling irqs
-> with spin_lock_irqsave in check_for_release?
-> 
->  include/linux/cgroup.h |    6 ++
->  kernel/cgroup.c        |  124 ++++++++++++++++++++++++++++--------------------
->  2 files changed, 78 insertions(+), 52 deletions(-)
-> 
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+---
+ drivers/ide/ide-cd.c |   13 ++-----------
+ 1 files changed, 2 insertions(+), 11 deletions(-)
 
-Colin, what became of this patch?  I see this in your Tegra tree for
-Android.
-
-http://android.git.kernel.org/?p=kernel/tegra.git;a=commit;h=05946a1e0fdb011ac0e6638ee60b181c584f127b
-
-I looked in linux-next but didn't see it there.  This resolves a
-performance issue on MSM SMP so I'm curious if this is going upstream.
- Thanks.
-
-- Bryan
-
-
+diff --git a/drivers/ide/ide-cd.c b/drivers/ide/ide-cd.c
+index 0c73fe3..7ce9caf 100644
+--- a/drivers/ide/ide-cd.c
++++ b/drivers/ide/ide-cd.c
+@@ -258,17 +258,10 @@ static int ide_cd_breathe(ide_drive_t *drive, struct request *rq)
+ 	if (time_after(jiffies, info->write_timeout))
+ 		return 0;
+ 	else {
+-		struct request_queue *q = drive->queue;
+-		unsigned long flags;
+-
+ 		/*
+-		 * take a breather relying on the unplug timer to kick us again
++		 * take a breather
+ 		 */
+-
+-		spin_lock_irqsave(q->queue_lock, flags);
+-		blk_plug_device(q);
+-		spin_unlock_irqrestore(q->queue_lock, flags);
+-
++		blk_delay_queue(drive->queue, 1);
+ 		return 1;
+ 	}
+ }
+@@ -1514,8 +1507,6 @@ static int ide_cdrom_setup(ide_drive_t *drive)
+ 	blk_queue_dma_alignment(q, 31);
+ 	blk_queue_update_dma_pad(q, 15);
+ 
+-	q->unplug_delay = max((1 * HZ) / 1000, 1);
+-
+ 	drive->dev_flags |= IDE_DFLAG_MEDIA_CHANGED;
+ 	drive->atapi_flags = IDE_AFLAG_NO_EJECT | ide_cd_flags(id);
+ 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.3.2.146.gca209
+
