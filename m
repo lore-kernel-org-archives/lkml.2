@@ -1,94 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab1AVCcj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 21:32:39 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:63403 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791Ab1AVCci (ORCPT
+	id S1754602Ab1AVCir (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 21:38:47 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:11601 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753387Ab1AVCip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 21:32:38 -0500
-X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=caeoQ5mqpWkA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=9g8v8V-fZgbiv9y2HscA:9 a=YNXltTnWs37ZO12VjcIA:7 a=CZDrKv5Bj8S9_ak3stj_RU371XoA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 0/7] Nexus One Support
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Pekka Enberg <penberg@kernel.org>,
-        Dima Zavin <dmitriyz@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, Joe Perches <joe@perches.com>,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, davidb@codeaurora.org
-In-Reply-To: <1295662437.22882.19.camel@m0nster>
-References: <20110121094827.41818a55@jbarnes-desktop>
-	 <20110121095658.1ab623fe@jbarnes-desktop>
-	 <1295632828.19880.22.camel@m0nster>
-	 <20110121100441.06a94482@jbarnes-desktop>
-	 <1295633882.19880.31.camel@m0nster>
-	 <AANLkTi=L+MW5-KLP_TKSxhstD8JEtBW=RKci5wSbZsd6@mail.gmail.com>
-	 <1295642995.19880.42.camel@m0nster>
-	 <AANLkTikVDn+W8t7KSym5tCGZowyYvoLFrk8d0mumiRF-@mail.gmail.com>
-	 <20110121234930.GK3043@thunk.org> <1295654593.22882.9.camel@m0nster>
-	 <20110122015821.GA6249@home.goodmis.org>
-	 <1295662437.22882.19.camel@m0nster>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 21 Jan 2011 21:32:36 -0500
-Message-ID: <1295663556.12215.4812.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Jan 2011 21:38:45 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6233"; a="71250606"
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
+To: davidb@codeaurora.org
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>
+Subject: [PATCH] msm: serial: Add MSM8960 serial support
+Date: Fri, 21 Jan 2011 18:38:41 -0800
+Message-Id: <1295663921-32723-1-git-send-email-stepanm@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-21 at 18:13 -0800, Daniel Walker wrote:
-> On Fri, 2011-01-21 at 20:58 -0500, Steven Rostedt wrote:
-> > On Fri, Jan 21, 2011 at 04:03:13PM -0800, Daniel Walker wrote:
-> > > 
-> > > right, but it wasn't a cherrypick which was explain in the thread. So
-> > > there's no wrongs here ..
-> > 
-> > I'm sorry Daniel, but you are absolutely wrong!
-> 
-> This thread is getting way out of hand .. I think you really don't
-> understand what has happened here.. That's fine tho, if you don't like
-> what I've done then NAK, I'm not going to argue with any you.
+Add the device definitions and platform data to support
+the console serial port on MSM8960 Simulator and RUMI3
+targets.
 
-Sorry for coming off a bit strong, but I've known you for a while, and
-that is usually the best way to get you to understand.
+Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+---
+ arch/arm/mach-msm/Makefile          |    2 +-
+ arch/arm/mach-msm/board-msm8960.c   |   22 +++++++++
+ arch/arm/mach-msm/devices-msm8960.c |   83 +++++++++++++++++++++++++++++++++++
+ arch/arm/mach-msm/devices.h         |    3 +
+ 4 files changed, 109 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/mach-msm/devices-msm8960.c
 
-I don't want to argue, but instead teach you that there is a process of
-getting code into the kernel, and a etiquette (not to mention legal) way
-of doing things.
-
-If you take code from someone else, look at it, and make it work, or do
-whatever changes to it. You must keep some form of authorship with the
-original author. If you rewrote it completely so that it doesn't look
-anything like what the original code was, then sure, its yours. But then
-the copyright would belong to you.
-
-But you stated that the copyright was not yours but googles. You are not
-employed by google are you? The major problem I have with these patches
-is that you got code from somewhere else but had no Signed-off-bys from
-anyone. This is where legal comes in.
-
-How do you know this code was attained legally?  Can you take sole
-responsibility that the code was not stolen from non GPL code? The only
-tag line in a change log that matters is that Signed-off-by. Its the one
-with (sorta) legal powers. This is saying that you verify that this code
-was given to you through legal means. Either that you wrote the code
-yourself and are not under any contract to keep it from becoming GPL, or
-you took it from someone that gave you their own Signed-off-by that you
-can trust.
-
-The biggest problem with your patch set is that it is missing the
-necessary Signed-off-bys. Also, the only Signed-off-by that you can
-write is your own. Someone can give you their Signed-off-by and you can
-add it. There's been patches that I would not accept until the author
-gave me (usually publicly) their Signed-off-by.
-
-
-If you had those, I would not have written the email that I wrote.
-
--- Steve
-
+diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
+index 0229427..19ef1ee 100644
+--- a/arch/arm/mach-msm/Makefile
++++ b/arch/arm/mach-msm/Makefile
+@@ -24,7 +24,7 @@ obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
+ obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
+ obj-$(CONFIG_ARCH_QSD8X50) += board-qsd8x50.o devices-qsd8x50.o
+ obj-$(CONFIG_ARCH_MSM8X60) += board-msm8x60.o
+-obj-$(CONFIG_ARCH_MSM8960) += board-msm8960.o
++obj-$(CONFIG_ARCH_MSM8960) += board-msm8960.o devices-msm8960.o
+ 
+ obj-$(CONFIG_ARCH_MSM7X30) += gpiomux-7x30.o gpiomux-v1.o gpiomux.o
+ obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o gpiomux-v1.o gpiomux.o
+diff --git a/arch/arm/mach-msm/board-msm8960.c b/arch/arm/mach-msm/board-msm8960.c
+index 2b09573..43134cf 100644
+--- a/arch/arm/mach-msm/board-msm8960.c
++++ b/arch/arm/mach-msm/board-msm8960.c
+@@ -27,6 +27,8 @@
+ #include <mach/board.h>
+ #include <mach/msm_iomap.h>
+ 
++#include "devices.h"
++
+ static void __init msm8960_map_io(void)
+ {
+ 	msm_map_msm8960_io();
+@@ -54,15 +56,35 @@ static void __init msm8960_init_irq(void)
+ 	}
+ }
+ 
++static struct platform_device *sim_devices[] __initdata = {
++	&msm8960_device_uart_gsbi2,
++};
++
++static struct platform_device *rumi3_devices[] __initdata = {
++	&msm8960_device_uart_gsbi5,
++};
++
++static void __init msm8960_sim_init(void)
++{
++	platform_add_devices(sim_devices, ARRAY_SIZE(sim_devices));
++}
++
++static void __init msm8960_rumi3_init(void)
++{
++	platform_add_devices(rumi3_devices, ARRAY_SIZE(rumi3_devices));
++}
++
+ MACHINE_START(MSM8960_SIM, "QCT MSM8960 SIMULATOR")
+ 	.map_io = msm8960_map_io,
+ 	.init_irq = msm8960_init_irq,
++	.init_machine = msm8960_sim_init,
+ 	.timer = &msm_timer,
+ MACHINE_END
+ 
+ MACHINE_START(MSM8960_RUMI3, "QCT MSM8960 RUMI3")
+ 	.map_io = msm8960_map_io,
+ 	.init_irq = msm8960_init_irq,
++	.init_machine = msm8960_rumi3_init,
+ 	.timer = &msm_timer,
+ MACHINE_END
+ 
+diff --git a/arch/arm/mach-msm/devices-msm8960.c b/arch/arm/mach-msm/devices-msm8960.c
+new file mode 100644
+index 0000000..821e6d1
+--- /dev/null
++++ b/arch/arm/mach-msm/devices-msm8960.c
+@@ -0,0 +1,83 @@
++/*
++ * Copyright (C) 2008 Google, Inc.
++ * Copyright (c) 2008-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/platform_device.h>
++
++#include <linux/dma-mapping.h>
++#include <mach/irqs-8960.h>
++#include <mach/board.h>
++
++#include "devices.h"
++
++#define MSM_GSBI2_PHYS		0x16100000
++#define MSM_UART2DM_PHYS	(MSM_GSBI2_PHYS + 0x40000)
++
++#define MSM_GSBI5_PHYS		0x16400000
++#define MSM_UART5DM_PHYS	(MSM_GSBI5_PHYS + 0x40000)
++
++static struct resource resources_uart_gsbi2[] = {
++	{
++		.start	= GSBI2_UARTDM_IRQ,
++		.end	= GSBI2_UARTDM_IRQ,
++		.flags	= IORESOURCE_IRQ,
++	},
++	{
++		.start	= MSM_UART2DM_PHYS,
++		.end	= MSM_UART2DM_PHYS + PAGE_SIZE - 1,
++		.name	= "uart_resource",
++		.flags	= IORESOURCE_MEM,
++	},
++	{
++		.start	= MSM_GSBI2_PHYS,
++		.end	= MSM_GSBI2_PHYS + PAGE_SIZE - 1,
++		.name	= "gsbi_resource",
++		.flags	= IORESOURCE_MEM,
++	},
++};
++
++struct platform_device msm8960_device_uart_gsbi2 = {
++	.name	= "msm_serial",
++	.id	= 0,
++	.num_resources	= ARRAY_SIZE(resources_uart_gsbi2),
++	.resource	= resources_uart_gsbi2,
++};
++
++static struct resource resources_uart_gsbi5[] = {
++	{
++		.start	= GSBI5_UARTDM_IRQ,
++		.end	= GSBI5_UARTDM_IRQ,
++		.flags	= IORESOURCE_IRQ,
++	},
++	{
++		.start	= MSM_UART5DM_PHYS,
++		.end	= MSM_UART5DM_PHYS + PAGE_SIZE - 1,
++		.name	= "uart_resource",
++		.flags	= IORESOURCE_MEM,
++	},
++	{
++		.start	= MSM_GSBI5_PHYS,
++		.end	= MSM_GSBI5_PHYS + PAGE_SIZE - 1,
++		.name	= "gsbi_resource",
++		.flags	= IORESOURCE_MEM,
++	},
++};
++
++struct platform_device msm8960_device_uart_gsbi5 = {
++	.name	= "msm_serial",
++	.id	= 0,
++	.num_resources	= ARRAY_SIZE(resources_uart_gsbi5),
++	.resource	= resources_uart_gsbi5,
++};
+diff --git a/arch/arm/mach-msm/devices.h b/arch/arm/mach-msm/devices.h
+index 87c70bf..e2643b3 100644
+--- a/arch/arm/mach-msm/devices.h
++++ b/arch/arm/mach-msm/devices.h
+@@ -22,6 +22,9 @@ extern struct platform_device msm_device_uart1;
+ extern struct platform_device msm_device_uart2;
+ extern struct platform_device msm_device_uart3;
+ 
++extern struct platform_device msm8960_device_uart_gsbi2;
++extern struct platform_device msm8960_device_uart_gsbi5;
++
+ extern struct platform_device msm_device_sdc1;
+ extern struct platform_device msm_device_sdc2;
+ extern struct platform_device msm_device_sdc3;
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
