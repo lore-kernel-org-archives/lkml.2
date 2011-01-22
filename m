@@ -1,155 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330Ab1AVVoS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 16:44:18 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:51982 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750881Ab1AVVoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 16:44:17 -0500
-Message-ID: <4D3B4FA5.2040702@parallels.com>
-Date: Sat, 22 Jan 2011 15:44:05 -0600
-From: Rob Landley <rlandley@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1751997Ab1AVV4R (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 16:56:17 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:50778 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738Ab1AVV4P convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jan 2011 16:56:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=dko9+T2CRpuQA//OO2CYc7biDfLUfxepQM5gzLKryb4+woDDUJUPE7awERMAi7/gLN
+         +LAiBu/nhfIK7LLIFfFOjxSfh8L0yTSWouaQv33WOEIPumJWJWCaLaQkswsIgry73xIA
+         P/CI/x0eB6pMbPjiqp4b5bltZRihTlDg08eW4=
 MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>, Jeff Layton <jlayton@redhat.com>,
-        <containers@lists.linux-foundation.org>, <linux-cifs@vger.kernel.org>,
-        <sfrench@samba.org>, <samba-technical@lists.samba.org>
-Subject: [PATCH] Make CIFS mount work in a container.
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110122205535.GD8666@infradead.org>
+References: <20110121094827.41818a55@jbarnes-desktop>
+	<20110121095658.1ab623fe@jbarnes-desktop>
+	<1295632828.19880.22.camel@m0nster>
+	<20110121100441.06a94482@jbarnes-desktop>
+	<1295633882.19880.31.camel@m0nster>
+	<AANLkTi=L+MW5-KLP_TKSxhstD8JEtBW=RKci5wSbZsd6@mail.gmail.com>
+	<1295642995.19880.42.camel@m0nster>
+	<AANLkTikVDn+W8t7KSym5tCGZowyYvoLFrk8d0mumiRF-@mail.gmail.com>
+	<20110121234930.GK3043@thunk.org>
+	<1295684398.19231.47.camel@jaguar>
+	<20110122205535.GD8666@infradead.org>
+Date: Sat, 22 Jan 2011 23:56:14 +0200
+X-Google-Sender-Auth: 4wLTtfQnmzwfbwIxUxPN_RurCx0
+Message-ID: <AANLkTimKRCAVQSn8cic2OH2+2eOP+RKxWhUkpRw-B3k3@mail.gmail.com>
+Subject: Re: [PATCH 0/7] Nexus One Support
+From: Pekka Enberg <penberg@kernel.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Daniel Walker <dwalker@codeaurora.org>,
+        Dima Zavin <dmitriyz@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, Joe Perches <joe@perches.com>,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, davidb@codeaurora.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Landley <rlandley@parallels.com>
+Hi Christoph!
 
-Teach cifs about network namespaces, so mounting uses adresses/routing
-visible from the container rather than from init context.
+On Sat, Jan 22, 2011 at 10:19:58AM +0200, Pekka Enberg wrote:
+>> Sure, it would have been nicer for everyone involved if Daniel would
+>> have kept the original patches and added new patches to clean it up on
+>> top of that to preserve the history.
 
-For a long drawn out test reproduction sequence, see:
+On Sat, Jan 22, 2011 at 10:55 PM, Christoph Hellwig <hch@infradead.org> wrote:
+> No, it would be a complete fucking mess that way.  We tell people to
+> submit standalone and well formed patches all the time.  Why would it
+> make any difference just because they were also commited to a shitty git
+> tree somewhere else?
 
-  http://landley.livejournal.com/47024.html
-  http://landley.livejournal.com/47205.html
-  http://landley.livejournal.com/47476.html
+We also tell people to submit crap into tree all the time - it's
+called staging! We also merge full history from time to time like in
+the case of btrfs.
 
-Signed-off-by: Rob Landley <rlandley@parallels.com>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
----
-Several other people commented on the patch without giving a formal byline, see:
-https://lists.linux-foundation.org/pipermail/containers/2011-January/026250.html
+Usually even "shitty git trees" have value in the history for people
+who're interested why the code is the way it is. But as people who
+actually looked at the patches, it doesn't apply here.
 
-This is version three of the patch.  Discussion on the other lists
-seems to have died down, and it Works For Me (tm).
-
-The patch is almost size neutral when CONFIG_NET_NS is disabled,
-everything but the switch from sock_create_kern() to __sock_create()
-(which has two more function arguments) drops out.
-
- fs/cifs/cifsglob.h |   33 +++++++++++++++++++++++++++++++++
- fs/cifs/connect.c  |   12 ++++++++++--
- 2 files changed, 43 insertions(+), 2 deletions(-)
-
-diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
-index 606ca8b..54cd4ab 100644
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -165,6 +165,9 @@ struct TCP_Server_Info {
- 	struct socket *ssocket;
- 	struct sockaddr_storage dstaddr;
- 	struct sockaddr_storage srcaddr; /* locally bind to this IP */
-+#ifdef CONFIG_NET_NS
-+	struct net *net;
-+#endif
- 	wait_queue_head_t response_q;
- 	wait_queue_head_t request_q; /* if more than maxmpx to srvr must block*/
- 	struct list_head pending_mid_q;
-@@ -224,6 +227,36 @@ struct TCP_Server_Info {
- };
- 
- /*
-+ * Macros to allow the TCP_Server_Info->net field and related code to drop out
-+ * when CONFIG_NET_NS isn't set.
-+ */
-+
-+#ifdef CONFIG_NET_NS
-+
-+static inline struct net *cifs_net_ns(struct TCP_Server_Info *srv)
-+{
-+	return srv->net;
-+}
-+
-+static inline void cifs_set_net_ns(struct TCP_Server_Info *srv, struct net *net)
-+{
-+	srv->net = net;
-+}
-+
-+#else
-+
-+static inline struct net *cifs_net_ns(struct TCP_Server_Info *srv)
-+{
-+	return &init_net;
-+}
-+
-+static inline void cifs_set_net_ns(struct TCP_Server_Info *srv, struct net *net)
-+{
-+}
-+
-+#endif
-+
-+/*
-  * Session structure.  One of these for each uid session with a particular host
-  */
- struct cifsSesInfo {
-diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-index a65d311..53679f6 100644
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -1577,6 +1577,9 @@ cifs_find_tcp_session(struct sockaddr *addr, struct smb_vol *vol)
- 
- 	spin_lock(&cifs_tcp_ses_lock);
- 	list_for_each_entry(server, &cifs_tcp_ses_list, tcp_ses_list) {
-+		if (!net_eq(cifs_net_ns(server), current->nsproxy->net_ns))
-+			continue;
-+
- 		if (!match_address(server, addr,
- 				   (struct sockaddr *)&vol->srcaddr))
- 			continue;
-@@ -1607,6 +1610,8 @@ cifs_put_tcp_session(struct TCP_Server_Info *server)
- 		return;
- 	}
- 
-+	put_net(cifs_net_ns(server));
-+
- 	list_del_init(&server->tcp_ses_list);
- 	spin_unlock(&cifs_tcp_ses_lock);
- 
-@@ -1679,6 +1684,7 @@ cifs_get_tcp_session(struct smb_vol *volume_info)
- 		goto out_err;
- 	}
- 
-+	cifs_set_net_ns(tcp_ses, get_net(current->nsproxy->net_ns));
- 	tcp_ses->hostname = extract_hostname(volume_info->UNC);
- 	if (IS_ERR(tcp_ses->hostname)) {
- 		rc = PTR_ERR(tcp_ses->hostname);
-@@ -1754,6 +1760,8 @@ cifs_get_tcp_session(struct smb_vol *volume_info)
- out_err_crypto_release:
- 	cifs_crypto_shash_release(tcp_ses);
- 
-+	put_net(cifs_net_ns(tcp_ses));
-+
- out_err:
- 	if (tcp_ses) {
- 		if (!IS_ERR(tcp_ses->hostname))
-@@ -2265,8 +2273,8 @@ generic_ip_connect(struct TCP_Server_Info *server)
- 	}
- 
- 	if (socket == NULL) {
--		rc = sock_create_kern(sfamily, SOCK_STREAM,
--				      IPPROTO_TCP, &socket);
-+		rc = __sock_create(cifs_net_ns(server), sfamily, SOCK_STREAM,
-+				   IPPROTO_TCP, &socket, 1);
- 		if (rc < 0) {
- 			cERROR(1, "Error %d creating socket", rc);
- 			server->ssocket = NULL;
-
-
+                        Pekka
