@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267Ab1AVEqT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 23:46:19 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:39183 "EHLO
+	id S1750848Ab1AVFEl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 00:04:41 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:45521 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683Ab1AVEqS (ORCPT
+	with ESMTP id S1750720Ab1AVFEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 23:46:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=Bc6zOtw8rphEoLUcIv2nX0HoHsPzaTIJ1I9GUQnExQtWFo4/KrQrCw6z9ll4ZD5JGc
-         h+6yTlYHE3Ko65elUhTA==
-Date: Fri, 21 Jan 2011 20:46:00 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Miklos Szeredi <miklos@szeredi.hu>
-cc: Christoph Hellwig <hch@infradead.org>, akpm@linux-foundation.org,
-        gurudas.pai@oracle.com, lkml20101129@newton.leun.net,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: prevent concurrent unmap_mapping_range() on the same
- inode
-In-Reply-To: <E1PfvGx-00086O-IA@pomaz-ex.szeredi.hu>
-Message-ID: <alpine.LSU.2.00.1101212014330.4301@sister.anvils>
-References: <E1PftfG-0007w1-Ek@pomaz-ex.szeredi.hu> <20110120124043.GA4347@infradead.org> <E1PfvGx-00086O-IA@pomaz-ex.szeredi.hu>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 22 Jan 2011 00:04:39 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:user-agent:date:from:to:cc:subject:references:
+	content-disposition:x-system-of-record;
+	b=oBSP8E0T0tBfUx9YOhZEeQJj9u20iUz9bwZSlaKTJDd6mGD5njnBi0SSCkS6BnVpo
+	ls4GCetQZ8YEqP0Qi8JQw==
+Message-Id: <20110122044851.825284940@google.com>
+User-Agent: quilt/0.48-1
+Date: Fri, 21 Jan 2011 20:45:00 -0800
+From: Paul Turner <pjt@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Dan Carpenter <error27@gmail.com>
+Subject: [patch 2/5] sched: (cleanup) remove redundant cfs_rq checks
+References: <20110122044458.058531078@google.com>
+Content-Disposition: inline; filename=sched-remove_cfs_rq_checks.patch
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jan 2011, Miklos Szeredi wrote:
-> On Thu, 20 Jan 2011, Christoph Hellwig wrote:
-> > On Thu, Jan 20, 2011 at 01:30:58PM +0100, Miklos Szeredi wrote:
-> > > 
-> > > Truncate and hole punching already serialize with i_mutex.  Other
-> > > callers of unmap_mapping_range() do not, and it's difficult to get
-> > > i_mutex protection for all callers.  In particular ->d_revalidate(),
-> > > which calls invalidate_inode_pages2_range() in fuse, may be called
-> > > with or without i_mutex.
-> > 
-> > 
-> > Which I think is mostly a fuse problem.  I really hate bloating the
-> > generic inode (into which the address_space is embedded) with another
-> > mutex for deficits in rather special case filesystems. 
-> 
-> As Hugh pointed out unmap_mapping_range() has grown a varied set of
-> callers, which are difficult to fix up wrt i_mutex.  Fuse was just an
-> example.
-> 
-> I don't like the bloat either, but this is the best I could come up
-> with for fixing this problem generally.  If you have a better idea,
-> please share it.
+Since updates are against an entity's queuing cfs_rq it's not possible to
+enter update_cfs_{shares,load} with a NULL cfs_rq.  (Indeed, update_cfs_load
+would crash prior to the check if we did anyway since we load is examined
+during the initializers).  Also, in the update_cfs_load case there's no point
+in maintaining averages for rq->cfs_rq since we don't perform shares
+distribution at that level -- NULL check is replaced accordingly.
 
-If we start from the point that this is mostly a fuse problem (I expect
-that a thorough audit will show up a few other filesystems too, but
-let's start from this point): you cite ->d_revalidate as a particular
-problem, but can we fix up its call sites so that it is always called
-either with, or much preferably without, i_mutex held?  Though actually
-I couldn't find where ->d_revalidate() is called while holding i_mutex.
+Thanks to Dan Carpenter for pointing out the deference before NULL check.
 
-Failing that, can fuse down_write i_alloc_sem before calling
-invalidate_inode_pages2(_range), to achieve the same exclusion?
-The setattr truncation path takes i_alloc_sem as well as i_mutex,
-though I'm not certain of its full coverage.
+Signed-off-by: Paul Turner <pjt@google.com>
 
-I did already consider holding and dropping i_alloc_sem inside
-invalidate_inode_pages2_range(); but direct-io.c very much wants
-to take mmap_sem (when get_user_pages_fast goes slow) after taking
-i_alloc_sem, whereas fuse_direct_mmap() very much wants to call
-invalidate_inode_pages2() while mmap_sem is held.
+---
+ kernel/sched_fair.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-Hugh
+Index: tip3/kernel/sched_fair.c
+===================================================================
+--- tip3.orig/kernel/sched_fair.c
++++ tip3/kernel/sched_fair.c
+@@ -721,7 +721,7 @@ static void update_cfs_load(struct cfs_r
+ 	u64 now, delta;
+ 	unsigned long load = cfs_rq->load.weight;
+ 
+-	if (!cfs_rq)
++	if (cfs_rq->tg == &root_task_group)
+ 		return;
+ 
+ 	now = rq_of(cfs_rq)->clock;
+@@ -784,9 +784,6 @@ static void update_cfs_shares(struct cfs
+ 	struct sched_entity *se;
+ 	long load_weight, load, shares;
+ 
+-	if (!cfs_rq)
+-		return;
+-
+ 	tg = cfs_rq->tg;
+ 	se = tg->se[cpu_of(rq_of(cfs_rq))];
+ 	if (!se)
+
+
