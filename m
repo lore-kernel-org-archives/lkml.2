@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541Ab1AVV7v (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 16:59:51 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:45704 "EHLO
-	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751892Ab1AVV7t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 16:59:49 -0500
-Date: Sat, 22 Jan 2011 21:57:56 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Brian Swetland <swetland@google.com>, Pekka Enberg <penberg@kernel.org>,
-        Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Dima Zavin <dmitriyz@google.com>, Joe Perches <joe@perches.com>,
-        davidb@codeaurora.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/7] Nexus One Support
-Message-ID: <20110122215756.10428245@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110122210405.GC11960@n2100.arm.linux.org.uk>
-References: <1295632828.19880.22.camel@m0nster>
-	<20110121100441.06a94482@jbarnes-desktop>
-	<1295633882.19880.31.camel@m0nster>
-	<AANLkTi=L+MW5-KLP_TKSxhstD8JEtBW=RKci5wSbZsd6@mail.gmail.com>
-	<1295642995.19880.42.camel@m0nster>
-	<1295643762.25868.31.camel@Joe-Laptop>
-	<1295645098.22882.1.camel@m0nster>
-	<AANLkTi=mvdfpCPefGeDr+eGxpSUr3is5jgugHtgB-m1w@mail.gmail.com>
-	<20110122122018.GC5194@n2100.arm.linux.org.uk>
-	<AANLkTi=47z21zExtfHq2WYdUdXeC1rNhe7vQsqPkFsMi@mail.gmail.com>
-	<20110122210405.GC11960@n2100.arm.linux.org.uk>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752596Ab1AVWA0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 17:00:26 -0500
+Received: from sg2ehsobe002.messaging.microsoft.com ([207.46.51.76]:51600 "EHLO
+	SG2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752476Ab1AVWAZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jan 2011 17:00:25 -0500
+X-Greylist: delayed 905 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Jan 2011 17:00:24 EST
+X-SpamScore: -4
+X-BigFish: VPS-4(zz4015Lzz1202hzzz2dh95h668h63h)
+X-Spam-TCS-SCL: 2:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 8BIT
+Subject: console problem?, close(2) hangs /sbin/init
+Date: Sat, 22 Jan 2011 14:45:09 -0700
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: console problem?, close(2) hangs /sbin/init
+Thread-Index: Acu6faQMQ9P6a7G0TZ6dFVQ45qRDAQ==
+From: John Linn <John.Linn@xilinx.com>
+To: <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 22 Jan 2011 21:45:12.0165 (UTC) FILETIME=[A5919150:01CBBA7D]
+X-RCIS-Action: ALLOW
+Message-ID: <7110b8bd-1411-4a92-81b7-1a76f5d5cb65@SG2EHSMHS005.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 22 Jan 2011 21:04:05 +0000
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+I have a kernel that runs fine with a busybox root file system using
+inittab.  When I move to a non-busybox init (sysvinit), I see init
+hanging when doing a close of standard error very early when it starts.
+I have debugged it with GDB but not found the source of the hang as it's
+in the kernel it appears.
 
-> On Sat, Jan 22, 2011 at 11:22:57AM -0800, Brian Swetland wrote:
-> > What would be useful would be a reasonable convention for
-> > acknowledging multiple authors, perhaps something along the lines of:
-> 
-> I asked for the answer to a _specific_ example.  If you can't answer
-> that example, then you *can't* expect Daniel to either, and it is
-> utterly unreasonable to demand it of him.
+To debug this, I use init=/bin/sh on the kernel command line, then exec
+init to start it. The same root file system works on another board with
+a different kernel.  I have also noticed that building init with
+INITDEBUG on so that it forks for debugging makes it work fine. This
+seems to indicate the device nodes are all fine to me.
 
-I've always just put it in the text. I'm not fond of it being in URLs
-because some day they break and move, at least if the list of names is in
-the git log it's ensuring the contributor data isn't going to get
-completely lost.
+It seems related to PID 1 and the console device.
 
-Yeah
+Adding debug to the kernel in sys_close() shows it hanging in
+filp_close() and I'm still digging more (maybe locking issue). The
+console is a serial device with a newer driver which I suspected to be
+the issue, but can't see anything wrong.
 
-Based on blah by
-	name
-	name
-	name
-	name
-	name
+Any hints or similar problems seen would be much appreciated.
+Thanks,
+John
 
-isn't the most thrilling git commit message but it works and sometimes
-you can even generate the list with grep
+
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+
 
