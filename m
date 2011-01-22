@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412Ab1AVKEQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 05:04:16 -0500
-Received: from www.tglx.de ([62.245.132.106]:47912 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752022Ab1AVKEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 05:04:15 -0500
-Date: Sat, 22 Jan 2011 11:01:49 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Torben Hohn <torbenh@gmx.de>
-cc: linux-kernel@vger.kernel.org, johnstul@us.ibm.com, hch@infradead.org,
-        yong.zhang0@gmail.com
-Subject: Re: [PATCH 09/18] frv: switch do_timer() to xtime_update()
-In-Reply-To: <1295651224-29823-10-git-send-email-torbenh@gmx.de>
-Message-ID: <alpine.LFD.2.00.1101221051570.2971@localhost6.localdomain6>
-References: <1295651224-29823-1-git-send-email-torbenh@gmx.de> <1295651224-29823-10-git-send-email-torbenh@gmx.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752333Ab1AVKLo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 05:11:44 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:33857 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710Ab1AVKLm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jan 2011 05:11:42 -0500
+Date: Sat, 22 Jan 2011 11:14:03 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "Richter, Robert" <robert.richter@amd.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        "Rosenfeld, Hans" <Hans.Rosenfeld@amd.com>,
+        Alok N Kataria <akataria@vmware.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "Hans J. Koch" <hjk@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: Move llc_shared_map out of cpu_info
+Message-ID: <20110122101403.GB23987@aftab>
+References: <4D3A16E8.5020608@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D3A16E8.5020608@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 22 Jan 2011, Torben Hohn wrote:
+On Fri, Jan 21, 2011 at 06:29:44PM -0500, Yinghai Lu wrote:
+> 
+> cpu_info is already with per_cpu, We can take llc_shared_map out of cpu_info,
+> and declare it as per_cpu variable directly.
+> 
+> So later referencing could be simple and directly instead of diving to find
+> cpu_info at first.
+> 
+> Also could make smp_store_cpu_info() much simple to avoid to do save and restore trick.
+> 
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-> this code looks like its protecting __set_LEDS() with this lock also.
-> i dont think thats necessary.
+Yep, it's only natural to do that.
 
-This changelog is horrible. 
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
 
-This code does not look like protecting the __set_LEDS() call with the
-xtime_lock. The call happens to be inside the xtime_lock held region.
+-- 
+Regards/Gruss,
+Boris.
 
-Now instead of bringing up a weak argument "I dont think ..." you
-should provide a proper analysis why it's safe to move that code out.
-
-It's pretty simple:
-
-No other call site of __set_LEDS() is protected by xtime_lock, so
-xtime_lock does not protect anything related to __set_LEDS(). It's
-just inside the xtime_lock region for no good reason at all.
-
-Please be more careful when writing change logs, so a reviewer can
-understand the reasoning behind your change easily.
-
-Also all arch/* patches are missing a "Cc: arch-maintainer@somewhere.xxx".
-
->  {
-> @@ -61,10 +61,11 @@ static irqreturn_t timer_interrupt(int irq, void *dummy)
->  	 * CPU. We need to avoid to SMP race with it. NOTE: we don't need
->  	 * the irq version of write_lock because as just said we have irq
->  	 * locally disabled. -arca
-> +	 *
-> +	 * xtime_update takes the writelock.
-
-  Errm. xtime_update write locks xtime_lock. Please be careful with comments.
-
-Thanks,
-
-	tglx
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
