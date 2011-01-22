@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab1AVNO2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 08:14:28 -0500
+	id S1753487Ab1AVNOd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 08:14:33 -0500
 Received: from mail-iw0-f174.google.com ([209.85.214.174]:43821 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753267Ab1AVNOX (ORCPT
+	with ESMTP id S1753267Ab1AVNOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 08:14:23 -0500
+	Sat, 22 Jan 2011 08:14:30 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=kdmLEI3ByGPxY1a+2W25vZfcE0kBDnDVIWqqWS7tNJ8L7AqSPCD8qq+nUIeIh/fwjQ
-         kF6V04xAj6a9E4EqtRaMGLdizh4QzRXsUbNYMeFQtIqT7oWxOXG2RO1obH+4y+HKl+0g
-         y6Df+XS6WQGnlGTMZrZPr6uXWpDbZdBGrsP2A=
+        b=lzICMhJStdcru2+uuhQTncM+QLn7vLoF1nFxVGY1YSNZHRNpEUa3S9IV2qQ688RmEK
+         Dnf0NJoSgFwYiw1RgvQr5IkzuWMfmJ0jfcWM+axWNea8DPGt1aJkIld6qqyeKgIOIndz
+         n1LQJcphOf+8c+m7N7N4dh3WGAwJ9uyY6J4I0=
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org
-Subject: [PATCH v5 14/27] kvm: use little-endian bitops
-Date: Sat, 22 Jan 2011 22:13:46 +0900
-Message-Id: <1295702039-23186-15-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, Jan Kara <jack@suse.cz>
+Subject: [PATCH v5 16/27] ext3: use little-endian bitops
+Date: Sat, 22 Jan 2011 22:13:48 +0900
+Message-Id: <1295702039-23186-17-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1295702039-23186-1-git-send-email-akinobu.mita@gmail.com>
 References: <1295702039-23186-1-git-send-email-akinobu.mita@gmail.com>
@@ -33,33 +33,43 @@ asm/bitops.h.  This converts ext2 non-atomic bit operations to
 little-endian bit operations.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: kvm@vger.kernel.org
+Acked-by: Jan Kara <jack@suse.cz>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
 
 Change from v4:
- - splitted into two patches to fix a bisection hole
+ - remove casts to "unsigned long *" due to le-bitops prototype change
 
 The whole series is available in the git branch at:
  git://git.kernel.org/pub/scm/linux/kernel/git/mita/linux-2.6.git le-bitops-v5
 
- virt/kvm/kvm_main.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/ext3_fs.h |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 3461001..508fdb1 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1420,7 +1420,7 @@ void mark_page_dirty_in_slot(struct kvm *kvm, struct kvm_memory_slot *memslot,
- 	if (memslot && memslot->dirty_bitmap) {
- 		unsigned long rel_gfn = gfn - memslot->base_gfn;
+diff --git a/include/linux/ext3_fs.h b/include/linux/ext3_fs.h
+index 65990ef..fffd3fb 100644
+--- a/include/linux/ext3_fs.h
++++ b/include/linux/ext3_fs.h
+@@ -418,13 +418,13 @@ struct ext3_inode {
+ #define EXT2_MOUNT_DATA_FLAGS		EXT3_MOUNT_DATA_FLAGS
+ #endif
  
--		ext2_set_bit(rel_gfn, memslot->dirty_bitmap);
-+		__set_bit_le(rel_gfn, memslot->dirty_bitmap);
- 	}
- }
+-#define ext3_set_bit			ext2_set_bit
++#define ext3_set_bit			__test_and_set_bit_le
+ #define ext3_set_bit_atomic		ext2_set_bit_atomic
+-#define ext3_clear_bit			ext2_clear_bit
++#define ext3_clear_bit			__test_and_clear_bit_le
+ #define ext3_clear_bit_atomic		ext2_clear_bit_atomic
+-#define ext3_test_bit			ext2_test_bit
+-#define ext3_find_first_zero_bit	ext2_find_first_zero_bit
+-#define ext3_find_next_zero_bit		ext2_find_next_zero_bit
++#define ext3_test_bit			test_bit_le
++#define ext3_find_first_zero_bit	find_first_zero_bit_le
++#define ext3_find_next_zero_bit		find_next_zero_bit_le
  
+ /*
+  * Maximal mount counts between two filesystem checks
 -- 
 1.7.3.4
 
