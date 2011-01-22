@@ -1,115 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab1AVWi1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 17:38:27 -0500
-Received: from smtp-out-005.synserver.de ([212.40.180.5]:1060 "HELO
-	smtp-out-002.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1751089Ab1AVWi0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 17:38:26 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 19667
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, stable@kernel.org (for 2.6.37)
-Subject: [PATCH] SoC: Samsung: Fix outdated cpu_dai_name for s3c24xx i2s
-Date: Sat, 22 Jan 2011 23:38:08 +0100
-Message-Id: <1295735888-25527-2-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1295735888-25527-1-git-send-email-lars@metafoo.de>
-References: <1295735888-25527-1-git-send-email-lars@metafoo.de>
+	id S1752647Ab1AVWmP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 17:42:15 -0500
+Received: from sg2ehsobe002.messaging.microsoft.com ([207.46.51.76]:9344 "EHLO
+	SG2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750872Ab1AVWmO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jan 2011 17:42:14 -0500
+X-SpamScore: -30
+X-BigFish: VPS-30(zz542N1432N98dN4015L9371Pzz1202hzz8275dh8275chz2dh95h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 8BIT
+x-cr-puzzleid: {0A6DAD8F-7BF8-4B24-8D6D-9C4F1842CB46}
+x-cr-hashedpuzzle: AAli Aqo+ DBJ5 EFVL FhGs FmWX FuDB JEDb K4pB MGax QrVl Tbo5 T57D Wi/B XCsB YiC7;2;agBqAEAAYwBoAGEAbwBzAGIAaQB0AHMALgBuAGUAdAA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcA;Sosha1_v1;7;{0A6DAD8F-7BF8-4B24-8D6D-9C4F1842CB46};bABpAG4AbgBqAEAAeABpAGwAaQBuAHgALgBjAG8AbQA=;Sat, 22 Jan 2011 22:40:25 GMT;UgBFADoAIABjAG8AbgBzAG8AbABlACAAcAByAG8AYgBsAGUAbQA/ACwAIABjAGwAbwBzAGUAKAAyACkAIABoAGEAbgBnAHMAIAAvAHMAYgBpAG4ALwBpAG4AaQB0AA==
+Content-Class: urn:content-classes:message
+Subject: RE: console problem?, close(2) hangs /sbin/init
+Date: Sat, 22 Jan 2011 15:40:25 -0700
+In-Reply-To: <alpine.LNX.2.00.1101222312560.7746@swampdragon.chaosbits.net>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: console problem?, close(2) hangs /sbin/init
+Thread-Index: Acu6ga2EfH4LKA61T+qZbvGFKc/MZAAAxdzQ
+References: <7110b8bd-1411-4a92-81b7-1a76f5d5cb65@SG2EHSMHS005.ehs.local> <alpine.LNX.2.00.1101222312560.7746@swampdragon.chaosbits.net>
+From: John Linn <John.Linn@xilinx.com>
+To: Jesper Juhl <jj@chaosbits.net>
+CC: <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 22 Jan 2011 22:40:32.0319 (UTC) FILETIME=[6088DCF0:01CBBA85]
+X-RCIS-Action: ALLOW
+Message-ID: <f472f2eb-0730-43d7-ad97-3ba867694fb5@SG2EHSMHS007.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During the multi-component patch the s3c24xx i2s driver was renamed from
-"s3c24xx-i2s" to "s3c24xx-iis", while the sound board drivers were not
-updated to reflect this change as well.
+> -----Original Message-----
+> From: Jesper Juhl [mailto:jj@chaosbits.net]
+> Sent: Saturday, January 22, 2011 3:14 PM
+> To: John Linn
+> Cc: linux-kernel@vger.kernel.org
+> Subject: Re: console problem?, close(2) hangs /sbin/init
+> 
+> On Sat, 22 Jan 2011, John Linn wrote:
+> 
+> > I have a kernel that runs fine
+> 
+> What kernel exactely?
+> 
+> >with a busybox root file system using
+> > inittab.  When I move to a non-busybox init (sysvinit), I see init
+> > hanging when doing a close of standard error very early when it
+starts.
+> > I have debugged it with GDB but not found the source of the hang as
+it's
+> > in the kernel it appears.
 
-As a result there is no match between the dai_link and the i2s driver and no
-sound card is instantiated.
+I seems like it's any of the descriptors for the console, 0, 1, or 2 as
+I try to isolate it.
+Init closes all 3 when it begins and this is where the problem seems to
+start.
 
-This patch fixes the problem by updating the sound board drivers to use
-"s3c24xx-iis" for the cpu_dai_name.
+At one point during some debug, I saw the kernel spit out a message
+about a hung task which
+showed tty_lock/mutex_lock_slowpath from a sys_open origin.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: stable@kernel.org (for 2.6.37)
----
- sound/soc/samsung/neo1973_gta02_wm8753.c       |    2 +-
- sound/soc/samsung/neo1973_wm8753.c             |    2 +-
- sound/soc/samsung/s3c24xx_simtec_hermes.c      |    2 +-
- sound/soc/samsung/s3c24xx_simtec_tlv320aic23.c |    2 +-
- sound/soc/samsung/s3c24xx_uda134x.c            |    2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
+I had written it off in the beginning because I don't always see it, but
+maybe this is also
+a symptom I should be debugging.
 
-diff --git a/sound/soc/samsung/neo1973_gta02_wm8753.c b/sound/soc/samsung/neo1973_gta02_wm8753.c
-index 5e77cd1..95ebf81 100644
---- a/sound/soc/samsung/neo1973_gta02_wm8753.c
-+++ b/sound/soc/samsung/neo1973_gta02_wm8753.c
-@@ -387,7 +387,7 @@ static struct snd_soc_dai_link neo1973_gta02_dai[] = {
- { /* Hifi Playback - for similatious use with voice below */
- 	.name = "WM8753",
- 	.stream_name = "WM8753 HiFi",
--	.cpu_dai_name = "s3c24xx-i2s",
-+	.cpu_dai_name = "s3c24xx-iis",
- 	.codec_dai_name = "wm8753-hifi",
- 	.init = neo1973_gta02_wm8753_init,
- 	.platform_name = "samsung-audio",
-diff --git a/sound/soc/samsung/neo1973_wm8753.c b/sound/soc/samsung/neo1973_wm8753.c
-index cf69e14..d20815d 100644
---- a/sound/soc/samsung/neo1973_wm8753.c
-+++ b/sound/soc/samsung/neo1973_wm8753.c
-@@ -559,7 +559,7 @@ static struct snd_soc_dai_link neo1973_dai[] = {
- 	.name = "WM8753",
- 	.stream_name = "WM8753 HiFi",
- 	.platform_name = "samsung-audio",
--	.cpu_dai_name = "s3c24xx-i2s",
-+	.cpu_dai_name = "s3c24xx-iis",
- 	.codec_dai_name = "wm8753-hifi",
- 	.codec_name = "wm8753-codec.0-001a",
- 	.init = neo1973_wm8753_init,
-diff --git a/sound/soc/samsung/s3c24xx_simtec_hermes.c b/sound/soc/samsung/s3c24xx_simtec_hermes.c
-index 2fa6d1b..ce6aef6 100644
---- a/sound/soc/samsung/s3c24xx_simtec_hermes.c
-+++ b/sound/soc/samsung/s3c24xx_simtec_hermes.c
-@@ -85,7 +85,7 @@ static struct snd_soc_dai_link simtec_dai_aic33 = {
- 	.name		= "tlv320aic33",
- 	.stream_name	= "TLV320AIC33",
- 	.codec_name	= "tlv320aic3x-codec.0-001a",
--	.cpu_dai_name	= "s3c24xx-i2s",
-+	.cpu_dai_name	= "s3c24xx-iis",
- 	.codec_dai_name = "tlv320aic3x-hifi",
- 	.platform_name	= "samsung-audio",
- 	.init		= simtec_hermes_init,
-diff --git a/sound/soc/samsung/s3c24xx_simtec_tlv320aic23.c b/sound/soc/samsung/s3c24xx_simtec_tlv320aic23.c
-index d219223..a7ef7db 100644
---- a/sound/soc/samsung/s3c24xx_simtec_tlv320aic23.c
-+++ b/sound/soc/samsung/s3c24xx_simtec_tlv320aic23.c
-@@ -74,7 +74,7 @@ static struct snd_soc_dai_link simtec_dai_aic23 = {
- 	.name		= "tlv320aic23",
- 	.stream_name	= "TLV320AIC23",
- 	.codec_name	= "tlv320aic3x-codec.0-001a",
--	.cpu_dai_name	= "s3c24xx-i2s",
-+	.cpu_dai_name	= "s3c24xx-iis",
- 	.codec_dai_name = "tlv320aic3x-hifi",
- 	.platform_name	= "samsung-audio",
- 	.init		= simtec_tlv320aic23_init,
-diff --git a/sound/soc/samsung/s3c24xx_uda134x.c b/sound/soc/samsung/s3c24xx_uda134x.c
-index ce749a1..3cb7007 100644
---- a/sound/soc/samsung/s3c24xx_uda134x.c
-+++ b/sound/soc/samsung/s3c24xx_uda134x.c
-@@ -221,7 +221,7 @@ static struct snd_soc_dai_link s3c24xx_uda134x_dai_link = {
- 	.stream_name = "UDA134X",
- 	.codec_name = "uda134x-hifi",
- 	.codec_dai_name = "uda134x-hifi",
--	.cpu_dai_name = "s3c24xx-i2s",
-+	.cpu_dai_name = "s3c24xx-iis",
- 	.ops = &s3c24xx_uda134x_ops,
- 	.platform_name	= "samsung-audio",
- };
--- 
-1.7.2.3
+> >
+> > To debug this, I use init=/bin/sh on the kernel command line, then
+exec
+> > init to start it. The same root file system works on another board
+with
+> > a different kernel.
+> 
+> What other kernel version exactely?
+> 
+> > I have also noticed that building init with
+> > INITDEBUG on so that it forks for debugging makes it work fine. This
+> > seems to indicate the device nodes are all fine to me.
+> >
+> > It seems related to PID 1 and the console device.
+> >
+> > Adding debug to the kernel in sys_close() shows it hanging in
+> > filp_close() and I'm still digging more (maybe locking issue). The
+> > console is a serial device with a newer driver which I suspected to
+be
+> > the issue, but can't see anything wrong.
+> >
+> > Any hints or similar problems seen would be much appreciated.
+> > Thanks,
+> > John
+> >
+> 
+> --
+> Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+> Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+> Plain text mails only, please.
+> 
+
+
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+
 
