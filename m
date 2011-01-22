@@ -1,110 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837Ab1AVBLG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 20:11:06 -0500
-Received: from fw.wantstofly.org ([80.101.37.227]:34613 "EHLO
-	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751973Ab1AVBLE (ORCPT
+	id S1752881Ab1AVBQP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 20:16:15 -0500
+Received: from casper.infradead.org ([85.118.1.10]:47632 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927Ab1AVBQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 20:11:04 -0500
-Date: Sat, 22 Jan 2011 02:11:03 +0100
-From: Lennert Buytenhek <buytenh@wantstofly.org>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH] dma: ipu: irq_data conversion.
-Message-ID: <20110122011103.GA27850@mail.wantstofly.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	Fri, 21 Jan 2011 20:16:14 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Han Pingtian <phan@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 2/2] perf test: Use cpu_map->[cpu] when setting affinity
+Date: Fri, 21 Jan 2011 23:16:08 -0200
+Message-Id: <1295658968-23217-3-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1295658968-23217-1-git-send-email-acme@infradead.org>
+References: <1295658968-23217-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Lennert Buytenhek <buytenh@secretlab.ca>
----
- drivers/dma/ipu/ipu_irq.c |   26 +++++++++++++-------------
- 1 files changed, 13 insertions(+), 13 deletions(-)
+From: Han Pingtian <phan@redhat.com>
 
-diff --git a/drivers/dma/ipu/ipu_irq.c b/drivers/dma/ipu/ipu_irq.c
-index dd8ebc7..5f89d72 100644
---- a/drivers/dma/ipu/ipu_irq.c
-+++ b/drivers/dma/ipu/ipu_irq.c
-@@ -94,9 +94,9 @@ static struct ipu_irq_map *src2map(unsigned int src)
- 	return NULL;
- }
+When some of CPUs are offline:
+
+ # cat /sys/devices/system/cpu/online
+ 0,6-31
+
+perf test will fail on #3 testcase:
+
+   3: detect open syscall event on all cpus:
+   --- start ---
+   perf_evsel__read_on_cpu: expected to intercept 111 calls on cpu 0, got 681
+   perf_evsel__read_on_cpu: expected to intercept 112 calls on cpu 1, got 117
+   perf_evsel__read_on_cpu: expected to intercept 113 calls on cpu 2, got 118
+   perf_evsel__read_on_cpu: expected to intercept 114 calls on cpu 3, got 119
+   perf_evsel__read_on_cpu: expected to intercept 115 calls on cpu 4, got 120
+   perf_evsel__read_on_cpu: expected to intercept 116 calls on cpu 5, got 121
+   perf_evsel__read_on_cpu: expected to intercept 117 calls on cpu 6, got 122
+   perf_evsel__read_on_cpu: expected to intercept 118 calls on cpu 7, got 123
+   perf_evsel__read_on_cpu: expected to intercept 119 calls on cpu 8, got 124
+   perf_evsel__read_on_cpu: expected to intercept 120 calls on cpu 9, got 125
+   perf_evsel__read_on_cpu: expected to intercept 121 calls on cpu 10, got 126
+   ....
+
+This patch try to use 'cpus->map[cpu]' when setting cpu affinity, and
+will check the return code of sched_setaffinity()
+
+LKML-Reference: <20110120114707.GA11781@hpt.nay.redhat.com>
+Signed-off-by: Han Pingtian <phan@redhat.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-test.c |   13 +++++++++----
+ 1 files changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index ed56961..02958d6 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -380,13 +380,18 @@ static int test__open_syscall_event_on_all_cpus(void)
+ 	for (cpu = 0; cpu < cpus->nr; ++cpu) {
+ 		unsigned int ncalls = nr_open_calls + cpu;
  
--static void ipu_irq_unmask(unsigned int irq)
-+static void ipu_irq_unmask(struct irq_data *d)
- {
--	struct ipu_irq_map *map = get_irq_chip_data(irq);
-+	struct ipu_irq_map *map = irq_data_get_irq_chip_data(d);
- 	struct ipu_irq_bank *bank;
- 	uint32_t reg;
- 	unsigned long lock_flags;
-@@ -106,7 +106,7 @@ static void ipu_irq_unmask(unsigned int irq)
- 	bank = map->bank;
- 	if (!bank) {
- 		spin_unlock_irqrestore(&bank_lock, lock_flags);
--		pr_err("IPU: %s(%u) - unmapped!\n", __func__, irq);
-+		pr_err("IPU: %s(%u) - unmapped!\n", __func__, d->irq);
- 		return;
+-		CPU_SET(cpu, cpu_set);
+-		sched_setaffinity(0, cpu_set_size, cpu_set);
++		CPU_SET_S(cpus->map[cpu], cpu_set_size, cpu_set);
++		if (sched_setaffinity(0, cpu_set_size, cpu_set) < 0) {
++			pr_debug("sched_setaffinity() failed on CPU %d: %s ",
++				 cpus->map[cpu],
++				 strerror(errno));
++			goto out_close_fd;
++		}
+ 		for (i = 0; i < ncalls; ++i) {
+ 			fd = open("/etc/passwd", O_RDONLY);
+ 			close(fd);
+ 		}
+-		CPU_CLR(cpu, cpu_set);
++		CPU_CLR_S(cpus->map[cpu], cpu_set_size, cpu_set);
  	}
  
-@@ -117,9 +117,9 @@ static void ipu_irq_unmask(unsigned int irq)
- 	spin_unlock_irqrestore(&bank_lock, lock_flags);
- }
- 
--static void ipu_irq_mask(unsigned int irq)
-+static void ipu_irq_mask(struct irq_data *d)
- {
--	struct ipu_irq_map *map = get_irq_chip_data(irq);
-+	struct ipu_irq_map *map = irq_data_get_irq_chip_data(d);
- 	struct ipu_irq_bank *bank;
- 	uint32_t reg;
- 	unsigned long lock_flags;
-@@ -129,7 +129,7 @@ static void ipu_irq_mask(unsigned int irq)
- 	bank = map->bank;
- 	if (!bank) {
- 		spin_unlock_irqrestore(&bank_lock, lock_flags);
--		pr_err("IPU: %s(%u) - unmapped!\n", __func__, irq);
-+		pr_err("IPU: %s(%u) - unmapped!\n", __func__, d->irq);
- 		return;
+ 	/*
+@@ -410,7 +415,7 @@ static int test__open_syscall_event_on_all_cpus(void)
+ 		expected = nr_open_calls + cpu;
+ 		if (evsel->counts->cpu[cpu].val != expected) {
+ 			pr_debug("perf_evsel__read_on_cpu: expected to intercept %d calls on cpu %d, got %Ld\n",
+-				 expected, cpu, evsel->counts->cpu[cpu].val);
++				 expected, cpus->map[cpu], evsel->counts->cpu[cpu].val);
+ 			goto out_close_fd;
+ 		}
  	}
- 
-@@ -140,9 +140,9 @@ static void ipu_irq_mask(unsigned int irq)
- 	spin_unlock_irqrestore(&bank_lock, lock_flags);
- }
- 
--static void ipu_irq_ack(unsigned int irq)
-+static void ipu_irq_ack(struct irq_data *d)
- {
--	struct ipu_irq_map *map = get_irq_chip_data(irq);
-+	struct ipu_irq_map *map = irq_data_get_irq_chip_data(d);
- 	struct ipu_irq_bank *bank;
- 	unsigned long lock_flags;
- 
-@@ -151,7 +151,7 @@ static void ipu_irq_ack(unsigned int irq)
- 	bank = map->bank;
- 	if (!bank) {
- 		spin_unlock_irqrestore(&bank_lock, lock_flags);
--		pr_err("IPU: %s(%u) - unmapped!\n", __func__, irq);
-+		pr_err("IPU: %s(%u) - unmapped!\n", __func__, d->irq);
- 		return;
- 	}
- 
-@@ -345,10 +345,10 @@ static void ipu_irq_fn(unsigned int irq, struct irq_desc *desc)
- }
- 
- static struct irq_chip ipu_irq_chip = {
--	.name	= "ipu_irq",
--	.ack	= ipu_irq_ack,
--	.mask	= ipu_irq_mask,
--	.unmask	= ipu_irq_unmask,
-+	.name		= "ipu_irq",
-+	.irq_ack	= ipu_irq_ack,
-+	.irq_mask	= ipu_irq_mask,
-+	.irq_unmask	= ipu_irq_unmask,
- };
- 
- /* Install the IRQ handler */
+-- 
+1.6.2.5
+
