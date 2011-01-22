@@ -1,53 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751614Ab1AVUZw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 15:25:52 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:49015 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903Ab1AVUZv (ORCPT
+	id S1751895Ab1AVUdV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 15:33:21 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:63029 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027Ab1AVUdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 15:25:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=j2cSFT4HmjO+JxxLoUZaEp+Zlc9NuCdkUVOVO/yQZXmPbXwyvDgAOzFus4YelQu2Xn
-         EBJTB1SwXbw/tAkndjeHUKq9IcWk1aZaE/Vyfsg43avA/1UzjgpRFVRf/Q45gPh+dIUd
-         3EJdYjFTBXCM9cawhRkVxMVQsGms56XXRYbok=
-Date: Sat, 22 Jan 2011 22:17:09 +0200
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Will Newton <will.newton@gmail.com>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] headers: remove aio.h from sched.h
-Message-ID: <20110122201709.GA4691@p183.telecom.by>
-References: <20110122150315.GA26270@p183.telecom.by>
- <AANLkTi=TOo=u+wz7GEDZfPnOoV3VywOrf46yPK7wLykT@mail.gmail.com>
+	Sat, 22 Jan 2011 15:33:19 -0500
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=B1xhD0n74xUA:10 a=IkcTkHD0fZMA:10 a=mpMdnlmFKti1S5SNY1DT+A==:17 a=KT5DMVwHAAAA:8 a=yQdBAQUQAAAA:8 a=VwQbUJbxAAAA:8 a=dAL8bw_q4pAZFhccMfUA:9 a=pPu3t9nM6jMziqkfEVQA:7 a=DvemZjr-TTsrVJa8d_NF-53LHYEA:4 a=QEXdDO2ut3YA:10 a=5KVauyKsRKMA:10 a=IcxpeKGZWnEA:10 a=LI9Vle30uBYA:10 a=mpMdnlmFKti1S5SNY1DT+A==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 65.28.92.85
+Date: Sat, 22 Jan 2011 14:33:50 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, AxelKoellhofer@web.de
+Subject: [PATCH] staging: r8712u: Add new device IDs
+Message-ID: <4d3b3f2e.JqpoSFVgKX4P2LDs%Larry.Finger@lwfinger.net>
+User-Agent: Heirloom mailx 12.2 01/07/07
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=TOo=u+wz7GEDZfPnOoV3VywOrf46yPK7wLykT@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 22, 2011 at 03:31:19PM +0000, Will Newton wrote:
-> On Sat, Jan 22, 2011 at 3:03 PM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
-> > --- a/block/scsi_ioctl.c
-> > +++ b/block/scsi_ioctl.c
-> > @@ -26,6 +26,7 @@
-> >  #include <linux/cdrom.h>
-> >  #include <linux/slab.h>
-> >  #include <linux/times.h>
-> > +#include <linux/uio.h>
-> >  #include <asm/uaccess.h>
-> >
-> >  #include <scsi/scsi.h>
-> 
-> Should this be aio.h?
-> 
-> There's a few more instances of uio,h elsewhere in the patch.
+From: Axel KÃ¶llhofer <AxelKoellhofer@web.de>
 
-No. It's for "struct iovec" specifically.
+This patch adds several new device ids to the r8712u staging driver.
+The new ids were retrieved from latest vendor driver (v2.6.6.0.20101111)
+downloadable from www.realtek.com.tw
+
+Signed-off-by: Axel Koellhofer <AxelKoellhofer@web.de>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Stable <stable@kernel.org> [2.6.37]
+---
+
+Greg,
+
+Realtek added a lot of new devices. There are also some changes in the
+code that will follow.
+
+Axel,
+
+Thanks for letting me know about the new driver. When we first
+corresponded, I had not yet noticed that the ID table split the 8188,
+8191, and 8192 chips. To keep that distinction, I reworked your patch.
+I also deferred the cleanup patch as it should not be backported
+to stable.
+
+Larry
+---
+
+Index: linux-2.6/drivers/staging/rtl8712/usb_intf.c
+===================================================================
+--- linux-2.6.orig/drivers/staging/rtl8712/usb_intf.c
++++ linux-2.6/drivers/staging/rtl8712/usb_intf.c
+@@ -47,54 +47,123 @@ static int r871xu_drv_init(struct usb_in
+ static void r871xu_dev_remove(struct usb_interface *pusb_intf);
+ 
+ static struct usb_device_id rtl871x_usb_id_tbl[] = {
+-	/*92SU
+-	 * Realtek */
+-	{USB_DEVICE(0x0bda, 0x8171)},
+-	{USB_DEVICE(0x0bda, 0x8172)},
++
++/* RTL8188SU */
++	/* Realtek */
++	{USB_DEVICE(0x0BDA, 0x8171)},
+ 	{USB_DEVICE(0x0bda, 0x8173)},
+-	{USB_DEVICE(0x0bda, 0x8174)},
+ 	{USB_DEVICE(0x0bda, 0x8712)},
+ 	{USB_DEVICE(0x0bda, 0x8713)},
+ 	{USB_DEVICE(0x0bda, 0xC512)},
+-	/* Abocom  */
++	/* Abocom */
+ 	{USB_DEVICE(0x07B8, 0x8188)},
++	/* ASUS */
++	{USB_DEVICE(0x0B05, 0x1786)},
++	{USB_DEVICE(0x0B05, 0x1791)}, /* 11n mode disable */
++	/* Belkin */
++	{USB_DEVICE(0x050D, 0x945A)},
+ 	/* Corega */
+-	{USB_DEVICE(0x07aa, 0x0047)},
+-	/* Dlink */
+-	{USB_DEVICE(0x07d1, 0x3303)},
+-	{USB_DEVICE(0x07d1, 0x3302)},
+-	{USB_DEVICE(0x07d1, 0x3300)},
+-	/* Dlink for Skyworth */
+-	{USB_DEVICE(0x14b2, 0x3300)},
+-	{USB_DEVICE(0x14b2, 0x3301)},
+-	{USB_DEVICE(0x14b2, 0x3302)},
++	{USB_DEVICE(0x07AA, 0x0047)},
++	/* D-Link */
++	{USB_DEVICE(0x2001, 0x3306)},
++	{USB_DEVICE(0x07D1, 0x3306)}, /* 11n mode disable */
++	/* Edimax */
++	{USB_DEVICE(0x7392, 0x7611)},
+ 	/* EnGenius */
+ 	{USB_DEVICE(0x1740, 0x9603)},
+-	{USB_DEVICE(0x1740, 0x9605)},
++	/* Hawking */
++	{USB_DEVICE(0x0E66, 0x0016)},
++	/* Hercules */
++	{USB_DEVICE(0x06F8, 0xE034)},
++	{USB_DEVICE(0x06F8, 0xE032)},
++	/* Logitec */
++	{USB_DEVICE(0x0789, 0x0167)},
++	/* PCI */
++	{USB_DEVICE(0x2019, 0xAB28)},
++	{USB_DEVICE(0x2019, 0xED16)},
++	/* Sitecom */
++	{USB_DEVICE(0x0DF6, 0x0057)},
++	{USB_DEVICE(0x0DF6, 0x0045)},
++	{USB_DEVICE(0x0DF6, 0x0059)}, /* 11n mode disable */
++	{USB_DEVICE(0x0DF6, 0x004B)},
++	{USB_DEVICE(0x0DF6, 0x0063)},
++	/* Sweex */
++	{USB_DEVICE(0x177F, 0x0154)},
++	/* Thinkware */
++	{USB_DEVICE(0x0BDA, 0x5077)},
++	/* Toshiba */
++	{USB_DEVICE(0x1690, 0x0752)},
++	/* - */
++	{USB_DEVICE(0x20F4, 0x646B)},
++	{USB_DEVICE(0x083A, 0xC512)},
++
++/* RTL8191SU */
++	/* Realtek */
++	{USB_DEVICE(0x0BDA, 0x8172)},
++	/* Amigo */
++	{USB_DEVICE(0x0EB0, 0x9061)},
++	/* ASUS/EKB */
++	{USB_DEVICE(0x0BDA, 0x8172)},
++	{USB_DEVICE(0x13D3, 0x3323)},
++	{USB_DEVICE(0x13D3, 0x3311)}, /* 11n mode disable */
++	{USB_DEVICE(0x13D3, 0x3342)},
++	/* ASUS/EKBLenovo */
++	{USB_DEVICE(0x13D3, 0x3333)},
++	{USB_DEVICE(0x13D3, 0x3334)},
++	{USB_DEVICE(0x13D3, 0x3335)}, /* 11n mode disable */
++	{USB_DEVICE(0x13D3, 0x3336)}, /* 11n mode disable */
++	/* ASUS/Media BOX */
++	{USB_DEVICE(0x13D3, 0x3309)},
+ 	/* Belkin */
+-	{USB_DEVICE(0x050d, 0x815F)},
+-	{USB_DEVICE(0x050d, 0x945A)},
+-	{USB_DEVICE(0x050d, 0x845A)},
+-	/* Guillemot */
+-	{USB_DEVICE(0x06f8, 0xe031)},
++	{USB_DEVICE(0x050D, 0x815F)},
++	/* D-Link */
++	{USB_DEVICE(0x07D1, 0x3302)},
++	{USB_DEVICE(0x07D1, 0x3300)},
++	{USB_DEVICE(0x07D1, 0x3303)},
+ 	/* Edimax */
+-	{USB_DEVICE(0x7392, 0x7611)},
+ 	{USB_DEVICE(0x7392, 0x7612)},
+-	{USB_DEVICE(0x7392, 0x7622)},
+-	/* Sitecom */
+-	{USB_DEVICE(0x0DF6, 0x0045)},
++	/* EnGenius */
++	{USB_DEVICE(0x1740, 0x9605)},
++	/* Guillemot */
++	{USB_DEVICE(0x06F8, 0xE031)},
+ 	/* Hawking */
+ 	{USB_DEVICE(0x0E66, 0x0015)},
+-	{USB_DEVICE(0x0E66, 0x0016)},
+-	{USB_DEVICE(0x0b05, 0x1786)},
+-	{USB_DEVICE(0x0b05, 0x1791)},    /* 11n mode disable */
+-
++	/* Mediao */
+ 	{USB_DEVICE(0x13D3, 0x3306)},
+-	{USB_DEVICE(0x13D3, 0x3309)},
++	/* PCI */
++	{USB_DEVICE(0x2019, 0xED18)},
++	{USB_DEVICE(0x2019, 0x4901)},
++	/* Sitecom */
++	{USB_DEVICE(0x0DF6, 0x0058)},
++	{USB_DEVICE(0x0DF6, 0x0049)},
++	{USB_DEVICE(0x0DF6, 0x004C)},
++	{USB_DEVICE(0x0DF6, 0x0064)},
++	/* Skyworth */
++	{USB_DEVICE(0x14b2, 0x3300)},
++	{USB_DEVICE(0x14b2, 0x3301)},
++	{USB_DEVICE(0x14B2, 0x3302)},
++	/* - */
++	{USB_DEVICE(0x04F2, 0xAFF2)},
++	{USB_DEVICE(0x04F2, 0xAFF5)},
++	{USB_DEVICE(0x04F2, 0xAFF6)},
++	{USB_DEVICE(0x13D3, 0x3339)},
++	{USB_DEVICE(0x13D3, 0x3340)}, /* 11n mode disable */
++	{USB_DEVICE(0x13D3, 0x3341)}, /* 11n mode disable */
+ 	{USB_DEVICE(0x13D3, 0x3310)},
+-	{USB_DEVICE(0x13D3, 0x3311)},    /* 11n mode disable */
+ 	{USB_DEVICE(0x13D3, 0x3325)},
+-	{USB_DEVICE(0x083A, 0xC512)},
++
++/* RTL8192SU */
++	/* Realtek */
++	{USB_DEVICE(0x0BDA, 0x8174)},
++	{USB_DEVICE(0x0BDA, 0x8174)},
++	/* Belkin */
++	{USB_DEVICE(0x050D, 0x845A)},
++	/* Corega */
++	{USB_DEVICE(0x07AA, 0x0051)},
++	/* Edimax */
++	{USB_DEVICE(0x7392, 0x7622)},
++	/* NEC */
++	{USB_DEVICE(0x0409, 0x02B6)},
+ 	{}
+ };
+ 
+@@ -103,8 +172,20 @@ MODULE_DEVICE_TABLE(usb, rtl871x_usb_id_
+ static struct specific_device_id specific_device_id_tbl[] = {
+ 	{.idVendor = 0x0b05, .idProduct = 0x1791,
+ 		 .flags = SPEC_DEV_ID_DISABLE_HT},
++	{.idVendor = 0x0df6, .idProduct = 0x0059,
++		 .flags = SPEC_DEV_ID_DISABLE_HT},
++	{.idVendor = 0x13d3, .idProduct = 0x3306,
++		 .flags = SPEC_DEV_ID_DISABLE_HT},
+ 	{.idVendor = 0x13D3, .idProduct = 0x3311,
+ 		 .flags = SPEC_DEV_ID_DISABLE_HT},
++	{.idVendor = 0x13d3, .idProduct = 0x3335,
++		 .flags = SPEC_DEV_ID_DISABLE_HT},
++	{.idVendor = 0x13d3, .idProduct = 0x3336,
++		 .flags = SPEC_DEV_ID_DISABLE_HT},
++	{.idVendor = 0x13d3, .idProduct = 0x3340,
++		 .flags = SPEC_DEV_ID_DISABLE_HT},
++	{.idVendor = 0x13d3, .idProduct = 0x3341,
++		 .flags = SPEC_DEV_ID_DISABLE_HT},
+ 	{}
+ };
+ 
