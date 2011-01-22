@@ -1,61 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755088Ab1AVAOx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 19:14:53 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:38697 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755070Ab1AVAOw (ORCPT
+	id S1755072Ab1AVAX7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 19:23:59 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43416
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754894Ab1AVAX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 19:14:52 -0500
-X-Authenticated: #911537
-X-Provags-ID: V01U2FsdGVkX19FLvBkIWtFSu4KBoE4MRSdpiuWkDU3IFNV2d+qpx
-	MWP4ThYD87pM4X
-From: Torben Hohn <torbenh@gmx.de>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, johnstul@us.ibm.com, hch@infradead.org,
-        yong.zhang0@gmail.com, Torben Hohn <torbenh@gmx.de>
-Subject: [PATCH 17/18] xtensa: switch do_timer() to xtime_update()
-Date: Sat, 22 Jan 2011 00:07:03 +0100
-Message-Id: <1295651224-29823-18-git-send-email-torbenh@gmx.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1295651224-29823-1-git-send-email-torbenh@gmx.de>
-References: <1295651224-29823-1-git-send-email-torbenh@gmx.de>
-X-Y-GMX-Trusted: 0
+	Fri, 21 Jan 2011 19:23:58 -0500
+Date: Fri, 21 Jan 2011 16:24:32 -0800 (PST)
+Message-Id: <20110121.162432.77330574.davem@davemloft.net>
+To: segoon@openwall.com
+Cc: kernel-janitors@vger.kernel.org, chas@cmf.nrl.navy.mil,
+        linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] atm: idt77105: fix fetch_stats() result
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1295602987-11688-1-git-send-email-segoon@openwall.com>
+References: <1295602987-11688-1-git-send-email-segoon@openwall.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xtime_update() takes the xtime_lock itself.
+From: Vasiliy Kulikov <segoon@openwall.com>
+Date: Fri, 21 Jan 2011 12:43:07 +0300
 
-i dont believe that set_linux_timer() needs to be protected by a lock.
+> copy_to_user() used PRIV(dev)->stats instead of local stats variable.
+> Zero stats were returned to user in case of (zero != 0), also memcpy()
+> was pointless.
+> 
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 
-Signed-off-by: Torben Hohn <torbenh@gmx.de>
----
- arch/xtensa/kernel/time.c |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
-
-diff --git a/arch/xtensa/kernel/time.c b/arch/xtensa/kernel/time.c
-index 19df764..f3e5eb4 100644
---- a/arch/xtensa/kernel/time.c
-+++ b/arch/xtensa/kernel/time.c
-@@ -96,16 +96,12 @@ again:
- 		update_process_times(user_mode(get_irq_regs()));
- #endif
- 
--		write_seqlock(&xtime_lock);
--
--		do_timer(1); /* Linux handler in kernel/timer.c */
-+		xtime_update(1); /* Linux handler in kernel/time/timekeeping */
- 
- 		/* Note that writing CCOMPARE clears the interrupt. */
- 
- 		next += CCOUNT_PER_JIFFY;
- 		set_linux_timer(next);
--
--		write_sequnlock(&xtime_lock);
- 	}
- 
- 	/* Allow platform to do something useful (Wdog). */
--- 
-1.7.2.3
-
+Applied, thanks.
