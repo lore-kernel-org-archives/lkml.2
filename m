@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525Ab1AVPUw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 10:20:52 -0500
-Received: from hera.kernel.org ([140.211.167.34]:48615 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753331Ab1AVPUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 10:20:51 -0500
-Date: Sat, 22 Jan 2011 15:19:28 GMT
-From: "tip-bot for Dr. David Alan Gilbert" <david.gilbert@linaro.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, dave.martin@linaro.org,
-        hpa@zytor.com, mingo@redhat.com, david.gilbert@linaro.org,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, dave.martin@linaro.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com,
-        david.gilbert@linaro.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110121163922.GA31398@davesworkthinkpad>
-References: <20110121163922.GA31398@davesworkthinkpad>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf symbols: Fix annotation of thumb code
-Message-ID: <tip-b2f8fb237e9cc407a02aca401369c15babae35dd@git.kernel.org>
-Git-Commit-ID: b2f8fb237e9cc407a02aca401369c15babae35dd
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753530Ab1AVPZG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 10:25:06 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:44763 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753331Ab1AVPZE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jan 2011 10:25:04 -0500
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX18M8bQN0DIMkWLhaqM7zttoa1UeTiCKch9qyNwVas
+	//G1NZGPFdCTUa
+From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+To: linux-kernel@vger.kernel.org
+Subject: libata EH running when switching VTs
+Date: Sat, 22 Jan 2011 16:25:00 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.4.5; i686; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 22 Jan 2011 15:19:30 +0000 (UTC)
+Message-Id: <201101221625.00775.toralf.foerster@gmx.de>
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b2f8fb237e9cc407a02aca401369c15babae35dd
-Gitweb:     http://git.kernel.org/tip/b2f8fb237e9cc407a02aca401369c15babae35dd
-Author:     Dr. David Alan Gilbert <david.gilbert@linaro.org>
-AuthorDate: Fri, 21 Jan 2011 16:40:19 +0000
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 21 Jan 2011 16:32:18 -0200
+Hello,
 
-perf symbols: Fix annotation of thumb code
+Henrique de Moraes Holschuh wrote at 14:11:12
+> 
+> I don't even know whom to refer you to.  Maybe ask in LKML directly?  Use
+> the subject "libata EH running when switching VTs".  If one of those VTs
+> are in X.org control, say that as well.
 
-In ARM's Thumb mode the bottom bit of the symbol address is set to mark
-the function as Thumb; the instructions are in reality 2 or 4 byte on 2
-byte alignments, and when the +1 address is used in annotate it causes
-objdump to disassemble invalid instructions.
+I'm wondering why I get this in /var/log/messages w/ kernel 2.6.37 when I
+switch from VT7 (running xorg ) to VT12 (or 1 or 2 or another number) and 
+back:
 
-The patch removes that bottom bit during symbol loading.
 
-Many thinks to Dave Martin for comments on an initial version of the
-patch.
+2011-01-22T16:20:53.854+01:00 n22 kernel: ata1: hard resetting link
+2011-01-22T16:20:54.163+01:00 n22 kernel: ata1: SATA link up 1.5 Gbps (SStatus 
+113 SControl 300)
+2011-01-22T16:20:54.164+01:00 n22 kernel: ata1.00: ACPI cmd 
+ef/02:00:00:00:00:a0 (SET FEATURES) succeeded
+2011-01-22T16:20:54.164+01:00 n22 kernel: ata1.00: ACPI cmd 
+f5/00:00:00:00:00:a0 (SECURITY FREEZE LOCK) filtered out
+2011-01-22T16:20:54.165+01:00 n22 kernel: ata1.00: ACPI cmd 
+ef/5f:00:00:00:00:a0 (SET FEATURES) succeeded
+2011-01-22T16:20:54.165+01:00 n22 kernel: ata1.00: ACPI cmd 
+ef/10:03:00:00:00:a0 (SET FEATURES) filtered out
+2011-01-22T16:20:54.169+01:00 n22 kernel: ata1.00: ACPI cmd 
+ef/02:00:00:00:00:a0 (SET FEATURES) succeeded
+2011-01-22T16:20:54.169+01:00 n22 kernel: ata1.00: ACPI cmd 
+f5/00:00:00:00:00:a0 (SECURITY FREEZE LOCK) filtered out
+2011-01-22T16:20:54.169+01:00 n22 kernel: ata1.00: ACPI cmd 
+ef/5f:00:00:00:00:a0 (SET FEATURES) succeeded
+2011-01-22T16:20:54.169+01:00 n22 kernel: ata1.00: ACPI cmd 
+ef/10:03:00:00:00:a0 (SET FEATURES) filtered out
+2011-01-22T16:20:54.170+01:00 n22 kernel: ata1.00: configured for UDMA/100
+2011-01-22T16:20:54.171+01:00 n22 kernel: ata1: EH complete
 
-(For reference this corresponds to this bug
-https://bugs.launchpad.net/linux-linaro/+bug/677547 )
 
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Dave Martin <dave.martin@linaro.org>
-LKML-Reference: <20110121163922.GA31398@davesworkthinkpad>
-Signed-off-by: Dr. David Alan Gilbert <david.gilbert@linaro.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/symbol.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+I'm running an almost stable Gentoo on a ThinkPad T400 with current kernel
+(2.6.37, earlier shows this behaviour too)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 15ccfba..e32478e 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1161,6 +1161,13 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
- 
- 		section_name = elf_sec__name(&shdr, secstrs);
- 
-+		/* On ARM, symbols for thumb functions have 1 added to
-+		 * the symbol address as a flag - remove it */
-+		if ((ehdr.e_machine == EM_ARM) &&
-+		    (map->type == MAP__FUNCTION) &&
-+		    (sym.st_value & 1))
-+			--sym.st_value;
-+
- 		if (self->kernel != DSO_TYPE_USER || kmodule) {
- 			char dso_name[PATH_MAX];
- 
+-- 
+MfG/Kind regards
+Toralf Förster
+
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+
