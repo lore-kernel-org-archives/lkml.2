@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751150Ab1AVGO2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 01:14:28 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:39352 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997Ab1AVGO1 (ORCPT
+	id S1751259Ab1AVGbq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 01:31:46 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62616 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078Ab1AVGbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 01:14:27 -0500
-Date: Sat, 22 Jan 2011 11:44:17 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Eric Dumazet <dada1@cosmosbay.com>, Jan Beulich <JBeulich@novell.com>,
-        Avi Kivity <avi@redhat.com>, Xen-devel <xen-devel@lists.xensource.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        kvm@vger.kernel.org, suzuki@in.ibm.com
-Subject: Re: [PATCH 2/3] kvm hypervisor : Add hypercalls to support
- pv-ticketlock
-Message-ID: <20110122061417.GA7258@linux.vnet.ibm.com>
-Reply-To: vatsa@linux.vnet.ibm.com
-References: <cover.1289940821.git.jeremy.fitzhardinge@citrix.com>
- <20110119164432.GA30669@linux.vnet.ibm.com>
- <20110119171239.GB726@linux.vnet.ibm.com>
- <1295457672.28776.144.camel@laptop>
- <4D373340.60608@goop.org>
- <20110120115958.GB11177@linux.vnet.ibm.com>
- <4D38774B.6070704@goop.org>
- <20110121140208.GA13609@linux.vnet.ibm.com>
- <4D399CBD.10506@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D399CBD.10506@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 22 Jan 2011 01:31:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=UDK/JCm/I55TuqqWyl7Lt2FhaMmGBCMF9TY30vBBOlq3vCafOdHBXgUlcwl82PvPH6
+         hhsKIhcYysC+kOejNR1K/oL1p8NDa4UwAXdMaVg+T7w/Q3deXHysEC8AWsS/+SCjkKPj
+         8NJkxs3hhcaBmd6jXdio7/jrgojfGmbuSqMz4=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>, Nick Piggin <npiggin@kernel.dk>,
+        Jiri Kosina <trivial@kernel.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] fs: update comments to point correct document
+Date: Sat, 22 Jan 2011 15:31:32 +0900
+Message-Id: <1295677892-3767-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.3.4.600.g982838b0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 09:48:29AM -0500, Rik van Riel wrote:
-> >>Why?  If a VCPU can't make progress because its waiting for some
-> >>resource, then why not schedule something else instead?
-> >
-> >In the process, "something else" can get more share of cpu resource than its
-> >entitled to and that's where I was bit concerned. I guess one could
-> >employ hard-limits to cap "something else's" bandwidth where it is of real
-> >concern (like clouds).
-> 
-> I'd like to think I fixed those things in my yield_task_fair +
-> yield_to + kvm_vcpu_on_spin patch series from yesterday.
+dcache-locking.txt is not exist any more, and the path was not
+correct anyway. Fix it.
 
-Speaking of the spinlock-in-virtualized-environment problem as whole, IMHO
-I don't think that kvm_vcpu_on_spin + yield changes will provide the best
-results, especially where ticketlocks are involved and they are paravirtualized 
-in a manner being discussed in this thread. An important focus of pv-ticketlocks
-is to reduce the lock _acquisition_ time by ensuring that the next-in-line 
-vcpu gets to run asap when a ticket lock is released. With the way 
-kvm_vcpu_on_spin+yield_to is implemented, I don't see how we can provide the 
-best lock acquisition times for threads. It would be nice though to compare 
-the two approaches (kvm_vcpu_on_spin optimization and the pv-ticketlock scheme) 
-to get some real-world numbers. I unfortunately don't have access to a PLE
-capable hardware which is required to test your kvm_vcpu_on_spin changes?
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ fs/dcache.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Also it may be possible for the pv-ticketlocks to track owning vcpu and make use
-of a yield-to interface as further optimization to avoid the 
-"others-get-more-time" problem, but Peterz rightly pointed that PI would be a 
-better solution there than yield-to. So overall IMO kvm_vcpu_on_spin+yield_to
-could be the best solution for unmodified guests, while paravirtualized
-ticketlocks + some sort of PI would be a better solution where we have the
-luxury of modifying guest sources!
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 9f493ee4dcba..56be05ef4fe3 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1779,7 +1779,7 @@ struct dentry *__d_lookup_rcu(struct dentry *parent, struct qstr *name,
+ 	 * false-negative result. d_lookup() protects against concurrent
+ 	 * renames using rename_lock seqlock.
+ 	 *
+-	 * See Documentation/vfs/dcache-locking.txt for more details.
++	 * See Documentation/filesystems/path-lookup.txt for more details.
+ 	 */
+ 	hlist_bl_for_each_entry_rcu(dentry, node, &b->head, d_hash) {
+ 		struct inode *i;
+@@ -1899,7 +1899,7 @@ struct dentry *__d_lookup(struct dentry *parent, struct qstr *name)
+ 	 * false-negative result. d_lookup() protects against concurrent
+ 	 * renames using rename_lock seqlock.
+ 	 *
+-	 * See Documentation/vfs/dcache-locking.txt for more details.
++	 * See Documentation/filesystems/path-lookup.txt for more details.
+ 	 */
+ 	rcu_read_lock();
+ 	
+-- 
+1.7.3.4.600.g982838b0
 
-- vatsa
