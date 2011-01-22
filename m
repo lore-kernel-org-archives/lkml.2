@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab1AVBQe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 20:16:34 -0500
-Received: from casper.infradead.org ([85.118.1.10]:47639 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131Ab1AVBQP (ORCPT
+	id S1753983Ab1AVBR0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 20:17:26 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:11828 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752342Ab1AVBRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 20:16:15 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        "Dr. David Alan Gilbert" <david.gilbert@linaro.org>,
-        Ingo Molnar <mingo@elte.hu>, Dave Martin <dave.martin@linaro.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/2] perf symbols: Fix annotation of thumb code
-Date: Fri, 21 Jan 2011 23:16:07 -0200
-Message-Id: <1295658968-23217-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1295658968-23217-1-git-send-email-acme@infradead.org>
-References: <1295658968-23217-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 21 Jan 2011 20:17:25 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6233"; a="71242754"
+Message-ID: <4D3A3024.9040402@codeaurora.org>
+Date: Fri, 21 Jan 2011 17:17:24 -0800
+From: Bryan Huntsman <bryanh@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Colin Cross <ccross@android.com>
+CC: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        mbohan@codeaurora.org
+Subject: Re: [PATCH] cgroup: Remove call to synchronize_rcu in cgroup_attach_task
+References: <AANLkTi=4-OgPUugnUBaqSU3oC=3wxTjAsOB_Ais3Or+i@mail.gmail.com> <1290563018-2804-1-git-send-email-ccross@android.com>
+In-Reply-To: <1290563018-2804-1-git-send-email-ccross@android.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dr. David Alan Gilbert <david.gilbert@linaro.org>
+On 11/23/2010 05:43 PM, Colin Cross wrote:
+> synchronize_rcu can be very expensive, averaging 100 ms in
+> some cases.  In cgroup_attach_task, it is used to prevent
+> a task->cgroups pointer dereferenced in an RCU read side
+> critical section from being invalidated by delaying the call
+> to put_css_set until after an RCU grace period.
+> 
+> To avoid the call to synchronize_rcu, make the put_css_set
+> call rcu-safe by moving the deletion of the css_set links
+> into rcu-protected free_css_set_rcu.
+> 
+> The calls to check_for_release in free_css_set_rcu now occur
+> in softirq context, so convert all uses of the
+> release_list_lock spinlock to irq safe versions.
+> 
+> The decrement of the cgroup refcount is no longer
+> synchronous with the call to put_css_set, which can result
+> in the cgroup refcount staying positive after the last call
+> to cgroup_attach_task returns.  To allow the cgroup to be
+> deleted with cgroup_rmdir synchronously after
+> cgroup_attach_task, introduce a second refcount,
+> rmdir_count, that is decremented synchronously in
+> put_css_set.  If cgroup_rmdir is called on a cgroup for
+> hich rmdir_count is zero but count is nonzero, reuse the
+> rmdir waitqueue to block the rmdir until the rcu callback
+> is called.
+> 
+> Signed-off-by: Colin Cross <ccross@android.com>
+> ---
+> 
+> This patch is similar to what you described.  The main differences are
+> that I used a new atomic to handle the rmdir case, and I converted
+> check_for_release to be callable in softirq context rather than schedule
+> work in free_css_set_rcu.  Your css_set scanning in rmdir sounds better,
+> I'll take another look at that.  Is there any problem with disabling irqs
+> with spin_lock_irqsave in check_for_release?
+> 
+>  include/linux/cgroup.h |    6 ++
+>  kernel/cgroup.c        |  124 ++++++++++++++++++++++++++++--------------------
+>  2 files changed, 78 insertions(+), 52 deletions(-)
+> 
 
-In ARM's Thumb mode the bottom bit of the symbol address is set to mark
-the function as Thumb; the instructions are in reality 2 or 4 byte on 2
-byte alignments, and when the +1 address is used in annotate it causes
-objdump to disassemble invalid instructions.
+Colin, what became of this patch?  I see this in your Tegra tree for
+Android.
 
-The patch removes that bottom bit during symbol loading.
+http://android.git.kernel.org/?p=kernel/tegra.git;a=commit;h=05946a1e0fdb011ac0e6638ee60b181c584f127b
 
-Many thinks to Dave Martin for comments on an initial version of the
-patch.
+I looked in linux-next but didn't see it there.  This resolves a
+performance issue on MSM SMP so I'm curious if this is going upstream.
+ Thanks.
 
-(For reference this corresponds to this bug
-https://bugs.launchpad.net/linux-linaro/+bug/677547 )
+- Bryan
 
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Dave Martin <dave.martin@linaro.org>
-LKML-Reference: <20110121163922.GA31398@davesworkthinkpad>
-Signed-off-by: Dr. David Alan Gilbert <david.gilbert@linaro.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/symbol.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 15ccfba..e32478e 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1161,6 +1161,13 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
- 
- 		section_name = elf_sec__name(&shdr, secstrs);
- 
-+		/* On ARM, symbols for thumb functions have 1 added to
-+		 * the symbol address as a flag - remove it */
-+		if ((ehdr.e_machine == EM_ARM) &&
-+		    (map->type == MAP__FUNCTION) &&
-+		    (sym.st_value & 1))
-+			--sym.st_value;
-+
- 		if (self->kernel != DSO_TYPE_USER || kmodule) {
- 			char dso_name[PATH_MAX];
- 
 -- 
-1.6.2.5
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
