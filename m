@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab1AVOKe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 09:10:34 -0500
-Received: from sh.osrg.net ([192.16.179.4]:49338 "EHLO sh.osrg.net"
+	id S1753274Ab1AVOLR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 09:11:17 -0500
+Received: from kroah.org ([198.145.64.141]:36172 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753083Ab1AVOKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 09:10:32 -0500
-Date: Sat, 22 Jan 2011 23:09:56 +0900 (JST)
-Message-Id: <20110122.230956.176521815.ryusuke@osrg.net>
-To: wakko@animx.eu.org
-Cc: linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: NILFS crash on 2.6.37
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-In-Reply-To: <20110122015748.GA3174@animx.eu.org>
-References: <20110121.163738.135792151.ryusuke@osrg.net>
-	<20110121.181859.144825828.ryusuke@osrg.net>
-	<20110122015748.GA3174@animx.eu.org>
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 22 Jan 2011 23:09:58 +0900 (JST)
+	id S1753083Ab1AVOLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jan 2011 09:11:15 -0500
+Date: Sat, 22 Jan 2011 05:55:16 -0800
+From: Greg KH <greg@kroah.com>
+To: Alan Ott <alan@signal11.us>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] hid: Add HID Report Descriptor to sysfs.
+Message-ID: <20110122135516.GA4893@kroah.com>
+References: <1295590785-7101-1-git-send-email-alan@signal11.us>
+ <1295590785-7101-2-git-send-email-alan@signal11.us>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295590785-7101-2-git-send-email-alan@signal11.us>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Jan 2011 20:57:48 -0500, Wakko Warner wrote:
-> Ryusuke Konishi wrote:
-> > On Fri, 21 Jan 2011 16:37:38 +0900 (JST), Ryusuke Konishi wrote:
-> > > (Cc'ed to linux-nilfs)
-> > Does the following patch fix your problem?
+On Fri, Jan 21, 2011 at 01:19:45AM -0500, Alan Ott wrote:
+> Add a new sysfs entry called report_descriptor which contains the HID report
+> descriptor.
 > 
-> > diff --git a/fs/nilfs2/super.c b/fs/nilfs2/super.c
-> > index 0994f6a7..58fd707 100644
-> > --- a/fs/nilfs2/super.c
-> > +++ b/fs/nilfs2/super.c
-> > @@ -704,7 +704,8 @@ skip_mount_setup:
-> >  	sbp[0]->s_state =
-> >  		cpu_to_le16(le16_to_cpu(sbp[0]->s_state) & ~NILFS_VALID_FS);
-> >  	/* synchronize sbp[1] with sbp[0] */
-> > -	memcpy(sbp[1], sbp[0], nilfs->ns_sbsize);
-> > +	if (sbp[1])
-> > +		memcpy(sbp[1], sbp[0], nilfs->ns_sbsize);
-> >  	return nilfs_commit_super(sbi, NILFS_SB_COMMIT_ALL);
-> >  }
+> Signed-off-by: Alan Ott <alan@signal11.us>
+> ---
+>  drivers/hid/hid-core.c |   28 ++++++++++++++++++++++++++++
+>  1 files changed, 28 insertions(+), 0 deletions(-)
 > 
-> That patch fix it.  Just a note, the 2.6.37 vanilla source was about 20
-> lines up from 704
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index d678cf3..0ff1ba2 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -1159,6 +1159,28 @@ static bool hid_hiddev(struct hid_device *hdev)
+>  	return !!hid_match_id(hdev, hid_hiddev_list);
+>  }
+>  
+> +
+> +static ssize_t show_report_descriptor(struct device *dev,
+> +				      struct device_attribute *attr,
+> +				      char *buf)
+> +{
+> +	int i, cur = 0;
+> +	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
+> +
+> +	for (i = 0; i < hdev->rsize; i++) {
+> +		if (cur + 4 >= PAGE_SIZE)
+> +			break;
+> +		sprintf(buf + cur, "%02hhx ", hdev->rdesc[i]);
+> +		cur += 3;
+> +	}
+> +	/* Replace the last space with a newline. */
+> +	buf[cur-1] = '\n';
+> +	buf[PAGE_SIZE-1] = '\0';
+> +	return cur + 1;
+> +}
 
-Thanks for testing.  Will send upstream and to stable.
+If you are going to do this this way through sysfs, please make this a
+binary file, not a text one.
 
+thanks,
 
-> > > > [ 1202.581501] NILFS warning: broken superblock. using spare superblock.
-> > > > [ 1202.582093] NILFS warning: broken superblock. using spare superblock.
-> 
-> Why does it say this 2 times?  Just curious.
-
-Because each super block is read twice in different block sizes.
-
-Well, indeed it looks confusing.  I'll try to do something.
-
-
-Ryusuke Konishi
+greg k-h
