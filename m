@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525Ab1AVNSB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 08:18:01 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57944 "EHLO
+	id S1753203Ab1AVNNi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 08:13:38 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52422 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753217Ab1AVNOE (ORCPT
+	with ESMTP id S1753124Ab1AVNN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 08:14:04 -0500
+	Sat, 22 Jan 2011 08:13:27 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=fz6on9v9Wng7Y65AET01O+3jzkEdtrwI0HiKLbm4Bgqv1MAa2deFbEDfdy7Z5lHeEJ
-         zWYAtLs3ws1vzDQm/Nt6Nsyglw6qh1y0JfpZnkCxBGCN5KpWKCVw6V9ENK/r5R917JDT
-         n1jhSGR7YFU6VP+GhLXk6puK5wABmolg+2H8Y=
+        b=tpoJudmxXsLSi0ghdoL3TsqrjOsDivScqaA/fsEfXCNqPfodRqv9e6Bdxvby+2o3JG
+         U7NYTaa0qqBKwfCw+ur1OOlQLsw2HXf+zwB4/OQtxYLDQlcBLKGW3Fl+5jg02o56RXNp
+         FGtErkVh3b+rad81SvNqGG/nSNbYoLkaadanc=
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Greg Ungerer <gerg@uclinux.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v5 10/27] bitops: introduce CONFIG_GENERIC_FIND_BIT_LE
-Date: Sat, 22 Jan 2011 22:13:42 +0900
-Message-Id: <1295702039-23186-11-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Andy Grover <andy.grover@oracle.com>, rds-devel@oss.oracle.com,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [PATCH v5 02/27] rds: stop including asm-generic/bitops/le.h directly
+Date: Sat, 22 Jan 2011 22:13:34 +0900
+Message-Id: <1295702039-23186-3-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1295702039-23186-1-git-send-email-akinobu.mita@gmail.com>
 References: <1295702039-23186-1-git-send-email-akinobu.mita@gmail.com>
@@ -28,251 +29,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This introduces CONFIG_GENERIC_FIND_BIT_LE to tell whether to use generic
-implementation of find_*_bit_le() in lib/find_next_bit.c or not.
+asm-generic/bitops/le.h is only intended to be included directly from
+asm-generic/bitops/ext2-non-atomic.h or asm-generic/bitops/minix-le.h
+which implements generic ext2 or minix bit operations.
 
-For now we select CONFIG_GENERIC_FIND_BIT_LE for all architectures which
-enable CONFIG_GENERIC_FIND_NEXT_BIT.
+This stops including asm-generic/bitops/le.h directly and use ext2
+non-atomic bit operations instead.
 
-But m68knommu wants to define own faster find_next_zero_bit_le() and
-continues using generic find_next_{,zero_}bit().
-(CONFIG_GENERIC_FIND_NEXT_BIT and !CONFIG_GENERIC_FIND_BIT_LE)
+It seems odd to use ext2_*_bit() on rds, but it will replaced with
+__{set,clear,test}_bit_le() after introducing little endian bit operations
+for all architectures.  This indirect step is necessary to maintain
+bisectability for some architectures which have their own little-endian
+bit operations.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Greg Ungerer <gerg@uclinux.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Grover <andy.grover@oracle.com>
+Cc: rds-devel@oss.oracle.com
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org
 ---
 
 Change from v4:
- - no changes
+ - splitted into two patches to fix a bisection hole
 
 The whole series is available in the git branch at:
  git://git.kernel.org/pub/scm/linux/kernel/git/mita/linux-2.6.git le-bitops-v5
 
- arch/frv/Kconfig        |    4 ++++
- arch/h8300/Kconfig      |    4 ++++
- arch/m32r/Kconfig       |    4 ++++
- arch/m68knommu/Kconfig  |    4 ++++
- arch/microblaze/Kconfig |    3 +++
- arch/mips/Kconfig       |    4 ++++
- arch/parisc/Kconfig     |    4 ++++
- arch/powerpc/Kconfig    |    4 ++++
- arch/sh/Kconfig         |    3 +++
- arch/sparc/Kconfig      |    4 ++++
- arch/xtensa/Kconfig     |    3 +++
- lib/Kconfig             |    3 +++
- lib/Makefile            |    1 +
- lib/find_next_bit.c     |    3 +++
- 14 files changed, 48 insertions(+), 0 deletions(-)
+ net/rds/cong.c |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/arch/frv/Kconfig b/arch/frv/Kconfig
-index f6bcb03..e0764f0 100644
---- a/arch/frv/Kconfig
-+++ b/arch/frv/Kconfig
-@@ -21,6 +21,10 @@ config GENERIC_FIND_NEXT_BIT
- 	bool
- 	default y
+diff --git a/net/rds/cong.c b/net/rds/cong.c
+index 75ea686..8cc322b 100644
+--- a/net/rds/cong.c
++++ b/net/rds/cong.c
+@@ -33,8 +33,7 @@
+ #include <linux/slab.h>
+ #include <linux/types.h>
+ #include <linux/rbtree.h>
+-
+-#include <asm-generic/bitops/le.h>
++#include <linux/bitops.h>
  
-+config GENERIC_FIND_BIT_LE
-+	bool
-+	default y
-+
- config GENERIC_HWEIGHT
- 	bool
- 	default y
-diff --git a/arch/h8300/Kconfig b/arch/h8300/Kconfig
-index 65f897d8..552219f 100644
---- a/arch/h8300/Kconfig
-+++ b/arch/h8300/Kconfig
-@@ -43,6 +43,10 @@ config GENERIC_FIND_NEXT_BIT
- 	bool
- 	default y
+ #include "rds.h"
  
-+config GENERIC_FIND_BIT_LE
-+	bool
-+	default y
-+
- config GENERIC_HWEIGHT
- 	bool
- 	default y
-diff --git a/arch/m32r/Kconfig b/arch/m32r/Kconfig
-index 5c291d6..b30cea3 100644
---- a/arch/m32r/Kconfig
-+++ b/arch/m32r/Kconfig
-@@ -265,6 +265,10 @@ config GENERIC_FIND_NEXT_BIT
- 	bool
- 	default y
+@@ -285,7 +284,7 @@ void rds_cong_set_bit(struct rds_cong_map *map, __be16 port)
+ 	i = be16_to_cpu(port) / RDS_CONG_MAP_PAGE_BITS;
+ 	off = be16_to_cpu(port) % RDS_CONG_MAP_PAGE_BITS;
  
-+config GENERIC_FIND_BIT_LE
-+	bool
-+	default y
-+
- config GENERIC_HWEIGHT
- 	bool
- 	default y
-diff --git a/arch/m68knommu/Kconfig b/arch/m68knommu/Kconfig
-index 704e7b9..5ba4f15 100644
---- a/arch/m68knommu/Kconfig
-+++ b/arch/m68knommu/Kconfig
-@@ -40,6 +40,10 @@ config GENERIC_FIND_NEXT_BIT
- 	bool
- 	default y
- 
-+config GENERIC_FIND_BIT_LE
-+	bool
-+	default y
-+
- config GENERIC_GPIO
- 	bool
- 	default n
-diff --git a/arch/microblaze/Kconfig b/arch/microblaze/Kconfig
-index 5f5018a..102d986 100644
---- a/arch/microblaze/Kconfig
-+++ b/arch/microblaze/Kconfig
-@@ -34,6 +34,9 @@ config ARCH_HAS_ILOG2_U64
- config GENERIC_FIND_NEXT_BIT
- 	def_bool y
- 
-+config GENERIC_FIND_BIT_LE
-+	def_bool y
-+
- config GENERIC_HWEIGHT
- 	def_bool y
- 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 548e6cc..72e3ba3 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -773,6 +773,10 @@ config GENERIC_FIND_NEXT_BIT
- 	bool
- 	default y
- 
-+config GENERIC_FIND_BIT_LE
-+	bool
-+	default y
-+
- config GENERIC_HWEIGHT
- 	bool
- 	default y
-diff --git a/arch/parisc/Kconfig b/arch/parisc/Kconfig
-index 0888675..3aeaf16 100644
---- a/arch/parisc/Kconfig
-+++ b/arch/parisc/Kconfig
-@@ -48,6 +48,10 @@ config GENERIC_FIND_NEXT_BIT
- 	bool
- 	default y
- 
-+config GENERIC_FIND_BIT_LE
-+	bool
-+	default y
-+
- config GENERIC_BUG
- 	bool
- 	default y
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 959f38c..b88d787 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -107,6 +107,10 @@ config GENERIC_FIND_NEXT_BIT
- 	bool
- 	default y
- 
-+config GENERIC_FIND_BIT_LE
-+	bool
-+	default y
-+
- config GENERIC_GPIO
- 	bool
- 	help
-diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
-index fff2522..6ee6d4b 100644
---- a/arch/sh/Kconfig
-+++ b/arch/sh/Kconfig
-@@ -73,6 +73,9 @@ config GENERIC_CSUM
- config GENERIC_FIND_NEXT_BIT
- 	def_bool y
- 
-+config GENERIC_FIND_BIT_LE
-+	def_bool y
-+
- config GENERIC_HWEIGHT
- 	def_bool y
- 
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index 45d9c87..085a9b7 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -194,6 +194,10 @@ config GENERIC_FIND_NEXT_BIT
- 	bool
- 	default y
- 
-+config GENERIC_FIND_BIT_LE
-+	bool
-+	default y
-+
- config GENERIC_HWEIGHT
- 	bool
- 	default y if !ULTRA_HAS_POPULATION_COUNT
-diff --git a/arch/xtensa/Kconfig b/arch/xtensa/Kconfig
-index d373d15..7283919 100644
---- a/arch/xtensa/Kconfig
-+++ b/arch/xtensa/Kconfig
-@@ -21,6 +21,9 @@ config RWSEM_XCHGADD_ALGORITHM
- config GENERIC_FIND_NEXT_BIT
- 	def_bool y
- 
-+config GENERIC_FIND_BIT_LE
-+	def_bool y
-+
- config GENERIC_HWEIGHT
- 	def_bool y
- 
-diff --git a/lib/Kconfig b/lib/Kconfig
-index 0ee67e0..99b8008 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -22,6 +22,9 @@ config GENERIC_FIND_FIRST_BIT
- config GENERIC_FIND_NEXT_BIT
- 	bool
- 
-+config GENERIC_FIND_BIT_LE
-+	bool
-+
- config GENERIC_FIND_LAST_BIT
- 	bool
- 	default y
-diff --git a/lib/Makefile b/lib/Makefile
-index cbb774f..865dc16 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -38,6 +38,7 @@ lib-$(CONFIG_RWSEM_GENERIC_SPINLOCK) += rwsem-spinlock.o
- lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem.o
- lib-$(CONFIG_GENERIC_FIND_FIRST_BIT) += find_next_bit.o
- lib-$(CONFIG_GENERIC_FIND_NEXT_BIT) += find_next_bit.o
-+lib-$(CONFIG_GENERIC_FIND_BIT_LE) += find_next_bit.o
- obj-$(CONFIG_GENERIC_FIND_LAST_BIT) += find_last_bit.o
- 
- CFLAGS_hweight.o = $(subst $(quote),,$(CONFIG_ARCH_HWEIGHT_CFLAGS))
-diff --git a/lib/find_next_bit.c b/lib/find_next_bit.c
-index 7667c3d..b0a8767 100644
---- a/lib/find_next_bit.c
-+++ b/lib/find_next_bit.c
-@@ -160,6 +160,7 @@ EXPORT_SYMBOL(find_first_zero_bit);
- #endif /* CONFIG_GENERIC_FIND_FIRST_BIT */
- 
- #ifdef __BIG_ENDIAN
-+#ifdef CONFIG_GENERIC_FIND_BIT_LE
- 
- /* include/linux/byteorder does not support "unsigned long" type */
- static inline unsigned long ext2_swabp(const unsigned long * x)
-@@ -273,4 +274,6 @@ found_middle_swap:
- 	return result + __ffs(ext2_swab(tmp));
+-	generic___set_le_bit(off, (void *)map->m_page_addrs[i]);
++	ext2_set_bit(off, (void *)map->m_page_addrs[i]);
  }
- EXPORT_SYMBOL(find_next_bit_le);
-+
-+#endif /* CONFIG_GENERIC_FIND_BIT_LE */
- #endif /* __BIG_ENDIAN */
+ 
+ void rds_cong_clear_bit(struct rds_cong_map *map, __be16 port)
+@@ -299,7 +298,7 @@ void rds_cong_clear_bit(struct rds_cong_map *map, __be16 port)
+ 	i = be16_to_cpu(port) / RDS_CONG_MAP_PAGE_BITS;
+ 	off = be16_to_cpu(port) % RDS_CONG_MAP_PAGE_BITS;
+ 
+-	generic___clear_le_bit(off, (void *)map->m_page_addrs[i]);
++	ext2_clear_bit(off, (void *)map->m_page_addrs[i]);
+ }
+ 
+ static int rds_cong_test_bit(struct rds_cong_map *map, __be16 port)
+@@ -310,7 +309,7 @@ static int rds_cong_test_bit(struct rds_cong_map *map, __be16 port)
+ 	i = be16_to_cpu(port) / RDS_CONG_MAP_PAGE_BITS;
+ 	off = be16_to_cpu(port) % RDS_CONG_MAP_PAGE_BITS;
+ 
+-	return generic_test_le_bit(off, (void *)map->m_page_addrs[i]);
++	return ext2_test_bit(off, (void *)map->m_page_addrs[i]);
+ }
+ 
+ void rds_cong_add_socket(struct rds_sock *rs)
 -- 
 1.7.3.4
 
