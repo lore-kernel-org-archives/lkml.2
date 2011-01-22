@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab1AVCMo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 21:12:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34631 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754634Ab1AVCMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 21:12:43 -0500
-Date: Sat, 22 Jan 2011 03:12:26 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: werner <w.landgraf@ru.ru>
-Cc: akpm@linux-foundation.org, hannes@cmpxchg.org, idryomov@gmail.com,
-        rostedt@goodmis.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <jweiner@redhat.com>
-Subject: [PATCH] thp: fix PARAVIRT x86 32bit noPAE
-Message-ID: <20110122021226.GQ9506@random.random>
-References: <web-444048714@zbackend1.aha.ru>
- <20110121191757.GO9506@random.random>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110121191757.GO9506@random.random>
+	id S1754889Ab1AVCN4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 21:13:56 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:25208 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754634Ab1AVCNy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 21:13:54 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6233"; a="71248876"
+Subject: Re: [PATCH 0/7] Nexus One Support
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Pekka Enberg <penberg@kernel.org>,
+        Dima Zavin <dmitriyz@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, Joe Perches <joe@perches.com>,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, davidb@codeaurora.org
+In-Reply-To: <20110122015821.GA6249@home.goodmis.org>
+References: <20110121094827.41818a55@jbarnes-desktop>
+	 <20110121095658.1ab623fe@jbarnes-desktop>
+	 <1295632828.19880.22.camel@m0nster>
+	 <20110121100441.06a94482@jbarnes-desktop>
+	 <1295633882.19880.31.camel@m0nster>
+	 <AANLkTi=L+MW5-KLP_TKSxhstD8JEtBW=RKci5wSbZsd6@mail.gmail.com>
+	 <1295642995.19880.42.camel@m0nster>
+	 <AANLkTikVDn+W8t7KSym5tCGZowyYvoLFrk8d0mumiRF-@mail.gmail.com>
+	 <20110121234930.GK3043@thunk.org> <1295654593.22882.9.camel@m0nster>
+	 <20110122015821.GA6249@home.goodmis.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 21 Jan 2011 18:13:57 -0800
+Message-ID: <1295662437.22882.19.camel@m0nster>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I reproduced your 32bit x86 problem with an initramfs with a hugepage
-benchmark placed as /init inside KVM (not exactly an extensive test
-but it was trivial to reproduce). I tested below fix with HIGHMEM4G
-and HIGHMEM64G with PARAVIRT=y (and verified setting PARAVIRT=n fixed
-it, in other email Minchan also verified that setting HIGHMEM64G=y
-also fixed it, to confirm my theory the problem was the below #ifdef).
+On Fri, 2011-01-21 at 20:58 -0500, Steven Rostedt wrote:
+> On Fri, Jan 21, 2011 at 04:03:13PM -0800, Daniel Walker wrote:
+> > 
+> > right, but it wasn't a cherrypick which was explain in the thread. So
+> > there's no wrongs here ..
+> 
+> I'm sorry Daniel, but you are absolutely wrong!
 
-The stress test reaches exit() successfully now (before the fix it
-crashed in out_of_memory() instead of do_exit as expected):
+This thread is getting way out of hand .. I think you really don't
+understand what has happened here.. That's fine tho, if you don't like
+what I've done then NAK, I'm not going to argue with any you.
 
-NMI watchdog disabled for cpu0: unable to create perf event: -2
-�Kernel panic - not syncing: Attempted to kill init!
-Pid: 1, comm: init Not tainted 2.6.37+ #17
-Call Trace:
- [<c14351d2>] ? panic+0x57/0x161
- [<c107439b>] ? trace_hardirqs_on+0xb/0x10
- [<c1045321>] ? do_exit+0x6b1/0x6e0
- [<c10728ab>] ? trace_hardirqs_off+0xb/0x10
- [<c1045389>] ? do_group_exit+0x39/0xa0
- [<c1045403>] ? sys_exit_group+0x13/0x20
- [<c1002d9c>] ? sysenter_do_call+0x12/0x3c
-QEMU 0.12.1 monitor - type 'help' for more information
-(qemu) quit
+Daniel
 
-====
-Subject: thp: fix PARAVIRT x86 32bit noPAE
+-- 
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
+Forum.
 
-From: Andrea Arcangeli <aarcange@redhat.com>
 
-This fixes TRANSPARENT_HUGEPAGE=y with PARAVIRT=y and HIGHMEM64=n.
-
-The #ifdef that this patch removes was erratically introduced to fix a build
-error for noPAE (where pmd.pmd doesn't exist). So then the kernel built but it
-failed at runtime because set_pmd_at was a noop. This will correct it by
-enabling set_pmd_at for noPAE mode too.
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
-
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-index 2071a8b..ebbc4d8 100644
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -558,13 +558,12 @@ static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
- static inline void set_pmd_at(struct mm_struct *mm, unsigned long addr,
- 			      pmd_t *pmdp, pmd_t pmd)
- {
--#if PAGETABLE_LEVELS >= 3
- 	if (sizeof(pmdval_t) > sizeof(long))
- 		/* 5 arg words */
- 		pv_mmu_ops.set_pmd_at(mm, addr, pmdp, pmd);
- 	else
--		PVOP_VCALL4(pv_mmu_ops.set_pmd_at, mm, addr, pmdp, pmd.pmd);
--#endif
-+		PVOP_VCALL4(pv_mmu_ops.set_pmd_at, mm, addr, pmdp,
-+			    native_pmd_val(pmd));
- }
- #endif
- 
