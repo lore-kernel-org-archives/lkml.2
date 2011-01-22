@@ -1,115 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415Ab1AVMf7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 07:35:59 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:62617 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143Ab1AVMf6 (ORCPT
+	id S1752854Ab1AVMir (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 07:38:47 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40300 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752208Ab1AVMip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 07:35:58 -0500
-From: Nitin Gupta <ngupta@vflare.org>
-To: Greg KH <greg@kroah.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Jerome Marchand <jmarchan@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/4] [resend] Staging: zram: simplify zram_make_request
-Date: Sat, 22 Jan 2011 07:36:15 -0500
-Message-Id: <1295699775-10429-1-git-send-email-ngupta@vflare.org>
-X-Mailer: git-send-email 1.7.3.5
+	Sat, 22 Jan 2011 07:38:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=KtZzQQ64djR+GISjTbIhZyiGIUQ3teq3neotEQcgmiDBr3sCSmv4HbfH/jOUSfhDyV
+         mshsJW7J4c7offTbGKrfLXYTvGnznk3O9u4n8syosUJOe37gM7kZamp7hmF//M6TOR29
+         tBGb3s09JwzYQ963L7FgpZHjLIS1UEzEdoRHQ=
+Date: Sat, 22 Jan 2011 13:38:40 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
+        David Miller <davem@davemloft.net>, John Stultz <johnstul@us.ibm.com>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>
+Subject: Re: [PATCH V9 08/13] posix clocks: cleanup the CLOCK_DISPTACH macro
+Message-ID: <20110122123840.GA30830@riccoc20.at.omicron.at>
+References: <cover.1294917347.git.richard.cochran@omicron.at>
+ <90b2beef441615d01c93fcad029c44af4e505c5f.1294917348.git.richard.cochran@omicron.at>
+ <alpine.LFD.2.00.1101131745400.2678@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1101131745400.2678@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zram_read() and zram_write() always return zero, so make them return
-void to simplify the code.
+On Thu, Jan 13, 2011 at 06:03:24PM +0100, Thomas Gleixner wrote:
+> On Thu, 13 Jan 2011, Richard Cochran wrote:
+> >  int posix_cpu_clock_getres(const clockid_t which_clock, struct timespec *ts);
+> >  int posix_cpu_clock_get(const clockid_t which_clock, struct timespec *ts);
+> > -int posix_cpu_clock_set(const clockid_t which_clock, const struct timespec *ts);
+> > +int posix_cpu_clock_set(const clockid_t which_clock, struct timespec *ts);
+> 
+> Shouldn't we change the clock_set function to have *ts const in all places ?
 
-Signed-off-by: Nitin Gupta <ngupta@vflare.org>
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
----
- drivers/staging/zram/zram_drv.c |   19 ++++++++-----------
- 1 files changed, 8 insertions(+), 11 deletions(-)
+The common_clock_set function calls:
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 01d6dd9..5ed4e75 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -200,7 +200,7 @@ static void handle_uncompressed_page(struct zram *zram,
- 	flush_dcache_page(page);
- }
- 
--static int zram_read(struct zram *zram, struct bio *bio)
-+static void zram_read(struct zram *zram, struct bio *bio)
- {
- 
- 	int i;
-@@ -209,7 +209,7 @@ static int zram_read(struct zram *zram, struct bio *bio)
- 
- 	if (unlikely(!zram->init_done)) {
- 		bio_endio(bio, -ENXIO);
--		return 0;
-+		return;
- 	}
- 
- 	zram_stat64_inc(zram, &zram->stats.num_reads);
-@@ -271,14 +271,13 @@ static int zram_read(struct zram *zram, struct bio *bio)
- 
- 	set_bit(BIO_UPTODATE, &bio->bi_flags);
- 	bio_endio(bio, 0);
--	return 0;
-+	return;
- 
- out:
- 	bio_io_error(bio);
--	return 0;
- }
- 
--static int zram_write(struct zram *zram, struct bio *bio)
-+static void zram_write(struct zram *zram, struct bio *bio)
- {
- 	int i, ret;
- 	u32 index;
-@@ -402,11 +401,10 @@ memstore:
- 
- 	set_bit(BIO_UPTODATE, &bio->bi_flags);
- 	bio_endio(bio, 0);
--	return 0;
-+	return;
- 
- out:
- 	bio_io_error(bio);
--	return 0;
- }
- 
- /*
-@@ -431,7 +429,6 @@ static inline int valid_io_request(struct zram *zram, struct bio *bio)
-  */
- static int zram_make_request(struct request_queue *queue, struct bio *bio)
- {
--	int ret = 0;
- 	struct zram *zram = queue->queuedata;
- 
- 	if (!valid_io_request(zram, bio)) {
-@@ -442,15 +439,15 @@ static int zram_make_request(struct request_queue *queue, struct bio *bio)
- 
- 	switch (bio_data_dir(bio)) {
- 	case READ:
--		ret = zram_read(zram, bio);
-+		zram_read(zram, bio);
- 		break;
- 
- 	case WRITE:
--		ret = zram_write(zram, bio);
-+		zram_write(zram, bio);
- 		break;
- 	}
- 
--	return ret;
-+	return 0;
- }
- 
- void zram_reset_device(struct zram *zram)
--- 
-1.7.3.5
+    do_sys_settimeofday
+        security_settime
+            cap_settime
+    do_settimeofday
 
+so all their signatures must also change.
+
+Should I add that into my patch set?
+
+Thanks,
+Richard
