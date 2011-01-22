@@ -1,151 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab1AVCmk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 21:42:40 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47812 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753963Ab1AVCmi (ORCPT
+	id S1754889Ab1AVDAk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 22:00:40 -0500
+Received: from mga09.intel.com ([134.134.136.24]:33520 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754602Ab1AVDAi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 21:42:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=lx0RUvYmQCmTUKM+LyC9ODIa7JJoeeqsmhn177YIXG5w7xQH/ZT4SoBhTfLB9MU9uL
-         x88go0+IkHuM8AMx3KUYr7dVlTK4lUpOagYEBZWsLE6+f9AU2t57lr42KVBqCTC+hJ5a
-         gAl6LlZptT6EUjxedF1fFhVla+rF8+JLqQTLM=
-Date: Sat, 22 Jan 2011 03:42:33 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
-        rostedt@goodmis.org, amit.kucheria@linaro.org
-Subject: Re: [PATCH V2] tracing, perf : add cpu hotplug trace events
-Message-ID: <20110122024229.GB2870@nowhere>
-References: <AANLkTinNoYbDe5huY4_Q6YidbWxqXqVWbVP2_7o-=P3W@mail.gmail.com>
- <20110120161101.GA17218@nowhere>
- <AANLkTinhX6UwQA0HFhuu5=jbq84woVhqtahuzA5hEo2o@mail.gmail.com>
- <20110121164404.GA2520@nowhere>
- <AANLkTi=Tx3DYczwf9U=QS9XGs6C8sjKwVZr+RLuo781V@mail.gmail.com>
+	Fri, 21 Jan 2011 22:00:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,361,1291622400"; 
+   d="scan'208";a="699400439"
+From: "Dong, Chuanxiao" <chuanxiao.dong@intel.com>
+To: Chris Ball <cjb@laptop.org>
+CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Date: Sat, 22 Jan 2011 11:00:32 +0800
+Subject: RE: [PATCH v4 1/1]mmc: implemented eMMC4.4 enhanced area feature
+Thread-Topic: [PATCH v4 1/1]mmc: implemented eMMC4.4 enhanced area feature
+Thread-Index: Acu51vDULpzERp/FR0CeehirTVopwQACXEFA
+Message-ID: <5D8008F58939784290FAB48F549751983539F50616@shsmsx502.ccr.corp.intel.com>
+References: <20110121200941.GA16236@intel.com>
+ <20110122015132.GA6748@void.printf.net>
+In-Reply-To: <20110122015132.GA6748@void.printf.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=Tx3DYczwf9U=QS9XGs6C8sjKwVZr+RLuo781V@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 06:41:58PM +0100, Vincent Guittot wrote:
-> On 21 January 2011 17:44, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > On Fri, Jan 21, 2011 at 09:43:18AM +0100, Vincent Guittot wrote:
-> >> On 20 January 2011 17:11, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >> > On Thu, Jan 20, 2011 at 09:25:54AM +0100, Vincent Guittot wrote:
-> >> >> Please find below a new proposal for adding trace events for cpu hotplug.
-> >> >> The goal is to measure the latency of each part (kernel, architecture)
-> >> >> and also to trace the cpu hotplug activity with other power events. I
-> >> >> have tested these traces events on an arm platform.
-> >> >>
-> >> >> Changes since previous version:
-> >> >> -Use cpu_hotplug for trace name
-> >> >> -Define traces for kernel core and arch parts only
-> >> >> -Use DECLARE_EVENT_CLASS and DEFINE_EVENT
-> >> >> -Use proper indentation
-> >> >>
-> >> >> Subject: [PATCH] cpu hotplug tracepoint
-> >> >>
-> >> >> this patch adds new events for cpu hotplug tracing
-> >> >>  * plug/unplug sequence
-> >> >>  * core and architecture latency measurements
-> >> >>
-> >> >> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.com>
-> >> >> ---
-> >> >>  include/trace/events/cpu_hotplug.h |  117 ++++++++++++++++++++++++++++++++++++
-> >> >
-> >> > Note we can't apply new tracepoints if they are not inserted in the code.
-> >>
-> >> I agree, i just want to have 1st feedbacks on the tracepoint interface
-> >> before providing a patch which inserts the trace in the code.
-> >>
-> >> >
-> >> >> +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_wait_die_start,
-> >> >> +
-> >> >> +     TP_PROTO(unsigned int cpuid),
-> >> >> +
-> >> >> +     TP_ARGS(cpuid)
-> >> >> +);
-> >> >> +
-> >> >> +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_wait_die_end,
-> >> >> +
-> >> >> +     TP_PROTO(unsigned int cpuid),
-> >> >> +
-> >> >> +     TP_ARGS(cpuid)
-> >> >> +);
-> >> >
-> >> > What is wait die, compared to die for example?
-> >> >
-> >>
-> >> The arch_wait_die is used to trace the process which waits for the cpu
-> >> to die (__cpu_die) and the arch_die is used to trace when the cpu dies
-> >> (cpu_die)
-> >
-> > I still can't find the difference.
-> >
-> > Having:
-> >
-> > trace_cpu_hotplug_arch_die_start(cpu)
-> > __cpu_die();
-> > trace_cpu_hotplug_arch_die_end(cpu)
-> >
-> > Is not enough to get both the information that a cpu dies
-> > and the time took to do so?
-> >
+Hi Chris,
+Thanks for letting me know this. :)
+
+-Chuanxiao
+
+> -----Original Message-----
+> From: Chris Ball [mailto:cjb@laptop.org]
+> Sent: Saturday, January 22, 2011 9:52 AM
+> To: Dong, Chuanxiao
+> Cc: linux-mmc@vger.kernel.org; linux-kernel@vger.kernel.org;
+> akpm@linux-foundation.org
+> Subject: Re: [PATCH v4 1/1]mmc: implemented eMMC4.4 enhanced area feature
 > 
-> it's quite interesting to trace the cpu_die function because the cpu
-> really dies in this one.
-
-Note in case of success, you have barely the same time between die and
-wait_die, the difference will reside in some completion wait/polling,
-noise, mostly. Probably most of the time unnoticeable and irrelevant.
-
-Plus if you opt for this scheme, you need to put your die hook into
-every architectures, while otherwise a simple trace_cpu_die_start()
-trace_cpu_die_stop() pair around __cpu_die() call in the generic code
-is enough.
-
-> The __cpu_die function can't return if the
-> cpu fails to die in the very last step and then wake up. But this
-> could be detected with some cpu_die traces.
->
+> Hi Chuanxiao,
 > 
-> for a normal use case we have something like :
-> cpu 0 enters __cpu_die
-> cpu 1 enters cpu_die
-> cpu1 acks that it is going to died
-> cpu0 returns from __cpu_die
+> On Sat, Jan 22, 2011 at 04:09:41AM +0800, Chuanxiao Dong wrote:
+> > Enhanced area feature is a new feature defined in eMMC4.4 standard. This
+> > kind of area can help to improve the performance.
+> >
+> > MMC driver will read out the enhanced area offset and size and add them
+> > to be device attributes. The feature enabling should be done in manufactory.
+> > To use this feature, bit ERASE_GRP_DEF should also be set.
+> >
+> > Documentation/ABI/testing/sysfs-devices-mmc described the two new attributes
+> >
+> > Signed-off-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
 > 
-> if the cpu 1 fails to die at the very last step, we could have:
-> cpu 0 enters __cpu_die
-> cpu 1 enters cpu_idle --> cpu_die
-> cpu1 leaves cpu_die because of some issues and comes back into cpu_idle.
-> cpu0 returns from __cpu_die after a timeout or an error ack
-
-If it fails in the hardware level, you'll certainly notice in your
-power profiling because a CPU is not supposed to take seconds to
-die. Especially with a such visual tool like pytimechart, it will
-be obvious.
-
-For the details, that's something that must be found in syslogs and
-that's it.
-
-I don't think it's a good idea to handle such buggy and unexpected case at
-the tracepoint level. You don't want to profile bugs, you want to debug them.
-So it doesn't belong to this space IMHO.
-
-> Then, cpu_die traces can be used with power traces for profiling the
-> cpu power state. May be, the power.h trace file is a better place for
-> the cpu_die traces ?
-
-Hmm, this should probably stay inside the cpu hotplug tracepoint family,
-this is where people will seek them in the first place.
+> Looks good, pushed to mmc-next.  Thanks for all the edits to this!
+> 
+> --
+> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+> One Laptop Per Child
