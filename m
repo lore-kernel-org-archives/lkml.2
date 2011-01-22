@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530Ab1AVPZG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 10:25:06 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:44763 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753331Ab1AVPZE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 10:25:04 -0500
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX18M8bQN0DIMkWLhaqM7zttoa1UeTiCKch9qyNwVas
-	//G1NZGPFdCTUa
-From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
-To: linux-kernel@vger.kernel.org
-Subject: libata EH running when switching VTs
-Date: Sat, 22 Jan 2011 16:25:00 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.4.5; i686; ; )
+	id S1753550Ab1AVPaj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 10:30:39 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:56403 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753439Ab1AVPai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jan 2011 10:30:38 -0500
+Date: Sat, 22 Jan 2011 09:30:33 -0600
+From: Robin Holt <holt@sgi.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hugh@veritas.com>, Andrew Morton <akpm@osdl.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: shmget limited by SHMEM_MAX_BYTES to 0x4020010000 bytes.
+Message-ID: <20110122153033.GR2912@sgi.com>
 MIME-Version: 1.0
-Message-Id: <201101221625.00775.toralf.foerster@gmx.de>
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+I have a customer system with 12 TB of memory.  The customer is trying
+to do a shmget() call with size of 4TB and it fails due to the check in
+shmem_file_setup() against SHMEM_MAX_BYTES which is 0x4020010000.
 
-Henrique de Moraes Holschuh wrote at 14:11:12
-> 
-> I don't even know whom to refer you to.  Maybe ask in LKML directly?  Use
-> the subject "libata EH running when switching VTs".  If one of those VTs
-> are in X.org control, say that as well.
+I have considered a bunch of options and really do not know which
+direction I should take this.
 
-I'm wondering why I get this in /var/log/messages w/ kernel 2.6.37 when I
-switch from VT7 (running xorg ) to VT12 (or 1 or 2 or another number) and 
-back:
+I could add a third level and fourth level with a similar 1/4 size being
+the current level of indirection, and the next quarter being a next level.
+That would get me closer, but not all the way there.
 
-
-2011-01-22T16:20:53.854+01:00 n22 kernel: ata1: hard resetting link
-2011-01-22T16:20:54.163+01:00 n22 kernel: ata1: SATA link up 1.5 Gbps (SStatus 
-113 SControl 300)
-2011-01-22T16:20:54.164+01:00 n22 kernel: ata1.00: ACPI cmd 
-ef/02:00:00:00:00:a0 (SET FEATURES) succeeded
-2011-01-22T16:20:54.164+01:00 n22 kernel: ata1.00: ACPI cmd 
-f5/00:00:00:00:00:a0 (SECURITY FREEZE LOCK) filtered out
-2011-01-22T16:20:54.165+01:00 n22 kernel: ata1.00: ACPI cmd 
-ef/5f:00:00:00:00:a0 (SET FEATURES) succeeded
-2011-01-22T16:20:54.165+01:00 n22 kernel: ata1.00: ACPI cmd 
-ef/10:03:00:00:00:a0 (SET FEATURES) filtered out
-2011-01-22T16:20:54.169+01:00 n22 kernel: ata1.00: ACPI cmd 
-ef/02:00:00:00:00:a0 (SET FEATURES) succeeded
-2011-01-22T16:20:54.169+01:00 n22 kernel: ata1.00: ACPI cmd 
-f5/00:00:00:00:00:a0 (SECURITY FREEZE LOCK) filtered out
-2011-01-22T16:20:54.169+01:00 n22 kernel: ata1.00: ACPI cmd 
-ef/5f:00:00:00:00:a0 (SET FEATURES) succeeded
-2011-01-22T16:20:54.169+01:00 n22 kernel: ata1.00: ACPI cmd 
-ef/10:03:00:00:00:a0 (SET FEATURES) filtered out
-2011-01-22T16:20:54.170+01:00 n22 kernel: ata1.00: configured for UDMA/100
-2011-01-22T16:20:54.171+01:00 n22 kernel: ata1: EH complete
+Given the complexity we would be introducing, I really lean towards
+having a tree of tables like the page tables instead of the current
+half is one level of indirection and the other half is two levels.
+It adds complexity which really does not have much value that I can see.
 
 
-I'm running an almost stable Gentoo on a ThinkPad T400 with current kernel
-(2.6.37, earlier shows this behaviour too)
+An alternative to the current halves being different levels
+of indirection, I considered reworking the info->next_index
+increment/decrement to put it inside the same locking as the walk/fill
+of the table.  With that, I could resize the table depth based
+upon the next_index value.  For next_index from SHMEM_NR_DIRECT
+to SHMEM_NR_DIRECT + ENTRIES_PER_PAGE (2MB), it could be direct.
+>From there to SHMEM_NR_DIRECT + ENTRIES_PER_PAGE ** 2 (1GB), it could
+be one level of indirection.  Then from there to SHMEM_NR_DIRECT +
+ENTRIES_PER_PAGE ** 3 (512GB), it could be two levels of indirection.
+Finally, from there to SHMEM_NR_DIRECT + ENTRIES_PER_PAGE ** 4 (256TB),
+it could be three levels.  That should be enough for a little while.
 
--- 
-MfG/Kind regards
-Toralf Förster
+I am unsure about the value of having the direct entries at the beginning.
+Given they have been this way for this long, I would probably leave them
+to minimize the chances for a performance impact.
 
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
-
+Thanks,
+Robin Holt
