@@ -1,118 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471Ab1AVPPw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 10:15:52 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:43461 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753358Ab1AVPPu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 10:15:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=EhTJgnpHeYuO0hKifReQe/nXArudK0n2cC46OI8nk99CMv/7uucWf21+p2p5qewcK1
-         pmn1+RYD3C6jiQADcftrG3CIy1YWgfIQg1TGsJ+qvUqo6x3SDb8CQkLflaQSd471JUr/
-         hajcZeBNI/89e/VtKJ5qeU5f0YHY8fpf3sJ2s=
-Subject: Re: Problems with /proc/net/tcp6  - possible bug - ipv6
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: PK <runningdoglackey@yahoo.com>, David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
-        Tom Herbert <therbert@google.com>
-In-Reply-To: <1295686781.2609.37.camel@edumazet-laptop>
-References: <702550.61465.qm@web63902.mail.re1.yahoo.com>
-	 <1295686781.2609.37.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 22 Jan 2011 16:15:44 +0100
-Message-ID: <1295709344.2651.55.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1753504Ab1AVPUP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 10:20:15 -0500
+Received: from hera.kernel.org ([140.211.167.34]:48576 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753331Ab1AVPUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jan 2011 10:20:14 -0500
+Date: Sat, 22 Jan 2011 15:19:55 GMT
+From: tip-bot for Han Pingtian <phan@redhat.com>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@redhat.com, phan@redhat.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, phan@redhat.com, tglx@linutronix.de
+In-Reply-To: <20110120114707.GA11781@hpt.nay.redhat.com>
+References: <20110120114707.GA11781@hpt.nay.redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf test: Use cpu_map->[cpu] when setting affinity
+Message-ID: <tip-ffb5e0fb44d0829021a51f972df90166bc9b700e@git.kernel.org>
+Git-Commit-ID: ffb5e0fb44d0829021a51f972df90166bc9b700e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 22 Jan 2011 15:19:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le samedi 22 janvier 2011 à 09:59 +0100, Eric Dumazet a écrit : 
-> Le vendredi 21 janvier 2011 à 22:30 -0800, PK a écrit :
-> > Creating many ipv6 connections hits a ceiling on connections/fds ; okay, fine.
-> > 
-> > But in my case I'm seeing millions of entries spring up within a few seconds and 
-> > then vanish within a few minutes, in /proc/net/tcp6 (vanish due to garbage 
-> > collection?)
-> > 
-> > Furthermore I can trigger this easily on vanilla kernels from 2.6.36 to 
-> > 2.6.38-rc1-next-20110121  inside a ubuntu 10.10 amd64 vm, causing the kernel to 
-> > spew warnings.  There is also some corruption in the logs (see kernel-sample.log 
-> > line 296), but that may be unrelated.
-> > 
-> > More explanation, kernel config of the primary machine I saw this on, sample 
-> > ruby script to reproduce (inside the ubuntu VMs I apt-get and use ruby-1.9.1), 
-> > are located at
-> > https://github.com/runningdogx/net6-bug
-> > 
-> > Seems to only affect 64-bit.  So far I have not been able to reproduce on 32-bit 
-> > ubuntu VMs of any kernel version.
-> > Seems to only affect IPv6.  So far I have not been able to reproduce using IPv4 
-> > connections (and watching /proc/net/tcp of course).
-> > Does not trigger the bug if the connections are made to ::1.  Only externally 
-> > routable local and global IPv6 addresses seem to cause problems.
-> > Seems to have been introduced between 2.6.35 and 2.6.36 (see README on github 
-> > for more kernels I've tried)
-> > 
-> > All the tested Ubuntu VMs are stock 10.10 userland, with vanilla kernels (the 
-> > latest ubuntu kernel is 2.6.35-something, and my initial test didn't show it 
-> > suffering from this problem)
-> > 
-> > Originally noticed on separate Gentoo 64-bit non-vm system when doing web 
-> > benchmarking.
-> > 
-> > not subscribed, so please keep me in cc although I'll try to follow the thread
-> > 
-> > 
+Commit-ID:  ffb5e0fb44d0829021a51f972df90166bc9b700e
+Gitweb:     http://git.kernel.org/tip/ffb5e0fb44d0829021a51f972df90166bc9b700e
+Author:     Han Pingtian <phan@redhat.com>
+AuthorDate: Thu, 20 Jan 2011 19:47:07 +0800
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 21 Jan 2011 16:44:14 -0200
 
+perf test: Use cpu_map->[cpu] when setting affinity
 
-I had some incidents, after hours of testing...
+When some of CPUs are offline:
 
-After following patch, I could not reproduce it.
+ # cat /sys/devices/system/cpu/online
+ 0,6-31
 
-I cant believe this bug was not noticed before today.
+perf test will fail on #3 testcase:
 
-Thanks !
+   3: detect open syscall event on all cpus:
+   --- start ---
+   perf_evsel__read_on_cpu: expected to intercept 111 calls on cpu 0, got 681
+   perf_evsel__read_on_cpu: expected to intercept 112 calls on cpu 1, got 117
+   perf_evsel__read_on_cpu: expected to intercept 113 calls on cpu 2, got 118
+   perf_evsel__read_on_cpu: expected to intercept 114 calls on cpu 3, got 119
+   perf_evsel__read_on_cpu: expected to intercept 115 calls on cpu 4, got 120
+   perf_evsel__read_on_cpu: expected to intercept 116 calls on cpu 5, got 121
+   perf_evsel__read_on_cpu: expected to intercept 117 calls on cpu 6, got 122
+   perf_evsel__read_on_cpu: expected to intercept 118 calls on cpu 7, got 123
+   perf_evsel__read_on_cpu: expected to intercept 119 calls on cpu 8, got 124
+   perf_evsel__read_on_cpu: expected to intercept 120 calls on cpu 9, got 125
+   perf_evsel__read_on_cpu: expected to intercept 121 calls on cpu 10, got 126
+   ....
 
-[PATCH] tcp: fix bug in listening_get_next()
+This patch try to use 'cpus->map[cpu]' when setting cpu affinity, and
+will check the return code of sched_setaffinity()
 
-commit a8b690f98baf9fb19 (tcp: Fix slowness in read /proc/net/tcp)
-introduced a bug in handling of SYN_RECV sockets.
-
-st->offset represents number of sockets found since beginning of
-listening_hash[st->bucket].
-
-We should not reset st->offset when iterating through
-syn_table[st->sbucket], or else if more than ~25 sockets (if
-PAGE_SIZE=4096) are in SYN_RECV state, we exit from listening_get_next()
-with a too small st->offset
-
-Next time we enter tcp_seek_last_pos(), we are not able to seek past
-already found sockets.
-
-Reported-by: PK <runningdoglackey@yahoo.com>
-CC: Tom Herbert <therbert@google.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+LKML-Reference: <20110120114707.GA11781@hpt.nay.redhat.com>
+Signed-off-by: Han Pingtian <phan@redhat.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- net/ipv4/tcp_ipv4.c |    1 -
- 1 file changed, 1 deletion(-)
+ tools/perf/builtin-test.c |   13 +++++++++----
+ 1 files changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index 856f684..02f583b 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -1994,7 +1994,6 @@ static void *listening_get_next(struct seq_file *seq, void *cur)
- 				}
- 				req = req->dl_next;
- 			}
--			st->offset = 0;
- 			if (++st->sbucket >= icsk->icsk_accept_queue.listen_opt->nr_table_entries)
- 				break;
- get_req:
-
-
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index ed56961..02958d6 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -380,13 +380,18 @@ static int test__open_syscall_event_on_all_cpus(void)
+ 	for (cpu = 0; cpu < cpus->nr; ++cpu) {
+ 		unsigned int ncalls = nr_open_calls + cpu;
+ 
+-		CPU_SET(cpu, cpu_set);
+-		sched_setaffinity(0, cpu_set_size, cpu_set);
++		CPU_SET_S(cpus->map[cpu], cpu_set_size, cpu_set);
++		if (sched_setaffinity(0, cpu_set_size, cpu_set) < 0) {
++			pr_debug("sched_setaffinity() failed on CPU %d: %s ",
++				 cpus->map[cpu],
++				 strerror(errno));
++			goto out_close_fd;
++		}
+ 		for (i = 0; i < ncalls; ++i) {
+ 			fd = open("/etc/passwd", O_RDONLY);
+ 			close(fd);
+ 		}
+-		CPU_CLR(cpu, cpu_set);
++		CPU_CLR_S(cpus->map[cpu], cpu_set_size, cpu_set);
+ 	}
+ 
+ 	/*
+@@ -410,7 +415,7 @@ static int test__open_syscall_event_on_all_cpus(void)
+ 		expected = nr_open_calls + cpu;
+ 		if (evsel->counts->cpu[cpu].val != expected) {
+ 			pr_debug("perf_evsel__read_on_cpu: expected to intercept %d calls on cpu %d, got %Ld\n",
+-				 expected, cpu, evsel->counts->cpu[cpu].val);
++				 expected, cpus->map[cpu], evsel->counts->cpu[cpu].val);
+ 			goto out_close_fd;
+ 		}
+ 	}
