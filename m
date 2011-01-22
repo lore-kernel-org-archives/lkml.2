@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057Ab1AVUxL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 15:53:11 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:52487 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910Ab1AVUxI (ORCPT
+	id S1751745Ab1AVUxJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 15:53:09 -0500
+Received: from smtp-out11.han.skanova.net ([195.67.226.200]:48533 "EHLO
+	smtp-out11.han.skanova.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750861Ab1AVUxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 22 Jan 2011 15:53:08 -0500
-Date: Sat, 22 Jan 2011 15:53:00 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Brian Swetland <swetland@google.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pekka Enberg <penberg@kernel.org>,
-        Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Dima Zavin <dmitriyz@google.com>, Joe Perches <joe@perches.com>,
-        davidb@codeaurora.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/7] Nexus One Support
-Message-ID: <20110122205300.GC8666@infradead.org>
-References: <1295632828.19880.22.camel@m0nster>
- <20110121100441.06a94482@jbarnes-desktop>
- <1295633882.19880.31.camel@m0nster>
- <AANLkTi=L+MW5-KLP_TKSxhstD8JEtBW=RKci5wSbZsd6@mail.gmail.com>
- <1295642995.19880.42.camel@m0nster>
- <1295643762.25868.31.camel@Joe-Laptop>
- <1295645098.22882.1.camel@m0nster>
- <AANLkTi=mvdfpCPefGeDr+eGxpSUr3is5jgugHtgB-m1w@mail.gmail.com>
- <20110122122018.GC5194@n2100.arm.linux.org.uk>
- <AANLkTi=47z21zExtfHq2WYdUdXeC1rNhe7vQsqPkFsMi@mail.gmail.com>
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Sat, 22 Jan 2011 21:52:54 +0100
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.38-rc1/-2: applesmc lockdep warning
+Message-ID: <20110122205254.GA2854@polaris.bitmath.org>
+References: <20110122134513.1e1d512a@stein>
+ <20110122200002.GA1677@polaris.bitmath.org>
+ <20110122204050.GB22252@ericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=47z21zExtfHq2WYdUdXeC1rNhe7vQsqPkFsMi@mail.gmail.com>
+In-Reply-To: <20110122204050.GB22252@ericsson.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 22, 2011 at 11:22:57AM -0800, Brian Swetland wrote:
-> What would be useful would be a reasonable convention for
-> acknowledging multiple authors, perhaps something along the lines of:
+> I can take it.
 
-If you do a grep "Based on" in git-log output you'll see that this is a
-pretty common and thus defacto standard for attributing substantial
-modified patches.
+Great, thanks.
 
+> Looks pretty straightforward. Do you think it is ready for upstream,
+> or should I wait for verification ?
+
+I was able to reproduce the problem, but a verification would still be
+good, just in case - if possible. AFAICT, it will be another week
+before rc3, so there seems to be no rush.
+
+Thanks,
+Henrik
