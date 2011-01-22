@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305Ab1AVGhh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 01:37:37 -0500
-Received: from web63902.mail.re1.yahoo.com ([69.147.97.117]:43052 "HELO
-	web63902.mail.re1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751139Ab1AVGhg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 01:37:36 -0500
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Jan 2011 01:37:36 EST
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type;
-  b=2Ci5PT1xbjWbroFDYAtLblRXYLPLtt46Mti3kpeAabCnJcOYW+x3Z4rdapLXkbuE1TwfSDCs2ReP8uEF+Ku+UtzlDrSMRllRxiestkkz8hnTqOeOAk4pLrCh3Zh2yARbcQ9gujohT9RNqmbtVSqpl34Y1VeVeXREzfqxUNR/ybs=;
-Message-ID: <702550.61465.qm@web63902.mail.re1.yahoo.com>
-X-YMail-OSG: W7Vv7LQVM1kTQ2jXspJ2ssTgI69eo.RchdcSXKUE_fWurF9
- _dl3HnwRiTK6XU6PdVVM.R8NZvaLPu8QLrnUCIWgp56FZ.WXK8vpjtLPBX5e
- RkK1XlDl1j7UwjSubIog.2bexKI7YwoeK__41NDtuCsMtUy.T.8gm1etHCyw
- U9a.jWLDkZvFuJSb9LucZfOpgPAQv0IBnO9M4.LjfGiYFeb4EshfeTLjUk7X
- qSp7_dlkhb.c4Iz1I4Pb92xyMoSRd7.E1OpaTdactXAubtPHfuHGXAmJUgs4
- w83L4SrFQtNPCmOMRhyOGD_g2yh_909pXepXgjN4eC5HJaNrw7yU-
-X-Mailer: YahooMailRC/555 YahooMailWebService/0.8.107.285259
-Date: Fri, 21 Jan 2011 22:30:54 -0800 (PST)
-From: PK <runningdoglackey@yahoo.com>
-Subject: Problems with /proc/net/tcp6  - possible bug - ipv6
-To: linux-kernel@vger.kernel.org
-Cc: runningdoglackey@yahoo.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753082Ab1AVIUE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 03:20:04 -0500
+Received: from freeflow.nu ([178.79.134.28]:58537 "EHLO freeflow.nu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751321Ab1AVIUC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jan 2011 03:20:02 -0500
+Subject: Re: [PATCH 0/7] Nexus One Support
+From: Pekka Enberg <penberg@kernel.org>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Daniel Walker <dwalker@codeaurora.org>, Dima Zavin <dmitriyz@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, Joe Perches <joe@perches.com>,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, davidb@codeaurora.org
+In-Reply-To: <20110121234930.GK3043@thunk.org>
+References: <1295576730.4096.24.camel@Joe-Laptop>
+	 <1295624801.19880.13.camel@m0nster>
+	 <20110121094827.41818a55@jbarnes-desktop>
+	 <20110121095658.1ab623fe@jbarnes-desktop>
+	 <1295632828.19880.22.camel@m0nster>
+	 <20110121100441.06a94482@jbarnes-desktop>
+	 <1295633882.19880.31.camel@m0nster>
+	 <AANLkTi=L+MW5-KLP_TKSxhstD8JEtBW=RKci5wSbZsd6@mail.gmail.com>
+	 <1295642995.19880.42.camel@m0nster>
+	 <AANLkTikVDn+W8t7KSym5tCGZowyYvoLFrk8d0mumiRF-@mail.gmail.com>
+	 <20110121234930.GK3043@thunk.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Sat, 22 Jan 2011 10:19:58 +0200
+Message-ID: <1295684398.19231.47.camel@jaguar>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Creating many ipv6 connections hits a ceiling on connections/fds ; okay, fine.
+Hi Ted,
 
-But in my case I'm seeing millions of entries spring up within a few seconds and 
-then vanish within a few minutes, in /proc/net/tcp6 (vanish due to garbage 
-collection?)
+On Fri, Jan 21, 2011 at 10:49 PM, Daniel Walker <dwalker@codeaurora.org> wrote:
+> > > I'll add this list into the commit text ..
 
-Furthermore I can trigger this easily on vanilla kernels from 2.6.36 to 
-2.6.38-rc1-next-20110121  inside a ubuntu 10.10 amd64 vm, causing the kernel to 
-spew warnings.  There is also some corruption in the logs (see kernel-sample.log 
-line 296), but that may be unrelated.
+On Fri, Jan 21, 2011 at 11:05:54PM +0200, Pekka Enberg wrote: 
+> > So why is everyone bitching at Daniel when he's doing something the
+> > Android folks should have done themselves a long time ago?
 
-More explanation, kernel config of the primary machine I saw this on, sample 
-ruby script to reproduce (inside the ubuntu VMs I apt-get and use ruby-1.9.1), 
-are located at
-https://github.com/runningdogx/net6-bug
+On Fri, 2011-01-21 at 18:49 -0500, Ted Ts'o wrote:
+> Two wrongs don't make a right.  And it's not like not submitting
+> changes is wrong, although granted it's not ideal.  (I'd say removing
+> attribution from a git commit is even worse.  If you're doing the
+> equivalent of a cherry pick, you should preserve the Author field.
+> Even if you're doing some cleanup work, as the maintainer I generally
+> preserve the Author line, and will simply add the fact that I did some
+> cleanup to the commit body.  The question is who did more work; the
+> person who originally submitted the code, or the person who did the
+> cleanup.)
 
-Seems to only affect 64-bit.  So far I have not been able to reproduce on 32-bit 
-ubuntu VMs of any kernel version.
-Seems to only affect IPv6.  So far I have not been able to reproduce using IPv4 
-connections (and watching /proc/net/tcp of course).
-Does not trigger the bug if the connections are made to ::1.  Only externally 
-routable local and global IPv6 addresses seem to cause problems.
-Seems to have been introduced between 2.6.35 and 2.6.36 (see README on github 
-for more kernels I've tried)
+Sure, it would have been nicer for everyone involved if Daniel would
+have kept the original patches and added new patches to clean it up on
+top of that to preserve the history. However, I don't understand the
+harsh comments when this looks like a honest mistake! And I especially
+don't understand the almost hostile attitude of the Android developers
+who have been sitting on these patches for over a year now AFAICT.
 
-All the tested Ubuntu VMs are stock 10.10 userland, with vanilla kernels (the 
-latest ubuntu kernel is 2.6.35-something, and my initial test didn't show it 
-suffering from this problem)
+			Pekka
 
-Originally noticed on separate Gentoo 64-bit non-vm system when doing web 
-benchmarking.
-
-not subscribed, so please keep me in cc although I'll try to follow the thread
-
-
-      
