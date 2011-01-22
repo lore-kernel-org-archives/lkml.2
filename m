@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab1AVAEe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 19:04:34 -0500
-Received: from kroah.org ([198.145.64.141]:46109 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754949Ab1AVAEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 19:04:33 -0500
-Date: Fri, 21 Jan 2011 15:54:31 -0800
-From: Greg KH <greg@kroah.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Naveen Kumar G <naveen.gaddipati@stericsson.com>,
-        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com
-Subject: Re: [PATCH 2/2] staging: synaptics: Implement error hamdling for
- rmi4 touch regulator
-Message-ID: <20110121235431.GA23124@kroah.com>
-References: <1295605236-3031-1-git-send-email-naveen.gaddipati@stericsson.com>
- <20110121203815.GA25099@kroah.com>
- <20110121233329.GB27943@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110121233329.GB27943@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755035Ab1AVAEn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 19:04:43 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54346
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755013Ab1AVAEl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 19:04:41 -0500
+Date: Fri, 21 Jan 2011 16:05:16 -0800 (PST)
+Message-Id: <20110121.160516.256850550.davem@davemloft.net>
+To: mathieu.desnoyers@efficios.com
+Cc: linux-kernel@vger.kernel.org, rostedt@goodmis.org, fweisbec@gmail.com,
+        mingo@elte.hu, richm@oldelvet.org.uk, ben@decadent.org.uk,
+        sparclinux@vger.kernel.org
+Subject: Re: [patch 3/3] tracepoints: use __u64_aligned/U64_ALIGN()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110121203643.046218322@efficios.com>
+References: <20110121203630.725922272@efficios.com>
+	<20110121203643.046218322@efficios.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 03:33:30PM -0800, Dmitry Torokhov wrote:
-> On Fri, Jan 21, 2011 at 12:38:15PM -0800, Greg KH wrote:
-> > On Fri, Jan 21, 2011 at 03:50:36PM +0530, Naveen Kumar G wrote:
-> > > From: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-> > > 
-> > > Implement the error handling for regulator in synaptics
-> > > rmi4 touch screen
-> > > 
-> > > Signed-off-by: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-> > 
-> > This patch has some fuzz and doesn't apply correctly.  Care to rediff it
-> > and resend it?
-> > 
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Date: Fri, 21 Jan 2011 15:36:33 -0500
+
+> commit 7e066fb870fcd1025ec3ba7bbde5d541094f4ce1 added the aligned(32) type and
+> variable attribute to the tracepoint structures to deal with gcc happily
+> aligning statically defined structures on 32-byte multiples.
 > 
-> Given that this driver is a [hopefully] dead-end placeholder should we
-> even spend time cleaning this up? It would be better if effor was spent
-> helping Synaptics folks clean up their generic driver...
+> Working on issues within Ftrace, we came up with __64_aligned, which deals with
+> this issue more elegantly by forcing an 8-byte alignment to both the type
+> declaration and variable definition.
+> 
+> This therefore saves space, bringing down the size of struct tracepoint from 64
+> bytes to 38 on 64-bit architectures.
+> 
+> Updating:
+> - The type attribute (for iteration over the struct tracepoint array)
+> - Added the variable attribute to the extern definition (needed to force gcc to
+>   consider this alignment for the following definition)
+> - The definition variable attribute (to force gcc to this specific alignment for
+>   the static definitions)
+> - The linker script (8-byte alignment can now replace the previous 32-byte
+>   alignment for the custom tracepoint section)
+> 
+> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-I agree, but this looks like a new feature being added.  We also can't
-keep people from sending patches in, and if Synaptics never comes
-through with their new driver, hey, all the better :)
-
-thanks,
-
-greg k-h
+Acked-by: David S. Miller <davem@davemloft.net>
