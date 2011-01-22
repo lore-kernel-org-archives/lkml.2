@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab1AVB5z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Jan 2011 20:57:55 -0500
-Received: from tn-76-7-162-101.sta.embarqhsd.net ([76.7.162.101]:46075 "EHLO
-	animx.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753826Ab1AVB5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Jan 2011 20:57:54 -0500
-Date: Fri, 21 Jan 2011 20:57:48 -0500
-From: Wakko Warner <wakko@animx.eu.org>
-To: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Cc: linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: NILFS crash on 2.6.37
-Message-ID: <20110122015748.GA3174@animx.eu.org>
-Mail-Followup-To: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-	linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20110121024918.GA29598@animx.eu.org> <20110121.163738.135792151.ryusuke@osrg.net> <20110121.181859.144825828.ryusuke@osrg.net>
-Mime-Version: 1.0
+	id S1754496Ab1AVB60 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Jan 2011 20:58:26 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:35505 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754228Ab1AVB6Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Jan 2011 20:58:25 -0500
+X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=caeoQ5mqpWkA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=Wo-aebrEy7bbeRxhL0oA:9 a=xBTc7TJ18MYySec_IZg3WcN6FiwA:4 a=CjuIK1q_8ugA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Date: Fri, 21 Jan 2011 20:58:21 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Pekka Enberg <penberg@kernel.org>,
+        Dima Zavin <dmitriyz@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, Joe Perches <joe@perches.com>,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, davidb@codeaurora.org
+Subject: Re: [PATCH 0/7] Nexus One Support
+Message-ID: <20110122015821.GA6249@home.goodmis.org>
+References: <20110121094827.41818a55@jbarnes-desktop>
+ <20110121095658.1ab623fe@jbarnes-desktop>
+ <1295632828.19880.22.camel@m0nster>
+ <20110121100441.06a94482@jbarnes-desktop>
+ <1295633882.19880.31.camel@m0nster>
+ <AANLkTi=L+MW5-KLP_TKSxhstD8JEtBW=RKci5wSbZsd6@mail.gmail.com>
+ <1295642995.19880.42.camel@m0nster>
+ <AANLkTikVDn+W8t7KSym5tCGZowyYvoLFrk8d0mumiRF-@mail.gmail.com>
+ <20110121234930.GK3043@thunk.org>
+ <1295654593.22882.9.camel@m0nster>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110121.181859.144825828.ryusuke@osrg.net>
-User-Agent: Mutt/1.5.6+20040907i
+In-Reply-To: <1295654593.22882.9.camel@m0nster>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ryusuke Konishi wrote:
-> On Fri, 21 Jan 2011 16:37:38 +0900 (JST), Ryusuke Konishi wrote:
-> > (Cc'ed to linux-nilfs)
-> > > [ 1202.581501] NILFS warning: broken superblock. using spare superblock.
-> > > [ 1202.582093] NILFS warning: broken superblock. using spare superblock.
-
-Why does it say this 2 times?  Just curious.
-
-> > Thanks for the report.
-> > 
-> > This seems to be a regression on 2.6.36 which could happen when one of
-> > two superblocks is broken.
-> > 
-> > I'll fix it.
+On Fri, Jan 21, 2011 at 04:03:13PM -0800, Daniel Walker wrote:
 > 
-> Does the following patch fix your problem?
+> right, but it wasn't a cherrypick which was explain in the thread. So
+> there's no wrongs here ..
 
-> diff --git a/fs/nilfs2/super.c b/fs/nilfs2/super.c
-> index 0994f6a7..58fd707 100644
-> --- a/fs/nilfs2/super.c
-> +++ b/fs/nilfs2/super.c
-> @@ -704,7 +704,8 @@ skip_mount_setup:
->  	sbp[0]->s_state =
->  		cpu_to_le16(le16_to_cpu(sbp[0]->s_state) & ~NILFS_VALID_FS);
->  	/* synchronize sbp[1] with sbp[0] */
-> -	memcpy(sbp[1], sbp[0], nilfs->ns_sbsize);
-> +	if (sbp[1])
-> +		memcpy(sbp[1], sbp[0], nilfs->ns_sbsize);
->  	return nilfs_commit_super(sbi, NILFS_SB_COMMIT_ALL);
->  }
+I'm sorry Daniel, but you are absolutely wrong!
 
-That patch fix it.  Just a note, the 2.6.37 vanilla source was about 20
-lines up from 704
+Did you come up with the logic of this code, or did you take someone
+else's code and just massage it until it worked?
 
--- 
- Microsoft has beaten Volkswagen's world record.  Volkswagen only created 22
- million bugs.
+If you took someone else's code, where are their Signed-off-by's?
+
+Just look at what I did recently with Lai's rt-mutex clean up patch. I
+ported it to the PREEMPT_RT (-rt) patch set. That port took me a week to
+do. I had to add a bunch of code to make it work. When it was finished,
+did I claim author of it? No! I left Lai as the author and simply added:
+
+ [ Ported to the -rt patch set by Steven Rostedt ]
+
+Take a look at the changes.
+
+  Here's the patch I started with:
+
+https://patchwork.kernel.org/patch/477841/
+
+  Here's what I ended with (all my changes)
+
+https://patchwork.kernel.org/patch/470171/
+
+Do a diff of the two. There was a lot of work going into that. But I did
+not come up with change to the algorithm that Lai did, so I kept him as
+author. I just added my insert in the change log and added my own SoB
+(including his).
+
+If I repaint a Picasso, can I call it a Rostedt?
+
+-- Steve
+
