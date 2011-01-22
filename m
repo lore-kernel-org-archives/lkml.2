@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab1AVOXI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 09:23:08 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61939 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728Ab1AVOXG (ORCPT
+	id S1753343Ab1AVO0m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 09:26:42 -0500
+Received: from smtprelay0005.hostedemail.com ([216.40.44.5]:44046 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753197Ab1AVO0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 09:23:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=LbX0a6bKEYH5bfQkbrdto6nZlFqEtwSHuSvMP4s5nHWz88kgrOHxZh1oOO4i2EdABU
-         FAsOJ9Jq+q78rZI2I1+JsZ7fCBMyscQtg5Z9bs4PcrbVZZCXu0jq6B7dampsoGCHHGQT
-         05cEuumEi8U6jw34wJrMWJhBn2/iNbiwltlU4=
-Date: Sat, 22 Jan 2011 15:23:03 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>, "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 2/2] block: clear ro on fd detach fd is bound
-Message-ID: <20110122142303.GD6160@htj.dyndns.org>
-References: <23846.1295615979@jrobl>
- <20110122142234.GC6160@htj.dyndns.org>
+	Sat, 22 Jan 2011 09:26:41 -0500
+X-Greylist: delayed 1152 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Jan 2011 09:26:41 EST
+X-Panda: scanned!
+X-Spam-Summary: 2,-1.05263,0,b85536f2dd368688,d41d8cd98f00b204,rostedt@goodmis.org,tglx@linutronix.de:laijs@cn.fujitsu.com:mingo@elte.hu:a.p.zijlstra@chello.nl:akpm@linux-foundation.org:hidave.darkstar@gmail.com:dvhart@linux.intel.com:namhyung@gmail.com:linux-kernel@vger.kernel.org:torvalds@linux-foundation.org,RULES_HIT:152:355:379:599:601:945:960:988:989:1260:1261:1277:1311:1313:1314:1345:1358:1359:1437:1515:1516:1518:1534:1537:1567:1593:1594:1676:1711:1714:1730:1747:1766:1792:2393:2553:2559:2562:3027:3138:3867:3868:3870:3872:3873:5007:6117:7652:7875:7903:10004:10016:10400:10471,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:none,DNSBL:none,Custom_rules:0:0:0
+X-Session-Marker: 726F737465647440676F6F646D69732E6F7267
+X-Filterd-Recvd-Size: 1929
+X-User-Agent: K-9 Mail for Android
+References: <4D07330A.7020600@cn.fujitsu.com> <alpine.LFD.2.00.1012141850460.12146@localhost6.localdomain6> <4D083900.1050801@cn.fujitsu.com> <1292386606.5015.1862.camel@gandalf.stny.rr.com> <4D130D23.1040309@cn.fujitsu.com> <1294851790.26623.372.camel@gandalf.stny.rr.com> <1294851864.26623.373.camel@gandalf.stny.rr.com> <1294851934.26623.374.camel@gandalf.stny.rr.com> <4D3012D5.4060709@cn.fujitsu.com> <alpine.LFD.2.00.1101211833120.2971@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1101211833120.2971@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110122142234.GC6160@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH V4] rtmutex: ensure only the top waiter or higher priority task can take the lock and remove unrelated boosting
+From: Steven Rostedt <rostedt@goodmis.org>
+Date: Sat, 22 Jan 2011 09:07:22 -0500
+To: Thomas Gleixner <tglx@linutronix.de>, Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Young <hidave.darkstar@gmail.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Message-ID: <5987f58c-029d-4b2d-a887-9589dcc4ae0c@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 75f1dc0d (block: check bdev_read_only() from blkdev_get())
-enforced bdev_read_only() check during blkdev_get().  This had an
-unfortunate side effect on loop because loop didn't clear ro flag on
-fd detach, so once a loop device was used ro, it can't be used for rw
-at all.
+"Thomas Gleixner" <tglx@linutronix.de> wrote:
 
-Fix it by clearing ro flag on fd detach.
+>On Fri, 14 Jan 2011, Lai Jiangshan wrote:
+>> On 01/13/2011 01:05 AM, Steven Rostedt wrote:
+>
+>Does not apply to mainline. Can you please redo ?
+>
+>Thanks,
+>
+>	tglx
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: "J. R. Okajima" <hooanon05@yahoo.co.jp>
----
- drivers/block/loop.c |    1 +
- 1 file changed, 1 insertion(+)
+I'll see if I can pull it in and fix it.
 
-Index: work/drivers/block/loop.c
-===================================================================
---- work.orig/drivers/block/loop.c
-+++ work/drivers/block/loop.c
-@@ -1041,6 +1041,7 @@ static int loop_clr_fd(struct loop_devic
- 	set_capacity(lo->lo_disk, 0);
- 	loop_sysfs_exit(lo);
- 	bd_set_size(bdev, 0);
-+	set_device_ro(bdev, 0);
- 	/* let user-space know about this change */
- 	kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
- 	mapping_set_gfp_mask(filp->f_mapping, gfp);
+-- Steve 
+
+-- 
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
