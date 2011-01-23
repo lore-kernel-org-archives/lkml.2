@@ -1,93 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960Ab1AWSEi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 13:04:38 -0500
-Received: from hera.kernel.org ([140.211.167.34]:56111 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751621Ab1AWSEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 13:04:37 -0500
-Date: Sun, 23 Jan 2011 18:03:25 GMT
-From: tip-bot for matthieu castet <castet.matthieu@free.fr>
-Cc: sliakh.lkml@gmail.com, mingo@redhat.com, torvalds@linux-foundation.org,
-        rusty@rustcorp.com.au, a.p.zijlstra@chello.nl, jiang@cs.ncsu.edu,
-        fweisbec@gmail.com, akpm@linux-foundation.org, rostedt@goodmis.org,
-        kees.cook@canonical.com, tglx@linutronix.de, jbaron@redhat.com,
-        xtfeng@gmail.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        jmorris@namei.org, arjan@linux.intel.com, davej@redhat.com,
-        castet.matthieu@free.fr, mingo@elte.hu
-Reply-To: mingo@redhat.com, sliakh.lkml@gmail.com, a.p.zijlstra@chello.nl,
-        rusty@rustcorp.com.au, torvalds@linux-foundation.org,
-        jiang@cs.ncsu.edu, fweisbec@gmail.com, rostedt@goodmis.org,
-        akpm@linux-foundation.org, kees.cook@canonical.com, jbaron@redhat.com,
-        tglx@linutronix.de, xtfeng@gmail.com, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, jmorris@namei.org, arjan@linux.intel.com,
-        davej@redhat.com, castet.matthieu@free.fr, mingo@elte.hu
-In-Reply-To: <4D3C3F20.7030203@free.fr>
-References: <4D3C3F20.7030203@free.fr>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Fix jump label with RO/NX module protection crash
-Message-ID: <tip-8969691343354bdd80eff5405a0f879edbf013d6@git.kernel.org>
-Git-Commit-ID: 8969691343354bdd80eff5405a0f879edbf013d6
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1751810Ab1AWSGF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 13:06:05 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58425 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243Ab1AWSGD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 13:06:03 -0500
+Date: Sun, 23 Jan 2011 18:05:32 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: KyongHo Cho <pullip.cho@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        KeyYoung Park <keyyoung.park@samsung.com>,
+        linux-kernel@vger.kernel.org, Ilho Lee <ilho215.lee@samsung.com>,
+        linux-mm@kvack.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: mm: Regarding section when dealing with meminfo
+Message-ID: <20110123180532.GA3509@n2100.arm.linux.org.uk>
+References: <1295516739-9839-1-git-send-email-pullip.cho@samsung.com> <1295544047.9039.609.camel@nimitz> <20110120180146.GH6335@n2100.arm.linux.org.uk> <1295547087.9039.694.camel@nimitz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 23 Jan 2011 18:03:27 +0000 (UTC)
+In-Reply-To: <1295547087.9039.694.camel@nimitz>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8969691343354bdd80eff5405a0f879edbf013d6
-Gitweb:     http://git.kernel.org/tip/8969691343354bdd80eff5405a0f879edbf013d6
-Author:     matthieu castet <castet.matthieu@free.fr>
-AuthorDate: Sun, 23 Jan 2011 15:45:52 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sun, 23 Jan 2011 16:12:45 +0100
+On Thu, Jan 20, 2011 at 10:11:27AM -0800, Dave Hansen wrote:
+> On Thu, 2011-01-20 at 18:01 +0000, Russell King - ARM Linux wrote:
+> > > The x86 version of show_mem() actually manages to do this without any
+> > > #ifdefs, and works for a ton of configuration options.  It uses
+> > > pfn_valid() to tell whether it can touch a given pfn.
+> > 
+> > x86 memory layout tends to be very simple as it expects memory to
+> > start at the beginning of every region described by a pgdat and extend
+> > in one contiguous block.  I wish ARM was that simple.
+> 
+> x86 memory layouts can be pretty funky and have been that way for a long
+> time.  That's why we *have* to handle holes in x86's show_mem().  My
+> laptop even has a ~1GB hole in its ZONE_DMA32:
 
-x86: Fix jump label with RO/NX module protection crash
-
-If we use jump table in module init, there are marked
-as removed in __jump_table section after init is done.
-
-But we already applied ro permissions on the module, so
-we can't modify a read only section (crash in
-remove_jump_label_module_init).
-
-Make the __jump_table section rw.
-
-Signed-off-by: Matthieu CASTET <castet.matthieu@free.fr>
-Cc: Xiaotian Feng <xtfeng@gmail.com>
-Cc: Jason Baron <jbaron@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Siarhei Liakh <sliakh.lkml@gmail.com>
-Cc: Xuxian Jiang <jiang@cs.ncsu.edu>
-Cc: James Morris <jmorris@namei.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Kees Cook <kees.cook@canonical.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-LKML-Reference: <4D3C3F20.7030203@free.fr>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/jump_label.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
-index f52d42e..574dbc2 100644
---- a/arch/x86/include/asm/jump_label.h
-+++ b/arch/x86/include/asm/jump_label.h
-@@ -14,7 +14,7 @@
- 	do {							\
- 		asm goto("1:"					\
- 			JUMP_LABEL_INITIAL_NOP			\
--			".pushsection __jump_table,  \"a\" \n\t"\
-+			".pushsection __jump_table,  \"aw\" \n\t"\
- 			_ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
- 			".popsection \n\t"			\
- 			: :  "i" (key) :  : label);		\
+If x86 is soo funky, I suggest you try the x86 version of show_mem()
+on an ARM platform with memory holes.  Make sure you try it with
+sparsemem as well...
