@@ -1,34 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174Ab1AWE5F (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 23:57:05 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:51091 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab1AWE5E (ORCPT
+	id S1750985Ab1AWFmT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 00:42:19 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:59056 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750802Ab1AWFmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 23:57:04 -0500
-Date: Sun, 23 Jan 2011 04:56:50 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Ali Gholami Rudi <aliqrudi@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-acpi@vger.kernel.org, rpurdie@rpsys.net
-Subject: Re: [Intel-gfx] [PATCH 2/5] i915: Add native backlight control
-Message-ID: <20110123045650.GA29156@srcf.ucam.org>
-References: <1295033065-13450-1-git-send-email-mjg@redhat.com> <1295033065-13450-2-git-send-email-mjg@redhat.com> <20112101000015@lilem.mirepesht> <20112101004346@lilem.mirepesht> <20110120151349.49cf3ebb.akpm@linux-foundation.org> <20110121004359.GA6422@srcf.ucam.org> <20110120170337.94d83333.akpm@linux-foundation.org> <20110121045754.GA9897@srcf.ucam.org> <20112301081539@lilem.mirepesht>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20112301081539@lilem.mirepesht>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Sun, 23 Jan 2011 00:42:18 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/li6Ry99Tlv8u5aBfizMLfiMYEkuKGqW5byWPhpw
+	SOzH5pe1s2grg8
+Subject: Re: 'autogroup' sched code KILLING responsiveness
+From: Mike Galbraith <efault@gmx.de>
+To: Michael Witten <mfwitten@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTinU7kFRSkNZ2JcyGYPWRF9LP48FqWZknVafm56a@mail.gmail.com>
+References: <4d39ce58.cc7e0e0a.5448.59e4@mx.google.com>
+	 <1295648870.23779.15.camel@marge.simson.net>
+	 <4d3b4ac1.26092a0a.6f30.ffffcf6b@mx.google.com>
+	 <AANLkTinU7kFRSkNZ2JcyGYPWRF9LP48FqWZknVafm56a@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 23 Jan 2011 06:42:14 +0100
+Message-ID: <1295761334.7883.5.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well, that's odd. I'll look into it this week.
+On Sat, 2011-01-22 at 21:32 -0600, Michael Witten wrote:
+> On Sat, Jan 22, 2011 at 15:23, Michael Witten <mfwitten@gmail.com> wrote:
+> > Of course, I have none of these problems when I disable:
+> >
+> >  CONFIG_AUTOGROUP_SCHED
+> 
+> Of course, if CONFIG_AUTOGROUP_SCHED is enabled, then the problem also
+> goes away if the kernel is booted using the `noautogroup' parameter.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+I built a UP kernel for my old P4 box, and fair group scheduling doesn't
+appear to be working at all, whereas SMP does.  It was usable, but
+pretty horrible.
+
+I have other (hot) things to do atm, but will investigate this.  Thanks.
+
+	-Mike
+
