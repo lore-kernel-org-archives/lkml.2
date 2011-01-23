@@ -1,33 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818Ab1AWDKg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 22:10:36 -0500
-Received: from zfrontend1.aha.ru ([195.2.83.147]:46499 "EHLO aha.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752212Ab1AWDKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 22:10:33 -0500
-From: "werner" <w.landgraf@ru.ru>
-Subject: 2.6.38-rc1 and -rc2 problems with khugepaged
-To: aarcange@redhat.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        idryomov@gmail.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <jweiner@redhat.com>
-X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
-Date: Sat, 22 Jan 2011 23:10:28 -0400
-Message-ID: <web-444847885@zbackend1.aha.ru>
+	id S1752880Ab1AWDd0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 22:33:26 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58904 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752395Ab1AWDdZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jan 2011 22:33:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=hdX3epQEg6FYe89VkUCg0JtUsTrAGYIzXWEjzHY15BTHXeNMdYZ7nJGRIfEraAc/Rs
+         4Blp6V/1VFo2tomA6eKvIvnjb/MNuUr3xM3frvpPG80sj+rMKtZuPFvlmKoBUjejJdo/
+         Y+q3TOF48T4wrzwrJ60ewrnbv+rIwAqI4Mwi0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; format="flowed"
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <4d3b4ac1.26092a0a.6f30.ffffcf6b@mx.google.com>
+References: <4d39ce58.cc7e0e0a.5448.59e4@mx.google.com> <1295648870.23779.15.camel@marge.simson.net>
+ <4d3b4ac1.26092a0a.6f30.ffffcf6b@mx.google.com>
+From: Michael Witten <mfwitten@gmail.com>
+Date: Sat, 22 Jan 2011 21:32:54 -0600
+Message-ID: <AANLkTinU7kFRSkNZ2JcyGYPWRF9LP48FqWZknVafm56a@mail.gmail.com>
+Subject: Re: 'autogroup' sched code KILLING responsiveness
+To: Mike Galbraith <efault@gmx.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hello
-I want to inform, still, that with the boot kernel option
-transparent_hugepage=never
-it dont crash and the computer boots and works normal. I'm 
-just now using it with this option.
-Thus, the reason for the freezing is really khugepaged.
-wl
----
-Professional hosting for everyone - http://www.host.ru
+On Sat, Jan 22, 2011 at 15:23, Michael Witten <mfwitten@gmail.com> wrote:
+> Of course, I have none of these problems when I disable:
+>
+>  CONFIG_AUTOGROUP_SCHED
+
+Of course, if CONFIG_AUTOGROUP_SCHED is enabled, then the problem also
+goes away if the kernel is booted using the `noautogroup' parameter.
