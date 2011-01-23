@@ -1,58 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751236Ab1AWQPJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 11:15:09 -0500
-Received: from ns.km10614-05.keymachine.de ([87.118.102.170]:55327 "EHLO
-	km10614-05.keymachine.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750981Ab1AWQPI (ORCPT
+	id S1751306Ab1AWQRe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 11:17:34 -0500
+Received: from jester.euphonynet.be ([212.87.96.13]:48001 "EHLO
+	mailpush2.euphonynet.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099Ab1AWQRd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 11:15:08 -0500
-Date: Sun, 23 Jan 2011 17:15:00 +0100
-From: Harald Braumann <harry@unheit.net>
+	Sun, 23 Jan 2011 11:17:33 -0500
+From: Bart Van Assche <bvanassche@acm.org>
 To: linux-kernel@vger.kernel.org
-Subject: Re: Deadlock on concurrent remount-ro and mdadm --stop (2.6.37)
-Message-ID: <20110123161500.GB4108@nn.nn>
-Mail-Followup-To: Harald Braumann <harry@unheit.net>,
-	linux-kernel@vger.kernel.org
-References: <20110121124754.GA5233@nn.nn>
+Subject: [PATCH] Dynamic debug: Add more flags
+Date: Sun, 23 Jan 2011 17:17:24 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34.8-scst; KDE/4.4.4; x86_64; ; )
+Cc: Greg Banks <gnb@sgi.com>, Jason Baron <jbaron@redhat.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110121124754.GA5233@nn.nn>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101231717.24175.bvanassche@acm.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 01:47:54PM +0100, Harald Braumann wrote:
-> On shutdown `umountroot' and `mdadm-raid'  are executed concurrently. The 
-> actual commands are:
-> mount -o remount,ro /
-> mdadm --stop --scan
-> 
-> This seems to trigger a deadlock in the kernel. Dumping blocked tasks (sysrq-W)
-> gives:
-> 
-> md126_raid5: call trace:
->   md_super_wait
->   autoremove_wake_function
->   bitmap_unplug
->   ...
-> 
-> mount: call trace:
->   sync_page
->   io_schedule
->   sync_page
+Add flags that allow the user to specify via debugfs whether or not the
+module name, function name, line number and/or thread ID have to be
+included in the printed message.
 
-I've now disable parallel boot in my system, so umountroot and mdadm
-shouldn't be called cuncurrently anymore. But I still get lock-ups on
-mdadm --stop. Umountroot is called before mdadm --stop, and all other
-filesystems are unmounted before that, so I guess
-there should be no `sync_page' in progress anymore. But I also have
-swap on the raid, so maybe there's a problem?
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Cc: Greg Banks <gnb@sgi.com>
+Cc: Jason Baron <jbaron@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
+---
+ Documentation/dynamic-debug-howto.txt |   12 +++++-
+ include/linux/dynamic_debug.h         |    8 ++++-
+ lib/dynamic_debug.c                   |   60 ++++++++++++++++++++++++++++-----
+ 3 files changed, 68 insertions(+), 12 deletions(-)
 
-As not even the magic SysRQ keys work, I can't provide any more
-details. Any suggestions how I could debug this problem?
+diff --git a/Documentation/dynamic-debug-howto.txt b/Documentation/dynamic-debug-howto.txt
+index 58ea64a..e6c4b75 100644
+--- a/Documentation/dynamic-debug-howto.txt
++++ b/Documentation/dynamic-debug-howto.txt
+@@ -205,12 +205,20 @@ of the characters:
+ 
+ The flags are:
+ 
++f
++    Include the function name in the printed message
++l
++    Include line number in the printed message
++m
++    Include module name in the printed message
+ p
+     Causes a printk() message to be emitted to dmesg
++t
++    Include thread ID in messages not generated from interrupt context
+ 
+-Note the regexp ^[-+=][scp]+$ matches a flags specification.
++Note the regexp ^[-+=][flmpt]+$ matches a flags specification.
+ Note also that there is no convenient syntax to remove all
+-the flags at once, you need to use "-psc".
++the flags at once, you need to use "-flmpt".
+ 
+ 
+ Debug messages during boot process
+diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+index 1c70028..0c9653f 100644
+--- a/include/linux/dynamic_debug.h
++++ b/include/linux/dynamic_debug.h
+@@ -31,6 +31,10 @@ struct _ddebug {
+ 	 * writes commands to <debugfs>/dynamic_debug/control
+ 	 */
+ #define _DPRINTK_FLAGS_PRINT   (1<<0)  /* printk() a message using the format */
++#define _DPRINTK_FLAGS_INCL_MODNAME	(1<<1)
++#define _DPRINTK_FLAGS_INCL_FUNCNAME	(1<<2)
++#define _DPRINTK_FLAGS_INCL_LINENO	(1<<3)
++#define _DPRINTK_FLAGS_INCL_TID		(1<<4)
+ #define _DPRINTK_FLAGS_DEFAULT 0
+ 	unsigned int flags:8;
+ 	char enabled;
+@@ -42,6 +46,8 @@ int ddebug_add_module(struct _ddebug *tab, unsigned int n,
+ 
+ #if defined(CONFIG_DYNAMIC_DEBUG)
+ extern int ddebug_remove_module(const char *mod_name);
++extern int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
++	__attribute__ ((format (printf, 2, 3)));
+ 
+ #define dynamic_pr_debug(fmt, ...) do {					\
+ 	static struct _ddebug descriptor				\
+@@ -50,7 +56,7 @@ extern int ddebug_remove_module(const char *mod_name);
+ 	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
+ 		_DPRINTK_FLAGS_DEFAULT };				\
+ 	if (unlikely(descriptor.enabled))				\
+-		printk(KERN_DEBUG pr_fmt(fmt),	##__VA_ARGS__);		\
++		__dynamic_pr_debug(&descriptor, pr_fmt(fmt), ##__VA_ARGS__); \
+ 	} while (0)
+ 
+ 
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index b335acb..863c834 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -7,6 +7,7 @@
+  * Copyright (C) 2008 Jason Baron <jbaron@redhat.com>
+  * By Greg Banks <gnb@melbourne.sgi.com>
+  * Copyright (c) 2008 Silicon Graphics Inc.  All Rights Reserved.
++ * Copyright (C) 2011 Bart Van Assche.  All Rights Reserved.
+  */
+ 
+ #include <linux/kernel.h>
+@@ -27,6 +28,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/slab.h>
+ #include <linux/jump_label.h>
++#include <linux/hardirq.h>
+ 
+ extern struct _ddebug __start___verbose[];
+ extern struct _ddebug __stop___verbose[];
+@@ -63,15 +65,25 @@ static inline const char *basename(const char *path)
+ 	return tail ? tail+1 : path;
+ }
+ 
++static struct { unsigned flag:8; char opt_char; } opt_array[] = {
++	{ _DPRINTK_FLAGS_PRINT, 'p' },
++	{ _DPRINTK_FLAGS_INCL_MODNAME, 'm' },
++	{ _DPRINTK_FLAGS_INCL_FUNCNAME, 'f' },
++	{ _DPRINTK_FLAGS_INCL_LINENO, 'l' },
++	{ _DPRINTK_FLAGS_INCL_TID, 't' },
++};
++
+ /* format a string into buf[] which describes the _ddebug's flags */
+ static char *ddebug_describe_flags(struct _ddebug *dp, char *buf,
+ 				    size_t maxlen)
+ {
+ 	char *p = buf;
++	int i;
+ 
+ 	BUG_ON(maxlen < 4);
+-	if (dp->flags & _DPRINTK_FLAGS_PRINT)
+-		*p++ = 'p';
++	for (i = 0; i < ARRAY_SIZE(opt_array); ++i)
++		if (dp->flags & opt_array[i].flag)
++			*p++ = opt_array[i].opt_char;
+ 	if (p == buf)
+ 		*p++ = '-';
+ 	*p = '\0';
+@@ -343,7 +355,7 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ 			       unsigned int *maskp)
+ {
+ 	unsigned flags = 0;
+-	int op = '=';
++	int op = '=', i;
+ 
+ 	switch (*str) {
+ 	case '+':
+@@ -358,13 +370,14 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ 		printk(KERN_INFO "%s: op='%c'\n", __func__, op);
+ 
+ 	for ( ; *str ; ++str) {
+-		switch (*str) {
+-		case 'p':
+-			flags |= _DPRINTK_FLAGS_PRINT;
+-			break;
+-		default:
+-			return -EINVAL;
++		for (i = ARRAY_SIZE(opt_array) - 1; i >= 0; i--) {
++			if (*str == opt_array[i].opt_char) {
++				flags |= opt_array[i].flag;
++				break;
++			}
+ 		}
++		if (i < 0)
++			return -EINVAL;
+ 	}
+ 	if (flags == 0)
+ 		return -EINVAL;
+@@ -413,6 +426,35 @@ static int ddebug_exec_query(char *query_string)
+ 	return 0;
+ }
+ 
++int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
++{
++	va_list args;
++	int res;
++
++	BUG_ON(!descriptor);
++	BUG_ON(!fmt);
++
++	va_start(args, fmt);
++	res = printk(KERN_DEBUG);
++	if (descriptor->flags & _DPRINTK_FLAGS_INCL_TID) {
++		if (in_interrupt())
++			res += printk(KERN_CONT "<intr> ");
++		else
++			res += printk(KERN_CONT "[%d] ", task_pid_vnr(current));
++	}
++	if (descriptor->flags & _DPRINTK_FLAGS_INCL_MODNAME)
++		res += printk(KERN_CONT "%s:", descriptor->modname);
++	if (descriptor->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
++		res += printk(KERN_CONT "%s:", descriptor->function);
++	if (descriptor->flags & _DPRINTK_FLAGS_INCL_LINENO)
++		res += printk(KERN_CONT "%d ", descriptor->lineno);
++	res += vprintk(fmt, args);
++	va_end(args);
++
++	return res;
++}
++EXPORT_SYMBOL(__dynamic_pr_debug);
++
+ static __initdata char ddebug_setup_string[1024];
+ static __init int ddebug_setup_query(char *str)
+ {
+-- 
+1.7.1
 
-Cheers,
-harry
