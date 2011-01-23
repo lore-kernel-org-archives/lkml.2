@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751310Ab1AWQmH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 11:42:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41570 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983Ab1AWQmG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 11:42:06 -0500
-Date: Sun, 23 Jan 2011 08:31:54 -0800
-From: Greg KH <gregkh@suse.de>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: unbreak billionton CF card (was Re: [000/152] 2.6.36.3-stable
- review)
-Message-ID: <20110123163154.GA1071@suse.de>
-References: <20110106002500.GA3172@kroah.com>
- <20110106134254.68fa27ac@lxorguk.ukuu.org.uk>
- <20110106215705.GA30799@suse.de>
- <20110107150724.GA29082@atrey.karlin.mff.cuni.cz>
- <20110107183716.GA14895@suse.de>
- <20110123130611.GA2713@ucw.cz>
+	id S1751363Ab1AWQtC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 11:49:02 -0500
+Received: from lider.pardus.org.tr ([193.140.100.216]:39738 "EHLO
+	lider.pardus.org.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983Ab1AWQtA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 11:49:00 -0500
+Message-ID: <4D3C5C01.4040408@pardus.org.tr>
+Date: Sun, 23 Jan 2011 18:49:05 +0200
+From: =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozan@pardus.org.tr>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110123130611.GA2713@ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: =?UTF-8?B?UmljaGFyZCBTY2jDvHR6?= <r.schtz@t-online.de>
+CC: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org, rjw@sisk.pl
+Subject: Re: Common boot/shutdown issues with the latest 2.6.37 (Mostly Asus
+ laptops)
+References: <4D3C3B1E.1080500@pardus.org.tr> <4D3C42A5.6060909@t-online.de>
+In-Reply-To: <4D3C42A5.6060909@t-online.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 23, 2011 at 02:06:11PM +0100, Pavel Machek wrote:
-> Unbreak Billionton CF bluetooth card. This actually fixes a regression
-> on zaurus.
-> 
-> Signed-off-by: Pavel Machek <pavel@ucw.cz>
-> 
-> ---
-> 
-> (now fixed typo)
+On 23.01.2011 17:00, Richard Schütz wrote:
 
-So you mean the version that I just accepted into my tree is wrong?
-What's wrong with it?  Care to provide the diff between the two?
+>
+> Looks like these are all Intel machines. Do they use intel_idle for the
+> CPU powersaving features?
+> (cat /sys/devices/system/cpu/cpuidle/current_driver)
 
-thanks,
+Well at least on F50SV and N61JQ they use acpi_idle (this is what dmesg 
+output says).
 
-greg k-h
+I'll open a bug for N61JQ as I've got detailed information about it.
+
+
+-- 
+Pardus Linux
+http://www.pardus.org.tr/eng
