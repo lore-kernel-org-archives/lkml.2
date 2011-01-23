@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675Ab1AWWTd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 17:19:33 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:19965 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752248Ab1AWWTS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 17:19:18 -0500
-Date: Sun, 23 Jan 2011 23:19:55 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-usb@vger.kernel.org
-cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>, The Zapman <zapman@interlan.net>,
-        Michael Rothwell <rothwell@interlan.net>
-Subject: [PATCH] USB NET KL5KUSB101: Fix mem leak in error path of
- kaweth_download_firmware()
-Message-ID: <alpine.LNX.2.00.1101232315230.30955@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752639Ab1AWWgH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 17:36:07 -0500
+Received: from core.signal11.us ([64.251.29.136]:56480 "EHLO core.signal11.us"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752433Ab1AWWgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 17:36:05 -0500
+From: Alan Ott <alan@signal11.us>
+To: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, greg@kroah.com,
+        stern@rowland.harvard.edu, libusb-devel@lists.sourceforge.net
+Cc: Alan Ott <alan@signal11.us>
+Subject: [PATCH v2 0/1] HID: Report Descriptor in Sysfs
+Date: Sun, 23 Jan 2011 17:35:06 -0500
+Message-Id: <1295822107-6820-1-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <20110122135516.GA4893@kroah.com>
+References: <20110122135516.GA4893@kroah.com>
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Sun Jan 23 17:36:03 2011
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 4d3cad5320439529717128
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We will leak the storage allocated by request_firmware() if the size of 
-the firmware is greater than KAWETH_FIRMWARE_BUF_SIZE.
-This removes the leak by calling release_firmware() before we return 
--ENOSPC.
+This is version 2 of the patch, with binary data in the sysfs file instead
+of ASCII, as suggested by Alan Stern and Greg KH.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- kaweth.c |    1 +
- 1 file changed, 1 insertion(+)
+So I'd like to have access to the HID report descriptor in a sysfs entry, so
+I can read it without opening the device.  hid-core seemed like the place to
+put it.
 
-  Compile tested only since I do not have the hardware.
+Using the /sys/class links, for hidraw devices, this puts a new file,
+report_descriptor in the directory:
+	/sys/class/hidraw/hidraw0/device/
 
-diff --git a/drivers/net/usb/kaweth.c b/drivers/net/usb/kaweth.c
-index 5e98643..7dc8497 100644
---- a/drivers/net/usb/kaweth.c
-+++ b/drivers/net/usb/kaweth.c
-@@ -406,6 +406,7 @@ static int kaweth_download_firmware(struct kaweth_device *kaweth,
- 
- 	if (fw->size > KAWETH_FIRMWARE_BUF_SIZE) {
- 		err("Firmware too big: %zu", fw->size);
-+		release_firmware(fw);
- 		return -ENOSPC;
- 	}
- 	data_len = fw->size;
+For my USB device (for example), the new file is in:
+	/sys/bus/usb/devices/1-5.3:1.0/0003:046D:C216.0001/
 
+For my Bluetooth device, the new file is in:
+	/sys/class/bluetooth/hci0/hci0:11/0005:054C:0268.0002/
 
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+I'm not super confident that these file locations are the best place, but I
+made a best guess so that it could be discussed.  The current location is
+where the hid-core stuff lives.  Is there a reason these directories are
+named bus:vendor:product:id (instead of hid-core or something similar)?  Is
+there a better way to do this?
+
+Alan.
+
+Alan Ott (1):
+  hid: Add HID Report Descriptor to sysfs.
+
+ drivers/hid/hid-core.c |   33 +++++++++++++++++++++++++++++++++
+ 1 files changed, 33 insertions(+), 0 deletions(-)
+
 
