@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751446Ab1AWAO7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 19:14:59 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:41816 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947Ab1AWAO6 convert rfc822-to-8bit (ORCPT
+	id S1751791Ab1AWAQy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 19:16:54 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:38982 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750973Ab1AWAQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 19:14:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=PlPZGiNY+ba+wnc5Ypgk7YFFAYqZI8e+QAznubVvYvwHwkazo978/1WNpu9ecuP3xD
-         wQrXYF4uK3OhwIG9B9rq8jbilSfm9YJVWZOxiH4GbknCmaEy5glug6z9hkY3LY5jCImr
-         4DharMlf1ycQjMn0ey01prT5+Uu6DJbmLtva8=
+	Sat, 22 Jan 2011 19:16:53 -0500
+Message-ID: <4D3B7361.3030800@metafoo.de>
+Date: Sun, 23 Jan 2011 01:16:33 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <201101222012.14028.rjw@sisk.pl>
-References: <201101201226.41021.rjw@sisk.pl>
-	<201101221025.49327.rjw@sisk.pl>
-	<AANLkTi=MDyaPj9D+28NWRRK13qhJfKw098xPPhwrGZoa@mail.gmail.com>
-	<201101222012.14028.rjw@sisk.pl>
-Date: Sun, 23 Jan 2011 08:14:57 +0800
-Message-ID: <AANLkTikstr=vY=1S7A4Pudg3u=k4eJ7HRz6tWwAq4N-v@mail.gmail.com>
-Subject: Re: [PATCH 0/11] ACPI: Fixes and cleanups related to iomaps management
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, "for 2.6.37" <stable@kernel.org>
+Subject: Re: [PATCH] ASoC: Fix codec device id format used by some dai_links
+References: <1295735888-25527-1-git-send-email-lars@metafoo.de> <20110122233309.GA22799@opensource.wolfsonmicro.com>
+In-Reply-To: <20110122233309.GA22799@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 23, 2011 at 3:12 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Saturday, January 22, 2011, Jeff Chua wrote:
->> 2011/1/22 Rafael J. Wysocki <rjw@sisk.pl>:
->> > On Saturday, January 22, 2011, Jeff Chua wrote:
->>
->> > means that my patch [11/11] _and_ the replacement are totally wrong, because you have
->> > _multiple_ NVS regions.  That really helped, thanks a lot.
->>
->> Would it be different if I offline all CPUs before suspending to ram?
->> It seems to help with suspending to disk.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+On 01/23/2011 01:01 AM, Mark Brown wrote:
+> On Sun, Jan 23, 2011 at 12:58:02AM +0100, Lars-Peter Clausen wrote:
 >
-> No, that doesn't matter.  NVS regions are just sitting there regardless of
-> what happens at run time.
+>> I just went through the whole list and the wm8994 codec is a platform driver as well.
+>> And on the jive board the wm8750 is connected through SPI.
+>
+> Yeah, Liam made up a lot of this stuff through guesswork but as you can
+> see a mechanical run through fixing them won't work as not everything is
+> I2C based in the first place.
 
-Strange. If I didn't offline, it hanged during suspend even without
-thinkpad_acpi. I could see that the suspend code does the offline
-automatically, but executing the offline before calling suspend makes
-it no hanging.
+On the other hand a mechanical run wont break anything that is not already broken,
+but potentially fixes it.
 
-Jeff
+I could resend the patch with those three cases which were definitely wrong in the
+current patch fixed to use the correct SPI or platform id. Or I could just send the
+fix for the neo1973 and neo1973_gta02 boards. Which one do you prefer?
+
+- - Lars
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk07c2EACgkQBX4mSR26RiNwkgCcCwFvSv2k4pH+2KwHeP7zHB+3
+aMsAn1PYvQnTXM36+DTASMgFXfcj9hRV
+=OQXL
+-----END PGP SIGNATURE-----
