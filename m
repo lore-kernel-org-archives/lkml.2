@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716Ab1AWRp3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 12:45:29 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36779 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab1AWRp0 (ORCPT
+	id S1751648Ab1AWRvo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 12:51:44 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:45251 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751420Ab1AWRvn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 12:45:26 -0500
+	Sun, 23 Jan 2011 12:51:43 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=SEqhVdcCkL98veXYSPJD2pqBzYiKZBpFLLHV6dWxBtPd4/HGlH40cXPTxflfAzQbUb
-         ObRkGguRrEQBYqWwvo3ZMO7Qm8KZc/jk4ixUsgRETIJseKmXjez4q+Apj/7Wjn41U/hR
-         HT/cUq5hsXtiWEWzJ5msf/cGpCHzRZxq0xfaM=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Simon Arlott <simon@fire.lp0.eu>
-Subject: Re: 2.6.37 regression: adding main interface to a bridge breaks vlan interface RX
-Date: Sun, 23 Jan 2011 18:45:20 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.4.5; i686; ; )
-Cc: netdev <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        jesse@nicira.com
-References: <4D32FC1C.3010905@simon.arlott.org.uk>
-In-Reply-To: <4D32FC1C.3010905@simon.arlott.org.uk>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=BY4/ZArpyNOvaD/Sqh/6FKumDz8gd24boqffI12uf7R4ioLY9v44erWepIGgILE3uU
+         OqVwIP9Zw2aRsXEQnDaRFE2MNPn+qmWPbDZhOLgJcSNh6ENGlBTieEzhoVNLX0P5b/Vj
+         PrwQBKBSSNzpsP+gRkGb9aW5zJybJKBTcG56Q=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101231845.20505.maciej.rutecki@gmail.com>
+In-Reply-To: <20110122183800.GU9506@random.random>
+References: <AANLkTikdwZp1r_MD4TH7bsLjzPAtHzq7XWoLZmFwdK=S@mail.gmail.com>
+	<20110122183800.GU9506@random.random>
+Date: Sun, 23 Jan 2011 18:51:42 +0100
+Message-ID: <AANLkTik6QKuoGmYBsP8goZSCWDoWxd0hwnMvSAEeNa_k@mail.gmail.com>
+Subject: Re: [PATCH] compaction: don't depend on HUGETLB_PAGE
+From: Luca Tettamanti <kronos.it@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=27432
-for your bug report, please add your address to the CC list in there, thanks!
+On Sat, Jan 22, 2011 at 7:38 PM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> Hello,
+>
+> On Sat, Jan 22, 2011 at 03:48:03PM +0100, Luca Tettamanti wrote:
+>> Hello Andrea,
+>> this commit:
+>>
+>> commit 5d6892407cab23d4bf2f6de065ca351a53849323
+>> Author: Andrea Arcangeli <aarcange@redhat.com>
+>> Date:   Thu Jan 13 15:47:07 2011 -0800
+>>
+>>     thp: select CONFIG_COMPACTION if TRANSPARENT_HUGEPAGE enabled
+>>
+>> causes this warning during the configuration process:
+>>
+>> warning: (TRANSPARENT_HUGEPAGE) selects COMPACTION which has unmet
+>> direct dependencies (EXPERIMENTAL && HUGETLB_PAGE && MMU)
+>>
+>> This happens because 'select' does not enable the dependencies of its
+>> target, so when I selected THP it also enabled COMPATION but I don't
+>> have HUGETLBFS (=HUGETLB_PAGE) enabled.
+>> Making THP select HUGETLB_PAGE fixes the warning but I'm not 100% sure
+>> that's correct (does it work without HUGETLBFS?).
+>
+> Mel, what's your take about this issue?
+>
+> Luca does the below fix all your .config problems?
 
-On niedziela, 16 stycznia 2011 o 15:09:32 Simon Arlott wrote:
-> [    1.666706] forcedeth 0000:00:08.0: ifname eth0, PHY OUI 0x5043 @ 16,
-> addr 00:e0:81:4d:2b:ec [    1.666767] forcedeth 0000:00:08.0: highdma csum
-> vlan pwrctl mgmt gbit lnktim msi desc-v3
-> 
-> I have eth0 and eth0.3840 which works until I add eth0 to a bridge.
-> While eth0 is in a bridge (the bridge device is up), eth0.3840 is unable
-> to receive packets. Using tcpdump on eth0 shows the packets being
-> received with a VLAN tag but they don't appear on eth0.3840. They appear
-> with the VLAN tag on the bridge interface.
-> 
-> If I remove eth0 from the bridge, eth0.3840 starts working again. It
-> still works if eth0.3840 is part of a bridge but eth0 isn't (the device
-> is in promiscuous mode). I've only tested with broadcast traffic.
-> 
-> This works with 2.6.36.
-> 
-> git bisect produces 3701e51382a026cba10c60b03efabe534fba4ca4 as the
-> first bad commit.
-> 
-> The behaviour of drivers/net/forcedeth.c nv_rx_process_optimized looks
-> ok - vlan_gro_receive and napi_gro_receive are called correctly. (The
-> likely(!np->vlangrp) looks odd as it'll always be false if vlans are in
-> use).
+Yes, no more warnings; I haven't tested the kernel though.
 
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+Luca
+
+> diff --git a/mm/Kconfig b/mm/Kconfig
+> index 3ad483b..e9c0c61 100644
+> --- a/mm/Kconfig
+> +++ b/mm/Kconfig
+> @@ -179,7 +179,7 @@ config SPLIT_PTLOCK_CPUS
+>  config COMPACTION
+>        bool "Allow for memory compaction"
+>        select MIGRATION
+> -       depends on EXPERIMENTAL && HUGETLB_PAGE && MMU
+> +       depends on MMU
+>        help
+>          Allows the compaction of memory for the allocation of huge pages.
