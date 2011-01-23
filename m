@@ -1,44 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752296Ab1AWTjm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 14:39:42 -0500
-Received: from kroah.org ([198.145.64.141]:60722 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752128Ab1AWTjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 14:39:40 -0500
-Date: Mon, 24 Jan 2011 04:40:48 +0900
-From: Greg KH <greg@kroah.com>
-To: merez@codeaurora.org
-Cc: linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/PATCH v4] usb: Add streams support to the gadget
- framework.
-Message-ID: <20110123194048.GA8954@kroah.com>
-References: <1295523914-20056-1-git-send-email-merez@codeaurora.org>
- <20110120163811.GB30680@kroah.com>
- <e146c388999f324ac94d72d35d4fa656.squirrel@www.codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <e146c388999f324ac94d72d35d4fa656.squirrel@www.codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752519Ab1AWTyY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 14:54:24 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50103
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752458Ab1AWTyX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 14:54:23 -0500
+Date: Sun, 23 Jan 2011 11:54:58 -0800 (PST)
+Message-Id: <20110123.115458.183063678.davem@davemloft.net>
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
+        sparclinux@vger.kernel.org
+Subject: Re: [patch 4/9] sparc: Replace deprecated spinlock initialization
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110123143837.223928325@linutronix.de>
+References: <20110123143631.392446736@linutronix.de>
+	<20110123143837.223928325@linutronix.de>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 23, 2011 at 11:34:19AM -0800, merez@codeaurora.org wrote:
-> > On Thu, January 20, 2011 8:38 am, Greg KH wrote:
-> > Why?  What in-kernel code needs this?
-> > Again, why?
-> Both chnages are required for the UASP device driver
-> (http://marc.info/?t=129559592400001&r=1&w=2).
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Sun, 23 Jan 2011 15:17:04 -0000
 
-Then PLEASE say that.  How am I supposed to know this?
+> SPIN_LOCK_UNLOCK is deprecated. Use the lockdep capable variant
+> instead.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-Just make this patch part of that series.  We dont add apis to the
-kernel unless there is a user of it, so it will not be accepted until
-those other patches are also accepted.
-
-thanks,
-
-greg k-h
+Acked-by: David S. Miller <davem@davemloft.net>
