@@ -1,36 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519Ab1AWTyY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 14:54:24 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50103
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752458Ab1AWTyX (ORCPT
+	id S1752497Ab1AWUF1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 15:05:27 -0500
+Received: from aa011-1msr.fastwebnet.it ([62.101.93.131]:60625 "EHLO
+	aa011-1msr.fastwebnet.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521Ab1AWUF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 14:54:23 -0500
-Date: Sun, 23 Jan 2011 11:54:58 -0800 (PST)
-Message-Id: <20110123.115458.183063678.davem@davemloft.net>
-To: tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
-        sparclinux@vger.kernel.org
-Subject: Re: [patch 4/9] sparc: Replace deprecated spinlock initialization
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110123143837.223928325@linutronix.de>
-References: <20110123143631.392446736@linutronix.de>
-	<20110123143837.223928325@linutronix.de>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Sun, 23 Jan 2011 15:05:26 -0500
+Message-ID: <9095724.228781295813073228.JavaMail.root@pr003msr>
+Date: Sun, 23 Jan 2011 21:04:33 +0100 (CET)
+From: MONEY GRAM TRANSFER <laura.dorialamba@fastwebnet.it>
+Reply-To: moneygram.transfer@zbavitu.net
+Subject: RE
+MIME-Version: 1.0
+Content-Type: text/plain;charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: 173.245.85.199
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
-Date: Sun, 23 Jan 2011 15:17:04 -0000
+My working partner in relationship with
+HSBC London has concluded that our working
+partner has helped us to send you first payment of US$5,000 to you as
+instructed by Mr. David Cameron and will
+keep sending you $5000 twice a week until
+the payment of (US$820,000 ) is completed
+within six months and here is the information
 
-> SPIN_LOCK_UNLOCK is deprecated. Use the lockdep capable variant
-> instead.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-Acked-by: David S. Miller <davem@davemloft.net>
+MONEY TRANSFER REFRENCE:2116-3297
+
+SENDER'S NAME: Mike Marx
+AMOUNT: US$5000
+To track your funds forward money gram
+Transfer agent Mr Allan Davis
+
+Your Name.___________________________
+Phone .___________________________
+
+E-mail:moneygram.transfer@zbavitu.net 
+Phone:+60163544376
+
+Please direct all enquiring to:
+
+Best Regards,
+Mr Allan Davis
+
