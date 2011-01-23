@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900Ab1AWNiN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 08:38:13 -0500
+	id S1751997Ab1AWNiP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 08:38:15 -0500
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:42549 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751296Ab1AWNh4 (ORCPT
+	with ESMTP id S1751719Ab1AWNiD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 08:37:56 -0500
+	Sun, 23 Jan 2011 08:38:03 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=QaBIogaGpOJ1yv0DG5OVsGgz2carzMnGJ3akrAjugr6HZ8uX72hRIgxHQTgO1Z4Gx8
-         /rdYykm1J4sOHctCKuYn5ToaxQwVVBkWn11cA1bXhHx+zSrY1O3NqzON/KsyWM97db6v
-         g91/pdPqrUvel1lwI/hCJIrofyO13kMTtI3dY=
+        b=Qz2nwLr20rtvhnQ4baxSDqWHM97Rry3BV4l9mIHC1tcz5thrU43OoFb++RMr0NXzUR
+         hIiR2XzXfcD6gxLs01ZB2ZyC9UxnvuxDXFW6jphsMB6/sJ3sw3ZFTtFr3cQEzl/exESM
+         VSM/F6GuipBpF36qEswDI1uwb8POEnSHpMQ1Q=
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, hpa@zytor.com
 Cc: mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
         eric.dumazet@gmail.com, yinghai@kernel.org, brgerst@gmail.com,
         gorcunov@gmail.com, penberg@kernel.org, shaohui.zheng@intel.com,
         rientjes@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 02/16] x86: Drop x86_32 MAX_APICID
-Date: Sun, 23 Jan 2011 14:37:28 +0100
-Message-Id: <1295789862-25482-3-git-send-email-tj@kernel.org>
+Subject: [PATCH 03/16] x86: Make default_send_IPI_mask_sequence/allbutself_logical() 32bit only
+Date: Sun, 23 Jan 2011 14:37:29 +0100
+Message-Id: <1295789862-25482-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1295789862-25482-1-git-send-email-tj@kernel.org>
 References: <1295789862-25482-1-git-send-email-tj@kernel.org>
@@ -30,67 +30,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 56d91f13 (x86, acpi: Add MAX_LOCAL_APIC for 32bit) added
-MAX_LOCAL_APIC for x86_32 but didn't replace MAX_APICID users with it.
-Convert MAX_APICID users to MAX_LOCAL_APIC and drop MAX_APICID.
+Both functions are used only in 32bit.  Put them inside CONFIG_X86_32.
+This is to prepare for logical apicid handling update.
+
+- Cyrill Gorcunov spotted that I forgot to move declarations in ipi.h
+  under CONFIG_X86_32.  Fixed.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Reviewed-by: Pekka Enberg <penberg@kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Cyrill Gorcunov <gorcunov@gmail.com>
 ---
- arch/x86/include/asm/mpspec.h |    2 --
- arch/x86/kernel/smpboot.c     |    2 +-
- arch/x86/mm/srat_32.c         |    4 ++--
- 3 files changed, 3 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/ipi.h |    8 ++++----
+ arch/x86/kernel/apic/ipi.c |    4 ++--
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
-index 0c90dd9..edc2a45 100644
---- a/arch/x86/include/asm/mpspec.h
-+++ b/arch/x86/include/asm/mpspec.h
-@@ -33,8 +33,6 @@ extern int mp_bus_id_to_local[MAX_MP_BUSSES];
- extern int quad_local_to_mp_bus_id [NR_CPUS/4][4];
- #endif
+diff --git a/arch/x86/include/asm/ipi.h b/arch/x86/include/asm/ipi.h
+index 0b72282..615fa90 100644
+--- a/arch/x86/include/asm/ipi.h
++++ b/arch/x86/include/asm/ipi.h
+@@ -123,10 +123,6 @@ extern void default_send_IPI_mask_sequence_phys(const struct cpumask *mask,
+ 						 int vector);
+ extern void default_send_IPI_mask_allbutself_phys(const struct cpumask *mask,
+ 							 int vector);
+-extern void default_send_IPI_mask_sequence_logical(const struct cpumask *mask,
+-							 int vector);
+-extern void default_send_IPI_mask_allbutself_logical(const struct cpumask *mask,
+-							 int vector);
  
--#define MAX_APICID		256
--
- #else /* CONFIG_X86_64: */
- 
- #define MAX_MP_BUSSES		256
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index c255980..d68bab5 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -72,7 +72,7 @@
- #include <asm/i8259.h>
+ /* Avoid include hell */
+ #define NMI_VECTOR 0x02
+@@ -150,6 +146,10 @@ static inline void __default_local_send_IPI_all(int vector)
+ }
  
  #ifdef CONFIG_X86_32
--u8 apicid_2_node[MAX_APICID];
-+u8 apicid_2_node[MAX_LOCAL_APIC];
- #endif
++extern void default_send_IPI_mask_sequence_logical(const struct cpumask *mask,
++							 int vector);
++extern void default_send_IPI_mask_allbutself_logical(const struct cpumask *mask,
++							 int vector);
+ extern void default_send_IPI_mask_logical(const struct cpumask *mask,
+ 						 int vector);
+ extern void default_send_IPI_allbutself(int vector);
+diff --git a/arch/x86/kernel/apic/ipi.c b/arch/x86/kernel/apic/ipi.c
+index 08385e0..5037736 100644
+--- a/arch/x86/kernel/apic/ipi.c
++++ b/arch/x86/kernel/apic/ipi.c
+@@ -56,6 +56,8 @@ void default_send_IPI_mask_allbutself_phys(const struct cpumask *mask,
+ 	local_irq_restore(flags);
+ }
  
- /* State of each CPU */
-diff --git a/arch/x86/mm/srat_32.c b/arch/x86/mm/srat_32.c
-index ae96e7b..6027a48 100644
---- a/arch/x86/mm/srat_32.c
-+++ b/arch/x86/mm/srat_32.c
-@@ -57,7 +57,7 @@ struct node_memory_chunk_s {
- static struct node_memory_chunk_s __initdata node_memory_chunk[MAXCHUNKS];
++#ifdef CONFIG_X86_32
++
+ void default_send_IPI_mask_sequence_logical(const struct cpumask *mask,
+ 						 int vector)
+ {
+@@ -96,8 +98,6 @@ void default_send_IPI_mask_allbutself_logical(const struct cpumask *mask,
+ 	local_irq_restore(flags);
+ }
  
- static int __initdata num_memory_chunks; /* total number of memory chunks */
--static u8 __initdata apicid_to_pxm[MAX_APICID];
-+static u8 __initdata apicid_to_pxm[MAX_LOCAL_APIC];
- 
- int acpi_numa __initdata;
- 
-@@ -254,7 +254,7 @@ int __init get_memcfg_from_srat(void)
- 	printk(KERN_DEBUG "Number of memory chunks in system = %d\n",
- 			 num_memory_chunks);
- 
--	for (i = 0; i < MAX_APICID; i++)
-+	for (i = 0; i < MAX_LOCAL_APIC; i++)
- 		apicid_2_node[i] = pxm_to_node(apicid_to_pxm[i]);
- 
- 	for (j = 0; j < num_memory_chunks; j++){
+-#ifdef CONFIG_X86_32
+-
+ /*
+  * This is only used on smaller machines.
+  */
 -- 
 1.7.1
 
