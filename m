@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751578Ab1AWR7y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 12:59:54 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61825 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab1AWR7x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 12:59:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=rdHavq5EIvk2uhr6rdMIZzH26vG1N7veeP/PJ/BcKXDjSXN2KEYeOs7qJo2I2vf21Q
-         WPTd53Vs6EGWQ6STJbHPFro+sopMm1JnnuK6ZFWfVm7AG+FGcZhowIV5UDIlXitVBdaE
-         tOlD4NTHzX1x+yh3X75D7Lp2nm20GWFhkcqT8=
-Date: Sun, 23 Jan 2011 18:59:49 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: Re: [PATCH] drm/i915,agp/intel: Do not clear stolen entries
-Message-ID: <20110123175945.GA1760@nowhere>
-References: <20110123011221.GB1805@nowhere>
- <1295780472-8475-1-git-send-email-chris@chris-wilson.co.uk>
+	id S1751745Ab1AWSAg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 13:00:36 -0500
+Received: from cantor.suse.de ([195.135.220.2]:60716 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751351Ab1AWSAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 13:00:35 -0500
+Date: Mon, 24 Jan 2011 02:59:52 +0900
+From: Greg KH <gregkh@suse.de>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: unbreak billionton CF card (was Re: [000/152] 2.6.36.3-stable
+ review)
+Message-ID: <20110123175952.GA4199@suse.de>
+References: <20110106002500.GA3172@kroah.com>
+ <20110106134254.68fa27ac@lxorguk.ukuu.org.uk>
+ <20110106215705.GA30799@suse.de>
+ <20110107150724.GA29082@atrey.karlin.mff.cuni.cz>
+ <20110107183716.GA14895@suse.de>
+ <20110123130611.GA2713@ucw.cz>
+ <20110123163154.GA1071@suse.de>
+ <20110123170854.GA25287@atrey.karlin.mff.cuni.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1295780472-8475-1-git-send-email-chris@chris-wilson.co.uk>
+In-Reply-To: <20110123170854.GA25287@atrey.karlin.mff.cuni.cz>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 23, 2011 at 11:01:12AM +0000, Chris Wilson wrote:
-> We can only utilize the stolen portion of the GTT if we are in sole
-> charge of the hardware. This is only true if using GEM and KMS,
-> otherwise VESA continues to access stolen memory.
+On Sun, Jan 23, 2011 at 06:08:54PM +0100, Pavel Machek wrote:
+> > On Sun, Jan 23, 2011 at 02:06:11PM +0100, Pavel Machek wrote:
+> > > Unbreak Billionton CF bluetooth card. This actually fixes a regression
+> > > on zaurus.
+> > > 
+> > > Signed-off-by: Pavel Machek <pavel@ucw.cz>
+> > > 
+> > > ---
+> > > 
+> > > (now fixed typo)
+> > 
+> > So you mean the version that I just accepted into my tree is wrong?
+> > What's wrong with it?  Care to provide the diff between the two?
 > 
-> Reported-by: Arnd Bergmann <arnd@arndb.de>
-> Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Tested-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> ---
-> 
-> Frederic, updated patch attached. The bug was that clear_range took (start,
-> count) and I was passing in (start, end) so we were dereferencing past the
-> end of the valid pages.
-> -Chris
+> Sorry about that. Typo is in comment -> not really important. Someone
+> spotted it, so... feel free to keep old version.
 
-Works well, thank you :)
+Great, I'll keep that one, it will get pushed to Linus soon.
 
-Tested-by: Frederic Weisbecker <fweisbec@gmail.com>
+thanks,
+
+greg k-h
