@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751299Ab1AWITn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 03:19:43 -0500
-Received: from kroah.org ([198.145.64.141]:46918 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751146Ab1AWITm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 03:19:42 -0500
-Date: Sat, 22 Jan 2011 19:46:53 -0800
-From: Greg KH <greg@kroah.com>
-To: Robert Morell <rmorell@nvidia.com>
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Benoit Goby <benoit@android.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
-        Oliver Neukum <oliver@neukum.org>, Olof Johansson <olof@lixom.net>,
-        Erik Gilling <konkers@android.com>, Colin Cross <ccross@android.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 1/2] USB: HCD: Add driver hooks for (un)?map_urb_for_dma
-Message-ID: <20110123034653.GA20186@kroah.com>
-References: <1294356045-1018-1-git-send-email-rmorell@nvidia.com>
- <1295559715-14264-2-git-send-email-rmorell@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295559715-14264-2-git-send-email-rmorell@nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751314Ab1AWI3p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 03:29:45 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:41252 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174Ab1AWI3o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 03:29:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=SUVL6pnq4eyCcHh3zlpOI+7A1RoP/2b28HN9kWN/imLylvwMTzVyIEGFBmLX7hKY5m
+         89TgQ+QFRwvsNQGX/OyJcVv0Tea+D8KSW9mvUX6tbDYLoLFbNbYRZh3Q9s+DRgraeKO5
+         4xqQkZdwwvnEzXP1DJE9mRXKQKaVKnFWtXpfU=
+Subject: Re: [PATCH 1/6] perf test: Fix build on older glibcs
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+In-Reply-To: <1295747778-26186-2-git-send-email-acme@infradead.org>
+References: <1295747778-26186-1-git-send-email-acme@infradead.org>
+	 <1295747778-26186-2-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 23 Jan 2011 09:29:36 +0100
+Message-ID: <1295771376.17333.1.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 20, 2011 at 01:41:54PM -0800, Robert Morell wrote:
-> Provide optional hooks for the host controller driver to override the
-> default DMA mapping and unmapping routines.  In general, these shouldn't
-> be necessary unless the host controller has special DMA requirements,
-> such as alignment contraints.  If these are not specified, the
-> general usb_hcd_(un)?map_urb_for_dma functions will be used instead.
-> Also, pass the status to unmap_urb_for_dma so it can know whether the
-> DMA buffer has been overwritten.
+Le samedi 22 janvier 2011 à 23:56 -0200, Arnaldo Carvalho de Melo a
+écrit :
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
 > 
-> Finally, add a flag to be used by these implementations if they
-> allocated a temporary buffer so it can be freed properly when unmapping.
+> Where we don't have CPU_ALLOC & friends. As the tools are being used in older
+> distros where the only allowed change are to replace the kernel, like RHEL4 and
+> 5.
 > 
-> Signed-off-by: Robert Morell <rmorell@nvidia.com>
+> Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
+> Cc: Eric Dumazet <eric.dumazet@gmail.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Stephane Eranian <eranian@google.com>
+> LKML-Reference: <new-submission>
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> ---
 
-I'd like to get an ACK from Alan before applying this one, and ideally
-also from David and Sarah as they know the HCD code also.
+Hi Arnaldo
 
-Anyone?
+I tested the preliminary version you sent me, it worked well, but I
+could not apply this patch to current linux-2.6
 
-thanks,
 
-greg k-h
+Thanks !
+
+
