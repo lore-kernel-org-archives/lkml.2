@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751306Ab1AWQaS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 11:30:18 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55626 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751037Ab1AWQaQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 11:30:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=l+nXy5SOyKuht3xqoDH5qGskA6GJSavTj5NakYpjZRv68ffJycrH21YIs4FJtre4vR
-         W2BpJRV+yoFunJmpWPrltW24+A2EOGtDvaEL0avSisBfNbOvjqA7V5oNAAMfzuqFRrJC
-         vzdRbZevhYRAlEKAuUnca9I8TSjthvGsfDJTE=
-From: Ralf Thielow <ralf.thielow@googlemail.com>
-To: tom@opengridcomputing.com
-Cc: swise@opengridcomputing.com, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Ralf Thielow <ralf.thielow@googlemail.com>
-Subject: [PATCH] infiniband: hw: amso1100: Fixed compile warning.
-Date: Sun, 23 Jan 2011 17:30:03 +0100
-Message-Id: <1295800203-9552-1-git-send-email-ralf.thielow@googlemail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1751310Ab1AWQmH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 11:42:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41570 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750983Ab1AWQmG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 11:42:06 -0500
+Date: Sun, 23 Jan 2011 08:31:54 -0800
+From: Greg KH <gregkh@suse.de>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: unbreak billionton CF card (was Re: [000/152] 2.6.36.3-stable
+ review)
+Message-ID: <20110123163154.GA1071@suse.de>
+References: <20110106002500.GA3172@kroah.com>
+ <20110106134254.68fa27ac@lxorguk.ukuu.org.uk>
+ <20110106215705.GA30799@suse.de>
+ <20110107150724.GA29082@atrey.karlin.mff.cuni.cz>
+ <20110107183716.GA14895@suse.de>
+ <20110123130611.GA2713@ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110123130611.GA2713@ucw.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed compile warning by use "unsigned long" instead of "u64"
-on assign NULL to "c2_vq_req->reply_msg".
+On Sun, Jan 23, 2011 at 02:06:11PM +0100, Pavel Machek wrote:
+> Unbreak Billionton CF bluetooth card. This actually fixes a regression
+> on zaurus.
+> 
+> Signed-off-by: Pavel Machek <pavel@ucw.cz>
+> 
+> ---
+> 
+> (now fixed typo)
 
-Signed-off-by: Ralf Thielow <ralf.thielow@googlemail.com>
----
- drivers/infiniband/hw/amso1100/c2_vq.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+So you mean the version that I just accepted into my tree is wrong?
+What's wrong with it?  Care to provide the diff between the two?
 
-diff --git a/drivers/infiniband/hw/amso1100/c2_vq.c b/drivers/infiniband/hw/amso1100/c2_vq.c
-index 9ce7819..807b730 100644
---- a/drivers/infiniband/hw/amso1100/c2_vq.c
-+++ b/drivers/infiniband/hw/amso1100/c2_vq.c
-@@ -107,7 +107,7 @@ struct c2_vq_req *vq_req_alloc(struct c2_dev *c2dev)
- 	r = kmalloc(sizeof(struct c2_vq_req), GFP_KERNEL);
- 	if (r) {
- 		init_waitqueue_head(&r->wait_object);
--		r->reply_msg = (u64) NULL;
-+		r->reply_msg = (unsigned long) NULL;
- 		r->event = 0;
- 		r->cm_id = NULL;
- 		r->qp = NULL;
-@@ -123,7 +123,7 @@ struct c2_vq_req *vq_req_alloc(struct c2_dev *c2dev)
-  */
- void vq_req_free(struct c2_dev *c2dev, struct c2_vq_req *r)
- {
--	r->reply_msg = (u64) NULL;
-+	r->reply_msg = (unsigned long) NULL;
- 	if (atomic_dec_and_test(&r->refcnt)) {
- 		kfree(r);
- 	}
-@@ -151,7 +151,7 @@ void vq_req_get(struct c2_dev *c2dev, struct c2_vq_req *r)
- void vq_req_put(struct c2_dev *c2dev, struct c2_vq_req *r)
- {
- 	if (atomic_dec_and_test(&r->refcnt)) {
--		if (r->reply_msg != (u64) NULL)
-+		if (r->reply_msg != (unsigned long) NULL)
- 			vq_repbuf_free(c2dev,
- 				       (void *) (unsigned long) r->reply_msg);
- 		kfree(r);
--- 
-1.7.1
+thanks,
 
+greg k-h
