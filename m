@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433Ab1AWB4q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 20:56:46 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:59175 "EHLO
+	id S1753163Ab1AWB5d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 20:57:33 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:59195 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab1AWB4d (ORCPT
+	with ESMTP id S1751235Ab1AWB4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 20:56:33 -0500
+	Sat, 22 Jan 2011 20:56:47 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Denis Kirjanov <dkirjanov@kernel.org>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>, Pingtian Han <phan@redhat.com>,
         Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 4/6] perf tools: Fix build when using gcc 3.4.6
-Date: Sat, 22 Jan 2011 23:56:16 -0200
-Message-Id: <1295747778-26186-5-git-send-email-acme@infradead.org>
+        Thomas Renninger <trenn@suse.de>, Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [GIT PULL 0/6] perf/urgent build fixes for some environments
+Date: Sat, 22 Jan 2011 23:56:12 -0200
+Message-Id: <1295747778-26186-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1295747778-26186-1-git-send-email-acme@infradead.org>
-References: <1295747778-26186-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Hi Ingo,
 
-[acme@localhost linux]$ make O=~acme/git/build/perf -C tools/perf
-make: Entering directory `/home/acme/git/linux/tools/perf'
-Makefile:526: No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev
-Makefile:582: newt not found, disables TUI support. Please install newt-devel or libnewt-dev
-    CC /home/acme/git/build/perf/builtin-annotate.o
-In file included from builtin-annotate.c:23:
-util/parse-events.h:26: warning: declaration of 'evsel_list' shadows a global declaration
-util/parse-events.h:12: warning: shadowed declaration is here
-make: *** [/home/acme/git/build/perf/builtin-annotate.o] Error 1
-make: Leaving directory `/home/acme/git/linux/tools/perf'
-[acme@localhost linux]$ gcc --version | head -1
-gcc (GCC) 3.4.6 20060404 (Red Hat 3.4.6-11)
-[acme@localhost linux]$
+        Please consider pulling from:
 
-Fix it by renaming the parameter to evlist.
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/urgent
 
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/parse-events.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Regards,
 
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index b82cafb..458e3ec 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -23,7 +23,7 @@ struct tracepoint_path {
- };
- 
- extern struct tracepoint_path *tracepoint_id_to_path(u64 config);
--extern bool have_tracepoints(struct list_head *evsel_list);
-+extern bool have_tracepoints(struct list_head *evlist);
- 
- extern int			nr_counters;
- 
--- 
-1.6.2.5
+- Arnaldo
+
+Arnaldo Carvalho de Melo (5):
+  perf test: Fix build on older glibcs
+  perf tools: Fix 64 bit integer format strings
+  perf tools: Add missing header, fixes build
+  perf tools: Fix build when using gcc 3.4.6
+  perf tools: Fix build by checking if extra warnings are supported
+
+Thomas Renninger (1):
+  perf tools: Fix time function double declaration with glibc
+
+ tools/perf/Makefile                    |    9 +++++-
+ tools/perf/builtin-annotate.c          |    6 ++--
+ tools/perf/builtin-kmem.c              |    4 +-
+ tools/perf/builtin-lock.c              |    6 ++--
+ tools/perf/builtin-record.c            |    2 +-
+ tools/perf/builtin-report.c            |    2 +-
+ tools/perf/builtin-sched.c             |   20 +++++++-------
+ tools/perf/builtin-script.c            |    6 ++--
+ tools/perf/builtin-stat.c              |    4 +-
+ tools/perf/builtin-test.c              |   47 +++++++++++++++++--------------
+ tools/perf/builtin-top.c               |    9 +++---
+ tools/perf/util/event.c                |    5 ++-
+ tools/perf/util/header.c               |    4 +-
+ tools/perf/util/hist.c                 |   17 ++++++-----
+ tools/perf/util/include/linux/bitops.h |    1 +
+ tools/perf/util/map.c                  |    3 +-
+ tools/perf/util/parse-events.c         |    2 +-
+ tools/perf/util/parse-events.h         |    2 +-
+ tools/perf/util/probe-event.c          |    2 +-
+ tools/perf/util/session.c              |   28 ++++++++++---------
+ tools/perf/util/svghelper.c            |    9 +++---
+ tools/perf/util/symbol.c               |    9 +++---
+ tools/perf/util/types.h                |   10 ++++---
+ tools/perf/util/ui/browsers/hists.c    |    2 +-
+ tools/perf/util/ui/browsers/map.c      |    5 ++-
+ tools/perf/util/values.c               |   10 +++---
+ 26 files changed, 123 insertions(+), 101 deletions(-)
 
