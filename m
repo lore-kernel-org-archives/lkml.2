@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751296Ab1AWPLO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 10:11:14 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:54400 "EHLO mail.wdtv.com"
+	id S1751447Ab1AWPQH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 10:16:07 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:59571 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750814Ab1AWPLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 10:11:13 -0500
-From: Gene Heskett <gene.heskett@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: Re: Common boot/shutdown issues with the latest 2.6.37 (Mostly Asus laptops)
-Date: Sun, 23 Jan 2011 10:11:08 -0500
-User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.5.5; i686; ; )
-References: <4D3C3B1E.1080500@pardus.org.tr> <4D3C42A5.6060909@t-online.de>
-In-Reply-To: <4D3C42A5.6060909@t-online.de>
+	id S1751018Ab1AWPQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 10:16:05 -0500
+Date: Sun, 23 Jan 2011 16:15:56 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Christian Kujau <christian@nerdbynature.de>,
+        Michael Witten <mfwitten@gmail.com>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: 'autogroup' sched code KILLING responsiveness
+Message-ID: <20110123151556.GA15236@elte.hu>
+References: <4d39ce58.cc7e0e0a.5448.59e4@mx.google.com>
+ <alpine.DEB.2.01.1101230243370.7903@trent.utfs.org>
+ <20110123145429.GA2523@zhy>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201101231011.08513.gene.heskett@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110123145429.GA2523@zhy>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.3
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.3 required=5.9 tests=BAYES_00,FUZZY_VPILL autolearn=no SpamAssassin version=3.2.5
+	0.7 FUZZY_VPILL            BODY: Attempt to obfuscate words in spam
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, January 23, 2011, Richard Schütz wrote:
->> Hi,
->> 
->> I'm getting a lot of bug reports about hanging boot/shutdowns on these
->> days.
->> 
->> Most of the affected hardware are ASUS laptops. The problem is that I
->> don't have access to any of those problematic laptops and the users are
->> not able at all to debug/bisect what is going on. However, I have
->> collected dmesgs of good/bad boots, acpidump, etc.
->> 
->> Here are the current status:
->> 
->> "Asus F50SV does not boot unless lapic is passed"
->> https://bugzilla.kernel.org/show_bug.cgi?id=26502
->> 
->> "Regression between 2.6.35-020635-rc1 and 2.6.35-020635 breaks acpi
->> support on Asus X71 laptop"
->> https://bugs.launchpad.net/ubuntu/+source/linux-meta/+bug/689796
->> 
->> "Asus N61JQ hangs at shutdown unless lapic is passed"
->> (Not reported upstream yet, I've only downstream bug report which is
->> Turkish)
->> http://bugs.pardus.org.tr/show_bug.cgi?id=15969
->> 
->> "Asus X61S does not boot unless acpi=off is given"
->> (Not reported upstream yet, I've only downstream bug report which is
->> Turkish)
->> http://bugs.pardus.org.tr/show_bug.cgi?id=16322
->> (I've told the reporter to try with nolapic, it will probably fix the
->> issue but until confirmed acpi=off is the only solution. 2.6.36 was
->> fine)
->> 
->> I'll post more bugs in here as I've found them.
->> 
->> Thanks,
->
->Looks like these are all Intel machines. Do they use intel_idle for the
->CPU powersaving features?
->(cat /sys/devices/system/cpu/cpuidle/current_driver)
->
->If yes - does booting with intel_idle.max_cstate=0 or
->intel_idle.max_cstate=3 boot parameter help?
->
->It could be related to https://bugzilla.kernel.org/show_bug.cgi?id=21952
->somehow, which seems to be an 2.6.35 regression.
 
-This hang on shutdown, (I have an asus big board) can it also be caused by 
-not having /var as a dir on /? 
+* Yong Zhang <yong.zhang0@gmail.com> wrote:
 
-After having been burnt by / going read-only, depriving me of the failure 
-log, I have always put /var on its own partition, which is unmounted early 
-and then halt can't get a lockfile, so it hangs after turning off the 
-swaps. I have to hit the hardware reset button from there to complete the 
-reboot.
+> On Sun, Jan 23, 2011 at 02:50:08AM -0800, Christian Kujau wrote:
+> > On Fri, 21 Jan 2011 at 10:20, Michael Witten wrote:
+> > > With that code in place, a resource-intensive activity (such as
+> > > compiling the Linux kernel) causes my computer to become
+> > > unresponsive for many seconds at a time; the entire screen
+> > > does not refresh, typed keys are dropped or are handled very
+> > > late, etc (even in Linux's plain virtual consoles).
+> > 
+> > Unfortunately, I'd like to add a "me too". 2.6.38-rc1 behaves fine, but 
+> > with CONFIG_SCHED_AUTOGROUP=y and doing I/O and CPU intensive work (git 
+> > prune/git repack on a Linux git tree), system load goes up to ~13 and 
+> > becomes unresponse for some time too. This even happens when I start the 
+> > jobs with nice -n10.
+> > 
+> > Without CONFIG_SCHED_AUTOGROUP enabled and doing the same work,
+> > systemload goes up to 1 or maybe 2.
+> > 
+> > I'm on UP as well (PowerPC G4), disabling CONFIG_SCHED_AUTOGROUP helps 
+> > here too.
+> 
+> I think below patch will fix it.
 
-Twould be nice if there was a fix for that. ;)
+Christian, Michael, can you confirm that this and the second patch fixes the 
+interactivity bug for you? If yes then i'd like to apply and send this fix to Linus 
+ASAP.
 
--- 
-Cheers, Gene
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Downgrade your system for only 89 dollars! Install Windows!
+Thanks,
+
+	Ingo
