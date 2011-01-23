@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163Ab1AWB5d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 20:57:33 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:59195 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab1AWB4r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 20:56:47 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Denis Kirjanov <dkirjanov@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>, Pingtian Han <phan@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Renninger <trenn@suse.de>, Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [GIT PULL 0/6] perf/urgent build fixes for some environments
-Date: Sat, 22 Jan 2011 23:56:12 -0200
-Message-Id: <1295747778-26186-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1752342Ab1AWCPR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 21:15:17 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:55635 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751246Ab1AWCPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Jan 2011 21:15:14 -0500
+Message-ID: <4D3B8F40.7040505@cn.fujitsu.com>
+Date: Sun, 23 Jan 2011 10:15:28 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Jens Axboe <axboe@kernel.dk>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        Chad Talbott <ctalbott@google.com>, Nauman Rafique <nauman@google.com>,
+        Divyesh Shah <dpshah@google.com>, jmoyer@redhat.com,
+        Shaohua Li <shaohua.li@intel.com>
+Subject: Re: [PATCH 2/6 v3] cfq-iosched: Introduce cfq_entity for CFQ group
+References: <4D180ECE.4000305@cn.fujitsu.com> <4D18536B.9090109@cn.fujitsu.com> <20110118212056.GK27946@redhat.com>
+In-Reply-To: <20110118212056.GK27946@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-01-23 10:14:36,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-01-23 10:14:37,
+	Serialize complete at 2011-01-23 10:14:37
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+Vivek Goyal wrote:
+> On Mon, Dec 27, 2010 at 04:50:51PM +0800, Gui Jianfeng wrote:
+> 
+> [..]
+>> -static struct cfq_group *cfq_rb_first_group(struct cfq_rb_root *root)
+>> +static struct cfq_entity *cfq_rb_first_entity(struct cfq_rb_root *root)
+>>  {
+>>  	if (!root->left)
+>>  		root->left = rb_first(&root->rb);
+>>  
+>>  	if (root->left)
+>> -		return rb_entry_cfqg(root->left);
+>> +		return rb_entry_entity(root->left);
+>>  
+> 
+> Why are we defining cfq_rb_first_entity(). Can't we simply use cfq_rb_first()
+> as introduced in first patch.
 
-        Please consider pulling from:
+Vivek,
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/urgent
+At this time, we can't remove cfq_rb_first_entity(), because we don't
+use st->count for cfqg.
+In [PATCH 5/6], I remove cfq_rb_first_entity() and just use cfq_rb_first()
+for cfqq and cfqg.
 
-Regards,
+Thanks,
+Gui
 
-- Arnaldo
-
-Arnaldo Carvalho de Melo (5):
-  perf test: Fix build on older glibcs
-  perf tools: Fix 64 bit integer format strings
-  perf tools: Add missing header, fixes build
-  perf tools: Fix build when using gcc 3.4.6
-  perf tools: Fix build by checking if extra warnings are supported
-
-Thomas Renninger (1):
-  perf tools: Fix time function double declaration with glibc
-
- tools/perf/Makefile                    |    9 +++++-
- tools/perf/builtin-annotate.c          |    6 ++--
- tools/perf/builtin-kmem.c              |    4 +-
- tools/perf/builtin-lock.c              |    6 ++--
- tools/perf/builtin-record.c            |    2 +-
- tools/perf/builtin-report.c            |    2 +-
- tools/perf/builtin-sched.c             |   20 +++++++-------
- tools/perf/builtin-script.c            |    6 ++--
- tools/perf/builtin-stat.c              |    4 +-
- tools/perf/builtin-test.c              |   47 +++++++++++++++++--------------
- tools/perf/builtin-top.c               |    9 +++---
- tools/perf/util/event.c                |    5 ++-
- tools/perf/util/header.c               |    4 +-
- tools/perf/util/hist.c                 |   17 ++++++-----
- tools/perf/util/include/linux/bitops.h |    1 +
- tools/perf/util/map.c                  |    3 +-
- tools/perf/util/parse-events.c         |    2 +-
- tools/perf/util/parse-events.h         |    2 +-
- tools/perf/util/probe-event.c          |    2 +-
- tools/perf/util/session.c              |   28 ++++++++++---------
- tools/perf/util/svghelper.c            |    9 +++---
- tools/perf/util/symbol.c               |    9 +++---
- tools/perf/util/types.h                |   10 ++++---
- tools/perf/util/ui/browsers/hists.c    |    2 +-
- tools/perf/util/ui/browsers/map.c      |    5 ++-
- tools/perf/util/values.c               |   10 +++---
- 26 files changed, 123 insertions(+), 101 deletions(-)
-
+> 
+> Thanks
+> Vivek
+> 
