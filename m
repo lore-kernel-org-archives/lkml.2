@@ -1,99 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069Ab1AWSDG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 13:03:06 -0500
-Received: from hera.kernel.org ([140.211.167.34]:56048 "EHLO hera.kernel.org"
+	id S1751960Ab1AWSEi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 13:04:38 -0500
+Received: from hera.kernel.org ([140.211.167.34]:56111 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751778Ab1AWSDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 13:03:03 -0500
-Date: Sun, 23 Jan 2011 18:02:35 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
-        eric.dumazet@gmail.com, peterz@infradead.org, efault@gmx.de,
-        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, tzanussi@gmail.com, efault@gmx.de,
-        peterz@infradead.org, fweisbec@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <new-submission>
-References: <new-submission>
+	id S1751621Ab1AWSEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 13:04:37 -0500
+Date: Sun, 23 Jan 2011 18:03:25 GMT
+From: tip-bot for matthieu castet <castet.matthieu@free.fr>
+Cc: sliakh.lkml@gmail.com, mingo@redhat.com, torvalds@linux-foundation.org,
+        rusty@rustcorp.com.au, a.p.zijlstra@chello.nl, jiang@cs.ncsu.edu,
+        fweisbec@gmail.com, akpm@linux-foundation.org, rostedt@goodmis.org,
+        kees.cook@canonical.com, tglx@linutronix.de, jbaron@redhat.com,
+        xtfeng@gmail.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        jmorris@namei.org, arjan@linux.intel.com, davej@redhat.com,
+        castet.matthieu@free.fr, mingo@elte.hu
+Reply-To: mingo@redhat.com, sliakh.lkml@gmail.com, a.p.zijlstra@chello.nl,
+        rusty@rustcorp.com.au, torvalds@linux-foundation.org,
+        jiang@cs.ncsu.edu, fweisbec@gmail.com, rostedt@goodmis.org,
+        akpm@linux-foundation.org, kees.cook@canonical.com, jbaron@redhat.com,
+        tglx@linutronix.de, xtfeng@gmail.com, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, jmorris@namei.org, arjan@linux.intel.com,
+        davej@redhat.com, castet.matthieu@free.fr, mingo@elte.hu
+In-Reply-To: <4D3C3F20.7030203@free.fr>
+References: <4D3C3F20.7030203@free.fr>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools: Fix build by checking if extra warnings are supported
-Message-ID: <tip-065bef5af620dcedeb6dc26fdc0b1739a3c9adef@git.kernel.org>
-Git-Commit-ID: 065bef5af620dcedeb6dc26fdc0b1739a3c9adef
+Subject: [tip:x86/urgent] x86: Fix jump label with RO/NX module protection crash
+Message-ID: <tip-8969691343354bdd80eff5405a0f879edbf013d6@git.kernel.org>
+Git-Commit-ID: 8969691343354bdd80eff5405a0f879edbf013d6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 23 Jan 2011 18:02:35 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 23 Jan 2011 18:03:27 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  065bef5af620dcedeb6dc26fdc0b1739a3c9adef
-Gitweb:     http://git.kernel.org/tip/065bef5af620dcedeb6dc26fdc0b1739a3c9adef
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Sat, 22 Jan 2011 19:29:53 -0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Sat, 22 Jan 2011 19:29:53 -0200
+Commit-ID:  8969691343354bdd80eff5405a0f879edbf013d6
+Gitweb:     http://git.kernel.org/tip/8969691343354bdd80eff5405a0f879edbf013d6
+Author:     matthieu castet <castet.matthieu@free.fr>
+AuthorDate: Sun, 23 Jan 2011 15:45:52 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sun, 23 Jan 2011 16:12:45 +0100
 
-perf tools: Fix build by checking if extra warnings are supported
+x86: Fix jump label with RO/NX module protection crash
 
-The -Wstack-protector and -Wvolatile-register-var warnings, for
-instance, are not supported by gcc 3.4.6.
+If we use jump table in module init, there are marked
+as removed in __jump_table section after init is done.
 
-So fix by doing the same check we already do for -fstack-protector-all.
+But we already applied ro permissions on the module, so
+we can't modify a read only section (crash in
+remove_jump_label_module_init).
 
-With this and the other patches in this series, perf builds unmodified
-on, for instance, RHEL4.
+Make the __jump_table section rw.
 
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Matthieu CASTET <castet.matthieu@free.fr>
+Cc: Xiaotian Feng <xtfeng@gmail.com>
+Cc: Jason Baron <jbaron@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Siarhei Liakh <sliakh.lkml@gmail.com>
+Cc: Xuxian Jiang <jiang@cs.ncsu.edu>
+Cc: James Morris <jmorris@namei.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Kees Cook <kees.cook@canonical.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+LKML-Reference: <4D3C3F20.7030203@free.fr>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- tools/perf/Makefile |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/jump_label.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 2b5387d..7141c42 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -204,13 +204,11 @@ EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wshadow
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Winit-self
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wpacked
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wredundant-decls
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstack-protector
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstrict-aliasing=3
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wswitch-default
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wswitch-enum
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wno-system-headers
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wundef
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wvolatile-register-var
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wwrite-strings
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wbad-function-cast
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wmissing-declarations
-@@ -294,6 +292,13 @@ ifeq ($(call try-cc,$(SOURCE_HELLO),-Werror -fstack-protector-all),y)
- 	CFLAGS := $(CFLAGS) -fstack-protector-all
- endif
- 
-+ifeq ($(call try-cc,$(SOURCE_HELLO),-Werror -Wstack-protector),y)
-+       CFLAGS := $(CFLAGS) -Wstack-protector
-+endif
-+
-+ifeq ($(call try-cc,$(SOURCE_HELLO),-Werror -Wvolatile-register-var),y)
-+       CFLAGS := $(CFLAGS) -Wvolatile-register-var
-+endif
- 
- ### --- END CONFIGURATION SECTION ---
- 
+diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
+index f52d42e..574dbc2 100644
+--- a/arch/x86/include/asm/jump_label.h
++++ b/arch/x86/include/asm/jump_label.h
+@@ -14,7 +14,7 @@
+ 	do {							\
+ 		asm goto("1:"					\
+ 			JUMP_LABEL_INITIAL_NOP			\
+-			".pushsection __jump_table,  \"a\" \n\t"\
++			".pushsection __jump_table,  \"aw\" \n\t"\
+ 			_ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
+ 			".popsection \n\t"			\
+ 			: :  "i" (key) :  : label);		\
