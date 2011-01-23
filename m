@@ -1,156 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778Ab1AWLBV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 06:01:21 -0500
-Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:51791
-	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751351Ab1AWLBU (ORCPT
+	id S1751155Ab1AWLGL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 06:06:11 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:51989 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882Ab1AWLGJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 06:01:20 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH] drm/i915,agp/intel: Do not clear stolen entries
-Date: Sun, 23 Jan 2011 11:01:12 +0000
-Message-Id: <1295780472-8475-1-git-send-email-chris@chris-wilson.co.uk>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <20110123011221.GB1805@nowhere>
-References: <20110123011221.GB1805@nowhere>
-X-Originating-IP: 78.156.66.37
+	Sun, 23 Jan 2011 06:06:09 -0500
+Subject: Re: [PATCH 00/21] mm: Preemptibility -v6
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: paulmck@linux.vnet.ibm.com
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>, Nick Piggin <npiggin@kernel.dk>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, Andrea Arcangeli <aarcange@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>
+In-Reply-To: <20110122210623.GR17752@linux.vnet.ibm.com>
+References: <20101126143843.801484792@chello.nl>
+	 <alpine.LSU.2.00.1101172301340.2899@sister.anvils>
+	 <1295457039.28776.137.camel@laptop>
+	 <alpine.LSU.2.00.1101201052060.1603@sister.anvils>
+	 <1295624034.28776.303.camel@laptop>
+	 <20110122210623.GR17752@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sun, 23 Jan 2011 12:03:50 +0100
+Message-ID: <1295780630.2274.43.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can only utilize the stolen portion of the GTT if we are in sole
-charge of the hardware. This is only true if using GEM and KMS,
-otherwise VESA continues to access stolen memory.
+On Sat, 2011-01-22 at 13:06 -0800, Paul E. McKenney wrote:
 
-Reported-by: Arnd Bergmann <arnd@arndb.de>
-Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
-Tested-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
----
+> OK, so the anon_vma slab cache is SLAB_DESTROY_BY_RCU.  Presumably
+> all callers of page_lock_anon_vma() check the identity of the page
+> that got locked, since it might be recycled at any time.  But when
+> I look at 2.6.37, I only see checks for NULL.  So I am assuming
+> that this code is supposed to prevent such recycling.
+> 
+> I am not sure that I am seeing a consistent snapshot of all of the
+> relevant code, in particular, I am guessing that the ->lock and ->mutex
+> are the result of changes rather than there really being both a spinlock
+> and a mutex in anon_vma. 
 
-Frederic, updated patch attached. The bug was that clear_range took (start,
-count) and I was passing in (start, end) so we were dereferencing past the
-end of the valid pages.
--Chris
+Correct, my earlier spinlock -> mutex conversion left is being called
+->lock, but Hugh (rightly) pointed out that I should rename it too, so
+in the new (as of yet unposted version its called ->mutex).
 
----
- drivers/char/agp/intel-gtt.c        |   19 +++++++++----------
- drivers/gpu/drm/i915/i915_drv.h     |    5 ++++-
- drivers/gpu/drm/i915/i915_gem.c     |   10 +++++++---
- drivers/gpu/drm/i915/i915_gem_gtt.c |    4 ++++
- 4 files changed, 24 insertions(+), 14 deletions(-)
+>  Mainline currently has a lock, FWIW.  But from
+> what I do see, I am concerned about the following sequence of events:
+> 
+> o	CPU 0 starts executing page_lock_anon_vma() as shown at
+> 	https://lkml.org/lkml/2010/11/26/213, fetches the pointer
+> 	to anon_vma->root->lock, but does not yet invoke
+> 	mutex_trylock().
+> 
+> o	CPU 1 executes __put_anon_vma() above on the same VMA
+> 	that CPU 0 is attempting to use.  It sees that the
+> 	anon_vma->root->mutex (presumably AKA ->lock) is not held,
+> 	so it calls anon_vma_free().
+> 
+> o	CPU 2 reallocates the anon_vma freed by CPU 1, so that it
+> 	now has a non-zero reference count.
+> 
+> o	CPU 0 continues execution, incorrectly acquiring a reference
+> 	to the now-recycled anon_vma.
+> 
+> Or am I misunderstanding what this code is trying to do?
 
-diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
-index 826ab09..fab3d32 100644
---- a/drivers/char/agp/intel-gtt.c
-+++ b/drivers/char/agp/intel-gtt.c
-@@ -68,6 +68,7 @@ static struct _intel_private {
- 	phys_addr_t gma_bus_addr;
- 	u32 PGETBL_save;
- 	u32 __iomem *gtt;		/* I915G */
-+	bool clear_fake_agp; /* on first access via agp, fill with scratch */
- 	int num_dcache_entries;
- 	union {
- 		void __iomem *i9xx_flush_page;
-@@ -869,21 +870,12 @@ static int intel_fake_agp_free_gatt_table(struct agp_bridge_data *bridge)
- 
- static int intel_fake_agp_configure(void)
- {
--	int i;
--
- 	if (!intel_enable_gtt())
- 	    return -EIO;
- 
-+	intel_private.clear_fake_agp = true;
- 	agp_bridge->gart_bus_addr = intel_private.gma_bus_addr;
- 
--	for (i = 0; i < intel_private.base.gtt_total_entries; i++) {
--		intel_private.driver->write_entry(intel_private.scratch_page_dma,
--						  i, 0);
--	}
--	readl(intel_private.gtt+i-1);	/* PCI Posting. */
--
--	global_cache_flush();
--
- 	return 0;
- }
- 
-@@ -945,6 +937,13 @@ static int intel_fake_agp_insert_entries(struct agp_memory *mem,
- {
- 	int ret = -EINVAL;
- 
-+	if (intel_private.clear_fake_agp) {
-+		int start = intel_private.base.stolen_size / PAGE_SIZE;
-+		int end = intel_private.base.gtt_mappable_entries;
-+		intel_gtt_clear_range(start, end - start);
-+		intel_private.clear_fake_agp = false;
-+	}
-+
- 	if (INTEL_GTT_GEN == 1 && type == AGP_DCACHE_MEMORY)
- 		return i810_insert_dcache_entries(mem, pg_start, type);
- 
-diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-index 5969f46..a0149c6 100644
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -543,8 +543,11 @@ typedef struct drm_i915_private {
- 		/** List of all objects in gtt_space. Used to restore gtt
- 		 * mappings on resume */
- 		struct list_head gtt_list;
--		/** End of mappable part of GTT */
-+
-+		/** Usable portion of the GTT for GEM */
-+		unsigned long gtt_start;
- 		unsigned long gtt_mappable_end;
-+		unsigned long gtt_end;
- 
- 		struct io_mapping *gtt_mapping;
- 		int gtt_mtrr;
-diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-index 812b97b..b1d7461 100644
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -140,12 +140,16 @@ void i915_gem_do_init(struct drm_device *dev,
- {
- 	drm_i915_private_t *dev_priv = dev->dev_private;
- 
--	drm_mm_init(&dev_priv->mm.gtt_space, start,
--		    end - start);
-+	drm_mm_init(&dev_priv->mm.gtt_space, start, end - start);
- 
-+	dev_priv->mm.gtt_start = start;
-+	dev_priv->mm.gtt_mappable_end = mappable_end;
-+	dev_priv->mm.gtt_end = end;
- 	dev_priv->mm.gtt_total = end - start;
- 	dev_priv->mm.mappable_gtt_total = min(end, mappable_end) - start;
--	dev_priv->mm.gtt_mappable_end = mappable_end;
-+
-+	/* Take over this portion of the GTT */
-+	intel_gtt_clear_range(start / PAGE_SIZE, end / PAGE_SIZE);
- }
- 
- int
-diff --git a/drivers/gpu/drm/i915/i915_gem_gtt.c b/drivers/gpu/drm/i915/i915_gem_gtt.c
-index 70433ae..9c41f54 100644
---- a/drivers/gpu/drm/i915/i915_gem_gtt.c
-+++ b/drivers/gpu/drm/i915/i915_gem_gtt.c
-@@ -34,6 +34,10 @@ void i915_gem_restore_gtt_mappings(struct drm_device *dev)
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	struct drm_i915_gem_object *obj;
- 
-+	/* First fill with scratch pages */
-+	intel_gtt_clear_range(dev_priv->mm.gtt_start / PAGE_SIZE,
-+			      dev_priv->mm.gtt_end / PAGE_SIZE);
-+
- 	list_for_each_entry(obj, &dev_priv->mm.gtt_list, gtt_list) {
- 		i915_gem_clflush_object(obj);
- 
--- 
-1.7.2.3
+No that is quite right and possible, its one of the many subtle issues
+surrounding the existing page_lock_anon_vma(), we can indeed return a
+locked anon_vma that is not in fact related to the page we asked it for,
+all calling code SHOULD and afaict does deal with that, mostly by
+calling things like vma_address(vma, page) for all vma's obtained from
+the anon_vma, to verify the page is indeed (or not) part of the vma.
+
+The race we guard against with all the fancy stuff is the page itself
+getting unmapped and us returning an anon_vma for an unmapped page.
+
+And of course, returning a locked but free'd anon_vma, that too isn't
+allowed ;-)
+
 
