@@ -1,46 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146Ab1AWU7C (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 15:59:02 -0500
-Received: from mga03.intel.com ([143.182.124.21]:2077 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751073Ab1AWU7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 15:59:01 -0500
-Message-Id: <849307$b97gn8@azsmga001.ch.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,366,1291622400"; 
-   d="scan'208";a="378782440"
-Date: Sun, 23 Jan 2011 20:58:56 +0000
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH 1/1] Use cachable mapping for i915 opregion.
-Cc: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>, airlied@linux.ie,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-References: <1295803414-5373-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de> <0d30dc$kr9u7e@orsmga001.jf.intel.com> <201101232152.27970.rjw@sisk.pl>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <201101232152.27970.rjw@sisk.pl>
+	id S1752389Ab1AWV3F (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 16:29:05 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:42600 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416Ab1AWV3D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 16:29:03 -0500
+MIME-Version: 1.0
+In-Reply-To: <201101231845.20505.maciej.rutecki@gmail.com>
+References: <4D32FC1C.3010905@simon.arlott.org.uk>
+	<201101231845.20505.maciej.rutecki@gmail.com>
+Date: Sun, 23 Jan 2011 13:29:02 -0800
+Message-ID: <AANLkTimTz=kMmJ=YhyJv28WUrsbN=ygBt9e7dMJ3KGqB@mail.gmail.com>
+Subject: Re: 2.6.37 regression: adding main interface to a bridge breaks vlan
+ interface RX
+From: Jesse Gross <jesse@nicira.com>
+To: maciej.rutecki@gmail.com
+Cc: Simon Arlott <simon@fire.lp0.eu>, netdev <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 23 Jan 2011 21:52:27 +0100, "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> On Sunday, January 23, 2011, Chris Wilson wrote:
-> > On Sun, 23 Jan 2011 18:23:34 +0100, Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de> wrote:
-> > > The opregion is a shared memory region between ACPI and the graphics
-> > > driver. As the ACPI mapping has been changed to cachable in commit
-> > > 6d5bbf00d251cc73223a71422d69e069dc2e0b8d, mapping the intel opregion
-> > > non-cachable now fails. As no bus-master hardware is involved in the
-> > > opregion, cachable map should do no harm.
-> > 
-> > Satisfied myself that is indeed equivalent to use the newly introduced
-> > acpi_os_ioremap for this purpose and applied to -fixes.
-> 
-> However, it might be better to use acpi_os_ioremap() in case we decide to
-> go back to ioremap() for some reason.  For now, ioremap_cache() seems fine,
-> but ...
+On Sun, Jan 23, 2011 at 9:45 AM, Maciej Rutecki
+<maciej.rutecki@gmail.com> wrote:
+> I created a Bugzilla entry at
+> https://bugzilla.kernel.org/show_bug.cgi?id=27432
+> for your bug report, please add your address to the CC list in there, thanks!
 
-Great minds think a like, but fools rarely differ...
-http://git.kernel.org/?p=linux/kernel/git/ickle/drm-intel.git;a=commit;h=94b3eb7a71fe62f19c91c39dd94c83786108d626
--Chris
-
--- 
-Chris Wilson, Intel Open Source Technology Centre
+This isn't a bug - the change resolved behavior that varied depending
+on what NIC was in use.
