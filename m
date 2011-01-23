@@ -1,89 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751395Ab1AWJRF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 04:17:05 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:62305 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261Ab1AWJRB (ORCPT
+	id S1751426Ab1AWJdG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 04:33:06 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63501 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169Ab1AWJdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 04:17:01 -0500
+	Sun, 23 Jan 2011 04:33:03 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=mqqyVq1U7/SAbqA7dIokOKZANsVY4MN4X8yuoEAIxE3KBpRQi+7vqsvpKffLdz0kyK
-         H4rDaD3qXCUyYlxEkFPGvEFnlrONBTgkzdYenzhz5rqsc4f8eyOedpmb7d/+uPRinmt3
-         dfuHP9xlAzu5rmx49GhSVzW/blDovsfGrb+Nw=
-From: Alexander Strakh <cromlehg@gmail.com>
-To: mchehab@infradead.org
-Cc: tobias.lorenz@gmx.net, jy0922.shim@samsung.com,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexander Strakh <cromlehg@gmail.com>,
-        Alexander Strakh <strakh@ispras.ru>
-Subject: [PATCH 1/1] Media: radio: si470x: remove double mutex lock
-Date: Sun, 23 Jan 2011 12:16:54 +0300
-Message-Id: <1295774214-3606-1-git-send-email-strakh@ispras.ru>
-X-Mailer: git-send-email 1.7.1
+        d=googlemail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding
+         :content-disposition:message-id;
+        b=sIjk28IiF73k0PvOi2ai6/QxNObCqMRKzTXYNF4F+ZCNUTEqZucKtmWcjKm4RLNBPT
+         FSLSkqRrfLkdqKMKWeHUkat/EuPuZxcEyB/k11Z5x++yDBTn3YoFKp9R4E4WIN4xN/hs
+         j+biJTtqTLbVL9HWmYHBsbhFlsiwaFe0wTCKo=
+From: Chris Clayton <chris2553@googlemail.com>
+Reply-To: chris2553@googlemail.com
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH] drm/i915: Increase the amount of defense before computing vblank timestamps
+Date: Sun, 23 Jan 2011 09:32:49 +0000
+User-Agent: KMail/1.9.10
+Cc: linux-kernel@vger.kernel.org
+References: <:201101220935.03623.chris2553@googlemail.com> <0d30dc$kr3ing@orsmga001.jf.intel.com> <201101230856.42744.chris2553@googlemail.com>
+In-Reply-To: <201101230856.42744.chris2553@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201101230932.49998.chris2553@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Strakh <cromlehg@gmail.com>
+On Sunday 23 January 2011, Chris Clayton wrote:
+> On Saturday 22 January 2011, Chris Wilson wrote:
+> > On Sat, 22 Jan 2011 11:18:53 +0000, Chris Clayton
+> > <chris2553@googlemail.com>
+>
+> wrote:
+> > > On Saturday 22 January 2011, Chris Wilson wrote:
+> > > > Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+> > > > ---
+> > > >
+> > > > Chris, does this help?
+> > >
+> > > Sorry Chris, X still doesn't start with this patch applied. The
+> > > symptoms are slightly different in that the monitor doesn't go into
+> > > power saving mode, but the screen is still black and I have to recycle
+> > > the power to get the machine back.
+> > > The messages in the log file has changed though.We now have:
+> >
+> > Despite appearances to the contrary, it is a step forward. We have the
+> > crash under control, and now need to tackle the underlying problem.
+> >
+> > However, I'm worried by the fact that no CRTCs are attached. Is this not
+> > using KMS?
+>
+> No KMS is not configured in. I found that under an earlier version of the
+> kernel it caused my kernel to lock up, so I configured it out. I meant to
+> investigate further and report it, but then forgot. I'll turn KMS on and
+> report the outcome.
+>
 
+Mmmm, I get a lock up when turning KMS on in 2.3.38-rc2+ and it looks like KMS 
+is inducing a crash in X. The Xorg log contains:
 
-1. First mutex_lock on &radio->lock in line 441
-2. Second in line 462
+Backtrace:
+0: /usr/X11/bin/X(xorg_backtrace+0x3b) [0x81352db]
+1: /usr/X11/bin/X(xf86SigHandler+0x51) [0x80ba0b1]
+2: [0xb78b5400]
+3: /usr/X11R6/lib/libdrm_intel.so.1(+0x624b) [0xb72d024b]
+4: /usr/X11R6/lib/libdrm_intel.so.1(drm_intel_bo_unreference+0x16) [0xb72cb446]
+5: /usr/X11/lib/xorg/modules/drivers//intel_drv.so(intel_batch_flush+0xb6) 
+[0xb72ec876]
+6: /usr/X11/lib/xorg/modules/drivers//intel_drv.so(+0x4b5d0) [0xb73215d0]
+7: /usr/X11/lib/xorg/modules/drivers//intel_drv.so(uxa_fill_region_tiled+0x264) 
+[0xb7338fc4]
+8: /usr/X11/lib/xorg/modules/drivers//intel_drv.so(+0x6343b) [0xb733943b]
+9: /usr/X11/bin/X() [0x817b8c6]
+10: /usr/X11/bin/X(miPaintWindow+0x1cb) [0x811484b]
+11: /usr/X11/bin/X(miWindowExposures+0xbf) [0x8114bbf]
+12: /usr/X11/bin/X() [0x80b364f]
+13: /usr/X11/bin/X(MapWindow+0x3a8) [0x8072cc8]
+14: /usr/X11/bin/X(InitRootWindow+0x10c) [0x8072dfc]
+15: /usr/X11/bin/X(main+0x40a) [0x806be0a]
+16: /lib/libc.so.6(__libc_start_main+0xe6) [0xb7412b86]
+17: /usr/X11/bin/X() [0x806b2c1]
 
-I think that mutex in line 462 is not needed. In kernel v2.6.36.3 function si470
-x_rds_on contains mutex_lock/mutex_unlock. Have no mutex_lock in line 441. In kernel v2.6.37 mutex_lock/mutex_unlock has been moved from si470x_rds_on to fops_read. But old mutex_lock (line 462) forgot to remove. 
+Fatal server error:
+Caught signal 11.  Server aborting
 
- 433static ssize_t si470x_fops_read(struct file *file, char __user *buf,
- 434                size_t count, loff_t *ppos)
- 435{
-....
- 441        mutex_lock(&radio->lock);
- 442        if ((radio->registers[SYSCONFIG1] & SYSCONFIG1_RDS) == 0)
- 443                si470x_rds_on(radio);
- 444
- 445        /* block if no new data available */
- 446        while (radio->wr_index == radio->rd_index) {
- 447                if (file->f_flags & O_NONBLOCK) {
- 448                        retval = -EWOULDBLOCK;
- 449                        goto done;
- 450                }
- 451                if (wait_event_interruptible(radio->read_queue,
- 452                        radio->wr_index != radio->rd_index) < 0) {
- 453                        retval = -EINTR;
- 454                        goto done;
- 455                }
- 456        }
- 457
- 458        /* calculate block count from byte count */
- 459        count /= 3;
- 460
- 461        /* copy RDS block out of internal buffer and to user buffer */
- 462        mutex_lock(&radio->lock);
+and the kernel log contains:
 
-Found by Linux Device Drivers Verification Project
+Jan 23 09:07:38 upstairs kernel: X[1273]: segfault at 3fe8 ip b72ebc95 sp 
+bfdbf4b0 error 6 in intel_drv.so[b72d6000+76000]
 
-Remove second mutex_lock from fops_read
+So it looks like there are two problems. I'm happy to help fix both, but would 
+prefer to get the non-KMS setup working first, so that I can run the 
+development kernel to see if I find any other problems. Once the graphics mode 
+has been switched, the text on the screen as the kernel boots is so small, that 
+my old eyes struggle to see it, so normally I will probably run without KMS, as 
+long as that is supported.
 
-Signed-off-by: Alexander Strakh <strakh@ispras.ru>
----
- drivers/media/radio/si470x/radio-si470x-common.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+<snip>
 
-diff --git a/drivers/media/radio/si470x/radio-si470x-common.c b/drivers/media/radio/si470x/radio-si470x-common.c
-index 60c176f..38ae6cd 100644
---- a/drivers/media/radio/si470x/radio-si470x-common.c
-+++ b/drivers/media/radio/si470x/radio-si470x-common.c
-@@ -460,7 +460,6 @@ static ssize_t si470x_fops_read(struct file *file, char __user *buf,
- 	count /= 3;
- 
- 	/* copy RDS block out of internal buffer and to user buffer */
--	mutex_lock(&radio->lock);
- 	while (block_count < count) {
- 		if (radio->rd_index == radio->wr_index)
- 			break;
+Chris
 -- 
-1.7.1
-
+The more I see, the more I know. The more I know, the less I understand. 
+Changing Man - Paul Weller
